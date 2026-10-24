@@ -12,6 +12,8 @@ import ComplexityAbstracts.CookLevinAbstract
 import ComplexityAbstracts.CookLevinBridge
 import ComplexityAbstracts.CryptographyAbstract
 import ComplexityAbstracts.CryptographyBridge
+import ComplexityAbstracts.DijkstraAbstract
+import ComplexityAbstracts.DijkstraBridge
 import ComplexityAbstracts.Encoding
 import ComplexityAbstracts.FaginAbstract
 import ComplexityAbstracts.FaginBridge

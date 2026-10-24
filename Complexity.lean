@@ -32,6 +32,16 @@ public import Complexity.Algorithms.Reachability.InductiveCounting.Semantics
 public import Complexity.Algorithms.Reachability.Reingold
 public import Complexity.Algorithms.Reachability.ReingoldEval
 public import Complexity.Algorithms.Reachability.Savitch
+public import Complexity.Algorithms.WordRAM.Dijkstra.BinaryHeap
+public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
+public import Complexity.Algorithms.WordRAM.Dijkstra.HeapProgram
+public import Complexity.Algorithms.WordRAM.Dijkstra.HeapRelax
+public import Complexity.Algorithms.WordRAM.Dijkstra.HeapSift
+public import Complexity.Algorithms.WordRAM.Dijkstra.HeapStatement
+public import Complexity.Algorithms.WordRAM.Dijkstra.Invariant
+public import Complexity.Algorithms.WordRAM.Dijkstra.ListEncode
+public import Complexity.Algorithms.WordRAM.Dijkstra.LogLinear
+public import Complexity.Algorithms.WordRAM.Dijkstra.Statement
 public import Complexity.Algorithms.WordRAM.DynamicArray
 public import Complexity.Algorithms.WordRAM.ElementDistinctness
 public import Complexity.Algorithms.WordRAM.ElementDistinctnessRAM
