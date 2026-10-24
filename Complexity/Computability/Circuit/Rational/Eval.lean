@@ -152,14 +152,14 @@ abbrev matMul {l m n : Type*} [Fintype m] (A : Matrix l m R) (B : Matrix m n R) 
     Matrix l n R := A * B
 
 /-- An upper unitriangular block matrix is invertible. -/
-theorem upper_unit (B : Matrix ι κ R) :
+private theorem upper_unit (B : Matrix ι κ R) :
     IsUnit (fromBlocks (1 : Matrix ι ι R) B 0 (1 : Matrix κ κ R)) := by
   apply isUnit_iff_exists.mpr
   refine ⟨fromBlocks 1 (-B) 0 1, ?_, ?_⟩ <;>
     simp [fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul]
 
 /-- A lower unitriangular block matrix is invertible. -/
-theorem lower_unit (C : Matrix κ ι R) :
+private theorem lower_unit (C : Matrix κ ι R) :
     IsUnit (fromBlocks (1 : Matrix ι ι R) 0 C (1 : Matrix κ κ R)) := by
   apply isUnit_iff_exists.mpr
   refine ⟨fromBlocks 1 0 (-C) 1, ?_, ?_⟩ <;>
@@ -201,7 +201,7 @@ theorem diag_unit_iff (A : Matrix ι ι R) (D : Matrix κ κ R) :
       simp [fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul]
 
 /-- The Schur factorization of a block matrix with a zero corner and an invertible corner. -/
-theorem schur_factor (A A' : Matrix ι ι R) (B : Matrix ι κ R) (C : Matrix κ ι R)
+private theorem schur_factor (A A' : Matrix ι ι R) (B : Matrix ι κ R) (C : Matrix κ ι R)
     (hAA' : A * A' = 1) (hA'A : A' * A = 1) :
     fromBlocks A B C 0 =
       fromBlocks 1 0 (C * A') 1 * fromBlocks A 0 0 (-C * A' * B) *

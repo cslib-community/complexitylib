@@ -240,7 +240,7 @@ theorem Circuit.essential_le_size
 
 /-- In a program of fan-in `r`, a wire of depth `d` is supported by at most `max 1 r ^ d`
 inputs. -/
-theorem Program.card_wireSupport_le_pow {r : ℕ} :
+private theorem Program.card_wireSupport_le_pow {r : ℕ} :
     ∀ {g : ℕ} {p : Program σ n g}, p.FanInAtMost r →
       ∀ w : Wire n g, (p.wireSupport w).card ≤ max 1 r ^ p.wireDepths w
   | _, .empty, _, .input i => by simp

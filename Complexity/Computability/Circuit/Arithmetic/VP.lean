@@ -121,7 +121,8 @@ theorem Circuit.aeval_polynomial {R : Type*} [CommSemiring R] [Algebra K R]
 
 /-- Substituting polynomials for the variables of the polynomial computed by a circuit is
 evaluating the circuit at those polynomials. -/
-theorem Circuit.aeval_polynomial_mvPolynomial {σ : Type*} (c : Circuit (arithSignature K) n m)
+private theorem Circuit.aeval_polynomial_mvPolynomial {σ : Type*}
+    (c : Circuit (arithSignature K) n m)
     (x : Fin n → MvPolynomial σ K) (j : Fin m) :
     aeval x (c.polynomial j) = c.eval (arithInterpretationWith K C) x j := by
   rw [c.aeval_polynomial, algebraMap_eq]
@@ -320,7 +321,7 @@ theorem size_projectionCircuit_le (ρ : Fin m → Fin n ⊕ K) : (projectionCirc
 
 /-- Feeding the substitution of a projection to a circuit computes the projection of its
 polynomial. -/
-theorem polynomial_comp_projectionCircuit (c : Circuit (arithSignature K) m p)
+private theorem polynomial_comp_projectionCircuit (c : Circuit (arithSignature K) m p)
     (ρ : Fin m → Fin n ⊕ K) (j : Fin p) :
     (c.comp (projectionCircuit ρ)).polynomial j = projection ρ (c.polynomial j) := by
   rw [projection, Circuit.aeval_polynomial_mvPolynomial, Circuit.polynomial, Circuit.eval_comp]

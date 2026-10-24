@@ -26,7 +26,8 @@ the original semi-circuit (`SemiCircuit.MoveOK.liftsTo`, `SemiCircuit.RewireOK.l
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.SemiCircuit.moveAffine`, `Cslib.Circuits.Boolean.SemiCircuit.rewire`.
+* `Cslib.Circuits.Boolean.SemiCircuit.moveAffine`, `Cslib.Circuits.Boolean.SemiCircuit.MoveOK`,
+  `Cslib.Circuits.Boolean.SemiCircuit.rewire`, `Cslib.Circuits.Boolean.SemiCircuit.RewireOK`.
 
 ## Main results
 
@@ -71,6 +72,8 @@ namespace MoveOK
 variable {J e : ℕ} (h : C.MoveOK J e)
 include h
 
+/-- Moving gate `J` with fresh equation index `e` leaves all existing equations of `C`
+unchanged. -/
 theorem eqn_of_mem {e' : ℕ} (he' : e' ∈ C.eqns) : (C.moveAffine J e).eqn e' = C.eqn e' :=
   Function.update_of_ne (show e' ≠ e from fun he => h.fresh (he ▸ he')) _ _
 
@@ -91,7 +94,7 @@ theorem eqnsHold_iff (val : ℕ → Bool) : (C.moveAffine J e).EqnsHold val ↔
       rwa [Function.update_self]
     · rw [h.eqn_of_mem he']; exact hv e' he'
 
-theorem live_eq : (C.moveAffine J e).live = C.live := by
+private theorem live_eq : (C.moveAffine J e).live = C.live := by
   ext i
   simp only [live, Finset.mem_union]
   change (i ∈ C.params ∨ i ∈ insert J C.aux) ∨ i ∈ C.gates.erase J ↔ _
@@ -102,6 +105,8 @@ theorem live_eq : (C.moveAffine J e).live = C.live := by
 
 end MoveOK
 
+/-- In a well-formed semi-circuit, any node read by a gate `J` satisfying `MoveOK J e` is a
+parameter or auxiliary variable. -/
 theorem MoveOK.mem_params_or_aux (hC : C.WellFormed) {J e : ℕ} (h : C.MoveOK J e) {i : ℕ}
     (hi : (C.gate J).Reads i) : i ∈ C.params ∪ C.aux := by
   have := hC.reads_live J h.mem i hi
@@ -233,10 +238,11 @@ structure RewireOK (C : SemiCircuit) (J : ℕ) (g : Gate) : Prop where
   value : ∀ val, (∀ K ∈ C.gates, K ≠ J → val K = (C.gate K).eval val) →
     g.eval val = (C.gate J).eval val
 
-theorem rewire_gate_of_ne {J K : ℕ} {g : Gate} (hKJ : K ≠ J) : (C.rewire J g).gate K = C.gate K :=
+private theorem rewire_gate_of_ne {J K : ℕ} {g : Gate} (hKJ : K ≠ J) :
+    (C.rewire J g).gate K = C.gate K :=
   Function.update_of_ne hKJ _ _
 
-theorem rewire_gate_self {J : ℕ} {g : Gate} : (C.rewire J g).gate J = g :=
+private theorem rewire_gate_self {J : ℕ} {g : Gate} : (C.rewire J g).gate J = g :=
   Function.update_self _ _ _
 
 /-- Rewiring a gate to read only parameters preserves well-formedness. -/

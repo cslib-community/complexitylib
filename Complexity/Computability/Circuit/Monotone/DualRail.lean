@@ -72,7 +72,7 @@ def railBits (x : List Bool) : List Bool := true :: x.flatMap fun b => [b, !b]
     simp only [List.length_append, List.length_cons, List.length_nil]
     omega
 
-theorem railBits_append (x : List Bool) (v : Bool) :
+private theorem railBits_append (x : List Bool) (v : Bool) :
     railBits (x ++ [v]) = railBits x ++ [v, !v] := by
   simp [railBits]
 
@@ -135,7 +135,7 @@ def dualCode (gates : List (Boolean.Op × List ℕ)) : List (Op × List ℕ) := 
   | cons g gates ih => simp only [dualCode, List.flatMap_cons, List.length_append,
       length_dualGates, List.length_cons] at ih ⊢; omega
 
-theorem dualCode_append (gates gates' : List (Boolean.Op × List ℕ)) :
+private theorem dualCode_append (gates gates' : List (Boolean.Op × List ℕ)) :
     dualCode (gates ++ gates') = dualCode gates ++ dualCode gates' :=
   List.flatMap_append
 
@@ -324,7 +324,7 @@ theorem code_dualRail (c : Circuit Boolean.signature n m) :
 theorem size_dualRail (c : Circuit Boolean.signature n m) : (dualRail c).size = 2 * c.size := by
   rw [← Circuit.length_code_fst, code_dualRail, length_dualCode, Circuit.length_code_fst]
 
-theorem toNat_outputs_dualRail (c : Circuit Boolean.signature n m) (j : Fin m) :
+private theorem toNat_outputs_dualRail (c : Circuit Boolean.signature n m) (j : Fin m) :
     ((dualRail c).outputs j).toNat = railWire true (c.outputs j).toNat := by
   have h := congrArg Prod.snd (code_dualRail c)
   simp only [Circuit.code] at h

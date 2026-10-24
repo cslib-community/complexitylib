@@ -291,7 +291,7 @@ theorem eq_head_of_src_eq_signal : ∀ {e : Edge c} {w : Signal c}, src e = .sig
   | .deliver _, _, h => by cases h
 
 /-- An edge leaving a junction carries the signal of the junction. -/
-theorem signal_of_src_eq_junction :
+private theorem signal_of_src_eq_junction :
     ∀ {e : Edge c} {j : Junction c}, src e = .junction j → e.signal = j.1
   | .feed ⟨_, ⟨0, _⟩⟩, _, h => by cases h
   | .feed ⟨_, ⟨_ + 1, _⟩⟩, _, h => by cases h; rfl
@@ -426,21 +426,21 @@ include hα
 
 /-- In a satisfying assignment, the feed edges along the chain of junctions of a signal carry
 the value of its first edge. -/
-theorem feed_eq_head (w : Signal c) :
+private theorem feed_eq_head (w : Signal c) :
     ∀ (k : ℕ) (hk : k < fanout c w), α (.feed ⟨w, ⟨k, hk⟩⟩) = α (head w)
   | 0, _ => rfl
   | k + 1, hk => (hα (.junction ⟨w, ⟨k, by omega⟩⟩) _ rfl).trans (feed_eq_head w k _)
 
 /-- In a satisfying assignment, every edge carries the value of the first edge of its
 signal. -/
-theorem eq_head (e : Edge c) : α e = α (head e.signal) := by
+private theorem eq_head (e : Edge c) : α e = α (head e.signal) := by
   rcases e with ⟨w, k⟩ | ⟨w, k⟩
   · exact feed_eq_head hα w k k.isLt
   · exact (hα (.junction ⟨w, k⟩) (.deliver ⟨w, k⟩) rfl).trans (feed_eq_head hα w k k.isLt)
 
 /-- In a satisfying assignment, the first edge of every signal carries its value in the
 circuit. -/
-theorem head_eq_trace :
+private theorem head_eq_trace :
     ∀ (w : Wire n c.size) (hw : Reach c w), α (head ⟨w, hw⟩) = c.program.trace I x w := by
   refine c.program.wire_induction (fun i hw => hα (.signal ⟨.input i, hw⟩)) fun g ih hw => ?_
   have h : α (head ⟨.gate g, hw⟩) = I _ fun a => α (argEdge hw a) := hα (.signal ⟨.gate g, hw⟩)

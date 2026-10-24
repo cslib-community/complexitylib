@@ -43,7 +43,7 @@ open Cslib.Circuits.Clique Finset
 variable {n k : ℕ}
 
 /-- Monotone programs have fan-in at most two. -/
-theorem program_fanInAtMost_two {g : ℕ} (p : Program signature n g) : p.FanInAtMost 2 := by
+private theorem program_fanInAtMost_two {g : ℕ} (p : Program signature n g) : p.FanInAtMost 2 := by
   induction p with
   | empty => trivial
   | gate p line ih => exact ⟨ih, by cases line.op <;> simp⟩

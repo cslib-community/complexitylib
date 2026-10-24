@@ -142,7 +142,7 @@ theorem contains_ofColoring_iff {c : Fin n → Fin r} {s : Finset (Fin n)} :
 
 /-- A set with all edges inside in the graph of a colouring with `r` colours has at most `r`
 vertices. -/
-theorem card_le_of_contains_ofColoring {c : Fin n → Fin r} {s : Finset (Fin n)}
+private theorem card_le_of_contains_ofColoring {c : Fin n → Fin r} {s : Finset (Fin n)}
     (h : Contains (ofColoring c) s) : s.card ≤ r := by
   simpa using Finset.card_le_card_of_injOn c (fun _ _ => Finset.mem_univ _)
     (contains_ofColoring_iff.1 h)

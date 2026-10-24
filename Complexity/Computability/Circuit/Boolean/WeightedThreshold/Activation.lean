@@ -25,9 +25,11 @@ weights are constant in the input sum and have cost `1`.
   `Cslib.Circuits.Boolean.WeightedThreshold.activationSignature`,
   `Cslib.Circuits.Boolean.WeightedThreshold.activationInterpretation`: real-weight gates with
   arbitrary scalar activations `ℝ → Bool`.
-* `Cslib.Circuits.Boolean.WeightedThreshold.ofWeightedThreshold`: embedding of the weighted
+* `Cslib.Circuits.Boolean.WeightedThreshold.ofWeightedThresholdOp`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.ofWeightedThreshold`: embedding of the weighted
   threshold signature into the activation signature.
-* `Cslib.Circuits.Boolean.WeightedThreshold.activationInputWeight`,
+* `Cslib.Circuits.Boolean.WeightedThreshold.activationLineWeight`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.activationInputWeight`,
   `Cslib.Circuits.Boolean.WeightedThreshold.activationGateWeight`,
   `Cslib.Circuits.Boolean.WeightedThreshold.activationInputGates`: aggregated wire coefficients
   and input-reading gates.
@@ -97,7 +99,7 @@ def activationLineWeight (line : Line activationSignature n g) (wire : Wire n g)
   ∑ a with line.wires a = wire, line.op.weight a
 
 /-- Regrouping argument slots by actual wire preserves their weighted sum. -/
-theorem sum_activationLineWeight_mul (line : Line activationSignature n g)
+private theorem sum_activationLineWeight_mul (line : Line activationSignature n g)
     (values : Wire n g → ℝ) :
     ∑ a, line.op.weight a * values (line.wires a) =
       ∑ wire, activationLineWeight line wire * values wire := by
@@ -143,7 +145,7 @@ theorem eval_activationGate_eq (p : Program activationSignature n g)
   rfl
 
 /-- A gate has zero coefficient on its own output and on later gate outputs. -/
-theorem activationGateWeight_eq_zero_of_le (p : Program activationSignature n g)
+private theorem activationGateWeight_eq_zero_of_le (p : Program activationSignature n g)
     (gate prior : Fin g) (h : gate ≤ prior) : activationGateWeight p gate prior = 0 := by
   unfold activationGateWeight activationLineWeight
   apply sum_eq_zero
@@ -154,6 +156,8 @@ theorem activationGateWeight_eq_zero_of_le (p : Program activationSignature n g)
 noncomputable def activationInputGates (p : Program activationSignature n g) : Finset (Fin g) :=
   univ.filter fun gate => ∃ i, activationInputWeight p gate i ≠ 0
 
+/-- A gate belongs to `activationInputGates p` if and only if it has a nonzero direct-input
+weight. -/
 @[simp]
 theorem mem_activationInputGates (p : Program activationSignature n g) (gate : Fin g) :
     gate ∈ activationInputGates p ↔ ∃ i, activationInputWeight p gate i ≠ 0 := by

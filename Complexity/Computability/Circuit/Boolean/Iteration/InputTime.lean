@@ -76,7 +76,7 @@ theorem inputTimeIterate_zero (f : BitString n → BitString n) (y : BitString (
   simp only [inputTimeIterate, h, Function.iterate_zero, id_eq]
 
 /-- Reading one more bit of a binary time adds that bit's power of two. -/
-theorem toNat_word_mod_two_pow_succ (bits : BitString m) {j : ℕ} (hj : j < m) :
+private theorem toNat_word_mod_two_pow_succ (bits : BitString m) {j : ℕ} (hj : j < m) :
     (word bits).toNat % 2 ^ (j + 1) =
       (word bits).toNat % 2 ^ j + if bits ⟨j, hj⟩ then 2 ^ j else 0 := by
   have hbit : (word bits).toNat / 2 ^ j % 2 = if bits ⟨j, hj⟩ then 1 else 0 := by
@@ -92,7 +92,7 @@ theorem toNat_word_mod_two_pow_succ (bits : BitString m) {j : ℕ} (hj : j < m) 
   split_ifs <;> simp
 
 /-- Applying `f^[2 ^ j]` exactly when bit `j` is set extends the time read so far by that bit. -/
-theorem iterate_toNat_word_mod_two_pow_succ {α : Type*} (f : α → α) (bits : BitString m)
+private theorem iterate_toNat_word_mod_two_pow_succ {α : Type*} (f : α → α) (bits : BitString m)
     {j : ℕ} (hj : j < m) (y : α) :
     f^[(word bits).toNat % 2 ^ (j + 1)] y =
       if bits ⟨j, hj⟩ then f^[2 ^ j] (f^[(word bits).toNat % 2 ^ j] y)

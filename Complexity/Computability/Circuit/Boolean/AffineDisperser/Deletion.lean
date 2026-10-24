@@ -51,6 +51,8 @@ namespace State
 
 variable {n : ℕ} {f : BooleanFunction n}
 
+/-- A parameter `p` of degree `1` containing `H` among its children has `{H}` as its set of
+children. -/
 theorem children_eq_singleton {S : State n} {p : ℕ} {H : ℕ ⊕ ℕ} (h1 : S.deg p = 1)
     (hH : H ∈ S.children p) : S.children p = {H} := by
   obtain ⟨a, ha⟩ := Finset.card_eq_one.1 h1
@@ -153,7 +155,7 @@ theorem Valid.unit_delete {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAffin
   exact ⟨S', hS', hm, hs, ha', hq, by omega⟩
 
 /-- (D4) as a step of gate elimination. -/
-theorem Valid.step_unit {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAffineDisperser f d)
+private theorem Valid.step_unit {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAffineDisperser f d)
     (ha : d < S.a) {x e : ℕ} (hx : x ∈ S.unpaired) (hc : S.children x = {.inr e}) :
     ∃ S', Step f S S' := by
   obtain ⟨S', hS', hm, hs, ha', -, hW⟩ := hS.unit_delete hf ha hx hc

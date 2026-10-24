@@ -111,7 +111,7 @@ def joinFormula {r : ℕ} (seed : Bool) : List (Formula Monotone.signature r) �
   | f :: fs => Monotone.or f (joinFormula seed fs)
 
 /-- The union tree charges exactly the conjunctions in its arguments. -/
-theorem cost_joinFormula {r : ℕ} (seed : Bool) (fs : List (Formula Monotone.signature r)) :
+private theorem cost_joinFormula {r : ℕ} (seed : Bool) (fs : List (Formula Monotone.signature r)) :
     (joinFormula seed fs).cost Monotone.andCost = (fs.map (·.cost Monotone.andCost)).sum := by
   induction fs with
   | nil => simp [joinFormula, Monotone.const]
@@ -128,7 +128,8 @@ theorem mem_eval_joinFormula {r : ℕ} (seed : Bool) (fs : List (Formula Monoton
     simp [joinFormula, Monotone.or, ih, or_left_comm]
 
 /-- Every union tree has an operation at its root, including the empty tree. -/
-theorem joinFormula_isGate {r : ℕ} (seed : Bool) (fs : List (Formula Monotone.signature r)) :
+private theorem joinFormula_isGate {r : ℕ} (seed : Bool)
+    (fs : List (Formula Monotone.signature r)) :
     ∃ op args, joinFormula seed fs = .gate op args := by
   cases fs <;> exact ⟨_, _, rfl⟩
 

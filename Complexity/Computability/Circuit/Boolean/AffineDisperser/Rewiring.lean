@@ -57,12 +57,15 @@ equation `e`. -/
 def moveAffine (S : State n) (J e : ℕ) : State n :=
   { S with toSemiCircuit := S.toSemiCircuit.moveAffine J e }
 
+/-- Moving an affine gate into the affine system preserves the parameters of the state. -/
 @[simp] theorem moveAffine_params (S : State n) (J e : ℕ) :
     (S.moveAffine J e).params = S.params := rfl
 
+/-- Moving an affine gate into the affine system preserves the pairs of the state. -/
 @[simp] theorem moveAffine_pairs (S : State n) (J e : ℕ) :
     (S.moveAffine J e).pairs = S.pairs := rfl
 
+/-- Moving an affine gate into the affine system preserves the size of the state. -/
 theorem moveAffine_size {S : State n} {J e : ℕ} (h : S.MoveOK J e) :
     (S.moveAffine J e).size = S.size := by
   have h1 := Finset.card_erase_add_one h.mem
@@ -71,6 +74,7 @@ theorem moveAffine_size {S : State n} {J e : ℕ} (h : S.MoveOK J e) :
   change (S.gates.erase J).card + (insert e S.eqns).card = _
   omega
 
+/-- Moving an affine gate into the affine system decreases the number of gates by `1`. -/
 theorem moveAffine_gates_card {S : State n} {J e : ℕ} (h : S.MoveOK J e) :
     (S.moveAffine J e).gates.card + 1 = S.gates.card :=
   Finset.card_erase_add_one h.mem
@@ -91,16 +95,22 @@ theorem Valid.moveAffine {S : State n} (hS : S.Valid f) {J e : ℕ} (h : S.MoveO
 def rewire (S : State n) (J : ℕ) (g : Gate) : State n :=
   { S with toSemiCircuit := S.toSemiCircuit.rewire J g }
 
+/-- Rewiring a gate preserves the parameters of the state. -/
 @[simp] theorem rewire_params (S : State n) (J : ℕ) (g : Gate) :
     (S.rewire J g).params = S.params := rfl
 
+/-- Rewiring a gate preserves the pairs of the state. -/
 @[simp] theorem rewire_pairs (S : State n) (J : ℕ) (g : Gate) :
     (S.rewire J g).pairs = S.pairs := rfl
 
+/-- Rewiring a gate preserves the size of the state. -/
 theorem rewire_size (S : State n) (J : ℕ) (g : Gate) : (S.rewire J g).size = S.size := rfl
 
+/-- Rewiring a gate preserves the set of gate names. -/
 theorem rewire_gates (S : State n) (J : ℕ) (g : Gate) : (S.rewire J g).gates = S.gates := rfl
 
+/-- A gate `K` is a child of `z` in `S.rewire J g` iff `K ∈ S.gates` and the gate at `K` (which
+is `g` when `K = J`) reads `z`. -/
 theorem inl_mem_children_rewire (S : State n) (J : ℕ) (g : Gate) (z K : ℕ) :
     Sum.inl K ∈ (S.rewire J g).children z ↔
       K ∈ S.gates ∧ (if K = J then g.Reads z else (S.gate K).Reads z) := by
@@ -110,6 +120,7 @@ theorem inl_mem_children_rewire (S : State n) (J : ℕ) (g : Gate) (z K : ℕ) :
   · subst hKJ; rw [Function.update_self, ite_eq_left rfl]
   · rw [Function.update_of_ne hKJ, ite_eq_right hKJ]
 
+/-- Rewiring a gate preserves the equation children of every variable. -/
 theorem inr_mem_children_rewire (S : State n) (J : ℕ) (g : Gate) (z e : ℕ) :
     Sum.inr e ∈ (S.rewire J g).children z ↔ Sum.inr e ∈ S.children z := by
   simp only [SemiCircuit.inr_mem_children]

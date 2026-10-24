@@ -171,7 +171,7 @@ section Deviations
 variable {Ω κ : Type*} [Fintype κ]
 
 /-- The number of events that occur is the sum of their indicators. -/
-theorem ncard_eq_sum_indicator (A : κ → Set Ω) (ω : Ω) :
+private theorem ncard_eq_sum_indicator (A : κ → Set Ω) (ω : Ω) :
     ({k | ω ∈ A k}.ncard : ℝ) = ∑ k, (A k).indicator (1 : Ω → ℝ) ω := by
   classical
   simp only [indicator_apply, Pi.one_apply]
@@ -179,7 +179,7 @@ theorem ncard_eq_sum_indicator (A : κ → Set Ω) (ω : Ω) :
 
 /-- Outside the event that the number of events that occur deviates from `m` by at least `c`,
 this number is below `m + c`. -/
-theorem ncard_lt_of_not_le_abs {A : κ → Set Ω} {ω : Ω} {m c : ℝ}
+private theorem ncard_lt_of_not_le_abs {A : κ → Set Ω} {ω : Ω} {m c : ℝ}
     (h : ¬c ≤ |∑ k, (A k).indicator (1 : Ω → ℝ) ω - m|) : ({k | ω ∈ A k}.ncard : ℝ) < m + c := by
   rw [ncard_eq_sum_indicator]
   linarith [le_abs_self (∑ k, (A k).indicator (1 : Ω → ℝ) ω - m), not_le.mp h]
@@ -248,7 +248,7 @@ variable {V : Type*} [Fintype V]
 
 /-- The product of standard Gaussians on `V → ℝ` carries an event about inner products to the
 same event under the standard Gaussian measure of `EuclideanSpace ℝ V`. -/
-theorem measureReal_pi_eq {s : Set (EuclideanSpace ℝ V)} (hs : MeasurableSet s) :
+private theorem measureReal_pi_eq {s : Set (EuclideanSpace ℝ V)} (hs : MeasurableSet s) :
     (Measure.pi fun _ : V => gaussianReal 0 1).real {ω | WithLp.toLp 2 ω ∈ s} =
       (stdGaussian (EuclideanSpace ℝ V)).real s :=
   (measurePreserving_toLp_pi_gaussianReal V).measureReal_preimage hs.nullMeasurableSet
@@ -325,7 +325,7 @@ theorem le_inner_unitKernelRow_src_tgt [Finite E] (hloop : G.Loopless) {d : ℕ}
 
 end Correlations
 
-theorem continuous_correlation : Continuous fun q : ℝ => 2 * q / (1 + q ^ 2) :=
+private theorem continuous_correlation : Continuous fun q : ℝ => 2 * q / (1 + q ^ 2) :=
   (continuous_const.mul continuous_id).div (continuous_const.add (continuous_pow 2))
     fun q => by positivity
 

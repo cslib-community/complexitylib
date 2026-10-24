@@ -178,7 +178,7 @@ private theorem schedule_correct (p : Program signature n g) (x : Fin n → Bool
       exact hvalues w hw
 
 /-- Every compiled reference reads an available preceding-layer wire, including at depth zero. -/
-theorem wellFormed_schedule (p : Program signature n g) (k : ℕ) :
+private theorem wellFormed_schedule (p : Program signature n g) (k : ℕ) :
     WellFormed n (schedule n p.code (wireDepthsCode n p.code) k) :=
   (schedule_correct p (fun _ => false) k).1
 

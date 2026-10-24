@@ -79,6 +79,8 @@ noncomputable def inputActivityFrom (p : Program signature n g)
 noncomputable def gateActivityFrom (p : Program signature n g) (v : Fin g → Bool) : ℕ :=
   univ.sup fun x => hammingDist (p.eval interpretation x) v
 
+/-- A pattern belongs to `attainableTranscripts p` if and only if it is the restricted transcript
+of some input `x`. -/
 @[simp]
 theorem mem_attainableTranscripts (p : Program signature n g) (z : inputGates p → Bool) :
     z ∈ attainableTranscripts p ↔ ∃ x, transcript p x = z := by
@@ -175,7 +177,7 @@ theorem card_attainableTranscripts_le_sum_choose_gateActivity (p : Program signa
 
 /-- Every realized transcript lies in the Hamming ball of radius `e` around any fixed baseline `v`
 whenever `inputActivityFrom p v ≤ e`. -/
-theorem card_attainableTranscripts_le_sum_choose_of_inputActivityFrom_le
+private theorem card_attainableTranscripts_le_sum_choose_of_inputActivityFrom_le
     (p : Program signature n g) (v : inputGates p → Bool) {e : ℕ}
     (he : inputActivityFrom p v ≤ e) :
     (attainableTranscripts p).card ≤

@@ -72,11 +72,11 @@ theorem satisfies_reindex_iff {x : ι' → U} {α : E → U} :
 theorem accepted_reindex : (N.reindex e).accepted = {x | x ∘ e ∈ N.accepted} :=
   rfl
 
-theorem readAt_reindex (v : V) : (N.reindex e).readAt v = e '' N.readAt v := by
+private theorem readAt_reindex (v : V) : (N.reindex e).readAt v = e '' N.readAt v := by
   rw [e.image_eq_preimage_symm]
   rfl
 
-theorem read_reindex : (N.reindex e).read = e '' N.read := by
+private theorem read_reindex : (N.reindex e).read = e '' N.read := by
   rw [e.image_eq_preimage_symm]
   rfl
 

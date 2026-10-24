@@ -260,7 +260,7 @@ def oneRun (p : KWProtocol (Fin (n * n))) (h : Vertex m e ≃ Fin n) (i₀ : Fin
 variable {p : KWProtocol (Fin (n * n))} {h : Vertex m e ≃ Fin n} {i₀ : Fin m}
 
 /-- A run outputs Bob's answer on the edge found by `p`, relabelled back. -/
-theorem run_oneRun (σ : Relabeling m e) (x y : BitString m) :
+private theorem run_oneRun (σ : Relabeling m e) (x y : BitString m) :
     (oneRun p h i₀ σ).run x y = bobAnswer i₀ y (relabel h σ
       (p.run (fun k => aliceGraph x (relabel h σ k)) fun k => bobGraph i₀ y (relabel h σ k))) := by
   simp only [oneRun, Protocol.run_bind, Protocol.run_comap, Protocol.run_bob,
@@ -282,14 +282,14 @@ private theorem graph_relabel (h : Vertex m e ≃ Fin n) (σ : Relabeling m e)
 
 /-- The relabelled graphs are an instance of the monotone Karchmer–Wigderson game of bipartite
 perfect matching: Alice's has a perfect matching and Bob's has none. -/
-theorem bipartitePerfectMatching_aliceGraph (h : Vertex m e ≃ Fin n) (σ : Relabeling m e)
+private theorem bipartitePerfectMatching_aliceGraph (h : Vertex m e ≃ Fin n) (σ : Relabeling m e)
     (x : BitString m) :
     bipartitePerfectMatching n (fun k => aliceGraph x (relabel h σ k)) = true := by
   rw [bipartitePerfectMatching_eq_true_iff, graph_relabel]
   exact (hasPerfectMatching_comp_iff _ _ _).mpr (hasPerfectMatching_aliceGraph x)
 
 /-- Bob's relabelled graph has no perfect matching. -/
-theorem bipartitePerfectMatching_bobGraph (h : Vertex m e ≃ Fin n) (σ : Relabeling m e)
+private theorem bipartitePerfectMatching_bobGraph (h : Vertex m e ≃ Fin n) (σ : Relabeling m e)
     (y : BitString m) :
     bipartitePerfectMatching n (fun k => bobGraph i₀ y (relabel h σ k)) = false := by
   rw [Bool.eq_false_iff]

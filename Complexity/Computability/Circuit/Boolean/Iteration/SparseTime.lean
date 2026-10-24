@@ -53,6 +53,9 @@ open Cslib.FunctionalGraph
 
 variable {n R : ℕ}
 
+/-- Given a `CounterIntervalChart` with `R` runs for an injective map `f : BitVec n → BitVec n`,
+iterating `f` by an `m`-bit input time on an `n`-bit input state has a Boolean circuit of size at
+most `1000 * (n + 3) * (R + m)`. -/
 theorem CounterIntervalChart.variable_time {f : BitVec n → BitVec n}
     (chart : CounterIntervalChart f R) (hf : Function.Injective f) (m : ℕ) :
     ∃ out : Circuit Boolean.signature (n + m) n,

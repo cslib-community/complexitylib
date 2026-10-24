@@ -119,7 +119,7 @@ theorem inequality_signature_injective
   tauto
 
 /-- A canonical cover needs enough bit signatures to label all vertices. -/
-theorem card_le_two_pow_length_inequality
+private theorem card_le_two_pow_length_inequality
     (c : PairCover (inequality V) sources (canonicalClass (inequality V))) :
     Fintype.card V ≤ 2 ^ c.pairs.length := by
   simpa using Fintype.card_le_of_injective _ (inequality_signature_injective c)

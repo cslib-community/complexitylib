@@ -83,7 +83,8 @@ end bitonicLayerCircuit
 open bitonicLayerCircuit
 
 /-- Gather reads corresponding records from the two halves without changing their bits. -/
-theorem bitonicLayerCircuit.gather_pair {n r : ℕ} (x : BitString ((n + n) * r)) (j : Fin n) :
+private theorem bitonicLayerCircuit.gather_pair {n r : ℕ} (x : BitString ((n + n) * r))
+    (j : Fin n) :
     directProductInput (x ∘ gather n r) j =
       Fin.append (directProductInput x (Fin.castAdd n j))
         (directProductInput x (Fin.natAdd n j)) := by
@@ -108,13 +109,13 @@ end bitonicMergeCircuit
 open bitonicMergeCircuit
 
 /-- The first flat input block is the first half of the record array. -/
-theorem bitonicMergeCircuit.records_firstHalf {n r : ℕ} (x : BitString ((n + n) * r)) :
+private theorem bitonicMergeCircuit.records_firstHalf {n r : ℕ} (x : BitString ((n + n) * r)) :
     directProductInput (x ∘ firstHalf n r) = directProductInput x ∘ Fin.castAdd n := by
   funext j b
   simp only [firstHalf, directProductInput, Function.comp_apply, Equiv.symm_apply_apply]
 
 /-- The second flat input block is the second half of the record array. -/
-theorem bitonicMergeCircuit.records_secondHalf {n r : ℕ} (x : BitString ((n + n) * r)) :
+private theorem bitonicMergeCircuit.records_secondHalf {n r : ℕ} (x : BitString ((n + n) * r)) :
     directProductInput (x ∘ secondHalf n r) = directProductInput x ∘ Fin.natAdd n := by
   funext j b
   simp only [secondHalf, directProductInput, Function.comp_apply, Equiv.symm_apply_apply]
@@ -300,7 +301,7 @@ private theorem eval_chain {input a b n m r : ℕ}
 def pairs {n : ℕ} (flags : BitString n) : Fin n → BitString 2 :=
   fun i => ![flags i, !flags i]
 
-theorem pairs_append {n m : ℕ} (x : BitString n) (y : BitString m) :
+private theorem pairs_append {n m : ℕ} (x : BitString n) (y : BitString m) :
     pairs (Fin.append x y) = Fin.append (pairs x) (pairs y) := by
   funext i b
   cases i using Fin.addCases <;> simp only [pairs, Fin.append_left, Fin.append_right]
@@ -510,7 +511,7 @@ theorem eval_bitonicSortTraceCircuit {k r : ℕ} (key : Fin k → Fin r) (d : �
     erw [controls_pack, records_pack, ← pairs_append, ← pairs_append]
 
 /-- A traced merge computes each comparator once, retaining its existing control pair. -/
-theorem cost_program_bitonicMergeTraceCircuit {k r : ℕ} (key : Fin k → Fin r) (d : ℕ)
+private theorem cost_program_bitonicMergeTraceCircuit {k r : ℕ} (key : Fin k → Fin r) (d : ℕ)
     (ascending : Bool) (cost : signature.Op → ℕ) :
     (bitonicMergeTraceCircuit key d ascending).program.cost cost = mergeTraceSize d *
       (compareSwapCircuit.record
@@ -625,7 +626,7 @@ theorem bitonicSortCircuit_perm {k r : ℕ} (key : Fin k → Fin r) (depth : ℕ
   exact BitonicSort.sort_perm _ _ _ _
 
 /-- A layer uses `n` copies of the comparator under any assignment of gate costs. -/
-theorem cost_program_bitonicLayerCircuit {k r : ℕ} (key : Fin k → Fin r) (n : ℕ)
+private theorem cost_program_bitonicLayerCircuit {k r : ℕ} (key : Fin k → Fin r) (n : ℕ)
     (ascending : Bool) (cost : signature.Op → ℕ) :
     (bitonicLayerCircuit key n ascending).program.cost cost =
       n * (compareSwapCircuit key).program.cost cost := by

@@ -26,6 +26,8 @@ charge the full code and hold uniformly at every width, including zero.
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.csaSumCode`, `Cslib.Circuits.Boolean.csaCarryCode`: raw code templates
+  for sum and carry bits.
 * `Cslib.Circuits.Boolean.csa3to2Code`: raw code generation for the three-to-two reducer.
 * `Cslib.Circuits.Boolean.csa4to2Code`: raw code generation for the four-to-two reducer.
 

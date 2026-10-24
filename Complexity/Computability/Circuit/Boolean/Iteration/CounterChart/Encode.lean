@@ -21,7 +21,13 @@ enumeration of payload states or an assumed constant-time table primitive.
 
 ## Main definitions
 
+* `chartWidth`: widened bit-vector width `n + 2` for cycle lengths and phases.
 * `wordCycleLabel`: canonical word-cycle coordinates.
+* `CounterIntervalChart.first`, `CounterIntervalChart.period`,
+  `CounterIntervalChart.initialPhase`, `CounterIntervalChart.length`,
+  `CounterIntervalChart.contains`, `CounterIntervalChart.offset`,
+  `CounterIntervalChart.encodedRow`: per-interval parameters, membership test, offset, and
+  predicted coordinates.
 * `CounterIntervalChart.encode`: select the coordinates of a containing interval.
 
 ## Main results
@@ -51,6 +57,7 @@ variable {n R w : ℕ}
 /-- Two spare bits hold cycle lengths and sums even for a cycle of length `2^n`. -/
 abbrev chartWidth (n : ℕ) := n + 2
 
+/-- Every cycle length of a map on `BitVec n` is at most `2 ^ n`. -/
 theorem cycleLength_le_words (f : BitVec n → BitVec n) (x : BitVec n) :
     cycleLength f x ≤ 2 ^ n := by
   have h := transientDepth_add_cycleLength_le_card f x
@@ -59,6 +66,7 @@ theorem cycleLength_le_words (f : BitVec n → BitVec n) (x : BitVec n) :
   rw [hc] at h
   lia
 
+/-- Any natural number `a ≤ 2 ^ n` fits without wraparound in `BitVec (chartWidth n)`. -/
 theorem chart_ofNat_toNat {a : ℕ} (ha : a ≤ 2 ^ n) :
     (BitVec.ofNat (chartWidth n) a).toNat = a := by
   apply Nat.mod_eq_of_lt
@@ -66,7 +74,7 @@ theorem chart_ofNat_toNat {a : ℕ} (ha : a ≤ 2 ^ n) :
   have := Nat.two_pow_pos n
   lia
 
-theorem chart_setWidth_toNat (x : BitVec n) :
+private theorem chart_setWidth_toNat (x : BitVec n) :
     (x.setWidth (chartWidth n)).toNat = x.toNat := by
   simpa only [BitVec.ofNat_toNat] using chart_ofNat_toNat x.isLt.le
 
@@ -96,14 +104,17 @@ noncomputable def initialPhase (j : Fin R) : BitVec (chartWidth n) :=
 def length (j : Fin R) : BitVec (chartWidth n) :=
   BitVec.ofNat (chartWidth n) (chart.stop j - chart.start j)
 
+/-- The natural-number value of `chart.period j` is the cycle length of `chart.first j`. -/
 @[simp] theorem period_toNat (j : Fin R) :
     (chart.period j).toNat = cycleLength f (chart.first j) :=
   chart_ofNat_toNat (cycleLength_le_words f _)
 
+/-- The natural-number value of `chart.initialPhase j` is the phase of `chart.first j`. -/
 @[simp] theorem initialPhase_toNat (j : Fin R) :
     (chart.initialPhase j).toNat = phase f (chart.first j) :=
   chart_ofNat_toNat ((phase_lt f _).le.trans (cycleLength_le_words f _))
 
+/-- The natural-number value of `chart.length j` is `chart.stop j - chart.start j`. -/
 @[simp] theorem length_toNat (j : Fin R) :
     (chart.length j).toNat = chart.stop j - chart.start j :=
   chart_ofNat_toNat ((Nat.sub_le _ _).trans (chart.stop_le j))
@@ -113,6 +124,7 @@ def contains (j : Fin R) (x : BitVec n) : Bool :=
   !(x.setWidth (chartWidth n)).ult (BitVec.ofNat (chartWidth n) (chart.start j)) &&
     (x.setWidth (chartWidth n)).ult (BitVec.ofNat (chartWidth n) (chart.stop j))
 
+/-- `chart.contains j x` is `true` iff `x.toNat` lies in `[chart.start j, chart.stop j)`. -/
 @[simp] theorem contains_iff (j : Fin R) (x : BitVec n) :
     chart.contains j x = true ↔ chart.start j ≤ x.toNat ∧ x.toNat < chart.stop j := by
   have hx := chart_setWidth_toNat x
@@ -124,7 +136,7 @@ def contains (j : Fin R) (x : BitVec n) : Bool :=
 def offset (j : Fin R) (x : BitVec n) : BitVec (chartWidth n) :=
   x.setWidth (chartWidth n) - BitVec.ofNat (chartWidth n) (chart.start j)
 
-theorem offset_toNat (j : Fin R) (x : BitVec n) (hx : chart.start j ≤ x.toNat) :
+private theorem offset_toNat (j : Fin R) (x : BitVec n) (hx : chart.start j ≤ x.toNat) :
     (chart.offset j x).toNat = x.toNat - chart.start j := by
   have hw := chart_setWidth_toNat x
   have hs := chart_ofNat_toNat (chart.start_lt j).le
@@ -137,7 +149,7 @@ noncomputable def encodedRow (j : Fin R) (x : BitVec n) :
   labelBits (fun i => (canonicalCycle f (chart.first j)).getLsbD i.val) (chart.period j)
     (addResidue (chart.period j) (chart.initialPhase j) (chart.offset j x))
 
-theorem encodedRow_spec (hf : Function.Injective f) (j : Fin R) (x : BitVec n)
+private theorem encodedRow_spec (hf : Function.Injective f) (j : Fin R) (x : BitVec n)
     (hx : chart.contains j x = true) : chart.encodedRow j x = wordCycleLabel f x := by
   obtain ⟨hlo, hhi⟩ := (chart.contains_iff j x).mp hx
   have hpath := chart.point_eq j x hlo hhi
@@ -169,6 +181,8 @@ theorem encodedRow_spec (hf : Function.Injective f) (j : Fin R) (x : BitVec n)
 noncomputable def encode (x : BitVec n) : BitString (n + (chartWidth n + chartWidth n)) :=
   chooseRecord (fun j => chart.contains j x) (fun j => chart.encodedRow j x) (fun _ => false) R
 
+/-- Encoding a word `x` under an injective map `f` produces its canonical cycle coordinates
+`wordCycleLabel f x`. -/
 theorem encode_spec (hf : Function.Injective f) (x : BitVec n) :
     chart.encode x = wordCycleLabel f x := by
   obtain ⟨j, hlo, hhi⟩ := chart.covers x

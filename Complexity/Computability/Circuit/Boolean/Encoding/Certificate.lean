@@ -39,6 +39,8 @@ polynomial-time test `codeCheck` tells the codes of circuits apart (`codeCheck_e
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.Op.ofBits`, `Cslib.Circuits.Boolean.gateRow`,
+  `Cslib.Circuits.Boolean.readRow`: 3-bit operation decoding and gate row encoding/decoding.
 * `Cslib.Circuits.Boolean.certLength`: the length of certificates.
 * `Cslib.Circuits.Boolean.certificate`: the certificate of a circuit code.
 * `Cslib.Circuits.Boolean.readCertificate`: the gates and the output wire read from a certificate.
@@ -72,10 +74,12 @@ open Turing.MultiTapeTM
 def unaryField (width a : ℕ) : List Bool :=
   List.replicate a true ++ List.replicate (width - a) false
 
+/-- A unary field of width `width` for `a ≤ width` has length `width`. -/
 @[simp] theorem length_unaryField (width a : ℕ) (h : a ≤ width) :
     (unaryField width a).length = width := by
   simp [unaryField, h]
 
+/-- A unary field of width `width` for `a` contains `a` ones. -/
 @[simp] theorem count_unaryField (width a : ℕ) : (unaryField width a).count true = a := by
   simp [unaryField, List.count_replicate]
 
@@ -87,6 +91,7 @@ def Op.bits : Op → List Bool
   | .and => [true, true, false]
   | .or => [false, false, true]
 
+/-- The 3-bit encoding `op.bits` has length `3`. -/
 @[simp] theorem Op.length_bits (op : Op) : op.bits.length = 3 := by
   cases op with
   | const b => cases b <;> rfl
@@ -99,6 +104,7 @@ def Op.ofBits : Bool × Bool × Bool → Op
   | (true, true, false) => .and
   | (_, _, true) => .or
 
+/-- Decoding the three bits of `op.bits` via `Op.ofBits` recovers `op`. -/
 theorem Op.ofBits_bits (op : Op) :
     Op.ofBits (op.bits.getD 0 false, op.bits.getD 1 false, op.bits.getD 2 false) = op := by
   cases op with
@@ -117,7 +123,7 @@ def readRow (width : ℕ) (row : List Bool) : Op × List ℕ :=
     [((row.drop 3).take width).count true, ((row.drop (3 + width)).take width).count true].take
       (signature.Arity (Op.ofBits (row.getD 0 false, row.getD 1 false, row.getD 2 false))))
 
-theorem length_gateRow {width : ℕ} {g : Op × List ℕ} (h : ∀ i ∈ g.2, i ≤ width) :
+private theorem length_gateRow {width : ℕ} {g : Op × List ℕ} (h : ∀ i ∈ g.2, i ≤ width) :
     (gateRow width g).length = 3 + 2 * width := by
   rw [gateRow, List.length_append, List.length_append, Op.length_bits,
     length_unaryField _ _ (List.getD_le_of_forall_le h 0),
@@ -125,7 +131,8 @@ theorem length_gateRow {width : ℕ} {g : Op × List ℕ} (h : ∀ i ∈ g.2, i 
   omega
 
 /-- A row reads as its gate, when the gate has the arity of its operation. -/
-theorem readRow_gateRow {width : ℕ} {g : Op × List ℕ} (harity : g.2.length = signature.Arity g.1)
+private theorem readRow_gateRow {width : ℕ} {g : Op × List ℕ}
+    (harity : g.2.length = signature.Arity g.1)
     (h : ∀ i ∈ g.2, i ≤ width) : readRow width (gateRow width g) = g := by
   obtain ⟨op, args⟩ := g
   have h₀ := length_unaryField _ _ (List.getD_le_of_forall_le h 0)
@@ -261,6 +268,7 @@ private theorem all_zipIdx_eq_true_iff {n : ℕ} (k : ℕ) (gates : List (Op × 
     rw [List.zipIdx_cons, List.all_cons, Bool.and_eq_true, ih, Program.isCodeFrom_cons]
     simp
 
+/-- `codeCheck n gates` returns `true` iff `gates` is a valid program code on `n` inputs. -/
 theorem codeCheck_eq_true_iff {n : ℕ} {gates : List (Op × List ℕ)} :
     codeCheck n gates = true ↔ Program.IsCodeFrom signature n 0 gates :=
   all_zipIdx_eq_true_iff 0 gates
@@ -270,7 +278,7 @@ theorem codeCheck_eq_true_iff {n : ℕ} {gates : List (Op × List ℕ)} :
 open ComputableTidilyInPolyTime
 
 /-- Reading a gate from a row is polynomial-time, for the field width in unary. -/
-theorem computableInPolyTime_readRow :
+private theorem computableInPolyTime_readRow :
     ComputableInPolyTime (fun p : ℕ × List Bool => readRow p.1 p.2)
       (encPair encUnary encBits) encGate := by
   refine .of_tidy ?_

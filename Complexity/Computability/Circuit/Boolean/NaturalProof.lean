@@ -119,7 +119,7 @@ theorem truthTableTest_truthTable_eq_true_iff {C : Set (BooleanFunction n)}
   rw [truthTableTest_eq_true_iff, Equiv.symm_apply_apply]
 
 /-- The test deciding `C` accepts as many truth tables as there are functions in `C`. -/
-theorem card_filter_truthTableTest (C : Set (BooleanFunction n)) :
+private theorem card_filter_truthTableTest (C : Set (BooleanFunction n)) :
     #{T | truthTableTest C T = true} = C.ncard := by
   have h : ((({T | truthTableTest C T = true} : Finset (BitString (2 ^ n))) :
       Set (BitString (2 ^ n)))) = truthTable n '' C := by
@@ -193,7 +193,7 @@ theorem IsUseful.anti (hC : IsUseful Λ C) (hΛ : Λ' ⊆ Λ) (h : ∀ n, C' n �
 
 /-- If `Λ` contains `SIZE s`, with `s` positive, a property useful against `Λ` eventually holds
 only for functions needing more than `s n` gates. -/
-theorem IsUseful.eventually_lt_complexity (hC : IsUseful Λ C) {s : ℕ → ℕ} (hΛ : SIZE s ⊆ Λ)
+private theorem IsUseful.eventually_lt_complexity (hC : IsUseful Λ C) {s : ℕ → ℕ} (hΛ : SIZE s ⊆ Λ)
     (hs : ∀ n, 1 ≤ s n) :
     ∀ᶠ n in atTop, ∀ f ∈ C n, s n < complexity interpretation (single f) := by
   classical
@@ -233,7 +233,7 @@ theorem isUseful_PPoly_iff :
     exact lt_irrefl _ (hn _ hmem)
 
 /-- A `P/poly`-constructive property is decided by circuits of size `2 ^ O(n)`. -/
-theorem exists_complexity_truthTableTest_le (hC : truthTableLanguage C ∈ PPoly) :
+private theorem exists_complexity_truthTableTest_le (hC : truthTableLanguage C ∈ PPoly) :
     ∃ c, ∀ n, 1 ≤ n → complexity interpretation (single (truthTableTest (C n))) ≤ 2 ^ (c * n) := by
   obtain ⟨a, d, h⟩ := polynomiallyBounded_iff_le.1 hC
   refine ⟨a + 2 * d, fun n hn => ?_⟩

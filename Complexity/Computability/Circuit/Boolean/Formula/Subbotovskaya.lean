@@ -82,36 +82,43 @@ namespace Formula
 def restrictAt (i : Fin n) (b : Bool) (F : Formula signature n) : Formula signature n :=
   F.restrict (update PartialAssignment.empty i (some b))
 
+/-- Evaluating `F.restrictAt i b` at `x` equals evaluating `F` at `update x i b`. -/
 @[simp] theorem eval_restrictAt (i : Fin n) (b : Bool) (F : Formula signature n)
     (x : BitString n) :
     (F.restrictAt i b).eval interpretation x = F.eval interpretation (update x i b) := by
   simp [restrictAt]
 
-theorem leafSize_restrictAt_add_leafSizeIn_le (F : Formula signature n) (i : Fin n) (b : Bool) :
+private theorem leafSize_restrictAt_add_leafSizeIn_le (F : Formula signature n) (i : Fin n)
+    (b : Bool) :
     (F.restrictAt i b).leafSize + F.leafSizeIn {i} ≤ F.leafSize :=
   leafSize_restrict_update_le F i b
 
+/-- Restricting a constant formula `const c` at input `i` leaves it unchanged. -/
 @[simp] theorem restrictAt_const (i : Fin n) (b c : Bool) :
     (const c : Formula signature n).restrictAt i b = const c :=
   rfl
 
+/-- Restricting a negation at input `i` applies `mkNot` to the restricted argument. -/
 @[simp] theorem restrictAt_not (i : Fin n) (b : Bool) (F : Formula signature n) :
     F.not.restrictAt i b = mkNot (F.restrictAt i b) :=
   rfl
 
+/-- Restricting a conjunction at input `i` applies `mkAnd` to the restricted arguments. -/
 @[simp] theorem restrictAt_and (i : Fin n) (b : Bool) (F G : Formula signature n) :
     (F.and G).restrictAt i b = mkAnd (F.restrictAt i b) (G.restrictAt i b) :=
   rfl
 
+/-- Restricting a disjunction at input `i` applies `mkOr` to the restricted arguments. -/
 @[simp] theorem restrictAt_or (i : Fin n) (b : Bool) (F G : Formula signature n) :
     (F.or G).restrictAt i b = mkOr (F.restrictAt i b) (G.restrictAt i b) :=
   rfl
 
+/-- Restricting `input i` at input `i` to `b` yields `const b`. -/
 theorem restrictAt_input_self (i : Fin n) (b : Bool) :
     (input i : Formula signature n).restrictAt i b = const b := by
   simp [restrictAt]
 
-theorem restrictAt_input_of_ne {i j : Fin n} (h : j ≠ i) (b : Bool) :
+private theorem restrictAt_input_of_ne {i j : Fin n} (h : j ≠ i) (b : Bool) :
     (input j : Formula signature n).restrictAt i b = input j := by
   simp [restrictAt, h]
 
@@ -131,7 +138,7 @@ theorem isLeafMinimal_iff_leafSize_eq_formulaSize {F : Formula signature n} :
     fun h _ hG => h ▸ formulaSize_le hG⟩
 
 /-- Every argument of a leaf-minimal gate is leaf-minimal. -/
-theorem IsLeafMinimal.arg {op : Op} {args : Fin (signature.Arity op) → Formula signature n}
+private theorem IsLeafMinimal.arg {op : Op} {args : Fin (signature.Arity op) → Formula signature n}
     (hF : (gate op args).IsLeafMinimal) (j : Fin (signature.Arity op)) :
     (args j).IsLeafMinimal := by
   intro G hG
@@ -154,23 +161,25 @@ theorem IsLeafMinimal.arg {op : Op} {args : Fin (signature.Arity op) → Formula
   rw [← hsum1, ← hsum2, update_self, heq] at hle
   omega
 
-theorem IsLeafMinimal.of_not {F : Formula signature n} (h : F.not.IsLeafMinimal) :
+private theorem IsLeafMinimal.of_not {F : Formula signature n} (h : F.not.IsLeafMinimal) :
     F.IsLeafMinimal :=
   h.arg 0
 
-theorem IsLeafMinimal.left_of_and {F G : Formula signature n} (h : (F.and G).IsLeafMinimal) :
+private theorem IsLeafMinimal.left_of_and {F G : Formula signature n}
+    (h : (F.and G).IsLeafMinimal) :
     F.IsLeafMinimal :=
   h.arg 0
 
-theorem IsLeafMinimal.right_of_and {F G : Formula signature n} (h : (F.and G).IsLeafMinimal) :
+private theorem IsLeafMinimal.right_of_and {F G : Formula signature n}
+    (h : (F.and G).IsLeafMinimal) :
     G.IsLeafMinimal :=
   h.arg 1
 
-theorem IsLeafMinimal.left_of_or {F G : Formula signature n} (h : (F.or G).IsLeafMinimal) :
+private theorem IsLeafMinimal.left_of_or {F G : Formula signature n} (h : (F.or G).IsLeafMinimal) :
     F.IsLeafMinimal :=
   h.arg 0
 
-theorem IsLeafMinimal.right_of_or {F G : Formula signature n} (h : (F.or G).IsLeafMinimal) :
+private theorem IsLeafMinimal.right_of_or {F G : Formula signature n} (h : (F.or G).IsLeafMinimal) :
     G.IsLeafMinimal :=
   h.arg 1
 
@@ -434,7 +443,7 @@ theorem sum_formulaSize_restrict_update_le (f : BooleanFunction n)
 /-- Uniform single-step shrinkage inequality valid for every formula size, including `1`:
 the sum over all `2 |ρ.free|` single-variable extensions of `ρ` is at most
 `(2 |ρ.free| - 3) L(f↾ρ) + 1`. -/
-theorem sum_formulaSize_restrict_update_le_add_one (f : BooleanFunction n)
+private theorem sum_formulaSize_restrict_update_le_add_one (f : BooleanFunction n)
     (ρ : PartialAssignment (Fin n)) :
     ∑ i ∈ ρ.free,
         (formulaSize (f ∘ PartialAssignment.fill (update ρ i (some false))) +

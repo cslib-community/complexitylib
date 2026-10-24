@@ -33,10 +33,20 @@ records are accepted, sorting by label restores the original order: each label h
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.MassProduction.Scheduler.width`: the record width.
+* `Cslib.Circuits.Boolean.MassProduction.Scheduler.width`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.labelBit`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.targetBit`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.lineBit`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.label`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.target`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.line`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.encode`: the record layout, field projections,
+  and request label encoding.
 * `Cslib.Circuits.Boolean.MassProduction.Scheduler.Good`: the scheduler invariant.
 * `Cslib.Circuits.Boolean.MassProduction.Scheduler.initialSubstitution`: the initial records.
-* `Cslib.Circuits.Boolean.MassProduction.Scheduler.finalOutput`: lines in original order.
+* `Cslib.Circuits.Boolean.MassProduction.Scheduler.sortedByLabel`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.finalOutput`: sorting records by label and
+  reading lines in original order.
 
 ## Main results
 

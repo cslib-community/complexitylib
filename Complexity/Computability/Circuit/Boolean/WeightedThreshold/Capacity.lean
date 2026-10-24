@@ -37,8 +37,11 @@ of two on the second side. Integer division is retained at every step.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.WeightedThreshold.BlockKind`: scalar and finite-summary blocks.
-* `Cslib.Circuits.Boolean.WeightedThreshold.BlockDecomposition`: a semantic block decomposition.
+* `Cslib.Circuits.Boolean.WeightedThreshold.weightedSum`: weighted sum of a Boolean input.
+* `Cslib.Circuits.Boolean.WeightedThreshold.BlockKind`: scalar and finite-summary blocks, with
+  `BlockKind.cost` and `BlockKind.Step`.
+* `Cslib.Circuits.Boolean.WeightedThreshold.BlockDecomposition`: a semantic block decomposition,
+  with `BlockDecomposition.cost`.
 
 ## Main results
 

@@ -63,7 +63,7 @@ def cycleLabelVisits (x y : BitString (n + (chartWidth n + chartWidth n))) :
     (fun i => ((cycleLabelDistance x y).setWidth (n + 1)).getLsbD i.val))
     (fun i => ((labelLength y).setWidth (n + 1)).getLsbD i.val)
 
-theorem cycleLabelVisits_flag (f : BitVec n → BitVec n) (hf : Function.Injective f)
+private theorem cycleLabelVisits_flag (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) :
     cycleLabelVisits (wordCycleLabel f x) (wordCycleLabel f y)
       (Fin.castAdd (n + 1) (0 : Fin (1 + (n + 1)))) = true ↔ ∃ t, f^[t] x = y := by
@@ -78,7 +78,7 @@ theorem cycleLabelVisits_flag (f : BitVec n → BitVec n) (hf : Function.Injecti
   rw [decide_eq_true_eq]
   exact (exists_iterate_eq_iff_canonicalCycle_eq f x y (hf.mem_periodicPts y)).symm
 
-theorem cycleLabelDistance_toNat (f : BitVec n → BitVec n) (hf : Function.Injective f)
+private theorem cycleLabelDistance_toNat (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) (hc : canonicalCycle f x = canonicalCycle f y) :
     (cycleLabelDistance (wordCycleLabel f x) (wordCycleLabel f y)).toNat =
       cyclicDistance f x y := by
@@ -95,7 +95,7 @@ theorem cycleLabelDistance_toNat (f : BitVec n → BitVec n) (hf : Function.Inje
     (by rw [hp, he]; exact phase_lt f x), hp, hp, he]
   simp only [cyclicDistance, hdepth, Nat.add_zero]
 
-theorem cycleLabelVisits_first (f : BitVec n → BitVec n) (hf : Function.Injective f)
+private theorem cycleLabelVisits_first (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) (hr : ∃ t, f^[t] x = y) :
     let d := (visitScheduleFirst (cycleLabelVisits (wordCycleLabel f x) (wordCycleLabel f y))).toNat
     f^[d] x = y ∧ (∀ j < d, f^[j] x ≠ y) ∧ d < 2 ^ n := by
@@ -114,7 +114,7 @@ theorem cycleLabelVisits_first (f : BitVec n → BitVec n) (hf : Function.Inject
   exact ⟨by simpa only [hdepth, Nat.zero_add] using hfirst.1,
     by simpa only [hdepth, Nat.zero_add] using hfirst.2, hd⟩
 
-theorem cycleLabelVisits_period (f : BitVec n → BitVec n) (hf : Function.Injective f)
+private theorem cycleLabelVisits_period (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) :
     (visitSchedulePeriod (cycleLabelVisits (wordCycleLabel f x) (wordCycleLabel f y))).toNat =
       Function.minimalPeriod f y := by
@@ -125,6 +125,8 @@ theorem cycleLabelVisits_period (f : BitVec n → BitVec n) (hf : Function.Injec
   rw [chart_ofNat_toNat (cycleLength_le_words f y), Nat.mod_eq_of_lt hwide,
     cycleLength_eq_minimalPeriod_of_mem_periodicPts f (hf.mem_periodicPts y)]
 
+/-- For an injective word map `f`, the visit schedule constructed from the cycle labels of `x` and
+`y` contains time `t` if and only if `f^[t] x = y`. -/
 theorem cycleLabelVisits_spec (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) (t : ℕ) :
     f^[t] x = y ↔ visitScheduleContains
@@ -211,6 +213,9 @@ theorem cycle_label_visit_circuit (f : BitVec n → BitVec n)
   obtain ⟨out, ho, hs⟩ := ((hx.union hy).trans hnav).exists_circuit_outputs
   exact ⟨out, ho, by lia⟩
 
+/-- Every permutation `f` of `BitVec n` has a circuit of size at most `1200 * (n + 3) * (r + 1)`
+computing the visit schedule between its two `n`-bit inputs from their cycle labels, where `r` is
+the number of disagreements of `f` with the unit increment. -/
 theorem sparse_counter_visit_circuit (f : Equiv.Perm (BitVec n)) :
     ∃ out : Circuit Boolean.signature (n + n) (visitScheduleWidth n),
       out.Computes Boolean.interpretation (fun z =>

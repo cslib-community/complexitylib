@@ -24,7 +24,13 @@ pairs that a detector never produces.
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.Iteration.hitValue`: the state `K - index` steps after a checkpoint
+  payload.
+* `Cslib.Circuits.Boolean.Iteration.repeatedValue`: the prefix state at the time in `[lo, hi)`
+  congruent to `T`.
 * `Cslib.Circuits.Boolean.Iteration.reconstruct`: the state determined by a pair of records.
+* `Cslib.Circuits.Boolean.Iteration.prefixWires`: the wire functions of the prefix states up to
+  time `K`.
 
 ## Main results
 
@@ -63,6 +69,7 @@ def reconstruct (f : BitString n → BitString n) (T K : ℕ) (x : BitString n)
   else if a.index.ult b.index then repeatedValue f T K x a.index b.index
   else repeatedValue f T K x b.index a.index
 
+/-- Stepping `K - d` times from the checkpoint payload `f^[T - K] (f^[d] x)` recovers `f^[T] x`. -/
 theorem hitValue_spec (f : BitString n → BitString n) (T K d : ℕ) (x : BitString n)
     (hd : d ≤ K) (hK : K < 2 ^ w) (hT : K ≤ T) :
     hitValue f K (BitVec.ofNat w d) (f^[T - K] (f^[d] x)) = f^[T] x := by
@@ -77,7 +84,7 @@ theorem hitValue_spec (f : BitString n → BitString n) (T K d : ℕ) (x : BitSt
   congr 1
   omega
 
-theorem repeatedValue_spec (f : BitString n → BitString n) (T K i j : ℕ) (x : BitString n)
+private theorem repeatedValue_spec (f : BitString n → BitString n) (T K i j : ℕ) (x : BitString n)
     (hij : i < j) (hj : j ≤ K) (hK : K < 2 ^ w) (hT : K ≤ T) (heq : f^[i] x = f^[j] x) :
     repeatedValue f T K x (BitVec.ofNat w i) (BitVec.ofNat w j) = f^[T] x := by
   have hiw : (BitVec.ofNat w i).toNat = i := Nat.mod_eq_of_lt (by omega)
@@ -114,11 +121,13 @@ theorem reconstruct_spec {M : ℕ} (f : BitString n → BitString n) (T K : ℕ)
 def prefixWires (f : BitString n → BitString n) (K : ℕ) : Set (BooleanFunction n) :=
   Synthesis.stages (fun j => wires fun x => f^[j] x) K
 
+/-- Every bit wire of `f^[j]` for `j ≤ K` belongs to `prefixWires f K`. -/
 theorem prefix_mem (f : BitString n → BitString n) {K j : ℕ} (hj : j ≤ K) (bit : Fin n) :
     (fun x => f^[j] x bit) ∈ prefixWires f K :=
   Synthesis.subset_stages _ hj ⟨bit, rfl⟩
 
-theorem synthesis_repeatedValue (s : Set (BooleanFunction n)) (f : BitString n → BitString n)
+private theorem synthesis_repeatedValue (s : Set (BooleanFunction n))
+    (f : BitString n → BitString n)
     (T K : ℕ) (lo hi : BitString n → BitVec w)
     (hlo : ∀ i : Fin w, (fun x => (lo x).getLsbD i.val) ∈ s)
     (hhi : ∀ i : Fin w, (fun x => (hi x).getLsbD i.val) ∈ s)
@@ -134,6 +143,8 @@ theorem synthesis_repeatedValue (s : Set (BooleanFunction n)) (f : BitString n �
   apply (hidx.trans hsel).mono Set.Subset.rfl Set.Subset.rfl
   nlinarith [Nat.zero_le (K * n ^ 2), Nat.zero_le (K * n * w), Nat.zero_le (K * w ^ 2)]
 
+/-- Synthesizes `hitValue` by unfolding `K` steps of `c` from `payload` and selecting step
+`K - index`. -/
 theorem synthesis_hitValue {a : ℕ} (s : Set (BooleanFunction a))
     (c : Circuit signature n n) (K : ℕ) (index : BitString a → BitVec w)
     (payload : BitString a → BitString n)

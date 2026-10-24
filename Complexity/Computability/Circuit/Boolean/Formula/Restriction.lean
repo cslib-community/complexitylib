@@ -33,8 +33,9 @@ with at most `3 L(f) - 2` operation nodes, or a constant (`Boolean.exists_comput
 
 ## Main definitions
 
-* `Cslib.Circuits.Formula.mkNot`, `Cslib.Circuits.Formula.mkAnd`, `Cslib.Circuits.Formula.mkOr`:
-  negation, conjunction and disjunction, simplifying constants and double negations.
+* `Cslib.Circuits.Formula.constValue?`, `Cslib.Circuits.Formula.mkNot`,
+  `Cslib.Circuits.Formula.mkAnd`, `Cslib.Circuits.Formula.mkOr`: constant inspection and negation,
+  conjunction and disjunction simplifying constants and double negations.
 * `Cslib.Circuits.Formula.restrict`: the restriction of a formula by a partial assignment.
 * `Cslib.Circuits.Formula.IsSimplified`: formulas without constants or double negations.
 * `Cslib.Circuits.Boolean.formulaSize`: the least leaf size of a De Morgan formula computing a
@@ -77,18 +78,20 @@ def constValue? : Formula signature n → Option Bool
   | gate (.const b) _ => some b
   | _ => none
 
+/-- `constValue?` of a constant formula `const b` is `some b`. -/
 @[simp] theorem constValue?_const (b : Bool) :
     (const b : Formula signature n).constValue? = some b :=
   rfl
 
 /-- A formula with a constant value is that constant. -/
-theorem eq_const_of_constValue? {F : Formula signature n} {b : Bool} (h : F.constValue? = some b) :
+private theorem eq_const_of_constValue? {F : Formula signature n} {b : Bool}
+    (h : F.constValue? = some b) :
     F = const b := by
   match F, h with
   | gate (.const _) args, rfl => exact congrArg (gate _) (funext fun j => j.elim0)
 
 /-- A formula is either a constant or has `constValue? = none`. -/
-theorem eq_const_or_constValue?_eq_none (F : Formula signature n) :
+private theorem eq_const_or_constValue?_eq_none (F : Formula signature n) :
     (∃ b, F = const b) ∨ F.constValue? = none := by
   cases h : F.constValue? with
   | none => exact Or.inr rfl
@@ -143,23 +146,29 @@ theorem gate_or_eq (args : Fin (signature.Arity Op.or) → Formula signature n) 
   funext j
   fin_cases j <;> rfl
 
+/-- `mkNot` of a constant `const b` is `const (!b)`. -/
 @[simp] theorem mkNot_const (b : Bool) : mkNot (const b : Formula signature n) = const (!b) :=
   rfl
 
+/-- `mkNot` cancels a double negation. -/
 @[simp] theorem mkNot_not (F : Formula signature n) : mkNot F.not = F :=
   rfl
 
+/-- `mkNot` of an input leaf is its negation. -/
 @[simp] theorem mkNot_input (i : Fin n) : mkNot (input i : Formula signature n) = (input i).not :=
   rfl
 
+/-- `mkNot` of a conjunction is its negation. -/
 @[simp] theorem mkNot_and (F G : Formula signature n) : mkNot (F.and G) = (F.and G).not :=
   rfl
 
+/-- `mkNot` of a disjunction is its negation. -/
 @[simp] theorem mkNot_or (F G : Formula signature n) : mkNot (F.or G) = (F.or G).not :=
   rfl
 
 variable (x : BitString n)
 
+/-- `mkNot F` evaluates to the negation of `F`. -/
 @[simp] theorem eval_mkNot (F : Formula signature n) :
     (mkNot F).eval interpretation x = !F.eval interpretation x := by
   cases F with
@@ -172,6 +181,7 @@ variable (x : BitString n)
     | and => rw [gate_and_eq, mkNot_and, eval_not]
     | or => rw [gate_or_eq, mkNot_or, eval_not]
 
+/-- `mkNot` preserves leaf size. -/
 @[simp] theorem leafSize_mkNot (F : Formula signature n) : (mkNot F).leafSize = F.leafSize := by
   cases F with
   | input i => rfl
@@ -182,55 +192,67 @@ variable (x : BitString n)
     | and => rw [gate_and_eq, mkNot_and, leafSize_not]
     | or => rw [gate_or_eq, mkNot_or, leafSize_not]
 
+/-- `mkAnd F G` evaluates to the conjunction of `F` and `G`. -/
 @[simp] theorem eval_mkAnd (F G : Formula signature n) :
     (mkAnd F G).eval interpretation x = (F.eval interpretation x && G.eval interpretation x) := by
   rcases eq_const_or_constValue?_eq_none F with ⟨_ | _, rfl⟩ | hF <;>
     rcases eq_const_or_constValue?_eq_none G with ⟨_ | _, rfl⟩ | hG <;>
     simp_all [mkAnd]
 
+/-- `mkOr F G` evaluates to the disjunction of `F` and `G`. -/
 @[simp] theorem eval_mkOr (F G : Formula signature n) :
     (mkOr F G).eval interpretation x = (F.eval interpretation x || G.eval interpretation x) := by
   rcases eq_const_or_constValue?_eq_none F with ⟨_ | _, rfl⟩ | hF <;>
     rcases eq_const_or_constValue?_eq_none G with ⟨_ | _, rfl⟩ | hG <;>
     simp_all [mkOr]
 
+/-- The leaf size of `mkAnd F G` is at most `F.leafSize + G.leafSize`. -/
 theorem leafSize_mkAnd_le (F G : Formula signature n) :
     (mkAnd F G).leafSize ≤ F.leafSize + G.leafSize := by
   rcases eq_const_or_constValue?_eq_none F with ⟨_ | _, rfl⟩ | hF <;>
     rcases eq_const_or_constValue?_eq_none G with ⟨_ | _, rfl⟩ | hG <;>
     simp_all [mkAnd]
 
+/-- The leaf size of `mkOr F G` is at most `F.leafSize + G.leafSize`. -/
 theorem leafSize_mkOr_le (F G : Formula signature n) :
     (mkOr F G).leafSize ≤ F.leafSize + G.leafSize := by
   rcases eq_const_or_constValue?_eq_none F with ⟨_ | _, rfl⟩ | hF <;>
     rcases eq_const_or_constValue?_eq_none G with ⟨_ | _, rfl⟩ | hG <;>
     simp_all [mkOr]
 
+/-- `mkAnd` with `const false` on the left simplifies to `const false`. -/
 @[simp] theorem mkAnd_const_false_left (G : Formula signature n) :
     mkAnd (const false) G = const false :=
   rfl
 
+/-- `mkAnd` with `const true` on the left simplifies to the right argument. -/
 @[simp] theorem mkAnd_const_true_left (G : Formula signature n) : mkAnd (const true) G = G :=
   rfl
 
+/-- `mkAnd` with `const false` on the right simplifies to `const false`. -/
 @[simp] theorem mkAnd_const_false_right (F : Formula signature n) :
     mkAnd F (const false) = const false := by
   rcases eq_const_or_constValue?_eq_none F with ⟨_ | _, rfl⟩ | hF <;> simp_all [mkAnd]
 
+/-- `mkAnd` with `const true` on the right simplifies to the left argument. -/
 @[simp] theorem mkAnd_const_true_right (F : Formula signature n) : mkAnd F (const true) = F := by
   rcases eq_const_or_constValue?_eq_none F with ⟨_ | _, rfl⟩ | hF <;> simp_all [mkAnd]
 
+/-- `mkOr` with `const true` on the left simplifies to `const true`. -/
 @[simp] theorem mkOr_const_true_left (G : Formula signature n) :
     mkOr (const true) G = const true :=
   rfl
 
+/-- `mkOr` with `const false` on the left simplifies to the right argument. -/
 @[simp] theorem mkOr_const_false_left (G : Formula signature n) : mkOr (const false) G = G :=
   rfl
 
+/-- `mkOr` with `const true` on the right simplifies to `const true`. -/
 @[simp] theorem mkOr_const_true_right (F : Formula signature n) :
     mkOr F (const true) = const true := by
   rcases eq_const_or_constValue?_eq_none F with ⟨_ | _, rfl⟩ | hF <;> simp_all [mkOr]
 
+/-- `mkOr` with `const false` on the right simplifies to the left argument. -/
 @[simp] theorem mkOr_const_false_right (F : Formula signature n) : mkOr F (const false) = F := by
   rcases eq_const_or_constValue?_eq_none F with ⟨_ | _, rfl⟩ | hF <;> simp_all [mkOr]
 
@@ -247,30 +269,36 @@ def restrict (ρ : PartialAssignment (Fin n)) : Formula signature n → Formula 
 
 variable (ρ : PartialAssignment (Fin n))
 
+/-- Restricting an input leaf `input i` by `ρ` yields `const b` if `ρ i = some b` and `input i`
+otherwise. -/
 @[simp] theorem restrict_input (i : Fin n) :
     (input i : Formula signature n).restrict ρ = (ρ i).elim (input i) const :=
   rfl
 
+/-- Restricting a constant formula `const b` leaves it unchanged. -/
 @[simp] theorem restrict_const (b : Bool) : (const b : Formula signature n).restrict ρ = const b :=
   rfl
 
+/-- Restricting a negation applies `mkNot` to the restricted argument. -/
 @[simp] theorem restrict_not (F : Formula signature n) :
     F.not.restrict ρ = mkNot (F.restrict ρ) :=
   rfl
 
+/-- Restricting a conjunction applies `mkAnd` to the restricted arguments. -/
 @[simp] theorem restrict_and (F G : Formula signature n) :
     (F.and G).restrict ρ = mkAnd (F.restrict ρ) (G.restrict ρ) :=
   rfl
 
+/-- Restricting a disjunction applies `mkOr` to the restricted arguments. -/
 @[simp] theorem restrict_or (F G : Formula signature n) :
     (F.or G).restrict ρ = mkOr (F.restrict ρ) (G.restrict ρ) :=
   rfl
 
-theorem restrict_input_of_eq_none {i : Fin n} (h : ρ i = none) :
+private theorem restrict_input_of_eq_none {i : Fin n} (h : ρ i = none) :
     (input i : Formula signature n).restrict ρ = input i := by
   simp [h]
 
-theorem restrict_input_of_eq_some {i : Fin n} {b : Bool} (h : ρ i = some b) :
+private theorem restrict_input_of_eq_some {i : Fin n} {b : Bool} (h : ρ i = some b) :
     (input i : Formula signature n).restrict ρ = const b := by
   simp [h]
 
@@ -346,12 +374,13 @@ inductive IsSimplified : Formula signature n → Prop
   | not_or {F G : Formula signature n} :
       F.IsSimplified → G.IsSimplified → (F.or G).not.IsSimplified
 
+/-- A simplified formula is not a constant (`constValue? = none`). -/
 theorem IsSimplified.constValue?_eq_none {F : Formula signature n} (hF : F.IsSimplified) :
     F.constValue? = none := by
   cases hF <;> rfl
 
 /-- A simplified formula has a leaf. -/
-theorem IsSimplified.one_le_leafSize {F : Formula signature n} (hF : F.IsSimplified) :
+private theorem IsSimplified.one_le_leafSize {F : Formula signature n} (hF : F.IsSimplified) :
     1 ≤ F.leafSize := by
   induction hF <;> simp only [leafSize_input, leafSize_not, leafSize_and, leafSize_or] <;> omega
 

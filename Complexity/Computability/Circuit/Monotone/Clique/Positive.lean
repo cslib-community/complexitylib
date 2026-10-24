@@ -62,7 +62,7 @@ theorem card_superCliques {s : Finset (Fin n)} (hs : s.card ≤ k) :
 
 /-- A set of more than `w` vertices lies inside at most `C(n - w - 1, k - w - 1)` of the
 `k`-sets. -/
-theorem card_superCliques_le (hk : w + 1 ≤ k) {s : Finset (Fin n)} (hs : w < s.card) :
+private theorem card_superCliques_le (hk : w + 1 ≤ k) {s : Finset (Fin n)} (hs : w < s.card) :
     (superCliques n k s).card ≤ (n - (w + 1)).choose (k - (w + 1)) := by
   obtain ⟨t, hts, ht⟩ := exists_subset_card_eq (s := s) (n := w + 1) (by omega)
   calc (superCliques n k s).card ≤ (superCliques n k t).card :=
@@ -75,7 +75,7 @@ def andExceptions (n k w : ℕ) (F G : Finset (Finset (Fin n))) : Finset (Clique
   ((F ×ˢ G).filter fun st => w < (join st.1 st.2).card).biUnion fun st =>
     superCliques n k (join st.1 st.2)
 
-theorem card_andExceptions_le (hk : w + 1 ≤ k) (F G : Finset (Finset (Fin n))) :
+private theorem card_andExceptions_le (hk : w + 1 ≤ k) (F G : Finset (Finset (Fin n))) :
     (andExceptions n k w F G).card ≤ F.card * G.card * (n - (w + 1)).choose (k - (w + 1)) := by
   calc (andExceptions n k w F G).card
       ≤ ∑ st ∈ (F ×ˢ G).filter fun st => w < (join st.1 st.2).card,

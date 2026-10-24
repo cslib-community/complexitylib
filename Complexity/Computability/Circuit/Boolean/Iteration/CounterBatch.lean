@@ -78,6 +78,8 @@ variable {k r : ℕ}
 abbrev counterRemainder (T : ℕ) (x : BitString k) : BitString k :=
   ModulusCounter.remainder T x
 
+/-- The `BitVec k` word of `counterRemainder T x` is `T % (word x).toNat` for nonzero `word x`
+and `0` otherwise. -/
 theorem word_counterRemainder (T : ℕ) (x : BitString k) :
     word (counterRemainder T x) =
       BitVec.ofNat k (if (word x).toNat = 0 then 0 else T % (word x).toNat) :=
@@ -110,10 +112,12 @@ theorem counterPower_of_remainder (T : ℕ) (c : Circuit signature k k)
 
 /-! ### Batched modular-counter states and dictionary -/
 
+/-- The quotient `divNat` of `finProdFinEquiv (a, b)` recovers the first coordinate `a`. -/
 @[simp] theorem divNat_finProdFinEquiv {m n : ℕ} (a : Fin m) (b : Fin n) :
     (finProdFinEquiv (a, b)).divNat = a :=
   congrArg Prod.fst (finProdFinEquiv.symm_apply_apply (a, b))
 
+/-- The remainder `modNat` of `finProdFinEquiv (a, b)` recovers the second coordinate `b`. -/
 @[simp] theorem modNat_finProdFinEquiv {m n : ℕ} (a : Fin m) (b : Fin n) :
     (finProdFinEquiv (a, b)).modNat = b :=
   congrArg Prod.snd (finProdFinEquiv.symm_apply_apply (a, b))
@@ -128,12 +132,16 @@ def counterBatchPower (T : ℕ) (x : BitString (r * (k + k))) : BitString (r * (
   fun i =>
     ModulusCounter.power T (counterBlock x (finProdFinEquiv.symm i).1) (finProdFinEquiv.symm i).2
 
+/-- At coordinate `finProdFinEquiv (member, bit)`, `counterBatchPower T x` evaluates bit `bit` of
+`ModulusCounter.power T` on block `member`. -/
 @[simp] theorem counterBatchPower_apply (T : ℕ) (x : BitString (r * (k + k))) (member : Fin r)
     (bit : Fin (k + k)) :
     counterBatchPower T x (finProdFinEquiv (member, bit)) =
       ModulusCounter.power T (counterBlock x member) bit := by
   simp [counterBatchPower]
 
+/-- Extracting block `member` from `counterBatchPower T x` yields `ModulusCounter.power T` applied
+to `counterBlock x member`. -/
 @[simp] theorem counterBlock_counterBatchPower (T : ℕ) (x : BitString (r * (k + k)))
     (member : Fin r) :
     counterBlock (counterBatchPower T x) member =
@@ -158,16 +166,16 @@ theorem iterate_counterBatchPower (T : ℕ) :
       ModulusCounter.power_add]
 
 /-- The left half (the modulus) of every state is preserved by `ModulusCounter.power T`. -/
-theorem counterStep_iterate_left (T : ℕ) (y : BitString (k + k)) (i : Fin k) :
+private theorem counterStep_iterate_left (T : ℕ) (y : BitString (k + k)) (i : Fin k) :
     ModulusCounter.power T y (Fin.castAdd k i) = y (Fin.castAdd k i) := by
   simp [ModulusCounter.power, ModulusCounter.pack, ModulusCounter.leftWord]
 
 /-- States with modulus zero are fixed by `ModulusCounter.power T`. -/
-theorem counterStep_iterate_joinState_zero (T : ℕ) (b : BitVec k) :
+private theorem counterStep_iterate_joinState_zero (T : ℕ) (b : BitVec k) :
     ModulusCounter.power T (ModulusCounter.pack 0 b) = ModulusCounter.pack 0 b := by
   simp [ModulusCounter.power, ModulusCounter.advance]
 
-theorem joinState_zero_zero : ModulusCounter.pack (0 : BitVec k) 0 = fun _ => false := by
+private theorem joinState_zero_zero : ModulusCounter.pack (0 : BitVec k) 0 = fun _ => false := by
   funext bit
   induction bit using Fin.addCases <;>
     simp only [ModulusCounter.pack, Fin.append_left, Fin.append_right] <;>
@@ -181,6 +189,8 @@ def residueKeys (k : ℕ) (j : Fin (2 ^ k - 1)) : BitString k :=
 def residueValues (k T : ℕ) (j : Fin (2 ^ k - 1)) : BitString k :=
   fun bit => (BitVec.ofNat k (T % (j.val + 1))).getLsbD bit.val
 
+/-- The dictionary key map `residueKeys k` over the `2 ^ k - 1` positive `k`-bit moduli is
+injective. -/
 theorem residueKeys_injective (k : ℕ) : Function.Injective (residueKeys k) := by
   intro i j h
   have hw : BitVec.ofNat k (i.val + 1) = BitVec.ofNat k (j.val + 1) :=
@@ -191,7 +201,8 @@ theorem residueKeys_injective (k : ℕ) : Function.Injective (residueKeys k) := 
   simp only [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hj] at hn
   exact Fin.ext (by omega)
 
-theorem clog_two_pow_add_le (hr : r ≤ 2 ^ (k + k)) : Nat.clog 2 (r + (2 ^ k - 1)) ≤ 2 * k + 1 := by
+private theorem clog_two_pow_add_le (hr : r ≤ 2 ^ (k + k)) :
+    Nat.clog 2 (r + (2 ^ k - 1)) ≤ 2 * k + 1 := by
   apply Nat.clog_le_of_le_pow
   have h1 : 2 ^ k ≤ 2 ^ (k + k) := Nat.pow_le_pow_right (by decide) (by omega)
   rw [show 2 * k + 1 = (k + k) + 1 by omega, pow_succ]

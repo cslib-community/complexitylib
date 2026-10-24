@@ -293,7 +293,7 @@ theorem edgeCut_union_of_edgeCut_eq_empty {K L : Set V} (hK : G.edgeCut K = ∅)
   · simp [mem_edgeCut, hs, mt hKe.2 hs]
 
 /-- The edges touching a closed set `W` are those with both endpoints in `W`. -/
-theorem touching_eq_of_edgeCut_eq_empty {W : Set V} (hW : G.edgeCut W = ∅) :
+private theorem touching_eq_of_edgeCut_eq_empty {W : Set V} (hW : G.edgeCut W = ∅) :
     G.touching W = {e | G.src e ∈ W ∧ G.tgt e ∈ W} := by
   ext e
   have := G.edgeCut_eq_empty_iff.1 hW e
@@ -303,7 +303,7 @@ theorem touching_eq_of_edgeCut_eq_empty {W : Set V} (hW : G.edgeCut W = ∅) :
 /-! ### Connected components -/
 
 /-- The endpoints of an edge lie in the same connected component. -/
-theorem connectedComponentMk_src (e : E) :
+private theorem connectedComponentMk_src (e : E) :
     G.toSimpleGraph.connectedComponentMk (G.src e) =
       G.toSimpleGraph.connectedComponentMk (G.tgt e) :=
   SimpleGraph.ConnectedComponent.sound (G.reachable_src_tgt e)
@@ -352,7 +352,7 @@ theorem MaxDegreeLE.induce [Finite E] {d : ℕ} (hG : G.MaxDegreeLE d) (W : Set 
     Subtype.val_injective.injOn).trans (hG w)
 
 /-- The simple graph underlying an induced subgraph is the induced simple graph. -/
-theorem toSimpleGraph_induce (W : Set V) :
+private theorem toSimpleGraph_induce (W : Set V) :
     (G.induce W).toSimpleGraph = G.toSimpleGraph.induce W := by
   ext u v
   simp only [toSimpleGraph_adj, SimpleGraph.comap_adj, Function.Embedding.subtype_apply, ne_eq,

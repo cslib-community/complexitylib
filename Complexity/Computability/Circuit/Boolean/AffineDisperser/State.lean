@@ -50,14 +50,22 @@ elimination (`State.Step`) is a move to a valid state with smaller `m + s`, `Δa
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.AffineDisperser.State`,
-  `Cslib.Circuits.Boolean.AffineDisperser.State.Valid`: states.
+  `Cslib.Circuits.Boolean.AffineDisperser.State.Valid`,
+  `Cslib.Circuits.Boolean.AffineDisperser.PairTame`: states and tame pairs.
+* `Cslib.Circuits.Boolean.AffineDisperser.State.Paired`,
+  `Cslib.Circuits.Boolean.AffineDisperser.State.unpaired`,
+  `Cslib.Circuits.Boolean.AffineDisperser.State.wt`: paired and unpaired parameters and their
+  weights.
 * `Cslib.Circuits.Boolean.AffineDisperser.State.m`, `q`, `a`, `s`, `W`: the counted quantities
   and the potential, with `Cslib.Circuits.Boolean.AffineDisperser.weight`.
+* `Cslib.Circuits.Boolean.AffineDisperser.State.spread`: spreading bits over a finite set of
+  names.
 * `Cslib.Circuits.Boolean.AffineDisperser.State.Step`,
   `Cslib.Circuits.Boolean.AffineDisperser.State.Preparation`: steps and preparatory operations.
 * `Cslib.Circuits.Boolean.AffineDisperser.State.IsPartner`,
-  `Cslib.Circuits.Boolean.AffineDisperser.State.pairsMeeting`: partners and the pairs meeting a
-  set of parameters.
+  `Cslib.Circuits.Boolean.AffineDisperser.State.pairsAvoid`,
+  `Cslib.Circuits.Boolean.AffineDisperser.State.pairsMeeting`: partners and the pairs avoiding a
+  parameter or meeting a set of parameters.
 
 ## Main results
 
@@ -83,19 +91,25 @@ isolated and `7` otherwise (equation (4) of [Mishra and Santhanam][MishraSanthan
 def weight (k : ℕ) : ℕ :=
   if k = 0 then 0 else if k = 1 then 6 else 7
 
+/-- The degree weight function `weight` is monotone. -/
 theorem weight_mono {k l : ℕ} (h : k ≤ l) : weight k ≤ weight l := by
   unfold weight; split_ifs <;> omega
 
+/-- Every degree weight `weight k` is at most `7`. -/
 theorem weight_le_seven (k : ℕ) : weight k ≤ 7 := by
   unfold weight; split_ifs <;> omega
 
+/-- An unused parameter (`k = 0`) has weight `0`. -/
 @[simp] theorem weight_zero : weight 0 = 0 := rfl
 
+/-- An isolated parameter (`k = 1`) has weight `6`. -/
 @[simp] theorem weight_one : weight 1 = 6 := rfl
 
+/-- A parameter of degree `k ≥ 2` has weight `7`. -/
 theorem weight_of_two_le {k : ℕ} (hk : 2 ≤ k) : weight k = 7 := by
   unfold weight; split_ifs <;> omega
 
+/-- A parameter of positive degree (`k ≥ 1`) has weight at least `6`. -/
 theorem six_le_weight {k : ℕ} (hk : 1 ≤ k) : 6 ≤ weight k := by
   unfold weight; split_ifs <;> omega
 
@@ -121,6 +135,7 @@ variable {n : ℕ} (S : State n)
 def Paired (x : ℕ) : Prop :=
   ∃ pr ∈ S.pairs, pr.1 = x ∨ pr.2 = x
 
+/-- Decidability of `State.Paired`. -/
 instance : DecidablePred S.Paired :=
   fun _ => inferInstanceAs (Decidable (∃ pr ∈ S.pairs, _))
 
@@ -177,20 +192,24 @@ structure Valid (f : BooleanFunction n) : Prop where
 def spread (F : Finset ℕ) {k : ℕ} (h : F.card = k) (u : BitString k) : ℕ → Bool :=
   fun i => if hi : i ∈ F then u ((F.orderIsoOfFin h).symm ⟨i, hi⟩) else false
 
+/-- Spreading a `k`-bit string over `F` defines an affine family of assignments. -/
 theorem isAffine_spread (F : Finset ℕ) {k : ℕ} (h : F.card = k) : IsAffine (spread F h) := by
   intro u v w
   funext i
   simp only [spread, Pi.add_apply]
   split_ifs <;> rfl
 
+/-- `spread F h u` assigns `false` to every index outside `F`. -/
 theorem spread_of_notMem {F : Finset ℕ} {k : ℕ} (h : F.card = k) (u : BitString k) {i : ℕ}
     (hi : i ∉ F) : spread F h u i = false := by
   simp [spread, hi]
 
+/-- At the `i`-th element of `F` in increasing order, `spread F h u` equals `u i`. -/
 theorem spread_orderIsoOfFin {F : Finset ℕ} {k : ℕ} (h : F.card = k) (u : BitString k)
     (i : Fin k) : spread F h u (F.orderIsoOfFin h i) = u i := by
   simp only [spread, Finset.coe_mem, ↓reduceDIte, Subtype.coe_eta, OrderIso.symm_apply_apply]
 
+/-- Two `k`-bit strings whose `spread` assignments agree on `F` are equal. -/
 theorem eq_of_spread {F : Finset ℕ} {k : ℕ} (h : F.card = k) {u v : BitString k}
     (huv : ∀ i ∈ F, spread F h u i = spread F h v i) : u = v := by
   funext i
@@ -377,32 +396,42 @@ otherwise. -/
 def wt (S : State n) (x : ℕ) : ℕ :=
   if x ∈ S.unpaired then weight (S.deg x) else 0
 
+/-- The weight `S.wt x` of any name `x` is at most `7`. -/
 theorem wt_le_seven (S : State n) (x : ℕ) : S.wt x ≤ 7 := by
   unfold wt; split_ifs
   · exact weight_le_seven _
   · omega
 
+/-- A name `x` belongs to `S.unpaired` iff it is an unpaired parameter of `S`. -/
 theorem mem_unpaired {S : State n} {x : ℕ} : x ∈ S.unpaired ↔ x ∈ S.params ∧ ¬ S.Paired x := by
   simp [unpaired]
 
+/-- For an unpaired parameter `x`, `S.wt x` is `weight (S.deg x)`. -/
 theorem wt_of_mem {S : State n} {x : ℕ} (hx : x ∈ S.unpaired) : S.wt x = weight (S.deg x) := by
   simp [wt, hx]
 
+/-- For a name `x` outside `S.unpaired`, `S.wt x = 0`. -/
 theorem wt_of_notMem {S : State n} {x : ℕ} (hx : x ∉ S.unpaired) : S.wt x = 0 := by
   simp [wt, hx]
 
+/-- A paired parameter contributes weight `0`. -/
 theorem wt_of_paired {S : State n} {x : ℕ} (hx : S.Paired x) : S.wt x = 0 :=
   wt_of_notMem fun h => (mem_unpaired.1 h).2 hx
 
+/-- A name outside `S.params` contributes weight `0`. -/
 theorem wt_of_notMem_params {S : State n} {x : ℕ} (hx : x ∉ S.params) : S.wt x = 0 :=
   wt_of_notMem fun h => hx (mem_unpaired.1 h).1
 
+/-- Summing `S.wt` over any superset `N` of `S.params` equals the sum of `weight (S.deg x)` over
+`S.unpaired`. -/
 theorem sum_wt (S : State n) {N : Finset ℕ} (hN : S.params ⊆ N) :
     ∑ x ∈ N, S.wt x = ∑ x ∈ S.unpaired, weight (S.deg x) := by
   have hU : S.unpaired ⊆ N := (Finset.filter_subset _ _).trans hN
   unfold wt
   rw [Finset.sum_ite_mem, Finset.inter_eq_right.2 hU]
 
+/-- Expressing the potential `S.W` with the weight sum taken over any superset `N` of
+`S.params`. -/
 theorem W_eq_sum (S : State n) {N : Finset ℕ} (hN : S.params ⊆ N) :
     S.W = 2 * S.s + 3 * S.q + ∑ x ∈ N, S.wt x := by
   rw [sum_wt S hN]; rfl
@@ -452,6 +481,7 @@ structure Preparation (f : BooleanFunction n) (S S' : State n) : Prop where
   /-- The potential does not increase. -/
   W_le : S'.W ≤ S.W
 
+/-- A preparatory operation preserves `a = m - q`. -/
 theorem Preparation.a_eq {S S' : State n} (h : Preparation f S S') : S'.a = S.a := by
   simp only [a, h.m_eq, h.q_eq]
 
@@ -471,6 +501,7 @@ theorem Step.of_preparation {S S₁ S' : State n} (hp : Preparation f S S₁) (h
 def IsPartner (S : State n) (w r : ℕ) : Prop :=
   ∃ pr ∈ S.pairs, (pr.1 = w ∧ pr.2 = r) ∨ (pr.2 = w ∧ pr.1 = r)
 
+/-- Decidability of `State.IsPartner`. -/
 instance (S : State n) (w : ℕ) : DecidablePred (S.IsPartner w) :=
   fun _ => inferInstanceAs (Decidable (∃ pr ∈ S.pairs, _))
 
@@ -482,15 +513,18 @@ def pairsAvoid (S : State n) (w : ℕ) : Finset (ℕ × ℕ) :=
 def pairsMeeting (S : State n) (F : Finset ℕ) : Finset (ℕ × ℕ) :=
   S.pairs.filter fun pr => pr.1 ∈ F ∨ pr.2 ∈ F
 
+/-- Two states with the same pairs have the same paired names. -/
 theorem paired_congr {S S' : State n} (h : S'.pairs = S.pairs) {x : ℕ} :
     S'.Paired x ↔ S.Paired x := by
   unfold Paired; rw [h]
 
+/-- Two states with the same parameters and pairs have the same unpaired parameters. -/
 theorem unpaired_congr {S S' : State n} (hp : S'.params = S.params) (h : S'.pairs = S.pairs) :
     S'.unpaired = S.unpaired := by
   ext x
   rw [mem_unpaired, mem_unpaired, hp, paired_congr h]
 
+/-- Every paired name of a valid state is a parameter. -/
 theorem Valid.mem_params_of_paired {S : State n} (hS : S.Valid f) {p : ℕ} (hp : S.Paired p) :
     p ∈ S.params := by
   obtain ⟨pr, hpr, h | h⟩ := hp
@@ -505,26 +539,31 @@ theorem Valid.pair_unique {S : State n} (hS : S.Valid f) {w : ℕ} {pr pr' : ℕ
   have := hS.pairs_disjoint pr hpr pr' hpr' hne
   rcases h with rfl | rfl <;> rcases h' with h' | h' <;> tauto
 
+/-- Every paired parameter has a partner. -/
 theorem exists_partner {S : State n} {p : ℕ} (hp : S.Paired p) : ∃ r, S.IsPartner p r := by
   obtain ⟨pr, hpr, h | h⟩ := hp
   · exact ⟨pr.2, pr, hpr, Or.inl ⟨h, rfl⟩⟩
   · exact ⟨pr.1, pr, hpr, Or.inr ⟨h, rfl⟩⟩
 
+/-- The partner relation `State.IsPartner` is symmetric. -/
 theorem IsPartner.symm {S : State n} {p r : ℕ} (h : S.IsPartner p r) : S.IsPartner r p := by
   obtain ⟨pr, hpr, h⟩ := h
   exact ⟨pr, hpr, by tauto⟩
 
+/-- A parameter that has a partner is paired. -/
 theorem IsPartner.paired {S : State n} {w r : ℕ} (h : S.IsPartner w r) : S.Paired w := by
   obtain ⟨pr, hpr, ⟨h1, -⟩ | ⟨h1, -⟩⟩ := h
   · exact ⟨pr, hpr, Or.inl h1⟩
   · exact ⟨pr, hpr, Or.inr h1⟩
 
+/-- In a valid state, a parameter is distinct from its partner. -/
 theorem Valid.partner_ne {S : State n} (hS : S.Valid f) {p r : ℕ} (h : S.IsPartner p r) :
     r ≠ p := by
   obtain ⟨pr, hpr, ⟨h1, h2⟩ | ⟨h1, h2⟩⟩ := h
   · rw [← h1, ← h2]; exact (hS.pair_mem pr hpr).2.2.symm
   · rw [← h1, ← h2]; exact (hS.pair_mem pr hpr).2.2
 
+/-- In a valid state, the partner of a parameter is a parameter. -/
 theorem Valid.partner_mem {S : State n} (hS : S.Valid f) {p r : ℕ} (h : S.IsPartner p r) :
     r ∈ S.params :=
   hS.mem_params_of_paired h.symm.paired
@@ -606,6 +645,7 @@ theorem Valid.card_pairsMeeting_le {S : State n} (hS : S.Valid f) (F : Finset �
       (by split_ifs <;> simp) ?_
     rw [h]; split_ifs <;> simp
 
+/-- The number of pairs meeting `{w}` is `1` if `w` is paired and `0` otherwise. -/
 theorem Valid.card_pairsMeeting_singleton {S : State n} (hS : S.Valid f) (w : ℕ) :
     (S.pairsMeeting {w}).card = if S.Paired w then 1 else 0 := by
   split_ifs with hw

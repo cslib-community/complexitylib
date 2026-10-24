@@ -92,7 +92,7 @@ lemma embed_monomial (m : Fin 2 →₀ ℕ) (a : K) :
   simp [variableSeries, Fin.prod_univ_two, HahnSeries.single_pow,
     HahnSeries.single_mul_single, HahnSeries.algebraMap_apply, HahnSeries.C_apply, he]
 
-lemma embed_coeff (p : MvPolynomial (Fin 2) K) (m : Fin 2 →₀ ℕ) :
+private lemma embed_coeff (p : MvPolynomial (Fin 2) K) (m : Fin 2 →₀ ℕ) :
     (embed p).coeff (exponent m) = p.coeff m := by
   classical
   conv_lhs => rw [p.as_sum]

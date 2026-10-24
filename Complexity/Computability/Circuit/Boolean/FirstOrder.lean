@@ -250,7 +250,7 @@ noncomputable def atomsOf (e : M ≃ Fin n) : Atom L n → Bool :=
   fun a => decide (Structure.RelMap a.1.2 (e.symm ∘ a.2))
 
 /-- An enumeration of `M` is an isomorphism onto the structure with the atomic facts of `M`. -/
-def equivModel (e : M ≃ Fin n) : M ≃[L] Model (atomsOf (L := L) e) where
+private def equivModel (e : M ≃ Fin n) : M ≃[L] Model (atomsOf (L := L) e) where
   toEquiv := e
   map_fun' f := isEmptyElim f
   map_rel' R t := by
@@ -278,7 +278,7 @@ end Structures
 sentence is decided on the structures with `n` elements, given by their atomic facts, by a formula
 of negations and unbounded fan-in conjunctions and disjunctions whose depth does not depend on `n`
 and whose size is polynomial in `n`. -/
-theorem exists_formula_realize (φ : L.Sentence) (e : Atom L n ≃ Fin N) :
+private theorem exists_formula_realize (φ : L.Sentence) (e : Atom L n ≃ Fin N) :
     ∃ F : Formula Unbounded.signature N,
       (∀ x : Atom L n → Bool, F.eval Unbounded.interpretation (x ∘ e.symm) = true ↔
         Model x ⊨ φ) ∧

@@ -54,6 +54,10 @@ projection `tape : Fin m → Fin w` satisfying `∀ x, e (M.init x) ∘ tape = x
 * `Cslib.Circuits.Boolean.Iteration.InPlace.Move`: clamped head moves (`left`, `stay`, `right`).
 * `Cslib.Circuits.Boolean.Iteration.InPlace.Machine`: an in-place multi-head machine.
 * `Cslib.Circuits.Boolean.Iteration.InPlace.Config`: machine configuration `(w, p, q)`.
+* `Cslib.Circuits.Boolean.Iteration.InPlace.Machine.init`,
+  `Cslib.Circuits.Boolean.Iteration.InPlace.Machine.step`,
+  `Cslib.Circuits.Boolean.Iteration.InPlace.Machine.HaltingAbsorbing`: initial configuration,
+  one-step transition, and absorbing halting-state predicate.
 * `Cslib.Circuits.Boolean.Iteration.InPlace.reach`: configurations reachable from initial inputs.
 
 ## Main results
@@ -136,7 +140,7 @@ theorem writeHeads_of_forall_ne (w : Fin n → Γ) (p : Fin h → Fin n) (σ : F
     exact ih (fun j => p j.castSucc) (fun j => σ j.castSucc) (fun j => hi _)
 
 /-- Rewriting the symbols read leaves the tape unchanged. -/
-theorem writeHeads_read (w : Fin n → Γ) (p : Fin h → Fin n) :
+private theorem writeHeads_read (w : Fin n → Γ) (p : Fin h → Fin n) :
     writeHeads w p (fun j => w (p j)) = w := by
   induction h with
   | zero => rfl
@@ -160,6 +164,8 @@ def Machine.init [NeZero n] (M : Machine Q Γ h) (x : BitString n) : Config Q Γ
 def Machine.HaltingAbsorbing (M : Machine Q Γ h) : Prop :=
   ∀ q, M.halting q → ∀ r a b, M.δ q r a b = (q, r, fun _ => Move.stay)
 
+/-- Under `HaltingAbsorbing`, any configuration in a halting control state is a fixed point of
+`Machine.step`. -/
 theorem Machine.step_of_halting {M : Machine Q Γ h} (hM : M.HaltingAbsorbing)
     (z : Config Q Γ n h) (hz : M.halting z.2.2) : M.step z = z := by
   obtain ⟨w, p, q⟩ := z
@@ -181,14 +187,18 @@ noncomputable def reach (M : Machine Q Γ h) (n : ℕ) [NeZero n] : Finset (Conf
 
 variable (M : Machine Q Γ h)
 
+/-- A configuration belongs to `reach M n` iff it is reached in some number of steps from some
+initial configuration `M.init x`. -/
 theorem mem_reach {z : Config Q Γ n h} :
     z ∈ reach M n ↔ ∃ x t, M.step^[t] (M.init x) = z := by
   unfold reach
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
+/-- Every initial configuration `M.init x` belongs to `reach M n`. -/
 theorem init_mem_reach (x : BitString n) : M.init x ∈ reach M n :=
   (mem_reach M).mpr ⟨x, 0, rfl⟩
 
+/-- Every iterate `M.step^[t] (M.init x)` from an initial configuration belongs to `reach M n`. -/
 theorem iterate_mem_reach (x : BitString n) (t : ℕ) : M.step^[t] (M.init x) ∈ reach M n :=
   (mem_reach M).mpr ⟨x, t, rfl⟩
 
@@ -204,7 +214,7 @@ theorem reach_card_le_configs :
   card_config (Q := Q) (Γ := Γ) (n := n) (h := h) ▸ Finset.card_le_univ _
 
 /-- Reachable configurations are covered by the first `B` steps from every input. -/
-theorem reach_card_le_of_cover (B : ℕ)
+private theorem reach_card_le_of_cover (B : ℕ)
     (hcover : ∀ (x : BitString n) (t : ℕ),
       ∃ y, ∃ j < B, M.step^[t] (M.init x) = M.step^[j] (M.init y)) :
     (reach M n).card ≤ 2 ^ n * B := by
@@ -233,7 +243,7 @@ theorem reach_card_le_time (hM : M.HaltingAbsorbing) (t : ℕ)
 
 omit [Fintype Q] [Fintype Γ] in
 /-- Running `τ * m` steps of a machine with rounds of length `τ` runs `m` rounds. -/
-theorem iterate_rounds (τ : ℕ) (P : BitString n → BitString n)
+private theorem iterate_rounds (τ : ℕ) (P : BitString n → BitString n)
     (hround : ∀ x, M.step^[τ] (M.init x) = M.init (P x)) (x : BitString n) (m : ℕ) :
     M.step^[τ * m] (M.init x) = M.init (P^[m] x) := by
   induction m with
@@ -300,7 +310,8 @@ section Circuits
 variable [Fintype Q] [Fintype Γ] [NeZero n] {w : ℕ} (M : Machine Q Γ h)
 
 /-- The reachable set fits in the encoding width. -/
-theorem reach_card_le_two_pow (e : Config Q Γ n h → BitString w) (he : Set.InjOn e (reach M n)) :
+private theorem reach_card_le_two_pow (e : Config Q Γ n h → BitString w)
+    (he : Set.InjOn e (reach M n)) :
     (reach M n).card ≤ 2 ^ w := by
   classical
   rw [← Finset.card_image_of_injOn he]

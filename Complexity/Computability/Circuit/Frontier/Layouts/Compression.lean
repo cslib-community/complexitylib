@@ -94,7 +94,7 @@ variable {G : Multigraph V E} {d : ℕ}
 /-! ### Merging -/
 
 /-- The compression into single vertices. -/
-def singletons [Fintype V] [DecidableEq V] [Finite E] (hG : G.MaxDegreeLE d) :
+private def singletons [Fintype V] [DecidableEq V] [Finite E] (hG : G.MaxDegreeLE d) :
     Compression G d where
   blocks := Finset.univ.image fun v => [v]
   exists_mem v := ⟨[v], Finset.mem_image_of_mem _ (Finset.mem_univ v),
@@ -120,7 +120,7 @@ variable (c : Compression G d)
 
 /-- **Merging.** Two distinct blocks joined by an edge, with at most `d` edges leaving their
 union, may be replaced by their union, listing the longer block first. -/
-theorem exists_merge [Finite E] {B B' : List V} (hB : B ∈ c.blocks) (hB' : B' ∈ c.blocks)
+private theorem exists_merge [Finite E] {B B' : List V} (hB : B ∈ c.blocks) (hB' : B' ∈ c.blocks)
     (hne : B ≠ B') (hjoin : (G.edgeCut {v | v ∈ B} ∩ G.edgeCut {v | v ∈ B'}).Nonempty)
     (hcut : (G.edgeCut ({v | v ∈ B} ∪ {v | v ∈ B'})).ncard ≤ d) :
     ∃ c' : Compression G d, c'.blocks.card < c.blocks.card := by
@@ -274,7 +274,7 @@ theorem mem_iff_blockOf_eq {v : V} {B : c.blocks} : v ∈ B.1 ↔ c.blockOf v = 
     fun h => h ▸ c.mem_blockOf v⟩
 
 /-- The vertices of a block are those it contains. -/
-theorem preimage_blockOf_singleton (B : c.blocks) : c.blockOf ⁻¹' {B} = {v | v ∈ B.1} := by
+private theorem preimage_blockOf_singleton (B : c.blocks) : c.blockOf ⁻¹' {B} = {v | v ∈ B.1} := by
   ext v
   simp [c.mem_iff_blockOf_eq]
 
@@ -317,7 +317,7 @@ def external : Set E :=
   {e | c.blockOf (G.src e) ≠ c.blockOf (G.tgt e)}
 
 /-- The edges outside the external edges are those inside a block. -/
-theorem compl_external : c.externalᶜ = {e | ∃ B ∈ c.blocks, G.src e ∈ B ∧ G.tgt e ∈ B} := by
+private theorem compl_external : c.externalᶜ = {e | ∃ B ∈ c.blocks, G.src e ∈ B ∧ G.tgt e ∈ B} := by
   ext e
   simp only [external, mem_compl_iff, mem_ofPred_eq, not_not]
   constructor
@@ -342,7 +342,7 @@ theorem quotient_loopless : c.quotient.Loopless :=
   fun e => e.2
 
 /-- The cut of a union of whole blocks consists of the edges of the cut of the quotient. -/
-theorem edgeCut_preimage (T : Set c.blocks) :
+private theorem edgeCut_preimage (T : Set c.blocks) :
     G.edgeCut (c.blockOf ⁻¹' T) = Subtype.val '' c.quotient.edgeCut T := by
   ext e
   simp only [mem_edgeCut, mem_preimage, mem_image, Subtype.exists, exists_and_right,

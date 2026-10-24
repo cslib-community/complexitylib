@@ -38,6 +38,9 @@ enumerative coding for weight-bounded words (Theorem 4.3) is in
 
 * `Cslib.Circuits.Boolean.WeightedThreshold.scalarScore`: directional projection
   `∑ i, w i * (x i).toNat`.
+* `Cslib.Circuits.Boolean.WeightedThreshold.leInputs`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.scalarRep`: inputs with scalar score at most `t` and a
+  canonical representative input for `t`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.scalarEval`,
   `Cslib.Circuits.Boolean.WeightedThreshold.scalarTranscript`,
   `Cslib.Circuits.Boolean.WeightedThreshold.scalarReadout`: extension of gate evaluation,
@@ -169,7 +172,7 @@ theorem eval_eq_of_scalarScore_eq (p : Program signature n g) (w : Fin n → ℝ
       ring
 
 /-- Inputs with equal scalar score have identical input-reading transcripts. -/
-theorem transcript_eq_of_scalarScore_eq (p : Program signature n g) (w : Fin n → ℝ)
+private theorem transcript_eq_of_scalarScore_eq (p : Program signature n g) (w : Fin n → ℝ)
     (hw : ∀ j : Fin g, ∃ c : ℝ, inputWeight p j = c • w)
     {x₁ x₂ : Fin n → Bool} (h : scalarScore w x₁ = scalarScore w x₂) :
     transcript p x₁ = transcript p x₂ := by
@@ -182,6 +185,7 @@ theorem attainableTranscripts_nonempty (p : Program signature n g) :
   classical
   exact ⟨transcript p (fun _ => false), mem_image_of_mem _ (mem_univ _)⟩
 
+/-- The number of attainable transcripts of `p` is positive. -/
 theorem card_attainableTranscripts_pos (p : Program signature n g) :
     0 < (attainableTranscripts p).card :=
   (attainableTranscripts_nonempty p).card_pos
@@ -192,7 +196,7 @@ noncomputable def leInputs (w : Fin n → ℝ) (t : ℝ) : Finset (Fin n → Boo
 
 open scoped Classical in
 /-- Input-reading transcripts realized by inputs with scalar score at most `t`. -/
-noncomputable def leTranscripts (p : Program signature n g) (w : Fin n → ℝ) (t : ℝ) :
+private noncomputable def leTranscripts (p : Program signature n g) (w : Fin n → ℝ) (t : ℝ) :
     Finset (inputGates p → Bool) :=
   (leInputs w t).image (transcript p)
 
@@ -395,7 +399,8 @@ private theorem isChain_le_getElem {α : Type*} [Preorder α] {ts : List α}
 
 /-- Any ordered list `ts` along which `Φ` alternates between consecutive elements has length at
 most `T + 1` whenever `ChangesAtMost Φ T`. -/
-theorem length_le_succ_of_changesAtMost_of_isChain {α β : Type*} [Preorder α] {Φ : α → β} {T : ℕ}
+private theorem length_le_succ_of_changesAtMost_of_isChain {α β : Type*} [Preorder α] {Φ : α → β}
+    {T : ℕ}
     (hΦ : ChangesAtMost Φ T) {ts : List α} (hmono : ts.IsChain (· ≤ ·))
     (halt : (ts.map Φ).IsChain (· ≠ ·)) :
     ts.length ≤ T + 1 := by

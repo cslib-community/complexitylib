@@ -24,11 +24,26 @@ records repeat. Sorting uses the native Batcher circuit `bitonicSortCircuit`.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Iteration.Record`: a complete record and its bit encoding.
-* `Cslib.Circuits.Boolean.Iteration.Record.initial`: checkpoints, then the orbit prefix, then
-  padding.
+* `Cslib.Circuits.Boolean.Iteration.Record`,
+  `Cslib.Circuits.Boolean.Iteration.Record.width`,
+  `Cslib.Circuits.Boolean.Iteration.Record.key`,
+  `Cslib.Circuits.Boolean.Iteration.Record.keyBits`,
+  `Cslib.Circuits.Boolean.Iteration.Record.encode`,
+  `Cslib.Circuits.Boolean.Iteration.Record.decode`: a complete record, its sort key, and its bit
+  encoding.
+* `Cslib.Circuits.Boolean.Iteration.Record.query`,
+  `Cslib.Circuits.Boolean.Iteration.Record.stored`,
+  `Cslib.Circuits.Boolean.Iteration.Record.pad`,
+  `Cslib.Circuits.Boolean.Iteration.Record.collision`,
+  `Cslib.Circuits.Boolean.Iteration.Record.initial`,
+  `Cslib.Circuits.Boolean.Iteration.Record.Valid`: query, checkpoint, and padding records,
+  collision test, initial array, and validity predicate.
 * `Cslib.Circuits.Boolean.Iteration.Record.Witness`: what a detected collision certifies.
-* `Cslib.Circuits.Boolean.Iteration.Record.sorted`, `Record.detect`: sort and scan.
+* `Cslib.Circuits.Boolean.Iteration.Record.pack`,
+  `Cslib.Circuits.Boolean.Iteration.Record.sorted`,
+  `Cslib.Circuits.Boolean.Iteration.Record.adjacentPair`,
+  `Cslib.Circuits.Boolean.Iteration.Record.detect`: array packing, sorting, and adjacent-collision
+  scan.
 
 ## Main results
 
@@ -86,9 +101,11 @@ def decode (bits : BitString (width n w)) : Record n w where
   index := word fun i => bits (Fin.natAdd (n + 1) (Fin.castAdd n i).succ)
   payload i := bits (Fin.natAdd (n + 1) (Fin.natAdd w i).succ)
 
+/-- Decoding the bit encoding of a record recovers the record. -/
 @[simp] theorem decode_encode (r : Record n w) : decode (encode r) = r := by
   ext <;> simp [decode, encode, Fin.cons]
 
+/-- Encoding the decoded record of a bit string recovers the bit string. -/
 @[simp] theorem encode_decode (bits : BitString (width n w)) : encode (decode bits) = bits := by
   funext i
   induction i using Fin.addCases with
@@ -104,16 +121,18 @@ def decode (bits : BitString (width n w)) : Record n w where
       | left i => simp [encode, decode]
       | right i => simp [encode, decode]
 
+/-- Record bit encoding `encode` is injective. -/
 theorem encode_injective : Function.Injective (encode : Record n w → BitString (width n w)) :=
   Function.LeftInverse.injective decode_encode
 
 /-- The sort key of a decoded record is read from its key coordinates. -/
-theorem key_decode (bits : BitString (width n w)) :
+private theorem key_decode (bits : BitString (width n w)) :
     (decode bits).key = toLex (bits ∘ keyBits) := by
   apply congrArg toLex
   funext i
   induction i using Fin.cases <;> rfl
 
+/-- Two records have equal sort keys iff they have the same padding flag and state. -/
 theorem key_eq_iff (a b : Record n w) :
     a.key = b.key ↔ a.padding = b.padding ∧ a.state = b.state := by
   constructor
@@ -137,6 +156,8 @@ def pad : Record n w := ⟨true, fun _ => false, false, 0, fun _ => false⟩
 def collision (a b : Record n w) : Bool :=
   !a.padding && !b.padding && decide (a.state = b.state) && decide (a ≠ b)
 
+/-- `collision a b` holds iff neither record is padding, their states are equal, and the records
+are distinct. -/
 theorem collision_iff (a b : Record n w) :
     collision a b = true ↔ a.padding = false ∧ b.padding = false ∧
       a.state = b.state ∧ a ≠ b := by
@@ -152,13 +173,13 @@ def initial (f : BitString n → BitString n) (T K : ℕ) (checkpoints : Fin M �
   else if j.val - M ≤ K then query (f^[j.val - M] x) (j.val - M)
   else pad
 
-theorem initial_stored (f : BitString n → BitString n) (T K : ℕ)
+private theorem initial_stored (f : BitString n → BitString n) (T K : ℕ)
     (checkpoints : Fin M → BitString n) (x : BitString n) (hR : M + (K + 1) ≤ R) (j : Fin M) :
     initial (R := R) (w := w) f T K checkpoints x ⟨j.val, by have := j.isLt; omega⟩ =
       stored (checkpoints j) (f^[T - K] (checkpoints j)) := by
   simp [initial, j.isLt]
 
-theorem initial_query (f : BitString n → BitString n) (T K : ℕ)
+private theorem initial_query (f : BitString n → BitString n) (T K : ℕ)
     (checkpoints : Fin M → BitString n) (x : BitString n) (hR : M + (K + 1) ≤ R)
     (j : Fin (K + 1)) :
     initial (R := R) (w := w) f T K checkpoints x ⟨M + j.val, by have := j.isLt; omega⟩ =
@@ -171,7 +192,7 @@ def Valid (f : BitString n → BitString n) (T K : ℕ) (checkpoints : Fin M →
   r = pad ∨ (∃ h : Fin M, r = stored (checkpoints h) (f^[T - K] (checkpoints h))) ∨
     ∃ d ≤ K, r = query (f^[d] x) d
 
-theorem valid_initial (f : BitString n → BitString n) (T K : ℕ)
+private theorem valid_initial (f : BitString n → BitString n) (T K : ℕ)
     (checkpoints : Fin M → BitString n) (x : BitString n) (j : Fin R) :
     Valid f T K checkpoints x (initial (w := w) f T K checkpoints x j) := by
   unfold initial
@@ -196,7 +217,7 @@ inductive Witness (f : BitString n → BitString n) (T K : ℕ) (checkpoints : F
       Witness f T K checkpoints x (query (f^[i] x) i) (query (f^[j] x) j)
 
 /-- A collision between valid records is a witness, without requiring unique records. -/
-theorem collision_witness (f : BitString n → BitString n) (T K : ℕ)
+private theorem collision_witness (f : BitString n → BitString n) (T K : ℕ)
     (checkpoints : Fin M → BitString n) (x : BitString n) (a b : Record n w)
     (ha : Valid f T K checkpoints x a) (hb : Valid f T K checkpoints x b)
     (hc : collision a b = true) : Witness f T K checkpoints x a b := by
@@ -219,6 +240,7 @@ theorem collision_witness (f : BitString n → BitString n) (T K : ℕ)
 def pack (records : Fin R → Record n w) : BitString (R * width n w) :=
   fun bit => encode (records (finProdFinEquiv.symm bit).1) (finProdFinEquiv.symm bit).2
 
+/-- Extracting the `j`-th block of `pack records` gives `encode (records j)`. -/
 @[simp] theorem directProductInput_pack (records : Fin R → Record n w) (j : Fin R) :
     directProductInput (pack records) j = encode (records j) := by
   funext bit
@@ -230,13 +252,13 @@ def sorted (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w) :
   fun j => decode (directProductInput
     ((bitonicSortCircuit keyBits d true).eval interpretation (pack records)) j)
 
-theorem sorted_perm (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w) :
+private theorem sorted_perm (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w) :
     (List.ofFn (sorted d records)).Perm (List.ofFn records) := by
   have h := (bitonicSortCircuit_perm (keyBits (n := n) (w := w)) d true (pack records)).map decode
   unfold sorted
   simpa only [List.map_ofFn, Function.comp_def, directProductInput_pack, decode_encode] using h
 
-theorem monotone_key_sorted (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w) :
+private theorem monotone_key_sorted (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w) :
     Monotone (key ∘ sorted d records) := by
   have h := monotone_bitonicSortCircuit (keyBits (n := n) (w := w)) d (pack records)
   simpa only [Function.comp_def, sorted, key_decode] using h
@@ -252,7 +274,7 @@ def detect (records : Fin R → Record n w) : Record n w × Record n w :=
 
 /-- A checkpoint hit or a repeat of the prefix gives two different initial records with equal
 keys, the first of which is not padding. -/
-theorem initial_collision (f : BitString n → BitString n) (T K : ℕ)
+private theorem initial_collision (f : BitString n → BitString n) (T K : ℕ)
     (checkpoints : Fin M → BitString n) (x : BitString n) (hR : M + (K + 1) ≤ R) (hK : K < 2 ^ w)
     (hcover : (∃ d ≤ K, ∃ h : Fin M, f^[d] x = checkpoints h) ∨
       ∃ i j, i < j ∧ j ≤ K ∧ f^[i] x = f^[j] x) :
@@ -277,7 +299,7 @@ theorem initial_collision (f : BitString n → BitString n) (T K : ℕ)
     omega
 
 /-- Sorting turns such a pair into a flagged adjacent pair. -/
-theorem sorted_has_collision (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w)
+private theorem sorted_has_collision (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w)
     (hex : ∃ a b, records a ≠ records b ∧ (records a).key = (records b).key ∧
       (records a).padding = false) :
     ∃ j : Fin (BitonicSort.arity d - 1),

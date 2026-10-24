@@ -55,7 +55,7 @@ noncomputable def Atom.failures (a : Atom σ U) (I : Interpretation σ U)
   simp only [failures, Finset.mem_filter]
 
 /-- The sampled witnesses are covered by the union of the atoms' failures. -/
-theorem card_le_sum_failures (atoms : Fin k → Atom σ U) (samples : Finset W)
+private theorem card_le_sum_failures (atoms : Fin k → Atom σ U) (samples : Finset W)
     (hcover : ∀ t ∈ samples, ¬ ∀ i, (atoms i).Preserves I (P t)) :
     samples.card ≤ ∑ i, ((atoms i).failures I P samples).card := by
   classical

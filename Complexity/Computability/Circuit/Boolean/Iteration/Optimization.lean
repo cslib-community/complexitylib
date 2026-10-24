@@ -107,6 +107,8 @@ theorem exists_le_three_mul_add_sqrt (a b M N : ℕ) (hb : 0 < b) (hba : b ≤ a
   change (a : ℝ) * L + b * ((M / L : ℕ) + 1) ≤ 3 * (a + z)
   nlinarith
 
+/-- For any `M ≤ 2 ^ n`, there is a checkpoint parameter `0 < L ≤ 2 ^ n` with
+`powerBudget n s M L ≤ 3 * optimizedBudget n s M`. -/
 theorem exists_powerBudget_le_optimizedBudget (n s M : ℕ) (hM : M ≤ 2 ^ n) :
     ∃ L : ℕ, 0 < L ∧ L ≤ 2 ^ n ∧ (powerBudget n s M L : ℝ) ≤ 3 * optimizedBudget n s M := by
   obtain ⟨L, hL, hLN, h⟩ := exists_le_three_mul_add_sqrt (s + (n + 1) ^ 3) ((n + 1) ^ 3)

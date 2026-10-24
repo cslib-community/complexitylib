@@ -60,7 +60,7 @@ def edgeRestrict (F : Set E) : Multigraph V F where
 variable {G}
 
 /-- Removing edges does not increase degrees. -/
-theorem MaxDegreeLE.edgeRestrict [Finite E] {d : ℕ} (hd : G.MaxDegreeLE d) (F : Set E) :
+private theorem MaxDegreeLE.edgeRestrict [Finite E] {d : ℕ} (hd : G.MaxDegreeLE d) (F : Set E) :
     (G.edgeRestrict F).MaxDegreeLE d := by
   intro v
   rw [← ncard_image_of_injective _ Subtype.val_injective]

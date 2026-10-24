@@ -71,7 +71,7 @@ variable {V E : Type*} {G : Multigraph V E} {c : Compression G 3}
 
 /-- In a saturated compression with budget three, two distinct blocks are joined by at most one
 edge. -/
-theorem Saturated.ncard_edgeCut_inter_le_one [Finite E] (hc : c.Saturated) {B B' : c.blocks}
+private theorem Saturated.ncard_edgeCut_inter_le_one [Finite E] (hc : c.Saturated) {B B' : c.blocks}
     (hne : B ≠ B') : (G.edgeCut {v | v ∈ B.1} ∩ G.edgeCut {v | v ∈ B'.1}).ncard ≤ 1 := by
   rcases (G.edgeCut {v | v ∈ B.1} ∩ G.edgeCut {v | v ∈ B'.1}).eq_empty_or_nonempty with h | h
   · simp [h]
@@ -83,7 +83,7 @@ theorem Saturated.ncard_edgeCut_inter_le_one [Finite E] (hc : c.Saturated) {B B'
 
 /-- In a saturated compression with budget three of a connected multigraph into at least two
 blocks, exactly three edges leave each block. -/
-theorem Saturated.ncard_edgeCut_eq_three [Finite E] (hc : c.Saturated)
+private theorem Saturated.ncard_edgeCut_eq_three [Finite E] (hc : c.Saturated)
     (hG : G.toSimpleGraph.Connected) (two : 1 < Nat.card c.blocks) (B : c.blocks) :
     (G.edgeCut {v | v ∈ B.1}).ncard = 3 := by
   obtain ⟨e, he⟩ := c.edgeCut_nonempty hG two B

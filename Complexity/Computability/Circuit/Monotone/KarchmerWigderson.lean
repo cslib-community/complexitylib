@@ -85,7 +85,8 @@ def monotoneKWProtocol : Formula Monotone.signature n → KWProtocol (Fin n)
 
 /-- The protocol of a monotone formula finds a bit that is one in Alice's input and zero in Bob's,
 when the formula is true on Alice's input and false on Bob's. -/
-theorem exceedsAt_run_monotoneKWProtocol (F : Formula Monotone.signature n) {x y : BitString n}
+private theorem exceedsAt_run_monotoneKWProtocol (F : Formula Monotone.signature n)
+    {x y : BitString n}
     (hx : F.eval interpretation x = true) (hy : F.eval interpretation y = false) :
     ExceedsAt x y (F.monotoneKWProtocol.run x y) := by
   induction F with

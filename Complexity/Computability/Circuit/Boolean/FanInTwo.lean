@@ -158,7 +158,7 @@ theorem depth_dedup_le (C : Circuit signature n m) : (dedup C).depth ≤ C.depth
   Circuit.depth_mapLines_le depth_dedupLine_le C
 
 /-- Every gate of `dedup C` reads at most all `n + C.size` wires. -/
-theorem arity_lines_dedup_le (C : Circuit signature n m) (k : Fin C.size) :
+private theorem arity_lines_dedup_le (C : Circuit signature n m) (k : Fin C.size) :
     signature.Arity ((dedup C).program.lines k).op ≤ n + C.size :=
   arity_lines_mapLines_dedupLine_le C.program k
 

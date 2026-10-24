@@ -73,6 +73,7 @@ variable {n g : ℕ}
 noncomputable def inputSupport (p : Program signature n g) (gate : Fin g) : Finset (Fin n) :=
   univ.filter fun i => inputWeight p gate i ≠ 0
 
+/-- An input `i` belongs to `inputSupport p gate` if and only if `inputWeight p gate i ≠ 0`. -/
 @[simp]
 theorem mem_inputSupport (p : Program signature n g) (gate : Fin g) (i : Fin n) :
     i ∈ inputSupport p gate ↔ inputWeight p gate i ≠ 0 := by
@@ -125,7 +126,7 @@ theorem card_lt_or_card_lt_of_rectangleFree {f : Cslib.BooleanFunction n} {K : �
 
 /-! ### Weighted sums and gluing -/
 
-theorem weightedSum_glue (U : Finset (Fin n)) (w : Fin n → ℝ)
+private theorem weightedSum_glue (U : Finset (Fin n)) (w : Fin n → ℝ)
     (p : U → Bool) (q : ↥Uᶜ → Bool) :
     weightedSum w (glue U p q) =
       weightedSum w (glue U p fun _ => false) +

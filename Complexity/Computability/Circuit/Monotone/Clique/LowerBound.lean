@@ -46,11 +46,11 @@ variable {n k p w : ℕ}
 def negativeGateCap (n r p w : ℕ) : ℕ :=
   (2 * sunflowerBound p w + sunflowerBound p w ^ 2) * Negative.pluckErrorCap n r p w
 
-theorem Positive.errorCost_le (op : Op) :
+private theorem Positive.errorCost_le (op : Op) :
     Positive.errorCost n k p w op ≤ Positive.errorCap n k p w := by
   cases op <;> simp [Positive.errorCost]
 
-theorem Negative.errorCost_le (hp : 2 ≤ p) (r : ℕ) (op : Op) :
+private theorem Negative.errorCost_le (hp : 2 ≤ p) (r : ℕ) (op : Op) :
     Negative.errorCost n r p w op ≤ negativeGateCap n r p w := by
   have hB := sunflowerBound_pos hp w
   unfold negativeGateCap
@@ -90,7 +90,7 @@ theorem nonempty_outputApproximator (hw : 2 ≤ w) (hk : w + 1 ≤ k)
 /-- The approximator of the output of a circuit computing `k`-clique accepts only colourings with
 `k - 1` colours on which it is wrong, and so at most as many as the negative cost of the
 circuit. -/
-theorem card_acceptedColorings_le (hw : 2 ≤ w) (hk : 0 < k)
+private theorem card_acceptedColorings_le (hw : 2 ≤ w) (hk : 0 < k)
     {C : Circuit signature (edgeCount n) 1} (hC : C.Computes interpretation (single (clique n k))) :
     (Negative.acceptedColorings (k - 1) (outputApproximator C : Approximator n p w).terms).card ≤
       C.program.cost (Negative.errorCost n (k - 1) p w) := by

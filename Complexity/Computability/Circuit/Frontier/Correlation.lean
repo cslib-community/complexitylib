@@ -111,7 +111,7 @@ universe v
 
 /-- The threshold and the rate of the Gaussian layout coefficient `A = 2p` in closed form:
 `c* = 1 + π / (6 arccos ((1 + 2√2)/4))` and `L = 1 + π / (3 arccos ((1 + 2√2)/4))`. -/
-theorem gaussian_rate_eq (c : ℝ) :
+private theorem gaussian_rate_eq (c : ℝ) :
     (1 + 1 / (2 * (2 * Gaussian.gaussianCoefficient)) - c) /
         (2 * (1 + 1 / (2 * Gaussian.gaussianCoefficient))) =
       (1 + π / (6 * arccos ((1 + 2 * √2) / 4)) - c) /
@@ -179,7 +179,7 @@ theorem rightHalf_injective (n : ℕ) : Function.Injective (rightHalf n) :=
   fun a b h => Fin.ext (by simpa [rightHalf] using congrArg Fin.val h)
 
 /-- The two halves are disjoint. -/
-theorem disjoint_range_leftHalf_rightHalf (n : ℕ) :
+private theorem disjoint_range_leftHalf_rightHalf (n : ℕ) :
     Disjoint (range (leftHalf n)) (range (rightHalf n)) := by
   rw [Set.disjoint_left]
   rintro _ ⟨a, rfl⟩ ⟨b, hb⟩
@@ -227,7 +227,7 @@ theorem half_le_cutRank_hardMatrix (n : ℕ) {U : Set (Fin n)} (hU : U.ncard = n
     (by rw [Nat.card_eq_fintype_card, Fintype.card_fin]; omega) hU
 
 /-- The deficiency `2 (2 ⌊√⌊n/2⌋⌋ + 1) + 1` of the chosen family is sublinear. -/
-theorem isLittleO_hardDeficiency :
+private theorem isLittleO_hardDeficiency :
     (fun n : ℕ => ((2 * (2 * Nat.sqrt (n / 2) + 1) + 1 : ℕ) : ℝ)) =o[atTop] fun n => (n : ℝ) := by
   rw [isLittleO_iff]
   intro ε hε
@@ -255,7 +255,7 @@ theorem isLittleO_hardDeficiency :
   linarith
 
 /-- The bisection hypothesis for the chosen family, in the form used by the asymptotic bounds. -/
-theorem half_le_cutRank_hardMatrix_add (n : ℕ) (U : Set (Fin n)) (hU : U.ncard = n / 2) :
+private theorem half_le_cutRank_hardMatrix_add (n : ℕ) (U : Set (Fin n)) (hU : U.ncard = n / 2) :
     ((n / 2 : ℕ) : ℝ) ≤ (hardMatrix n + (hardMatrix n)ᵀ).cutRank U +
       ((2 * (2 * Nat.sqrt (n / 2) + 1) + 1 : ℕ) : ℝ) := by
   exact_mod_cast half_le_cutRank_hardMatrix n hU

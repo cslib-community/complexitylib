@@ -85,7 +85,7 @@ namespace Formula
 
 /-- The protocol of a formula finds a bit where Alice's and Bob's inputs differ, when the formula
 is `onAlice` on Alice's input and `!onAlice` on Bob's. -/
-theorem differsAt_run_kwProtocol [NeZero n] (F : Formula signature n) (onAlice : Bool)
+private theorem differsAt_run_kwProtocol [NeZero n] (F : Formula signature n) (onAlice : Bool)
     {x y : BitString n} (hx : F.eval interpretation x = onAlice)
     (hy : F.eval interpretation y = !onAlice) :
     DiffersAt x y ((F.kwProtocol onAlice).run x y) := by
@@ -267,7 +267,7 @@ theorem exists_kwProtocol_of_computes [NeZero n] {f : BooleanFunction n}
 
 /-- A protocol for the Karchmer–Wigderson game of `f` gives a formula computing `f`, with at most
 as many AND and OR gates on a path as the protocol sends bits. -/
-theorem exists_formula_of_solves {f : BooleanFunction n} {p : KWProtocol (Fin n)}
+private theorem exists_formula_of_solves {f : BooleanFunction n} {p : KWProtocol (Fin n)}
     (hp : p.Solves DiffersAt {x | f x = true} {y | f y = false}) :
     ∃ F : Formula signature n, F.Computes interpretation f ∧ F.depthWith binaryCost ≤ p.depth := by
   refine ⟨p.kwFormula {x | f x = true} {y | f y = false}, fun x => ?_,

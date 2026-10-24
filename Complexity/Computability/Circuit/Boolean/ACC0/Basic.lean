@@ -88,6 +88,7 @@ def modZeroCircuit : (op : ExtOp) → Circuit Unbounded.signature (extSignature.
   | .ac op => Circuit.oneGate (σ := Unbounded.signature) op id
   | .gate m => Circuit.oneGate (σ := Unbounded.signature) (.or m) id
 
+/-- `modZeroCircuit op` computes the `AC⁰[0]` operation `op` over the `AC⁰` basis. -/
 theorem computes_modZeroCircuit (op : ExtOp) :
     (modZeroCircuit op).Computes Unbounded.interpretation
       (single (extInterpretation (modGate 0) op)) := by
@@ -112,6 +113,7 @@ def modOneCircuit : (op : ExtOp) → Circuit Unbounded.signature (extSignature.A
   | .ac op => Circuit.oneGate (σ := Unbounded.signature) op id
   | .gate _ => constCircuit (Signature.Hom.id _) false
 
+/-- `modOneCircuit op` computes the `AC⁰[1]` operation `op` over the `AC⁰` basis. -/
 theorem computes_modOneCircuit (op : ExtOp) :
     (modOneCircuit op).Computes Unbounded.interpretation
       (single (extInterpretation (modGate 1) op)) := by
@@ -155,6 +157,8 @@ def modMulCircuit (k : ℕ) : (op : ExtOp) → Circuit extSignature (extSignatur
   | .gate m => Circuit.oneGate (σ := extSignature) (.gate (m * k))
       fun j => (finProdFinEquiv.symm j).1
 
+/-- `modMulCircuit k op` computes the `AC⁰[q]` operation `op` over the `AC⁰[q * k]` basis when
+`0 < k`. -/
 theorem computes_modMulCircuit (q : ℕ) {k : ℕ} (hk : 0 < k) (op : ExtOp) :
     (modMulCircuit k op).Computes (extInterpretation (modGate (q * k)))
       (single (extInterpretation (modGate q) op)) := by

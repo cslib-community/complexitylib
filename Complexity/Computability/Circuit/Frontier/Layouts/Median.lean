@@ -111,14 +111,14 @@ namespace IsMedian
 variable {score : E → α} {v : V} {m : α}
 
 /-- Some edge at `v` scores at most a median. -/
-theorem exists_score_le (h : G.IsMedian score v m) :
+private theorem exists_score_le (h : G.IsMedian score v m) :
     ∃ e ∈ G.incidenceSet v, score e ≤ m := by
   obtain ⟨e, he⟩ := nonempty_of_ncard_ne_zero (s := {e ∈ G.incidenceSet v | score e ≤ m})
     (by have := h.1; omega)
   exact ⟨e, he⟩
 
 /-- Some edge at `v` scores at least a median. -/
-theorem exists_le_score (h : G.IsMedian score v m) :
+private theorem exists_le_score (h : G.IsMedian score v m) :
     ∃ e ∈ G.incidenceSet v, m ≤ score e := by
   obtain ⟨e, he⟩ := nonempty_of_ncard_ne_zero (s := {e ∈ G.incidenceSet v | m ≤ score e})
     (by have := h.2; omega)
@@ -127,7 +127,7 @@ theorem exists_le_score (h : G.IsMedian score v m) :
 variable [Finite E]
 
 /-- At a vertex with three edges, at most one edge scores below a median. -/
-theorem eq_of_score_lt (h : G.IsMedian score v m) (hv : (G.incidenceSet v).ncard = 3)
+private theorem eq_of_score_lt (h : G.IsMedian score v m) (hv : (G.incidenceSet v).ncard = 3)
     {e e' : E} (he : e ∈ G.incidenceSet v) (he' : e' ∈ G.incidenceSet v) (hlt : score e < m)
     (hlt' : score e' < m) : e = e' := by
   by_contra hne
@@ -142,7 +142,7 @@ theorem eq_of_score_lt (h : G.IsMedian score v m) (hv : (G.incidenceSet v).ncard
   omega
 
 /-- At a vertex with three edges, at most one edge scores above a median. -/
-theorem eq_of_lt_score (h : G.IsMedian score v m) (hv : (G.incidenceSet v).ncard = 3)
+private theorem eq_of_lt_score (h : G.IsMedian score v m) (hv : (G.incidenceSet v).ncard = 3)
     {e e' : E} (he : e ∈ G.incidenceSet v) (he' : e' ∈ G.incidenceSet v) (hlt : m < score e)
     (hlt' : m < score e') : e = e' := by
   by_contra hne
@@ -200,7 +200,7 @@ private theorem ncard_le_add_add (F : Set E) (score : E → α) (t t' : α) :
 /-- **Charging low edges.** If the medians outside `P` are at least `m`, the edges leaving `P`
 that score below a threshold `t ≤ m` are no more than the vertices outside `P` that straddle
 `t`. -/
-theorem ncard_edgeCut_score_lt_le [Finite V] (h3 : ∀ v, (G.incidenceSet v).ncard = 3)
+private theorem ncard_edgeCut_score_lt_le [Finite V] (h3 : ∀ v, (G.incidenceSet v).ncard = 3)
     (hmed : ∀ v, G.IsMedian score v (med v)) (hPc : ∀ v ∉ P, m ≤ med v) {t : α}
     (ht : t ≤ m) :
     {e ∈ G.edgeCut P | score e < t}.ncard ≤ {v | v ∉ P ∧ G.EdgeStraddles score t v}.ncard := by
@@ -221,7 +221,7 @@ theorem ncard_edgeCut_score_lt_le [Finite V] (h3 : ∀ v, (G.incidenceSet v).nca
 /-- **Charging high edges.** If the medians inside `P` are at most `m`, the edges leaving `P`
 that score at least a threshold `t > m` are no more than the vertices inside `P` with an edge
 scoring at least `t`. -/
-theorem ncard_edgeCut_le_score_le [Finite V] (h3 : ∀ v, (G.incidenceSet v).ncard = 3)
+private theorem ncard_edgeCut_le_score_le [Finite V] (h3 : ∀ v, (G.incidenceSet v).ncard = 3)
     (hmed : ∀ v, G.IsMedian score v (med v)) (hP : ∀ u ∈ P, med u ≤ m) {t : α}
     (ht : m < t) :
     {e ∈ G.edgeCut P | t ≤ score e}.ncard ≤
@@ -240,7 +240,7 @@ theorem ncard_edgeCut_le_score_le [Finite V] (h3 : ∀ v, (G.incidenceSet v).nca
       (((hP _ hu).trans_lt ht).trans_le hle')
 
 /-- The endpoints of a set of edges number at most twice the edges. -/
-theorem ncard_endpoints_le (F : Set E) :
+private theorem ncard_endpoints_le (F : Set E) :
     {w | ∃ e ∈ F, G.src e = w ∨ G.tgt e = w}.ncard ≤ 2 * F.ncard := by
   refine (ncard_le_ncard (t := G.src '' F ∪ G.tgt '' F) ?_).trans
     ((ncard_union_le _ _).trans ?_)

@@ -48,16 +48,32 @@ advances `b` by `1` modulo `ℓ r` when `b < ℓ r` and fixes every other state.
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.Iteration.PrimeCycles.classWord`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycles.posWord`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycles.pack`: split and pack `m`-bit class and `K`-bit
+  position words.
 * `Cslib.Circuits.Boolean.Iteration.PrimeCycles.power`: `T`-step map advancing each class `r`
   modulo `ℓ r`.
 * `Cslib.Circuits.Boolean.Iteration.PrimeCycles.step`: single-step permutation `power ℓ 1`.
-* `Cslib.Circuits.Boolean.Iteration.PrimeCycles.order`: common-period product of the nontrivial
-  cycle lengths (which equals the exact permutation order under `LengthsCoprime`).
-* `Cslib.Circuits.Boolean.Iteration.PrimeCycles.classPrime`: least-index prime candidate in each
-  hash class, or `1` if none exists.
+* `Cslib.Circuits.Boolean.Iteration.PrimeCycles.active`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycles.order`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycles.LengthsCoprime`: active classes, common-period
+  product of the nontrivial cycle lengths (which equals the exact permutation order under
+  `LengthsCoprime`), and pairwise coprimality predicate.
+* `Cslib.Circuits.Boolean.Iteration.PrimeCycles.candidate`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycles.classPrime`: prime candidates and least-index prime
+  candidate in each hash class, or `1` if none exists.
 * `Cslib.Circuits.Boolean.Iteration.lcmBelow`: least common multiple of `{1, …, n}`.
-* `Cslib.Circuits.Boolean.Iteration.PrimeCycleData`: bundled cycle-length data with pairwise
-  coprime nontrivial lengths.
+* `Cslib.Circuits.Boolean.Iteration.PrimeCycleData`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycleData.activeLength`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycleData.stepNat`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycleData.step`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycleData.perm`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycleData.period`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycleData.lengthBits`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycleData.remainderBits`,
+  `Cslib.Circuits.Boolean.Iteration.PrimeCycleData.ofHash`: bundled cycle-length data with pairwise
+  coprime nontrivial lengths and associated step, period, bit-encoding, and hash constructors.
 
 ## Main results
 
@@ -90,8 +106,10 @@ open scoped BigOperators
 /-- The least common multiple `lcm(1, …, n)`. -/
 def lcmBelow (n : ℕ) : ℕ := Nat.lcmUpto n
 
+/-- `lcmBelow n` is positive for every `n`. -/
 theorem lcmBelow_pos (n : ℕ) : 0 < lcmBelow n := Nat.lcmUpto_pos n
 
+/-- `lcmBelow n` equals the product of highest prime powers `p ^ p.log n` for primes `p ≤ n`. -/
 theorem lcmBelow_eq_prod_prime_powers (n : ℕ) :
     lcmBelow n = ∏ p ∈ Nat.primesLE n, p ^ p.log n :=
   Nat.lcmUpto_eq_prod_pow_log n
@@ -139,7 +157,7 @@ theorem lcmBelow_add_dvd {m n : ℕ} (h : n ≤ m) :
         exact hpow
       omega
 
-theorem lcmBelow_add_le {m n : ℕ} (h : n ≤ m) :
+private theorem lcmBelow_add_le {m n : ℕ} (h : n ≤ m) :
     lcmBelow (m + n) ≤ lcmBelow m * (m + n).choose m :=
   Nat.le_of_dvd (Nat.mul_pos (lcmBelow_pos m) (Nat.choose_pos (Nat.le_add_right m n)))
     (lcmBelow_add_dvd h)
@@ -217,12 +235,15 @@ def posWord (x : BitString (m + K)) : BitVec K := word fun i => x (Fin.natAdd m 
 def pack (r : BitVec m) (b : BitVec K) : BitString (m + K) :=
   Fin.append (fun i : Fin m => r.getLsbD i.val) (fun i : Fin K => b.getLsbD i.val)
 
+/-- Extracting the class word from `pack r b` recovers `r`. -/
 @[simp] theorem classWord_pack (r : BitVec m) (b : BitVec K) : classWord (pack r b) = r := by
   simp only [classWord, pack, Fin.append_left, word_getLsbD]
 
+/-- Extracting the position word from `pack r b` recovers `b`. -/
 @[simp] theorem posWord_pack (r : BitVec m) (b : BitVec K) : posWord (pack r b) = b := by
   simp only [posWord, pack, Fin.append_right, word_getLsbD]
 
+/-- Repacking the class and position words of `x` recovers `x`. -/
 @[simp] theorem pack_words (x : BitString (m + K)) : pack (classWord x) (posWord x) = x := by
   funext bit
   induction bit using Fin.addCases with
@@ -239,11 +260,12 @@ def step (ℓ : BitVec m → ℕ) : BitString (m + K) → BitString (m + K) := p
 
 variable (ℓ : BitVec m → ℕ)
 
+/-- The `0`-th power `power ℓ 0` is the identity map. -/
 @[simp] theorem power_zero : power (K := K) ℓ 0 = id := by
   funext x
   simp [power]
 
-theorem power_add (hℓ : ∀ r, ℓ r < 2 ^ K) (S T : ℕ) (x : BitString (m + K)) :
+private theorem power_add (hℓ : ∀ r, ℓ r < 2 ^ K) (S T : ℕ) (x : BitString (m + K)) :
     power ℓ T (power ℓ S x) = power ℓ (S + T) x := by
   simp only [power, classWord_pack, posWord_pack, BitVec.toNat_ofNat]
   rw [Nat.mod_eq_of_lt (advance_lt (hℓ _) (BitVec.isLt _)), advance_add]
@@ -256,7 +278,7 @@ theorem iterate_step (hℓ : ∀ r, ℓ r < 2 ^ K) (T : ℕ) :
   | zero => simp
   | succ T ih => rw [Function.iterate_succ_apply', ih, step, power_add ℓ hℓ]
 
-theorem advance_mod (a b T : ℕ) : advance a b (T % a) = advance a b T := by
+private theorem advance_mod (a b T : ℕ) : advance a b (T % a) = advance a b T := by
   unfold advance
   split_ifs with h
   · rw [Nat.add_mod, Nat.mod_mod, ← Nat.add_mod]
@@ -271,7 +293,7 @@ theorem power_apply_mod (T : ℕ) (r : BitVec m) (b : BitVec K) :
   rfl
 
 /-- Every positive length divides the product of positive lengths, so that power is the identity. -/
-theorem power_prod_eq_id :
+private theorem power_prod_eq_id :
     power (K := K) ℓ (∏ r ∈ Finset.univ.filter (fun r => 0 < ℓ r), ℓ r) = id := by
   funext x
   simp only [power, id]
@@ -284,6 +306,7 @@ theorem power_prod_eq_id :
     simp
   · simp
 
+/-- When every cycle length is below `2 ^ K`, `step ℓ` is a bijection on `BitString (m + K)`. -/
 theorem step_bijective (hℓ : ∀ r, ℓ r < 2 ^ K) : Function.Bijective (step (K := K) ℓ) := by
   set P := ∏ r ∈ Finset.univ.filter (fun r => 0 < ℓ r), ℓ r
   have hP : 0 < P := Finset.prod_pos fun r hr => (Finset.mem_filter.mp hr).2
@@ -323,12 +346,13 @@ def active : Finset (BitVec m) := Finset.univ.filter fun r => 1 < ℓ r
 order under `LengthsCoprime`). -/
 def order : ℕ := ∏ r ∈ active ℓ, ℓ r
 
+/-- The common-period product `order ℓ` of the nontrivial cycle lengths is positive. -/
 theorem order_pos : 0 < order ℓ :=
   Finset.prod_pos fun r hr => by
     have := (Finset.mem_filter.mp hr).2
     omega
 
-theorem dvd_order {r : BitVec m} (hr : 1 < ℓ r) : ℓ r ∣ order ℓ :=
+private theorem dvd_order {r : BitVec m} (hr : 1 < ℓ r) : ℓ r ∣ order ℓ :=
   Finset.dvd_prod_of_mem _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hr⟩)
 
 /-- Pairwise coprimality of the nontrivial cycle lengths. -/
@@ -337,6 +361,8 @@ def LengthsCoprime : Prop := ((active ℓ : Finset (BitVec m)) : Set (BitVec m))
 
 variable {ℓ}
 
+/-- Under `LengthsCoprime ℓ`, two exponents are congruent modulo `order ℓ` iff they are congruent
+modulo every nontrivial cycle length `ℓ r`. -/
 theorem modEq_order_iff (hc : LengthsCoprime ℓ) (S T : ℕ) :
     S ≡ T [MOD order ℓ] ↔ ∀ r, 1 < ℓ r → S ≡ T [MOD ℓ r] := by
   have hrel : ((active ℓ : Finset (BitVec m)) : Set (BitVec m)).Pairwise
@@ -392,7 +418,7 @@ theorem card_range_iterate (hℓ : ∀ r, ℓ r < 2 ^ K) (hc : LengthsCoprime �
   simp
 
 /-- The order is at least `L ^ c` when the `c` nontrivial lengths are each at least `L`. -/
-theorem pow_card_le_order {L : ℕ} (hL : ∀ r, 1 < ℓ r → L ≤ ℓ r) :
+private theorem pow_card_le_order {L : ℕ} (hL : ∀ r, 1 < ℓ r → L ≤ ℓ r) :
     L ^ (active ℓ).card ≤ order ℓ :=
   Finset.pow_card_le_prod _ _ _ fun r hr => hL r (Finset.mem_filter.mp hr).2
 
@@ -425,14 +451,14 @@ def classPrime (m g : ℕ) (f : ℕ → ℕ) (r : BitVec m) : ℕ :=
   if h : ∃ z, z < 2 ^ g ∧ (candidate g f r z).Prime then
     candidate g f r (Nat.find h) else 1
 
-theorem candidate_mod {g : ℕ} (f : ℕ → ℕ) (r : BitVec m) {z : ℕ} (hz : z < 2 ^ g) :
+private theorem candidate_mod {g : ℕ} (f : ℕ → ℕ) (r : BitVec m) {z : ℕ} (hz : z < 2 ^ g) :
     candidate g f r z % 2 ^ g = z := by
   unfold candidate
   rw [pow_add, Nat.add_mod, Nat.add_mod (2 ^ m * 2 ^ g), Nat.mul_mod_left, Nat.mul_mod_left,
     Nat.mod_eq_of_lt hz]
   simp [Nat.mod_eq_of_lt hz]
 
-theorem candidate_bounds {g : ℕ} {f : ℕ → ℕ} (hf : ∀ z, f z < 2 ^ m) (r : BitVec m)
+private theorem candidate_bounds {g : ℕ} {f : ℕ → ℕ} (hf : ∀ z, f z < 2 ^ m) (r : BitVec m)
     {z : ℕ} (hz : z < 2 ^ g) :
     2 ^ (m + g) ≤ candidate g f r z ∧ candidate g f r z < 2 ^ (m + g + 1) := by
   have hx : r.toNat ^^^ f z < 2 ^ m := Nat.xor_lt_two_pow r.isLt (hf z)
@@ -455,7 +481,7 @@ theorem candidate_injective {g : ℕ} (f : ℕ → ℕ) {r s : BitVec m} {y z : 
   simp only [Nat.xor_assoc, Nat.xor_self, Nat.xor_zero] at this
   exact BitVec.eq_of_toNat_eq this
 
-theorem classPrime_spec {g : ℕ} (f : ℕ → ℕ) (r : BitVec m) :
+private theorem classPrime_spec {g : ℕ} (f : ℕ → ℕ) (r : BitVec m) :
     classPrime m g f r = 1 ∨
       ∃ z < 2 ^ g, classPrime m g f r = candidate g f r z ∧ (classPrime m g f r).Prime := by
   classical
@@ -466,6 +492,8 @@ theorem classPrime_spec {g : ℕ} (f : ℕ → ℕ) (r : BitVec m) :
     exact ⟨_, hs.1, rfl, hs.2⟩
   · left; rfl
 
+/-- Every `classPrime m g f r` is below `2 ^ (m + g + 1)`, and any nontrivial `classPrime m g f r`
+is a prime at least `2 ^ (m + g)`. -/
 theorem classPrime_bounds {g : ℕ} {f : ℕ → ℕ} (hf : ∀ z, f z < 2 ^ m) (r : BitVec m) :
     classPrime m g f r < 2 ^ (m + g + 1) ∧
       (1 < classPrime m g f r → 2 ^ (m + g) ≤ classPrime m g f r ∧ (classPrime m g f r).Prime) := by
@@ -546,6 +574,7 @@ def stepNat (r : BitVec m) (b : ℕ) : ℕ :=
 def step : BitString (m + K) → BitString (m + K) :=
   PrimeCycles.step D.length
 
+/-- The single-step map `D.step` is a bijection on `BitString (m + K)`. -/
 theorem step_bijective : Function.Bijective D.step :=
   PrimeCycles.step_bijective D.length D.length_lt
 
@@ -557,14 +586,18 @@ noncomputable def perm : Equiv.Perm (BitString (m + K)) :=
 def period : ℕ :=
   PrimeCycles.order D.length
 
+/-- `D.step^[T]` is the identity iff `D.period` divides `T`. -/
 theorem period_dvd_of_fixed (T : ℕ) :
     D.step^[T] = id ↔ D.period ∣ T :=
   PrimeCycles.iterate_eq_id_iff D.length_lt D.lengths_coprime T
 
+/-- Powers `D.step^[T]` for `T < D.period` are pairwise distinct. -/
 theorem powers_injective :
     Function.Injective (fun T : Fin D.period => D.step^[T.val]) :=
   PrimeCycles.iterate_injective D.length_lt D.lengths_coprime
 
+/-- If the ordered-syntax budget for `q` gates is strictly below `D.period`, some power
+`D.step^[T]` with `T < D.period` requires more than `q` gates. -/
 theorem exists_hard_power (q : ℕ)
     (large : signature.orderedBudget (m + K) (m + K) q < D.period) :
     ∃ T < D.period, ∀ out : Circuit signature (m + K) (m + K),
@@ -583,6 +616,7 @@ theorem step_diff_card_le :
 def lengthBits (r : BitString m) : BitString K :=
   fun i : Fin K => (BitVec.ofNat K (D.length (word r))).getLsbD i.val
 
+/-- Packing `D.lengthBits r` into a `BitVec K` gives `BitVec.ofNat K (D.length (word r))`. -/
 @[simp] theorem word_lengthBits (r : BitString m) :
     word (D.lengthBits r) = BitVec.ofNat K (D.length (word r)) :=
   word_getLsbD _
@@ -593,6 +627,8 @@ def remainderBits (T : ℕ) (r : BitString m) : BitString K :=
   fun i : Fin K =>
     (BitVec.ofNat K (if 0 < D.length (word r) then T % D.length (word r) else 0)).getLsbD i.val
 
+/-- Packing `D.remainderBits T r` into a `BitVec K` gives `T % D.length (word r)` (or `0` when
+`D.length (word r) = 0`). -/
 @[simp] theorem word_remainderBits (T : ℕ) (r : BitString m) :
     word (D.remainderBits T r) =
       BitVec.ofNat K (if 0 < D.length (word r) then T % D.length (word r) else 0) :=

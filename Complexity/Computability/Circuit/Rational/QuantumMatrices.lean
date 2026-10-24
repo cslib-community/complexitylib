@@ -55,7 +55,7 @@ open scoped BigOperators
 noncomputable section
 variable {Γ R : Type*} [AddCommGroup Γ] [LinearOrder Γ] [IsOrderedAddMonoid Γ] [Ring R]
 
-lemma coeff_mul_support_superset (x y : HahnSeries Γ R) (a : Γ)
+private lemma coeff_mul_support_superset (x y : HahnSeries Γ R) (a : Γ)
     (s t : Set Γ) (hs : s.IsPWO) (ht : t.IsPWO)
     (hxs : x.support ⊆ s) (hyt : y.support ⊆ t) :
     (x * y).coeff a = ∑ ij ∈ Finset.antidiagonal hs ht a,
@@ -84,7 +84,7 @@ omit [AddCommGroup Γ] [IsOrderedAddMonoid Γ] [Fintype ι] [DecidableEq ι] in
     (entry x i j).coeff a = x.coeff a i j := rfl
 
 omit [AddCommGroup Γ] [IsOrderedAddMonoid Γ] [Fintype ι] [DecidableEq ι] in
-lemma entry_support (x : HahnSeries Γ (Matrix ι ι R)) (i j : ι) :
+private lemma entry_support (x : HahnSeries Γ (Matrix ι ι R)) (i j : ι) :
     (entry x i j).support ⊆ x.support := by
   intro a ha
   change x.coeff a ≠ 0

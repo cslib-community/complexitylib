@@ -80,7 +80,7 @@ namespace Cslib.Circuits.Frontier.Gaussian
 
 /-- **Decay rate and radius.** Every `ρ₀ < 2√2/3` admits a decay rate `q ≥ 0` and a radius `R`
 with `ρ₀ ≤ 2 q / (1 + q ^ 2) - 3 (2 q ^ 2) ^ R`. -/
-theorem exists_decay_radius {ρ₀ : ℝ} (hρ₀ : ρ₀ < 2 * √2 / 3) :
+private theorem exists_decay_radius {ρ₀ : ℝ} (hρ₀ : ρ₀ < 2 * √2 / 3) :
     ∃ (q : ℝ) (R : ℕ), 0 ≤ q ∧ ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R := by
   have h3 : vertexCorrelation 3 = 2 * √2 / 3 := by norm_num [vertexCorrelation]
   obtain ⟨q, R, hq, hρ⟩ := exists_decay_radius_degree (by norm_num : 2 ≤ 3) (ρ := ρ₀)

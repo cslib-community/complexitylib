@@ -213,7 +213,7 @@ theorem rectangle_subset (v : N) :
 
 /-- A node accepting at least `K` assignments has fewer than `K` contexts, when the accepted set
 is `K`-rectangle-free. -/
-theorem ncard_contexts_le (hS : RectangleFree P.accepted K) {v : N}
+private theorem ncard_contexts_le (hS : RectangleFree P.accepted K) {v : N}
     (hv : K ≤ (P.values v).ncard) : (P.contexts v).ncard ≤ K - 1 := by
   rcases hS.ncard_lt_or _ _ _ (P.rectangle_subset v) with h | h <;> omega
 
@@ -231,7 +231,7 @@ def stops (K : ℕ) (v : N) : Set (ι → U) :=
 
 /-- The threshold budget of a node: `(K - 1) ^ 2` for each child of a union and `(K - 1) ^ 3` for
 a product. -/
-def budget (K : ℕ) (v : N) : ℕ :=
+private def budget (K : ℕ) (v : N) : ℕ :=
   match P.gate v with
   | .leaf => 0
   | .union c => (K - 1) ^ 2 * c.card
@@ -273,7 +273,7 @@ theorem exists_mem_stops (hK : 1 < K) (hS : K ≤ P.accepted.ncard) {x : ι → 
 
 /-- **The charge at a node.** If the accepted set is `K`-rectangle-free, the descent stops at a
 node `v` for at most the budget of `v` inputs. -/
-theorem ncard_stops_le (hS : RectangleFree P.accepted K) (v : N) :
+private theorem ncard_stops_le (hS : RectangleFree P.accepted K) (v : N) :
     (P.stops K v).ncard ≤ P.budget K v := by
   by_cases hlarge : K ≤ (P.values v).ncard
   swap

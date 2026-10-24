@@ -159,6 +159,7 @@ namespace Reduction
 
 variable {S S' : State n} {F : Finset ℕ} {D T : List (ℕ ⊕ ℕ)}
 
+/-- The empty reduction from a valid state `S` to itself. -/
 theorem refl (hS : S.Valid f) : Reduction f S S ∅ [] [] where
   valid := hS
   subset := Finset.empty_subset _
@@ -214,20 +215,25 @@ theorem mono (h : Reduction f S S' F D T) {T' : List (ℕ ⊕ ℕ)} (hT : ∀ N 
 
 /-! ### Accounting -/
 
+/-- A reduction restricting `F` decreases the number of parameters `m` by `|F|`. -/
 theorem m_add (h : Reduction f S S' F D T) : S'.m + F.card = S.m := by
   unfold m
   rw [h.params, Finset.card_sdiff_of_subset h.subset]
   have := Finset.card_le_card h.subset
   omega
 
+/-- A reduction deleting `D` decreases the size `s` by `|D|`. -/
 theorem s_add (h : Reduction f S S' F D T) : S'.s + D.length = S.s :=
   h.size
 
+/-- A reduction restricting `F` decreases the number of pairs `q` by the number of pairs meeting
+`F`. -/
 theorem q_add (h : Reduction f S S' F D T) : S'.q + (S.pairsMeeting F).card = S.q := by
   unfold q pairsMeeting
   rw [h.pairs, add_comm]
   exact Finset.card_filter_add_card_filter_not _
 
+/-- Under a reduction restricting `F`, `S'.a + |F| = S.a + (S.pairsMeeting F).card`. -/
 theorem a_add (h : Reduction f S S' F D T) (hS : S.Valid f) :
     S'.a + F.card = S.a + (S.pairsMeeting F).card := by
   have hm := h.m_add
@@ -295,7 +301,7 @@ theorem wt_le (h : Reduction f S S' F D T) (hS : S.Valid f) {u : ℕ}
   · rw [h.wt_eq_zero hS hu hpart]; exact Nat.zero_le _
 
 /-- A used parameter that is not the partner of a member of `F` gains at most one in weight. -/
-theorem wt_le_add_one (h : Reduction f S S' F D T) (hS : S.Valid f) {u : ℕ}
+private theorem wt_le_add_one (h : Reduction f S S' F D T) (hS : S.Valid f) {u : ℕ}
     (hpart : ∀ x ∈ F, ¬ S.IsPartner x u) (hdeg : 1 ≤ S.deg u) : S'.wt u ≤ S.wt u + 1 := by
   by_cases hu : u ∈ S.unpaired
   · rw [wt_of_mem hu]
@@ -453,7 +459,7 @@ restriction (UF) for an unpaired parameter and (PF) for a paired one. -/
 def fixConst (S : State n) (w : ℕ) (b : Bool) : State n :=
   S.restrict w (Lit.const b) (S.pairsAvoid w)
 
-theorem restrictOK_fixConst {S : State n} {w : ℕ} (hw : w ∈ S.params) (b : Bool) :
+private theorem restrictOK_fixConst {S : State n} {w : ℕ} (hw : w ∈ S.params) (b : Bool) :
     S.RestrictOK w (Lit.const b) (S.pairsAvoid w) where
   mem := hw
   reads y hy := by simp [Lit.Reads, Lit.const] at hy
@@ -465,21 +471,27 @@ theorem restrictOK_fixConst {S : State n} {w : ℕ} (hw : w ∈ S.params) (b : B
     push Not at h
     exact hP (Finset.mem_filter.2 ⟨hpr, h⟩)
 
+/-- Fixing a parameter to a constant preserves validity. -/
 theorem Valid.fixConst {S : State n} (hS : S.Valid f) {w : ℕ} (hw : w ∈ S.params) (b : Bool) :
     (S.fixConst w b).Valid f :=
   hS.restrict (restrictOK_fixConst hw b)
 
+/-- Fixing `w` to a constant removes `w` from `S.params`. -/
 @[simp] theorem fixConst_params (S : State n) (w : ℕ) (b : Bool) :
     (S.fixConst w b).params = S.params.erase w := rfl
 
+/-- Fixing `w` to a constant retains the pairs avoiding `w`. -/
 @[simp] theorem fixConst_pairs (S : State n) (w : ℕ) (b : Bool) :
     (S.fixConst w b).pairs = S.pairsAvoid w := rfl
 
+/-- Fixing a parameter to a constant preserves the size of the state. -/
 theorem fixConst_size (S : State n) (w : ℕ) (b : Bool) : (S.fixConst w b).size = S.size := rfl
 
+/-- Fixing `w` to `b` substitutes `w` with `Lit.const b` in every gate. -/
 @[simp] theorem fixConst_gate (S : State n) (w : ℕ) (b : Bool) (J : ℕ) :
     (S.fixConst w b).gate J = (S.gate J).subst w (Lit.const b) := rfl
 
+/-- Fixing `w` to a constant preserves the children of every `z ≠ w`. -/
 theorem fixConst_children (S : State n) {w : ℕ} (b : Bool) {z : ℕ} (hz : z ≠ w) :
     (S.fixConst w b).children z = S.children z :=
   SemiCircuit.children_subst hz (by simp [Lit.const])
@@ -547,7 +559,8 @@ theorem Valid.reduction_deleteEqn {S : State n} (hS : S.Valid f) {e v : ℕ} {�
       exact ⟨Finset.mem_erase.2 ⟨hee, hdel.1⟩, Equation.card_subst_le.trans hdel.2⟩
 
 /-- Deleting an equation without terms is a reduction rerouting nothing. -/
-theorem Valid.reduction_dropTrivialEqn {S : State n} (hS : S.Valid f) {e : ℕ} (he : e ∈ S.eqns)
+private theorem Valid.reduction_dropTrivialEqn {S : State n} (hS : S.Valid f) {e : ℕ}
+    (he : e ∈ S.eqns)
     (hterms : (S.eqn e).terms = ∅) : Reduction f S (S.dropTrivialEqn e) ∅ [.inr e] [] where
   valid := hS.dropTrivialEqn he hterms
   subset := Finset.empty_subset _

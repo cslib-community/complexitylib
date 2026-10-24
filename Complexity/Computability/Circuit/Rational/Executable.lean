@@ -62,7 +62,7 @@ def inputTables (n N e : ℕ) (x : Fin 3 → ℕ) :
 def normalizedEntry {d : ℕ} (A B : Table d) (den : ℤ) (i j : Fin d) : ℚ :=
   Rat.divInt (determinant (tabulate ((denote A).updateCol i (fun r => denote B r j)))) den
 
-lemma normalizedEntry_spec {d : ℕ} (A B : Table d) (hA : (denote A).det ≠ 0) (i j : Fin d) :
+private lemma normalizedEntry_spec {d : ℕ} (A B : Table d) (hA : (denote A).det ≠ 0) (i j : Fin d) :
     normalizedEntry A B (determinant A) i j =
       (((denote A).map (Int.castRingHom ℚ))⁻¹ * (denote B).map (Int.castRingHom ℚ)) i j := by
   rw [normalizedEntry, determinant_eq, denote_tabulate, determinant_eq]
@@ -91,7 +91,7 @@ def atPoint (n N e : ℕ) (x : Fin 3 → ℕ) : Option (Tuple n (Generator.matri
   let den := determinant (A.get 0)
   if den = 0 then none else some (tuple (normalized A den))
 
-lemma U_det_eq_zero (n N e : ℕ) (x : Fin 3 → ℕ) :
+private lemma U_det_eq_zero (n N e : ℕ) (x : Fin 3 → ℕ) :
     (Generator.integralLift n N e x 0).det = 0 ↔ (Generator.rationalLift n N e x 0).det = 0 := by
   have he := congrArg Matrix.det (Generator.U_cast n N e x 0)
   rw [Matrix.det_smul] at he
@@ -132,7 +132,7 @@ def output (n N e H : ℕ) : Output n where
   dimension_pos := Nat.mul_pos (CyclotomicRing.dimension_pos e) (CyclotomicRing.degree_pos e)
   tuples := (Generator.grid H).filterMap fun x => atPoint n N e (fun i => (x i).val + 1)
 
-theorem output_spec (n N e H : ℕ) : output n N e H = Generator.output n N e H := by
+private theorem output_spec (n N e H : ℕ) : output n N e H = Generator.output n N e H := by
   simp only [output, Generator.output, atPoint_spec]
 
 /-- The executable hitting list for the selected parameter values. -/

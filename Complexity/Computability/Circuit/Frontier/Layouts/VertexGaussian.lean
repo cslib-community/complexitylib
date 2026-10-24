@@ -83,7 +83,7 @@ def crossingEvent (q : ℝ) (R : ℕ) (t : ℝ) (e : E) : Set (V → ℝ) :=
 
 variable {G} {q : ℝ} {R : ℕ}
 
-theorem measurable_vertexScore (q : ℝ) (R : ℕ) (v : V) :
+private theorem measurable_vertexScore (q : ℝ) (R : ℕ) (v : V) :
     Measurable fun ω => vertexScore G q R ω v := by
   unfold vertexScore
   fun_prop

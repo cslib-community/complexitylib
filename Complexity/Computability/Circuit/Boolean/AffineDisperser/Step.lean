@@ -52,7 +52,7 @@ variable {n : ℕ} {f : BooleanFunction n}
 
 /-- Lemma 4.2, by induction on the number of gates, the number of auxiliary inputs of the minimal
 gate and the number of its children reading one of its parameter inputs. -/
-theorem Valid.exists_step_aux {d : ℕ} (hf : IsAffineDisperser f d) :
+private theorem Valid.exists_step_aux {d : ℕ} (hf : IsAffineDisperser f d) :
     ∀ k₁ k₂ k₃ (S : State n), S.gates.card = k₁ → S.auxIn = k₂ → S.childIn = k₃ →
       S.Valid f → d < S.a → ∃ S', Step f S S' := by
   intro k₁

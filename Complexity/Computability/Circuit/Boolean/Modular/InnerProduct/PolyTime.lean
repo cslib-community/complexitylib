@@ -22,6 +22,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 Unary array count and word width generate all block selectors, complete product circuits and the
 balanced sum. Binary wire numbers and every generated code list are charged.
 
+## Main definitions
+
+* `Cslib.Circuits.Boolean.Modular.innerProductCode`: raw circuit code for the modular inner product.
+
 ## Main results
 
 * `Cslib.Circuits.Boolean.Modular.innerProductCode_eq_code`: exact raw and typed code agreement.

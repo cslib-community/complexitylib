@@ -161,7 +161,7 @@ theorem cyclic_labels_from_checkpoints (c : Circuit signature n n) (L : ℕ) (hL
     omega
 
 /-- The label construction is within `20000` times the fixed-power tradeoff. -/
-theorem labelCost_le (n s M L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^ n) (hM : M ≤ 2 ^ n / L) :
+private theorem labelCost_le (n s M L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^ n) (hM : M ≤ 2 ^ n / L) :
     labelCost n s M L ≤ 20000 * powerBudget n s (2 ^ n) L := by
   unfold labelCost powerBudget
   set N := 2 ^ n with hNdef
@@ -224,12 +224,13 @@ theorem cyclic_label_circuit (c : Circuit signature n n) (L : ℕ) (hL : 0 < L) 
   exact ⟨out, hout, hs.trans (labelCost_le _ _ _ _ hL hLN (by simpa using hcard))⟩
 
 /-- Moving a state onto its cycle with `f^[(2 ^ n)!]` does not change its label. -/
-theorem canonicalLabel_iterate_factorial (f : BitString n → BitString n) (x : BitString n) :
+private theorem canonicalLabel_iterate_factorial (f : BitString n → BitString n) (x : BitString n) :
     canonicalLabel f (f^[(2 ^ n).factorial] x) = canonicalLabel f x := by
   have hd := Nat.dvd_factorial (cycleLength_pos f x) (cycleLength_le_two_pow f x)
   simp only [canonicalLabel, canonicalCycle_iterate, cycleLength_iterate, phase_iterate,
     Nat.add_mod, Nat.mod_eq_zero_of_dvd hd, Nat.add_zero, Nat.mod_eq_of_lt (phase_lt f x)]
 
+/-- Iterating `f` on `BitString n` for `(2 ^ n)!` steps lands on a periodic point. -/
 theorem iterate_factorial_mem_periodicPts (f : BitString n → BitString n) (x : BitString n) :
     f^[(2 ^ n).factorial] x ∈ Function.periodicPts f := by
   apply (iterate_mem_periodicPts_iff f x _).mpr

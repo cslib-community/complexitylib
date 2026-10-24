@@ -87,7 +87,7 @@ section Finite
 variable [Finite ι] [Finite U]
 
 /-- Membership in `S` agrees with membership in `T` or with membership in `Tᶜ`. -/
-theorem agreement_add_agreement_compl [Nonempty U] (S T : Set (ι → U)) :
+private theorem agreement_add_agreement_compl [Nonempty U] (S T : Set (ι → U)) :
     agreement S T + agreement S Tᶜ = 1 := by
   have hN : (0 : ℝ) < Nat.card (ι → U) := by exact_mod_cast Nat.card_pos
   have hcompl : {x : ι → U | x ∈ S ↔ x ∈ Tᶜ} = {x | x ∈ S ↔ x ∈ T}ᶜ := by
@@ -325,7 +325,7 @@ theorem agreement_le_of_layout {S : Set (Fin n → U)} {K : ℕ} {b : ℝ}
 degree three have layouts of width at most `(A + η) β₁ + η |V| + C`. If the inputs a circuit of
 fan-in at most two does not read carry fewer than `K` assignments, its graph has a layout of
 width at most `(A + η) (s - n + log_q K + 1) + η |V| + C` for `s` inner gates. -/
-theorem exists_layout_le {A η C : ℝ} (hAη : 0 ≤ A + η)
+private theorem exists_layout_le {A η C : ℝ} (hAη : 0 ≤ A + η)
     (hC : ∀ (V E : Type) [Finite V] [Finite E] (G : Multigraph V E),
       G.toSimpleGraph.Connected → G.Loopless → G.MaxDegreeLE 3 →
         ∃ π : Layout V, (G.width π : ℝ) ≤ (A + η) * G.cycleRank + η * Nat.card V + C)

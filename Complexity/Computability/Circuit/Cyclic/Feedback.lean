@@ -53,7 +53,7 @@ def feedbackWire (feed : Fin k → Fin g) : Wire (n + k) g → Wire n g :=
   Wire.elim (Fin.addCases Wire.input (Wire.gate ∘ feed)) Wire.gate
 
 /-- Reading a feedback wire is reading the original wire with the selected gate values as state. -/
-theorem elim_feedbackWire (feed : Fin k → Fin g) (input : Fin n → U) (state : Fin g → U)
+private theorem elim_feedbackWire (feed : Fin k → Fin g) (input : Fin n → U) (state : Fin g → U)
     (wire : Wire (n + k) g) :
     Wire.elim input state (feedbackWire feed wire) =
       Wire.elim (Fin.append input (state ∘ feed)) state wire := by

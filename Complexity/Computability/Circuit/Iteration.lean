@@ -112,7 +112,7 @@ def stages (q : ℕ → Set ((Fin n → U) → U)) (t : ℕ) : Set ((Fin n → U
 @[simp] theorem stages_zero (q : ℕ → Set ((Fin n → U) → U)) : stages q 0 = q 0 := by
   simp [stages]
 
-theorem stages_succ (q : ℕ → Set ((Fin n → U) → U)) (t : ℕ) :
+private theorem stages_succ (q : ℕ → Set ((Fin n → U) → U)) (t : ℕ) :
     stages q (t + 1) = stages q t ∪ q (t + 1) := by
   simp [stages, Finset.range_add_one, Set.union_comm]
 

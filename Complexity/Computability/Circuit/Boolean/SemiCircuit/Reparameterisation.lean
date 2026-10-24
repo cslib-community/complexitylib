@@ -26,7 +26,8 @@ reparameterisations (AR) and (QR) of [Mishra and Santhanam, Section 3.2][MishraS
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.SemiCircuit.swap`, `Cslib.Circuits.Boolean.SemiCircuit.quad`.
+* `Cslib.Circuits.Boolean.SemiCircuit.swap`, `Cslib.Circuits.Boolean.SemiCircuit.quad`,
+  `Cslib.Circuits.Boolean.SemiCircuit.QuadOK`, `Cslib.Circuits.Boolean.SemiCircuit.quadValue`.
 
 ## Main results
 
@@ -61,7 +62,7 @@ theorem AffineIn.solve {Q x : ℕ} {c : Bool} {T : Finset ℕ} (h : C.AffineIn Q
   generalize val x = a; generalize ∑ j ∈ T.erase x, val j = b
   cases a <;> cases b <;> cases c <;> rfl
 
-theorem params_union_aux_swap {x Q : ℕ} (hx : x ∈ C.params) (hQ : Q ∈ C.aux) :
+private theorem params_union_aux_swap {x Q : ℕ} (hx : x ∈ C.params) (hQ : Q ∈ C.aux) :
     (C.swap x Q).params ∪ (C.swap x Q).aux = C.params ∪ C.aux := by
   ext i
   change i ∈ insert Q (C.params.erase x) ∪ insert x (C.aux.erase Q) ↔ _
@@ -71,7 +72,8 @@ theorem params_union_aux_swap {x Q : ℕ} (hx : x ∈ C.params) (hQ : Q ∈ C.au
     · subst hiQ; simp [hQ]
     · simp [hix, hiQ]
 
-theorem live_swap {x Q : ℕ} (hx : x ∈ C.params) (hQ : Q ∈ C.aux) : (C.swap x Q).live = C.live := by
+private theorem live_swap {x Q : ℕ} (hx : x ∈ C.params) (hQ : Q ∈ C.aux) :
+    (C.swap x Q).live = C.live := by
   change (C.swap x Q).params ∪ (C.swap x Q).aux ∪ C.gates = _
   rw [params_union_aux_swap hx hQ]
   rfl
@@ -147,6 +149,7 @@ theorem WellFormed.swap (hC : C.WellFormed) {x Q : ℕ} {c : Bool} {T : Finset �
 def quad (C : SemiCircuit) (z G D : ℕ) : SemiCircuit :=
   { C with params := insert D (C.params.erase z), gates := (C.gates.erase D).erase G }
 
+/-- Any live node of `C` distinct from `z` and `G` remains live in `C.quad z G D`. -/
 theorem mem_live_quad {z G D i : ℕ} (hi : i ∈ C.live) (hiz : i ≠ z) (hiG : i ≠ G) :
     i ∈ (C.quad z G D).live := by
   simp only [live, Finset.mem_union] at hi ⊢
@@ -182,18 +185,18 @@ namespace QuadOK
 variable {x y z G D : ℕ} {α β γ c : Bool} (h : C.QuadOK x y z G D α β γ c)
 include h
 
-theorem notMem_terms_z {e : ℕ} (he : e ∈ C.eqns) : z ∉ (C.eqn e).terms := fun hz => by
+private theorem notMem_terms_z {e : ℕ} (he : e ∈ C.eqns) : z ∉ (C.eqn e).terms := fun hz => by
   have : Sum.inr e ∈ C.children z := (inr_mem_children _).2 ⟨he, hz⟩
   rw [h.children_z] at this
   simp at this
 
-theorem not_reads_z {K : ℕ} (hK : K ∈ C.gates) (hKD : K ≠ D) : ¬ (C.gate K).Reads z :=
+private theorem not_reads_z {K : ℕ} (hK : K ∈ C.gates) (hKD : K ≠ D) : ¬ (C.gate K).Reads z :=
   fun hr => by
     have : Sum.inl K ∈ C.children z := (inl_mem_children _).2 ⟨hK, hr⟩
     rw [h.children_z] at this
     exact hKD (Sum.inl.inj (Finset.mem_singleton.1 this))
 
-theorem not_reads_G {K : ℕ} (hK : K ∈ C.gates) (hKD : K ≠ D) : ¬ (C.gate K).Reads G :=
+private theorem not_reads_G {K : ℕ} (hK : K ∈ C.gates) (hKD : K ≠ D) : ¬ (C.gate K).Reads G :=
   fun hr => by
     have : Sum.inl K ∈ C.children G := (inl_mem_children _).2 ⟨hK, hr⟩
     rw [h.children_G] at this

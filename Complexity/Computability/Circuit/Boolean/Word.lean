@@ -171,7 +171,7 @@ section Arithmetic
 variable (a b : BitString n → BitVec w)
 
 /-- One carry chain uses four gates per bit and its initial constant. -/
-theorem word_carry (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
+private theorem word_carry (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
     (hb : ∀ i : Fin w, (fun x => (b x).getLsbD i.val) ∈ s) (c : Bool) {t : ℕ} (ht : t ≤ w) :
     Synthesis interpretation s {fun x => BitVec.carry t (a x) (b x) c} (4 * t + 1) := by
   induction t with
@@ -188,7 +188,7 @@ theorem word_carry (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
     · omega
 
 /-- All carries of a sum, each computed once from the previous one. -/
-theorem word_carries (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
+private theorem word_carries (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
     (hb : ∀ i : Fin w, (fun x => (b x).getLsbD i.val) ∈ s) (c : Bool) :
     Synthesis interpretation s
       (stages (fun t => {fun x => BitVec.carry t (a x) (b x) c}) w) (4 * w + 1) := by

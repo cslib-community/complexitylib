@@ -85,7 +85,7 @@ theorem loopless : (graph c).Loopless := by
     rcases t with a | o <;> cases h
 
 /-- A gate has at most `r` argument slots when the fan-in is at most `r`. -/
-theorem ncard_slot_le {r : ℕ} (hfan : c.FanInAtMost r) (w : Wire n c.size) :
+private theorem ncard_slot_le {r : ℕ} (hfan : c.FanInAtMost r) (w : Wire n c.size) :
     {a : Slot c | Wire.gate a.1.1 = w}.ncard ≤ r := by
   calc {a : Slot c | Wire.gate a.1.1 = w}.ncard
       ≤ ((Finset.range r : Finset ℕ) : Set ℕ).ncard := by
@@ -98,7 +98,7 @@ theorem ncard_slot_le {r : ℕ} (hfan : c.FanInAtMost r) (w : Wire n c.size) :
     _ = r := by rw [ncard_coe_finset, Finset.card_range]
 
 /-- Two junctions fed by the same junction are equal. -/
-theorem eq_of_feeder_eq_junction :
+private theorem eq_of_feeder_eq_junction :
     ∀ {j₁ j₂ j : Junction c}, feeder j₁ = .junction j → feeder j₂ = .junction j → j₁ = j₂
   | ⟨_, ⟨0, _⟩⟩, _, _, h₁, _ => by cases h₁
   | ⟨_, ⟨_ + 1, _⟩⟩, ⟨_, ⟨0, _⟩⟩, _, _, h₂ => by cases h₂
@@ -166,7 +166,7 @@ theorem maxDegreeLE {r : ℕ} (hr : 2 ≤ r) (hfan : c.FanInAtMost r) :
 /-! ### Connectivity -/
 
 /-- The junctions of a signal are joined to its vertex along their chain. -/
-theorem reachable_junction_signal (w : Signal c) :
+private theorem reachable_junction_signal (w : Signal c) :
     ∀ (k : ℕ) (hk : k < fanout c w),
       (graph c).toSimpleGraph.Reachable (.junction ⟨w, ⟨k, hk⟩⟩) (.signal w)
   | 0, hk => ((graph c).reachable_src_tgt (.feed ⟨w, ⟨0, hk⟩⟩)).symm
@@ -174,12 +174,12 @@ theorem reachable_junction_signal (w : Signal c) :
       (reachable_junction_signal w k (by omega))
 
 /-- Every junction is joined to the vertex of its signal. -/
-theorem reachable_junction (j : Junction c) :
+private theorem reachable_junction (j : Junction c) :
     (graph c).toSimpleGraph.Reachable (.junction j) (.signal j.1) :=
   reachable_junction_signal j.1 j.2 j.2.isLt
 
 /-- The vertex of a signal is joined to each of its consumers. -/
-theorem reachable_owner (t : Consumer c) :
+private theorem reachable_owner (t : Consumer c) :
     (graph c).toSimpleGraph.Reachable (.signal (consumed t)) (owner t) := by
   have h := ((graph c).reachable_src_tgt (deliverEdge t)).symm
   rw [graph_tgt, tgt_deliverEdge] at h
@@ -187,7 +187,7 @@ theorem reachable_owner (t : Consumer c) :
   exact (h.trans (reachable_junction _)).symm
 
 /-- The vertex of every signal is joined to the vertex of some output. -/
-theorem exists_reachable_signal_output (w : Signal c) :
+private theorem exists_reachable_signal_output (w : Signal c) :
     ∃ o, (graph c).toSimpleGraph.Reachable (.signal w) (.output o) := by
   obtain ⟨w, hw⟩ := w
   induction hw with
@@ -197,7 +197,7 @@ theorem exists_reachable_signal_output (w : Signal c) :
     exact ⟨o, (reachable_owner (.inl ⟨⟨_, a⟩, hg⟩)).trans ho⟩
 
 /-- Every vertex is joined to the vertex of some output. -/
-theorem exists_reachable_output (v : Vertex c) :
+private theorem exists_reachable_output (v : Vertex c) :
     ∃ o, (graph c).toSimpleGraph.Reachable v (.output o) := by
   cases v with
   | signal w => exact exists_reachable_signal_output w
@@ -262,7 +262,7 @@ theorem ncard_readAt_le (v : Vertex c) : ((network c I Acc).readAt v).ncard ≤ 
   exact Wire.input.inj (congrArg Subtype.val (Vertex.signal.inj h))
 
 /-- The inputs read in a set of vertices are the reachable inputs whose vertex lies in it. -/
-theorem readIn_network (W : Set (Vertex c)) :
+private theorem readIn_network (W : Set (Vertex c)) :
     (network c I Acc).readIn W = {i | ∃ hi : Reach c (.input i), .signal ⟨.input i, hi⟩ ∈ W} := by
   ext i
   constructor
@@ -273,7 +273,7 @@ theorem readIn_network (W : Set (Vertex c)) :
     exact ⟨_, hv, site_of_reach hi⟩
 
 /-- Signals are reachable inputs and reachable gates. -/
-def signalEquiv :
+private def signalEquiv :
     Signal c ≃ {i : Fin n // Reach c (.input i)} ⊕ {g : Fin c.size // Reach c (.gate g)} where
   toFun
     | ⟨.input i, h⟩ => .inl ⟨i, h⟩
@@ -295,13 +295,14 @@ abbrev InnerGateIn (W : Set (Vertex c)) : Type :=
   {g : InnerGate c // Vertex.signal ⟨.gate g.1, g.2.1⟩ ∈ W}
 
 /-- The reachable inner gates are inner gates. -/
-theorem card_innerGate_le : Nat.card (InnerGate c) ≤ c.innerSize := by
+private theorem card_innerGate_le : Nat.card (InnerGate c) ≤ c.innerSize := by
   rw [Circuit.innerSize, ← Nat.card_eq_finsetCard]
   exact Nat.card_le_card_of_injective (fun g => ⟨g.1, Program.mem_innerGates.mpr g.2.2⟩)
     fun _ _ h => Subtype.ext (congrArg Subtype.val h :)
 
 /-- The reachable inner gates in `W` are inner gates. -/
-theorem card_innerGateIn_le (W : Set (Vertex c)) : Nat.card (InnerGateIn c W) ≤ c.innerSize :=
+private theorem card_innerGateIn_le (W : Set (Vertex c)) :
+    Nat.card (InnerGateIn c W) ≤ c.innerSize :=
   (Finite.card_subtype_le _).trans card_innerGate_le
 
 /-- There are at least as many reachable gates as reachable inner gates. -/
@@ -311,7 +312,7 @@ theorem card_innerGate_le_card_gate :
     Subtype.ext (congrArg Subtype.val h :)
 
 /-- There are at most `r` slots per reachable inner gate in `W`; constant gates have none. -/
-theorem card_slot_le {r : ℕ} (hfan : c.FanInAtMost r) (W : Set (Vertex c)) :
+private theorem card_slot_le {r : ℕ} (hfan : c.FanInAtMost r) (W : Set (Vertex c)) :
     Nat.card {t : Slot c // owner (.inl t) ∈ W} ≤ r * Nat.card (InnerGateIn c W) := by
   calc Nat.card {t : Slot c // owner (.inl t) ∈ W}
       ≤ Nat.card (InnerGateIn c W × Fin r) := by
@@ -331,17 +332,17 @@ theorem card_edge : Nat.card (Edge c) = 2 * Nat.card (Consumer c) := by
   rw [Nat.card_congr Edge.equiv, Nat.card_sum, Nat.card_congr (junctionEquiv c), two_mul]
 
 /-- There is one vertex per signal, per consumer, and per output. -/
-theorem card_vertex :
+private theorem card_vertex :
     Nat.card (Vertex c) = Nat.card (Signal c) + Nat.card (Consumer c) + m := by
   rw [Nat.card_congr Vertex.equiv, Nat.card_sum, Nat.card_sum, Nat.card_congr (junctionEquiv c),
     Nat.card_eq_fintype_card (α := Fin m), Fintype.card_fin, add_assoc]
 
 /-- The consumers are the argument slots of reachable gates and the outputs. -/
-theorem card_consumer : Nat.card (Consumer c) = Nat.card (Slot c) + m := by
+private theorem card_consumer : Nat.card (Consumer c) = Nat.card (Slot c) + m := by
   rw [Nat.card_sum, Nat.card_eq_fintype_card (α := Fin m), Fintype.card_fin]
 
 /-- Every signal has a consumer, so there are at least as many consumers as signals. -/
-theorem card_signal_le_card_consumer : Nat.card (Signal c) ≤ Nat.card (Consumer c) := by
+private theorem card_signal_le_card_consumer : Nat.card (Signal c) ≤ Nat.card (Consumer c) := by
   rw [← Nat.card_congr (junctionEquiv c)]
   exact Nat.card_le_card_of_injective (fun w => ⟨w, ⟨0, fanout_pos w⟩⟩) fun w w' h =>
     congrArg Sigma.fst h
@@ -401,7 +402,7 @@ private theorem ncard_readIn_add_card_le (W : Set (Vertex c)) :
 /-- **The count inside a closed set, gate by gate.** For fan-in at most `r`, the edges at a
 closed set of vertices `W` and the inputs read in `W` number at most `(r - 1) s_W` more than the
 vertices of `W`, where `s_W` counts the reachable inner gates in `W`. -/
-theorem ncard_touching_add_ncard_readIn_le_card_innerGateIn {r : ℕ} (hfan : c.FanInAtMost r)
+private theorem ncard_touching_add_ncard_readIn_le_card_innerGateIn {r : ℕ} (hfan : c.FanInAtMost r)
     {W : Set (Vertex c)} (hW : (graph c).edgeCut W = ∅) :
     ((graph c).touching W).ncard + ((network c I Acc).readIn W).ncard ≤
       W.ncard + (r - 1) * Nat.card (InnerGateIn c W) := by
@@ -443,7 +444,7 @@ theorem cycleRankOn_add_ncard_readIn_le {r : ℕ} (hfan : c.FanInAtMost r)
 /-- **The edge count.** For fan-in at most `r`, the edges of the graph and the inputs read by
 the network number at most `(r - 1) s` more than the vertices, where `s` counts the inner
 gates. This is the count inside the closed set of all vertices. -/
-theorem card_edge_add_ncard_read_le {r : ℕ} (hfan : c.FanInAtMost r) :
+private theorem card_edge_add_ncard_read_le {r : ℕ} (hfan : c.FanInAtMost r) :
     Nat.card (Edge c) + (network c I Acc).read.ncard ≤
       Nat.card (Vertex c) + (r - 1) * c.innerSize := by
   have h := ncard_touching_add_ncard_readIn_le I Acc hfan (graph c).edgeCut_univ

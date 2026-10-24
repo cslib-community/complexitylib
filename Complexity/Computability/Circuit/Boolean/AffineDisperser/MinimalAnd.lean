@@ -30,7 +30,8 @@ child.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.AffineDisperser.State.auxIn`,
+* `Cslib.Circuits.Boolean.AffineDisperser.State.auxArgs`,
+  `Cslib.Circuits.Boolean.AffineDisperser.State.auxIn`,
   `Cslib.Circuits.Boolean.AffineDisperser.State.childIn`: the measures of the restructuring.
 * `Cslib.Circuits.Boolean.AffineDisperser.State.MinimalAnd`: the minimal AND.
 
@@ -62,7 +63,7 @@ variable {n : ℕ} {f : BooleanFunction n}
 
 /-- An auxiliary variable of a valid state occurs in some equation: otherwise the affine system
 would not determine it. -/
-theorem Valid.exists_eqn_of_aux {S : State n} (hS : S.Valid f) {v : ℕ} (hv : v ∈ S.aux) :
+private theorem Valid.exists_eqn_of_aux {S : State n} (hS : S.Valid f) {v : ℕ} (hv : v ∈ S.aux) :
     ∃ e ∈ S.eqns, v ∈ (S.eqn e).terms := by
   by_contra hne
   push Not at hne
@@ -79,7 +80,7 @@ theorem Valid.exists_eqn_of_aux {S : State n} (hS : S.Valid f) {v : ℕ} (hv : v
 /-- The affine reparameterisation of an unpaired parameter `x` of degree at least two and an
 auxiliary variable `Q` of degree at least two depending on it is a preparatory operation: it keeps
 every child, and both weights are `7`. -/
-theorem Valid.preparation_swap {S : State n} (hS : S.Valid f) {x Q : ℕ} {c : Bool}
+private theorem Valid.preparation_swap {S : State n} (hS : S.Valid f) {x Q : ℕ} {c : Bool}
     {T : Finset ℕ} (hx : x ∈ S.unpaired) (hxdeg : 2 ≤ S.deg x) (hQ : Q ∈ S.aux)
     (hQdeg : 2 ≤ S.deg Q) (haff : S.AffineIn Q c T) (hxT : x ∈ T) :
     Preparation f S (S.swap x Q c T) := by
@@ -129,7 +130,7 @@ theorem Valid.preparation_swap {S : State n} (hS : S.Valid f) {x Q : ℕ} {c : B
 
 /-- Rewiring a gate to a gate reading only parameters of degree at least two is a preparatory
 operation: only those parameters may gain a child, and their weight is already `7`. -/
-theorem Valid.preparation_rewire {S : State n} (hS : S.Valid f) {J : ℕ} {g : Gate}
+private theorem Valid.preparation_rewire {S : State n} (hS : S.Valid f) {J : ℕ} {g : Gate}
     (h : S.RewireOK J g) (hdeg : ∀ t, g.Reads t → t ∈ S.unpaired → 2 ≤ S.deg t) :
     Preparation f S (S.rewire J g) := by
   refine ⟨hS.rewire h, rfl, rfl, rfl, ?_⟩
@@ -160,13 +161,14 @@ theorem Valid.preparation_rewire {S : State n} (hS : S.Valid f) {J : ℕ} {g : G
 
 /-! ### Degenerate minimal gates allow deletions -/
 
-theorem deletionAvailable_of_degenerate {S : State n} {J : ℕ} (hJ : J ∈ S.gates)
+private theorem deletionAvailable_of_degenerate {S : State n} {J : ℕ} (hJ : J ∈ S.gates)
     (h : (S.gate J).Degenerate) : S.DeletionAvailable :=
   Or.inr (Or.inl ⟨J, hJ, (S.gate J).lit, fun _ ht => Gate.reads_of_lit_reads ht,
     fun val _ => Gate.eval_lit h val⟩)
 
 /-- A gate one of whose inputs is constant on the solutions of the affine system allows (D1). -/
-theorem deletionAvailable_of_const_input {S : State n} {J t : ℕ} (hJ : J ∈ S.gates) {c : Bool}
+private theorem deletionAvailable_of_const_input {S : State n} {J t : ℕ} (hJ : J ∈ S.gates)
+    {c : Bool}
     (ht : (S.gate J).Reads t) (hc : ∀ val, S.EqnsHold val → val t = c) : S.DeletionAvailable := by
   refine Or.inr (Or.inl ⟨J, hJ, ?_⟩)
   rcases ht with ht | ht
@@ -183,7 +185,8 @@ theorem deletionAvailable_of_const_input {S : State n} {J t : ℕ} (hJ : J ∈ S
 
 /-- A gate whose inputs differ by a constant on the solutions of the affine system allows
 (D1). -/
-theorem deletionAvailable_of_dependent {S : State n} {J t t' : ℕ} (hJ : J ∈ S.gates) {c : Bool}
+private theorem deletionAvailable_of_dependent {S : State n} {J t t' : ℕ} (hJ : J ∈ S.gates)
+    {c : Bool}
     (hargs : ((S.gate J).left = .node t ∧ (S.gate J).right = .node t') ∨
       ((S.gate J).left = .node t' ∧ (S.gate J).right = .node t))
     (hc : ∀ val, S.EqnsHold val → val t' = (val t ^^ c)) : S.DeletionAvailable := by
@@ -203,7 +206,7 @@ theorem deletionAvailable_of_dependent {S : State n} {J t t' : ℕ} (hJ : J ∈ 
 /-! ### The minimal gate of a normal state -/
 
 /-- The output of a valid state with `d < a` is not a literal of an auxiliary variable. -/
-theorem Valid.not_out_reads_aux {S : State n} {d : ℕ} (hS : S.Valid f)
+private theorem Valid.not_out_reads_aux {S : State n} {d : ℕ} (hS : S.Valid f)
     (hf : IsAffineDisperser f d) (ha : d < S.a) {v : ℕ} (hv : v ∈ S.aux) : ¬ S.out.Reads v := by
   intro hr
   obtain ⟨c, T, hT⟩ := hS.wf.exists_affineIn hv
@@ -258,7 +261,8 @@ theorem Valid.exists_minGate {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAf
 /-- An auxiliary input `Q` of the minimal gate depends on a parameter `x` other than the other
 input; when no preliminary reduction applies, `x` is unpaired of degree at least two, and `Q` has
 degree at least two. -/
-theorem Valid.exists_param_of_aux_input {S : State n} (hS : S.Valid f) (hN : S.Normal) {G Q o : ℕ}
+private theorem Valid.exists_param_of_aux_input {S : State n} (hS : S.Valid f) (hN : S.Normal)
+    {G Q o : ℕ}
     (hG : G ∈ S.gates) (hargs : ((S.gate G).left = .node Q ∧ (S.gate G).right = .node o) ∨
       ((S.gate G).left = .node o ∧ (S.gate G).right = .node Q))
     (hQ : Q ∈ S.aux) (hQo : Q ≠ o) :
@@ -316,16 +320,16 @@ def childIn (S : State n) : ℕ :=
       ∃ t ∈ S.params, (S.gate (S.gates.min' h)).Reads t ∧ (S.gate K).Reads t).card
   else 0
 
-theorem auxIn_eq {S : State n} (hne : S.gates.Nonempty) :
+private theorem auxIn_eq {S : State n} (hne : S.gates.Nonempty) :
     S.auxIn = S.auxArgs (S.gate (S.gates.min' hne)) := by
   simp only [auxIn, dite_eq_left hne]
 
-theorem auxArgs_nodes (S : State n) {g : Gate} {t₁ t₂ : ℕ} (hl : g.left = .node t₁)
+private theorem auxArgs_nodes (S : State n) {g : Gate} {t₁ t₂ : ℕ} (hl : g.left = .node t₁)
     (hr : g.right = .node t₂) :
     S.auxArgs g = (if t₁ ∈ S.aux then 1 else 0) + (if t₂ ∈ S.aux then 1 else 0) := by
   simp only [auxArgs, hl, hr]
 
-theorem childIn_eq {S : State n} (hne : S.gates.Nonempty) :
+private theorem childIn_eq {S : State n} (hne : S.gates.Nonempty) :
     S.childIn = (S.gates.filter fun K => (S.gate K).Reads (S.gates.min' hne) ∧
       ∃ t ∈ S.params, (S.gate (S.gates.min' hne)).Reads t ∧ (S.gate K).Reads t).card := by
   simp only [childIn, dite_eq_left hne]
@@ -484,13 +488,17 @@ namespace MinimalAnd
 
 variable {S : State n} {G x y : ℕ}
 
+/-- The first input `x` of a minimal AND is a parameter of `S`. -/
 theorem mem_params_x (h : S.MinimalAnd G x y) : x ∈ S.params := (mem_unpaired.1 h.unpaired_x).1
 
+/-- The second input `y` of a minimal AND is a parameter of `S`. -/
 theorem mem_params_y (h : S.MinimalAnd G x y) : y ∈ S.params := (mem_unpaired.1 h.unpaired_y).1
 
+/-- The minimal AND gate `G` is a child of its first input `x`. -/
 theorem mem_children_x (h : S.MinimalAnd G x y) : Sum.inl G ∈ S.children x :=
   (SemiCircuit.inl_mem_children _).2 ⟨h.mem, (Gate.reads_of_args h.args).1⟩
 
+/-- The minimal AND gate `G` is a child of its second input `y`. -/
 theorem mem_children_y (h : S.MinimalAnd G x y) : Sum.inl G ∈ S.children y :=
   (SemiCircuit.inl_mem_children _).2 ⟨h.mem, (Gate.reads_of_args h.args).2⟩
 
@@ -500,6 +508,7 @@ theorem exists_op (h : S.MinimalAnd G x y) : ∃ φ : Bool → Bool → Bool, ¬
   obtain ⟨φ, hφ, hG⟩ := Gate.exists_op_of_args h.args
   exact ⟨φ, fun h' => h.and_op (hφ.1 h'), hG⟩
 
+/-- No parameter of a valid state is equal to its minimal AND gate `G`. -/
 theorem ne_gate (hS : S.Valid f) (h : S.MinimalAnd G x y) {u : ℕ} (hu : u ∈ S.params) : u ≠ G :=
   fun he => hS.wf.notMem_gates_of_mem_params hu (he ▸ h.mem)
 

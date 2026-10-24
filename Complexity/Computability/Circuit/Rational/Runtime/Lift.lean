@@ -66,7 +66,8 @@ namespace Rational
 
 /-! ### Magnitude bounds -/
 
-lemma natAbs_pow_le {z : ℤ} {H : ℕ} (hH : 1 ≤ H) (hz : z.natAbs ≤ H) {q M : ℕ} (hq : q ≤ M) :
+private lemma natAbs_pow_le {z : ℤ} {H : ℕ} (hH : 1 ≤ H) (hz : z.natAbs ≤ H) {q M : ℕ}
+    (hq : q ≤ M) :
     (z ^ q).natAbs ≤ H ^ M := by
   rw [Int.natAbs_pow]
   exact (Nat.pow_le_pow_left hz q).trans (Nat.pow_le_pow_right hH hq)
@@ -78,7 +79,8 @@ include hw hc
 
 /-- The coefficients of `(X + c) ^ k` are at most `(2 * w) ^ k` in absolute value, by
 `IntegralTest.coeff_bound`. -/
-theorem natAbs_getD_coeffRow_le (k i : ℕ) : ((coeffRow c k).getD i 0).natAbs ≤ (2 * w) ^ k := by
+private theorem natAbs_getD_coeffRow_le (k i : ℕ) :
+    ((coeffRow c k).getD i 0).natAbs ≤ (2 * w) ^ k := by
   have h := IntegralTest.coeff_bound c w k k i hw
     (by rw [Int.abs_eq_natAbs]; exact_mod_cast hc) le_rfl
   rw [← getD_coeffRow, Int.abs_eq_natAbs] at h
@@ -86,7 +88,7 @@ theorem natAbs_getD_coeffRow_le (k i : ℕ) : ((coeffRow c k).getD i 0).natAbs �
 
 /-- The values computed by the shift-and-add step from `coeffRow c k`: the shifted coefficient,
 the scaled coefficient and their sum. -/
-theorem natAbs_shiftAdd_le (k i : ℕ) :
+private theorem natAbs_shiftAdd_le (k i : ℕ) :
     ((0 :: coeffRow c k).getD i 0).natAbs ≤ (2 * w) ^ (k + 1) ∧
       (c * (coeffRow c k).getD i 0).natAbs ≤ (2 * w) ^ (k + 1) ∧
       ((0 :: coeffRow c k).getD i 0 + c * (coeffRow c k).getD i 0).natAbs ≤
@@ -103,7 +105,7 @@ theorem natAbs_shiftAdd_le (k i : ℕ) :
   · rw [← getD_shiftAddRow, ← coeffRow_succ]
     exact natAbs_getD_coeffRow_le hw hc (k + 1) i
 
-theorem natAbs_rowEntry_coeffRows_le (M k i : ℕ) :
+private theorem natAbs_rowEntry_coeffRows_le (M k i : ℕ) :
     (rowEntry (coeffRows c M) k i).natAbs ≤ (2 * w) ^ M := by
   rw [rowEntry_coeffRows]
   split_ifs with h
@@ -118,7 +120,7 @@ variable {M : ℕ} {a t : ℤ} {w H : ℕ} (hw : 1 ≤ w) (ha : a.natAbs ≤ w) 
   (ht : t.natAbs ≤ H)
 
 include hw ha in
-theorem natAbs_coeffProduct_le (k u v q : ℕ) :
+private theorem natAbs_coeffProduct_le (k u v q : ℕ) :
     (rowEntry (coeffRows (-a) M) k u * rowEntry (coeffRows a M) v q).natAbs ≤
       (2 * w) ^ (2 * M) := by
   rw [Int.natAbs_mul, show 2 * M = M + M by omega, pow_add]
@@ -127,21 +129,21 @@ theorem natAbs_coeffProduct_le (k u v q : ℕ) :
 
 include hw ha hH ht
 
-theorem natAbs_testTerm_le {q : ℕ} (hq : q ≤ M) (u v : ℕ) :
+private theorem natAbs_testTerm_le {q : ℕ} (hq : q ≤ M) (u v : ℕ) :
     (testTerm M (coeffRows (-a) M) (coeffRows a M) t u v q).natAbs ≤
       (2 * w) ^ (2 * M) * H ^ M := by
   rw [testTerm, Int.natAbs_mul]
   exact Nat.mul_le_mul (natAbs_coeffProduct_le hw ha ..) (natAbs_pow_le hH ht hq)
 
 /-- Every prefix sum of the summands of a Taylor entry. -/
-theorem natAbs_testTerms_take_sum_le (u v m : ℕ) :
+private theorem natAbs_testTerms_take_sum_le (u v m : ℕ) :
     ((testTerms M (coeffRows (-a) M) (coeffRows a M) t u v).take m).sum.natAbs ≤
       M * ((2 * w) ^ (2 * M) * H ^ M) := by
   refine natAbs_take_sum_le_of_length (by simp [testTerms]) (fun z hz => ?_) m
   obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hz
   exact natAbs_testTerm_le hw ha hH ht (List.mem_range.mp hq).le u v
 
-theorem natAbs_rowEntry_testRows_le (N u v : ℕ) :
+private theorem natAbs_rowEntry_testRows_le (N u v : ℕ) :
     (rowEntry (testRows M N a t) u v).natAbs ≤ M * ((2 * w) ^ (2 * M) * H ^ M) := by
   rw [testRows, rowEntry_tabulateRows]
   split_ifs
@@ -154,7 +156,7 @@ theorem natAbs_rowEntry_testRows_le (N u v : ℕ) :
 
 end TestBounds
 
-lemma natAbs_signedCoeff_le (Dg z i j : ℕ) : (signedCoeff Dg z i j).natAbs ≤ 1 := by
+private lemma natAbs_signedCoeff_le (Dg z i j : ℕ) : (signedCoeff Dg z i j).natAbs ≤ 1 := by
   unfold signedCoeff
   split_ifs <;> simp [Int.natAbs_pow]
 
@@ -165,47 +167,47 @@ variable {M Dg : ℕ} {T : List (List ℤ)} {p r : ℤ} {A H : ℕ}
 include hT
 
 /-- The partial products of a lift term, for any indices. -/
-theorem natAbs_liftPartial_le (k l z i j : ℕ) :
+private theorem natAbs_liftPartial_le (k l z i j : ℕ) :
     (rowEntry T k l * signedCoeff Dg z i j).natAbs ≤ A := by
   rw [Int.natAbs_mul]
   simpa using Nat.mul_le_mul (hT k l) (natAbs_signedCoeff_le Dg z i j)
 
 include hH hp
 
-theorem natAbs_liftPartial_pow_le (k l z i j : ℕ) {α : ℕ} (hα : α ≤ M) :
+private theorem natAbs_liftPartial_pow_le (k l z i j : ℕ) {α : ℕ} (hα : α ≤ M) :
     (rowEntry T k l * signedCoeff Dg z i j * p ^ α).natAbs ≤ A * H ^ M := by
   rw [Int.natAbs_mul]
   exact Nat.mul_le_mul (natAbs_liftPartial_le hT ..) (natAbs_pow_le hH hp hα)
 
 include hr
 
-theorem natAbs_liftTerm_le {α : ℕ} (hα : α < M) (u v i j κ : ℕ) :
+private theorem natAbs_liftTerm_le {α : ℕ} (hα : α < M) (u v i j κ : ℕ) :
     (liftTerm M Dg T p r u v i j α κ).natAbs ≤ A * H ^ (2 * M) := by
   rw [liftTerm, Int.natAbs_mul, show 2 * M = M + M by omega, pow_add, ← Nat.mul_assoc]
   exact Nat.mul_le_mul (natAbs_liftPartial_pow_le hT hH hp _ _ _ _ _ hα.le)
     (natAbs_pow_le hH hr (Nat.mod_lt _ (by omega)).le)
 
 /-- Every prefix sum of an inner sum of a lift entry. -/
-theorem natAbs_liftTerms_take_sum_le {α : ℕ} (hα : α < M) (u v i j m : ℕ) :
+private theorem natAbs_liftTerms_take_sum_le {α : ℕ} (hα : α < M) (u v i j m : ℕ) :
     ((liftTerms M Dg T p r u v i j α).take m).sum.natAbs ≤ M * (A * H ^ (2 * M)) := by
   refine natAbs_take_sum_le_of_length (by simp [liftTerms]) (fun z hz => ?_) m
   obtain ⟨κ, -, rfl⟩ := List.mem_map.mp hz
   exact natAbs_liftTerm_le hT hH hp hr hα u v i j κ
 
 /-- Every prefix sum of the outer sum of a lift entry. -/
-theorem natAbs_liftSums_take_sum_le (u v i j m : ℕ) :
+private theorem natAbs_liftSums_take_sum_le (u v i j m : ℕ) :
     ((liftSums M Dg T p r u v i j).take m).sum.natAbs ≤ M * (M * (A * H ^ (2 * M))) := by
   refine natAbs_take_sum_le_of_length (by simp [liftSums]) (fun z hz => ?_) m
   obtain ⟨α, hα, rfl⟩ := List.mem_map.mp hz
   have h := natAbs_liftTerms_take_sum_le (Dg := Dg) hT hH hp hr (List.mem_range.mp hα) u v i j M
   rwa [List.take_of_length_le (by simp [liftTerms])] at h
 
-theorem natAbs_liftEntry_le (u v i j : ℕ) :
+private theorem natAbs_liftEntry_le (u v i j : ℕ) :
     (liftEntry M Dg T p r u v i j).natAbs ≤ M * (M * (A * H ^ (2 * M))) := by
   have h := natAbs_liftSums_take_sum_le (M := M) (Dg := Dg) hT hH hp hr u v i j M
   rwa [List.take_of_length_le (by simp [liftSums])] at h
 
-theorem natAbs_rowEntry_liftTable_le (i j : ℕ) :
+private theorem natAbs_rowEntry_liftTable_le (i j : ℕ) :
     (rowEntry (liftTable M Dg T p r) i j).natAbs ≤ M * (M * (A * H ^ (2 * M))) := by
   rw [liftTable, rowEntry_tabulateRows]
   split_ifs
@@ -228,7 +230,7 @@ lemma liftBits_parameters (n s : ℕ) :
   rfl
 
 /-- At the generator's parameters, the bit-length budget is polynomial in `n + s + 1`. -/
-theorem liftBits_bound (n s : ℕ) :
+private theorem liftBits_bound (n s : ℕ) :
     liftBits n (Parameters.ambientDimension n s) (Parameters.gridSize n s) ≤
       PolynomialBounds.logConstant * (n + s + 1) ^ 22 + 2 := by
   rw [liftBits_parameters]
@@ -236,7 +238,7 @@ theorem liftBits_bound (n s : ℕ) :
 
 /-- Every value of magnitude at most `M ^ 3 * (2 * (n + 1)) ^ (2 * M) * H ^ (3 * M)` fits in the
 budget. -/
-theorem intBits_le_liftBits {n M H : ℕ} {z : ℤ}
+private theorem intBits_le_liftBits {n M H : ℕ} {z : ℤ}
     (hz : z.natAbs ≤ M ^ 3 * (2 * (n + 1)) ^ (2 * M) * H ^ (3 * M)) :
     intBits z ≤ liftBits n M H := by
   have hM : M ^ 3 ≤ 2 ^ (3 * M) := by
@@ -261,7 +263,7 @@ theorem intBits_le_liftBits {n M H : ℕ} {z : ℤ}
   exact (intBits_le_iff _ _).mpr hlt
 
 /-- Each factor of the magnitude bound can be weakened. -/
-lemma le_liftMagnitude {M w H i j k : ℕ} (hM : 1 ≤ M) (hw : 1 ≤ w) (hH : 1 ≤ H) (hi : i ≤ 3)
+private lemma le_liftMagnitude {M w H i j k : ℕ} (hM : 1 ≤ M) (hw : 1 ≤ w) (hH : 1 ≤ H) (hi : i ≤ 3)
     (hj : j ≤ 2 * M) (hk : k ≤ 3 * M) :
     M ^ i * (2 * w) ^ j * H ^ k ≤ M ^ 3 * (2 * w) ^ (2 * M) * H ^ (3 * M) := by
   gcongr

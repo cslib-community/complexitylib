@@ -121,13 +121,13 @@ theorem ofFn_substitute_frameWiring {n P : ℕ} (x : Fin n → Bool) (r : Fin P 
 noncomputable def framedSlice (L : Language Bool) (n P : ℕ) : BooleanFunction (n + P) :=
   fun y => L.slice (2 * n + 1 + P) (substitute (frameWiring n P) y)
 
-theorem framedSlice_append_eq_true {L : Language Bool} {n P : ℕ} (x : Fin n → Bool)
+private theorem framedSlice_append_eq_true {L : Language Bool} {n P : ℕ} (x : Fin n → Bool)
     (r : Fin P → Bool) :
     framedSlice L n P (Fin.append x r) = true ↔ frame (List.ofFn x) ++ List.ofFn r ∈ L := by
   rw [framedSlice, Language.slice_eq_true_iff, ofFn_substitute_frameWiring]
 
 /-- Framing costs at most two gates. -/
-theorem polynomiallyBounded_complexity_framedSlice {L : Language Bool} (hL : L ∈ PPoly)
+private theorem polynomiallyBounded_complexity_framedSlice {L : Language Bool} (hL : L ∈ PPoly)
     {p : ℕ → ℕ} (hp : PolynomiallyBounded p) :
     PolynomiallyBounded fun n => complexity interpretation (single (framedSlice L n (p n))) := by
   set q := fun N => complexity interpretation (single (L.slice N)) with hq

@@ -425,7 +425,7 @@ theorem eval_eq_of_inputSummary_eq (p : Program signature n g) {x y : Fin n → 
 
 /-- If `summary x` determines the direct input summary of `enc x y` for every `y`, then equal
 summaries force identical row functions `f x₁ = f x₂`. -/
-theorem f_eq_of_summary_eq {X Y α : Type*} (p : Program signature n g)
+private theorem f_eq_of_summary_eq {X Y α : Type*} (p : Program signature n g)
     (enc : X → Y → (Fin n → Bool)) (readout : (Fin g → Bool) → Bool) (f : X → Y → Bool)
     (summary : X → α)
     (hcomp : ∀ x y, readout (p.eval interpretation (enc x y)) = f x y)
@@ -476,7 +476,7 @@ def intSummary {ι : Type*} [Fintype ι] {r : ℕ} (R : Fin r → ι → ℤ) (u
 
 /-- Each row `a` of `intSummary R` takes at most `1 + ∑ i, (R a i).natAbs` values on the Boolean
 cube. -/
-theorem card_intSummary_le_prod {ι : Type*} [Fintype ι] [DecidableEq ι] {r : ℕ}
+private theorem card_intSummary_le_prod {ι : Type*} [Fintype ι] [DecidableEq ι] {r : ℕ}
     (R : Fin r → ι → ℤ) :
     (univ.image (intSummary R)).card ≤ ∏ a : Fin r, (1 + ∑ i : ι, (R a i).natAbs) := by
   have hle := card_image_le_of_factorsThrough (intSummary R)
@@ -553,7 +553,7 @@ private theorem pendingBiasTrace_add_eq_of_pendingBiasTrace_eq (p : Program sign
 /-- Under phased input access across cut `k`, the pending-bias state
 `pendingBiasTrace p (enc x y₀) k` at a reference right input `y₀` determines the entire row `f x`.
 -/
-theorem f_eq_of_pendingBiasTrace_eq_of_phased {X Y : Type*} (p : Program signature n g)
+private theorem f_eq_of_pendingBiasTrace_eq_of_phased {X Y : Type*} (p : Program signature n g)
     (enc : X → Y → (Fin n → Bool)) (readout : (Fin g → Bool) → Bool) (f : X → Y → Bool)
     (k : ℕ) (y₀ : Y)
     (hcomp : ∀ x y, readout (p.eval interpretation (enc x y)) = f x y)

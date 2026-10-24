@@ -96,17 +96,23 @@ section Components
 
 variable (p : Program signature n g)
 
+/-- An input `u` belongs to `componentInputs p c` if and only if its connected component in
+`supportGraph p` is `c`. -/
 @[simp]
 theorem mem_componentInputs {c : (supportGraph p).ConnectedComponent} {u : Fin n} :
     u ∈ componentInputs p c ↔ (supportGraph p).connectedComponentMk u = c := by
   classical
   simp [componentInputs]
 
+/-- Coercing `componentInputs p c` to a set yields the support `c.supp` of the connected component
+`c`. -/
 theorem coe_componentInputs (c : (supportGraph p).ConnectedComponent) :
     (componentInputs p c : Set (Fin n)) = c.supp := by
   ext u
   simp [mem_componentInputs, SimpleGraph.ConnectedComponent.mem_supp_iff]
 
+/-- A gate belongs to `componentGates p c` if and only if its input support is nonempty and
+contained in `componentInputs p c`. -/
 @[simp]
 theorem mem_componentGates {c : (supportGraph p).ConnectedComponent} {j : Fin g} :
     j ∈ componentGates p c ↔ inputSupport p j ≠ ∅ ∧ inputSupport p j ⊆ componentInputs p c := by
@@ -131,7 +137,7 @@ theorem sum_card_componentInputs : ∑ c, (componentInputs p c).card = n := by
   simpa [componentInputs] using h.symm
 
 open Classical in
-theorem pairwiseDisjoint_componentInputs :
+private theorem pairwiseDisjoint_componentInputs :
     ((univ : Finset (supportGraph p).ConnectedComponent) : Set _).PairwiseDisjoint
       (componentInputs p) := by
   intro c _ c' _ hcc'
@@ -141,7 +147,7 @@ theorem pairwiseDisjoint_componentInputs :
   exact hcc' (hu.symm.trans hu')
 
 open Classical in
-theorem pairwiseDisjoint_componentGates :
+private theorem pairwiseDisjoint_componentGates :
     ((univ : Finset (supportGraph p).ConnectedComponent) : Set _).PairwiseDisjoint
       (componentGates p) := by
   intro c _ c' _ hcc'
@@ -155,7 +161,7 @@ theorem pairwiseDisjoint_componentGates :
 
 open Classical in
 /-- The input-reading gates are partitioned by the connected components of `supportGraph p`. -/
-theorem inputGates_eq_biUnion_componentGates :
+private theorem inputGates_eq_biUnion_componentGates :
     inputGates p = univ.biUnion (componentGates p) := by
   ext j
   simp only [mem_biUnion, mem_univ, true_and, mem_componentGates, ← inputSupport_ne_empty_iff]
@@ -408,12 +414,15 @@ noncomputable def residualGates (p : Program signature n g) (F b : Finset (Fin n
     Finset (Fin g) :=
   univ.filter fun j => ¬ inputSupport p j ⊆ F ∧ inputSupport p j \ F ⊆ b
 
+/-- A gate belongs to `residualGates p F b` if and only if its input support is not contained in
+`F` and its residual support outside `F` is contained in `b`. -/
 @[simp]
 theorem mem_residualGates (p : Program signature n g) (F b : Finset (Fin n)) (j : Fin g) :
     j ∈ residualGates p F b ↔ ¬ inputSupport p j ⊆ F ∧ inputSupport p j \ F ⊆ b := by
   classical
   simp [residualGates]
 
+/-- Every gate in `residualGates p F b` belongs to `inputGates p`. -/
 theorem residualGates_subset_inputGates (p : Program signature n g) (F b : Finset (Fin n)) :
     residualGates p F b ⊆ inputGates p := by
   intro j hj
@@ -421,7 +430,7 @@ theorem residualGates_subset_inputGates (p : Program signature n g) (F b : Finse
   rw [← inputSupport_ne_empty_iff]
   exact fun h0 => hj.1 (h0 ▸ empty_subset F)
 
-theorem disjoint_residualGates (p : Program signature n g) (F : Finset (Fin n))
+private theorem disjoint_residualGates (p : Program signature n g) (F : Finset (Fin n))
     {b b' : Finset (Fin n)} (hbb' : Disjoint b b') :
     Disjoint (residualGates p F b) (residualGates p F b') := by
   rw [disjoint_left]
@@ -434,7 +443,7 @@ theorem disjoint_residualGates (p : Program signature n g) (F : Finset (Fin n))
 
 /-- Over pairwise disjoint blocks `𝓑`, the total number of residual gates is at most
 `(inputGates p).card`. -/
-theorem sum_card_residualGates_le (p : Program signature n g) (F : Finset (Fin n))
+private theorem sum_card_residualGates_le (p : Program signature n g) (F : Finset (Fin n))
     (𝓑 : Finset (Finset (Fin n))) (hdisj : (𝓑 : Set (Finset (Fin n))).PairwiseDisjoint id) :
     ∑ b ∈ 𝓑, (residualGates p F b).card ≤ (inputGates p).card := by
   classical

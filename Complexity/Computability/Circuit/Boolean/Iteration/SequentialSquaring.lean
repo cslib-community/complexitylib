@@ -64,7 +64,7 @@ theorem carmichael_pos (M : ℕ) : 0 < carmichael M :=
   Nat.pos_of_ne_zero Monoid.exponent_ne_zero_of_finite
 
 /-- Modulo a prime divisor `p` of `M`, every residue satisfies `y ^ (λ(M) + 1) = y`. -/
-theorem pow_carmichael_succ_prime {M p : ℕ} [NeZero M] (hp : p.Prime) (hpM : p ∣ M)
+private theorem pow_carmichael_succ_prime {M p : ℕ} [NeZero M] (hp : p.Prime) (hpM : p ∣ M)
     (y : ZMod p) : y ^ (carmichael M + 1) = y := by
   have := Fact.mk hp
   by_cases hy : y = 0
@@ -96,7 +96,7 @@ theorem pow_carmichael_succ {M : ℕ} (hM : Squarefree M) (x : ZMod M) :
   rwa [Nat.prod_primeFactors_of_squarefree hM] at key
 
 /-- Adding a multiple of `λ(M)` to a positive exponent does not change the power map. -/
-theorem pow_add_mul_carmichael {M : ℕ} (hM : Squarefree M) (x : ZMod M) {a : ℕ}
+private theorem pow_add_mul_carmichael {M : ℕ} (hM : Squarefree M) (x : ZMod M) {a : ℕ}
     (ha : 1 ≤ a) (k : ℕ) : x ^ (a + carmichael M * k) = x ^ a := by
   induction k with
   | zero => simp

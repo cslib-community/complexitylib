@@ -105,6 +105,7 @@ def andreev (b m : ℕ) : BooleanFunction (2 ^ b + b * m) :=
   fun w => w (andreevTableIndex b m
     (BitString.equivFin b fun j => parity m fun t => w (andreevBlockVar b m j t)))
 
+/-- Within each block `j`, the block variable map `andreevBlockVar b m j` is injective. -/
 theorem andreevBlockVar_injective (b m : ℕ) (j : Fin b) :
     Function.Injective (andreevBlockVar b m j) := by
   intro t₁ t₂ h
@@ -112,6 +113,7 @@ theorem andreevBlockVar_injective (b m : ℕ) (j : Fin b) :
   have h2 := finProdFinEquiv.injective h1
   exact (Prod.ext_iff.1 h2).2
 
+/-- Each parity block `andreevBlock b m j` has cardinality `m`. -/
 @[simp] theorem card_andreevBlock (b m : ℕ) (j : Fin b) :
     #(andreevBlock b m j) = m := by
   rw [andreevBlock, card_image_of_injective _ (andreevBlockVar_injective b m j), card_univ,
@@ -123,22 +125,27 @@ def andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
     PartialAssignment (Fin (2 ^ b + b * m)) :=
   Fin.addCases (fun idx => some (h ((BitString.equivFin b).symm idx))) (fun _ => none)
 
+/-- `andreevFixTable b m h` fixes the `idx`-th truth-table coordinate to the value of `h` at
+`idx`. -/
 @[simp] theorem andreevFixTable_tableIndex (b m : ℕ) (h : BooleanFunction b)
     (idx : Fin (2 ^ b)) :
     andreevFixTable b m h (andreevTableIndex b m idx) =
       some (h ((BitString.equivFin b).symm idx)) := by
   simp [andreevFixTable, andreevTableIndex]
 
+/-- `andreevFixTable b m h` leaves every coordinate past the first `2 ^ b` truth-table bits
+free. -/
 @[simp] theorem andreevFixTable_natAdd (b m : ℕ) (h : BooleanFunction b) (u : Fin (b * m)) :
     andreevFixTable b m h (Fin.natAdd (2 ^ b) u) = none := by
   simp [andreevFixTable]
 
+/-- `andreevFixTable b m h` leaves every block variable `andreevBlockVar b m j t` free. -/
 @[simp] theorem andreevFixTable_blockVar (b m : ℕ) (h : BooleanFunction b)
     (j : Fin b) (t : Fin m) :
     andreevFixTable b m h (andreevBlockVar b m j t) = none := by
   simp [andreevBlockVar]
 
-theorem free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
+private theorem free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
     (andreevFixTable b m h).free = univ.image (Fin.natAdd (2 ^ b)) := by
   ext i
   simp only [PartialAssignment.mem_free, mem_image, mem_univ, true_and]
@@ -148,11 +155,14 @@ theorem free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
   · rintro ⟨u, rfl⟩
     exact andreevFixTable_natAdd b m h u
 
+/-- `andreevFixTable b m h` has `b * m` free variables. -/
 @[simp] theorem card_free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
     #(andreevFixTable b m h).free = b * m := by
   rw [free_andreevFixTable, card_image_of_injective _ (Fin.natAdd_injective (b * m) (2 ^ b)),
     card_univ, Fintype.card_fin]
 
+/-- Every parity block `andreevBlock b m j` is contained in the free variables of
+`andreevFixTable b m h`. -/
 theorem andreevBlock_subset_free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) (j : Fin b) :
     andreevBlock b m j ⊆ (andreevFixTable b m h).free := by
   intro i hi
@@ -161,7 +171,7 @@ theorem andreevBlock_subset_free_andreevFixTable (b m : ℕ) (h : BooleanFunctio
 
 /-- Under any extension `ρ` of `andreevFixTable b m h`, Andreev's function evaluates `h` on the
 block parities of `ρ.fill w`. -/
-theorem andreev_fill_of_extends {h : BooleanFunction b}
+private theorem andreev_fill_of_extends {h : BooleanFunction b}
     {ρ : PartialAssignment (Fin (2 ^ b + b * m))} (hext : ρ.Extends (andreevFixTable b m h))
     (w : BitString (2 ^ b + b * m)) :
     andreev b m (ρ.fill w) =
@@ -305,7 +315,7 @@ theorem formulaSize_sub_sq_mul_pow_three_le_andreev (h : BooleanFunction b) (hb 
 
 /-- Specialization of Andreev's reduction to `r = Nat.log 2 b + 2`, for which `2 * b ≤ 2 ^ r`
 always holds. -/
-theorem formulaSize_sub_sq_mul_pow_three_le_andreev_log (h : BooleanFunction b) (hb : 1 ≤ b)
+private theorem formulaSize_sub_sq_mul_pow_three_le_andreev_log (h : BooleanFunction b) (hb : 1 ≤ b)
     {m : ℕ} (hm : Nat.log 2 b + 2 ≤ m) :
     (formulaSize h - 2 * b * (Nat.log 2 b + 2)) ^ 2 * m ^ 3 ≤
       4 * formulaSize (andreev b m) ^ 2 * (Nat.log 2 b + 2) ^ 3 := by

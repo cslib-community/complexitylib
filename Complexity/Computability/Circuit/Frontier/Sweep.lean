@@ -156,14 +156,14 @@ theorem one_le_ncard_futureSide [Finite ι] [Finite U] {x : ι → U} (hx : x �
   (ncard_pos (toFinite _)).mpr ⟨_, x, ⟨hx, rfl⟩, rfl⟩
 
 /-- At the start nothing is revealed, so there is at most one revealed part. -/
-theorem ncard_pastSide_zero_le (x : ι → U) : (P.pastSide 0 x).ncard ≤ 1 := by
+private theorem ncard_pastSide_zero_le (x : ι → U) : (P.pastSide 0 x).ncard ≤ 1 := by
   have : Subsingleton (P.revealed 0 → U) :=
     ⟨fun a b => funext fun i => absurd i.2 (by simp [P.revealed_zero])⟩
   exact (ncard_le_one (toFinite _)).mpr fun a _ b _ => Subsingleton.elim a b
 
 /-- At the end everything is revealed and every input of `S` is a peer, so the revealed parts
 are as numerous as `S`. -/
-theorem ncard_pastSide_length {x : ι → U} (hx : x ∈ S) :
+private theorem ncard_pastSide_length {x : ι → U} (hx : x ∈ S) :
     (P.pastSide P.length x).ncard = S.ncard := by
   have hpeers : P.peers P.length x = S :=
     subset_antisymm (fun _ hy => hy.1) fun y hy => ⟨hy, P.message_length y hy x hx⟩
@@ -173,7 +173,7 @@ theorem ncard_pastSide_length {x : ι → U} (hx : x ∈ S) :
 
 /-- The time at which `x` is charged: the first time its peers have at least `K` distinct
 revealed parts. -/
-noncomputable def chargeTime (K : ℕ) (x : ι → U) : ℕ :=
+private noncomputable def chargeTime (K : ℕ) (x : ι → U) : ℕ :=
   sInf {t | K ≤ (P.pastSide t x).ncard}
 
 /-- **The charging argument.** If at every time up to the end each input of `S` has fewer than

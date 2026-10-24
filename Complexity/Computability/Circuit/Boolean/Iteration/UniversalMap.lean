@@ -46,7 +46,12 @@ handled by the same hardwiring argument.
 * `Cslib.Circuits.Boolean.Iteration.Universal.Description`: straight-line program description held
   in the state of the universal step map.
 * `Cslib.Circuits.Boolean.Iteration.Universal.Config`: configuration of the universal step map.
+* `Cslib.Circuits.Boolean.Iteration.Universal.read`: register lookup by natural-number index.
 * `Cslib.Circuits.Boolean.Iteration.Universal.step`: one step of the universal step map.
+* `Cslib.Circuits.Boolean.Iteration.Universal.wireIndex`,
+  `Cslib.Circuits.Boolean.Iteration.Universal.describe`,
+  `Cslib.Circuits.Boolean.Iteration.Universal.start`: encoding a circuit into a program description
+  and initial universal configuration.
 
 ## Main results
 
@@ -93,7 +98,7 @@ def hardwired {n m : ℕ} (place : Fin m → Fin n ⊕ Bool) (x : BitString n) :
   fun j => Sum.elim x id (place j)
 
 /-- Hardwiring constants and duplicating or permuting inputs costs the two constants. -/
-theorem exists_hardwired_comp {n m p : ℕ} (u : Circuit signature m p)
+private theorem exists_hardwired_comp {n m p : ℕ} (u : Circuit signature m p)
     (place : Fin m → Fin n ⊕ Bool) :
     ∃ d : Circuit signature n p,
       (∀ x, d.eval interpretation x = u.eval interpretation (hardwired place x)) ∧
@@ -105,7 +110,7 @@ theorem exists_hardwired_comp {n m p : ℕ} (u : Circuit signature m p)
     exact le_rfl
 
 /-- Hardwire constants, run `u`, and read selected output wires. -/
-theorem exists_hardwired_projection {n m p k : ℕ} (u : Circuit signature m p)
+private theorem exists_hardwired_projection {n m p k : ℕ} (u : Circuit signature m p)
     (place : Fin m → Fin n ⊕ Bool) (select : Fin k → Fin p) :
     ∃ d : Circuit signature n k,
       (∀ x, d.eval interpretation x =
@@ -337,7 +342,7 @@ def start (D : Description σ n G) (x : Fin n → V) : Config σ V n G :=
   ⟨D, x, fun _ => default, 0⟩
 
 /-- The widened lines of a program read only earlier gates. -/
-theorem lines_wire_lt {g : ℕ} (p : Program σ n g) (j : Fin g) :
+private theorem lines_wire_lt {g : ℕ} (p : Program σ n g) (j : Fin g) :
     ∀ (a : Fin (σ.Arity (p.lines j).op)) (b : Fin g),
       (p.lines j).wires a = Wire.gate b → b.val < j.val := by
   induction p with
@@ -370,7 +375,7 @@ theorem lines_wire_lt {g : ℕ} (p : Program σ n g) (j : Fin g) :
         simpa using ih j a b' hw
 
 /-- Reading a wire by its index, from work registers that hold the gate values. -/
-theorem read_wireIndex {g : ℕ} (x : Fin n → V) (w : Fin G → V) (e : Fin g → V)
+private theorem read_wireIndex {g : ℕ} (x : Fin n → V) (w : Fin G → V) (e : Fin g → V)
     (wire : Wire n g) (hlt : ∀ b : Fin g, wire = Wire.gate b → b.val < G)
     (hw : ∀ (b : Fin g) (h : b.val < G), wire = Wire.gate b → w ⟨b, h⟩ = e b) :
     read x w (wireIndex wire) = Wire.elim x e wire := by

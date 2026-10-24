@@ -205,7 +205,7 @@ theorem depth_from_checkpoints (c : Circuit signature n n) (L : ℕ) (hL : 0 < L
     nlinarith
 
 /-- The depth construction is within `50000` times the fixed-power tradeoff. -/
-theorem depthCost_le (n s M L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^ n) (hM : M ≤ 2 ^ n / L) :
+private theorem depthCost_le (n s M L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^ n) (hM : M ≤ 2 ^ n / L) :
     depthCost n s M L ≤ 50000 * powerBudget n s (2 ^ n) L := by
   unfold depthCost powerBudget
   set N := 2 ^ n with hNdef

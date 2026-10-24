@@ -100,7 +100,7 @@ open Finset
 
 /-- Synthesize a simultaneous modular test without increasing the comparison
 depth. The bound counts all ordered pairs, including harmless diagonal pairs. -/
-theorem exists_test_altFormula {n d B M : ℕ} {ι : Type*} [Fintype ι]
+private theorem exists_test_altFormula {n d B M : ℕ} {ι : Type*} [Fintype ι]
     (k : ι → ℕ) [∀ i, NeZero (k i)]
     (ih : ∀ m ≤ M, ∀ a : ℕ → Bool,
       ∃ f : AltFormula m (d + 2), AltFormula.size f ≤ B ∧

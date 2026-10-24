@@ -126,7 +126,7 @@ theorem eval_propagateCircuit_eq_true_iff {count : ℕ} (source link : BitString
         links ⟨index, hindex⟩ after (Nat.le_of_lt_succ before)
 
 /-- Each prefix contributes one AND and one OR, independently of the input links. -/
-theorem cost_propagateCircuit_program (count processed : ℕ) (fits : processed ≤ count)
+private theorem cost_propagateCircuit_program (count processed : ℕ) (fits : processed ≤ count)
     (cost : signature.Op → ℕ) :
     (program count processed fits).cost cost =
       cost (.const false) + processed * (cost .and + cost .or) := by

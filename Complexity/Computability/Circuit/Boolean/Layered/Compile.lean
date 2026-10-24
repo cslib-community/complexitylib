@@ -24,6 +24,9 @@ Output selection is separate wiring, so an empty schedule preserves depth-zero c
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.Layered.carry`, `Cslib.Circuits.Boolean.Layered.prepareFirst`,
+  `Cslib.Circuits.Boolean.Layered.prepareSecond`, `Cslib.Circuits.Boolean.Layered.finish`:
+  per-node microlevel constructors for carrying wires and decomposing De Morgan gates into NANDs.
 * `Cslib.Circuits.Boolean.Layered.prepareLayer`: prepare one depth's NAND intermediates.
 * `Cslib.Circuits.Boolean.Layered.finishLayer`: finish gates at that depth and carry older wires.
 * `Cslib.Circuits.Boolean.Layered.schedule`: two consecutive layers per original depth.
@@ -110,15 +113,18 @@ abbrev encCompiled : List (List Node) × List ℕ ↪ List Bool :=
   Turing.MultiTapeTM.encPair (Turing.MultiTapeTM.encList (Turing.MultiTapeTM.encList encNode))
     (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encNat)
 
+/-- `compile` preserves the designated output wire indices unchanged. -/
 @[simp] theorem compile_outputs (inputCount : ℕ) (code : List (Op × List ℕ) × List ℕ) :
     (compile inputCount code).2 = code.2 := rfl
 
+/-- Every preparation layer has width `inputCount + 3 * gates.length`. -/
 @[simp] theorem length_prepareLayer (inputCount : ℕ) (gates : List (Op × List ℕ))
     (depths : List ℕ) (level : ℕ) :
     (prepareLayer inputCount gates depths level).length = inputCount + 3 * gates.length := by
   simp only [prepareLayer, List.length_append, List.length_map, List.length_range]
   omega
 
+/-- Every finishing layer has width `inputCount + 3 * gates.length`. -/
 @[simp] theorem length_finishLayer (inputCount : ℕ) (gates : List (Op × List ℕ))
     (depths : List ℕ) (level : ℕ) :
     (finishLayer inputCount gates depths level).length = inputCount + 3 * gates.length := by
@@ -126,9 +132,12 @@ abbrev encCompiled : List (List Node) × List ℕ ↪ List Bool :=
     List.length_replicate]
   omega
 
+/-- At depth zero, the compiled schedule is empty. -/
 @[simp] theorem schedule_zero (inputCount : ℕ) (gates : List (Op × List ℕ)) (depths : List ℕ) :
     schedule inputCount gates depths 0 = [] := rfl
 
+/-- Scheduling `depth + 1` levels appends the preparation and finishing layers for level
+`depth + 1`. -/
 theorem schedule_succ (inputCount : ℕ) (gates : List (Op × List ℕ)) (depths : List ℕ)
     (depth : ℕ) :
     schedule inputCount gates depths (depth + 1) = schedule inputCount gates depths depth ++

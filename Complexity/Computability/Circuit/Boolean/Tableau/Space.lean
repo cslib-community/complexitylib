@@ -191,6 +191,7 @@ private theorem globStart_inSpace :
 
 omit [DecidableEq State] in
 omit hT hin in
+/-- Computing `gfStart k State (T x)` within space budget `Bs`. -/
 theorem gfStart_inSpace (hT : ComputableInSpace T encIn encNat Bs)
     (hin : (fun x => (encIn x).length) ≼ Bs) :
     ComputableInSpace (fun x => gfStart k State (T x)) encIn encNat Bs := by
@@ -206,6 +207,7 @@ private theorem colStart_inSpace :
 
 omit [DecidableEq State] in
 omit hT hin in
+/-- Computing `blockSize k State (T x)` within space budget `Bs`. -/
 theorem blockSize_inSpace (hT : ComputableInSpace T encIn encNat Bs)
     (hin : (fun x => (encIn x).length) ≼ Bs) :
     ComputableInSpace (fun x => blockSize k State (T x)) encIn encNat Bs := by
@@ -214,9 +216,11 @@ theorem blockSize_inSpace (hT : ComputableInSpace T encIn encNat Bs)
   exact budget_natAdd (colStart_inSpace (k := k) (State := State) hT hin)
     (budget_natMul (numCols_inSpace hT hin) (budget_const _ hin))
 
+/-- Explicit finite enumeration of `ColSel`. -/
 instance : FinEnum ColSel :=
   FinEnum.ofList [.same, .prev, .next, .last] fun x => by cases x <;> decide
 
+/-- Explicit finite enumeration of `Guard`. -/
 instance : FinEnum Guard :=
   FinEnum.ofList [.always, .pos, .ltLast, .inRange, .outRange, .isZero, .isEnd, .leEnd]
     fun x => by cases x <;> decide

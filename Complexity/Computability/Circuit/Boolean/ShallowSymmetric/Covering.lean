@@ -39,7 +39,7 @@ as in the paper. The resulting density `k! / k^k` still gives the required expon
 namespace Cslib.Circuits.Boolean.ShallowSymmetric
 
 /-- A convenient elementary form of the factorial estimate; no asymptotics. -/
-theorem pow_self_le_three_pow_mul_factorial (k : ℕ) :
+private theorem pow_self_le_three_pow_mul_factorial (k : ℕ) :
     k ^ k ≤ 3 ^ k * k.factorial := by
   have h := Real.pow_div_factorial_le_exp (x := (k : ℝ)) (by positivity) k
   have he : Real.exp (k : ℝ) ≤ (3 : ℝ) ^ k := by

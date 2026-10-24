@@ -38,14 +38,26 @@ block position (`div_mod_wire`, `exists_wire_eq`).
 
 * `Cslib.Circuits.Boolean.Tableau.Attr`, `Cslib.Circuits.Boolean.Tableau.ColFeat`,
   `Cslib.Circuits.Boolean.Tableau.GFeat`, `Cslib.Circuits.Boolean.Tableau.ScanQ`,
-  `Cslib.Circuits.Boolean.Tableau.ScanLoc`, `Cslib.Circuits.Boolean.Tableau.GlobLoc`,
-  `Cslib.Circuits.Boolean.Tableau.Loc`: positions within a tableau block.
-* `Cslib.Circuits.Boolean.Tableau.ColSel`, `Cslib.Circuits.Boolean.Tableau.Guard`,
-  `Cslib.Circuits.Boolean.Tableau.Ref`: symbolic wire references relative to a block and column.
-* `Cslib.Circuits.Boolean.Tableau.blockSize`, `Cslib.Circuits.Boolean.Tableau.numGates`,
-  `Cslib.Circuits.Boolean.Tableau.Loc.offset`, `Cslib.Circuits.Boolean.Tableau.wire`,
-  `Cslib.Circuits.Boolean.Tableau.Ref.resolve`: numerical layout and wire resolution.
-* `Cslib.Circuits.Boolean.Tableau.ScanLoc.ofIdx`, `Cslib.Circuits.Boolean.Tableau.GlobLoc.ofIdx`,
+  `Cslib.Circuits.Boolean.Tableau.ScanLoc`, `Cslib.Circuits.Boolean.Tableau.numSit`,
+  `Cslib.Circuits.Boolean.Tableau.GlobLoc`, `Cslib.Circuits.Boolean.Tableau.Loc`,
+  `Cslib.Circuits.Boolean.Tableau.Loc.ColOK`: positions within a tableau block.
+* `Cslib.Circuits.Boolean.Tableau.ColSel`, `Cslib.Circuits.Boolean.Tableau.ColSel.apply`,
+  `Cslib.Circuits.Boolean.Tableau.Guard`, `Cslib.Circuits.Boolean.Tableau.Guard.test`,
+  `Cslib.Circuits.Boolean.Tableau.Ref`, `Cslib.Circuits.Boolean.Tableau.Ref.toData`,
+  `Cslib.Circuits.Boolean.Tableau.colF`, `Cslib.Circuits.Boolean.Tableau.gfF`,
+  `Cslib.Circuits.Boolean.Tableau.act`, `Cslib.Circuits.Boolean.Tableau.halted`,
+  `Cslib.Circuits.Boolean.Tableau.scanAt`: symbolic wire references relative to a block and column.
+* `Cslib.Circuits.Boolean.Tableau.symIdx`, `Cslib.Circuits.Boolean.Tableau.attrIdx`,
+  `Cslib.Circuits.Boolean.Tableau.gadgetIdx`, `Cslib.Circuits.Boolean.Tableau.scanWidth`,
+  `Cslib.Circuits.Boolean.Tableau.globWidth`, `Cslib.Circuits.Boolean.Tableau.gfWidth`,
+  `Cslib.Circuits.Boolean.Tableau.colWidth`, `Cslib.Circuits.Boolean.Tableau.numCols`,
+  `Cslib.Circuits.Boolean.Tableau.globStart`, `Cslib.Circuits.Boolean.Tableau.gfStart`,
+  `Cslib.Circuits.Boolean.Tableau.colStart`, `Cslib.Circuits.Boolean.Tableau.blockSize`,
+  `Cslib.Circuits.Boolean.Tableau.numGates`, `Cslib.Circuits.Boolean.Tableau.Loc.offset`,
+  `Cslib.Circuits.Boolean.Tableau.wire`, `Cslib.Circuits.Boolean.Tableau.Ref.resolve`,
+  `Cslib.Circuits.Boolean.Tableau.argsOf`: numerical layout and wire resolution.
+* `Cslib.Circuits.Boolean.Tableau.symOf`, `Cslib.Circuits.Boolean.Tableau.ScanQ.ofIdx`,
+  `Cslib.Circuits.Boolean.Tableau.ScanLoc.ofIdx`, `Cslib.Circuits.Boolean.Tableau.GlobLoc.ofIdx`,
   `Cslib.Circuits.Boolean.Tableau.GFeat.ofIdx`, `Cslib.Circuits.Boolean.Tableau.ColFeat.ofIdx`:
   arithmetic decoders for block offsets.
 
@@ -168,6 +180,7 @@ inductive ColSel where
   | last
   deriving DecidableEq
 
+/-- Finite enumeration of column selectors. -/
 instance : Fintype ColSel where
   elems := {.same, .prev, .next, .last}
   complete x := by cases x <;> simp
@@ -193,6 +206,7 @@ inductive Guard where
   | leEnd
   deriving DecidableEq
 
+/-- Finite enumeration of column guards. -/
 instance : Fintype Guard where
   elems := {.always, .pos, .ltLast, .inRange, .outRange, .isZero, .isEnd, .leEnd}
   complete x := by cases x <;> simp
@@ -220,6 +234,7 @@ def Ref.toData : Ref k State → Option (Option (Option (Bool × Loc k State × 
   | .inp => some (some none)
   | .node p l cs g => some (some (some (p, l, cs, g)))
 
+/-- Finiteness of symbolic wire references. -/
 instance : Finite (Ref k State) :=
   Finite.of_injective Ref.toData fun a b h => by cases a <;> cases b <;> simp_all [Ref.toData]
 
@@ -417,6 +432,7 @@ private theorem symOf_symIdx (s : Option Bool) : symOf (symIdx s) = s := by
 private theorem symIdx_lt (s : Option Bool) : symIdx s < 3 := by
   rcases s with _ | _ | _ <;> simp [symIdx]
 
+/-- Decoding the index of a scanned quantity recovers the quantity. -/
 theorem ScanQ.ofIdx_idx (q : ScanQ k) : ScanQ.ofIdx q.idx = q := by
   rcases q with s | ⟨i, s⟩
   · simp [ScanQ.idx, ScanQ.ofIdx, symIdx_lt, symOf_symIdx]
@@ -426,11 +442,13 @@ theorem ScanQ.ofIdx_idx (q : ScanQ k) : ScanQ.ofIdx q.idx = q := by
     simp only [ScanQ.idx, ScanQ.ofIdx, show ¬3 + 3 * (i : ℕ) + symIdx s < 3 by omega,
       ↓reduceIte, h₁, i.isLt, ↓reduceDIte, h₂, symOf_symIdx]
 
+/-- The index of a scanned quantity is strictly less than `3 + 3 * k`. -/
 theorem ScanQ.idx_lt (q : ScanQ k) : q.idx < 3 + 3 * k := by
   rcases q with s | ⟨i, s⟩ <;> simp only [ScanQ.idx] <;> have := symIdx_lt s
   · omega
   · have := i.isLt; omega
 
+/-- Decoding the index of a scan position recovers the position. -/
 theorem ScanLoc.ofIdx_idx (l : ScanLoc k) : ScanLoc.ofIdx l.idx = l := by
   rcases l with i | _ | q | q
   · simp [ScanLoc.idx, ScanLoc.ofIdx]
@@ -445,6 +463,7 @@ theorem ScanLoc.ofIdx_idx (l : ScanLoc k) : ScanLoc.ofIdx l.idx = l := by
       show (k + 2 + 2 * q.idx - (k + 1)) / 2 = q.idx by omega, ScanQ.ofIdx_idx]
     rfl
 
+/-- The index of a scan position is strictly less than `scanWidth k`. -/
 theorem ScanLoc.idx_lt (l : ScanLoc k) : l.idx < scanWidth k := by
   rcases l with i | _ | q | q <;> simp only [ScanLoc.idx, scanWidth]
   · have := i.isLt; omega
@@ -455,6 +474,7 @@ theorem ScanLoc.idx_lt (l : ScanLoc k) : l.idx < scanWidth k := by
 private theorem attrIdx_lt (v : Attr k State) : attrIdx v < Fintype.card (Attr k State) :=
   (Fintype.equivFin (Attr k State) v).isLt
 
+/-- The index of a global gate position is strictly less than `globWidth k State`. -/
 theorem GlobLoc.idx_lt (l : GlobLoc k State) : l.idx < globWidth k State := by
   rcases l with ⟨j, i⟩ | ⟨v, j⟩ <;> simp only [GlobLoc.idx, globWidth]
   · have := j.isLt
@@ -470,6 +490,7 @@ theorem GlobLoc.idx_lt (l : GlobLoc k State) : l.idx < globWidth k State := by
         Fintype.card (Attr k State) * (numSit k State + 1) := Nat.mul_le_mul_right _ h₂
     omega
 
+/-- Decoding the index of a global gate position recovers the position. -/
 theorem GlobLoc.ofIdx_idx (l : GlobLoc k State) : GlobLoc.ofIdx l.idx = l := by
   rcases l with ⟨j, i⟩ | ⟨v, j⟩
   · have hlt : (j : ℕ) * (k + 1) + i < numSit k State * (k + 1) := by
@@ -498,6 +519,7 @@ theorem GlobLoc.ofIdx_idx (l : GlobLoc k State) : GlobLoc.ofIdx l.idx = l := by
     congr
     exact (Fintype.equivFin (Attr k State)).symm_apply_apply v
 
+/-- The index of a global feature is strictly less than `Fintype.card (Option State) + 4`. -/
 theorem GFeat.idx_lt (f : GFeat State) : f.idx < Fintype.card (Option State) + 4 := by
   rcases f with q | o
   · have := (Fintype.equivFin (Option State) q).isLt
@@ -507,6 +529,7 @@ theorem GFeat.idx_lt (f : GFeat State) : f.idx < Fintype.card (Option State) + 4
     simp only [GFeat.idx]
     omega
 
+/-- Decoding the index of a global feature recovers the feature. -/
 theorem GFeat.ofIdx_idx (f : GFeat State) : GFeat.ofIdx f.idx = f := by
   rcases f with q | o
   · simp only [GFeat.idx, GFeat.ofIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Equiv.symm_apply_apply]
@@ -515,12 +538,14 @@ theorem GFeat.ofIdx_idx (f : GFeat State) : GFeat.ofIdx f.idx = f := by
     · exact absurd h (by simp only [GFeat.idx]; omega)
     · simp [GFeat.idx]
 
+/-- The index of a column feature is strictly less than `1 + 4 * k`. -/
 theorem ColFeat.idx_lt (f : ColFeat k) : f.idx < 1 + 4 * k := by
   rcases f with _ | i | ⟨i, s⟩ <;> simp only [ColFeat.idx]
   · omega
   · have := i.isLt; omega
   · have := i.isLt; have := symIdx_lt s; omega
 
+/-- Decoding the index of a column feature recovers the feature. -/
 theorem ColFeat.ofIdx_idx (f : ColFeat k) : ColFeat.ofIdx f.idx = f := by
   rcases f with _ | i | ⟨i, s⟩
   · rfl
@@ -532,6 +557,7 @@ theorem ColFeat.ofIdx_idx (f : ColFeat k) : ColFeat.ofIdx f.idx = f := by
       show ¬1 + k + 3 * (i : ℕ) + symIdx s - 1 < k by omega, ↓reduceIte, ↓reduceDIte, h₁,
       i.isLt, h₂, symOf_symIdx]
 
+/-- The gadget index for feature `fi` is strictly less than `16 * (fi + 1)`. -/
 theorem gadgetIdx_lt (fi : ℕ) (b : Bool) (j : Fin 8) :
     gadgetIdx fi b j < 16 * (fi + 1) := by
   have := j.isLt
@@ -539,11 +565,13 @@ theorem gadgetIdx_lt (fi : ℕ) (b : Bool) (j : Fin 8) :
     simp only [gadgetIdx, Bool.toNat_false, Bool.toNat_true, mul_zero, mul_one, add_zero,
       gt_iff_lt] <;> omega
 
+/-- Dividing `gadgetIdx fi b j` by `16` recovers the feature index `fi`. -/
 theorem gadgetIdx_div (fi : ℕ) (b : Bool) (j : Fin 8) : gadgetIdx fi b j / 16 = fi := by
   have := j.isLt
   cases b <;>
     simp only [gadgetIdx, Bool.toNat_false, Bool.toNat_true, mul_zero, mul_one, add_zero] <;> omega
 
+/-- Decoding the gate kind from `gadgetIdx fi b j` recovers `b`. -/
 theorem gadgetB_gadgetIdx (fi : ℕ) (b : Bool) (j : Fin 8) :
     gadgetB (gadgetIdx fi b j) = b := by
   have := j.isLt
@@ -552,6 +580,7 @@ theorem gadgetB_gadgetIdx (fi : ℕ) (b : Bool) (j : Fin 8) :
       Nat.mul_add_mod_self_left, decide_eq_false_iff_not, decide_eq_true_eq, not_le, ge_iff_le,
       gt_iff_lt] <;> omega
 
+/-- Decoding the term index from `gadgetIdx fi b j` recovers `j`. -/
 theorem gadgetJ_gadgetIdx (fi : ℕ) (b : Bool) (j : Fin 8) :
     gadgetJ (gadgetIdx fi b j) = j := by
   have := j.isLt
@@ -576,10 +605,12 @@ private theorem mul_add_lt_mul {c w W i : ℕ} (hc : c < W) (hi : i < w) : c * w
   calc c * w + i < (c + 1) * w := by rw [Nat.succ_mul]; omega
     _ ≤ W * w := Nat.mul_le_mul_right _ hc
 
+/-- Any scan gate offset in a valid column is strictly less than `globStart k T`. -/
 theorem scan_offset_lt_globStart {c : ℕ} (hc : c < numCols T) (l : ScanLoc k) :
     c * scanWidth k + l.idx < globStart k T :=
   mul_add_lt_mul hc l.idx_lt
 
+/-- Any global-feature gadget offset is strictly less than `colStart k State T`. -/
 theorem gfStart_add_gadgetIdx_lt (f : GFeat State) (b : Bool) (j : Fin 8) :
     gfStart k State T + gadgetIdx f.idx b j < colStart k State T := by
   have h₁ := gadgetIdx_lt f.idx b j
@@ -624,6 +655,7 @@ theorem Loc.offset_lt_of_lt {l : Loc k State} {c : ℕ} (hc : c < numCols T) :
   · exact Loc.offset_lt (l := .gf f b j) (c := 0) rfl
   · exact Loc.offset_lt (l := .col f b j) hc
 
+/-- Any admissible column `c` for a position `l` satisfies `c < numCols T`. -/
 theorem Loc.ColOK.lt {l : Loc k State} {c : ℕ} (hl : l.ColOK T c) : c < numCols T := by
   rcases l with l | l | ⟨f, b, j⟩ | ⟨f, b, j⟩ <;> simp only [Loc.ColOK] at hl <;>
     first | exact hl | (subst hl; simp [numCols])
@@ -637,6 +669,8 @@ theorem wire_sub (n T t : ℕ) (l : Loc k State) (c : ℕ) :
   simp only [wire]
   omega
 
+/-- Dividing and reducing `wire n T t l c - n - 2` modulo `blockSize` recovers the block `t` and
+intra-block offset `l.offset T c`. -/
 theorem div_mod_wire {n T t : ℕ} {l : Loc k State} {c : ℕ} (hl : l.ColOK T c) :
     (wire n T t l c - n - 2) / blockSize k State T = t ∧
       (wire n T t l c - n - 2) % blockSize k State T = l.offset T c := by
@@ -655,6 +689,7 @@ private theorem symIdx_symOf {m : ℕ} (hm : m < 3) : symIdx (symOf m) = m := by
   · rfl
   · omega
 
+/-- Encoding `ScanQ.ofIdx m` for `m < 3 + 3 * k` recovers `m`. -/
 theorem ScanQ.idx_ofIdx {m : ℕ} (hm : m < 3 + 3 * k) :
     (ScanQ.ofIdx m : ScanQ k).idx = m := by
   rw [ScanQ.ofIdx]
@@ -665,6 +700,7 @@ theorem ScanQ.idx_ofIdx {m : ℕ} (hm : m < 3 + 3 * k) :
     omega
   · exact absurd (by omega) h₂
 
+/-- Encoding `ScanLoc.ofIdx m` for `m < scanWidth k` recovers `m`. -/
 theorem ScanLoc.idx_ofIdx {m : ℕ} (hm : m < scanWidth k) :
     (ScanLoc.ofIdx m : ScanLoc k).idx = m := by
   simp only [scanWidth] at hm
@@ -679,6 +715,7 @@ theorem ScanLoc.idx_ofIdx {m : ℕ} (hm : m < scanWidth k) :
     rw [ScanQ.idx_ofIdx (by omega)]
     omega
 
+/-- Encoding `GlobLoc.ofIdx m` for `m < globWidth k State` recovers `m`. -/
 theorem GlobLoc.idx_ofIdx {m : ℕ} (hm : m < globWidth k State) :
     (GlobLoc.ofIdx m : GlobLoc k State).idx = m := by
   simp only [globWidth] at hm
@@ -693,6 +730,7 @@ theorem GlobLoc.idx_ofIdx {m : ℕ} (hm : m < globWidth k State) :
         Fintype.card (Attr k State) * (numSit k State + 1) := by omega
     exact absurd ((Nat.div_lt_iff_lt_mul (by omega)).2 this) h₂
 
+/-- Encoding `GFeat.ofIdx m` for `m < Fintype.card (Option State) + 4` recovers `m`. -/
 theorem GFeat.idx_ofIdx {m : ℕ} (hm : m < Fintype.card (Option State) + 4) :
     (GFeat.ofIdx m : GFeat State).idx = m := by
   rw [GFeat.ofIdx]
@@ -702,6 +740,7 @@ theorem GFeat.idx_ofIdx {m : ℕ} (hm : m < Fintype.card (Option State) + 4) :
     rw [OutView.index_ofIndex (by omega)]
     omega
 
+/-- Encoding `ColFeat.ofIdx m` for `m < 1 + 4 * k` recovers `m`. -/
 theorem ColFeat.idx_ofIdx {m : ℕ} (hm : m < 1 + 4 * k) :
     (ColFeat.ofIdx m : ColFeat k).idx = m := by
   rw [ColFeat.ofIdx]

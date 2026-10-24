@@ -132,6 +132,7 @@ def controlledBits (g : BitString q → BitString q)
   Fin.append (g fun i => x (Fin.castAdd p i))
     (a (fun i => x (Fin.castAdd p i)) (fun i => x (Fin.natAdd q i)))
 
+/-- Applying `controlledBits g a` to `Fin.append u v` yields `Fin.append (g u) (a u v)`. -/
 @[simp] theorem controlledBits_append (g : BitString q → BitString q)
     (a : BitString q → BitString p → BitString p) (u : BitString q) (v : BitString p) :
     controlledBits g a (Fin.append u v) = Fin.append (g u) (a u v) := by

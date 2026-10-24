@@ -24,6 +24,11 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 The generator preserves the complete half-split reducer, its zero fallback and the final adder.
 Input counts and references are binary, word widths unary, and all supplied leaf code is charged.
 
+## Main definitions
+
+* `Cslib.Circuits.Boolean.pairWithZeroCode`, `Cslib.Circuits.Boolean.sumPairsCode`: raw code
+  generators for `pairWithZero` and `sumPairs`.
+
 ## Main results
 
 * `Cslib.Circuits.Boolean.sumPairsCode_eq_code`: exact reduction and final-adder code.

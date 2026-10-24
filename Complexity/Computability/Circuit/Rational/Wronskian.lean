@@ -67,7 +67,7 @@ def wronskianFamily {K : Type*} [CommRing K] {h : ℕ} (f : Fin h → K[X]) : K[
 
 /-- Factoring prescribed powers from the columns keeps track of the first
 possible coefficient of a determinant. -/
-lemma det_factor_column_orders {K ι : Type*} [CommRing K]
+private lemma det_factor_column_orders {K ι : Type*} [CommRing K]
     [Fintype ι] [DecidableEq ι] (A : Matrix ι ι K[X]) (d : ι → ℕ)
     (hd : ∀ i j, X ^ d j ∣ A i j) :
     ∃ B : Matrix ι ι K[X],
@@ -86,7 +86,7 @@ lemma det_factor_column_orders {K ι : Type*} [CommRing K]
     rw [hB i j, coeff_X_pow_mul']
     simp
 
-lemma coeff_scaled_derivative_at {K : Type*} [CommRing K]
+private lemma coeff_scaled_derivative_at {K : Type*} [CommRing K]
     (f : K[X]) (r d : ℕ) :
     (X ^ r * derivative^[r] f).coeff d =
       (d.descFactorial r : K) * f.coeff d := by
@@ -96,7 +96,7 @@ lemma coeff_scaled_derivative_at {K : Type*} [CommRing K]
   · rw [coeff_X_pow_mul', ite_eq_right hr,
       Nat.descFactorial_eq_zero_iff_lt.mpr (Nat.lt_of_not_ge hr), Nat.cast_zero, zero_mul]
 
-lemma scaled_derivative_order {K : Type*} [CommRing K]
+private lemma scaled_derivative_order {K : Type*} [CommRing K]
     (f : K[X]) (r : ℕ) : X ^ f.natTrailingDegree ∣ X ^ r * derivative^[r] f := by
   apply X_pow_dvd_iff.mpr
   intro a ha
@@ -172,7 +172,7 @@ lemma wronskian_order_of_distinct_orders {K : Type*} [Field K] [CharZero K]
 
 /-- Polynomial row reduction, derived rather than assumed: every bounded-degree
 subspace has a basis with distinct largest degrees. -/
-lemma exists_degree_echelon_family {K : Type*} [Field K]
+private lemma exists_degree_echelon_family {K : Type*} [Field K]
     (d : ℕ) (V : Submodule K K[X])
     (hV : ∀ f ∈ V, f ≠ 0 → f.natDegree < d) :
     ∃ (h : ℕ) (f : Fin h → K[X]), LinearIndependent K f ∧
@@ -263,7 +263,7 @@ lemma exists_degree_echelon_family {K : Type*} [Field K]
 
 /-- Fixed-length coefficient reversal is linear, unlike degree-dependent
 polynomial reversal. -/
-def reflectLinearEquiv (K : Type*) [Field K] (N : ℕ) : K[X] ≃ₗ[K] K[X] where
+private def reflectLinearEquiv (K : Type*) [Field K] (N : ℕ) : K[X] ≃ₗ[K] K[X] where
   toFun := reflect N
   invFun := reflect N
   left_inv := fun _ => reflect_reflect
@@ -273,7 +273,7 @@ def reflectLinearEquiv (K : Type*) [Field K] (N : ℕ) : K[X] ≃ₗ[K] K[X] whe
     intro c f
     simpa only [smul_eq_C_mul, RingHom.id_apply] using reflect_C_mul f c N
 
-lemma order_reflect {K : Type*} [Field K] (N : ℕ) (f : K[X])
+private lemma order_reflect {K : Type*} [Field K] (N : ℕ) (f : K[X])
     (hf : f ≠ 0) (hd : f.natDegree ≤ N) :
     (reflect N f).natTrailingDegree = N - f.natDegree := by
   apply le_antisymm
@@ -285,7 +285,7 @@ lemma order_reflect {K : Type*} [Field K] (N : ℕ) (f : K[X])
     rw [coeff_reflect, revAt_le (by omega)]
     exact coeff_eq_zero_of_natDegree_lt (by omega)
 
-lemma exists_order_echelon_family {K : Type*} [Field K]
+private lemma exists_order_echelon_family {K : Type*} [Field K]
     (d : ℕ) (V : Submodule K K[X])
     (hV : ∀ f ∈ V, f ≠ 0 → f.natDegree < d) :
     ∃ (h : ℕ) (f : Fin h → K[X]), LinearIndependent K f ∧
@@ -326,7 +326,7 @@ lemma exists_order_echelon_family {K : Type*} [Field K]
     change (g i).natDegree = (g j).natDegree
     omega
 
-lemma wronskian_linearCombination {K : Type*} [CommRing K] {h : ℕ}
+private lemma wronskian_linearCombination {K : Type*} [CommRing K] {h : ℕ}
     (f : Fin h → K[X]) (A : Matrix (Fin h) (Fin h) K) :
     wronskianFamily (fun j => ∑ i, A i j • f i) = wronskianFamily f * C A.det := by
   have he : (Matrix.of fun r j : Fin h =>
@@ -347,14 +347,14 @@ lemma wronskian_linearCombination {K : Type*} [CommRing K] {h : ℕ}
   congr 1
   exact (C.map_det A).symm
 
-lemma basis_toMatrix_det_ne_zero {K M : Type*} [Field K] [AddCommGroup M]
+private lemma basis_toMatrix_det_ne_zero {K M : Type*} [Field K] [AddCommGroup M]
     [Module K M] {h : ℕ} (b b' : Basis (Fin h) K M) :
     (b.toMatrix b').det ≠ 0 := by
   have hh := congrArg Matrix.det (b.toMatrix_mul_toMatrix_flip b')
   rw [Matrix.det_mul, Matrix.det_one] at hh
   exact left_ne_zero_of_mul_eq_one hh
 
-lemma wronskian_basis_change {K : Type*} [Field K] {h : ℕ}
+private lemma wronskian_basis_change {K : Type*} [Field K] {h : ℕ}
     {V : Submodule K K[X]} (b b' : Basis (Fin h) K V) :
     wronskianFamily (fun j => (b' j : K[X])) =
       wronskianFamily (fun j => (b j : K[X])) * C (b.toMatrix b').det := by
@@ -365,7 +365,7 @@ lemma wronskian_basis_change {K : Type*} [Field K] {h : ℕ}
     simpa only [Submodule.coe_sum, Submodule.coe_smul, Basis.toMatrix_apply] using hh.symm
   rw [he, wronskian_linearCombination]
 
-lemma exists_order_echelon_basis {K : Type*} [Field K]
+private lemma exists_order_echelon_basis {K : Type*} [Field K]
     (d : ℕ) (V : Submodule K K[X]) {h : ℕ} (b : Basis (Fin h) K V)
     (hV : ∀ f ∈ V, f ≠ 0 → f.natDegree < d) :
     ∃ b' : Basis (Fin h) K V,
@@ -383,7 +383,7 @@ lemma exists_order_echelon_basis {K : Type*} [Field K]
   subst k
   exact ⟨b', by simpa only [hb'] using hord⟩
 
-lemma wronskian_basis_ne_zero {K : Type*} [Field K] [CharZero K]
+private lemma wronskian_basis_ne_zero {K : Type*} [Field K] [CharZero K]
     (d : ℕ) {V : Submodule K K[X]} {h : ℕ} (b : Basis (Fin h) K V)
     (hV : ∀ f ∈ V, f ≠ 0 → f.natDegree < d) :
     wronskianFamily (fun j => (b j : K[X])) ≠ 0 := by
@@ -395,12 +395,12 @@ lemma wronskian_basis_ne_zero {K : Type*} [Field K] [CharZero K]
   rw [wronskian_basis_change b b'] at hn
   exact (mul_ne_zero_iff.mp hn).1
 
-lemma derivative_taylor {K : Type*} [CommRing K] (a : K) (f : K[X]) :
+private lemma derivative_taylor {K : Type*} [CommRing K] (a : K) (f : K[X]) :
     derivative (taylor a f) = taylor a (derivative f) := by
   simp only [taylor_apply, derivative_comp, derivative_add, derivative_X,
     derivative_C, add_zero, one_mul]
 
-lemma iterate_derivative_taylor {K : Type*} [CommRing K] (a : K)
+private lemma iterate_derivative_taylor {K : Type*} [CommRing K] (a : K)
     (f : K[X]) (r : ℕ) :
     derivative^[r] (taylor a f) = taylor a (derivative^[r] f) := by
   induction r with
@@ -408,7 +408,7 @@ lemma iterate_derivative_taylor {K : Type*} [CommRing K] (a : K)
   | succ r ih =>
     rw [Function.iterate_succ_apply', ih, derivative_taylor, Function.iterate_succ_apply']
 
-lemma wronskian_taylor {K : Type*} [CommRing K] {h : ℕ}
+private lemma wronskian_taylor {K : Type*} [CommRing K] {h : ℕ}
     (a : K) (f : Fin h → K[X]) :
     wronskianFamily (fun j => taylor a (f j)) = taylor a (wronskianFamily f) := by
   unfold wronskianFamily
@@ -420,7 +420,7 @@ lemma wronskian_taylor {K : Type*} [CommRing K] {h : ℕ}
   rw [he]
   exact ((taylorEquiv a).toRingHom.map_det _).symm
 
-lemma natDegree_wronskian_le {K : Type*} [CommRing K] {h : ℕ}
+private lemma natDegree_wronskian_le {K : Type*} [CommRing K] {h : ℕ}
     (f : Fin h → K[X]) (D : ℕ) (hd : ∀ j, (f j).natDegree ≤ D) :
     (wronskianFamily f).natDegree ≤ h * D := by
   unfold wronskianFamily
@@ -435,7 +435,7 @@ lemma natDegree_wronskian_le {K : Type*} [CommRing K] {h : ℕ}
           (natDegree_iterate_derivative _ _).trans ((Nat.sub_le _ _).trans (hd j))
     _ = h * D := by simp
 
-lemma sum_rootMultiplicity_le_natDegree {K : Type*} [Field K]
+private lemma sum_rootMultiplicity_le_natDegree {K : Type*} [Field K]
     (f : K[X]) (s : Finset K) :
     ∑ a ∈ s, f.rootMultiplicity a ≤ f.natDegree := by
   classical
@@ -447,7 +447,7 @@ lemma sum_rootMultiplicity_le_natDegree {K : Type*} [Field K]
       Finset.mem_union_right _ (Multiset.mem_toFinset.mpr ha))
     _ ≤ f.natDegree := card_roots' f
 
-lemma wronskian_order_at {K : Type*} [Field K] [CharZero K] {h : ℕ}
+private lemma wronskian_order_at {K : Type*} [Field K] [CharZero K] {h : ℕ}
     (a : K) (f : Fin h → K[X]) (hf : ∀ j, f j ≠ 0)
     (hd : Function.Injective (fun j => (f j).rootMultiplicity a)) :
     (wronskianFamily f).rootMultiplicity a + (∑ i : Fin h, i.val) =
@@ -461,7 +461,7 @@ lemma wronskian_order_at {K : Type*} [Field K] [CharZero K] {h : ℕ}
   rw [wronskian_taylor] at hh
   simpa only [rootMultiplicity_eq_natTrailingDegree, ← taylor_apply] using hh
 
-lemma wronskian_basis_rootMultiplicity {K : Type*} [Field K] [CharZero K]
+private lemma wronskian_basis_rootMultiplicity {K : Type*} [Field K] [CharZero K]
     (d : ℕ) {V : Submodule K K[X]} {h : ℕ}
     (b b' : Basis (Fin h) K V) (a : K)
     (hV : ∀ f ∈ V, f ≠ 0 → f.natDegree < d) :
@@ -531,7 +531,7 @@ lemma exists_echelon_basis_at {K : Type*} [Field K]
 
 /-- Distinct leading orders make vanishing conditions triangular; no linear
 combination can cancel its first nonzero echelon term. -/
-lemma low_coefficients_force_zero {K : Type*} [Field K] {h : ℕ}
+private lemma low_coefficients_force_zero {K : Type*} [Field K] {h : ℕ}
     (f : Fin h → K[X]) (hf : ∀ j, f j ≠ 0)
     (hd : Function.Injective (fun j => (f j).natTrailingDegree))
     (c : Fin h → K) (r : ℕ)
@@ -587,7 +587,7 @@ lemma mem_vanishingFiltration_iff_dvd {K : Type*} [Field K]
   rw [X_sub_C_pow_dvd_iff, X_pow_dvd_iff]
   rfl
 
-lemma vanishingFiltration_eq_span {K : Type*} [Field K]
+private lemma vanishingFiltration_eq_span {K : Type*} [Field K]
     {V : Submodule K K[X]} {h : ℕ} (b : Basis (Fin h) K V)
     (a : K) (hb : Function.Injective (fun j => (b j : K[X]).rootMultiplicity a))
     (r : ℕ) :

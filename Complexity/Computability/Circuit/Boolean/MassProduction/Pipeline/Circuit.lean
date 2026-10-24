@@ -41,6 +41,14 @@ running time of the circuit constructors.
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.MassProduction.Pipeline.slotEquiv`,
+  `Cslib.Circuits.Boolean.MassProduction.Pipeline.slotKey`: slot numbering and lookup keys.
+* `Cslib.Circuits.Boolean.MassProduction.Pipeline.metaWidth`,
+  `Cslib.Circuits.Boolean.MassProduction.Pipeline.stateWidth`,
+  `Cslib.Circuits.Boolean.MassProduction.Pipeline.metadata`,
+  `Cslib.Circuits.Boolean.MassProduction.Pipeline.prefixWires`,
+  `Cslib.Circuits.Boolean.MassProduction.Pipeline.incidenceKey`: wire widths, prefix metadata, and
+  incidence lookup keys.
 * `Cslib.Circuits.Boolean.MassProduction.Pipeline.recoveryCircuit`: stages one to five.
 * `Cslib.Circuits.Boolean.MassProduction.Pipeline.lineSums`: stage six, as a function.
 * `Cslib.Circuits.Boolean.MassProduction.Pipeline.slotResource`: the resource of a slot.
@@ -103,6 +111,7 @@ def slotEquiv : Fin copies × BitString (ℓ * b) ≃ Fin (copies * 2 ^ (ℓ * b
 def slotKey (q : Fin (copies * 2 ^ (ℓ * b))) : BitString (Nat.clog 2 copies + ℓ * b) :=
   Fin.append (indexBits (slotEquiv.symm q).1) (slotEquiv.symm q).2
 
+/-- The key of `slotEquiv (c, y)` is the binary index of `c` followed by `y`. -/
 theorem slotKey_slotEquiv (c : Fin copies) (y : BitString (ℓ * b)) :
     slotKey (slotEquiv (c, y)) = Fin.append (indexBits c) y := by
   simp only [slotKey, Equiv.symm_apply_apply]
@@ -124,6 +133,7 @@ private theorem append_eq_append_iff {α : Type*} {m n : ℕ} {u u' : Fin m → 
   · rintro ⟨rfl, rfl⟩
     rfl
 
+/-- Distinct slots have distinct lookup keys. -/
 theorem slotKey_injective : Function.Injective (slotKey (copies := copies) (ℓ := ℓ) (b := b)) := by
   intro q q' h
   rw [slotKey, slotKey, append_eq_append_iff] at h
