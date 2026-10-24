@@ -92,7 +92,7 @@ def programExceptions : ∀ {g : ℕ}, Program σ n g → Finset Sample
   rfl
 
 /-- There are at most as many exceptions as the total cost of the gates. -/
-theorem card_programExceptions_le {g : ℕ} (p : Program σ n g) :
+private theorem card_programExceptions_le {g : ℕ} (p : Program σ n g) :
     (S.programExceptions p).card ≤ p.cost S.errorCost := by
   induction p with
   | empty => simp
@@ -123,7 +123,7 @@ theorem program_correct {g : ℕ} (p : Program σ n g) {s : Sample}
     | castSucc w => simpa only [Program.trace_gate_castSucc] using ih hs.1 w
 
 /-- Away from the exceptions, every output of a circuit is correct. -/
-theorem circuit_correct {m : ℕ} (C : Circuit σ n m) (o : Fin m) {s : Sample}
+private theorem circuit_correct {m : ℕ} (C : Circuit σ n m) (o : Fin m) {s : Sample}
     (hs : s ∉ S.programExceptions C.program) :
     S.relation (C.eval exact (exactInput s) o) (decode (C.eval approx approxInput o) s) :=
   S.program_correct C.program hs (C.outputs o)

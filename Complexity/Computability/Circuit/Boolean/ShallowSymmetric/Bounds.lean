@@ -38,7 +38,7 @@ namespace Cslib.Circuits.Boolean.ShallowSymmetric
 open Finset
 
 /-- Products of numbers below `2 ^ (a k)` and `2 ^ (b k)` are below `2 ^ ((a + b) k)`. -/
-theorem mul_le_two_pow_add_mul {k a b x y : ℕ} (hx : x ≤ 2 ^ (a * k))
+private theorem mul_le_two_pow_add_mul {k a b x y : ℕ} (hx : x ≤ 2 ^ (a * k))
     (hy : y ≤ 2 ^ (b * k)) : x * y ≤ 2 ^ ((a + b) * k) := by
   calc
     x * y ≤ 2 ^ (a * k) * 2 ^ (b * k) := Nat.mul_le_mul hx hy
@@ -57,7 +57,7 @@ theorem add_le_two_pow_add_add_one_mul {k a b x y : ℕ} (hk : 1 ≤ k) (hx : x 
     _ ≤ _ := Nat.pow_le_pow_right (by omega) (by nlinarith)
 
 /-- A constant `c` is below `2 ^ (c k)` for `k ≥ 1`. -/
-theorem le_two_pow_mul (c k : ℕ) (hk : 1 ≤ k) : c ≤ 2 ^ (c * k) :=
+private theorem le_two_pow_mul (c k : ℕ) (hk : 1 ≤ k) : c ≤ 2 ^ (c * k) :=
   Nat.lt_two_pow_self.le.trans
     (Nat.pow_le_pow_right (by omega) (by nlinarith))
 

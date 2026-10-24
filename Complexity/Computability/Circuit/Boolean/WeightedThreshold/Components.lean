@@ -131,7 +131,7 @@ theorem sum_card_componentInputs : ∑ c, (componentInputs p c).card = n := by
   simpa [componentInputs] using h.symm
 
 open Classical in
-theorem pairwiseDisjoint_componentInputs :
+private theorem pairwiseDisjoint_componentInputs :
     ((univ : Finset (supportGraph p).ConnectedComponent) : Set _).PairwiseDisjoint
       (componentInputs p) := by
   intro c _ c' _ hcc'
@@ -141,7 +141,7 @@ theorem pairwiseDisjoint_componentInputs :
   exact hcc' (hu.symm.trans hu')
 
 open Classical in
-theorem pairwiseDisjoint_componentGates :
+private theorem pairwiseDisjoint_componentGates :
     ((univ : Finset (supportGraph p).ConnectedComponent) : Set _).PairwiseDisjoint
       (componentGates p) := by
   intro c _ c' _ hcc'
@@ -155,7 +155,7 @@ theorem pairwiseDisjoint_componentGates :
 
 open Classical in
 /-- The input-reading gates are partitioned by the connected components of `supportGraph p`. -/
-theorem inputGates_eq_biUnion_componentGates :
+private theorem inputGates_eq_biUnion_componentGates :
     inputGates p = univ.biUnion (componentGates p) := by
   ext j
   simp only [mem_biUnion, mem_univ, true_and, mem_componentGates, ← inputSupport_ne_empty_iff]
@@ -421,7 +421,7 @@ theorem residualGates_subset_inputGates (p : Program signature n g) (F b : Finse
   rw [← inputSupport_ne_empty_iff]
   exact fun h0 => hj.1 (h0 ▸ empty_subset F)
 
-theorem disjoint_residualGates (p : Program signature n g) (F : Finset (Fin n))
+private theorem disjoint_residualGates (p : Program signature n g) (F : Finset (Fin n))
     {b b' : Finset (Fin n)} (hbb' : Disjoint b b') :
     Disjoint (residualGates p F b) (residualGates p F b') := by
   rw [disjoint_left]
@@ -434,7 +434,7 @@ theorem disjoint_residualGates (p : Program signature n g) (F : Finset (Fin n))
 
 /-- Over pairwise disjoint blocks `𝓑`, the total number of residual gates is at most
 `(inputGates p).card`. -/
-theorem sum_card_residualGates_le (p : Program signature n g) (F : Finset (Fin n))
+private theorem sum_card_residualGates_le (p : Program signature n g) (F : Finset (Fin n))
     (𝓑 : Finset (Finset (Fin n))) (hdisj : (𝓑 : Set (Finset (Fin n))).PairwiseDisjoint id) :
     ∑ b ∈ 𝓑, (residualGates p F b).card ≤ (inputGates p).card := by
   classical

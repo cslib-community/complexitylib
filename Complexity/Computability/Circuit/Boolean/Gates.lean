@@ -38,9 +38,11 @@ namespace Cslib.Circuits.Boolean
 def nandCircuit : Circuit signature 2 1 :=
   (Circuit.oneGate (σ := signature) .not (fun _ => 0)).comp (Circuit.oneGate .and id)
 
+/-- `nandCircuit` computes the NAND of its two input bits. -/
 @[simp] theorem eval_nandCircuit (x : Fin 2 → Bool) (j : Fin 1) :
     nandCircuit.eval interpretation x j = !(x 0 && x 1) := rfl
 
+/-- `nandCircuit` has `2` gates. -/
 @[simp] theorem size_nandCircuit : nandCircuit.size = 2 := rfl
 
 end Cslib.Circuits.Boolean

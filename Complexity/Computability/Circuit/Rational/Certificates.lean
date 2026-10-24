@@ -78,7 +78,7 @@ def evaluate (ev : P →+* K) : Regular ev →+* K :=
 
 /-- Only fractions whose denominator is nonzero at the point are evaluated.
 The entire division algebra is deliberately not given a specialization. -/
-lemma evaluate_reflects_units (ev : P →+* K) (x : Regular ev)
+private lemma evaluate_reflects_units (ev : P →+* K) (x : Regular ev)
     (hx : IsUnit (evaluate ev x)) : IsUnit x := by
   obtain ⟨a, b, rfl⟩ := IsLocalization.exists_mk'_eq (denominators ev) x
   have heq : ev a = ev b * evaluate ev (IsLocalization.mk' (Regular ev) a b) :=
@@ -111,7 +111,7 @@ lemma intoField_injective (ev : P →+* K) (j : P →+* E) (hj : Function.Inject
     rw [hj h]
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
-lemma matrix_reflects_units (ev : P →+* K) (A : Matrix ι ι (Regular ev))
+private lemma matrix_reflects_units (ev : P →+* K) (A : Matrix ι ι (Regular ev))
     (hA : IsUnit ((evaluate ev).mapMatrix A)) : IsUnit A := by
   rw [Matrix.isUnit_iff_isUnit_det] at hA ⊢
   apply evaluate_reflects_units ev
@@ -277,7 +277,7 @@ lemma specialized (χ : AddChar (ZMod M) K)
   simp only [RingHom.mapMatrix_apply, Matrix.map_apply, polynomial_apply, map_sum, map_mul,
     eval₂Hom_C, RingHom.id_apply]
 
-lemma block_eq (φ : K →+* E) (L : Matrix (Fin q) (Fin q) (Affine.Form n))
+private lemma block_eq (φ : K →+* E) (L : Matrix (Fin q) (Fin q) (Affine.Form n))
     {d : ℕ} (X : Fin n → Matrix (Fin d) (Fin d) E) :
     Rectangular.blockMatrix (fun i => φ.mapMatrix (coefficients (K := K) L i)) (Fin.cases 1 X) =
       Matrix.compRingEquiv (Fin q) (Fin d) E (L.map (Affine.eval (algebraMap ℚ _) X)) := by

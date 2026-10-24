@@ -40,8 +40,13 @@ gate reading the first one, or reading the other reader of `xᵢ` if that is the
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.GateElimination.EqUpToNeg`,
+  `Cslib.Circuits.Boolean.GateElimination.IsConstOrLiteral`: equality of Boolean functions up to
+  negation, and functions that are constant or a literal.
 * `Cslib.Circuits.Boolean.GateElimination.restricted`: the function of a wire under a restriction.
-* `Cslib.Circuits.Boolean.GateElimination.NonRedundant`: nonredundant gates under a restriction.
+* `Cslib.Circuits.Boolean.GateElimination.NonRedundant`,
+  `Cslib.Circuits.Boolean.GateElimination.nonRedundant`: the predicate and finite set of
+  nonredundant binary gates under a restriction.
 
 ## Main results
 
@@ -82,41 +87,45 @@ def EqUpToNeg (φ ψ : BooleanFunction n) : Prop :=
 def IsConstOrLiteral (φ : BooleanFunction n) : Prop :=
   IsConst φ ∨ ∃ i, EqUpToNeg φ (· i)
 
+/-- Every Boolean function is equal to itself up to negation. -/
 @[refl] theorem EqUpToNeg.refl (φ : BooleanFunction n) : EqUpToNeg φ φ :=
   ⟨false, fun _ => (Bool.xor_false _).symm⟩
 
+/-- Equality up to negation is symmetric. -/
 @[symm] theorem EqUpToNeg.symm (h : EqUpToNeg φ ψ) : EqUpToNeg ψ φ := by
   obtain ⟨c, h⟩ := h
   exact ⟨c, fun x => by rw [h x, Bool.xor_assoc, Bool.xor_self, Bool.xor_false]⟩
 
+/-- Equality up to negation is transitive. -/
 @[trans] theorem EqUpToNeg.trans (h₁ : EqUpToNeg φ ψ) (h₂ : EqUpToNeg ψ χ) : EqUpToNeg φ χ := by
   obtain ⟨c, h₁⟩ := h₁
   obtain ⟨d, h₂⟩ := h₂
   exact ⟨d ^^ c, fun x => by rw [h₁ x, h₂ x, Bool.xor_assoc]⟩
 
-theorem EqUpToNeg.isConst (h : EqUpToNeg φ ψ) (hψ : IsConst ψ) : IsConst φ := by
+private theorem EqUpToNeg.isConst (h : EqUpToNeg φ ψ) (hψ : IsConst ψ) : IsConst φ := by
   obtain ⟨c, h⟩ := h
   exact fun x y => by rw [h, h, hψ x y]
 
-theorem EqUpToNeg.isConstOrLiteral (h : EqUpToNeg φ ψ) (hψ : IsConstOrLiteral ψ) :
+private theorem EqUpToNeg.isConstOrLiteral (h : EqUpToNeg φ ψ) (hψ : IsConstOrLiteral ψ) :
     IsConstOrLiteral φ :=
   hψ.imp h.isConst fun ⟨i, hi⟩ => ⟨i, h.trans hi⟩
 
-theorem EqUpToNeg.dependsOn {s : Set (Fin n)} (h : EqUpToNeg φ ψ) (hψ : DependsOn ψ s) :
+private theorem EqUpToNeg.dependsOn {s : Set (Fin n)} (h : EqUpToNeg φ ψ) (hψ : DependsOn ψ s) :
     DependsOn φ s := by
   obtain ⟨c, h⟩ := h
   exact fun x y hxy => by rw [h, h, hψ hxy]
 
-theorem EqUpToNeg.comp_right (h : EqUpToNeg φ ψ) (f : BitString n → BitString n) :
+private theorem EqUpToNeg.comp_right (h : EqUpToNeg φ ψ) (f : BitString n → BitString n) :
     EqUpToNeg (φ ∘ f) (ψ ∘ f) := by
   obtain ⟨c, h⟩ := h
   exact ⟨c, fun x => h _⟩
 
-theorem isConstOrLiteral_literal (i : Fin n) : IsConstOrLiteral fun x : BitString n => x i :=
+private theorem isConstOrLiteral_literal (i : Fin n) :
+    IsConstOrLiteral fun x : BitString n => x i :=
   Or.inr ⟨i, EqUpToNeg.refl _⟩
 
 /-- A function of bit `i` alone is constant or a literal. -/
-theorem isConstOrLiteral_of_eq_comp (f : Bool → Bool) (h : ∀ x, φ x = f (x i)) :
+private theorem isConstOrLiteral_of_eq_comp (f : Bool → Bool) (h : ∀ x, φ x = f (x i)) :
     IsConstOrLiteral φ := by
   cases h0 : f false <;> cases h1 : f true
   · exact Or.inl fun x y => by rw [h, h]; cases x i <;> cases y i <;> simp [h0, h1]
@@ -125,7 +134,8 @@ theorem isConstOrLiteral_of_eq_comp (f : Bool → Bool) (h : ∀ x, φ x = f (x 
   · exact Or.inl fun x y => by rw [h, h]; cases x i <;> cases y i <;> simp [h0, h1]
 
 /-- Hardwiring bits keeps constants and literals. -/
-theorem IsConstOrLiteral.comp_fill (h : IsConstOrLiteral φ) (ρ : PartialAssignment (Fin n)) :
+private theorem IsConstOrLiteral.comp_fill (h : IsConstOrLiteral φ)
+    (ρ : PartialAssignment (Fin n)) :
     IsConstOrLiteral (φ ∘ ρ.fill) := by
   rcases h with h | ⟨i, c, h⟩
   · exact Or.inl fun x y => h _ _
@@ -134,7 +144,7 @@ theorem IsConstOrLiteral.comp_fill (h : IsConstOrLiteral φ) (ρ : PartialAssign
     | some b => exact Or.inl fun x y => by simp [h, hi]
 
 /-- A constant or a literal is bit `i` up to negation or ignores it. -/
-theorem IsConstOrLiteral.eqUpToNeg_or_dependsOn (h : IsConstOrLiteral φ) (i : Fin n) :
+private theorem IsConstOrLiteral.eqUpToNeg_or_dependsOn (h : IsConstOrLiteral φ) (i : Fin n) :
     EqUpToNeg φ (· i) ∨ DependsOn φ {i}ᶜ := by
   rcases h with h | ⟨u, hu⟩
   · exact Or.inr fun x y _ => h x y
@@ -249,6 +259,8 @@ variable (p : Program signature n g)
 def restricted (ρ : PartialAssignment (Fin n)) (w : Wire n g) : BooleanFunction n :=
   p.wireFunction interpretation w ∘ ρ.fill
 
+/-- The restricted function at gate `k` applies the operation of line `k` to the restricted
+functions of its input wires. -/
 theorem restricted_gate_apply (ρ : PartialAssignment (Fin n)) (k : Fin g) (x : BitString n) :
     restricted p ρ (.gate k) x =
       interpretation (p.lines k).op fun s => restricted p ρ ((p.lines k).wires s) x := by
@@ -260,25 +272,25 @@ private theorem restricted_gate (ρ : PartialAssignment (Fin n)) (k : Fin g) :
     restricted p ρ (.gate k) = lineFunction (p.lines k) (restricted p ρ) :=
   funext (restricted_gate_apply p ρ k)
 
-theorem isConstOrLiteral_restricted_input (ρ : PartialAssignment (Fin n)) (i : Fin n) :
+private theorem isConstOrLiteral_restricted_input (ρ : PartialAssignment (Fin n)) (i : Fin n) :
     IsConstOrLiteral (restricted p ρ (.input i)) :=
   (isConstOrLiteral_literal i).comp_fill ρ
 
 variable {p} {ρ : PartialAssignment (Fin n)} {i : Fin n}
 
 /-- Fixing one more free bit is restricting the restricted function. -/
-theorem restricted_update (hi : ρ i = none) (b : Bool) (w : Wire n g) :
+private theorem restricted_update (hi : ρ i = none) (b : Bool) (w : Wire n g) :
     restricted p (update ρ i (some b)) w =
       restricted p ρ w ∘ PartialAssignment.fill (update ρ i (some b)) := by
   funext x
   simp only [restricted, comp_apply, PartialAssignment.fill_fill_update hi]
 
-theorem restricted_update_of_ne_none (hi : ρ i ≠ none) (w : Wire n g) (x : BitString n)
+private theorem restricted_update_of_ne_none (hi : ρ i ≠ none) (w : Wire n g) (x : BitString n)
     (c : Bool) : restricted p ρ w (update x i c) = restricted p ρ w x := by
   simp only [restricted, comp_apply, PartialAssignment.fill_update_of_ne_none hi]
 
 /-- A wire that is another up to negation is constant when the other is, after fixing a bit. -/
-theorem isConst_update_of_eqUpToNeg (hi : ρ i = none) (a : Bool) {w w' : Wire n g}
+private theorem isConst_update_of_eqUpToNeg (hi : ρ i = none) (a : Bool) {w w' : Wire n g}
     (h : EqUpToNeg (restricted p ρ w) (restricted p ρ w'))
     (hc : IsConst (restricted p (update ρ i (some a)) w')) :
     IsConst (restricted p (update ρ i (some a)) w) := by
@@ -287,7 +299,7 @@ theorem isConst_update_of_eqUpToNeg (hi : ρ i = none) (a : Bool) {w w' : Wire n
 
 /-- Fixing a free bit of the parity of all free bits leaves the parity of the others, possibly
 negated. -/
-theorem restricted_update_of_parity {o : Wire n g} (hi : ρ i = none) (b : Bool) {c : Bool}
+private theorem restricted_update_of_parity {o : Wire n g} (hi : ρ i = none) (b : Bool) {c : Bool}
     (ho : ∀ x, restricted p ρ o x = (c ^^ parityOn ρ.free x)) (x : BitString n) :
     restricted p (update ρ i (some b)) o x =
       ((c ^^ b) ^^ parityOn (PartialAssignment.free (update ρ i (some b))) x) := by
@@ -322,12 +334,13 @@ noncomputable def nonRedundant (ρ : PartialAssignment (Fin n)) : Finset (Fin g)
 
 variable {p} {ρ : PartialAssignment (Fin n)} {i : Fin n}
 
+/-- Membership in `nonRedundant p ρ` is `NonRedundant p ρ`. -/
 @[simp] theorem mem_nonRedundant {k : Fin g} : k ∈ nonRedundant p ρ ↔ NonRedundant p ρ k := by
   simp [nonRedundant]
 
 variable (p ρ) in
 /-- There are at most as many nonredundant gates as binary gates. -/
-theorem card_nonRedundant_le : #(nonRedundant p ρ) ≤ p.cost binaryCost := by
+private theorem card_nonRedundant_le : #(nonRedundant p ρ) ≤ p.cost binaryCost := by
   rw [Program.cost_eq_sum]
   simp only [binaryCost_eq_ite, ← card_filter]
   exact card_le_card fun k hk => mem_filter.2 ⟨mem_univ _, (mem_nonRedundant.1 hk).1⟩
@@ -467,7 +480,7 @@ section Step
 
 variable {p : Program signature n g} {ρ : PartialAssignment (Fin n)} {o : Wire n g}
 
-theorem not_isConstOrLiteral_parityOn {s : Finset (Fin n)} (hs : 2 ≤ #s) (c : Bool) :
+private theorem not_isConstOrLiteral_parityOn {s : Finset (Fin n)} (hs : 2 ≤ #s) (c : Bool) :
     ¬IsConstOrLiteral fun x => c ^^ parityOn s x := by
   rintro (h | ⟨u, hu⟩)
   · exact not_isConst_parityOn (card_pos.1 (by omega)) c h
@@ -531,7 +544,7 @@ variable (p o) in
 /-- **Schnorr's elimination step.** If, under `ρ`, the wire `o` computes the parity of all free
 bits, possibly negated, and at least two bits are free, then fixing one free bit suitably makes at
 least three nonredundant gates redundant. -/
-theorem exists_card_add_three_le {c : Bool}
+private theorem exists_card_add_three_le {c : Bool}
     (ho : ∀ x, restricted p ρ o x = (c ^^ parityOn ρ.free x)) (hV : 2 ≤ #ρ.free) :
     ∃ i b, ρ i = none ∧
       #(nonRedundant p (update ρ i (some b))) + 3 ≤ #(nonRedundant p ρ) := by
@@ -612,7 +625,7 @@ theorem exists_card_add_three_le {c : Bool}
 variable (p o) in
 /-- Under a restriction leaving `m + 1` bits free for which the wire `o` computes their parity,
 possibly negated, at least `3 m` gates are nonredundant. -/
-theorem three_mul_le_card_nonRedundant (m : ℕ) (ρ : PartialAssignment (Fin n)) (c : Bool)
+private theorem three_mul_le_card_nonRedundant (m : ℕ) (ρ : PartialAssignment (Fin n)) (c : Bool)
     (hρ : #ρ.free = m + 1) (ho : ∀ x, restricted p ρ o x = (c ^^ parityOn ρ.free x)) :
     3 * m ≤ #(nonRedundant p ρ) := by
   induction m generalizing ρ c with

@@ -61,7 +61,7 @@ namespace Scheduler
 
 /-- Some circuit computes `finalOutput` exactly, by sorting the records by label and reading every
 request's line from the rank of its label, within the displayed number of gates. -/
-theorem exists_finalOutput_circuit (D L s : ℕ) :
+private theorem exists_finalOutput_circuit (D L s : ℕ) :
     ∃ c : Circuit signature (2 ^ D * width D L s) (2 ^ D * (s * L)),
       c.Computes interpretation finalOutput ∧
         c.size ≤ (D + 1) ^ 2 * 2 ^ D * (2 * D + 2 * width D L s + 1) := by
@@ -94,7 +94,7 @@ theorem exists_finalOutput_circuit (D L s : ℕ) :
 /-- The phases with `2 ^ p, 2 ^ (p - 1), …, 1` pending requests accept every remaining request:
 some circuit maps every good state with `2 ^ D - 2 ^ p` accepted records to a good state with all
 records accepted, within `p + 1` phase budgets. -/
-theorem exists_phases_circuit (bits : K ≃+ BitString b) (scalar : Fin s ≃ {c : K // c ≠ 0})
+private theorem exists_phases_circuit (bits : K ≃+ BitString b) (scalar : Fin s ≃ {c : K // c ≠ 0})
     (hmenu : ∀ k, 0 < k → k ≤ 2 ^ D → ∃ r, k * r ≤ 2 ^ D * (2 + 3 * (ℓ * b)) + 2 * k ∧
       ∃ menu : Fin r → Fin k → Fin ℓ → K, IsUniversalMenu (2 ^ D) menu)
     (hs : s < 2 ^ b) (p : ℕ) (hp : p ≤ D) :

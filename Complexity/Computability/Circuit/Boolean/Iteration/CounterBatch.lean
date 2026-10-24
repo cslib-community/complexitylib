@@ -158,16 +158,16 @@ theorem iterate_counterBatchPower (T : ℕ) :
       ModulusCounter.power_add]
 
 /-- The left half (the modulus) of every state is preserved by `ModulusCounter.power T`. -/
-theorem counterStep_iterate_left (T : ℕ) (y : BitString (k + k)) (i : Fin k) :
+private theorem counterStep_iterate_left (T : ℕ) (y : BitString (k + k)) (i : Fin k) :
     ModulusCounter.power T y (Fin.castAdd k i) = y (Fin.castAdd k i) := by
   simp [ModulusCounter.power, ModulusCounter.pack, ModulusCounter.leftWord]
 
 /-- States with modulus zero are fixed by `ModulusCounter.power T`. -/
-theorem counterStep_iterate_joinState_zero (T : ℕ) (b : BitVec k) :
+private theorem counterStep_iterate_joinState_zero (T : ℕ) (b : BitVec k) :
     ModulusCounter.power T (ModulusCounter.pack 0 b) = ModulusCounter.pack 0 b := by
   simp [ModulusCounter.power, ModulusCounter.advance]
 
-theorem joinState_zero_zero : ModulusCounter.pack (0 : BitVec k) 0 = fun _ => false := by
+private theorem joinState_zero_zero : ModulusCounter.pack (0 : BitVec k) 0 = fun _ => false := by
   funext bit
   induction bit using Fin.addCases <;>
     simp only [ModulusCounter.pack, Fin.append_left, Fin.append_right] <;>
@@ -191,7 +191,8 @@ theorem residueKeys_injective (k : ℕ) : Function.Injective (residueKeys k) := 
   simp only [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hj] at hn
   exact Fin.ext (by omega)
 
-theorem clog_two_pow_add_le (hr : r ≤ 2 ^ (k + k)) : Nat.clog 2 (r + (2 ^ k - 1)) ≤ 2 * k + 1 := by
+private theorem clog_two_pow_add_le (hr : r ≤ 2 ^ (k + k)) :
+    Nat.clog 2 (r + (2 ^ k - 1)) ≤ 2 * k + 1 := by
   apply Nat.clog_le_of_le_pow
   have h1 : 2 ^ k ≤ 2 ^ (k + k) := Nat.pow_le_pow_right (by decide) (by omega)
   rw [show 2 * k + 1 = (k + k) + 1 by omega, pow_succ]

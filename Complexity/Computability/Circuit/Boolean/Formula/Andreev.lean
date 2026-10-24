@@ -138,7 +138,7 @@ def andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
     andreevFixTable b m h (andreevBlockVar b m j t) = none := by
   simp [andreevBlockVar]
 
-theorem free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
+private theorem free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
     (andreevFixTable b m h).free = univ.image (Fin.natAdd (2 ^ b)) := by
   ext i
   simp only [PartialAssignment.mem_free, mem_image, mem_univ, true_and]
@@ -161,7 +161,7 @@ theorem andreevBlock_subset_free_andreevFixTable (b m : ℕ) (h : BooleanFunctio
 
 /-- Under any extension `ρ` of `andreevFixTable b m h`, Andreev's function evaluates `h` on the
 block parities of `ρ.fill w`. -/
-theorem andreev_fill_of_extends {h : BooleanFunction b}
+private theorem andreev_fill_of_extends {h : BooleanFunction b}
     {ρ : PartialAssignment (Fin (2 ^ b + b * m))} (hext : ρ.Extends (andreevFixTable b m h))
     (w : BitString (2 ^ b + b * m)) :
     andreev b m (ρ.fill w) =
@@ -305,7 +305,7 @@ theorem formulaSize_sub_sq_mul_pow_three_le_andreev (h : BooleanFunction b) (hb 
 
 /-- Specialization of Andreev's reduction to `r = Nat.log 2 b + 2`, for which `2 * b ≤ 2 ^ r`
 always holds. -/
-theorem formulaSize_sub_sq_mul_pow_three_le_andreev_log (h : BooleanFunction b) (hb : 1 ≤ b)
+private theorem formulaSize_sub_sq_mul_pow_three_le_andreev_log (h : BooleanFunction b) (hb : 1 ≤ b)
     {m : ℕ} (hm : Nat.log 2 b + 2 ≤ m) :
     (formulaSize h - 2 * b * (Nat.log 2 b + 2)) ^ 2 * m ^ 3 ≤
       4 * formulaSize (andreev b m) ^ 2 * (Nat.log 2 b + 2) ^ 3 := by

@@ -43,7 +43,7 @@ universe u
 variable {α : Type u} {n : ℕ}
 
 /-- A circuit realizing `f` on the encodings of an invariant set realizes its powers. -/
-theorem iterate_encoded (f : α → α) (S : Finset α) (e : α → BitString n)
+private theorem iterate_encoded (f : α → α) (S : Finset α) (e : α → BitString n)
     (c : Circuit signature n n) (hS : ∀ x ∈ S, f x ∈ S)
     (hstep : ∀ x ∈ S, c.eval interpretation (e x) = e (f x)) {x : α} (hx : x ∈ S) (T : ℕ) :
     (c.eval interpretation)^[T] (e x) = e (f^[T] x) := by

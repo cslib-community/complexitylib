@@ -44,6 +44,8 @@ in De Morgan depth `O(d log F)` and size `O(s F log F)`
   depth `O(log k)` computing `majority k`.
 * `Cslib.Circuits.Boolean.Threshold.Op.deMorganCircuit`: a De Morgan circuit for each operation of
   the threshold basis.
+* `Cslib.Circuits.Boolean.Unbounded.ExtOp.majorityDeMorganCircuit`: a De Morgan circuit for each
+  operation of the `TC` basis.
 
 ## Main results
 
@@ -82,6 +84,7 @@ def wordConstCircuit (n : ℕ) (y : BitString w) : Circuit signature n w :=
     ((Circuit.oneGate (Op.const false) Fin.elim0).append
       (Circuit.oneGate (Op.const true) Fin.elim0))
 
+/-- `wordConstCircuit n y` evaluates to the constant bit string `y` on every input. -/
 @[simp] theorem eval_wordConstCircuit (y : BitString w) (x : BitString n) :
     (wordConstCircuit n y).eval interpretation x = y := by
   funext i
@@ -89,10 +92,12 @@ def wordConstCircuit (n : ℕ) (y : BitString w) : Circuit signature n w :=
     Function.comp_apply]
   cases y i <;> rfl
 
+/-- `wordConstCircuit n y` uses `2` gates (one `false` and one `true` constant gate). -/
 @[simp] theorem size_wordConstCircuit (n : ℕ) (y : BitString w) :
     (wordConstCircuit n y).size = 2 :=
   rfl
 
+/-- `wordConstCircuit n y` has depth at most `1`. -/
 theorem depth_wordConstCircuit_le (n : ℕ) (y : BitString w) :
     (wordConstCircuit n y).depth ≤ 1 := by
   refine (Circuit.depth_comp_le _ _).trans ?_
@@ -127,6 +132,7 @@ theorem computes_thresholdDeMorganCircuit (k j : ℕ) :
       val_eval_weightCircuit]
   · simp only [Circuit.eval_oneGate, interpretation, threshold_eq_false_of_lt (not_le.1 h)]
 
+/-- Evaluating `thresholdDeMorganCircuit k j` on `x` yields `single (threshold k j) x`. -/
 @[simp] theorem eval_thresholdDeMorganCircuit (k j : ℕ) (x : BitString k) :
     (thresholdDeMorganCircuit k j).eval interpretation x = single (threshold k j) x :=
   computes_thresholdDeMorganCircuit k j x
@@ -172,6 +178,7 @@ theorem computes_majorityDeMorganCircuit (k : ℕ) :
     (majorityDeMorganCircuit k).Computes interpretation (single (majority k)) :=
   computes_thresholdDeMorganCircuit k ((k + 1) / 2)
 
+/-- Evaluating `majorityDeMorganCircuit k` on `x` yields `single (majority k) x`. -/
 @[simp] theorem eval_majorityDeMorganCircuit (k : ℕ) (x : BitString k) :
     (majorityDeMorganCircuit k).eval interpretation x = single (majority k) x :=
   computes_majorityDeMorganCircuit k x

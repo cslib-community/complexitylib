@@ -31,6 +31,9 @@ include these constants; the polynomial gate bound does not certify constructor 
 
 * `Cslib.Circuits.Boolean.batchLookupCircuit`: lookup with inferred sorting depth and padding.
 * `Cslib.Circuits.Boolean.batchLookupCircuit.withPadding`: lookup with a supplied record count.
+* `Cslib.Circuits.Boolean.batchLookupCircuit.depth`,
+  `Cslib.Circuits.Boolean.batchLookupCircuit.padding`: the canonical sorting depth and record
+  padding for a given request count and key width.
 
 ## Main results
 

@@ -127,13 +127,14 @@ end Approximators
 /-! ### Sums of bits -/
 
 /-- A sum of bits is their count. -/
-theorem sum_bitVal (S : Finset (Fin m)) (u : Fin m → Bool) :
+private theorem sum_bitVal (S : Finset (Fin m)) (u : Fin m → Bool) :
     ∑ i ∈ S, bitVal R (u i) = (#(S.filter fun i => u i = true) : R) := by
   rw [Finset.card_filter, Nat.cast_sum]
   exact Finset.sum_congr rfl fun i _ => by cases u i <;> simp [bitVal]
 
 /-- If some coordinate is true, at most half of the sets have a sum of bits equal to zero. -/
-theorem two_mul_card_sum_eq_zero_le [Nontrivial R] [DecidableEq R] (u : Fin m → Bool) {k : Fin m}
+private theorem two_mul_card_sum_eq_zero_le [Nontrivial R] [DecidableEq R] (u : Fin m → Bool)
+    {k : Fin m}
     (hk : u k = true) :
     2 * #(univ.filter fun S : Finset (Fin m) => ∑ i ∈ S, bitVal R (u i) = 0) ≤ 2 ^ m := by
   set Z := univ.filter fun S : Finset (Fin m) => ∑ i ∈ S, bitVal R (u i) = 0
@@ -159,7 +160,7 @@ theorem two_mul_card_sum_eq_zero_le [Nontrivial R] [DecidableEq R] (u : Fin m �
 
 variable {p : ℕ} [Fact p.Prime]
 
-theorem orApprox_bitVal_of_forall_false (T : Fin ℓ → Finset (Fin m)) (u : Fin m → Bool)
+private theorem orApprox_bitVal_of_forall_false (T : Fin ℓ → Finset (Fin m)) (u : Fin m → Bool)
     (hu : ∀ i, u i = false) : orApprox p T (fun i => bitVal R (u i)) = 0 := by
   have hp := (Fact.out : p.Prime).two_le
   simp [orApprox, hu, bitVal, zero_pow (show p - 1 ≠ 0 by omega)]
@@ -181,17 +182,17 @@ theorem natCast_pow_eq_bitVal (c : ℕ) :
     simp [h, hc, bitVal]
 
 /-- In characteristic `p`, the `(p - 1)`-st power of a nonzero count is `1`. -/
-theorem natCast_pow_eq_one {c : ℕ} (hc : (c : R) ≠ 0) : (c : R) ^ (p - 1) = 1 := by
+private theorem natCast_pow_eq_one {c : ℕ} (hc : (c : R) ≠ 0) : (c : R) ^ (p - 1) = 1 := by
   have h : c % p ≠ 0 := fun h => hc ((CharP.cast_eq_zero_iff R p c).2 (Nat.dvd_of_mod_eq_zero h))
   simp [natCast_pow_eq_bitVal, h, bitVal]
 
 /-- The `MOD_p` polynomial is exact on bits. -/
-theorem modApprox_bitVal (u : Fin m → Bool) :
+private theorem modApprox_bitVal (u : Fin m → Bool) :
     modApprox p (fun i => bitVal R (u i)) = bitVal R (modGate p m u) := by
   rw [modApprox, sum_bitVal, natCast_pow_eq_bitVal]
   rfl
 
-theorem orApprox_bitVal_of_exists (T : Fin ℓ → Finset (Fin m)) (u : Fin m → Bool)
+private theorem orApprox_bitVal_of_exists (T : Fin ℓ → Finset (Fin m)) (u : Fin m → Bool)
     (hT : ∃ j, ∑ i ∈ T j, bitVal R (u i) ≠ 0) :
     orApprox p T (fun i => bitVal R (u i)) = 1 := by
   obtain ⟨j, hj⟩ := hT
@@ -239,7 +240,7 @@ theorem card_orApprox_wrong_mul_le (u : Fin m → Bool) :
 
 /-- **Averaging over the inputs.** For arguments `u x` depending on the input, some tuple makes the
 OR approximator err on at most `2 ^ n / 2 ^ ℓ` inputs. -/
-theorem exists_orApprox (u : BitString n → Fin m → Bool) :
+private theorem exists_orApprox (u : BitString n → Fin m → Bool) :
     ∃ T : Fin ℓ → Finset (Fin m),
       #(univ.filter fun x => orApprox p T (fun i => bitVal R (u x i)) ≠
           bitVal R (decide (∃ j, u x j = true))) * 2 ^ ℓ ≤ 2 ^ n := by

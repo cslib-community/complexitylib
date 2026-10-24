@@ -112,20 +112,20 @@ theorem accepted_hiddenNetwork [Nonempty U] :
   rw [happend]
 
 /-- Each vertex of the hidden network reads at most one input. -/
-theorem ncard_readAt_hiddenNetwork_le (v : Vertex c) :
+private theorem ncard_readAt_hiddenNetwork_le (v : Vertex c) :
     ((hiddenNetwork c I Acc).readAt v).ncard ≤ 1 :=
   (Network.ncard_readAt_hide_le _ v).trans
     ((Network.ncard_readAt_reindex _ _ v).trans_le (ncard_readAt_le I Acc v))
 
 /-- The hidden network reads no more inputs than the network of the circuit. -/
-theorem ncard_read_hiddenNetwork_le :
+private theorem ncard_read_hiddenNetwork_le :
     (hiddenNetwork c I Acc).read.ncard ≤ (network c I Acc).read.ncard :=
   (Network.ncard_read_hide_le _).trans (Network.ncard_read_reindex _ _).le
 
 /-- **The cycle rank.** For fan-in at most `r`, if the graph of the circuit is connected, its
 cycle rank and the number of ordinary inputs read by the hidden network add up to at most
 `(r - 1) s + 1`, where `s` counts the inner gates. -/
-theorem cycleRank_add_ncard_read_hiddenNetwork_le {r : ℕ} (hfan : c.FanInAtMost r)
+private theorem cycleRank_add_ncard_read_hiddenNetwork_le {r : ℕ} (hfan : c.FanInAtMost r)
     (hconn : (graph c).toSimpleGraph.Connected) :
     (graph c).cycleRank + (hiddenNetwork c I Acc).read.ncard ≤ (r - 1) * c.innerSize + 1 :=
   (Nat.add_le_add_left (ncard_read_hiddenNetwork_le c I Acc) _).trans
@@ -141,7 +141,7 @@ variable {I : Interpretation σ U} {Acc : Set U} {c : Circuit σ (n + k) 1} {S :
   {K r : ℕ}
 
 /-- The hidden network of a circuit deciding `S` nondeterministically accepts exactly `S`. -/
-theorem accepted_hiddenNetwork_of_nondeterministicDecides [Nonempty U]
+private theorem accepted_hiddenNetwork_of_nondeterministicDecides [Nonempty U]
     (hS : c.NondeterministicDecides I Acc S) :
     (Compiler.hiddenNetwork c I fun _ => Acc).accepted = S := by
   rw [Compiler.accepted_hiddenNetwork]
@@ -154,7 +154,7 @@ variable [Finite U] [Nontrivial U]
 /-- **The cycle rank of the graph of a nondeterministic circuit** deciding a large
 `K`-rectangle-free set `S ⊆ U^n` is at most `(r - 1) s - n + log_q K + 1` for fan-in at most `r`,
 where `s` counts the inner gates. Only the `n` ordinary inputs are subtracted. -/
-theorem cycleRank_le_of_nondeterministicDecides (hfan : c.FanInAtMost r)
+private theorem cycleRank_le_of_nondeterministicDecides (hfan : c.FanInAtMost r)
     (hS : c.NondeterministicDecides I Acc S) (hfree : RectangleFree S K)
     (hbig : Nat.card U * K ^ 2 ≤ S.ncard) :
     ((Compiler.graph c).cycleRank : ℝ) ≤
@@ -182,7 +182,7 @@ theorem cycleRank_le_of_nondeterministicDecides (hfan : c.FanInAtMost r)
 /-- **Every layout of the graph of a nondeterministic circuit is wide.** For a circuit of fan-in
 at most `r ≥ 2` deciding a large `K`-rectangle-free set `S` nondeterministically, every layout `π`
 of its graph satisfies `log_q |S| ≤ width π + (r + 2) + 3 log_q K + log_q (|V| + 1)`. -/
-theorem logb_ncard_le_width_of_nondeterministicDecides (hr : 2 ≤ r) (hfan : c.FanInAtMost r)
+private theorem logb_ncard_le_width_of_nondeterministicDecides (hr : 2 ≤ r) (hfan : c.FanInAtMost r)
     (hS : c.NondeterministicDecides I Acc S) (hfree : RectangleFree S K)
     (hbig : Nat.card U * K ^ 2 ≤ S.ncard) (π : Layout (Compiler.Vertex c)) :
     Real.logb (Nat.card U) S.ncard ≤
@@ -264,7 +264,7 @@ hypothesis for subcubic graphs with coefficient `A > 0`. Under the hypotheses of
 every circuit of fan-in at most two with any number of witness inputs deciding `S_n`
 nondeterministically, over any basis and interpretation on `U`, has more than `(1 + 1/A - ε) n`
 inner gates. -/
-theorem eventually_lt_innerSize_of_nondeterministicDecides {A : ℝ} (hA : 0 < A)
+private theorem eventually_lt_innerSize_of_nondeterministicDecides {A : ℝ} (hA : 0 < A)
     (hlayout : LayoutBound 3 A) (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
     (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
     (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]

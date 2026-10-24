@@ -78,7 +78,7 @@ def stages {n : ℕ} (A : Table n) : ℕ → Table n
   | 0 => A
   | k + 1 => step A (stages A k)
 
-lemma stages_spec {n : ℕ} (A : Table n) (k : ℕ) :
+private lemma stages_spec {n : ℕ} (A : Table n) (k : ℕ) :
     denote (stages A k) = (BirdDet.Spec.stepEntry (denote A))^[k] (denote A) := by
   induction k with
   | zero => rfl

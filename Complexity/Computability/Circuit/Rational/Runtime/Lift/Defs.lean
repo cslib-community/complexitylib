@@ -77,7 +77,7 @@ open Polynomial
 
 /-! ### Index bridges -/
 
-lemma val_finEquiv {m : ℕ} [NeZero m] (i : Fin m) : (ZMod.finEquiv m i).val = i.val := by
+private lemma val_finEquiv {m : ℕ} [NeZero m] (i : Fin m) : (ZMod.finEquiv m i).val = i.val := by
   cases m with
   | zero => exact (NeZero.ne 0 rfl).elim
   | succ m => rfl
@@ -87,13 +87,13 @@ lemma val_finEquiv_symm {m : ℕ} [NeZero m] (z : ZMod m) :
   rw [← val_finEquiv, RingEquiv.apply_symm_apply]
 
 /-- A sum over `List.range m` is a sum over `Fin m`. -/
-lemma sum_range_eq_sum_fin {A : Type*} [AddCommMonoid A] (m : ℕ) (f : ℕ → A) :
+private lemma sum_range_eq_sum_fin {A : Type*} [AddCommMonoid A] (m : ℕ) (f : ℕ → A) :
     ((List.range m).map f).sum = ∑ i : Fin m, f i := by
   rw [← List.map_coe_finRange_eq_range, List.map_map, ← List.ofFn_eq_map, List.sum_ofFn]
   rfl
 
 /-- A sum over `List.range m` is a sum over the residues modulo `m`. -/
-lemma sum_range_eq_sum_zmod {A : Type*} [AddCommMonoid A] (m : ℕ) [NeZero m] (f : ℕ → A) :
+private lemma sum_range_eq_sum_zmod {A : Type*} [AddCommMonoid A] (m : ℕ) [NeZero m] (f : ℕ → A) :
     ((List.range m).map f).sum = ∑ z : ZMod m, f z.val := by
   rw [sum_range_eq_sum_fin]
   exact Fintype.sum_equiv (ZMod.finEquiv m).toEquiv _ _ fun i => by
@@ -101,14 +101,14 @@ lemma sum_range_eq_sum_zmod {A : Type*} [AddCommMonoid A] (m : ℕ) [NeZero m] (
     rw [val_finEquiv]
 
 /-- Residue subtraction on values, without truncated subtraction below zero. -/
-lemma val_sub_eq_mod {m : ℕ} [NeZero m] (u v : ZMod m) :
+private lemma val_sub_eq_mod {m : ℕ} [NeZero m] (u v : ZMod m) :
     (u - v).val = (u.val + m - v.val) % m := by
   have hv := v.val_lt
   rw [← ZMod.val_natCast, Nat.cast_sub (by omega), Nat.cast_add, ZMod.natCast_self,
     ZMod.natCast_zmod_val, ZMod.natCast_zmod_val, add_zero]
 
 /-- The residue `-a * k + a * u` of the lift formula, on values. -/
-lemma val_neg_mul_add_mul_eq_mod {m : ℕ} [NeZero m] (a u k : ZMod m) :
+private lemma val_neg_mul_add_mul_eq_mod {m : ℕ} [NeZero m] (a u k : ZMod m) :
     (-a * k + a * u).val = a.val * (u.val + m - k.val) % m := by
   have hk := k.val_lt
   rw [← ZMod.val_natCast, Nat.cast_mul, Nat.cast_sub (by omega), Nat.cast_add, ZMod.natCast_self,
@@ -239,7 +239,7 @@ theorem testEntry_eq (M N : ℕ) (a t : ℤ) (u v : Fin M) :
       show M - (q.val + 1) = M - 1 - q by omega]
   · rfl
 
-theorem rowEntry_testRows (M N : ℕ) (a t : ℤ) (u v : Fin M) :
+private theorem rowEntry_testRows (M N : ℕ) (a t : ℤ) (u v : Fin M) :
     rowEntry (testRows M N a t) u v = IntegralTest.padded M N a t u v := by
   rw [testRows, rowEntry_tabulateRows, ite_eq_left ⟨u.isLt, v.isLt⟩, testEntry_eq]
 
@@ -249,7 +249,7 @@ theorem testRows_eq (M N : ℕ) (a t : ℤ) :
   tabulateRows_eq_rowsOf _ _ (testEntry_eq M N a t)
 
 /-- The Taylor rows, read at residues, are the residue-indexed `Generator.integerTest`. -/
-theorem rowEntry_testRows_integerTest (N e : ℕ) (a t : ℤ)
+private theorem rowEntry_testRows_integerTest (N e : ℕ) (a t : ℤ)
     (u v : ZMod (CyclotomicRing.dimension e)) :
     rowEntry (testRows (CyclotomicRing.dimension e) N a t) u.val v.val =
       Generator.integerTest N e a t u v := by
@@ -295,7 +295,7 @@ residues and cyclotomic degree `Dg`. -/
 def liftRows (n N M Dg t p r : ℕ) : List (List (List ℤ)) :=
   (List.range (n + 1)).map fun a : ℕ => liftTable M Dg (testRows M N a t) p r
 
-lemma signedCoeff_eq (e : ℕ) (z : ZMod (CyclotomicRing.dimension e))
+private lemma signedCoeff_eq (e : ℕ) (z : ZMod (CyclotomicRing.dimension e))
     (i j : Fin (CyclotomicRing.degree e)) :
     signedCoeff (CyclotomicRing.degree e) z.val i j = CyclotomicRing.signedEntry e z i j :=
   rfl
@@ -321,7 +321,7 @@ theorem liftEntry_eq (e : ℕ) {T : List (List ℤ)}
     ← val_neg_mul_add_mul_eq_mod α u κ, hT, signedCoeff_eq]
 
 /-- The integer lift entry of `Generator.integralLift`, on the residues of the test rows. -/
-theorem liftEntry_testRows (N e : ℕ) (a t p r : ℤ) (u v : ZMod (CyclotomicRing.dimension e))
+private theorem liftEntry_testRows (N e : ℕ) (a t p r : ℤ) (u v : ZMod (CyclotomicRing.dimension e))
     (i j : Fin (CyclotomicRing.degree e)) :
     liftEntry (CyclotomicRing.dimension e) (CyclotomicRing.degree e)
         (testRows (CyclotomicRing.dimension e) N a t) p r u.val v.val i j =
@@ -329,7 +329,7 @@ theorem liftEntry_testRows (N e : ℕ) (a t p r : ℤ) (u v : ZMod (CyclotomicRi
   liftEntry_eq e (rowEntry_testRows_integerTest N e a t) p r u v i j
 
 /-- The entries of a lift table are the entries of `Generator.integralLift`. -/
-theorem liftEntry_coordinate (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1))
+private theorem liftEntry_coordinate (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1))
     (i j : Fin (Generator.matrixDimension e)) :
     liftEntry (CyclotomicRing.dimension e) (CyclotomicRing.degree e)
         (testRows (CyclotomicRing.dimension e) N a (x 0)) (x 1) (x 2)

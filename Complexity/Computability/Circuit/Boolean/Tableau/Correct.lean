@@ -61,7 +61,7 @@ variable {k : ℕ} {State : Type} [Fintype State] [DecidableEq State]
 /-! ### Values of wires -/
 
 /-- The value of a De Morgan gate from its operation and its first two arguments. -/
-def opVal : Op → Bool → Bool → Bool
+private def opVal : Op → Bool → Bool → Bool
   | .const b, _, _ => b
   | .not, a, _ => !a
   | .and, a, b => a && b
@@ -78,7 +78,7 @@ noncomputable def val (T : ℕ) (x : List Bool) (w : ℕ) : Bool :=
 variable {T : ℕ} {x : List Bool}
 
 /-- The value of a numbered gate is its operation applied to the values of its arguments. -/
-theorem val_add {g : ℕ} (hg : g < numGates k State T) :
+private theorem val_add {g : ℕ} (hg : g < numGates k State T) :
     val tm T x (x.length + g) = interpretation (gateCode tm x.length T g).1
       fun a => (gateCode tm x.length T g).2[a.val]?.elim false (val tm T x) := by
   exact getD_evalCode interpretation false x (isCodeFrom_gates tm x.length T)
@@ -153,7 +153,8 @@ def gfSem {input : List Bool} (cfg : Cfg k Bool State input) : GFeat State → B
 
 /-- Whether the action of the step from a configuration has the attribute `v`: never, once
 halted. -/
-noncomputable def actSem {input : List Bool} (cfg : Cfg k Bool State input) (v : Attr k State) :
+private noncomputable def actSem {input : List Bool} (cfg : Cfg k Bool State input)
+    (v : Attr k State) :
     Bool :=
   match cfg.state with
   | none => false
@@ -168,7 +169,7 @@ def Invariant (t : ℕ) : Prop :=
     colSem T (tm.runFrom (tm.initCfg x) t) c f
 
 /-- The first block holds the initial configuration. -/
-theorem invariant_zero : Invariant tm T x 0 := by
+private theorem invariant_zero : Invariant tm T x 0 := by
   refine ⟨fun f => ?_, fun c hc f => ?_⟩
   · rw [val_wire tm (l := .gf f true 7) rfl (Nat.zero_le _)]
     rcases f with q | o <;> simp [initBit, gfInit, gfSem, runFrom, Cfg.init, eq_comm]
@@ -212,7 +213,7 @@ private theorem val_resolve_node {t c : ℕ} {p : Bool} {l : Loc k State} {cs : 
 
 variable (T x) in
 /-- The contribution of column `c` to a scanned quantity. -/
-def termSem (cfg : Cfg k Bool State x) (c : ℕ) : ScanQ k → Prop
+private def termSem (cfg : Cfg k Bool State x) (c : ℕ) : ScanQ k → Prop
   | .inRead s => cfg.inputPos.val = c ∧ inputAt x c = s
   | .read i s => cfg.workTapePos i = (c : ℤ) - T ∧ cfg.workTapes i ((c : ℤ) - T) = s
 
@@ -227,7 +228,7 @@ private theorem inputAt_eq_some {c : ℕ} (h : 1 ≤ c ∧ c ≤ x.length) :
 
 variable (x) in
 /-- The symbol read by a head of a configuration. -/
-def readSem (cfg : Cfg k Bool State x) : ScanQ k → Prop
+private def readSem (cfg : Cfg k Bool State x) : ScanQ k → Prop
   | .inRead s => cfg.inputSymbol = s
   | .read i s => cfg.workTapeSymbols i = s
 
@@ -242,7 +243,7 @@ private theorem sitOf_equivFin (y : Situation k State) :
 
 variable (T x) in
 /-- The value of a term of a feature, from block `t` and column `c`: both of its wires are true. -/
-noncomputable def termVal (t c : ℕ) (p : Ref k State × Ref k State) : Bool :=
+private noncomputable def termVal (t c : ℕ) (p : Ref k State × Ref k State) : Bool :=
   val tm T x (p.1.resolve x.length T t c) && val tm T x (p.2.resolve x.length T t c)
 
 section Step
@@ -713,7 +714,7 @@ private theorem val_col_step {c : ℕ} (hc : c < numCols T) (f : ColFeat k) :
     · simp [hz, Ne.symm hz]
 
 /-- One step of the simulation: the invariant passes from block `t` to block `t + 1`. -/
-theorem invariant_succ : Invariant tm T x (t + 1) :=
+private theorem invariant_succ : Invariant tm T x (t + 1) :=
   ⟨fun f => val_gf_step tm hinv hn htT f, fun _ hc f => val_col_step tm hinv hn htT hc f⟩
 
 end Step

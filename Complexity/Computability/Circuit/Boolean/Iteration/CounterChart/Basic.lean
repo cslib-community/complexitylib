@@ -97,18 +97,18 @@ theorem length_le_period (hf : Function.Injective f) (j : Fin R) :
 end CounterIntervalChart
 
 /-- Starts of the linear pieces; the last counter edge creates no additional piece. -/
-noncomputable def counterIntervalStarts (f : BitVec n → BitVec n) : Finset ℕ :=
+private noncomputable def counterIntervalStarts (f : BitVec n → BitVec n) : Finset ℕ :=
   insert 0 (((disagreement f (fun x => x + 1)).image
     (fun x => x.toNat + 1)).filter fun a => a < 2 ^ n)
 
-theorem counterIntervalStarts_bound (f : BitVec n → BitVec n) :
+private theorem counterIntervalStarts_bound (f : BitVec n → BitVec n) :
     (counterIntervalStarts f).card ≤ (disagreement f (fun x => x + 1)).card + 1 := by
   classical
   unfold counterIntervalStarts
   exact (Finset.card_insert_le _ _).trans
     (Nat.add_le_add_right ((Finset.card_filter_le _ _).trans (Finset.card_image_le)) 1)
 
-theorem counterIntervalStarts_lt (f : BitVec n → BitVec n) {a : ℕ}
+private theorem counterIntervalStarts_lt (f : BitVec n → BitVec n) {a : ℕ}
     (ha : a ∈ counterIntervalStarts f) : a < 2 ^ n := by
   classical
   rcases Finset.mem_insert.mp ha with rfl | ha
@@ -119,7 +119,7 @@ theorem counterIntervalStarts_lt (f : BitVec n → BitVec n) {a : ℕ}
 def nextBoundary (S : Finset ℕ) (N a : ℕ) : ℕ :=
   (insert N (S.filter fun b => a < b)).min' (by simp)
 
-theorem nextBoundary_gt (S : Finset ℕ) {N a : ℕ} (ha : a < N) :
+private theorem nextBoundary_gt (S : Finset ℕ) {N a : ℕ} (ha : a < N) :
     a < nextBoundary S N a := by
   have h := Finset.min'_mem (insert N (S.filter fun b => a < b)) (by simp)
   rcases Finset.mem_insert.mp h with he | he
@@ -127,7 +127,7 @@ theorem nextBoundary_gt (S : Finset ℕ) {N a : ℕ} (ha : a < N) :
     exact he.symm ▸ ha
   · exact (Finset.mem_filter.mp he).2
 
-theorem nextBoundary_le (S : Finset ℕ) (N a : ℕ) : nextBoundary S N a ≤ N :=
+private theorem nextBoundary_le (S : Finset ℕ) (N a : ℕ) : nextBoundary S N a ≤ N :=
   Finset.min'_le _ _ (by simp)
 
 theorem nextBoundary_le_of_mem (S : Finset ℕ) (N a b : ℕ)
@@ -135,7 +135,7 @@ theorem nextBoundary_le_of_mem (S : Finset ℕ) (N a b : ℕ)
   Finset.min'_le _ _ (by simp [hb, hab])
 
 /-- A finite set of starts containing zero covers the whole linear universe. -/
-theorem exists_covering_interval (S : Finset ℕ) {N x : ℕ}
+private theorem exists_covering_interval (S : Finset ℕ) {N x : ℕ}
     (hzero : 0 ∈ S) (hx : x < N) :
     ∃ a ∈ S, a ≤ x ∧ x < nextBoundary S N a := by
   let before := S.filter fun a => a ≤ x
@@ -157,7 +157,7 @@ theorem exists_covering_interval (S : Finset ℕ) {N x : ℕ}
     lia
 
 /-- Before the next cut, the actual update agrees with numerical increment. -/
-theorem counterInterval_step (f : BitVec n → BitVec n) {a i : ℕ}
+private theorem counterInterval_step (f : BitVec n → BitVec n) {a i : ℕ}
     (hai : a ≤ i) (hi : i + 1 < nextBoundary (counterIntervalStarts f) (2 ^ n) a) :
     f (BitVec.ofNat n i) = BitVec.ofNat n (i + 1) := by
   classical

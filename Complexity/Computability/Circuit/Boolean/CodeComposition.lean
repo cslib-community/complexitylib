@@ -32,10 +32,13 @@ performs binary-indexed lookup and gate relocation, and agrees exactly with `Cir
 ## Main definitions
 
 * `Cslib.Circuits.Program.appendWireCode`: wire numbers under program continuation.
+* `Cslib.Circuits.Boolean.shiftCodeWire`, `Cslib.Circuits.Boolean.shiftCode`: relocate gate and
+  output wire references of a raw circuit code past preceding gates.
 * `Cslib.Circuits.Boolean.appendCode`: combine raw codes on shared inputs.
 * `Cslib.Circuits.Boolean.appendCodes`: combine raw blocks of varying sizes on shared inputs.
 * `Cslib.Circuits.Boolean.bundleCode`: combine equal-sized raw blocks on shared inputs.
-* `Cslib.Circuits.Boolean.compCode`: compose raw circuit codes through their output wires.
+* `Cslib.Circuits.Boolean.compCodeWire`, `Cslib.Circuits.Boolean.compCode`: compose raw circuit
+  codes through their output wires.
 
 ## Main results
 
@@ -111,11 +114,13 @@ def appendCode (n : ℕ) (c d : List (Op × List ℕ) × List ℕ) :
   (c.1 ++ d.1.map (fun g => (g.1, g.2.map (shiftCodeWire n c.1.length))),
     c.2 ++ d.2.map (shiftCodeWire n c.1.length))
 
+/-- Appending two raw codes sums their gate counts. -/
 @[simp]
 theorem length_appendCode (n : ℕ) (c d : List (Op × List ℕ) × List ℕ) :
     (appendCode n c d).1.length = c.1.length + d.1.length := by
   simp [appendCode]
 
+/-- Appending two raw codes sums their output counts. -/
 @[simp]
 theorem length_appendCode_outputs (n : ℕ) (c d : List (Op × List ℕ) × List ℕ) :
     (appendCode n c d).2.length = c.2.length + d.2.length := by
@@ -243,10 +248,11 @@ def appendCodes (n : ℕ) (codes : List (List (Op × List ℕ) × List ℕ)) :
     List (Op × List ℕ) × List ℕ :=
   codes.foldl (appendCode n) ([], [])
 
+/-- Combining an empty list of raw codes yields the empty code. -/
 @[simp] theorem appendCodes_nil (n : ℕ) : appendCodes n [] = ([], []) := rfl
 
 /-- Adding a final block is ordinary shared-input append. -/
-theorem appendCodes_append_singleton (n : ℕ)
+private theorem appendCodes_append_singleton (n : ℕ)
     (codes : List (List (Op × List ℕ) × List ℕ)) (code : List (Op × List ℕ) × List ℕ) :
     appendCodes n (codes ++ [code]) = appendCode n (appendCodes n codes) code := by
   simp [appendCodes]
@@ -390,7 +396,7 @@ private theorem bundleCode_snoc (n blockSize : ℕ)
   simp [bundleCode, List.zipIdx_append]
 
 /-- Equal-sized blocks occupy exactly their number times their common gate count. -/
-theorem length_bundleCode (n blockSize : ℕ) (codes : List (List (Op × List ℕ) × List ℕ))
+private theorem length_bundleCode (n blockSize : ℕ) (codes : List (List (Op × List ℕ) × List ℕ))
     (hlen : ∀ c ∈ codes, c.1.length = blockSize) :
     (bundleCode n blockSize codes).1.length = codes.length * blockSize := by
   induction codes using List.reverseRecOn with
@@ -403,7 +409,7 @@ theorem length_bundleCode (n blockSize : ℕ) (codes : List (List (Op × List �
       hlen code (by simp)]
 
 /-- Adding the next equal-sized block is shared-input append. -/
-theorem bundleCode_append_singleton (n blockSize : ℕ)
+private theorem bundleCode_append_singleton (n blockSize : ℕ)
     (codes : List (List (Op × List ℕ) × List ℕ)) (code : List (Op × List ℕ) × List ℕ)
     (hlen : ∀ c ∈ codes, c.1.length = blockSize) :
     bundleCode n blockSize (codes ++ [code]) =

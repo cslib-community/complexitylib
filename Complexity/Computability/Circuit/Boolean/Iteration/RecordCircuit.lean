@@ -115,7 +115,7 @@ theorem payload_mem {s : Set (BooleanFunction n)} {a : BitString n → Record n 
     (ha : wireSet a ⊆ s) (i : Fin n) : (fun x => (a x).payload i) ∈ s := by
   simpa [encode] using ha ⟨Fin.natAdd (n + 1) (Fin.natAdd w i).succ, rfl⟩
 
-theorem synthesis_collision (s : Set (BooleanFunction n)) (a b : BitString n → Record n w)
+private theorem synthesis_collision (s : Set (BooleanFunction n)) (a b : BitString n → Record n w)
     (ha : wireSet a ⊆ s) (hb : wireSet b ⊆ s) :
     Synthesis interpretation s {fun x => collision (a x) (b x)} (20 * (width n w + 1)) := by
   have hs := synthesis_bits_eq s (fun x => (a x).state) (fun x => (b x).state)

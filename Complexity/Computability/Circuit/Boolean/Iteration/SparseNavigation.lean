@@ -63,7 +63,7 @@ def cycleLabelVisits (x y : BitString (n + (chartWidth n + chartWidth n))) :
     (fun i => ((cycleLabelDistance x y).setWidth (n + 1)).getLsbD i.val))
     (fun i => ((labelLength y).setWidth (n + 1)).getLsbD i.val)
 
-theorem cycleLabelVisits_flag (f : BitVec n → BitVec n) (hf : Function.Injective f)
+private theorem cycleLabelVisits_flag (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) :
     cycleLabelVisits (wordCycleLabel f x) (wordCycleLabel f y)
       (Fin.castAdd (n + 1) (0 : Fin (1 + (n + 1)))) = true ↔ ∃ t, f^[t] x = y := by
@@ -78,7 +78,7 @@ theorem cycleLabelVisits_flag (f : BitVec n → BitVec n) (hf : Function.Injecti
   rw [decide_eq_true_eq]
   exact (exists_iterate_eq_iff_canonicalCycle_eq f x y (hf.mem_periodicPts y)).symm
 
-theorem cycleLabelDistance_toNat (f : BitVec n → BitVec n) (hf : Function.Injective f)
+private theorem cycleLabelDistance_toNat (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) (hc : canonicalCycle f x = canonicalCycle f y) :
     (cycleLabelDistance (wordCycleLabel f x) (wordCycleLabel f y)).toNat =
       cyclicDistance f x y := by
@@ -95,7 +95,7 @@ theorem cycleLabelDistance_toNat (f : BitVec n → BitVec n) (hf : Function.Inje
     (by rw [hp, he]; exact phase_lt f x), hp, hp, he]
   simp only [cyclicDistance, hdepth, Nat.add_zero]
 
-theorem cycleLabelVisits_first (f : BitVec n → BitVec n) (hf : Function.Injective f)
+private theorem cycleLabelVisits_first (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) (hr : ∃ t, f^[t] x = y) :
     let d := (visitScheduleFirst (cycleLabelVisits (wordCycleLabel f x) (wordCycleLabel f y))).toNat
     f^[d] x = y ∧ (∀ j < d, f^[j] x ≠ y) ∧ d < 2 ^ n := by
@@ -114,7 +114,7 @@ theorem cycleLabelVisits_first (f : BitVec n → BitVec n) (hf : Function.Inject
   exact ⟨by simpa only [hdepth, Nat.zero_add] using hfirst.1,
     by simpa only [hdepth, Nat.zero_add] using hfirst.2, hd⟩
 
-theorem cycleLabelVisits_period (f : BitVec n → BitVec n) (hf : Function.Injective f)
+private theorem cycleLabelVisits_period (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) :
     (visitSchedulePeriod (cycleLabelVisits (wordCycleLabel f x) (wordCycleLabel f y))).toNat =
       Function.minimalPeriod f y := by

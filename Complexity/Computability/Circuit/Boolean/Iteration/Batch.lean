@@ -77,7 +77,7 @@ theorem batchBudget_one (n s M L : ℕ) : batchBudget n s M 1 L = powerBudget n 
   simp only [batchBudget, powerBudget, Nat.one_mul]
 
 /-- A synthesis of every member's output block gives a circuit for the block map. -/
-theorem exists_circuit_blockMap {k : ℕ} {g : BitString n → BitString k} {C : ℕ}
+private theorem exists_circuit_blockMap {k : ℕ} {g : BitString n → BitString k} {C : ℕ}
     (h : Synthesis interpretation (inputs (r * n))
       (⋃ member, wires fun x => g (directProductInput x member)) C) :
     ∃ out : Circuit signature (r * n) (r * k),
@@ -182,7 +182,7 @@ theorem synthesis_batched_power (c : Circuit signature n n) (s : Set (BooleanFun
     omega
 
 /-- The construction cost is within `100000` times the batched tradeoff. -/
-theorem batch_construction_cost (n s M r L : ℕ) (hrN : r ≤ 2 ^ n) (hL : 0 < L)
+private theorem batch_construction_cost (n s M r L : ℕ) (hrN : r ≤ 2 ^ n) (hL : 0 < L)
     (hLN : L ≤ 2 ^ n) (hM : M ≤ 2 ^ n / L) :
     2 + (r * (2 * L * s) +
         48 * (r * (2 * L + 1) + M + 1) * (Nat.clog 2 (r * (2 * L + 1) + M) + 1) ^ 2 *
@@ -301,7 +301,7 @@ theorem optimizedBatchBudget_one (n s M : ℕ) :
     optimizedBatchBudget n s M 1 = optimizedBudget n s M := by
   simp only [optimizedBatchBudget, optimizedBudget, Nat.one_mul]
 
-theorem exists_batchBudget_le_optimizedBatchBudget (n s M r : ℕ) (hr : 0 < r)
+private theorem exists_batchBudget_le_optimizedBatchBudget (n s M r : ℕ) (hr : 0 < r)
     (hM : M ≤ 2 ^ n) :
     ∃ L : ℕ, 0 < L ∧ L ≤ 2 ^ n ∧
       (batchBudget n s M r L : ℝ) ≤ 3 * optimizedBatchBudget n s M r := by

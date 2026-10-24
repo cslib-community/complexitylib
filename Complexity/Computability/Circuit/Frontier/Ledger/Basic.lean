@@ -105,7 +105,7 @@ def run (m : M) (x : Fin n → U) : Wire n s → U :=
 
 /-- The value of a gate in the run with guess `m`: the readout for a special gate, and the gate
 applied to the values of its arguments otherwise. -/
-theorem run_gate (m : M) (x : Fin n → U) (g : Fin s) :
+private theorem run_gate (m : M) (x : Fin n → U) (g : Fin s) :
     L.run m x (.gate g) = if h : special g then L.readout m ⟨g, h⟩
       else I (p.lines g).op fun a => L.run m x ((p.lines g).wires a) :=
   p.trace_eraseGates_gate x g

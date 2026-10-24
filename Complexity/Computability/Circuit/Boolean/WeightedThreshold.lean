@@ -31,7 +31,16 @@ does not assert an algorithm for evaluating rationally encoded circuits.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.WeightedThreshold.signature`: the weighted threshold basis.
+* `Cslib.Circuits.Boolean.WeightedThreshold.Op`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.signature`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.interpretation`: the weighted threshold basis and its
+  Boolean evaluation.
+* `Cslib.Circuits.Boolean.WeightedThreshold.ofThresholdOp`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.ofThreshold`: embedding of the unweighted threshold
+  basis.
+* `Cslib.Circuits.Boolean.WeightedThreshold.lineWeight`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.inputWeight`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.gateWeight`: aggregated wire coefficients of a gate.
 * `Cslib.Circuits.Boolean.WeightedThreshold.inputGates`: gates with a nonzero aggregated
   coefficient on an original input.
 * `Cslib.Circuits.Boolean.WeightedThreshold.transcript`: the values of these gates.
@@ -104,7 +113,7 @@ def lineWeight (line : Line signature n g) (wire : Wire n g) : ℝ :=
   ∑ a with line.wires a = wire, line.op.weight a
 
 /-- Regrouping argument slots by actual wire preserves their weighted sum. -/
-theorem sum_lineWeight_mul (line : Line signature n g) (values : Wire n g → ℝ) :
+private theorem sum_lineWeight_mul (line : Line signature n g) (values : Wire n g → ℝ) :
     ∑ a, line.op.weight a * values (line.wires a) =
       ∑ wire, lineWeight line wire * values wire := by
   rw [← sum_fiberwise univ line.wires (fun a => line.op.weight a * values (line.wires a))]
@@ -158,6 +167,8 @@ only through earlier gates are not counted. -/
 noncomputable def inputGates (p : Program signature n g) : Finset (Fin g) :=
   univ.filter fun gate => ∃ i, inputWeight p gate i ≠ 0
 
+/-- A gate belongs to `inputGates p` if and only if it has a nonzero aggregated coefficient on some
+original input. -/
 @[simp]
 theorem mem_inputGates (p : Program signature n g) (gate : Fin g) :
     gate ∈ inputGates p ↔ ∃ i, inputWeight p gate i ≠ 0 := by

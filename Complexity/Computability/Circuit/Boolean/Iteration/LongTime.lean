@@ -102,7 +102,8 @@ theorem toNat_compressedTime (f : BitString n → BitString n) (x : BitString n)
 
 /-- Compressing an available time with an available cycle length: one streaming remainder over
 the time bits, one modular difference, one addition, one comparison and one selection. -/
-theorem synthesis_compressedTime (s : Set (BooleanFunction a)) (ell : BitString a → BitVec (n + 3))
+private theorem synthesis_compressedTime (s : Set (BooleanFunction a))
+    (ell : BitString a → BitVec (n + 3))
     (bits : BitString a → BitString m) (hl : wordWires ell ⊆ s) (hb : ∀ j, (fun x => bits x j) ∈ s)
     (hc : ∀ b : Bool, (fun _ : BitString a => b) ∈ s) :
     Synthesis interpretation s (wordWires fun x => compressedTime n (ell x) (bits x))
@@ -137,14 +138,14 @@ theorem synthesis_compressedTime (s : Set (BooleanFunction a)) (ell : BitString 
 
 /-- The gate count of the long-time construction: constants, the label circuit, the time
 compression and binary powering over `n + 3` time bits. -/
-def longTimeBudget (n s m L : ℕ) : ℕ :=
+private def longTimeBudget (n s m L : ℕ) : ℕ :=
   2 + 60000 * powerBudget n s (2 ^ n) L +
     (m * (22 * (n + 3) + 3) + 50 * (n + 4) ^ 2 + 16 * (n + 3) + 1 + (5 * m + 2)) +
     (n + 3) * (40000 * powerBudget n s (2 ^ n) L + 4 * n)
 
 /-- **Long input times**, for times wider than the state: some circuit of size at most
 `longTimeBudget n c.size m L` iterates `c` for a number of steps given by `m > n` input bits. -/
-theorem long_time_circuit (c : Circuit signature n n) (m L : ℕ) (hnm : n < m) (hL : 0 < L)
+private theorem long_time_circuit (c : Circuit signature n n) (m L : ℕ) (hnm : n < m) (hL : 0 < L)
     (hLN : L ≤ 2 ^ n) :
     ∃ out : Circuit signature (n + m) n,
       out.Computes interpretation (inputTimeIterate (c.eval interpretation) m) ∧
@@ -192,7 +193,7 @@ theorem long_time_circuit (c : Circuit signature n n) (m L : ℕ) (hnm : n < m) 
     simp only [time, ell, canonicalLabel, labelLength_labelBits]
     rw [toNat_compressedTime f _ _ hnm, iterate_normalizedTime]
 
-theorem longTimeBudget_le (n s m L : ℕ) :
+private theorem longTimeBudget_le (n s m L : ℕ) :
     longTimeBudget n s m L ≤
       200000 * (n + 1) * powerBudget n s (2 ^ n) L + 80 * m * (n + 1) := by
   set B := powerBudget n s (2 ^ n) L

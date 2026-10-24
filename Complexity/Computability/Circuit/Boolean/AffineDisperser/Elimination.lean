@@ -64,7 +64,7 @@ def SharedSecondChild (S : State n) (G x y : ℕ) : Prop :=
 
 /-- Restricting one input `x'` of the minimal AND and deleting its two children `G` and `B`,
 which are also the children of the other input `y'`, is a step: `Δa = -1`, `ΔW ≤ -18`. -/
-theorem Reduction.step_of_shared {S S' : State n} (hS : S.Valid f) {G x' y' : ℕ}
+private theorem Reduction.step_of_shared {S S' : State n} (hS : S.Valid f) {G x' y' : ℕ}
     {B : ℕ ⊕ ℕ} (hx' : x' ∈ S.unpaired) (hy' : y' ∈ S.unpaired) (hxy : x' ≠ y')
     (hx'2 : S.deg x' = 2) (hy'2 : S.deg y' = 2) (hcy : S.children y' = {.inl G, B})
     (h : Reduction f S S' {x'} [.inl G, B] []) : Step f S S' := by
@@ -90,7 +90,7 @@ theorem Reduction.step_of_shared {S S' : State n} (hS : S.Valid f) {G x' y' : �
 /-- Restricting a parameter `x'` to a constant or to a literal of another parameter with at least
 its children, on which the gates `G` and `B ≠ G`, `B` not reading `G`, are constant, and deleting
 both gates, is a reduction. -/
-theorem Valid.exists_reduction_restrict_deleteConst {S : State n} (hS : S.Valid f) {x' : ℕ}
+private theorem Valid.exists_reduction_restrict_deleteConst {S : State n} (hS : S.Valid f) {x' : ℕ}
     (hx' : x' ∈ S.params) {ℓ : Lit} (hℓ : ∀ t, ℓ.Reads t → t ∈ S.params ∧ t ≠ x' ∧
       S.children x' ⊆ S.children t ∧ (S.Paired x' → S.IsPartner x' t))
     {G B : ℕ} (hG : G ∈ S.gates) (hB : B ∈ S.gates) (hBG : B ≠ G)
@@ -114,7 +114,7 @@ theorem Valid.exists_reduction_restrict_deleteConst {S : State n} (hS : S.Valid 
 
 /-- Case 7 when the shared second child `B` of `x` and `y` is a gate: on one of the lines `x = c`,
 `y = c` or `x = y + c` both `G` and `B` are constant, and restricting to it deletes both. -/
-theorem Valid.exists_reduction_sharedGate {S : State n} (hS : S.Valid f) {G x y B : ℕ}
+private theorem Valid.exists_reduction_sharedGate {S : State n} (hS : S.Valid f) {G x y B : ℕ}
     (h : S.MinimalAnd G x y) (hcx : S.children x = {.inl G, .inl B})
     (hcy : S.children y = {.inl G, .inl B}) (hBG : B ≠ G) :
     ∃ S' x' y', ((x' = x ∧ y' = y) ∨ (x' = y ∧ y' = x)) ∧
@@ -163,7 +163,7 @@ theorem Valid.exists_reduction_sharedGate {S : State n} (hS : S.Valid f) {G x y 
 /-- Case 7 when the shared second child of `x` and `y` is an equation `v + x + y = rhs`:
 restricting to the line `x = y + c` on which `G` is constant makes the equation read `v = rhs + c`,
 and both are deleted. -/
-theorem Valid.exists_reduction_sharedEqn {S : State n} (hS : S.Valid f) (hN : S.Normal)
+private theorem Valid.exists_reduction_sharedEqn {S : State n} (hS : S.Valid f) (hN : S.Normal)
     {G x y e : ℕ} (h : S.MinimalAnd G x y) (hcx : S.children x = {.inl G, .inr e})
     (hcy : S.children y = {.inl G, .inr e}) :
     ∃ S', Reduction f S S' {x} [.inl G, .inr e] [] := by
@@ -283,7 +283,7 @@ def fixInputDeleted (S : State n) (G x : ℕ) : Finset (ℕ ⊕ ℕ) :=
 /-- Fixing the input `x` of the minimal AND so that `G` becomes constant, and deleting `G`, the
 other children of `x` and the children of `G`, is a reduction deleting `deg x + deg G`
 constraints. -/
-theorem Valid.exists_reduction_fixInput {S : State n} (hS : S.Valid f) {G x y : ℕ}
+private theorem Valid.exists_reduction_fixInput {S : State n} (hS : S.Valid f) {G x y : ℕ}
     (h : S.MinimalAnd G x y) : ∃ S', Reduction f S S' {x}
       (.inl G :: (S.fixInputDeleted G x).toList) (S.fixInputDeleted G x).toList := by
   have hxG := h.ne_gate hS h.mem_params_x
@@ -302,7 +302,7 @@ theorem Valid.exists_reduction_fixInput {S : State n} (hS : S.Valid f) {G x y : 
         (by rw [fixConst_gate, Gate.reads_subst_of_ne hxG.symm (by simp [Lit.const])]; exact hKG)
   exact ⟨S', (h₁.trans_delete h₂).trans_delete h₃⟩
 
-theorem MinimalAnd.length_fixInput {S : State n} (hS : S.Valid f) {G x y : ℕ}
+private theorem MinimalAnd.length_fixInput {S : State n} (hS : S.Valid f) {G x y : ℕ}
     (h : S.MinimalAnd G x y) :
     (Sum.inl G :: (S.fixInputDeleted G x).toList).length = S.deg x + S.deg G := by
   have hdisj : Disjoint ((S.children x).erase (.inl G)) (S.children G) := by
@@ -378,7 +378,7 @@ theorem Reduction.wt_add_le_fixInput {S S' : State n} (hS : S.Valid f) (hN : S.N
 
 /-- Outside the bottleneck configuration, when `deg x = 2` and `G` has one child, no unpaired
 isolated parameter lies below `G`. -/
-theorem MinimalAnd.not_isolatedBelow {S : State n} (hS : S.Valid f) {G x y : ℕ}
+private theorem MinimalAnd.not_isolatedBelow {S : State n} (hS : S.Valid f) {G x y : ℕ}
     (h : S.MinimalAnd G x y) (hbot : ¬ S.Bottleneck G x) (hx2 : S.deg x = 2)
     (hG1 : S.deg G = 1) {u : ℕ} : ¬ S.IsolatedBelow G u := fun ⟨hu1, hu2, N, hNG, hNu⟩ => by
   refine hbot ⟨hx2, ?_⟩
@@ -434,7 +434,7 @@ theorem Valid.step_fixInput {S : State n} (hS : S.Valid f) (hN : S.Normal) {G x 
 
 /-- The weights after the quadratic reparameterisation: `x` and `y` become paired, `z` is
 replaced by `D`, which gains at most seven, and no other weight grows. -/
-theorem QuadOK.wt_add_le {S : State n} (hS : S.Valid f) {x y z G D : ℕ} {α β γ c : Bool}
+private theorem QuadOK.wt_add_le {S : State n} (hS : S.Valid f) {x y z G D : ℕ} {α β γ c : Bool}
     (h : S.QuadOK x y z G D α β γ c) (hx : 2 ≤ S.deg x) (hy : 2 ≤ S.deg y) :
     ∀ u ∈ insert D S.params, (S.quad x y z G D α β γ c).wt u + ((if u = x then 7 else 0) +
       (if u = y then 7 else 0) + (if u = z then 6 else 0)) ≤ S.wt u + (if u = D then 7 else 0) := by
@@ -484,7 +484,7 @@ theorem QuadOK.wt_add_le {S : State n} (hS : S.Valid f) {x y z G D : ℕ} {α β
 
 /-- The quadratic reparameterisation of the bottleneck configuration, when `x` and `y` have
 degree at least two, is a step of gate elimination: `Δa = -1`, `ΔW ≤ -14`. -/
-theorem Valid.step_quad {S : State n} (hS : S.Valid f) {x y z G D : ℕ} {α β γ c : Bool}
+private theorem Valid.step_quad {S : State n} (hS : S.Valid f) {x y z G D : ℕ} {α β γ c : Bool}
     (h : S.QuadOK x y z G D α β γ c) (hx : 2 ≤ S.deg x) (hy : 2 ≤ S.deg y) :
     Step f S (S.quad x y z G D α β γ c) := by
   set S' := S.quad x y z G D α β γ c
@@ -509,7 +509,7 @@ theorem Valid.step_quad {S : State n} (hS : S.Valid f) {x y z G D : ℕ} {α β 
     by simp only [State.a]; omega⟩
 
 /-- In the bottleneck configuration, `G` has the unique child `D` and `z` the unique child `D`. -/
-theorem MinimalAnd.children_of_bottleneck {S : State n} (hS : S.Valid f) {G x y D z : ℕ}
+private theorem MinimalAnd.children_of_bottleneck {S : State n} (hS : S.Valid f) {G x y D z : ℕ}
     (h : S.MinimalAnd G x y) (hDiff : ∀ K ∈ S.gates, (S.gate K).Reads G ↔ K = D)
     (hD : D ∈ S.gates) (hz1 : S.deg z = 1) (hDz : (S.gate D).Reads z) :
     S.children G = {.inl D} ∧ S.children z = {.inl D} := by
@@ -527,7 +527,7 @@ theorem MinimalAnd.children_of_bottleneck {S : State n} (hS : S.Valid f) {G x y 
 
 /-- In the bottleneck configuration with `D` AND-type, fixing `x` and `y` so that `G` takes the
 value making `D` constant deletes `G`, `D` and the second children `Bx`, `By` of `x` and `y`. -/
-theorem Valid.exists_reduction_bottleneck_and {S : State n} (hS : S.Valid f) {G x y D : ℕ}
+private theorem Valid.exists_reduction_bottleneck_and {S : State n} (hS : S.Valid f) {G x y D : ℕ}
     (h : S.MinimalAnd G x y) (hD : D ∈ S.gates) (hDG' : D ≠ G)
     {δ c : Bool} (hc : ∀ val : ℕ → Bool, val G = δ → (S.gate D).eval val = c)
     {x₀ y₀ : Bool} (hδ : (S.gate G).eval (Function.update (Function.update (fun _ => false) y y₀)
@@ -674,7 +674,7 @@ theorem Valid.step_of_bottleneck_xor {S : State n} {d : ℕ} (hS : S.Valid f)
 /-- **Cases 9 and 10** of [Mishra and Santhanam, Section 4.3][MishraSanthanam2026], the
 bottleneck configuration: the unique child `D` of the minimal AND `G` reads an unpaired isolated
 parameter `z`; its elimination is a step. -/
-theorem Valid.step_of_bottleneck {S : State n} {d : ℕ} (hS : S.Valid f)
+private theorem Valid.step_of_bottleneck {S : State n} {d : ℕ} (hS : S.Valid f)
     (hf : IsAffineDisperser f d) (ha : d < S.a) (hN : S.Normal) {G x y : ℕ}
     (h : S.MinimalAnd G x y) (h7 : ¬ S.SharedSecondChild G x y) (hbot : S.Bottleneck G x) :
     ∃ S', Step f S S' := by

@@ -82,7 +82,8 @@ theorem layerOverhead_mono {p w w' : ℕ} (h : w ≤ w') : layerOverhead p w ≤
   gcongr
 
 /-- A crude polynomial bound on the overhead of one pair. -/
-theorem layerOverhead_le (p w : ℕ) : layerOverhead p w ≤ 32 * 8 ^ p * (p + 1) * (w + 2) := by
+private theorem layerOverhead_le (p w : ℕ) :
+    layerOverhead p w ≤ 32 * 8 ^ p * (p + 1) * (w + 2) := by
   have h8 : 8 ^ p = 2 ^ p * 2 ^ p * 2 ^ p := by
     rw [show 8 = 2 * 2 * 2 by rfl, mul_pow, mul_pow]
   unfold layerOverhead selectorCost
@@ -144,7 +145,7 @@ theorem complexity_directProduct_two_pow_le {p m L H : ℕ}
 /-! ### Arithmetic estimates -/
 
 /-- `(1 + 1 / M) ^ d ≤ 1 + 1 / R` when `(R + 1) d ≤ M`, without denominators. -/
-theorem mul_add_one_pow_le {R M d : ℕ} (h : (R + 1) * d ≤ M) :
+private theorem mul_add_one_pow_le {R M d : ℕ} (h : (R + 1) * d ≤ M) :
     R * (M + 1) ^ d ≤ (R + 1) * M ^ d := by
   -- `(M + 1) ^ d * (M - d) ≤ M ^ (d + 1)` by induction.
   have key : ∀ e : ℕ, e ≤ M → (M + 1) ^ e * (M - e) ≤ M ^ (e + 1) := by
@@ -205,7 +206,7 @@ theorem eventually_mul_complexity_single_le (Q : ℕ) :
 
 /-- The per-layer overhead with prefixes of `2 log₂ n + 2` bits is eventually below
 `2 ^ (n / 2)`, even after multiplication by `4 P n`. -/
-theorem eventually_overhead_le (P : ℕ) : ∀ᶠ n in atTop,
+private theorem eventually_overhead_le (P : ℕ) : ∀ᶠ n in atTop,
     4 * P * n * (32 * 8 ^ (2 * Nat.log 2 n + 2) * (2 * Nat.log 2 n + 3) * (n + 2)) ≤
       2 ^ (n / 2) := by
   have htend : Tendsto (fun n : ℕ => n / 2) atTop atTop :=

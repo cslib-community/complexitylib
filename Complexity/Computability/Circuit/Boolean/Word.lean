@@ -64,14 +64,17 @@ variable {n k w R : ℕ}
 def word (bits : BitString w) : BitVec w :=
   (BitVec.ofBoolListLE (List.ofFn bits)).cast (by simp)
 
+/-- Bit `i` (least significant first) of `word bits` is `bits i`. -/
 theorem getLsbD_word (bits : BitString w) (i : Fin w) :
     (word bits).getLsbD i.val = bits i := by
   rw [word, BitVec.getLsbD_cast, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD]
   simp
 
+/-- Indexing `word bits` at `i < w` returns `bits ⟨i, hi⟩`. -/
 @[simp] theorem getElem_word (bits : BitString w) (i : ℕ) (hi : i < w) :
     (word bits)[i] = bits ⟨i, hi⟩ := getLsbD_word bits ⟨i, hi⟩
 
+/-- Rebuilding a `word` from the bits `a.getLsbD i` recovers `a`. -/
 theorem word_getLsbD (a : BitVec w) : word (fun i : Fin w => a.getLsbD i.val) = a :=
   BitVec.eq_of_getLsbD_eq fun i hi => getLsbD_word _ ⟨i, hi⟩
 
@@ -171,7 +174,7 @@ section Arithmetic
 variable (a b : BitString n → BitVec w)
 
 /-- One carry chain uses four gates per bit and its initial constant. -/
-theorem word_carry (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
+private theorem word_carry (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
     (hb : ∀ i : Fin w, (fun x => (b x).getLsbD i.val) ∈ s) (c : Bool) {t : ℕ} (ht : t ≤ w) :
     Synthesis interpretation s {fun x => BitVec.carry t (a x) (b x) c} (4 * t + 1) := by
   induction t with
@@ -188,7 +191,7 @@ theorem word_carry (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
     · omega
 
 /-- All carries of a sum, each computed once from the previous one. -/
-theorem word_carries (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
+private theorem word_carries (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
     (hb : ∀ i : Fin w, (fun x => (b x).getLsbD i.val) ∈ s) (c : Bool) :
     Synthesis interpretation s
       (stages (fun t => {fun x => BitVec.carry t (a x) (b x) c}) w) (4 * w + 1) := by

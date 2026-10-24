@@ -114,7 +114,7 @@ private theorem binaryPowerCircuit_bit (one : C) (bit : Bool) (e : ℕ) (he : e 
 @[simp] theorem binaryMultiplicationCount_one : binaryMultiplicationCount 1 = 0 := by
   simp [binaryMultiplicationCount]
 
-theorem binaryMultiplicationCount_bit (bit : Bool) (e : ℕ) (he : e ≠ 0) :
+private theorem binaryMultiplicationCount_bit (bit : Bool) (e : ℕ) (he : e ≠ 0) :
     binaryMultiplicationCount (Nat.bit bit e) = binaryMultiplicationCount e + 1 + bit.toNat :=
   Nat.binaryRecFromOne_eq bit e he
 

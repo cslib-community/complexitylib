@@ -225,14 +225,14 @@ def SmallSides (K : ℕ) : Prop :=
     (P.sweep.pastSide t x).ncard < K ∨ (P.sweep.futureSide t x).ncard < K
 
 /-- A rectangle-free accepted set has small sides. -/
-theorem smallSides_of_rectangleFree {K : ℕ} (hS : RectangleFree P.accepted K) :
+private theorem smallSides_of_rectangleFree {K : ℕ} (hS : RectangleFree P.accepted K) :
     P.SmallSides K :=
   fun t _ x _ => P.sweep.pastSide_lt_or_futureSide_lt hS t x
 
 variable {P} in
 /-- Small sides force `K > 1` once some input is accepted: at the first layer both sides of an
 accepted input are nonempty. -/
-theorem SmallSides.one_lt [Finite ι] [Finite U] {K : ℕ} (hS : P.SmallSides K)
+private theorem SmallSides.one_lt [Finite ι] [Finite U] {K : ℕ} (hS : P.SmallSides K)
     (hne : P.accepted.Nonempty) : 1 < K := by
   obtain ⟨x, hx⟩ := hne
   rcases hS 0 (Nat.zero_le _) x hx with h | h
@@ -295,7 +295,7 @@ def eraseNode (t : ℕ) (m : M) : ReadOnceNBP ι U M :=
 
 variable {P}
 
-theorem IsAcceptingPath.of_eraseNode {t : ℕ} {m : M} {x : ι → U} {γ : ℕ → M}
+private theorem IsAcceptingPath.of_eraseNode {t : ℕ} {m : M} {x : ι → U} {γ : ℕ → M}
     (h : (P.eraseNode t m).IsAcceptingPath x γ) : P.IsAcceptingPath x γ :=
   ⟨h.start, h.accept, fun s hs => (h.edge s hs).1⟩
 
@@ -318,7 +318,7 @@ theorem isAcceptingPath_eraseNode_iff (hL : 0 < P.length) {t : ℕ} (ht : t ≤ 
     · rintro ⟨rfl, hs'⟩
       exact hγ hs'
 
-theorem Unambiguous.eraseNode (hP : P.Unambiguous) (t : ℕ) (m : M) :
+private theorem Unambiguous.eraseNode (hP : P.Unambiguous) (t : ℕ) (m : M) :
     (P.eraseNode t m).Unambiguous :=
   fun x γ δ hγ hδ s hs => hP x γ δ hγ.of_eraseNode hδ.of_eraseNode s hs
 

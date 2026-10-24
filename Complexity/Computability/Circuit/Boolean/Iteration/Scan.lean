@@ -101,7 +101,7 @@ variable {n a R w : ℕ}
 
 open Classical in
 /-- Lexicographic comparison of two available bit strings, by the native comparison formula. -/
-theorem synthesis_lexLt (s : Set (BooleanFunction a)) (x y : BitString a → BitString n)
+private theorem synthesis_lexLt (s : Set (BooleanFunction a)) (x y : BitString a → BitString n)
     (hx : wires x ⊆ s) (hy : wires y ⊆ s) :
     Synthesis interpretation s {fun z => decide (toLex (x z) < toLex (y z))} (6 * n + 1) := by
   have h := Synthesis.circuit (I := interpretation) (s := s)
@@ -157,7 +157,7 @@ theorem synthesis_scanMin (s : Set (BooleanFunction a)) (values : BitString a �
 /-! ### First flagged positions -/
 
 /-- If position `j` is flagged and no later position below `t` is, the scan returns its record. -/
-theorem chooseRecord_eq_of_last {α : Type*} (flags : Fin R → Bool) (records : Fin R → α)
+private theorem chooseRecord_eq_of_last {α : Type*} (flags : Fin R → Bool) (records : Fin R → α)
     (fallback : α) (j : Fin R) (hj : flags j = true) (t : ℕ) (hjt : j.val < t)
     (hlast : ∀ i : Fin R, j.val < i.val → i.val < t → flags i = false) :
     chooseRecord flags records fallback t = records j := by

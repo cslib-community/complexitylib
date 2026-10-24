@@ -137,7 +137,7 @@ end Definitions
 variable {hk : a + arity p = 2 ^ D}
 
 /-- Pending request `i` sits `i` positions after the accepted block. -/
-theorem val_pending (i : Fin (arity p)) : (pending hk i).val = a + i.val := rfl
+private theorem val_pending (i : Fin (arity p)) : (pending hk i).val = a + i.val := rfl
 
 /-- Accepted request `m` sits at position `m`. -/
 theorem val_accepted (m : Fin a) : (accepted (p := p) hk m).val = m.val := rfl
@@ -199,7 +199,7 @@ include htarget
 
 omit [Fintype K] [DecidableEq K] in
 /-- A candidate lists the bits of its point. -/
-theorem candidate_eq (e : Fin r) (i : Fin (arity p)) (c : Fin s) :
+private theorem candidate_eq (e : Fin r) (i : Fin (arity p)) (c : Fin s) :
     candidate hk bits scalar menu x e i c =
       pointBits bits (T (pending hk i) + (scalar c : K) • menu e i) := by
   rw [candidate, htarget, pointBits_add]

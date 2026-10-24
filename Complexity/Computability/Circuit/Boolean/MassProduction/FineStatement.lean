@@ -193,7 +193,7 @@ theorem exists_rat_coefficient {γ ε : ℝ} (hγ : 0 ≤ γ) (hγ1 : γ < 1) (h
 
 /-- A real copy budget `2 ^ (γ n)` below a rational exponent `num / den` is within the core
 budget `2 ^ (⌊num n / den⌋ + 1)`. -/
-theorem le_two_pow_of_real {γ : ℝ} {n k : ℕ} (hden : 0 < den) (hγ : γ ≤ (num : ℝ) / den)
+private theorem le_two_pow_of_real {γ : ℝ} {n k : ℕ} (hden : 0 < den) (hγ : γ ≤ (num : ℝ) / den)
     (hk : (k : ℝ) ≤ (2 : ℝ) ^ (γ * n)) : k ≤ 2 ^ (num * n / den + 1) := by
   have hpos : 0 < (den : ℝ) := by exact_mod_cast hden
   have hq : (num : ℝ) * n < ((num * n / den + 1 : ℕ) : ℝ) * den := by

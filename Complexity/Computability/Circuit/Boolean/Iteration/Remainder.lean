@@ -61,7 +61,7 @@ namespace Cslib.Circuits.Boolean.Iteration
 variable {n a m w : ℕ}
 
 /-- A word with one more bit, read from the least significant end. -/
-theorem word_succ (bits : BitString (m + 1)) :
+private theorem word_succ (bits : BitString (m + 1)) :
     word bits = (word fun i : Fin m => bits i.succ).concat (bits 0) := by
   apply BitVec.eq_of_getLsbD_eq
   intro i hi
@@ -85,7 +85,7 @@ def streamRemainder (d : BitVec w) : {m : ℕ} → BitString m → BitVec w
   | 0, _ => 0
   | _ + 1, bits => remainderStep d (streamRemainder d fun i => bits i.succ) (bits 0)
 
-theorem toNat_remainderStep (d r : BitVec w) (b : Bool) (hd : 0 < d.toNat)
+private theorem toNat_remainderStep (d r : BitVec w) (b : Bool) (hd : 0 < d.toNat)
     (hw : 2 * d.toNat ≤ 2 ^ w) (hr : r.toNat < d.toNat) :
     (remainderStep d r b).toNat = (2 * r.toNat + b.toNat) % d.toNat := by
   have hb : b.toNat ≤ 1 := Bool.toNat_le b
@@ -118,7 +118,7 @@ theorem toNat_streamRemainder (d : BitVec w) (bits : BitString m) (hd : 0 < d.to
     simp only [Nat.add_mod, Nat.mul_mod, Nat.mod_mod, Nat.mul_comm]
 
 /-- One step of long division: a subtraction, a comparison and a selection. -/
-theorem synthesis_remainderStep (s : Set (BooleanFunction a)) (d r : BitString a → BitVec w)
+private theorem synthesis_remainderStep (s : Set (BooleanFunction a)) (d r : BitString a → BitVec w)
     (b : BooleanFunction a) (hd : ∀ i : Fin w, (fun x => (d x).getLsbD i.val) ∈ s)
     (hr : ∀ i : Fin w, (fun x => (r x).getLsbD i.val) ∈ s) (hb : b ∈ s) :
     Synthesis interpretation s (wordWires fun x => remainderStep (d x) (r x) (b x))
@@ -217,7 +217,7 @@ def subMod (a b d : BitVec w) : BitVec w :=
   let rb := streamRemainder d fun i : Fin w => b.getLsbD i.val
   if ra.ult rb then ra + d - rb else ra - rb
 
-theorem add_sub_mod_mod_eq_ite (a b d : ℕ) (hd : 0 < d) :
+private theorem add_sub_mod_mod_eq_ite (a b d : ℕ) (hd : 0 < d) :
     (a + d - b % d) % d = if a % d < b % d then a % d + d - b % d else a % d - b % d := by
   have ha := Nat.mod_lt a hd
   have hb := Nat.mod_lt b hd

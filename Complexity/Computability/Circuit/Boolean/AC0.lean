@@ -76,10 +76,12 @@ def binCircuit (op : Op) (h : op.arity = 2) (C D : Circuit σ n 1) : Circuit σ 
 
 variable {φ} [φ.Preserves interpretation I]
 
+/-- Evaluating `constCircuit φ b` returns the constant `b`. -/
 @[simp] theorem eval_constCircuit (b : Bool) (x : BitString n) (j : Fin 1) :
     (constCircuit φ b).eval I x j = b := by
   cases b <;> simp [constCircuit, Circuit.eval_mapOp (I := interpretation)]
 
+/-- A constant circuit has size `1`. -/
 @[simp] theorem size_constCircuit (b : Bool) : (constCircuit (n := n) φ b).size = 1 := by
   cases b <;> rfl
 
@@ -87,11 +89,13 @@ variable {φ} [φ.Preserves interpretation I]
 theorem depth_constCircuit_le (b : Bool) : (constCircuit (n := n) φ b).depth ≤ 1 := by
   cases b <;> simp [constCircuit]
 
+/-- Evaluating `notCircuit φ C` negates the output of `C`. -/
 @[simp] theorem eval_notCircuit (C : Circuit σ n 1) (x : BitString n) (j : Fin 1) :
     (notCircuit φ C).eval I x j = !C.eval I x 0 := by
   rw [notCircuit, Circuit.eval_comp, Circuit.eval_mapOp (I := interpretation), Circuit.eval_oneGate,
     interpretation_not]
 
+/-- Appending a negation gate adds `1` to the size of `C`. -/
 @[simp] theorem size_notCircuit (C : Circuit σ n 1) : (notCircuit φ C).size = C.size + 1 := by
   rw [notCircuit, Circuit.size_comp, Circuit.size_mapOp, Circuit.size_oneGate, add_comm]
 
@@ -114,16 +118,21 @@ theorem eval_binCircuit (op : Op) (h : op.arity = 2) (C D : Circuit σ n 1) (x :
   · rw [Subsingleton.elim b 0]
     exact Fin.append_right _ _ 0
 
+/-- Evaluating `binCircuit` with a binary conjunction gate computes the conjunction of the outputs
+of `C` and `D`. -/
 @[simp] theorem eval_binCircuit_and (C D : Circuit σ n 1) (x : BitString n) (j : Fin 1) :
     (binCircuit φ (.and 2) rfl C D).eval I x j = (C.eval I x 0 && D.eval I x 0) := by
   rw [eval_binCircuit, interpretation_and]
   simp [Fin.forall_fin_two]
 
+/-- Evaluating `binCircuit` with a binary disjunction gate computes the disjunction of the outputs
+of `C` and `D`. -/
 @[simp] theorem eval_binCircuit_or (C D : Circuit σ n 1) (x : BitString n) (j : Fin 1) :
     (binCircuit φ (.or 2) rfl C D).eval I x j = (C.eval I x 0 || D.eval I x 0) := by
   rw [eval_binCircuit, interpretation_or]
   simp [Fin.exists_fin_two]
 
+/-- Combining `C` and `D` with a binary gate has size `C.size + D.size + 1`. -/
 @[simp] theorem size_binCircuit (op : Op) (h : op.arity = 2) (C D : Circuit σ n 1) :
     (binCircuit φ op h C D).size = C.size + D.size + 1 := by
   rw [binCircuit, Circuit.size_comp, Circuit.size_append, Circuit.size_mapOp,

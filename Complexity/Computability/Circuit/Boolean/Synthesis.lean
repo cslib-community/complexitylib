@@ -195,7 +195,7 @@ theorem complexity_not_le (f : BooleanFunction n) :
 
 /-- Combining two outputs with a binary operation that costs `c` gates on two inputs costs `c`
 gates. -/
-theorem complexity_binary_le (f g : BooleanFunction n) (op : Bool → Bool → Bool) {c : ℕ}
+private theorem complexity_binary_le (f g : BooleanFunction n) (op : Bool → Bool → Bool) {c : ℕ}
     (hop : Synthesis interpretation (inputs 2) {fun y : Fin 2 → Bool => op (y 0) (y 1)} c) :
     complexity interpretation (single fun x => op (f x) (g x)) ≤
       complexity interpretation (single f) + complexity interpretation (single g) + c :=

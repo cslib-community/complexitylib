@@ -86,12 +86,15 @@ def TC (i : ℕ) : Set (Language Bool) :=
 def ACMod (q i : ℕ) : Set (Language Bool) :=
   PolylogDepth (Unbounded.extInterpretation (modGate q)) i
 
+/-- `AC 0` is `AC⁰`. -/
 theorem AC_zero : AC 0 = AC0 :=
   polylogDepth_zero _
 
+/-- `TC 0` is `TC⁰`. -/
 theorem TC_zero : TC 0 = TC0 :=
   polylogDepth_zero _
 
+/-- `ACMod q 0` is `AC⁰[q]`. -/
 theorem ACMod_zero (q : ℕ) : ACMod q 0 = AC0Mod q :=
   polylogDepth_zero _
 
@@ -107,15 +110,19 @@ theorem AC_subset_TC (i : ℕ) : AC i ⊆ TC i :=
 theorem AC_subset_ACMod (q i : ℕ) : AC i ⊆ ACMod q i :=
   PolylogDepth.mono Unbounded.toExt
 
+/-- `NC` is monotone in the depth exponent. -/
 theorem NC_mono {i j : ℕ} (hij : i ≤ j) : NC i ⊆ NC j :=
   PolylogDepth.mono_exponent hij
 
+/-- `AC` is monotone in the depth exponent. -/
 theorem AC_mono {i j : ℕ} (hij : i ≤ j) : AC i ⊆ AC j :=
   PolylogDepth.mono_exponent hij
 
+/-- `TC` is monotone in the depth exponent. -/
 theorem TC_mono {i j : ℕ} (hij : i ≤ j) : TC i ⊆ TC j :=
   PolylogDepth.mono_exponent hij
 
+/-- `ACMod q` is monotone in the depth exponent. -/
 theorem ACMod_mono (q : ℕ) {i j : ℕ} (hij : i ≤ j) : ACMod q i ⊆ ACMod q j :=
   PolylogDepth.mono_exponent hij
 

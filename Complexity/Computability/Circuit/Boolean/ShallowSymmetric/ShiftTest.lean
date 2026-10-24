@@ -70,7 +70,7 @@ theorem ShiftTest.sound {t : G} {w s : G → G} (h : ShiftTest t w s) :
   exact add_right_cancel (b := residueSum G - t) (by simpa using hs)
 
 /-- For a valid weight vector, choosing a permutation determines the shifts. -/
-theorem shiftTest_perm {t : G} (w : G → G) (hw : ∑ i, w i = t)
+private theorem shiftTest_perm {t : G} (w : G → G) (hw : ∑ i, w i = t)
     (e : Equiv.Perm G) : ShiftTest t w (fun i => e i - w i) := by
   constructor
   · rw [sum_sub_distrib, hw]
@@ -79,7 +79,7 @@ theorem shiftTest_perm {t : G} (w : G → G) (hw : ∑ i, w i = t)
   · simpa only [add_sub_cancel] using e.injective
 
 /-- Accepting shifts are precisely permutations translated by the weight vector. -/
-noncomputable def acceptingShiftsEquiv {t : G} (w : G → G) (hw : ∑ i, w i = t) :
+private noncomputable def acceptingShiftsEquiv {t : G} (w : G → G) (hw : ∑ i, w i = t) :
     {s : G → G // ShiftTest t w s} ≃ Equiv.Perm G where
   toFun s := Equiv.ofBijective (fun i => w i + s.1 i)
     (Finite.injective_iff_bijective.mp s.2.2)

@@ -76,12 +76,12 @@ lemma integral_zero : Integral (0 : F K) := zero_mem _
 
 lemma integral_one : Integral (1 : F K) := one_mem _
 
-lemma Integral.add {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x + y) :=
+private lemma Integral.add {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x + y) :=
   add_mem hx hy
 
 lemma Integral.neg {x : F K} (hx : Integral x) : Integral (-x) := neg_mem hx
 
-lemma Integral.sub {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x - y) :=
+private lemma Integral.sub {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x - y) :=
   sub_mem hx hy
 
 lemma Integral.mul {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x * y) :=
@@ -93,7 +93,7 @@ lemma Integral.mul {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x
 
 lemma reduction_add (x y : F K) : reduction (x + y) = reduction x + reduction y := by
   simp [reduction]
-lemma reduction_mul {x y : F K} (hx : Integral x) (hy : Integral y) :
+private lemma reduction_mul {x y : F K} (hx : Integral x) (hy : Integral y) :
     reduction (x * y) = reduction x * reduction y := by
   obtain ⟨p, rfl⟩ := RingHom.mem_range.mp hx
   obtain ⟨q, rfl⟩ := RingHom.mem_range.mp hy
@@ -105,7 +105,7 @@ lemma reduction_mul {x y : F K} (hx : Integral x) (hy : Integral y) :
       (LaurentSeries.coeff_coe_powerSeries s 0)
   rw [hc, hc, hc, map_mul]
 
-lemma normalize_vector {ι : Type*} [Finite ι] (x : ι → F K) (hx : x ≠ 0) :
+private lemma normalize_vector {ι : Type*} [Finite ι] (x : ι → F K) (hx : x ≠ 0) :
     ∃ (c : ι) (u : F K), u ≠ 0 ∧ (∀ i, Integral (u * x i)) ∧ u * x c = 1 := by
   classical
   have := Fintype.ofFinite ι
@@ -276,7 +276,7 @@ namespace IntegralFrame
 
 variable {ι : Type*} {U : Submodule (F K) (ι → F K)} (b : IntegralFrame U)
 
-lemma linearIndependent : LinearIndependent (F K) b.vector := by
+private lemma linearIndependent : LinearIndependent (F K) b.vector := by
   classical
   rw [linearIndependent_iff']
   intro s c hc j hj
@@ -289,10 +289,10 @@ lemma vector_mem (j : Fin b.length) : b.vector j ∈ U := by
 
 /-- Full integral-lattice saturation: every integral member has integral
 basis coordinates, explicitly given by the constructed functionals. -/
-lemma integral_coordinates (x : ι → F K) (hx : IntegralVector x) :
+private lemma integral_coordinates (x : ι → F K) (hx : IntegralVector x) :
     ∀ j, Integral (b.coordinate j x) := fun j => b.coordinate_integral j x hx
 
-lemma sum_coordinates (x : ι → F K) (hx : x ∈ U) :
+private lemma sum_coordinates (x : ι → F K) (hx : x ∈ U) :
     ∑ j, b.coordinate j x • b.vector j = x := by
   classical
   have hx := b.span_eq.ge hx
@@ -302,31 +302,31 @@ lemma sum_coordinates (x : ι → F K) (hx : x ∈ U) :
   simp only [map_sum, map_smul, b.pairing, smul_eq_mul, mul_ite,
     mul_one, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
 
-lemma length_eq_finrank : b.length = finrank (F K) U := by
+private lemma length_eq_finrank : b.length = finrank (F K) U := by
   have hh := finrank_span_eq_card b.linearIndependent
   rw [b.span_eq] at hh
   simpa using hh.symm
 
 end IntegralFrame
 
-lemma integral_C (a : K) : Integral (HahnSeries.C a : F K) :=
+private lemma integral_C (a : K) : Integral (HahnSeries.C a : F K) :=
   RingHom.mem_range.mpr ⟨PowerSeries.C a, PowerSeries.coe_C a⟩
 
 lemma reduction_C (a : K) : reduction (HahnSeries.C a : F K) = a := by
   simp [reduction, HahnSeries.C_apply]
 
-lemma reduce_sum {ι τ : Type*} (s : Finset τ) (v : τ → (ι → F K)) :
+private lemma reduce_sum {ι τ : Type*} (s : Finset τ) (v : τ → (ι → F K)) :
     reduce (∑ j ∈ s, v j) = ∑ j ∈ s, reduce (v j) := by
   ext i
   simp [reduce, reduction]
 
-lemma reduce_smul {ι : Type*} {a : F K} {v : ι → F K}
+private lemma reduce_smul {ι : Type*} {a : F K} {v : ι → F K}
     (ha : Integral a) (hv : IntegralVector v) :
     reduce (a • v) = reduction a • reduce v := by
   ext i
   exact reduction_mul ha (hv i)
 
-lemma reduce_C_smul {ι : Type*} (a : K) (v : ι → F K) :
+private lemma reduce_C_smul {ι : Type*} (a : K) (v : ι → F K) :
     reduce ((HahnSeries.C a : F K) • v) = a • reduce v := by
   ext i
   change reduction (HahnSeries.C a * v i) = a * reduction (v i)
@@ -387,7 +387,7 @@ lemma Integral.order_nonneg {x : F K} (hx : Integral x) : 0 ≤ x.order := by
   have hh : Valued.v x ≤ WithZero.exp (-(0 : ℤ)) := by simpa using hv
   exact (LaurentSeries.valuation_le_iff_coeff_lt_eq_zero K).mp hh
 
-lemma Integral.order_eq_zero {x : F K} (hx : Integral x) (hr : reduction x ≠ 0) :
+private lemma Integral.order_eq_zero {x : F K} (hx : Integral x) (hr : reduction x ≠ 0) :
     x.order = 0 :=
   le_antisymm (HahnSeries.order_le_of_coeff_ne_zero hr) hx.order_nonneg
 
@@ -408,7 +408,7 @@ lemma weightMap_injective {ι : Type*} (w : ι → ℕ) :
 
 /-- The key valuation step of order reversal: an integral normalized input
 having a nonzero low reduction cannot give a high leading output coefficient. -/
-lemma weighted_high_reduction_zero {ι : Type*} (w : ι → ℕ) (A : ℕ)
+private lemma weighted_high_reduction_zero {ι : Type*} (w : ι → ℕ) (A : ℕ)
     (x : ι → F K) (hx : IntegralVector x)
     (hlow : ∃ j, w j ≤ A ∧ reduction (x j) ≠ 0)
     (c : F K) (hc : c ≠ 0)
@@ -435,7 +435,7 @@ lemma weighted_high_reduction_zero {ι : Type*} (w : ι → ℕ) (A : ℕ)
 
 /-- Low coordinates detect reduction throughout U. This controls its full
 integral image lattice, not only the images of an arbitrary integral basis. -/
-theorem reduction_weighted_supported {ι : Type*} [Finite ι]
+private theorem reduction_weighted_supported {ι : Type*} [Finite ι]
     (w : ι → ℕ) (A : ℕ) (U : Submodule (F K) (ι → F K))
     (hdetect : ∀ x ∈ U, IntegralVector x →
       (∀ i, w i ≤ A → reduction (x i) = 0) → reduce x = 0)
@@ -463,7 +463,7 @@ theorem reduction_weighted_supported {ι : Type*} [Finite ι]
   exact he ▸ weighted_high_reduction_zero w A (u • x) hnI' hd u⁻¹
     (inv_ne_zero hu) (he.symm ▸ hyI)
 
-lemma exists_independent_subfamily {V : Type*} [AddCommGroup V] [Module K V]
+private lemma exists_independent_subfamily {V : Type*} [AddCommGroup V] [Module K V]
     {h : ℕ} (v : Fin h → V) :
     ∃ (k : ℕ) (a : Fin k → Fin h), Function.Injective a ∧
       Submodule.span K (Set.range (v ∘ a)) = Submodule.span K (Set.range v) ∧
@@ -484,7 +484,7 @@ lemma exists_independent_subfamily {V : Type*} [AddCommGroup V] [Module K V]
   rw [he, hs]
 
 /-- Restrict an integral frame to a selected family of basis vectors. -/
-def IntegralFrame.subframe {ι : Type*} {U : Submodule (F K) (ι → F K)}
+private def IntegralFrame.subframe {ι : Type*} {U : Submodule (F K) (ι → F K)}
     (b : IntegralFrame U) {k : ℕ} (a : Fin k → Fin b.length)
     (ha : Function.Injective a) :
     IntegralFrame (Submodule.span (F K) (Set.range (b.vector ∘ a))) where
@@ -507,7 +507,7 @@ lemma reducedSubspace_mono {ι : Type*} {U V : Submodule (F K) (ι → F K)}
 
 /-- Choose an integral-lattice subspace on whose reduction a specified
 projection is injective, of dimension equal to that projection's rank. -/
-theorem exists_projection_subspace {ι : Type*} [Finite ι]
+private theorem exists_projection_subspace {ι : Type*} [Finite ι]
     {V : Type*} [AddCommGroup V] [Module K V]
     (U : Submodule (F K) (ι → F K)) (P : (ι → K) →ₗ[K] V) :
     ∃ U' : Submodule (F K) (ι → F K), U' ≤ U ∧
@@ -600,16 +600,16 @@ lemma liftMap_apply (P : (ι → K) →ₗ[K] κ → K) (x : ι → F K) (j : κ
     liftMap P x j = ∑ i, HahnSeries.C (LinearMap.toMatrix' P j i) * x i := rfl
 
 omit [Fintype τ] [DecidableEq τ] in
-lemma liftMap_comp (P : (κ → K) →ₗ[K] τ → K) (Q : (ι → K) →ₗ[K] κ → K) :
+private lemma liftMap_comp (P : (κ → K) →ₗ[K] τ → K) (Q : (ι → K) →ₗ[K] κ → K) :
     liftMap (P ∘ₗ Q) = liftMap P ∘ₗ liftMap Q := by
   simp only [liftMap, LinearMap.toMatrix'_comp, Matrix.map_mul, Matrix.toLin'_mul]
 
-lemma liftMap_id : liftMap (LinearMap.id : (ι → K) →ₗ[K] (ι → K)) = LinearMap.id := by
+private lemma liftMap_id : liftMap (LinearMap.id : (ι → K) →ₗ[K] (ι → K)) = LinearMap.id := by
   simp only [liftMap, LinearMap.toMatrix'_id, Matrix.map_one _ (map_zero _) (map_one _),
     Matrix.toLin'_one]
 
 omit [Fintype κ] [DecidableEq κ] in
-lemma liftMap_integral (P : (ι → K) →ₗ[K] (κ → K)) {x : ι → F K}
+private lemma liftMap_integral (P : (ι → K) →ₗ[K] (κ → K)) {x : ι → F K}
     (hx : IntegralVector x) : IntegralVector (liftMap P x) := by
   intro j
   rw [liftMap_apply]
@@ -618,7 +618,7 @@ lemma liftMap_integral (P : (ι → K) →ₗ[K] (κ → K)) {x : ι → F K}
   exact (integral_C _).mul (hx i)
 
 omit [Fintype κ] [DecidableEq κ] in
-lemma reduction_liftMap (P : (ι → K) →ₗ[K] κ → K) (x : ι → F K) :
+private lemma reduction_liftMap (P : (ι → K) →ₗ[K] κ → K) (x : ι → F K) :
     reduce (liftMap P x) = P (reduce x) := by
   have hc (a : K) (z : F K) : reduction (HahnSeries.C a * z) = a * reduction z := by
     rw [HahnSeries.C_mul_eq_smul]; rfl
@@ -664,7 +664,7 @@ lemma integral_liftEquiv_iff (E : (ι → K) ≃ₗ[K] (κ → K)) (x : ι → F
     simpa using hh
   · exact liftMap_integral E.toLinearMap
 
-lemma reducedSubspace_liftEquiv (E : (ι → K) ≃ₗ[K] (κ → K))
+private lemma reducedSubspace_liftEquiv (E : (ι → K) ≃ₗ[K] (κ → K))
     (U : Submodule (F K) (ι → F K)) :
     reducedSubspace (U.map (liftEquiv E).toLinearMap) =
       (reducedSubspace U).map E.toLinearMap := by

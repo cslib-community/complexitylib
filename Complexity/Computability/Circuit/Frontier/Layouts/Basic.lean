@@ -41,7 +41,7 @@ namespace Cslib.Circuits.Frontier
 open Set
 
 /-- `log₂ N` is at most `ε N` plus a constant, for every `ε > 0`. -/
-theorem exists_natLog_le_mul_add {ε : ℝ} (hε : 0 < ε) :
+private theorem exists_natLog_le_mul_add {ε : ℝ} (hε : 0 < ε) :
     ∃ K : ℝ, ∀ N : ℕ, (Nat.log 2 N : ℝ) ≤ ε * N + K := by
   obtain ⟨k, hk⟩ := pow_unbounded_of_one_lt (1 / ε) one_lt_two
   refine ⟨k, fun N => ?_⟩

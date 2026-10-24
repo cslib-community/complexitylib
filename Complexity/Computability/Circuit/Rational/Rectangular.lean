@@ -135,13 +135,13 @@ def coefficientMatrix {q k : ℕ} (f : Fin q → P)
     (b : Basis (Fin k) F (componentSpace (F := F) f)) : Matrix (Fin q) (Fin k) F :=
   fun α => b.equivFun (component (F := F) f α)
 
-lemma span_component_top {q : ℕ} (f : Fin q → P) :
+private lemma span_component_top {q : ℕ} (f : Fin q → P) :
     Submodule.span F (Set.range (component (F := F) f)) = ⊤ := by
   apply Submodule.map_injective_of_injective (componentSpace (F := F) f).injective_subtype
   rw [Submodule.map_span, ← Set.range_comp, Submodule.map_top, Submodule.range_subtype]
   rfl
 
-lemma rank_coefficientMatrix {q k : ℕ} (f : Fin q → P)
+private lemma rank_coefficientMatrix {q k : ℕ} (f : Fin q → P)
     (b : Basis (Fin k) F (componentSpace (F := F) f)) : (coefficientMatrix f b).rank = k := by
   have hs : Submodule.span F (Set.range (coefficientMatrix f b)) = ⊤ := by
     have hh := congrArg (Submodule.map b.equivFun.toLinearMap) (span_component_top f)
@@ -153,7 +153,7 @@ lemma rank_coefficientMatrix {q k : ℕ} (f : Fin q → P)
   rw [hs]
   simp
 
-lemma coefficientMatrix_expansion {q k : ℕ} (f : Fin q → P)
+private lemma coefficientMatrix_expansion {q k : ℕ} (f : Fin q → P)
     (b : Basis (Fin k) F (componentSpace (F := F) f)) (α : Fin q) :
     ∑ j, (coefficientMatrix f b) α j • (b j : P) = f α := by
   simpa only [coefficientMatrix, Basis.equivFun_apply, Submodule.coe_sum,
@@ -169,7 +169,7 @@ def concatMatrix {w q k : ℕ} (A : Fin w → Matrix (Fin q) (Fin q) F)
     (P : Matrix (Fin q) (Fin k) F) : Matrix (Fin q) (Fin w × Fin k) F :=
   fun α ij => (A ij.1 * P) α ij.2
 
-lemma concat_row_relation {w q k : ℕ}
+private lemma concat_row_relation {w q k : ℕ}
     (A : Fin w → Matrix (Fin q) (Fin q) F) (T : Fin w → P →ₗ[F] Q)
     (f : Fin q → P) (b : Basis (Fin k) F (componentSpace (F := F) f))
     (hker : ∀ α, ∑ i, ∑ γ, A i α γ • T i (f γ) = 0) (α : Fin q) :
@@ -185,7 +185,7 @@ lemma concat_row_relation {w q k : ℕ}
     coefficientMatrix_expansion]
   exact hker α
 
-lemma rank_concat_lt {w q k : ℕ}
+private lemma rank_concat_lt {w q k : ℕ}
     (A : Fin w → Matrix (Fin q) (Fin q) F) (T : Fin w → P →ₗ[F] Q)
     (f : Fin q → P) (b : Basis (Fin k) F (componentSpace (F := F) f))
     (hker : ∀ α, ∑ i, ∑ γ, A i α γ • T i (f γ) = 0)
@@ -208,7 +208,7 @@ lemma rank_concat_lt {w q k : ℕ}
   change (w - 1) * k < finrank F H.range at hex
   omega
 
-lemma coefficient_image_le_concat {w q k : ℕ}
+private lemma coefficient_image_le_concat {w q k : ℕ}
     (A : Fin w → Matrix (Fin q) (Fin q) F) (P : Matrix (Fin q) (Fin k) F) (i : Fin w) :
     (Submodule.span F (Set.range P.col)).map (A i).mulVecLin ≤
       Submodule.span F (Set.range (concatMatrix A P).col) := by
@@ -219,7 +219,7 @@ lemma coefficient_image_le_concat {w q k : ℕ}
   funext α
   simp [concatMatrix, Matrix.mulVec, Matrix.mul_apply, dotProduct]
 
-lemma component_image_le_range {w q k : ℕ} (T : Fin w → P →ₗ[F] Q)
+private lemma component_image_le_range {w q k : ℕ} (T : Fin w → P →ₗ[F] Q)
     (f : Fin q → P) (b : Basis (Fin k) F (componentSpace (F := F) f)) (i : Fin w) :
     (componentSpace (F := F) f).map (T i) ≤
       (imageCombination T (fun j => (b j : P))).range := by
@@ -265,7 +265,7 @@ def blockMatrix {w q e : ℕ} (A : Fin w → Matrix (Fin q) (Fin q) F)
     (X : Fin w → Matrix (Fin e) (Fin e) F) :
     Matrix (Fin q × Fin e) (Fin q × Fin e) F := ∑ i, A i ⊗ₖ X i
 
-lemma blockMatrix_mulVec {w q e : ℕ} (A : Fin w → Matrix (Fin q) (Fin q) F)
+private lemma blockMatrix_mulVec {w q e : ℕ} (A : Fin w → Matrix (Fin q) (Fin q) F)
     (X : Fin w → Matrix (Fin e) (Fin e) F) (v : Fin e → Fin q → F)
     (α : Fin q) (β : Fin e) :
     (blockMatrix A X).mulVec (fun j => v j.2 j.1) (α, β) = blockEval A X v β α := by

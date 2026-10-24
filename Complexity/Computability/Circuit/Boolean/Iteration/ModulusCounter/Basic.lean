@@ -139,12 +139,12 @@ theorem iterate_power (T : ℕ) : (power (k := k) 1)^[T] = power T := by
 /-- The order `lcm(1, …, 2 ^ k - 1)` common to every active `k`-bit modular counter. -/
 def period (k : ℕ) : ℕ := Nat.lcmUpto (2 ^ k - 1)
 
-theorem modulus_dvd_period {a : ℕ} (ha : 0 < a) (haU : a < 2 ^ k) : a ∣ period k := by
+private theorem modulus_dvd_period {a : ℕ} (ha : 0 < a) (haU : a < 2 ^ k) : a ∣ period k := by
   change a ∣ (Finset.Icc 1 (2 ^ k - 1)).lcm id
   apply Finset.dvd_lcm
   simpa only [Finset.mem_Icc] using (show 1 ≤ a ∧ a ≤ 2 ^ k - 1 by omega)
 
-theorem power_period (x : BitString (k + k)) : power (period k) x = x := by
+private theorem power_period (x : BitString (k + k)) : power (period k) x = x := by
   unfold power advance
   split_ifs with h
   · have hd := modulus_dvd_period h.1 (BitVec.isLt (leftWord x))
@@ -220,7 +220,8 @@ theorem stepValue_spec (a b : BitVec k) :
     simp
 
 /-- Equality of two available `k`-bit words costs at most `6 * k + 1` gates. -/
-theorem synthesis_word_eq {n : ℕ} (s : Set (BooleanFunction n)) (a b : BitString n → BitVec k)
+private theorem synthesis_word_eq {n : ℕ} (s : Set (BooleanFunction n))
+    (a b : BitString n → BitVec k)
     (ha : ∀ i : Fin k, (fun x => (a x).getLsbD i.val) ∈ s)
     (hb : ∀ i : Fin k, (fun x => (b x).getLsbD i.val) ∈ s) :
     Synthesis interpretation s {fun x => decide (a x = b x)} (6 * k + 1) := by

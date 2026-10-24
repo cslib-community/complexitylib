@@ -68,7 +68,7 @@ noncomputable section
 /-- The cyclotomic modulus for roots of unity of power-of-two order. -/
 def modulus (e : ℕ) : ℚ[X] := X ^ (2 ^ e) + 1
 
-lemma modulus_eq_cyclotomic (e : ℕ) : modulus e = cyclotomic (dimension e) ℚ := by
+private lemma modulus_eq_cyclotomic (e : ℕ) : modulus e = cyclotomic (dimension e) ℚ := by
   rw [dimension, cyclotomic_prime_pow_eq_geom_sum Nat.prime_two]
   simp [modulus, Finset.sum_range_succ, add_comm]
 

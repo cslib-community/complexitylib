@@ -136,7 +136,7 @@ theorem writeHeads_of_forall_ne (w : Fin n → Γ) (p : Fin h → Fin n) (σ : F
     exact ih (fun j => p j.castSucc) (fun j => σ j.castSucc) (fun j => hi _)
 
 /-- Rewriting the symbols read leaves the tape unchanged. -/
-theorem writeHeads_read (w : Fin n → Γ) (p : Fin h → Fin n) :
+private theorem writeHeads_read (w : Fin n → Γ) (p : Fin h → Fin n) :
     writeHeads w p (fun j => w (p j)) = w := by
   induction h with
   | zero => rfl
@@ -204,7 +204,7 @@ theorem reach_card_le_configs :
   card_config (Q := Q) (Γ := Γ) (n := n) (h := h) ▸ Finset.card_le_univ _
 
 /-- Reachable configurations are covered by the first `B` steps from every input. -/
-theorem reach_card_le_of_cover (B : ℕ)
+private theorem reach_card_le_of_cover (B : ℕ)
     (hcover : ∀ (x : BitString n) (t : ℕ),
       ∃ y, ∃ j < B, M.step^[t] (M.init x) = M.step^[j] (M.init y)) :
     (reach M n).card ≤ 2 ^ n * B := by
@@ -233,7 +233,7 @@ theorem reach_card_le_time (hM : M.HaltingAbsorbing) (t : ℕ)
 
 omit [Fintype Q] [Fintype Γ] in
 /-- Running `τ * m` steps of a machine with rounds of length `τ` runs `m` rounds. -/
-theorem iterate_rounds (τ : ℕ) (P : BitString n → BitString n)
+private theorem iterate_rounds (τ : ℕ) (P : BitString n → BitString n)
     (hround : ∀ x, M.step^[τ] (M.init x) = M.init (P x)) (x : BitString n) (m : ℕ) :
     M.step^[τ * m] (M.init x) = M.init (P^[m] x) := by
   induction m with
@@ -300,7 +300,8 @@ section Circuits
 variable [Fintype Q] [Fintype Γ] [NeZero n] {w : ℕ} (M : Machine Q Γ h)
 
 /-- The reachable set fits in the encoding width. -/
-theorem reach_card_le_two_pow (e : Config Q Γ n h → BitString w) (he : Set.InjOn e (reach M n)) :
+private theorem reach_card_le_two_pow (e : Config Q Γ n h → BitString w)
+    (he : Set.InjOn e (reach M n)) :
     (reach M n).card ≤ 2 ^ w := by
   classical
   rw [← Finset.card_image_of_injOn he]

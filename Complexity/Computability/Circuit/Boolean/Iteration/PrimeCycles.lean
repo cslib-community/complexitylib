@@ -139,7 +139,7 @@ theorem lcmBelow_add_dvd {m n : ℕ} (h : n ≤ m) :
         exact hpow
       omega
 
-theorem lcmBelow_add_le {m n : ℕ} (h : n ≤ m) :
+private theorem lcmBelow_add_le {m n : ℕ} (h : n ≤ m) :
     lcmBelow (m + n) ≤ lcmBelow m * (m + n).choose m :=
   Nat.le_of_dvd (Nat.mul_pos (lcmBelow_pos m) (Nat.choose_pos (Nat.le_add_right m n)))
     (lcmBelow_add_dvd h)
@@ -243,7 +243,7 @@ variable (ℓ : BitVec m → ℕ)
   funext x
   simp [power]
 
-theorem power_add (hℓ : ∀ r, ℓ r < 2 ^ K) (S T : ℕ) (x : BitString (m + K)) :
+private theorem power_add (hℓ : ∀ r, ℓ r < 2 ^ K) (S T : ℕ) (x : BitString (m + K)) :
     power ℓ T (power ℓ S x) = power ℓ (S + T) x := by
   simp only [power, classWord_pack, posWord_pack, BitVec.toNat_ofNat]
   rw [Nat.mod_eq_of_lt (advance_lt (hℓ _) (BitVec.isLt _)), advance_add]
@@ -256,7 +256,7 @@ theorem iterate_step (hℓ : ∀ r, ℓ r < 2 ^ K) (T : ℕ) :
   | zero => simp
   | succ T ih => rw [Function.iterate_succ_apply', ih, step, power_add ℓ hℓ]
 
-theorem advance_mod (a b T : ℕ) : advance a b (T % a) = advance a b T := by
+private theorem advance_mod (a b T : ℕ) : advance a b (T % a) = advance a b T := by
   unfold advance
   split_ifs with h
   · rw [Nat.add_mod, Nat.mod_mod, ← Nat.add_mod]
@@ -271,7 +271,7 @@ theorem power_apply_mod (T : ℕ) (r : BitVec m) (b : BitVec K) :
   rfl
 
 /-- Every positive length divides the product of positive lengths, so that power is the identity. -/
-theorem power_prod_eq_id :
+private theorem power_prod_eq_id :
     power (K := K) ℓ (∏ r ∈ Finset.univ.filter (fun r => 0 < ℓ r), ℓ r) = id := by
   funext x
   simp only [power, id]
@@ -328,7 +328,7 @@ theorem order_pos : 0 < order ℓ :=
     have := (Finset.mem_filter.mp hr).2
     omega
 
-theorem dvd_order {r : BitVec m} (hr : 1 < ℓ r) : ℓ r ∣ order ℓ :=
+private theorem dvd_order {r : BitVec m} (hr : 1 < ℓ r) : ℓ r ∣ order ℓ :=
   Finset.dvd_prod_of_mem _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hr⟩)
 
 /-- Pairwise coprimality of the nontrivial cycle lengths. -/
@@ -392,7 +392,7 @@ theorem card_range_iterate (hℓ : ∀ r, ℓ r < 2 ^ K) (hc : LengthsCoprime �
   simp
 
 /-- The order is at least `L ^ c` when the `c` nontrivial lengths are each at least `L`. -/
-theorem pow_card_le_order {L : ℕ} (hL : ∀ r, 1 < ℓ r → L ≤ ℓ r) :
+private theorem pow_card_le_order {L : ℕ} (hL : ∀ r, 1 < ℓ r → L ≤ ℓ r) :
     L ^ (active ℓ).card ≤ order ℓ :=
   Finset.pow_card_le_prod _ _ _ fun r hr => hL r (Finset.mem_filter.mp hr).2
 
@@ -425,14 +425,14 @@ def classPrime (m g : ℕ) (f : ℕ → ℕ) (r : BitVec m) : ℕ :=
   if h : ∃ z, z < 2 ^ g ∧ (candidate g f r z).Prime then
     candidate g f r (Nat.find h) else 1
 
-theorem candidate_mod {g : ℕ} (f : ℕ → ℕ) (r : BitVec m) {z : ℕ} (hz : z < 2 ^ g) :
+private theorem candidate_mod {g : ℕ} (f : ℕ → ℕ) (r : BitVec m) {z : ℕ} (hz : z < 2 ^ g) :
     candidate g f r z % 2 ^ g = z := by
   unfold candidate
   rw [pow_add, Nat.add_mod, Nat.add_mod (2 ^ m * 2 ^ g), Nat.mul_mod_left, Nat.mul_mod_left,
     Nat.mod_eq_of_lt hz]
   simp [Nat.mod_eq_of_lt hz]
 
-theorem candidate_bounds {g : ℕ} {f : ℕ → ℕ} (hf : ∀ z, f z < 2 ^ m) (r : BitVec m)
+private theorem candidate_bounds {g : ℕ} {f : ℕ → ℕ} (hf : ∀ z, f z < 2 ^ m) (r : BitVec m)
     {z : ℕ} (hz : z < 2 ^ g) :
     2 ^ (m + g) ≤ candidate g f r z ∧ candidate g f r z < 2 ^ (m + g + 1) := by
   have hx : r.toNat ^^^ f z < 2 ^ m := Nat.xor_lt_two_pow r.isLt (hf z)
@@ -455,7 +455,7 @@ theorem candidate_injective {g : ℕ} (f : ℕ → ℕ) {r s : BitVec m} {y z : 
   simp only [Nat.xor_assoc, Nat.xor_self, Nat.xor_zero] at this
   exact BitVec.eq_of_toNat_eq this
 
-theorem classPrime_spec {g : ℕ} (f : ℕ → ℕ) (r : BitVec m) :
+private theorem classPrime_spec {g : ℕ} (f : ℕ → ℕ) (r : BitVec m) :
     classPrime m g f r = 1 ∨
       ∃ z < 2 ^ g, classPrime m g f r = candidate g f r z ∧ (classPrime m g f r).Prime := by
   classical

@@ -34,6 +34,9 @@ Costs include constants and negations. Gate counts do not certify construction r
 
 * `Cslib.Circuits.Boolean.adjacentDuplicateCircuit`: share adjacent-key equality tests.
 * `Cslib.Circuits.Boolean.duplicateFlagsCircuit`: duplicate flags in original input order.
+* `Cslib.Circuits.Boolean.duplicateFlagsCircuit.rows`,
+  `Cslib.Circuits.Boolean.duplicateFlagsCircuit.outputs`: wiring adapters between a vector of flags
+  and an array of one-bit records.
 
 ## Main results
 
@@ -83,7 +86,7 @@ theorem eval_adjacentDuplicateCircuit_iff {input count k : ℕ}
     tauto
 
 /-- Sharing the equality outputs adds exactly one OR gate per record. -/
-theorem cost_program_adjacentDuplicateCircuit {input count k : ℕ}
+private theorem cost_program_adjacentDuplicateCircuit {input count k : ℕ}
     (key : Fin count → Fin k → Fin input) (cost : signature.Op → ℕ) :
     (adjacentDuplicateCircuit key).program.cost cost =
       (adjacentEqualityCircuit key).program.cost cost + count * cost .or := by

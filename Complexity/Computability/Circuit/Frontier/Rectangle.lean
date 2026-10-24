@@ -290,7 +290,7 @@ theorem signedCount_eq_add_sdiff (S : Set (ι → U)) {R D : Set (ι → U)} (h 
   ring
 
 /-- The signed count is twice the deviation of `|R ∩ S|` from `|R| / 2`. -/
-theorem signedCount_eq_two_mul (S R : Set (ι → U)) :
+private theorem signedCount_eq_two_mul (S R : Set (ι → U)) :
     signedCount S R = 2 * (((R ∩ S).ncard : ℝ) - R.ncard / 2) := by
   have : ((R ∩ S).ncard : ℝ) + (R \ S).ncard = R.ncard := by
     exact_mod_cast ncard_inter_add_ncard_sdiff_eq_ncard R S

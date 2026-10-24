@@ -25,9 +25,28 @@ linear-size prefix network. All gates, including constants and negations, count.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.CarryLookahead.step`: one prefix-doubling circuit.
+* `Cslib.Circuits.Boolean.CarryLookahead.combine`,
+  `Cslib.Circuits.Boolean.CarryLookahead.rangeSummary`,
+  `Cslib.Circuits.Boolean.CarryLookahead.readRow`,
+  `Cslib.Circuits.Boolean.CarryLookahead.neighbour`: carry-summary composition, interval summaries,
+  row lookup, and cell neighbours at a given distance.
+* `Cslib.Circuits.Boolean.CarryLookahead.generateFormula`,
+  `Cslib.Circuits.Boolean.CarryLookahead.propagateFormula`,
+  `Cslib.Circuits.Boolean.CarryLookahead.step`: the generate/propagate formulas and one
+  prefix-doubling circuit.
 * `Cslib.Circuits.Boolean.CarryLookahead.scan`: the prefix circuit after a specified number
   of rounds.
+* `Cslib.Circuits.Boolean.CarryLookahead.leftInput`,
+  `Cslib.Circuits.Boolean.CarryLookahead.rightInput`,
+  `Cslib.Circuits.Boolean.CarryLookahead.initialGenerate`,
+  `Cslib.Circuits.Boolean.CarryLookahead.initialPropagate`,
+  `Cslib.Circuits.Boolean.CarryLookahead.initial`: input wire indexing and the initial carry-summary
+  stage.
+* `Cslib.Circuits.Boolean.CarryLookahead.carries`,
+  `Cslib.Circuits.Boolean.CarryLookahead.sumFormula`,
+  `Cslib.Circuits.Boolean.CarryLookahead.finish`,
+  `Cslib.Circuits.Boolean.CarryLookahead.inputCarry`: the full carry network, sum-bit formulas,
+  output stage, and arithmetic carry specification.
 * `Cslib.Circuits.Boolean.carryLookahead`: full addition with carry-in and carry-out.
 * `Cslib.Circuits.Boolean.carryLookaheadAdd`: modular addition of two unsigned words.
 * `Cslib.Circuits.Boolean.carryLookaheadFinish`: finish a carry-save pair in logarithmic depth.
@@ -65,12 +84,15 @@ private theorem combine_assoc (a b c : Bool × Bool) :
   rcases a with ⟨a, a'⟩; rcases b with ⟨b, b'⟩; rcases c with ⟨c, c'⟩
   cases a <;> cases a' <;> cases b <;> cases b' <;> cases c <;> cases c' <;> rfl
 
+/-- `(false, true)` is a left identity for `combine`. -/
 @[simp] theorem combine_unit_left (a : Bool × Bool) : combine (false, true) a = a := by
   cases a; simp [combine]
 
+/-- `(false, true)` is a right identity for `combine`. -/
 @[simp] theorem combine_unit_right (a : Bool × Bool) : combine a (false, true) = a := by
   cases a; simp [combine]
 
+/-- Carry-summary composition is idempotent. -/
 @[simp] theorem combine_self (a : Bool × Bool) : combine a a = a := by
   rcases a with ⟨a, b⟩; cases a <;> cases b <;> rfl
 
@@ -123,6 +145,7 @@ def step (k distance : ℕ) : Circuit signature (k + k) (k + k) :=
   (Circuit.pi fun i => (generateFormula k distance i).toCircuit).append
     (Circuit.pi fun i => (propagateFormula k distance i).toCircuit)
 
+/-- One round of parallel carry composition on `k` cells uses `3 * k` gates. -/
 @[simp] theorem size_step (k distance : ℕ) : (step k distance).size = 3 * k := by
   simp only [step, generateFormula, Fin.natAdd_eq_addNat, propagateFormula, Circuit.size_append,
     Circuit.size_pi, Formula.size_toCircuit, Formula.size_or, Formula.size_input, Formula.size_and,
@@ -130,6 +153,7 @@ def step (k distance : ℕ) : Circuit signature (k + k) (k + k) :=
     smul_eq_mul, mul_one]
   omega
 
+/-- One round of parallel carry composition has depth at most `2`. -/
 theorem depth_step_le (k distance : ℕ) : (step k distance).depth ≤ 2 := by
   apply (Circuit.depth_append_le _ _).trans
   apply max_le
@@ -160,11 +184,13 @@ def scan (k : ℕ) : ℕ → Circuit signature (k + k) (k + k)
   | 0 => Circuit.wiring signature id
   | t + 1 => (step k (2 ^ t)).comp (scan k t)
 
+/-- `t` rounds of the prefix-doubling network on `k` cells use `3 * k * t` gates. -/
 @[simp] theorem size_scan (k t : ℕ) : (scan k t).size = 3 * k * t := by
   induction t with
   | zero => rfl
   | succ t ih => simp only [scan, Circuit.size_comp, size_step, ih, Nat.mul_succ]
 
+/-- `t` rounds of the prefix-doubling network have depth at most `2 * t`. -/
 theorem depth_scan_le (k t : ℕ) : (scan k t).depth ≤ 2 * t := by
   induction t with
   | zero => simp [scan]
@@ -214,15 +240,19 @@ def initialPropagate (w : ℕ) (i : Fin (w + 1)) : Circuit signature (w + w + 1)
 def initial (w : ℕ) : Circuit signature (w + w + 1) ((w + 1) + (w + 1)) :=
   (Circuit.pi (initialGenerate w)).append (Circuit.pi (initialPropagate w))
 
+/-- Each initial generate cell uses a single gate. -/
 @[simp] theorem size_initialGenerate (w : ℕ) (i : Fin (w + 1)) :
     (initialGenerate w i).size = 1 := by unfold initialGenerate; split <;> rfl
 
+/-- Each initial propagate cell uses a single gate. -/
 @[simp] theorem size_initialPropagate (w : ℕ) (i : Fin (w + 1)) :
     (initialPropagate w i).size = 1 := by unfold initialPropagate; split <;> rfl
 
+/-- The initial carry-summary stage for width `w` uses `2 * (w + 1)` gates. -/
 @[simp] theorem size_initial (w : ℕ) : (initial w).size = 2 * (w + 1) := by
   simp [initial, two_mul]
 
+/-- The initial carry-summary stage has depth at most `1`. -/
 theorem depth_initial_le (w : ℕ) : (initial w).depth ≤ 1 := by
   apply (Circuit.depth_append_le _ _).trans
   apply max_le <;> apply Circuit.depth_pi_le <;> intro i
@@ -246,12 +276,15 @@ def finish (w : ℕ) :
   (Circuit.pi fun i => (sumFormula w i).toCircuit).append
     (Circuit.wiring signature fun _ : Fin 1 => Fin.natAdd (w + w + 1) ⟨0, by omega⟩)
 
+/-- Each three-way XOR sum-bit formula uses `15` De Morgan gates. -/
 @[simp] theorem size_sumFormula (w : ℕ) (i : Fin w) : (sumFormula w i).size = 15 := by
   simp [sumFormula]
 
+/-- The output stage converting carry summaries to `w` sum bits uses `15 * w` gates. -/
 @[simp] theorem size_finish (w : ℕ) : (finish w).size = 15 * w := by
   simp [finish, Nat.mul_comm]
 
+/-- The output stage converting carry summaries to sum bits has depth at most `6`. -/
 theorem depth_finish_le (w : ℕ) : (finish w).depth ≤ 6 := by
   apply (Circuit.depth_append_le _ _).trans
   apply max_le
@@ -448,10 +481,12 @@ theorem val_eval_carryLookaheadAdd {w : ℕ} (a b : BitString w) :
   rw [he]
   exact (Nat.mod_eq_of_lt (BitString.equivFin w _).isLt).symm.trans hm
 
+/-- Modular addition adds one constant gate (for the zero carry-in) to `carryLookahead`. -/
 @[simp] theorem size_carryLookaheadAdd (w : ℕ) :
     (carryLookaheadAdd w).size = (carryLookahead w).size + 1 := by
   simp [carryLookaheadAdd, Nat.add_comm]
 
+/-- Modular addition of width-`w` words has depth at most `8 + 2 * Nat.clog 2 (w + 1)`. -/
 theorem depth_carryLookaheadAdd_le (w : ℕ) :
     (carryLookaheadAdd w).depth ≤ 8 + 2 * Nat.clog 2 (w + 1) := by
   have h₁ := Circuit.depth_comp_le (carryLookahead w)

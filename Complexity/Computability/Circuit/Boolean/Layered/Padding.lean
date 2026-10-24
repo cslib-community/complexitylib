@@ -44,7 +44,8 @@ def identityLayer (width : ℕ) : List Node := (List.range width).map Node.copy
 @[simp] theorem length_identityLayer (width : ℕ) : (identityLayer width).length = width := by
   simp [identityLayer]
 
-theorem valid_identityLayer (width : ℕ) : ∀ node ∈ identityLayer width, node.Valid width := by
+private theorem valid_identityLayer (width : ℕ) :
+    ∀ node ∈ identityLayer width, node.Valid width := by
   intro node hnode
   obtain ⟨i, hi, rfl⟩ := List.mem_map.mp hnode
   exact List.mem_range.mp hi
@@ -69,7 +70,7 @@ theorem valid_identityLayer (width : ℕ) : ∀ node ∈ identityLayer width, no
   | succ count ih =>
     simp only [List.replicate_succ, outputWidth_cons, length_identityLayer, ih]
 
-theorem wellFormed_replicate_identityLayer (width count : ℕ) :
+private theorem wellFormed_replicate_identityLayer (width count : ℕ) :
     WellFormed width (List.replicate count (identityLayer width)) := by
   induction count with
   | zero => trivial

@@ -37,9 +37,21 @@ the negated inputs first (`AltFormula.exists_circuit`).
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.AltOp`, `Cslib.Circuits.Boolean.AltOp.dual`: root operations (conjunction
+  and disjunction) and De Morgan duality.
 * `Cslib.Circuits.Boolean.AltFormula`: alternating formulas of a given depth.
 * `Cslib.Circuits.Boolean.AltFormula.eval`, `Cslib.Circuits.Boolean.AltFormula.size`: their
   meaning, for a root operation, and their number of gates.
+* `Cslib.Circuits.Boolean.AltFormula.mapInputs`, `Cslib.Circuits.Boolean.AltFormula.neg`:
+  literal substitution and simultaneous input negation.
+* `Cslib.Circuits.Boolean.AltFormula.gate`, `Cslib.Circuits.Boolean.AltFormula.merge`,
+  `Cslib.Circuits.Boolean.AltFormula.constant`,
+  `Cslib.Circuits.Boolean.AltFormula.excludingClause`, `Cslib.Circuits.Boolean.AltFormula.cnf`:
+  combinators for building alternating formulas and normal forms.
+* `Cslib.Circuits.Boolean.AltFormula.toFormula`, `Cslib.Circuits.Boolean.AltFormula.literals`,
+  `Cslib.Circuits.Boolean.AltFormula.literalsCircuit`,
+  `Cslib.Circuits.Boolean.AltFormula.deMorganLiteralsCircuit`: translation of alternating formulas
+  to unbounded fan-in formulas and literal-layer circuits.
 
 ## Main results
 
@@ -102,12 +114,15 @@ def mapInputs {m : ℕ} (ρ : Fin n → Literal (Fin m)) : {d : ℕ} → AltForm
 def neg {d : ℕ} (f : AltFormula n d) : AltFormula n d :=
   mapInputs (fun i => (i, false)) f
 
+/-- Substituting literals for the inputs preserves the number of gates. -/
 @[simp] theorem size_mapInputs {m d : ℕ} (ρ : Fin n → Literal (Fin m)) (f : AltFormula n d) :
     size (mapInputs ρ f) = size f := by
   induction d with
   | zero => rfl
   | succ d ih => simp [size, mapInputs, List.map_map, Function.comp_def, ih]
 
+/-- Evaluating an alternating formula after substituting literals is equivalent to evaluating the
+original formula on the evaluated literals. -/
 theorem eval_mapInputs {m d : ℕ} (ρ : Fin n → Literal (Fin m)) (f : AltFormula n d) (op : AltOp)
     (x : BitString m) :
     eval op (mapInputs ρ f) x = eval op f fun i => Literal.eval x (ρ i) := by
@@ -118,6 +133,7 @@ theorem eval_mapInputs {m d : ℕ} (ρ : Fin n → Literal (Fin m)) (f : AltForm
   | succ d ih =>
     cases op <;> simp [eval, mapInputs, List.all_map, List.any_map, Function.comp_def, ih]
 
+/-- Negating every input of an alternating formula preserves its size. -/
 @[simp] theorem size_neg {d : ℕ} (f : AltFormula n d) : size (neg f) = size f :=
   size_mapInputs _ f
 
@@ -155,14 +171,20 @@ noncomputable def gate {d : ℕ} {ι : Type*} [Fintype ι] (fs : ι → AltFormu
     AltFormula n (d + 1) :=
   univ.toList.map fs
 
+/-- The size of a single gate over a family of alternating formulas is one plus the sum of the
+child sizes. -/
 theorem size_gate {d : ℕ} {ι : Type*} [Fintype ι] (fs : ι → AltFormula n d) :
     size (gate fs) = 1 + ∑ i, size (fs i) := by
   simp [gate, size, List.map_map, Finset.sum_map_toList, Function.comp_def]
 
+/-- Evaluating `gate fs` with `.and` at the root holds iff every child evaluates to `true` with
+`.or` at its root. -/
 theorem eval_gate_and {d : ℕ} {ι : Type*} [Fintype ι] (fs : ι → AltFormula n d)
     (x : BitString n) : eval .and (gate fs) x = true ↔ ∀ i, eval .or (fs i) x = true := by
   simp [gate, eval, List.all_map, List.all_eq_true, Function.comp_def]
 
+/-- Evaluating `gate fs` with `.or` at the root holds iff some child evaluates to `true` with
+`.and` at its root. -/
 theorem eval_gate_or {d : ℕ} {ι : Type*} [Fintype ι] (fs : ι → AltFormula n d)
     (x : BitString n) : eval .or (gate fs) x = true ↔ ∃ i, eval .and (fs i) x = true := by
   simp [gate, eval, List.any_map, List.any_eq_true, Function.comp_def]
@@ -173,14 +195,19 @@ noncomputable def merge {d : ℕ} {ι : Type*} [Fintype ι] (fs : ι → AltForm
     AltFormula n (d + 1) :=
   (univ.toList.map fs).flatten
 
+/-- Evaluating `merge fs` with `.and` at the root holds iff every formula in the family evaluates
+to `true` with `.and` at its root. -/
 theorem eval_merge_and {d : ℕ} {ι : Type*} [Fintype ι] (fs : ι → AltFormula n (d + 1))
     (x : BitString n) : eval .and (merge fs) x = true ↔ ∀ i, eval .and (fs i) x = true := by
   simp [merge, eval, List.all_flatten, List.all_map, List.all_eq_true, Function.comp_def]
 
+/-- Evaluating `merge fs` with `.or` at the root holds iff some formula in the family evaluates to
+`true` with `.or` at its root. -/
 theorem eval_merge_or {d : ℕ} {ι : Type*} [Fintype ι] (fs : ι → AltFormula n (d + 1))
     (x : BitString n) : eval .or (merge fs) x = true ↔ ∃ i, eval .or (fs i) x = true := by
   simp [merge, eval, List.any_flatten, List.any_map, List.any_eq_true, Function.comp_def]
 
+/-- Merging a finite family of alternating formulas uses at most one plus the sum of their sizes. -/
 theorem size_merge_le {d : ℕ} {ι : Type*} [Fintype ι] (fs : ι → AltFormula n (d + 1)) :
     size (merge fs) ≤ 1 + ∑ i, size (fs i) := by
   have h (ls : List (AltFormula n (d + 1))) :
@@ -198,10 +225,12 @@ theorem size_merge_le {d : ℕ} {ι : Type*} [Fintype ι] (fs : ι → AltFormul
 def constant (n d : ℕ) (op : AltOp) (b : Bool) : AltFormula n (d + 2) :=
   if b = decide (op = .and) then [] else [[]]
 
+/-- `constant n d op b` evaluates to `b` on every input when evaluated with root operation `op`. -/
 theorem eval_constant (n d : ℕ) (op : AltOp) (b : Bool) (x : BitString n) :
     eval op (constant n d op b) x = b := by
   cases op <;> cases b <;> simp [constant, eval]
 
+/-- A constant alternating formula has size at most `2`. -/
 theorem size_constant_le (n d : ℕ) (op : AltOp) (b : Bool) : size (constant n d op b) ≤ 2 := by
   cases op <;> cases b <;> simp [constant, size]
 
@@ -209,12 +238,14 @@ theorem size_constant_le (n d : ℕ) (op : AltOp) (b : Bool) : size (constant n 
 noncomputable def excludingClause (y : BitString n) : AltFormula n 1 :=
   gate fun i : Fin n => (i, !y i)
 
+/-- The clause `excludingClause y` evaluates to `true` on `x` with root `.or` iff `x ≠ y`. -/
 theorem eval_excludingClause (y x : BitString n) :
     eval .or (excludingClause y) x = true ↔ x ≠ y := by
   rw [excludingClause, eval_gate_or]
   simp only [eval, Literal.eval, beq_iff_eq, Bool.eq_not_iff, ne_eq]
   exact ⟨fun ⟨i, hi⟩ h => hi (congrFun h i), fun h => not_forall.1 fun h' => h (funext h')⟩
 
+/-- `excludingClause y` has size `1`. -/
 theorem size_excludingClause (y : BitString n) : size (excludingClause y) = 1 := by
   rw [excludingClause, size_gate]
   simp [size]
@@ -223,6 +254,7 @@ theorem size_excludingClause (y : BitString n) : size (excludingClause y) = 1 :=
 noncomputable def cnf (f : BitString n → Bool) : AltFormula n 2 :=
   gate fun y : {y : BitString n // f y = false} => excludingClause y.1
 
+/-- `cnf f` evaluates to `f x` on every input `x` with root operation `.and`. -/
 theorem eval_cnf (f : BitString n → Bool) (x : BitString n) : eval .and (cnf f) x = f x := by
   apply Bool.eq_iff_iff.2
   rw [cnf, eval_gate_and]
@@ -236,6 +268,7 @@ theorem eval_cnf (f : BitString n → Bool) (x : BitString n) : eval .and (cnf f
     subst x
     exact Bool.noConfusion (h.symm.trans y.2)
 
+/-- The canonical CNF formula `cnf f` has size at most `2 ^ n + 1`. -/
 theorem size_cnf_le (f : BitString n → Bool) : size (cnf f) ≤ 2 ^ n + 1 := by
   have hc : Fintype.card {y : BitString n // f y = false} ≤ 2 ^ n := by
     simpa using Fintype.card_subtype_le fun y : BitString n => f y = false
@@ -279,6 +312,7 @@ private theorem decide_exists_get {α : Type*} (l : List α) (p : α → Bool) :
   exact ⟨fun ⟨j, hj⟩ => ⟨_, List.get_mem l j, hj⟩,
     fun ⟨a, ha, hpa⟩ => by obtain ⟨j, rfl⟩ := List.get_of_mem ha; exact ⟨j, hpa⟩⟩
 
+/-- Evaluating `toFormula op f` on the literal vector `literals x` agrees with `eval op f x`. -/
 theorem eval_toFormula {d : ℕ} (op : AltOp) (f : AltFormula n d) (x : BitString n) :
     (toFormula op f).eval Unbounded.interpretation (literals x) = eval op f x := by
   induction d generalizing op with
@@ -298,6 +332,7 @@ theorem eval_toFormula {d : ℕ} (op : AltOp) (f : AltFormula n d) (x : BitStrin
     · simp only [toFormula, Formula.eval_gate, Unbounded.interpretation_or, ih, eval]
       exact decide_exists_get f fun g => eval .and g x
 
+/-- Translating an alternating formula to an unbounded fan-in formula preserves its gate count. -/
 theorem size_toFormula {d : ℕ} (op : AltOp) (f : AltFormula n d) :
     (toFormula op f).size = size f := by
   induction d generalizing op with
@@ -309,6 +344,7 @@ theorem size_toFormula {d : ℕ} (op : AltOp) (f : AltFormula n d) :
       rw [← List.sum_ofFn, List.ofFn_comp', List.ofFn_get]
     cases op <;> simp only [toFormula, Formula.size_gate, h, size] <;> omega
 
+/-- An alternating formula of depth `d` translates to a formula of depth at most `d`. -/
 theorem depth_toFormula_le {d : ℕ} (op : AltOp) (f : AltFormula n d) :
     (toFormula op f).depth ≤ d := by
   induction d generalizing op with
@@ -316,6 +352,7 @@ theorem depth_toFormula_le {d : ℕ} (op : AltOp) (f : AltFormula n d) :
   | succ d ih =>
     cases op <;> exact Nat.succ_le_succ (Finset.sup_le fun j _ => ih _ _)
 
+/-- An alternating formula of depth `d` translates to a formula of AND/OR depth at most `d`. -/
 theorem depthWith_toFormula_le {d : ℕ} (op : AltOp) (f : AltFormula n d) :
     (toFormula op f).depthWith Unbounded.andOrCost ≤ d := by
   induction d generalizing op with
@@ -328,11 +365,13 @@ input. -/
 def literalsCircuit (n : ℕ) : Circuit Unbounded.signature n (n + n) :=
   (Circuit.wiring _ id).append (Circuit.pi fun i => Circuit.oneGate .not fun _ => i)
 
+/-- `literalsCircuit n` evaluates to the vector `literals x` of positive and negated inputs. -/
 theorem eval_literalsCircuit (x : BitString n) :
     (literalsCircuit n).eval Unbounded.interpretation x = literals x := by
   rw [literalsCircuit, Circuit.eval_append, Circuit.eval_pi]
   rfl
 
+/-- `literalsCircuit n` uses `n` gates (one negation per input). -/
 theorem size_literalsCircuit (n : ℕ) : (literalsCircuit n).size = n := by
   simp [literalsCircuit]
 
@@ -341,14 +380,18 @@ negation gate per input. -/
 def deMorganLiteralsCircuit (n : ℕ) : Circuit Boolean.signature n (n + n) :=
   (Circuit.wiring _ id).append (Circuit.pi fun i => Circuit.oneGate .not fun _ => i)
 
+/-- `deMorganLiteralsCircuit n` evaluates to the vector `literals x` of positive and negated
+inputs. -/
 theorem eval_deMorganLiteralsCircuit (x : BitString n) :
     (deMorganLiteralsCircuit n).eval Boolean.interpretation x = literals x := by
   rw [deMorganLiteralsCircuit, Circuit.eval_append, Circuit.eval_pi]
   rfl
 
+/-- `deMorganLiteralsCircuit n` uses `n` gates (one negation per input). -/
 theorem size_deMorganLiteralsCircuit (n : ℕ) : (deMorganLiteralsCircuit n).size = n := by
   simp [deMorganLiteralsCircuit]
 
+/-- `literalsCircuit n` has depth at most `1`. -/
 theorem depth_literalsCircuit_le (n : ℕ) : (literalsCircuit n).depth ≤ 1 :=
   (Circuit.depth_append_le _ _).trans (max_le (by simp)
     (Circuit.depth_pi_le _ fun _ => (Circuit.depth_oneGate _ _).le))

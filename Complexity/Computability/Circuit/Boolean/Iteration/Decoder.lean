@@ -77,7 +77,7 @@ theorem hitValue_spec (f : BitString n → BitString n) (T K d : ℕ) (x : BitSt
   congr 1
   omega
 
-theorem repeatedValue_spec (f : BitString n → BitString n) (T K i j : ℕ) (x : BitString n)
+private theorem repeatedValue_spec (f : BitString n → BitString n) (T K i j : ℕ) (x : BitString n)
     (hij : i < j) (hj : j ≤ K) (hK : K < 2 ^ w) (hT : K ≤ T) (heq : f^[i] x = f^[j] x) :
     repeatedValue f T K x (BitVec.ofNat w i) (BitVec.ofNat w j) = f^[T] x := by
   have hiw : (BitVec.ofNat w i).toNat = i := Nat.mod_eq_of_lt (by omega)
@@ -118,7 +118,8 @@ theorem prefix_mem (f : BitString n → BitString n) {K j : ℕ} (hj : j ≤ K) 
     (fun x => f^[j] x bit) ∈ prefixWires f K :=
   Synthesis.subset_stages _ hj ⟨bit, rfl⟩
 
-theorem synthesis_repeatedValue (s : Set (BooleanFunction n)) (f : BitString n → BitString n)
+private theorem synthesis_repeatedValue (s : Set (BooleanFunction n))
+    (f : BitString n → BitString n)
     (T K : ℕ) (lo hi : BitString n → BitVec w)
     (hlo : ∀ i : Fin w, (fun x => (lo x).getLsbD i.val) ∈ s)
     (hhi : ∀ i : Fin w, (fun x => (hi x).getLsbD i.val) ∈ s)

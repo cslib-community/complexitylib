@@ -66,7 +66,7 @@ universe u v
 variable {U : Type u} [Finite U] [Nontrivial U]
 
 /-- A set of inputs has at most `|U| ^ n` elements: `log_|U| |S| ≤ n`. -/
-theorem logb_ncard_le_self {n : ℕ} {S : Set (Fin n → U)} (hS : S.Nonempty) :
+private theorem logb_ncard_le_self {n : ℕ} {S : Set (Fin n → U)} (hS : S.Nonempty) :
     Real.logb (Nat.card U) S.ncard ≤ n := by
   have hq : (1 : ℝ) < Nat.card U := by exact_mod_cast Finite.one_lt_card
   have hle : (S.ncard : ℝ) ≤ (Nat.card U : ℝ) ^ n := by
@@ -81,7 +81,7 @@ theorem logb_ncard_le_self {n : ℕ} {S : Set (Fin n → U)} (hS : S.Nonempty) :
 variable {S : ∀ n, Set (Fin n → U)} {K : ℕ → ℕ}
 
 /-- A dense family of sets has `n - log_|U| |S_n| = o(n)`. -/
-theorem isLittleO_sub_logb_ncard
+private theorem isLittleO_sub_logb_ncard
     (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
       fun n => (n : ℝ)) :
     (fun n : ℕ => (n : ℝ) - Real.logb (Nat.card U) (S n).ncard) =o[atTop] fun n => (n : ℝ) := by

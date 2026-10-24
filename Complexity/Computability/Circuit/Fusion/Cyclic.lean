@@ -112,7 +112,7 @@ theorem pairCover_lowerBound_cyclic {target : Set U} {input : Fin n → Set U}
     hbound (PairCover.ofCyclicCircuit c input o hc admissible)
 
 /-- The minimum pair-cover length bounds the AND cost of any cyclic construction. -/
-theorem pairCoverComplexity_le_cyclic_cost {target : Set U}
+private theorem pairCoverComplexity_le_cyclic_cost {target : Set U}
     (c : CyclicCircuit Monotone.signature n m) (input : Fin n → Set U) (o : Fin m)
     (hc : c.eval (Monotone.setInterpretation U) Monotone.setInterpretation_mono input o = target)
     (admissible : Semifilter ↥(targetᶜ) → Prop := fun _ => True) :

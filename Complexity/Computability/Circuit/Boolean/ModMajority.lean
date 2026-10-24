@@ -30,6 +30,8 @@ arguments (`Unbounded.modMultCircuit`). Replacing every gate of a polynomial-siz
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.modCircuitOfMajority`: `MOD_q` from a circuit for majority.
+* `Cslib.Circuits.Boolean.Unbounded.modCount`, `Unbounded.modMult`, `Unbounded.expandIndex`:
+  modulus-`q` count predicate, reduced wire multiplicity, and expansion index map.
 * `Cslib.Circuits.Boolean.Unbounded.modMultCircuit`: a circuit with majority gates for every
   operation of the basis with `MOD_q` gates and multiplicities.
 
@@ -135,6 +137,7 @@ it is read at all. -/
 def modMult (q k : ℕ) : ℕ :=
   if q = 0 then min k 1 else k % q
 
+/-- The reduced multiplicity `modMult q k` is at most `max q 1`. -/
 theorem modMult_le (q k : ℕ) : modMult q k ≤ max q 1 := by
   unfold modMult
   split_ifs with hq

@@ -62,7 +62,7 @@ def depthCode (inputCount : ℕ) (code : List (Op × List ℕ) × List ℕ) : �
   simp [wireDepthsCode]
 
 /-- The raw table of a typed program lists its zero input depths and then its gate depths. -/
-theorem wireDepthsCode_code (p : Program signature n g) :
+private theorem wireDepthsCode_code (p : Program signature n g) :
     wireDepthsCode n p.code = List.replicate n 0 ++ List.ofFn p.depths := by
   have h := p.evalCode_code (depthInterpretation 1) 0 (fun _ => 0)
   rw [← p.depthsWith_one]

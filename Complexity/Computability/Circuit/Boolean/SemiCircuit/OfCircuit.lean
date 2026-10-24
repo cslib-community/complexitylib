@@ -69,7 +69,7 @@ theorem eval_lineGate {g : ℕ} (line : Line (fullSignature 2 Bool) n g) (val : 
     · simp at ha
   · rfl
 
-theorem reads_lineGate {g : ℕ} {line : Line (fullSignature 2 Bool) n g} {i : ℕ}
+private theorem reads_lineGate {g : ℕ} {line : Line (fullSignature 2 Bool) n g} {i : ℕ}
     (h : (lineGate line).Reads i) : ∃ a, wireName (line.wires a) = i := by
   obtain ⟨op | c, w⟩ := line
   · rcases h with h | h
@@ -101,7 +101,7 @@ def ofCircuit (C : Circuit (fullSignature 2 Bool) n 1) : SemiCircuit where
 @[simp] theorem ofCircuit_eqns (C : Circuit (fullSignature 2 Bool) n 1) :
     (ofCircuit C).eqns = ∅ := rfl
 
-theorem ofCircuit_gate (C : Circuit (fullSignature 2 Bool) n 1) (k : Fin C.size) :
+private theorem ofCircuit_gate (C : Circuit (fullSignature 2 Bool) n 1) (k : Fin C.size) :
     (ofCircuit C).gate (n + k) = lineGate (C.program.lines k) := by
   have h : n ≤ n + (k : ℕ) ∧ n + (k : ℕ) < n + C.size := ⟨Nat.le_add_right _ _, by omega⟩
   simp only [ofCircuit, dite_eq_left h]

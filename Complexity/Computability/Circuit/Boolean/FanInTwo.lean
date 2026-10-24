@@ -37,7 +37,8 @@ For circuits of polynomial size `log (n + s)` is `O(log n)`, so polynomial-size 
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Unbounded.dedup`: the circuit whose gates read their distinct wires.
+* `Cslib.Circuits.Boolean.Unbounded.dedupLine`, `Cslib.Circuits.Boolean.Unbounded.dedup`: the line
+  and circuit whose gates read their distinct wires, each once.
 * `Cslib.Circuits.Boolean.Unbounded.Op.deMorganFormula`: a De Morgan formula for each operation of
   the unbounded fan-in basis.
 
@@ -158,7 +159,7 @@ theorem depth_dedup_le (C : Circuit signature n m) : (dedup C).depth ≤ C.depth
   Circuit.depth_mapLines_le depth_dedupLine_le C
 
 /-- Every gate of `dedup C` reads at most all `n + C.size` wires. -/
-theorem arity_lines_dedup_le (C : Circuit signature n m) (k : Fin C.size) :
+private theorem arity_lines_dedup_le (C : Circuit signature n m) (k : Fin C.size) :
     signature.Arity ((dedup C).program.lines k).op ≤ n + C.size :=
   arity_lines_mapLines_dedupLine_le C.program k
 

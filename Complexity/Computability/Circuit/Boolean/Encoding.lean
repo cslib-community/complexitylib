@@ -42,15 +42,16 @@ logarithmically many bits.
 
 ## Main definitions
 
-* `Cslib.Circuits.Wire.toNat`, `Cslib.Circuits.Wire.ofNat`: wire numbers.
+* `Cslib.Circuits.Wire.equivFin`, `Cslib.Circuits.Wire.toNat`, `Cslib.Circuits.Wire.ofNat`: wire
+  numbers.
 * `Cslib.Circuits.Line.code`, `Cslib.Circuits.Program.code`, `Cslib.Circuits.Circuit.code`: circuits
   as lists of gates.
-* `Cslib.Circuits.Line.ofCode`, `Cslib.Circuits.Program.ofCode`, `Cslib.Circuits.Circuit.ofCode`:
-  decoding, with the well-formedness checks.
+* `Cslib.Circuits.Line.ofCode`, `Cslib.Circuits.Program.pushCode`, `Cslib.Circuits.Program.ofCode`,
+  `Cslib.Circuits.Circuit.ofCode`: decoding, with the well-formedness checks.
 * `Cslib.Circuits.Program.IsCodeFrom`: the lists of gates that are codes of programs.
-* `Cslib.Circuits.Boolean.encOp`, `Cslib.Circuits.Boolean.encGate`,
-  `Cslib.Circuits.Boolean.encCode`, `Cslib.Circuits.Boolean.encCircuit`: binary encodings of De
-  Morgan circuits.
+* `Cslib.Circuits.Boolean.Op.toNat`, `Cslib.Circuits.Boolean.encOp`,
+  `Cslib.Circuits.Boolean.encGate`, `Cslib.Circuits.Boolean.encCode`,
+  `Cslib.Circuits.Boolean.encCircuit`: binary encodings of De Morgan circuits.
 
 ## Main results
 
@@ -93,31 +94,41 @@ def equivFin (inputCount gateCount : ℕ) :
     Wire inputCount gateCount ≃ Fin (inputCount + gateCount) :=
   (equiv inputCount gateCount).trans finSumFinEquiv
 
+/-- Input wire `i` maps to `Fin.castAdd k i` under `equivFin`. -/
 @[simp] theorem equivFin_input (i : Fin n) : equivFin n k (input i) = Fin.castAdd k i := rfl
 
+/-- Gate wire `j` maps to `Fin.natAdd n j` under `equivFin`. -/
 @[simp] theorem equivFin_gate (j : Fin k) : equivFin n k (gate j) = Fin.natAdd n j := rfl
 
 /-- The number of a wire: input `i` is `i` and gate `j` is `inputCount + j`. -/
 def toNat (w : Wire n k) : ℕ := (equivFin n k w).val
 
+/-- Input wire `i` has wire number `i`. -/
 @[simp] theorem toNat_input (i : Fin n) : (input i : Wire n k).toNat = i := rfl
 
+/-- Gate wire `j` has wire number `n + j`. -/
 @[simp] theorem toNat_gate (j : Fin k) : (gate j : Wire n k).toNat = n + j := rfl
 
+/-- Every wire in a circuit with `n` inputs and `k` gates has wire number strictly less than
+`n + k`. -/
 theorem toNat_lt (w : Wire n k) : w.toNat < n + k := (equivFin n k w).isLt
 
 /-- The wire with number `i`, for `i < inputCount + gateCount`. -/
 def ofNat (i : ℕ) (h : i < n + k) : Wire n k := (equivFin n k).symm ⟨i, h⟩
 
+/-- Decoding the wire number of `w` recovers `w`. -/
 @[simp] theorem ofNat_toNat (w : Wire n k) : ofNat w.toNat w.toNat_lt = w :=
   (equivFin n k).symm_apply_apply w
 
+/-- The wire number of `ofNat i h` is `i`. -/
 @[simp] theorem toNat_ofNat (i : ℕ) (h : i < n + k) : (ofNat i h : Wire n k).toNat = i := by
   simp [ofNat, toNat]
 
+/-- Wire numbering `toNat` is injective. -/
 theorem toNat_injective : Function.Injective (toNat : Wire n k → ℕ) :=
   fun _ _ h => (equivFin n k).injective (Fin.ext h)
 
+/-- Widening a wire by `castSucc` preserves its wire number. -/
 @[simp] theorem toNat_castSucc (w : Wire n k) : w.castSucc.toNat = w.toNat := by
   cases w <;> rfl
 
@@ -131,11 +142,14 @@ namespace Line
 def code (line : Line σ n k) : σ.Op × List ℕ :=
   (line.op, List.ofFn fun a => (line.wires a).toNat)
 
+/-- The first component of a line's code is its operation. -/
 @[simp] theorem code_fst (line : Line σ n k) : line.code.1 = line.op := rfl
 
+/-- The wire list in a line's code has length equal to the arity of its operation. -/
 @[simp] theorem length_code_snd (line : Line σ n k) : line.code.2.length = σ.Arity line.op := by
   simp [code]
 
+/-- Widening the wires of a line by `castSucc` leaves its code unchanged. -/
 theorem code_mapWires_castSucc (line : Line σ n k) :
     (line.mapWires Wire.Renaming.castSucc).code = line.code := by
   simp [code, Wire.toNat_castSucc]
@@ -186,8 +200,10 @@ def code : {k : ℕ} → Program σ n k → List (σ.Op × List ℕ)
   | _, .empty => []
   | _, .gate p line => p.code ++ [line.code]
 
+/-- The code of the empty program is the empty list. -/
 @[simp] theorem code_empty : (Program.empty : Program σ n 0).code = [] := rfl
 
+/-- Appending a gate appends its line code to the program's code. -/
 @[simp] theorem code_gate (p : Program σ n k) (line : Line σ n k) :
     (p.gate line).code = p.code ++ [line.code] := rfl
 
@@ -220,18 +236,24 @@ def IsCodeFrom (σ : Signature.{v}) (n : ℕ) : ℕ → List (σ.Op × List ℕ)
   | k, g :: gates =>
     (g.2.length = σ.Arity g.1 ∧ ∀ i ∈ g.2, i < n + k) ∧ IsCodeFrom σ n (k + 1) gates
 
+/-- `IsCodeFrom σ n k gates` is decidable. -/
 instance instDecidableIsCodeFrom :
     (k : ℕ) → (gates : List (σ.Op × List ℕ)) → Decidable (IsCodeFrom σ n k gates)
   | _, [] => isTrue trivial
   | k, _ :: gates => @instDecidableAnd _ _ inferInstance (instDecidableIsCodeFrom (k + 1) gates)
 
+/-- The empty gate list satisfies `IsCodeFrom σ n k` for every starting gate index `k`. -/
 @[simp] theorem isCodeFrom_nil (k : ℕ) : IsCodeFrom σ n k [] := trivial
 
+/-- `g :: gates` satisfies `IsCodeFrom σ n k` iff `g` is a valid line at index `k` and `gates`
+satisfies `IsCodeFrom σ n (k + 1)`. -/
 @[simp] theorem isCodeFrom_cons (k : ℕ) (g : σ.Op × List ℕ) (gates : List (σ.Op × List ℕ)) :
     IsCodeFrom σ n k (g :: gates) ↔
       (g.2.length = σ.Arity g.1 ∧ ∀ i ∈ g.2, i < n + k) ∧ IsCodeFrom σ n (k + 1) gates :=
   Iff.rfl
 
+/-- A concatenation `gates ++ gates'` satisfies `IsCodeFrom σ n k` iff `gates` satisfies
+`IsCodeFrom σ n k` and `gates'` satisfies `IsCodeFrom σ n (k + gates.length)`. -/
 theorem isCodeFrom_append (k : ℕ) (gates gates' : List (σ.Op × List ℕ)) :
     IsCodeFrom σ n k (gates ++ gates') ↔
       IsCodeFrom σ n k gates ∧ IsCodeFrom σ n (k + gates.length) gates' := by
@@ -280,8 +302,10 @@ a line reading only inputs and earlier gates. -/
 def ofCode (n : ℕ) (gates : List (σ.Op × List ℕ)) : Option (Σ k, Program σ n k) :=
   gates.foldl (pushCode n) (some ⟨0, .empty⟩)
 
+/-- Decoding the empty gate list yields the empty program. -/
 @[simp] theorem ofCode_nil : ofCode n ([] : List (σ.Op × List ℕ)) = some ⟨0, .empty⟩ := rfl
 
+/-- Decoding `gates ++ [g]` is equivalent to decoding `gates` and then pushing `g`. -/
 theorem ofCode_append_singleton (gates : List (σ.Op × List ℕ)) (g : σ.Op × List ℕ) :
     ofCode n (gates ++ [g]) = pushCode n (ofCode n gates) g := by
   simp [ofCode, List.foldl_append]
@@ -418,6 +442,7 @@ def Op.toNat : Op → ℕ
   | .and => 3
   | .or => 4
 
+/-- The numbering `Op.toNat` of De Morgan operations is injective. -/
 theorem Op.toNat_injective : Function.Injective Op.toNat := by
   decide
 
@@ -445,6 +470,7 @@ def encCircuit (m : ℕ) : (Σ n, Circuit signature n m) ↪ List Bool :=
     subst hn
     rw [Circuit.code_injective hc]⟩
 
+/-- Unfolding formula for `encCircuit m c`. -/
 theorem encCircuit_apply (c : Σ n, Circuit signature n m) :
     encCircuit m c = encPair encUnary encCode (c.1, c.2.code) := rfl
 

@@ -138,7 +138,7 @@ theorem stages_stable :
   simpa only [a, Finset.mem_filter, Finset.mem_univ, true_and] using this
 
 /-- All finite propagation stages are contained in the generated pair values. -/
-theorem stages_le_pairValues (k : ℕ) :
+private theorem stages_le_pairValues (k : ℕ) :
     stages target input pairs k ≤ pairValues target input pairs := by
   induction k with
   | zero => exact bot_le
@@ -180,7 +180,7 @@ noncomputable def stageCircuit (k : ℕ) :
   ((roundCircuit target input pairs).iterate k).comp (initialCircuit target pairs)
 
 /-- Each propagation round charges one conjunction per listed pair. -/
-theorem cost_stageCircuit (k : ℕ) :
+private theorem cost_stageCircuit (k : ℕ) :
     (stageCircuit target input pairs k).program.cost Monotone.andCost = k * pairs.length := by
   rw [stageCircuit, Circuit.cost_program_comp, Circuit.cost_program_iterate,
     roundCircuit, Circuit.cost_program_append, Circuit.cost_program_wiring, cost_updateCircuit,
@@ -329,7 +329,7 @@ theorem PairCover.size_toCircuit_le (c : PairCover target input) :
   nlinarith
 
 /-- Every unrestricted pair cover yields a quadratic upper bound for native AND complexity. -/
-theorem PairCover.ecomplexityFrom_le_sq (c : PairCover target input) :
+private theorem PairCover.ecomplexityFrom_le_sq (c : PairCover target input) :
     ecomplexityFrom (Monotone.setInterpretation U) Monotone.andCost
       (fun _ : Unit => fun _ : Fin 1 => target) (fun _ => input) ≤
         (c.pairs.length : ℕ∞) ^ 2 := by

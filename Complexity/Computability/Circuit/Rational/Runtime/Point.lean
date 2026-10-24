@@ -164,7 +164,7 @@ theorem tupleWord_eq {n d : ℕ} (A : Vector (DeterminantAlgorithm.Table d) (n +
 
 /-- `pointWordOfTables` on the row lists of `A` tests `determinant (A.get 0) = 0` and encodes the
 normalized tuple when nonsingular. -/
-theorem pointWordOfTables_eq {n d : ℕ} (A : Vector (DeterminantAlgorithm.Table d) (n + 1)) :
+private theorem pointWordOfTables_eq {n d : ℕ} (A : Vector (DeterminantAlgorithm.Table d) (n + 1)) :
     pointWordOfTables (A.toList.map fun T => rowsOf (DeterminantAlgorithm.denote T)) =
       let den := DeterminantAlgorithm.determinant (A.get 0)
       if den = 0 then []
@@ -177,7 +177,8 @@ theorem pointWordOfTables_eq {n d : ℕ} (A : Vector (DeterminantAlgorithm.Table
 
 /-- `pointWordsOfTables` on the row lists of `A` produces `[]` when singular and the singleton
 encoded tuple when nonsingular. -/
-theorem pointWordsOfTables_eq {n d : ℕ} (A : Vector (DeterminantAlgorithm.Table d) (n + 1)) :
+private theorem pointWordsOfTables_eq {n d : ℕ}
+    (A : Vector (DeterminantAlgorithm.Table d) (n + 1)) :
     pointWordsOfTables (A.toList.map fun T => rowsOf (DeterminantAlgorithm.denote T)) =
       let den := DeterminantAlgorithm.determinant (A.get 0)
       if den = 0 then []

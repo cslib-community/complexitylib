@@ -118,7 +118,7 @@ theorem antitone_keyedSortCircuit (key : Circuit signature r k) (depth : ℕ)
     ((keyedSortCircuit.pack key depth).eval interpretation x)
 
 /-- Key computation is charged once per record; packing and dropping keys are free wirings. -/
-theorem cost_program_keyedSortCircuit (key : Circuit signature r k) (depth : ℕ)
+private theorem cost_program_keyedSortCircuit (key : Circuit signature r k) (depth : ℕ)
     (ascending : Bool) (cost : signature.Op → ℕ) :
     (keyedSortCircuit key depth ascending).program.cost cost =
       BitonicSort.arity depth * key.program.cost cost +

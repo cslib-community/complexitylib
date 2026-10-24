@@ -110,16 +110,19 @@ size of the smallest circuits deciding `C` from truth tables. -/
 noncomputable def truthTableTest (C : Set (BooleanFunction n)) : BooleanFunction (2 ^ n) :=
   open scoped Classical in fun T => decide ((truthTable n).symm T ∈ C)
 
+/-- `truthTableTest C` accepts a truth table `T` if and only if the function with truth table `T`
+belongs to `C`. -/
 @[simp] theorem truthTableTest_eq_true_iff {C : Set (BooleanFunction n)} {T : BitString (2 ^ n)} :
     truthTableTest C T = true ↔ (truthTable n).symm T ∈ C :=
   @decide_eq_true_iff _ (Classical.propDecidable _)
 
+/-- `truthTableTest C` accepts the truth table of `f` if and only if `f ∈ C`. -/
 theorem truthTableTest_truthTable_eq_true_iff {C : Set (BooleanFunction n)}
     {f : BooleanFunction n} : truthTableTest C (truthTable n f) = true ↔ f ∈ C := by
   rw [truthTableTest_eq_true_iff, Equiv.symm_apply_apply]
 
 /-- The test deciding `C` accepts as many truth tables as there are functions in `C`. -/
-theorem card_filter_truthTableTest (C : Set (BooleanFunction n)) :
+private theorem card_filter_truthTableTest (C : Set (BooleanFunction n)) :
     #{T | truthTableTest C T = true} = C.ncard := by
   have h : ((({T | truthTableTest C T = true} : Finset (BitString (2 ^ n))) :
       Set (BitString (2 ^ n)))) = truthTable n '' C := by
@@ -136,6 +139,8 @@ def truthTableLanguage (C : ∀ n, Set (BooleanFunction n)) : Language Bool :=
   {w | ∃ n, ∃ h : w.length = 2 ^ n,
     (truthTable n).symm (fun i => w[(i : ℕ)]'(i.isLt.trans_eq h.symm)) ∈ C n}
 
+/-- A `2 ^ n`-bit string `T`, viewed as a list via `List.ofFn`, belongs to `truthTableLanguage C`
+if and only if its corresponding Boolean function lies in `C n`. -/
 theorem ofFn_mem_truthTableLanguage {C : ∀ n, Set (BooleanFunction n)} {T : BitString (2 ^ n)} :
     List.ofFn T ∈ truthTableLanguage C ↔ (truthTable n).symm T ∈ C n := by
   constructor
@@ -176,6 +181,7 @@ every polynomial bound, eventually every function in `C n` needs more gates
 def IsUseful (Λ : Set (Language Bool)) (C : ∀ n, Set (BooleanFunction n)) : Prop :=
   ∀ L ∈ Λ, ∀ᶠ n in atTop, L.slice n ∉ C n
 
+/-- Any property containing a large property at every input length is itself large. -/
 theorem IsLarge.mono (hC : IsLarge C) (h : ∀ n, C n ⊆ C' n) : IsLarge C' := by
   obtain ⟨c, hc⟩ := hC
   exact ⟨c, hc.mono fun n hn => hn.trans (Nat.mul_le_mul_left _ (Set.ncard_le_ncard (h n)))⟩
@@ -193,7 +199,7 @@ theorem IsUseful.anti (hC : IsUseful Λ C) (hΛ : Λ' ⊆ Λ) (h : ∀ n, C' n �
 
 /-- If `Λ` contains `SIZE s`, with `s` positive, a property useful against `Λ` eventually holds
 only for functions needing more than `s n` gates. -/
-theorem IsUseful.eventually_lt_complexity (hC : IsUseful Λ C) {s : ℕ → ℕ} (hΛ : SIZE s ⊆ Λ)
+private theorem IsUseful.eventually_lt_complexity (hC : IsUseful Λ C) {s : ℕ → ℕ} (hΛ : SIZE s ⊆ Λ)
     (hs : ∀ n, 1 ≤ s n) :
     ∀ᶠ n in atTop, ∀ f ∈ C n, s n < complexity interpretation (single f) := by
   classical
@@ -233,7 +239,7 @@ theorem isUseful_PPoly_iff :
     exact lt_irrefl _ (hn _ hmem)
 
 /-- A `P/poly`-constructive property is decided by circuits of size `2 ^ O(n)`. -/
-theorem exists_complexity_truthTableTest_le (hC : truthTableLanguage C ∈ PPoly) :
+private theorem exists_complexity_truthTableTest_le (hC : truthTableLanguage C ∈ PPoly) :
     ∃ c, ∀ n, 1 ≤ n → complexity interpretation (single (truthTableTest (C n))) ≤ 2 ^ (c * n) := by
   obtain ⟨a, d, h⟩ := polynomiallyBounded_iff_le.1 hC
   refine ⟨a + 2 * d, fun n hn => ?_⟩

@@ -91,7 +91,7 @@ theorem kernelRow_comm (q : ℝ) (R : ℕ) (v z : V) : kernelRow G q R v z = ker
   simp only [kernelRow_apply, SimpleGraph.edist_comm (u := v), SimpleGraph.dist_comm (u := v)]
 
 /-- The kernel row of `v` vanishes outside the closed ball of radius `R` around `v`. -/
-theorem kernelRow_eq_zero_of_lt {q : ℝ} {R : ℕ} {v z : V} (h : R < G.edist v z) :
+private theorem kernelRow_eq_zero_of_lt {q : ℝ} {R : ℕ} {v z : V} (h : R < G.edist v z) :
     kernelRow G q R v z = 0 := by
   rw [kernelRow_apply, ite_eq_right (not_le.2 h)]
 
@@ -165,7 +165,7 @@ private theorem kernelRow_defect_le {q : ℝ} (R : ℕ) {u v : V} (huv : G.Adj u
 variable [Fintype V]
 
 /-- Every kernel row has norm at least one, from its entry `1` at its own vertex. -/
-theorem one_le_norm_kernelRow (q : ℝ) (R : ℕ) (v : V) : 1 ≤ ‖kernelRow G q R v‖ := by
+private theorem one_le_norm_kernelRow (q : ℝ) (R : ℕ) (v : V) : 1 ≤ ‖kernelRow G q R v‖ := by
   have h : 1 ≤ ‖kernelRow G q R v‖ ^ 2 := by
     rw [EuclideanSpace.real_norm_sq_eq]
     calc (1 : ℝ) = kernelRow G q R v v ^ 2 := by rw [kernelRow_self, one_pow]

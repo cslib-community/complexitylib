@@ -106,7 +106,8 @@ theorem PairCover.exists_forallGuess {n : ℕ} (f : BooleanFunction n)
     exact Formula.eval_toCircuit _ _ _ _
 
 /-- The semi-ultrafilter bound applies after minimizing over all auxiliary counts and verifiers. -/
-theorem pairCoverComplexity_le_econondeterministicAndComplexity {n : ℕ} (f : BooleanFunction n) :
+private theorem pairCoverComplexity_le_econondeterministicAndComplexity {n : ℕ}
+    (f : BooleanFunction n) :
     pairCoverComplexity {x | f x = true} (fun i => {x | AltFormula.literals x i = true})
       Semifilter.IsUltra ≤ econondeterministicAndComplexity f := by
   apply le_econondeterministicAndComplexity_iff.mpr
@@ -115,7 +116,8 @@ theorem pairCoverComplexity_le_econondeterministicAndComplexity {n : ℕ} (f : B
   exact pairCoverComplexity_forallGuess_le_cost g c hc
 
 /-- A semi-ultrafilter cover gives a universal verifier at most five times as costly. -/
-theorem econondeterministicAndComplexity_le_pairCoverComplexity {n : ℕ} (f : BooleanFunction n) :
+private theorem econondeterministicAndComplexity_le_pairCoverComplexity {n : ℕ}
+    (f : BooleanFunction n) :
     econondeterministicAndComplexity f ≤
       5 * pairCoverComplexity {x | f x = true}
         (fun i => {x | AltFormula.literals x i = true}) Semifilter.IsUltra := by

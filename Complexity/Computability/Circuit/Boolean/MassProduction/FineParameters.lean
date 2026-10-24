@@ -111,7 +111,7 @@ theorem mul_le_suffixWidth (hnd : num ≤ den) (n : ℕ) :
   have h1 : (X + 1) * (num + e) * n = n * (num + e + num * X) + X * e * n := by ring
   omega
 
-theorem three_le_dimension : 3 ≤ dimension num den X := by
+private theorem three_le_dimension : 3 ≤ dimension num den X := by
   unfold dimension
   omega
 
@@ -144,7 +144,8 @@ theorem dimension_mul_fieldWidth_le (n : ℕ) :
     rw [Nat.sub_eq_zero_of_le (by omega), Nat.zero_div, Nat.mul_zero]
 
 /-- Linear growth eventually dominates any affine function of `log₂ (n + 2)`. -/
-theorem eventually_add_mul_log_le (A B : ℕ) : ∀ᶠ n in atTop, A + B * Nat.log 2 (n + 2) ≤ n := by
+private theorem eventually_add_mul_log_le (A B : ℕ) :
+    ∀ᶠ n in atTop, A + B * Nat.log 2 (n + 2) ≤ n := by
   filter_upwards [Nat.eventually_mul_log_le (2 * B + 1) one_lt_two,
     eventually_ge_atTop (2 * (A + 2 * B) + 4)] with n hlog hn
   have h2 : Nat.log 2 (n + 2) ≤ Nat.log 2 n + 1 := by
@@ -224,7 +225,7 @@ theorem eventually_add_depth_le (hnd : num < den) (c : ℕ) :
   omega
 
 /-- The prefix grows at least linearly: `n < (X + 1) * (prefixWidth n + 1)`. -/
-theorem lt_mul_prefixWidth_add_one (hden : 0 < den) (n : ℕ) :
+private theorem lt_mul_prefixWidth_add_one (hden : 0 < den) (n : ℕ) :
     n < (X + 1) * (prefixWidth num den X n + 1) := by
   have F1 : n * (den + num * X) < (X + 1) * den * (prefixWidth num den X n + 1) :=
     Nat.lt_mul_div_succ _ (Nat.mul_pos (by omega) hden)
@@ -307,7 +308,7 @@ theorem mul_add_le_of_slack {P n w p den num R L O : ℕ}
   omega
 
 /-- Any polynomial is eventually below `2 ^ (n / c)`. -/
-theorem eventually_mul_pow_le_two_pow_div (A E c : ℕ) (hc : 0 < c) :
+private theorem eventually_mul_pow_le_two_pow_div (A E c : ℕ) (hc : 0 < c) :
     ∀ᶠ n in atTop, A * (n + 1) ^ E ≤ 2 ^ (n / c) := by
   have htend : Tendsto (fun n : ℕ => n / c) atTop atTop :=
     tendsto_atTop_atTop.mpr fun k => ⟨c * k, fun n hn =>
@@ -358,7 +359,7 @@ theorem eventually_mul_two_pow_dimension_le (hnd : num ≤ den) (X' : ℕ) :
   · simp [h]
 
 /-- The prefix leaves a linear number of suffix bits: `n / ((X + 1) den) ≤ suffixWidth n`. -/
-theorem div_le_suffixWidth (hnd : num < den) (hX : 0 < X) (n : ℕ) :
+private theorem div_le_suffixWidth (hnd : num < den) (hX : 0 < X) (n : ℕ) :
     n / ((X + 1) * den) ≤ suffixWidth num den X n := by
   have h := mul_le_suffixWidth (X := X) hnd.le n
   have h1 : n ≤ X * (den - num) * n := Nat.le_mul_of_pos_left n (Nat.mul_pos hX (by omega))

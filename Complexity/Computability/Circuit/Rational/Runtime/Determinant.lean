@@ -211,14 +211,14 @@ lemma rowEntry_rowsOf {d : ℕ} (A : Matrix (Fin d) (Fin d) ℤ) (i j : Fin d) :
     rowEntry (rowsOf A) i j = A i j := by
   simp [rowEntry, rowsOf, List.getD_eq_getElem?_getD]
 
-lemma stagesRows_zero (A : List (List ℤ)) : stagesRows A 0 = squareRows A := rfl
+private lemma stagesRows_zero (A : List (List ℤ)) : stagesRows A 0 = squareRows A := rfl
 
-lemma stagesRows_succ (A : List (List ℤ)) (k : ℕ) :
+private lemma stagesRows_succ (A : List (List ℤ)) (k : ℕ) :
     stagesRows A (k + 1) = stepRows A (stagesRows A k) :=
   Function.iterate_succ_apply' _ _ _
 
 /-- A tail of a range, summed as a list, is a tail sum over `Fin`. -/
-lemma sum_map_drop_range (d lo : ℕ) (f : ℕ → ℤ) :
+private lemma sum_map_drop_range (d lo : ℕ) (f : ℕ → ℤ) :
     (((List.range d).drop lo).map f).sum = BirdDet.sumFrom d lo f := by
   induction lo using BirdDet.sumFrom_induct d with
   | step lo hlo ih =>
@@ -229,14 +229,14 @@ lemma sum_map_drop_range (d lo : ℕ) (f : ℕ → ℤ) :
     rw [BirdDet.sumFrom_stop d lo f hlo, List.drop_eq_nil_of_le (by simpa using hlo)]
     rfl
 
-lemma sum_map_drop_range_fin {d : ℕ} (i : Fin d) (f : ℕ → ℤ) :
+private lemma sum_map_drop_range_fin {d : ℕ} (i : Fin d) (f : ℕ → ℤ) :
     (((List.range d).drop (i.val + 1)).map f).sum = ∑ k ∈ Finset.Ioi i, f k.val := by
   rw [sum_map_drop_range, DeterminantAlgorithm.sumFrom_fin_tail]
 
 /-! ### Correctness -/
 
 /-- The list stages agree with the Bird stages of the matrix denoted by the input. -/
-theorem rowEntry_stagesRows (A : List (List ℤ)) (k : ℕ) (i j : Fin A.length) :
+private theorem rowEntry_stagesRows (A : List (List ℤ)) (k : ℕ) (i j : Fin A.length) :
     rowEntry (stagesRows A k) i j =
       ((BirdDet.Spec.stepEntry (ofRows A))^[k] (ofRows A)) i j := by
   induction k generalizing i j with
@@ -293,7 +293,7 @@ theorem detRows_rowsOf_denote {d : ℕ} (A : DeterminantAlgorithm.Table d) :
 
 /-! ### Size bounds -/
 
-lemma natAbs_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) :
+private lemma natAbs_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) :
     l.sum.natAbs ≤ l.length * C := by
   induction l with
   | nil => simp
@@ -305,7 +305,7 @@ lemma natAbs_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) :
       _ = (l.length + 1) * C := by ring
 
 /-- Every prefix sum of a list is bounded by its length times a bound on its entries. -/
-lemma natAbs_take_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) (m : ℕ) :
+private lemma natAbs_take_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) (m : ℕ) :
     (l.take m).sum.natAbs ≤ l.length * C :=
   (natAbs_sum_le fun x hx => h x (List.mem_of_mem_take hx)).trans
     (Nat.mul_le_mul_right _ (List.length_take_le' _ _))
@@ -338,12 +338,12 @@ lemma exists_rowEntry_eq {rows : List (List ℤ)} {row : List ℤ} {z : ℤ} (hr
   obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hz
   exact ⟨i, j, by simp [rowEntry, List.getD_eq_getElem?_getD, hi, hj]⟩
 
-lemma length_traceTerms_le (A F : List (List ℤ)) (i : ℕ) :
+private lemma length_traceTerms_le (A F : List (List ℤ)) (i : ℕ) :
     (traceTerms A F i).length ≤ A.length := by
   simp only [traceTerms, List.length_map, List.length_drop, List.length_range]
   omega
 
-lemma length_productTerms_le (A F : List (List ℤ)) (i j : ℕ) :
+private lemma length_productTerms_le (A F : List (List ℤ)) (i j : ℕ) :
     (productTerms A F i j).length ≤ A.length := by
   simp only [productTerms, List.length_map, List.length_drop, List.length_range]
   omega
@@ -406,7 +406,7 @@ private lemma trace_mul_le (hA : ∀ i j, (rowEntry A i j).natAbs < 2 ^ b)
     (hA i j).le
 
 /-- The trace product computed in one stage obeys the next stage's bound. -/
-theorem natAbs_traceTerms_sum_mul_lt (hA : ∀ i j, (rowEntry A i j).natAbs < 2 ^ b)
+private theorem natAbs_traceTerms_sum_mul_lt (hA : ∀ i j, (rowEntry A i j).natAbs < 2 ^ b)
     (hF : ∀ i j, (rowEntry F i j).natAbs < 2 ^ e) (i j : ℕ) :
     ((traceTerms A F i).sum * rowEntry A i j).natAbs < 2 ^ (e + (1 + A.length + b)) :=
   ((trace_mul_le hA hF i j).trans_lt (length_mul_lt A b e)).trans_le (half_le_bound A b e)
@@ -521,7 +521,7 @@ lemma length_of_mem_stagesRows {A : List (List ℤ)} {k : ℕ} {row : List ℤ}
   | zero => exact length_of_mem_tabulateRows hrow
   | succ k => rw [stagesRows_succ] at hrow; exact length_of_mem_tabulateRows hrow
 
-lemma intBits_le_length_encList {A : List (List ℤ)} {row : List ℤ} (hrow : row ∈ A)
+private lemma intBits_le_length_encList {A : List (List ℤ)} {row : List ℤ} (hrow : row ∈ A)
     {z : ℤ} (hz : z ∈ row) : intBits z ≤ (encList (encList encIntBin) A).length + 1 := by
   rw [intBits_eq_length_encIntBin]
   exact ((length_le_encList_of_mem encIntBin hz).trans
@@ -678,7 +678,7 @@ theorem computableInPolyTime_stagesRows {A : α → List (List ℤ)} {k : α →
     (polyBounded_stageTableBound hA.polyBounded_length hk.polyBounded)
     fun x _ hi => length_encList_stagesRows_le (A x) hi)
 
-lemma detRows_eq_ite (A : List (List ℤ)) :
+private lemma detRows_eq_ite (A : List (List ℤ)) :
     detRows A =
       if A.isEmpty then 1
       else (-1) ^ (A.length - 1) * rowEntry (stagesRows A (A.length - 1)) 0 0 := by

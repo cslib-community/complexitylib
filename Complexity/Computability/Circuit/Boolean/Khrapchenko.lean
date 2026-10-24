@@ -405,7 +405,7 @@ theorem eval_parityFormula (k o : ℕ) (h : o + 2 ^ k ≤ n) (x : BitString n) :
     omega
 
 /-- The formula `parityFormula k o` has leaf size `4 ^ k`. -/
-theorem leafSize_parityFormula (k o : ℕ) (h : o + 2 ^ k ≤ n) :
+private theorem leafSize_parityFormula (k o : ℕ) (h : o + 2 ^ k ≤ n) :
     (parityFormula k o h).leafSize = 4 ^ k := by
   induction k generalizing o with
   | zero => rfl

@@ -235,7 +235,7 @@ theorem directionMenuSum_pos_of_nonempty (p : Program signature n g) (dir : Fin 
 /-! ### Static menu precomputation and block decomposition -/
 
 /-- A linear threshold predicate `decide (θ ≤ c * t + β)` changes at most once along `ℝ`. -/
-theorem changesAtMost_linear_threshold (θ c β : ℝ) :
+private theorem changesAtMost_linear_threshold (θ c β : ℝ) :
     ChangesAtMost (fun t : ℝ => decide (θ ≤ c * t + β)) 1 := by
   have hbase : ChangesAtMost (fun u : ℝ => decide (θ ≤ u)) 1 := by
     intro z hz S hS

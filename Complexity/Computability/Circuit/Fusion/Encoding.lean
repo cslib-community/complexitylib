@@ -66,7 +66,8 @@ def decode (code : CoverCode n t) (input : Fin n → Set U) : Set U :=
   code.read input (code.stages input t) (Fin.last (t + t))
 
 /-- The description has exactly `(2*t+1)*(n+t+1)` independent bits. -/
-theorem card (n t : ℕ) : Fintype.card (CoverCode n t) = 2 ^ ((2 * t + 1) * (n + t + 1)) := by
+private theorem card (n t : ℕ) :
+    Fintype.card (CoverCode n t) = 2 ^ ((2 * t + 1) * (n + t + 1)) := by
   simp only [CoverCode, Fintype.card_fun, Fintype.card_prod, Fintype.card_bool, Fintype.card_fin]
   rw [← pow_add, ← pow_succ', ← pow_mul]
   congr 1
@@ -92,7 +93,7 @@ noncomputable def encode : CoverCode n pairs.length :=
     (fun j => decide ((pairs.get j).1 ∩ (pairs.get j).2 ⊆ coordinate target pairs i))⟩
 
 /-- Encoded reads are the original compiler's reconstructed closure coordinates. -/
-theorem read_encode (state : Fin pairs.length → Set U)
+private theorem read_encode (state : Fin pairs.length → Set U)
     (i : Fin (pairs.length + pairs.length + 1)) :
     (encode target input pairs).read input state i =
       readState target input pairs state (coordinate target pairs i) := by
@@ -102,7 +103,7 @@ theorem read_encode (state : Fin pairs.length → Set U)
   simp only [encode, decide_eq_true_eq]
 
 /-- Encoded propagation agrees with the original compiler at every stage. -/
-theorem stages_encode (k : ℕ) :
+private theorem stages_encode (k : ℕ) :
     (encode target input pairs).stages input k = stages target input pairs k := by
   induction k with
   | zero => rfl

@@ -31,14 +31,17 @@ So the unbounded fan-in basis maps into the threshold basis keeping the meaning 
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Threshold.signature`: negation, and the threshold gates of every arity
+* `Cslib.Circuits.Boolean.Threshold.Op`, `Cslib.Circuits.Boolean.Threshold.Op.arity`,
+  `Cslib.Circuits.Boolean.Threshold.signature`: negation, and the threshold gates of every arity
   and cutoff.
 * `Cslib.Circuits.Boolean.Threshold.interpretation`: their Boolean meaning.
 * `Cslib.Circuits.Boolean.Threshold.thresholdCost`: the costs of the threshold depth, in which
   negations are free.
-* `Cslib.Circuits.Boolean.Threshold.ofUnbounded`: the unbounded fan-in basis inside the threshold
+* `Cslib.Circuits.Boolean.Threshold.ofUnboundedOp`,
+  `Cslib.Circuits.Boolean.Threshold.ofUnbounded`: the unbounded fan-in basis inside the threshold
   basis.
-* `Cslib.Circuits.Boolean.Threshold.ofMajority`: the basis of TC⁰, with majority gates, inside the
+* `Cslib.Circuits.Boolean.Threshold.ofMajorityOp`,
+  `Cslib.Circuits.Boolean.Threshold.ofMajority`: the basis of TC⁰, with majority gates, inside the
   threshold basis.
 
 ## Main results
@@ -82,10 +85,12 @@ def interpretation : Interpretation signature Bool
   | .not, x => !x (0 : Fin 1)
   | .threshold m j, x => Cslib.threshold m j x
 
+/-- The threshold-basis interpretation of `.not` is Boolean negation of its single argument. -/
 @[simp] theorem interpretation_not (x : Fin 1 → Bool) :
     interpretation .not x = !x 0 :=
   rfl
 
+/-- The threshold-basis interpretation of `.threshold m j` is `Cslib.threshold m j`. -/
 @[simp] theorem interpretation_threshold (m j : ℕ) (x : Fin m → Bool) :
     interpretation (.threshold m j) x = Cslib.threshold m j x :=
   rfl
@@ -97,10 +102,13 @@ def thresholdCost : Op → ℕ
   | .not => 0
   | .threshold _ _ => 1
 
+/-- Negation has `thresholdCost` equal to `0`. -/
 @[simp] theorem thresholdCost_not : thresholdCost .not = 0 := rfl
 
+/-- Every threshold gate `.threshold m j` has `thresholdCost` equal to `1`. -/
 @[simp] theorem thresholdCost_threshold (m j : ℕ) : thresholdCost (.threshold m j) = 1 := rfl
 
+/-- Every operation in the threshold basis has `thresholdCost` at most `1`. -/
 theorem thresholdCost_le_one (op : Op) : thresholdCost op ≤ 1 := by
   cases op <;> simp
 
@@ -115,6 +123,7 @@ def ofUnboundedOp : Unbounded.Op → Op
 def ofUnbounded : Unbounded.signature.Hom signature :=
   ⟨ofUnboundedOp, fun op => by cases op <;> rfl⟩
 
+/-- `ofUnbounded` acts on operations as `ofUnboundedOp`. -/
 @[simp] theorem ofUnbounded_apply (op : Unbounded.Op) : ofUnbounded op = ofUnboundedOp op :=
   rfl
 
@@ -142,6 +151,7 @@ def ofMajorityOp : Unbounded.ExtOp → Op
 def ofMajority : Unbounded.extSignature.Hom signature :=
   ⟨ofMajorityOp, fun op => by rcases op with (_ | _ | _) | _ <;> rfl⟩
 
+/-- `ofMajority` acts on operations as `ofMajorityOp`. -/
 @[simp] theorem ofMajority_apply (op : Unbounded.ExtOp) : ofMajority op = ofMajorityOp op :=
   rfl
 

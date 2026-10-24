@@ -140,7 +140,7 @@ private theorem eval_eq_mulVec (hc : c.Computes I fun x => M *ᵥ x) (x : Fin N 
 
 /-- **Every output of a totally regular map depends on every input**, so in the graph of a
 circuit computing it the vertex of every input is joined to every output vertex. -/
-theorem exists_reachable_of_isTotallyRegular (hM : M.IsTotallyRegular)
+private theorem exists_reachable_of_isTotallyRegular (hM : M.IsTotallyRegular)
     (hc : c.Computes I fun x => M *ᵥ x) (i o : Fin N) :
     ∃ hi : Reach c (.input i),
       (graph c).toSimpleGraph.Reachable (.signal ⟨.input i, hi⟩) (.output o) := by
@@ -152,14 +152,14 @@ theorem exists_reachable_of_isTotallyRegular (hM : M.IsTotallyRegular)
 
 /-- The graph of a circuit computing a totally regular map with at least one input is
 connected. -/
-theorem connected_of_isTotallyRegular (hN : 0 < N) (hM : M.IsTotallyRegular)
+private theorem connected_of_isTotallyRegular (hN : 0 < N) (hM : M.IsTotallyRegular)
     (hc : c.Computes I fun x => M *ᵥ x) : (graph c).toSimpleGraph.Connected := by
   obtain ⟨hi, -⟩ := exists_reachable_of_isTotallyRegular hM hc ⟨0, hN⟩ ⟨0, hN⟩
   exact connected_of_reachable (v₀ := .signal ⟨.input ⟨0, hN⟩, hi⟩) fun o =>
     (exists_reachable_of_isTotallyRegular hM hc ⟨0, hN⟩ o).2
 
 /-- A circuit computing a totally regular map reads all of its inputs. -/
-theorem read_eq_univ_of_isTotallyRegular (hM : M.IsTotallyRegular)
+private theorem read_eq_univ_of_isTotallyRegular (hM : M.IsTotallyRegular)
     (hc : c.Computes I fun x => M *ᵥ x) (Acc : Fin N → Set F) :
     (network c I Acc).read = univ := by
   rw [read_network]
@@ -269,7 +269,8 @@ theorem exists_injective_frontier (hM : M.IsTotallyRegular) (hc : c.Computes I f
 
 /-- **Every layout is wide.** Every layout of the graph of a circuit with linear capacity
 computing a totally regular map `F^N → F^N` has width at least `N`. -/
-theorem le_width_of_isTotallyRegular (hM : M.IsTotallyRegular) (hc : c.Computes I fun x => M *ᵥ x)
+private theorem le_width_of_isTotallyRegular (hM : M.IsTotallyRegular)
+    (hc : c.Computes I fun x => M *ᵥ x)
     (hcap : c.LinearCapacity I) (π : Layout (Vertex c)) : N ≤ (graph c).width π := by
   obtain ⟨t, ht⟩ := exists_injective_frontier hM hc π
   -- The wires carried by the frontier.

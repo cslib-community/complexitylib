@@ -129,7 +129,7 @@ theorem Valid.step_of_andOnIsolated {S : State n} (hS : S.Valid f) (h : S.AndOnI
 
 /-- When Case 2 does not apply, an unpaired parameter read by an AND-type gate together with
 another parameter has degree at least two. -/
-theorem two_le_deg_of_not_andOnIsolated {S : State n} (h2 : ¬ S.AndOnIsolated) {G x y : ℕ}
+private theorem two_le_deg_of_not_andOnIsolated {S : State n} (h2 : ¬ S.AndOnIsolated) {G x y : ℕ}
     (hG : G ∈ S.gates) (hand : ¬ IsAffineOp (S.gate G).op)
     (hargs : ((S.gate G).left = .node x ∧ (S.gate G).right = .node y) ∨
       ((S.gate G).left = .node y ∧ (S.gate G).right = .node x))
@@ -208,7 +208,7 @@ theorem Valid.exclusive {S : State n} (hS : S.Valid f) (hmov : ∀ J, ¬ S.Movab
 def DegeneratePair (S : State n) : Prop :=
   ∃ p ∈ S.params, S.Paired p ∧ (S.deg p = 0 ∨ 2 ≤ S.deg p)
 
-theorem deg_eq_one_of_not_degeneratePair {S : State n} (h3 : ¬ S.DegeneratePair) {p : ℕ}
+private theorem deg_eq_one_of_not_degeneratePair {S : State n} (h3 : ¬ S.DegeneratePair) {p : ℕ}
     (hp : p ∈ S.params) (hpp : S.Paired p) : S.deg p = 1 := by
   by_contra h
   exact h3 ⟨p, hp, hpp, by omega⟩
@@ -326,7 +326,7 @@ def PartnersShareChild (S : State n) : Prop :=
   ∃ pr ∈ S.pairs, ∃ H, H ∈ S.children pr.1 ∧ H ∈ S.children pr.2
 
 /-- When Case 4 does not apply, partners have no common child. -/
-theorem notMem_children_of_isPartner {S : State n} (h4 : ¬ S.PartnersShareChild) {p r : ℕ}
+private theorem notMem_children_of_isPartner {S : State n} (h4 : ¬ S.PartnersShareChild) {p r : ℕ}
     (hpr : S.IsPartner p r) {N : ℕ ⊕ ℕ} (hNp : N ∈ S.children p) : N ∉ S.children r :=
   fun hNr => by
     obtain ⟨pr, hpr', ⟨h1, h2⟩ | ⟨h1, h2⟩⟩ := hpr

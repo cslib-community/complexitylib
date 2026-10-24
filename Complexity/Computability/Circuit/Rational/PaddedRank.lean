@@ -53,7 +53,7 @@ open scoped BigOperators
 noncomputable section
 variable {K : Type*} [Field K]
 
-lemma polynomialMap_single (M : ℕ) (b : Fin M) :
+private lemma polynomialMap_single (M : ℕ) (b : Fin M) :
     polynomialMap M (Pi.single b (1 : K)) = X ^ b.val := by
   ext j
   by_cases hj : j < M
@@ -104,9 +104,9 @@ def padded (M N : ℕ) (a : K) : Matrix (Fin M) (Fin M) K[X] :=
 /-- The original t indeterminate embeds into the fresh Laurent indeterminate. -/
 def embed : K[X] →+* F K := Polynomial.eval₂RingHom HahnSeries.C (HahnSeries.single 1 1)
 
-lemma embed_C (a : K) : embed (C a) = HahnSeries.C a := by simp [embed]
+private lemma embed_C (a : K) : embed (C a) = HahnSeries.C a := by simp [embed]
 
-lemma embed_X_pow (a : ℕ) : embed ((X : K[X]) ^ a) = HahnSeries.single (a : ℤ) 1 := by
+private lemma embed_X_pow (a : ℕ) : embed ((X : K[X]) ^ a) = HahnSeries.single (a : ℤ) 1 := by
   simp [embed, HahnSeries.single_pow]
 
 lemma full_embed (M : ℕ) (a : K) :
@@ -128,7 +128,7 @@ lemma full_embed (M : ℕ) (a : K) :
   simp only [weightMap, LinearMap.coe_mk, AddHom.coe_mk, hin]
   ring
 
-lemma full_natDegree_le (M : ℕ) (a : K) (i j : Fin M) :
+private lemma full_natDegree_le (M : ℕ) (a : K) (i j : Fin M) :
     (full M a i j).natDegree ≤ M - 1 := by
   apply natDegree_sum_le_of_forall_le
   intro r _
@@ -182,7 +182,7 @@ def extend (q M N : ℕ) : (Fin q × Fin N → F K) →ₗ[F K] (Fin q × Fin M 
   map_smul' c f := by funext a; by_cases h : a.2.val < N <;> simp [h]
 
 omit [CharZero K] in
-lemma extend_low (q M N : ℕ) (f : Fin q × Fin N → F K) (α : Fin q) (j : Fin M) :
+private lemma extend_low (q M N : ℕ) (f : Fin q × Fin N → F K) (α : Fin q) (j : Fin M) :
     N ≤ ↑j → extend q M N f (α, j) = 0 := by
   intro hj
   simp [extend, not_lt.mpr hj]
@@ -196,7 +196,7 @@ lemma extend_injective (q M N : ℕ) (hNM : N ≤ M) :
   simpa [extend, j.isLt] using hh
 
 omit [CharZero K] in
-lemma padded_mulVec_low (M N : ℕ) (a : K) (f : Fin M → F K)
+private lemma padded_mulVec_low (M N : ℕ) (a : K) (f : Fin M → F K)
     (hf : ∀ (j : Fin M), N ≤ ↑j → f j = 0) :
     (embed.mapMatrix (padded M N a)).mulVec f = testMap M a f := by
   rw [← Matrix.toLin'_toMatrix' (testMap M a), ← full_embed M a, Matrix.toLin'_apply]
@@ -271,12 +271,12 @@ open scoped BigOperators
 noncomputable section
 variable {K E : Type*} [Field K] [Field E]
 
-lemma map_taylor_coeff (φ : K →+* E) (a : K) (j r : ℕ) :
+private lemma map_taylor_coeff (φ : K →+* E) (a : K) (j r : ℕ) :
     φ (((X + C a) ^ j : K[X]).coeff r) = (((X + C (φ a)) ^ j : E[X]).coeff r) := by
   rw [← Polynomial.coeff_map]
   simp
 
-lemma full_map (φ : K →+* E) (M : ℕ) (a : K) (i j : Fin M) :
+private lemma full_map (φ : K →+* E) (M : ℕ) (a : K) (i j : Fin M) :
     (full M a i j).map φ = full M (φ a) i j := by
   unfold full
   rw [Polynomial.map_sum]
@@ -285,7 +285,7 @@ lemma full_map (φ : K →+* E) (M : ℕ) (a : K) (i j : Fin M) :
   simp only [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_pow, Polynomial.map_X, map_mul]
   rw [map_taylor_coeff φ (-a), map_taylor_coeff φ a, map_neg]
 
-lemma padded_map (φ : K →+* E) (M N : ℕ) (a : K) (i j : Fin M) :
+private lemma padded_map (φ : K →+* E) (M N : ℕ) (a : K) (i j : Fin M) :
     (padded M N a i j).map φ = padded M N (φ a) i j := by
   by_cases hj : j.val < N <;> simp [padded, hj, full_map]
 

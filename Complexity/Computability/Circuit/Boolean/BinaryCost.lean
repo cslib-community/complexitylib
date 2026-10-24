@@ -44,15 +44,19 @@ namespace Boolean
 def Op.IsBinary (op : Op) : Prop :=
   signature.Arity op = 2
 
+/-- Decidability of whether a De Morgan operation is binary. -/
 instance : DecidablePred Op.IsBinary :=
   fun op => inferInstanceAs (Decidable (signature.Arity op = 2))
 
+/-- A De Morgan operation is binary if and only if it is `.and` or `.or`. -/
 theorem Op.isBinary_iff {op : Op} : op.IsBinary ↔ op = .and ∨ op = .or := by
   cases op <;> simp [Op.IsBinary]
 
+/-- The conjunction operation `.and` is binary. -/
 theorem Op.isBinary_and : Op.and.IsBinary :=
   rfl
 
+/-- The disjunction operation `.or` is binary. -/
 theorem Op.isBinary_or : Op.or.IsBinary :=
   rfl
 
@@ -79,21 +83,27 @@ def binaryCost : Op → ℕ
   | .and | .or => 1
   | .const _ | .not => 0
 
+/-- A conjunction gate has binary cost `1`. -/
 @[simp] theorem binaryCost_and : binaryCost .and = 1 :=
   rfl
 
+/-- A disjunction gate has binary cost `1`. -/
 @[simp] theorem binaryCost_or : binaryCost .or = 1 :=
   rfl
 
+/-- A negation gate has binary cost `0`. -/
 @[simp] theorem binaryCost_not : binaryCost .not = 0 :=
   rfl
 
+/-- A constant gate has binary cost `0`. -/
 @[simp] theorem binaryCost_const (b : Bool) : binaryCost (.const b) = 0 :=
   rfl
 
+/-- Every De Morgan operation has binary cost at most `1`. -/
 theorem binaryCost_le_one (op : Op) : binaryCost op ≤ 1 := by
   cases op <;> simp
 
+/-- The binary cost of an operation is `1` if it is binary and `0` otherwise. -/
 theorem binaryCost_eq_ite (op : Op) : binaryCost op = if op.IsBinary then 1 else 0 := by
   cases op <;> simp [Op.IsBinary]
 

@@ -34,6 +34,8 @@ for batched lookup are separate clients.
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.routeCircuit`: the complete two-sort router.
+* `Cslib.Circuits.Boolean.routeCircuit.matchKey`: wiring that selects the matching key followed by
+  its source/destination tag.
 * `Cslib.Circuits.Boolean.routeCircuit.broadcast`: matching sort and shared broadcast.
 
 ## Main results

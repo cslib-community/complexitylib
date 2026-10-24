@@ -104,14 +104,14 @@ noncomputable def liveNetwork (U : Type*) :
 variable {p special}
 
 /-- The live wires are signals of the live circuit. -/
-theorem reach_of_live {w : Wire n s} (hw : Live p special w) :
+private theorem reach_of_live {w : Wire n s} (hw : Live p special w) :
     Compiler.Reach (liveCircuit p special) w := by
   have h := Compiler.Reach.output (c := liveCircuit p special)
     (Finite.equivFin {w // Live p special w} ⟨w, hw⟩)
   simpa [liveCircuit] using h
 
 /-- The inputs are signals of the live circuit. -/
-theorem reach_input (i : Fin n) : Compiler.Reach (liveCircuit p special) (.input i) :=
+private theorem reach_input (i : Fin n) : Compiler.Reach (liveCircuit p special) (.input i) :=
   reach_of_live trivial
 
 /-- The inner gates of the live circuit are the ordinary inner gates. -/
@@ -134,7 +134,7 @@ theorem card_live_le :
         rw [Nat.card_sum, Nat.card_eq_fintype_card (α := Fin n), Fintype.card_fin]
 
 /-- The live network reads every input. -/
-theorem read_liveNetwork : (liveNetwork p special U).read = univ :=
+private theorem read_liveNetwork : (liveNetwork p special U).read = univ :=
   eq_univ_of_forall fun i => ⟨_, mem_univ _, Compiler.site_of_reach (reach_input i)⟩
 
 /-- When there are inputs, the graph of the live circuit has a vertex. -/
@@ -161,19 +161,20 @@ noncomputable abbrev network (m : M) :
   Compiler.network (liveCircuit p special) (I.withConstants (L.readout m)) fun _ => univ
 
 /-- The run with guess `m` satisfies the network on the guess `m`. -/
-theorem satisfies_network (m : M) (x : Fin n → U) :
+private theorem satisfies_network (m : M) (x : Fin n → U) :
     (L.network m).Satisfies x fun e => L.run m x e.signal.1 :=
   Compiler.satisfies_trace fun _ => mem_univ _
 
 /-- A satisfying assignment of the network on the guess `m` is the run with guess `m`. -/
-theorem eq_run_of_satisfies {m : M} {x : Fin n → U} {α : Compiler.Edge (liveCircuit p special) → U}
+private theorem eq_run_of_satisfies {m : M} {x : Fin n → U}
+    {α : Compiler.Edge (liveCircuit p special) → U}
     (h : (L.network m).Satisfies x α) (e : Compiler.Edge (liveCircuit p special)) :
     α e = L.run m x e.signal.1 :=
   Compiler.eq_trace h e
 
 /-- A wire that is not a signal of the live circuit is a constant of the erased program, so its
 value in a run depends only on the guess. -/
-theorem run_eq_of_not_reach (m : M) {w : Wire n s}
+private theorem run_eq_of_not_reach (m : M) {w : Wire n s}
     (hw : ¬Compiler.Reach (liveCircuit p special) w) (x y : Fin n → U) :
     L.run m x w = L.run m y w := by
   have hlive : ¬Live p special w := fun h => hw (reach_of_live h)
@@ -347,7 +348,7 @@ theorem ncard_transition_le_readIn [Finite U] [Finite M] {t : ℕ}
 
 /-- At the last step the transition is determined by the guess and the two ledgers, since every
 input is read. -/
-theorem ncard_transition_last_le [Finite U] [Finite M] :
+private theorem ncard_transition_last_le [Finite U] [Finite M] :
     ((L.sweep o Acc π).transition (Nat.card (Compiler.Vertex (liveCircuit p special))) ''
       {x | p.trace I x o ∈ Acc}).ncard ≤ Nat.card M ^ 3 := by
   have h : ((L.sweep o Acc π).transition (Nat.card (Compiler.Vertex (liveCircuit p special))) ''

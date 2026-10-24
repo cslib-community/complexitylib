@@ -51,7 +51,7 @@ variable {n p : ℕ}
 
 /-- If `g` is a threshold of copies of `F` with hardwired random strings, its complexity is at
 most that of the copies and of the threshold. -/
-theorem complexity_le_of_eq_threshold {m j : ℕ} (F : BooleanFunction (n + p))
+private theorem complexity_le_of_eq_threshold {m j : ℕ} (F : BooleanFunction (n + p))
     (g : BooleanFunction n) (ω : Fin m → Fin p → Bool)
     (h : ∀ x, g x = threshold m j fun i => F (Fin.append x (ω i))) :
     complexity interpretation (single g) ≤
