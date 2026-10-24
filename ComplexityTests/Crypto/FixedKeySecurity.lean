@@ -35,7 +35,8 @@ private theorem readSelf_ppt : IsPPT encBool readSelf := by
       encBits encBool :=
     (ComputableTidilyInPolyTime.headD (encA := encBool) (encL := encBits) false).comp
       ((ComputableTidilyInPolyTime.headD (encA := encBits) []).comp hdecode.snd')
-  exact hread.isPPTOn.preprocess (ComputableTidilyInPolyTime.snd encUnary encBits)
+  exact hread.isPPTOn.preprocess
+    (.of_tidy (ComputableTidilyInPolyTime.snd encUnary encBits))
 
 private theorem eval_readSelf (real : Bool) (n : ℕ) :
     distinguishingGame
@@ -79,7 +80,8 @@ private theorem readJoint_ppt : IsPPT encBool readJoint := by
       (fun word => (FixedKey.publicKeyDecoder.decode word).1.headD false ^^
         ((FixedKey.publicKeyDecoder.decode word).2.headD []).headD false)
       encBits encBool := by fun_prop
-  exact hread.isPPTOn.preprocess (ComputableTidilyInPolyTime.snd encUnary encBits)
+  exact hread.isPPTOn.preprocess
+    (.of_tidy (ComputableTidilyInPolyTime.snd encUnary encBits))
 
 private theorem eval_masked (real : Bool) (n : ℕ) :
     ProbComp.eval (Encryption.circularPublicKey maskedKeyGen maskedEncrypt real n) =
