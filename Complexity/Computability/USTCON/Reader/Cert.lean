@@ -242,7 +242,7 @@ private theorem foldl_modStep (w : ℕ) :
       ring
 
 /-- The label of a residue. -/
-private noncomputable def labelOfZMod (z : ZMod numLabels) : Label :=
+private def labelOfZMod (z : ZMod numLabels) : Label :=
   labelEquiv ⟨z.val, ZMod.val_lt z⟩
 
 /-- The label of a digit is the label of the residue computed by the fold. -/
@@ -384,7 +384,7 @@ private theorem evalStepT_inSpace : ComputableTidilyInSpace
 /-! ### The step -/
 
 /-- The step on tuples. -/
-private noncomputable def stepT (y : Tuple × Bool) : Tuple × List Bool :=
+private def stepT (y : Tuple × Bool) : Tuple × List Bool :=
   ((step (State.ofTuple y.1) y.2).1.toTuple, (step (State.ofTuple y.1) y.2).2)
 
 /-- **The step on tuples** within the budget. -/

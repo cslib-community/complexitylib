@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Combinatorics.Expander.Connected
-public import Complexity.Foundations.Combinatorics.Expander.ReingoldVertex
+public import Complexity.Foundations.Combinatorics.Expander.IteratedProd
 
 /-!
 # Reingold's transformation
@@ -26,7 +26,7 @@ square is `Fin 2 → E × E`-regular, so `e.symm` renames its labels back to `B`
 `reingoldStep H e G = ((G ⓩ H) ^ 2).relabel e.symm`,
 
 a `B`-regular graph on `V × B`. Starting from `G₀ = G`, `reingold H e G ℓ` is the graph
-`G_ℓ = reingoldStep H e G_{ℓ - 1}`, on the vertices `ReingoldVertex V B ℓ = (⋯ (V × B) × ⋯) × B`.
+`G_ℓ = reingoldStep H e G_{ℓ - 1}`, on the vertices `IteratedProd V B ℓ = (⋯ (V × B) × ⋯) × B`.
 Each vertex of `G_ℓ` lies over a vertex of `G`, its `root`.
 
 **Spectral gap.** By the zig-zag theorem `λ(G ⓩ H) ≤ 1 - (1 - λ(G)) (1 - λ(H)) ^ 2`, so with
@@ -58,7 +58,7 @@ every vertex over the component as soon as `|V| |B| ^ ℓ 4 ^ T ≤ 5 ^ T`
 * `Cslib.RotationMap.reingoldStep`: one step `((G ⓩ H) ^ 2).relabel e.symm` of the
   transformation.
 * `Cslib.RotationMap.reingold`: the graphs `G_ℓ`, on the iterated products
-  `Cslib.RotationMap.ReingoldVertex V B ℓ`.
+  `Cslib.IteratedProd V B ℓ`.
 
 ## Main results
 
@@ -102,7 +102,7 @@ def reingoldStep {V : Type*} (G : RotationMap V B) : RotationMap (V × B) B :=
 /-- **Reingold's transformation**, a variant of [Reingold, Definition 3.1][Reingold2008] with the
 square instead of the eighth power: `reingold H e G ℓ` is the graph `G_ℓ` obtained from `G₀ = G`
 by `ℓ` steps `G_{i + 1} = ((G_i ⓩ H) ^ 2).relabel e.symm`. -/
-def reingold {V : Type u} (G : RotationMap V B) : (ℓ : ℕ) → RotationMap (ReingoldVertex V B ℓ) B
+def reingold {V : Type u} (G : RotationMap V B) : (ℓ : ℕ) → RotationMap (IteratedProd V B ℓ) B
   | 0 => G
   | ℓ + 1 => reingoldStep H e (reingold G ℓ)
 
@@ -125,8 +125,8 @@ def Hom.reingold {V W : Type u} {G : RotationMap V B} {G' : RotationMap W B} (φ
 
 /-- The homomorphism of the transforms applies the homomorphism to the root. -/
 theorem Hom.reingold_apply {V W : Type u} {G : RotationMap V B} {G' : RotationMap W B}
-    (φ : Hom G G') (ℓ : ℕ) (x : ReingoldVertex V B ℓ) :
-    φ.reingold H e ℓ x = ReingoldVertex.map φ ℓ x := by
+    (φ : Hom G G') (ℓ : ℕ) (x : IteratedProd V B ℓ) :
+    φ.reingold H e ℓ x = IteratedProd.map φ ℓ x := by
   induction ℓ with
   | zero => rfl
   | succ ℓ ih => exact Prod.ext (ih x.1) rfl
@@ -135,20 +135,20 @@ section Projection
 
 /-- Every edge of `G_ℓ` joins two vertices over vertices of `G` reachable from each other. -/
 private theorem reachable_root_neighbor_reingold {V : Type u} (G : RotationMap V B) :
-    ∀ (ℓ : ℕ) (x : ReingoldVertex V B ℓ) (i : B),
+    ∀ (ℓ : ℕ) (x : IteratedProd V B ℓ) (i : B),
       G.toSimpleGraph.Reachable x.root ((reingold H e G ℓ).neighbor x i).root
   | 0, x, i => G.reachable_neighbor x i
   | ℓ + 1, x, i =>
     reachable_neighbor_pow_of_forall G ((reingold H e G ℓ).zigzag H)
-      (fun p ↦ ReingoldVertex.root p.1)
+      (fun p ↦ IteratedProd.root p.1)
       (fun p _ ↦ reachable_root_neighbor_reingold G ℓ p.1 _) 2 x (e i)
 
 /-- **Walks in `G_ℓ` stay over a connected component of `G`**: the walk of length `T` from any
 vertex of `G_ℓ` ends over a vertex reachable in `G` from the root of the start. -/
 theorem reachable_root_neighbor_pow_reingold {V : Type u} (G : RotationMap V B) (ℓ T : ℕ)
-    (x : ReingoldVertex V B ℓ) (k : Fin T → B) :
+    (x : IteratedProd V B ℓ) (k : Fin T → B) :
     G.toSimpleGraph.Reachable x.root (((reingold H e G ℓ).pow T).neighbor x k).root :=
-  reachable_neighbor_pow_of_forall G (reingold H e G ℓ) ReingoldVertex.root
+  reachable_neighbor_pow_of_forall G (reingold H e G ℓ) IteratedProd.root
     (reachable_root_neighbor_reingold H e G ℓ) T x k
 
 end Projection
@@ -238,7 +238,7 @@ theorem exists_neighbor_pow_reingold_eq {V : Type u} [Fintype V] [DecidableEq V]
     (hG : ∀ v, Fintype.card B ≤ 2 * G.edgeCount v v) {ℓ T : ℕ}
     (hℓ : 2 * Fintype.card V ^ 2 * Fintype.card B ^ 2 * 5 ^ ℓ ≤ 5 * 6 ^ ℓ)
     (hT : Fintype.card V * Fintype.card B ^ ℓ * 4 ^ T ≤ 5 ^ T)
-    {x y : ReingoldVertex V B ℓ} (hxy : G.toSimpleGraph.Reachable x.root y.root) :
+    {x y : IteratedProd V B ℓ} (hxy : G.toSimpleGraph.Reachable x.root y.root) :
     ∃ k : Fin T → B, ((reingold H e G ℓ).pow T).neighbor x k = y := by
   classical
   have : Nonempty V := ⟨x.root⟩
@@ -274,8 +274,8 @@ theorem exists_neighbor_pow_reingold_eq {V : Type u} [Fintype V] [DecidableEq V]
   have hlam : (reingold H e (G.componentGraph x.root) ℓ).spectralExpansion ≤ 4 / 5 := by linarith
   -- so walks of length `T` reach every vertex of the transform of the component
   have hwalk : (reingold H e (G.componentGraph x.root) ℓ).spectralExpansion ^ T *
-      (Fintype.card (ReingoldVertex C B ℓ) - 1) < 1 := by
-    rw [ReingoldVertex.card]
+      (Fintype.card (IteratedProd C B ℓ) - 1) < 1 := by
+    rw [IteratedProd.card]
     have hM : (1 : ℝ) ≤ Fintype.card C * Fintype.card B ^ ℓ := by
       exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.mul_ne_zero hC.ne' (pow_pos hB ℓ).ne')
     have hMV : (Fintype.card C * Fintype.card B ^ ℓ : ℝ) * 4 ^ T ≤ 5 ^ T := by
@@ -299,8 +299,8 @@ theorem exists_neighbor_pow_reingold_eq {V : Type u} [Fintype V] [DecidableEq V]
   refine ⟨k, ?_⟩
   have h := (((G.componentHom x.root).reingold H e ℓ).pow T).neighbor_map
     (x.setRoot (⟨x.root, hxC⟩ : C)) k
-  simp only [Hom.pow_apply, Hom.reingold_apply, hk, ReingoldVertex.map_setRoot, componentHom_apply,
-    ReingoldVertex.setRoot_root] at h
+  simp only [Hom.pow_apply, Hom.reingold_apply, hk, IteratedProd.map_setRoot, componentHom_apply,
+    IteratedProd.setRoot_root] at h
   exact h
 
 /-- **Undirected connectivity by short walks in Reingold's transform** [Reingold][Reingold2008]
@@ -315,12 +315,12 @@ theorem reachable_iff_exists_root_neighbor_pow_reingold {V : Type u} [Fintype V]
     (hT : Fintype.card V * Fintype.card B ^ ℓ * 4 ^ T ≤ 5 ^ T) (s t : V) (b : B) :
     G.toSimpleGraph.Reachable s t ↔
       ∃ k : Fin T → B,
-        (((reingold H e G ℓ).pow T).neighbor (ReingoldVertex.mk s b ℓ) k).root = t := by
+        (((reingold H e G ℓ).pow T).neighbor (IteratedProd.mk s b ℓ) k).root = t := by
   refine ⟨fun h ↦ ?_, fun ⟨k, hk⟩ ↦ ?_⟩
   · obtain ⟨k, hk⟩ := exists_neighbor_pow_reingold_eq H e hH G hG hℓ hT
-      (x := ReingoldVertex.mk s b ℓ) (y := ReingoldVertex.mk t b ℓ) (by simpa using h)
-    exact ⟨k, by rw [hk, ReingoldVertex.root_mk]⟩
-  · simpa [hk] using reachable_root_neighbor_pow_reingold H e G ℓ T (ReingoldVertex.mk s b ℓ) k
+      (x := IteratedProd.mk s b ℓ) (y := IteratedProd.mk t b ℓ) (by simpa using h)
+    exact ⟨k, by rw [hk, IteratedProd.root_mk]⟩
+  · simpa [hk] using reachable_root_neighbor_pow_reingold H e G ℓ T (IteratedProd.mk s b ℓ) k
 
 end Main
 

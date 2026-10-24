@@ -9,7 +9,7 @@ module
 
 public import Complexity.Foundations.Combinatorics.Expander.Zigzag
 public import Complexity.Foundations.Combinatorics.Expander.Power
-public import Complexity.Foundations.Combinatorics.Expander.ReingoldVertex
+public import Complexity.Foundations.Combinatorics.Expander.IteratedProd
 
 /-!
 # The zig-zag tower
@@ -80,14 +80,14 @@ universe u
 /-- The vertices of the `(n + 1)`-st graph of the zig-zag tower over a base graph on `B`: the
 `(n + 1)`-fold product `(⋯ (B × B) × ⋯) × B`, nested to the left, as each zig-zag product pairs
 a vertex of the previous graph with a vertex of the base graph. They are the iterated products
-`Cslib.RotationMap.ReingoldVertex B B n`, whose instances and cardinality apply. -/
+`Cslib.IteratedProd B B n`, whose instances and cardinality apply. -/
 abbrev ZigzagTowerVertex (B : Type u) : ℕ → Type u :=
-  ReingoldVertex B B
+  IteratedProd B B
 
 /-- The `(n + 1)`-st graph of the tower has `|B| ^ (n + 1)` vertices. -/
 theorem card_zigzagTowerVertex (B : Type u) [Fintype B] (n : ℕ) :
     Fintype.card (ZigzagTowerVertex B n) = Fintype.card B ^ (n + 1) := by
-  rw [ReingoldVertex.card, pow_succ, mul_comm]
+  rw [IteratedProd.card, pow_succ, mul_comm]
 
 /-- The graphs of the tower grow without bound: if the base graph has at least two vertices, then
 the `(n + 1)`-st graph of the tower has more than `n` vertices. -/

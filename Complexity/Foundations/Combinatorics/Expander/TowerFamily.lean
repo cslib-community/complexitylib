@@ -51,11 +51,9 @@ namespace Cslib.RotationMap
 variable {B D : Type*} {b : ℕ}
 
 /-- Number a tower vertex by recursively pairing the explicit base indices. -/
-def ZigzagTowerVertex.equivFin (numbering : B ≃ Fin b) :
-    (n : ℕ) → ZigzagTowerVertex B n ≃ Fin (b ^ (n + 1))
-  | 0 => numbering.trans (finCongr (pow_one b).symm)
-  | n + 1 => (((equivFin numbering n).prodCongr numbering).trans finProdFinEquiv).trans
-      (finCongr (pow_succ b (n + 1)).symm)
+def ZigzagTowerVertex.equivFin (numbering : B ≃ Fin b) (n : ℕ) :
+    ZigzagTowerVertex B n ≃ Fin (b ^ (n + 1)) :=
+  (IteratedProd.equivFin numbering numbering n).trans (finCongr (pow_succ' b n).symm)
 
 /-- The first tower size at least `n` is bounded by `b*n`, independently of its depth. -/
 theorem zigzagTower_size_bounds (hb : 1 < b) {n : ℕ} (hn : 2 ≤ n) :

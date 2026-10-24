@@ -159,13 +159,13 @@ variable {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj]
 
 /-- **Reingold's graph** of a simple graph on `Fin n`: `depth a` steps of Reingold's transformation
 applied to its regular rotation map, a `257 ^ 8`-regular multigraph. -/
-def graph (a : ℕ) : RotationMap (ReingoldVertex (Fin n × Fin n) Label (depth a)) Label :=
+def graph (a : ℕ) : RotationMap (IteratedProd (Fin n × Fin n) Label (depth a)) Label :=
   reingold base baseEquiv (input G) (depth a)
 
 /-- The start vertex of the walks from `s`: the vertex `(⋯ ((s, s), 0) ⋯, 0)` of Reingold's graph,
 over the slot `(s, s)`. -/
-def start (s : Fin n) (a : ℕ) : ReingoldVertex (Fin n × Fin n) Label (depth a) :=
-  ReingoldVertex.mk (s, s) 0 (depth a)
+def start (s : Fin n) (a : ℕ) : IteratedProd (Fin n × Fin n) Label (depth a) :=
+  IteratedProd.mk (s, s) 0 (depth a)
 
 /-- The number of steps suffices: `2 |V|² |B|² 5 ^ ℓ ≤ 5 · 6 ^ ℓ` for the `n ^ 2` slots and the
 `257 ^ 8` labels. -/
@@ -231,7 +231,7 @@ theorem reachable_iff_exists_walk_of_le_two_pow {a : ℕ} (ha : n ≤ 2 ^ a) (s 
     exact ⟨k, by rw [graph, start, hk]⟩
   · have h := reachable_root_neighbor_pow_reingold base baseEquiv (input G)
       (depth a) (walkLength a) (start s a) k
-    rw [start, ReingoldVertex.root_mk] at h
+    rw [start, IteratedProd.root_mk] at h
     rw [← hk]
     exact (reachable_input_iff G).1 h
 

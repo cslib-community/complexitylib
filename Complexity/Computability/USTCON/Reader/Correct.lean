@@ -247,7 +247,7 @@ private theorem inputRot_slotVal (v : Fin I.n × Fin I.n) (b : Label) :
 label `a` above the registers of a vertex `x` of the `m`-th graph, the machine reaches the registers
 of the rotation of the `m`-th graph at `(x, a)`, with the label at the far end below the frames. -/
 private theorem reaches_eval (q : State) (hc : q.ctl = .eval) (hn : q.n = I.n) (hs : q.s = I.s)
-    (ht : q.t = I.t) {m : ℕ} (hm : m ≠ 0) (x : ReingoldVertex (Fin I.n × Fin I.n) Label m)
+    (ht : q.t = I.t) {m : ℕ} (hm : m ≠ 0) (x : IteratedProd (Fin I.n × Fin I.n) Label m)
     (a : Label)
     (hev : q.ev = (⟨(x.toList).1, (x.toList).2, [(.zig₀, a)]⟩ :
       ReingoldEvalState (Fin I.n × Fin I.n) Label).mapVertex slotVal) :
@@ -285,15 +285,15 @@ private theorem reaches_eval (q : State) (hc : q.ctl = .eval) (hn : q.n = I.n) (
 variable (I) in
 /-- The walk in the `m`-th graph of Reingold's transformation of the instance from `x` along the
 labels of the digits of `w`, for `j` steps. -/
-noncomputable def walkFrom {m : ℕ} :
-    ReingoldVertex (Fin I.n × Fin I.n) Label m → ℕ → ℕ → ReingoldVertex (Fin I.n × Fin I.n) Label m
+def walkFrom {m : ℕ} :
+    IteratedProd (Fin I.n × Fin I.n) Label m → ℕ → ℕ → IteratedProd (Fin I.n × Fin I.n) Label m
   | x, _, 0 => x
   | x, w, j + 1 =>
     walkFrom ((reingold base baseEquiv (input I.graph) m).neighbor x (labelOfNat w))
       (w / numLabels) j
 
 /-- The walk along the digits of `w` is the walk along the labels `labelOfNat (w / B ^ i)`. -/
-private theorem walkFrom_eq {m : ℕ} (x : ReingoldVertex (Fin I.n × Fin I.n) Label m) (w j : ℕ) :
+private theorem walkFrom_eq {m : ℕ} (x : IteratedProd (Fin I.n × Fin I.n) Label m) (w j : ℕ) :
     walkFrom I x w j = ((reingold base baseEquiv (input I.graph) m).pow j).neighbor x
       fun i ↦ labelOfNat (w / numLabels ^ (i : ℕ)) := by
   induction j generalizing x w with
@@ -313,7 +313,7 @@ private theorem depth_ne_zero (a : ℕ) : depth a ≠ 0 := by
 steps left, the machine reaches the end of the walk with the registers of its last vertex and the
 digits `w / B ^ j` left. -/
 private theorem reaches_walk {m : ℕ} (hm : m ≠ 0) (q : State) (hc : q.ctl = .next) (hn : q.n = I.n)
-    (hs : q.s = I.s) (ht : q.t = I.t) (x : ReingoldVertex (Fin I.n × Fin I.n) Label m) (w j : ℕ)
+    (hs : q.s = I.s) (ht : q.t = I.t) (x : IteratedProd (Fin I.n × Fin I.n) Label m) (w j : ℕ)
     (hev : q.ev = ⟨slotVal x.root, (x.toList).2, []⟩) (hw : q.w = w) (hj : q.j = j) :
     Reaches I q { q with
       ctl := .check
@@ -382,8 +382,8 @@ private theorem reaches_start {m : ℕ} (hm : m ≠ 0) (q : State) (hc : q.ctl =
     (hs : q.s = I.s) (ht : q.t = I.t) (hd : q.depth = m) :
     Reaches I q { q with
       ctl := .check
-      ev := ⟨slotVal (walkFrom I (ReingoldVertex.mk (I.s, I.s) 0 m) q.c q.len).root,
-        ((walkFrom I (ReingoldVertex.mk (I.s, I.s) 0 m) q.c q.len).toList).2, []⟩
+      ev := ⟨slotVal (walkFrom I (IteratedProd.mk (I.s, I.s) 0 m) q.c q.len).root,
+        ((walkFrom I (IteratedProd.mk (I.s, I.s) 0 m) q.c q.len).toList).2, []⟩
       w := q.c / numLabels ^ q.len
       j := 0 } := by
   -- the start resets the registers
@@ -419,7 +419,7 @@ private theorem reaches_start {m : ℕ} (hm : m ≠ 0) (q : State) (hc : q.ctl =
       ctl := .next
       ev := ⟨(q.s, q.s), List.replicate m 0, []⟩
       w := q.c
-      j := q.len } rfl hn hs ht (ReingoldVertex.mk (I.s, I.s) 0 m) q.c q.len
+      j := q.len } rfl hn hs ht (IteratedProd.mk (I.s, I.s) 0 m) q.c q.len
     (by simp [slotVal, hs]) rfl rfl
   exact h₁.trans (h₂.trans h₃)
 
@@ -470,7 +470,7 @@ private theorem reaches_check_next (Q : State) (hc : Q.ctl = .check) (hw : Q.w =
 variable (I) in
 /-- The walk of the counter `c` succeeds: it ends over a slot of `t`. -/
 def Success (m T c : ℕ) : Prop :=
-  (walkFrom I (ReingoldVertex.mk (I.s, I.s) 0 m) c T).root.1 = I.t
+  (walkFrom I (IteratedProd.mk (I.s, I.s) 0 m) c T).root.1 = I.t
 
 open scoped Classical in
 /-- **The counters**: from the start of the walk of a counter `c ≤ B ^ T`, the machine halts with
@@ -513,7 +513,7 @@ private theorem outputs_start {m T : ℕ} (hm : m ≠ 0) :
         · exact h₁
         · exact absurd (h₁ ▸ h₃) hsucc
       rw [heq]
-      have hne : ((walkFrom I (ReingoldVertex.mk (I.s, I.s) 0 m) q.c q.len).root.1 : ℕ) ≠ I.t := by
+      have hne : ((walkFrom I (IteratedProd.mk (I.s, I.s) 0 m) q.c q.len).root.1 : ℕ) ≠ I.t := by
         intro h
         rw [hl] at h
         exact hsucc (Fin.ext h)

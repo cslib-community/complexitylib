@@ -58,9 +58,7 @@ variable {K : Type*} {q : ℕ}
 def affinePlaneTowerBaseNumbering (numbering : K ≃ Fin q) :
     AffinePlaneTowerBaseVertex K ≃ Fin (q ^ 8) :=
   let pair := (numbering.prodCongr numbering).trans finProdFinEquiv
-  let four := (pair.prodCongr pair).trans finProdFinEquiv
-  let six := (four.prodCongr pair).trans finProdFinEquiv
-  ((six.prodCongr pair).trans finProdFinEquiv).trans (finCongr (by ring))
+  (IteratedProd.equivFin pair pair 3).trans (finCongr (by ring))
 
 /-- The fixed label type of the contracted lazy arithmetic tower over a field with `q` elements. -/
 abbrev AffinePlaneFamilyLabel (K : Type*) (q : ℕ) : Type _ :=

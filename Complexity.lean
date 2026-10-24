@@ -1592,6 +1592,7 @@ public import Complexity.Foundations.Combinatorics.Expander.Existence
 public import Complexity.Foundations.Combinatorics.Expander.Family
 public import Complexity.Foundations.Combinatorics.Expander.Hitting
 public import Complexity.Foundations.Combinatorics.Expander.Hom
+public import Complexity.Foundations.Combinatorics.Expander.IteratedProd
 public import Complexity.Foundations.Combinatorics.Expander.KilledWalk
 public import Complexity.Foundations.Combinatorics.Expander.Lazy
 public import Complexity.Foundations.Combinatorics.Expander.Loops
@@ -1603,7 +1604,6 @@ public import Complexity.Foundations.Combinatorics.Expander.Power
 public import Complexity.Foundations.Combinatorics.Expander.Random
 public import Complexity.Foundations.Combinatorics.Expander.Reindex
 public import Complexity.Foundations.Combinatorics.Expander.Reingold
-public import Complexity.Foundations.Combinatorics.Expander.ReingoldVertex
 public import Complexity.Foundations.Combinatorics.Expander.Replacement
 public import Complexity.Foundations.Combinatorics.Expander.SimpleGraph
 public import Complexity.Foundations.Combinatorics.Expander.SlotGraph
