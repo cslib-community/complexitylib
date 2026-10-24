@@ -121,7 +121,7 @@ attribute [program_certificate] keyGen_ppt sign_ppt verify_polyTime
 theorem isPPTOn_keyGen_comp (S : SignatureScheme) {γ : Type} {encIn : γ ↪ List Bool}
     {n : γ → ℕ} (hn : ComputableTidilyInPolyTime n encIn encUnary) :
     IsPPTOn encIn (encPair encBits encBits) (fun a => S.keyGen (n a)) :=
-  S.keyGen_ppt.preprocess hn
+  S.keyGen_ppt.preprocess (ComputableInPolyTime.of_tidy hn)
 
 @[program_certificate, fun_prop]
 theorem isPPTOn_sign_comp (S : SignatureScheme) {γ : Type} {encIn : γ ↪ List Bool}
@@ -129,7 +129,7 @@ theorem isPPTOn_sign_comp (S : SignatureScheme) {γ : Type} {encIn : γ ↪ List
     (hsk : ComputableTidilyInPolyTime sk encIn encBits)
     (hmsg : ComputableTidilyInPolyTime msg encIn encBits) :
     IsPPTOn encIn encBits (fun a => S.sign (sk a) (msg a)) :=
-  S.sign_ppt.preprocess (hsk.prod hmsg)
+  S.sign_ppt.preprocess (ComputableInPolyTime.of_tidy (hsk.prod hmsg))
 
 @[program_certificate, fun_prop]
 theorem computableTidilyInPolyTime_verify_comp (S : SignatureScheme)
@@ -228,7 +228,7 @@ theorem isPPTOn_eufCmaGame (S : SignatureScheme) {adversary : Forger}
 theorem isPPT_eufCmaGame (S : SignatureScheme) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsPPT encBool (fun n _ => S.eufCmaGame adversary n) :=
-  ((S.isPPTOn_eufCmaGame hadversary).preprocess (ComputableTidilyInPolyTime.fst _ _)).isPPT
+  ((S.isPPTOn_eufCmaGame hadversary).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
 /-- Existential unforgeability under adaptive chosen-message attack (EUF-CMA) against uniform
 strict oracle-PPT adversaries. -/
@@ -344,7 +344,7 @@ input. -/
 theorem isPPT_eufOneTimeGame (S : SignatureScheme) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsPPT encBool (fun n _ => S.eufOneTimeGame adversary n) :=
-  ((S.isPPTOn_eufOneTimeGame hadversary).preprocess (ComputableTidilyInPolyTime.fst _ _)).isPPT
+  ((S.isPPTOn_eufOneTimeGame hadversary).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
 /-- Existential unforgeability under one-time adaptive chosen-message attack against uniform strict
 oracle-PPT adversaries. -/

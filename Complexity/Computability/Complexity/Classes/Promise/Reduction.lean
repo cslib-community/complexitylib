@@ -27,6 +27,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Reductions of promise problems, randomized reductions, and gap problems
@@ -622,7 +623,8 @@ theorem PolyTimeReducible.mem_PromiseBPP (h : PolyTimeReducible encA encB X Y)
   obtain ⟨f, hf, hfyes, hfno⟩ := polyTimeReducible_iff_tidy.mp h
   obtain ⟨M, hM, hyes, hno⟩ := mem_PromiseBPP_iff_exists_isPPTOn.mp hY
   exact mem_PromiseBPP_iff_exists_isPPTOn.mpr
-    ⟨fun a => M (f a), hM.preprocess hf, fun a ha => hyes (f a) (hfyes ha),
+    ⟨fun a => M (f a), hM.preprocess (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy hf),
+      fun a ha => hyes (f a) (hfyes ha),
       fun a ha => hno (f a) (hfno ha)⟩
 
 /-- **`PromiseRP` is closed under polynomial-time reductions.** -/
@@ -631,7 +633,8 @@ theorem PolyTimeReducible.mem_PromiseRP (h : PolyTimeReducible encA encB X Y)
   obtain ⟨f, hf, hfyes, hfno⟩ := polyTimeReducible_iff_tidy.mp h
   obtain ⟨M, hM, hyes, hno⟩ := mem_PromiseRP_iff_exists_isPPTOn.mp hY
   exact mem_PromiseRP_iff_exists_isPPTOn.mpr
-    ⟨fun a => M (f a), hM.preprocess hf, fun a ha => hyes (f a) (hfyes ha),
+    ⟨fun a => M (f a), hM.preprocess (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy hf),
+      fun a ha => hyes (f a) (hfyes ha),
       fun a ha => hno (f a) (hfno ha)⟩
 
 /-- **`PromiseCoRP` is closed under polynomial-time reductions.** -/
@@ -640,7 +643,8 @@ theorem PolyTimeReducible.mem_PromiseCoRP (h : PolyTimeReducible encA encB X Y)
   obtain ⟨f, hf, hfyes, hfno⟩ := polyTimeReducible_iff_tidy.mp h
   obtain ⟨M, hM, hyes, hno⟩ := mem_PromiseCoRP_iff_exists_isPPTOn.mp hY
   exact mem_PromiseCoRP_iff_exists_isPPTOn.mpr
-    ⟨fun a => M (f a), hM.preprocess hf, fun a ha => hyes (f a) (hfyes ha),
+    ⟨fun a => M (f a), hM.preprocess (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy hf),
+      fun a ha => hyes (f a) (hfyes ha),
       fun a ha => hno (f a) (hfno ha)⟩
 
 /-! ### Randomized reductions with one-sided error -/
@@ -925,7 +929,7 @@ theorem PolyTimeReducible.trans_rpReducibleWithError {s : β → ℝ}
     RPReducibleWithError encA encC (fun a => s (hXY.choose a)) X Z := by
   have hf := hXY.choose_spec
   obtain ⟨R, hR, hyes, hno⟩ := hYZ
-  exact ⟨fun a => R (hXY.choose a), hR.preprocess hf.1.tidy,
+  exact ⟨fun a => R (hXY.choose a), hR.preprocess hf.1,
     fun a ha c hc => hyes _ (hf.2.1 ha) c hc, fun a ha => hno _ (hf.2.2 ha)⟩
 
 /-- Postcomposing an `RPReducibleWithError` reduction with a deterministic polynomial-time reduction

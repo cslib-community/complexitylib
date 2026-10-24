@@ -15,6 +15,7 @@ public import Complexity.Crypto.Computational.Basic
 import Complexity.Probability.Product
 import Complexity.Probability.Uniform
 import Complexity.Tactic.PPT
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # XOR combination of independently seeded generators
@@ -202,6 +203,7 @@ theorem isPPTOn_test {α : Type} {input : α ↪ List Bool}
   apply hadversary.preprocess (prepare := fun p : α × List Bool =>
     (p.1, generate (count p.1) (seedBits p.1) (outputBits p.1)
       (fun j coins => if j = index p.1 then challenge p.1 else generator p.1 j coins) p.2))
+  apply ComputableInPolyTime.of_tidy
   apply ComputableTidilyInPolyTime.prod (by fun_prop)
   apply isPolyTime_generate (by fun_prop) (by fun_prop) (by fun_prop) ?_ (by fun_prop)
   have hgen := hgenerator.comp

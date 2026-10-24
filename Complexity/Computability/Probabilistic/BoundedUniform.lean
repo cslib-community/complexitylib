@@ -79,7 +79,7 @@ theorem isPPTOn_sampleUniformInterval_binary {α : Type} {input : α ↪ List Bo
     funext p
     simp only [min_def, Function.comp_def, decide_eq_true_eq]
   have hs : IsPPTOn input encNat (fun a => sampleBoundedIndex (bound a)) := by
-    apply ((isPPTOn_sampleBinaryNat.preprocess hw).map_with
+    apply ((isPPTOn_sampleBinaryNat.preprocess (ComputableInPolyTime.of_tidy hw)).map_with
       (f := fun a value => min (bound a) value) (.of_tidy hmin)).congr
     intro a
     rw [sampleBoundedIndex_eq_binary, ← hwidth_eq a]

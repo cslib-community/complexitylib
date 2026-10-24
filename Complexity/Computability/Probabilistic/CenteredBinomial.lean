@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Native centered binomial sampling
@@ -55,7 +56,7 @@ theorem isPPTOn_sampleCenteredBinomial :
       ((hcast.comp ((ComputableTidilyInPolyTime.fst _ _).snd')).prod
         (hcast.comp (ComputableTidilyInPolyTime.snd _ _)))
   have hsecond := (hcount.preprocess
-    (ComputableTidilyInPolyTime.fst encUnary encUnary)).map_with
+    (ComputableInPolyTime.fst encUnary encUnary)).map_with
       (f := fun (p : ℕ × ℕ) (negative : ℕ) => (p.2 : ℤ) - negative) (.of_tidy hsub)
   unfold sampleCenteredBinomial
   apply hcount.bind_with
@@ -70,4 +71,5 @@ theorem Turing.MultiTapeTM.ComputableTidilyInPolyTime.sampleCenteredBinomial {α
     (hparameter : ComputableTidilyInPolyTime parameter input encUnary) :
     Cslib.Probability.IsPPTOn input encIntBin
       (fun a => Cslib.ProbComp.sampleCenteredBinomial (parameter a)) :=
-  Cslib.Probability.isPPTOn_sampleCenteredBinomial.preprocess hparameter
+  Cslib.Probability.isPPTOn_sampleCenteredBinomial.preprocess
+    (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy hparameter)

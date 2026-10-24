@@ -17,6 +17,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Tactic.PolyTime.Init
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Strict PPT list traversal
@@ -116,7 +117,7 @@ theorem IsPPTOn.mapMWith {α β γ : Type} {input : α ↪ List Bool}
     IsPPTOn input (encList output) (fun a => (list a).mapM (program a)) := by
   have hpairs : ComputableTidilyInPolyTime (fun a => (list a).map fun b => (a, b))
       input (encList (encPair input element)) := by fun_prop
-  apply (hprogram.mapM.preprocess hpairs).congr
+  apply (hprogram.mapM.preprocess (ComputableInPolyTime.of_tidy hpairs)).congr
   intro a
   simp only [List.mapM_map, Function.comp_def]
 
