@@ -27,9 +27,11 @@ instructions, initialization and memory before any machine running-time claim is
 ## Main definitions
 
 * `Tree`: a fully allocated recursive shape, with a two-key base universe.
+* `Tree.bounds`, `Tree.minimum`, `Tree.maximum`, `Tree.withBounds`: cached local extrema and
+  header update.
 * `Tree.empty`, `Tree.insert`, `Tree.member`, `Tree.successor`: set operations.
 * `Tree.Contains`: mathematical interpretation of the stored keys.
-* `Tree.Valid`: the recursive extrema, cluster and summary invariant.
+* `Tree.Extrema`, `Tree.Valid`: local extrema specification and recursive tree invariant.
 
 ## References
 
@@ -159,15 +161,19 @@ def Valid : {d : ℕ} → Tree d → Prop
       | none => s.bounds = none ∧ ∀ i, (c i).bounds = none
       | some (m, _) => ∀ i y, (c i).Contains y → m < i.val * universeSize d + y
 
+/-- The empty tree at depth `d` has no cached bounds. -/
 @[simp] theorem bounds_empty (d : ℕ) : (empty d).bounds = none := by
   cases d <;> rfl
 
+/-- The empty tree at depth `d` has no cached minimum. -/
 @[simp] theorem minimum_empty (d : ℕ) : (empty d).minimum = none := by
   simp [minimum]
 
+/-- The empty tree at depth `d` has no cached maximum. -/
 @[simp] theorem maximum_empty (d : ℕ) : (empty d).maximum = none := by
   simp [maximum]
 
+/-- The empty tree at depth `d` contains no elements. -/
 @[simp] theorem contains_empty (d x : ℕ) : ¬(empty d).Contains x := by
   cases d <;> simp [empty, Contains]
 
@@ -182,9 +188,11 @@ theorem valid_empty (d : ℕ) : (empty d).Valid := by
       simp
     · simp
 
+/-- Membership lookup on the empty tree at depth `d` always returns `false`. -/
 @[simp] theorem member_empty (d x : ℕ) : (empty d).member x = false := by
   cases d <;> rfl
 
+/-- Successor lookup on the empty tree at depth `d` always returns `none`. -/
 @[simp] theorem successor_empty (d x : ℕ) : (empty d).successor x = none := by
   cases d <;> rfl
 

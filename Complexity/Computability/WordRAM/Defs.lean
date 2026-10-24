@@ -110,17 +110,24 @@ convention.
 ## Main definitions
 
 * `Cslib.WordRAM.Fits`: a number fits a `w`-bit word.
-* `Cslib.WordRAM.Cond`, `Cslib.WordRAM.Op`, `Cslib.WordRAM.Instr`, `Cslib.WordRAM.Program`:
-  conditions, data instructions, instructions and programs over a basis.
+* `Cslib.WordRAM.Cond`, `Cslib.WordRAM.Cond.Holds`, `Cslib.WordRAM.Op`, `Cslib.WordRAM.Instr`,
+  `Cslib.WordRAM.Program`: conditions, their satisfaction, data instructions, instructions and
+  programs over a basis.
 * `Cslib.WordRAM.Op.bin`, `Cslib.WordRAM.Op.width`: the data instructions of the standard basis;
   `Cslib.WordRAM.Op.exactBin`, `Cslib.WordRAM.Op.exactWidth`: those of the exact basis.
-* `Cslib.WordRAM.Data`, `Cslib.WordRAM.State`: registers with memory, and with a program counter.
+* `Cslib.WordRAM.Data`, `Cslib.WordRAM.Data.set`, `Cslib.WordRAM.Data.write`,
+  `Cslib.WordRAM.Data.put`, `Cslib.WordRAM.State`: registers with memory, register/memory updates,
+  and state with a program counter.
 * `Cslib.WordRAM.Op.eval`: the effect of a data instruction, `none` on a fault.
-* `Cslib.WordRAM.step`: one step of a program, which continues, halts with an output, or faults.
+* `Cslib.WordRAM.Outcome`, `Cslib.WordRAM.step`, `Cslib.WordRAM.Next`: step outcome, one step of a
+  program, and the single-step transition relation.
 * `Cslib.WordRAM.Runs`, `Cslib.WordRAM.Executes`: runs of a given number of steps, and runs that
   halt with a given output after a given number of instructions, the `halt` included.
-* `Cslib.WordRAM.State.init`, `Cslib.WordRAM.InputFits`: the initial state on an input, and inputs
-  whose length and words fit a word.
+* `Cslib.WordRAM.Data.init`, `Cslib.WordRAM.State.init`, `Cslib.WordRAM.InputFits`,
+  `Cslib.WordRAM.Data.Bounded`: initial data/state on an input, inputs whose length and words fit a
+  word, and word-bounded machine data.
+* `Cslib.WordRAM.Op.ReadsWidth`, `Cslib.WordRAM.Instr.ReadsWidth`,
+  `Cslib.WordRAM.Program.ReadsWidth`: predicates for reading the word size `w`.
 * `Cslib.WordRAM.run`: a computable interpreter with a step budget.
 
 ## Main results
@@ -155,18 +162,24 @@ variable {B : Basis} {r : ℕ}
 /-- A number fits a `w`-bit word if it is below `2 ^ w`. -/
 def Fits (w v : ℕ) : Prop := v < 2 ^ w
 
+/-- Decidability of `Fits w v`. -/
 instance (w v : ℕ) : Decidable (Fits w v) := inferInstanceAs (Decidable (v < 2 ^ w))
 
+/-- `Fits w v` unfolds to `v < 2 ^ w`. -/
 theorem fits_iff {w v : ℕ} : Fits w v ↔ v < 2 ^ w := Iff.rfl
 
+/-- A word that fits in `w` bits also fits in any larger word width `w'`. -/
 theorem Fits.mono {w w' v : ℕ} (h : Fits w v) (hw : w ≤ w') : Fits w' v :=
   h.trans_le (Nat.pow_le_pow_right Nat.two_pos hw)
 
+/-- Any value at most a `w`-bit word also fits in `w` bits. -/
 theorem Fits.of_le {w u v : ℕ} (h : Fits w v) (huv : u ≤ v) : Fits w u := huv.trans_lt h
 
+/-- Zero fits in every word width `w`. -/
 @[simp]
 theorem fits_zero (w : ℕ) : Fits w 0 := Nat.two_pow_pos w
 
+/-- One fits in every nonzero word width `w`. -/
 theorem fits_one {w : ℕ} (hw : w ≠ 0) : Fits w 1 :=
   Nat.one_lt_two_pow hw
 
@@ -249,16 +262,20 @@ def set (x : Data r) (i : Fin r) (v : ℕ) : Data r := ⟨Function.update x.regs
 /-- Set the memory cell at address `a` to `v`. -/
 def write (x : Data r) (a v : ℕ) : Data r := ⟨x.regs, Function.update x.mem a v⟩
 
+/-- Setting register `i` updates the register file at `i`. -/
 @[simp]
 theorem set_regs (x : Data r) (i : Fin r) (v : ℕ) :
     (x.set i v).regs = Function.update x.regs i v := rfl
 
+/-- Setting register `i` leaves memory unchanged. -/
 @[simp]
 theorem set_mem (x : Data r) (i : Fin r) (v : ℕ) : (x.set i v).mem = x.mem := rfl
 
+/-- Writing to memory leaves the register file unchanged. -/
 @[simp]
 theorem write_regs (x : Data r) (a v : ℕ) : (x.write a v).regs = x.regs := rfl
 
+/-- Writing `v` at address `a` updates memory at `a`. -/
 @[simp]
 theorem write_mem (x : Data r) (a v : ℕ) :
     (x.write a v).mem = Function.update x.mem a v := rfl
@@ -267,10 +284,12 @@ theorem write_mem (x : Data r) (a v : ℕ) :
 def put (w : ℕ) (x : Data r) (i : Fin r) (v : ℕ) : Option (Data r) :=
   if Fits w v then some (x.set i v) else none
 
+/-- When `v` fits in `w` bits, `put` succeeds and sets register `i` to `v`. -/
 theorem put_of_fits {w : ℕ} {x : Data r} {i : Fin r} {v : ℕ} (h : Fits w v) :
     x.put w i v = some (x.set i v) := by
   simp [put, h]
 
+/-- `put` returns `some y` iff `v` fits in `w` bits and `y = x.set i v`. -/
 theorem put_eq_some {w : ℕ} {x y : Data r} {i : Fin r} {v : ℕ} :
     x.put w i v = some y ↔ Fits w v ∧ x.set i v = y := by
   unfold put
@@ -293,15 +312,18 @@ def Cond.Holds : Cond r → Data r → Prop
   | .eq i j, x => x.regs i = x.regs j
   | .lt i j, x => x.regs i < x.regs j
 
+/-- Decidability of `Cond.Holds`. -/
 instance (c : Cond r) (x : Data r) : Decidable (c.Holds x) :=
   match c with
   | .eq i j => inferInstanceAs (Decidable (x.regs i = x.regs j))
   | .lt i j => inferInstanceAs (Decidable (x.regs i < x.regs j))
 
+/-- `Cond.eq i j` holds iff registers `i` and `j` have equal contents. -/
 @[simp]
 theorem Cond.holds_eq {i j : Fin r} {x : Data r} : (Cond.eq i j).Holds x ↔ x.regs i = x.regs j :=
   Iff.rfl
 
+/-- `Cond.lt i j` holds iff register `i` is strictly less than register `j`. -/
 @[simp]
 theorem Cond.holds_lt {i j : Fin r} {x : Data r} : (Cond.lt i j).Holds x ↔ x.regs i < x.regs j :=
   Iff.rfl
@@ -325,19 +347,24 @@ section Eval
 
 variable (w : ℕ) (x : Data r) {d s a : Fin r}
 
+/-- Evaluating `Op.const d v` writes `v` to register `d` via `Data.put`. -/
 @[simp]
 theorem Op.eval_const (v : ℕ) : (Op.const (B := B) d v).eval w x = x.put w d v := rfl
 
+/-- Evaluating `Op.copy d s` copies register `s` into register `d`. -/
 @[simp]
 theorem Op.eval_copy : (Op.copy (B := B) d s).eval w x = some (x.set d (x.regs s)) := rfl
 
+/-- Evaluating `Op.alu f d args` interprets `f` on `args` and writes the result via `Data.put`. -/
 @[simp]
 theorem Op.eval_alu (f : B.Op) (args : Fin (B.Arity f) → Fin r) :
     (Op.alu f d args).eval w x = (B.interp w f (x.regs ∘ args)).bind (x.put w d) := rfl
 
+/-- Evaluating `Op.load d a` loads the memory word at address `x.regs a` into register `d`. -/
 @[simp]
 theorem Op.eval_load : (Op.load (B := B) d a).eval w x = some (x.set d (x.mem (x.regs a))) := rfl
 
+/-- Evaluating `Op.store a s` stores `x.regs s` at memory address `x.regs a`. -/
 @[simp]
 theorem Op.eval_store :
     (Op.store (B := B) a s).eval w x = some (x.write (x.regs a) (x.regs s)) := rfl
@@ -354,6 +381,7 @@ theorem Op.eval_alu_eq_some {w : ℕ} {x y : Data r} {f : B.Op} {d : Fin r}
   | none => exact ⟨nofun, fun ⟨_, h, _⟩ => nomatch h⟩
   | some v => exact Data.put_eq_some.trans ⟨fun h => ⟨v, rfl, h⟩, fun ⟨_, rfl, h⟩ => h⟩
 
+/-- Evaluating a standard binary operation `Op.bin f d i j` writes `f.eval` via `Data.put`. -/
 @[simp]
 theorem Op.eval_bin (w : ℕ) (f : BinOp) (d i j : Fin r) (x : Data r) :
     (Op.bin f d i j).eval w x = x.put w d (f.eval (x.regs i) (x.regs j)) := rfl
@@ -364,11 +392,13 @@ theorem Op.eval_width (w : ℕ) (d : Fin r) (x : Data r) :
     (Op.width d).eval w x = some (x.set d w) :=
   Data.put_of_fits (fits_self w)
 
+/-- Evaluating an exact binary operation `Op.exactBin f d i j` binds `f.evalExact` to `Data.put`. -/
 @[simp]
 theorem Op.eval_exactBin (w : ℕ) (f : BinOp) (d i j : Fin r) (x : Data r) :
     (Op.exactBin f d i j).eval w x = (f.evalExact (x.regs i) (x.regs j)).bind (x.put w d) :=
   rfl
 
+/-- Reading the word width in the exact basis always succeeds and writes `w`. -/
 @[simp]
 theorem Op.eval_exactWidth (w : ℕ) (d : Fin r) (x : Data r) :
     (Op.exactWidth d).eval w x = some (x.set d w) :=
@@ -400,23 +430,28 @@ section Step
 
 variable {w : ℕ} {p : Program B r} {s : State r}
 
+/-- Stepping on a data instruction that evaluates to `some x` advances `pc` by `1` with data `x`. -/
 theorem step_op {o : Op B r} {x : Data r} (hp : p[s.pc]? = some (.op o))
     (h : o.eval w s.data = some x) :
     step w p s = .next ⟨s.pc + 1, x⟩ := by
   simp only [step, hp, h]
 
+/-- Stepping on a data instruction that evaluates to `none` faults. -/
 theorem step_op_fault {o : Op B r} (hp : p[s.pc]? = some (.op o)) (h : o.eval w s.data = none) :
     step w p s = .fault := by
   simp only [step, hp, h]
 
+/-- Stepping on an unconditional jump sets `pc` to the target `t`. -/
 theorem step_jump {t : ℕ} (hp : p[s.pc]? = some (.jump t)) :
     step w p s = .next ⟨t, s.data⟩ := by
   simp only [step, hp]
 
+/-- Stepping on a conditional branch jumps to `t` when `c` holds and advances `pc` otherwise. -/
 theorem step_branch {c : Cond r} {t : ℕ} (hp : p[s.pc]? = some (.branch c t)) :
     step w p s = .next ⟨if c.Holds s.data then t else s.pc + 1, s.data⟩ := by
   simp only [step, hp]
 
+/-- Stepping on `halt i` halts with output `s.data.regs i`. -/
 theorem step_halt {i : Fin r} (hp : p[s.pc]? = some (.halt i)) :
     step w p s = .halt (s.data.regs i) := by
   simp only [step, hp]
@@ -452,9 +487,11 @@ section Executes
 
 variable {w : ℕ} {p : Program B r} {s t u : State r} {v v' m n n' : ℕ}
 
+/-- A state that immediately halts executes in `1` instruction. -/
 theorem Executes.halt (h : step w p s = .halt v) : Executes w p s v 1 :=
   ⟨s, 0, .refl s, h, rfl⟩
 
+/-- Prepending a single transition `Next w p s t` increments the instruction count by `1`. -/
 theorem Executes.head (h : Next w p s t) (ht : Executes w p t v n) : Executes w p s v (n + 1) := by
   obtain ⟨u, m, hr, hu, rfl⟩ := ht
   exact ⟨u, m + 1, hr.head s t u m h, hu, rfl⟩
@@ -465,10 +502,12 @@ theorem Executes.of_runs (h : Runs w p s t m) (ht : Executes w p t v n) :
   obtain ⟨u, k, hr, hu, rfl⟩ := ht
   exact ⟨u, m + k, h.trans hr, hu, by omega⟩
 
+/-- Every halting execution takes at least one instruction. -/
 theorem Executes.pos (h : Executes w p s v n) : 0 < n := by
   obtain ⟨_, _, _, _, rfl⟩ := h
   omega
 
+/-- Unfolding `run` for `n + 1` steps of fuel. -/
 theorem run_succ :
     run w p (n + 1) s = match step w p s with
       | .next t => (run w p n t).map fun vn => (vn.1, vn.2 + 1)
@@ -551,13 +590,16 @@ def Data.init (input : List ℕ) : Data r where
 /-- The initial state on an input: the program counter at `0`, and `Data.init input`. -/
 def State.init (input : List ℕ) : State r := ⟨0, .init input⟩
 
+/-- All registers are initialized to `0` in `Data.init`. -/
 @[simp]
 theorem Data.init_regs (input : List ℕ) (i : Fin r) : (Data.init input).regs i = 0 := rfl
 
+/-- Memory cell `0` holds the input length in `Data.init`. -/
 @[simp]
 theorem Data.init_mem_zero (input : List ℕ) : (Data.init input : Data r).mem 0 = input.length :=
   rfl
 
+/-- Memory cell `a + 1` holds the `a`-th input word (or `0` out of bounds) in `Data.init`. -/
 @[simp]
 theorem Data.init_mem_succ (input : List ℕ) (a : ℕ) :
     (Data.init input : Data r).mem (a + 1) = input.getD a 0 := rfl
@@ -566,9 +608,11 @@ theorem Data.init_mem_succ (input : List ℕ) (a : ℕ) :
 def InputFits (w : ℕ) (input : List ℕ) : Prop :=
   Fits w input.length ∧ ∀ v ∈ input, Fits w v
 
+/-- Decidability of `InputFits w input`. -/
 instance (w : ℕ) (input : List ℕ) : Decidable (InputFits w input) :=
   inferInstanceAs (Decidable (_ ∧ _))
 
+/-- An input that fits in word size `w` also fits in any larger word size `w'`. -/
 theorem InputFits.mono {w w' : ℕ} {input : List ℕ} (h : InputFits w input) (hw : w ≤ w') :
     InputFits w' input :=
   ⟨h.1.mono hw, fun v hv => (h.2 v hv).mono hw⟩
@@ -582,6 +626,7 @@ every reachable state does. -/
 def Data.Bounded (w : ℕ) (x : Data r) : Prop :=
   (∀ i, Fits w (x.regs i)) ∧ ∀ a, Fits w (x.mem a)
 
+/-- The initial data on an input that fits in `w` bits is word-bounded. -/
 theorem Data.Bounded.init {w : ℕ} {input : List ℕ} (h : InputFits w input) :
     (Data.init input : Data r).Bounded w := by
   refine ⟨fun _ => fits_zero w, fun a => ?_⟩
@@ -592,6 +637,7 @@ theorem Data.Bounded.init {w : ℕ} {input : List ℕ} (h : InputFits w input) :
     | none => exact fits_zero w
     | some v => exact h.2 v (List.mem_of_getElem? hv)
 
+/-- Setting a register to a `w`-bit word preserves `Data.Bounded w`. -/
 theorem Data.Bounded.set {w : ℕ} {x : Data r} (hx : x.Bounded w) {i : Fin r} {v : ℕ}
     (hv : Fits w v) : (x.set i v).Bounded w := by
   refine ⟨fun j => ?_, hx.2⟩
@@ -599,6 +645,7 @@ theorem Data.Bounded.set {w : ℕ} {x : Data r} (hx : x.Bounded w) {i : Fin r} {
   · simpa using hv
   · simpa [Function.update_of_ne hj] using hx.1 j
 
+/-- Writing a `w`-bit word to memory preserves `Data.Bounded w`. -/
 theorem Data.Bounded.write {w : ℕ} {x : Data r} (hx : x.Bounded w) {a v : ℕ} (hv : Fits w v) :
     (x.write a v).Bounded w := by
   refine ⟨hx.1, fun b => ?_⟩
@@ -606,6 +653,7 @@ theorem Data.Bounded.write {w : ℕ} {x : Data r} (hx : x.Bounded w) {a v : ℕ}
   · simpa using hv
   · simpa [Function.update_of_ne hb] using hx.2 b
 
+/-- Any non-faulting data instruction preserves `Data.Bounded w`. -/
 theorem Data.Bounded.op {w : ℕ} {x y : Data r} (hx : x.Bounded w) {o : Op B r}
     (h : o.eval w x = some y) : y.Bounded w := by
   cases o with
@@ -654,15 +702,18 @@ def Op.ReadsWidth : Op B r → Prop
   | .alu f _ _ => B.ReadsWidth f
   | _ => False
 
+/-- Decidability of `Op.ReadsWidth`. -/
 instance : DecidablePred (Op.ReadsWidth (B := B) (r := r)) := fun o =>
   match o with
   | .alu f _ _ => inferInstanceAs (Decidable (B.ReadsWidth f))
   | .const .. | .copy .. | .load .. | .store .. => isFalse id
 
+/-- A binary ALU instruction `Op.bin` does not read the word width. -/
 @[simp]
 theorem Op.readsWidth_bin (f : BinOp) (d i j : Fin r) : ¬(Op.bin f d i j).ReadsWidth := by
   simp [Op.bin, Op.ReadsWidth]
 
+/-- The instruction `Op.width` reads the word width. -/
 @[simp]
 theorem Op.readsWidth_width (d : Fin r) : (Op.width d).ReadsWidth := by
   simp [Op.width, Op.ReadsWidth]
@@ -672,6 +723,7 @@ def Instr.ReadsWidth : Instr B r → Prop
   | .op o => o.ReadsWidth
   | _ => False
 
+/-- Decidability of `Instr.ReadsWidth`. -/
 instance : DecidablePred (Instr.ReadsWidth (B := B) (r := r)) := fun i =>
   match i with
   | .op o => inferInstanceAs (Decidable o.ReadsWidth)
@@ -680,9 +732,12 @@ instance : DecidablePred (Instr.ReadsWidth (B := B) (r := r)) := fun i =>
 /-- A program reads the word size if one of its instructions does. -/
 def Program.ReadsWidth (p : Program B r) : Prop := ∃ i ∈ p, i.ReadsWidth
 
+/-- Decidability of `Program.ReadsWidth`. -/
 instance (p : Program B r) : Decidable p.ReadsWidth :=
   inferInstanceAs (Decidable (∃ i ∈ p, i.ReadsWidth))
 
+/-- A successful evaluation of a data instruction that does not read the word width gives the same
+result at any larger width. -/
 theorem Op.eval_mono_width {w w' : ℕ} {o : Op B r} {x y : Data r} (ho : ¬o.ReadsWidth)
     (h : o.eval w x = some y) (hw : w ≤ w') : o.eval w' x = some y := by
   cases o with
@@ -695,6 +750,8 @@ theorem Op.eval_mono_width {w w' : ℕ} {o : Op B r} {x y : Data r} (ho : ¬o.Re
     exact Data.put_of_fits (hv.mono hw)
   | copy | load | store => exact h
 
+/-- A single step of a program that does not read the word width is preserved at any larger
+width. -/
 theorem Next.mono_width {w w' : ℕ} {p : Program B r} {s t : State r} (hp : ¬p.ReadsWidth)
     (h : Next w p s t) (hw : w ≤ w') : Next w' p s t := by
   unfold Next at h ⊢
@@ -711,7 +768,7 @@ theorem Next.mono_width {w w' : ℕ} {p : Program B r} {s t : State r} (hp : ¬p
     | branch c t => rw [step_branch hpc] at h ⊢; exact h
     | halt i => simp [step_halt hpc] at h
 
-theorem step_halt_mono_width {w w' : ℕ} {p : Program B r} {s : State r} {v : ℕ}
+private theorem step_halt_mono_width {w w' : ℕ} {p : Program B r} {s : State r} {v : ℕ}
     (h : step w p s = .halt v) : step w' p s = .halt v := by
   cases hpc : p[s.pc]? with
   | none => simp [WordRAM.step, hpc] at h
@@ -724,6 +781,7 @@ theorem step_halt_mono_width {w w' : ℕ} {p : Program B r} {s : State r} {v : �
     | branch c t => simp [step_branch hpc] at h
     | halt i => rw [step_halt hpc] at h ⊢; exact h
 
+/-- Multi-step runs of a program that does not read the word width lift to any larger width. -/
 theorem Runs.mono_width {w w' : ℕ} {p : Program B r} {s t : State r} {n : ℕ}
     (hp : ¬p.ReadsWidth) (h : Runs w p s t n) (hw : w ≤ w') : Runs w' p s t n := by
   induction h with

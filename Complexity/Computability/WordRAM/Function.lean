@@ -31,10 +31,12 @@ polynomial time is asserted.
 
 ## Main definitions
 
-* `WordSizeDependentProgram.ComputesInTime`: a family computes a word-valued function.
+* `Program.ComputesInTime`, `WordSizeDependentProgram.ComputesInTime`: a fixed program or
+  program family computes a word-valued function.
 * `ComputableInTime`: existence of a family with bounded program length.
 * `UniformComputableInTime`: existence of one fixed program.
 * `ComputableInTimeLogWord`, `UniformComputableInTimeLogWord`: transdichotomous word-size wrappers.
+* `ComputableInO`, `UniformComputableInO`: asymptotic running-time bounds.
 * `ComputableInPolyTime`, `UniformComputableInPolyTime`: polynomial instruction bounds.
 
 ## Main results

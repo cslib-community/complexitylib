@@ -19,8 +19,10 @@ memory, not a new allocator or a claim that inaccessible cells cease to exist.
 
 ## Main definitions
 
+* `Block.footprint`: the finite set of memory cells owned by a contiguous block.
 * `HeapAssertion`: a memory predicate supported on a finite footprint.
-* `HeapAssertion.sep`, `HeapAssertion.pointsto`, `HeapAssertion.array`: representation primitives.
+* `HeapAssertion.pure`, `HeapAssertion.sep`, `HeapAssertion.pointsto`, `HeapAssertion.array`:
+  representation primitives.
 * `Modifies`: equality outside a permitted set of writes.
 
 ## Main results
@@ -43,12 +45,14 @@ namespace Cslib.WordRAM
 def Block.footprint (b : Block) : Finset ℕ :=
   (Finset.range b.length).image (b.base + ·)
 
+/-- An address belongs to `b.footprint` if and only if `b` owns it. -/
 @[simp]
 theorem Block.mem_footprint {b : Block} {a : ℕ} : a ∈ b.footprint ↔ b.Owns a := by
   simp only [Block.footprint, Finset.mem_image, Finset.mem_range, Block.Owns]
   exact ⟨fun ⟨i, hi, ha⟩ => ⟨by omega, by omega⟩,
     fun ⟨hlo, hhi⟩ => ⟨a - b.base, by omega, by omega⟩⟩
 
+/-- The cardinality of `b.footprint` equals `b.length`. -/
 @[simp]
 theorem Block.card_footprint (b : Block) : b.footprint.card = b.length := by
   rw [Block.footprint, Finset.card_image_of_injective _ (fun _ _ h => Nat.add_left_cancel h),

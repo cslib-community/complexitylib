@@ -24,7 +24,8 @@ contiguous record layout is an engineering choice.
 
 ## Main definitions
 
-* `Header`: the five-word record, allowing stale empty extrema.
+* `splitSize`, `childSpan`, `Header`: the static split/child-span header fields and the five-word
+  record predicate allowing stale empty extrema.
 * `Rep`: recursive interpretation of actual memory as a functional tree.
 * `writeBounds`: the concrete presence/extrema writes.
 

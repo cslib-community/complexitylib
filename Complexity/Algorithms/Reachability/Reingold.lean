@@ -49,8 +49,9 @@ and `log₂ (5 / 4)` down to `1 / 4`.
 
 ## Main definitions
 
-* `Cslib.Reachability.Reingold.Label`, `Cslib.Reachability.Reingold.base`: the labels and the
-  base graph.
+* `Cslib.Reachability.Reingold.Label`, `Cslib.Reachability.Reingold.BaseLabel`,
+  `Cslib.Reachability.Reingold.base`, `Cslib.Reachability.Reingold.baseEquiv`,
+  `Cslib.Reachability.Reingold.slotLabel`: the labels, base graph, and label embeddings.
 * `Cslib.Reachability.Reingold.input`: the regular rotation map of a simple graph on `Fin n`.
 * `Cslib.Reachability.Reingold.depth`, `Cslib.Reachability.Reingold.walkLength`: the number of
   steps of the transformation and the walk length.

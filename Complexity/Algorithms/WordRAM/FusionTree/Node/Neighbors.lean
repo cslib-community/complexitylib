@@ -16,6 +16,11 @@ The key table begins eighteen words after the record base and has stride two. It
 word in each entry is a child pointer; this subroutine reads the full-key minima only.
 All constants, address calculations, copies and both loads are charged.
 
+## Main definitions
+
+* `NodeProgram.neighborInputs`, `NodeProgram.neighborAddress`, `NodeProgram.neighbors`: register
+  copies, table-address calculation, and full-key neighbor-loading code.
+
 ## Main results
 
 * `NodeProgram.exec_neighbors`: select a minimum-exclusive-or sketch neighbor in 25 instructions.

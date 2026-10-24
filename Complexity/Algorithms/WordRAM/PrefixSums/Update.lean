@@ -21,8 +21,12 @@ loads, stores, tests and jumps are actual bounded-word instructions.
 
 ## Main definitions
 
-* `updateLoop`: the fixed update loop.
+* `Reg.zero`, `Reg.one`, `Reg.two`, `Reg.ptr`, `Reg.len`, `Reg.idx`, `Reg.delta`, `Reg.val`,
+  `Reg.tmp`, `Reg.ans`, `Reg.tag`, `Reg.root`, `Reg.capacity`, `Reg.position`: register
+  assignments for aggregation-tree updates and queries.
 * `Entry`: the register calling convention.
+* `updateBody`, `updateLoop`, `updateNext`: the single-iteration body, fixed update loop, and
+  single-iteration state transition.
 
 ## Main results
 
@@ -105,7 +109,7 @@ def updateNext (x : Data 14) (b n i δ : ℕ) : Data 14 :=
 
 variable {w h b n i δ : ℕ} {x : Data 14}
 
-theorem updateBody_exec (hx : Entry b n i δ x) (hi : i < n)
+private theorem updateBody_exec (hx : Entry b n i δ x) (hi : i < n)
     (ha : Fits w (b + 2 * n)) (hv : Fits w (x.mem b + δ)) :
     ExecWithin w updateBody x (updateNext x b n i δ) 9 := by
   obtain ⟨hz, ho, ht, hp, hl, hi', hd⟩ := hx
@@ -118,13 +122,15 @@ theorem updateBody_exec (hx : Entry b n i δ x) (hi : i < n)
   · ram_eval [updateBody, updateNext, hp, hl, hi', hd, ho, ht, hc, hv, hf, hb]
   · ram_eval [updateBody, updateNext, hp, hl, hi', hd, ho, ht, hc, hv, hf, hb', hb'', hi'']
 
-theorem updateNext_entry (hx : Entry b n i δ x) :
+private theorem updateNext_entry (hx : Entry b n i δ x) :
     Entry (if i < n / 2 then b + 1 else b + n / 2 + n / 2) (n / 2)
       (if i < n / 2 then i else i - n / 2) δ (updateNext x b n i δ) := by
   rcases hx with ⟨hz, ho, ht, hp, hl, hi, hd⟩
   by_cases hc : i < n / 2 <;>
     simp +decide [updateNext, hc, Entry.mk, hz, ho, ht, hi, hd]
 
+/-- One update iteration increments the memory word at the current node pointer `b` by `δ` and
+leaves all other addresses unchanged. -/
 @[simp]
 theorem updateNext_mem (a : ℕ) :
     (updateNext x b n i δ).mem a = Function.update x.mem b (x.mem b + δ) a := by

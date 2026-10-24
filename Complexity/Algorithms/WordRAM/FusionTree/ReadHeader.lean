@@ -19,7 +19,11 @@ are separate from this header load.
 
 ## Main definitions
 
+* `ReadHeaderProgram.pointer`, `ReadHeaderProgram.offset`, `ReadHeaderProgram.address`: register
+  assignments for the header reader.
+* `ReadHeaderProgram.word`: three-instruction block loading a single header word.
 * `ReadHeaderProgram.code`: the 54-instruction header reader.
+* `ReadHeaderProgram.result`: output state after loading all eighteen header words.
 
 ## Main results
 

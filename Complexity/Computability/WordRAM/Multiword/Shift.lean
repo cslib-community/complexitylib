@@ -18,6 +18,11 @@ with a remainder carry. Each intermediate is strictly below the square of the di
 
 ## Main definitions
 
+* `Cslib.WordRAM.Multiword.Shift.cell`, `Cslib.WordRAM.Multiword.Shift.digits`,
+  `Cslib.WordRAM.Multiword.Shift.finish`: single-digit division, high-to-low digit division, and
+  residual power-of-two shift completion.
+* `Cslib.WordRAM.Multiword.Shift.dispatch`, `Cslib.WordRAM.Multiword.Shift.codeSize`: whole-digit
+  shift dispatch and its static instruction count.
 * `Cslib.WordRAM.Multiword.Shift.program`: variable right shift with fixed register lists.
 
 ## Main results
@@ -58,7 +63,7 @@ def cell (a d : Fin (r + 4)) : Code .standard (r + 4) := ram[
   carry ← carry % zero ]
 
 /-- Full result of a division digit, including the remainder workspace. -/
-def cellResult (x : Data (r + 4)) (a d : Fin (r + 4)) : Data (r + 4) :=
+private def cellResult (x : Data (r + 4)) (a d : Fin (r + 4)) : Data (r + 4) :=
   let t := x.regs carry * x.regs base + x.regs a
   ((x.set carry t).set d (t >>> x.regs total)).set carry (t % x.regs zero)
 
@@ -115,6 +120,7 @@ def digits : List (Fin (r + 4)) → List (Fin (r + 4)) → Code .standard (r + 4
   | [], d :: ds => .seq (digits [] ds) (.op (.const d 0))
   | _, [] => .op (.const carry 0)
 
+/-- The static instruction size of `digits as ds` when `as.length ≤ ds.length`. -/
 theorem size_digits (as ds : List (Fin (r + 4))) (hlen : as.length ≤ ds.length) :
     (digits as ds).size = ds.length + 3 * as.length + 1 := by
   induction ds generalizing as with
@@ -285,6 +291,7 @@ def codeSize : ℕ → ℕ → ℕ
   | 0, n => n + 4
   | m + 1, n => codeSize m n + n + 3 * (m + 1) + 6
 
+/-- The static instruction size of `dispatch as ds` equals `codeSize as.length ds.length`. -/
 theorem size_dispatch (as ds : List (Fin (r + 4))) (hlen : as.length ≤ ds.length) :
     (dispatch as ds).size = codeSize as.length ds.length := by
   induction as with
@@ -370,6 +377,7 @@ def program (w : ℕ) (as ds : List (Fin (r + 4))) (s : Fin (r + 4)) :
     Code .standard (r + 4) :=
   .seq (ram[ base ← #(radix w); zero ← #(w / 2); total ← s ]) (dispatch as ds)
 
+/-- The static instruction size of `program w as ds s` is `3 + codeSize as.length ds.length`. -/
 theorem size_program (w : ℕ) (as ds : List (Fin (r + 4))) (s : Fin (r + 4))
     (hlen : as.length ≤ ds.length) :
     (program w as ds s).size = 3 + codeSize as.length ds.length := by
@@ -416,7 +424,7 @@ theorem exec {w : ℕ} (hw : 2 ≤ w)
   · exact hf.2 s (by simp [hsb, hsz, hsout]) hst hsc
 
 /-- Extract the outside-output register guarantee from the complete four-register frame. -/
-theorem regs_eq_of_frame {x y : Data (r + 4)} {ds : List (Fin (r + 4))}
+private theorem regs_eq_of_frame {x y : Data (r + 4)} {ds : List (Fin (r + 4))}
     (hf : Frame x y (base :: zero :: ds)) {i : Fin (r + 4)}
     (hi : IsDigit i) (hnot : i ∉ ds) : y.regs i = x.regs i := by
   obtain ⟨ht, hc, hb, hz⟩ := digit_ne hi

@@ -20,8 +20,10 @@ method is described in Chapter 17.
 
 ## Main definitions
 
-* `stack`, `stackPair`, and `queue`: total specifications with operation-dependent result types.
-* `implementation`: semantic queue implementation over the stack-pair interface.
+* `StackOp`, `stack`, `stackPair`, `QueueOp`, and `queue`: total specifications with
+  operation-dependent result types.
+* `transfer`, `transferTrace`, `methods`, and `implementation`: semantic queue implementation
+  over the stack-pair interface.
 
 ## Main results
 

@@ -20,6 +20,7 @@ query result or execution assumption. The complete eighteen-word header load is 
 
 * `NodeProgram.Rep`: actual parameter words and interleaved full keys in RAM.
 * `NodeProgram.Ready`: loaded header, original query and address, and unchanged key table.
+* `NodeProgram.readHeader`: structured program loading the 18-word node header into registers.
 
 ## Main results
 
@@ -72,6 +73,7 @@ structure Ready {w n : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w keys)
   /-- Actual stride-two full-key table. -/
   keys_eq : ∀ i : Fin n, x.mem (a + 18 + i.val * 2) = keys i
 
+/-- Framing memory and the first 40 registers preserves `Ready`. -/
 theorem Ready.frame {w n q a : ℕ} {keys : Fin n → ℕ} {p : NodeParameters w keys}
     {x y : Data registers} (hx : Ready p q a x) (hf : Frame x y) : Ready p q a y :=
   ⟨hx.prepared.frame hf, (hf.2 query (by decide)).trans hx.query_eq,

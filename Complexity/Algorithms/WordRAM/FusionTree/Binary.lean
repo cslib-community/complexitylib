@@ -20,7 +20,13 @@ and interleaved key/pointer table use the same layout as larger nodes.
 
 ## Main definitions
 
+* `BinaryNodeProgram.registers`, `BinaryNodeProgram.query`, `BinaryNodeProgram.pointer`,
+  `BinaryNodeProgram.out`, `BinaryNodeProgram.two`, `BinaryNodeProgram.offset`,
+  `BinaryNodeProgram.address`, `BinaryNodeProgram.first`, `BinaryNodeProgram.second`: register
+  allocation for the two-child node search.
 * `BinaryNodeProgram.code`: actual two-child node search.
+* `BinaryNodeProgram.rank`, `BinaryNodeProgram.result`: the inclusive rank among two keys and the
+  resulting machine data.
 
 ## Main results
 

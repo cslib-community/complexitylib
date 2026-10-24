@@ -33,11 +33,17 @@ integer/I/O model. Neither this compiler nor its cost bound is a Turing-machine 
 
 ## Main definitions
 
-* `Cslib.WordRAM.Instr.IsAdditive`: the supported instruction fragment.
-* `Cslib.WordRAM.ToRAM.compile`, `Cslib.WordRAM.ToRAM.compileAdditive`: fixed-block compilation,
-  with explicit code placement.
-* `Cslib.WordRAM.ToRAM.paddedProgram`, `Cslib.WordRAM.ToRAM.paddedProgramAdditive`: complete
-  compiled programs using `paddedInput`.
+* `Cslib.WordRAM.Instr.IsAdditive`, `Cslib.WordRAM.Program.IsAdditive`: the supported instruction
+  and program fragment.
+* `Cslib.WordRAM.ToRAM.memoryBase`, `Cslib.WordRAM.ToRAM.one`, `Cslib.WordRAM.ToRAM.offset`,
+  `Cslib.WordRAM.ToRAM.address`, `Cslib.WordRAM.ToRAM.test`, `Cslib.WordRAM.ToRAM.entry`: target
+  register layout and instruction block offsets.
+* `Cslib.WordRAM.ToRAM.compileInstr`, `Cslib.WordRAM.ToRAM.compile`,
+  `Cslib.WordRAM.ToRAM.compileAdditive`: fixed-block instruction and program compilation, with
+  explicit code placement.
+* `Cslib.WordRAM.ToRAM.prologue`, `Cslib.WordRAM.ToRAM.paddedProgram`,
+  `Cslib.WordRAM.ToRAM.paddedProgramAdditive`: compiler prologue and complete compiled programs
+  using `paddedInput`.
 * `Cslib.WordRAM.ToRAM.Represents`: the register and memory layout.
 
 ## Main results
@@ -75,6 +81,7 @@ def Instr.IsAdditive : Instr .standard r → Prop
   | .op (.alu .width ..) => False
   | _ => True
 
+/-- Decidability of `Instr.IsAdditive`. -/
 instance (i : Instr .standard r) : Decidable i.IsAdditive :=
   match i with
   | .op (.alu (.bin f) ..) => inferInstanceAs (Decidable (f = .add ∨ f = .sub))
@@ -85,6 +92,7 @@ instance (i : Instr .standard r) : Decidable i.IsAdditive :=
 /-- Every instruction belongs to the additive-memory fragment. -/
 def Program.IsAdditive (p : Program .standard r) : Prop := ∀ i ∈ p, i.IsAdditive
 
+/-- Decidability of `Program.IsAdditive`. -/
 instance (p : Program .standard r) : Decidable p.IsAdditive :=
   inferInstanceAs (Decidable (∀ i ∈ p, i.IsAdditive))
 
@@ -167,6 +175,7 @@ def compile (base : ℕ) (p : Program .standard r) : RAM.Program :=
     | some i => compileInstr base p.length (k.1 / 8) i (k.1 % 8)
     | none => .jpos (one r) (entry base p.length)
 
+/-- Each compiled source instruction occupies eight target instructions. -/
 @[simp]
 theorem length_compile (base : ℕ) (p : Program .standard r) :
     (compile base p).length = 8 * p.length :=
@@ -198,7 +207,7 @@ namespace Represents
 
 variable {x : Data r} {σ : URM.Regs}
 
-theorem set (h : Represents x σ) (i : Fin r) (v : ℕ) :
+private theorem set (h : Represents x σ) (i : Fin r) (v : ℕ) :
     Represents (x.set i v) (σ.write (i + 1) v) := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · rw [URM.Regs.write_read_of_ne _ _ _ _ (by lia), h.zero]
@@ -213,6 +222,7 @@ theorem set (h : Represents x σ) (i : Fin r) (v : ℕ) :
     rw [URM.Regs.write_read_of_ne _ _ _ _ (by dsimp [memoryBase]; have := i.isLt; lia)]
     exact h.mem a
 
+/-- Writing a source memory cell corresponds to writing the offset target register. -/
 theorem write (h : Represents x σ) (a v : ℕ) :
     Represents (x.write a v) (σ.write (memoryBase r + a) v) := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
@@ -673,6 +683,8 @@ theorem haltsWithResultInTime_padded {p : Program .standard r} (hp : p.IsAdditiv
 def compileAdditive (base : ℕ) (p : Program .additive r) : RAM.Program :=
   compile base (p.mapOp Basis.additiveHomStandard)
 
+/-- Compiling a `Basis.additive` program produces eight target instructions per source
+instruction. -/
 @[simp]
 theorem length_compileAdditive (base : ℕ) (p : Program .additive r) :
     (compileAdditive base p).length = 8 * p.length := by

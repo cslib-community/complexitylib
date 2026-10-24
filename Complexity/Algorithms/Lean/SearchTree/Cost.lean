@@ -56,6 +56,7 @@ def successorVisits (x : α) : BinaryTree α → Nat
   | .nil => 0
   | .node a l r => 1 + if x < a then successorVisits x l else successorVisits x r
 
+/-- Search and insertion visit at most `t.height` internal nodes. -/
 theorem searchVisits_le_height (x : α) (t : BinaryTree α) :
     searchVisits x t ≤ t.height := by
   induction t with
@@ -67,6 +68,7 @@ theorem searchVisits_le_height (x : α) (t : BinaryTree α) :
     · split <;> omega
 
 omit [LinearOrder α] in
+/-- Leftmost minimum descent visits at most `t.height` internal nodes. -/
 theorem minimumVisits_le_height (t : BinaryTree α) : minimumVisits t ≤ t.height := by
   induction t with
   | nil => rfl
@@ -74,6 +76,7 @@ theorem minimumVisits_le_height (t : BinaryTree α) : minimumVisits t ≤ t.heig
     simp only [minimumVisits, BinaryTree.height]
     omega
 
+/-- Successor search visits at most `t.height` internal nodes. -/
 theorem successorVisits_le_height (x : α) (t : BinaryTree α) :
     successorVisits x t ≤ t.height := by
   induction t with

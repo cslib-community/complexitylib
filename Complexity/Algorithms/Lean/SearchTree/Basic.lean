@@ -79,6 +79,7 @@ def successor (x : α) : BinaryTree α → Option α
   | .nil => none
   | .node a l r => if x < a then (successor x l).or (some a) else successor x r
 
+/-- Membership in a node's element set splits across the root key and the two subtrees. -/
 @[simp] theorem mem_elements_node {x a : α} {l r : BinaryTree α} :
     x ∈ elements (.node a l r) ↔ x = a ∨ x ∈ elements l ∨ x ∈ elements r := by
   simp [elements]

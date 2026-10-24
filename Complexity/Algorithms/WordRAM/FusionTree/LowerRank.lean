@@ -18,7 +18,12 @@ queries directly.
 
 ## Main definitions
 
-* `LowerRankProgram.code`: eight standard instructions for strict sketch rank.
+* `LowerRankProgram.query`, `LowerRankProgram.node`, `LowerRankProgram.copies`,
+  `LowerRankProgram.guards`, `LowerRankProgram.bits`, `LowerRankProgram.middle`,
+  `LowerRankProgram.base`, `LowerRankProgram.count`, `LowerRankProgram.temp`,
+  `LowerRankProgram.out`: register indices for strict sketch rank.
+* `LowerRankProgram.code`, `LowerRankProgram.result`: eight standard instructions for strict sketch
+  rank and the resulting machine state.
 
 ## Main results
 
@@ -79,6 +84,8 @@ def result (x : Data 10) (b n : ℕ) (s : ℕ → ℕ) (q : ℕ) : Data 10 :=
     (p / 2 ^ ((b + 1) * (n - 1)))).set out (countGuards b n s q)).set out
     (n - countGuards b n s q))
 
+/-- Subtracting the number of sketches at least `q` from `n` counts the sketches strictly below
+`q`. -/
 theorem countGuards_complement {b n q : ℕ} (s : ℕ → ℕ) (hn : 0 < n)
     (hb : n < 2 ^ (b + 1)) (hs : ∀ i < n, s i < 2 ^ b) (hq : q < 2 ^ b) :
     n - countGuards b n s q = ((Finset.range n).filter (fun i => s i < q)).card := by

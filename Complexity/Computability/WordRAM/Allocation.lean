@@ -29,10 +29,15 @@ access is an addition followed by a load or a store. The registers they use are 
 
 ## Main definitions
 
-* `Cslib.WordRAM.Block`: a block of consecutive cells; `Cslib.WordRAM.clear`: memory with a range
-  of cells set to `0`.
+* `Cslib.WordRAM.Block`, `Cslib.WordRAM.Block.Owns`, `Cslib.WordRAM.Block.read`,
+  `Cslib.WordRAM.Block.Realizes`: a block of consecutive cells, address ownership, indexed read,
+  and array realization.
+* `Cslib.WordRAM.clear`: memory with a range of cells set to `0`.
 * `Cslib.WordRAM.zeroFill`, `Cslib.WordRAM.alloc`, `Cslib.WordRAM.readAt`,
-  `Cslib.WordRAM.writeAt`: the programs.
+  `Cslib.WordRAM.writeAt`: the standard-basis programs.
+* `Cslib.WordRAM.Op.addAdditive`, `Cslib.WordRAM.zeroFillAdditive`,
+  `Cslib.WordRAM.allocAdditive`, `Cslib.WordRAM.readAtAdditive`,
+  `Cslib.WordRAM.writeAtAdditive`: the additive-basis counterparts.
 
 ## Main results
 
@@ -105,21 +110,24 @@ end Block
 def clear (m : ℕ → ℕ) (base k : ℕ) : ℕ → ℕ :=
   fun a => if base ≤ a ∧ a < base + k then 0 else m a
 
+/-- Clearing `k` cells from `base` sets every cell in the block to `0`. -/
 theorem clear_of_owns {m : ℕ → ℕ} {base k a : ℕ} (h : (Block.mk base k).Owns a) :
     clear m base k a = 0 := by
   simp [clear, show base ≤ a ∧ a < base + k from h]
 
+/-- Clearing `k` cells from `base` leaves every cell outside the block unchanged. -/
 theorem clear_of_not_owns {m : ℕ → ℕ} {base k a : ℕ} (h : ¬(Block.mk base k).Owns a) :
     clear m base k a = m a := by
   simp only [clear, ite_eq_right_iff]
   exact fun h' => absurd h' h
 
+/-- Clearing zero cells leaves memory unchanged. -/
 @[simp]
 theorem clear_zero (m : ℕ → ℕ) (base : ℕ) : clear m base 0 = m := by
   funext a
   simp [clear]
 
-theorem clear_succ (m : ℕ → ℕ) (base k : ℕ) :
+private theorem clear_succ (m : ℕ → ℕ) (base k : ℕ) :
     clear m base (k + 1) = Function.update (clear m base k) (base + k) 0 := by
   funext a
   simp only [clear, Function.update_apply]

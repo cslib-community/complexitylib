@@ -18,14 +18,21 @@ Multiplication, transfers, bitwise operations and shifts share this layout.
 
 ## Main definitions
 
+* `Workspace.total`, `Workspace.carry`, `Workspace.base`, `Workspace.zero`: the four reserved
+  workspace registers.
 * `Workspace.IsDigit`: a register outside the four reserved registers.
 * `Workspace.Frame`: memory and registers outside destinations and arithmetic scratch are kept.
-* `Workspace.setup`: initialize the radix and zero in six checked instructions.
+* `Workspace.setup`, `Workspace.setupResult`: initialize the radix and zero in six checked
+  instructions, and the resulting machine state.
 
 ## Main results
 
 * `Workspace.exec_setup`: exact initialization at every physical width at least two.
 * `Workspace.setup_digit`: initialization leaves operand digits unchanged.
+
+## References
+
+* [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*][CLRS2009].
 -/
 
 @[expose] public section

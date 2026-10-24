@@ -20,7 +20,11 @@ these constants is separate from the fragment.
 
 ## Main definitions
 
-* `Cslib.WordRAM.PackedCount.code`: multiplication, division, and remainder.
+* `Cslib.WordRAM.PackedCount.flags`, `Cslib.WordRAM.PackedCount.ones`,
+  `Cslib.WordRAM.PackedCount.divisor`, `Cslib.WordRAM.PackedCount.base`,
+  `Cslib.WordRAM.PackedCount.out`: the five registers of the packed-count fragment.
+* `Cslib.WordRAM.PackedCount.code`, `Cslib.WordRAM.PackedCount.result`: the three-instruction
+  multiplication, division, and remainder program and its final data state.
 
 ## Main results
 

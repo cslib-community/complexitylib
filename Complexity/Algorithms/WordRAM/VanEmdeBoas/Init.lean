@@ -60,11 +60,11 @@ open Cslib.Algorithms.Lean.VanEmdeBoas
 /-! ## Phase 3: depth-first empty-header initialization -/
 
 /-- State after `dfsSetup`. -/
-def dfsSetupData (s : Data 32) (base d : ℕ) : Data 32 :=
+private def dfsSetupData (s : Data 32) (base d : ℕ) : Data 32 :=
   let lw := base + span d + 2 * (d + 1)
   ((((s.set low lw).set p base).set x d).set kind 0).set runFlag 1
 
-theorem dfsSetup_exec {w base d : ℕ} {s : Data 32}
+private theorem dfsSetup_exec {w base d : ℕ} {s : Data 32}
     (h0 : s.regs zero = 0) (h1 : s.regs one = 1) (hroot : s.regs root = base)
     (hdepth : s.regs depth = d) (hsp : s.regs sp = base + span d + 2 * (d + 1)) :
     Exec w dfsSetup s (dfsSetupData s base d) 5 := by
@@ -82,13 +82,13 @@ def DfsConst (base d : ℕ) (s : Data 32) : Prop :=
     TableInv (base + span d) d s.mem
 
 /-- Extract the lookup-table invariant from `DfsConst`. -/
-theorem DfsConst.tableInv {base d : ℕ} {s : Data 32} (hc : DfsConst base d s) :
+private theorem DfsConst.tableInv {base d : ℕ} {s : Data 32} (hc : DfsConst base d s) :
     TableInv (base + span d) d s.mem :=
   hc.2.2.2.2.2.2.2.2.2.2.2.2
 
 /-- Transfer `DfsConst` across a state update that preserves the twelve constant registers and
 establishes the lookup-table invariant on the new memory. -/
-theorem DfsConst.of_regs_eq {base d : ℕ} {s s' : Data 32} (hc : DfsConst base d s)
+private theorem DfsConst.of_regs_eq {base d : ℕ} {s s' : Data 32} (hc : DfsConst base d s)
     (hregs : ∀ r ∈ ([zero, one, two, three, four, five, root, depth, payload,
       tableBase, stackBase, low] : List (Fin 32)), s'.regs r = s.regs r)
     (hinv : TableInv (base + span d) d s'.mem) :
@@ -108,13 +108,13 @@ def DfsState (base d ptr k kindVal : ℕ) (s : Data 32) : Prop :=
     s.regs p = ptr ∧ s.regs x = k ∧ s.regs kind = kindVal ∧ s.regs runFlag = 1
 
 /-- State after `dfsBody` at a leaf (`kind = 0`, `x = 0`). -/
-def dfsLeafData (s : Data 32) (base d ptr : ℕ) : Data 32 :=
+private def dfsLeafData (s : Data 32) (base d ptr : ℕ) : Data 32 :=
   let tbl := base + span d
   (((((((((((s.write ptr 0).set tmp (0 * 2)).set addr (tbl + 0 * 2)).set q 0).set
     addr (tbl + 0 * 2 + 1)).set t 0).set child (ptr + 3)).write (ptr + 3) 0).set
     child (ptr + 3 + 1)).write (ptr + 3 + 1) 0).set p (ptr + 5)).set kind 1
 
-theorem dfsBody_leaf_exec {w base d ptr : ℕ} {s : Data 32}
+private theorem dfsBody_leaf_exec {w base d ptr : ℕ} {s : Data 32}
     (hs : DfsState base d ptr 0 0 s) (ha : Fits w (base + span d + 4 * (d + 1)))
     (hptr_end : ptr + 5 ≤ base + span d) :
     ExecWithin w dfsBody s (dfsLeafData s base d ptr) 14 := by
@@ -139,7 +139,7 @@ theorem dfsBody_leaf_exec {w base d ptr : ℕ} {s : Data 32}
     hf_tmp, hf_a0, hf_a1, hf_c3, hf_c4, hf_p5]
 
 /-- State after `dfsBody` entering an internal node (`kind = 0`, `x = k + 1`). -/
-def dfsEnterSuccData (s : Data 32) (base d ptr k : ℕ) : Data 32 :=
+private def dfsEnterSuccData (s : Data 32) (base d ptr k : ℕ) : Data 32 :=
   let tbl := base + span d
   let lw := base + span d + 2 * (d + 1)
   (((((((((((((s.write ptr 0).set tmp ((k + 1) * 2)).set
@@ -150,7 +150,7 @@ def dfsEnterSuccData (s : Data 32) (base d ptr k : ℕ) : Data 32 :=
     p (ptr + 5)).set addr (lw + (k + 1))).write (lw + (k + 1)) (universeSize k)).set
     x (k + 1 - 1)
 
-theorem dfsBody_enter_succ_exec {w base d ptr k : ℕ} {s : Data 32}
+private theorem dfsBody_enter_succ_exec {w base d ptr k : ℕ} {s : Data 32}
     (hs : DfsState base d ptr (k + 1) 0 s) (hk : k + 1 ≤ d)
     (ha : Fits w (base + span d + 4 * (d + 1))) (hptr_end : ptr + span (k + 1) ≤ base + span d) :
     ExecWithin w dfsBody s (dfsEnterSuccData s base d ptr k) 17 := by
@@ -180,13 +180,13 @@ theorem dfsBody_enter_succ_exec {w base d ptr k : ℕ} {s : Data 32}
 
 /-- State after `dfsBody` advancing from one child to the next cluster (`kind = 1`, `x = k`,
 `mem (low + k + 1) = cnt + 1`). -/
-def dfsNextClusterData (s : Data 32) (base d k cnt : ℕ) : Data 32 :=
+private def dfsNextClusterData (s : Data 32) (base d k cnt : ℕ) : Data 32 :=
   let lw := base + span d + 2 * (d + 1)
   s.set x (k + 1) |>.set addr (lw + (k + 1)) |>.set present (cnt + 1)
     |>.set present (cnt + 1 - 1) |>.write (lw + (k + 1)) (cnt + 1 - 1)
     |>.set x (k + 1 - 1) |>.set kind 0
 
-theorem dfsBody_next_cluster_exec {w base d ptr k cnt : ℕ} {s : Data 32}
+private theorem dfsBody_next_cluster_exec {w base d ptr k cnt : ℕ} {s : Data 32}
     (hs : DfsState base d ptr k 1 s) (hk : k + 1 ≤ d)
     (hcnt : s.mem (base + span d + 2 * (d + 1) + (k + 1)) = cnt + 1)
     (ha : Fits w (base + span d + 4 * (d + 1)))
@@ -204,11 +204,11 @@ theorem dfsBody_next_cluster_exec {w base d ptr k cnt : ℕ} {s : Data 32}
 
 /-- State after `dfsBody` finishing all clusters of a depth-`k + 1` node (`kind = 1`, `x = k`,
 `mem (low + k + 1) = 0`). -/
-def dfsExitNodeData (s : Data 32) (base d k : ℕ) : Data 32 :=
+private def dfsExitNodeData (s : Data 32) (base d k : ℕ) : Data 32 :=
   let lw := base + span d + 2 * (d + 1)
   (((s.set x (k + 1)).set addr (lw + (k + 1))).set present 0).set kind 1
 
-theorem dfsBody_exit_node_exec {w base d ptr k : ℕ} {s : Data 32}
+private theorem dfsBody_exit_node_exec {w base d ptr k : ℕ} {s : Data 32}
     (hs : DfsState base d ptr k 1 s) (hk : k + 1 ≤ d)
     (hrem : s.mem (base + span d + 2 * (d + 1) + (k + 1)) = 0)
     (ha : Fits w (base + span d + 4 * (d + 1))) :
@@ -221,10 +221,10 @@ theorem dfsBody_exit_node_exec {w base d ptr k : ℕ} {s : Data 32}
     h0, h1, hdepth, hlow, hx, hkind, hrem, hnot_lt, hf_k1, hf_lw]
 
 /-- State after `dfsBody` exiting the root (`kind = 1`, `x = d`). -/
-def dfsFinishData (s : Data 32) (d : ℕ) : Data 32 :=
+private def dfsFinishData (s : Data 32) (d : ℕ) : Data 32 :=
   (s.set x (d + 1)).set runFlag 0
 
-theorem dfsBody_finish_exec {w base d ptr : ℕ} {s : Data 32}
+private theorem dfsBody_finish_exec {w base d ptr : ℕ} {s : Data 32}
     (hs : DfsState base d ptr d 1 s) (ha : Fits w (base + span d + 4 * (d + 1))) :
     ExecWithin w dfsBody s (dfsFinishData s d) 5 := by
   obtain ⟨⟨h0, h1, _, _, _, _, _, hdepth, _, _, _, _, _⟩, _, hx, hkind, _⟩ := hs
@@ -249,7 +249,7 @@ private theorem tableInv_congr {tbl d : ℕ} {m m' : ℕ → ℕ}
 /-- Cluster-iteration helper for `dfs_subtree_spec` at depth `k + 1`: given the induction
 hypothesis `ih` at depth `k`, initializes the remaining `cnt` clusters starting at index `m`
 (where `m + cnt = universeSize k`) in `cnt * (8 * span k)` loop instructions. -/
-theorem dfs_clusters_spec {w base d ptr k : ℕ}
+private theorem dfs_clusters_spec {w base d ptr k : ℕ}
     (hk : k + 1 ≤ d) (ha : Fits w (base + span d + 4 * (d + 1)))
     (hptr_end : ptr + span (k + 1) ≤ base + span d)
     (ih : ∀ {p₀ : ℕ} {s₀ : Data 32},
@@ -365,7 +365,7 @@ theorem dfs_clusters_spec {w base d ptr k : ℕ}
 `ptr + span k ≤ base + span d`, the DFS loop initializes `Rep (Tree.empty k) ptr s'.mem`
 and reaches `DfsState base d (ptr + span k) k 1 s'` in at most `8 * span k - 15` instructions,
 modifying only `[ptr, ptr + span k)` and counters `[low + 1, low + k]`. -/
-theorem dfs_subtree_spec {w base d : ℕ} (k : ℕ) (hk : k ≤ d)
+private theorem dfs_subtree_spec {w base d : ℕ} (k : ℕ) (hk : k ≤ d)
     (ha : Fits w (base + span d + 4 * (d + 1))) :
     ∀ {ptr : ℕ} {s : Data 32},
       DfsState base d ptr k 0 s → ptr + span k ≤ base + span d →
@@ -498,7 +498,7 @@ theorem dfs_subtree_spec {w base d : ℕ} (k : ℕ) (hk : k ≤ d)
 terminates in at most `8 * span d - 6` instructions, establishing `Rep (Tree.empty d) base z.mem`,
 preserving `root`, `payload`, and `stackBase`, and modifying only `[base, base + span d)` and
 `[base + span d + 2 * (d + 1) + 1, base + span d + 3 * d + 2]`. -/
-theorem dfsLoop_spec {w base d : ℕ} {s : Data 32}
+private theorem dfsLoop_spec {w base d : ℕ} {s : Data 32}
     (hs : DfsState base d base d 0 s) (ha : Fits w (base + span d + 4 * (d + 1))) :
     ∃ z, ExecWithin w dfsLoop s z (8 * span d - 6) ∧
       Rep (Tree.empty d) base z.mem ∧

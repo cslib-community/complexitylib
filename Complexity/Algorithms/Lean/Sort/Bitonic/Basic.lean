@@ -53,6 +53,7 @@ def arity : ℕ → ℕ
   | 0 => 1
   | depth + 1 => arity depth + arity depth
 
+/-- The arity at `depth` is `2 ^ depth`. -/
 @[simp] theorem arity_eq_two_pow (depth : ℕ) : arity depth = 2 ^ depth := by
   induction depth with
   | zero => rfl

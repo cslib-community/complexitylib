@@ -19,8 +19,11 @@ standard instruction per digit. Scalar arithmetic is provided separately in `Ban
 
 ## Main definitions
 
-* `Bank.constant`: installation of a width-dependent constant.
+* `Bank.constantDigits`, `Bank.constant`: canonical eighteen-digit decomposition and installation
+  of a width-dependent constant.
 * `Bank.boolean`: limbwise Boolean operations.
+* `Bank.inputReg`, `Bank.allRegs`, `Bank.clear`, `Bank.input`: the physical input register, the
+  list of all bank digit registers, bank initialization, and input loading.
 
 ## Main results
 
@@ -45,13 +48,13 @@ performed by the constant installer. -/
 def constantDigits (w z : ℕ) : List ℕ :=
   List.ofFn fun i : Fin 18 => z / radix w ^ i.val % radix w
 
-theorem constantDigits_bounded {w : ℕ} (hw : 2 ≤ w) (z : ℕ) :
+private theorem constantDigits_bounded {w : ℕ} (hw : 2 ≤ w) (z : ℕ) :
     ∀ c ∈ constantDigits w z, c < radix w := by
   intro c hc
   obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hc
   exact Nat.mod_lt _ (by have := one_lt_radix hw; omega)
 
-theorem value_constantDigits {w z : ℕ} (hz : z < radix w ^ 18) :
+private theorem value_constantDigits {w z : ℕ} (hz : z < radix w ^ 18) :
     Nat.ofDigits (radix w) (constantDigits w z) = z := by
   obtain ⟨cs, hcs, hval⟩ := Nat.exists_ofDigits_ofFn hz
   have he : (fun i : Fin 18 => z / radix w ^ i.val % radix w) = cs := by
@@ -64,10 +67,13 @@ theorem value_constantDigits {w z : ℕ} (hz : z < radix w ^ 18) :
 def constant (w z : ℕ) (d : Fin n) : Code .standard (capacity n + 4) :=
   Transfer.constants (regs d) (constantDigits w z)
 
+/-- Installing an eighteen-digit constant takes `19` instructions. -/
 theorem size_constant (w z : ℕ) (d : Fin n) : (constant w z d).size = 19 := by
   simpa only [constant, length_regs] using Transfer.size_constants (regs d)
     (constantDigits w z) (by simp [length_regs, constantDigits])
 
+/-- Executing `constant w z d` installs `z` in bank entry `d` in `19` instructions, preserving
+memory and all other registers. -/
 theorem exec_constant {w : ℕ} (hw : 2 ≤ w) (d : Fin n) (z : ℕ)
     (hz : z < 2 ^ (6 * w)) (x : Data (capacity n + 4))
     {v : Fin n → ℕ} (hx : Encodes w x v) :
@@ -85,10 +91,13 @@ theorem exec_constant {w : ℕ} (hw : 2 ≤ w) (d : Fin n) (z : ℕ)
 def boolean (f : BinOp) (a b d : Fin n) : Code .standard (capacity n + 4) :=
   Bitwise.program f (regs a) (regs b) (regs d)
 
+/-- A limbwise Boolean operation on two bank entries takes `19` instructions. -/
 theorem size_boolean (f : BinOp) (a b d : Fin n) : (boolean f a b d).size = 19 := by
   simpa only [boolean, length_regs] using Bitwise.size_program f (regs a) (regs b)
     (regs d) (by rw [length_regs, length_regs]) (by rw [length_regs, length_regs])
 
+/-- Executing `boolean f a b d` writes `f.eval (v a) (v b)` to bank entry `d` in `19` instructions,
+preserving memory and all other bank entries. -/
 theorem exec_boolean {w : ℕ} (hw : 2 ≤ w) {f : BinOp} (hf : Bitwise.Supported f)
     (a b d : Fin n) (hda : d ≠ a) (hdb : d ≠ b) (x : Data (capacity n + 4))
     {v : Fin n → ℕ} (hx : Encodes w x v) :
@@ -127,6 +136,7 @@ private theorem mem_allRegs (j : Fin n) {i : Fin (capacity n + 4)} (hi : i ∈ r
 def clear (n : ℕ) : Code .standard (capacity n + 4) :=
   Transfer.constants (allRegs n) (List.replicate (18 * n) 0)
 
+/-- Clearing `n` bank entries takes `18 * n + 1` instructions. -/
 theorem size_clear (n : ℕ) : (clear n).size = 18 * n + 1 := by
   simpa only [clear, allRegs, registers, List.length_ofFn] using
     Transfer.size_constants (allRegs n) (List.replicate (18 * n) 0) (by
@@ -175,6 +185,7 @@ The input memory contains its length at address zero and its value at address on
 def input (d : Fin n) : Code .standard (capacity n + 4) :=
   .seq (ram[inputReg ← #1; inputReg ← *inputReg]) (Transfer.split inputReg (regs d))
 
+/-- Loading and splitting the one-word input into a bank entry takes `46` instructions. -/
 theorem size_input (d : Fin n) : (input d).size = 46 := by
   simp only [input, Code.size, Transfer.size_split, length_regs]
 

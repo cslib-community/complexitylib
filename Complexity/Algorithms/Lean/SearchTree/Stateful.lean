@@ -21,8 +21,10 @@ calculus; node-visit costs are supplied afterwards as a separate resource certif
 ## Main definitions
 
 * `Cslib.OrderedSet.spec`: the shared representation-independent finite-set specification.
-* `step`, `Exec`: concrete tree operations with their exact node-visit charge.
-* `realization`: the search tree realizes the finite-set interface.
+* `step`, `Exec`, `run`: concrete tree operations and client interpreter with their exact
+  node-visit charge.
+* `Rep`, `realization`: the search tree representation relation and its realization of the
+  finite-set interface.
 
 ## Main results
 

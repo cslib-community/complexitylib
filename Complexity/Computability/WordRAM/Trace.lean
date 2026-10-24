@@ -19,9 +19,11 @@ of a RAM execution, not the full cell-probe model with arbitrary free computatio
 
 ## Main definitions
 
-* `Probe`: a read or write event with address and value.
+* `Probe`, `Op.probes`: a read or write event with address and value, and the probes of a primitive
+  instruction.
 * `TraceExec`: structured execution with its memory-access transcript.
-* `Probe.readCount`, `Probe.writeCount`: additive resource interpretations.
+* `Probe.readCount`, `Probe.writeCount`, `Probe.writes`: additive resource interpretations and the
+  set of written addresses.
 
 ## Main results
 
@@ -160,7 +162,7 @@ theorem writes_append (ts us : List Probe) : writes (ts ++ us) = writes ts ∪ w
 end Probe
 
 /-- A successful primitive instruction preserves every cell absent from its write transcript. -/
-theorem Op.eval_modifies {w : ℕ} {o : Op B r} {x y : Data r} (h : o.eval w x = some y) :
+private theorem Op.eval_modifies {w : ℕ} {o : Op B r} {x y : Data r} (h : o.eval w x = some y) :
     Modifies (Probe.writes (o.probes x)) x.mem y.mem := by
   cases o with
   | const =>

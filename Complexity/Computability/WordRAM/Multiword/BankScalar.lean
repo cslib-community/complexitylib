@@ -20,6 +20,8 @@ Variable right shifts assemble only the shift amount; the shifted input remains 
 
 ## Main definitions
 
+* `Bank.scalarLeft`, `Bank.scalarRight`, `Bank.scalarResult`: physical registers four, five, and
+  six used for assembled scalar operands and results.
 * `Bank.scalar`: a checked physical binary operation between bank entries.
 * `Bank.shift`: a variable right shift into a distinct bank entry.
 

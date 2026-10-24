@@ -18,7 +18,11 @@ It is a fixed program: neither the length nor either address is baked into the c
 
 ## Main definitions
 
-* `Cslib.WordRAM.ArrayCopy.program`: copying between addresses supplied in registers.
+* `Cslib.WordRAM.ArrayCopy.src`, `Cslib.WordRAM.ArrayCopy.dst`, `Cslib.WordRAM.ArrayCopy.len`,
+  `Cslib.WordRAM.ArrayCopy.idx`, `Cslib.WordRAM.ArrayCopy.addr`, `Cslib.WordRAM.ArrayCopy.value`,
+  `Cslib.WordRAM.ArrayCopy.one`: the seven registers of the copy routine.
+* `Cslib.WordRAM.ArrayCopy.body`, `Cslib.WordRAM.ArrayCopy.program`: single-word loop body and
+  full copying program between addresses supplied in registers.
 * `Cslib.WordRAM.ArrayCopy.copyPrefix`: mathematical specification of the writes.
 
 ## Main results
@@ -39,20 +43,23 @@ namespace Cslib.WordRAM.ArrayCopy
 def copyPrefix (mem : ℕ → ℕ) (src dst k : ℕ) : ℕ → ℕ :=
   fun a => if dst ≤ a ∧ a < dst + k then mem (src + (a - dst)) else mem a
 
+/-- Copying zero words leaves memory unchanged. -/
 @[simp]
 theorem copyPrefix_zero (mem : ℕ → ℕ) (src dst : ℕ) : copyPrefix mem src dst 0 = mem := by
   funext a
   simp [copyPrefix]
 
+/-- Reading within the copied destination block returns the corresponding source word. -/
 theorem copyPrefix_read {mem : ℕ → ℕ} {src dst k j : ℕ} (hj : j < k) :
     copyPrefix mem src dst k (dst + j) = mem (src + j) := by
   simp [copyPrefix, hj]
 
+/-- Memory cells outside `[dst, dst + k)` are unchanged by `copyPrefix`. -/
 theorem copyPrefix_outside {mem : ℕ → ℕ} {src dst k a : ℕ}
     (ha : ¬(dst ≤ a ∧ a < dst + k)) : copyPrefix mem src dst k a = mem a := by
   simp [copyPrefix, ha]
 
-theorem copyPrefix_succ (mem : ℕ → ℕ) (src dst k : ℕ) :
+private theorem copyPrefix_succ (mem : ℕ → ℕ) (src dst k : ℕ) :
     copyPrefix mem src dst (k + 1) =
       Function.update (copyPrefix mem src dst k) (dst + k) (mem (src + k)) := by
   funext a

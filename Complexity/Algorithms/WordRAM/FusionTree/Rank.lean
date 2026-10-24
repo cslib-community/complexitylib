@@ -22,8 +22,14 @@ a most-significant-bit primitive. Node constants must be precomputed and loaded 
 
 ## Main definitions
 
-* `guardMask`, `guardFlags`: extract one zero-or-one digit from each guarded comparison.
+* `guardMask`, `guardFlags`, `countGuards`: extract one zero-or-one digit from each guarded
+  comparison and sum the set guards through one multiplication.
 * `upperRankExpr`: inclusive rank using complemented sketches.
+* `RankProgram.query`, `RankProgram.node`, `RankProgram.copies`, `RankProgram.guards`,
+  `RankProgram.bits`, `RankProgram.middle`, `RankProgram.base`, `RankProgram.maximum`,
+  `RankProgram.temp`, `RankProgram.out`: named registers of the rank program.
+* `RankProgram.code`, `RankProgram.result`: the eight-instruction rank program and its final data
+  state.
 
 ## Main results
 
@@ -47,12 +53,12 @@ open scoped BigOperators
 /-- One guard bit per field, with all other bits zero. -/
 def guardMask (b n : ℕ) : ℕ := packedNode b n (fun _ => 0)
 
-theorem guardMask_eq_sum (b n : ℕ) :
+private theorem guardMask_eq_sum (b n : ℕ) :
     guardMask b n = ∑ i ∈ Finset.range n, 2 ^ (b + (b + 1) * i) := by
   simp only [guardMask, packedNode_eq_sum, add_zero, pow_add]
 
 /-- The guard mask has no other set bits. -/
-theorem guardMask_testBit (b n k : ℕ) :
+private theorem guardMask_testBit (b n k : ℕ) :
     (guardMask b n).testBit k = true ↔
       ∃ i ∈ Finset.range n, b + (b + 1) * i = k := by
   have hf : Function.Injective (fun i : ℕ => b + (b + 1) * i) := by
@@ -94,6 +100,7 @@ theorem guardFlags_eq {b n q : ℕ} (s : ℕ → ℕ)
 def countGuards (b n : ℕ) (s : ℕ → ℕ) (q : ℕ) : ℕ :=
   (guardFlags b n s q * queryMultiplier b n) / 2 ^ ((b + 1) * (n - 1)) % 2 ^ (b + 1)
 
+/-- `countGuards b n s q` counts the indices `i < n` with `q ≤ s i`. -/
 theorem countGuards_eq {b n q : ℕ} (s : ℕ → ℕ) (hn : 0 < n)
     (hb : n < 2 ^ (b + 1)) (hs : ∀ i < n, s i < 2 ^ b) (hq : q < 2 ^ b) :
     countGuards b n s q = ∑ i ∈ Finset.range n, (decide (q ≤ s i)).toNat := by

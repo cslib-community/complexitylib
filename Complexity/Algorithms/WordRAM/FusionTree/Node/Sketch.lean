@@ -17,6 +17,14 @@ import Mathlib.Tactic.FinCases
 All transfers into the two fixed workspaces are charged. Only the actual loaded header
 values supply node-dependent constants. The caller's registers and all memory are framed.
 
+## Main definitions
+
+* `NodeProgram.compressionInputs`, `NodeProgram.compress`: workspace transfers and multiplier
+  compression routine.
+* `NodeProgram.rankInputs`, `NodeProgram.rank`, `NodeProgram.sketchCut`,
+  `NodeProgram.sketchQuery`: workspace transfers, packed-rank routine, mathematical sketch
+  cut, and combined compression-plus-rank query.
+
 ## Main results
 
 * `NodeProgram.exec_compress`: a bounded word is compressed in 102 instructions.

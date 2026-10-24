@@ -18,6 +18,7 @@ are part of the code, so even width two requires no address large enough to name
 
 ## Main definitions
 
+* `Bank.capacity`: number of non-workspace registers in a bank of `n` entries.
 * `Bank.regs`: the eighteen registers of a bank entry.
 * `Bank.Encodes`: bounded digits with specified reconstructed bank values.
 
@@ -46,21 +47,25 @@ def capacity (n : ℕ) : ℕ := 18 * n + 40
 def regs (j : Fin n) : List (Fin (capacity n + 4)) :=
   registers (40 + 18 * j.val) 18 (by dsimp [capacity]; omega)
 
+/-- Every bank entry has exactly 18 physical registers. -/
 theorem length_regs (j : Fin n) : (regs j).length = 18 := by
   simp [regs, registers]
 
+/-- Physical register indices in `regs j` lie in `[44 + 18 * j, 44 + 18 * j + 18)`. -/
 theorem mem_regs {j : Fin n} {i : Fin (capacity n + 4)} (hi : i ∈ regs j) :
     44 + 18 * j.val ≤ i.val ∧ i.val < 44 + 18 * j.val + 18 := by
   obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hi
   dsimp
   omega
 
+/-- Every register of `regs j` is a non-scratch digit register (`IsDigit`). -/
 theorem digit_regs (j : Fin n) : ∀ i ∈ regs j, IsDigit i := by
   intro i hi
   have := mem_regs hi
   dsimp [IsDigit]
   omega
 
+/-- The register list `regs j` of a bank entry has no duplicates. -/
 theorem nodup_regs (j : Fin n) : (regs j).Nodup := by
   apply List.nodup_ofFn_ofInjective
   intro a b hab
@@ -69,6 +74,7 @@ theorem nodup_regs (j : Fin n) : (regs j).Nodup := by
   dsimp at this
   omega
 
+/-- Distinct bank entries occupy disjoint lists of physical registers. -/
 theorem disjoint_regs {j k : Fin n} (hjk : j ≠ k) : List.Disjoint (regs j) (regs k) := by
   apply List.disjoint_left.mpr
   intro i hi hj

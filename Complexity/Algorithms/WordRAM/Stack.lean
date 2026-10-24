@@ -27,8 +27,12 @@ execution of the client's pure controller.
 ## Main definitions
 
 * `spec`: the mathematical stack with explicit bounded-operation admissibility.
-* `program`: a single fixed dispatch program, independent of the requested operation.
-* `Rep`: top-first lists represented by a bottom-first memory block.
+* `tag`, `arg`, `len`, `ptr`, `addr`, `out`, `zero`, `one`, `present`: named registers of the
+  nine-register dispatcher.
+* `program`, `implementation`, `bodyCost`: fixed dispatch program, dynamic calling convention, and
+  per-operation instruction count.
+* `Rep`, `footprint`, `initial`: top-first list representation, reserved memory block, and initial
+  calling-convention state.
 * `certificate`: semantic realization over native word-RAM traces.
 
 ## Main results
@@ -38,6 +42,9 @@ execution of the client's pure controller.
 * `initial_rep`: a concrete empty represented stack.
 
 ## References
+
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Section 10.1][CLRS2009]
 
 The abstract stack interface is shared with `Cslib.Algorithms.Lean.Queue`. Array indexing and
 machine execution reuse the checked `WordRAM.Allocation` and `WordRAM.Structured` substrate.
@@ -114,6 +121,7 @@ structure Rep (w base capacity : ℕ) (vs : List ℕ) (x : Data 9) : Prop where
 def footprint (base capacity : ℕ) : Finset ℕ :=
   (Block.mk base capacity).footprint
 
+/-- Encoded input registers fit in a `w`-bit word for every admissible stack operation. -/
 theorem arguments_fit {w capacity : ℕ} (h2 : Fits w 2) {vs : List ℕ} (o : StackOp ℕ)
     (hv : (spec w capacity).valid vs o) (i : Fin 9) :
     Fits w ((implementation w capacity).encode o i) := by

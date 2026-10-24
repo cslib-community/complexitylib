@@ -45,7 +45,8 @@ The time and space of the algorithm on multi-tape machines are in
 * `Cslib.Reachability.reach`: the midpoint recursion.
 * `Cslib.Reachability.Savitch.next`: the binary counter of fixed width.
 * `Cslib.Reachability.Savitch.Frame`, `Cslib.Reachability.Savitch.Reg`,
-  `Cslib.Reachability.Savitch.State`, `Cslib.Reachability.Savitch.step`: the stack machine.
+  `Cslib.Reachability.Savitch.Reg.answer`, `Cslib.Reachability.Savitch.State`,
+  `Cslib.Reachability.Savitch.step`: the stack machine.
 * `Cslib.Reachability.Savitch.callSteps`, `Cslib.Reachability.Savitch.steps`: the number of steps
   of a call, and of the algorithm.
 * `Cslib.Reachability.savitch`: Savitch's algorithm.
@@ -81,7 +82,7 @@ def reach (edge : List Bool → List Bool → Bool) (w : ℕ) : ℕ → List Boo
   | i + 1, u, v => (enumList w).any fun m => reach edge w i u m && reach edge w i m v
 
 /-- A walk along edges between words of width `w` stays among the words of width `w`. -/
-theorem length_eq_of_relatesWithinSteps {edge : List Bool → List Bool → Bool} {w n : ℕ}
+private theorem length_eq_of_relatesWithinSteps {edge : List Bool → List Bool → Bool} {w n : ℕ}
     {u v : List Bool} (hu : u.length = w)
     (h : Relation.RelatesWithinSteps (fun a b => a.length = w ∧ b.length = w ∧ edge a b = true)
       u v n) : v.length = w := by
@@ -351,12 +352,12 @@ theorem exists_iterate_step_call (i : ℕ) (u v : List Bool) (stack : List Frame
     omega
 
 /-- An empty stack with a returned value is a fixed point. -/
-theorem iterate_step_ret_nil (b : Bool) (n : ℕ) :
+private theorem iterate_step_ret_nil (b : Bool) (n : ℕ) :
     (step edge w)^[n] ⟨[], .ret b⟩ = ⟨[], .ret b⟩ :=
   Function.iterate_fixed rfl n
 
 /-- The number of steps of a call at level `i` is below `2 ^ ((w + 2) * i + 1)`. -/
-theorem callSteps_add_one_le (w i : ℕ) : callSteps w i + 1 ≤ 2 ^ ((w + 2) * i + 1) := by
+private theorem callSteps_add_one_le (w i : ℕ) : callSteps w i + 1 ≤ 2 ^ ((w + 2) * i + 1) := by
   induction i with
   | zero => simp [callSteps]
   | succ i ih =>
@@ -369,7 +370,7 @@ theorem callSteps_add_one_le (w i : ℕ) : callSteps w i + 1 ≤ 2 ^ ((w + 2) * 
     nlinarith
 
 /-- Savitch's algorithm runs the machine for long enough to return from the call at level `d`. -/
-theorem callSteps_le_steps (w d : ℕ) : callSteps w d ≤ steps w d := by
+private theorem callSteps_le_steps (w d : ℕ) : callSteps w d ≤ steps w d := by
   have h₁ := callSteps_add_one_le w d
   have h₂ : 2 ^ ((w + 2) * d + 1) ≤ 2 ^ ((w + 2) * (d + 1)) :=
     Nat.pow_le_pow_right two_pos (by nlinarith)

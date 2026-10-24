@@ -19,8 +19,10 @@ little endian in the half-word radix. Registers zero through three are reserved 
 
 * `Cslib.WordRAM.Multiword.Transfer.copy`: copy disjoint equal-length register lists.
 * `Cslib.WordRAM.Multiword.Transfer.constants`: install a supplied list of constants.
-* `Cslib.WordRAM.Multiword.Transfer.assemble`: reconstruct a scalar from digit registers.
-* `Cslib.WordRAM.Multiword.Transfer.split`: split a physical scalar into digit registers.
+* `Cslib.WordRAM.Multiword.Transfer.accumulate`, `Cslib.WordRAM.Multiword.Transfer.assemble`:
+  Horner accumulation and scalar reconstruction from digit registers.
+* `Cslib.WordRAM.Multiword.Transfer.extract`, `Cslib.WordRAM.Multiword.Transfer.split`: digit
+  extraction and splitting of a physical scalar into digit registers.
 
 ## Main results
 

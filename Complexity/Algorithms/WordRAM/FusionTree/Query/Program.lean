@@ -20,8 +20,17 @@ runtime inputs. Leaves return an option as a presence flag and a full-key value.
 
 ## Main definitions
 
-* `QueryProgram.code`: initialization followed by pointer-chasing descent.
+* `QueryProgram.registers`, `QueryProgram.query`, `QueryProgram.pointer`, `QueryProgram.rank`,
+  `QueryProgram.active`, `QueryProgram.found`, `QueryProgram.value`, `QueryProgram.one`,
+  `QueryProgram.zero`, `QueryProgram.address`, `QueryProgram.tag`, `QueryProgram.offset`: register
+  allocation for the fusion-tree traversal.
+* `QueryProgram.setup`, `QueryProgram.leaf`, `QueryProgram.follow`, `QueryProgram.node`,
+  `QueryProgram.internal`, `QueryProgram.body`, `QueryProgram.loop`, `QueryProgram.code`,
+  `QueryProgram.program`: initialization, leaf inspection, child-pointer descent, node dispatch,
+  and the complete structured and flat query programs.
 * `QueryProgram.answer`: the conventional two-register option encoding.
+* `QueryProgram.Entry`, `QueryProgram.initialized`, `QueryProgram.leafResult`,
+  `QueryProgram.followResult`: traversal register invariant and step-result data states.
 
 ## Main results
 

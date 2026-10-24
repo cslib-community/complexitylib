@@ -16,6 +16,10 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Node.Neighbors
 The first sketch query obtains a cut. Two full-key loads then select a neighboring key by
 exclusive or. The original query and record address remain available for correction.
 
+## Main definitions
+
+* `NodeProgram.saveNeighbor`, `NodeProgram.initial`: neighbor-saving and initial query code.
+
 ## Main results
 
 * `NodeProgram.exec_initial`: 149 charged instructions produce the selected neighbor.

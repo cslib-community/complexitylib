@@ -19,7 +19,12 @@ without constructing the overflowing word `2^w`.
 
 ## Main definitions
 
-* `BoundaryProgram.code`: ten standard instructions computing both correction boundaries.
+* `BoundaryProgram.query`, `BoundaryProgram.position`, `BoundaryProgram.one`,
+  `BoundaryProgram.next`, `BoundaryProgram.power`, `BoundaryProgram.low`, `BoundaryProgram.stem`,
+  `BoundaryProgram.lower`, `BoundaryProgram.upper`, `BoundaryProgram.bit`: register indices for
+  boundary computation.
+* `BoundaryProgram.code`, `BoundaryProgram.result`: ten standard instructions computing both
+  correction boundaries and the resulting machine state.
 
 ## Main results
 

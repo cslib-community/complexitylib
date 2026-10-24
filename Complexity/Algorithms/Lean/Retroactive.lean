@@ -21,10 +21,14 @@ checks the entire edited history.
 
 ## Main definitions
 
-* `TimelineEdit`: insertion and deletion by position.
+* `TimelineEdit`, `TimelineEdit.apply`, `TimelineEdit.Valid`: insertion and deletion by position,
+  with timeline application and range validity.
 * `Retroactive.spec`: the abstract timeline-editing specification.
-* `Retroactive.backend`: an interface exposing edit, reset, and ordinary operations.
-* `Retroactive.implementation`: the reusable rebuilding module.
+* `Retroactive.BackendOp`, `Retroactive.backend`: primitive operations and interface exposing
+  edit, reset, and ordinary operations.
+* `Retroactive.replay`, `Retroactive.methods`, `Retroactive.implementation`: the replay client,
+  method table, and reusable rebuilding module.
+* `Retroactive.primitiveCharge`: combined resource charge for editing, reset, and ordinary calls.
 
 ## Main results
 
@@ -179,7 +183,7 @@ def primitiveCharge (editCharge : List D.Op → TimelineEdit D.Op → Nat)
   | .execute o => ordinaryCharge s.2 o
 
 /-- Charges for replay are exactly the charges for the ordinary history. -/
-theorem replay_charge (editCharge : List D.Op → TimelineEdit D.Op → Nat)
+private theorem replay_charge (editCharge : List D.Op → TimelineEdit D.Op → Nat)
     (resetCharge : Nat) (ordinaryCharge : D.State → D.Op → Nat)
     (timeline os : List D.Op) (s : D.State) :
     (backend D initial).totalCost (primitiveCharge D initial editCharge resetCharge ordinaryCharge)

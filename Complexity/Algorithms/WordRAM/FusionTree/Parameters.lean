@@ -25,7 +25,18 @@ complete fusion-tree query remain separate.
 
 ## Main definitions
 
-* `NodeParameters`: actual compression witnesses for a node.
+* `relevantCount`, `sourcePositions`: number and ordered enumeration of distinguishing bit
+  positions.
+* `NodeParameters`, `NodeParameters.choose`: actual compression witnesses for a node and classical
+  selector.
+* `NodeParameters.r`, `NodeParameters.b`, `NodeParameters.C`, `NodeParameters.M`,
+  `NodeParameters.D`: selected-bit count, compressed payload width, input mask, multiplier, and
+  retained output mask.
+* `NodeParameters.compressed`, `NodeParameters.sketches`: arithmetic compressed sketch and stored
+  node sketches.
+* `NodeParameters.copies`, `NodeParameters.packed`, `NodeParameters.packedComplement`,
+  `NodeParameters.guards`, `NodeParameters.middle`, `NodeParameters.radix`,
+  `NodeParameters.maximum`: packed-comparison constants.
 * `NodeParameters.words`: fifteen physical parameter words, independent of the node header.
 
 ## Main results
@@ -57,7 +68,7 @@ def sourcePositions {n : ℕ} (w : ℕ) (keys : Fin n → ℕ) :
   (relevantBits w keys).orderEmbOfFin rfl
 
 /-- The source-position list is exactly the list defining the perfect sketch. -/
-theorem sourcePositions_list {n : ℕ} (w : ℕ) (keys : Fin n → ℕ) :
+private theorem sourcePositions_list {n : ℕ} (w : ℕ) (keys : Fin n → ℕ) :
     List.ofFn (sourcePositions w keys) = (relevantBits w keys).sort (· ≤ ·) := by
   rw [List.ofFn_eq_map]
   exact Finset.listMap_orderEmbOfFin_finRange _ rfl
@@ -120,9 +131,9 @@ def radix (p : NodeParameters w keys) : ℕ := 2 ^ (p.b + 1)
 /-- Largest compressed payload. -/
 def maximum (p : NodeParameters w keys) : ℕ := 2 ^ p.b - 1
 
-theorem r_le (p : NodeParameters w keys) : p.r ≤ n - 1 := relevantBits_card_le w keys
+private theorem r_le (p : NodeParameters w keys) : p.r ≤ n - 1 := relevantBits_card_le w keys
 
-theorem diagonal_strictMono_sub (p : NodeParameters w keys) :
+private theorem diagonal_strictMono_sub (p : NodeParameters w keys) :
     StrictMono (fun i => sourcePositions w keys i + p.shifts i - w) := by
   intro i j hij
   have := p.diagonal_strictMono hij
@@ -131,6 +142,7 @@ theorem diagonal_strictMono_sub (p : NodeParameters w keys) :
   dsimp only at *
   omega
 
+/-- The retained output mask fits in `p.b` bits. -/
 theorem D_lt (p : NodeParameters w keys) : p.D < 2 ^ p.b := by
   apply positionMask_lt _ p.diagonal_strictMono_sub.injective
   intro i
@@ -148,6 +160,7 @@ theorem M_lt (p : NodeParameters w keys) : p.M < 2 ^ (w + p.b) := by
   exact positionMask_lt _ hm
     (fun i => lt_of_le_of_lt (Nat.le_add_left _ _) (p.span i).2)
 
+/-- Every compressed sketch fits in `p.b` bits. -/
 theorem compressed_lt (p : NodeParameters w keys) (x : ℕ) :
     p.compressed x < 2 ^ p.b := Nat.and_le_right.trans_lt p.D_lt
 
@@ -183,13 +196,14 @@ theorem window (p : NodeParameters w keys) (hn : 0 < n) (hnB : n ≤ branching w
     (hw : 9 ≤ Nat.log 2 w) : p.b + (w - 2 * (w / 2)) ≤ w / 2 :=
   compression_window_le hw hn hnB (p.r_le.trans (by omega))
 
-theorem C_fit (p : NodeParameters w keys) (hsorted : StrictMono keys)
+private theorem C_fit (p : NodeParameters w keys) (hsorted : StrictMono keys)
     (hbound : ∀ i, keys i < 2 ^ w) : Fits w p.C := by
   apply positionMask_lt _ (sourcePositions w keys).injective
   intro i
   exact Finset.mem_range.mp (relevantBits_subset_range hsorted hbound
     (Finset.orderEmbOfFin_mem _ rfl i))
 
+/-- Every stored sketch fits in `p.b` bits. -/
 theorem sketches_lt (p : NodeParameters w keys) (i : ℕ) : p.sketches i < 2 ^ p.b :=
   p.compressed_lt _
 

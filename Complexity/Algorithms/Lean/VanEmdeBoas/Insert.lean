@@ -38,10 +38,13 @@ namespace Cslib.Algorithms.Lean.VanEmdeBoas.Tree
 
 variable {d : ℕ}
 
+/-- A leaf with bounds `some (m, M)` contains `y` iff `y = m` or `y = M`. -/
 @[simp] theorem contains_leaf_some (m M y : ℕ) :
     (leaf (some (m, M))).Contains y ↔ y = m ∨ y = M := by
   simp [Contains]
 
+/-- An internal node with bounds `some (m, M)` contains `y` iff `y = m` or `y` is in some
+cluster. -/
 @[simp] theorem contains_node_some (m M : ℕ) (s : Tree d)
     (c : Fin (universeSize d) → Tree d) (y : ℕ) :
     (node (some (m, M)) s c).Contains y ↔
@@ -71,7 +74,7 @@ private theorem extrema_insert_of_contains {t t' : Tree d} (ht : t.Valid)
         Nat.le_trans (he.2.2.2.2 y hy).2 (le_max_left _ _)⟩
 
 /-- Installing the first key changes only an empty node's local header. -/
-theorem singleton_of_bounds_none {t : Tree d} (ht : t.Valid) (hb : t.bounds = none)
+private theorem singleton_of_bounds_none {t : Tree d} (ht : t.Valid) (hb : t.bounds = none)
     {x : ℕ} (hx : x < universeSize d) :
     (t.withBounds (some (x, x))).Valid ∧
       ∀ y, (t.withBounds (some (x, x))).Contains y ↔ y = x := by

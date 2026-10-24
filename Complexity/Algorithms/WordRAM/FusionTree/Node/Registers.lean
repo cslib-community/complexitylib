@@ -18,8 +18,16 @@ multiword highest-bit workspaces occupy disjoint intervals. Explicit copies conn
 
 ## Main definitions
 
+* `NodeProgram.registers`, `NodeProgram.query`, `NodeProgram.pointer`, `NodeProgram.out`,
+  `NodeProgram.argument`, `NodeProgram.cut`, `NodeProgram.zero`, `NodeProgram.chosen`,
+  `NodeProgram.divergence`, `NodeProgram.position`: physical register count and caller registers.
+* `NodeProgram.bank`, `NodeProgram.headerBank`, `NodeProgram.compressBank`,
+  `NodeProgram.rankBank`, `NodeProgram.neighborBank`, `NodeProgram.boundaryBank`,
+  `NodeProgram.parameter`, `NodeProgram.count`: contiguous subroutine register banks and header
+  register indices.
 * `NodeProgram.Frame`: memory and registers below forty are unchanged by a subroutine.
-* `NodeProgram.moves`: charged register copies, with a terminal self-copy.
+* `NodeProgram.moves`, `NodeProgram.moved`: charged register copies, with a terminal self-copy,
+  and their resulting state.
 * `NodeProgram.Prepared`: the actual eighteen loaded header words supply node parameters.
 
 ## References
@@ -58,6 +66,7 @@ abbrev position : Fin registers := 8
 def bank {k : ℕ} (offset : ℕ) (hk : offset + k ≤ registers) (i : Fin k) :
     Fin registers := ⟨offset + i.val, by omega⟩
 
+/-- Contiguous register embeddings are injective. -/
 theorem bank_injective {k offset : ℕ} (hk : offset + k ≤ registers) :
     Function.Injective (bank offset hk) := by
   intro i j he
@@ -68,7 +77,7 @@ theorem bank_injective {k offset : ℕ} (hk : offset + k ≤ registers) :
 
 /-- A renamed subroutine cannot write a register outside its embedding. This proof treats
 the subroutine structurally and does not expand its instruction graph. -/
-theorem preserves_rename {k : ℕ} {f : Fin k → Fin registers} (c : Code .standard k)
+private theorem preserves_rename {k : ℕ} {f : Fin k → Fin registers} (c : Code .standard k)
     (i : Fin registers) (hi : ∀ j, f j ≠ i) : (c.rename f).Preserves i := by
   induction c with
   | op o =>
@@ -109,11 +118,14 @@ abbrev count : Fin registers := headerBank 2
 def Frame (x y : Data registers) : Prop :=
   y.mem = x.mem ∧ ∀ i : Fin registers, i.val < 40 → y.regs i = x.regs i
 
+/-- `Frame` is reflexive. -/
 theorem Frame.refl (x : Data registers) : Frame x x := ⟨rfl, fun _ _ => rfl⟩
 
+/-- `Frame` is transitive. -/
 theorem Frame.trans {x y z : Data registers} (hxy : Frame x y) (hyz : Frame y z) :
     Frame x z := ⟨hyz.1.trans hxy.1, fun i hi => (hyz.2 i hi).trans (hxy.2 i hi)⟩
 
+/-- Updating a register at index at least `40` preserves `Frame`. -/
 theorem frame_set (x : Data registers) (i : Fin registers) (v : ℕ) (hi : 40 ≤ i.val) :
     Frame x (x.set i v) := by
   refine ⟨rfl, ?_⟩
@@ -121,6 +133,7 @@ theorem frame_set (x : Data registers) (i : Fin registers) (v : ℕ) (hi : 40 �
   have hn : j ≠ i := by intro he; subst j; omega
   exact Function.update_of_ne hn _ _
 
+/-- Extending a subroutine state into a register bank at offset at least `40` preserves `Frame`. -/
 theorem frame_extend {k offset : ℕ} (hk : offset + k ≤ registers) (ho : 40 ≤ offset)
     (x : Data registers) (y : Data k) (hm : y.mem = x.mem) :
     Frame x (y.extend (bank offset hk) x) := by
@@ -142,12 +155,14 @@ def moves : List (Fin registers × Fin registers) → Code .standard registers
 def moved (xs : List (Fin registers × Fin registers)) (x : Data registers) : Data registers :=
   xs.foldl (fun y p => y.set p.1 (y.regs p.2)) x
 
+/-- The instruction count of `moves xs` is `xs.length + 1`. -/
 theorem size_moves (xs : List (Fin registers × Fin registers)) :
     (moves xs).size = xs.length + 1 := by
   induction xs with
   | nil => rfl
   | cons p ps ih => simp only [moves, Code.size, List.length_cons, ih]; omega
 
+/-- Executing `moves xs` reaches `moved xs x` in `xs.length + 1` steps. -/
 theorem exec_moves (w : ℕ) (xs : List (Fin registers × Fin registers)) (x : Data registers) :
     Exec w (moves xs) x (moved xs x) (xs.length + 1) := by
   induction xs generalizing x with
@@ -164,6 +179,7 @@ theorem exec_moves (w : ℕ) (xs : List (Fin registers × Fin registers)) (x : D
       (Exec.copy (B := .standard) (w := w) (d := p.1) (s := p.2) (x := x)).seq
         (ih (x.set p.1 (x.regs p.2)))
 
+/-- Register copies whose destinations are at index at least `40` preserve `Frame`. -/
 theorem frame_moved (xs : List (Fin registers × Fin registers)) (x : Data registers)
     (hs : ∀ p ∈ xs, 40 ≤ p.1.val) : Frame x (moved xs x) := by
   induction xs generalizing x with
@@ -186,6 +202,7 @@ structure Prepared {w n : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w keys
   /-- Actual fifteen parameter words. -/
   words_eq : ∀ j : Fin 15, x.regs (parameter j) = p.words j
 
+/-- The `Prepared` header invariant is preserved across `Frame` transitions. -/
 theorem Prepared.frame {w n : ℕ} {keys : Fin n → ℕ} {p : NodeParameters w keys}
     {x y : Data registers} (hx : Prepared p x) (hf : Frame x y) : Prepared p y := by
   constructor

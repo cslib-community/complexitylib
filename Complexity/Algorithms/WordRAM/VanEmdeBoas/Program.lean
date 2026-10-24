@@ -30,6 +30,13 @@ above the cached maximum before computing a descendant address.
 
 ## Main definitions
 
+* `tag`, `arg`, `out`, `found`, `root`, `stackBase`, `depth`, `tableBase`, `zero`, `one`, `two`,
+  `three`, `four`, `five`, `p`, `x`, `q`, `t`, `high`, `low`, `child`, `addr`, `present`, `mn`,
+  `mx`, `tmp`, `sp`, `runFlag`, `kind`, `payload`, `frameQ`, `frameT`: the thirty-two named
+  registers of the van Emde Boas machine program.
+* `setup`, `coordinates`, `finishMin`, `finishMax`, `finishNone`, `pushFrame`, `descendCluster`,
+  `descendSummary`, `popFrame`: register setup, coordinate splitting, termination, and return-stack
+  frame subroutines.
 * `program`: one fixed dispatch over native instructions.
 * `memberBody`, `memberLoop`: membership descent with a cached-maximum rejection.
 * `insertBody`, `insertLoop`: native insertion descent.

@@ -22,12 +22,28 @@ the doubling array to `Cslib.Stateful` and `Cslib.Stateful.Amortized`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.DynamicArray.program`: the fixed twelve-register append procedure.
+* `Cslib.Algorithms.WordRAM.DynamicArray.ptr`, `Cslib.Algorithms.WordRAM.DynamicArray.dest`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.len`, `Cslib.Algorithms.WordRAM.DynamicArray.idx`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.addr`, `Cslib.Algorithms.WordRAM.DynamicArray.temp`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.one`, `Cslib.Algorithms.WordRAM.DynamicArray.cap`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.frontier`, `Cslib.Algorithms.WordRAM.DynamicArray.arg`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.count`, `Cslib.Algorithms.WordRAM.DynamicArray.zero`:
+  the twelve register names.
+* `Cslib.Algorithms.WordRAM.DynamicArray.copy`, `Cslib.Algorithms.WordRAM.DynamicArray.grow`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.program`: the copy, growth, and append procedures.
 * `Cslib.Algorithms.WordRAM.DynamicArray.getProgram`: the two-instruction indexed read procedure.
 * `Cslib.Algorithms.WordRAM.DynamicArray.initProgram`: charged fifteen-instruction initializer.
 * `Cslib.Algorithms.WordRAM.DynamicArray.dispatch`: fixed append/get operation dispatcher.
-* `Cslib.Algorithms.WordRAM.DynamicArray.Rep`: the live array and allocator frontier invariant.
+* `Cslib.Algorithms.WordRAM.DynamicArray.Rep`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.BoundedRep`: the live array and allocator frontier
+  invariants.
 * `Cslib.Algorithms.WordRAM.DynamicArray.potential`: natural-valued credit `15 * (2 * |vs| - cap)`.
+* `Cslib.Algorithms.WordRAM.DynamicArray.Op`, `Cslib.Algorithms.WordRAM.DynamicArray.spec`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.implementation`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.charge`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.certificate`,
+  `Cslib.Algorithms.WordRAM.DynamicArray.appendAll`: the `Stateful` specification, dynamic
+  program realization, amortized charge, and bulk-append client.
 
 ## Main results
 
@@ -127,7 +143,7 @@ theorem Rep.space {vs : List ℕ} {x : Data 12} (h : Rep vs x) (hne : vs ≠ [])
 
 /-- The doubled frontier bound `x.regs frontier + 2 * x.regs cap` is bounded by `8 * vs.length + 3`
 for every represented state. -/
-theorem Rep.frontier_add_two_cap_le {vs : List ℕ} {x : Data 12} (h : Rep vs x) :
+private theorem Rep.frontier_add_two_cap_le {vs : List ℕ} {x : Data 12} (h : Rep vs x) :
     x.regs frontier + 2 * x.regs cap ≤ 8 * vs.length + 3 := by
   have := h.capacity_le
   have := h.frontier_eq
@@ -137,7 +153,7 @@ theorem Rep.frontier_add_two_cap_le {vs : List ℕ} {x : Data 12} (h : Rep vs x)
 def potential (vs : List ℕ) (x : Data 12) : ℕ := 15 * (2 * vs.length - x.regs cap)
 
 /-- The exact copy contract lifts to a larger register file without charging a meta-level call. -/
-theorem copy_exec {w : ℕ} (x : Data 12) (h1 : Fits w 1)
+private theorem copy_exec {w : ℕ} (x : Data 12) (h1 : Fits w 1)
     (hs : Fits w (x.regs ptr + x.regs len))
     (hd : Fits w (x.regs dest + x.regs len))
     (hdisj : x.regs ptr + x.regs len ≤ x.regs dest) :
@@ -224,7 +240,7 @@ theorem grow_exec {w : ℕ} (x : Data 12) (h1 : Fits w 1)
 
 /-- Four-instruction suffix of `program`: set `one ← #1`, write `arg` at `ptr + len`, and
 increment `len`. -/
-theorem appendTail_exec {w : ℕ} (z : Data 12) (h1 : Fits w 1)
+private theorem appendTail_exec {w : ℕ} (z : Data 12) (h1 : Fits w 1)
     (haddr : Fits w (z.regs ptr + z.regs len)) (hlen : Fits w (z.regs len + 1)) :
     let y := (((z.set one 1).set addr (z.regs ptr + z.regs len)).write
       (z.regs ptr + z.regs len) (z.regs arg)).set len (z.regs len + 1)
@@ -526,7 +542,7 @@ theorem arguments_fit {w : ℕ} (h1 : Fits w 1) {vs : List ℕ} (o : Op)
 
 /-- Argument delivery preserves `Rep` because `dest` and `arg` are not persistent representation
 registers. -/
-theorem prepare_rep {vs : List ℕ} {x : Data 12} (hr : Rep vs x) (w : ℕ) (o : Op) :
+private theorem prepare_rep {vs : List ℕ} {x : Data 12} (hr : Rep vs x) (w : ℕ) (o : Op) :
     Rep vs ((implementation w).prepare o x) where
   length_eq := by simpa +decide [implementation, DynamicProgram.prepare] using hr.length_eq
   capacity_pos := by simpa +decide [implementation, DynamicProgram.prepare] using hr.capacity_pos

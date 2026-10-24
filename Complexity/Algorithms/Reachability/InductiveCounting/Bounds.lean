@@ -18,6 +18,10 @@ Every branch halts in `O((N + 1)^4 * (width + 1))` instructions. Every register 
 fixed register tuple therefore uses `O(log N + width)` bits when the width is chosen to encode
 vertex identifiers.
 
+## Main definitions
+
+* `Cslib.InductiveCounting.budget`: the uniform polynomial instruction budget.
+
 ## Main results
 
 * `Cslib.InductiveCounting.halted_replay_budget`: a uniform all-branch time bound.
@@ -37,11 +41,11 @@ variable {N width source : ℕ} {edge : ℕ → ℕ → Bool} {bad : ℕ → Boo
 /-- A uniform polynomial instruction budget. The width counts binary choices per vertex. -/
 def budget (N width : ℕ) : ℕ := 16 * (N + 1) ^ 4 * (width + 1)
 
-theorem rank_initial (hsource : source < N) :
+private theorem rank_initial (hsource : source < N) :
     rank N width (initial N source) = N * roundCost N width + 1 := by
   simp [initial, hsource, rank]
 
-theorem rank_initial_le_budget : rank N width (initial N source) ≤ budget N width := by
+private theorem rank_initial_le_budget : rank N width (initial N source) ≤ budget N width := by
   by_cases hs : source < N
   · rw [rank_initial hs]
     calc

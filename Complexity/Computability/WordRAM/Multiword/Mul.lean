@@ -19,10 +19,21 @@ accumulator and shifted operand have the same length.
 
 ## Main definitions
 
-* `Cslib.WordRAM.Multiword.Schoolbook.row`: one complete multiply-add row.
-* `Cslib.WordRAM.Multiword.Schoolbook.rows`: the schoolbook multiplication routine.
-* `Cslib.WordRAM.Multiword.Schoolbook.fixedProgram`: a concrete register allocation for
-  arbitrary fixed operand lengths, including radix setup and accumulator clearing.
+* `Cslib.WordRAM.Multiword.Schoolbook.cell`, `Cslib.WordRAM.Multiword.Schoolbook.row`: one
+  multiply-add cell and one complete multiply-add row.
+* `Cslib.WordRAM.Multiword.Schoolbook.rows`, `Cslib.WordRAM.Multiword.Schoolbook.rowCost`,
+  `Cslib.WordRAM.Multiword.Schoolbook.clear`, `Cslib.WordRAM.Multiword.Schoolbook.program`:
+  the unrolled schoolbook rows, their instruction cost, accumulator clearing, and full
+  multiplication routine.
+* `Cslib.WordRAM.Multiword.Schoolbook.registers`,
+  `Cslib.WordRAM.Multiword.Schoolbook.leftRegs`,
+  `Cslib.WordRAM.Multiword.Schoolbook.rightRegs`,
+  `Cslib.WordRAM.Multiword.Schoolbook.outputRegs`,
+  `Cslib.WordRAM.Multiword.Schoolbook.lowRegs`,
+  `Cslib.WordRAM.Multiword.Schoolbook.highRegs`,
+  `Cslib.WordRAM.Multiword.Schoolbook.fixedProgram`,
+  `Cslib.WordRAM.Multiword.Schoolbook.input`: a concrete register allocation and input
+  encoding for arbitrary fixed operand lengths.
 
 ## Main results
 
@@ -70,7 +81,7 @@ def cell (a b d : Fin (r + 4)) : Code .standard (r + 4) := ram[
   carry ← total / base ]
 
 /-- All workspace is included in the exact result of a cell. -/
-def cellResult (x : Data (r + 4)) (a b d : Fin (r + 4)) : Data (r + 4) :=
+private def cellResult (x : Data (r + 4)) (a b d : Fin (r + 4)) : Data (r + 4) :=
   let s := x.regs a * x.regs b + x.regs d + x.regs carry
   ((x.set total s).set d (s % x.regs base)).set carry (s / x.regs base)
 
@@ -134,7 +145,7 @@ theorem size_row (a : Fin (r + 4)) (bs ds : List (Fin (r + 4)))
 
 /-- Execute an entire row, with exact reconstruction including its final carry.
 `I` is any set of preserved input registers, disjoint from the destination registers. -/
-theorem exec_row {w : ℕ} (hw : 2 ≤ w) (I : Set (Fin (r + 4)))
+private theorem exec_row {w : ℕ} (hw : 2 ≤ w) (I : Set (Fin (r + 4)))
     (hI : ∀ i ∈ I, i ≠ total ∧ i ≠ carry) (a : Fin (r + 4)) (haI : a ∈ I)
     (bs ds : List (Fin (r + 4))) (hlen : bs.length = ds.length)
     (hbs : ∀ b ∈ bs, b ∈ I) (hds : ∀ d ∈ ds, IsDigit d ∧ d ∉ I)
@@ -244,6 +255,7 @@ theorem rowCost_eq (m n : ℕ) :
       ring
   simpa only [Nat.choose_two_right] using h
 
+/-- The instruction count of `rows` equals `rowCost` on the operand lengths. -/
 theorem size_rows (as bs ds os : List (Fin (r + 4)))
     (hlen : bs.length = ds.length) (hos : os.length = as.length) :
     (rows as bs ds os).size = rowCost as.length bs.length := by
@@ -288,7 +300,7 @@ private theorem frame_input {x y : Data (r + 4)} {I : Set (Fin (r + 4))}
 /-- Complete schoolbook multiplication with an arbitrary initial accumulator. The theorem
 constructs an execution and proves its product equation; no multiplication specification is
 assumed. The accumulator grows by one carry digit per row. -/
-theorem exec_rows {w : ℕ} (hw : 2 ≤ w) (I : Set (Fin (r + 4)))
+private theorem exec_rows {w : ℕ} (hw : 2 ≤ w) (I : Set (Fin (r + 4)))
     (hI : ∀ i ∈ I, i ≠ total ∧ i ≠ carry) (hzI : zero ∈ I)
     (as bs ds os : List (Fin (r + 4)))
     (hlen : bs.length = ds.length) (hos : os.length = as.length)
@@ -453,6 +465,7 @@ def clear : List (Fin (r + 4)) → Code .standard (r + 4)
   | [] => .op (.copy carry carry)
   | d :: ds => .seq (.op (.const d 0)) (clear ds)
 
+/-- Clearing `ds` takes one constant instruction per digit plus one final self-copy. -/
 theorem size_clear (ds : List (Fin (r + 4))) : (clear ds).size = ds.length + 1 := by
   induction ds with
   | nil => rfl
@@ -646,6 +659,7 @@ The code and register count depend only on the limb counts, not on the physical 
 def fixedProgram (m n : ℕ) : Code .standard (2 * (m + n) + 4) :=
   program (leftRegs m n) (rightRegs m n) (lowRegs m n) (highRegs m n)
 
+/-- Exact code size of the fixed-register schoolbook multiplication program. -/
 theorem size_fixedProgram (m n : ℕ) :
     (fixedProgram m n).size = 7 + n + rowCost m n := by
   obtain ⟨hl, hr, hd, ho⟩ := lengths m n
@@ -716,7 +730,7 @@ private theorem input_right (m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ) 
   have hy : 4 + m ≤ 4 + m + i.val ∧ 4 + m + i.val < 4 + m + n := by omega
   simp [input, hy]
 
-theorem value_input_left (β m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ) :
+private theorem value_input_left (β m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ) :
     value β (input m n a b) (leftRegs m n) = Nat.ofDigits β (List.ofFn a) := by
   simp only [value, leftRegs, registers, List.map_ofFn]
   congr 1
@@ -724,7 +738,7 @@ theorem value_input_left (β m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ) 
   funext i
   exact input_left m n a b i
 
-theorem value_input_right (β m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ) :
+private theorem value_input_right (β m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ) :
     value β (input m n a b) (rightRegs m n) = Nat.ofDigits β (List.ofFn b) := by
   simp only [value, rightRegs, registers, List.map_ofFn]
   congr 1
@@ -732,14 +746,14 @@ theorem value_input_right (β m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ)
   funext i
   exact input_right m n a b i
 
-theorem bounded_input_left {β : ℕ} (m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ)
+private theorem bounded_input_left {β : ℕ} (m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ)
     (ha : ∀ i, a i < β) : Bounded β (input m n a b) (leftRegs m n) := by
   intro j hj
   obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hj
   rw [input_left]
   exact ha i
 
-theorem bounded_input_right {β : ℕ} (m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ)
+private theorem bounded_input_right {β : ℕ} (m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ)
     (hb : ∀ i, b i < β) : Bounded β (input m n a b) (rightRegs m n) := by
   intro j hj
   obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hj
@@ -747,7 +761,7 @@ theorem bounded_input_right {β : ℕ} (m n : ℕ) (a : Fin m → ℕ) (b : Fin 
   exact hb i
 
 /-- Bounded digit tuples encode globally bounded RAM data. -/
-theorem input_bounded {w : ℕ} (hw : 2 ≤ w) (m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ)
+private theorem input_bounded {w : ℕ} (hw : 2 ≤ w) (m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ)
     (ha : ∀ i, a i < radix w) (hb : ∀ i, b i < radix w) :
     (input m n a b).Bounded w := by
   refine ⟨fun i => ?_, fun _ => fits_zero _⟩

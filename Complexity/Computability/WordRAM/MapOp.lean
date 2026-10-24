@@ -30,7 +30,8 @@ instruction budget, is not formalized here.
 ## Main definitions
 
 * `Cslib.WordRAM.Op.mapOp`, `Cslib.WordRAM.Instr.mapOp`, `Cslib.WordRAM.Program.mapOp`,
-  `Cslib.WordRAM.Code.mapOp`: translation along a map of bases.
+  `Cslib.WordRAM.Code.mapOp`, `Cslib.WordRAM.WordSizeDependentProgram.mapOp`: translation along a
+  map of bases.
 
 ## Main results
 
@@ -83,10 +84,12 @@ def Code.mapOp (φ : B.Hom B') : Code B r → Code B' r
 
 variable (φ : B.Hom B')
 
+/-- Translating a program along a basis homomorphism preserves its length. -/
 @[simp]
 theorem Program.length_mapOp (p : Program B r) : (p.mapOp φ).length = p.length :=
   List.length_map _
 
+/-- Translating a structured program along a basis homomorphism preserves its size. -/
 @[simp]
 theorem Code.size_mapOp (c : Code B r) : (c.mapOp φ).size = c.size := by
   induction c <;> simp_all [Code.mapOp]
@@ -104,6 +107,7 @@ theorem Op.readsWidth_of_mapOp {o : Op B r} (h : (o.mapOp φ).ReadsWidth) : o.Re
   | alu f d args => exact φ.readsWidth_of_map f h
   | _ => exact h
 
+/-- A translated instruction reads the word size only if the instruction does. -/
 theorem Instr.readsWidth_of_mapOp {i : Instr B r} (h : (i.mapOp φ).ReadsWidth) : i.ReadsWidth := by
   cases i with
   | op o => exact Op.readsWidth_of_mapOp φ h
@@ -140,11 +144,11 @@ theorem step_mapOp (w : ℕ) (p : Program B r) (s : State r) :
     | op o => simp only [Option.map_some, Instr.mapOp, Op.eval_mapOp]
     | _ => rfl
 
-theorem next_mapOp (w : ℕ) (p : Program B r) : Next w (p.mapOp φ) = Next w p := by
+private theorem next_mapOp (w : ℕ) (p : Program B r) : Next w (p.mapOp φ) = Next w p := by
   funext s t
   simp only [Next, step_mapOp]
 
-theorem runs_mapOp (w : ℕ) (p : Program B r) : Runs w (p.mapOp φ) = Runs w p := by
+private theorem runs_mapOp (w : ℕ) (p : Program B r) : Runs w (p.mapOp φ) = Runs w p := by
   rw [Runs, Runs, next_mapOp]
 
 /-- **Translation preserves halting runs.** The translated program halts with the same output
@@ -154,6 +158,7 @@ theorem executes_mapOp_iff {w : ℕ} {p : Program B r} {s : State r} {v n : ℕ}
     Executes w (p.mapOp φ) s v n ↔ Executes w p s v n := by
   simp only [Executes, runs_mapOp, step_mapOp]
 
+/-- Fuel-bounded execution of a translated program agrees with the original program. -/
 @[simp]
 theorem run_mapOp (w : ℕ) (p : Program B r) (fuel : ℕ) (s : State r) :
     run w (p.mapOp φ) fuel s = run w p fuel s := by
@@ -174,6 +179,7 @@ theorem Exec.mapOp {w : ℕ} {c : Code B r} {x y : Data r} {n : ℕ} (h : Exec w
   | loop_exit hc => exact .loop_exit hc
   | loop_iter hc _ _ ihb ihl => exact .loop_iter hc ihb ihl
 
+/-- Bounded-step execution of a structured program transfers along a basis homomorphism. -/
 theorem ExecWithin.mapOp {w T : ℕ} {c : Code B r} {x y : Data r} (h : ExecWithin w c x y T) :
     ExecWithin w (c.mapOp φ) x y T :=
   let ⟨n, hn, he⟩ := h
@@ -189,10 +195,12 @@ theorem Code.assemble_mapOp (c : Code B r) (pc : ℕ) :
     simp [Code.mapOp, Code.assemble, Program.mapOp, ihp, ihn, Instr.mapOp]
   | loop c body ih => simp [Code.mapOp, Code.assemble, Program.mapOp, ih, Instr.mapOp]
 
+/-- Translation commutes with compiling a structured program into a complete halting program. -/
 theorem Code.program_mapOp (c : Code B r) (out : Fin r) :
     (c.mapOp φ).program out = (c.program out).mapOp φ := by
   simp [Code.program, Code.assemble_mapOp, Program.mapOp, Instr.mapOp]
 
+/-- A structured program that answers a question continues to answer it after translation. -/
 theorem Code.Answers.mapOp {c : Code B r} {out : Fin r} {w : ℕ} {input : List ℕ} {b : Prop}
     {time : ℕ} (h : c.Answers out w input b time) : (c.mapOp φ).Answers out w input b time :=
   let ⟨y, hy, hv⟩ := h
@@ -200,11 +208,14 @@ theorem Code.Answers.mapOp {c : Code B r} {out : Fin r} {w : ℕ} {input : List 
 
 /-! ## Decision -/
 
+/-- A translated flat program answers a question within `time` steps if and only if the original
+program does. -/
 @[simp]
 theorem Program.answers_mapOp_iff {p : Program B r} {w : ℕ} {input : List ℕ} {b : Prop}
     {time : ℕ} : (p.mapOp φ).Answers w input b time ↔ p.Answers w input b time := by
   simp only [Program.Answers, executes_mapOp_iff]
 
+/-- A flat decision procedure transfers along a basis homomorphism with the same time bound. -/
 theorem Program.DecidesInTime.mapOp {p : Program B r} {encode : ℕ → α → List ℕ} {A : Set α}
     {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop}
     (h : p.DecidesInTime encode A time allowed) :
@@ -274,14 +285,18 @@ theorem UniformPolynomialTime.mapOp {encode : ℕ → α → List ℕ} {A : Set 
 
 /-! ## Functoriality -/
 
+/-- Translating a data instruction along the identity basis homomorphism leaves it unchanged. -/
 @[simp]
 theorem Op.mapOp_id (o : Op B r) : o.mapOp (Basis.Hom.id B) = o := by
   cases o <;> rfl
 
+/-- Translating a data instruction along a composition of basis homomorphisms composes the
+translations. -/
 theorem Op.mapOp_comp (ψ : B'.Hom B'') (φ : B.Hom B') (o : Op B r) :
     o.mapOp (ψ.comp φ) = (o.mapOp φ).mapOp ψ := by
   cases o <;> rfl
 
+/-- Translating a program along the identity basis homomorphism leaves it unchanged. -/
 @[simp]
 theorem Program.mapOp_id (p : Program B r) : p.mapOp (Basis.Hom.id B) = p := by
   simp only [Program.mapOp]
@@ -290,6 +305,7 @@ theorem Program.mapOp_id (p : Program B r) : p.mapOp (Basis.Hom.id B) = p := by
   funext i
   cases i <;> simp [Instr.mapOp]
 
+/-- Translating a program along a composition of basis homomorphisms composes the translations. -/
 theorem Program.mapOp_comp (ψ : B'.Hom B'') (φ : B.Hom B') (p : Program B r) :
     p.mapOp (ψ.comp φ) = (p.mapOp φ).mapOp ψ := by
   simp only [Program.mapOp, List.map_map]

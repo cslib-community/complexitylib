@@ -44,12 +44,17 @@ injectively chosen registers of a larger register file and leaves the others unt
 
 ## Main definitions
 
-* `Cslib.WordRAM.Code`: structured programs over a basis, and `Cslib.WordRAM.Code.size`, the
-  length of the flat program they compile to.
+* `Cslib.WordRAM.Code`, `Cslib.WordRAM.Code.size`, `Cslib.WordRAM.Code.ReadsWidth`: structured
+  programs over a basis, the length of the flat program they compile to, and whether a program
+  reads the word size.
 * `Cslib.WordRAM.Exec`, `Cslib.WordRAM.ExecWithin`: executions with an exact instruction count,
   and within a time bound.
-* `Cslib.WordRAM.Code.eval`: an interpreter with a budget of loop iterations.
-* `Cslib.WordRAM.Code.rename`: running a program on other registers.
+* `Cslib.WordRAM.Code.evalLoop`, `Cslib.WordRAM.Code.eval`: an interpreter with a budget of loop
+  iterations.
+* `Cslib.WordRAM.Op.dest`, `Cslib.WordRAM.Code.Preserves`: written register of a data instruction
+  and register preservation predicate.
+* `Cslib.WordRAM.Data.comap`, `Cslib.WordRAM.Data.extend`, `Cslib.WordRAM.Op.rename`,
+  `Cslib.WordRAM.Cond.rename`, `Cslib.WordRAM.Code.rename`: running a program on other registers.
 
 ## Main results
 
@@ -105,6 +110,7 @@ def ReadsWidth : Code B r → Prop
   | .branch _ pos neg => pos.ReadsWidth ∨ neg.ReadsWidth
   | .loop _ body => body.ReadsWidth
 
+/-- Decidability of whether a structured program reads the word size. -/
 instance decidableReadsWidth : (c : Code B r) → Decidable c.ReadsWidth
   | .op o => inferInstanceAs (Decidable o.ReadsWidth)
   | .seq c₁ c₂ =>
@@ -184,6 +190,7 @@ theorem unique (h : Exec w c x y n) (h' : Exec w c x y' n') : y = y' ∧ n = n' 
       obtain ⟨rfl, rfl⟩ := ihl hl
       exact ⟨rfl, rfl⟩
 
+/-- An exact execution of `n` instructions is also an execution within `n` instructions. -/
 theorem within (h : Exec w c x y n) : ExecWithin w c x y n := ⟨n, le_rfl, h⟩
 
 /-! ### Data instructions
@@ -195,19 +202,24 @@ section Ops
 
 variable {d a s : Fin r}
 
+/-- Setting register `d` to a fitting constant `v` takes one instruction. -/
 theorem const {v : ℕ} (h : Fits w v) :
     Exec (B := B) w (.op (.const d v)) x (x.set d v) 1 :=
   .op (Data.put_of_fits h)
 
+/-- An ALU operation whose result `v` fits in a word takes one instruction. -/
 theorem alu {f : B.Op} {args : Fin (B.Arity f) → Fin r} {v : ℕ}
     (hf : B.interp w f (x.regs ∘ args) = some v) (h : Fits w v) :
     Exec w (.op (.alu f d args)) x (x.set d v) 1 :=
   .op (by rw [Op.eval_alu, hf]; exact Data.put_of_fits h)
 
+/-- Copying register `s` into register `d` takes one instruction. -/
 theorem copy : Exec (B := B) w (.op (.copy d s)) x (x.set d (x.regs s)) 1 := .op rfl
 
+/-- Loading the memory cell at register `a` into register `d` takes one instruction. -/
 theorem load : Exec (B := B) w (.op (.load d a)) x (x.set d (x.mem (x.regs a))) 1 := .op rfl
 
+/-- Storing register `s` into the memory cell at register `a` takes one instruction. -/
 theorem store : Exec (B := B) w (.op (.store a s)) x (x.write (x.regs a) (x.regs s)) 1 :=
   .op rfl
 
@@ -217,10 +229,12 @@ section Standard
 
 variable {d i j : Fin r}
 
+/-- A standard binary operation whose result fits in a word takes one instruction. -/
 theorem bin {f : BinOp} (h : Fits w (f.eval (x.regs i) (x.regs j))) :
     Exec w (.op (.bin f d i j)) x (x.set d (f.eval (x.regs i) (x.regs j))) 1 :=
   .op (Data.put_of_fits h)
 
+/-- Reading the word size `w` into register `d` takes one instruction. -/
 theorem width : Exec w (.op (.width d)) x (x.set d w) 1 := .op (Op.eval_width w d x)
 
 end Standard
@@ -257,23 +271,28 @@ namespace ExecWithin
 variable {w : ℕ} {c c₁ c₂ pos neg body : Code B r} {cond : Cond r} {x y z : Data r}
   {d i j a s : Fin r} {T T₁ T₂ : ℕ}
 
+/-- Monotonicity of `ExecWithin` in the instruction budget. -/
 theorem mono (h : ExecWithin w c x y T) (hT : T ≤ T₂) : ExecWithin w c x y T₂ :=
   let ⟨n, hn, he⟩ := h
   ⟨n, hn.trans hT, he⟩
 
+/-- A single data instruction executes within one instruction. -/
 theorem op {o : Op B r} (h : o.eval w x = some y) : ExecWithin w (.op o) x y 1 := (Exec.op h).within
 
+/-- Sequencing adds the instruction bounds of the two subprograms. -/
 theorem seq (h₁ : ExecWithin w c₁ x y T₁) (h₂ : ExecWithin w c₂ y z T₂) :
     ExecWithin w (.seq c₁ c₂) x z (T₁ + T₂) :=
   let ⟨m, hm, he₁⟩ := h₁
   let ⟨n, hn, he₂⟩ := h₂
   ⟨m + n, Nat.add_le_add hm hn, .seq he₁ he₂⟩
 
+/-- Taking the positive branch of a conditional adds one instruction to the bound. -/
 theorem branch_pos (hc : cond.Holds x) (h : ExecWithin w pos x y T) :
     ExecWithin w (.branch cond pos neg) x y (T + 1) :=
   let ⟨n, hn, he⟩ := h
   ⟨n + 1, Nat.add_le_add_right hn 1, .branch_pos hc he⟩
 
+/-- Taking the negative branch of a conditional adds two instructions to the bound. -/
 theorem branch_neg (hc : ¬cond.Holds x) (h : ExecWithin w neg x y T) :
     ExecWithin w (.branch cond pos neg) x y (T + 2) :=
   let ⟨n, hn, he⟩ := h
@@ -287,9 +306,11 @@ theorem branch (hpos : cond.Holds x → ExecWithin w pos x y T)
   · exact (branch_pos hc (hpos hc)).mono (by omega)
   · exact branch_neg hc (hneg hc)
 
+/-- Exiting a loop when the condition fails takes at most two instructions. -/
 theorem loop_exit (hc : ¬cond.Holds x) : ExecWithin w (.loop cond body) x x 2 :=
   (Exec.loop_exit hc).within
 
+/-- One loop iteration followed by the rest of the loop adds `T₁ + 2` instructions to the bound. -/
 theorem loop_iter (hc : cond.Holds x) (h₁ : ExecWithin w body x y T₁)
     (h₂ : ExecWithin w (.loop cond body) y z T₂) :
     ExecWithin w (.loop cond body) x z (T₁ + T₂ + 2) :=
@@ -339,29 +360,36 @@ theorem loop_invariant (I : Data r → Prop) (μ : Data r → ℕ) {T : ℕ}
 
 /-! ### Data instructions -/
 
+/-- Setting register `d` to a fitting constant `v` executes within one instruction. -/
 theorem const {v : ℕ} (h : Fits w v) :
     ExecWithin (B := B) w (.op (.const d v)) x (x.set d v) 1 :=
   (Exec.const h).within
 
+/-- An ALU operation whose result `v` fits in a word executes within one instruction. -/
 theorem alu {f : B.Op} {args : Fin (B.Arity f) → Fin r} {v : ℕ}
     (hf : B.interp w f (x.regs ∘ args) = some v) (h : Fits w v) :
     ExecWithin w (.op (.alu f d args)) x (x.set d v) 1 :=
   (Exec.alu hf h).within
 
+/-- Copying register `s` into register `d` executes within one instruction. -/
 theorem copy : ExecWithin (B := B) w (.op (.copy d s)) x (x.set d (x.regs s)) 1 :=
   Exec.copy.within
 
+/-- Loading the memory cell at register `a` into register `d` executes within one instruction. -/
 theorem load : ExecWithin (B := B) w (.op (.load d a)) x (x.set d (x.mem (x.regs a))) 1 :=
   Exec.load.within
 
+/-- Storing register `s` into the memory cell at register `a` executes within one instruction. -/
 theorem store :
     ExecWithin (B := B) w (.op (.store a s)) x (x.write (x.regs a) (x.regs s)) 1 :=
   Exec.store.within
 
+/-- A standard binary operation whose result fits in a word executes within one instruction. -/
 theorem bin {f : BinOp} (h : Fits w (f.eval (x.regs i) (x.regs j))) :
     ExecWithin w (.op (.bin f d i j)) x (x.set d (f.eval (x.regs i) (x.regs j))) 1 :=
   (Exec.bin h).within
 
+/-- Reading the word size `w` into register `d` executes within one instruction. -/
 theorem width : ExecWithin w (.op (.width d)) x (x.set d w) 1 :=
   Exec.width.within
 
@@ -393,7 +421,8 @@ def Code.eval (w fuel : ℕ) : Code B r → Data r → Option (Data r × ℕ)
     else (neg.eval w fuel x).map fun yn => (yn.1, yn.2 + 2)
   | .loop c body, x => evalLoop c (fun y => body.eval w fuel y) fuel x
 
-theorem Exec.of_evalLoop {w : ℕ} {c : Cond r} {body : Code B r} {f : Data r → Option (Data r × ℕ)}
+private theorem Exec.of_evalLoop {w : ℕ} {c : Cond r} {body : Code B r}
+    {f : Data r → Option (Data r × ℕ)}
     (hf : ∀ {x y : Data r} {n : ℕ}, f x = some (y, n) → Exec w body x y n) {fuel : ℕ}
     {x y : Data r} {n : ℕ} (h : Code.evalLoop c f fuel x = some (y, n)) :
     Exec w (.loop c body) x y n := by
@@ -443,6 +472,8 @@ theorem Exec.of_eval {w fuel : ℕ} {c : Code B r} {x y : Data r} {n : ℕ}
       exact .branch_neg hc (ihn h₁)
   | loop c body ih => exact Exec.of_evalLoop ih h
 
+/-- If the bounded-fuel interpreter returns `(y, n)` with `n ≤ T`, then `c` executes within `T`
+instructions. -/
 theorem ExecWithin.of_eval {w fuel : ℕ} {c : Code B r} {x y : Data r} {n T : ℕ}
     (h : c.eval w fuel x = some (y, n)) (hn : n ≤ T) : ExecWithin w c x y T :=
   ⟨n, hn, .of_eval h⟩
@@ -454,9 +485,11 @@ def Op.dest : Op B r → Option (Fin r)
   | .const d _ | .copy d _ | .alu _ d _ | .load d _ => some d
   | .store _ _ => none
 
+/-- A binary operation writes its destination register `d`. -/
 @[simp]
 theorem Op.dest_bin (f : BinOp) (d i j : Fin r) : (Op.bin f d i j).dest = some d := rfl
 
+/-- The word-size instruction writes its destination register `d`. -/
 @[simp]
 theorem Op.dest_width (d : Fin r) : (Op.width d).dest = some d := rfl
 
@@ -467,6 +500,7 @@ def Code.Preserves (i : Fin r) : Code B r → Prop
   | .branch _ pos neg => pos.Preserves i ∧ neg.Preserves i
   | .loop _ body => body.Preserves i
 
+/-- Decidability of whether a structured program preserves register `i`. -/
 instance Code.decidablePreserves (i : Fin r) : (c : Code B r) → Decidable (c.Preserves i)
   | .op o => inferInstanceAs (Decidable (o.dest ≠ some i))
   | .seq c₁ c₂ =>
@@ -479,7 +513,7 @@ instance Code.decidablePreserves (i : Fin r) : (c : Code B r) → Decidable (c.P
     inferInstanceAs (Decidable (_ ∧ _))
   | .loop _ body => body.decidablePreserves i
 
-theorem Op.regs_eq {w : ℕ} {o : Op B r} {x y : Data r} {i : Fin r} (hi : o.dest ≠ some i)
+private theorem Op.regs_eq {w : ℕ} {o : Op B r} {x y : Data r} {i : Fin r} (hi : o.dest ≠ some i)
     (h : o.eval w x = some y) : y.regs i = x.regs i := by
   have hne {d : Fin r} (hd : o.dest = some d) : i ≠ d := fun hid => hi (hid ▸ hd)
   cases o with
@@ -504,6 +538,7 @@ theorem Exec.regs_eq {w : ℕ} {c : Code B r} {x y : Data r} {n : ℕ} {i : Fin 
   | loop_exit _ => rfl
   | loop_iter _ _ _ ihb ihl => exact (ihl hi).trans (ihb hi)
 
+/-- Any register preserved by `c` retains its value across a bounded execution. -/
 theorem ExecWithin.regs_eq {w T : ℕ} {c : Code B r} {x y : Data r} {i : Fin r}
     (h : ExecWithin w c x y T) (hi : c.Preserves i) : y.regs i = x.regs i :=
   let ⟨_, _, he⟩ := h
@@ -530,6 +565,7 @@ def Op.rename (f : Fin r → Fin r') : Op B r → Op B r'
   | .load d a => .load (f d) (f a)
   | .store a s => .store (f a) (f s)
 
+/-- Renaming a binary operation renames its destination and operand registers. -/
 @[simp]
 theorem Op.rename_bin (f : Fin r → Fin r') (g : BinOp) (d i j : Fin r) :
     (Op.bin g d i j).rename f = Op.bin g (f d) (f i) (f j) := by
@@ -540,6 +576,7 @@ theorem Op.rename_bin (f : Fin r → Fin r') (g : BinOp) (d i j : Fin r) :
   | ⟨0, _⟩ => rfl
   | ⟨1, _⟩ => rfl
 
+/-- Renaming the word-size instruction renames its destination register. -/
 @[simp]
 theorem Op.rename_width (f : Fin r → Fin r') (d : Fin r) :
     (Op.width d).rename f = Op.width (f d) := by
@@ -560,6 +597,7 @@ def Code.rename (f : Fin r → Fin r') : Code B r → Code B r'
   | .branch c pos neg => .branch (c.rename f) (pos.rename f) (neg.rename f)
   | .loop c body => .loop (c.rename f) (body.rename f)
 
+/-- Register renaming preserves the compiled program size. -/
 @[simp]
 theorem Code.size_rename (f : Fin r → Fin r') (c : Code B r) : (c.rename f).size = c.size := by
   induction c <;> simp_all [Code.rename]
@@ -568,19 +606,21 @@ section Rename
 
 variable {f : Fin r → Fin r'}
 
+/-- Reading register `i` of `x.comap f` reads register `f i` of `x`. -/
 @[simp]
 theorem Data.comap_regs (x : Data r') (i : Fin r) : (x.comap f).regs i = x.regs (f i) := rfl
 
+/-- `Data.comap` leaves memory unchanged. -/
 @[simp]
 theorem Data.comap_mem (x : Data r') : (x.comap f).mem = x.mem := rfl
 
-theorem Data.comap_extend (hf : f.Injective) (y : Data r) (x : Data r') :
+private theorem Data.comap_extend (hf : f.Injective) (y : Data r) (x : Data r') :
     (y.extend f x).comap f = y := by
   ext i
   · exact hf.extend_apply _ _ i
   · rfl
 
-theorem Data.extend_extend (hf : f.Injective) (y z : Data r) (x : Data r') :
+private theorem Data.extend_extend (hf : f.Injective) (y z : Data r) (x : Data r') :
     z.extend f (y.extend f x) = z.extend f x := by
   ext j
   · simp only [Data.extend]
@@ -590,7 +630,8 @@ theorem Data.extend_extend (hf : f.Injective) (y z : Data r) (x : Data r') :
     · simp [Function.extend_apply' _ _ _ hj]
   · rfl
 
-theorem Data.extend_comap (hf : f.Injective) (x : Data r') : (x.comap f).extend f x = x := by
+private theorem Data.extend_comap (hf : f.Injective) (x : Data r') :
+    (x.comap f).extend f x = x := by
   ext j
   · change Function.extend f (x.regs ∘ f) x.regs j = x.regs j
     by_cases hj : ∃ i, f i = j
@@ -599,16 +640,19 @@ theorem Data.extend_comap (hf : f.Injective) (x : Data r') : (x.comap f).extend 
     · exact Function.extend_apply' _ _ _ hj
   · rfl
 
-theorem Data.extend_set (hf : f.Injective) (y : Data r) (x : Data r') (i : Fin r) (v : ℕ) :
+private theorem Data.extend_set (hf : f.Injective) (y : Data r) (x : Data r') (i : Fin r) (v : ℕ) :
     (y.set i v).extend f x = (y.extend f x).set (f i) v :=
   Data.ext (hf.extend_update _ _ _ _) rfl
 
-theorem Data.extend_write (y : Data r) (x : Data r') (a v : ℕ) :
+private theorem Data.extend_write (y : Data r) (x : Data r') (a v : ℕ) :
     (y.write a v).extend f x = (y.extend f x).write a v := rfl
 
+/-- A renamed condition holds on `x` if and only if the original condition holds on `x.comap f`. -/
 theorem Cond.holds_rename (c : Cond r) (x : Data r') : (c.rename f).Holds x ↔ c.Holds (x.comap f) :=
   by cases c <;> rfl
 
+/-- Evaluating a renamed instruction along an injective register map `f` commutes with `comap` and
+`extend`. -/
 theorem Op.eval_rename (hf : f.Injective) (o : Op B r) (w : ℕ) (x : Data r') :
     (o.rename f).eval w x = ((o.eval w (x.comap f)).map fun y => y.extend f x) := by
   have hput {d : Fin r} {v : ℕ} :
@@ -659,6 +703,7 @@ theorem Exec.rename (hf : f.Injective) {w : ℕ} {c : Code B r} {x : Data r'} {y
     rw [Data.extend_extend hf] at h₂
     exact .loop_iter ((Cond.holds_rename _ _).2 hc) h₁ h₂
 
+/-- Bounded-time execution of a program renamed along an injective register map `f`. -/
 theorem ExecWithin.rename (hf : f.Injective) {w T : ℕ} {c : Code B r} {x : Data r'} {y : Data r}
     (h : ExecWithin w c (x.comap f) y T) : ExecWithin w (c.rename f) x (y.extend f x) T :=
   let ⟨n, hn, he⟩ := h
@@ -680,6 +725,8 @@ theorem Exec.mono_width {w w' : ℕ} {c : Code B r} {x y : Data r} {n : ℕ} (hc
   | loop_exit hn => exact .loop_exit hn
   | loop_iter hp _ _ ihb ihl => exact .loop_iter hp (ihb hc) (ihl hc)
 
+/-- A program that does not read the word size executes within the same bound at any larger word
+size. -/
 theorem ExecWithin.mono_width {w w' T : ℕ} {c : Code B r} {x y : Data r} (hc : ¬c.ReadsWidth)
     (h : ExecWithin w c x y T) (hw : w ≤ w') : ExecWithin w' c x y T :=
   let ⟨n, hn, he⟩ := h
@@ -695,6 +742,7 @@ theorem Exec.bounded {w : ℕ} {c : Code B r} {x y : Data r} {n : ℕ} (h : Exec
   | loop_exit _ => exact hx
   | loop_iter _ _ _ ihb ihl => exact ihl (ihb hx)
 
+/-- Bounded-time executions preserve word-sized data. -/
 theorem ExecWithin.bounded {w T : ℕ} {c : Code B r} {x y : Data r} (h : ExecWithin w c x y T)
     (hx : x.Bounded w) : y.Bounded w :=
   let ⟨_, _, he⟩ := h

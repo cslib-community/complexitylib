@@ -26,6 +26,7 @@ iteration, as polynomial-time certificates need.
 
 ## Main definitions
 
+* `Cslib.Reachability.insertNew`: append an element to a list if not already present.
 * `Cslib.Reachability.expand`: one round of breadth-first search.
 * `Cslib.Reachability.search`: a number of rounds from a start element.
 
@@ -59,13 +60,15 @@ def expand (succ : α → List α) (found : List α) : List α :=
 def search (succ : α → List α) (rounds : ℕ) (start : α) : List α :=
   (expand succ)^[rounds] [start]
 
+/-- Zero rounds of breadth-first search return the singleton list `[start]`. -/
 @[simp] theorem search_zero (start : α) : search succ 0 start = [start] := rfl
 
+/-- `rounds + 1` rounds of breadth-first search apply `expand` to the result of `rounds` rounds. -/
 theorem search_succ (rounds : ℕ) (start : α) :
     search succ (rounds + 1) start = expand succ (search succ rounds start) :=
   Function.iterate_succ_apply' _ _ _
 
-theorem prefix_foldl_insertNew (l found : List α) : found <+: l.foldl insertNew found := by
+private theorem prefix_foldl_insertNew (l found : List α) : found <+: l.foldl insertNew found := by
   induction l generalizing found with
   | nil => exact List.prefix_refl _
   | cons a l ih =>
@@ -75,7 +78,7 @@ theorem prefix_foldl_insertNew (l found : List α) : found <+: l.foldl insertNew
     · exact List.prefix_refl _
     · exact List.prefix_append _ _
 
-theorem mem_foldl_insertNew {l found : List α} {a : α} :
+private theorem mem_foldl_insertNew {l found : List α} {a : α} :
     a ∈ l.foldl insertNew found ↔ a ∈ found ∨ a ∈ l := by
   induction l generalizing found with
   | nil => simp
@@ -92,7 +95,7 @@ theorem mem_foldl_insertNew {l found : List α} {a : α} :
     · simp only [List.mem_append, List.mem_singleton]
       tauto
 
-theorem nodup_foldl_insertNew {l found : List α} (h : found.Nodup) :
+private theorem nodup_foldl_insertNew {l found : List α} (h : found.Nodup) :
     (l.foldl insertNew found).Nodup := by
   induction l generalizing found with
   | nil => exact h
@@ -139,7 +142,7 @@ theorem expand_eq_self_iff {found : List α} :
       exact h b hb a ha
 
 /-- A round that adds something makes the list longer. -/
-theorem length_lt_expand {found : List α} (h : expand succ found ≠ found) :
+private theorem length_lt_expand {found : List α} (h : expand succ found ≠ found) :
     found.length < (expand succ found).length := by
   obtain ⟨rest, hrest⟩ := prefix_expand (succ := succ) found
   rcases rest with _ | ⟨a, rest⟩
@@ -158,7 +161,7 @@ theorem prefix_search {i j : ℕ} (hij : i ≤ j) (start : α) :
     rw [← Nat.add_assoc, search_succ]
     exact prefix_expand _
 
-theorem start_mem_search (rounds : ℕ) (start : α) : start ∈ search succ rounds start :=
+private theorem start_mem_search (rounds : ℕ) (start : α) : start ∈ search succ rounds start :=
   (prefix_search (Nat.zero_le rounds) start).subset (by simp)
 
 /-- **The found elements are distinct.** -/
@@ -183,7 +186,7 @@ theorem reflTransGen_of_mem_search {rounds : ℕ} {start a : α}
     · exact (ih hb).tail ha
 
 /-- Each round before the found elements are closed finds a new element. -/
-theorem succ_le_length_search_or_closed (rounds : ℕ) (start : α) :
+private theorem succ_le_length_search_or_closed (rounds : ℕ) (start : α) :
     rounds + 1 ≤ (search succ rounds start).length ∨
       expand succ (search succ rounds start) = search succ rounds start := by
   induction rounds with

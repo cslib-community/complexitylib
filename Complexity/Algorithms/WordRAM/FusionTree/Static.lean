@@ -23,6 +23,7 @@ in register 33. This distinguishes absence from key zero without requiring an ex
 
 ## Main definitions
 
+* `Static.orderedKeys`: the elements of a finite set as a strictly increasing list.
 * `Static.tree`: the tree constructed from an arbitrary finite set.
 * `Static.initial`: its actual preprocessed memory and query registers.
 * `Static.IsPredecessor`: conventional inclusive predecessor semantics.

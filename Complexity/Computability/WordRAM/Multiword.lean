@@ -22,9 +22,14 @@ physical word, and division and remainder recover an exact digit and carry.
 ## Main definitions
 
 * `Cslib.WordRAM.Multiword.radix`: the half-word radix.
+* `Cslib.WordRAM.Multiword.LimbUpdate.left`, `Cslib.WordRAM.Multiword.LimbUpdate.right`,
+  `Cslib.WordRAM.Multiword.LimbUpdate.addend`, `Cslib.WordRAM.Multiword.LimbUpdate.carry`,
+  `Cslib.WordRAM.Multiword.LimbUpdate.base`, `Cslib.WordRAM.Multiword.LimbUpdate.total`,
+  `Cslib.WordRAM.Multiword.LimbUpdate.digit`: register allocation for the schoolbook limb update.
 * `Cslib.WordRAM.Multiword.LimbUpdate.program`: five standard RAM instructions implementing
   one schoolbook multiply-add update.
-* `Cslib.WordRAM.Multiword.LimbUpdate.initializedProgram`: compute the half-word radix and
+* `Cslib.WordRAM.Multiword.LimbUpdate.setup`,
+  `Cslib.WordRAM.Multiword.LimbUpdate.initializedProgram`: compute the half-word radix and
   perform the update in ten instructions, with no preloaded radix.
 
 ## Main results
@@ -52,13 +57,16 @@ a different representation and routine. The schoolbook routines explicitly assum
 theorem radix_eq_one_of_lt_two {w : ℕ} (hw : w < 2) : radix w = 1 := by
   simp [radix, Nat.div_eq_of_lt hw]
 
+/-- For word sizes at least two, the half-word radix exceeds one. -/
 theorem one_lt_radix {w : ℕ} (hw : 2 ≤ w) : 1 < radix w :=
   Nat.one_lt_two_pow (by omega)
 
+/-- The square of the half-word radix is at most `2 ^ w`. -/
 theorem radix_sq_le (w : ℕ) : radix w ^ 2 ≤ 2 ^ w := by
   rw [radix, ← pow_mul]
   exact Nat.pow_le_pow_right (by decide) (by omega)
 
+/-- For word sizes at least two, the half-word radix fits in a `w`-bit word. -/
 theorem radix_fits {w : ℕ} (hw : 2 ≤ w) : Fits w (radix w) := by
   have h := one_lt_radix hw
   have hs := radix_sq_le w
@@ -111,6 +119,7 @@ def program : Code .standard 7 := ram[
   digit ← total % base;
   carry ← total / base ]
 
+/-- The elementary limb-update program consists of five instructions. -/
 theorem size_program : program.size = 5 := rfl
 
 /-- Compute the radix from the physical word size, using only the two output registers as
@@ -123,11 +132,11 @@ def setup : Code .standard 7 := ram[
   base ← digit <<< base ]
 
 /-- The result of radix setup. -/
-def setupResult (w : ℕ) (x : Data 7) : Data 7 :=
+private def setupResult (w : ℕ) (x : Data 7) : Data 7 :=
   ((((x.set total w).set digit 2).set base (w / 2)).set digit 1).set base (radix w)
 
 /-- Radix setup costs five instructions for every physical word size at least two. -/
-theorem exec_setup {w : ℕ} (x : Data 7) (hw : 2 ≤ w) :
+private theorem exec_setup {w : ℕ} (x : Data 7) (hw : 2 ≤ w) :
     Exec w setup x (setupResult w x) 5 := by
   have h2 : Fits w 2 := by
     have := Nat.pow_le_pow_right (n := 2) (by decide) hw
@@ -141,16 +150,17 @@ theorem exec_setup {w : ℕ} (x : Data 7) (hw : 2 ≤ w) :
 /-- Fixed code computing the radix and then executing a schoolbook update. -/
 def initializedProgram : Code .standard 7 := .seq setup program
 
+/-- The initialized limb-update program consists of ten instructions. -/
 theorem size_initializedProgram : initializedProgram.size = 10 := rfl
 
 /-- The mathematical result of the five instructions, including the workspace. -/
-def result (x : Data 7) : Data 7 :=
+private def result (x : Data 7) : Data 7 :=
   let s := x.regs left * x.regs right + x.regs addend + x.regs carry
   ((x.set total s).set digit (s % x.regs base)).set carry (s / x.regs base)
 
 /-- Checked execution of the elementary update. All three intermediate results are justified
 from the digit bounds; no high-product primitive or enlarged physical word is assumed. -/
-theorem exec_exact {w : ℕ} (x : Data 7)
+private theorem exec_exact {w : ℕ} (x : Data 7)
     (ha : x.regs left < radix w) (hb : x.regs right < radix w)
     (hd : x.regs addend < radix w) (hc : x.regs carry < radix w) :
     Exec w program x (result x) 5 := by

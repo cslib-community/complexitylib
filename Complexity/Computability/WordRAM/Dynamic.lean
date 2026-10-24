@@ -47,9 +47,11 @@ ComplexityTests/WordRAMPrefixSums.lean for repeated calls retaining persistent d
 
 ## Main definitions
 
-* `DynamicProgram`: fixed code, an input-register convention, and an output decoder.
+* `DynamicProgram`, `DynamicProgram.prepare`: fixed code, an input-register convention, an output
+  decoder, and argument-delivery state update.
 * `DynamicProgram.eval`: typed call evaluation with halt-inclusive instruction cost.
-* `DynamicProgram.ExecOp`: execution of a call, including the final halt charge.
+* `DynamicProgram.OperationTrace`, `DynamicProgram.ExecOp`: call trace and execution of a call,
+  including the final halt charge.
 * `DynamicCertificate`: representation, word bounds, and per-operation semantic machine proofs.
 
 ## Main results
@@ -58,6 +60,10 @@ ComplexityTests/WordRAMPrefixSums.lean for repeated calls retaining persistent d
 * `DynamicCertificate.execOp_of_eval`: certify an evaluated admissible call.
 * `DynamicCertificate.realization`: machine certificates instantiate shared adaptive execution.
 * `DynamicCertificate.instruction_bound`: separate native instruction-cost certificates.
+
+## References
+
+* [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*][CLRS2009].
 -/
 
 @[expose] public section
@@ -90,6 +96,7 @@ def prepare (o : D.Op) (x : Data r) : Data r where
   regs i := if P.input i then P.encode o i else x.regs i
   mem := x.mem
 
+/-- Delivering operation arguments preserves the machine memory unchanged. -/
 @[simp]
 theorem prepare_mem (o : D.Op) (x : Data r) : (P.prepare o x).mem = x.mem := rfl
 

@@ -20,10 +20,21 @@ flags are stored. An edge or bad-vertex oracle is consulted only in an explicit 
 
 ## Main definitions
 
-* `Cslib.InductiveCounting.State`: the finite phase and the registers.
-* `Cslib.InductiveCounting.query`: the request made in a query phase.
-* `Cslib.InductiveCounting.advance`: one binary-choice controller instruction.
-* `Cslib.InductiveCounting.replay`: replay a finite sequence of choices.
+* `Cslib.InductiveCounting.Phase`, `Cslib.InductiveCounting.Query`,
+  `Cslib.InductiveCounting.State`: the finite control phase, oracle requests, and register state.
+* `Cslib.InductiveCounting.reject`, `Cslib.InductiveCounting.accept`,
+  `Cslib.InductiveCounting.halted`, `Cslib.InductiveCounting.initial`: canonical terminal and
+  initial states and the halting predicate.
+* `Cslib.InductiveCounting.query`, `Cslib.InductiveCounting.answer`: the request made in a query
+  phase and its oracle evaluation.
+* `Cslib.InductiveCounting.registerBound`, `Cslib.InductiveCounting.Bounded`,
+  `Cslib.InductiveCounting.candidateCost`, `Cslib.InductiveCounting.targetCost`,
+  `Cslib.InductiveCounting.roundCost`, `Cslib.InductiveCounting.rank`: uniform register bounds and
+  progress measure.
+* `Cslib.InductiveCounting.instruction`, `Cslib.InductiveCounting.advance`,
+  `Cslib.InductiveCounting.step`: unchecked, checked, and graph-backed controller transitions.
+* `Cslib.InductiveCounting.replay`, `Cslib.InductiveCounting.Accepts`: replay of a finite sequence
+  of choices and acceptance from the initial state.
 
 ## References
 
@@ -41,6 +52,7 @@ inductive Phase
   | round | target | candidate | walk | guess | edge | observe | done | accept | reject
   deriving DecidableEq, Repr
 
+/-- Explicit `Fintype` enumeration of all ten control phases. -/
 instance : Fintype Phase where
   elems := {.round, .target, .candidate, .walk, .guess, .edge, .observe, .done, .accept, .reject}
   complete p := by cases p <;> simp
@@ -161,6 +173,7 @@ def Bounded (N width : ℕ) (s : State) : Prop :=
   s.remaining < registerBound N width ∧ s.current < registerBound N width ∧
   s.guess < registerBound N width ∧ s.bits < registerBound N width
 
+/-- Register boundedness is decidable. -/
 instance : Decidable (Bounded N width s) := by unfold Bounded; infer_instance
 
 /-- Worst-case cost of checking one candidate, with slack for the loop instructions. -/
@@ -225,9 +238,11 @@ def replay (N width source : ℕ) (edge : ℕ → ℕ → Bool) (bad : ℕ → B
 def Accepts (N width source : ℕ) (edge : ℕ → ℕ → Bool) (bad : ℕ → Bool) : Prop :=
   ∃ bs, (replay N width source edge bad (initial N source) bs).phase = .accept
 
+/-- The canonical rejecting state satisfies `Bounded`. -/
 @[simp] theorem bounded_reject : Bounded N width reject := by
   simp [Bounded, reject, registerBound]
 
+/-- The canonical accepting state satisfies `Bounded`. -/
 @[simp] theorem bounded_accept : Bounded N width accept := by
   simp [Bounded, accept, registerBound]
 
@@ -252,6 +267,7 @@ theorem rank_advance_lt (ans choice : Bool) (h : halted s = false) :
   · exact ht.2
   · exact hs
 
+/-- Advancing a halted state leaves it unchanged. -/
 @[simp] theorem advance_halted (ans choice : Bool) (h : halted s = true) :
     advance N width source s ans choice = s := by simp [advance, h]
 

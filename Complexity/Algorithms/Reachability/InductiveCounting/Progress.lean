@@ -39,6 +39,7 @@ private theorem sub_mul_step {u N : ℕ} (hu : u < N) (c : ℕ) :
 
 private theorem sub_add_one (N u : ℕ) : N - (u + 1) = N - u - 1 := by omega
 
+/-- Every unhalted instruction from a state satisfying `Invariant` strictly decreases `rank`. -/
 theorem rank_instruction_lt (hi : Invariant N edge bad source s)
     (hh : halted s = false) (choice : Bool) :
     rank N width (instruction N width source s (answer edge bad s) choice) < rank N width s := by

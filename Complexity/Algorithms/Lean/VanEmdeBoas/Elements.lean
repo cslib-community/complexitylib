@@ -52,6 +52,7 @@ theorem mem_elements_iff {t : Tree d} (ht : t.Valid) (x : ℕ) :
   simp only [elements, Finset.mem_filter, Finset.mem_range, member_iff_contains ht]
   exact ⟨And.right, fun hx => ⟨ht.contains_lt hx, hx⟩⟩
 
+/-- The empty van Emde Boas tree represents the empty finite set of keys. -/
 @[simp] theorem elements_empty (d : ℕ) : (empty d).elements = ∅ := by
   ext x
   simp only [mem_elements_iff (valid_empty d), contains_empty, Finset.notMem_empty]

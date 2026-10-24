@@ -70,6 +70,7 @@ def Code.assemble : Code B r → ℕ → Program B r
   | .loop c body, pc =>
     .branch c (pc + 2) :: .jump (pc + body.size + 3) :: body.assemble (pc + 2) ++ [.jump pc]
 
+/-- Assembling a structured program `c` at any base index produces `c.size` instructions. -/
 @[simp]
 theorem Code.length_assemble (c : Code B r) (pc : ℕ) : (c.assemble pc).length = c.size := by
   induction c generalizing pc with
@@ -89,25 +90,31 @@ namespace Program.Contains
 
 variable {p q q₁ q₂ : Program B r} {base : ℕ}
 
+/-- Every program contains itself starting at instruction index `0`. -/
 theorem self (p : Program B r) : p.Contains 0 p := ⟨[], [], by simp, rfl⟩
 
+/-- If `p` contains `q₁ ++ q₂` at `base`, then `p` contains `q₁` at `base`. -/
 theorem append_left (h : p.Contains base (q₁ ++ q₂)) : p.Contains base q₁ :=
   let ⟨pre, post, hp, hl⟩ := h
   ⟨pre, q₂ ++ post, by simp [hp], hl⟩
 
+/-- If `p` contains `q₁ ++ q₂` at `base`, then `p` contains `q₂` at `base + q₁.length`. -/
 theorem append_right (h : p.Contains base (q₁ ++ q₂)) : p.Contains (base + q₁.length) q₂ :=
   let ⟨pre, post, hp, hl⟩ := h
   ⟨pre ++ q₁, post, by simp [hp], by simp [hl]⟩
 
+/-- If `p` contains `i :: q` at `base`, then `p` contains `q` at `base + 1`. -/
 theorem cons_tail {i : Instr B r} (h : p.Contains base (i :: q)) : p.Contains (base + 1) q :=
   append_right (q₁ := [i]) h
 
+/-- Indexing into `p` at `base + k` for `k < q.length` agrees with indexing into `q` at `k`. -/
 theorem getElem? (h : p.Contains base q) {k : ℕ} (hk : k < q.length) :
     p[base + k]? = q[k]? := by
   obtain ⟨pre, post, rfl, rfl⟩ := h
   rw [List.append_assoc, List.getElem?_append_right (by omega), Nat.add_sub_cancel_left,
     List.getElem?_append_left hk]
 
+/-- If `p` contains `i :: q` at `base`, then instruction `base` of `p` is `i`. -/
 theorem head {i : Instr B r} (h : p.Contains base (i :: q)) : p[base]? = some i := by
   simpa using h.getElem? (k := 0) (by simp)
 
@@ -229,8 +236,8 @@ theorem DecidableInTime.of_code {α : Type*} {encode : ℕ → α → List ℕ} 
 /-! ## Reading the word size -/
 
 /-- An assembled program reads the word size only if the structured program does. -/
-theorem Code.readsWidth_of_assemble {c : Code B r} {pc : ℕ} (h : (c.assemble pc).ReadsWidth) :
-    c.ReadsWidth := by
+private theorem Code.readsWidth_of_assemble {c : Code B r} {pc : ℕ}
+    (h : (c.assemble pc).ReadsWidth) : c.ReadsWidth := by
   obtain ⟨i, hi, hr⟩ := h
   induction c generalizing pc with
   | op o =>

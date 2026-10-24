@@ -20,8 +20,12 @@ not require clearing the reserved memory.
 
 ## Main definitions
 
-* `Rep`: the bounded shared-memory representation of the two top-first lists.
-* `program`: one fixed operation dispatcher.
+* `tag`, `arg`, `frontLen`, `frontBase`, `backLen`, `backBase`, `addr`, `out`, `present`, `zero`,
+  `one`: register allocation for the two-stack queue.
+* `Rep`, `footprint`: the bounded shared-memory representation of the two top-first lists and its
+  reserved memory footprint.
+* `enqueue`, `move`, `transfer`, `pop`, `dequeue`, `program`, `bodyCost`: structured queue
+  operations, the fixed operation dispatcher, and its per-operation instruction count.
 * `implementation`: its argument and result conventions.
 * `initializeCode`: six charged writes installing an empty representation.
 
@@ -120,7 +124,7 @@ def implementation (w capacity : ℕ) : DynamicProgram (spec w capacity) 11 wher
     | .dequeue => some (if regs present = 0 then none else some (regs out))
 
 /-- Enqueue body correctness with an exact four-instruction execution. -/
-theorem enqueue_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11}
+private theorem enqueue_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11}
     (hc : Fits w (base + 2 * capacity)) (hr : Rep w base capacity front back x)
     (hs : front.length + back.length < capacity) (hv : x.regs arg = v) :
     ∃ y, Exec w enqueue x y 4 ∧ Rep w base capacity front (v :: back) y ∧
@@ -155,7 +159,7 @@ theorem enqueue_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data
   · exact Modifies.write_of_owns ⟨by omega, by omega⟩ v
 
 /-- A rear-to-front move performs six instructions and preserves the reserved-region frame. -/
-theorem move_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11}
+private theorem move_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11}
     (hc : Fits w (base + 2 * capacity)) (hr : Rep w base capacity front (v :: back) x) :
     ∃ y, Exec w move x y 6 ∧ Rep w base capacity (v :: front) back y ∧
       Modifies (footprint base capacity) x.mem y.mem := by
@@ -200,7 +204,7 @@ theorem move_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11
   · exact Modifies.write_of_owns ⟨by omega, by omega⟩ v
 
 /-- Transfer costs eight instructions per moved word and two instructions to exit the loop. -/
-theorem transfer_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 11}
+private theorem transfer_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 11}
     (hc : Fits w (base + 2 * capacity)) (hr : Rep w base capacity front back x) :
     ∃ y, Exec w transfer x y (8 * back.length + 2) ∧
       Rep w base capacity (back.reverse ++ front) [] y ∧
@@ -228,7 +232,7 @@ theorem transfer_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 
     · exact fun a ha => (hfz a ha).trans (hf a ha)
 
 /-- Front-pop execution counts include the empty/nonempty branch and distinguish returned zero. -/
-theorem pop_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 11}
+private theorem pop_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 11}
     (hc : Fits w (base + 2 * capacity)) (hr : Rep w base capacity front back x) :
     ∃ y, Exec w pop x y (if front = [] then 3 else 6) ∧
       Rep w base capacity front.tail back y ∧
@@ -281,6 +285,7 @@ def bodyCost (front back : List ℕ) : QueueOp ℕ → ℕ
   | .enqueue _ => 5
   | .dequeue => if front = [] then 8 * back.length + (if back = [] then 8 else 11) else 10
 
+/-- Encoded operation arguments for any valid queue operation fit in a `w`-bit word. -/
 theorem arguments_fit {w capacity : ℕ} (h1 : Fits w 1) {q : List ℕ} (o : QueueOp ℕ)
     (hv : (spec w capacity).valid q o) (i : Fin 11) :
     Fits w ((implementation w capacity).encode o i) := by

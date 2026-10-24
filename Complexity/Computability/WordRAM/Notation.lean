@@ -37,8 +37,6 @@ ordinary names.
 ## Main definitions
 
 * `ram[ s₁; s₂; … ]`: scoped notation for structured word-RAM programs (`Cslib.WordRAM.Code`).
-* `ram_eval`: symbolic execution tactic for `Cslib.WordRAM.ExecWithin` and `Cslib.WordRAM.Exec`
-  goals.
 
 ## Tactics
 

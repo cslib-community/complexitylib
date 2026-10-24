@@ -25,7 +25,8 @@ instruction count. It does not impose new validity assumptions on existing WordR
 ## Main definitions
 
 * `Basis.genericModel`: the generic model associated to a word-RAM operation basis.
-* `Data.toGeneric`, `State.toGeneric`, `Program.toGeneric`: the exact representation adapter.
+* `Data.toGeneric`, `State.toGeneric`, `Cond.toGeneric`, `Op.toGeneric`, `Instr.toGeneric`,
+  `Program.toGeneric`, `Outcome.toGeneric`: the exact representation adapter.
 
 ## Main results
 

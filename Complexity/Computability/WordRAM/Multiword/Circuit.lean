@@ -20,6 +20,8 @@ than by enlarging the RAM's operation basis or physical width.
 
 * `Circuit.Operation`: a constant or a binary standard operation on virtual registers.
 * `Circuit.Operation.eval`: the mathematical value of one node.
+* `Circuit.Operation.Earlier`, `Circuit.Operation.Admissible`: topological-order and operand/result
+  width-bound predicates for compiling an operation.
 
 ## References
 

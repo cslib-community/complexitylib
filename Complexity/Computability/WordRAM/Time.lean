@@ -29,9 +29,13 @@ code/encoding selection or identification with Turing-machine complexity is asse
 
 ## Main definitions
 
-* `WordSizeDependentProgram`: code selected by word size, with a fixed register count.
+* `Program.Answers`, `logWidth`: bounded-time decision of a proposition on a single input and the
+  logarithmic word-size schedule `k (⌊log₂ n⌋ + 1)`.
+* `WordSizeDependentProgram`, `WordSizeDependentProgram.const`: code selected by word size, with a
+  fixed register count, and constant families.
 * `WordSizeDependentProgram.BoundedCode`: one instruction-list length bound for every word size.
-* `DecidableInTime`, `UniformDecidableInTime`: nonuniform and uniform instruction bounds.
+* `WordSizeDependentProgram.DecidesInTime`, `Program.DecidesInTime`, `DecidableInTime`,
+  `UniformDecidableInTime`: nonuniform and uniform instruction bounds.
 * `DecidableInTimeLogWord`, `UniformDecidableInTimeLogWord`: transdichotomous word-size conventions.
 * `DecidableInO`, `UniformDecidableInO`: asymptotic time with constants shared by all widths.
 * `LinearTime`, `PolynomialTime`, `UniformLinearTime`, `UniformPolynomialTime`: size-based classes.
@@ -75,6 +79,7 @@ theorem mono (h : p.Answers w input b time) (ht : time ≤ time') : p.Answers w 
   let ⟨v, n, he, hn, hv⟩ := h
   ⟨v, n, he, hn.trans ht, hv⟩
 
+/-- Equivalent propositions have the same `Program.Answers` specification. -/
 theorem congr (h : p.Answers w input b time) (hb : b ↔ b') : p.Answers w input b' time :=
   let ⟨v, n, he, hn, hv, hb'⟩ := h
   ⟨v, n, he, hn, hv, hb'.trans hb⟩
@@ -100,6 +105,7 @@ theorem fits_of_lt_pow {k n v : ℕ} (hv : v < (n + 1) ^ k) : Fits (logWidth k n
     _ ≤ (2 ^ (Nat.log 2 n + 1)) ^ k := Nat.pow_le_pow_left hn k
     _ = 2 ^ logWidth k n := by rw [← pow_mul, logWidth, Nat.mul_comm]
 
+/-- Monotonicity of `logWidth` in both multiplier and size argument. -/
 theorem logWidth_mono {k k' n n' : ℕ} (hk : k ≤ k') (hn : n ≤ n') :
     logWidth k n ≤ logWidth k' n' :=
   Nat.mul_le_mul hk (Nat.add_le_add_right (Nat.log_mono_right hn) 1)

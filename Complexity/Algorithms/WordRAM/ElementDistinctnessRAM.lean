@@ -66,6 +66,7 @@ convention is `ToRAM.paddedInput 12`, whose supplied zero prefix has length seve
 def paddedRamProgram : RAM.Program :=
   ToRAM.paddedProgramAdditive (deciderAdditive.program Reg.ans)
 
+/-- `paddedRamProgram` equals `ToRAM.paddedProgram` applied to `decider.program Reg.ans`. -/
 @[simp]
 theorem paddedRamProgram_eq :
     paddedRamProgram = ToRAM.paddedProgram (decider.program Reg.ans) := by
@@ -76,6 +77,7 @@ Its external input convention is `RAM.Input.encode 5`. -/
 def ramProgram : RAM.Program :=
   ToRAM.preparedProgramAdditive (deciderAdditive.program Reg.ans)
 
+/-- `ramProgram` equals `ToRAM.preparedProgram` applied to `decider.program Reg.ans`. -/
 @[simp]
 theorem ramProgram_eq :
     ramProgram = ToRAM.preparedProgram (decider.program Reg.ans) := by

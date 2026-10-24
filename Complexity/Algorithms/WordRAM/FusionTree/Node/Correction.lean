@@ -17,6 +17,12 @@ public import Complexity.Algorithms.WordRAM.FusionTree.MSBProgram
 The highest-bit call accepts an ordinary physical register and initializes its own bank.
 The boundary and second-rank calls charge all register transfers. No call changes memory.
 
+## Main definitions
+
+* `NodeProgram.msbBank`, `NodeProgram.highest`: register bank and code for the highest-bit call.
+* `NodeProgram.boundaryInputs`, `NodeProgram.boundaries`: register transfers and boundary code.
+* `NodeProgram.secondQuery`: second sketch query with charged register transfers.
+
 ## Main results
 
 * `NodeProgram.exec_highest`: the concrete highest-bit code on the selected exclusive or.

@@ -23,9 +23,12 @@ and cost proofs.
 
 ## Main definitions
 
-* `Tree`: a complete binary tree with natural-number leaves.
-* `Tree.Rep`: the contiguous memory representation, including every internal sum.
-* `Tree.prefixSum` and `Tree.add`: prefix queries and point increments.
+* `Tree`, `Tree.leaves`, `Tree.total`, `Tree.zero`: a complete binary tree with natural-number
+  leaves, its leaf array, root aggregate, and all-zero tree.
+* `increment`: point increment on a list of natural numbers.
+* `Tree.words`, `Tree.Rep`: word count and contiguous memory representation, including every
+  internal sum.
+* `Tree.prefixSum`, `Tree.add`: prefix queries and point increments.
 
 ## Main results
 
@@ -57,7 +60,7 @@ def increment : List ℕ → ℕ → ℕ → List ℕ
   | a :: as, i + 1, δ => a :: increment as i δ
 
 /-- Point increments split over concatenation at the left array's length. -/
-theorem increment_append (as bs : List ℕ) (i δ : ℕ) :
+private theorem increment_append (as bs : List ℕ) (i δ : ℕ) :
     increment (as ++ bs) i δ =
       if i < as.length then increment as i δ ++ bs
       else as ++ increment bs (i - as.length) δ := by
@@ -97,20 +100,24 @@ def add : {h : ℕ} → Tree h → ℕ → ℕ → Tree h
   | _, .node (h := h) l r, i, δ =>
     if i < 2 ^ h then .node (l.add i δ) r else .node l (r.add (i - 2 ^ h) δ)
 
+/-- A complete binary tree of height `h` has `2 ^ h` leaves. -/
 @[simp]
 theorem length_leaves (t : Tree h) : t.leaves.length = 2 ^ h := by
   induction t with
   | leaf => simp [leaves]
   | node l r ihl ihr => simp [leaves, ihl, ihr, pow_succ, Nat.mul_two]
 
+/-- The sum of the leaf array equals the root aggregate `t.total`. -/
 @[simp]
 theorem sum_leaves (t : Tree h) : t.leaves.sum = t.total := by
   induction t <;> simp_all [leaves, total]
 
+/-- The prefix sum of length zero is zero. -/
 @[simp]
 theorem prefixSum_zero (t : Tree h) : t.prefixSum 0 = 0 := by
   induction t <;> simp_all [prefixSum]
 
+/-- The prefix sum over all `2 ^ h` leaves equals `t.total`. -/
 @[simp]
 theorem prefixSum_length (t : Tree h) : t.prefixSum (2 ^ h) = t.total := by
   induction t with
@@ -159,10 +166,11 @@ theorem leaves_add (t : Tree h) (i δ : ℕ) (hi : i < 2 ^ h) :
 /-- Number of words occupied by a complete aggregation tree. -/
 def words (h : ℕ) : ℕ := 2 * 2 ^ h - 1
 
+/-- A leaf tree of height zero occupies one word. -/
 @[simp]
 theorem words_zero : words 0 = 1 := rfl
 
-theorem words_succ (h : ℕ) : words (h + 1) = 1 + words h + words h := by
+private theorem words_succ (h : ℕ) : words (h + 1) = 1 + words h + words h := by
   have := Nat.two_pow_pos h
   simp only [words, pow_succ]
   omega
@@ -174,6 +182,7 @@ def Rep : {h : ℕ} → Tree h → ℕ → (ℕ → ℕ) → Prop
   | h + 1, .node l r, b, mem =>
     mem b = l.total + r.total ∧ l.Rep (b + 1) mem ∧ r.Rep (b + 2 * 2 ^ h) mem
 
+/-- The root word at base address `b` stores `t.total`. -/
 theorem Rep.root {t : Tree h} (ht : t.Rep b mem) : mem b = t.total := by
   cases t with
   | leaf => exact ht
@@ -211,10 +220,12 @@ def zero : (h : ℕ) → Tree h
   | 0 => .leaf 0
   | h + 1 => .node (zero h) (zero h)
 
+/-- The root aggregate of the all-zero tree is zero. -/
 @[simp]
 theorem total_zero (h : ℕ) : (zero h).total = 0 := by
   induction h <;> simp_all [zero, total]
 
+/-- All-zero memory represents the all-zero tree at any base address `b`. -/
 theorem rep_zero (h b : ℕ) : (zero h).Rep b (fun _ => 0) := by
   induction h generalizing b <;> simp_all [zero, Rep]
 

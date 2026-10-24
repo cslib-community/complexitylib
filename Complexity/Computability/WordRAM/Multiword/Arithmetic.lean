@@ -57,14 +57,14 @@ end Arithmetic
 namespace Schoolbook
 
 /-- A multiplication cell writes only its output digit and arithmetic workspace. -/
-theorem preserves_cell (a b d i : Fin (r + 4)) (hi : Workspace.IsDigit i) (hid : i ≠ d) :
+private theorem preserves_cell (a b d i : Fin (r + 4)) (hi : Workspace.IsDigit i) (hid : i ≠ d) :
     (cell a b d).Preserves i := by
   obtain ⟨ht, hc, _, _⟩ := Workspace.digit_ne hi
   simp only [cell, Code.Preserves, Op.dest_bin, ne_eq, Option.some.injEq]
   exact ⟨Ne.symm ht, Ne.symm ht, Ne.symm ht, Ne.symm hid, Ne.symm hc⟩
 
 /-- Every digit register outside a row's destinations is syntactically preserved. -/
-theorem preserves_row (a : Fin (r + 4)) (bs ds : List (Fin (r + 4)))
+private theorem preserves_row (a : Fin (r + 4)) (bs ds : List (Fin (r + 4)))
     (i : Fin (r + 4)) (hi : Workspace.IsDigit i) (hid : i ∉ ds) :
     (row a bs ds).Preserves i := by
   have hc := (Workspace.digit_ne hi).2.1
@@ -80,7 +80,7 @@ theorem preserves_row (a : Fin (r + 4)) (bs ds : List (Fin (r + 4)))
         ih ds (fun hm => hid (by simp [hm]))⟩
 
 /-- Every digit register outside all row destinations is syntactically preserved. -/
-theorem preserves_rows (as bs ds os : List (Fin (r + 4)))
+private theorem preserves_rows (as bs ds os : List (Fin (r + 4)))
     (i : Fin (r + 4)) (hi : Workspace.IsDigit i) (hid : i ∉ ds ++ os) :
     (rows as bs ds os).Preserves i := by
   have hc := (Workspace.digit_ne hi).2.1
@@ -103,7 +103,7 @@ theorem preserves_rows (as bs ds os : List (Fin (r + 4)))
           List.not_mem_nil, false_or] using hm
 
 /-- Clearing an accumulator preserves every digit register outside it. -/
-theorem preserves_clear (ds : List (Fin (r + 4)))
+private theorem preserves_clear (ds : List (Fin (r + 4)))
     (i : Fin (r + 4)) (hi : Workspace.IsDigit i) (hid : i ∉ ds) :
     (clear ds).Preserves i := by
   induction ds with
@@ -116,7 +116,7 @@ theorem preserves_clear (ds : List (Fin (r + 4)))
       (show d ≠ i from fun he => hid (by simp [he]))
 
 /-- Radix initialization writes only the four reserved workspace registers. -/
-theorem preserves_setup (i : Fin (r + 4)) (hi : Workspace.IsDigit i) :
+private theorem preserves_setup (i : Fin (r + 4)) (hi : Workspace.IsDigit i) :
     (Workspace.setup (r := r)).Preserves i := by
   obtain ⟨ht, hc, hb, hz⟩ := Workspace.digit_ne hi
   simp only [Workspace.setup, Code.Preserves, Op.width, Op.bin, Op.dest,
@@ -131,7 +131,7 @@ theorem preserves_program (as bs ds os : List (Fin (r + 4)))
     preserves_rows as bs ds os i hi hid⟩
 
 /-- Clear a digit list, with its full frame and exact cost. -/
-theorem exec_clear_framed {w : ℕ} (ds : List (Fin (r + 4)))
+private theorem exec_clear_framed {w : ℕ} (ds : List (Fin (r + 4)))
     (hds : ∀ i ∈ ds, Workspace.IsDigit i) (hnd : ds.Nodup) (x : Data (r + 4)) :
     ∃ y, Exec w (clear ds) x y (ds.length + 1) ∧
       (∀ i ∈ ds, y.regs i = 0) ∧ Arithmetic.Frame x y ds := by
@@ -200,7 +200,7 @@ namespace Difference
 
 /-- Subtraction without a sign hypothesis, retaining the exact final borrow equation.
 This is the arithmetic core used before clearing a negative result. -/
-theorem exec_borrow_framed {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
+private theorem exec_borrow_framed {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
     (hlen : bs.length = ds.length) (hbs : ∀ b ∈ bs, IsDigit b)
     (hds : ∀ d ∈ ds, IsDigit d) (hnd : ds.Nodup) (hdis : List.Disjoint bs ds)
     (x : Data (r + 4))

@@ -56,11 +56,14 @@ def universeSize : ℕ → ℕ
   | 0 => 2
   | d + 1 => universeSize d * universeSize d
 
+/-- The base universe at depth zero has two elements. -/
 @[simp] theorem universeSize_zero : universeSize 0 = 2 := rfl
 
+/-- Each additional level of depth squares the universe size. -/
 @[simp] theorem universeSize_succ (d : ℕ) :
     universeSize (d + 1) = universeSize d * universeSize d := rfl
 
+/-- Every depth has universe size at least two. -/
 theorem two_le_universeSize (d : ℕ) : 2 ≤ universeSize d := by
   induction d with
   | zero => decide
@@ -68,6 +71,7 @@ theorem two_le_universeSize (d : ℕ) : 2 ≤ universeSize d := by
     rw [universeSize_succ]
     nlinarith
 
+/-- Every depth has positive universe size. -/
 theorem universeSize_pos (d : ℕ) : 0 < universeSize d := by
   have := two_le_universeSize d
   omega
@@ -85,14 +89,19 @@ def span : ℕ → ℕ
   | 0 => 5
   | d + 1 => 5 + (universeSize d + 1) * span d
 
+/-- A depth-zero leaf record occupies five header words. -/
 @[simp] theorem span_zero : span 0 = 5 := rfl
 
+/-- A depth-`d + 1` record consists of five header words, one summary, and `universeSize d`
+clusters of size `span d`. -/
 @[simp] theorem span_succ (d : ℕ) :
     span (d + 1) = 5 + (universeSize d + 1) * span d := rfl
 
+/-- Every record occupies at least the five header words. -/
 theorem five_le_span (d : ℕ) : 5 ≤ span d := by
   cases d <;> simp [span_succ]
 
+/-- Every record occupies a positive number of words. -/
 theorem span_pos (d : ℕ) : 0 < span d := by
   have := five_le_span d
   omega
@@ -118,6 +127,7 @@ def summaryOffset : ℕ := 5
 /-- Relative start of cluster `i` in a depth-`d + 1` record. The summary occupies slot zero. -/
 def clusterOffset (d i : ℕ) : ℕ := 5 + (i + 1) * span d
 
+/-- Every header word offset lies strictly within the record span. -/
 theorem header_word_lt_span (d : ℕ) {h : ℕ} (hh : h < 5) : h < span d :=
   hh.trans_le (five_le_span d)
 
@@ -127,6 +137,7 @@ theorem header_word_lt_summary_word {h : ℕ} (hh : h < 5) (a : ℕ) :
   dsimp only [summaryOffset]
   omega
 
+/-- The summary block fits within the parent record's span. -/
 theorem summary_end_le_span (d : ℕ) : summaryOffset + span d ≤ span (d + 1) := by
   rw [span_succ]
   dsimp only [summaryOffset]
@@ -138,6 +149,7 @@ theorem summary_word_lt_span (d : ℕ) {a : ℕ} (ha : a < span d) :
   have := summary_end_le_span d
   omega
 
+/-- Each valid cluster block fits within the parent record's span. -/
 theorem cluster_end_le_span (d : ℕ) {i : ℕ} (hi : i < universeSize d) :
     clusterOffset d i + span d ≤ span (d + 1) := by
   have h := Nat.mul_le_mul_right (span d) (show i + 2 ≤ universeSize d + 1 by omega)

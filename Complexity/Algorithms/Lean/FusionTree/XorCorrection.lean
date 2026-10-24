@@ -44,6 +44,8 @@ def xorSketchNeighbor {n : ℕ} (w : ℕ) (keys : Fin n → ℕ) (q : ℕ) : Opt
   chooseByScore (fun i => keys i ^^^ q)
     (sketchPredecessor w keys q) (sketchSuccessor w keys q)
 
+/-- Any index returned by `xorSketchNeighbor` is a sketch neighbor minimizing the exclusive-or
+distance to `q`. -/
 theorem xorSketchNeighbor_spec {n w q : ℕ} {keys : Fin n → ℕ} {j : Fin n}
     (h : xorSketchNeighbor w keys q = some j) :
     IsSketchNeighbor w keys q j ∧
@@ -51,13 +53,14 @@ theorem xorSketchNeighbor_spec {n w q : ℕ} {keys : Fin n → ℕ} {j : Fin n}
   obtain ⟨hj, hmin⟩ := chooseByScore_spec (fun i => keys i ^^^ q) h
   exact ⟨(isSketchNeighbor_iff j).mpr hj, fun i hi => hmin i ((isSketchNeighbor_iff i).mp hi)⟩
 
+/-- `xorSketchNeighbor` returns `none` if and only if the key table is empty. -/
 theorem xorSketchNeighbor_eq_none_iff {n w q : ℕ} {keys : Fin n → ℕ} :
     xorSketchNeighbor w keys q = none ↔ n = 0 := by
   rw [xorSketchNeighbor, chooseByScore_eq_none_iff]
   rw [← chooseByScore_eq_none_iff (fun i => divergenceScore w (keys i) q)]
   exact bestSketchNeighbor_eq_none_iff
 
-theorem miss_of_xorSketchNeighbor {n w q : ℕ} {keys : Fin n → ℕ}
+private theorem miss_of_xorSketchNeighbor {n w q : ℕ} {keys : Fin n → ℕ}
     (hsorted : StrictMono keys) (hbound : ∀ i, keys i < 2 ^ w) {j : Fin n}
     (hj : xorSketchNeighbor w keys q = some j) (hmiss : keys j ≠ q) :
     ∀ i, keys i ≠ q := by
@@ -66,7 +69,7 @@ theorem miss_of_xorSketchNeighbor {n w q : ℕ} {keys : Fin n → ℕ}
   rw [hi, Nat.xor_self] at hscore
   exact hmiss (Nat.xor_eq_zero_iff.mp (Nat.eq_zero_of_le_zero hscore))
 
-theorem xorSketchNeighbor_highestDiff_le {n w q : ℕ} {keys : Fin n → ℕ}
+private theorem xorSketchNeighbor_highestDiff_le {n w q : ℕ} {keys : Fin n → ℕ}
     (hq : q < 2 ^ w) (hbound : ∀ i, keys i < 2 ^ w) (hmiss : ∀ i, keys i ≠ q)
     {j : Fin n} (hj : xorSketchNeighbor w keys q = some j) (i : Fin n)
     (hi : IsSketchNeighbor w keys q i) :

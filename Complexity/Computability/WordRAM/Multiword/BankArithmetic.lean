@@ -22,6 +22,8 @@ other bank entry.
 
 ## Main definitions
 
+* `Bank.productLow`, `Bank.productHigh`: eighteen-register scratch slices holding the low and high
+  digits of a thirty-six-digit product.
 * `Bank.multiply`: multiplication through a separate full-product scratch area.
 * `Bank.subtract`: copying followed by truncating natural-number subtraction.
 
@@ -54,10 +56,10 @@ def productLow (n : ℕ) : List (Fin (capacity n + 4)) :=
 def productHigh (n : ℕ) : List (Fin (capacity n + 4)) :=
   registers 22 18 (by dsimp [capacity]; omega)
 
-theorem length_productLow (n : ℕ) : (productLow n).length = 18 := by
+private theorem length_productLow (n : ℕ) : (productLow n).length = 18 := by
   simp [productLow, registers]
 
-theorem length_productHigh (n : ℕ) : (productHigh n).length = 18 := by
+private theorem length_productHigh (n : ℕ) : (productHigh n).length = 18 := by
   simp [productHigh, registers]
 
 private theorem register_bounds {start len r : ℕ} {h : start + len ≤ r}
@@ -111,6 +113,7 @@ def multiply (a b d : Fin n) : Code .standard (capacity n + 4) :=
   .seq (Schoolbook.program (regs a) (regs b) (productLow n) (productHigh n))
     (Transfer.copy (productLow n) (regs d))
 
+/-- Bank multiplication compiles to `2484` instructions. -/
 theorem size_multiply (a b d : Fin n) : (multiply a b d).size = 2484 := by
   have hm := Schoolbook.size_program (regs a) (regs b) (productLow n) (productHigh n)
     ((length_regs b).trans (length_productLow n).symm)
@@ -188,6 +191,7 @@ def subtract (w : ℕ) (a b d : Fin n) : Code .standard (capacity n + 4) :=
   .seq (Transfer.copy (regs a) (regs d))
     (Difference.truncatingProgram w (regs b) (regs d))
 
+/-- Bank subtraction compiles to `153` instructions. -/
 theorem size_subtract (w : ℕ) (a b d : Fin n) :
     (subtract w a b d).size = 153 := by
   simp only [subtract, Code.size,

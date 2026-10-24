@@ -19,8 +19,13 @@ the physical word, even at width two. In particular, no modular overflow is used
 
 ## Main definitions
 
-* `Difference.cell`: six standard instructions for a digit and outgoing borrow.
-* `Difference.program`: a fixed-length, in-place multiword difference.
+* `Difference.total`, `Difference.borrow`, `Difference.base`, `Difference.one`,
+  `Difference.IsDigit`, `Difference.Frame`: reserved workspace registers, digit-register
+  predicate, and frame relation.
+* `Difference.cell`, `Difference.cellResult`: six standard instructions for a digit and
+  outgoing borrow, and their mathematical state update.
+* `Difference.digits`, `Difference.program`: unrolled digit cells and the fixed-length,
+  in-place multiword difference routine.
 
 ## Main results
 
@@ -136,6 +141,7 @@ def digits : List (Fin (r + 4)) → List (Fin (r + 4)) → Code .standard (r + 4
   | b :: bs, d :: ds => .seq (cell b d) (digits bs ds)
   | _, _ => .op (.copy borrow borrow)
 
+/-- Unrolling `ds.length` subtraction cells takes `6 * ds.length + 1` instructions. -/
 theorem size_digits (bs ds : List (Fin (r + 4))) (hlen : bs.length = ds.length) :
     (digits bs ds).size = 6 * ds.length + 1 := by
   induction bs generalizing ds with
@@ -247,6 +253,7 @@ theorem exec_digits {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
 def program (w : ℕ) (bs ds : List (Fin (r + 4))) : Code .standard (r + 4) :=
   .seq (ram[base ← #(radix w); one ← #1; borrow ← #0]) (digits bs ds)
 
+/-- Exact instruction count of `program`, including the three constant-setup instructions. -/
 theorem size_program (w : ℕ) (bs ds : List (Fin (r + 4)))
     (hlen : bs.length = ds.length) : (program w bs ds).size = 6 * ds.length + 4 := by
   simp only [program, Code.size, size_digits bs ds hlen]

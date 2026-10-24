@@ -26,9 +26,14 @@ controls separately. The exact trace lengths below count Boolean decisions, not 
 
 ## Main definitions
 
-* `Cslib.BitonicSort.mergeTrace`, `Cslib.BitonicSort.sortTrace`: record comparison decisions.
-* `Cslib.BitonicSort.routeSort`: replay saved decisions on arbitrary payloads.
-* `Cslib.BitonicSort.unrouteSort`: reverse those decisions.
+* `Cslib.BitonicSort.routeLayer`, `Cslib.BitonicSort.layerFlags`: exchange corresponding entries
+  between two halves according to saved flags, and the comparison flags of a bitonic layer.
+* `Cslib.BitonicSort.mergeTraceSize`, `Cslib.BitonicSort.sortTraceSize`,
+  `Cslib.BitonicSort.mergeTrace`, `Cslib.BitonicSort.sortTrace`: trace lengths and comparison
+  decision traces for bitonic merge and sort.
+* `Cslib.BitonicSort.routeMerge`, `Cslib.BitonicSort.routeSort`: replay saved decisions on
+  arbitrary payloads.
+* `Cslib.BitonicSort.unrouteMerge`, `Cslib.BitonicSort.unrouteSort`: reverse those decisions.
 
 ## Main results
 
@@ -68,7 +73,7 @@ def layerFlags [LinearOrder κ] (key : α → κ) {n : ℕ} (ascending : Bool)
   fun i => decide (if ascending then key (x (Fin.natAdd n i)) < key (x (Fin.castAdd n i))
     else ¬key (x (Fin.natAdd n i)) < key (x (Fin.castAdd n i)))
 
-theorem routeLayer_layerFlags [LinearOrder κ] (key : α → κ) {n : ℕ}
+private theorem routeLayer_layerFlags [LinearOrder κ] (key : α → κ) {n : ℕ}
     (ascending : Bool) (x : Fin (n + n) → α) :
     routeLayer (layerFlags key ascending x) x = compareLayer key ascending x := by
   funext i
@@ -150,6 +155,7 @@ def unrouteSort : (d : ℕ) → (Fin (sortTraceSize d) → Bool) →
       (unrouteSort d (children ∘ Fin.castAdd (sortTraceSize d)) (merged ∘ Fin.castAdd (arity d)))
       (unrouteSort d (children ∘ Fin.natAdd (sortTraceSize d)) (merged ∘ Fin.natAdd (arity d)))
 
+/-- Reversing a routed bitonic merge recovers the original payload. -/
 @[simp] theorem unrouteMerge_routeMerge (d : ℕ) (flags : Fin (mergeTraceSize d) → Bool)
     (x : Fin (arity d) → α) : unrouteMerge d flags (routeMerge d flags x) = x := by
   induction d with
@@ -161,6 +167,7 @@ def unrouteSort : (d : ℕ) → (Fin (sortTraceSize d) → Bool) →
     rw [Fin.append_castAdd_natAdd]
     exact routeLayer_routeLayer _ x
 
+/-- Routing a reversed bitonic merge recovers the payload. -/
 @[simp] theorem routeMerge_unrouteMerge (d : ℕ) (flags : Fin (mergeTraceSize d) → Bool)
     (x : Fin (arity d) → α) : routeMerge d flags (unrouteMerge d flags x) = x := by
   induction d with
@@ -171,6 +178,7 @@ def unrouteSort : (d : ℕ) → (Fin (sortTraceSize d) → Bool) →
     simp only [Function.comp_def, Fin.append_left, Fin.append_right, ih]
     exact Fin.append_castAdd_natAdd
 
+/-- Reversing a routed bitonic sort recovers the original payload. -/
 @[simp] theorem unrouteSort_routeSort (d : ℕ) (flags : Fin (sortTraceSize d) → Bool)
     (x : Fin (arity d) → α) : unrouteSort d flags (routeSort d flags x) = x := by
   induction d with
@@ -182,6 +190,7 @@ def unrouteSort : (d : ℕ) → (Fin (sortTraceSize d) → Bool) →
     simp only [Function.comp_def, Fin.append_left, Fin.append_right, ih]
     exact Fin.append_castAdd_natAdd
 
+/-- Routing a reversed bitonic sort recovers the payload. -/
 @[simp] theorem routeSort_unrouteSort (d : ℕ) (flags : Fin (sortTraceSize d) → Bool)
     (x : Fin (arity d) → α) : routeSort d flags (unrouteSort d flags x) = x := by
   induction d with
@@ -192,7 +201,7 @@ def unrouteSort : (d : ℕ) → (Fin (sortTraceSize d) → Bool) →
     simp only [Function.comp_def, Fin.append_left, Fin.append_right, ih]
     erw [Fin.append_castAdd_natAdd, routeMerge_unrouteMerge]
 
-theorem routeMerge_mergeTrace [LinearOrder κ] (key : α → κ) (d : ℕ)
+private theorem routeMerge_mergeTrace [LinearOrder κ] (key : α → κ) (d : ℕ)
     (ascending : Bool) (x : Fin (arity d) → α) :
     routeMerge d (mergeTrace key d ascending x) x = merge key d ascending x := by
   induction d with
@@ -204,6 +213,7 @@ theorem routeMerge_mergeTrace [LinearOrder κ] (key : α → κ) (d : ℕ)
     rw [routeLayer_layerFlags]
     simp only [ih]
 
+/-- Routing a payload along its own sort trace computes `sort`. -/
 theorem routeSort_sortTrace [LinearOrder κ] (key : α → κ) (d : ℕ)
     (ascending : Bool) (x : Fin (arity d) → α) :
     routeSort d (sortTrace key d ascending x) x = sort key d ascending x := by
@@ -215,13 +225,13 @@ theorem routeSort_sortTrace [LinearOrder κ] (key : α → κ) (d : ℕ)
     simp only [Function.comp_def, Fin.append_left, Fin.append_right, ih]
     exact routeMerge_mergeTrace _ _ _ _
 
-theorem unrouteSort_sort [LinearOrder κ] (key : α → κ) (d : ℕ)
+private theorem unrouteSort_sort [LinearOrder κ] (key : α → κ) (d : ℕ)
     (ascending : Bool) (x : Fin (arity d) → α) :
     unrouteSort d (sortTrace key d ascending x) (sort key d ascending x) = x := by
   rw [← routeSort_sortTrace, unrouteSort_routeSort]
 
 /-- Moving a payload and then transforming it is the same as transforming before moving. -/
-theorem routeLayer_comp {n : ℕ} (flags : Fin n → Bool) (f : α → β)
+private theorem routeLayer_comp {n : ℕ} (flags : Fin n → Bool) (f : α → β)
     (x : Fin (n + n) → α) : routeLayer flags (f ∘ x) = f ∘ routeLayer flags x := by
   funext i
   cases i using Fin.addCases <;>
@@ -229,7 +239,7 @@ theorem routeLayer_comp {n : ℕ} (flags : Fin n → Bool) (f : α → β)
     split_ifs <;> rfl
 
 /-- Saved merge decisions do not inspect the payload. -/
-theorem routeMerge_comp (d : ℕ) (flags : Fin (mergeTraceSize d) → Bool) (f : α → β)
+private theorem routeMerge_comp (d : ℕ) (flags : Fin (mergeTraceSize d) → Bool) (f : α → β)
     (x : Fin (arity d) → α) : routeMerge d flags (f ∘ x) = f ∘ routeMerge d flags x := by
   induction d with
   | zero => rfl

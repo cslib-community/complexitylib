@@ -25,9 +25,12 @@ increments must fit the chosen word width. This is a segment tree, not a Fenwick
 
 ## Main definitions
 
-* `spec`: array operations and mathematical answers, with word-fit admissibility conditions.
-* `program`: the fixed dispatcher and register-only calling convention.
-* `certificate`: a semantic realization on the bounded-word machine.
+* `Operation`, `spec`: array operations and mathematical answers, with word-fit admissibility
+  conditions.
+* `setup`, `setupData`, `dispatch`, `program`: the register-setup fragment, fixed dispatcher, and
+  register-only calling convention.
+* `Rep`, `zeroData`, `certificate`: the bounded-tree representation relation, initial zero state,
+  and semantic realization on the bounded-word machine.
 
 ## Main results
 
@@ -93,12 +96,12 @@ def setupData (x : Data 14) : Data 14 :=
 
 variable {h w b : ℕ} {x : Data 14}
 
-theorem setup_exec (hw : Fits w 2) : Exec w setup x (setupData x) 7 := by
+private theorem setup_exec (hw : Fits w 2) : Exec w setup x (setupData x) 7 := by
   have h1 := hw.of_le (by decide : 1 ≤ 2)
   ram_eval [setup, setupData, hw, h1]
 
-theorem setup_entry : Entry (x.regs root) (x.regs capacity) (x.regs position) (x.regs delta)
-    (setupData x) := by
+private theorem setup_entry : Entry (x.regs root) (x.regs capacity) (x.regs position)
+    (x.regs delta) (setupData x) := by
   constructor <;> simp +decide [setupData]
 
 /-- A list is represented by a bounded tree, with persistent root and capacity registers. -/
@@ -113,6 +116,7 @@ theorem Rep.length {s : List ℕ} (hx : Rep h b w s x) : s.length = 2 ^ h := by
   obtain ⟨t, rfl, _⟩ := hx.tree
   exact t.length_leaves
 
+/-- Every encoded argument of a valid operation fits in a `w`-bit word. -/
 theorem arguments_fit (ha : Fits w (b + 2 * 2 ^ h)) {s : List ℕ} (o : Operation)
     (ho : (spec h w).valid s o) (j : Fin 14) : Fits w ((program h w).encode o j) := by
   have hp := Nat.two_pow_pos h

@@ -36,17 +36,25 @@ over a larger one; `Cslib.WordRAM.Basis.restrict` gives the sub-bases of a basis
 
 * `Cslib.WordRAM.Basis`: operation symbols, their meaning at each word size, and the symbols
   exempt from word-size monotonicity.
-* `Cslib.WordRAM.BinOp`, `Cslib.WordRAM.StandardOp`, `Cslib.WordRAM.Basis.standard`: the standard
-  word-RAM operations: addition, subtraction, multiplication, bitwise operations and shifts as in
-  [Hagerup][Hagerup1998], together with division, remainder and the word size, with truncated
-  subtraction and Lean's division by zero.
-* `Cslib.WordRAM.BinOp.evalExact`, `Cslib.WordRAM.Basis.exact`: the same operations with their
-  exact values: subtraction below zero and division and remainder by zero are undefined.
-* `Cslib.WordRAM.Basis.Hom`: a map of bases that keeps the meaning of every operation.
-* `Cslib.WordRAM.Basis.restrict`: the sub-basis of the operations satisfying a predicate.
-* `Cslib.WordRAM.Basis.additive`, `Cslib.WordRAM.Basis.arithmetic`: addition and subtraction; and
-  these with multiplication, division and remainder, the operation symbols of the bounded-word RAM
-  of [MIT–ULB CompGeom Group][Tromino2025], on unsigned words with truncated subtraction.
+* `Cslib.WordRAM.BinOp`, `Cslib.WordRAM.BinOp.eval`, `Cslib.WordRAM.StandardOp`,
+  `Cslib.WordRAM.StandardOp.arity`, `Cslib.WordRAM.StandardOp.eval`,
+  `Cslib.WordRAM.Basis.standard`: the standard word-RAM operations: addition, subtraction,
+  multiplication, bitwise operations and shifts as in [Hagerup][Hagerup1998], together with
+  division, remainder and the word size, with truncated subtraction and Lean's division by zero.
+* `Cslib.WordRAM.BinOp.evalExact`, `Cslib.WordRAM.StandardOp.evalExact`,
+  `Cslib.WordRAM.Basis.exact`: the same operations with their exact values: subtraction below zero
+  and division and remainder by zero are undefined.
+* `Cslib.WordRAM.Basis.Hom`, `Cslib.WordRAM.Basis.Hom.map`, `Cslib.WordRAM.Basis.Hom.id`,
+  `Cslib.WordRAM.Basis.Hom.comp`: maps of bases that keep the meaning of every operation, their
+  action on operation symbols, identity, and composition.
+* `Cslib.WordRAM.Basis.restrict`, `Cslib.WordRAM.Basis.restrictHom`: the sub-basis of the
+  operations satisfying a predicate and its inclusion map.
+* `Cslib.WordRAM.Basis.additive`, `Cslib.WordRAM.Basis.arithmetic`,
+  `Cslib.WordRAM.Basis.additiveHomArithmetic`, `Cslib.WordRAM.Basis.arithmeticHomStandard`,
+  `Cslib.WordRAM.Basis.additiveHomStandard`: addition and subtraction; these with multiplication,
+  division and remainder, the operation symbols of the bounded-word RAM of
+  [MIT–ULB CompGeom Group][Tromino2025], on unsigned words with truncated subtraction; and the
+  inclusion maps between them.
 
 ## Main results
 
@@ -168,16 +176,20 @@ abbrev Basis.standard : Basis where
     | bin => exact h
     | width => exact absurd rfl hf
 
+/-- The operation type of `Basis.standard` is `StandardOp`. -/
 theorem Basis.standard_op : Basis.standard.Op = StandardOp := rfl
 
+/-- Interpreting a binary operation `.bin f` in `Basis.standard` evaluates `f.eval`. -/
 @[simp]
 theorem Basis.standard_interp_bin (w : ℕ) (f : BinOp) (x : Fin 2 → ℕ) :
     Basis.standard.interp w (.bin f) x = some (f.eval (x 0) (x 1)) := rfl
 
+/-- Interpreting `.width` in `Basis.standard` at word size `w` returns `some w`. -/
 @[simp]
 theorem Basis.standard_interp_width (w : ℕ) (x : Fin 0 → ℕ) :
     Basis.standard.interp w .width x = some w := rfl
 
+/-- An operation of `Basis.standard` reads the word size if and only if it is `.width`. -/
 @[simp]
 theorem Basis.standard_readsWidth (f : StandardOp) :
     Basis.standard.ReadsWidth f ↔ f = .width := Iff.rfl
@@ -221,14 +233,17 @@ abbrev Basis.exact : Basis where
     | bin => exact h
     | width => exact absurd rfl hf
 
+/-- Interpreting a binary operation `.bin f` in `Basis.exact` evaluates `f.evalExact`. -/
 @[simp]
 theorem Basis.exact_interp_bin (w : ℕ) (f : BinOp) (x : Fin 2 → ℕ) :
     Basis.exact.interp w (.bin f) x = f.evalExact (x 0) (x 1) := rfl
 
+/-- Interpreting `.width` in `Basis.exact` at word size `w` returns `some w`. -/
 @[simp]
 theorem Basis.exact_interp_width (w : ℕ) (x : Fin 0 → ℕ) :
     Basis.exact.interp w .width x = some w := rfl
 
+/-- An operation of `Basis.exact` reads the word size if and only if it is `.width`. -/
 @[simp]
 theorem Basis.exact_readsWidth (f : StandardOp) :
     Basis.exact.ReadsWidth f ↔ f = .width := Iff.rfl
@@ -254,6 +269,7 @@ variable {B B' B'' : Basis}
 /-- The image of an operation under a map of bases. -/
 abbrev map (φ : B.Hom B') (f : B.Op) : B'.Op := φ.toHom f
 
+/-- A map of bases preserves the arity of every operation. -/
 theorem arity_map (φ : B.Hom B') (f : B.Op) : B'.Arity (φ.map f) = B.Arity f :=
   φ.toHom.arity_eq f
 
@@ -275,9 +291,11 @@ def comp (ψ : B'.Hom B'') (φ : B.Hom B') : B.Hom B'' where
   preserves w f x := (ψ.preserves w (φ.toHom f) _).trans (φ.preserves w f x)
   readsWidth_of_map f h := φ.readsWidth_of_map f (ψ.readsWidth_of_map _ h)
 
+/-- The identity map of bases fixes every operation symbol. -/
 @[simp]
 theorem id_map (f : B.Op) : (Hom.id B).map f = f := rfl
 
+/-- Composition of maps of bases acts by composition on operation symbols. -/
 @[simp]
 theorem comp_map (ψ : B'.Hom B'') (φ : B.Hom B') (f : B.Op) :
     (ψ.comp φ).map f = ψ.map (φ.map f) := rfl
