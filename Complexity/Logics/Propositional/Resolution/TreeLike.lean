@@ -100,8 +100,10 @@ def size : {c : Clause V} → φ.Derivation c → ℕ
   | _, mem _ => 1
   | _, resolvent _ d₁ d₂ _ _ => d₁.size + d₂.size + 1
 
+/-- A leaf derivation of a clause of `φ` has size `1`. -/
 @[simp] theorem size_mem (hc : c ∈ φ) : (mem hc).size = 1 := rfl
 
+/-- The size of a resolution step is the sum of the sizes of its two subderivations plus `1`. -/
 @[simp] theorem size_resolvent {c₁ c₂ : Clause V} (v : V) (d₁ : φ.Derivation c₁)
     (d₂ : φ.Derivation c₂) (hv₁ : (v, true) ∈ c₁) (hv₂ : (v, false) ∈ c₂) :
     (resolvent v d₁ d₂ hv₁ hv₂).size = d₁.size + d₂.size + 1 := rfl

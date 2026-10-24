@@ -24,8 +24,9 @@ truth values (`Function.update`).
 
 The value of a formula depends only on its free variables (`QBF.eval_congr`), so a closed formula,
 one without free variables, has the same value under every assignment (`QBF.eval_eq_of_closed`).
-The true closed formulas form the problem `TQBF`, which is `PSPACE`-complete [Arora and Barak,
-Section 4.2][AroraBarak09] (`Cslib.Complexity.TQBF_pspaceComplete`).
+The true closed formulas form the problem `TQBF` (`Cslib.Complexity.TQBF`), which is proved
+`PSPACE`-complete in `Complexity.Computability.Complexity.Classes.Space.TQBF`
+(`Cslib.Complexity.TQBF_pspaceComplete`) [Arora and Barak, Section 4.2][AroraBarak09].
 
 cslib's `Cslib.Logic.PL.Proposition` has no quantifiers and is a syntax for proof systems rather
 than an evaluated one, so it is not reused. `QBF V` instantiates cslib's logical operator
@@ -112,22 +113,30 @@ def eval (σ : V → Bool) : QBF V → Bool
 
 variable (σ : V → Bool) (v : V) (φ ψ : QBF V)
 
+/-- Evaluating a variable `var v` under `σ` yields `σ v`. -/
 @[simp] theorem eval_var : (var v).eval σ = σ v := rfl
 
+/-- The constant `top` evaluates to `true`. -/
 @[simp] theorem eval_top : (top : QBF V).eval σ = true := rfl
 
+/-- The constant `bot` evaluates to `false`. -/
 @[simp] theorem eval_bot : (bot : QBF V).eval σ = false := rfl
 
+/-- Evaluating `φ.not` negates the truth value of `φ`. -/
 @[simp] theorem eval_not : φ.not.eval σ = !φ.eval σ := rfl
 
+/-- Evaluating `φ.and ψ` takes the Boolean conjunction of `φ.eval σ` and `ψ.eval σ`. -/
 @[simp] theorem eval_and : (φ.and ψ).eval σ = (φ.eval σ && ψ.eval σ) := rfl
 
+/-- Evaluating `φ.or ψ` takes the Boolean disjunction of `φ.eval σ` and `ψ.eval σ`. -/
 @[simp] theorem eval_or : (φ.or ψ).eval σ = (φ.eval σ || ψ.eval σ) := rfl
 
+/-- Evaluating `ex v φ` takes the disjunction of `φ` with `v` set to `false` and to `true`. -/
 @[simp] theorem eval_ex :
     (ex v φ).eval σ = (φ.eval (Function.update σ v false) || φ.eval (Function.update σ v true)) :=
   rfl
 
+/-- Evaluating `all v φ` takes the conjunction of `φ` with `v` set to `false` and to `true`. -/
 @[simp] theorem eval_all :
     (all v φ).eval σ = (φ.eval (Function.update σ v false) && φ.eval (Function.update σ v true)) :=
   rfl
@@ -164,20 +173,28 @@ def freeVars : QBF V → Finset V
   | .ex v φ => (freeVars φ).erase v
   | .all v φ => (freeVars φ).erase v
 
+/-- The free variables of `var v` are `{v}`. -/
 @[simp] theorem freeVars_var : (var v).freeVars = {v} := rfl
 
+/-- The constant `top` has no free variables. -/
 @[simp] theorem freeVars_top : (top : QBF V).freeVars = ∅ := rfl
 
+/-- The constant `bot` has no free variables. -/
 @[simp] theorem freeVars_bot : (bot : QBF V).freeVars = ∅ := rfl
 
+/-- Negation preserves the set of free variables. -/
 @[simp] theorem freeVars_not : φ.not.freeVars = φ.freeVars := rfl
 
+/-- The free variables of `φ.and ψ` are the union of those of `φ` and `ψ`. -/
 @[simp] theorem freeVars_and : (φ.and ψ).freeVars = φ.freeVars ∪ ψ.freeVars := rfl
 
+/-- The free variables of `φ.or ψ` are the union of those of `φ` and `ψ`. -/
 @[simp] theorem freeVars_or : (φ.or ψ).freeVars = φ.freeVars ∪ ψ.freeVars := rfl
 
+/-- Existential quantification over `v` removes `v` from the free variables of `φ`. -/
 @[simp] theorem freeVars_ex : (ex v φ).freeVars = φ.freeVars.erase v := rfl
 
+/-- Universal quantification over `v` removes `v` from the free variables of `φ`. -/
 @[simp] theorem freeVars_all : (all v φ).freeVars = φ.freeVars.erase v := rfl
 
 variable {σ v φ}
@@ -252,10 +269,12 @@ def size : QBF V → ℕ
   | .all _ φ => size φ + 1
 
 omit [DecidableEq V] in
+/-- Every formula has size at least `1`. -/
 theorem one_le_size (φ : QBF V) : 1 ≤ φ.size := by
   cases φ <;> simp only [size] <;> omega
 
 omit [DecidableEq V] in
+/-- The number of variable occurrences in `φ` is at most `φ.size`. -/
 theorem length_vars_le_size (φ : QBF V) : φ.vars.length ≤ φ.size := by
   induction φ <;>
     simp only [vars, size, List.length_nil, List.length_append, List.length_cons] <;>
@@ -266,16 +285,20 @@ theorem length_vars_le_size (φ : QBF V) : φ.vars.length ≤ φ.size := by
 /-- A formula is closed when it has no free variables. -/
 def Closed (φ : QBF V) : Prop := φ.freeVars = ∅
 
+/-- Being closed is decidable when variable equality is decidable. -/
 instance : DecidablePred (Closed (V := V)) := fun φ => inferInstanceAs (Decidable (φ.freeVars = ∅))
 
 /-- A closed formula has the same value under every assignment. -/
 theorem eval_eq_of_closed (hφ : φ.Closed) (σ τ : V → Bool) : φ.eval σ = φ.eval τ :=
   eval_congr fun w hw => absurd (hφ ▸ hw) (Finset.notMem_empty w)
 
+/-- A negated formula `φ.not` is closed if and only if `φ` is closed. -/
 theorem closed_not : φ.not.Closed ↔ φ.Closed := Iff.rfl
 
+/-- A conjunction `φ.and ψ` is closed if and only if both `φ` and `ψ` are closed. -/
 theorem closed_and : (φ.and ψ).Closed ↔ φ.Closed ∧ ψ.Closed := Finset.union_eq_empty
 
+/-- A disjunction `φ.or ψ` is closed if and only if both `φ` and `ψ` are closed. -/
 theorem closed_or : (φ.or ψ).Closed ↔ φ.Closed ∧ ψ.Closed := Finset.union_eq_empty
 
 end QBF
@@ -301,12 +324,19 @@ def imp (φ ψ : QBF V) : QBF V := or (not φ) ψ
 /-- Equivalence. -/
 def iff (φ ψ : QBF V) : QBF V := or (and φ ψ) (and (not φ) (not ψ))
 
+/-- `⊤` on `QBF V` is `QBF.top`. -/
 instance : Top (QBF V) := ⟨.top⟩
+/-- `⊥` on `QBF V` is `QBF.bot`. -/
 instance : Bot (QBF V) := ⟨.bot⟩
+/-- `¬` on `QBF V` is `QBF.not`. -/
 instance : HasNot (QBF V) := ⟨.not⟩
+/-- `∧` on `QBF V` is `QBF.and`. -/
 instance : HasAnd (QBF V) := ⟨.and⟩
+/-- `∨` on `QBF V` is `QBF.or`. -/
 instance : HasOr (QBF V) := ⟨.or⟩
+/-- `→` on `QBF V` is `QBF.imp`. -/
 instance : HasImp (QBF V) := ⟨.imp⟩
+/-- `↔` on `QBF V` is `QBF.iff`. -/
 instance : HasIff (QBF V) := ⟨.iff⟩
 
 /-- `QBF.conj` agrees with `Cslib.Logic.finiteAnd` (`⋀`). -/
@@ -322,9 +352,13 @@ def ofClause (c : Clause V) : QBF V := c.foldr (fun l φ => or (lit l.1 l.2) φ)
 formula. -/
 def ofCNF (φ : CNF V) : QBF V := φ.foldr (fun c ψ => and (ofClause c) ψ) top
 
+/-- Existential quantification over `vs ++ ws` is existential quantification over `vs` followed by
+`ws`. -/
 theorem exs_append (vs ws : List V) (φ : QBF V) : exs (vs ++ ws) φ = exs vs (exs ws φ) :=
   List.foldr_append
 
+/-- Universal quantification over `vs ++ ws` is universal quantification over `vs` followed by
+`ws`. -/
 theorem alls_append (vs ws : List V) (φ : QBF V) : alls (vs ++ ws) φ = alls vs (alls ws φ) :=
   List.foldr_append
 
@@ -377,6 +411,8 @@ theorem eval_alls_eq_true_iff (vs : List V) (φ : QBF V) :
       rw [hτ x fun h => hx (List.mem_cons_of_mem _ h),
         Function.update_of_ne fun h => hx (by simp [h])]
 
+/-- The conjunction of a list `l` evaluates to `true` iff every formula in `l` evaluates to
+`true`. -/
 @[simp] theorem eval_conj (l : List (QBF V)) : (conj l).eval σ = l.all (·.eval σ) := by
   induction l with
   | nil => rfl
@@ -384,16 +420,20 @@ theorem eval_alls_eq_true_iff (vs : List V) (φ : QBF V) :
     change (φ.and (conj l)).eval σ = _
     simp [ih]
 
+/-- Evaluating `imp φ ψ` computes Boolean implication `!φ.eval σ || ψ.eval σ`. -/
 @[simp] theorem eval_imp (φ ψ : QBF V) : (imp φ ψ).eval σ = (!φ.eval σ || ψ.eval σ) := rfl
 
+/-- Evaluating `iff φ ψ` computes Boolean equivalence `φ.eval σ == ψ.eval σ`. -/
 @[simp] theorem eval_iff (φ ψ : QBF V) : (iff φ ψ).eval σ = (φ.eval σ == ψ.eval σ) := by
   simp only [iff, eval_or, eval_and, eval_not]
   cases φ.eval σ <;> cases ψ.eval σ <;> rfl
 
+/-- A literal `lit v b` evaluates to `true` iff `σ v` equals `b`. -/
 @[simp] theorem eval_lit (v : V) (b : Bool) : (lit v b).eval σ = (σ v == b) := by
   cases b <;> simp only [lit, eval_var, eval_not, Bool.false_eq_true, ite_false, ite_true] <;>
     cases σ v <;> rfl
 
+/-- Embedding a clause via `ofClause` preserves its truth value under `σ`. -/
 @[simp] theorem eval_ofClause (c : Clause V) : (ofClause c).eval σ = Clause.eval σ c := by
   induction c with
   | nil => rfl
@@ -411,6 +451,7 @@ theorem eval_alls_eq_true_iff (vs : List V) (φ : QBF V) :
 
 /-! ### Free variables of the derived connectives -/
 
+/-- Quantifying existentially over `vs` removes `vs.toFinset` from the free variables of `φ`. -/
 theorem freeVars_exs (vs : List V) (φ : QBF V) :
     (exs vs φ).freeVars = φ.freeVars \ vs.toFinset := by
   induction vs with
@@ -422,6 +463,7 @@ theorem freeVars_exs (vs : List V) (φ : QBF V) :
     simp only [Finset.mem_erase, Finset.mem_sdiff, Finset.mem_insert]
     tauto
 
+/-- Quantifying universally over `vs` removes `vs.toFinset` from the free variables of `φ`. -/
 theorem freeVars_alls (vs : List V) (φ : QBF V) :
     (alls vs φ).freeVars = φ.freeVars \ vs.toFinset := by
   induction vs with
@@ -433,6 +475,7 @@ theorem freeVars_alls (vs : List V) (φ : QBF V) :
     simp only [Finset.mem_erase, Finset.mem_sdiff, Finset.mem_insert]
     tauto
 
+/-- A variable is free in `conj l` if and only if it is free in some formula of `l`. -/
 theorem mem_freeVars_conj {l : List (QBF V)} {x : V} :
     x ∈ (conj l).freeVars ↔ ∃ φ ∈ l, x ∈ φ.freeVars := by
   induction l with
@@ -441,16 +484,20 @@ theorem mem_freeVars_conj {l : List (QBF V)} {x : V} :
     change x ∈ (φ.and (conj l)).freeVars ↔ _
     simp [ih]
 
+/-- The free variables of `imp φ ψ` are the union of those of `φ` and `ψ`. -/
 @[simp] theorem freeVars_imp (φ ψ : QBF V) : (imp φ ψ).freeVars = φ.freeVars ∪ ψ.freeVars := rfl
 
+/-- The free variables of `iff φ ψ` are the union of those of `φ` and `ψ`. -/
 @[simp] theorem freeVars_iff (φ ψ : QBF V) : (iff φ ψ).freeVars = φ.freeVars ∪ ψ.freeVars := by
   ext x
   simp only [iff, freeVars_or, freeVars_and, freeVars_not, Finset.mem_union]
   tauto
 
+/-- The only free variable of `lit v b` is `v`. -/
 @[simp] theorem freeVars_lit (v : V) (b : Bool) : (lit v b).freeVars = {v} := by
   cases b <;> rfl
 
+/-- The free variables of `ofCNF φ` are the variables occurring in `φ`. -/
 theorem mem_freeVars_ofCNF {x : V} {φ : CNF V} : x ∈ (ofCNF φ).freeVars ↔ x ∈ φ.vars := by
   have hc (c : Clause V) : x ∈ (ofClause c).freeVars ↔ ∃ l ∈ c, l.1 = x := by
     induction c with
