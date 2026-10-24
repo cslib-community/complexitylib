@@ -11,6 +11,7 @@ public import Complexity.Crypto.Computational.Homomorphic.FixedKey.Basic
 public import Complexity.Crypto.Computational.Homomorphic.Evaluation.PolyTime
 public import Complexity.Computability.Circuit.Boolean.EvaluationTime
 public import Complexity.Computability.Circuit.Boolean.DepthTime.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Probabilistic.PPT.Capture
 
 /-!
@@ -60,7 +61,7 @@ The key generator has no circuit-size or depth parameter. -/
 theorem isPPTOn_keyGen
     (hn : ComputableTidilyInPolyTime n input encUnary) :
     IsPPTOn input (encPair encBits encBits) (fun a => keyGen E (n a)) := by
-  apply (hkeyGen.preprocess hn).bind_with
+  apply (hkeyGen.preprocess (.of_tidy hn)).bind_with
   have hbits := Scheme.isPPTOn_encryptBits hencrypt
     (show ComputableTidilyInPolyTime
       (fun p : α × (List Bool × List Bool) => n p.1)
@@ -86,7 +87,7 @@ theorem isPPTOn_encrypt {bit : α → Bool}
     (hbit : ComputableTidilyInPolyTime bit input encBool) :
     IsPPTOn input encBits (fun a => encrypt E (n a) (pk a) (bit a)) := by
   have hpublic := publicKeyDecoder.computableTidilyInPolyTime.comp hpk
-  exact hencrypt.preprocess (hn.prod (hpublic.fst'.prod hbit))
+  exact hencrypt.preprocess (.of_tidy (hn.prod (hpublic.fst'.prod hbit)))
 
 variable {secretWidth ciphertextWidth : ℕ → ℕ}
   (D : DecryptionCircuits E secretWidth ciphertextWidth)

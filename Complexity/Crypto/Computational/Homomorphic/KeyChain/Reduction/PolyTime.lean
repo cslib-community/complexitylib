@@ -11,6 +11,7 @@ public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Reduction
 public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Hybrid.PolyTime
 public import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Computability.Probabilistic.Repeat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Tactic.PPT
 
 /-!
@@ -63,13 +64,13 @@ theorem isPPTOn_chooseLinkAt {n beforeCount afterCount bitIndex : α → ℕ}
     IsPPTOn input (encPair (encPair encBool encBool) encBits)
       (fun a => E.chooseLinkAt (n a) (beforeCount a) (afterCount a) (bitIndex a)
         (challengePk a)) := by
-  have hkey := hkeyGen.preprocess hn
+  have hkey := hkeyGen.preprocess (.of_tidy hn)
   have hfront := hkey.replicate hbefore
   have hback := hkey.replicate hafter
   unfold chooseLinkAt
   apply hfront.bind_with
-  apply (hkey.preprocess (ComputableTidilyInPolyTime.fst _ _)).bind_with
-  apply (hback.preprocess (ComputableTidilyInPolyTime.fst _ _).fst').bind_with
+  apply (hkey.preprocess (ComputableInPolyTime.fst _ _)).bind_with
+  apply (hback.preprocess (ComputableInPolyTime.fst _ _).fst').bind_with
   have hstate : ComputableTidilyInPolyTime
       (fun p : ((α × List (List Bool × List Bool)) × (List Bool × List Bool)) ×
         List (List Bool × List Bool) =>
@@ -116,7 +117,7 @@ theorem isPPTOn_guessLink {n : α → ℕ} {state challengeCiphertext : α → L
   unfold guessLink
   apply IsPPTOn.cond hcontext.fst'
   · apply hlinks.bind_with
-    exact htest.preprocess (show ComputableTidilyInPolyTime
+    exact htest.preprocess (ComputableInPolyTime.of_tidy (show ComputableTidilyInPolyTime
       (fun p : α × List (List (List Bool)) => (n p.1,
         ((linkStateDecoder.decode (state p.1)).2.1 ++
           (linkStateDecoder.decode (state p.1)).2.2.1 ::
@@ -127,7 +128,7 @@ theorem isPPTOn_guessLink {n : α → ℕ} {state challengeCiphertext : α → L
       (encPair encUnary (encPair (encList encBits) (encList (encList encBits)))) by
         exact (hn.comp (ComputableTidilyInPolyTime.fst _ _)).prod
           ((hpublic.comp (ComputableTidilyInPolyTime.fst _ _)).prod
-            (ComputableTidilyInPolyTime.snd _ _)))
+            (ComputableTidilyInPolyTime.snd _ _))))
   · ppt
 
 include hkeyGen hencrypt htest

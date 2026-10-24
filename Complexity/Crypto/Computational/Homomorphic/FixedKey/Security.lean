@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Homomorphic.FixedKey.Reduction
 public import Complexity.Crypto.Computational.Homomorphic.FixedKey.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Probabilistic.PPT.Composition
 
 /-!
@@ -86,9 +87,10 @@ theorem negligible_publicKeyGame {E : Scheme}
   have hgame := isPPTOn_publicKeyGame hencrypt hadversary bit
   have htest : IsPPT encBool (fun n word =>
       publicKeyGame E adversary bit n (publicKeyDecoder.decode word)) :=
-    hgame.preprocess ((ComputableTidilyInPolyTime.fst encUnary encBits).prod
+    hgame.preprocess (ComputableInPolyTime.of_tidy
+      ((ComputableTidilyInPolyTime.fst encUnary encBits).prod
       (publicKeyDecoder.computableTidilyInPolyTime.comp
-        (ComputableTidilyInPolyTime.snd encUnary encBits)))
+        (ComputableTidilyInPolyTime.snd encUnary encBits))))
   have h := hcircular _ htest
   simpa only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
     publicKeyDecoder.decode_enc, ProbComp.eval_bind] using h

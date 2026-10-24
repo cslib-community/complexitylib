@@ -97,7 +97,7 @@ theorem isPPTOn_encrypt {bit : α → Bool}
   have hpublic := publicKeyDecoder.computableTidilyInPolyTime.comp hpk
   have hfirst := (ComputableTidilyInPolyTime.listGetD (encA := encBits) []).comp
     (hpublic.fst'.prod (ComputableTidilyInPolyTime.const 0))
-  exact (hencrypt.preprocess (hn.prod (hfirst.prod hbit))).map (by fun_prop)
+  exact (hencrypt.preprocess (.of_tidy (hn.prod (hfirst.prod hbit)))).map (by fun_prop)
 
 variable {secretWidth ciphertextWidth : ℕ → ℕ}
   (D : DecryptionCircuits E secretWidth ciphertextWidth)
