@@ -279,6 +279,7 @@ public import Complexity.Computability.Circuit.Boolean.PPolyHard
 public import Complexity.Computability.Circuit.Boolean.Parity
 public import Complexity.Computability.Circuit.Boolean.PolynomialTime
 public import Complexity.Computability.Circuit.Boolean.Propagation
+public import Complexity.Computability.Circuit.Boolean.ReadOnce
 public import Complexity.Computability.Circuit.Boolean.Routing
 public import Complexity.Computability.Circuit.Boolean.RoutingValues
 public import Complexity.Computability.Circuit.Boolean.SeedFixing
@@ -842,6 +843,7 @@ public import Complexity.Computability.MCSP.AntiChecker
 public import Complexity.Computability.MCSP.Basic
 public import Complexity.Computability.MCSP.NP
 public import Complexity.Computability.MCSP.Partial
+public import Complexity.Computability.MCSP.PartialETH
 public import Complexity.Computability.MCSP.PartialNP
 public import Complexity.Computability.MCSP.Shannon
 public import Complexity.Computability.MCSP.Succinct

@@ -1101,7 +1101,6 @@ theorem computableInPolyTime_bpisOfColoring :
       encBipartitePermutationGraph :=
   .of_tidy computableTidilyInPolyTime_bpisOfColoring
 
-@[fun_prop]
 private theorem computableTidilyInPolyTime_toBinary :
     ComputableTidilyInPolyTime id encBipartitePermutationGraph
       encBipartitePermutationGraphBinary := by
