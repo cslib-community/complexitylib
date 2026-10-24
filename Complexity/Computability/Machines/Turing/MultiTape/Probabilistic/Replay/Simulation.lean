@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Deterministic
@@ -54,6 +56,8 @@ run are polynomial-time (`Turing.MultiTapePTM.computableTidilyInPolyTime_answerS
 * `Turing.MultiTapePTM.interpret_run_pure_false`: a coin-fixed run is an iteration of
   `answerStep`.
 * `Turing.MultiTapePTM.answerStep_inO`: the bounds of an instruction.
+* `Turing.MultiTapePTM.exists_computableInO_run`: the plain charged-time/workspace frontend,
+  retaining the independent bounds and exact clocked run.
 * `Turing.MultiTapePTM.exists_computableTidilyInO_run`: a clocked run against an oracle computed
   within polynomial space is computable within polynomial space.
 * `Turing.MultiTapePTM.computableTidilyInPolyTime_answerStep`: an instruction against a
@@ -420,6 +424,23 @@ theorem exists_computableTidilyInO_run [Finite Operation] {α : Type} {input : �
       ((cf * (L + c * (L + 1) ^ d + 1 + 1) + 1) ^ e + cg * (c * (L + 1) ^ d + 1) ^ dg) +
       cf * (L + c * (L + 1) ^ d + 1 + 1) + (c * (L + 1) ^ d + 1) +
       (cf * (L + c * (L + 1) ^ d + 1 + 1) + 1) ^ do') (by fun_prop)) fun a => le_rfl
+
+
+omit [Fintype Operation] in
+/-- A clocked coin-false run against a plain oracle decider is computable within polynomial
+space. Both oracle and run certificates charge encoded output in workspace. The independent
+time and workspace bounds are exactly those of the tidy simulation; only the realizing-machine
+presentation changes. No polynomial time bound on the oracle is assumed. -/
+theorem exists_computableInO_run [Finite Operation] {α : Type} {input : α ↪ List Bool}
+    {g : List Bool → Bool} {Tg Sg : List Bool → ℕ}
+    (hg : ComputableInO g encBits encBool Tg Sg) (hSg : PolyBounded List.length Sg)
+    (c d : ℕ) :
+    ∃ T S, PolyBounded (fun a => (input a).length) S ∧
+      ComputableInO (fun a => OracleComp.interpret (m := Id) (fun q => [g q.2])
+        (machine.run (pure false) (fun op word => OracleComp.query (op, word))
+          (c * ((input a).length + 1) ^ d) (input a))) input encBits T S := by
+  obtain ⟨T, S, hS, hrun⟩ := machine.exists_computableTidilyInO_run hg.tidy hSg c d
+  exact ⟨T, S, hS, .of_tidy hrun⟩
 
 /-- **An instruction against a polynomial-time oracle is polynomial-time.** Against an oracle
 answering `[g w]` to a request `w`, with `g` polynomial-time, an instruction is polynomial-time in
