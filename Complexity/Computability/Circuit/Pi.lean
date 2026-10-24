@@ -77,10 +77,12 @@ theorem depthWith_pi_le (cost : σ.Op → ℕ) {m : ℕ} (cs : Fin m → Circuit
 def oneGate (op : σ.Op) (args : Fin (σ.Arity op) → Fin n) : Circuit σ n 1 :=
   ⟨.gate .empty ⟨op, fun a => .input (args a)⟩, fun _ => .gate 0⟩
 
+/-- Evaluating `oneGate op args` at `x` applies `I op` to the selected inputs `x ∘ args`. -/
 @[simp] theorem eval_oneGate {I : Interpretation σ U} (op : σ.Op) (args : Fin (σ.Arity op) → Fin n)
     (x : Fin n → U) (j : Fin 1) : (oneGate op args).eval I x j = I op fun a => x (args a) :=
   rfl
 
+/-- The circuit `oneGate op args` has size `1`. -/
 @[simp] theorem size_oneGate (op : σ.Op) (args : Fin (σ.Arity op) → Fin n) :
     (oneGate op args).size = 1 :=
   rfl

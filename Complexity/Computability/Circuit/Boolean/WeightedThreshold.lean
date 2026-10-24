@@ -104,7 +104,7 @@ def lineWeight (line : Line signature n g) (wire : Wire n g) : ℝ :=
   ∑ a with line.wires a = wire, line.op.weight a
 
 /-- Regrouping argument slots by actual wire preserves their weighted sum. -/
-theorem sum_lineWeight_mul (line : Line signature n g) (values : Wire n g → ℝ) :
+private theorem sum_lineWeight_mul (line : Line signature n g) (values : Wire n g → ℝ) :
     ∑ a, line.op.weight a * values (line.wires a) =
       ∑ wire, lineWeight line wire * values wire := by
   rw [← sum_fiberwise univ line.wires (fun a => line.op.weight a * values (line.wires a))]

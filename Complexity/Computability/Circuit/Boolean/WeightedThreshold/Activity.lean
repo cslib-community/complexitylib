@@ -175,7 +175,7 @@ theorem card_attainableTranscripts_le_sum_choose_gateActivity (p : Program signa
 
 /-- Every realized transcript lies in the Hamming ball of radius `e` around any fixed baseline `v`
 whenever `inputActivityFrom p v ≤ e`. -/
-theorem card_attainableTranscripts_le_sum_choose_of_inputActivityFrom_le
+private theorem card_attainableTranscripts_le_sum_choose_of_inputActivityFrom_le
     (p : Program signature n g) (v : inputGates p → Bool) {e : ℕ}
     (he : inputActivityFrom p v ≤ e) :
     (attainableTranscripts p).card ≤

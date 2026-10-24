@@ -74,25 +74,33 @@ def and : Formula signature n :=
 def or : Formula signature n :=
   .gate .or ![F, G]
 
+/-- A constant monotone formula `const b` evaluates to `b`. -/
 @[simp] theorem eval_const (b : Bool) : (const b : Formula signature n).eval interpretation x = b :=
   rfl
 
+/-- `and F G` evaluates to the Boolean conjunction of the values of `F` and `G`. -/
 @[simp] theorem eval_and :
     (and F G).eval interpretation x = (F.eval interpretation x && G.eval interpretation x) :=
   rfl
 
+/-- `or F G` evaluates to the Boolean disjunction of the values of `F` and `G`. -/
 @[simp] theorem eval_or :
     (or F G).eval interpretation x = (F.eval interpretation x || G.eval interpretation x) :=
   rfl
 
+/-- A constant monotone formula `const b` has weighted depth `cost (.const b)`. -/
 @[simp] theorem depthWith_const (cost : Op → ℕ) (b : Bool) :
     (const b : Formula signature n).depthWith cost = cost (.const b) := by
   simp [const]
 
+/-- The weighted depth of `and F G` is the maximum of the weighted depths of `F` and `G` plus
+`cost .and`. -/
 @[simp] theorem depthWith_and (cost : Op → ℕ) :
     (and F G).depthWith cost = max (F.depthWith cost) (G.depthWith cost) + cost .and := by
   simp [and, Fin.univ_succ]
 
+/-- The weighted depth of `or F G` is the maximum of the weighted depths of `F` and `G` plus
+`cost .or`. -/
 @[simp] theorem depthWith_or (cost : Op → ℕ) :
     (or F G).depthWith cost = max (F.depthWith cost) (G.depthWith cost) + cost .or := by
   simp [or, Fin.univ_succ]

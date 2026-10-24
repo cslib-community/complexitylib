@@ -62,23 +62,29 @@ def Program.gateFormula : {g : ℕ} → Program σ n g → Fin g → Formula σ 
 def Program.wireFormula (p : Program σ n g) : Wire n g → Formula σ n :=
   Wire.elim .input p.gateFormula
 
+/-- Unfolding an input wire `.input i` gives the input formula `.input i`. -/
 @[simp] theorem Program.wireFormula_input (p : Program σ n g) (i : Fin n) :
     p.wireFormula (.input i) = .input i :=
   rfl
 
+/-- Unfolding a gate wire `.gate k` gives the gate formula `p.gateFormula k`. -/
 @[simp] theorem Program.wireFormula_gate (p : Program σ n g) (k : Fin g) :
     p.wireFormula (.gate k) = p.gateFormula k :=
   rfl
 
+/-- The formula of the newly added last gate is `line.op` applied to the formulas of its argument
+wires. -/
 @[simp] theorem Program.gateFormula_gate_last (p : Program σ n g) (line : Line σ n g) :
     (p.gate line).gateFormula (Fin.last g) =
       .gate line.op fun a => p.wireFormula (line.wires a) := by
   simp [gateFormula, wireFormula]
 
+/-- Appending a gate leaves the formulas of earlier gates unchanged. -/
 @[simp] theorem Program.gateFormula_gate_castSucc (p : Program σ n g) (line : Line σ n g)
     (k : Fin g) : (p.gate line).gateFormula k.castSucc = p.gateFormula k := by
   simp [gateFormula]
 
+/-- Appending a gate leaves the formulas of earlier wires unchanged. -/
 @[simp] theorem Program.wireFormula_gate_castSucc (p : Program σ n g) (line : Line σ n g)
     (w : Wire n g) : (p.gate line).wireFormula w.castSucc = p.wireFormula w := by
   cases w <;> simp

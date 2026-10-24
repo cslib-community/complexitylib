@@ -77,9 +77,12 @@ noncomputable def diffDist (I : Interpretation σ U) [I.IsComplete] (c : ℕ)
     (f g : (Fin n → U) → U) : ℕ :=
   if f = g then 0 else complexity I (single (f - g)) + c
 
+/-- The difference distance from a function to itself is `0`. -/
 @[simp] theorem diffDist_self (f : (Fin n → U) → U) : diffDist I c f f = 0 := by
   simp [diffDist]
 
+/-- For distinct functions `f ≠ g`, `diffDist I c f g` is the circuit complexity of `f - g`
+plus `c`. -/
 theorem diffDist_of_ne {f g : (Fin n → U) → U} (h : f ≠ g) :
     diffDist I c f g = complexity I (single (f - g)) + c := by
   simp [diffDist, h]
@@ -176,6 +179,7 @@ noncomputable def diffNorm (I : Interpretation σ U) [I.IsComplete] (c : ℕ) (h
     simp only [hf, ↓reduceIte, Nat.cast_eq_zero] at h
     omega
 
+/-- Applying `diffNorm` to `f` gives `diffDist I c f 0` cast to `ℝ`. -/
 theorem diffNorm_apply {hc : 0 < c}
     {hadd : complexity I (single fun y : Fin 2 → U => y 0 + y 1) ≤ c}
     {hneg : ∀ f : (Fin n → U) → U, complexity I (single (-f)) = complexity I (single f)}

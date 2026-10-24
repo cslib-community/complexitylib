@@ -125,7 +125,7 @@ theorem card_lt_or_card_lt_of_rectangleFree {f : Cslib.BooleanFunction n} {K : �
 
 /-! ### Weighted sums and gluing -/
 
-theorem weightedSum_glue (U : Finset (Fin n)) (w : Fin n → ℝ)
+private theorem weightedSum_glue (U : Finset (Fin n)) (w : Fin n → ℝ)
     (p : U → Bool) (q : ↥Uᶜ → Bool) :
     weightedSum w (glue U p q) =
       weightedSum w (glue U p fun _ => false) +

@@ -82,12 +82,12 @@ noncomputable def booleanSum (m : ℕ) (P : MvPolynomial (Fin (n + m)) K) :
 
 /-- Lift a projection of the first `k` of `k + m` variables to all of them, keeping the last `m`
 variables. -/
-def liftProjection (ρ : Fin k → Fin n ⊕ K) : Fin (k + m) → Fin (n + m) ⊕ K :=
+private def liftProjection (ρ : Fin k → Fin n ⊕ K) : Fin (k + m) → Fin (n + m) ⊕ K :=
   Fin.append (fun i => (ρ i).map (Fin.castAdd m) id) fun i => Sum.inl (Fin.natAdd n i)
 
 /-- A projection of a Boolean sum is the Boolean sum of a projection: substitution for the first
 variables commutes with summing over the last. -/
-theorem projection_booleanSum (ρ : Fin k → Fin n ⊕ K) (P : MvPolynomial (Fin (k + m)) K) :
+private theorem projection_booleanSum (ρ : Fin k → Fin n ⊕ K) (P : MvPolynomial (Fin (k + m)) K) :
     projection ρ (booleanSum m P) = booleanSum m (projection (liftProjection ρ) P) := by
   rw [booleanSum, booleanSum, map_sum]
   refine Finset.sum_congr rfl fun e _ => ?_
@@ -101,7 +101,7 @@ theorem projection_booleanSum (ρ : Fin k → Fin n ⊕ K) (P : MvPolynomial (Fi
   | right i => cases e i <;> simp [booleanAssignment, liftProjection]
 
 /-- A Boolean sum has no larger degree than the summed polynomial. -/
-theorem totalDegree_booleanSum_le (P : MvPolynomial (Fin (n + m)) K) :
+private theorem totalDegree_booleanSum_le (P : MvPolynomial (Fin (n + m)) K) :
     (booleanSum m P).totalDegree ≤ P.totalDegree :=
   totalDegree_finsetSum_le fun _ _ => totalDegree_projection_le _ _
 

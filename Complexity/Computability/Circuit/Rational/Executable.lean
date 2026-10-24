@@ -22,6 +22,10 @@ noncomputable specification.
 
 ## Main definitions
 
+* `Rational.ExecutableGenerator.inputTables`: dense integer lift tables at a grid point.
+* `Rational.ExecutableGenerator.normalizedEntry`, `Rational.ExecutableGenerator.RationalTable`,
+  `Rational.ExecutableGenerator.tuple`, `Rational.ExecutableGenerator.normalized`: Cramer-rule
+  rational entries and normalized matrix tuples.
 * `Rational.ExecutableGenerator.atPoint`: the normalized tuple at one grid point, if any.
 * `Rational.ExecutableGenerator.output`: the computable list for fixed parameters.
 * `Rational.ExecutableGenerator.list`: the computable list for `n` variables and `s` nodes.
@@ -54,6 +58,7 @@ def inputTables (n N e : ℕ) (x : Fin 3 → ℕ) :
     Vector (Table (Generator.matrixDimension e)) (n + 1) :=
   Vector.ofFn fun a => tabulate (Generator.integralLift n N e x a)
 
+/-- Reading the `a`-th table of `inputTables` gives `Generator.integralLift`. -/
 @[simp] lemma inputTables_denote (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
     denote ((inputTables n N e x).get a) = Generator.integralLift n N e x a := by
   simp [inputTables]
@@ -62,7 +67,7 @@ def inputTables (n N e : ℕ) (x : Fin 3 → ℕ) :
 def normalizedEntry {d : ℕ} (A B : Table d) (den : ℤ) (i j : Fin d) : ℚ :=
   Rat.divInt (determinant (tabulate ((denote A).updateCol i (fun r => denote B r j)))) den
 
-lemma normalizedEntry_spec {d : ℕ} (A B : Table d) (hA : (denote A).det ≠ 0) (i j : Fin d) :
+private lemma normalizedEntry_spec {d : ℕ} (A B : Table d) (hA : (denote A).det ≠ 0) (i j : Fin d) :
     normalizedEntry A B (determinant A) i j =
       (((denote A).map (Int.castRingHom ℚ))⁻¹ * (denote B).map (Int.castRingHom ℚ)) i j := by
   rw [normalizedEntry, determinant_eq, denote_tabulate, determinant_eq]
@@ -80,6 +85,7 @@ def normalized {n d : ℕ} (A : Vector (Table d) (n + 1)) (den : ℤ) : Rational
   Vector.ofFn fun a => Vector.ofFn fun i => Vector.ofFn fun j =>
     normalizedEntry (A.get 0) (A.get a.succ) den i j
 
+/-- Reading `tuple (normalized A den)` at `(a, i, j)` gives `normalizedEntry`. -/
 @[simp] lemma tuple_normalized {n d : ℕ} (A : Vector (Table d) (n + 1)) (den : ℤ)
     (a : Fin n) (i j : Fin d) :
     tuple (normalized A den) a i j = normalizedEntry (A.get 0) (A.get a.succ) den i j := by
@@ -91,7 +97,7 @@ def atPoint (n N e : ℕ) (x : Fin 3 → ℕ) : Option (Tuple n (Generator.matri
   let den := determinant (A.get 0)
   if den = 0 then none else some (tuple (normalized A den))
 
-lemma U_det_eq_zero (n N e : ℕ) (x : Fin 3 → ℕ) :
+private lemma U_det_eq_zero (n N e : ℕ) (x : Fin 3 → ℕ) :
     (Generator.integralLift n N e x 0).det = 0 ↔ (Generator.rationalLift n N e x 0).det = 0 := by
   have he := congrArg Matrix.det (Generator.U_cast n N e x 0)
   rw [Matrix.det_smul] at he
@@ -132,18 +138,20 @@ def output (n N e H : ℕ) : Output n where
   dimension_pos := Nat.mul_pos (CyclotomicRing.dimension_pos e) (CyclotomicRing.degree_pos e)
   tuples := (Generator.grid H).filterMap fun x => atPoint n N e (fun i => (x i).val + 1)
 
-theorem output_spec (n N e H : ℕ) : output n N e H = Generator.output n N e H := by
+private theorem output_spec (n N e H : ℕ) : output n N e H = Generator.output n N e H := by
   simp only [output, Generator.output, atPoint_spec]
 
 /-- The executable hitting list for the selected parameter values. -/
 def list (n s : ℕ) : Output n :=
   output n (Parameters.truncation n s) (Parameters.exponent n s) (Parameters.gridSize n s)
 
+/-- The executable hitting list equals the specification `Generator.list`. -/
 theorem list_spec (n s : ℕ) : list n s = Generator.list n s := output_spec ..
 
 /-- The complete binary encoding of the executable hitting list. -/
 def encoded (n s : ℕ) : List Bool := encodeOutput (list n s)
 
+/-- The encoded executable hitting list equals the encoding of `Generator.list`. -/
 theorem encoded_spec (n s : ℕ) : encoded n s = encodeOutput (Generator.list n s) := by
   rw [encoded, list_spec]
 

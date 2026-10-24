@@ -68,13 +68,13 @@ def edgeScoreEvent (q : ℝ) (R : ℕ) (p : ℝ → Prop) (e : E) : Set (V → �
 
 variable {G} {q : ℝ} {R : ℕ}
 
-theorem measurableSet_edgeScoreEvent (q : ℝ) (R : ℕ) {p : ℝ → Prop}
+private theorem measurableSet_edgeScoreEvent (q : ℝ) (R : ℕ) {p : ℝ → Prop}
     (hp : MeasurableSet {x | p x}) (e : E) : MeasurableSet (edgeScoreEvent G q R p e) :=
   measurable_edgeScore q R e hp
 
 /-- An event about the score of `e` depends only on the coordinates of the sample in the closed
 ball of radius `R + 1` around the source of `e`. -/
-theorem dependsOn_edgeScoreEvent (q : ℝ) (R : ℕ) (p : ℝ → Prop) (e : E) :
+private theorem dependsOn_edgeScoreEvent (q : ℝ) (R : ℕ) (p : ℝ → Prop) (e : E) :
     DependsOn (· ∈ edgeScoreEvent G q R p e) (closedBall G.toSimpleGraph (G.src e) (R + 1)) := by
   intro ω ω' hω
   simp only [edgeScoreEvent, mem_ofPred_eq, edgeScore_congr (Or.inl rfl) hω]

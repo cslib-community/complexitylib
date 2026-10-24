@@ -56,25 +56,26 @@ namespace Rational.EncodingBounds
 open Matrix
 open scoped BigOperators
 
-lemma encodeNat_length (a : ℕ) : (encodeNat a).length = 2 * (Nat.digits 2 a).length + 1 := by
+private lemma encodeNat_length (a : ℕ) :
+    (encodeNat a).length = 2 * (Nat.digits 2 a).length + 1 := by
   simp only [encodeNat, List.length_append, List.length_replicate, List.length_map,
     List.length_cons, List.length_nil]
   omega
 
-lemma encodeNat_le (a L : ℕ) (ha : a < 2 ^ L) : (encodeNat a).length ≤ 2 * L + 1 := by
+private lemma encodeNat_le (a L : ℕ) (ha : a < 2 ^ L) : (encodeNat a).length ≤ 2 * L + 1 := by
   rw [encodeNat_length]
   exact Nat.add_le_add_right (Nat.mul_le_mul_left 2 ((Nat.digits_length_le_iff (by omega) a).mpr
     ha)) 1
 
-lemma ratio_num_le (a b : ℤ) (hb : b ≠ 0) : (Rat.divInt a b).num.natAbs ≤ a.natAbs := by
+private lemma ratio_num_le (a b : ℤ) (hb : b ≠ 0) : (Rat.divInt a b).num.natAbs ≤ a.natAbs := by
   by_cases ha : a = 0
   · simp [ha]
   · exact Int.natAbs_le_of_dvd_ne_zero (Rat.num_dvd a hb) ha
 
-lemma ratio_den_le (a b : ℤ) (hb : b ≠ 0) : (Rat.divInt a b).den ≤ b.natAbs := by
+private lemma ratio_den_le (a b : ℤ) (hb : b ≠ 0) : (Rat.divInt a b).den ≤ b.natAbs := by
   simpa only [Int.natAbs_natCast] using Int.natAbs_le_of_dvd_ne_zero (Rat.den_dvd a b) hb
 
-lemma encodeRat_ratio_le (a b : ℤ) (hb : b ≠ 0) (L : ℕ)
+private lemma encodeRat_ratio_le (a b : ℤ) (hb : b ≠ 0) (L : ℕ)
     (ha : a.natAbs < 2 ^ L) (hb' : b.natAbs < 2 ^ L) :
     (encodeRat (Rat.divInt a b)).length ≤ 4 * L + 3 := by
   have hn := encodeNat_le _ L (lt_of_le_of_lt (ratio_num_le a b hb) ha)
@@ -82,7 +83,7 @@ lemma encodeRat_ratio_le (a b : ℤ) (hb : b ≠ 0) (L : ℕ)
   simp only [encodeRat, List.length_append, List.length_singleton]
   omega
 
-lemma determinant_bound {d : ℕ} (A : Matrix (Fin d) (Fin d) ℤ) (B : ℕ)
+private lemma determinant_bound {d : ℕ} (A : Matrix (Fin d) (Fin d) ℤ) (B : ℕ)
     (hA : ∀ i j, |A i j| ≤ B) : |A.det| ≤ (d.factorial : ℤ) * (B : ℤ) ^ d := by
   have h := Matrix.det_le (abv := AbsoluteValue.abs) (x := (B : ℤ)) (A := A) (by simpa using hA)
   simpa only [AbsoluteValue.abs_apply, nsmul_eq_mul, Fintype.card_fin] using h
@@ -117,7 +118,7 @@ lemma normalized_entry_ratio {d : ℕ} (A B : Matrix (Fin d) (Fin d) ℤ) (hA : 
   rw [he] at hi
   exact hi
 
-lemma determinant_pow_bound {d b : ℕ} (A : Matrix (Fin d) (Fin d) ℤ)
+private lemma determinant_pow_bound {d b : ℕ} (A : Matrix (Fin d) (Fin d) ℤ)
     (hA : ∀ i j, |A i j| ≤ (2 : ℤ) ^ b) : |A.det| < (2 : ℤ) ^ (d * d + d * b + 1) := by
   have hb := determinant_bound A (2 ^ b) (by simpa using hA)
   have hf : d.factorial ≤ (2 ^ d) ^ d :=
@@ -133,6 +134,9 @@ lemma determinant_pow_bound {d b : ℕ} (A : Matrix (Fin d) (Fin d) ℤ)
   have : (0 : ℤ) < 2 ^ (d * d + d * b) := by positivity
   omega
 
+/-- For `d × d` integer matrices `A` (with `A.det ≠ 0`) and `B` whose entries have absolute value
+at most `2 ^ b`, the binary encoding of each entry of `A⁻¹ * B` has length at most
+`4 * (d * d + d * b + 1) + 3`. -/
 lemma normalization_bit_bound {d b : ℕ} (A B : Matrix (Fin d) (Fin d) ℤ) (hA : A.det ≠ 0)
     (hAb : ∀ i j, |A i j| ≤ (2 : ℤ) ^ b) (hBb : ∀ i j, |B i j| ≤ (2 : ℤ) ^ b) (i j : Fin d) :
     (encodeRat (((A.map (Int.castRingHom ℚ))⁻¹ * B.map (Int.castRingHom ℚ)) i j)).length ≤
@@ -150,7 +154,7 @@ lemma normalization_bit_bound {d b : ℕ} (A B : Matrix (Fin d) (Fin d) ℤ) (hA
     rw [← Int.natCast_natAbs] at h
     exact_mod_cast h
 
-lemma tuple_length_le {n d B : ℕ} (X : Tuple n d)
+private lemma tuple_length_le {n d B : ℕ} (X : Tuple n d)
     (h : ∀ a i j, (encodeRat (X a i j)).length ≤ B) :
     (encodeTuple X).length ≤ n * d * d * B := by
   unfold encodeTuple
@@ -166,13 +170,17 @@ lemma tuple_length_le {n d B : ℕ} (X : Tuple n d)
                _ = _ := by simp
        _ = _ := by simp [Nat.mul_assoc]
 
-lemma encodeNat_linear (a : ℕ) : (encodeNat a).length ≤ 2 * (a + 1) + 1 := by
+private lemma encodeNat_linear (a : ℕ) : (encodeNat a).length ≤ 2 * (a + 1) + 1 := by
   apply encodeNat_le
   have h : a ≤ 2 ^ a := Nat.lt_two_pow_self.le
   have hp : 0 < 2 ^ a := by positivity
   rw [pow_succ]
   omega
 
+/-- If every entry of every matrix tuple in `H` has encoded length at most `B`, then the encoded
+output `encodeOutput H` has length at most
+`2 * (H.dimension + 1) + 1 + 2 * (H.tuples.length + 1) + 1` plus
+`H.tuples.length * n * H.dimension ^ 2 * B`. -/
 lemma output_length_le {n B : ℕ} (H : Output n)
     (hb : ∀ X ∈ H.tuples, ∀ a i j, (encodeRat (X a i j)).length ≤ B) :
     (encodeOutput H).length ≤ 2 * (H.dimension + 1) + 1 + 2 * (H.tuples.length + 1) + 1 +
@@ -190,11 +198,12 @@ end Rational.EncodingBounds
 namespace Rational.PolynomialBounds
 
 /-- Coefficient/exponent bookkeeping, with no symbolic expansion of large powers. -/
-lemma mul_monomials (a b m i j : ℕ) : (a * m ^ i) * (b * m ^ j) = (a * b) * m ^ (i + j) := by
+private lemma mul_monomials (a b m i j : ℕ) :
+    (a * m ^ i) * (b * m ^ j) = (a * b) * m ^ (i + j) := by
   rw [pow_add]
   ac_rfl
 
-lemma lift_power (c m i j : ℕ) (hm : 1 ≤ m) (hij : i ≤ j) : c * m ^ i ≤ c * m ^ j :=
+private lemma lift_power (c m i j : ℕ) (hm : 1 ≤ m) (hij : i ≤ j) : c * m ^ i ≤ c * m ^ j :=
   Nat.mul_le_mul_left c (Nat.pow_le_pow_right hm hij)
 
 /-- Exponent bounding all denominator-cleared matrix entries by a power of 2. -/
@@ -205,6 +214,7 @@ def logarithmic (n s : ℕ) : ℕ :=
 /-- Fixed coefficient bounding the binary logarithm of integral entry magnitudes. -/
 def logConstant : ℕ := 64 + 64 + 3 * 16 * 49153
 
+/-- The entry-magnitude exponent `logarithmic n s` is at most `logConstant * (n + s + 1) ^ 22`. -/
 theorem logarithmic_bound (n s : ℕ) :
     logarithmic n s ≤ logConstant * (n + s + 1) ^ 22 := by
   let m := n + s + 1
@@ -237,7 +247,7 @@ theorem logarithmic_bound (n s : ℕ) :
 /-- Fixed coefficient in the bound on normalized rational entry encodings. -/
 def bitConstant : ℕ := 4 * (256 * 256 + 256 * logConstant + 1) + 3
 
-theorem normalized_bits_bound (m D b : ℕ) (hm : 1 ≤ m)
+private theorem normalized_bits_bound (m D b : ℕ) (hm : 1 ≤ m)
     (hD : D ≤ 256 * m ^ 10) (hb : b ≤ logConstant * m ^ 22) :
     4 * (D * D + D * b + 1) + 3 ≤ bitConstant * m ^ 32 := by
   have h₁ : D * D ≤ (256 * 256) * m ^ 32 := by
@@ -258,7 +268,7 @@ source's constant: the bound also covers `n = 0`, which raises the grid-size coe
 def outputConstant : ℕ :=
   (2 * 256 + 3) + (2 * 49153 ^ 3 + 3) + 49153 ^ 3 * 256 * 256 * bitConstant
 
-theorem output_bits_bound (n m D L B : ℕ) (hm : 1 ≤ m) (hn : n ≤ m)
+private theorem output_bits_bound (n m D L B : ℕ) (hm : 1 ≤ m) (hn : n ≤ m)
     (hD : D ≤ 256 * m ^ 10) (hL : L ≤ 49153 ^ 3 * m ^ 51) (hB : B ≤ bitConstant * m ^ 32) :
     2 * (D + 1) + 1 + 2 * (L + 1) + 1 + L * n * D * D * B ≤ outputConstant * m ^ 104 := by
   have hp := Nat.one_le_pow 104 m hm
@@ -278,7 +288,7 @@ namespace Rational.Generator
 open Matrix EncodingBounds
 open scoped BigOperators
 
-lemma U_power_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx : ∀ l, x l ≤ H)
+private lemma U_power_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx : ∀ l, x l ≤ H)
     (a : Fin (n + 1)) (i j : Fin (matrixDimension e)) :
     |integralLift n N e x a i j| ≤ (2 : ℤ) ^ (4 * CyclotomicRing.dimension e +
       4 * CyclotomicRing.dimension e * (n + 1) + 3 * CyclotomicRing.dimension e * H) := by
@@ -297,7 +307,7 @@ lemma U_power_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx : ∀
           dsimp [M]
           ring
 
-lemma tupleAt_bit_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx : ∀ l, x l ≤ H)
+private lemma tupleAt_bit_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx : ∀ l, x l ≤ H)
     (hz : (rationalLift n N e x 0).det ≠ 0) (a : Fin n) (i j : Fin (matrixDimension e)) :
     (encodeRat (tupleAt n N e x a i j)).length ≤
       4 * (matrixDimension e * matrixDimension e + matrixDimension e *
@@ -307,7 +317,7 @@ lemma tupleAt_bit_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx :
   exact normalization_bit_bound _ _ (U_det_ne_zero n N e x hz)
     (U_power_bound n N e H x hH hx 0) (U_power_bound n N e H x hH hx a.succ) i j
 
-lemma output_entry_bit_bound (n N e H : ℕ) (hH : 1 ≤ H)
+private lemma output_entry_bit_bound (n N e H : ℕ) (hH : 1 ≤ H)
     (X : Tuple n (matrixDimension e)) (hX : X ∈ (output n N e H).tuples)
     (a : Fin n) (i j : Fin (matrixDimension e)) :
     (encodeRat (X a i j)).length ≤
@@ -321,6 +331,8 @@ lemma output_entry_bit_bound (n N e H : ℕ) (hH : 1 ≤ H)
     rw [← he]
     exact tupleAt_bit_bound n N e H _ hH (fun l => by omega) hz a i j
 
+/-- The binary encoding of the hitting list `list n s` has length at most
+`PolynomialBounds.outputConstant * (n + s + 1) ^ 104`. -/
 lemma list_output_bound (n s : ℕ) :
     (encodeOutput (list n s)).length ≤ PolynomialBounds.outputConstant * (n + s + 1) ^ 104 := by
   have hH : 1 ≤ Parameters.gridSize n s := by unfold Parameters.gridSize; omega

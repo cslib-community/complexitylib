@@ -31,8 +31,16 @@ the forward lower bound also allows restricted witness classes.
 
 ## Main definitions
 
-* `Cslib.Circuits.Fusion.PairClosureCompiler.readState`: reconstruct a closure coordinate from
+* `Cslib.Circuits.Fusion.PairClosureCompiler.readState`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.pairValues`: reconstruct a closure coordinate from
   finitely many input and pair values.
+* `Cslib.Circuits.Fusion.PairClosureCompiler.joinFormula`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.readFormula`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.updateFormula`: monotone formulas for union trees,
+  coordinate reads, and pair updates.
+* `Cslib.Circuits.Fusion.PairClosureCompiler.updateCircuit`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.circuit`: the straight-line update circuit and its
+  feedback closure.
 * `Cslib.Circuits.Fusion.PairCover.toCyclic`: a finite binary circuit realizing a pair cover.
 
 ## Main results
@@ -111,7 +119,7 @@ def joinFormula {r : ℕ} (seed : Bool) : List (Formula Monotone.signature r) �
   | f :: fs => Monotone.or f (joinFormula seed fs)
 
 /-- The union tree charges exactly the conjunctions in its arguments. -/
-theorem cost_joinFormula {r : ℕ} (seed : Bool) (fs : List (Formula Monotone.signature r)) :
+private theorem cost_joinFormula {r : ℕ} (seed : Bool) (fs : List (Formula Monotone.signature r)) :
     (joinFormula seed fs).cost Monotone.andCost = (fs.map (·.cost Monotone.andCost)).sum := by
   induction fs with
   | nil => simp [joinFormula, Monotone.const]
@@ -128,7 +136,8 @@ theorem mem_eval_joinFormula {r : ℕ} (seed : Bool) (fs : List (Formula Monoton
     simp [joinFormula, Monotone.or, ih, or_left_comm]
 
 /-- Every union tree has an operation at its root, including the empty tree. -/
-theorem joinFormula_isGate {r : ℕ} (seed : Bool) (fs : List (Formula Monotone.signature r)) :
+private theorem joinFormula_isGate {r : ℕ} (seed : Bool)
+    (fs : List (Formula Monotone.signature r)) :
     ∃ op args, joinFormula seed fs = .gate op args := by
   cases fs <;> exact ⟨_, _, rfl⟩
 

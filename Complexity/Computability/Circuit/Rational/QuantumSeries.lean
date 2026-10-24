@@ -63,7 +63,7 @@ matrix coefficient ring. -/
 def line (B : Γ → Rˣ) (g : Γ) : Submodule K R := K ∙ (B g : R)
 
 omit [LinearOrder Γ] [IsOrderedAddMonoid Γ] [Nontrivial R] in
-lemma line_mul (B : Γ → Rˣ)
+private lemma line_mul (B : Γ → Rˣ)
     (hB : ∀ (g h : Γ), ∃ c : K, (B g : R) * (B h : R) = c • (B (g + h) : R))
     {g h : Γ} {x y : R} (hx : x ∈ line (K := K) B g) (hy : y ∈ line (K := K) B h) :
     x * y ∈ line (K := K) B (g + h) := by
@@ -74,7 +74,7 @@ lemma line_mul (B : Γ → Rˣ)
   exact Submodule.mem_span_singleton.mpr ⟨a * b * c, rfl⟩
 
 omit [AddCommGroup Γ] [LinearOrder Γ] [IsOrderedAddMonoid Γ] [Nontrivial R] in
-lemma line_isUnit (B : Γ → Rˣ) {g : Γ} {x : R} (hx : x ∈ line (K := K) B g) (hne : x ≠ 0) :
+private lemma line_isUnit (B : Γ → Rˣ) {g : Γ} {x : R} (hx : x ∈ line (K := K) B g) (hne : x ≠ 0) :
     IsUnit x := by
   obtain ⟨a, rfl⟩ := Submodule.mem_span_singleton.mp hx
   have ha : a ≠ 0 := by intro h; simp [h] at hne
@@ -109,7 +109,7 @@ def coefficientRing (B : Γ → Rˣ) (h0 : B 0 = 1)
     rw [← heq]
     exact line_mul B hB (hx ij.1) (hy ij.2)
 
-lemma coefficientRing_noZeroDivisors (B : Γ → Rˣ) (h0 : B 0 = 1)
+private lemma coefficientRing_noZeroDivisors (B : Γ → Rˣ) (h0 : B 0 = 1)
     (hB : ∀ g h, ∃ c : K, (B g : R) * (B h : R) = c • (B (g + h) : R)) :
     NoZeroDivisors (coefficientRing B h0 hB) := by
   constructor
@@ -144,7 +144,7 @@ open HahnSeries HahnSeries.SummableFamily Finset Function
 noncomputable section
 variable {Γ R : Type*} [AddCommGroup Γ] [LinearOrder Γ] [IsOrderedAddMonoid Γ] [Ring R]
 
-theorem power_finite_co_support {x : R⟦Γ⟧} (hx : 0 < x.orderTop) (g : Γ) :
+private theorem power_finite_co_support {x : R⟦Γ⟧} (hx : 0 < x.orderTop) (g : Γ) :
     Set.Finite {a | ((fun n ↦ x ^ n) a).coeff g ≠ 0} := by
   have hpwo : Set.IsPWO (⋃ n, support (x ^ n)) :=
     isPWO_iUnion_support_powers (zero_le_orderTop_iff.mp <| le_of_lt hx)
@@ -186,15 +186,18 @@ def geometricPowers (x : R⟦Γ⟧) : SummableFamily Γ R ℕ where
     · simp only [h, ↓reduceIte]
       exact power_finite_co_support (orderTop_zero (R := R) (Γ := Γ) ▸ WithTop.top_pos) g
 
+/-- When `0 < x.orderTop`, the `n`-th term of `geometricPowers x` is `x ^ n`. -/
 theorem geometricPowers_of_orderTop_pos {x : R⟦Γ⟧} (hx : 0 < x.orderTop) (n : ℕ) :
     geometricPowers x n = x ^ n := by
   simp [hx]
 
+/-- When `¬ 0 < x.orderTop`, `geometricPowers x` is `.single 0 1`. -/
 theorem geometricPowers_of_not_orderTop_pos {x : R⟦Γ⟧} (hx : ¬ 0 < x.orderTop) :
     geometricPowers x = .single 0 1 := by
   ext a
   obtain rfl | ha := eq_or_ne a 0 <;> simp [geometricPowers, *]
 
+/-- `geometricPowers 0` is `.single 0 1`. -/
 @[simp]
 theorem geometricPowers_zero : geometricPowers (0 : R⟦Γ⟧) = .single 0 1 := by
   ext n
@@ -204,13 +207,14 @@ theorem geometricPowers_zero : geometricPowers (0 : R⟦Γ⟧) = .single 0 1 := 
 variable {x : R⟦Γ⟧} (hx : 0 < x.orderTop)
 
 include hx in
+/-- When `0 < x.orderTop`, `geometricPowers x` coerces to the power function `x ^ ·`. -/
 @[simp]
 theorem coe_geometricPowers : ⇑(geometricPowers x) = HPow.hPow x := by
   ext1 n
   simp [hx]
 
 include hx in
-theorem embDomain_succ_smul_geometricPowers :
+private theorem embDomain_succ_smul_geometricPowers :
     (x • geometricPowers x).embDomain ⟨Nat.succ, Nat.succ_injective⟩ =
       geometricPowers x - SummableFamily.ofFinsupp (Finsupp.single 0 1) := by
   apply SummableFamily.ext
@@ -222,6 +226,7 @@ theorem embDomain_succ_smul_geometricPowers :
       -smul_eq_mul]
 
 include hx in
+/-- When `0 < x.orderTop`, `(1 - x) * (geometricPowers x).hsum = 1`. -/
 theorem one_sub_self_mul_hsum_geometricPowers : (1 - x) * (geometricPowers x).hsum = 1 := by
   rw [← hsum_smul, sub_smul 1 x (geometricPowers x), one_smul, hsum_sub, ←
     hsum_embDomain (x • geometricPowers x) ⟨Nat.succ, Nat.succ_injective⟩,
@@ -259,6 +264,8 @@ lemma normalized_pos (x : HahnSeries Γ R) (u : Rˣ)
     rw [heq, orderTop_neg]
     exact zero_lt_orderTop_of_order hy'
 
+/-- A Hahn series `x` with unit leading coefficient `u` has a right inverse given by a
+geometric series. -/
 lemma normalized_right_inverse (x : HahnSeries Γ R) (u : Rˣ)
     (hu : x.leadingCoeff = (u : R)) :
     x * ((geometricPowers (1 - HahnSeries.single (-x.order) (↑u⁻¹ : R) * x)).hsum *
@@ -290,7 +297,7 @@ variable (B : Γ → Rˣ) (h0 : B 0 = 1)
 
 omit [LinearOrder Γ] [IsOrderedAddMonoid Γ] in
 include h0 hB in
-lemma line_inv_unit {g : Γ} (u : Rˣ) (hu : ↑u ∈ line (K := K) B g) :
+private lemma line_inv_unit {g : Γ} (u : Rˣ) (hu : ↑u ∈ line (K := K) B g) :
     ↑u⁻¹ ∈ line (K := K) B (-g) := by
   obtain ⟨a, ha⟩ := Submodule.mem_span_singleton.mp hu
   obtain ⟨c, hc⟩ := hB g (-g)
@@ -312,6 +319,8 @@ lemma line_inv_unit {g : Γ} (u : Rˣ) (hu : ↑u ∈ line (K := K) B g) :
   exact Submodule.smul_mem _ _ (Submodule.subset_span (Set.mem_singleton _))
 
 omit [Nontrivial R] in
+/-- A single-term Hahn series with coefficient in `line B g` belongs to
+`coefficientRing B h0 hB`. -/
 lemma single_mem {g : Γ} {r : R} (hr : r ∈ line (K := K) B g) :
     HahnSeries.single g r ∈ coefficientRing B h0 hB := by
   intro a
@@ -320,6 +329,8 @@ lemma single_mem {g : Γ} {r : R} (hr : r ∈ line (K := K) B g) :
   · simp [Ne.symm h]
 
 omit [Nontrivial R] in
+/-- The sum of a summable family in `coefficientRing B h0 hB` belongs to
+`coefficientRing B h0 hB`. -/
 lemma hsum_mem {α : Type*} (x : SummableFamily Γ R α)
     (hx : ∀ i, x i ∈ coefficientRing B h0 hB) :
     x.hsum ∈ coefficientRing B h0 hB := by
@@ -329,6 +340,8 @@ lemma hsum_mem {α : Type*} (x : SummableFamily Γ R α)
   intro i hi
   exact hx i g
 
+/-- The geometric-series right inverse of a series in `coefficientRing B h0 hB` with unit
+leading coefficient belongs to `coefficientRing B h0 hB`. -/
 lemma inverse_candidate_mem (x : HahnSeries Γ R)
     (hx : x ∈ coefficientRing B h0 hB) (u : Rˣ) (hu : x.leadingCoeff = (u : R)) :
     (geometricPowers (1 - HahnSeries.single (-x.order) (↑u⁻¹ : R) * x)).hsum *
@@ -349,7 +362,7 @@ lemma inverse_candidate_mem (x : HahnSeries Γ R)
     exact (coefficientRing B h0 hB).pow_mem hz i
   exact (coefficientRing B h0 hB).mul_mem (hsum_mem B h0 hB _ hpow) hv
 
-lemma inverse_exists (x : coefficientRing B h0 hB) (hx : x ≠ 0) :
+private lemma inverse_exists (x : coefficientRing B h0 hB) (hx : x ≠ 0) :
     ∃ y : coefficientRing B h0 hB, x * y = 1 := by
   have hx' : (x : HahnSeries Γ R) ≠ 0 := by
     intro h; apply hx; exact Subtype.ext h
@@ -366,6 +379,7 @@ lemma inverse_exists (x : coefficientRing B h0 hB) (hx : x ≠ 0) :
   refine ⟨⟨y, hy⟩, ?_⟩
   exact Subtype.ext heq
 
+/-- Every element of `coefficientRing B h0 hB` is either a unit or zero. -/
 lemma coefficientRing_isUnit_or_eq_zero (x : coefficientRing B h0 hB) :
     IsUnit x ∨ x = 0 := by
   by_cases hx : x = 0

@@ -246,7 +246,7 @@ def appendCodes (n : ℕ) (codes : List (List (Op × List ℕ) × List ℕ)) :
 @[simp] theorem appendCodes_nil (n : ℕ) : appendCodes n [] = ([], []) := rfl
 
 /-- Adding a final block is ordinary shared-input append. -/
-theorem appendCodes_append_singleton (n : ℕ)
+private theorem appendCodes_append_singleton (n : ℕ)
     (codes : List (List (Op × List ℕ) × List ℕ)) (code : List (Op × List ℕ) × List ℕ) :
     appendCodes n (codes ++ [code]) = appendCode n (appendCodes n codes) code := by
   simp [appendCodes]
@@ -390,7 +390,7 @@ private theorem bundleCode_snoc (n blockSize : ℕ)
   simp [bundleCode, List.zipIdx_append]
 
 /-- Equal-sized blocks occupy exactly their number times their common gate count. -/
-theorem length_bundleCode (n blockSize : ℕ) (codes : List (List (Op × List ℕ) × List ℕ))
+private theorem length_bundleCode (n blockSize : ℕ) (codes : List (List (Op × List ℕ) × List ℕ))
     (hlen : ∀ c ∈ codes, c.1.length = blockSize) :
     (bundleCode n blockSize codes).1.length = codes.length * blockSize := by
   induction codes using List.reverseRecOn with
@@ -403,7 +403,7 @@ theorem length_bundleCode (n blockSize : ℕ) (codes : List (List (Op × List �
       hlen code (by simp)]
 
 /-- Adding the next equal-sized block is shared-input append. -/
-theorem bundleCode_append_singleton (n blockSize : ℕ)
+private theorem bundleCode_append_singleton (n blockSize : ℕ)
     (codes : List (List (Op × List ℕ) × List ℕ)) (code : List (Op × List ℕ) × List ℕ)
     (hlen : ∀ c ∈ codes, c.1.length = blockSize) :
     bundleCode n blockSize (codes ++ [code]) =

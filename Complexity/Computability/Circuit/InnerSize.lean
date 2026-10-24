@@ -46,6 +46,7 @@ a leaf of the circuit like an input. -/
 def Program.innerGates (p : Program σ n g) : Finset (Fin g) :=
   {k | σ.Arity (p.lines k).op ≠ 0}
 
+/-- A gate `k` belongs to `p.innerGates` if and only if its operation has nonzero arity. -/
 @[simp] theorem Program.mem_innerGates {p : Program σ n g} {k : Fin g} :
     k ∈ p.innerGates ↔ σ.Arity (p.lines k).op ≠ 0 := by
   simp [Program.innerGates]
@@ -67,6 +68,7 @@ theorem Circuit.innerSize_eq_zero_of_fanInAtMost_zero {c : Circuit σ n m}
   intro k hk
   exact Program.mem_innerGates.mp hk (Nat.le_zero.mp (Program.fanInAtMost_iff.mp h k))
 
+/-- A pure input-wiring circuit has `0` inner gates. -/
 @[simp] theorem Circuit.innerSize_wiring (select : Fin m → Fin n) :
     (Circuit.wiring σ select).innerSize = 0 :=
   Nat.le_zero.mp ((Circuit.wiring σ select).innerSize_le_size)

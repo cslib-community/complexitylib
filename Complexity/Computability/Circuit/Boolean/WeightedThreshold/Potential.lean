@@ -139,12 +139,12 @@ def score (x : Fin n → Bool) (z : Fin g → Bool) (i : Fin g) : ℝ :=
   P.inputSum i x + P.internalSum i z - P.threshold i
 
 /-- Every gate score has absolute value at least `1`. -/
-theorem one_le_abs_score' (x : Fin n → Bool) (z : Fin g → Bool) (i : Fin g) :
+private theorem one_le_abs_score' (x : Fin n → Bool) (z : Fin g → Bool) (i : Fin g) :
     1 ≤ |P.score x z i| :=
   P.one_le_abs_score x z i
 
 /-- Every gate score is either at most `-1` or at least `1`. -/
-theorem score_le_neg_one_or_one_le (x : Fin n → Bool) (z : Fin g → Bool) (i : Fin g) :
+private theorem score_le_neg_one_or_one_le (x : Fin n → Bool) (z : Fin g → Bool) (i : Fin g) :
     P.score x z i ≤ -1 ∨ 1 ≤ P.score x z i := by
   have h := P.one_le_abs_score' x z i
   rcases le_total 0 (P.score x z i) with h0 | h0
@@ -191,7 +191,7 @@ theorem score_congr_lt (x : Fin n → Bool) {z₁ z₂ : Fin g → Bool} {i : Fi
   simp only [score, P.internalSum_congr_lt h]
 
 /-- Updating coordinate `j ≥ i` leaves gate `i`'s score unchanged. -/
-theorem score_update_of_le (x : Fin n → Bool) (z : Fin g → Bool) {i j : Fin g}
+private theorem score_update_of_le (x : Fin n → Bool) (z : Fin g → Bool) {i j : Fin g}
     (hij : i ≤ j) (b : Bool) :
     P.score x (Function.update z j b) i = P.score x z i :=
   P.score_congr_lt x fun _ hki => Function.update_of_ne (ne_of_lt (lt_of_lt_of_le hki hij)) b z
@@ -218,14 +218,14 @@ theorem sweep_zero (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin n �
     (z : Fin g → Bool) :
     P.sweep fixed val x z 0 = z := rfl
 
-theorem sweep_succ (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin n → Bool)
+private theorem sweep_succ (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin n → Bool)
     (z : Fin g → Bool) (k : ℕ) :
     P.sweep fixed val x z (k + 1) =
       if hk : k < g then P.faceStep fixed val x (P.sweep fixed val x z k) ⟨k, hk⟩
       else P.sweep fixed val x z k := rfl
 
 /-- Once coordinate `i` has been swept at step `i + 1`, later sweep steps leave it unchanged. -/
-theorem sweep_eq_of_lt (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin n → Bool)
+private theorem sweep_eq_of_lt (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin n → Bool)
     (z : Fin g → Bool) {i : Fin g} {k : ℕ} (hik : i.val < k) :
     P.sweep fixed val x z k i = P.sweep fixed val x z (i.val + 1) i := by
   induction k with
@@ -240,7 +240,7 @@ theorem sweep_eq_of_lt (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin 
 
 /-- At step `i + 1`, coordinate `i` is set according to the face rule on the state after `i`
 steps. -/
-theorem sweep_succ_self (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin n → Bool)
+private theorem sweep_succ_self (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin n → Bool)
     (z : Fin g → Bool) (i : Fin g) :
     P.sweep fixed val x z (i.val + 1) i =
       if i ∈ fixed then val i else decide (0 < P.score x (P.sweep fixed val x z i.val) i) := by
@@ -494,14 +494,14 @@ decreasing_by
   omega
 
 /-- Unfolding equation for the backwards priority `P.priority i`. -/
-theorem priority_eq (i : Fin g) :
+private theorem priority_eq (i : Fin g) :
     P.priority i = 1 + ∑ j : Fin g, if i < j then P.priority j * |P.gateWeight j i| else 0 := by
   rw [priority]
   congr 1
   exact sum_attach univ fun j => if i < j then P.priority j * |P.gateWeight j i| else 0
 
 /-- Every gate priority is at least `1`. -/
-theorem one_le_priority (i : Fin g) : 1 ≤ P.priority i := by
+private theorem one_le_priority (i : Fin g) : 1 ≤ P.priority i := by
   suffices ∀ k : ℕ, ∀ i : Fin g, g - 1 - i.val = k → 1 ≤ P.priority i from this _ i rfl
   intro k
   induction k using Nat.strong_induction_on with
@@ -522,7 +522,7 @@ theorem priority_pos (i : Fin g) : 0 < P.priority i :=
 
 /-- The total contribution of later gates `j > i` to coordinate `i`'s flip difference has magnitude
 at most `P.priority i - 1`. -/
-theorem abs_sum_later_le_priority_sub_one (z : Fin g → Bool) (i : Fin g) :
+private theorem abs_sum_later_le_priority_sub_one (z : Fin g → Bool) (i : Fin g) :
     |∑ j : Fin g, if i < j then P.priority j * P.gateWeight j i * (z j).toNat else 0| ≤
       P.priority i - 1 := by
   refine (abs_sum_le_sum_abs _ _).trans ?_
@@ -663,7 +663,8 @@ theorem energy_update_true_sub_false (x : Fin n → Bool) (z : Fin g → Bool) (
 
 /-- When `0 < P.score x z i`, setting `z_i = true` decreases the energy by at least `1` relative to
 `z_i = false`. -/
-theorem energy_update_true_add_one_le_false {x : Fin n → Bool} {z : Fin g → Bool} {i : Fin g}
+private theorem energy_update_true_add_one_le_false {x : Fin n → Bool} {z : Fin g → Bool}
+    {i : Fin g}
     (h : 0 < P.score x z i) :
     P.energy x (Function.update z i true) + 1 ≤ P.energy x (Function.update z i false) := by
   have h1 : 1 ≤ P.score x z i := (P.pos_score_iff_one_le x z i).mp h
@@ -675,7 +676,8 @@ theorem energy_update_true_add_one_le_false {x : Fin n → Bool} {z : Fin g → 
 
 /-- When `¬ (0 < P.score x z i)`, setting `z_i = false` decreases the energy by at least `1`
 relative to `z_i = true`. -/
-theorem energy_update_false_add_one_le_true {x : Fin n → Bool} {z : Fin g → Bool} {i : Fin g}
+private theorem energy_update_false_add_one_le_true {x : Fin n → Bool} {z : Fin g → Bool}
+    {i : Fin g}
     (h : ¬ 0 < P.score x z i) :
     P.energy x (Function.update z i false) + 1 ≤ P.energy x (Function.update z i true) := by
   have h1 : P.score x z i ≤ -1 :=
@@ -751,7 +753,7 @@ theorem isSink_iff_eq_eval (x : Fin n → Bool) (z : Fin g → Bool) :
 
 /-- Updating coordinate `i` via `P.faceStep fixed val x` does not increase `P.energy x` whenever
 `z` already agrees with `val` at `i` if `i ∈ fixed`. -/
-theorem energy_faceStep_le {fixed : Finset (Fin g)} {val : Fin g → Bool} {x : Fin n → Bool}
+private theorem energy_faceStep_le {fixed : Finset (Fin g)} {val : Fin g → Bool} {x : Fin n → Bool}
     {z : Fin g → Bool} {i : Fin g} (hfix : i ∈ fixed → z i = val i) :
     P.energy x (P.faceStep fixed val x z i) ≤ P.energy x z := by
   unfold faceStep

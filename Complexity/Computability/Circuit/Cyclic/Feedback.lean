@@ -24,7 +24,9 @@ This construction does not assert a finite iteration bound.
 
 ## Main definitions
 
+* `Cslib.Circuits.Program.feedbackWire`: replace state inputs by their selected feedback gates.
 * `Cslib.Circuits.Program.feedback`: connect state inputs to selected internal gates.
+* `Cslib.Circuits.Circuit.feedbackGate`: extract a circuit's internal output gate index.
 * `Cslib.Circuits.Circuit.feedback`: close a native circuit whose outputs are internal gates.
 
 ## Main results
@@ -53,7 +55,7 @@ def feedbackWire (feed : Fin k → Fin g) : Wire (n + k) g → Wire n g :=
   Wire.elim (Fin.addCases Wire.input (Wire.gate ∘ feed)) Wire.gate
 
 /-- Reading a feedback wire is reading the original wire with the selected gate values as state. -/
-theorem elim_feedbackWire (feed : Fin k → Fin g) (input : Fin n → U) (state : Fin g → U)
+private theorem elim_feedbackWire (feed : Fin k → Fin g) (input : Fin n → U) (state : Fin g → U)
     (wire : Wire (n + k) g) :
     Wire.elim input state (feedbackWire feed wire) =
       Wire.elim (Fin.append input (state ∘ feed)) state wire := by

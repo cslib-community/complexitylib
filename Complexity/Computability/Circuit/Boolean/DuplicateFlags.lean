@@ -83,7 +83,7 @@ theorem eval_adjacentDuplicateCircuit_iff {input count k : ℕ}
     tauto
 
 /-- Sharing the equality outputs adds exactly one OR gate per record. -/
-theorem cost_program_adjacentDuplicateCircuit {input count k : ℕ}
+private theorem cost_program_adjacentDuplicateCircuit {input count k : ℕ}
     (key : Fin count → Fin k → Fin input) (cost : signature.Op → ℕ) :
     (adjacentDuplicateCircuit key).program.cost cost =
       (adjacentEqualityCircuit key).program.cost cost + count * cost .or := by

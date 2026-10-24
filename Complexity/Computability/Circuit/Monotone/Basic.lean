@@ -23,7 +23,8 @@ keeping meanings and these costs (`binaryCost_toDeMorgan`).
 
 ## Main definitions
 
-* `Cslib.Circuits.Monotone.signature`, `Cslib.Circuits.Monotone.interpretation`.
+* `Cslib.Circuits.Monotone.Op`, `Cslib.Circuits.Monotone.signature`,
+  `Cslib.Circuits.Monotone.interpretation`.
 * `Cslib.Circuits.Monotone.binaryCost`: the cost function charging one for each AND and OR gate.
 * `Cslib.Circuits.Monotone.andCost`: the cost function charging only AND gates.
 * `Cslib.Circuits.Monotone.toDeMorgan`: the monotone basis inside the De Morgan basis.
@@ -51,6 +52,7 @@ inductive Op where
   | or
   deriving DecidableEq
 
+/-- Finite enumeration of the monotone basis operations `Op`. -/
 instance : Fintype Op :=
   ⟨{.const false, .const true, .and, .or}, fun op => by rcases op with (_ | _) | _ | _ <;> simp⟩
 
@@ -67,12 +69,15 @@ def interpretation : Interpretation signature Bool
   | .and, x => x 0 && x 1
   | .or, x => x 0 || x 1
 
+/-- Under `interpretation`, `.const b` evaluates to `b`. -/
 @[simp] theorem interpretation_const (b : Bool) (x : Fin 0 → Bool) :
     interpretation (.const b) x = b := rfl
 
+/-- Under `interpretation`, `.and` evaluates to `x 0 && x 1`. -/
 @[simp] theorem interpretation_and (x : Fin 2 → Bool) : interpretation .and x = (x 0 && x 1) :=
   rfl
 
+/-- Under `interpretation`, `.or` evaluates to `x 0 || x 1`. -/
 @[simp] theorem interpretation_or (x : Fin 2 → Bool) : interpretation .or x = (x 0 || x 1) :=
   rfl
 
@@ -111,10 +116,13 @@ def andCost : Op → ℕ
   | .and => 1
   | _ => 0
 
+/-- An AND gate has `andCost` equal to `1`. -/
 @[simp] theorem andCost_and : andCost .and = 1 := rfl
 
+/-- An OR gate has `andCost` equal to `0`. -/
 @[simp] theorem andCost_or : andCost .or = 0 := rfl
 
+/-- A constant gate has `andCost` equal to `0`. -/
 @[simp] theorem andCost_const (b : Bool) : andCost (.const b) = 0 := rfl
 
 /-! ### The monotone basis inside the De Morgan basis -/
@@ -127,12 +135,15 @@ def toDeMorgan : signature.Hom Boolean.signature where
     | .or => .or
   arity_eq op := by cases op <;> rfl
 
+/-- `toDeMorgan` maps `.const b` to `.const b`. -/
 @[simp] theorem toDeMorgan_const (b : Bool) : toDeMorgan (.const b) = .const b :=
   rfl
 
+/-- `toDeMorgan` maps `.and` to `.and`. -/
 @[simp] theorem toDeMorgan_and : toDeMorgan .and = .and :=
   rfl
 
+/-- `toDeMorgan` maps `.or` to `.or`. -/
 @[simp] theorem toDeMorgan_or : toDeMorgan .or = .or :=
   rfl
 

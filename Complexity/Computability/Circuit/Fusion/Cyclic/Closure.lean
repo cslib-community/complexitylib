@@ -26,7 +26,9 @@ Restriction to an arbitrary admissible class of semifilters does not supply the 
 
 ## Main definitions
 
-* `Cslib.Circuits.Fusion.PairDerivation`: the four closure rules at a reference point.
+* `Cslib.Circuits.Fusion.PairDerivation`,
+  `Cslib.Circuits.Fusion.PairDerivation.semifilter`: the four closure rules at a reference
+  point and the semifilter they form when the empty set is not derivable.
 * `Cslib.Circuits.Fusion.pairClosure`: the generated state as an order homomorphism.
 
 ## Main results
@@ -103,7 +105,7 @@ theorem PairDerivation.mem_of_outside (x : ↥(targetᶜ))
     (fun _ _ hst hx => hst hx) (fun _ _ hx hy => ⟨hx, hy⟩) s h
 
 /-- An unrestricted cover forces the empty set at each target point. -/
-theorem PairCover.derives_empty (c : PairCover target input) (hpoint : point ∈ target) :
+private theorem PairCover.derives_empty (c : PairCover target input) (hpoint : point ∈ target) :
     PairDerivation target input c.pairs point ∅ := by
   by_contra h
   apply c.isCover ⟨⟨point, hpoint⟩, PairDerivation.semifilter h, trivial, .input⟩

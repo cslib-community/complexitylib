@@ -49,7 +49,7 @@ noncomputable def econondeterministicAndComplexity (f : BooleanFunction n) : ℕ
     ecomplexityFrom Monotone.interpretation Monotone.andCost (single g.val) AltFormula.literals
 
 /-- A fixed universal verifier bounds the minimum over all verifier functions. -/
-theorem econondeterministicAndComplexity_le_ecomplexityFrom {f : BooleanFunction n} {a : ℕ}
+private theorem econondeterministicAndComplexity_le_ecomplexityFrom {f : BooleanFunction n} {a : ℕ}
     (g : BooleanFunction (n + a)) (hg : forallGuess g = f) :
     econondeterministicAndComplexity f ≤
       ecomplexityFrom Monotone.interpretation Monotone.andCost (single g) AltFormula.literals := by

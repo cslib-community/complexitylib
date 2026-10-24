@@ -25,7 +25,9 @@ cost is monotone even at zero copies, where a separate empty circuit suffices.
 
 ## Main definitions
 
-* `Cslib.Circuits.directProduct`: independent copies of a scalar function.
+* `Cslib.Circuits.directProductInput`, `Cslib.Circuits.blockMap`,
+  `Cslib.Circuits.directProduct`: input block selection and independent copies of multi-output and
+  scalar functions.
 * `Cslib.Circuits.Circuit.parallelFamily`: different circuits on consecutive disjoint blocks.
 * `Cslib.Circuits.Circuit.replicate`: independent copies of a multi-output circuit, the
   constant family.
@@ -69,6 +71,7 @@ def blockMap (f : (Fin n → U) → Fin m → U) (k : ℕ) :
 def directProduct (f : (Fin n → U) → U) (k : ℕ) : (Fin (k * n) → U) → Fin k → U :=
   fun x j => f (directProductInput x j)
 
+/-- Coordinate `(j, i)` of `blockMap f k x` is output `i` of `f` on input block `j`. -/
 @[simp] theorem blockMap_apply (f : (Fin n → U) → Fin m → U)
     (x : Fin (k * n) → U) (j : Fin k) (i : Fin m) :
     blockMap f k x (finProdFinEquiv (j, i)) = f (directProductInput x j) i := by
@@ -169,6 +172,7 @@ theorem cost_program_replicate (c : Circuit σ n m) (k : ℕ) (cost : σ.Op → 
 def replicateScalar (c : Circuit σ n 1) (k : ℕ) : Circuit σ (k * n) k :=
   pi fun j => c.comp (Circuit.wiring σ fun i => finProdFinEquiv (j, i))
 
+/-- Evaluating `c.replicateScalar k` computes `directProduct (fun y => c.eval I y 0) k`. -/
 @[simp] theorem eval_replicateScalar (c : Circuit σ n 1) (k : ℕ) (I : Interpretation σ U)
     (x : Fin (k * n) → U) :
     (c.replicateScalar k).eval I x = directProduct (fun y => c.eval I y 0) k x := by
@@ -181,6 +185,7 @@ theorem cost_program_replicateScalar (c : Circuit σ n 1) (k : ℕ) (cost : σ.O
   simp only [replicateScalar, cost_program_pi, cost_program_comp, cost_program_wiring,
     Nat.zero_add, Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
 
+/-- Scalar replication multiplies the gate count by `k`. -/
 @[simp] theorem size_replicateScalar (c : Circuit σ n 1) (k : ℕ) :
     (c.replicateScalar k).size = k * c.size := by
   simpa only [Program.cost_const, one_mul] using c.cost_program_replicateScalar k (fun _ => 1)

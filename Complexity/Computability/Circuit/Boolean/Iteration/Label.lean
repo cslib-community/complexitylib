@@ -200,7 +200,7 @@ variable (f : BitString n → BitString n) (K : ℕ) {x : BitString n}
   (hx : x ∈ Function.periodicPts f) (hK : cycleLength f x ≤ K)
 
 include hx hK in
-theorem shortRepresentative_eq : shortRepresentative f K x = canonicalCycle f x := by
+private theorem shortRepresentative_eq : shortRepresentative f K x = canonicalCycle f x := by
   have hs := scanMin_spec (fun j : Fin (K + 1) => f^[j.val] x) x (K + 1)
   apply @le_antisymm _ (lexOrder n).toPartialOrder
   · have ht := canonicalTime_lt_cycleLength f x hx
@@ -214,7 +214,7 @@ theorem shortRepresentative_eq : shortRepresentative f K x = canonicalCycle f x 
       exact iterate_mem_cycleSet f hx j.val
 
 include hx hK in
-theorem shortLength_eq : shortLength (w := w) f K x = BitVec.ofNat w (cycleLength f x) := by
+private theorem shortLength_eq : shortLength (w := w) f K x = BitVec.ofNat w (cycleLength f x) := by
   have hmin : Function.minimalPeriod f x = cycleLength f x :=
     (cycleLength_eq_minimalPeriod_of_mem_periodicPts f hx).symm
   apply firstIndex_spec _ ⟨cycleLength f x, by omega⟩
@@ -231,7 +231,7 @@ theorem shortLength_eq : shortLength (w := w) f K x = BitVec.ofNat w (cycleLengt
     exact absurd hi (not_lt.mpr hm)
 
 include hx hK in
-theorem shortTime_eq : shortTime (w := w) f K x = BitVec.ofNat w (canonicalTime f x) := by
+private theorem shortTime_eq : shortTime (w := w) f K x = BitVec.ofNat w (canonicalTime f x) := by
   unfold shortTime
   rw [shortRepresentative_eq f K hx hK]
   exact firstIndex_spec _ ⟨canonicalTime f x, (canonicalTime_lt_cycleLength f x hx).trans_le

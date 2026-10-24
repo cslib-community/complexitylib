@@ -133,7 +133,7 @@ theorem complexity_const (b : Bool) :
 /-- **Discrete intermediate values.** If changing one coordinate raises a measure by at most `B`,
 and the measure is at most `t` at `u` and above `t` at `v`, then it lies in `(t, t + B]`
 somewhere. -/
-theorem exists_lt_le_add_of_update_le {ι α : Type*} [Finite ι] [DecidableEq ι]
+private theorem exists_lt_le_add_of_update_le {ι α : Type*} [Finite ι] [DecidableEq ι]
     (μ : (ι → α) → ℕ) {B t : ℕ} (hμ : ∀ w i a, μ (Function.update w i a) ≤ μ w + B)
     {u v : ι → α} (hu : μ u ≤ t) (hv : t < μ v) : ∃ w, t < μ w ∧ μ w ≤ t + B := by
   have := Fintype.ofFinite ι

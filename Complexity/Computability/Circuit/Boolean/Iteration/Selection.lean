@@ -58,7 +58,7 @@ variable {β : Type v} [LinearOrder β]
 
 /-- In an array with monotone keys, two different records with equal keys force an adjacent pair
 of different records with that key. -/
-theorem adjacent_distinct_of_equal_keys (records : Fin R → α) (key : α → β)
+private theorem adjacent_distinct_of_equal_keys (records : Fin R → α) (key : α → β)
     (hs : Monotone (key ∘ records)) (i j : Fin R) (hij : i < j)
     (hne : records i ≠ records j) (heq : key (records i) = key (records j)) :
     ∃ (p : ℕ) (hp : p + 1 < R),

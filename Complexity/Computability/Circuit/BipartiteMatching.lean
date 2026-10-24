@@ -68,6 +68,7 @@ vertices with `(v, σ v)` an edge for every `v`. -/
 def HasPerfectMatching (G : V × V → Bool) : Prop :=
   ∃ σ : Equiv.Perm V, ∀ v, G (v, σ v) = true
 
+/-- Whether a bipartite graph on a finite vertex type has a perfect matching is decidable. -/
 instance [Fintype V] [DecidableEq V] (G : V × V → Bool) : Decidable (HasPerfectMatching G) :=
   inferInstanceAs (Decidable (∃ σ : Equiv.Perm V, ∀ v, G (v, σ v) = true))
 

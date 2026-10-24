@@ -23,14 +23,19 @@ reversal step of the small-subspace expansion argument.
 ## Main definitions
 
 * `LaurentReduction.F`: the Laurent-series field `K⸨X⸩` used as coefficient field.
-* `LaurentReduction.Integral`, `LaurentReduction.IntegralVector`: membership in `K⟦X⟧`,
-  coordinatewise.
+* `LaurentReduction.Integral`, `LaurentReduction.IntegralVector`,
+  `LaurentReduction.IntegralFunctional`: membership in `K⟦X⟧`, coordinatewise and for linear
+  functionals.
 * `LaurentReduction.reduction`, `LaurentReduction.reduce`: constant coefficients.
 * `LaurentReduction.IntegralFrame`: an integral spanning family with integral dual coordinates
   and linearly independent reductions.
-* `LaurentReduction.reducedSubspace`: the span of reductions of integral members.
-* `LaurentReduction.weightMap`, `LaurentReduction.liftMap`, `LaurentReduction.conjugatedWeight`:
-  coordinate weights, constant coordinate changes, and their composite.
+* `LaurentReduction.reducedSet`, `LaurentReduction.reducedSubspace`: reductions of integral
+  members and their span.
+* `LaurentReduction.lowProjection`, `LaurentReduction.lowSupported`: low-weight coordinate
+  projection and support subspace.
+* `LaurentReduction.weightMap`, `LaurentReduction.liftMap`, `LaurentReduction.liftEquiv`,
+  `LaurentReduction.conjugatedWeight`: coordinate weights, constant coordinate changes, and their
+  composite.
 
 ## Main results
 
@@ -69,31 +74,39 @@ def reduction (x : F K) : K := x.coeff 0
 /-- Take the constant coefficient in each coordinate. -/
 def reduce {ι : Type*} (x : ι → F K) : ι → K := fun i => reduction (x i)
 
+/-- A Laurent series `x` is integral (`x ∈ K⟦X⟧`) if and only if its valuation is at most `1`. -/
 lemma integral_iff (x : F K) : Integral x ↔ Valued.v x ≤ 1 :=
   (LaurentSeries.val_le_one_iff_eq_coe K x).symm
 
+/-- Zero is an integral Laurent series. -/
 lemma integral_zero : Integral (0 : F K) := zero_mem _
 
+/-- One is an integral Laurent series. -/
 lemma integral_one : Integral (1 : F K) := one_mem _
 
-lemma Integral.add {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x + y) :=
+private lemma Integral.add {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x + y) :=
   add_mem hx hy
 
+/-- Integral Laurent series are closed under negation. -/
 lemma Integral.neg {x : F K} (hx : Integral x) : Integral (-x) := neg_mem hx
 
-lemma Integral.sub {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x - y) :=
+private lemma Integral.sub {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x - y) :=
   sub_mem hx hy
 
+/-- Integral Laurent series are closed under multiplication. -/
 lemma Integral.mul {x y : F K} (hx : Integral x) (hy : Integral y) : Integral (x * y) :=
   mul_mem hx hy
 
+/-- The constant coefficient of `0` is `0`. -/
 @[simp] lemma reduction_zero : reduction (0 : F K) = 0 := by simp [reduction]
 
+/-- The constant coefficient of `1` is `1`. -/
 @[simp] lemma reduction_one : reduction (1 : F K) = 1 := by simp [reduction]
 
+/-- Taking the constant coefficient is additive. -/
 lemma reduction_add (x y : F K) : reduction (x + y) = reduction x + reduction y := by
   simp [reduction]
-lemma reduction_mul {x y : F K} (hx : Integral x) (hy : Integral y) :
+private lemma reduction_mul {x y : F K} (hx : Integral x) (hy : Integral y) :
     reduction (x * y) = reduction x * reduction y := by
   obtain ⟨p, rfl⟩ := RingHom.mem_range.mp hx
   obtain ⟨q, rfl⟩ := RingHom.mem_range.mp hy
@@ -105,7 +118,7 @@ lemma reduction_mul {x y : F K} (hx : Integral x) (hy : Integral y) :
       (LaurentSeries.coeff_coe_powerSeries s 0)
   rw [hc, hc, hc, map_mul]
 
-lemma normalize_vector {ι : Type*} [Finite ι] (x : ι → F K) (hx : x ≠ 0) :
+private lemma normalize_vector {ι : Type*} [Finite ι] (x : ι → F K) (hx : x ≠ 0) :
     ∃ (c : ι) (u : F K), u ≠ 0 ∧ (∀ i, Integral (u * x i)) ∧ u * x c = 1 := by
   classical
   have := Fintype.ofFinite ι
@@ -127,16 +140,20 @@ lemma normalize_vector {ι : Type*} [Finite ι] (x : ι → F K) (hx : x ≠ 0) 
 /-- Coefficientwise integrality, not an arbitrary sublattice. -/
 def IntegralVector {ι : Type*} (x : ι → F K) : Prop := ∀ i, Integral (x i)
 
+/-- The zero vector has integral coordinates. -/
 lemma IntegralVector.zero {ι : Type*} : IntegralVector (0 : ι → F K) := fun _ => integral_zero
 
+/-- Vectors with integral coordinates are closed under addition. -/
 lemma IntegralVector.add {ι : Type*} {x y : ι → F K}
     (hx : IntegralVector x) (hy : IntegralVector y) : IntegralVector (x + y) :=
   fun i => (hx i).add (hy i)
 
+/-- Vectors with integral coordinates are closed under subtraction. -/
 lemma IntegralVector.sub {ι : Type*} {x y : ι → F K}
     (hx : IntegralVector x) (hy : IntegralVector y) : IntegralVector (x - y) :=
   fun i => (hx i).sub (hy i)
 
+/-- Vectors with integral coordinates are closed under multiplication by an integral scalar. -/
 lemma IntegralVector.smul {ι : Type*} {x : ι → F K} {a : F K}
     (ha : Integral a) (hx : IntegralVector x) : IntegralVector (a • x) :=
   fun i => ha.mul (hx i)
@@ -276,7 +293,7 @@ namespace IntegralFrame
 
 variable {ι : Type*} {U : Submodule (F K) (ι → F K)} (b : IntegralFrame U)
 
-lemma linearIndependent : LinearIndependent (F K) b.vector := by
+private lemma linearIndependent : LinearIndependent (F K) b.vector := by
   classical
   rw [linearIndependent_iff']
   intro s c hc j hj
@@ -284,15 +301,16 @@ lemma linearIndependent : LinearIndependent (F K) b.vector := by
   simpa only [map_sum, map_smul, b.pairing, smul_eq_mul, mul_ite,
     mul_one, mul_zero, Finset.sum_ite_eq, hj, ite_true, map_zero] using hh
 
+/-- Every vector of an `IntegralFrame U` belongs to `U`. -/
 lemma vector_mem (j : Fin b.length) : b.vector j ∈ U := by
   exact b.span_eq.le (Submodule.subset_span ⟨j, rfl⟩)
 
 /-- Full integral-lattice saturation: every integral member has integral
 basis coordinates, explicitly given by the constructed functionals. -/
-lemma integral_coordinates (x : ι → F K) (hx : IntegralVector x) :
+private lemma integral_coordinates (x : ι → F K) (hx : IntegralVector x) :
     ∀ j, Integral (b.coordinate j x) := fun j => b.coordinate_integral j x hx
 
-lemma sum_coordinates (x : ι → F K) (hx : x ∈ U) :
+private lemma sum_coordinates (x : ι → F K) (hx : x ∈ U) :
     ∑ j, b.coordinate j x • b.vector j = x := by
   classical
   have hx := b.span_eq.ge hx
@@ -302,31 +320,32 @@ lemma sum_coordinates (x : ι → F K) (hx : x ∈ U) :
   simp only [map_sum, map_smul, b.pairing, smul_eq_mul, mul_ite,
     mul_one, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
 
-lemma length_eq_finrank : b.length = finrank (F K) U := by
+private lemma length_eq_finrank : b.length = finrank (F K) U := by
   have hh := finrank_span_eq_card b.linearIndependent
   rw [b.span_eq] at hh
   simpa using hh.symm
 
 end IntegralFrame
 
-lemma integral_C (a : K) : Integral (HahnSeries.C a : F K) :=
+private lemma integral_C (a : K) : Integral (HahnSeries.C a : F K) :=
   RingHom.mem_range.mpr ⟨PowerSeries.C a, PowerSeries.coe_C a⟩
 
+/-- The constant coefficient of the constant Laurent series `HahnSeries.C a` is `a`. -/
 lemma reduction_C (a : K) : reduction (HahnSeries.C a : F K) = a := by
   simp [reduction, HahnSeries.C_apply]
 
-lemma reduce_sum {ι τ : Type*} (s : Finset τ) (v : τ → (ι → F K)) :
+private lemma reduce_sum {ι τ : Type*} (s : Finset τ) (v : τ → (ι → F K)) :
     reduce (∑ j ∈ s, v j) = ∑ j ∈ s, reduce (v j) := by
   ext i
   simp [reduce, reduction]
 
-lemma reduce_smul {ι : Type*} {a : F K} {v : ι → F K}
+private lemma reduce_smul {ι : Type*} {a : F K} {v : ι → F K}
     (ha : Integral a) (hv : IntegralVector v) :
     reduce (a • v) = reduction a • reduce v := by
   ext i
   exact reduction_mul ha (hv i)
 
-lemma reduce_C_smul {ι : Type*} (a : K) (v : ι → F K) :
+private lemma reduce_C_smul {ι : Type*} (a : K) (v : ι → F K) :
     reduce ((HahnSeries.C a : F K) • v) = a • reduce v := by
   ext i
   change reduction (HahnSeries.C a * v i) = a * reduction (v i)
@@ -341,6 +360,8 @@ def reducedSet {ι : Type*} (U : Submodule (F K) (ι → F K)) : Set (ι → K) 
 def reducedSubspace {ι : Type*} (U : Submodule (F K) (ι → F K)) : Submodule K (ι → K) :=
   Submodule.span K (reducedSet U)
 
+/-- For any integral frame `b` of `U`, `reducedSet U` is the `K`-span of the reduced frame
+vectors. -/
 lemma reducedSet_eq_span {ι : Type*} {U : Submodule (F K) (ι → F K)}
     (b : IntegralFrame U) :
     reducedSet U = (Submodule.span K (Set.range (fun j => reduce (b.vector j))) : Set (ι → K)) := by
@@ -366,6 +387,8 @@ lemma reducedSet_eq_span {ι : Type*} {U : Submodule (F K) (ι → F K)}
     · rw [reduce_sum]
       simp_rw [reduce_C_smul]
 
+/-- For any integral frame `b` of `U`, `reducedSubspace U` is the `K`-span of the reduced frame
+vectors. -/
 lemma reducedSubspace_eq_span {ι : Type*} {U : Submodule (F K) (ι → F K)}
     (b : IntegralFrame U) :
     reducedSubspace U = Submodule.span K (Set.range (fun j => reduce (b.vector j))) := by
@@ -379,6 +402,7 @@ theorem finrank_reducedSubspace {ι : Type*} [Finite ι]
   rw [reducedSubspace_eq_span b, finrank_span_eq_card b.reduced_independent,
     Fintype.card_fin, b.length_eq_finrank]
 
+/-- An integral Laurent series has nonnegative order. -/
 lemma Integral.order_nonneg {x : F K} (hx : Integral x) : 0 ≤ x.order := by
   by_cases hz : x = 0
   · simp [hz]
@@ -387,7 +411,7 @@ lemma Integral.order_nonneg {x : F K} (hx : Integral x) : 0 ≤ x.order := by
   have hh : Valued.v x ≤ WithZero.exp (-(0 : ℤ)) := by simpa using hv
   exact (LaurentSeries.valuation_le_iff_coeff_lt_eq_zero K).mp hh
 
-lemma Integral.order_eq_zero {x : F K} (hx : Integral x) (hr : reduction x ≠ 0) :
+private lemma Integral.order_eq_zero {x : F K} (hx : Integral x) (hr : reduction x ≠ 0) :
     x.order = 0 :=
   le_antisymm (HahnSeries.order_le_of_coeff_ne_zero hr) hx.order_nonneg
 
@@ -397,6 +421,7 @@ def weightMap {ι : Type*} (w : ι → ℕ) : (ι → F K) →ₗ[F K] (ι → F
   map_add' := by intros; ext; simp [mul_add]
   map_smul' := by intros; ext; simp [mul_left_comm]
 
+/-- Coordinatewise multiplication `weightMap w` by Laurent monomials is injective. -/
 lemma weightMap_injective {ι : Type*} (w : ι → ℕ) :
     Function.Injective (weightMap (K := K) w) := by
   intro x y h
@@ -408,7 +433,7 @@ lemma weightMap_injective {ι : Type*} (w : ι → ℕ) :
 
 /-- The key valuation step of order reversal: an integral normalized input
 having a nonzero low reduction cannot give a high leading output coefficient. -/
-lemma weighted_high_reduction_zero {ι : Type*} (w : ι → ℕ) (A : ℕ)
+private lemma weighted_high_reduction_zero {ι : Type*} (w : ι → ℕ) (A : ℕ)
     (x : ι → F K) (hx : IntegralVector x)
     (hlow : ∃ j, w j ≤ A ∧ reduction (x j) ≠ 0)
     (c : F K) (hc : c ≠ 0)
@@ -435,7 +460,7 @@ lemma weighted_high_reduction_zero {ι : Type*} (w : ι → ℕ) (A : ℕ)
 
 /-- Low coordinates detect reduction throughout U. This controls its full
 integral image lattice, not only the images of an arbitrary integral basis. -/
-theorem reduction_weighted_supported {ι : Type*} [Finite ι]
+private theorem reduction_weighted_supported {ι : Type*} [Finite ι]
     (w : ι → ℕ) (A : ℕ) (U : Submodule (F K) (ι → F K))
     (hdetect : ∀ x ∈ U, IntegralVector x →
       (∀ i, w i ≤ A → reduction (x i) = 0) → reduce x = 0)
@@ -463,7 +488,7 @@ theorem reduction_weighted_supported {ι : Type*} [Finite ι]
   exact he ▸ weighted_high_reduction_zero w A (u • x) hnI' hd u⁻¹
     (inv_ne_zero hu) (he.symm ▸ hyI)
 
-lemma exists_independent_subfamily {V : Type*} [AddCommGroup V] [Module K V]
+private lemma exists_independent_subfamily {V : Type*} [AddCommGroup V] [Module K V]
     {h : ℕ} (v : Fin h → V) :
     ∃ (k : ℕ) (a : Fin k → Fin h), Function.Injective a ∧
       Submodule.span K (Set.range (v ∘ a)) = Submodule.span K (Set.range v) ∧
@@ -484,7 +509,7 @@ lemma exists_independent_subfamily {V : Type*} [AddCommGroup V] [Module K V]
   rw [he, hs]
 
 /-- Restrict an integral frame to a selected family of basis vectors. -/
-def IntegralFrame.subframe {ι : Type*} {U : Submodule (F K) (ι → F K)}
+private def IntegralFrame.subframe {ι : Type*} {U : Submodule (F K) (ι → F K)}
     (b : IntegralFrame U) {k : ℕ} (a : Fin k → Fin b.length)
     (ha : Function.Injective a) :
     IntegralFrame (Submodule.span (F K) (Set.range (b.vector ∘ a))) where
@@ -499,6 +524,7 @@ def IntegralFrame.subframe {ι : Type*} {U : Submodule (F K) (ι → F K)}
     simp only [Function.comp_apply, b.pairing, ha.eq_iff]
   reduced_independent := b.reduced_independent.comp a ha
 
+/-- `reducedSubspace` is monotone with respect to submodule inclusion. -/
 lemma reducedSubspace_mono {ι : Type*} {U V : Submodule (F K) (ι → F K)}
     (h : U ≤ V) : reducedSubspace U ≤ reducedSubspace V := by
   apply Submodule.span_mono
@@ -507,7 +533,7 @@ lemma reducedSubspace_mono {ι : Type*} {U V : Submodule (F K) (ι → F K)}
 
 /-- Choose an integral-lattice subspace on whose reduction a specified
 projection is injective, of dimension equal to that projection's rank. -/
-theorem exists_projection_subspace {ι : Type*} [Finite ι]
+private theorem exists_projection_subspace {ι : Type*} [Finite ι]
     {V : Type*} [AddCommGroup V] [Module K V]
     (U : Submodule (F K) (ι → F K)) (P : (ι → K) →ₗ[K] V) :
     ∃ U' : Submodule (F K) (ι → F K), U' ≤ U ∧
@@ -559,6 +585,7 @@ def lowSupported {ι : Type*} (w : ι → ℕ) (A : ℕ) : Submodule K (ι → K
   add_mem' := by intro x y hx hy i hi; simp [hx i hi, hy i hi]
   smul_mem' := by intro c x hx i hi; simp [hx i hi]
 
+/-- Mapping a submodule by an injective linear map preserves `finrank`. -/
 lemma finrank_map_injective {L : Type*} [Field L] {V W : Type*}
     [AddCommGroup V] [Module L V] [AddCommGroup W] [Module L W]
     (f : V →ₗ[L] W) (hf : Function.Injective f) (U : Submodule L V) :
@@ -596,20 +623,22 @@ def liftMap (P : (ι → K) →ₗ[K] (κ → K)) : (ι → F K) →ₗ[F K] (κ
   Matrix.toLin' ((LinearMap.toMatrix' P).map HahnSeries.C)
 
 omit [Fintype κ] [DecidableEq κ] in
+/-- Coordinate `j` of `liftMap P x` is the matrix-vector product with the constant coefficients
+of `P`. -/
 lemma liftMap_apply (P : (ι → K) →ₗ[K] κ → K) (x : ι → F K) (j : κ) :
     liftMap P x j = ∑ i, HahnSeries.C (LinearMap.toMatrix' P j i) * x i := rfl
 
 omit [Fintype τ] [DecidableEq τ] in
-lemma liftMap_comp (P : (κ → K) →ₗ[K] τ → K) (Q : (ι → K) →ₗ[K] κ → K) :
+private lemma liftMap_comp (P : (κ → K) →ₗ[K] τ → K) (Q : (ι → K) →ₗ[K] κ → K) :
     liftMap (P ∘ₗ Q) = liftMap P ∘ₗ liftMap Q := by
   simp only [liftMap, LinearMap.toMatrix'_comp, Matrix.map_mul, Matrix.toLin'_mul]
 
-lemma liftMap_id : liftMap (LinearMap.id : (ι → K) →ₗ[K] (ι → K)) = LinearMap.id := by
+private lemma liftMap_id : liftMap (LinearMap.id : (ι → K) →ₗ[K] (ι → K)) = LinearMap.id := by
   simp only [liftMap, LinearMap.toMatrix'_id, Matrix.map_one _ (map_zero _) (map_one _),
     Matrix.toLin'_one]
 
 omit [Fintype κ] [DecidableEq κ] in
-lemma liftMap_integral (P : (ι → K) →ₗ[K] (κ → K)) {x : ι → F K}
+private lemma liftMap_integral (P : (ι → K) →ₗ[K] (κ → K)) {x : ι → F K}
     (hx : IntegralVector x) : IntegralVector (liftMap P x) := by
   intro j
   rw [liftMap_apply]
@@ -618,7 +647,7 @@ lemma liftMap_integral (P : (ι → K) →ₗ[K] (κ → K)) {x : ι → F K}
   exact (integral_C _).mul (hx i)
 
 omit [Fintype κ] [DecidableEq κ] in
-lemma reduction_liftMap (P : (ι → K) →ₗ[K] κ → K) (x : ι → F K) :
+private lemma reduction_liftMap (P : (ι → K) →ₗ[K] κ → K) (x : ι → F K) :
     reduce (liftMap P x) = P (reduce x) := by
   have hc (a : K) (z : F K) : reduction (HahnSeries.C a * z) = a * reduction z := by
     rw [HahnSeries.C_mul_eq_smul]; rfl
@@ -647,14 +676,17 @@ def liftEquiv (E : (ι → K) ≃ₗ[K] (κ → K)) : (ι → F K) ≃ₗ[F K] (
       rw [hh, liftMap_id] at he
       exact (LinearMap.congr_fun he x).symm }
 
+/-- The underlying linear map of `liftEquiv E` is `liftMap E.toLinearMap`. -/
 @[simp] lemma liftEquiv_toLinearMap (E : (ι → K) ≃ₗ[K] (κ → K)) :
     (liftEquiv E).toLinearMap = liftMap E.toLinearMap := rfl
 
+/-- The inverse of `liftEquiv E` is `liftEquiv E.symm`. -/
 lemma liftEquiv_symm (E : (ι → K) ≃ₗ[K] (κ → K)) :
     (liftEquiv E).symm = liftEquiv E.symm := by
   ext x j
   rfl
 
+/-- `liftEquiv E` preserves and reflects `IntegralVector`. -/
 lemma integral_liftEquiv_iff (E : (ι → K) ≃ₗ[K] (κ → K)) (x : ι → F K) :
     IntegralVector (liftEquiv E x) ↔ IntegralVector x := by
   constructor
@@ -664,7 +696,7 @@ lemma integral_liftEquiv_iff (E : (ι → K) ≃ₗ[K] (κ → K)) (x : ι → F
     simpa using hh
   · exact liftMap_integral E.toLinearMap
 
-lemma reducedSubspace_liftEquiv (E : (ι → K) ≃ₗ[K] (κ → K))
+private lemma reducedSubspace_liftEquiv (E : (ι → K) ≃ₗ[K] (κ → K))
     (U : Submodule (F K) (ι → F K)) :
     reducedSubspace (U.map (liftEquiv E).toLinearMap) =
       (reducedSubspace U).map E.toLinearMap := by
@@ -689,11 +721,13 @@ def conjugatedWeight {ι : Type*} [Fintype ι] [DecidableEq ι]
   (liftEquiv Eout).symm.toLinearMap.comp
     ((weightMap w).comp (liftEquiv Ein).toLinearMap)
 
+/-- The conjugated weight map `conjugatedWeight Ein Eout w` is injective. -/
 lemma conjugatedWeight_injective {ι : Type*} [Fintype ι] [DecidableEq ι]
     (Ein Eout : (ι → K) ≃ₗ[K] (ι → K)) (w : ι → ℕ) :
     Function.Injective (conjugatedWeight Ein Eout w) :=
   (liftEquiv Eout).symm.injective.comp ((weightMap_injective w).comp (liftEquiv Ein).injective)
 
+/-- Filtration rank inequality for `conjugatedWeight Ein Eout w` after reduction at zero. -/
 theorem conjugated_filtration_rank {ι : Type*} [Fintype ι] [DecidableEq ι]
     (Ein Eout : (ι → K) ≃ₗ[K] (ι → K)) (w : ι → ℕ) (A : ℕ)
     (U W : Submodule (F K) (ι → F K))
@@ -709,6 +743,7 @@ theorem conjugated_filtration_rank {ι : Type*} [Fintype ι] [DecidableEq ι]
     (W.map (liftEquiv Eout).toLinearMap) hh
   rwa [reducedSubspace_liftEquiv, reducedSubspace_liftEquiv] at h
 
+/-- Rank-nullity for the restriction of a linear map `f` to a finite-dimensional submodule `U`. -/
 lemma finrank_map_add_finrank_inf_ker {L : Type*} [Field L] {V W : Type*}
     [AddCommGroup V] [Module L V] [AddCommGroup W] [Module L W]
     (f : V →ₗ[L] W) (U : Submodule L V) [FiniteDimensional L U] :

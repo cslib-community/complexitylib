@@ -159,10 +159,11 @@ structure DeleteGateOK (C : SemiCircuit) (J : ℕ) (ℓ : Lit) : Prop where
   value : (∀ val, C.EqnsHold val → (C.gate J).eval val = ℓ.eval val) ∨
     ((∀ K ∈ C.gates, ¬ (C.gate K).Reads J) ∧ ¬ C.out.Reads J)
 
-theorem DeleteGateOK.not_reads (hC : C.WellFormed) {J : ℕ} {ℓ : Lit} (h : C.DeleteGateOK J ℓ) :
+private theorem DeleteGateOK.not_reads (hC : C.WellFormed) {J : ℕ} {ℓ : Lit}
+    (h : C.DeleteGateOK J ℓ) :
     ℓ.arg ≠ .node J := fun he => hC.not_reads_self h.mem (h.reads J he)
 
-theorem eqnsHold_deleteGate (hC : C.WellFormed) {J : ℕ} {ℓ : Lit} (hJ : J ∈ C.gates)
+private theorem eqnsHold_deleteGate (hC : C.WellFormed) {J : ℕ} {ℓ : Lit} (hJ : J ∈ C.gates)
     (val : ℕ → Bool) : (C.deleteGate J ℓ).EqnsHold val ↔ C.EqnsHold val :=
   forall₂_congr fun e he => by
     change ((C.eqn e).subst J ℓ).Holds val ↔ _
@@ -276,7 +277,7 @@ theorem mem_live_deleteEqn {e v : ℕ} {ℓ : Lit} {i : ℕ} (hi : i ∈ C.live)
 
 /-- A solution of the affine system after deleting `v = ℓ` extends to a solution of the original
 system by giving `v` the value of `ℓ`. -/
-theorem DeleteEqnOK.eqnsHold {e v : ℕ} {ℓ : Lit} (h : C.DeleteEqnOK e v ℓ) {val : ℕ → Bool}
+private theorem DeleteEqnOK.eqnsHold {e v : ℕ} {ℓ : Lit} (h : C.DeleteEqnOK e v ℓ) {val : ℕ → Bool}
     (hval : (C.deleteEqn e v ℓ).EqnsHold val) :
     C.EqnsHold (Function.update val v (ℓ.eval val)) := by
   have hℓv : ℓ.arg ≠ .node v := fun he => (h.reads v he).2 rfl
@@ -375,10 +376,10 @@ structure DropEqnOK (C : SemiCircuit) (e v : ℕ) : Prop where
   out : ¬ C.out.Reads v
 
 /-- The value of the dropped auxiliary variable solving its equation. -/
-def dropEqnValue (C : SemiCircuit) (e v : ℕ) (val : ℕ → Bool) : ℕ → Bool :=
+private def dropEqnValue (C : SemiCircuit) (e v : ℕ) (val : ℕ → Bool) : ℕ → Bool :=
   Function.update val v ((C.eqn e).rhs + ∑ i ∈ (C.eqn e).terms.erase v, val i)
 
-theorem DropEqnOK.eqnsHold {e v : ℕ} (h : C.DropEqnOK e v) {val : ℕ → Bool}
+private theorem DropEqnOK.eqnsHold {e v : ℕ} (h : C.DropEqnOK e v) {val : ℕ → Bool}
     (hval : (C.dropEqn e v).EqnsHold val) : C.EqnsHold (C.dropEqnValue e v val) := by
   have hext : ∀ i, i ≠ v → C.dropEqnValue e v val i = val i := fun i hi =>
     Function.update_of_ne hi _ _
@@ -451,7 +452,7 @@ def dropTrivialEqn (C : SemiCircuit) (e : ℕ) : SemiCircuit :=
 
 /-- An equation without terms of a well-formed semi-circuit always holds, so dropping it keeps
 the solutions of the affine system. -/
-theorem eqnsHold_dropTrivialEqn (hC : C.WellFormed) {e : ℕ} (he : e ∈ C.eqns)
+private theorem eqnsHold_dropTrivialEqn (hC : C.WellFormed) {e : ℕ} (he : e ∈ C.eqns)
     (hterms : (C.eqn e).terms = ∅) (val : ℕ → Bool) :
     (C.dropTrivialEqn e).EqnsHold val ↔ C.EqnsHold val := by
   have htriv : (C.eqn e).Holds val := by

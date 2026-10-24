@@ -295,7 +295,7 @@ theorem wt_le (h : Reduction f S S' F D T) (hS : S.Valid f) {u : ℕ}
   · rw [h.wt_eq_zero hS hu hpart]; exact Nat.zero_le _
 
 /-- A used parameter that is not the partner of a member of `F` gains at most one in weight. -/
-theorem wt_le_add_one (h : Reduction f S S' F D T) (hS : S.Valid f) {u : ℕ}
+private theorem wt_le_add_one (h : Reduction f S S' F D T) (hS : S.Valid f) {u : ℕ}
     (hpart : ∀ x ∈ F, ¬ S.IsPartner x u) (hdeg : 1 ≤ S.deg u) : S'.wt u ≤ S.wt u + 1 := by
   by_cases hu : u ∈ S.unpaired
   · rw [wt_of_mem hu]
@@ -453,7 +453,7 @@ restriction (UF) for an unpaired parameter and (PF) for a paired one. -/
 def fixConst (S : State n) (w : ℕ) (b : Bool) : State n :=
   S.restrict w (Lit.const b) (S.pairsAvoid w)
 
-theorem restrictOK_fixConst {S : State n} {w : ℕ} (hw : w ∈ S.params) (b : Bool) :
+private theorem restrictOK_fixConst {S : State n} {w : ℕ} (hw : w ∈ S.params) (b : Bool) :
     S.RestrictOK w (Lit.const b) (S.pairsAvoid w) where
   mem := hw
   reads y hy := by simp [Lit.Reads, Lit.const] at hy
@@ -547,7 +547,8 @@ theorem Valid.reduction_deleteEqn {S : State n} (hS : S.Valid f) {e v : ℕ} {�
       exact ⟨Finset.mem_erase.2 ⟨hee, hdel.1⟩, Equation.card_subst_le.trans hdel.2⟩
 
 /-- Deleting an equation without terms is a reduction rerouting nothing. -/
-theorem Valid.reduction_dropTrivialEqn {S : State n} (hS : S.Valid f) {e : ℕ} (he : e ∈ S.eqns)
+private theorem Valid.reduction_dropTrivialEqn {S : State n} (hS : S.Valid f) {e : ℕ}
+    (he : e ∈ S.eqns)
     (hterms : (S.eqn e).terms = ∅) : Reduction f S (S.dropTrivialEqn e) ∅ [.inr e] [] where
   valid := hS.dropTrivialEqn he hterms
   subset := Finset.empty_subset _

@@ -89,7 +89,7 @@ def elementDistinctness (m k : ℕ) : BooleanFunction (m * k) :=
 
 /-- Element distinctness has at least `2 ^ (t (m - 1))` subfunctions on each block of `2 t` bits
 when `m ≤ 2 ^ t`. -/
-theorem two_pow_le_card_subfunctions_elementDistinctness (hm : m ≤ 2 ^ t) (i : Fin m) :
+private theorem two_pow_le_card_subfunctions_elementDistinctness (hm : m ≤ 2 ^ t) (i : Fin m) :
     2 ^ (t * (m - 1)) ≤ #(subfunctions (elementDistinctness m (t + t)) (blockBits (t + t) i)) := by
   -- Give block `j ≠ i` the value `(j, u j)`.
   let w (u : {j // j ≠ i} → Fin t → Bool) : Fin m → Fin t → Bool :=

@@ -184,7 +184,7 @@ theorem exists_dnf_of_shallow {op : Op} (hop : op ≠ .not) {args : Fin op.arity
 disjunction have decision tree depth at most `k` under `ρ`, at most `#E(ℓ - s) (4k)^s` of the
 extensions of `ρ` with `ℓ` free bits leave it `s`-deep, where `E(m)` are the extensions of `ρ` with
 `m` free bits. -/
-theorem card_filter_not_shallow_le_of_ne_not {op : Op} (hop : op ≠ .not) {k : ℕ}
+private theorem card_filter_not_shallow_le_of_ne_not {op : Op} (hop : op ≠ .not) {k : ℕ}
     {args : Fin op.arity → BitString n → Bool} (h : ∀ j, Shallow (k + 1) ρ (args j)) (ℓ s : ℕ) :
     #{ρ' ∈ ρ.extensions ℓ | ¬ Shallow s ρ' fun x => interpretation op fun j => args j x} ≤
       #(ρ.extensions (ℓ - s)) * (4 * k) ^ s := by
@@ -203,7 +203,7 @@ theorem card_filter_not_shallow_le_of_ne_not {op : Op} (hop : op ≠ .not) {k : 
 
 /-- **The switching step for one operation.** If the arguments of an operation are shallow under
 `ρ`, few extensions of `ρ` leave it deep. -/
-theorem card_filter_not_shallow_le {op : Op} {args : Fin op.arity → BitString n → Bool}
+private theorem card_filter_not_shallow_le {op : Op} {args : Fin op.arity → BitString n → Bool}
     (h : ∀ j, Shallow s ρ (args j)) (ℓ : ℕ) :
     #{ρ' ∈ ρ.extensions ℓ | ¬ Shallow s ρ' fun x => interpretation op fun j => args j x} ≤
       #(ρ.extensions (ℓ - s)) * (4 * s) ^ s := by
@@ -263,7 +263,7 @@ variable {g : ℕ}
 
 /-- If every gate of depth at most `j` is shallow under `ρ`, so is every argument of a gate of
 depth at most `j + 1`. -/
-theorem shallow_trace_wires {p : Program signature n g} (hs : 2 ≤ s) {j : ℕ}
+private theorem shallow_trace_wires {p : Program signature n g} (hs : 2 ≤ s) {j : ℕ}
     (hρ : ∀ k, p.depths k ≤ j → Shallow s ρ fun x => p.eval interpretation x k) {k : Fin g}
     (hk : p.depths k ≤ j + 1) (a : Fin (p.lines k).op.arity) :
     Shallow s ρ fun x => p.trace interpretation x ((p.lines k).wires a) := by

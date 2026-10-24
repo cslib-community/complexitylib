@@ -83,6 +83,7 @@ def Circuit.simulate (c : Circuit σ n m) (impl : ∀ op : σ.Op, Circuit τ (σ
     Circuit τ n m :=
   ⟨c.program.simulateProgram impl, c.program.simulateRenaming impl ∘ c.outputs⟩
 
+/-- The size of `c.simulate impl` is the program cost weighted by replacement circuit sizes. -/
 @[simp] theorem Circuit.size_simulate (c : Circuit σ n m)
     (impl : ∀ op : σ.Op, Circuit τ (σ.Arity op) 1) :
     (c.simulate impl).size = c.program.cost fun op => (impl op).size :=
@@ -102,10 +103,12 @@ like, after which they no longer match. They apply with `rw` and `simp only`. -/
 
 variable {p : ℕ}
 
+/-- A pure wiring circuit has zero program cost under any operation weight. -/
 theorem cost_program_wiring (select : Fin m → Fin n) (cost : σ.Op → ℕ) :
     (Circuit.wiring σ select).program.cost cost = 0 :=
   rfl
 
+/-- A single-gate circuit has program cost equal to the cost of its operation. -/
 theorem cost_program_oneGate (op : σ.Op) (args : Fin (σ.Arity op) → Fin n)
     (cost : σ.Op → ℕ) : (oneGate op args).program.cost cost = cost op :=
   Nat.zero_add _

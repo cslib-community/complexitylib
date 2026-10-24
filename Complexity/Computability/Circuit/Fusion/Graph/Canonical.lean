@@ -18,6 +18,8 @@ lower bound on unrestricted graph cover complexity.
 
 ## Main definitions
 
+* `Cslib.Circuits.Fusion.Graph.outsideRow`, `Cslib.Circuits.Fusion.Graph.outsideColumn`: the parts
+  of a row and column outside the graph.
 * `Cslib.Circuits.Fusion.Graph.CanonicalEdge`: edges with nonempty complementary row and column.
 * `Cslib.Circuits.Fusion.Graph.canonicalFilter`: the corresponding semifilter.
 * `Cslib.Circuits.Fusion.Graph.canonicalClass`: the class of canonical semifilters.

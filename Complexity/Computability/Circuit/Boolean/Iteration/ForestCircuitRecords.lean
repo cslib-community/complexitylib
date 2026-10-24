@@ -80,7 +80,7 @@ def forestHighWord (r : BitString (n + 1 + (n + 1))) : BitVec (n + 1) :=
     forestHighWord (forestLabelWord low high x) = BitVec.ofNat (n + 1) (high x).val := by
   simp only [forestHighWord, forestLabelWord, Fin.append_right, word_getLsbD]
 
-theorem forestLowWord_toNat (low high : BitString n → Fin (Nat.card (BitString n)))
+private theorem forestLowWord_toNat (low high : BitString n → Fin (Nat.card (BitString n)))
     (x : BitString n) :
     (forestLowWord (forestLabelWord low high x)).toNat = (low x).val := by
   have hlt : (low x).val < 2 ^ n := by
@@ -88,7 +88,7 @@ theorem forestLowWord_toNat (low high : BitString n → Fin (Nat.card (BitString
   have hpow : 2 ^ (n + 1) = 2 * 2 ^ n := by rw [pow_succ']
   rw [forestLowWord_bits, BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by omega)]
 
-theorem forestHighWord_toNat (low high : BitString n → Fin (Nat.card (BitString n)))
+private theorem forestHighWord_toNat (low high : BitString n → Fin (Nat.card (BitString n)))
     (x : BitString n) :
     (forestHighWord (forestLabelWord low high x)).toNat = (high x).val := by
   have hlt : (high x).val < 2 ^ n := by

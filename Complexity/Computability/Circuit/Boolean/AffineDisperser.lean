@@ -115,7 +115,7 @@ theorem initialState_valid {C : Circuit (fullSignature 2 Bool) n 1}
 theorem initialState_a (C : Circuit (fullSignature 2 Bool) n 1) : (initialState C).a = n := by
   simp [State.a, State.m, State.q, initialState]
 
-theorem initialState_W_le (C : Circuit (fullSignature 2 Bool) n 1) :
+private theorem initialState_W_le (C : Circuit (fullSignature 2 Bool) n 1) :
     (initialState C).W ≤ 2 * C.size + 7 * n := by
   have hs : (initialState C).s = C.size := by
     simp [State.s, SemiCircuit.size, initialState]

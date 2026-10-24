@@ -27,8 +27,13 @@ atom. Extracting a failing atom from a cover may use classical logic.
 
 ## Main definitions
 
-* `Cslib.Circuits.Fusion.Atom`: an operation with its semantic arguments.
-* `Cslib.Circuits.Fusion.Cover`: a finite family defeating every candidate invariant.
+* `Cslib.Circuits.Fusion.Atom`, `Cslib.Circuits.Fusion.Atom.Preserves`: an operation with its
+  semantic arguments, and predicate preservation across it.
+* `Cslib.Circuits.Fusion.IsCover`, `Cslib.Circuits.Fusion.Cover`,
+  `Cslib.Circuits.Fusion.Cover.cost`: a finite family defeating every candidate invariant, and its
+  weighted operation cost.
+* `Cslib.Circuits.Fusion.programAtoms`, `Cslib.Circuits.Fusion.Cover.ofProgram`: the semantic gate
+  atoms of a program, and the cover they form.
 * `Cslib.Circuits.Fusion.coverComplexity`: minimum weighted cover cost, or infinity.
 
 ## Main results
@@ -140,7 +145,7 @@ def Cover.ofProgram (p : Program σ n g) (I : Interpretation σ U) (P : W → U 
   (p.cost_eq_sum weight).symm
 
 /-- Every program violating all candidate invariants pays at least the minimum cover cost. -/
-theorem coverComplexity_le_program_cost (p : Program σ n g) (I : Interpretation σ U)
+private theorem coverComplexity_le_program_cost (p : Program σ n g) (I : Interpretation σ U)
     (P : W → U → Prop) (input : Fin n → U) (hin : ∀ t i, P t (input i))
     (hfail : ∀ t, ∃ w, ¬ P t (p.trace I input w)) (weight : σ.Op → ℕ) :
     coverComplexity I P weight ≤ p.cost weight := by

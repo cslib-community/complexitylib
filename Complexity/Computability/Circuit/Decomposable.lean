@@ -53,9 +53,13 @@ exponentially large.
 
 ## Main definitions
 
-* `Cslib.Circuits.DecomposableDAG`: a smooth decomposable DAG.
-* `Cslib.Circuits.DecomposableDAG.accepted`: the set it represents.
-* `Cslib.Circuits.DecomposableDAG.Occurs`: the nodes on accepting certificates.
+* `Cslib.Circuits.DecomposableDAG.Gate`, `Cslib.Circuits.DecomposableDAG`: a smooth
+  decomposable DAG and its node gates.
+* `Cslib.Circuits.DecomposableDAG.accepts`, `Cslib.Circuits.DecomposableDAG.accepted`: the
+  inputs accepted by a node and the set represented by the DAG.
+* `Cslib.Circuits.DecomposableDAG.Occurs`, `Cslib.Circuits.DecomposableDAG.contexts`,
+  `Cslib.Circuits.DecomposableDAG.stops`: nodes on accepting certificates, node contexts,
+  and threshold stopping nodes.
 * `Cslib.Circuits.DecomposableDAG.unionEdges`, `DecomposableDAG.products`,
   `DecomposableDAG.size`: the size of a DAG.
 
@@ -143,6 +147,7 @@ def accepts (v : N) : Set (ι → U) :=
 def accepted : Set (ι → U) :=
   P.accepts P.root
 
+/-- Acceptance at a node `v` depends only on the coordinates in `P.scope v`. -/
 theorem accepts_congr {v : N} {x y : ι → U} (h : EqOn x y (P.scope v)) :
     x ∈ P.accepts v ↔ y ∈ P.accepts v := by
   change _ ∈ P.values v ↔ _ ∈ P.values v
@@ -213,7 +218,7 @@ theorem rectangle_subset (v : N) :
 
 /-- A node accepting at least `K` assignments has fewer than `K` contexts, when the accepted set
 is `K`-rectangle-free. -/
-theorem ncard_contexts_le (hS : RectangleFree P.accepted K) {v : N}
+private theorem ncard_contexts_le (hS : RectangleFree P.accepted K) {v : N}
     (hv : K ≤ (P.values v).ncard) : (P.contexts v).ncard ≤ K - 1 := by
   rcases hS.ncard_lt_or _ _ _ (P.rectangle_subset v) with h | h <;> omega
 
@@ -231,7 +236,7 @@ def stops (K : ℕ) (v : N) : Set (ι → U) :=
 
 /-- The threshold budget of a node: `(K - 1) ^ 2` for each child of a union and `(K - 1) ^ 3` for
 a product. -/
-def budget (K : ℕ) (v : N) : ℕ :=
+private def budget (K : ℕ) (v : N) : ℕ :=
   match P.gate v with
   | .leaf => 0
   | .union c => (K - 1) ^ 2 * c.card
@@ -273,7 +278,7 @@ theorem exists_mem_stops (hK : 1 < K) (hS : K ≤ P.accepted.ncard) {x : ι → 
 
 /-- **The charge at a node.** If the accepted set is `K`-rectangle-free, the descent stops at a
 node `v` for at most the budget of `v` inputs. -/
-theorem ncard_stops_le (hS : RectangleFree P.accepted K) (v : N) :
+private theorem ncard_stops_le (hS : RectangleFree P.accepted K) (v : N) :
     (P.stops K v).ncard ≤ P.budget K v := by
   by_cases hlarge : K ≤ (P.values v).ncard
   swap

@@ -97,7 +97,7 @@ def activationLineWeight (line : Line activationSignature n g) (wire : Wire n g)
   ∑ a with line.wires a = wire, line.op.weight a
 
 /-- Regrouping argument slots by actual wire preserves their weighted sum. -/
-theorem sum_activationLineWeight_mul (line : Line activationSignature n g)
+private theorem sum_activationLineWeight_mul (line : Line activationSignature n g)
     (values : Wire n g → ℝ) :
     ∑ a, line.op.weight a * values (line.wires a) =
       ∑ wire, activationLineWeight line wire * values wire := by
@@ -143,7 +143,7 @@ theorem eval_activationGate_eq (p : Program activationSignature n g)
   rfl
 
 /-- A gate has zero coefficient on its own output and on later gate outputs. -/
-theorem activationGateWeight_eq_zero_of_le (p : Program activationSignature n g)
+private theorem activationGateWeight_eq_zero_of_le (p : Program activationSignature n g)
     (gate prior : Fin g) (h : gate ≤ prior) : activationGateWeight p gate prior = 0 := by
   unfold activationGateWeight activationLineWeight
   apply sum_eq_zero

@@ -23,10 +23,14 @@ yield nonzero determinant polynomials of bounded degree (`PencilCertificates.det
 
 ## Main definitions
 
-* `Cslib.Circuits.Rational.LocalSpecialization.Regular`,
-  `Cslib.Circuits.Rational.LocalSpecialization.evaluate`: fractions regular at a point and their
-  evaluation.
-* `Cslib.Circuits.Rational.PencilCertificates.polynomial`,
+* `Cslib.Circuits.Rational.LocalSpecialization.denominators`,
+  `Cslib.Circuits.Rational.LocalSpecialization.Regular`,
+  `Cslib.Circuits.Rational.LocalSpecialization.evaluate`,
+  `Cslib.Circuits.Rational.LocalSpecialization.intoField`: fractions regular at a point, their
+  evaluation, and their embedding into a field.
+* `Cslib.Circuits.Rational.PencilCertificates.coefficients`,
+  `Cslib.Circuits.Rational.PencilCertificates.lifts`,
+  `Cslib.Circuits.Rational.PencilCertificates.polynomial`,
   `Cslib.Circuits.Rational.PencilCertificates.determinant`: the polynomial matrix certificate of
   an affine pencil and its determinant.
 
@@ -73,12 +77,13 @@ abbrev Regular (ev : P →+* K) := Localization (denominators ev)
 def evaluate (ev : P →+* K) : Regular ev →+* K :=
   IsLocalization.lift (fun y : denominators ev => isUnit_iff_ne_zero.mpr y.property)
 
+/-- On the image of `algebraMap P (Regular ev)`, `evaluate ev` agrees with `ev`. -/
 @[simp] lemma evaluate_algebraMap (ev : P →+* K) (p : P) :
     evaluate ev (algebraMap P (Regular ev) p) = ev p := IsLocalization.lift_eq _ _
 
 /-- Only fractions whose denominator is nonzero at the point are evaluated.
 The entire division algebra is deliberately not given a specialization. -/
-lemma evaluate_reflects_units (ev : P →+* K) (x : Regular ev)
+private lemma evaluate_reflects_units (ev : P →+* K) (x : Regular ev)
     (hx : IsUnit (evaluate ev x)) : IsUnit x := by
   obtain ⟨a, b, rfl⟩ := IsLocalization.exists_mk'_eq (denominators ev) x
   have heq : ev a = ev b * evaluate ev (IsLocalization.mk' (Regular ev) a b) :=
@@ -96,10 +101,12 @@ def intoField (ev : P →+* K) (j : P →+* E) (hj : Function.Injective j) :
     have hy : (y : P) = 0 := hj (hz.trans (map_zero j).symm)
     exact y.property (by rw [hy, map_zero])))
 
+/-- On the image of `algebraMap P (Regular ev)`, `intoField ev j hj` agrees with `j`. -/
 @[simp] lemma intoField_algebraMap (ev : P →+* K) (j : P →+* E)
     (hj : Function.Injective j) (p : P) :
     intoField ev j hj (algebraMap P (Regular ev) p) = j p := IsLocalization.lift_eq _ _
 
+/-- The embedding `intoField ev j hj` of `Regular ev` into `E` is injective. -/
 lemma intoField_injective (ev : P →+* K) (j : P →+* E) (hj : Function.Injective j) :
     Function.Injective (intoField ev j hj) := by
   apply (IsLocalization.lift_injective_iff _).mpr
@@ -111,7 +118,7 @@ lemma intoField_injective (ev : P →+* K) (j : P →+* E) (hj : Function.Inject
     rw [hj h]
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
-lemma matrix_reflects_units (ev : P →+* K) (A : Matrix ι ι (Regular ev))
+private lemma matrix_reflects_units (ev : P →+* K) (A : Matrix ι ι (Regular ev))
     (hA : IsUnit ((evaluate ev).mapMatrix A)) : IsUnit A := by
   rw [Matrix.isUnit_iff_isUnit_det] at hA ⊢
   apply evaluate_reflects_units ev
@@ -257,6 +264,8 @@ def polynomial (χ : AddChar (ZMod M) K) (N : ℕ)
 def determinant (χ : AddChar (ZMod M) K) (N : ℕ)
     (L : Matrix (Fin q) (Fin q) (Affine.Form n)) := (polynomial χ N L).det
 
+/-- Entry `(a, b)` of the polynomial certificate matrix `polynomial χ N L` expanded over the
+homogeneous coordinates. -/
 lemma polynomial_apply (χ : AddChar (ZMod M) K)
     (L : Matrix (Fin q) (Fin q) (Affine.Form n)) (a b : Fin q × ZMod M) :
     polynomial χ N L a b = ∑ i, MvPolynomial.C ((algebraMap ℚ K) (Affine.coeff (L a.1 b.1) i)) *
@@ -266,6 +275,8 @@ lemma polynomial_apply (χ : AddChar (ZMod M) K)
   simp only [Matrix.sum_apply, ThreeLift.lift_smul, Matrix.smul_apply,
     MvPolynomial.smul_eq_C_mul, coefficients, lifts]
 
+/-- Evaluating `polynomial χ N L` at `x : Fin 3 → K` corresponds under `compRingEquiv` to
+evaluating `L` homogeneously at the specialized `lifts`. -/
 lemma specialized (χ : AddChar (ZMod M) K)
     (L : Matrix (Fin q) (Fin q) (Affine.Form n)) (x : Fin 3 → K) :
     (eval₂Hom (RingHom.id K) x).mapMatrix (polynomial χ N L) =
@@ -277,7 +288,7 @@ lemma specialized (χ : AddChar (ZMod M) K)
   simp only [RingHom.mapMatrix_apply, Matrix.map_apply, polynomial_apply, map_sum, map_mul,
     eval₂Hom_C, RingHom.id_apply]
 
-lemma block_eq (φ : K →+* E) (L : Matrix (Fin q) (Fin q) (Affine.Form n))
+private lemma block_eq (φ : K →+* E) (L : Matrix (Fin q) (Fin q) (Affine.Form n))
     {d : ℕ} (X : Fin n → Matrix (Fin d) (Fin d) E) :
     Rectangular.blockMatrix (fun i => φ.mapMatrix (coefficients (K := K) L i)) (Fin.cases 1 X) =
       Matrix.compRingEquiv (Fin q) (Fin d) E (L.map (Affine.eval (algebraMap ℚ _) X)) := by
@@ -292,6 +303,8 @@ lemma block_eq (φ : K →+* E) (L : Matrix (Fin q) (Fin q) (Affine.Form n))
   simp only [Rectangular.blockMatrix, Matrix.sum_apply, Matrix.kroneckerMap_apply,
     RingHom.mapMatrix_apply, Matrix.map_apply, coefficients, hc]
 
+/-- If an affine pencil `L` becomes invertible over `LaurentReduction.F E`, then its certificate
+determinant `determinant χ N L` is a nonzero polynomial. -/
 lemma determinant_ne_zero (χ : AddChar (ZMod M) K) (hχ : χ.IsPrimitive)
     (φ : K →+* E) (L : Matrix (Fin q) (Fin q) (Affine.Form n))
     (B d : ℕ) (hq : 1 ≤ q) (hqB : q ≤ B) (hN : 1 ≤ N)
@@ -308,6 +321,7 @@ lemma determinant_ne_zero (χ : AddChar (ZMod M) K) (hχ : χ.IsPrimitive)
   exact hX.map (Matrix.compRingEquiv (Fin q) (Fin d) (LaurentReduction.F E))
 
 
+/-- The total degree of `determinant χ N L` is at most `3 * q * M ^ 2`. -/
 lemma degree_le (χ : AddChar (ZMod M) K)
     (L : Matrix (Fin q) (Fin q) (Affine.Form n)) :
     (determinant χ N L).totalDegree ≤ 3 * q * M ^ 2 := by

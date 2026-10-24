@@ -91,7 +91,7 @@ theorem eqnsHold_iff (val : ℕ → Bool) : (C.moveAffine J e).EqnsHold val ↔
       rwa [Function.update_self]
     · rw [h.eqn_of_mem he']; exact hv e' he'
 
-theorem live_eq : (C.moveAffine J e).live = C.live := by
+private theorem live_eq : (C.moveAffine J e).live = C.live := by
   ext i
   simp only [live, Finset.mem_union]
   change (i ∈ C.params ∨ i ∈ insert J C.aux) ∨ i ∈ C.gates.erase J ↔ _
@@ -233,10 +233,11 @@ structure RewireOK (C : SemiCircuit) (J : ℕ) (g : Gate) : Prop where
   value : ∀ val, (∀ K ∈ C.gates, K ≠ J → val K = (C.gate K).eval val) →
     g.eval val = (C.gate J).eval val
 
-theorem rewire_gate_of_ne {J K : ℕ} {g : Gate} (hKJ : K ≠ J) : (C.rewire J g).gate K = C.gate K :=
+private theorem rewire_gate_of_ne {J K : ℕ} {g : Gate} (hKJ : K ≠ J) :
+    (C.rewire J g).gate K = C.gate K :=
   Function.update_of_ne hKJ _ _
 
-theorem rewire_gate_self {J : ℕ} {g : Gate} : (C.rewire J g).gate J = g :=
+private theorem rewire_gate_self {J : ℕ} {g : Gate} : (C.rewire J g).gate J = g :=
   Function.update_self _ _ _
 
 /-- Rewiring a gate to read only parameters preserves well-formedness. -/

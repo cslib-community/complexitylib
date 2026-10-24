@@ -108,7 +108,7 @@ theorem toNat_navigationGap (x y : BitString n)
   rw [navigationGap, BitVec.toNat_sub_of_le (by rw [BitVec.le_def]; simpa using hle),
     toNat_depthWord, toNat_depthWord]
 
-theorem toNat_navigationDistance (x y : BitString n) :
+private theorem toNat_navigationDistance (x y : BitString n) :
     (navigationDistance f x y).toNat = cyclicDistance f x y := by
   have hμ := transientDepth_lt_two_pow f x
   have hpx := (phase_lt f x).trans_le (cycleLength_le_two_pow f x)

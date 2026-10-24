@@ -52,7 +52,7 @@ namespace Cslib.Circuits.Boolean.Iteration
 def liftResidue (lower period r : ℕ) : ℕ := if r < lower then r + period else r
 
 /-- Repeated correction preserves the residue and never passes the interval. -/
-theorem liftResidue_invariant (lower period r t : ℕ) (hp : 0 < period) (hr : r < period) :
+private theorem liftResidue_invariant (lower period r t : ℕ) (hp : 0 < period) (hr : r < period) :
     let v := (liftResidue lower period)^[t] r
     (lower ≤ v ∨ t ≤ v) ∧ v < lower + period ∧ v % period = r := by
   induction t with
@@ -70,7 +70,7 @@ theorem liftResidue_invariant (lower period r t : ℕ) (hp : 0 < period) (hr : r
     · exact ⟨Or.inl (by omega), ih.2⟩
 
 /-- Enough corrections place the residue in the interval. -/
-theorem liftResidue_spec (lower period T K : ℕ) (hp : 0 < period) (hK : lower ≤ K) :
+private theorem liftResidue_spec (lower period T K : ℕ) (hp : 0 < period) (hK : lower ≤ K) :
     let v := (liftResidue lower period)^[K] (T % period)
     lower ≤ v ∧ v < lower + period ∧ v % period = T % period := by
   have h := liftResidue_invariant lower period (T % period) K hp (Nat.mod_lt _ hp)
@@ -89,7 +89,7 @@ def liftWord {w : ℕ} (lower period r : BitVec w) : BitVec w :=
   if r.ult lower then r + period else r
 
 /-- The word correction agrees with the natural-number one when the interval fits. -/
-theorem liftWord_toNat {w : ℕ} (lower period r : BitVec w)
+private theorem liftWord_toNat {w : ℕ} (lower period r : BitVec w)
     (hfit : lower.toNat + period.toNat ≤ 2 ^ w) :
     (liftWord lower period r).toNat = liftResidue lower.toNat period.toNat r.toNat := by
   unfold liftWord liftResidue
@@ -98,7 +98,7 @@ theorem liftWord_toNat {w : ℕ} (lower period r : BitVec w)
     exact Nat.mod_eq_of_lt (by omega)
   · simp only [BitVec.ult, hr, decide_false, Bool.false_eq_true, ↓reduceIte]
 
-theorem liftWord_iterate_toNat {w : ℕ} (lower period r : BitVec w)
+private theorem liftWord_iterate_toNat {w : ℕ} (lower period r : BitVec w)
     (hfit : lower.toNat + period.toNat ≤ 2 ^ w) (K : ℕ) :
     ((liftWord lower period)^[K] r).toNat =
       (liftResidue lower.toNat period.toNat)^[K] r.toNat := by
@@ -112,7 +112,7 @@ def residueWord {w : ℕ} (T K : ℕ) (period : BitVec w) : BitVec w :=
   word (selectBits period fun j : Fin (K + 1) =>
     fun i : Fin w => (BitVec.ofNat w (T % j.val)).getLsbD i.val)
 
-theorem residueWord_toNat {w T K : ℕ} (period : BitVec w)
+private theorem residueWord_toNat {w T K : ℕ} (period : BitVec w)
     (hK : K < 2 ^ w) (hp : 0 < period.toNat) (hpK : period.toNat ≤ K) :
     (residueWord T K period).toNat = T % period.toNat := by
   rw [residueWord, selectBits_of_toNat_lt _ _ (by omega), word_getLsbD,
@@ -136,7 +136,7 @@ theorem repeatWordIndex_spec {α : Type*} {f : α → α} {x : α} {w T K : ℕ}
   exact liftResidue_reconstructs hlt heq (by omega) (by omega)
 
 /-- One word correction: an addition, a comparison and a multiplexer. -/
-theorem synthesis_liftWord {n w : ℕ} (s : Set (BooleanFunction n))
+private theorem synthesis_liftWord {n w : ℕ} (s : Set (BooleanFunction n))
     (lower period r : BitString n → BitVec w)
     (hl : ∀ i : Fin w, (fun x => (lower x).getLsbD i.val) ∈ s)
     (hp : ∀ i : Fin w, (fun x => (period x).getLsbD i.val) ∈ s)
@@ -152,7 +152,7 @@ theorem synthesis_liftWord {n w : ℕ} (s : Set (BooleanFunction n))
     (by dsimp +zetaDelta [Synthesis.Builder.add, Synthesis.Builder.start]; omega)
 
 /-- Iterated word corrections, sharing all intermediate words. -/
-theorem synthesis_liftWord_iterate {n w : ℕ} (s : Set (BooleanFunction n))
+private theorem synthesis_liftWord_iterate {n w : ℕ} (s : Set (BooleanFunction n))
     (lower period init : BitString n → BitVec w)
     (hl : ∀ i : Fin w, (fun x => (lower x).getLsbD i.val) ∈ s)
     (hp : ∀ i : Fin w, (fun x => (period x).getLsbD i.val) ∈ s)
@@ -171,7 +171,7 @@ theorem synthesis_liftWord_iterate {n w : ℕ} (s : Set (BooleanFunction n))
         (fun i => Or.inr (Synthesis.subset_stages q le_rfl ⟨i, rfl⟩))
 
 /-- A residue table costs only its word width and entry count, whatever `T` is. -/
-theorem synthesis_residueWord {n w : ℕ} (s : Set (BooleanFunction n))
+private theorem synthesis_residueWord {n w : ℕ} (s : Set (BooleanFunction n))
     (T K : ℕ) (period : BitString n → BitVec w)
     (hp : ∀ i : Fin w, (fun x => (period x).getLsbD i.val) ∈ s)
     (hconst : ∀ b : Bool, (fun _ : BitString n => b) ∈ s) :

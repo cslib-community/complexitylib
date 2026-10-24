@@ -246,7 +246,7 @@ def Instruction.entryFormula (I : Instruction (Fin n) Bool (Function.End (Fin w)
   cases decide (I.select false a = b) <;> cases decide (I.select true a = b) <;> simp
 
 /-- The formula of an instruction is a constant or a literal, so in negation normal form. -/
-theorem Instruction.isNNF_entryFormula (I : Instruction (Fin n) Bool (Function.End (Fin w)))
+private theorem Instruction.isNNF_entryFormula (I : Instruction (Fin n) Bool (Function.End (Fin w)))
     (a b : Fin w) : (I.entryFormula a b).IsNNF := by
   unfold entryFormula
   cases decide (I.select false a = b) <;> cases decide (I.select true a = b) <;> constructor
@@ -287,7 +287,8 @@ def entryFormula (P : MonoidProgram (Fin n) Bool (Function.End (Fin w))) (a b : 
 
 /-- The formula saying that a branching program maps `a` to `b` has negations only at the
 leaves. -/
-theorem isNNF_entryFormula (P : MonoidProgram (Fin n) Bool (Function.End (Fin w))) (a b : Fin w) :
+private theorem isNNF_entryFormula (P : MonoidProgram (Fin n) Bool (Function.End (Fin w)))
+    (a b : Fin w) :
     (P.entryFormula a b).IsNNF := by
   rw [entryFormula]
   revert a b

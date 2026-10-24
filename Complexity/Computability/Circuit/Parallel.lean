@@ -37,6 +37,8 @@ variable {σ : Signature} {U : Type*} {n m p q : ℕ}
 def parallel (c : Circuit σ n m) (d : Circuit σ p q) : Circuit σ (n + p) (m + q) :=
   (c.comp (wiring σ (Fin.castAdd p))).append (d.comp (wiring σ (Fin.natAdd n)))
 
+/-- `c.parallel d` evaluates `c` on the first `n` inputs and `d` on the last `p` inputs,
+concatenating their outputs. -/
 @[simp] theorem eval_parallel (c : Circuit σ n m) (d : Circuit σ p q)
     (I : Interpretation σ U) (x : Fin (n + p) → U) :
     (c.parallel d).eval I x =
@@ -48,6 +50,7 @@ theorem cost_program_parallel (c : Circuit σ n m) (d : Circuit σ p q) (cost : 
     (c.parallel d).program.cost cost = c.program.cost cost + d.program.cost cost := by
   simp only [parallel, cost_program_append, cost_program_comp, cost_program_wiring, Nat.zero_add]
 
+/-- The size of `c.parallel d` is the sum of the sizes of `c` and `d`. -/
 @[simp] theorem size_parallel (c : Circuit σ n m) (d : Circuit σ p q) :
     (c.parallel d).size = c.size + d.size := by
   simp only [parallel, size_append, size_comp, size_wiring, Nat.zero_add]

@@ -85,7 +85,7 @@ variable {C : LineCode K ℓ} {place : BitString p ↪ Fin copies × C.info × F
   {f : BooleanFunction (p + w)}
 
 /-- The packed bit at a placed prefix is the value of `f` there. -/
-theorem packedBit_place (a : BitString p) (z : BitString w) :
+private theorem packedBit_place (a : BitString p) (z : BitString w) :
     packedBit C place f z (place a).1 (place a).2.1 (place a).2.2 = f (Fin.append a z) := by
   apply Bool.eq_iff_iff.mpr
   rw [packedBit, decide_eq_true_iff]
@@ -96,7 +96,7 @@ theorem packedBit_place (a : BitString p) (z : BitString w) :
   · exact fun hf => ⟨a, rfl, rfl, rfl, hf⟩
 
 /-- Numbering the nonzero scalars by `scalar` sums over the punctured line. -/
-theorem sum_scalar {M : Type*} [AddCommMonoid M] (scalar : Fin s ≃ {c : K // c ≠ 0})
+private theorem sum_scalar {M : Type*} [AddCommMonoid M] (scalar : Fin s ≃ {c : K // c ≠ 0})
     (g : K → M) : ∑ j, g (scalar j : K) = ∑ c ∈ (univ : Finset K).erase 0, g c := by
   rw [Finset.sum_subtype ((univ : Finset K).erase 0) (p := fun c => c ≠ 0)
     (fun c => by simp only [Finset.mem_erase, Finset.mem_univ, and_true]) g]

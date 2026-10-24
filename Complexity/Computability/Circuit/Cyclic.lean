@@ -27,10 +27,15 @@ Native acyclic circuits embed with exactly the same gate values, outputs and wei
 
 ## Main definitions
 
-* `Cslib.Circuits.CyclicCircuit`: finite equations with designated output wires.
-* `Cslib.Circuits.CyclicCircuit.evalGates`, `Cslib.Circuits.CyclicCircuit.eval`: least-solution
-  gate values and outputs.
-* `Cslib.Circuits.CyclicCircuit.ecomplexityFrom`: minimum cost from supplied source functions.
+* `Cslib.Circuits.CyclicCircuit`, `Cslib.Circuits.CyclicCircuit.cost`: finite equations with
+  designated output wires and weighted gate cost.
+* `Cslib.Circuits.Circuit.toCyclic`: embed an acyclic circuit into a cyclic circuit.
+* `Cslib.Circuits.CyclicCircuit.step`, `Cslib.Circuits.CyclicCircuit.evalGates`,
+  `Cslib.Circuits.CyclicCircuit.eval`: monotone step operator and least-solution gate values
+  and outputs.
+* `Cslib.Circuits.CyclicCircuit.ComputesFrom`,
+  `Cslib.Circuits.CyclicCircuit.ecomplexityFrom`: computation and minimum cost from supplied
+  source functions.
 
 ## Main results
 

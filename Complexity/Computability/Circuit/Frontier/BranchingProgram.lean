@@ -52,13 +52,19 @@ values on the edges of a frontier (`Cslib.Circuits.Frontier.Network.branchingPro
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.ReadOnceNBP ι U M`: a layered read-once nondeterministic branching
-  program with states in `M`.
-* `Cslib.Circuits.Frontier.ReadOnceNBP.accepted`: its accepted inputs.
-* `Cslib.Circuits.Frontier.ReadOnceNBP.Unambiguous`: every input has at most one accepting path.
-* `Cslib.Circuits.Frontier.ReadOnceNBP.size`: its number of edges.
-* `Cslib.Circuits.Frontier.ReadOnceNBP.sweep`: its chosen accepting paths, as a sweep of the
-  accepted set.
+* `Cslib.Circuits.Frontier.ReadOnceNBP`: a layered read-once nondeterministic branching program.
+* `Cslib.Circuits.Frontier.ReadOnceNBP.newly`: the coordinates read during a step.
+* `Cslib.Circuits.Frontier.ReadOnceNBP.IsAcceptingPath`,
+  `Cslib.Circuits.Frontier.ReadOnceNBP.accepted`,
+  `Cslib.Circuits.Frontier.ReadOnceNBP.Unambiguous`: accepting paths, accepted inputs, and
+  unambiguous programs.
+* `Cslib.Circuits.Frontier.ReadOnceNBP.edges`, `Cslib.Circuits.Frontier.ReadOnceNBP.size`: the
+  edges of a step and the total number of edges.
+* `Cslib.Circuits.Frontier.ReadOnceNBP.path`, `Cslib.Circuits.Frontier.ReadOnceNBP.edgeOf`,
+  `Cslib.Circuits.Frontier.ReadOnceNBP.sweep`: the chosen accepting path, the edge it takes at a
+  step, and the resulting sweep of the accepted set.
+* `Cslib.Circuits.Frontier.ReadOnceNBP.SmallSides`,
+  `Cslib.Circuits.Frontier.ReadOnceNBP.eraseNode`: the small-sides condition and state deletion.
 
 ## Main results
 
@@ -225,14 +231,14 @@ def SmallSides (K : ℕ) : Prop :=
     (P.sweep.pastSide t x).ncard < K ∨ (P.sweep.futureSide t x).ncard < K
 
 /-- A rectangle-free accepted set has small sides. -/
-theorem smallSides_of_rectangleFree {K : ℕ} (hS : RectangleFree P.accepted K) :
+private theorem smallSides_of_rectangleFree {K : ℕ} (hS : RectangleFree P.accepted K) :
     P.SmallSides K :=
   fun t _ x _ => P.sweep.pastSide_lt_or_futureSide_lt hS t x
 
 variable {P} in
 /-- Small sides force `K > 1` once some input is accepted: at the first layer both sides of an
 accepted input are nonempty. -/
-theorem SmallSides.one_lt [Finite ι] [Finite U] {K : ℕ} (hS : P.SmallSides K)
+private theorem SmallSides.one_lt [Finite ι] [Finite U] {K : ℕ} (hS : P.SmallSides K)
     (hne : P.accepted.Nonempty) : 1 < K := by
   obtain ⟨x, hx⟩ := hne
   rcases hS 0 (Nat.zero_le _) x hx with h | h
@@ -295,7 +301,7 @@ def eraseNode (t : ℕ) (m : M) : ReadOnceNBP ι U M :=
 
 variable {P}
 
-theorem IsAcceptingPath.of_eraseNode {t : ℕ} {m : M} {x : ι → U} {γ : ℕ → M}
+private theorem IsAcceptingPath.of_eraseNode {t : ℕ} {m : M} {x : ι → U} {γ : ℕ → M}
     (h : (P.eraseNode t m).IsAcceptingPath x γ) : P.IsAcceptingPath x γ :=
   ⟨h.start, h.accept, fun s hs => (h.edge s hs).1⟩
 
@@ -318,7 +324,7 @@ theorem isAcceptingPath_eraseNode_iff (hL : 0 < P.length) {t : ℕ} (ht : t ≤ 
     · rintro ⟨rfl, hs'⟩
       exact hγ hs'
 
-theorem Unambiguous.eraseNode (hP : P.Unambiguous) (t : ℕ) (m : M) :
+private theorem Unambiguous.eraseNode (hP : P.Unambiguous) (t : ℕ) (m : M) :
     (P.eraseNode t m).Unambiguous :=
   fun x γ δ hγ hδ s hs => hP x γ δ hγ.of_eraseNode hδ.of_eraseNode s hs
 
@@ -335,6 +341,7 @@ theorem accepted_eraseNode (hP : P.Unambiguous) (hL : 0 < P.length) {t : ℕ} (h
   · rintro ⟨hx, hxt⟩
     exact ⟨_, (isAcceptingPath_eraseNode_iff hL ht).mpr ⟨P.isAcceptingPath_path hx, hxt⟩⟩
 
+/-- Deleting a state does not increase the number of edges of the program. -/
 theorem size_eraseNode_le [Finite ι] [Finite U] [Finite M] (t : ℕ) (m : M) :
     (P.eraseNode t m).size ≤ P.size :=
   Finset.sum_le_sum fun _ _ => ncard_le_ncard (fun _ he => he.1) (toFinite _)

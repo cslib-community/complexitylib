@@ -66,7 +66,7 @@ theorem chart_ofNat_toNat {a : ℕ} (ha : a ≤ 2 ^ n) :
   have := Nat.two_pow_pos n
   lia
 
-theorem chart_setWidth_toNat (x : BitVec n) :
+private theorem chart_setWidth_toNat (x : BitVec n) :
     (x.setWidth (chartWidth n)).toNat = x.toNat := by
   simpa only [BitVec.ofNat_toNat] using chart_ofNat_toNat x.isLt.le
 
@@ -124,7 +124,7 @@ def contains (j : Fin R) (x : BitVec n) : Bool :=
 def offset (j : Fin R) (x : BitVec n) : BitVec (chartWidth n) :=
   x.setWidth (chartWidth n) - BitVec.ofNat (chartWidth n) (chart.start j)
 
-theorem offset_toNat (j : Fin R) (x : BitVec n) (hx : chart.start j ≤ x.toNat) :
+private theorem offset_toNat (j : Fin R) (x : BitVec n) (hx : chart.start j ≤ x.toNat) :
     (chart.offset j x).toNat = x.toNat - chart.start j := by
   have hw := chart_setWidth_toNat x
   have hs := chart_ofNat_toNat (chart.start_lt j).le
@@ -137,7 +137,7 @@ noncomputable def encodedRow (j : Fin R) (x : BitVec n) :
   labelBits (fun i => (canonicalCycle f (chart.first j)).getLsbD i.val) (chart.period j)
     (addResidue (chart.period j) (chart.initialPhase j) (chart.offset j x))
 
-theorem encodedRow_spec (hf : Function.Injective f) (j : Fin R) (x : BitVec n)
+private theorem encodedRow_spec (hf : Function.Injective f) (j : Fin R) (x : BitVec n)
     (hx : chart.contains j x = true) : chart.encodedRow j x = wordCycleLabel f x := by
   obtain ⟨hlo, hhi⟩ := (chart.contains_iff j x).mp hx
   have hpath := chart.point_eq j x hlo hhi

@@ -24,10 +24,6 @@ with positive and negative input literals supplied for free; constants and OR ga
 AND cost. This module proves the cover lower-bound direction of the conondeterministic
 characterization, not its converse.
 
-## Main definitions
-
-* `Cslib.Circuits.Boolean.forallGuess`: the existing universal quantifier on auxiliary bits.
-
 ## Main results
 
 * `Cslib.Circuits.Fusion.exists_pairCover_forallGuess`: extract a cover of exact AND cost.

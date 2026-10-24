@@ -65,7 +65,7 @@ private theorem abs_le_two_rpow_of_sq_le {y γ : ℝ} {n : ℕ}
 
 /-- The rate in two forms: `2 (c* - c)/(2L) = (1/2 - A (c - 1)) / (1 + A)`, where
 `c* = 1 + 1/(2A)` and `L = 1 + 1/A`. -/
-theorem two_mul_rate_eq {A c : ℝ} (hA : 0 < A) :
+private theorem two_mul_rate_eq {A c : ℝ} (hA : 0 < A) :
     2 * ((1 + 1 / (2 * A) - c) / (2 * (1 + 1 / A))) = (1 / 2 - A * (c - 1)) / (1 + A) := by
   field_simp
   ring

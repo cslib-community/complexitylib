@@ -70,7 +70,7 @@ noncomputable def gateApprox (hℓ : 1 ≤ ℓ) (op : Unbounded.extSignature.Op)
   Classical.choose (exists_gate_approx (R := R) (p := p) hℓ op u)
 
 variable (R p) in
-theorem gateApprox_spec (hℓ : 1 ≤ ℓ) (op : Unbounded.extSignature.Op)
+private theorem gateApprox_spec (hℓ : 1 ≤ ℓ) (op : Unbounded.extSignature.Op)
     (u : BitString n → Fin (Unbounded.extSignature.Arity op) → Bool) :
     (∀ (D : ℕ) (v : Fin (Unbounded.extSignature.Arity op) → BitString n → R),
       (∀ k, v k ∈ lowDegree R (Fin n) D) →
@@ -90,7 +90,7 @@ noncomputable def pairInterpretation (hℓ : 1 ≤ ℓ) :
 variable {g : ℕ} (hℓ : 1 ≤ ℓ) (P : Program Unbounded.extSignature n g)
 
 /-- The true functions of the pair evaluation are the gate functions of the program. -/
-theorem fst_trace_pair (w : Wire n g) (x : BitString n) :
+private theorem fst_trace_pair (w : Wire n g) (x : BitString n) :
     (P.trace (pairInterpretation R p hℓ) inputPair w).1 x =
       P.trace (Unbounded.extInterpretation (modGate p)) x w := by
   -- the first components form a homomorphism to the pointwise lift, then evaluate at `x`
@@ -101,7 +101,7 @@ theorem fst_trace_pair (w : Wire n g) (x : BitString n) :
     (P.trace_pointwise_apply _ _ w x)
 
 /-- The pair at a gate is its operation applied to the pairs at its wires. -/
-theorem trace_pair_gate (k : Fin g) :
+private theorem trace_pair_gate (k : Fin g) :
     P.trace (pairInterpretation R p hℓ) inputPair (.gate k) =
       pairInterpretation R p hℓ (P.lines k).op fun a =>
         P.trace (pairInterpretation R p hℓ) inputPair ((P.lines k).wires a) :=
@@ -136,11 +136,11 @@ noncomputable def errorSet (k : Fin g) : Finset (BitString n) :=
     bitVal R (Unbounded.extInterpretation (modGate p) (P.lines k).op
       (fun a => (P.trace (pairInterpretation R p hℓ) inputPair ((P.lines k).wires a)).1 x))
 
-theorem card_errorSet_mul_le (k : Fin g) : #(errorSet R p hℓ P k) * 2 ^ ℓ ≤ 2 ^ n :=
+private theorem card_errorSet_mul_le (k : Fin g) : #(errorSet R p hℓ P k) * 2 ^ ℓ ≤ 2 ^ n :=
   (gateApprox_spec R p hℓ (P.lines k).op _).2
 
 /-- **Exactness of the approximants** where no gate approximator errs. -/
-theorem snd_trace_pair_eq {x : BitString n} (hx : ∀ k, x ∉ errorSet R p hℓ P k)
+private theorem snd_trace_pair_eq {x : BitString n} (hx : ∀ k, x ∉ errorSet R p hℓ P k)
     (w : Wire n g) :
     (P.trace (pairInterpretation R p hℓ) inputPair w).2 x =
       bitVal R ((P.trace (pairInterpretation R p hℓ) inputPair w).1 x) := by

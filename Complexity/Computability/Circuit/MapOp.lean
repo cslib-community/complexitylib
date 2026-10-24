@@ -65,24 +65,30 @@ def Circuit.mapOp (c : Circuit σ n m) : Circuit τ n m :=
 
 variable {φ}
 
+/-- Translating a line along `φ` applies `φ` to its operation symbol. -/
 @[simp] theorem Line.mapOp_op (line : Line σ n g) : (line.mapOp φ).op = φ line.op :=
   rfl
 
+/-- Translating a line along `φ` casts its argument wires along `φ.arity_eq`. -/
 @[simp] theorem Line.mapOp_wires (line : Line σ n g) (a : Fin (τ.Arity (φ line.op))) :
     (line.mapOp φ).wires a = line.wires (Fin.cast (φ.arity_eq line.op) a) :=
   rfl
 
+/-- Translating the empty program yields the empty program. -/
 @[simp] theorem Program.mapOp_empty : (Program.empty : Program σ n 0).mapOp φ = .empty :=
   rfl
 
+/-- Translating a program extended by a gate translates both the prefix and the gate line. -/
 @[simp] theorem Program.mapOp_gate (p : Program σ n g) (line : Line σ n g) :
     (p.gate line).mapOp φ = (p.mapOp φ).gate (line.mapOp φ) :=
   rfl
 
+/-- The program of a translated circuit is the translated program. -/
 @[simp] theorem Circuit.mapOp_program (c : Circuit σ n m) :
     (c.mapOp φ).program = c.program.mapOp φ :=
   rfl
 
+/-- Translating a circuit preserves its output wires. -/
 @[simp] theorem Circuit.mapOp_outputs (c : Circuit σ n m) : (c.mapOp φ).outputs = c.outputs :=
   rfl
 
@@ -101,6 +107,7 @@ variable {φ}
     (c.mapOp φ).FanInAtMost r ↔ c.FanInAtMost r :=
   Program.fanInAtMost_mapOp c.program r
 
+/-- Translating a line along the identity signature homomorphism leaves it unchanged. -/
 @[simp] theorem Line.mapOp_id (line : Line σ n g) : line.mapOp (Signature.Hom.id σ) = line :=
   rfl
 
@@ -109,6 +116,7 @@ theorem Line.mapOp_comp (ψ : τ.Hom υ) (line : Line σ n g) :
     line.mapOp (ψ.comp φ) = (line.mapOp φ).mapOp ψ :=
   rfl
 
+/-- Translating a program along the identity signature homomorphism leaves it unchanged. -/
 @[simp] theorem Program.mapOp_id (p : Program σ n g) : p.mapOp (Signature.Hom.id σ) = p := by
   induction p with
   | empty => rfl
@@ -121,6 +129,7 @@ theorem Program.mapOp_comp (ψ : τ.Hom υ) (p : Program σ n g) :
   | empty => rfl
   | gate p line ih => rw [mapOp_gate, ih, Line.mapOp_comp, mapOp_gate, mapOp_gate]
 
+/-- Translating a circuit along the identity signature homomorphism leaves it unchanged. -/
 @[simp] theorem Circuit.mapOp_id (c : Circuit σ n m) : c.mapOp (Signature.Hom.id σ) = c := by
   change (⟨c.program.mapOp _, c.outputs⟩ : Circuit σ n m) = c
   rw [Program.mapOp_id]
@@ -132,6 +141,7 @@ theorem Circuit.mapOp_comp (ψ : τ.Hom υ) (c : Circuit σ n m) :
     ⟨(c.program.mapOp φ).mapOp ψ, c.outputs⟩
   rw [Program.mapOp_comp]
 
+/-- Translating operation symbols preserves circuit size. -/
 @[simp] theorem Circuit.size_mapOp (c : Circuit σ n m) : (c.mapOp φ).size = c.size :=
   rfl
 
@@ -148,6 +158,7 @@ theorem Line.depth_mapOp (line : Line σ n g) (depths : Wire n g → ℕ) :
 theorem Program.depths_mapOp (p : Program σ n g) : (p.mapOp φ).depths = p.depths :=
   p.depths_mapLines Line.depth_mapOp
 
+/-- Translating operation symbols preserves circuit depth. -/
 @[simp] theorem Circuit.depth_mapOp (c : Circuit σ n m) : (c.mapOp φ).depth = c.depth :=
   c.depth_mapLines Line.depth_mapOp
 
@@ -178,10 +189,13 @@ def Formula.mapOp : Formula σ n → Formula τ n
   | .input i => .input i
   | .gate op args => .gate (φ op) fun a => (args (Fin.cast (φ.arity_eq op) a)).mapOp
 
+/-- Translating an input leaf formula yields the same input leaf. -/
 @[simp] theorem Formula.mapOp_input (i : Fin n) :
     (Formula.input i : Formula σ n).mapOp φ = .input i :=
   rfl
 
+/-- Translating a gate formula translates its operation symbol and recursively translates its
+arguments. -/
 @[simp] theorem Formula.mapOp_gate (op : σ.Op) (args : Fin (σ.Arity op) → Formula σ n) :
     (Formula.gate op args).mapOp φ =
       .gate (φ op) fun a => (args (Fin.cast (φ.arity_eq op) a)).mapOp φ :=

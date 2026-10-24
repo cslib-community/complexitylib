@@ -64,7 +64,7 @@ theorem cfgAt_succ (t : ℕ) (x : Fin n → Bool) : cfgAt tm (t + 1) x = tm.step
   runFrom_succ _ _
 
 /-- A work head is within `t` cells of the origin after `t` steps. -/
-theorem abs_workTapePos_cfgAt_le (t : ℕ) (x : Fin n → Bool) (i : Fin k) :
+private theorem abs_workTapePos_cfgAt_le (t : ℕ) (x : Fin n → Bool) (i : Fin k) :
     |(cfgAt tm t x).workTapePos i| ≤ t :=
   abs_workTapePos_runFrom_le _ t i
 
@@ -76,10 +76,10 @@ noncomputable def featureFn (t : ℕ) (φ : Feature k State) : BooleanFunction n
 
 omit [DecidableEq State] in
 /-- The input symbol at position `j` is `s`, as a Boolean function of the input. -/
-def inputIs (j : ℕ) (s : Option Bool) : BooleanFunction n :=
+private def inputIs (j : ℕ) (s : Option Bool) : BooleanFunction n :=
   fun x => decide (inputAt (List.ofFn x) j = s)
 
-theorem featureFn_eq_true {t : ℕ} {φ : Feature k State} {x : Fin n → Bool} :
+private theorem featureFn_eq_true {t : ℕ} {φ : Feature k State} {x : Fin n → Bool} :
     featureFn tm t φ x = true ↔ φ.Holds (cfgAt tm t x) :=
   decide_eq_true_iff
 
@@ -101,7 +101,7 @@ noncomputable def basicFeatures (n T : ℕ) : Finset (Feature k State) := (Featu
 def featureCount (n T k : ℕ) (State : Type) [Fintype State] : ℕ :=
   (Fintype.card State + 1) + (n + 2) + k * (2 * T + 1) + k * (2 * T + 1) * 3 + 4
 
-theorem card_basicFeatures_le (n T : ℕ) :
+private theorem card_basicFeatures_le (n T : ℕ) :
     (basicFeatures (k := k) (State := State) n T).card ≤ featureCount n T k State :=
   (List.toFinset_card_le _).trans (length_basic n T).le
 
@@ -166,7 +166,7 @@ variable [Fintype State] {T t : ℕ}
 
 omit [DecidableEq State] [Fintype State] in
 /-- An input symbol, or a constant, costs at most one gate. -/
-theorem synthesis_inputIs (j : ℕ) (b : Option Bool) :
+private theorem synthesis_inputIs (j : ℕ) (b : Option Bool) :
     Synthesis interpretation (inputs n) {inputIs j b} 1 := by
   by_cases hj : j = 0 ∨ n < j
   · refine Synthesis.of_forall_eq_const (decide (none = b)) fun x => ?_
@@ -189,7 +189,7 @@ theorem synthesis_inputIs (j : ℕ) (b : Option Bool) :
         fun x => by rw [hinput]; simp
 
 /-- The symbol read by a work head, from the heads and cells in the window. -/
-theorem synthesis_read (ht : t ≤ T) (i : Fin k) (s : Option Bool) :
+private theorem synthesis_read (ht : t ≤ T) (i : Fin k) (s : Option Bool) :
     Synthesis interpretation (inputs n ∪ basicAt tm T t) {featureFn tm t (.read i s)}
       ((2 * T + 1) * 2 + 1) := by
   obtain ⟨g, hg, hsyn⟩ := Synthesis.exists_exists_mem (s := inputs n ∪ basicAt tm T t) (window T)
@@ -205,7 +205,7 @@ theorem synthesis_read (ht : t ≤ T) (i : Fin k) (s : Option Bool) :
   simp only [Bool.and_eq_true, featureFn_eq_true]
 
 /-- The symbol read by the input head, from its position and the input bits. -/
-theorem synthesis_inRead (s : Option Bool) :
+private theorem synthesis_inRead (s : Option Bool) :
     Synthesis interpretation (inputs n ∪ basicAt tm T t) {featureFn tm t (.inRead s)}
       ((n + 2) * 3 + 1) := by
   obtain ⟨g, hg, hsyn⟩ := Synthesis.exists_exists_mem (s := inputs n ∪ basicAt tm T t)
@@ -222,7 +222,7 @@ theorem synthesis_inRead (s : Option Bool) :
 def readsCost (n k T : ℕ) : ℕ := k * 3 * ((2 * T + 1) * 2 + 1) + 3 * ((n + 2) * 3 + 1)
 
 /-- Phase 1: the symbols read, from the basic features and the inputs. -/
-theorem synthesis_reads (ht : t ≤ T) :
+private theorem synthesis_reads (ht : t ≤ T) :
     Synthesis interpretation (inputs n ∪ basicAt tm T t) (readsAt tm t) (readsCost n k T) := by
   have hw := Synthesis.biUnion (I := interpretation) (s := inputs n ∪ basicAt tm T t)
     (Finset.univ : Finset (Fin k × Option Bool)) (fun p => {featureFn tm t (.read p.1 p.2)})
@@ -237,7 +237,7 @@ theorem synthesis_reads (ht : t ≤ T) :
   · simp [readsCost, Fintype.card_option]
 
 /-- The indicator of a situation, from the state and the symbols read. -/
-theorem synthesis_sit (y : Situation k State) :
+private theorem synthesis_sit (y : Situation k State) :
     Synthesis interpretation (inputs n ∪ basicAt tm T t ∪ readsAt tm t)
       {featureFn tm t (.sit y)} (k + 3) := by
   have hread : ∀ φ, ((∃ i s, φ = Feature.read i s) ∨ ∃ s, φ = Feature.inRead s) →
@@ -255,7 +255,7 @@ theorem synthesis_sit (y : Situation k State) :
   simp only [Bool.and_eq_true, hg, featureFn_eq_true, Finset.mem_univ, true_implies, and_assoc]
 
 /-- Phase 2: every situation indicator. -/
-theorem synthesis_sits :
+private theorem synthesis_sits :
     Synthesis interpretation (inputs n ∪ basicAt tm T t ∪ readsAt tm t) (sitsAt tm t)
       (Fintype.card (Situation k State) * (k + 3)) := by
   refine (Synthesis.biUnion (I := interpretation) (Finset.univ : Finset (Situation k State))
@@ -273,7 +273,7 @@ def featureCost (k : ℕ) (State : Type) [Fintype State] : ℕ :=
   (4 * Fintype.card (Situation k State) + 2) * (2 * 3 + 2) + 1
 
 /-- Every basic feature of the next configuration, from the terms of its step equation. -/
-theorem synthesis_next (ht : t ≤ T) {φ : Feature k State} (hφ : φ ∈ basicFeatures n T) :
+private theorem synthesis_next (ht : t ≤ T) {φ : Feature k State} (hφ : φ ∈ basicFeatures n T) :
     Synthesis interpretation (stepSources tm T t) {featureFn (n := n) tm (t + 1) φ}
       (featureCost k State) := by
   have hφ' := List.mem_toFinset.1 hφ
@@ -313,7 +313,7 @@ theorem synthesis_next (ht : t ≤ T) {φ : Feature k State} (hφ : φ ∈ basic
     exact Nat.add_le_add_right (Nat.mul_le_mul_right _ this) _
 
 /-- Phase 3: all basic features of the next configuration. -/
-theorem synthesis_nexts (ht : t ≤ T) :
+private theorem synthesis_nexts (ht : t ≤ T) :
     Synthesis interpretation (stepSources (n := n) tm T t) (basicAt tm T (t + 1))
       (featureCount n T k State * featureCost k State) := by
   refine (Synthesis.biUnion (I := interpretation) (basicFeatures n T)
@@ -344,7 +344,7 @@ section Run
 variable [Fintype State] {T : ℕ}
 
 /-- The basic features at time `0`, which do not depend on the input. -/
-theorem synthesis_basic_zero :
+private theorem synthesis_basic_zero :
     Synthesis interpretation (inputs n) (basicAt tm T 0) (featureCount n T k State) := by
   have h0 : ∀ x : Fin n → Bool, cfgAt tm 0 x = tm.initCfg (List.ofFn x) := fun _ => rfl
   refine (Synthesis.biUnion (I := interpretation) (basicFeatures n T)
@@ -376,12 +376,12 @@ theorem synthesis_basic : ∀ t ≤ T,
     rwa [Nat.add_mul, one_mul, ← Nat.add_assoc]
 
 /-- The total cost of simulating `T` steps on inputs of length `n`. -/
-def simulationCost (n T k : ℕ) (State : Type) [Fintype State] : ℕ :=
+private def simulationCost (n T k : ℕ) (State : Type) [Fintype State] : ℕ :=
   featureCount n T k State + T * stepCost n T k State
 
 omit [DecidableEq State] in
 /-- The simulation cost is polynomially bounded when the number of steps is. -/
-theorem polynomiallyBounded_simulationCost {T : ℕ → ℕ} (hT : PolynomiallyBounded T) :
+private theorem polynomiallyBounded_simulationCost {T : ℕ → ℕ} (hT : PolynomiallyBounded T) :
     PolynomiallyBounded fun n => simulationCost n (T n) k State := by
   simp only [simulationCost, featureCount, stepCost, readsCost, featureCost]
   fun_prop

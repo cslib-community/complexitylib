@@ -57,6 +57,7 @@ instance : FunLike (σ.Hom τ) σ.Op τ.Op where
     cases ψ
     congr
 
+/-- `φ.toFun` is equal to the `FunLike` coercion `⇑φ`. -/
 @[simp] theorem toFun_eq_coe (φ : σ.Hom τ) : φ.toFun = ⇑φ :=
   rfl
 
@@ -72,15 +73,19 @@ protected def id (σ : Signature) : σ.Hom σ :=
 def comp (ψ : τ.Hom υ) (φ : σ.Hom τ) : σ.Hom υ :=
   ⟨ψ ∘ φ, fun op => (ψ.arity_eq (φ op)).trans (φ.arity_eq op)⟩
 
+/-- Applying the identity signature map returns the operation unchanged. -/
 @[simp] theorem id_apply (op : σ.Op) : Hom.id σ op = op :=
   rfl
 
+/-- Applying a composition of signature maps applies them in turn. -/
 @[simp] theorem comp_apply (ψ : τ.Hom υ) (φ : σ.Hom τ) (op : σ.Op) : ψ.comp φ op = ψ (φ op) :=
   rfl
 
+/-- Composing a signature map with the identity on the left gives the same map. -/
 @[simp] theorem id_comp (φ : σ.Hom τ) : (Hom.id τ).comp φ = φ :=
   rfl
 
+/-- Composing a signature map with the identity on the right gives the same map. -/
 @[simp] theorem comp_id (φ : σ.Hom τ) : φ.comp (Hom.id σ) = φ :=
   rfl
 
@@ -95,6 +100,7 @@ class Preserves (φ : σ.Hom τ) (I : Interpretation σ U) (J : Interpretation �
   interpret_eq : ∀ op (x : Fin (σ.Arity op) → U),
     J (φ op) (fun a => x (Fin.cast (φ.arity_eq op) a)) = I op x
 
+/-- The identity signature map preserves every interpretation. -/
 instance preserves_id (I : Interpretation σ U) : (Hom.id σ).Preserves I I :=
   ⟨fun _ _ => rfl⟩
 

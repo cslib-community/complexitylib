@@ -297,7 +297,7 @@ def counterOutput (y : BitString (k + k)) : BitString k :=
     (ModulusCounter.rightWord (counterInput x)).toNat = 0 := by
   simp [counterInput]
 
-theorem counterRemainder_spec (T : ℕ) (x : BitString k) :
+private theorem counterRemainder_spec (T : ℕ) (x : BitString k) :
     counterOutput ((counterStep k)^[T] (counterInput x)) = ModulusCounter.remainder T x := by
   rw [counterStep, ModulusCounter.iterate_power]
   funext i

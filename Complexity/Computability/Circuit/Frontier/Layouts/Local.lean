@@ -73,7 +73,8 @@ variable {V E : Type*} (G : Multigraph V E)
 
 /-- **Independent sets count edges once.** If no edge has both endpoints in `I`, the edges of
 a set `X` at the vertices of `I` are the disjoint union of those at each vertex of `I`. -/
-theorem ncard_inter_touching [Finite E] {I : Finset V} (hI : ∀ e, ¬(G.src e ∈ I ∧ G.tgt e ∈ I))
+private theorem ncard_inter_touching [Finite E] {I : Finset V}
+    (hI : ∀ e, ¬(G.src e ∈ I ∧ G.tgt e ∈ I))
     (X : Set E) : (X ∩ G.touching I).ncard = ∑ v ∈ I, (X ∩ G.incidenceSet v).ncard := by
   classical
   have := Fintype.ofFinite E
@@ -186,7 +187,7 @@ theorem mem_edgeCut_iff_otherEnd {L : Set V} {v : V} {e : E} (he : e ∈ G.incid
     exact not_congr Iff.comm
 
 /-- In an independent set, the other ends of the edges at a vertex lie outside the set. -/
-theorem otherEnd_notMem {I : Finset V} (hI : ∀ e, ¬(G.src e ∈ I ∧ G.tgt e ∈ I)) {v : V}
+private theorem otherEnd_notMem {I : Finset V} (hI : ∀ e, ¬(G.src e ∈ I ∧ G.tgt e ∈ I)) {v : V}
     (hv : v ∈ I) {e : E} (he : e ∈ G.incidenceSet v) : G.otherEnd v e ∉ I := by
   unfold otherEnd
   split_ifs with hs
@@ -209,7 +210,7 @@ variable {G}
 /-- **A median minimises the local threshold cuts.** If the neighbours of `v` keep their keys and
 the new key of `v` is a median of theirs, then at every threshold at most as many edges at `v`
 cross the new threshold cut as crossed the old one. -/
-theorem ncard_edgeCut_threshold_inter_le [Finite E] {α : Type*} [LinearOrder α]
+private theorem ncard_edgeCut_threshold_inter_le [Finite E] {α : Type*} [LinearOrder α]
     {key key' : V → α} {v : V}
     (hfix : ∀ e ∈ G.incidenceSet v, key' (G.otherEnd v e) = key (G.otherEnd v e))
     (hmed : G.IsMedianAt key v (key' v)) (t : α) :

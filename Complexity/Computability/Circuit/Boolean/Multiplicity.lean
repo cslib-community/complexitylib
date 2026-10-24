@@ -116,7 +116,7 @@ private theorem countP_eq_sum {α : Type*} (p : α → Bool) (l : List α) :
   | cons a l ih => cases h : p a <;> simp [h, ih, add_comm]
 
 /-- Reading the distinct wires with their multiplicities counts the true arguments. -/
-theorem multWeight_count_dedup {k : ℕ} (w : Fin k → Wire n g) (v : Wire n g → Bool) :
+private theorem multWeight_count_dedup {k : ℕ} (w : Fin k → Wire n g) (v : Wire n g → Bool) :
     multWeight
         (fun j : Fin (List.ofFn w).dedup.length => (List.ofFn w).count (List.ofFn w).dedup[j.1])
         (fun j => v (List.ofFn w).dedup[j.1]) = BitString.weight (v ∘ w) := by
@@ -127,7 +127,7 @@ theorem multWeight_count_dedup {k : ℕ} (w : Fin k → Wire n g) (v : Wire n g 
   rfl
 
 /-- Reading the distinct wires with their multiplicities keeps the number of arguments. -/
-theorem sum_count_dedup {k : ℕ} (w : Fin k → Wire n g) :
+private theorem sum_count_dedup {k : ℕ} (w : Fin k → Wire n g) :
     ∑ j : Fin (List.ofFn w).dedup.length, (List.ofFn w).count (List.ofFn w).dedup[j.1] = k := by
   rw [Fin.sum_univ_fun_getElem (List.ofFn w).dedup (fun a => (List.ofFn w).count a),
     List.sum_map_count_dedup_eq_length, List.length_ofFn]
@@ -168,7 +168,7 @@ theorem depth_multLine_le (line : Line extSignature n g) (depths : Wire n g → 
     exact hle a
 
 /-- A line reading its distinct wires reads at most all `n + g` wires. -/
-theorem arity_multLine_le (line : Line extSignature n g) :
+private theorem arity_multLine_le (line : Line extSignature n g) :
     multSignature.Arity (multLine line).op ≤ n + g := by
   obtain ⟨op, w⟩ := line
   cases op with

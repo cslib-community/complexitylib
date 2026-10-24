@@ -73,7 +73,7 @@ namespace Cslib.Circuits.Boolean
 open Set Finset BitString Unbounded Cslib.Complexity Turing.MultiTapeTM
 
 /-- Folding `xor` over a Boolean word computes `parity` of its slice. -/
-theorem foldl_bne_eq_parity (w : List Bool) :
+private theorem foldl_bne_eq_parity (w : List Bool) :
     w.foldl bne false = parity w.length (fun i => w[i]) := by
   have hcount : w.foldl bne false = decide (w.count true % 2 = 1) := by
     have hgen (b : Bool) (l : List Bool) :

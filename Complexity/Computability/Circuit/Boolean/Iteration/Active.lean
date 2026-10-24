@@ -46,7 +46,7 @@ namespace Cslib.Circuits.Boolean.Iteration
 
 open FunctionalGraph
 
-theorem active_construction_cost (n s M L d : ℕ) (hL : 0 < L) (hd : d ≤ n + 3)
+private theorem active_construction_cost (n s M L d : ℕ) (hL : 0 < L) (hd : d ≤ n + 3)
     (hR : 2 ^ d ≤ 2 * (M + 4 * L + 1)) :
     2 + 5 * (4 * L) * s + (18 * d ^ 2 + 30) * 2 ^ d * (Record.width n (n + 3) + 1) +
       1000 * (4 * L + 1) * (n + (n + 3) + 1) ^ 2 ≤

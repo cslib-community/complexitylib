@@ -51,7 +51,7 @@ noncomputable def negativePhase (j : Fin R) : BitVec (chartWidth n) :=
 noncomputable def phaseDistance (j : Fin R) (p : BitVec (chartWidth n)) : BitVec (chartWidth n) :=
   addResidue (chart.period j) p (chart.negativePhase j)
 
-theorem phaseDistance_toNat (j : Fin R) (p : BitVec (chartWidth n))
+private theorem phaseDistance_toNat (j : Fin R) (p : BitVec (chartWidth n))
     (hp : p.toNat < cycleLength f (chart.first j)) :
     (chart.phaseDistance j p).toNat =
       (p.toNat + cycleLength f (chart.first j) -
@@ -69,7 +69,7 @@ theorem phaseDistance_toNat (j : Fin R) (p : BitVec (chartWidth n))
       (cycleLength f (chart.first j) - phase f (chart.first j)) (cycleLength_pos f _)
 
 /-- The decoded distance is exactly the numerical offset within a containing interval. -/
-theorem phaseDistance_of_contains (hf : Function.Injective f) (j : Fin R) (y : BitVec n)
+private theorem phaseDistance_of_contains (hf : Function.Injective f) (j : Fin R) (y : BitVec n)
     (hy : chart.contains j y = true) :
     (chart.phaseDistance j (BitVec.ofNat (chartWidth n) (phase f y))).toNat =
       y.toNat - chart.start j := by
@@ -89,7 +89,7 @@ theorem phaseDistance_of_contains (hf : Function.Injective f) (j : Fin R) (y : B
   simp only [Nat.ModEq, hphase, Nat.add_comm, Nat.mod_mod]
 
 /-- On a matching cycle, the decoded distance really reaches the requested state. -/
-theorem phaseDistance_hit (hf : Function.Injective f) (j : Fin R) (y : BitVec n)
+private theorem phaseDistance_hit (hf : Function.Injective f) (j : Fin R) (y : BitVec n)
     (hc : canonicalCycle f (chart.first j) = canonicalCycle f y) :
     f^[(chart.phaseDistance j (BitVec.ofNat (chartWidth n) (phase f y))).toNat]
       (chart.first j) = y := by
@@ -111,7 +111,7 @@ theorem phaseDistance_hit (hf : Function.Injective f) (j : Fin R) (y : BitVec n)
 noncomputable def decodedRow (j : Fin R) (p : BitVec (chartWidth n)) : BitVec n :=
   BitVec.ofNat n (chart.start j) + (chart.phaseDistance j p).setWidth n
 
-theorem decodedRow_eq (j : Fin R) (p : BitVec (chartWidth n)) :
+private theorem decodedRow_eq (j : Fin R) (p : BitVec (chartWidth n)) :
     chart.decodedRow j p = BitVec.ofNat n (chart.start j + (chart.phaseDistance j p).toNat) := by
   simp only [decodedRow, BitVec.ofNat_add, BitVec.ofNat_toNat]
 
@@ -119,7 +119,7 @@ theorem decodedRow_eq (j : Fin R) (p : BitVec (chartWidth n)) :
 noncomputable def decodeFlag (j : Fin R) (rep : BitVec n) (p : BitVec (chartWidth n)) : Bool :=
   decide (rep = canonicalCycle f (chart.first j)) && (chart.phaseDistance j p).ult (chart.length j)
 
-theorem decodeFlag_of_contains (hf : Function.Injective f) (j : Fin R) (y : BitVec n)
+private theorem decodeFlag_of_contains (hf : Function.Injective f) (j : Fin R) (y : BitVec n)
     (hy : chart.contains j y = true) :
     chart.decodeFlag j (canonicalCycle f y) (BitVec.ofNat (chartWidth n) (phase f y)) = true := by
   obtain ⟨hlo, hhi⟩ := (chart.contains_iff j y).mp hy
@@ -129,7 +129,7 @@ theorem decodeFlag_of_contains (hf : Function.Injective f) (j : Fin R) (y : BitV
     chart.phaseDistance_of_contains hf j y hy, length_toNat]
   lia
 
-theorem decodedRow_spec (hf : Function.Injective f) (j : Fin R) (y : BitVec n)
+private theorem decodedRow_spec (hf : Function.Injective f) (j : Fin R) (y : BitVec n)
     (hy : chart.decodeFlag j (canonicalCycle f y)
       (BitVec.ofNat (chartWidth n) (phase f y)) = true) :
     chart.decodedRow j (BitVec.ofNat (chartWidth n) (phase f y)) = y := by

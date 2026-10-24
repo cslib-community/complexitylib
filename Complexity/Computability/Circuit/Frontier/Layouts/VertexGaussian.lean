@@ -83,15 +83,17 @@ def crossingEvent (q : ℝ) (R : ℕ) (t : ℝ) (e : E) : Set (V → ℝ) :=
 
 variable {G} {q : ℝ} {R : ℕ}
 
-theorem measurable_vertexScore (q : ℝ) (R : ℕ) (v : V) :
+private theorem measurable_vertexScore (q : ℝ) (R : ℕ) (v : V) :
     Measurable fun ω => vertexScore G q R ω v := by
   unfold vertexScore
   fun_prop
 
+/-- For a measurable predicate `p`, `vertexEvent G q R p v` is a measurable set. -/
 theorem measurableSet_vertexEvent (q : ℝ) (R : ℕ) {p : ℝ → Prop}
     (hp : MeasurableSet {x | p x}) (v : V) : MeasurableSet (vertexEvent G q R p v) :=
   measurable_vertexScore q R v hp
 
+/-- The event `crossingEvent G q R t e` is measurable. -/
 theorem measurableSet_crossingEvent (q : ℝ) (R : ℕ) (t : ℝ) (e : E) :
     MeasurableSet (crossingEvent G q R t e) :=
   measurableSet_setOf_mem_uIoc (measurable_vertexScore q R _) (measurable_vertexScore q R _) t

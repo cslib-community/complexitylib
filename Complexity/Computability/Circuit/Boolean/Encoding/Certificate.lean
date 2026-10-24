@@ -117,7 +117,7 @@ def readRow (width : ℕ) (row : List Bool) : Op × List ℕ :=
     [((row.drop 3).take width).count true, ((row.drop (3 + width)).take width).count true].take
       (signature.Arity (Op.ofBits (row.getD 0 false, row.getD 1 false, row.getD 2 false))))
 
-theorem length_gateRow {width : ℕ} {g : Op × List ℕ} (h : ∀ i ∈ g.2, i ≤ width) :
+private theorem length_gateRow {width : ℕ} {g : Op × List ℕ} (h : ∀ i ∈ g.2, i ≤ width) :
     (gateRow width g).length = 3 + 2 * width := by
   rw [gateRow, List.length_append, List.length_append, Op.length_bits,
     length_unaryField _ _ (List.getD_le_of_forall_le h 0),
@@ -125,7 +125,8 @@ theorem length_gateRow {width : ℕ} {g : Op × List ℕ} (h : ∀ i ∈ g.2, i 
   omega
 
 /-- A row reads as its gate, when the gate has the arity of its operation. -/
-theorem readRow_gateRow {width : ℕ} {g : Op × List ℕ} (harity : g.2.length = signature.Arity g.1)
+private theorem readRow_gateRow {width : ℕ} {g : Op × List ℕ}
+    (harity : g.2.length = signature.Arity g.1)
     (h : ∀ i ∈ g.2, i ≤ width) : readRow width (gateRow width g) = g := by
   obtain ⟨op, args⟩ := g
   have h₀ := length_unaryField _ _ (List.getD_le_of_forall_le h 0)
@@ -270,7 +271,7 @@ theorem codeCheck_eq_true_iff {n : ℕ} {gates : List (Op × List ℕ)} :
 open ComputableTidilyInPolyTime
 
 /-- Reading a gate from a row is polynomial-time, for the field width in unary. -/
-theorem computableInPolyTime_readRow :
+private theorem computableInPolyTime_readRow :
     ComputableInPolyTime (fun p : ℕ × List Bool => readRow p.1 p.2)
       (encPair encUnary encBits) encGate := by
   refine .of_tidy ?_

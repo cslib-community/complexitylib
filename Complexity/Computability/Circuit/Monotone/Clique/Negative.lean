@@ -32,7 +32,19 @@ least twice the number `w ^ 2` of pairs inside a set (`half_le_card_acceptedColo
 
 ## Main definitions
 
+* `Cslib.Circuits.Monotone.Negative.collisionPairs`,
+  `Cslib.Circuits.Monotone.Negative.Profile`: collision pairs in a petal and profiles of collision
+  pairs across a sunflower.
+* `Cslib.Circuits.Monotone.Negative.sunflowerBad`,
+  `Cslib.Circuits.Monotone.Negative.pluckErrorCap`: colourings injective on a sunflower core but on
+  none of its petals, and the per-pluck negative error bound.
+* `Cslib.Circuits.Monotone.Negative.stepExceptions`,
+  `Cslib.Circuits.Monotone.Negative.errorCost`,
+  `Cslib.Circuits.Monotone.Negative.exceptions`: negative errors of a step, per-operation negative
+  error cost, and negative gate exceptions.
 * `Cslib.Circuits.Monotone.Negative.scheme`: the approximation scheme on multipartite graphs.
+* `Cslib.Circuits.Monotone.Negative.acceptedColorings`: colourings accepted by a family of vertex
+  sets.
 
 ## Main results
 
@@ -60,11 +72,13 @@ variable {n r p w : ℕ}
 def collisionPairs (K s : Finset (Fin n)) : Finset (Fin n × Fin n) :=
   ((s \ K) ×ˢ s).filter fun uv => uv.1 ≠ uv.2
 
+/-- An ordered pair of vertices belongs to `collisionPairs K s` if and only if its first vertex lies
+in `s \ K`, its second vertex lies in `s`, and the two vertices are distinct. -/
 @[simp] theorem mem_collisionPairs {K s : Finset (Fin n)} {uv : Fin n × Fin n} :
     uv ∈ collisionPairs K s ↔ uv.1 ∈ s ∧ uv.1 ∉ K ∧ uv.2 ∈ s ∧ uv.1 ≠ uv.2 := by
   simp [collisionPairs, and_assoc]
 
-theorem card_collisionPairs_le {K s : Finset (Fin n)} (hs : s.card ≤ w) :
+private theorem card_collisionPairs_le {K s : Finset (Fin n)} (hs : s.card ≤ w) :
     (collisionPairs K s).card ≤ w ^ 2 :=
   calc (collisionPairs K s).card ≤ ((s \ K) ×ˢ s).card := card_le_card (filter_subset _ _)
     _ = (s \ K).card * s.card := card_product _ _
@@ -75,7 +89,7 @@ theorem card_collisionPairs_le {K s : Finset (Fin n)} (hs : s.card ≤ w) :
 abbrev Profile (S : Finset (Finset (Fin n))) (K : Finset (Fin n)) : Type :=
   ∀ s : S, collisionPairs K s.1
 
-theorem card_profile_le {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
+private theorem card_profile_le {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
     (hS : ∀ s ∈ S, s.card ≤ w) : Fintype.card (Profile S K) ≤ (w ^ 2) ^ S.card := by
   rw [Fintype.card_pi]
   calc ∏ s : S, Fintype.card (collisionPairs K s.1) ≤ ∏ _s : S, w ^ 2 :=
@@ -83,7 +97,7 @@ theorem card_profile_le {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
     _ = (w ^ 2) ^ S.card := by simp
 
 /-- The first vertices of the pairs of a profile. -/
-def selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)} (π : Profile S K) :
+private def selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)} (π : Profile S K) :
     Finset (Fin n) :=
   univ.image fun s => (π s).1.1
 
@@ -99,12 +113,13 @@ theorem fst_injective {S : Finset (Finset (Fin n))} {K : Finset (Fin n)} (hS : I
   rw [hS s.2 t.2 fun e => hne (Subtype.ext e)] at this
   exact hs.2.1 this
 
-theorem card_selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)} (hS : IsSunflower S K)
+private theorem card_selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
+    (hS : IsSunflower S K)
     (π : Profile S K) : (selected π).card = S.card := by
   rw [selected, card_image_of_injective _ (fst_injective hS π), card_univ, Fintype.card_coe]
 
 /-- The second vertex of a collision pair is not selected. -/
-theorem snd_notMem_selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
+private theorem snd_notMem_selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
     (hS : IsSunflower S K) (π : Profile S K) (s : S) : (π s).1.2 ∉ selected π := by
   intro h
   obtain ⟨t, -, hts⟩ := mem_image.1 h
@@ -118,12 +133,12 @@ theorem snd_notMem_selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
     exact ht.2.1 this
 
 /-- The colourings giving both vertices of every pair of a profile the same colour. -/
-def profileColorings (r : ℕ) {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
+private def profileColorings (r : ℕ) {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
     (π : Profile S K) : Finset (Coloring n r) :=
   univ.filter fun c => ∀ s, c (π s).1.1 = c (π s).1.2
 
 /-- The colourings of a profile are determined by their colours outside the selected vertices. -/
-theorem card_profileColorings_le {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
+private theorem card_profileColorings_le {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
     (hS : IsSunflower S K) (π : Profile S K) :
     (profileColorings r π).card ≤ r ^ (n - S.card) := by
   let O := univ \ selected π
@@ -143,7 +158,7 @@ theorem card_profileColorings_le {S : Finset (Finset (Fin n))} {K : Finset (Fin 
     card_univ_sdiff, Fintype.card_fin, card_selected hS π] at this
 
 /-- A colouring injective on `K` but not on `s` has a collision pair in `s`. -/
-theorem exists_collisionPair {c : Coloring n r} {K s : Finset (Fin n)}
+private theorem exists_collisionPair {c : Coloring n r} {K s : Finset (Fin n)}
     (hK : Set.InjOn c K) (hs : ¬Set.InjOn c s) :
     ∃ uv : collisionPairs K s, c uv.1.1 = c uv.1.2 := by
   simp only [Set.InjOn, not_forall] at hs
@@ -187,12 +202,14 @@ theorem card_sunflowerBad_le {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
 noncomputable def stepExceptions (r : ℕ) (F G : Finset (Finset (Fin n))) : Finset (Coloring n r) :=
   univ.filter fun c => Accepts G (ofColoring c) ∧ ¬Accepts F (ofColoring c)
 
+/-- A colouring belongs to `stepExceptions r F G` if and only if `ofColoring c` is accepted by `G`
+and rejected by `F`. -/
 @[simp] theorem mem_stepExceptions {F G : Finset (Finset (Fin n))} {c : Coloring n r} :
     c ∈ stepExceptions r F G ↔ Accepts G (ofColoring c) ∧ ¬Accepts F (ofColoring c) := by
   simp [stepExceptions]
 
 /-- One pluck makes at most `pluckErrorCap n r p w` negative errors. -/
-theorem card_stepExceptions_le_of_pluck {F G : Finset (Finset (Fin n))} (h : Pluck p F G)
+private theorem card_stepExceptions_le_of_pluck {F G : Finset (Finset (Fin n))} (h : Pluck p F G)
     (hF : ∀ s ∈ F, s.card ≤ w) : (stepExceptions r F G).card ≤ pluckErrorCap n r p w := by
   obtain ⟨S, hSF, hSp, K, hSK, rfl⟩ := h
   refine (card_le_card fun c hc => ?_).trans
@@ -204,6 +221,8 @@ theorem card_stepExceptions_le_of_pluck {F G : Finset (Finset (Fin n))} (h : Plu
   · exact contains_ofColoring_iff.1 hct
   · exact absurd ⟨t, (mem_sdiff.1 ht).1, hct⟩ hF'
 
+/-- The negative exceptions between `F` and `H` are contained in the union of those between `F` and
+`G` and those between `G` and `H`. -/
 theorem stepExceptions_subset (r : ℕ) (F G H : Finset (Finset (Fin n))) :
     stepExceptions r F H ⊆ stepExceptions r F G ∪ stepExceptions r G H := fun c hc => by
   obtain ⟨hH, hF⟩ := mem_stepExceptions.1 hc
@@ -212,7 +231,8 @@ theorem stepExceptions_subset (r : ℕ) (F G H : Finset (Finset (Fin n))) :
   · exact mem_union_right _ (mem_stepExceptions.2 ⟨hH, hG⟩)
 
 /-- `m` plucks make at most `m` times `pluckErrorCap n r p w` negative errors. -/
-theorem card_stepExceptions_le_of_relatesInSteps (hp : 2 ≤ p) {F G : Finset (Finset (Fin n))}
+private theorem card_stepExceptions_le_of_relatesInSteps (hp : 2 ≤ p)
+    {F G : Finset (Finset (Fin n))}
     {m : ℕ} (h : RelatesInSteps (Pluck p) F G m) (hF : ∀ s ∈ F, s.card ≤ w) :
     (stepExceptions r F G).card ≤ m * pluckErrorCap n r p w := by
   induction h with
@@ -242,6 +262,8 @@ def errorCost (n r p w : ℕ) : signature.Op → ℕ
   | .or => 2 * sunflowerBound p w * pluckErrorCap n r p w
   | .and => sunflowerBound p w ^ 2 * pluckErrorCap n r p w
 
+/-- The number of pre-plucked terms produced by `op`, multiplied by `pluckErrorCap n r p w`, is at
+most `errorCost n r p w op`. -/
 theorem card_gateTerms_le (op : Op) (A : Fin (signature.Arity op) → Approximator n p w) :
     (gateTerms w op fun i => (A i).terms).card * pluckErrorCap n r p w ≤
       errorCost n r p w op := by
@@ -318,7 +340,7 @@ noncomputable def acceptedColorings (r : ℕ) (F : Finset (Finset (Fin n))) : Fi
 
 /-- At most `w ^ 2 * r ^ (n - 1)` colourings are not injective on a set of at most `w`
 vertices. -/
-theorem card_filter_not_injOn_le {s : Finset (Fin n)} (hs : s.card ≤ w) :
+private theorem card_filter_not_injOn_le {s : Finset (Fin n)} (hs : s.card ≤ w) :
     (univ.filter fun c : Coloring n r => ¬Set.InjOn c s).card ≤ w ^ 2 * r ^ (n - 1) := by
   have hS : IsSunflower ({s} : Finset (Finset (Fin n))) ∅ := fun t ht u hu htu => by
     rw [coe_singleton, Set.mem_singleton_iff] at ht hu

@@ -34,12 +34,15 @@ encoding, and, following the original development, for the stages of the dense t
 ## Main definitions
 
 * `Rational.rowEntry`: entry `(i, j)` of a list of rows, `0` when missing.
-* `Rational.rowsOf`: the list of rows of a square matrix.
+* `Rational.tabulateRows`, `Rational.rowsOf`, `Rational.ofRows`, `Rational.squareRows`:
+  conversion and tabulation between square matrices and lists of rows.
+* `Rational.traceTerms`, `Rational.productTerms`, `Rational.stepEntryRows`: the diagonal terms,
+  product terms, and entry formula for one Bird stage on lists of rows.
 * `Rational.stepRows`, `Rational.stagesRows`: one Bird stage, and the iterated stages.
 * `Rational.detRows`: the staged determinant of a list of rows.
 * `Rational.intBits`: the bit length of a sign-magnitude binary integer.
-* `Rational.stageTableBound`: upper bound on the encoded length of any stage table in the first `k`
-  Bird stages.
+* `Rational.stageEntryBound`, `Rational.stageRowBound`, `Rational.stageTableBound`: upper bounds
+  on the encoded lengths of entries, rows, and tables in the first `k` Bird stages.
 
 ## Main results
 
@@ -199,26 +202,30 @@ theorem intBits_eq_length_encIntBin (z : ℤ) :
 
 /-! ### Basic lemmas -/
 
+/-- Looking up entry `(i, j)` of `tabulateRows d g` returns `g i j` when `i < d` and `j < d`, and
+`0` otherwise. -/
 lemma rowEntry_tabulateRows (d : ℕ) (g : ℕ → ℕ → ℤ) (i j : ℕ) :
     rowEntry (tabulateRows d g) i j = if i < d ∧ j < d then g i j else 0 := by
   by_cases hi : i < d <;> by_cases hj : j < d <;>
     simp [rowEntry, tabulateRows, List.getD_eq_getElem?_getD, hi, hj]
 
+/-- The list of rows `rowsOf A` of a `d × d` matrix `A` has length `d`. -/
 @[simp] lemma length_rowsOf {d : ℕ} (A : Matrix (Fin d) (Fin d) ℤ) : (rowsOf A).length = d := by
   simp [rowsOf]
 
+/-- Looking up entry `(i, j)` in `rowsOf A` recovers `A i j`. -/
 lemma rowEntry_rowsOf {d : ℕ} (A : Matrix (Fin d) (Fin d) ℤ) (i j : Fin d) :
     rowEntry (rowsOf A) i j = A i j := by
   simp [rowEntry, rowsOf, List.getD_eq_getElem?_getD]
 
-lemma stagesRows_zero (A : List (List ℤ)) : stagesRows A 0 = squareRows A := rfl
+private lemma stagesRows_zero (A : List (List ℤ)) : stagesRows A 0 = squareRows A := rfl
 
-lemma stagesRows_succ (A : List (List ℤ)) (k : ℕ) :
+private lemma stagesRows_succ (A : List (List ℤ)) (k : ℕ) :
     stagesRows A (k + 1) = stepRows A (stagesRows A k) :=
   Function.iterate_succ_apply' _ _ _
 
 /-- A tail of a range, summed as a list, is a tail sum over `Fin`. -/
-lemma sum_map_drop_range (d lo : ℕ) (f : ℕ → ℤ) :
+private lemma sum_map_drop_range (d lo : ℕ) (f : ℕ → ℤ) :
     (((List.range d).drop lo).map f).sum = BirdDet.sumFrom d lo f := by
   induction lo using BirdDet.sumFrom_induct d with
   | step lo hlo ih =>
@@ -229,14 +236,14 @@ lemma sum_map_drop_range (d lo : ℕ) (f : ℕ → ℤ) :
     rw [BirdDet.sumFrom_stop d lo f hlo, List.drop_eq_nil_of_le (by simpa using hlo)]
     rfl
 
-lemma sum_map_drop_range_fin {d : ℕ} (i : Fin d) (f : ℕ → ℤ) :
+private lemma sum_map_drop_range_fin {d : ℕ} (i : Fin d) (f : ℕ → ℤ) :
     (((List.range d).drop (i.val + 1)).map f).sum = ∑ k ∈ Finset.Ioi i, f k.val := by
   rw [sum_map_drop_range, DeterminantAlgorithm.sumFrom_fin_tail]
 
 /-! ### Correctness -/
 
 /-- The list stages agree with the Bird stages of the matrix denoted by the input. -/
-theorem rowEntry_stagesRows (A : List (List ℤ)) (k : ℕ) (i j : Fin A.length) :
+private theorem rowEntry_stagesRows (A : List (List ℤ)) (k : ℕ) (i j : Fin A.length) :
     rowEntry (stagesRows A k) i j =
       ((BirdDet.Spec.stepEntry (ofRows A))^[k] (ofRows A)) i j := by
   induction k generalizing i j with
@@ -293,7 +300,7 @@ theorem detRows_rowsOf_denote {d : ℕ} (A : DeterminantAlgorithm.Table d) :
 
 /-! ### Size bounds -/
 
-lemma natAbs_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) :
+private lemma natAbs_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) :
     l.sum.natAbs ≤ l.length * C := by
   induction l with
   | nil => simp
@@ -305,7 +312,7 @@ lemma natAbs_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) :
       _ = (l.length + 1) * C := by ring
 
 /-- Every prefix sum of a list is bounded by its length times a bound on its entries. -/
-lemma natAbs_take_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) (m : ℕ) :
+private lemma natAbs_take_sum_le {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x.natAbs ≤ C) (m : ℕ) :
     (l.take m).sum.natAbs ≤ l.length * C :=
   (natAbs_sum_le fun x hx => h x (List.mem_of_mem_take hx)).trans
     (Nat.mul_le_mul_right _ (List.length_take_le' _ _))
@@ -338,12 +345,12 @@ lemma exists_rowEntry_eq {rows : List (List ℤ)} {row : List ℤ} {z : ℤ} (hr
   obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hz
   exact ⟨i, j, by simp [rowEntry, List.getD_eq_getElem?_getD, hi, hj]⟩
 
-lemma length_traceTerms_le (A F : List (List ℤ)) (i : ℕ) :
+private lemma length_traceTerms_le (A F : List (List ℤ)) (i : ℕ) :
     (traceTerms A F i).length ≤ A.length := by
   simp only [traceTerms, List.length_map, List.length_drop, List.length_range]
   omega
 
-lemma length_productTerms_le (A F : List (List ℤ)) (i j : ℕ) :
+private lemma length_productTerms_le (A F : List (List ℤ)) (i j : ℕ) :
     (productTerms A F i j).length ≤ A.length := by
   simp only [productTerms, List.length_map, List.length_drop, List.length_range]
   omega
@@ -406,7 +413,7 @@ private lemma trace_mul_le (hA : ∀ i j, (rowEntry A i j).natAbs < 2 ^ b)
     (hA i j).le
 
 /-- The trace product computed in one stage obeys the next stage's bound. -/
-theorem natAbs_traceTerms_sum_mul_lt (hA : ∀ i j, (rowEntry A i j).natAbs < 2 ^ b)
+private theorem natAbs_traceTerms_sum_mul_lt (hA : ∀ i j, (rowEntry A i j).natAbs < 2 ^ b)
     (hF : ∀ i j, (rowEntry F i j).natAbs < 2 ^ e) (i j : ℕ) :
     ((traceTerms A F i).sum * rowEntry A i j).natAbs < 2 ^ (e + (1 + A.length + b)) :=
   ((trace_mul_le hA hF i j).trans_lt (length_mul_lt A b e)).trans_le (half_le_bound A b e)
@@ -462,9 +469,12 @@ theorem natAbs_lt_of_mem_stagesRows {A : List (List ℤ)} {b : ℕ}
 
 /-! ### Bounds in bit length -/
 
+/-- An integer `z` has sign-magnitude bit length `intBits z ≤ e + 1` if and only if
+`z.natAbs < 2 ^ e`. -/
 lemma intBits_le_iff (z : ℤ) (e : ℕ) : intBits z ≤ e + 1 ↔ z.natAbs < 2 ^ e := by
   rw [intBits, Nat.add_le_add_iff_right, Nat.size_le]
 
+/-- Every integer has sign-magnitude bit length at least `1`. -/
 lemma one_le_intBits (z : ℤ) : 1 ≤ intBits z :=
   Nat.le_add_left 1 _
 
@@ -503,25 +513,29 @@ theorem intBits_step_le {A F : List (List ℤ)} {b e : ℕ}
 
 open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
 
+/-- Tabulating a `d × d` list of rows produces `d` rows. -/
 @[simp] lemma length_tabulateRows (d : ℕ) (g : ℕ → ℕ → ℤ) :
     (tabulateRows d g).length = d := by
   simp [tabulateRows]
 
+/-- Every row in `tabulateRows d g` has length `d`. -/
 lemma length_of_mem_tabulateRows {d : ℕ} {g : ℕ → ℕ → ℤ} {row : List ℤ}
     (hrow : row ∈ tabulateRows d g) : row.length = d := by
   obtain ⟨_, -, rfl⟩ := List.mem_map.mp hrow; simp
 
+/-- Every stage table `stagesRows A k` has `A.length` rows. -/
 @[simp] lemma length_stagesRows (A : List (List ℤ)) (k : ℕ) :
     (stagesRows A k).length = A.length := by
   cases k <;> simp [stagesRows_zero, stagesRows_succ, squareRows, stepRows, length_tabulateRows]
 
+/-- Every row in `stagesRows A k` has length `A.length`. -/
 lemma length_of_mem_stagesRows {A : List (List ℤ)} {k : ℕ} {row : List ℤ}
     (hrow : row ∈ stagesRows A k) : row.length = A.length := by
   cases k with
   | zero => exact length_of_mem_tabulateRows hrow
   | succ k => rw [stagesRows_succ] at hrow; exact length_of_mem_tabulateRows hrow
 
-lemma intBits_le_length_encList {A : List (List ℤ)} {row : List ℤ} (hrow : row ∈ A)
+private lemma intBits_le_length_encList {A : List (List ℤ)} {row : List ℤ} (hrow : row ∈ A)
     {z : ℤ} (hz : z ∈ row) : intBits z ≤ (encList (encList encIntBin) A).length + 1 := by
   rw [intBits_eq_length_encIntBin]
   exact ((length_le_encList_of_mem encIntBin hz).trans
@@ -678,7 +692,7 @@ theorem computableInPolyTime_stagesRows {A : α → List (List ℤ)} {k : α →
     (polyBounded_stageTableBound hA.polyBounded_length hk.polyBounded)
     fun x _ hi => length_encList_stagesRows_le (A x) hi)
 
-lemma detRows_eq_ite (A : List (List ℤ)) :
+private lemma detRows_eq_ite (A : List (List ℤ)) :
     detRows A =
       if A.isEmpty then 1
       else (-1) ^ (A.length - 1) * rowEntry (stagesRows A (A.length - 1)) 0 0 := by

@@ -142,7 +142,7 @@ theorem Valid.swap {S : State n} (hS : S.Valid f) {x Q : ℕ} {c : Bool} {T : Fi
 
 /-- Along an affine family on which the pair `(x, y)` is tame, the product
 `(u x + α) (u y + β)` is affine. -/
-theorem isAffine_mul_of_pairTame {k : ℕ} {τ : BitString k → ℕ → Bool} (hτ : IsAffine τ)
+private theorem isAffine_mul_of_pairTame {k : ℕ} {τ : BitString k → ℕ → Bool} (hτ : IsAffine τ)
     {x y : ℕ} (ht : PairTame τ (x, y)) (α β : Bool) :
     IsAffine fun u => (τ u x + α) * (τ u y + β) := by
   intro u v w
@@ -234,7 +234,7 @@ theorem pair_mem (hS : S.Valid f) : ∀ pr ∈ (S.quad x y z G D α β γ c).pai
     exact ⟨Finset.mem_insert_of_mem (Finset.mem_erase.2 ⟨hz1, h1⟩),
       Finset.mem_insert_of_mem (Finset.mem_erase.2 ⟨hz2, h2⟩), h12⟩
 
-theorem pairs_disjoint (hS : S.Valid f) : ∀ pr ∈ (S.quad x y z G D α β γ c).pairs,
+private theorem pairs_disjoint (hS : S.Valid f) : ∀ pr ∈ (S.quad x y z G D α β γ c).pairs,
     ∀ pr' ∈ (S.quad x y z G D α β γ c).pairs, pr ≠ pr' →
       pr.1 ≠ pr'.1 ∧ pr.1 ≠ pr'.2 ∧ pr.2 ≠ pr'.1 ∧ pr.2 ≠ pr'.2 := by
   have hnew : ∀ pr ∈ S.pairs, x ≠ pr.1 ∧ x ≠ pr.2 ∧ y ≠ pr.1 ∧ y ≠ pr.2 := fun pr hpr =>
@@ -253,7 +253,7 @@ theorem pairs_disjoint (hS : S.Valid f) : ∀ pr ∈ (S.quad x y z G D α β γ 
 
 /-- Along an affine family on which the new pairs are tame, substituting `z` keeps it affine
 and every old pair tame: the new pair `(x, y)` makes the product `G` affine. -/
-theorem affine (hS : S.Valid f) {k : ℕ} {τ : BitString k → ℕ → Bool} (hτ : IsAffine τ)
+private theorem affine (hS : S.Valid f) {k : ℕ} {τ : BitString k → ℕ → Bool} (hτ : IsAffine τ)
     (htame : ∀ pr ∈ (S.quad x y z G D α β γ c).pairs, PairTame τ pr) :
     ∃ τ' : BitString k → ℕ → Bool, IsAffine τ' ∧ (∀ pr ∈ S.pairs, PairTame τ' pr) ∧
       ∀ u, ∀ j ∈ S.params, τ' u j = quadValue x y z G D α β γ c (τ u) j := by

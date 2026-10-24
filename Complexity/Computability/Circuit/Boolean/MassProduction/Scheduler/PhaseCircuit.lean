@@ -69,7 +69,7 @@ private theorem add_false (x : Bool) : x + false = x := by cases x <;> rfl
 private theorem add_true (x : Bool) : x + true = !x := by cases x <;> rfl
 
 /-- Stage 1: each candidate bit is an input bit or its negation. -/
-theorem synthesis_candidate (hin : inputs _ ⊆ src) :
+private theorem synthesis_candidate (hin : inputs _ ⊆ src) :
     Synthesis interpretation src
       (Set.range fun q : Fin r × Fin (arity p) × Fin s × Fin (ℓ * b) =>
         fun x => candidate hk bits scalar menu x q.1 q.2.1 q.2.2.1 q.2.2.2)
@@ -95,7 +95,7 @@ theorem synthesis_candidate (hin : inputs _ ⊆ src) :
       Nat.mul_assoc]
 
 /-- Stage 2: occupancy by one shared OR lookup among the accepted line points. -/
-theorem synthesis_occupied (hin : inputs _ ⊆ src)
+private theorem synthesis_occupied (hin : inputs _ ⊆ src)
     (hcand : (Set.range fun q : Fin r × Fin (arity p) × Fin s × Fin (ℓ * b) =>
       fun x => candidate hk bits scalar menu x q.1 q.2.1 q.2.2.1 q.2.2.2) ⊆ src) :
     Synthesis interpretation src
@@ -154,7 +154,7 @@ theorem synthesis_occupied (hin : inputs _ ⊆ src)
 
 /-- Stage 3: for each menu entry, duplicate flags among its candidates. Padding records carry a
 true tag bit, so they never repeat a candidate. -/
-theorem synthesis_duplicate
+private theorem synthesis_duplicate
     (hcand : (Set.range fun q : Fin r × Fin (arity p) × Fin s × Fin (ℓ * b) =>
       fun x => candidate hk bits scalar menu x q.1 q.2.1 q.2.2.1 q.2.2.2) ⊆ src) :
     Synthesis interpretation src
@@ -235,7 +235,7 @@ theorem synthesis_duplicate
     rfl
 
 /-- Stage 4: a request is clean when no candidate is occupied or a duplicate. -/
-theorem synthesis_clean
+private theorem synthesis_clean
     (hocc : (Set.range fun q : Fin r × Fin (arity p) × Fin s =>
       fun x => occupied hk bits scalar menu x q.1 q.2.1 q.2.2) ⊆ src)
     (hdup : (Set.range fun q : Fin r × Fin (arity p) × Fin s =>
@@ -259,7 +259,7 @@ theorem synthesis_clean
 
 /-- Stage 5: an entry succeeds when its sorted clean flags are true at position
 `⌈2 ^ p / 2⌉ - 1`. -/
-theorem synthesis_success
+private theorem synthesis_success
     (hclean : (Set.range fun q : Fin r × Fin (arity p) =>
       fun x => clean hk bits scalar menu x q.1 q.2) ⊆ src) :
     Synthesis interpretation src
@@ -300,7 +300,7 @@ theorem synthesis_success
   · simp only [sum_const, card_univ, Fintype.card_fin, smul_eq_mul]
 
 /-- Stage 6: the first successful entry, from shared prefix disjunctions. -/
-theorem synthesis_chosen
+private theorem synthesis_chosen
     (hsucc : (Set.range fun e : Fin r => fun x => success hk bits scalar menu x e) ⊆ src) :
     Synthesis interpretation src
       (Set.range fun e : Fin r => fun x => chosen hk bits scalar menu x e) (3 * r) := by
@@ -338,7 +338,7 @@ theorem synthesis_chosen
     lia
 
 /-- Stage 7: the clean flag of each request for the chosen entry. -/
-theorem synthesis_flag
+private theorem synthesis_flag
     (hchosen : (Set.range fun e : Fin r => fun x => chosen hk bits scalar menu x e) ⊆ src)
     (hclean : (Set.range fun q : Fin r × Fin (arity p) =>
       fun x => clean hk bits scalar menu x q.1 q.2) ⊆ src) :
@@ -358,7 +358,7 @@ theorem synthesis_flag
   · simp only [sum_const, card_univ, Fintype.card_fin, smul_eq_mul]
 
 /-- Stage 7: the candidate line of each request for the chosen entry. -/
-theorem synthesis_newLine
+private theorem synthesis_newLine
     (hchosen : (Set.range fun e : Fin r => fun x => chosen hk bits scalar menu x e) ⊆ src)
     (hcand : (Set.range fun q : Fin r × Fin (arity p) × Fin s × Fin (ℓ * b) =>
       fun x => candidate hk bits scalar menu x q.1 q.2.1 q.2.2.1 q.2.2.2) ⊆ src) :
@@ -381,7 +381,7 @@ theorem synthesis_newLine
       Nat.mul_assoc]
 
 /-- Stage 8: the enriched pending records, sorted with clean records first. -/
-theorem synthesis_sortedPending (hin : inputs _ ⊆ src)
+private theorem synthesis_sortedPending (hin : inputs _ ⊆ src)
     (hflag : (Set.range fun i : Fin (arity p) => fun x => flag hk bits scalar menu x i) ⊆ src)
     (hnew : (Set.range fun q : Fin (arity p) × Fin s × Fin (ℓ * b) =>
       fun x => newLine hk bits scalar menu x q.1 q.2.1 q.2.2) ⊆ src) :

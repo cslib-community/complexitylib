@@ -50,7 +50,7 @@ def Program.appendXor (p : Program Boolean.signature n g) (u v : Wire n g) :
     ⟨.not, ![Wire.gate (Fin.last (g + 1))]⟩).gate
     ⟨.and, ![Wire.gate (Fin.last g).castSucc.castSucc, Wire.gate (Fin.last (g + 2))]⟩
 
-theorem Program.trace_appendXor (p : Program Boolean.signature n g) (u v : Wire n g)
+private theorem Program.trace_appendXor (p : Program Boolean.signature n g) (u v : Wire n g)
     (x : BitString n) :
     (p.appendXor u v).trace Boolean.interpretation x (.gate (Fin.last (g + 3))) =
       (p.trace Boolean.interpretation x u ^^ p.trace Boolean.interpretation x v) := by
@@ -78,7 +78,7 @@ def parityProgram : (k : ℕ) → k < n → Program signature n (4 * k) × Wire 
     let pw := parityProgram k (by omega)
     (pw.1.appendXor pw.2 (.input ⟨k + 1, hk⟩), .gate (Fin.last _))
 
-theorem trace_parityProgram (k : ℕ) (hk : k < n) (x : BitString n) :
+private theorem trace_parityProgram (k : ℕ) (hk : k < n) (x : BitString n) :
     (parityProgram k hk).1.trace interpretation x (parityProgram k hk).2 =
       parityOn (Iic ⟨k, hk⟩) x := by
   induction k with
@@ -96,7 +96,7 @@ theorem trace_parityProgram (k : ℕ) (hk : k < n) (x : BitString n) :
     rw [this, parityOn_insert (by simp [Fin.le_def]), ← ih (by omega), Bool.xor_comm]
     exact Program.trace_appendXor _ _ _ x
 
-theorem cost_parityProgram (k : ℕ) (hk : k < n) :
+private theorem cost_parityProgram (k : ℕ) (hk : k < n) :
     (parityProgram k hk).1.cost binaryCost = 3 * k := by
   induction k with
   | zero => rfl

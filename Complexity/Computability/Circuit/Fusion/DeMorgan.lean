@@ -82,7 +82,7 @@ def railSelect (k : Fin (2 * n + 1)) : Fin (n + n + 1) :=
   else Fin.castAdd 1 (Fin.natAdd n ⟨(k.val - 1) / 2, by have := k.isLt; omega⟩)
 
 /-- The dual-rail inputs are a selection from the literals and the constant `true`. -/
-theorem railBitString_eq_append_literals (x : BitString n) (k : Fin (2 * n + 1)) :
+private theorem railBitString_eq_append_literals (x : BitString n) (k : Fin (2 * n + 1)) :
     railBitString x k =
       Fin.append (Boolean.AltFormula.literals x) (fun _ : Fin 1 => true) (railSelect k) := by
   have hlen : (List.ofFn x).length = n := List.length_ofFn
@@ -106,6 +106,8 @@ def literalsRailCircuit (n : ℕ) : Circuit signature (n + n) (2 * n + 1) :=
   (Circuit.wiring _ railSelect).comp
     ((Circuit.wiring _ id).append (const true : Formula _ (n + n)).toCircuit)
 
+/-- Evaluating `literalsRailCircuit n` on the literals of `x` yields the dual-rail inputs
+`railBitString x`. -/
 theorem eval_literalsRailCircuit (x : BitString n) :
     (literalsRailCircuit n).eval interpretation (Boolean.AltFormula.literals x) =
       railBitString x := by
@@ -118,6 +120,7 @@ theorem eval_literalsRailCircuit (x : BitString n) :
     Circuit.eval_wiring, railBitString_eq_append_literals]
   rfl
 
+/-- `literalsRailCircuit n` uses `0` conjunction gates. -/
 @[simp] theorem cost_literalsRailCircuit :
     (literalsRailCircuit n).program.cost andCost = 0 := by
   rw [literalsRailCircuit, Circuit.cost_program_comp, Circuit.cost_program_wiring,
@@ -134,7 +137,7 @@ variable {n : ℕ}
 
 open Boolean in
 /-- An unrestricted cover compiles to a monotone circuit computing `f` from its literals. -/
-theorem PairCover.computesFrom_toCircuit {f : BooleanFunction n}
+private theorem PairCover.computesFrom_toCircuit {f : BooleanFunction n}
     (c : PairCover {x | f x = true} (fun i => {x | AltFormula.literals x i = true})) :
     c.toCircuit.ComputesFrom Monotone.interpretation (fun x (_ : Fin 1) => f x)
       AltFormula.literals :=

@@ -25,7 +25,8 @@ sharing and output wiring. Costs count every gadget gate, including gates unused
 ## Main definitions
 
 * `Cslib.Circuits.Signature.withContext`: prepend ambient inputs to every operation's arguments.
-* `Cslib.Circuits.Circuit.withContext`: pass the same ambient inputs to every gate.
+* `Cslib.Circuits.Line.withContext`, `Cslib.Circuits.Circuit.withContext`: pass the same ambient
+  inputs to a gate line or to every gate in a circuit.
 * `Cslib.Circuits.Circuit.simulateWithContext`: replace each operation by a contextual gadget.
 
 ## Main results
@@ -62,7 +63,7 @@ def Circuit.withContext (c : Circuit σ n m) (q : ℕ) : Circuit (σ.withContext
   (c.comp (wiring σ (Fin.natAdd q))).mapLines (Line.withContext q)
 
 /-- Adding context does not add gates or change their costs. -/
-theorem Circuit.cost_program_withContext (c : Circuit σ n m) (q : ℕ) (cost : σ.Op → ℕ) :
+private theorem Circuit.cost_program_withContext (c : Circuit σ n m) (q : ℕ) (cost : σ.Op → ℕ) :
     (c.withContext q).program.cost cost = c.program.cost cost := by
   change ((c.comp (wiring σ (Fin.natAdd q))).program.mapLines
     (Line.withContext q)).cost cost = _

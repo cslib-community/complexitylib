@@ -59,15 +59,17 @@ noncomputable def degreeCoefficient (d : ℕ) : ℝ :=
   3 * d / (2 * d - 3) * vertexCoefficient d
 
 /-- The limiting adjacent correlation `2 √(d - 1) / d` is less than one for `d ≥ 3`. -/
-theorem vertexCorrelation_lt_one {d : ℕ} (hd : 3 ≤ d) : vertexCorrelation d < 1 := by
+private theorem vertexCorrelation_lt_one {d : ℕ} (hd : 3 ≤ d) : vertexCorrelation d < 1 := by
   have hD : (3 : ℝ) ≤ d := by exact_mod_cast hd
   have hs : √((d : ℝ) - 1) ^ 2 = d - 1 := sq_sqrt (by linarith)
   rw [vertexCorrelation, div_lt_one (by linarith)]
   nlinarith [sqrt_nonneg ((d : ℝ) - 1), sq_pos_of_pos (show (0 : ℝ) < d - 2 by linarith)]
 
+/-- The limiting crossing probability `vertexCoefficient d` is positive for `d ≥ 3`. -/
 theorem vertexCoefficient_pos {d : ℕ} (hd : 3 ≤ d) : 0 < vertexCoefficient d :=
   div_pos (arccos_pos.mpr (vertexCorrelation_lt_one hd)) pi_pos
 
+/-- The layout coefficient `degreeCoefficient d` is positive for `d ≥ 3`. -/
 theorem degreeCoefficient_pos {d : ℕ} (hd : 3 ≤ d) : 0 < degreeCoefficient d := by
   have hD : (3 : ℝ) ≤ d := by exact_mod_cast hd
   exact mul_pos (div_pos (by linarith) (by linarith)) (vertexCoefficient_pos hd)

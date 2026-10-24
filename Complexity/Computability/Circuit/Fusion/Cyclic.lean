@@ -25,9 +25,14 @@ The bounds support any admissible class of semifilters and transfer to minimum c
 from arbitrary supplied source functions. This is a semantic construction over sets, with no
 execution or convergence-time claim. A converse construction from covers is not asserted here.
 
+## Main definitions
+
+* `Cslib.Circuits.Fusion.cyclicAtoms`: the semantic atoms of a cyclic circuit's equations at a
+  state.
+* `Cslib.Circuits.Fusion.PairCover.ofCyclicCircuit`: a cover from a least-fixed-point construction.
+
 ## Main results
 
-* `Cslib.Circuits.Fusion.PairCover.ofCyclicCircuit`: a cover from a least-fixed-point construction.
 * `Cslib.Circuits.Fusion.PairCover.length_ofCyclicCircuit`: exact preservation of AND cost.
 * `Cslib.Circuits.Fusion.pairCoverComplexity_le_cyclic_ecomplexityFrom`: the minimum-cost bound.
 
@@ -112,7 +117,7 @@ theorem pairCover_lowerBound_cyclic {target : Set U} {input : Fin n → Set U}
     hbound (PairCover.ofCyclicCircuit c input o hc admissible)
 
 /-- The minimum pair-cover length bounds the AND cost of any cyclic construction. -/
-theorem pairCoverComplexity_le_cyclic_cost {target : Set U}
+private theorem pairCoverComplexity_le_cyclic_cost {target : Set U}
     (c : CyclicCircuit Monotone.signature n m) (input : Fin n → Set U) (o : Fin m)
     (hc : c.eval (Monotone.setInterpretation U) Monotone.setInterpretation_mono input o = target)
     (admissible : Semifilter ↥(targetᶜ) → Prop := fun _ => True) :

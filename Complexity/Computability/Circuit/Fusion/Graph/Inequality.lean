@@ -21,7 +21,8 @@ length `k` injectively labels the vertices by `k` bits. For `n`-bit vertices thi
 ## Main definitions
 
 * `Cslib.Circuits.Fusion.Graph.inequality`: the bipartite graph of unequal vertex labels.
-* `Cslib.Circuits.Fusion.Graph.diagonal`: a diagonal point of its complement.
+* `Cslib.Circuits.Fusion.Graph.diagonal`, `Cslib.Circuits.Fusion.Graph.inequalityEdge`: a diagonal
+  point of the complement and a canonical edge of the inequality graph.
 
 ## Main results
 
@@ -119,7 +120,7 @@ theorem inequality_signature_injective
   tauto
 
 /-- A canonical cover needs enough bit signatures to label all vertices. -/
-theorem card_le_two_pow_length_inequality
+private theorem card_le_two_pow_length_inequality
     (c : PairCover (inequality V) sources (canonicalClass (inequality V))) :
     Fintype.card V ≤ 2 ^ c.pairs.length := by
   simpa using Fintype.card_le_of_injective _ (inequality_signature_injective c)

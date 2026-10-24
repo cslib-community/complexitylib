@@ -229,12 +229,12 @@ def subst (v : ℕ) (ℓ : Lit) : SemiCircuit where
 
 variable {C}
 
-theorem eqnsHold_subst {v : ℕ} {ℓ : Lit} {val : ℕ → Bool} (h : val v = ℓ.eval val) :
+private theorem eqnsHold_subst {v : ℕ} {ℓ : Lit} {val : ℕ → Bool} (h : val v = ℓ.eval val) :
     (C.subst v ℓ).EqnsHold val ↔ C.EqnsHold val := by
   unfold EqnsHold
   simp only [subst, Equation.holds_subst h]
 
-theorem gatesHold_subst {v : ℕ} {ℓ : Lit} {val : ℕ → Bool} (h : val v = ℓ.eval val) :
+private theorem gatesHold_subst {v : ℕ} {ℓ : Lit} {val : ℕ → Bool} (h : val v = ℓ.eval val) :
     (C.subst v ℓ).GatesHold val ↔ C.GatesHold val := by
   unfold GatesHold
   simp only [subst, Gate.eval_subst h]
@@ -274,14 +274,15 @@ theorem size_subst (v : ℕ) (ℓ : Lit) : (C.subst v ℓ).size = C.size := rfl
 
 /-! ### Solutions of the affine system -/
 
-theorem Equation.holds_add_add {E : Equation} {val val' val'' : ℕ → Bool} (h : E.Holds val)
+private theorem Equation.holds_add_add {E : Equation} {val val' val'' : ℕ → Bool} (h : E.Holds val)
     (h' : E.Holds val') (h'' : E.Holds val'') : E.Holds (val + val' + val'') := by
   unfold Equation.Holds at *
   simp only [Pi.add_apply, Finset.sum_add_distrib, h, h', h'']
   generalize E.rhs = r
   revert r; decide
 
-theorem eqnsHold_add_add {val val' val'' : ℕ → Bool} (h : C.EqnsHold val) (h' : C.EqnsHold val')
+private theorem eqnsHold_add_add {val val' val'' : ℕ → Bool} (h : C.EqnsHold val)
+    (h' : C.EqnsHold val')
     (h'' : C.EqnsHold val'') : C.EqnsHold (val + val' + val'') :=
   fun e he => Equation.holds_add_add (h e he) (h' e he) (h'' e he)
 
@@ -358,7 +359,7 @@ theorem AffineIn.unique (hC : C.WellFormed) {t : ℕ} {c c' : Bool} {T T' : Fins
 
 /-- A function of bits that depends only on the coordinates in `M` and preserves sums of three
 points is affine: a constant plus the sum of the coordinates in some `T ⊆ M`. -/
-theorem exists_affine_of_add_add {M : Finset ℕ} {g : (ℕ → Bool) → Bool}
+private theorem exists_affine_of_add_add {M : Finset ℕ} {g : (ℕ → Bool) → Bool}
     (hcongr : ∀ u u' : ℕ → Bool, (∀ j ∈ M, u j = u' j) → g u = g u')
     (hadd : ∀ u u' u'' : ℕ → Bool, g (u + u' + u'') = g u + g u' + g u'') :
     ∃ T ⊆ M, ∀ u, g u = g 0 + ∑ j ∈ T, u j := by

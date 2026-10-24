@@ -112,7 +112,7 @@ theorem depth_substituteCircuit_le {n N : ℕ} (ρ : Fin N → Fin n ⊕ Bool) :
       (Formula.depth_toCircuit_le _).trans (by simp [Formula.const])
 
 /-- A substitution costs at most two gates, one for each constant. -/
-theorem complexity_substitute_le_two (ρ : Fin N → Fin n ⊕ Bool) :
+private theorem complexity_substitute_le_two (ρ : Fin N → Fin n ⊕ Bool) :
     complexity interpretation (substitute ρ) ≤ 2 := by
   simpa only [size_substituteCircuit] using
     complexity_le_of_computes (substituteCircuit ρ) (eval_substituteCircuit ρ)

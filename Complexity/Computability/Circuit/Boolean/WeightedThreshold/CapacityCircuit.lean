@@ -206,7 +206,7 @@ noncomputable def evalFrom (p : Program signature n g) (fixed : Finset (Fin g))
         gateWeight p gate prior * (evalFrom p fixed η z prior).toNat else 0)
 termination_by gate
 
-theorem evalFrom_eq (p : Program signature n g) (fixed : Finset (Fin g)) (η : Fin g → Bool)
+private theorem evalFrom_eq (p : Program signature n g) (fixed : Finset (Fin g)) (η : Fin g → Bool)
     (z : Fin g → ℝ) (gate : Fin g) :
     evalFrom p fixed η z gate = if gate ∈ fixed then η gate else
       decide ((p.lines gate).op.threshold ≤ z gate +
@@ -505,7 +505,7 @@ def singleRun (p : Program signature n g) (w : Fin n → ℝ)
   along := along
 
 /-- The slope of a gate of run `i` along the direction of the run, and zero elsewhere. -/
-noncomputable def DirectionRuns.slope {p : Program signature n g} {B : ℕ}
+private noncomputable def DirectionRuns.slope {p : Program signature n g} {B : ℕ}
     (R : DirectionRuns p B) (i : ℕ) (gate : Fin g) : ℝ :=
   open scoped Classical in
   if R.run gate = i ∧ gate ∈ inputGates p then (R.along gate).choose else 0
@@ -577,7 +577,7 @@ noncomputable def DirectionRuns.toBlockDecomposition (p : Program signature n g)
     funext gate
     simp [R.run_lt gate]
 
-theorem DirectionRuns.cost_toBlockDecomposition (p : Program signature n g)
+private theorem DirectionRuns.cost_toBlockDecomposition (p : Program signature n g)
     (readout : (Fin g → Bool) → Bool) {B : ℕ} (R : DirectionRuns p B) :
     (R.toBlockDecomposition p readout).cost =
       ∏ i ∈ Finset.range B, (BlockKind.oneDim (2 ^ R.size i - 1)).cost :=
@@ -593,7 +593,7 @@ private theorem two_pow_succ_le (r : ℕ) : 2 ^ (r + 1) ≤ 4 ^ r + 1 := by
     rw [pow_succ 2 (r + 1), pow_succ 4 r]
     omega
 
-theorem cost_oneDim_le_four_pow (r : ℕ) : (BlockKind.oneDim (2 ^ r - 1)).cost ≤ 4 ^ r := by
+private theorem cost_oneDim_le_four_pow (r : ℕ) : (BlockKind.oneDim (2 ^ r - 1)).cost ≤ 4 ^ r := by
   rcases r with _ | r
   · simp [BlockKind.cost]
   · have h1 : 1 < 2 ^ (r + 1) := Nat.one_lt_two_pow (by omega)
@@ -603,7 +603,8 @@ theorem cost_oneDim_le_four_pow (r : ℕ) : (BlockKind.oneDim (2 ^ r - 1)).cost 
     rw [pow_succ 4 r]
     omega
 
-theorem cost_oneDim_le_four_mul (r : ℕ) : (BlockKind.oneDim (2 ^ r - 1)).cost ≤ 4 * 2 ^ r := by
+private theorem cost_oneDim_le_four_mul (r : ℕ) :
+    (BlockKind.oneDim (2 ^ r - 1)).cost ≤ 4 * 2 ^ r := by
   have := Nat.one_le_two_pow (n := r)
   simp only [BlockKind.cost]
   split_ifs <;> omega
@@ -623,7 +624,7 @@ theorem DirectionRuns.prod_cost_le_four_pow {p : Program signature n g} {B : ℕ
         Finset.prod_le_prod fun i _ => cost_oneDim_le_four_pow _
     _ = 4 ^ (inputGates p).card := by rw [Finset.prod_pow_eq_pow_sum, R.sum_size]
 
-theorem DirectionRuns.prod_cost_le_four_pow_mul {p : Program signature n g} {B : ℕ}
+private theorem DirectionRuns.prod_cost_le_four_pow_mul {p : Program signature n g} {B : ℕ}
     (R : DirectionRuns p B) :
     ∏ i ∈ Finset.range B, (BlockKind.oneDim (2 ^ R.size i - 1)).cost ≤
       4 ^ B * 2 ^ (inputGates p).card := by
@@ -649,7 +650,7 @@ private theorem lt_of_two_pow_lt_mul {n k K X e : ℕ} (hK : K ≤ 2 ^ k) (hX : 
 consecutive runs along single directions, with `rᵢ` input-reading gates in run `i`. Then
 `2 ^ n < 4 * K ^ 2 * ∏ i, cᵢ`, where `cᵢ = 4 * (2 ^ rᵢ - 1)` if `rᵢ ≥ 1` and `cᵢ = 1`
 otherwise. -/
-theorem two_pow_lt_of_directionRuns (p : Program signature n g)
+private theorem two_pow_lt_of_directionRuns (p : Program signature n g)
     (readout : (Fin g → Bool) → Bool) {B : ℕ} (R : DirectionRuns p B)
     {f : Cslib.BooleanFunction n} {K : ℕ}
     (hreadout : ∀ x, readout (p.eval interpretation x) = f x)

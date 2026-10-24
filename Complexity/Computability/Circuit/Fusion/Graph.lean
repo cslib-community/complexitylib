@@ -66,7 +66,7 @@ def literals {n : ℕ} (x : (Fin n → Bool) × (Fin n → Bool)) : Fin ((n + n)
   Fin.addCases (Fin.addCases x.1 x.2) (Fin.addCases (fun i => !x.1 i) (fun i => !x.2 i))
 
 /-- Every literal containing a pair contains its row or its column. -/
-theorem literals_sourceRefinement {n : ℕ} (x : (Fin n → Bool) × (Fin n → Bool))
+private theorem literals_sourceRefinement {n : ℕ} (x : (Fin n → Bool) × (Fin n → Bool))
     (i : Fin ((n + n) + (n + n))) (hi : literals x i = true) :
     ∃ j, x ∈ sources j ∧ sources j ⊆ {y | literals y i = true} := by
   let r := Fin.castAdd (Fintype.card (Fin n → Bool)) (Fintype.equivFin _ x.1)

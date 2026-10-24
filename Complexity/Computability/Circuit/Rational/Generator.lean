@@ -22,8 +22,17 @@ The parameters are polynomial in the number of variables and the node-count boun
 
 ## Main definitions
 
-* `Cslib.Circuits.Rational.Generator.output`: the list emitted for given parameters.
-* `Cslib.Circuits.Rational.Parameters.truncation`, `Cslib.Circuits.Rational.Parameters.exponent`,
+* `Cslib.Circuits.Rational.Generator.matrixDimension`,
+  `Cslib.Circuits.Rational.Generator.regular`, `Cslib.Circuits.Rational.Generator.grid`,
+  `Cslib.Circuits.Rational.Generator.specializedLift`,
+  `Cslib.Circuits.Rational.Generator.rationalLift`,
+  `Cslib.Circuits.Rational.Generator.tupleAt`, `Cslib.Circuits.Rational.Generator.atPoint`,
+  `Cslib.Circuits.Rational.Generator.output`: the regular representation, specialization grid,
+  normalized tuple at a grid point, and list emitted for given parameters.
+* `Cslib.Circuits.Rational.Parameters.w`, `Cslib.Circuits.Rational.Parameters.rankBound`,
+  `Cslib.Circuits.Rational.Parameters.delta`, `Cslib.Circuits.Rational.Parameters.exponent`,
+  `Cslib.Circuits.Rational.Parameters.ambientDimension`,
+  `Cslib.Circuits.Rational.Parameters.truncation`,
   `Cslib.Circuits.Rational.Parameters.gridSize`: the parameters chosen for `n` variables and `s`
   nodes.
 * `Cslib.Circuits.Rational.Generator.list`: the list with these parameters.
@@ -71,13 +80,14 @@ def grid (H : ℕ) : List (Fin 3 → Fin H) :=
   (List.finRange H).flatMap fun t => (List.finRange H).flatMap fun p =>
     (List.finRange H).map fun r => ![t, p, r]
 
+/-- Every point `x : Fin 3 → Fin H` belongs to `grid H`. -/
 lemma mem_grid (H : ℕ) (x : Fin 3 → Fin H) : x ∈ grid H := by
   simp only [grid, List.mem_flatMap, List.mem_map]
   refine ⟨x 0, by simp, x 1, by simp, x 2, by simp, ?_⟩
   funext i
   fin_cases i <;> rfl
 
-lemma grid_length (H : ℕ) : (grid H).length = H ^ 3 := by
+private lemma grid_length (H : ℕ) : (grid H).length = H ^ 3 := by
   simp [grid, List.length_flatMap, pow_succ, Nat.mul_assoc]
 
 /-- The polynomial lift is evaluated over the exact rational quotient. -/
@@ -105,12 +115,12 @@ def output (n N e H : ℕ) : Output n where
   dimension_pos := Nat.mul_pos (CyclotomicRing.dimension_pos e) (CyclotomicRing.degree_pos e)
   tuples := (grid H).filterMap (fun x => atPoint n N e (fun i => (x i).val + 1))
 
-lemma length_output_le (n N e H : ℕ) : (output n N e H).tuples.length ≤ H ^ 3 :=
+private lemma length_output_le (n N e H : ℕ) : (output n N e H).tuples.length ≤ H ^ 3 :=
   (List.length_filterMap_le _ _).trans_eq (grid_length H)
 
 /-- The actual emitted rational normalization is the homomorphic image of the
 quotient normalization. Consequently every original inverse occurrence is kept. -/
-lemma transfer {n N e : ℕ} (x : Fin 3 → ℕ) (f : Formula n)
+private lemma transfer {n N e : ℕ} (x : Fin 3 → ℕ) (f : Formula n)
     (z : (Matrix (ZMod (CyclotomicRing.dimension e)) (ZMod (CyclotomicRing.dimension e))
       (CyclotomicRing.R e))ˣ)
     (hz : (z : Matrix _ _ _) = specializedLift n N e x 0)
@@ -134,7 +144,7 @@ lemma transfer {n N e : ℕ} (x : Fin 3 → ℕ) (f : Formula n)
       (specializedLift n N e x i.succ)) (regular e v)
   simpa only [map_mul, hzinv, rationalLift] using hh
 
-lemma emitted {n N e H : ℕ} (x : Fin 3 → Fin H)
+private lemma emitted {n N e H : ℕ} (x : Fin 3 → Fin H)
     (hz : IsUnit (specializedLift n N e (fun i => (x i).val + 1) 0)) :
     tupleAt n N e (fun i => (x i).val + 1) ∈ (output n N e H).tuples := by
   apply List.mem_filterMap.mpr
@@ -152,18 +162,18 @@ open scoped BigOperators Rational.PolynomialHahn
 noncomputable section
 
 /-- The Hahn field containing the algebraic witnesses for the generator. -/
-abbrev WitnessField := HahnSeries QuantumLift.Exponents ℂ
+private abbrev WitnessField := HahnSeries QuantumLift.Exponents ℂ
 
 /-- Embed the cyclotomic field into the Hahn witness field. -/
-def witnessEmbedding (e : ℕ) : CyclotomicRing.R e →+* WitnessField :=
+private def witnessEmbedding (e : ℕ) : CyclotomicRing.R e →+* WitnessField :=
   (HahnSeries.C : ℂ →+* WitnessField).comp (CyclotomicRing.intoComplex e).toRingHom
 
 /-- Reindex the formula's pencil by its explicit finite dimension. -/
-def finPencil {n : ℕ} (f : Formula n) :
+private def finPencil {n : ℕ} (f : Formula n) :
     Matrix (Fin (Fintype.card f.Index)) (Fin (Fintype.card f.Index)) (Affine.Form n) :=
   (Formula.pencil f).reindex (Fintype.equivFin f.Index) (Fintype.equivFin f.Index)
 
-lemma finPencil_unit {n : ℕ} {R : Type*} [Ring R] (c : ℚ →+* R)
+private lemma finPencil_unit {n : ℕ} {R : Type*} [Ring R] (c : ℚ →+* R)
     (X : Fin n → R) (f : Formula n) :
     IsUnit ((finPencil f).map (Affine.eval c X)) ↔ IsUnit (Formula.realized c X f) := by
   let E := Matrix.reindexRingEquiv R (Fintype.equivFin f.Index)
@@ -173,16 +183,17 @@ lemma finPencil_unit {n : ℕ} {R : Type*} [Ring R] (c : ℚ →+* R)
   · exact fun h => h.map E
 
 /-- A one-by-one constant pencil used to enforce normalization. -/
-def onePencil (n : ℕ) : Matrix (Fin 1) (Fin 1) (Affine.Form n) := fun _ _ => Affine.constant 1
+private def onePencil (n : ℕ) :
+    Matrix (Fin 1) (Fin 1) (Affine.Form n) := fun _ _ => Affine.constant 1
 
 /-- Determinant polynomials whose simultaneous nonvanishing certifies a hit. -/
-def conditions {n : ℕ} (N e : ℕ) (f : Formula n) :
+private def conditions {n : ℕ} (N e : ℕ) (f : Formula n) :
     List (MvPolynomial (Fin 3) (CyclotomicRing.R e)) :=
   PencilCertificates.determinant (CyclotomicRing.character e) N (onePencil n) ::
     f.certificates.map fun h =>
       PencilCertificates.determinant (CyclotomicRing.character e) N (finPencil h)
 
-lemma condition_nonzero {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n) (hf : f.nodeCount ≤ s)
+private lemma condition_nonzero {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n) (hf : f.nodeCount ≤ s)
     (hnz : Nonzero f)
     (hN : 1 ≤ N) (hMN : CyclotomicRing.dimension e = N + 2 * (n + 1) ^ 3 * (2 * s + 1))
     (hM : (2 * s + 1) * (2 * (n + 1) ^ 3 * (2 * s + 1)) < CyclotomicRing.dimension e) :
@@ -217,7 +228,7 @@ lemma condition_nonzero {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n) (hf : f.n
       (2 * s + 1) d hb.1 hb.2 hN hMN hM hd Y
     exact (finPencil_unit _ _ h).mpr (hcert h hh)
 
-lemma condition_degree {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n) (hf : f.nodeCount ≤ s) :
+private lemma condition_degree {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n) (hf : f.nodeCount ≤ s) :
     (conditions N e f).length ≤ s + 2 ∧
     ∀ p ∈ conditions N e f, p.totalDegree ≤ 3 * (2 * s + 1) * (CyclotomicRing.dimension e) ^ 2 := by
   refine ⟨?_, ?_⟩
@@ -231,7 +242,7 @@ lemma condition_degree {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n) (hf : f.no
         gcongr
         exact ((Formula.certificate_bounds f s hs hf).2 h hh).2)
 
-lemma integer_grid {K : Type*} [Field K] [CharZero K] (P : List (MvPolynomial (Fin 3) K))
+private lemma integer_grid {K : Type*} [Field K] [CharZero K] (P : List (MvPolynomial (Fin 3) K))
     (hP : ∀ p ∈ P, p ≠ 0) (d H : ℕ) (hd : ∀ p ∈ P, p.totalDegree ≤ d)
     (hH : P.length * d < H) :
     ∃ x : Fin 3 → Fin H, ∀ p ∈ P, eval (fun i => (((x i).val + 1 : ℕ) : K)) p ≠ 0 := by
@@ -252,7 +263,7 @@ lemma integer_grid {K : Type*} [Field K] [CharZero K] (P : List (MvPolynomial (F
   have heq : (fun i => (((y i).val + 1 : ℕ) : K)) = x := funext hy
   simpa only [heq] using hxp p hp
 
-lemma specialized_unit {K : Type*} [Field K] [CharZero K] {n q M N : ℕ} [NeZero M]
+private lemma specialized_unit {K : Type*} [Field K] [CharZero K] {n q M N : ℕ} [NeZero M]
     (χ : AddChar (ZMod M) K) (L : Matrix (Fin q) (Fin q) (Affine.Form n)) (x : Fin 3 → K)
     (hx : eval x (PencilCertificates.determinant χ N L) ≠ 0) :
     IsUnit (L.map (Affine.homogeneous (algebraMap ℚ _) (fun i =>
@@ -266,7 +277,7 @@ lemma specialized_unit {K : Type*} [Field K] [CharZero K] {n q M N : ℕ} [NeZer
   rw [PencilCertificates.specialized] at hd
   simpa using hd.map (Matrix.compRingEquiv (Fin q) (ZMod M) K).symm
 
-lemma onePencil_unit {K : Type*} [Field K] [CharZero K] {n : ℕ}
+private lemma onePencil_unit {K : Type*} [Field K] [CharZero K] {n : ℕ}
     {ι : Type*} [Fintype ι] [DecidableEq ι] (rationalLift : Fin (n + 1) → Matrix ι ι K)
     (h : IsUnit ((onePencil n).map (Affine.homogeneous (algebraMap ℚ _) rationalLift))) : IsUnit
       (rationalLift 0) := by
@@ -330,25 +341,29 @@ def truncation (n s : ℕ) := ambientDimension n s-delta n s
 /-- Side length of the integer grid used for specialization. -/
 def gridSize (n s : ℕ) := 1 + 3 * (s + 2) * rankBound s * (ambientDimension n s) ^ 3
 
+/-- The rank-expansion threshold `rankBound s * delta n s` is positive. -/
 theorem threshold_pos (n s : ℕ) : 0 < rankBound s * delta n s := by
   simp only [rankBound, delta, w]
   positivity
 
-theorem threshold_lt (n s : ℕ) : rankBound s * delta n s < ambientDimension n s :=
+private theorem threshold_lt (n s : ℕ) : rankBound s * delta n s < ambientDimension n s :=
   Nat.lt_pow_succ_log_self (by omega) _
 
-theorem M_le (n s : ℕ) : ambientDimension n s ≤ 2 * (rankBound s * delta n s) := by
+private theorem M_le (n s : ℕ) : ambientDimension n s ≤ 2 * (rankBound s * delta n s) := by
   unfold ambientDimension
   rw [pow_succ]
   have h := Nat.pow_log_le_self 2 (threshold_pos n s).ne'
   unfold exponent
   omega
 
+/-- `ambientDimension n s` is at most any power of two strictly above
+`rankBound s * delta n s`. -/
 theorem M_minimal (n s k : ℕ) (hk : rankBound s * delta n s < 2 ^ k) :
     ambientDimension n s ≤ 2 ^ k := by
   apply Nat.pow_le_pow_right (by omega)
   exact Nat.succ_le_of_lt (Nat.log_lt_of_lt_pow (threshold_pos n s).ne' hk)
 
+/-- The truncation parameter `truncation n s` is at least `1`. -/
 theorem N_pos (n s : ℕ) : 1 ≤ truncation n s := by
   have hh := threshold_lt n s
   have hb : 1 ≤ rankBound s := by unfold rankBound; omega
@@ -356,12 +371,12 @@ theorem N_pos (n s : ℕ) : 1 ≤ truncation n s := by
   unfold truncation
   omega
 
-theorem M_eq (n s : ℕ) : ambientDimension n s = truncation n s + delta n s := by
+private theorem M_eq (n s : ℕ) : ambientDimension n s = truncation n s + delta n s := by
   have hh := N_pos n s
   unfold truncation at *
   omega
 
-theorem grid_large (n s : ℕ) :
+private theorem grid_large (n s : ℕ) :
     (s + 2) * (3 * rankBound s * (ambientDimension n s) ^ 2) < gridSize n s := by
   have hp : 1 ≤ ambientDimension n s := by
     apply Nat.one_le_iff_ne_zero.mpr
@@ -372,11 +387,11 @@ theorem grid_large (n s : ℕ) :
   unfold gridSize
   nlinarith [Nat.mul_le_mul_left (3 * (s + 2) * rankBound s) hpow]
 
-theorem w_bound (n s : ℕ) : w n ≤ n + s + 1 := by unfold w; omega
+private theorem w_bound (n s : ℕ) : w n ≤ n + s + 1 := by unfold w; omega
 
-theorem B_bound (n s : ℕ) : rankBound s ≤ 2 * (n + s + 1) := by unfold rankBound; omega
+private theorem B_bound (n s : ℕ) : rankBound s ≤ 2 * (n + s + 1) := by unfold rankBound; omega
 
-theorem delta_bound (n s : ℕ) : delta n s ≤ 4 * (n + s + 1) ^ 4 := by
+private theorem delta_bound (n s : ℕ) : delta n s ≤ 4 * (n + s + 1) ^ 4 := by
   calc delta n s ≤ 2 * (n + s + 1) ^ 3 * (2 * (n + s + 1)) := by
          unfold delta
          gcongr
@@ -384,6 +399,7 @@ theorem delta_bound (n s : ℕ) : delta n s ≤ 4 * (n + s + 1) ^ 4 := by
          · exact B_bound n s
        _ = _ := by ring
 
+/-- `ambientDimension n s` is at most `16 * (n + s + 1) ^ 5`. -/
 theorem polynomial_M (n s : ℕ) : ambientDimension n s ≤ 16 * (n + s + 1) ^ 5 := by
   calc ambientDimension n s ≤ 2 * (rankBound s * delta n s) := M_le n s
        _ ≤ 2 * ((2 * (n + s + 1)) * (4 * (n + s + 1) ^ 4)) := by
@@ -417,6 +433,7 @@ noncomputable section
 def list (n s : ℕ) : Output n :=
   output n (Parameters.truncation n s) (Parameters.exponent n s) (Parameters.gridSize n s)
 
+/-- When `1 ≤ s`, `list n s` hits all admissible nonzero formulas of node count at most `s`. -/
 theorem list_hits (n s : ℕ) (hs : 1 ≤ s) : Hits s (list n s) := by
   apply output_hits hs
   · exact Parameters.N_pos n s
@@ -424,6 +441,7 @@ theorem list_hits (n s : ℕ) (hs : 1 ≤ s) : Hits s (list n s) := by
   · exact Parameters.threshold_lt n s
   · exact Parameters.grid_large n s
 
+/-- The matrix dimension of `list n s` is at most `256 * (n + s + 1) ^ 10`. -/
 theorem list_dimension_bound (n s : ℕ) : (list n s).dimension ≤ 256 * (n + s + 1) ^ 10 := by
   have hd : CyclotomicRing.degree (Parameters.exponent n s) ≤ Parameters.ambientDimension n s := by
     unfold CyclotomicRing.degree Parameters.ambientDimension
@@ -433,6 +451,7 @@ theorem list_dimension_bound (n s : ℕ) : (list n s).dimension ≤ 256 * (n + s
              Nat.mul_le_mul (Parameters.polynomial_M n s) (hd.trans (Parameters.polynomial_M n s))
        _ = _ := by ring
 
+/-- The number of tuples in `list n s` is at most `49153 ^ 3 * (n + s + 1) ^ 51`. -/
 theorem list_length_bound (n s : ℕ) :
     (list n s).tuples.length ≤ 49153 ^ 3 * (n + s + 1) ^ 51 := by
   calc _ ≤ (Parameters.gridSize n s) ^ 3 := length_output_le ..

@@ -56,15 +56,19 @@ def setInterpretation (U : Type*) : Interpretation signature (Set U)
   | .and, args => args 0 ∩ args 1
   | .or, args => args 0 ∪ args 1
 
+/-- Evaluating `.const false` under `setInterpretation` gives the empty set. -/
 @[simp] theorem setInterpretation_false (U : Type*) (args : Fin 0 → Set U) :
     setInterpretation U (.const false) args = ∅ := rfl
 
+/-- Evaluating `.const true` under `setInterpretation` gives the full set `Set.univ`. -/
 @[simp] theorem setInterpretation_true (U : Type*) (args : Fin 0 → Set U) :
     setInterpretation U (.const true) args = Set.univ := rfl
 
+/-- Evaluating `.and` under `setInterpretation` intersects the two argument sets. -/
 @[simp] theorem setInterpretation_and {U : Type*} (args : Fin 2 → Set U) :
     setInterpretation U .and args = args 0 ∩ args 1 := rfl
 
+/-- Evaluating `.or` under `setInterpretation` takes the union of the two argument sets. -/
 @[simp] theorem setInterpretation_or {U : Type*} (args : Fin 2 → Set U) :
     setInterpretation U .or args = args 0 ∪ args 1 := rfl
 
@@ -89,6 +93,7 @@ noncomputable def membershipHomomorphism (x : U) :
       simp only [setInterpretation, interpretation, Function.comp_apply, Bool.and_eq_true,
         Bool.or_eq_true, ← Set.mem_iff_boolIndicator, Set.mem_inter_iff, Set.mem_union]
 
+/-- `membershipHomomorphism x` maps a set `s` to `s.boolIndicator x`. -/
 @[simp] theorem membershipHomomorphism_map (x : U) (s : Set U) :
     (membershipHomomorphism x).map s = s.boolIndicator x := rfl
 

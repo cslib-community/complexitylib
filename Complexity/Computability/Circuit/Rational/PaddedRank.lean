@@ -53,7 +53,7 @@ open scoped BigOperators
 noncomputable section
 variable {K : Type*} [Field K]
 
-lemma polynomialMap_single (M : ℕ) (b : Fin M) :
+private lemma polynomialMap_single (M : ℕ) (b : Fin M) :
     polynomialMap M (Pi.single b (1 : K)) = X ^ b.val := by
   ext j
   by_cases hj : j < M
@@ -64,14 +64,18 @@ lemma polynomialMap_single (M : ℕ) (b : Fin M) :
     have hb : b.val ≠ j := by omega
     simp [Ne.symm hb]
 
+/-- The inverse of `taylorCoordinates M a` is `taylorCoordinates M (-a)`. -/
 lemma taylorCoordinates_symm (M : ℕ) (a : K) :
     (taylorCoordinates M a).symm = taylorCoordinates M (-a) := by
   ext x i
   rfl
 
+/-- `(reverseCoordinates M).symm` reverses the index `j` to `j.rev`. -/
 lemma reverseCoordinates_symm_apply (M : ℕ) (x : Fin M → K) :
     (reverseCoordinates M).symm x = fun j => x j.rev := rfl
 
+/-- The `(i, j)` matrix entry of `(reverseTaylorCoordinates M a).symm` is the degree-`i`
+coefficient of `(X + C (-a)) ^ j.rev`. -/
 lemma reverseTaylor_symm_matrix (M : ℕ) (a : K) (i j : Fin M) :
     LinearMap.toMatrix' (reverseTaylorCoordinates M a).symm.toLinearMap i j =
       (((X + C (-a)) ^ j.rev.val : K[X]).coeff i.val) := by
@@ -104,11 +108,12 @@ def padded (M N : ℕ) (a : K) : Matrix (Fin M) (Fin M) K[X] :=
 /-- The original t indeterminate embeds into the fresh Laurent indeterminate. -/
 def embed : K[X] →+* F K := Polynomial.eval₂RingHom HahnSeries.C (HahnSeries.single 1 1)
 
-lemma embed_C (a : K) : embed (C a) = HahnSeries.C a := by simp [embed]
+private lemma embed_C (a : K) : embed (C a) = HahnSeries.C a := by simp [embed]
 
-lemma embed_X_pow (a : ℕ) : embed ((X : K[X]) ^ a) = HahnSeries.single (a : ℤ) 1 := by
+private lemma embed_X_pow (a : ℕ) : embed ((X : K[X]) ^ a) = HahnSeries.single (a : ℤ) 1 := by
   simp [embed, HahnSeries.single_pow]
 
+/-- Mapping `embed` over `full M a` gives the matrix of `testMap M a`. -/
 lemma full_embed (M : ℕ) (a : K) :
     (embed.mapMatrix (full M a)) = LinearMap.toMatrix' (testMap M a) := by
   apply Matrix.ext
@@ -128,13 +133,14 @@ lemma full_embed (M : ℕ) (a : K) :
   simp only [weightMap, LinearMap.coe_mk, AddHom.coe_mk, hin]
   ring
 
-lemma full_natDegree_le (M : ℕ) (a : K) (i j : Fin M) :
+private lemma full_natDegree_le (M : ℕ) (a : K) (i j : Fin M) :
     (full M a i j).natDegree ≤ M - 1 := by
   apply natDegree_sum_le_of_forall_le
   intro r _
   apply (natDegree_C_mul_le _ _).trans
   simpa using Nat.le_sub_one_of_lt r.isLt
 
+/-- Every entry of `padded M N a` has polynomial degree at most `M - 1`. -/
 lemma padded_natDegree_le (M N : ℕ) (a : K) (i j : Fin M) :
     (padded M N a i j).natDegree ≤ M - 1 := by
   by_cases hj : j.val < N
@@ -158,6 +164,7 @@ def raw {w q M : ℕ} (A : Fin w → Matrix (Fin q) (Fin q) (F K))
   fun a b => ∑ i, A i a.1 b.1 * R i a.2 b.2
 
 omit [CharZero K] in
+/-- Matrix-vector multiplication by `raw A R` expands blockwise over `i` and `γ`. -/
 lemma raw_apply {w q M : ℕ} (A : Fin w → Matrix (Fin q) (Fin q) (F K))
     (R : Fin w → Matrix (Fin M) (Fin M) (F K)) (f : Fin q × Fin M → F K) (α : Fin q)
     (j : Fin M) :
@@ -182,12 +189,13 @@ def extend (q M N : ℕ) : (Fin q × Fin N → F K) →ₗ[F K] (Fin q × Fin M 
   map_smul' c f := by funext a; by_cases h : a.2.val < N <;> simp [h]
 
 omit [CharZero K] in
-lemma extend_low (q M N : ℕ) (f : Fin q × Fin N → F K) (α : Fin q) (j : Fin M) :
+private lemma extend_low (q M N : ℕ) (f : Fin q × Fin N → F K) (α : Fin q) (j : Fin M) :
     N ≤ ↑j → extend q M N f (α, j) = 0 := by
   intro hj
   simp [extend, not_lt.mpr hj]
 
 omit [CharZero K] in
+/-- Zero-padding from `N` to `M` columns is injective when `N ≤ M`. -/
 lemma extend_injective (q M N : ℕ) (hNM : N ≤ M) :
     Function.Injective (extend (K := K) q M N) := by
   intro f g h
@@ -196,7 +204,7 @@ lemma extend_injective (q M N : ℕ) (hNM : N ≤ M) :
   simpa [extend, j.isLt] using hh
 
 omit [CharZero K] in
-lemma padded_mulVec_low (M N : ℕ) (a : K) (f : Fin M → F K)
+private lemma padded_mulVec_low (M N : ℕ) (a : K) (f : Fin M → F K)
     (hf : ∀ (j : Fin M), N ≤ ↑j → f j = 0) :
     (embed.mapMatrix (padded M N a)).mulVec f = testMap M a f := by
   rw [← Matrix.toLin'_toMatrix' (testMap M a), ← full_embed M a, Matrix.toLin'_apply]
@@ -247,6 +255,8 @@ theorem rank_ge (w B M N q e : ℕ) (hw : 1 ≤ w) (hN : 1 ≤ N)
     simp
   exact hr ▸ Matrix.rank_mul_le_left (raw A R) E
 
+/-- When `1 ≤ q ≤ B`, `M = N + 2 * w ^ 3 * B`, and `B * (2 * w ^ 3 * B) < M`, the rank threshold
+satisfies `(q - 1) * M < q * N`. -/
 lemma numeric_gap (w B M N q : ℕ) (hq : 1 ≤ q) (hqB : q ≤ B)
     (hMN : M = N + 2 * w ^ 3 * B) (hM : B * (2 * w ^ 3 * B) < M) : (q - 1) * M < q * N := by
   have hh : q * (2 * w ^ 3 * B) < M := (Nat.mul_le_mul_right _ hqB).trans_lt hM
@@ -271,12 +281,12 @@ open scoped BigOperators
 noncomputable section
 variable {K E : Type*} [Field K] [Field E]
 
-lemma map_taylor_coeff (φ : K →+* E) (a : K) (j r : ℕ) :
+private lemma map_taylor_coeff (φ : K →+* E) (a : K) (j r : ℕ) :
     φ (((X + C a) ^ j : K[X]).coeff r) = (((X + C (φ a)) ^ j : E[X]).coeff r) := by
   rw [← Polynomial.coeff_map]
   simp
 
-lemma full_map (φ : K →+* E) (M : ℕ) (a : K) (i j : Fin M) :
+private lemma full_map (φ : K →+* E) (M : ℕ) (a : K) (i j : Fin M) :
     (full M a i j).map φ = full M (φ a) i j := by
   unfold full
   rw [Polynomial.map_sum]
@@ -285,10 +295,12 @@ lemma full_map (φ : K →+* E) (M : ℕ) (a : K) (i j : Fin M) :
   simp only [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_pow, Polynomial.map_X, map_mul]
   rw [map_taylor_coeff φ (-a), map_taylor_coeff φ a, map_neg]
 
-lemma padded_map (φ : K →+* E) (M N : ℕ) (a : K) (i j : Fin M) :
+private lemma padded_map (φ : K →+* E) (M N : ℕ) (a : K) (i j : Fin M) :
     (padded M N a i j).map φ = padded M N (φ a) i j := by
   by_cases hj : j.val < N <;> simp [padded, hj, full_map]
 
+/-- Evaluating `padded M N a i j` along `HahnSeries.C.comp φ` at `HahnSeries.single 1 1` equals
+`embed (padded M N (φ a) i j)`. -/
 lemma eval₂_padded (φ : K →+* E) (M N : ℕ) (a : K) (i j : Fin M) :
     (padded M N a i j).eval₂ (HahnSeries.C.comp φ) (HahnSeries.single 1 1) =
       embed (padded M N (φ a) i j) := by

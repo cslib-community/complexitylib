@@ -59,7 +59,7 @@ structure Equation where
   rhs : Bool
 
 /-- Adding `t` to a set of terms over `𝔽₂` removes it if present and inserts it otherwise. -/
-theorem symmDiff_singleton_eq (s : Finset ℕ) (t : ℕ) :
+private theorem symmDiff_singleton_eq (s : Finset ℕ) (t : ℕ) :
     s ∆ {t} = if t ∈ s then s.erase t else insert t s := by
   ext z
   by_cases hz : z = t
@@ -67,7 +67,7 @@ theorem symmDiff_singleton_eq (s : Finset ℕ) (t : ℕ) :
     split_ifs with h <;> simp [Finset.mem_symmDiff, h]
   · split_ifs <;> simp [Finset.mem_symmDiff, hz]
 
-theorem sum_symmDiff_singleton (s : Finset ℕ) (t : ℕ) (val : ℕ → Bool) :
+private theorem sum_symmDiff_singleton (s : Finset ℕ) (t : ℕ) (val : ℕ → Bool) :
     ∑ i ∈ s ∆ {t}, val i = ∑ i ∈ s, val i + val t := by
   rw [symmDiff_singleton_eq]
   split_ifs with ht
@@ -82,7 +82,8 @@ theorem mem_symmDiff_singleton {s : Finset ℕ} {t z : ℕ} : z ∈ s ∆ {t} �
     split_ifs with ht <;> simp [ht]
   · split_ifs with ht <;> simp [hz]
 
-theorem card_symmDiff_singleton_le (s : Finset ℕ) (t : ℕ) : (s ∆ {t}).card ≤ s.card + 1 := by
+private theorem card_symmDiff_singleton_le (s : Finset ℕ) (t : ℕ) :
+    (s ∆ {t}).card ≤ s.card + 1 := by
   rw [symmDiff_singleton_eq]
   split_ifs with h
   · exact (Finset.card_erase_le).trans (Nat.le_succ _)
@@ -216,7 +217,7 @@ def addArg (p : Finset ℕ × Bool) (b : Bool) (a : Arg) : Finset ℕ × Bool :=
     | .const v => (p.1, p.2 ^^ v)
   else p
 
-theorem sum_addArg (p : Finset ℕ × Bool) (b : Bool) (a : Arg) (val : ℕ → Bool) :
+private theorem sum_addArg (p : Finset ℕ × Bool) (b : Bool) (a : Arg) (val : ℕ → Bool) :
     ∑ i ∈ (addArg p b a).1, val i + (addArg p b a).2 =
       ∑ i ∈ p.1, val i + p.2 + (b && a.eval val) := by
   unfold addArg
@@ -244,7 +245,7 @@ theorem mem_addArg {p : Finset ℕ × Bool} {b : Bool} {a : Arg} {z : ℕ}
       · exact Or.inl ((mem_symmDiff_singleton.1 h).2 hzt)
     | const v => exact Or.inl h
 
-theorem card_addArg_le (p : Finset ℕ × Bool) (b : Bool) (a : Arg) :
+private theorem card_addArg_le (p : Finset ℕ × Bool) (b : Bool) (a : Arg) :
     (addArg p b a).1.card ≤ p.1.card + 1 := by
   unfold addArg
   cases b

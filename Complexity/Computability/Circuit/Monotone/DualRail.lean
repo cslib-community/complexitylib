@@ -32,8 +32,8 @@ dual-rail inputs (`eval_dualRail`) and has twice the size (`size_dualRail`).
 
 ## Main definitions
 
-* `Cslib.Circuits.Monotone.railWire`, `Cslib.Circuits.Monotone.railBits`: the dual-rail wires and
-  inputs.
+* `Cslib.Circuits.Monotone.railWire`, `Cslib.Circuits.Monotone.railBits`,
+  `Cslib.Circuits.Monotone.railBitString`: the dual-rail wires and inputs.
 * `Cslib.Circuits.Monotone.dualGates`, `Cslib.Circuits.Monotone.dualCode`: the translation of
   gates and gate lists.
 * `Cslib.Circuits.Monotone.dualRail`: the dual-rail translation of a De Morgan circuit.
@@ -64,6 +64,7 @@ def railWire (b : Bool) (w : ℕ) : ℕ := 2 * w + if b then 1 else 2
 /-- The dual-rail values: the constant `true`, then each value followed by its negation. -/
 def railBits (x : List Bool) : List Bool := true :: x.flatMap fun b => [b, !b]
 
+/-- The dual-rail list `railBits x` has length `2 * x.length + 1`. -/
 @[simp] theorem length_railBits (x : List Bool) : (railBits x).length = 2 * x.length + 1 := by
   induction x with
   | nil => rfl
@@ -72,12 +73,14 @@ def railBits (x : List Bool) : List Bool := true :: x.flatMap fun b => [b, !b]
     simp only [List.length_append, List.length_cons, List.length_nil]
     omega
 
-theorem railBits_append (x : List Bool) (v : Bool) :
+private theorem railBits_append (x : List Bool) (v : Bool) :
     railBits (x ++ [v]) = railBits x ++ [v, !v] := by
   simp [railBits]
 
+/-- Wire `0` of `railBits x` carries the constant `true`. -/
 @[simp] theorem getD_railBits_zero (x : List Bool) : (railBits x).getD 0 false = true := rfl
 
+/-- Entry `0` of `railBits x` is `true`. -/
 @[simp] theorem getElem_railBits_zero (x : List Bool) (h : 0 < (railBits x).length) :
     (railBits x)[0] = true := rfl
 
@@ -122,12 +125,14 @@ def dualGates (g : Boolean.Op × List ℕ) : List (Op × List ℕ) :=
   | .or => [(.or, [railWire true (g.2.getD 0 0), railWire true (g.2.getD 1 0)]),
       (.and, [railWire false (g.2.getD 0 0), railWire false (g.2.getD 1 0)])]
 
+/-- Each De Morgan gate translates to exactly two monotone gates. -/
 @[simp] theorem length_dualGates (g : Boolean.Op × List ℕ) : (dualGates g).length = 2 := by
   rcases g with ⟨_ | _ | _ | _, _⟩ <;> rfl
 
 /-- **The dual-rail translation of a gate list**: each gate by its two monotone gates. -/
 def dualCode (gates : List (Boolean.Op × List ℕ)) : List (Op × List ℕ) := gates.flatMap dualGates
 
+/-- The translated gate list `dualCode gates` has twice the length of `gates`. -/
 @[simp] theorem length_dualCode (gates : List (Boolean.Op × List ℕ)) :
     (dualCode gates).length = 2 * gates.length := by
   induction gates with
@@ -135,7 +140,7 @@ def dualCode (gates : List (Boolean.Op × List ℕ)) : List (Op × List ℕ) := 
   | cons g gates ih => simp only [dualCode, List.flatMap_cons, List.length_append,
       length_dualGates, List.length_cons] at ih ⊢; omega
 
-theorem dualCode_append (gates gates' : List (Boolean.Op × List ℕ)) :
+private theorem dualCode_append (gates gates' : List (Boolean.Op × List ℕ)) :
     dualCode (gates ++ gates') = dualCode gates ++ dualCode gates' :=
   List.flatMap_append
 
@@ -288,6 +293,7 @@ variable {n m : ℕ}
 def railBitString (x : BitString n) : BitString (2 * n + 1) :=
   fun i => (railBits (List.ofFn x)).getD i false
 
+/-- Listing the bits of `railBitString x` gives `railBits (List.ofFn x)`. -/
 theorem ofFn_railBitString (x : BitString n) :
     List.ofFn (railBitString x) = railBits (List.ofFn x) := by
   refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
@@ -298,6 +304,7 @@ private theorem isCodeFrom_code_fst {σ : Signature} (c : Circuit σ n m) :
     Program.IsCodeFrom σ n 0 c.code.1 :=
   Program.isSome_ofCode_iff.1 (by rw [Circuit.code, Program.ofCode_code]; rfl)
 
+/-- The dual-rail code of a De Morgan circuit `c` is a valid monotone circuit code. -/
 theorem isSome_ofCode_dualRail (c : Circuit Boolean.signature n m) :
     (Circuit.ofCode (2 * n + 1) m (dualCode c.code.1, c.code.2.map (railWire true)) :
       Option (Circuit signature (2 * n + 1) m)).isSome := by
@@ -316,6 +323,7 @@ def dualRail (c : Circuit Boolean.signature n m) : Circuit signature (2 * n + 1)
   (Circuit.ofCode (2 * n + 1) m (dualCode c.code.1, c.code.2.map (railWire true))).get
     (isSome_ofCode_dualRail c)
 
+/-- The code of `dualRail c` consists of `dualCode c.code.1` and the positive output rails. -/
 theorem code_dualRail (c : Circuit Boolean.signature n m) :
     (dualRail c).code = (dualCode c.code.1, c.code.2.map (railWire true)) :=
   Circuit.code_of_ofCode_eq_some (Option.some_get _).symm
@@ -324,7 +332,7 @@ theorem code_dualRail (c : Circuit Boolean.signature n m) :
 theorem size_dualRail (c : Circuit Boolean.signature n m) : (dualRail c).size = 2 * c.size := by
   rw [← Circuit.length_code_fst, code_dualRail, length_dualCode, Circuit.length_code_fst]
 
-theorem toNat_outputs_dualRail (c : Circuit Boolean.signature n m) (j : Fin m) :
+private theorem toNat_outputs_dualRail (c : Circuit Boolean.signature n m) (j : Fin m) :
     ((dualRail c).outputs j).toNat = railWire true (c.outputs j).toNat := by
   have h := congrArg Prod.snd (code_dualRail c)
   simp only [Circuit.code] at h

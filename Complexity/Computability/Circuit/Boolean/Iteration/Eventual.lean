@@ -120,7 +120,7 @@ theorem recurring_target_circuit (c : Circuit signature n n) (p : Circuit signat
     omega
 
 /-- Negating a one-bit circuit costs one gate. -/
-theorem exists_not_circuit (p : Circuit signature n 1) :
+private theorem exists_not_circuit (p : Circuit signature n 1) :
     ∃ out : Circuit signature n 1,
       (∀ x, out.eval interpretation x 0 = !p.eval interpretation x 0) ∧ out.size ≤ p.size + 1 := by
   have hp : Synthesis interpretation (inputs n) {fun x => p.eval interpretation x 0} p.size :=

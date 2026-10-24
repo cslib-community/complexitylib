@@ -30,11 +30,6 @@ uses native circuits adding dictionary terms, with free additions and wiring. A 
 gate is charged once. These are bounds for this restricted representation model, not for
 unrestricted arithmetic circuits. All computation premises are formal polynomial equalities.
 
-## Main definitions
-
-* `Cslib.Circuits.Waring.Term`, `Cslib.Circuits.Waring.Term.polynomial`: scaled powers of
-  homogeneous linear forms, used as the dictionary of `SumOfTerms.signature`.
-
 ## Main results
 
 * `Cslib.Circuits.Waring.choose_le_card`, `Cslib.Circuits.Waring.centralBinom_le_card`:

@@ -61,8 +61,13 @@ travels along a layout next to the values on the frontier.
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.Network U ι V E`: a constraint network.
-* `Cslib.Circuits.Frontier.Network.accepted`: its accepted inputs.
+* `Cslib.Circuits.Frontier.Network`: a constraint network.
+* `Cslib.Circuits.Frontier.Network.Satisfies`, `Cslib.Circuits.Frontier.Network.accepted`:
+  satisfying edge assignments and accepted inputs.
+* `Cslib.Circuits.Frontier.Network.readAt`, `Cslib.Circuits.Frontier.Network.readIn`,
+  `Cslib.Circuits.Frontier.Network.read`: inputs read at a vertex, in a vertex set, and in total.
+* `Cslib.Circuits.Frontier.Network.frontierValues`, `Cslib.Circuits.Frontier.Network.revealedBy`:
+  edge values on the frontier and inputs revealed by time `t` along a layout.
 * `Cslib.Circuits.Frontier.Network.branchingProgram`: the read-once branching program of a
   layout.
 * `Cslib.Circuits.Frontier.Network.frontierSweep`: frontier values and extra messages along a
@@ -130,6 +135,7 @@ def readIn (L : Set V) : Set ι :=
 def read : Set ι :=
   N.readIn univ
 
+/-- No inputs are read in the empty set of vertices. -/
 @[simp] theorem readIn_empty : N.readIn ∅ = ∅ := by
   ext i; simp [readIn]
 
@@ -192,14 +198,17 @@ open Classical in
 noncomputable def frontierValues (t : ℕ) (α : E → U) : E → Option U := fun e =>
   if e ∈ N.frontier π t then some (α e) else none
 
+/-- On an edge `e` in the frontier at time `t`, `frontierValues` records `some (α e)`. -/
 theorem frontierValues_of_mem {t : ℕ} {α : E → U} {e : E} (he : e ∈ N.frontier π t) :
     N.frontierValues π t α e = some (α e) := by
   simp [frontierValues, he]
 
-theorem frontierValues_of_notMem {t : ℕ} {α : E → U} {e : E} (he : e ∉ N.frontier π t) :
+private theorem frontierValues_of_notMem {t : ℕ} {α : E → U} {e : E} (he : e ∉ N.frontier π t) :
     N.frontierValues π t α e = none := by
   simp [frontierValues, he]
 
+/-- Two assignments have the same `frontierValues` at time `t` if and only if they agree on
+`N.frontier π t`. -/
 theorem frontierValues_eq_iff {t : ℕ} {α β : E → U} :
     N.frontierValues π t α = N.frontierValues π t β ↔ EqOn α β (N.frontier π t) := by
   refine ⟨fun h e he => ?_, fun h => funext fun e => ?_⟩
@@ -213,6 +222,7 @@ vertex, all inputs, including those the network does not read. -/
 noncomputable def revealedBy (t : ℕ) : Set ι :=
   if t ≤ Nat.card V then N.readIn (π.initial t) else univ
 
+/-- The set `N.revealedBy π t` of revealed inputs is monotone in `t`. -/
 theorem revealedBy_mono : Monotone (N.revealedBy π) := by
   intro s t hst
   unfold revealedBy
@@ -225,7 +235,7 @@ theorem revealedBy_mono : Monotone (N.revealedBy π) := by
 
 /-- The inputs revealed while processing the vertex numbered `t` are those read at that
 vertex. -/
-theorem revealedBy_succ_diff {t : ℕ} (ht : t < Nat.card V) :
+private theorem revealedBy_succ_diff {t : ℕ} (ht : t < Nat.card V) :
     N.revealedBy π (t + 1) \ N.revealedBy π t = N.readAt (π.symm ⟨t, ht⟩) := by
   ext i
   simp only [revealedBy, show t + 1 ≤ Nat.card V by omega, ht.le, ite_true, mem_sdiff, readIn,
@@ -250,7 +260,7 @@ theorem revealedBy_succ_diff_subset {t : ℕ} (ht : t < Nat.card V) :
   (N.revealedBy_succ_diff π ht).subset
 
 /-- After the last vertex, the inputs revealed are those the network does not read. -/
-theorem revealedBy_card_succ_diff :
+private theorem revealedBy_card_succ_diff :
     N.revealedBy π (Nat.card V + 1) \ N.revealedBy π (Nat.card V) = N.readᶜ := by
   simp [revealedBy, read, π.initial_of_card_le le_rfl, compl_eq_univ_sdiff]
 
@@ -296,6 +306,7 @@ noncomputable def branchingProgram : ReadOnceNBP ι U (E → Option U) where
     (N.revealedBy π (t + 1) \ N.revealedBy π t).domRestrict x = a ∧
     ∀ ht : t < Nat.card V, N.Constraint (π.symm ⟨t, ht⟩) x α
 
+/-- Characterization of an edge at step `t` in `N.branchingProgram π`. -/
 theorem branchingProgram_edge_iff {t : ℕ} {m m' : E → Option U}
     {a : ↥(N.revealedBy π (t + 1) \ N.revealedBy π t) → U} :
     (N.branchingProgram π).Edge t m a m' ↔ ∃ (α : E → U) (x : ι → U),
@@ -305,19 +316,19 @@ theorem branchingProgram_edge_iff {t : ℕ} {m m' : E → Option U}
   Iff.rfl
 
 /-- The step processing the vertex numbered `t` reads the inputs read at that vertex. -/
-theorem newly_branchingProgram {t : ℕ} (ht : t < Nat.card V) :
+private theorem newly_branchingProgram {t : ℕ} (ht : t < Nat.card V) :
     (N.branchingProgram π).newly t = N.readAt (π.symm ⟨t, ht⟩) :=
   N.revealedBy_succ_diff π ht
 
 /-- The last step reads the inputs that the network does not read. -/
-theorem newly_branchingProgram_card :
+private theorem newly_branchingProgram_card :
     (N.branchingProgram π).newly (Nat.card V) = N.readᶜ :=
   N.revealedBy_card_succ_diff π
 
 /-! #### Exactness -/
 
 /-- The frontier values of a satisfying assignment form an accepting path. -/
-theorem isAcceptingPath_frontierValues {x : ι → U} {α : E → U} (hα : N.Satisfies x α) :
+private theorem isAcceptingPath_frontierValues {x : ι → U} {α : E → U} (hα : N.Satisfies x α) :
     (N.branchingProgram π).IsAcceptingPath x fun t => N.frontierValues π t α where
   start := funext fun _ => N.frontierValues_of_notMem π (by simp)
   accept := funext fun _ => N.frontierValues_of_notMem π <| by
@@ -420,7 +431,7 @@ theorem unambiguous_branchingProgram
 
 /-- **Edges by width.** At a step that processes a vertex, an edge of the program is determined
 by the values of an assignment on the two frontiers and the inputs read at the vertex. -/
-theorem ncard_edges_le [Finite ι] [Finite U] [Finite E] {t : ℕ} (ht : t < Nat.card V) :
+private theorem ncard_edges_le [Finite ι] [Finite U] [Finite E] {t : ℕ} (ht : t < Nat.card V) :
     ((N.branchingProgram π).edges t).ncard ≤
       Nat.card U ^ ((N.frontier π t ∪ N.frontier π (t + 1)).ncard +
         (N.readAt (π.symm ⟨t, ht⟩)).ncard) := by
@@ -446,7 +457,7 @@ theorem ncard_edges_le [Finite ι] [Finite U] [Finite E] {t : ℕ} (ht : t < Nat
 
 /-- At the last step both frontiers are empty, so an edge of the program is determined by the
 unread inputs. -/
-theorem ncard_edges_last_le [Finite ι] [Finite U] :
+private theorem ncard_edges_last_le [Finite ι] [Finite U] :
     ((N.branchingProgram π).edges (Nat.card V)).ncard ≤ Nat.card U ^ N.readᶜ.ncard := by
   have hempty (s : ℕ) (hs : Nat.card V ≤ s) (α : E → U) :
       N.frontierValues π s α = fun _ => none := by

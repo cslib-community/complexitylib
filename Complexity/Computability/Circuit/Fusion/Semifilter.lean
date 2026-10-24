@@ -33,9 +33,16 @@ efficient execution on an encoding of arbitrary sets.
 
 ## Main definitions
 
-* `Cslib.Circuits.Fusion.Semifilter`: a bounded order map from sets to propositions.
-* `Cslib.Circuits.Fusion.SemifilterWitness`: an admissible observation of a target point.
-* `Cslib.Circuits.Fusion.PairCover`: a list of intersection pairs defeating all witnesses.
+* `Cslib.Circuits.Fusion.Semifilter`, `Cslib.Circuits.Fusion.Semifilter.PreservesPair`: a bounded
+  order map from sets to propositions, and preservation of a pair under intersection.
+* `Cslib.Circuits.Fusion.Atom.andPair?`: the argument pair of an AND atom restricted along a map.
+* `Cslib.Circuits.Fusion.SemifilterWitness`,
+  `Cslib.Circuits.Fusion.SemifilterWitness.predicate`: an admissible observation of a target point
+  and its reference-to-observation predicate.
+* `Cslib.Circuits.Fusion.PairCover`, `Cslib.Circuits.Fusion.PairCover.pad`,
+  `Cslib.Circuits.Fusion.PairCover.ofCircuit`,
+  `Cslib.Circuits.Fusion.PairCover.ofSourceRefinement`: a list of intersection pairs defeating all
+  witnesses, padding, extraction from a circuit, and transport along source refinement.
 * `Cslib.Circuits.Fusion.pairCoverComplexity`: the minimum pair count, or infinity.
 
 ## Main results
@@ -63,9 +70,11 @@ universe u v
 This imposes no intersection-closure condition. -/
 abbrev Semifilter (U : Type u) := BoundedOrderHom (Set U) Prop
 
+/-- A semifilter accepts the full set `Set.univ`. -/
 @[simp] theorem Semifilter.apply_univ {U : Type u} (F : Semifilter U) : F Set.univ :=
   (map_top F).mpr trivial
 
+/-- A semifilter rejects the empty set `∅`. -/
 @[simp] theorem Semifilter.not_apply_empty {U : Type u} (F : Semifilter U) : ¬ F ∅ :=
   (map_bot F).mp
 

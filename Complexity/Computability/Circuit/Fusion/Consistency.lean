@@ -99,6 +99,8 @@ def SemifilterWitness.observe (w : SemifilterWitness target input admissible)
   open Classical in
   {x | if x = w.point.val then w.filter (Subtype.val ⁻¹' s) else x ∈ s}
 
+/-- At `w.point.val`, membership in `w.observe s` is acceptance of `Subtype.val ⁻¹' s` by
+`w.filter`. -/
 @[simp] theorem SemifilterWitness.mem_observe_point
     (w : SemifilterWitness target input admissible) (s : Set U) :
     w.point.val ∈ w.observe s ↔ w.filter (Subtype.val ⁻¹' s) := by

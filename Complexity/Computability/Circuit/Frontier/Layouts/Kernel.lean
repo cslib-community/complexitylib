@@ -72,6 +72,8 @@ noncomputable def unitKernelRow [Fintype V] (q : ℝ) (R : ℕ) (v : V) : Euclid
 
 variable {G}
 
+/-- Coordinate `z` of the kernel row of `v` is `q ^ G.dist v z` when `G.edist v z ≤ R`, and `0`
+otherwise. -/
 theorem kernelRow_apply (q : ℝ) (R : ℕ) (v z : V) :
     kernelRow G q R v z = if G.edist v z ≤ R then q ^ G.dist v z else 0 :=
   rfl
@@ -91,7 +93,7 @@ theorem kernelRow_comm (q : ℝ) (R : ℕ) (v z : V) : kernelRow G q R v z = ker
   simp only [kernelRow_apply, SimpleGraph.edist_comm (u := v), SimpleGraph.dist_comm (u := v)]
 
 /-- The kernel row of `v` vanishes outside the closed ball of radius `R` around `v`. -/
-theorem kernelRow_eq_zero_of_lt {q : ℝ} {R : ℕ} {v z : V} (h : R < G.edist v z) :
+private theorem kernelRow_eq_zero_of_lt {q : ℝ} {R : ℕ} {v z : V} (h : R < G.edist v z) :
     kernelRow G q R v z = 0 := by
   rw [kernelRow_apply, ite_eq_right (not_le.2 h)]
 
@@ -165,7 +167,7 @@ private theorem kernelRow_defect_le {q : ℝ} (R : ℕ) {u v : V} (huv : G.Adj u
 variable [Fintype V]
 
 /-- Every kernel row has norm at least one, from its entry `1` at its own vertex. -/
-theorem one_le_norm_kernelRow (q : ℝ) (R : ℕ) (v : V) : 1 ≤ ‖kernelRow G q R v‖ := by
+private theorem one_le_norm_kernelRow (q : ℝ) (R : ℕ) (v : V) : 1 ≤ ‖kernelRow G q R v‖ := by
   have h : 1 ≤ ‖kernelRow G q R v‖ ^ 2 := by
     rw [EuclideanSpace.real_norm_sq_eq]
     calc (1 : ℝ) = kernelRow G q R v v ^ 2 := by rw [kernelRow_self, one_pow]
@@ -174,6 +176,8 @@ theorem one_le_norm_kernelRow (q : ℝ) (R : ℕ) (v : V) : 1 ≤ ‖kernelRow G
           (mem_univ v)
   nlinarith [norm_nonneg (kernelRow G q R v)]
 
+/-- Coordinate `z` of the unit kernel row of `v` is `kernelRow G q R v z` divided by
+`‖kernelRow G q R v‖`. -/
 theorem unitKernelRow_apply (q : ℝ) (R : ℕ) (v z : V) :
     unitKernelRow G q R v z = ‖kernelRow G q R v‖⁻¹ * kernelRow G q R v z :=
   rfl

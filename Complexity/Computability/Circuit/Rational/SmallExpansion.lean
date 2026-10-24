@@ -24,8 +24,9 @@ inequality of `LaurentReduction` with the Wronskian order bound of `Expansion`.
 
 * `SmallExpansion.polynomialMap`: coefficient vectors as polynomials of degree `< M`.
 * `SmallExpansion.polynomialSpace`: the polynomial subspace of a coefficient subspace.
-* `SmallExpansion.taylorCoordinates`, `SmallExpansion.reverseTaylorCoordinates`: Taylor
-  coordinates at a point, in increasing and in reversed order.
+* `SmallExpansion.taylorCoordinates`, `SmallExpansion.reverseCoordinates`,
+  `SmallExpansion.reverseTaylorCoordinates`: Taylor coordinates at a point, coordinate
+  reversal, and reversed Taylor coordinates.
 * `SmallExpansion.testMap`: the reverse-Taylor test at a point, weighting the `j`-th Taylor
   coordinate by `X ^ j`.
 
@@ -58,17 +59,21 @@ variable {K : Type*} [Field K]
 def polynomialMap (M : ℕ) : (Fin M → K) →ₗ[K] K[X] :=
   (Polynomial.degreeLT K M).subtype.comp (Polynomial.degreeLTEquiv K M).symm.toLinearMap
 
+/-- `polynomialMap M` is injective. -/
 lemma polynomialMap_injective (M : ℕ) : Function.Injective (polynomialMap (K := K) M) :=
   Subtype.val_injective.comp (Polynomial.degreeLTEquiv K M).symm.injective
 
+/-- For `j : Fin M`, the `j`-th coefficient of `polynomialMap M x` is `x j`. -/
 @[simp] lemma polynomialMap_coeff (M : ℕ) (x : Fin M → K) (j : Fin M) :
     (polynomialMap M x).coeff j = x j := by
   exact congrFun ((Polynomial.degreeLTEquiv K M).apply_symm_apply x) j
 
+/-- `polynomialMap M x` has degree strictly less than `M`. -/
 lemma polynomialMap_mem (M : ℕ) (x : Fin M → K) :
     polynomialMap M x ∈ Polynomial.degreeLT K M :=
   ((Polynomial.degreeLTEquiv K M).symm x).property
 
+/-- Every coefficient of `polynomialMap M x` of index `j ≥ M` is zero. -/
 lemma polynomialMap_coeff_high (M : ℕ) (x : Fin M → K) (j : ℕ) (hj : M ≤ j) :
     (polynomialMap M x).coeff j = 0 := by
   apply coeff_eq_zero_of_degree_lt
@@ -78,11 +83,11 @@ lemma polynomialMap_coeff_high (M : ℕ) (x : Fin M → K) (j : ℕ) (hj : M ≤
 def polynomialSpace {M : ℕ} (V : Submodule K (Fin M → K)) : Submodule K K[X] :=
   V.map (polynomialMap M)
 
-lemma finrank_polynomialSpace {M : ℕ} (V : Submodule K (Fin M → K)) :
+private lemma finrank_polynomialSpace {M : ℕ} (V : Submodule K (Fin M → K)) :
     finrank K (polynomialSpace V) = finrank K V :=
   finrank_map_injective _ (polynomialMap_injective M) V
 
-lemma polynomialSpace_bound {M : ℕ} (V : Submodule K (Fin M → K)) :
+private lemma polynomialSpace_bound {M : ℕ} (V : Submodule K (Fin M → K)) :
     ∀ f ∈ polynomialSpace V, f ≠ 0 → f.natDegree < M := by
   rintro f ⟨x, hx, rfl⟩ hn
   exact (natDegree_lt_iff_degree_lt hn).mpr (Polynomial.mem_degreeLT.mp (polynomialMap_mem M x))
@@ -92,6 +97,8 @@ def taylorCoordinates (M : ℕ) (a : K) : (Fin M → K) ≃ₗ[K] (Fin M → K) 
   (Polynomial.degreeLTEquiv K M).symm.trans
     ((Polynomial.taylorLinearEquiv a M).trans (Polynomial.degreeLTEquiv K M))
 
+/-- The `j`-th Taylor coordinate of `x` at `a` is the `j`-th coefficient of
+`taylor a (polynomialMap M x)`. -/
 lemma taylorCoordinates_apply (M : ℕ) (a : K) (x : Fin M → K) (j : Fin M) :
     taylorCoordinates M a x j = (taylor a (polynomialMap M x)).coeff j := rfl
 
@@ -108,11 +115,12 @@ Taylor coefficient by t^a and places it in output degree M-1-a. -/
 def testMap (M : ℕ) (a : K) : (Fin M → F K) →ₗ[F K] (Fin M → F K) :=
   conjugatedWeight (taylorCoordinates M a) (reverseTaylorCoordinates M a) Fin.val
 
+/-- The reverse-Taylor test map `testMap M a` is injective. -/
 lemma testMap_injective (M : ℕ) (a : K) : Function.Injective (testMap M a) :=
   conjugatedWeight_injective _ _ _
 
 /-- Kernel of the low Taylor projection is precisely the vanishing filtration. -/
-lemma map_taylor_projection_kernel (M : ℕ) (a : K) (A : ℕ)
+private lemma map_taylor_projection_kernel (M : ℕ) (a : K) (A : ℕ)
     (V : Submodule K (Fin M → K)) :
     (V ⊓ ((lowProjection Fin.val A).comp (taylorCoordinates M a).toLinearMap).ker).map
       (polynomialMap M) = vanishingFiltration (polynomialSpace V) a (A + 1) := by
@@ -135,7 +143,7 @@ lemma map_taylor_projection_kernel (M : ℕ) (a : K) (A : ℕ)
     exact hx j.val.val (by have := j.property; omega)
 
 /-- The output-side low reverse coordinates mean high ordinary Taylor order. -/
-lemma map_reverseTaylor_lowSupported (M : ℕ) (a : K) (A : ℕ)
+private lemma map_reverseTaylor_lowSupported (M : ℕ) (a : K) (A : ℕ)
     (V : Submodule K (Fin M → K)) :
     ((V.map (reverseTaylorCoordinates M a).toLinearMap) ⊓ lowSupported Fin.val A).map
       ((polynomialMap M).comp (reverseTaylorCoordinates M a).symm.toLinearMap) =
@@ -157,7 +165,7 @@ lemma map_reverseTaylor_lowSupported (M : ℕ) (a : K) (A : ℕ)
       exact hx j.rev.val (by simp only [Fin.val_rev]; omega)
     · simp
 
-lemma finrank_lowTaylor (M : ℕ) (a : K) (A : ℕ)
+private lemma finrank_lowTaylor (M : ℕ) (a : K) (A : ℕ)
     (V : Submodule K (Fin M → K)) {h : ℕ}
     (b : Basis (Fin h) K (polynomialSpace V))
     (hb : Function.Injective (fun j => (b j : K[X]).rootMultiplicity a)) :
@@ -180,7 +188,7 @@ lemma finrank_lowTaylor (M : ℕ) (a : K) (A : ℕ)
         (fun j : Fin h => (b j : K[X]).rootMultiplicity a ≤ A)
   omega
 
-lemma finrank_reverseTaylor (M : ℕ) (a : K) (A : ℕ)
+private lemma finrank_reverseTaylor (M : ℕ) (a : K) (A : ℕ)
     (V : Submodule K (Fin M → K)) {h : ℕ}
     (b : Basis (Fin h) K (polynomialSpace V))
     (hb : Function.Injective (fun j => (b j : K[X]).rootMultiplicity a)) :
@@ -192,7 +200,7 @@ lemma finrank_reverseTaylor (M : ℕ) (a : K) (A : ℕ)
     map_reverseTaylor_lowSupported, finrank_vanishingFiltration b a hb]
 
 /-- The rank form of order reversal, at every threshold. -/
-theorem order_reversal_counts (M : ℕ) (a : K) (A : ℕ)
+private theorem order_reversal_counts (M : ℕ) (a : K) (A : ℕ)
     (U W : Submodule (F K) (Fin M → F K)) (hW : U.map (testMap M a) ≤ W)
     {k l : ℕ} (b : Basis (Fin k) K (polynomialSpace (reducedSubspace U)))
     (c : Basis (Fin l) K (polynomialSpace (reducedSubspace W)))
@@ -205,7 +213,7 @@ theorem order_reversal_counts (M : ℕ) (a : K) (A : ℕ)
   rwa [finrank_lowTaylor M a A _ b hb, finrank_reverseTaylor M a A _ c hc] at hh
 
 /-- Counting all thresholds counts each order with its exact multiplicity. -/
-lemma sum_threshold_counts {h : ℕ} (d : Fin h → ℕ) (L : ℕ) :
+private lemma sum_threshold_counts {h : ℕ} (d : Fin h → ℕ) (L : ℕ) :
     (∑ A ∈ Finset.range L, Fintype.card {j : Fin h // d j ≤ A}) =
       ∑ j, (L - d j) := by
   classical
@@ -220,7 +228,7 @@ lemma sum_threshold_counts {h : ℕ} (d : Fin h → ℕ) (L : ℕ) :
     tauto
   rw [← Finset.card_filter, he, Nat.card_Ico]
 
-lemma sum_reversed_counts {h : ℕ} (d : Fin h → ℕ) (L : ℕ) (hd : ∀ j, d j ≤ L) :
+private lemma sum_reversed_counts {h : ℕ} (d : Fin h → ℕ) (L : ℕ) (hd : ∀ j, d j ≤ L) :
     (∑ A ∈ Finset.range L, Fintype.card {j : Fin h // L - A ≤ d j}) = ∑ j, d j := by
   have he : ∀ A, (fun j : Fin h => L - A ≤ d j) = (fun j : Fin h => L - d j ≤ A) := by
     intro A
@@ -272,12 +280,12 @@ theorem order_reversal_sum (M : ℕ) (a : K)
       Fintype.card_fin, smul_eq_mul]
   omega
 
-lemma sum_fin_val_le_square (h : ℕ) : (∑ j : Fin h, j.val) ≤ h * h := by
+private lemma sum_fin_val_le_square (h : ℕ) : (∑ j : Fin h, j.val) ≤ h * h := by
   calc
     _ ≤ ∑ _j : Fin h, h := Finset.sum_le_sum fun j _ => Nat.le_of_lt j.isLt
     _ = h * h := by simp
 
-lemma expansion_numeric (w B M N k l : ℕ) (hw : 1 ≤ w) (hN : 1 ≤ N)
+private lemma expansion_numeric (w B M N k l : ℕ) (hw : 1 ≤ w) (hN : 1 ≤ N)
     (hMN : M = N + 2 * w ^ 3 * B) (hk : 1 ≤ k) (hkB : k ≤ B)
     (hh : w * (k * (M - 1)) ≤ k * (N - 1) + w * (∑ j : Fin k, j.val) +
       (l * (M - 1) + w * (∑ j : Fin l, j.val))) :
@@ -321,7 +329,7 @@ lemma expansion_numeric (w B M N k l : ℕ) (hw : 1 ≤ w) (hN : 1 ≤ N)
     nlinarith only [hbase]
   nlinarith
 
-lemma reduced_degree_bound {M N : ℕ} (U : Submodule (F K) (Fin M → F K))
+private lemma reduced_degree_bound {M N : ℕ} (U : Submodule (F K) (Fin M → F K))
     (hU : ∀ x ∈ U, ∀ j : Fin M, N ≤ j.val → x j = 0) :
     ∀ f ∈ polynomialSpace (reducedSubspace U), f ≠ 0 → f.natDegree < N := by
   have hr : ∀ y ∈ reducedSubspace U, ∀ j : Fin M, N ≤ j.val → y j = 0 := by

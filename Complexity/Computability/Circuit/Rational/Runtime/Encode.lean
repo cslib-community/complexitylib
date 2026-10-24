@@ -125,7 +125,7 @@ theorem divInt_sign (a b : ℤ) (hb : b ≠ 0) :
       simp [not_lt_of_gt hpa, not_lt_of_gt hpb, not_lt_of_ge hp.le]
 
 /-- Reduced numerator magnitude of `Rat.divInt a b` for arbitrary integers `a, b`. -/
-theorem divInt_num_abs_eq (a b : ℤ) :
+private theorem divInt_num_abs_eq (a b : ℤ) :
     (Rat.divInt a b).num.natAbs =
       if b = 0 then 0 else a.natAbs / Nat.gcd a.natAbs b.natAbs := by
   by_cases hb : b = 0
@@ -133,7 +133,7 @@ theorem divInt_num_abs_eq (a b : ℤ) :
   · simp [hb, divInt_num_abs a b hb]
 
 /-- Reduced denominator of `Rat.divInt a b` for arbitrary integers `a, b`. -/
-theorem divInt_den_eq (a b : ℤ) :
+private theorem divInt_den_eq (a b : ℤ) :
     (Rat.divInt a b).den =
       if b = 0 then 1 else b.natAbs / Nat.gcd a.natAbs b.natAbs := by
   by_cases hb : b = 0
@@ -141,7 +141,7 @@ theorem divInt_den_eq (a b : ℤ) :
   · simp [hb, divInt_den a b hb]
 
 /-- Sign bit of `Rat.divInt a b` for arbitrary integers `a, b`. -/
-theorem divInt_sign_eq (a b : ℤ) :
+private theorem divInt_sign_eq (a b : ℤ) :
     decide ((Rat.divInt a b).num < 0) =
       if a = 0 then false else if b = 0 then false else (decide (a < 0) ^^ decide (b < 0)) := by
   by_cases hb : b = 0

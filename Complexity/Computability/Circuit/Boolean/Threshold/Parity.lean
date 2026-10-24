@@ -66,7 +66,7 @@ def negIf : Bool → Circuit signature 1 1
   · simp [negIf, Subsingleton.elim o 0]
   · simp [negIf]
 
-theorem cost_program_negIf (b : Bool) : (negIf b).program.cost thresholdCost = 0 := by
+private theorem cost_program_negIf (b : Bool) : (negIf b).program.cost thresholdCost = 0 := by
   cases b <;> rfl
 
 @[simp] theorem size_negIf (b : Bool) : (negIf b).size = b.toNat := by

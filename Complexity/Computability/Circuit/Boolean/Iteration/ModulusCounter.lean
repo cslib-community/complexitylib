@@ -142,7 +142,7 @@ theorem mem_easyCounterPowers (k q : ℕ) (T : Fin (ModulusCounter.period k)) :
   simp only [easyCounterPowers, Finset.mem_filter, Finset.mem_univ, true_and,
     Circuit.mem_functionsAtMost_iff]
 
-theorem easyCounterPowers_card_le (k q : ℕ) :
+private theorem easyCounterPowers_card_le (k q : ℕ) :
     (easyCounterPowers k q).card ≤ signature.orderedBudget (k + k) (k + k) q := by
   classical
   have hsub : (easyCounterPowers k q).image (fun T => ModulusCounter.power (k := k) T.val) ⊆
@@ -170,7 +170,7 @@ theorem hardCounterPowers_card_ge (k q : ℕ) :
 
 /-- The description budget at `lowerBudget k` leaves an additive margin of `2 ^ (k - 1)` in the
 binary exponent. -/
-theorem lowerBudget_description_margin (k : ℕ) (hk : 64 ≤ k) :
+private theorem lowerBudget_description_margin (k : ℕ) (hk : 64 ≤ k) :
     let q := lowerBudget k
     3 * q + (k + 2) * (2 * q + (k + k) + 1) + k + 2 ^ (k - 1) ≤ 2 ^ k - 1 := by
   dsimp only

@@ -297,7 +297,7 @@ private theorem not_forall_trace_fill_eq_parity_bne {p : Program signature n g} 
 /-- **Håstad's theorem with the sharp exponent**, for programs: if a wire of AND/OR depth at most
 `d` computes the parity of `n` bits, the program has at least `2 ^ s` conjunctions and
 disjunctions, for every `s ≥ 2` with `17 s (16 s + 1) ^ (d - 2) ≤ n`. -/
-theorem two_pow_le_card_andOr_of_trace_eq_parity {p : Program signature n g} {w : Wire n g}
+private theorem two_pow_le_card_andOr_of_trace_eq_parity {p : Program signature n g} {w : Wire n g}
     (hw : ∀ x, p.trace interpretation x w = parity n x) (hs : 2 ≤ s) {d : ℕ}
     (hd : p.wireDepthsWith andOrCost w ≤ d) (hn : 17 * s * (16 * s + 1) ^ (d - 2) ≤ n) :
     2 ^ s ≤ #{k | (p.lines k).op ≠ .not} := by

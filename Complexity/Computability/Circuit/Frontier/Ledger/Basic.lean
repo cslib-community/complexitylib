@@ -100,12 +100,13 @@ variable [DecidablePred special]
 def run (m : M) (x : Fin n → U) : Wire n s → U :=
   (p.eraseGates special).trace (I.withConstants (L.readout m)) x
 
+/-- On an input wire `.input i`, `L.run m x` evaluates to `x i`. -/
 @[simp] theorem run_input (m : M) (x : Fin n → U) (i : Fin n) : L.run m x (.input i) = x i :=
   rfl
 
 /-- The value of a gate in the run with guess `m`: the readout for a special gate, and the gate
 applied to the values of its arguments otherwise. -/
-theorem run_gate (m : M) (x : Fin n → U) (g : Fin s) :
+private theorem run_gate (m : M) (x : Fin n → U) (g : Fin s) :
     L.run m x (.gate g) = if h : special g then L.readout m ⟨g, h⟩
       else I (p.lines g).op fun a => L.run m x ((p.lines g).wires a) :=
   p.trace_eraseGates_gate x g

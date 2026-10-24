@@ -32,7 +32,7 @@ bound.
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.Aggregates f T`: the operation `f` aggregates in `T`.
+* `Cslib.Circuits.Frontier.Aggregates`: an operation aggregates in a commutative monoid.
 * `Cslib.Circuits.Frontier.Ledger.ofAggregates`: the ledger of aggregate gates.
 
 ## Main results

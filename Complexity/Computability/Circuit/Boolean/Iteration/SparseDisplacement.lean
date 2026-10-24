@@ -61,7 +61,7 @@ def thresholdSum (S : Finset ℕ) (coeff : ℕ → BitVec w) (base x : BitVec w)
   base + ∑ i ∈ S, if (BitVec.ofNat w i).ult x then coeff i else 0
 
 /-- Each threshold uses one comparison, one word selector, and one shared-carry addition. -/
-theorem synthesis_thresholdSum (S : Finset ℕ) (coeff : ℕ → BitVec w) (base : BitVec w)
+private theorem synthesis_thresholdSum (S : Finset ℕ) (coeff : ℕ → BitVec w) (base : BitVec w)
     (s : Set (BitString n → Bool)) (a : BitString n → BitVec w)
     (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
     (hc : ∀ b : Bool, (fun _ : BitString n => b) ∈ s) :
@@ -148,7 +148,7 @@ theorem thresholdSum_displacement (h : BitVec n → BitVec n) (x : BitVec n) :
   simp [d]
 
 /-- Counter-coordinate changes inject into the commutation-defect set. -/
-theorem displacementCuts_card (f h : BitVec n → BitVec n)
+private theorem displacementCuts_card (f h : BitVec n → BitVec n)
     (hc : Function.Commute h f) (hi : Function.Injective h) :
     (displacementCuts h).card ≤ 2 * (disagreement f (fun x => x + 1)).card := by
   classical
@@ -167,7 +167,7 @@ theorem displacementCuts_card (f h : BitVec n → BitVec n)
     simpa only [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi', Nat.mod_eq_of_lt hj'] using he'
 
 /-- A sparse derivative gives an actual native Boolean circuit, including all selection gates. -/
-theorem displacement_circuit (h : BitVec n → BitVec n) :
+private theorem displacement_circuit (h : BitVec n → BitVec n) :
     ∃ out : Circuit Boolean.signature n n,
       out.Computes Boolean.interpretation (fun x i => (h (word x)).getLsbD i.val) ∧
       out.size ≤ 2 + (displacementCuts h).card * (21 * n + 3) + (12 * n + 1) := by

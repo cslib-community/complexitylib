@@ -180,7 +180,7 @@ private theorem cost_unchain {a b n r : ℕ} (first : Circuit signature (a * 2 +
     Circuit.cost_program_wiringOn, Nat.zero_add]
   exact Nat.add_comm _ _
 
-theorem pairs_comp {a b : ℕ} (flags : BitString a) (f : Fin b → Fin a) :
+private theorem pairs_comp {a b : ℕ} (flags : BitString a) (f : Fin b → Fin a) :
     pairs (flags ∘ f) = pairs flags ∘ f := rfl
 
 end bitonicSortTraceCircuit
@@ -236,7 +236,7 @@ theorem eval_bitonicUnsortCircuit (r d : ℕ) (flags : BitString (sortTraceSize 
     simp only [← pairs_comp, ih]
 
 /-- A reverse merge charges only switching; saved controls require no new negations. -/
-theorem cost_program_bitonicUnmergeCircuit (r d : ℕ) (cost : signature.Op → ℕ) :
+private theorem cost_program_bitonicUnmergeCircuit (r d : ℕ) (cost : signature.Op → ℕ) :
     (bitonicUnmergeCircuit r d).program.cost cost =
       mergeTraceSize d * (2 * r * (2 * cost .and + cost .or)) := by
   induction d with

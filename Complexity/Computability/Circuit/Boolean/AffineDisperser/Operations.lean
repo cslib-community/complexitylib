@@ -77,7 +77,7 @@ variable {n : ℕ} {f : BooleanFunction n}
 
 /-- A state with the parameters, pairs and parameter map of a valid state is valid when its
 semi-circuit is well formed and computes `f`. -/
-theorem Valid.of_phi {S S' : State n} (hS : S.Valid f) (hparams : S'.params = S.params)
+private theorem Valid.of_phi {S S' : State n} (hS : S.Valid f) (hparams : S'.params = S.params)
     (hpairs : S'.pairs = S.pairs) (hphi : S'.phi = S.phi) (hwf : S'.WellFormed)
     (hcomp : ∀ val, S'.Consistent val → S'.out.eval val = f (S'.phi val)) : S'.Valid f where
   wf := hwf
@@ -183,7 +183,7 @@ theorem restrict_size (S : State n) (x : ℕ) (ℓ : Lit) (P : Finset (ℕ × �
 /-- Along an affine family on which the kept pairs are tame, the restricted family is affine
 and every pair is tame: a dropped pair has a constant member, or a constant sum when `x` is
 restricted to a literal of its partner. -/
-theorem RestrictOK.pairTame {S : State n} {x : ℕ} {ℓ : Lit} {P : Finset (ℕ × ℕ)}
+private theorem RestrictOK.pairTame {S : State n} {x : ℕ} {ℓ : Lit} {P : Finset (ℕ × ℕ)}
     (h : S.RestrictOK x ℓ P) {k : ℕ} {τ : BitString k → ℕ → Bool}
     (htame : ∀ pr ∈ P, PairTame τ pr) :
     ∀ pr ∈ S.pairs, PairTame (fun u => Function.update (τ u) x (ℓ.eval (τ u))) pr := by

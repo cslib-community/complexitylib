@@ -35,9 +35,14 @@ functions can be negated (`MonoidProgram.Computes.not`) and combined by commutat
 
 ## Main definitions
 
-* `Cslib.BranchingPrograms.Instruction`: an instruction, a position and a function from the
-  alphabet to the monoid; `Cslib.BranchingPrograms.Instruction.cond`: the instruction selecting
-  one of two elements by a bit.
+* `Cslib.BranchingPrograms.Instruction`, `Cslib.BranchingPrograms.Instruction.eval`: an
+  instruction (a position and a function from the alphabet to the monoid) and the element it
+  selects on an input.
+* `Cslib.BranchingPrograms.Instruction.cond`, `Cslib.BranchingPrograms.Instruction.const`:
+  instructions selecting one of two elements by a bit, or a fixed element.
+* `Cslib.BranchingPrograms.Instruction.map`, `Cslib.BranchingPrograms.Instruction.comap`,
+  `Cslib.BranchingPrograms.Instruction.rename`: change of monoid, alphabet and positions for an
+  instruction.
 * `Cslib.BranchingPrograms.MonoidProgram`: a program over a monoid, a word of instructions.
 * `Cslib.BranchingPrograms.MonoidProgram.eval`: the value of a program on an input.
 * `Cslib.BranchingPrograms.MonoidProgram.map`, `Cslib.BranchingPrograms.MonoidProgram.comap`,
@@ -89,6 +94,7 @@ variable {ι κ α β M N : Type*}
 def eval (I : Instruction ι α M) (x : ι → α) : M :=
   I.select (x I.var)
 
+/-- Evaluating `⟨i, f⟩` on `x` applies `f` to `x i`. -/
 @[simp] theorem eval_mk (i : ι) (f : α → M) (x : ι → α) :
     (⟨i, f⟩ : Instruction ι α M).eval x = f (x i) :=
   rfl
@@ -99,6 +105,7 @@ is true and `e` when it is false. -/
 def cond (i : ι) (t e : M) : Instruction ι Bool M :=
   ⟨i, fun b => bif b then t else e⟩
 
+/-- Evaluating `cond i t e` on `x` selects `t` when `x i` is true and `e` when `x i` is false. -/
 @[simp] theorem eval_cond (i : ι) (t e : M) (x : ι → Bool) :
     (cond i t e).eval x = bif x i then t else e :=
   rfl
@@ -115,6 +122,7 @@ theorem cond_var_select (I : Instruction ι Bool M) :
 def const (i : ι) (m : M) : Instruction ι α M :=
   ⟨i, fun _ => m⟩
 
+/-- A constant instruction evaluates to its fixed element on every input. -/
 @[simp] theorem eval_const (i : ι) (m : M) (x : ι → α) : (const i m).eval x = m :=
   rfl
 
@@ -123,6 +131,7 @@ def const (i : ι) (m : M) : Instruction ι α M :=
 def map (φ : M → N) (I : Instruction ι α M) : Instruction ι α N :=
   ⟨I.var, φ ∘ I.select⟩
 
+/-- Mapping an instruction by `φ` applies `φ` to the element it selects. -/
 @[simp] theorem eval_map (φ : M → N) (I : Instruction ι α M) (x : ι → α) :
     (I.map φ).eval x = φ (I.eval x) :=
   rfl
@@ -132,6 +141,7 @@ def map (φ : M → N) (I : Instruction ι α M) : Instruction ι α N :=
 def comap (g : β → α) (I : Instruction ι α M) : Instruction ι β M :=
   ⟨I.var, I.select ∘ g⟩
 
+/-- Pulling an instruction back along `g` evaluates it on `g ∘ x`. -/
 @[simp] theorem eval_comap (g : β → α) (I : Instruction ι α M) (x : ι → β) :
     (I.comap g).eval x = I.eval (g ∘ x) :=
   rfl
@@ -141,6 +151,7 @@ def comap (g : β → α) (I : Instruction ι α M) : Instruction ι β M :=
 def rename (f : ι → κ) (I : Instruction ι α M) : Instruction κ α M :=
   ⟨f I.var, I.select⟩
 
+/-- Renaming the position of an instruction by `f` evaluates it on `x ∘ f`. -/
 @[simp] theorem eval_rename (f : ι → κ) (I : Instruction ι α M) (x : κ → α) :
     (I.rename f).eval x = I.eval (x ∘ f) :=
   rfl
@@ -159,17 +170,21 @@ variable {ι κ α β M N G : Type*} [Monoid M] [Monoid N] [Group G]
 def eval (P : MonoidProgram ι α M) (x : ι → α) : M :=
   FreeMonoid.lift (·.eval x) P
 
+/-- The value of a program on `x` is the list product of the elements its instructions select. -/
 theorem eval_eq_prod (P : MonoidProgram ι α M) (x : ι → α) :
     P.eval x = (P.toList.map (·.eval x)).prod :=
   FreeMonoid.lift_apply _ P
 
+/-- The empty program evaluates to `1`. -/
 @[simp] theorem eval_one (x : ι → α) : (1 : MonoidProgram ι α M).eval x = 1 :=
   map_one _
 
+/-- A single-instruction program evaluates to the element that instruction selects. -/
 @[simp] theorem eval_of (I : Instruction ι α M) (x : ι → α) :
     eval (FreeMonoid.of I) x = I.eval x :=
   FreeMonoid.lift_eval_of _ I
 
+/-- Concatenating two programs multiplies their values. -/
 @[simp] theorem eval_mul (P Q : MonoidProgram ι α M) (x : ι → α) :
     (P * Q).eval x = P.eval x * Q.eval x :=
   map_mul _ P Q
@@ -183,15 +198,19 @@ def Computes (P : MonoidProgram ι α M) (σ : M) (f : (ι → α) → Bool) : P
 def map (φ : M →* N) (P : MonoidProgram ι α M) : MonoidProgram ι α N :=
   FreeMonoid.map (Instruction.map φ) P
 
+/-- Mapping a program by a monoid homomorphism preserves its length. -/
 @[simp] theorem length_map (φ : M →* N) (P : MonoidProgram ι α M) :
     (P.map φ).length = P.length :=
   List.length_map _
 
+/-- Mapping a program by a monoid homomorphism `φ` applies `φ` to its value. -/
 @[simp] theorem eval_map (φ : M →* N) (P : MonoidProgram ι α M) (x : ι → α) :
     (P.map φ).eval x = φ (P.eval x) := by
   simp only [eval_eq_prod, map, FreeMonoid.toList_map, List.map_map, map_list_prod]
   rfl
 
+/-- Pushing a program that `σ`-computes `f` along a monoid homomorphism `φ` gives a program that
+`(φ σ)`-computes `f`. -/
 theorem Computes.map {P : MonoidProgram ι α M} {σ : M} {f : (ι → α) → Bool}
     (h : P.Computes σ f) (φ : M →* N) : (P.map φ).Computes (φ σ) f := fun x => by
   rw [eval_map, h x]
@@ -202,10 +221,12 @@ def comap (g : β → α) (P : MonoidProgram ι α M) : MonoidProgram ι β M :=
   FreeMonoid.map (Instruction.comap g) P
 
 omit [Monoid M] in
+/-- Pulling a program back along `g` preserves its length. -/
 @[simp] theorem length_comap (g : β → α) (P : MonoidProgram ι α M) :
     (P.comap g).length = P.length :=
   List.length_map _
 
+/-- Pulling a program back along `g` evaluates it on `g ∘ x`. -/
 @[simp] theorem eval_comap (g : β → α) (P : MonoidProgram ι α M) (x : ι → β) :
     (P.comap g).eval x = P.eval (g ∘ x) := by
   simp only [eval_eq_prod, comap, FreeMonoid.toList_map, List.map_map]
@@ -216,10 +237,12 @@ def rename (f : ι → κ) (P : MonoidProgram ι α M) : MonoidProgram κ α M :
   FreeMonoid.map (Instruction.rename f) P
 
 omit [Monoid M] in
+/-- Renaming the positions of a program preserves its length. -/
 @[simp] theorem length_rename (f : ι → κ) (P : MonoidProgram ι α M) :
     (P.rename f).length = P.length :=
   List.length_map _
 
+/-- Renaming the positions of a program by `f` evaluates it on `x ∘ f`. -/
 @[simp] theorem eval_rename (f : ι → κ) (P : MonoidProgram ι α M) (x : κ → α) :
     (P.rename f).eval x = P.eval (x ∘ f) := by
   simp only [eval_eq_prod, rename, FreeMonoid.toList_map, List.map_map]
@@ -229,13 +252,17 @@ omit [Monoid M] in
 def inv (P : MonoidProgram ι α G) : MonoidProgram ι α G :=
   FreeMonoid.reverse (FreeMonoid.map (Instruction.map (·⁻¹)) P)
 
+/-- The instruction list of `P.inv` is the reversed list of elementwise-inverted instructions of
+`P`. -/
 theorem toList_inv (P : MonoidProgram ι α G) :
     P.inv.toList = (P.toList.map (Instruction.map (·⁻¹))).reverse :=
   rfl
 
+/-- Inverting a program over a group preserves its length. -/
 @[simp] theorem length_inv (P : MonoidProgram ι α G) : P.inv.length = P.length := by
   simp [FreeMonoid.length, toList_inv]
 
+/-- The inverse of a program over a group evaluates to the inverse of its value. -/
 @[simp] theorem eval_inv (P : MonoidProgram ι α G) (x : ι → α) :
     P.inv.eval x = (P.eval x)⁻¹ := by
   simp [eval_eq_prod, toList_inv, List.prod_inv_reverse, Function.comp_def]
@@ -249,6 +276,7 @@ def mulLeft (g : M) (P : MonoidProgram ι α M) : MonoidProgram ι α M :=
   | [] => FreeMonoid.of (.const default g)
   | I :: l => FreeMonoid.ofList (I.map (g * ·) :: l)
 
+/-- `mulLeft g P` evaluates to `g * P.eval x`. -/
 @[simp] theorem eval_mulLeft (g : M) (P : MonoidProgram ι α M) (x : ι → α) :
     (mulLeft g P).eval x = g * P.eval x := by
   unfold mulLeft
@@ -256,6 +284,7 @@ def mulLeft (g : M) (P : MonoidProgram ι α M) : MonoidProgram ι α M :=
   · simp [eval_eq_prod, h]
   · simp [eval_eq_prod, h, mul_assoc]
 
+/-- `mulLeft g P` has length `max 1 P.length`. -/
 theorem length_mulLeft (g : M) (P : MonoidProgram ι α M) :
     (mulLeft g P).length = max 1 P.length := by
   unfold mulLeft FreeMonoid.length

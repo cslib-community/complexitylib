@@ -35,7 +35,8 @@ exactly the additions and multiplications.
 ## Main definitions
 
 * `Cslib.Circuits.affineSignature`, `Cslib.Circuits.affineInterpretation`: the affine basis.
-* `Cslib.Circuits.arithSignature`, `Cslib.Circuits.arithInterpretation`: the arithmetic basis.
+* `Cslib.Circuits.ArithOp`, `Cslib.Circuits.ArithOp.arity`,
+  `Cslib.Circuits.arithSignature`, `Cslib.Circuits.arithInterpretation`: the arithmetic basis.
 * `Cslib.Circuits.arithInterpretationWith`: interpret the constant symbols in another carrier.
 * `Cslib.Circuits.ArithOp.mulCost`: count multiplications, including scalar multiplications.
 * `Cslib.Circuits.ArithOp.addCost`: count additions.
@@ -113,12 +114,15 @@ def arithInterpretation [Semiring F] : Interpretation (arithSignature F) F :=
 
 variable {F}
 
+/-- Evaluating `.add` under `arithInterpretationWith` adds the two arguments. -/
 @[simp] theorem arithInterpretationWith_add {R : Type*} [Add R] [Mul R] (constant : F → R)
     (x : Fin 2 → R) : arithInterpretationWith F constant .add x = x 0 + x 1 := rfl
 
+/-- Evaluating `.mul` under `arithInterpretationWith` multiplies the two arguments. -/
 @[simp] theorem arithInterpretationWith_mul {R : Type*} [Add R] [Mul R] (constant : F → R)
     (x : Fin 2 → R) : arithInterpretationWith F constant .mul x = x 0 * x 1 := rfl
 
+/-- Evaluating `.const c` under `arithInterpretationWith` applies `constant` to `c`. -/
 @[simp] theorem arithInterpretationWith_const {R : Type*} [Add R] [Mul R] (constant : F → R)
     (c : F) (x : Fin 0 → R) : arithInterpretationWith F constant (.const c) x = constant c := rfl
 

@@ -64,7 +64,7 @@ def searchBelow (n μ : ℕ) : ℕ → ℕ
   | j + 1 => if searchBelow n μ j + 2 ^ (n - j - 1) < μ
     then searchBelow n μ j + 2 ^ (n - j - 1) else searchBelow n μ j
 
-theorem searchBelow_bounds (n μ : ℕ) (hμ : μ ≤ 2 ^ n) (j : ℕ) (hj : j ≤ n) :
+private theorem searchBelow_bounds (n μ : ℕ) (hμ : μ ≤ 2 ^ n) (j : ℕ) (hj : j ≤ n) :
     (μ = 0 → searchBelow n μ j = 0) ∧
       (0 < μ → searchBelow n μ j < μ ∧ μ ≤ searchBelow n μ j + 2 ^ (n - j)) := by
   induction j with
@@ -83,7 +83,8 @@ theorem searchBelow_bounds (n μ : ℕ) (hμ : μ ≤ 2 ^ n) (j : ℕ) (hj : j �
       rw [searchBelow, show n - (j + 1) = n - j - 1 by omega]
       split_ifs <;> constructor <;> omega
 
-theorem searchBelow_lt (n μ j : ℕ) (hμ : μ < 2 ^ n) (hj : j ≤ n) : searchBelow n μ j < 2 ^ n := by
+private theorem searchBelow_lt (n μ j : ℕ) (hμ : μ < 2 ^ n) (hj : j ≤ n) :
+    searchBelow n μ j < 2 ^ n := by
   obtain ⟨hz, hp⟩ := searchBelow_bounds n μ hμ.le j hj
   rcases Nat.eq_zero_or_pos μ with h | h
   · rw [hz h]
@@ -236,7 +237,7 @@ theorem depth_circuit (c : Circuit signature n n) (L : ℕ) (hL : 0 < L) (hLN : 
   omega
 
 /-- The threshold search costs at most a factor `(n + 1) ^ 2` more than a fixed power. -/
-theorem depthBudget_le (n s L : ℕ) :
+private theorem depthBudget_le (n s L : ℕ) :
     depthBudget n s L ≤ 200000 * (n + 1) ^ 2 * powerBudget n s (2 ^ n) L := by
   set B := powerBudget n s (2 ^ n) L
   have hb : (n + 1) ^ 3 ≤ B := by

@@ -52,14 +52,14 @@ namespace Cslib.Circuits
 namespace Rational.CyclotomicRing
 open Polynomial Matrix Module
 
-lemma root_degree (e : ℕ) : AdjoinRoot.root (modulus e) ^ degree e = -1 := by
+private lemma root_degree (e : ℕ) : AdjoinRoot.root (modulus e) ^ degree e = -1 := by
   have h := AdjoinRoot.eval₂_root (modulus e)
   change Polynomial.eval₂ (AdjoinRoot.of (modulus e)) (AdjoinRoot.root (modulus e))
     ((X : ℚ[X]) ^ degree e + 1) = 0 at h
   rw [Polynomial.eval₂_add, Polynomial.eval₂_pow, Polynomial.eval₂_X, Polynomial.eval₂_one] at h
   exact eq_neg_of_add_eq_zero_left h
 
-lemma root_pow_reduce (e k : ℕ) :
+private lemma root_pow_reduce (e k : ℕ) :
     AdjoinRoot.root (modulus e) ^ k = (-1 : R e) ^ (k / degree e) *
       (basis e ⟨k % degree e, Nat.mod_lt _ (degree_pos e)⟩) := by
   rw [basis_apply, ← root_degree, ← pow_mul, ← pow_add]
@@ -69,7 +69,7 @@ lemma root_pow_reduce (e k : ℕ) :
 
 /-- Every regular-representation entry of a cyclotomic monomial is 0 or ±1.
 This also gives an explicit integral computation with a division and remainder. -/
-lemma rho_root_pow (e k : ℕ) (i j : Fin (degree e)) :
+private lemma rho_root_pow (e k : ℕ) (i j : Fin (degree e)) :
     rho e (AdjoinRoot.root (modulus e) ^ k) i j =
       if (k + j.val) % degree e = i.val then (-1 : ℚ) ^ ((k + j.val) / degree e) else 0 := by
   rw [rho, Algebra.leftMulMatrix_eq_repr_mul, basis_apply, ← pow_add, root_pow_reduce]
@@ -80,7 +80,7 @@ lemma rho_root_pow (e k : ℕ) (i j : Fin (degree e)) :
   congr 1
   exact propext ⟨fun h => congrArg Fin.val h, fun h => Fin.ext h⟩
 
-lemma rho_character (e : ℕ) (a : ZMod (dimension e)) (i j : Fin (degree e)) :
+private lemma rho_character (e : ℕ) (a : ZMod (dimension e)) (i j : Fin (degree e)) :
     rho e (character e a) i j =
       if (a.val + j.val) % degree e = i.val then
         (-1 : ℚ) ^ ((a.val + j.val) / degree e) else 0 := by
@@ -90,12 +90,12 @@ lemma rho_character (e : ℕ) (a : ZMod (dimension e)) (i j : Fin (degree e)) :
 def signedEntry (e : ℕ) (a : ZMod (dimension e)) (i j : Fin (degree e)) : ℤ :=
   if (a.val + j.val) % degree e = i.val then (-1 : ℤ) ^ ((a.val + j.val) / degree e) else 0
 
-lemma rho_character_integral (e : ℕ) (a : ZMod (dimension e)) (i j : Fin (degree e)) :
+private lemma rho_character_integral (e : ℕ) (a : ZMod (dimension e)) (i j : Fin (degree e)) :
     rho e (character e a) i j = (signedEntry e a i j : ℚ) := by
   simp only [rho_character, signedEntry, Int.cast_ite, Int.cast_pow, Int.cast_neg, Int.cast_one,
     Int.cast_zero]
 
-lemma signedEntry_abs (e : ℕ) (a : ZMod (dimension e)) (i j : Fin (degree e)) :
+private lemma signedEntry_abs (e : ℕ) (a : ZMod (dimension e)) (i j : Fin (degree e)) :
     |signedEntry e a i j| ≤ 1 := by
   unfold signedEntry
   split_ifs <;> simp [abs_pow]
@@ -115,6 +115,8 @@ def full (M : ℕ) (a t : ℤ) : Matrix (Fin M) (Fin M) ℤ := fun i j =>
 def padded (M N : ℕ) (a t : ℤ) : Matrix (Fin M) (Fin M) ℤ :=
   fun i j => if j.val < N then full M a t i j else 0
 
+/-- For `|a| ≤ w` with `1 ≤ w` and `k ≤ M`, every coefficient of `(X + C a) ^ k` has absolute
+value at most `(2 * w) ^ M`. -/
 lemma coeff_bound (a : ℤ) (w M k j : ℕ) (hw : 1 ≤ w) (ha : |a| ≤ w) (hk : k ≤ M) :
     |(((X + C a) ^ k : ℤ[X]).coeff j)| ≤ (2 * w : ℤ) ^ M := by
   rw [coeff_X_add_C_pow, abs_mul, abs_pow, Int.abs_natCast]
@@ -127,7 +129,7 @@ lemma coeff_bound (a : ℤ) (w M k j : ℕ) (hw : 1 ≤ w) (ha : |a| ≤ w) (hk 
            (pow_le_pow_right₀ hw' (Nat.sub_le k j |>.trans hk))
        _ = _ := by rw [← mul_pow]; congr 1; ring
 
-lemma full_bound (M : ℕ) (a t : ℤ) (w H : ℕ) (hw : 1 ≤ w) (hH : 1 ≤ H)
+private lemma full_bound (M : ℕ) (a t : ℤ) (w H : ℕ) (hw : 1 ≤ w) (hH : 1 ≤ H)
     (ha : |a| ≤ w) (ht : |t| ≤ H) (i j : Fin M) :
     |full M a t i j| ≤ (M : ℤ) * (2 * w : ℤ) ^ (2 * M) * (H : ℤ) ^ M := by
   unfold full
@@ -150,21 +152,21 @@ lemma full_bound (M : ℕ) (a t : ℤ) (w H : ℕ) (hw : 1 ≤ w) (hH : 1 ≤ H)
               _ = _ := by rw [← pow_add]; simp [two_mul]
        _ = _ := by simp [mul_assoc]
 
-lemma padded_bound (M N : ℕ) (a t : ℤ) (w H : ℕ) (hw : 1 ≤ w) (hH : 1 ≤ H)
+private lemma padded_bound (M N : ℕ) (a t : ℤ) (w H : ℕ) (hw : 1 ≤ w) (hH : 1 ≤ H)
     (ha : |a| ≤ w) (ht : |t| ≤ H) (i j : Fin M) :
     |padded M N a t i j| ≤ (M : ℤ) * (2 * w : ℤ) ^ (2 * M) * (H : ℤ) ^ M := by
   by_cases h : j.val < N
   · simpa [padded, h] using full_bound M a t w H hw hH ha ht i j
   · simp only [padded, h, ite_false, abs_zero]; positivity
 
-lemma full_cast {K : Type*} [Field K] (M : ℕ) (a t : ℤ) (i j : Fin M) :
+private lemma full_cast {K : Type*} [Field K] (M : ℕ) (a t : ℤ) (i j : Fin M) :
     Polynomial.eval (t : K) (TestPolynomial.full M (a : K) i j) =
       (full M a t i j : K) := by
   simp only [TestPolynomial.full, full, coeff_X_add_C_pow, Polynomial.eval_finsetSum,
     Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X]
   simp only [Int.cast_sum, Int.cast_mul, Int.cast_pow, Int.cast_neg, Int.cast_natCast]
 
-lemma padded_cast {K : Type*} [Field K] (M N : ℕ) (a t : ℤ) (i j : Fin M) :
+private lemma padded_cast {K : Type*} [Field K] (M N : ℕ) (a t : ℤ) (i j : Fin M) :
     Polynomial.eval (t : K) (TestPolynomial.padded M N (a : K) i j) =
       (padded M N a t i j : K) := by
   by_cases h : j.val < N
@@ -178,6 +180,7 @@ open Polynomial MvPolynomial Matrix
 open scoped BigOperators
 variable {K : Type*} [Field K] {d : ℕ} [NeZero d]
 
+/-- Evaluating `uni p` on a three-variable tuple `x` evaluates `p` at `x 0`. -/
 lemma eval_uni (x : Fin 3 → K) (p : K[X]) :
     MvPolynomial.eval x (uni p) = Polynomial.eval (x 0) p := by
   have he : (MvPolynomial.eval x).comp uni = Polynomial.evalRingHom (x 0) := by
@@ -186,6 +189,8 @@ lemma eval_uni (x : Fin 3 → K) (p : K[X]) :
     · simp [uni]
   exact DFunLike.congr_fun he p
 
+/-- Evaluating `lift χ R i j` at `x` expands to the Weyl-matrix character sum at `x 0`, `x 1`,
+`x 2`. -/
 lemma eval_lift (χ : AddChar (ZMod d) K) (R : Matrix (ZMod d) (ZMod d) K[X])
     (x : Fin 3 → K) (i j : ZMod d) :
     MvPolynomial.eval x (lift χ R i j) =
@@ -217,7 +222,7 @@ def entry (e : ℕ) (T : Matrix (ZMod (dimension e)) (ZMod (dimension e)) ℤ)
       T k (k - b) * signedEntry e (-a * k + a * u) i j * p ^ a.val * r ^ b.val
     else 0
 
-lemma entry_bound (e : ℕ) (T : Matrix (ZMod (dimension e)) (ZMod (dimension e)) ℤ)
+private lemma entry_bound (e : ℕ) (T : Matrix (ZMod (dimension e)) (ZMod (dimension e)) ℤ)
     (p r : ℤ) (A H : ℕ) (hT : ∀ i j, |T i j| ≤ A) (hH : 1 ≤ H)
     (hp : |p| ≤ H) (hr : |r| ≤ H) (u v : ZMod (dimension e)) (i j : Fin (degree e)) :
     |entry e T p r u v i j| ≤ (dimension e : ℤ) ^ 3 * A * (H : ℤ) ^ (2 * dimension e) := by
@@ -252,16 +257,18 @@ lemma entry_bound (e : ℕ) (T : Matrix (ZMod (dimension e)) (ZMod (dimension e)
          exact (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum (fun k _ => hterm a b k))
        _ = _ := by simp only [Finset.sum_const, Finset.card_univ, ZMod.card, nsmul_eq_mul]; ring
 
-lemma rho_rat_mul (e : ℕ) (q : ℚ) (z : R e) (i j : Fin (degree e)) :
+private lemma rho_rat_mul (e : ℕ) (q : ℚ) (z : R e) (i j : Fin (degree e)) :
     rho e (algebraMap ℚ (R e) q * z) i j = q * rho e z i j := by
   rw [← Algebra.smul_def, map_smul, Matrix.smul_apply, smul_eq_mul]
 
-lemma rho_div_nat (e : ℕ) (z : R e) (i j : Fin (degree e)) :
+private lemma rho_div_nat (e : ℕ) (z : R e) (i j : Fin (degree e)) :
     (dimension e : ℚ) * rho e ((dimension e : R e)⁻¹ * z) i j = rho e z i j := by
   have hc : (dimension e : R e)⁻¹ = algebraMap ℚ (R e) ((dimension e : ℚ)⁻¹) := by simp
   have hd : (dimension e : ℚ) ≠ 0 := by exact_mod_cast (dimension_pos e).ne'
   rw [hc, rho_rat_mul, ← mul_assoc, mul_inv_cancel₀ hd, one_mul]
 
+/-- The integer formula `entry e T p r u v i j` equals `dimension e` times the `(i, j)` regular
+representation entry of `ThreeLift.lift (character e) P u v` at `(t, p, r)`. -/
 lemma entry_spec (e : ℕ)
     (P : Matrix (ZMod (dimension e)) (ZMod (dimension e)) (R e)[X])
     (T : Matrix (ZMod (dimension e)) (ZMod (dimension e)) ℤ) (t p r : ℤ)
@@ -311,6 +318,8 @@ def coordinate (e : ℕ) :
   (Equiv.prodCongr (ZMod.finEquiv (CyclotomicRing.dimension e)).symm.toEquiv
     (Equiv.refl (Fin (CyclotomicRing.degree e)))).trans finProdFinEquiv
 
+/-- The `(i, j)` entry of `regular e A` is the corresponding entry of `CyclotomicRing.rho e` under
+`coordinate e`. -/
 lemma regular_apply (e : ℕ)
     (A : Matrix (ZMod (CyclotomicRing.dimension e)) (ZMod (CyclotomicRing.dimension e))
       (CyclotomicRing.R e))
@@ -333,6 +342,8 @@ def integralLift (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
     (x 1 : ℤ) (x 2 : ℤ) ((coordinate e).symm i).1 ((coordinate e).symm j).1
       ((coordinate e).symm i).2 ((coordinate e).symm j).2
 
+/-- Casting `integralLift n N e x a` to `ℚ` equals `CyclotomicRing.dimension e` times
+`rationalLift n N e x a`. -/
 lemma U_cast (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
     (integralLift n N e x a).map (Int.castRingHom ℚ) = (CyclotomicRing.dimension e : ℚ) •
       rationalLift n N e x a := by
@@ -359,6 +370,8 @@ lemma U_cast (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
     Matrix.map_apply, MvPolynomial.coe_eval₂Hom, MvPolynomial.eval₂_id, Int.cast_natCast,
     hx] using hh
 
+/-- For grid points bounded by `H ≥ 1`, every entry of `integralLift n N e x a` has absolute value
+at most `M ^ 4 * (2 * (n + 1)) ^ (2 * M) * H ^ (3 * M)`, where `M = CyclotomicRing.dimension e`. -/
 lemma U_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx : ∀ l, x l ≤ H)
     (a : Fin (n + 1)) (i j : Fin (matrixDimension e)) :
     |integralLift n N e x a i j| ≤ (CyclotomicRing.dimension e : ℤ) ^ 4 *
@@ -383,7 +396,7 @@ lemma U_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx : ∀ l, x 
     CyclotomicRing.dimension e + 2 * CyclotomicRing.dimension e by omega, pow_add]
   ring
 
-lemma scaled_normalization {d : ℕ} (A B : Mat d) (hA : A.det ≠ 0) (c : ℚ) (hc : c ≠ 0) :
+private lemma scaled_normalization {d : ℕ} (A B : Mat d) (hA : A.det ≠ 0) (c : ℚ) (hc : c ≠ 0) :
     (c • A)⁻¹ * (c • B) = A⁻¹ * B := by
   let : Invertible c := invertibleOfNonzero hc
   have hi : (c • A)⁻¹ = c⁻¹ • A⁻¹ := by
@@ -391,6 +404,8 @@ lemma scaled_normalization {d : ℕ} (A B : Mat d) (hA : A.det ≠ 0) (c : ℚ) 
   rw [hi, Matrix.smul_mul, Matrix.mul_smul, smul_smul]
   simp [hc]
 
+/-- When `(rationalLift n N e x 0).det ≠ 0`, the normalized matrix `tupleAt n N e x a` is the
+ratio `(integralLift n N e x 0)⁻¹ * integralLift n N e x a.succ` over `ℚ`. -/
 lemma tupleAt_integer (n N e : ℕ) (x : Fin 3 → ℕ) (hz : (rationalLift n N e x 0).det ≠ 0)
     (a : Fin n) :
     tupleAt n N e x a = ((integralLift n N e x 0).map (Int.castRingHom ℚ))⁻¹ *
@@ -399,6 +414,7 @@ lemma tupleAt_integer (n N e : ℕ) (x : Fin 3 → ℕ) (hz : (rationalLift n N 
     scaled_normalization _ _ hz _ (by exact_mod_cast (CyclotomicRing.dimension_pos e).ne')]
   rfl
 
+/-- If `(rationalLift n N e x 0).det ≠ 0`, then `(integralLift n N e x 0).det ≠ 0`. -/
 lemma U_det_ne_zero (n N e : ℕ) (x : Fin 3 → ℕ) (hz : (rationalLift n N e x 0).det ≠ 0) :
     (integralLift n N e x 0).det ≠ 0 := by
   have hu : ((integralLift n N e x 0).map (Int.castRingHom ℚ)).det ≠ 0 := by
