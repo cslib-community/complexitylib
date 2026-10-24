@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
+import Complexity.Computability.MCSP.PartialETH
 import Complexity.Computability.MCSP.PartialNP
 
 /-!
@@ -161,5 +162,113 @@ example (heth : ETH) :
     ¬DecidableInSubexpTime BipartitePermutationIndependentSet
       encBipartitePermutationGraph fun G => 2 * G.1 * Nat.log 2 (2 * G.1) :=
   heth.not_decidableInSubexpTime_BipartitePermutationIndependentSet_two_mul
+
+/-! ### Monotone read-once formulas, Ilango's reduction, and PartialMCSP ETH lower bounds -/
+
+example (F : PosFormula n) :
+    F.size + 1 = F.leafSize :=
+  F.size_add_one
+
+example (hn : 0 < n) (c : Circuit signature n 1)
+    (hcost : c.program.cost binaryCost + 1 ≤ n)
+    (hpos : ∀ i : Fin n, ∃ y₀ y₁ : BitString n, (∀ k, k ≠ i → y₀ k = y₁ k) ∧
+      y₀ i = false ∧ y₁ i = true ∧
+      c.eval interpretation y₀ 0 = false ∧ c.eval interpretation y₁ 0 = true) :
+    ∃ F : PosFormula n,
+      F.IsReadOnce ∧ F.leafSize = n ∧ F.size = n - 1 ∧ F.leafSupport = Finset.univ ∧
+      ∀ x, F.eval x = c.eval interpretation x 0 :=
+  c.exists_posFormula_of_cost_binaryCost_le hn hcost hpos
+
+example (G : BipartitePermutationGraph) (hG : 0 < G.1)
+    {f : BitString (6 * G.1) → Bool} (hf : (PartialMCSP.ilangoInstance G).AgreesWith f)
+    (v : Fin (6 * G.1)) :
+    ∃ w : BitString (6 * G.1),
+      f (Function.update w v false) = false ∧ f (Function.update w v true) = true :=
+  PartialMCSP.ilangoInstance_posEssential hG hf v
+
+example {F : PosFormula (6 * n)} (hro : F.IsReadOnce) (hleaf : F.leafSize = 6 * n)
+    (hC1 : ∀ y z : BitString (2 * n),
+      F.eval (PartialMCSP.packXYZ PartialMCSP.zeros2n y z) =
+        decide (∃ i, y i = true ∧ z i = true))
+    (hC2 : ∀ y z : BitString (2 * n),
+      F.eval (PartialMCSP.packXYZ PartialMCSP.ones2n y z) = decide (∃ i, z i = true))
+    (hC3 : ∀ x y : BitString (2 * n),
+      F.eval (PartialMCSP.packXYZ x y PartialMCSP.ones2n) =
+        decide (∃ i, x i = true ∨ y i = true))
+    (hC4 : ∀ x y : BitString (2 * n),
+      F.eval (PartialMCSP.packXYZ x y PartialMCSP.zeros2n) = false) :
+    ∃ π : Equiv.Perm (Fin (2 * n)), ∀ x y z : BitString (2 * n),
+      F.eval (PartialMCSP.packXYZ x y z) =
+        decide (∃ i : Fin (2 * n), (x (π i) || y i) && z i) :=
+  PosFormula.exists_perm_of_agreesWith_ilango hro hleaf hC1 hC2 hC3 hC4
+
+example (G : BipartitePermutationGraph) :
+    G ∈ BipartitePermutationIndependentSet ↔
+      PartialMCSP.ilangoReduction G ∈ PartialMCSP.MonotoneReadOnce :=
+  PartialMCSP.mem_BipartitePermutationIndependentSet_iff_ilangoReduction_mem_monotoneReadOnce G
+
+example (G : BipartitePermutationGraph) :
+    G ∈ BipartitePermutationIndependentSet ↔
+      PartialMCSP.ilangoReduction G ∈ PartialMCSP.BinaryGate :=
+  PartialMCSP.mem_BipartitePermutationIndependentSet_iff_ilangoReduction_mem_binaryGate G
+
+example (G : BipartitePermutationGraph) :
+    G ∈ BipartitePermutationIndependentSet ↔
+      PartialMCSP.ilangoReduction G ∈ PartialMCSP :=
+  PartialMCSP.mem_BipartitePermutationIndependentSet_iff_ilangoReduction_mem G
+
+example :
+    ∃ C D : ℕ, ComputableInO PartialMCSP.ilangoReduction
+      encBipartitePermutationGraph PartialMCSP.enc
+      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D)
+      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D) :=
+  PartialMCSP.exists_computableInO_ilangoReduction
+
+example :
+    ∃ C D : ℕ, ComputableInO PartialMCSP.ilangoReduction
+      encBipartitePermutationGraph PartialMCSP.encBinary
+      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D)
+      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D) :=
+  PartialMCSP.exists_computableInO_ilangoReduction_encBinary
+
+example (heth : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP PartialMCSP.enc
+      fun I => I.arity * Nat.log 2 I.arity :=
+  heth.not_decidableInSubexpTime_PartialMCSP
+
+example (heth : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP PartialMCSP.encBinary
+      fun I => I.arity * Nat.log 2 I.arity :=
+  heth.not_decidableInSubexpTime_PartialMCSP_encBinary
+
+example (heth : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP.BinaryGate PartialMCSP.enc
+      fun I => I.arity * Nat.log 2 I.arity :=
+  heth.not_decidableInSubexpTime_PartialMCSP_binaryGate
+
+example (heth : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP.BinaryGate PartialMCSP.encBinary
+      fun I => I.arity * Nat.log 2 I.arity :=
+  heth.not_decidableInSubexpTime_PartialMCSP_binaryGate_encBinary
+
+example (heth : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP.MonotoneReadOnce PartialMCSP.enc
+      fun I => I.arity * Nat.log 2 I.arity :=
+  heth.not_decidableInSubexpTime_PartialMonotoneReadOnceMCSP
+
+example (heth : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP.MonotoneReadOnce PartialMCSP.encBinary
+      fun I => I.arity * Nat.log 2 I.arity :=
+  heth.not_decidableInSubexpTime_PartialMonotoneReadOnceMCSP_encBinary
+
+example (heth : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP PartialMCSP.enc
+      fun I => Nat.log 2 I.tableSize * Nat.log 2 (Nat.log 2 I.tableSize) :=
+  heth.not_decidableInSubexpTime_PartialMCSP_tableSize
+
+example (heth : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP PartialMCSP.encBinary
+      fun I => Nat.log 2 I.tableSize * Nat.log 2 (Nat.log 2 I.tableSize) :=
+  heth.not_decidableInSubexpTime_PartialMCSP_tableSize_encBinary
 
 end ComplexityTests.PartialMCSP
