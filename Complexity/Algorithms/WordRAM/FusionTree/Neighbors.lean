@@ -78,24 +78,24 @@ def left (t : ℕ) : ℕ := t - 1
 /-- Clamped successor position, expressed using two saturating subtractions. -/
 def right (n t : ℕ) : ℕ := t - (t - (n - 1))
 
-theorem indices_lt {n t : ℕ} (hn : 0 < n) (ht : t ≤ n) :
+private theorem indices_lt {n t : ℕ} (hn : 0 < n) (ht : t ≤ n) :
     left t < n ∧ right n t < n := by
   dsimp only [left, right]
   omega
 
 /-- Exactly one of the two optional sketch neighbors is repeated at an end cut. -/
-theorem indices_neighbors {n t : ℕ} (hn : 0 < n) (ht : t ≤ n) :
+private theorem indices_neighbors {n t : ℕ} (hn : 0 < n) (ht : t ≤ n) :
     (left t + 1 = t ∨ left t = t) ∧ (right n t + 1 = t ∨ right n t = t) := by
   dsimp only [left, right]
   omega
 
 /-- Index selected by the comparison in `code`. -/
-def selectIndex (score : ℕ → ℕ) (n t : ℕ) : ℕ :=
+private def selectIndex (score : ℕ → ℕ) (n t : ℕ) : ℕ :=
   if score (right n t) < score (left t) then right n t else left t
 
 /-- The clamped comparison chooses a valid neighbor of minimum score among all neighbors
 of the cut. At either end the repeated candidate causes no exception. -/
-theorem selectIndex_spec (score : ℕ → ℕ) {n t : ℕ} (hn : 0 < n) (ht : t ≤ n) :
+private theorem selectIndex_spec (score : ℕ → ℕ) {n t : ℕ} (hn : 0 < n) (ht : t ≤ n) :
     selectIndex score n t < n ∧
       (selectIndex score n t + 1 = t ∨ selectIndex score n t = t) ∧
       ∀ i < n, (i + 1 = t ∨ i = t) → score (selectIndex score n t) ≤ score i := by
@@ -164,7 +164,7 @@ def result (x : Data 17) (q n t a d : ℕ) : Data 17 :=
       (x.mem (a + left t * d) ^^^ q)).set index (left t)
 
 /-- The returned key, exclusive-or value, and index describe the same selected array entry. -/
-theorem result_spec (x : Data 17) (q n t a d : ℕ) :
+private theorem result_spec (x : Data 17) (q n t a d : ℕ) :
     let j := selectIndex (fun i => x.mem (a + i * d) ^^^ q) n t
     (result x q n t a d).regs index = j ∧
       (result x q n t a d).regs chosen = x.mem (a + j * d) ∧

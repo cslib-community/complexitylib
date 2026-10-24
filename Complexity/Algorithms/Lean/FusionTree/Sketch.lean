@@ -59,7 +59,7 @@ theorem relevantBits_subset_range {n w : ℕ} {keys : Fin n → ℕ}
     (Nat.ne_of_lt (hsorted (by exact Nat.lt_succ_self i.val)))).1
 
 /-- The significant bit of any adjacent pair is selected. -/
-theorem highestDiff_mem_relevantBits {n : ℕ} (w : ℕ) (keys : Fin (n + 1) → ℕ)
+private theorem highestDiff_mem_relevantBits {n : ℕ} (w : ℕ) (keys : Fin (n + 1) → ℕ)
     (i : Fin n) : highestDiff w (keys i.castSucc) (keys i.succ) ∈ relevantBits w keys := by
   apply Finset.mem_image.mpr
   refine ⟨⟨i, by omega⟩, Finset.mem_univ _, ?_⟩

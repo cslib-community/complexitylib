@@ -59,7 +59,7 @@ def glue (l : BinaryTree α) : BinaryTree α → BinaryTree α
   | .nil => l
   | .node b rl rr => .node (splitMin b rl rr).1 l (splitMin b rl rr).2
 
-theorem height_splitMin_le (a : α) (l r : BinaryTree α) :
+private theorem height_splitMin_le (a : α) (l r : BinaryTree α) :
     (splitMin a l r).2.height ≤ (BinaryTree.node a l r).height := by
   induction l generalizing a r with
   | nil => simp only [splitMin, BinaryTree.height]; omega
@@ -68,7 +68,7 @@ theorem height_splitMin_le (a : α) (l r : BinaryTree α) :
     simp only [splitMin, BinaryTree.height] at this ⊢
     omega
 
-theorem height_glue_le (a : α) (l r : BinaryTree α) :
+private theorem height_glue_le (a : α) (l r : BinaryTree α) :
     (glue l r).height ≤ (BinaryTree.node a l r).height := by
   cases r with
   | nil => simp only [glue, BinaryTree.height]; omega
@@ -89,7 +89,7 @@ def erase (x : α) : BinaryTree α → BinaryTree α
       else if a < x then .node a l (erase x r) else glue l r
 
 /-- The detached key together with the remaining tree represents the original set. -/
-theorem elements_splitMin (a : α) (l r : BinaryTree α) :
+private theorem elements_splitMin (a : α) (l r : BinaryTree α) :
     elements (.node a l r) = Insert.insert (splitMin a l r).1 (elements (splitMin a l r).2) := by
   induction l generalizing a r with
   | nil => simp [splitMin, elements]
@@ -100,7 +100,8 @@ theorem elements_splitMin (a : α) (l r : BinaryTree α) :
     tauto
 
 /-- Gluing loses only the key of the deleted node. -/
-theorem elements_glue (l r : BinaryTree α) : elements (glue l r) = elements l ∪ elements r := by
+private theorem elements_glue (l r : BinaryTree α) :
+    elements (glue l r) = elements l ∪ elements r := by
   cases r with
   | nil => simp [glue, elements]
   | node b rl rr =>
@@ -108,7 +109,7 @@ theorem elements_glue (l r : BinaryTree α) : elements (glue l r) = elements l �
     simp [glue, elements]
 
 /-- In an ordered tree the detached key is the least, and the remaining tree stays ordered. -/
-theorem ordered_splitMin {a : α} {l r : BinaryTree α} (ht : Ordered (.node a l r)) :
+private theorem ordered_splitMin {a : α} {l r : BinaryTree α} (ht : Ordered (.node a l r)) :
     Ordered (splitMin a l r).2 ∧ ∀ y ∈ elements (splitMin a l r).2, (splitMin a l r).1 < y := by
   induction l generalizing a r with
   | nil => exact ⟨ht.2.1, ht.2.2.2⟩
@@ -126,7 +127,7 @@ theorem ordered_splitMin {a : α} {l r : BinaryTree α} (ht : Ordered (.node a l
     · exact lt_trans hm (har y hy)
 
 /-- Gluing the subtrees of an ordered node yields an ordered tree. -/
-theorem ordered_glue {a : α} {l r : BinaryTree α} (ht : Ordered (.node a l r)) :
+private theorem ordered_glue {a : α} {l r : BinaryTree α} (ht : Ordered (.node a l r)) :
     Ordered (glue l r) := by
   obtain ⟨hl, hr, hla, har⟩ := ht
   cases r with

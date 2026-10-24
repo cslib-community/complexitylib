@@ -63,7 +63,7 @@ theorem lowerRank_eq {w n : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w ke
   simp only [lowerRank, dite_true, Fin.isLt]
 
 /-- A minimum-exclusive-or neighbor is an exact hit whenever any stored key is a hit. -/
-theorem miss {w n q : ℕ} {keys : Fin n → ℕ} (hs : StrictMono keys)
+private theorem miss {w n q : ℕ} {keys : Fin n → ℕ} (hs : StrictMono keys)
     (hk : ∀ i, keys i < 2 ^ w) (j : Fin n)
     (hbest : ∀ i, IsSketchNeighbor w keys q i → keys j ^^^ q ≤ keys i ^^^ q)
     (hj : keys j ≠ q) : ∀ i, keys i ≠ q := by

@@ -179,7 +179,7 @@ def primitiveCharge (editCharge : List D.Op → TimelineEdit D.Op → Nat)
   | .execute o => ordinaryCharge s.2 o
 
 /-- Charges for replay are exactly the charges for the ordinary history. -/
-theorem replay_charge (editCharge : List D.Op → TimelineEdit D.Op → Nat)
+private theorem replay_charge (editCharge : List D.Op → TimelineEdit D.Op → Nat)
     (resetCharge : Nat) (ordinaryCharge : D.State → D.Op → Nat)
     (timeline os : List D.Op) (s : D.State) :
     (backend D initial).totalCost (primitiveCharge D initial editCharge resetCharge ordinaryCharge)

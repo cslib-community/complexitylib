@@ -46,7 +46,7 @@ theorem Entry.frame {q p : ℕ} {x y : Data registers} (hx : Entry q p x)
     (hf zero (by decide) (by decide)).trans hx.zero_eq⟩
 
 /-- Whole-tree representation projects to the exact chosen fusion-node witness. -/
-theorem node_rep {w m p : ℕ} {cs : List Tree} {mem : ℕ → ℕ}
+private theorem node_rep {w m p : ℕ} {cs : List Tree} {mem : ℕ → ℕ}
     (he : ParameterEligible w cs) (hr : Rep (parameterWords w) (.node m cs) p mem) :
     NodeProgram.Rep
       (NodeParameters.choose he.2.1 he.2.2.2.1 he.2.2.2.2 he.2.2.1 he.1) p mem := by

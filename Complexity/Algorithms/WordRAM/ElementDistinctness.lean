@@ -155,7 +155,7 @@ variable {l : List ℕ} {w : ℕ}
 /-- The loop invariant, after the first `t = idx - 1` entries: the input is intact; either no
 duplicate has been found, the first `t` entries are distinct and the table flags exactly them, or
 a duplicate has been found, the answer is `0` and the loop is about to stop. -/
-structure Invariant (l : List ℕ) (y : Data 12) : Prop where
+private structure Invariant (l : List ℕ) (y : Data 12) : Prop where
   one_eq : y.regs one = 1
   base_eq : y.regs base = l.length + 1
   idx_pos : 1 ≤ y.regs idx
@@ -166,7 +166,7 @@ structure Invariant (l : List ℕ) (y : Data 12) : Prop where
     (y.regs ans = 0 ∧ ¬l.Nodup ∧ y.regs idx = l.length + 1)
 
 /-- Words of twice the number of binary digits of `n` hold `2 n + 1`. -/
-theorem fits_two_mul_add_one {n : ℕ} (hw : logWidth 2 n ≤ w) : Fits w (2 * n + 1) := by
+private theorem fits_two_mul_add_one {n : ℕ} (hw : logWidth 2 n ≤ w) : Fits w (2 * n + 1) := by
   refine Fits.mono ?_ hw
   have hn : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self Nat.one_lt_two n
   have hP : 2 ≤ 2 ^ (Nat.log 2 n + 1) := Nat.le_self_pow (Nat.succ_ne_zero _) 2
@@ -180,7 +180,7 @@ theorem inputFits (a : Input) (hw : logWidth 2 a.1.length ≤ w) : InputFits w a
   have hn : Fits w a.1.length := (fits_two_mul_add_one hw).of_le (by omega)
   exact ⟨hn, fun v hv => hn.of_le (a.2 v hv).le⟩
 
-theorem setup_spec (hw : Fits w (2 * l.length + 1)) :
+private theorem setup_spec (hw : Fits w (2 * l.length + 1)) :
     ∃ y, ExecWithin w setup (.init l) y (4 * l.length + 13) ∧ Invariant l y := by
   have h1 : Fits w 1 := hw.of_le (by omega)
   have e := (Exec.load (w := w) (d := len) (a := zero) (x := .init l)).seq <|
@@ -213,8 +213,8 @@ private theorem not_nodup_of_mem_take {t : ℕ} (ht : t < l.length) (h : l[t] �
 
 /-- One iteration of the loop takes at most `8` instructions, preserves the invariant, and
 either processes the next entry or stops. -/
-theorem body_spec (hl : ∀ v ∈ l, v < l.length) (hw : Fits w (2 * l.length + 1)) {y : Data 12}
-    (hy : Invariant l y) (hc : (Cond.lt idx base).Holds y) :
+private theorem body_spec (hl : ∀ v ∈ l, v < l.length) (hw : Fits w (2 * l.length + 1))
+    {y : Data 12} (hy : Invariant l y) (hc : (Cond.lt idx base).Holds y) :
     ∃ y', ExecWithin w body y y' 8 ∧ Invariant l y' ∧
       l.length + 1 - y'.regs idx < l.length + 1 - y.regs idx := by
   have hbase := hy.base_eq
@@ -286,7 +286,7 @@ theorem body_spec (hl : ∀ v ∈ l, v < l.length) (hw : Fits w (2 * l.length + 
           List.mem_append, List.mem_singleton, hu', or_false]
 
 /-- When the loop stops, the answer is `1` exactly if the input has no duplicates. -/
-theorem exit_spec {y : Data 12} (hy : Invariant l y) (hc : ¬(Cond.lt idx base).Holds y) :
+private theorem exit_spec {y : Data 12} (hy : Invariant l y) (hc : ¬(Cond.lt idx base).Holds y) :
     y.regs ans ≤ 1 ∧ (y.regs ans = 1 ↔ l.Nodup) := by
   have hidx : y.regs idx = l.length + 1 := by
     have := hy.idx_le

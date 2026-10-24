@@ -93,12 +93,12 @@ def setupData (x : Data 14) : Data 14 :=
 
 variable {h w b : ℕ} {x : Data 14}
 
-theorem setup_exec (hw : Fits w 2) : Exec w setup x (setupData x) 7 := by
+private theorem setup_exec (hw : Fits w 2) : Exec w setup x (setupData x) 7 := by
   have h1 := hw.of_le (by decide : 1 ≤ 2)
   ram_eval [setup, setupData, hw, h1]
 
-theorem setup_entry : Entry (x.regs root) (x.regs capacity) (x.regs position) (x.regs delta)
-    (setupData x) := by
+private theorem setup_entry : Entry (x.regs root) (x.regs capacity) (x.regs position)
+    (x.regs delta) (setupData x) := by
   constructor <;> simp +decide [setupData]
 
 /-- A list is represented by a bounded tree, with persistent root and capacity registers. -/

@@ -161,7 +161,7 @@ theorem memberBody_exec {d w base query : ℕ} {tree : Tree d} {s : Data 32}
               he, hm, hM, heq, heq', hlt, h₁, h₂]
 
 /-- Constant registers are preserved by a membership iteration. -/
-theorem memberNext_constants {base query : ℕ} {s : Data 32}
+private theorem memberNext_constants {base query : ℕ} {s : Data 32}
     (hs : MemberEntry base query s) :
     (memberNext s base query).regs zero = 0 ∧
     (memberNext s base query).regs one = 1 ∧
@@ -174,7 +174,7 @@ theorem memberNext_constants {base query : ℕ} {s : Data 32}
   split_ifs <;> simp +decide [hz, ho, ht, hthree, hfour, hfive]
 
 /-- A query above the cached maximum is absent; this fact uses validity, not outside memory. -/
-theorem member_eq_false_of_max_lt {d m M query : ℕ} {tree : Tree d}
+private theorem member_eq_false_of_max_lt {d m M query : ℕ} {tree : Tree d}
     (ht : tree.Valid) (hb : tree.bounds = some (m, M)) (hx : M < query) :
     tree.member query = false := by
   have hnot : ¬tree.Contains query := by
@@ -188,7 +188,7 @@ theorem member_eq_false_of_max_lt {d m M query : ℕ} {tree : Tree d}
   · exact False.elim (hnot ((Tree.member_iff_contains ht query).mp he))
 
 /-- The cached maximum is a valid early successful membership result. -/
-theorem member_maximum {d m M : ℕ} {tree : Tree d}
+private theorem member_maximum {d m M : ℕ} {tree : Tree d}
     (ht : tree.Valid) (hb : tree.bounds = some (m, M)) : tree.member M = true :=
   (Tree.member_iff_contains ht M).mpr (ht.contains_maximum hb)
 

@@ -78,8 +78,8 @@ theorem size_code (w : ℕ) : (code w).size ≤ 201000 := by
 
 /-- Registers 31 through 38 belong to the outer traversal. They are outside every node
 workspace; the terminal self-copy used by `moves` occupies register 39 instead. -/
-theorem preserves_caller (w : ℕ) (i : Fin registers) (hlo : 31 ≤ i.val) (hhi : i.val < 39) :
-    (code w).Preserves i := by
+private theorem preserves_caller (w : ℕ) (i : Fin registers) (hlo : 31 ≤ i.val)
+    (hhi : i.val < 39) : (code w).Preserves i := by
   have hh (c : Code .standard 21) : (c.rename headerBank).Preserves i :=
     preserves_bank _ c i (Or.inr (by omega))
   have hc (c : Code .standard 21) : (c.rename compressBank).Preserves i :=
@@ -108,15 +108,9 @@ theorem caller_regs_eq {w t : ℕ} {x y : Data registers} (he : Exec w (code w) 
     (i : Fin registers) (hlo : 31 ≤ i.val) (hhi : i.val < 39) : y.regs i = x.regs i :=
   he.regs_eq (preserves_caller w i hlo hhi)
 
-/-- The same caller frame for bounded-time executions, directly usable by traversal. -/
-theorem caller_regs_eq_within {w t : ℕ} {x y : Data registers}
-    (he : ExecWithin w (code w) x y t) (i : Fin registers)
-    (hlo : 31 ≤ i.val) (hhi : i.val < 39) : y.regs i = x.regs i :=
-  he.regs_eq (preserves_caller w i hlo hhi)
-
 /-- A miss executes the concrete highest-bit and boundary programs, returning the
 mathematical sibling-boundary rank. All incoming workspace registers may be arbitrary. -/
-theorem exec_correction {w n q a : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w keys)
+private theorem exec_correction {w n q a : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w keys)
     (hw : 3 ≤ w) (hn : 0 < n) (hs : StrictMono keys) (hk : ∀ i, keys i < 2 ^ w)
     (hnB : n ≤ branching w) (hlarge : 9 ≤ Nat.log 2 w)
     (x : Data registers) (hx : Ready p q a x) (hq : Fits w q) (j : Fin n)

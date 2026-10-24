@@ -63,34 +63,13 @@ theorem packedNode_eq_sum (b n : ℕ) (s : ℕ → ℕ) :
     packedNode b n s = ∑ i ∈ Finset.range n, (2 ^ b + s i) * 2 ^ ((b + 1) * i) := by
   simp only [packedNode, packRadix, pow_mul]
 
-/-- The replication constant has one bit at the beginning of each field. -/
-theorem queryMultiplier_eq_sum (b n : ℕ) :
-    queryMultiplier b n = ∑ i ∈ Finset.range n, 2 ^ ((b + 1) * i) := by
-  simp only [queryMultiplier, packRadix, one_mul, pow_mul]
-
 /-- Replication is a positional sum, not an extra word-RAM primitive. -/
-theorem query_mul_multiplier (b n q : ℕ) :
+private theorem query_mul_multiplier (b n q : ℕ) :
     q * queryMultiplier b n = packRadix (2 ^ (b + 1)) n (fun _ => q) := by
   simp [queryMultiplier, packRadix, Finset.mul_sum]
 
-/-- The replicated query is at most the guarded node: the subtraction never truncates. -/
-theorem query_mul_multiplier_le_packedNode {b n q : ℕ} (s : ℕ → ℕ)
-    (hq : q < 2 ^ b) : q * queryMultiplier b n ≤ packedNode b n s := by
-  rw [query_mul_multiplier]
-  unfold packedNode packRadix
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [Finset.sum_range_succ, Finset.sum_range_succ]
-    exact Nat.add_le_add ih (Nat.mul_le_mul_right _ (show q ≤ 2 ^ b + s n by omega))
-
-/-- The raw subtraction is an exact natural-number difference. -/
-theorem packedDifference_add_query {b n q : ℕ} (s : ℕ → ℕ) (hq : q < 2 ^ b) :
-    packedDifference b n s q + q * queryMultiplier b n = packedNode b n s :=
-  Nat.sub_add_cancel (query_mul_multiplier_le_packedNode s hq)
-
 /-- Subtraction is fieldwise: guards prevent any borrow between adjacent sketches. -/
-theorem packedDifference_eq {b n q : ℕ} (s : ℕ → ℕ) (hq : q < 2 ^ b) :
+private theorem packedDifference_eq {b n q : ℕ} (s : ℕ → ℕ) (hq : q < 2 ^ b) :
     packedDifference b n s q =
       packRadix (2 ^ (b + 1)) n (fun i => 2 ^ b + s i - q) := by
   have hsum :
@@ -117,7 +96,7 @@ theorem packedDifference_field {b n q i : ℕ} (s : ℕ → ℕ)
   omega
 
 /-- Every bit of a field agrees with the corresponding bit of its scalar difference. -/
-theorem packedDifference_testBit {b n q i j : ℕ} (s : ℕ → ℕ)
+private theorem packedDifference_testBit {b n q i j : ℕ} (s : ℕ → ℕ)
     (hs : ∀ k < n, s k < 2 ^ b) (hq : q < 2 ^ b) (hi : i < n) (hj : j < b + 1) :
     (packedDifference b n s q).testBit (j + (b + 1) * i) =
       (2 ^ b + s i - q).testBit j := by

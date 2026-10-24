@@ -66,7 +66,7 @@ def setupData (s : Data 32) : Data 32 :=
   (b.set sp (s.regs stackBase)).set runFlag 1
 
 /-- Constant and traversal setup has exactly twelve native instructions. -/
-theorem setup_exec {w : ℕ} {s : Data 32} (hw : Fits w 5) :
+private theorem setup_exec {w : ℕ} {s : Data 32} (hw : Fits w 5) :
     Exec w setup s (setupData s) 12 := by
   have h₁ := hw.of_le (by decide : 1 ≤ 5)
   have h₂ := hw.of_le (by decide : 2 ≤ 5)
@@ -75,18 +75,18 @@ theorem setup_exec {w : ℕ} {s : Data 32} (hw : Fits w 5) :
   ram_eval [setup, setupData, hw, h₁, h₂, h₃, h₄]
 
 /-- Setup establishes insertion's entry registers from the caller's root and argument. -/
-theorem setup_insertEntry (s : Data 32) :
+private theorem setup_insertEntry (s : Data 32) :
     InsertEntry (s.regs root) (s.regs arg) (setupData s) := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> simp +decide [setupData]
 
 /-- Setup establishes membership's entry registers from the caller's root and argument. -/
-theorem setup_memberEntry (s : Data 32) :
+private theorem setup_memberEntry (s : Data 32) :
     MemberEntry (s.regs root) (s.regs arg) (setupData s) := by
   constructor <;> simp +decide [setupData]
 
 /-- Setup establishes strict successor's entry registers from the caller's root, stack base,
 and argument. -/
-theorem setup_successorEntry (s : Data 32) :
+private theorem setup_successorEntry (s : Data 32) :
     SuccessorEntry (s.regs stackBase) (s.regs stackBase) (s.regs root) (s.regs arg)
       (setupData s) := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> simp +decide [setupData]
@@ -352,7 +352,7 @@ theorem successor_executes_log {d w base stackBase₀ query : ℕ} {tree : Tree 
 
 /-- `Tree.successor` on a valid tree computes the mathematical `OrderedSet.least` of the stored
 elements strictly greater than the query. -/
-theorem successor_eq_least {d : ℕ} {t : Tree d} (ht : t.Valid) (q : ℕ) :
+private theorem successor_eq_least {d : ℕ} {t : Tree d} (ht : t.Valid) (q : ℕ) :
     t.successor q = OrderedSet.least (t.elements.filter (q < ·)) := by
   apply OrderedSet.LeastResult.eq_least
   cases hs : t.successor q with

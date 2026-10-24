@@ -92,7 +92,7 @@ theorem highestDiff_mem_relevantBits_of_lt {n w : ℕ} {keys : Fin n → ℕ}
 
 /-- A query sharing the larger stored key's prefix lies strictly above every sketch of a
 smaller stored key outside that prefix block. -/
-theorem sketch_lt_query_of_prefix {n w cut q : ℕ} {keys : Fin n → ℕ}
+private theorem sketch_lt_query_of_prefix {n w cut q : ℕ} {keys : Fin n → ℕ}
     (hsorted : StrictMono keys) (hbound : ∀ i, keys i < 2 ^ w)
     {i j : Fin n} (hij : i < j) (hprefix : keys j >>> cut = q >>> cut)
     (hne : keys i >>> cut ≠ q >>> cut) :
@@ -113,7 +113,7 @@ theorem sketch_lt_query_of_prefix {n w cut q : ℕ} {keys : Fin n → ℕ}
 
 /-- A query sharing the smaller stored key's prefix lies strictly below every sketch of a
 larger stored key outside that prefix block. -/
-theorem query_lt_sketch_of_prefix {n w cut q : ℕ} {keys : Fin n → ℕ}
+private theorem query_lt_sketch_of_prefix {n w cut q : ℕ} {keys : Fin n → ℕ}
     (hsorted : StrictMono keys) (hbound : ∀ i, keys i < 2 ^ w)
     {i j : Fin n} (hij : i < j) (hprefix : keys i >>> cut = q >>> cut)
     (hne : keys j >>> cut ≠ q >>> cut) :
@@ -225,7 +225,7 @@ theorem exists_sketchNeighbor_min_highestDiff {n w q : ℕ} {keys : Fin n → �
   exact ⟨j, hj, fun k => hle.trans (hi k (Finset.mem_univ _))⟩
 
 /-- Minimizing over the at most two sketch neighbors therefore minimizes over every key. -/
-theorem min_highestDiff_of_sketchNeighbor {n w q : ℕ} {keys : Fin n → ℕ}
+private theorem min_highestDiff_of_sketchNeighbor {n w q : ℕ} {keys : Fin n → ℕ}
     (hsorted : StrictMono keys) (hbound : ∀ i, keys i < 2 ^ w) (hq : q < 2 ^ w)
     (hmiss : ∀ i, keys i ≠ q) (j : Fin n)
     (hbest : ∀ i, IsSketchNeighbor w keys q i →
@@ -237,7 +237,7 @@ theorem min_highestDiff_of_sketchNeighbor {n w q : ℕ} {keys : Fin n → ℕ}
 
 /-- Every key sharing the query's prefix above the globally minimum differing bit differs
 from the query at that bit. Thus none follows the query's branch there. -/
-theorem testBit_ne_of_min_highestDiff {n w q : ℕ} {keys : Fin n → ℕ}
+private theorem testBit_ne_of_min_highestDiff {n w q : ℕ} {keys : Fin n → ℕ}
     (hbound : ∀ i, keys i < 2 ^ w) (hq : q < 2 ^ w) (hmiss : ∀ i, keys i ≠ q)
     (j : Fin n) (hmin : ∀ i, highestDiff w (keys j) q ≤ highestDiff w (keys i) q)
     (i : Fin n)
@@ -252,7 +252,7 @@ theorem testBit_ne_of_min_highestDiff {n w q : ℕ} {keys : Fin n → ℕ}
 
 /-- If the query takes the one branch at its first divergence from a longest-prefix key,
 the true inclusive comparison equals the inclusive sketch comparison at the lower boundary. -/
-theorem le_iff_sketch_le_lowerBoundary {n w q : ℕ} {keys : Fin n → ℕ}
+private theorem le_iff_sketch_le_lowerBoundary {n w q : ℕ} {keys : Fin n → ℕ}
     (hsorted : StrictMono keys) (hbound : ∀ i, keys i < 2 ^ w) (hq : q < 2 ^ w)
     (hmiss : ∀ i, keys i ≠ q) (j : Fin n)
     (hmin : ∀ i, highestDiff w (keys j) q ≤ highestDiff w (keys i) q)
@@ -296,7 +296,7 @@ theorem le_iff_sketch_le_lowerBoundary {n w q : ℕ} {keys : Fin n → ℕ}
 
 /-- If the query takes the zero branch at its first divergence from a longest-prefix key,
 the true inclusive comparison equals the strict sketch comparison at the upper boundary. -/
-theorem le_iff_sketch_lt_upperBoundary {n w q : ℕ} {keys : Fin n → ℕ}
+private theorem le_iff_sketch_lt_upperBoundary {n w q : ℕ} {keys : Fin n → ℕ}
     (hsorted : StrictMono keys) (hbound : ∀ i, keys i < 2 ^ w) (hq : q < 2 ^ w)
     (hmiss : ∀ i, keys i ≠ q) (j : Fin n)
     (hmin : ∀ i, highestDiff w (keys j) q ≤ highestDiff w (keys i) q)
@@ -557,7 +557,7 @@ theorem isSketchNeighbor_of_eq {n w q : ℕ} {keys : Fin n → ℕ}
 
 /-- If the selected candidate is not an exact hit, then no stored key is an exact hit.
 Only the two neighboring candidates are inspected by the selection function. -/
-theorem miss_of_bestSketchNeighbor {n w q : ℕ} {keys : Fin n → ℕ}
+private theorem miss_of_bestSketchNeighbor {n w q : ℕ} {keys : Fin n → ℕ}
     (hsorted : StrictMono keys) (hbound : ∀ i, keys i < 2 ^ w) {j : Fin n}
     (hj : bestSketchNeighbor w keys q = some j) (hmiss : keys j ≠ q) :
     ∀ i, keys i ≠ q := by
@@ -567,7 +567,7 @@ theorem miss_of_bestSketchNeighbor {n w q : ℕ} {keys : Fin n → ℕ}
   omega
 
 /-- Away from exact hits, the two-candidate selector minimizes the highest differing bit. -/
-theorem bestSketchNeighbor_highestDiff_le {n w q : ℕ} {keys : Fin n → ℕ}
+private theorem bestSketchNeighbor_highestDiff_le {n w q : ℕ} {keys : Fin n → ℕ}
     (hmiss : ∀ i, keys i ≠ q) {j : Fin n}
     (hj : bestSketchNeighbor w keys q = some j) (i : Fin n)
     (hi : IsSketchNeighbor w keys q i) :

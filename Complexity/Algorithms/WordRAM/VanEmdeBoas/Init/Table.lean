@@ -144,12 +144,12 @@ theorem initSetup_exec {w : ℕ} {s : Data 32} (hw : Fits w 5) :
   ram_eval [initSetup, initSetupData, h0, h1, h2, h3, h4, hw]
 
 /-- State after one iteration of `sizeBody` at depth `k`. -/
-def sizeBodyData (s : Data 32) (k : ℕ) : Data 32 :=
+private def sizeBodyData (s : Data 32) (k : ℕ) : Data 32 :=
   (((((s.set tmp (universeSize k + 1)).set tmp ((universeSize k + 1) * span k)).set
     tmp ((universeSize k + 1) * span k + 5)).set q (universeSize k * universeSize k)).set
     t ((universeSize k + 1) * span k + 5)).set high (k + 1)
 
-theorem sizeBody_exec {w d k : ℕ} {s : Data 32} (hk : k < d) (hspan : Fits w (span d))
+private theorem sizeBody_exec {w d k : ℕ} {s : Data 32} (hk : k < d) (hspan : Fits w (span d))
     (hd : Fits w d) (h1 : s.regs one = 1) (h5 : s.regs five = 5)
     (hq : s.regs q = universeSize k) (ht : s.regs t = span k) (hhigh : s.regs high = k) :
     ExecWithin w sizeBody s (sizeBodyData s k) 6 := by
@@ -232,13 +232,13 @@ theorem tableSetup_exec {w base d : ℕ} {s : Data 32} (ha : Fits w (base + span
   ram_eval [tableSetup, tableSetupData, h0, h1, h2, h5, hroot, ht, hf_tbl, hf_tbl1, hf_tbl2]
 
 /-- State after one iteration of `tableBody` at depth `k` and pointer `sp₀`. -/
-def tableBodyData (s : Data 32) (sp₀ k : ℕ) : Data 32 :=
+private def tableBodyData (s : Data 32) (sp₀ k : ℕ) : Data 32 :=
   (((((((((s.write sp₀ (universeSize k)).set sp (sp₀ + 1)).write (sp₀ + 1) (span k)).set
     sp (sp₀ + 1 + 1)).set tmp (universeSize k + 1)).set tmp ((universeSize k + 1) * span k)).set
     tmp ((universeSize k + 1) * span k + 5)).set q (universeSize k * universeSize k)).set
     t ((universeSize k + 1) * span k + 5)).set high (k + 1)
 
-theorem tableBody_exec {w base d k : ℕ} {s : Data 32} (hk : k < d)
+private theorem tableBody_exec {w base d k : ℕ} {s : Data 32} (hk : k < d)
     (ha : Fits w (base + span d + 4 * (d + 1)))
     (h1 : s.regs one = 1) (h5 : s.regs five = 5)
     (hsp : s.regs sp = base + span d + 2 * (k + 1))

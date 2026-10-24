@@ -127,7 +127,7 @@ theorem Rep.space {vs : List ℕ} {x : Data 12} (h : Rep vs x) (hne : vs ≠ [])
 
 /-- The doubled frontier bound `x.regs frontier + 2 * x.regs cap` is bounded by `8 * vs.length + 3`
 for every represented state. -/
-theorem Rep.frontier_add_two_cap_le {vs : List ℕ} {x : Data 12} (h : Rep vs x) :
+private theorem Rep.frontier_add_two_cap_le {vs : List ℕ} {x : Data 12} (h : Rep vs x) :
     x.regs frontier + 2 * x.regs cap ≤ 8 * vs.length + 3 := by
   have := h.capacity_le
   have := h.frontier_eq
@@ -137,7 +137,7 @@ theorem Rep.frontier_add_two_cap_le {vs : List ℕ} {x : Data 12} (h : Rep vs x)
 def potential (vs : List ℕ) (x : Data 12) : ℕ := 15 * (2 * vs.length - x.regs cap)
 
 /-- The exact copy contract lifts to a larger register file without charging a meta-level call. -/
-theorem copy_exec {w : ℕ} (x : Data 12) (h1 : Fits w 1)
+private theorem copy_exec {w : ℕ} (x : Data 12) (h1 : Fits w 1)
     (hs : Fits w (x.regs ptr + x.regs len))
     (hd : Fits w (x.regs dest + x.regs len))
     (hdisj : x.regs ptr + x.regs len ≤ x.regs dest) :
@@ -224,7 +224,7 @@ theorem grow_exec {w : ℕ} (x : Data 12) (h1 : Fits w 1)
 
 /-- Four-instruction suffix of `program`: set `one ← #1`, write `arg` at `ptr + len`, and
 increment `len`. -/
-theorem appendTail_exec {w : ℕ} (z : Data 12) (h1 : Fits w 1)
+private theorem appendTail_exec {w : ℕ} (z : Data 12) (h1 : Fits w 1)
     (haddr : Fits w (z.regs ptr + z.regs len)) (hlen : Fits w (z.regs len + 1)) :
     let y := (((z.set one 1).set addr (z.regs ptr + z.regs len)).write
       (z.regs ptr + z.regs len) (z.regs arg)).set len (z.regs len + 1)
@@ -526,7 +526,7 @@ theorem arguments_fit {w : ℕ} (h1 : Fits w 1) {vs : List ℕ} (o : Op)
 
 /-- Argument delivery preserves `Rep` because `dest` and `arg` are not persistent representation
 registers. -/
-theorem prepare_rep {vs : List ℕ} {x : Data 12} (hr : Rep vs x) (w : ℕ) (o : Op) :
+private theorem prepare_rep {vs : List ℕ} {x : Data 12} (hr : Rep vs x) (w : ℕ) (o : Op) :
     Rep vs ((implementation w).prepare o x) where
   length_eq := by simpa +decide [implementation, DynamicProgram.prepare] using hr.length_eq
   capacity_pos := by simpa +decide [implementation, DynamicProgram.prepare] using hr.capacity_pos

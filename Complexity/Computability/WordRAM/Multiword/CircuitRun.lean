@@ -42,7 +42,7 @@ def «prefix» (v : Fin n → ℕ) (k : ℕ) : Fin n → ℕ :=
   fun j => if j.val < k then v j else 0
 
 /-- Completing the next node extends the encoded prefix by one entry. -/
-theorem update_prefix (v : Fin n → ℕ) (d : Fin n) :
+private theorem update_prefix (v : Fin n → ℕ) (d : Fin n) :
     Function.update («prefix» v d.val) d (v d) = «prefix» v (d.val + 1) := by
   funext j
   by_cases hj : j = d
@@ -57,7 +57,7 @@ theorem update_prefix (v : Fin n → ℕ) (d : Fin n) :
 namespace Operation
 
 /-- Evaluation depends only on the earlier source values of a node. -/
-theorem eval_congr {d : Fin n} {op : Operation n} {v u : Fin n → ℕ}
+private theorem eval_congr {d : Fin n} {op : Operation n} {v u : Fin n → ℕ}
     (he : op.Earlier d) (h : ∀ j, j.val < d.val → v j = u j) :
     op.eval v = op.eval u := by
   cases op with
@@ -67,7 +67,7 @@ theorem eval_congr {d : Fin n} {op : Operation n} {v u : Fin n → ℕ}
     simp only [eval, h a he.1, h b he.2]
 
 /-- The admissibility bounds depend only on the earlier source values of a node. -/
-theorem admissible_congr {w : ℕ} {d : Fin n} {op : Operation n} {v u : Fin n → ℕ}
+private theorem admissible_congr {w : ℕ} {d : Fin n} {op : Operation n} {v u : Fin n → ℕ}
     (he : op.Earlier d) (h : ∀ j, j.val < d.val → v j = u j) :
     op.Admissible w v ↔ op.Admissible w u := by
   cases op with

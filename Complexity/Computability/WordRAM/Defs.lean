@@ -711,7 +711,7 @@ theorem Next.mono_width {w w' : ℕ} {p : Program B r} {s t : State r} (hp : ¬p
     | branch c t => rw [step_branch hpc] at h ⊢; exact h
     | halt i => simp [step_halt hpc] at h
 
-theorem step_halt_mono_width {w w' : ℕ} {p : Program B r} {s : State r} {v : ℕ}
+private theorem step_halt_mono_width {w w' : ℕ} {p : Program B r} {s : State r} {v : ℕ}
     (h : step w p s = .halt v) : step w' p s = .halt v := by
   cases hpc : p[s.pc]? with
   | none => simp [WordRAM.step, hpc] at h

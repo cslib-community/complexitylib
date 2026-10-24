@@ -43,13 +43,13 @@ structure Done (q : ℕ) (ans : Option ℕ) (mem : ℕ → ℕ) (y : Data regist
   answer_eq : answer y = ans
 
 /-- The loop condition holds at entry. -/
-theorem Entry.running {q p : ℕ} {x : Data registers} (hx : Entry q p x) :
+private theorem Entry.running {q p : ℕ} {x : Data registers} (hx : Entry q p x) :
     (Cond.lt zero active).Holds x := by
   simp only [Cond.holds_lt, hx.zero_eq, hx.active_eq]
   decide
 
 /-- The loop condition fails after completion. -/
-theorem Done.stopped {q : ℕ} {ans : Option ℕ} {mem : ℕ → ℕ} {y : Data registers}
+private theorem Done.stopped {q : ℕ} {ans : Option ℕ} {mem : ℕ → ℕ} {y : Data registers}
     (hy : Done q ans mem y) : ¬(Cond.lt zero active).Holds y := by
   simp [Cond.holds_lt, hy.zero_eq, hy.active_eq]
 
@@ -60,7 +60,7 @@ private theorem descent_time_le {k h : ℕ} (hk : k < h) :
 /-- Complete loop execution from real preprocessed RAM. Every iteration costs at most
 201020 instructions and there are at most `height + 1` iterations; loop tests and jumps
 are charged too. The pointer may change, while all memory and the query are preserved. -/
-theorem exec_loop_height (h : ℕ) {w q p : ℕ} {t : Tree} {x : Data registers}
+private theorem exec_loop_height (h : ℕ) {w q p : ℕ} {t : Tree} {x : Data registers}
     (hheight_bound : t.height ≤ h) (hx : Entry q p x)
     (ht : Lean.FusionTree.Tree.Valid (branching w) t)
     (hs : t.keys.Pairwise (· < ·)) (hk : ∀ k ∈ t.keys, Fits w k)

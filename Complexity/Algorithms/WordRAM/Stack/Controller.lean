@@ -77,7 +77,7 @@ private theorem prepare_pop (w : ℕ) (x : Data 9) :
   · rfl
 
 /-- A full push/pop round trip costs twenty-one instructions, including argument delivery. -/
-theorem roundTrip_exec {w n : ℕ} {x : Data 9} (h3 : Fits w 3)
+private theorem roundTrip_exec {w n : ℕ} {x : Data 9} (h3 : Fits w 3)
     (hr : Rep w 2 1 [] x) (hn : x.regs arg = n) :
     ∃ y, Exec w roundTrip x y 21 ∧ Rep w 2 1 [] y ∧ y.regs out = n := by
   have h2 : Fits w 2 := h3.of_le (by decide)
@@ -98,7 +98,7 @@ theorem roundTrip_exec {w n : ℕ} {x : Data 9} (h3 : Fits w 3)
     · exact Option.some.inj (Option.some.inj ha)
 
 /-- Initialize the empty representation and load the input in four actual instructions. -/
-theorem setup_exec {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
+private theorem setup_exec {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
     ∃ x, Exec w setup (Data.init [n]) x 4 ∧ Rep w 2 1 [] x ∧ x.regs arg = n := by
   let x := (((Data.init [n]).set ptr 2).set len 0).set addr 1 |>.set arg n
   have h2 : Fits w 2 := h3.of_le (by decide)
@@ -148,7 +148,7 @@ theorem execute {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
     · rw [hny, max_eq_left (by omega)]
 
 /-- The abstract client returns the same positive value and restores the empty stack. -/
-theorem runClient_client (w n : ℕ) :
+private theorem runClient_client (w n : ℕ) :
     ((spec w 1).runClient [] (client w n)).1 = max n 1 ∧
       ((spec w 1).runClient [] (client w n)).2.1 = [] := by
   by_cases hn : n = 0
@@ -157,7 +157,7 @@ theorem runClient_client (w n : ℕ) :
       max_eq_left (show 1 ≤ n by omega)]
 
 /-- Both adaptive histories respect the one-cell capacity and word bounds. -/
-theorem client_valid {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
+private theorem client_valid {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
     (spec w 1).ValidHistory [] ((spec w 1).runClient [] (client w n)).2.2 := by
   have h1 : Fits w 1 := h3.of_le (by decide)
   have hfit : Fits w n := hn.2 n (by simp)

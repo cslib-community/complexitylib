@@ -71,7 +71,7 @@ private theorem extrema_insert_of_contains {t t' : Tree d} (ht : t.Valid)
         Nat.le_trans (he.2.2.2.2 y hy).2 (le_max_left _ _)⟩
 
 /-- Installing the first key changes only an empty node's local header. -/
-theorem singleton_of_bounds_none {t : Tree d} (ht : t.Valid) (hb : t.bounds = none)
+private theorem singleton_of_bounds_none {t : Tree d} (ht : t.Valid) (hb : t.bounds = none)
     {x : ℕ} (hx : x < universeSize d) :
     (t.withBounds (some (x, x))).Valid ∧
       ∀ y, (t.withBounds (some (x, x))).Contains y ↔ y = x := by
