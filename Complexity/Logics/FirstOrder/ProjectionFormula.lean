@@ -26,11 +26,20 @@ machine resource bound, is implicit in this definition.
 
 ## Main definitions
 
-* `Cslib.Logic.FO.InputLiteral`: a constant or a signed relation applied to free variables.
-* `Cslib.Logic.FO.ProjectionFormula`: numeric tests with input literals at the leaves.
+* `Cslib.Logic.FO.InputLiteral`, `Cslib.Logic.FO.InputLiteral.Realize`,
+  `Cslib.Logic.FO.InputLiteral.not`, `Cslib.Logic.FO.InputLiteral.relabel`,
+  `Cslib.Logic.FO.InputLiteral.toFormula`: a constant or a signed relation applied to free
+  variables, its semantics, negation, variable renaming, and formula view.
+* `Cslib.Logic.FO.ProjectionFormula`, `Cslib.Logic.FO.ProjectionFormula.not`,
+  `Cslib.Logic.FO.ProjectionFormula.relabel`, `Cslib.Logic.FO.ProjectionFormula.subst`,
+  `Cslib.Logic.FO.ProjectionFormula.IsQF`: numeric tests with input literals at the leaves,
+  negation, variable renaming, substitution, and quantifier-freeness.
 * `Cslib.Logic.FO.ProjectionFormula.toFormula`: the ordinary formula over the sum of the two
   languages.
 * `Cslib.Logic.FO.ProjectionFormula.select`: the literal selected by the numeric structure alone.
+* `Cslib.Logic.FO.ProjectionFormula.Case`, `Cslib.Logic.FO.ProjectionFormula.caseGuard`,
+  `Cslib.Logic.FO.ProjectionFormula.caseLiteral`: the leaf cases of a projection formula, their
+  guard formulas, and their output literals.
 
 ## Main results
 
@@ -73,15 +82,18 @@ def Realize : InputLiteral L α → (α → M) → Prop
   | .const b, _ => b = true
   | .rel R args neg, x => if neg then ¬ RelMap R (x ∘ args) else RelMap R (x ∘ args)
 
+/-- A constant input literal `.const b` holds if and only if `b = true`. -/
 @[fo_realize]
 theorem realize_const (b : Bool) (x : α → M) : (const b : InputLiteral L α).Realize x ↔ b = true :=
   Iff.rfl
 
+/-- A positive relation literal `.rel R args false` holds when `R` holds on `x ∘ args`. -/
 @[fo_realize]
 theorem realize_rel_false {n : ℕ} (R : L.Relations n) (args : Fin n → α) (x : α → M) :
     (rel R args false).Realize x ↔ RelMap R fun i => x (args i) :=
   Iff.rfl
 
+/-- A negated relation literal `.rel R args true` holds when `R` does not hold on `x ∘ args`. -/
 @[fo_realize]
 theorem realize_rel_true {n : ℕ} (R : L.Relations n) (args : Fin n → α) (x : α → M) :
     (rel R args true).Realize x ↔ ¬ RelMap R fun i => x (args i) :=
@@ -92,6 +104,7 @@ def not : InputLiteral L α → InputLiteral L α
   | .const b => .const (!b)
   | .rel R args neg => .rel R args (!neg)
 
+/-- The negated literal `l.not` holds if and only if `l` does not hold. -/
 @[simp, fo_realize]
 theorem realize_not (l : InputLiteral L α) (x : α → M) :
     l.not.Realize x ↔ ¬ l.Realize x := by
@@ -104,6 +117,7 @@ def relabel (f : α → β) : InputLiteral L α → InputLiteral L β
   | .const b => .const b
   | .rel R args neg => .rel R (f ∘ args) neg
 
+/-- Relabeling a literal by `f` evaluates it under the assignment `x ∘ f`. -/
 @[simp, fo_realize]
 theorem realize_relabel (f : α → β) (l : InputLiteral L α) (x : β → M) :
     (l.relabel f).Realize x ↔ l.Realize (x ∘ f) := by
@@ -115,6 +129,7 @@ def toFormula : InputLiteral L α → L.Formula α
   | .rel R args neg =>
     if neg then (R.formula fun i => .var (args i)).not else R.formula fun i => .var (args i)
 
+/-- The formula `l.toFormula` is realized if and only if `l` is realized. -/
 @[simp, fo_realize]
 theorem realize_toFormula (l : InputLiteral L α) (x : α → M) :
     l.toFormula.Realize x ↔ l.Realize x := by
@@ -202,6 +217,7 @@ def not : ProjectionFormula N L α → ProjectionFormula N L α
   | .leaf l => .leaf l.not
   | .branch guard yes no => .branch guard yes.not no.not
 
+/-- Selecting a literal from `p.not` negates the literal selected from `p`. -/
 @[simp]
 theorem select_not [N.Structure M] (p : ProjectionFormula N L α) (x : α → M) :
     p.not.select x = (p.select x).not := by
@@ -214,6 +230,7 @@ def relabel (f : α → β) : ProjectionFormula N L α → ProjectionFormula N L
   | .leaf l => .leaf (l.relabel f)
   | .branch guard yes no => .branch (guard.relabel f) (yes.relabel f) (no.relabel f)
 
+/-- Selecting a literal from `p.relabel f` relabels the literal selected under `x ∘ f`. -/
 @[simp]
 theorem select_relabel [N.Structure M] (f : α → β) (p : ProjectionFormula N L α) (x : β → M) :
     (p.relabel f).select x = (p.select (x ∘ f)).relabel f := by
@@ -224,12 +241,14 @@ theorem select_relabel [N.Structure M] (f : α → β) (p : ProjectionFormula N 
     simp only [relabel, select, Formula.realize_relabel, ihy, ihn]
     split_ifs <;> rfl
 
+/-- Relabeling a projection formula by `f` evaluates its formula under `x ∘ f`. -/
 @[fo_realize]
 theorem realize_relabel [N.Structure M] [L.Structure M]
     (f : α → β) (p : ProjectionFormula N L α) (x : β → M) :
     (p.relabel f).toFormula.Realize x ↔ p.toFormula.Realize (x ∘ f) := by
   simp only [realize_toFormula, select_relabel, InputLiteral.realize_relabel]
 
+/-- The formula of `p.not` holds if and only if the formula of `p` does not hold. -/
 @[simp, fo_realize]
 theorem realize_not [N.Structure M] [L.Structure M] (p : ProjectionFormula N L α)
     (x : α → M) : p.not.toFormula.Realize x ↔ ¬ p.toFormula.Realize x := by
@@ -266,10 +285,12 @@ def IsQF : ProjectionFormula N L α → Prop
   | .leaf _ => True
   | .branch guard yes no => guard.IsQF ∧ yes.IsQF ∧ no.IsQF
 
+/-- Every leaf projection formula is quantifier-free. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isQF_leaf (l : InputLiteral L α) : (leaf l : ProjectionFormula N L α).IsQF :=
   trivial
 
+/-- A branch of quantifier-free subformulas with a quantifier-free guard is quantifier-free. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem IsQF.branch {guard : N.Formula α} {yes no : ProjectionFormula N L α} (hguard : guard.IsQF)
     (hyes : yes.IsQF) (hno : no.IsQF) : (branch guard yes no).IsQF :=
@@ -285,12 +306,14 @@ theorem IsQF.toFormula {p : ProjectionFormula N L α} (h : p.IsQF) : p.toFormula
     have hg := h.1.onBoundedFormula (LHom.sumInl (L' := L))
     exact (hg.inf (ihy h.2.1)).sup (hg.not.inf (ihn h.2.2))
 
+/-- Negating a quantifier-free projection formula preserves quantifier-freeness. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem IsQF.not {p : ProjectionFormula N L α} (h : p.IsQF) : p.not.IsQF := by
   induction p with
   | leaf => trivial
   | branch _ _ _ ihy ihn => exact ⟨h.1, ihy h.2.1, ihn h.2.2⟩
 
+/-- Relabeling a quantifier-free projection formula preserves quantifier-freeness. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem IsQF.relabel {p : ProjectionFormula N L α} (h : p.IsQF) (f : α → β) :
     (p.relabel f).IsQF := by
@@ -298,6 +321,8 @@ theorem IsQF.relabel {p : ProjectionFormula N L α} (h : p.IsQF) (f : α → β)
   | leaf => trivial
   | branch _ _ _ ihy ihn => exact ⟨h.1.relabel _, ihy h.2.1, ihn h.2.2⟩
 
+/-- Substituting quantifier-free guards and quantifier-free projections into a quantifier-free
+projection formula preserves quantifier-freeness. -/
 theorem IsQF.subst {N' L' : Language} {p : ProjectionFormula N L α} (h : p.IsQF)
     (guard : N.Formula α → N'.Formula β)
     (literal : InputLiteral L α → ProjectionFormula N' L' β)
@@ -313,6 +338,7 @@ def Case : ProjectionFormula N L α → Type
   | .leaf _ => Unit
   | .branch _ yes no => yes.Case ⊕ no.Case
 
+/-- A projection formula has finitely many leaf cases. -/
 noncomputable instance (p : ProjectionFormula N L α) : Fintype p.Case := by
   induction p with
   | leaf => exact inferInstanceAs (Fintype Unit)

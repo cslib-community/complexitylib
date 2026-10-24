@@ -26,7 +26,9 @@ to a fixed malformed target.
 
 * `Cslib.Logic.FO.Ordered.FullTupleInterpretation.toDomainInterpretation`: embedding as an
   interpretation with domain formula `⊤`.
-* `Cslib.Logic.FO.Ordered.FullTupleInterpretation.encodedMap`: the total map on parsed instances.
+* `Cslib.Logic.FO.Ordered.FullTupleInterpretation.encodedMap`,
+  `Cslib.Logic.FO.Ordered.FullTupleInterpretation.encodedModelEquiv`: the total map on parsed
+  instances and the isomorphism of the interpreted model with the decoded output.
 
 ## Main results
 
@@ -62,6 +64,7 @@ def toDomainInterpretation : DomainInterpretation L L' k where
 
 variable {I}
 
+/-- The domain of `I.toDomainInterpretation` on `M` has `M.size ^ k` elements. -/
 theorem card_toDomainInterpretation (M : Structure L) :
     I.toDomainInterpretation.card M = M.size ^ k :=
   DomainInterpretation.card_of_forall fun _ => Formula.realize_top.mpr trivial
@@ -74,6 +77,8 @@ theorem unrank_toDomainInterpretation (i : Fin (I.toDomainInterpretation.card M)
       lexEquiv.symm (Fin.cast (card_toDomainInterpretation M) i) :=
   DomainInterpretation.unrank_of_forall (fun _ => Formula.realize_top.mpr trivial) i
 
+/-- Unranking the `i`-th tuple of `I.toDomainInterpretation` gives the tuple of lexicographic
+rank `i`. -/
 @[simp] theorem lexRank_unrank_toDomainInterpretation (i : Fin (I.toDomainInterpretation.card M)) :
     lexRank (I.toDomainInterpretation.unrank M i) = i :=
   DomainInterpretation.lexRank_unrank_of_forall (fun _ => Formula.realize_top.mpr trivial) i
@@ -99,6 +104,8 @@ noncomputable def encodedMap (a : EncodedStructure) : EncodedStructure :=
 
 variable {a : EncodedStructure}
 
+/-- On a well-formed encoding of size at least two, `encodedMap` encodes `I.inputStructure` on
+`Fin (a.1 ^ k)`. -/
 theorem encodedMap_of_admissible (ha : v.WellFormed a) (hn : 2 ≤ a.1) :
     I.encodedMap v v' a =
       (letI : Fact (2 ≤ a.1) := ⟨hn⟩;
@@ -107,6 +114,7 @@ theorem encodedMap_of_admissible (ha : v.WellFormed a) (hn : 2 ≤ a.1) :
        v'.encode (Fin (a.1 ^ k)) (Equiv.refl _)) :=
   dite_eq_left ⟨ha, hn⟩
 
+/-- On an inadmissible encoding, `encodedMap` returns `(0, List.replicate (v'.count + 1) [])`. -/
 theorem encodedMap_of_not_admissible (ha : ¬(v.WellFormed a ∧ 2 ≤ a.1)) :
     I.encodedMap v v' a = (0, List.replicate (v'.count + 1) []) :=
   dite_eq_right ha

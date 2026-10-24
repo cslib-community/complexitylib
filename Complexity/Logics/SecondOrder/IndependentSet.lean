@@ -22,8 +22,15 @@ and vertex cover, which are quantifier-free reducible to it.
 
 ## Main definitions
 
-* `Cslib.Logic.FO.sizedGraph.independentSetSentence`: the defining existential second-order
-  sentence of independent set.
+* `Cslib.Logic.FO.sizedGraph.independentSetArity`,
+  `Cslib.Logic.FO.sizedGraph.independentSetLanguage`: the relation variable arities and expanded
+  language of the independent-set sentence.
+* `Cslib.Logic.FO.sizedGraph.adjSym`, `Cslib.Logic.FO.sizedGraph.sizeSym`,
+  `Cslib.Logic.FO.sizedGraph.setSym`, `Cslib.Logic.FO.sizedGraph.bijSym`: the relation symbols of
+  `independentSetLanguage`.
+* `Cslib.Logic.FO.sizedGraph.independentSetMatrix`,
+  `Cslib.Logic.FO.sizedGraph.independentSetSentence`: the first-order matrix and defining
+  existential second-order sentence of independent set.
 
 ## Main results
 

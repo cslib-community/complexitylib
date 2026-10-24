@@ -26,9 +26,16 @@ numeric definitions and their correctness proofs. No ordered machine or capture 
 
 ## Main definitions
 
+* `Cslib.Logic.FO.Ordered.relationalLanguage`, `Cslib.Logic.FO.Ordered.constantsLanguageMap`:
+  the relational part of an ordered language and its embedding with numeric constants.
 * `Cslib.Logic.FO.Ordered.FullTupleInterpretation`: output input-relation formulas.
-* `Cslib.Logic.FO.Ordered.FullTupleInterpretation.toInterpretation`: full relational interpretation.
-* `Cslib.Logic.FO.Ordered.FullTupleInterpretation.onFormula`: native constant-aware pullback.
+* `Cslib.Logic.FO.Ordered.FullTupleInterpretation.toInterpretation`,
+  `Cslib.Logic.FO.Ordered.FullTupleInterpretation.constants`,
+  `Cslib.Logic.FO.Ordered.FullTupleInterpretation.inputStructure`,
+  `Cslib.Logic.FO.Ordered.FullTupleInterpretation.modelStructure`: full relational interpretation,
+  constant definitions, and target structures.
+* `Cslib.Logic.FO.Ordered.FullTupleInterpretation.onFormula`,
+  `Cslib.Logic.FO.Ordered.FullTupleInterpretation.onSentence`: native constant-aware pullback.
 
 ## Main results
 
@@ -52,6 +59,7 @@ abbrev relationalLanguage (L : Language) : Language where
   Functions _ := Empty
   Relations := (language L).Relations
 
+/-- `relationalLanguage L` has no function symbols and is therefore relational. -/
 instance (L : Language) : (relationalLanguage L).IsRelational := fun _ => inferInstance
 
 /-- View an ordered relational vocabulary as a relational core with genuine numeric constants. -/

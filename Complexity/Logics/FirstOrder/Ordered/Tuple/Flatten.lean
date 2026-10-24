@@ -39,6 +39,7 @@ namespace Cslib.Logic.FO.Ordered
 def flattenTuple {α : Type*} {k l : ℕ} (x : Fin l → Fin k → α) : Fin (l * k) → α :=
   fun a => x (finProdFinEquiv.symm a).1 (finProdFinEquiv.symm a).2
 
+/-- Reading `flattenTuple x` at `finProdFinEquiv (j, i)` returns `x j i`. -/
 @[simp] theorem flattenTuple_apply {α : Type*} {k l : ℕ} (x : Fin l → Fin k → α)
     (j : Fin l) (i : Fin k) : flattenTuple x (finProdFinEquiv (j, i)) = x j i := by
   simp [flattenTuple]
@@ -49,6 +50,7 @@ theorem flattenTuple_finProdFinEquiv {α : Type*} {k l : ℕ} (x : Fin (l * k) �
   funext a
   simp only [flattenTuple, Prod.mk.eta, Equiv.apply_symm_apply]
 
+/-- Reading `flattenTuple x` at `finProdFinEquiv p` returns `x p.1 p.2`. -/
 theorem flattenTuple_finProdFinEquiv_apply {α : Type*} {k l : ℕ} (x : Fin l → Fin k → α)
     (p : Fin l × Fin k) : flattenTuple x (finProdFinEquiv p) = x p.1 p.2 :=
   flattenTuple_apply x p.1 p.2

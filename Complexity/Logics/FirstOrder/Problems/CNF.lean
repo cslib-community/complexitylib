@@ -40,14 +40,18 @@ invariant under disjoint copies, so that tagged interpretations reduce to them. 
 
 ## Main definitions
 
-* `Cslib.Logic.FO.cnf`: the vocabulary of CNF structures, with `cnf.pos` and `cnf.neg`.
+* `Cslib.Logic.FO.CNFRel`, `Cslib.Logic.FO.cnf`, `Cslib.Logic.FO.cnf.lit`: the relation symbols and
+  vocabulary of CNF structures, with `cnf.pos` and `cnf.neg`.
 * `Cslib.Logic.FO.cnf.literals`: the literals of the clause named by an element.
 * `Cslib.Logic.FO.cnf.ClauseSatisfied`, `Cslib.Logic.FO.cnf.Satisfies`,
   `Cslib.Logic.FO.cnf.Satisfiable`: satisfied clauses, satisfying assignments and satisfiability.
 * `Cslib.Logic.FO.cnf.IsThreeCNF`: every clause has at most three literals.
 * `Cslib.Logic.FO.cnf.SAT`, `Cslib.Logic.FO.cnf.ThreeSAT`: the classes SAT and 3SAT.
-* `Cslib.Logic.FO.cnf.satSentence`, `Cslib.Logic.FO.cnf.threeCNFSentence`: their defining
-  existential second-order and first-order sentences.
+* `Cslib.Logic.FO.cnf.posSym`, `Cslib.Logic.FO.cnf.negSym`, `Cslib.Logic.FO.cnf.trueSym`,
+  `Cslib.Logic.FO.cnf.satMatrix`, `Cslib.Logic.FO.cnf.satSentence`,
+  `Cslib.Logic.FO.cnf.fourLiteralsFormula`, `Cslib.Logic.FO.cnf.threeCNFSentence`,
+  `Cslib.Logic.FO.cnf.nonemptyClausesSentence`: the defining existential second-order and
+  first-order formulas and sentences.
 * `Cslib.Logic.FO.cnf.vocabulary`: the vocabulary of encoded CNF structures.
 
 ## Main results
@@ -104,10 +108,12 @@ def lit : Bool → cnf.Relations 2
   | true => cnf.pos
   | false => cnf.neg
 
+/-- The positive literal relation symbol is `cnf.pos`. -/
 @[simp]
 theorem lit_true : lit true = cnf.pos :=
   rfl
 
+/-- The negative literal relation symbol is `cnf.neg`. -/
 @[simp]
 theorem lit_false : lit false = cnf.neg :=
   rfl
@@ -120,6 +126,7 @@ variable {M : Type*} [cnf.Structure M] {N : Type*} [cnf.Structure N]
 def literals (c : M) : Set (Bool × M) :=
   {l | RelMap (lit l.1) ![c, l.2]}
 
+/-- A pair `(b, x)` belongs to `literals c` iff `lit b` relates `c` and `x`. -/
 theorem mem_literals {c : M} {l : Bool × M} : l ∈ literals c ↔ RelMap (lit l.1) ![c, l.2] :=
   Iff.rfl
 
@@ -147,6 +154,8 @@ theorem clauseSatisfied_iff (A : M → Prop) (c : M) :
     · exact .inr ⟨hl, by simpa using h⟩
     · exact .inl ⟨hl, by simpa using h⟩
 
+/-- An assignment satisfies a CNF structure iff every clause has a literal matching its truth
+value. -/
 theorem satisfies_iff (A : M → Prop) :
     Satisfies A ↔ ∀ c, ∃ l ∈ literals c, (A l.2 ↔ l.1 = true) :=
   forall_congr' (clauseSatisfied_iff A)
@@ -161,6 +170,7 @@ theorem Satisfiable.of_equiv (e : M ≃[cnf] N) (h : Satisfiable M) : Satisfiabl
   refine ⟨e x, ?_⟩
   simpa only [hrel, e.symm_apply_apply] using hx
 
+/-- Isomorphic CNF structures are equisatisfiable. -/
 theorem satisfiable_iff_of_equiv (e : M ≃[cnf] N) : Satisfiable M ↔ Satisfiable N :=
   ⟨Satisfiable.of_equiv e, Satisfiable.of_equiv e.symm⟩
 
@@ -185,6 +195,7 @@ theorem encard_literals_le_three_iff (c : M) :
     show ((4 : ℕ) : ℕ∞) = ((3 : ℕ) : ℕ∞) + 1 by norm_cast, ENat.lt_natCast_add_one_iff]
   rfl
 
+/-- Being a 3-CNF structure is invariant under isomorphism. -/
 theorem isThreeCNF_iff_of_equiv (e : M ≃[cnf] N) : IsThreeCNF M ↔ IsThreeCNF N := by
   have hlit (c : M) : literals (e c) = Prod.map id e '' literals c := by
     ext ⟨b, y⟩

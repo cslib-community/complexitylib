@@ -33,9 +33,9 @@ are neighbours (see `Complexity/Logics/Propositional/Parity/DepthThree.lean`).
 
 ## Main definitions
 
-* `Cslib.BitString.flipOn`: flip the bits in a set of positions.
 * `Cslib.Logic.PL.ContainsSubcube`: a set of words contains a subcube of a given dimension.
 * `Cslib.Logic.PL.isolatedDirections`, `Cslib.Logic.PL.ClauseSet.neighbors`.
+* `Cslib.Logic.PL.ClauseSet.Meets`: whether a clause mentions a variable from a given set.
 
 ## Main results
 
@@ -68,6 +68,7 @@ flipping bits in a fixed set of `d` positions. -/
 def ContainsSubcube (S : Set (BitString N)) (d : ℕ) : Prop :=
   ∃ (a : BitString N) (J : Finset (Fin N)), J.card = d ∧ ∀ T ⊆ J, flipOn T a ∈ S
 
+/-- `ContainsSubcube` is monotone in the set of words. -/
 theorem ContainsSubcube.mono {S T : Set (BitString N)} (hST : S ⊆ T) {d : ℕ}
     (h : ContainsSubcube S d) : ContainsSubcube T d := by
   obtain ⟨a, J, hJ, hsub⟩ := h
@@ -148,6 +149,7 @@ private theorem flipOn_mem_solutions_of_independent {ψ : ClauseSet (Fin N)} {x 
       exact ⟨Ne.symm hne, C, hC, ⟨l, hl, hlj⟩, l', hl', hlj'⟩) hT
   simpa using h
 
+/-- Co-occurrence adjacency in `neighbors` is symmetric. -/
 theorem mem_neighbors_comm {ψ : ClauseSet (Fin N)} {u w : Fin N} :
     w ∈ ψ.neighbors u ↔ u ∈ ψ.neighbors w := by
   simp only [neighbors, mem_filter, mem_univ, true_and]

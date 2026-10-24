@@ -178,6 +178,8 @@ theorem CNF.satisfiable_iff_exists_bitsAssignment {φ : CNF V} {vs : List V}
   obtain ⟨i, hi, hiσ⟩ := exists_lt_two_pow_bitsAssignment_eq (vs := vs) σ
   exact ⟨i, hi, (CNF.eval_congr fun v hv => hiσ v (hφ v hv)).trans hσ⟩
 
+/-- The numbered assignment `bitsAssignment vs i` looks up the binary digit of `i` in `i.bits` at
+the index of `v` in `vs`, defaulting to `false`. -/
 theorem bitsAssignment_eq_getD (vs : List V) (i : ℕ) (v : V) :
     bitsAssignment vs i v = i.bits.getD (vs.idxOf v) false := by
   rw [bitsAssignment, Nat.testBit_eq_inth]
@@ -188,6 +190,7 @@ theorem bitsAssignment_eq_getD (vs : List V) (i : ℕ) (v : V) :
 def CNF.extendAssignment (φ : CNF V) (τ : φ.vars.toFinset → Bool) (v : V) : Bool :=
   if h : v ∈ φ.vars.toFinset then τ ⟨v, h⟩ else false
 
+/-- `φ.extendAssignment τ` agrees with `τ` on every variable occurring in `φ`. -/
 theorem CNF.extendAssignment_of_mem {φ : CNF V} (τ : φ.vars.toFinset → Bool) {v : V}
     (hv : v ∈ φ.vars) : φ.extendAssignment τ v = τ ⟨v, List.mem_toFinset.2 hv⟩ := by
   simp [CNF.extendAssignment, hv]

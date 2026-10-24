@@ -74,12 +74,15 @@ private theorem exists_unrank_id :
     (fun x _ => ⟨x 0, funext fun i => congrArg x (Subsingleton.elim 0 i)⟩)
     (fun _ _ h => by simpa [lexRank_apply] using h)
 
+/-- The identity interpretation on `M` has `M.size` domain elements. -/
 theorem card_id (M : Structure L) : (id L).card M = M.size :=
   exists_unrank_id.1
 
+/-- The `i`-th domain tuple of `id L` is the constant tuple at `i`. -/
 theorem unrank_id (i : Fin ((id L).card M)) : (id L).unrank M i = fun _ => Fin.cast (card_id M) i :=
   exists_unrank_id.2 i
 
+/-- The identity interpretation is admissible on every ordered structure. -/
 theorem admissible_id : (id L).Admissible :=
   fun M => (card_id M).symm ▸ M.size_ge_two
 

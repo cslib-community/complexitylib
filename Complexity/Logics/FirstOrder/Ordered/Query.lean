@@ -21,7 +21,9 @@ encoding serializes no numeric tables: the canonical numeric vocabulary is suppl
 
 * `Cslib.Logic.FO.Ordered.Structure`: an input structure on `Fin n`, with `n ≥ 2`.
 * `Cslib.Logic.FO.Ordered.Query`: arbitrary classes of these structures.
-* `Cslib.Logic.FO.Ordered.Query.encodedLanguage`: their source-only encoded languages.
+* `Cslib.Logic.FO.Ordered.decoded`, `Cslib.Logic.FO.Ordered.encode`,
+  `Cslib.Logic.FO.Ordered.Query.encodedLanguage`: decoding and encoding of ordered structures and
+  their source-only encoded languages.
 * `Cslib.Logic.FO.Ordered.Definable`: definability by one canonical ordered sentence.
 
 ## Main results
@@ -51,11 +53,14 @@ structure Structure (L : Language.{u, v}) where
   /-- The interpretation of the input symbols. Numeric symbols are supplied separately. -/
   input : L.Structure (Fin size)
 
+/-- Coerce an ordered structure `M` to its canonical carrier `Fin M.size`. -/
 instance structureCoeSort {L : Language.{u, v}} : CoeSort (Structure L) Type :=
   ⟨fun M => Fin M.size⟩
 
+/-- Equip `Fin M.size` with the input relations of `M`. -/
 instance structureInput {L : Language.{u, v}} (M : Structure L) : L.Structure M := M.input
 
+/-- Record the size bound `2 ≤ M.size` as a `Fact` instance. -/
 instance structureSize {L : Language.{u, v}} (M : Structure L) : Fact (2 ≤ M.size) :=
   ⟨M.size_ge_two⟩
 

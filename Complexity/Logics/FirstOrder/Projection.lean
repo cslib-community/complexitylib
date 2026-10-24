@@ -33,8 +33,12 @@ as required by `Interpretation`; numeric constants can instead be represented by
   model.
 * `Cslib.Logic.FO.Projection.tupleInputStructure`: the output input-relation structure on the full
   tuple domain.
-* `Cslib.Logic.FO.Projection.onFormula`: pull back a projection formula to a projection formula.
-* `Cslib.Logic.FO.Projection.comp`: composition, with product coordinates.
+* `Cslib.Logic.FO.Projection.onLiteral`, `Cslib.Logic.FO.Projection.onFormula`: pull back an input
+  literal or a projection formula to a projection formula.
+* `Cslib.Logic.FO.Projection.id`, `Cslib.Logic.FO.Projection.idEquiv`,
+  `Cslib.Logic.FO.Projection.comp`: the identity projection, its isomorphism, and composition with
+  product coordinates.
+* `Cslib.Logic.FO.Projection.IsQF`: quantifier-free relativized projections.
 
 ## Main results
 
@@ -91,6 +95,8 @@ def inputStructure (I : Projection N N' L L' ι) (M : Type*)
     [N.Structure M] [L.Structure M] [L'.IsRelational] : L'.Structure (I.numeric.Model M) where
   RelMap R x := (I.rel R).toFormula.Realize fun p => (x p.1).1 p.2
 
+/-- An output relation holds in `I.inputStructure M` iff its defining projection formula holds on
+the underlying coordinate tuples. -/
 @[fo_realize]
 theorem relMap_inputStructure [L'.IsRelational] (I : Projection N N' L L' ι) {M : Type*}
     [N.Structure M] [L.Structure M] {n : ℕ} (R : L'.Relations n) (x : Fin n → I.numeric.Model M) :
@@ -207,12 +213,14 @@ theorem comp_numeric [Finite ι] [Finite κ] [N'.IsRelational]
     (J.comp I).numeric = J.numeric.comp I.numeric :=
   rfl
 
+/-- The numeric domain of `J.comp I` is the domain of `J.numeric.comp I.numeric`. -/
 @[fo_realize]
 theorem comp_numeric_domain [Finite ι] [Finite κ] [N'.IsRelational]
     (J : Projection N' N'' L' L'' κ) (I : Projection N N' L L' ι) :
     (J.comp I).numeric.domain = (J.numeric.comp I.numeric).domain :=
   rfl
 
+/-- Each numeric relation of `J.comp I` is that of `J.numeric.comp I.numeric`. -/
 @[fo_realize]
 theorem comp_numeric_rel [Finite ι] [Finite κ] [N'.IsRelational]
     (J : Projection N' N'' L' L'' κ) (I : Projection N N' L L' ι) {n : ℕ}
@@ -220,6 +228,8 @@ theorem comp_numeric_rel [Finite ι] [Finite κ] [N'.IsRelational]
     (J.comp I).numeric.rel R = (J.numeric.comp I.numeric).rel R :=
   rfl
 
+/-- Uncurrying a tuple via `(Interpretation.compEquiv J.numeric I.numeric).symm` reads coordinate
+`(j, i)`. -/
 @[simp, fo_realize]
 theorem compEquiv_numeric_symm_apply_val_val [Finite ι] [Finite κ] [N'.IsRelational]
     [N''.IsRelational] (J : Projection N' N'' L' L'' κ) (I : Projection N N' L L' ι)
@@ -252,6 +262,8 @@ def tupleInputStructure (I : Projection N N' L L' ι) (M : Type*) [N.Structure M
     [L'.IsRelational] : L'.Structure (ι → M) where
   RelMap R x := (I.rel R).toFormula.Realize fun p => x p.1 p.2
 
+/-- An output relation holds in `I.tupleInputStructure M` iff its projection formula holds on the
+tuples. -/
 @[fo_realize]
 theorem relMap_tupleInputStructure [L'.IsRelational] (I : Projection N N' L L' ι) {M : Type*}
     [N.Structure M] [L.Structure M] {n : ℕ} (R : L'.Relations n) (x : Fin n → ι → M) :
@@ -274,6 +286,7 @@ def tupleModelEquiv [N'.IsRelational] [L'.IsRelational] (I : Projection N N' L L
     map_fun' f := isEmptyElim f
     map_rel' R x := by cases R <;> rfl }
 
+/-- `tupleModelEquiv` projects a model element to its underlying tuple. -/
 @[simp]
 theorem tupleModelEquiv_apply [N'.IsRelational] [L'.IsRelational]
     (I : Projection N N' L L' ι) (M : Type*) [N.Structure M] [L.Structure M]
@@ -326,6 +339,7 @@ structure IsQF (I : Projection N N' L L' ι) : Prop where
 attribute [aesop safe 10 apply (rule_sets := [FirstOrder])] IsQF.mk
 attribute [aesop safe forward (rule_sets := [FirstOrder])] IsQF.numeric IsQF.rel
 
+/-- Forgetting a quantifier-free projection yields a quantifier-free ordinary interpretation. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem IsQF.toInterpretation {I : Projection N N' L L' ι} (hI : I.IsQF) :
     I.toInterpretation.IsQF := by
@@ -334,6 +348,8 @@ theorem IsQF.toInterpretation {I : Projection N N' L L' ι} (hI : I.IsQF) :
   · exact (hI.numeric.rel R).onBoundedFormula _
   · exact (hI.rel R).toFormula
 
+/-- Pulling back an input literal along a quantifier-free projection yields a quantifier-free
+projection formula. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem IsQF.onLiteral {I : Projection N N' L L' ι} (hI : I.IsQF)
     (l : InputLiteral L' α) : (I.onLiteral l).IsQF := by
@@ -344,11 +360,14 @@ theorem IsQF.onLiteral {I : Projection N N' L L' ι} (hI : I.IsQF)
     · exact (hI.rel R).relabel _
     · exact ((hI.rel R).relabel _).not
 
+/-- Pulling back a quantifier-free projection formula along a quantifier-free projection yields a
+quantifier-free projection formula. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem IsQF.onFormula [Finite ι] [N'.IsRelational] {I : Projection N N' L L' ι}
     (hI : I.IsQF) {p : ProjectionFormula N' L' α} (hp : p.IsQF) : (I.onFormula p).IsQF :=
   hp.subst _ _ (fun _ h => hI.numeric.onFormula h) hI.onLiteral
 
+/-- The identity projection is quantifier-free. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isQF_id (N L : Language) : (Projection.id N L).IsQF :=
   ⟨Interpretation.isQF_id N, fun _ => trivial⟩

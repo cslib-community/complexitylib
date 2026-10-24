@@ -30,9 +30,10 @@ says that this preserves satisfiability.
 
 ## Main definitions
 
-* `Cslib.Logic.PL.Literal`, `Clause`, `CNF`.
+* `Cslib.Logic.PL.Literal`, `Cslib.Logic.PL.Clause`, `Cslib.Logic.PL.CNF`.
 * `Cslib.Logic.PL.CNF.eval`, `Cslib.Logic.PL.CNF.Satisfiable`.
-* `Cslib.Logic.PL.CNF.vars`: the variables of a formula, in order of occurrence.
+* `Cslib.Logic.PL.CNF.vars`, `Cslib.Logic.PL.CNF.occurrences`: the variables of a formula in order
+  of occurrence, and the number of clauses mentioning a variable.
 * `Cslib.Logic.PL.CNF.relabel`: rename the variables of a formula.
 * `Cslib.Logic.PL.CNF.countUnsat`: the number of clauses an assignment falsifies.
 * `Cslib.Logic.PL.Clause.imp`, `Cslib.Logic.PL.Clause.impLits`: the clause `h₁ ∧ ⋯ ∧ hₙ → c`, for
@@ -101,8 +102,10 @@ theorem Clause.eval_eq_true_iff (σ : V → Bool) (c : Clause V) :
     c.eval σ = true ↔ ∃ l ∈ c, σ l.1 = l.2 := by
   simp [Clause.eval, Literal.eval]
 
+/-- The empty clause evaluates to `false`. -/
 @[simp] theorem Clause.eval_nil (σ : V → Bool) : Clause.eval σ [] = false := rfl
 
+/-- A clause `l :: c` evaluates to the disjunction of `l` and `c`. -/
 @[simp] theorem Clause.eval_cons (σ : V → Bool) (l : Literal V) (c : Clause V) :
     Clause.eval σ (l :: c) = (Literal.eval σ l || Clause.eval σ c) := rfl
 
@@ -111,12 +114,15 @@ theorem CNF.eval_eq_true_iff (σ : V → Bool) (φ : CNF V) :
     φ.eval σ = true ↔ ∀ c ∈ φ, c.eval σ = true := by
   simp [CNF.eval]
 
+/-- The empty CNF formula evaluates to `true`. -/
 @[simp] theorem CNF.eval_nil (σ : V → Bool) : CNF.eval σ [] = true := rfl
 
+/-- Appending two CNF formulas evaluates to the conjunction of their evaluations. -/
 @[simp] theorem CNF.eval_append (σ : V → Bool) (φ ψ : CNF V) :
     CNF.eval σ (φ ++ ψ) = (CNF.eval σ φ && CNF.eval σ ψ) := by
   simp [CNF.eval, List.all_append]
 
+/-- A CNF formula `c :: φ` evaluates to the conjunction of `c` and `φ`. -/
 @[simp] theorem CNF.eval_cons (σ : V → Bool) (c : Clause V) (φ : CNF V) :
     CNF.eval σ (c :: φ) = (Clause.eval σ c && CNF.eval σ φ) := rfl
 
@@ -136,6 +142,7 @@ theorem CNF.eval_flatMap_eq_true_iff {ι : Type*} (σ : V → Bool) (l : List ι
 /-- The variables of a formula, in order of occurrence and with repetitions. -/
 def CNF.vars (φ : CNF V) : List V := φ.flatten.map Prod.fst
 
+/-- The length of `φ.vars` is the sum of the lengths of the clauses of `φ`. -/
 theorem CNF.length_vars (φ : CNF V) : φ.vars.length = (φ.map List.length).sum := by
   simp [CNF.vars, List.length_flatten, Function.comp_def]
 
@@ -181,6 +188,8 @@ def CNF.occurrences [DecidableEq V] (φ : CNF V) (v : V) : ℕ :=
 def Clause.impLits (hyps : List (Literal V)) (concl : V) : Clause V :=
   hyps.map Std.Sat.Literal.negate ++ [(concl, true)]
 
+/-- `Clause.impLits hyps concl` holds under `σ` if and only if `σ concl = true` whenever every
+literal in `hyps` holds. -/
 @[simp] theorem Clause.eval_impLits (σ : V → Bool) (hyps : List (Literal V)) (concl : V) :
     (Clause.impLits hyps concl).eval σ = true ↔
       ((∀ l ∈ hyps, σ l.1 = l.2) → σ concl = true) := by
@@ -203,6 +212,8 @@ def Clause.impLits (hyps : List (Literal V)) (concl : V) : Clause V :=
 def Clause.imp (hyps : List V) (concl : V) : Clause V :=
   Clause.impLits (hyps.map (·, true)) concl
 
+/-- `Clause.imp hyps concl` holds under `σ` if and only if `σ concl = true` whenever every variable
+in `hyps` is true. -/
 @[simp] theorem Clause.eval_imp (σ : V → Bool) (hyps : List V) (concl : V) :
     (Clause.imp hyps concl).eval σ = true ↔ ((∀ h ∈ hyps, σ h = true) → σ concl = true) := by
   simp [Clause.imp]
@@ -231,23 +242,28 @@ def Clause.relabel (f : V → W) (c : Clause V) : Clause W := c.map (Prod.map f 
 /-- Rename the variables of a formula along `f`. -/
 def CNF.relabel (f : V → W) (φ : CNF V) : CNF W := φ.map (Clause.relabel f)
 
+/-- Relabeling a clause by `id` leaves it unchanged. -/
 @[simp] theorem Clause.relabel_id (c : Clause V) : c.relabel id = c := List.map_id c
 
+/-- Relabeling a CNF formula by `id` leaves it unchanged. -/
 @[simp] theorem CNF.relabel_id (φ : CNF V) : φ.relabel id = φ :=
   List.map_id'' Clause.relabel_id φ
 
+/-- Evaluating a relabeled clause `c.relabel f` under `σ` evaluates `c` under `σ ∘ f`. -/
 @[simp] theorem Clause.eval_relabel (f : V → W) (σ : W → Bool) (c : Clause V) :
     (c.relabel f).eval σ = c.eval (σ ∘ f) := by
   induction c with
   | nil => rfl
   | cons l c ih => simp_all [Clause.relabel, Literal.eval]
 
+/-- Evaluating a relabeled CNF formula `φ.relabel f` under `σ` evaluates `φ` under `σ ∘ f`. -/
 @[simp] theorem CNF.eval_relabel (f : V → W) (σ : W → Bool) (φ : CNF V) :
     (φ.relabel f).eval σ = φ.eval (σ ∘ f) := by
   induction φ with
   | nil => rfl
   | cons c φ ih => simp_all [CNF.relabel]
 
+/-- Relabeling a clause preserves its length. -/
 @[simp] theorem Clause.length_relabel (f : V → W) (c : Clause V) :
     (c.relabel f).length = c.length := List.length_map _
 

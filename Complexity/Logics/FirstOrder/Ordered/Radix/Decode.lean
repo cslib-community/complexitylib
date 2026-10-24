@@ -18,7 +18,8 @@ works even when the universe size is not a power of two.
 
 ## Main definitions
 
-* `Cslib.Logic.FO.Ordered.Radix.decode`: decode a source element into a fixed-length word.
+* `Cslib.Logic.FO.Ordered.Radix.quotientEq`, `Cslib.Logic.FO.Ordered.Radix.decode`: one scalar
+  quotient equation and decoding a source element into a fixed-length word.
 
 ## Main results
 
@@ -56,6 +57,7 @@ noncomputable def decode (L : Language) {α : Type*} {d : ℕ}
 
 variable {L : Language} {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)] {α : Type*}
 
+/-- `quotientEq L B x q r` holds iff `x = r + B * q`. -/
 @[fo_realize]
 theorem realize_quotientEq (B x q r : (language L).Term α) (v : α → Fin n) :
     (quotientEq L B x q r).Realize v ↔

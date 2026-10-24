@@ -93,6 +93,7 @@ noncomputable def chooseBranch (θ : ℕ → ℕ) (ψ : ClauseSet V) : ℕ × Fi
   if h : Sparse θ ψ then (0, ∅)
   else ((exists_choice θ h).choose, (exists_choice θ h).choose_spec.choose)
 
+/-- `chooseBranch θ ψ` yields a valid branching choice whenever `ψ` is not sparse. -/
 theorem choice_chooseBranch {ψ : ClauseSet V} (h : ¬ Sparse θ ψ) :
     Choice θ ψ (chooseBranch θ ψ).1 (chooseBranch θ ψ).2 := by
   unfold chooseBranch
@@ -196,12 +197,14 @@ private theorem walk_take_succ (s : σ) (w : List Bool) {i : ℕ} (hi : i < w.le
     List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some]
   rfl
 
+/-- Every leaf word is a node word. -/
 theorem IsLeafWord.isNodeWord {s : σ} {w : List Bool} (h : R.IsLeafWord s w) :
     R.IsNodeWord s w := by
   induction w generalizing s with
   | nil => trivial
   | cons b w ih => exact ⟨h.1, ih h.2⟩
 
+/-- Walking along a leaf word reaches a sparse clause set. -/
 theorem IsLeafWord.sparse_walk {s : σ} {w : List Bool} (h : R.IsLeafWord s w) :
     Sparse θ (R.toClauseSet (R.walk s w)) := by
   induction w generalizing s with
@@ -323,6 +326,7 @@ theorem IsNodeWord.sat_of_sat_walk {s : σ} {w : List Bool} (h : R.IsNodeWord s 
   | nil => exact hx
   | cons b w ih => exact sat_of_sat_next h.1 (ih h.2 hx)
 
+/-- Every satisfying assignment of the state reached by `walkSeq` satisfies the starting state. -/
 theorem sat_of_sat_walkSeq {n : ℕ} {s : σ} {f : ℕ → Bool} {x : V → Bool}
     (hx : (R.toClauseSet (R.walkSeq n s f)).Sat x) : (R.toClauseSet s).Sat x := by
   induction n generalizing s f with

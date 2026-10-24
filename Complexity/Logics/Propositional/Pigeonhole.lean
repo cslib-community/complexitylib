@@ -77,10 +77,13 @@ theorem mem_pigeonhole {c : Clause (Fin m × Fin n)} :
   · rintro (⟨i, rfl⟩ | ⟨i, i', j, hii', rfl⟩)
     exacts [Or.inl ⟨i, rfl⟩, Or.inr ⟨j, i, i', hii', rfl⟩]
 
+/-- `pigeonClause n i` evaluates to `true` under `σ` iff `σ (i, j) = true` for some hole `j`. -/
 @[simp] theorem eval_pigeonClause (σ : Fin m × Fin n → Bool) (i : Fin m) :
     (pigeonClause n i).eval σ = true ↔ ∃ j, σ (i, j) = true := by
   simp [pigeonClause, Clause.eval_eq_true_iff]
 
+/-- `holeClause i i' j` evaluates to `true` under `σ` iff at least one of `(i, j)` or `(i', j)` is
+`false`. -/
 @[simp] theorem eval_holeClause (σ : Fin m × Fin n → Bool) (i i' : Fin m) (j : Fin n) :
     (holeClause i i' j).eval σ = true ↔ σ (i, j) = false ∨ σ (i', j) = false := by
   simp [holeClause]
@@ -130,9 +133,11 @@ theorem not_satisfiable_pigeonhole (h : n < m) : ¬ (pigeonhole m n).Satisfiable
   rw [satisfiable_pigeonhole_iff]
   omega
 
+/-- The pigeon clause for `n` holes has length `n`. -/
 @[simp] theorem length_pigeonClause (n : ℕ) (i : Fin m) : (pigeonClause n i).length = n := by
   simp [pigeonClause]
 
+/-- Every hole clause has length `2`. -/
 @[simp] theorem length_holeClause (i i' : Fin m) (j : Fin n) : (holeClause i i' j).length = 2 :=
   rfl
 

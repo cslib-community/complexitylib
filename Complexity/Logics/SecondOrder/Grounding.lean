@@ -48,10 +48,18 @@ empty structure.
 
 ## Main definitions
 
-* `Cslib.Logic.ESO.Sentence.GroundTag`, `Cslib.Logic.ESO.Sentence.groundInterpretation`: the
-  grounding of an existential second-order sentence, a tagged interpretation in CNF structures.
-* `Cslib.Logic.ESO.Sentence.subsingletonSentence`: a first-order sentence equivalent to `Φ` on
-  structures with at most one element.
+* `Cslib.Logic.ESO.Sentence.Subformula`, `Cslib.Logic.ESO.Sentence.GroundTag`,
+  `Cslib.Logic.ESO.Sentence.GroundTag.Coord`: the subformulas, variable and clause tags, and
+  coordinate types of the grounding of an existential second-order sentence.
+* `Cslib.Logic.ESO.Sentence.termCoord`, `Cslib.Logic.ESO.Sentence.selfVar`,
+  `Cslib.Logic.ESO.Sentence.clauseTemplates`, `Cslib.Logic.ESO.Sentence.groundTemplates`: the
+  literal templates of the grounding.
+* `Cslib.Logic.ESO.Sentence.groundInterpretation`: the grounding of an existential second-order
+  sentence, a tagged interpretation in CNF structures.
+* `Cslib.Logic.ESO.Sentence.constInterpretation`,
+  `Cslib.Logic.ESO.Sentence.subsingletonSentence`,
+  `Cslib.Logic.ESO.Sentence.subsingletonInterpretation`: the constant-relation interpretation,
+  defining first-order sentence, and CNF reduction on structures with at most one element.
 
 ## Main results
 
@@ -90,6 +98,7 @@ variable {L : Language.{u, v}} [L.IsRelational] (Φ : ESO.Sentence L)
 abbrev Subformula : Type _ :=
   ↥(subformulas Φ.matrix)
 
+/-- The type `Φ.Subformula` of subformulas of `Φ.matrix` is finite. -/
 instance : Finite Φ.Subformula :=
   (finite_subformulas Φ.matrix).to_subtype
 
@@ -113,6 +122,7 @@ private def GroundTag.toSum : Φ.GroundTag → Φ.Subformula ⊕ Φ.Var ⊕ Unit
   | .top => .inr (.inr (.inl ()))
   | .clause s i => .inr (.inr (.inr (s, i)))
 
+/-- The type `Φ.GroundTag` of variable and clause kinds in the grounding of `Φ` is finite. -/
 instance : Finite Φ.GroundTag := by
   refine Finite.of_injective (GroundTag.toSum Φ) ?_
   intro a b h
@@ -129,6 +139,7 @@ def GroundTag.Coord : Φ.GroundTag → Type
   | .top => Fin 0
   | .clause s _ => Fin (s.1.1 + 1)
 
+/-- Every tag `t : Φ.GroundTag` has a finite coordinate type `t.Coord`. -/
 instance instFiniteGroundTagCoord : ∀ t : Φ.GroundTag, Finite t.Coord
   | .var _ => inferInstanceAs (Finite (Fin _))
   | .relVar _ => inferInstanceAs (Finite (Fin _))

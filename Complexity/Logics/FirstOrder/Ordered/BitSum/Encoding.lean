@@ -23,7 +23,8 @@ the node's level to zero.
 
 * `Cslib.Logic.FO.Ordered.BitSum.treeAddress`: native bit-plane addressing.
 * `Cslib.Logic.FO.Ordered.BitSum.packedBit`: native access to eight packed words.
-* `Cslib.Logic.FO.Ordered.BitSum.nodeValue`: decoding a node's entire value.
+* `Cslib.Logic.FO.Ordered.BitSum.nodeValue`, `Cslib.Logic.FO.Ordered.BitSum.EncodesNode`:
+  decoding a node's entire value and its bitwise specification.
 
 ## Main results
 

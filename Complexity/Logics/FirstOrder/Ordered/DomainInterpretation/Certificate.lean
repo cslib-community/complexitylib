@@ -31,8 +31,11 @@ value [Immerman1999, Proposition 3.5].
 
 * `Cslib.Logic.FO.Ordered.DomainInterpretation.Certificate`: numeric definitions and their
   correctness on every source.
-* `Cslib.Logic.FO.Ordered.DomainInterpretation.Certificate.toInterpretation`: the relational
-  interpretation of the ordered target language.
+* `Cslib.Logic.FO.Ordered.DomainInterpretation.Certificate.toInterpretation`,
+  `Cslib.Logic.FO.Ordered.DomainInterpretation.Certificate.constants`,
+  `Cslib.Logic.FO.Ordered.DomainInterpretation.Certificate.modelStructure`: the relational
+  interpretation of the ordered target language, its constant definitions, and the interpreted
+  ordered structure.
 * `Cslib.Logic.FO.Ordered.DomainInterpretation.Certificate.onFormula`,
   `Cslib.Logic.FO.Ordered.DomainInterpretation.Certificate.onSentence`: pullback of ordered
   target formulas.
@@ -111,6 +114,7 @@ theorem constants_valid (hI : I.Admissible) : C.constants.Valid (Fin M.size) := 
   rw [← unrank_rank x.property] at hx ⊢
   exact congrArg _ (Fin.ext ((C.realize_const M c _).mp hx))
 
+/-- The rank of the tuple selected by `C.constants` for `c` is `c.index (I.card M)`. -/
 theorem val_rank_value (hI : I.Admissible) (c : NumericFunction 0) :
     (I.rank M (C.constants.value (C.constants_valid hI) c).val
       (C.constants.value (C.constants_valid hI) c).property).val = c.index (I.card M) := by
@@ -170,6 +174,7 @@ noncomputable def modelEquiv (hI : I.Admissible) :
         rw [← hv]
         exact (C.realize_bit M fun a => I.rank M (x a).val (x a).property).symm
 
+/-- `C.modelEquiv hI` maps a domain tuple to its rank in `I.map hI M`. -/
 theorem modelEquiv_apply (hI : I.Admissible)
     (x : C.toInterpretation.Model (Fin M.size)) :
     C.modelEquiv hI x = I.rank M x.val x.property :=

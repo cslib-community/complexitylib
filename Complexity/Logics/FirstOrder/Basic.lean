@@ -99,6 +99,7 @@ theorem realize_closeEx {M : Type w} [L.Structure M] (V : Type) [Finite V] (φ :
 def atVar (φ : L.Formula (Fin 1)) {V : Type*} (u : V) : L.Formula V :=
   φ.relabel (fun _ => u)
 
+/-- `atVar φ u` holds under `v` if and only if `φ` holds of the singleton tuple `![v u]`. -/
 @[simp, fo_realize]
 theorem realize_atVar {M : Type w} [L.Structure M] (φ : L.Formula (Fin 1)) {V : Type*}
     (v : V → M) (u : V) :
@@ -120,17 +121,20 @@ def rel₁ {V : Type*} (r : L.Relations 1) (u : V) : L.Formula V :=
 def rel₂ {V : Type*} (r : L.Relations 2) (u w : V) : L.Formula V :=
   Relations.formula₂ r (.var u) (.var w)
 
+/-- `varEq u w` holds under `v` if and only if `v u = v w`. -/
 @[simp, fo_realize]
 theorem realize_varEq {M : Type w} [L.Structure M] {V : Type*} (v : V → M) (u w : V) :
     (varEq (L := L) u w).Realize v ↔ v u = v w := by
   simp [varEq]
 
+/-- `rel₁ r u` holds under `v` if and only if `RelMap r ![v u]` holds. -/
 @[simp, fo_realize]
 theorem realize_rel₁ {M : Type w} [L.Structure M] {V : Type*} (v : V → M)
     (r : L.Relations 1) (u : V) :
     (rel₁ r u).Realize v ↔ RelMap r ![v u] := by
   simp [rel₁]
 
+/-- `rel₂ r u w` holds under `v` if and only if `RelMap r ![v u, v w]` holds. -/
 @[simp, fo_realize]
 theorem realize_rel₂ {M : Type w} [L.Structure M] {V : Type*} (v : V → M)
     (r : L.Relations 2) (u w : V) :
@@ -195,11 +199,13 @@ variable {B : ℕ} [L.Structure (Fin B)] {r : L.Relations 2}
 
 include hlt
 
+/-- On `Fin B`, with `r` interpreted as `<`, `lt r u w` holds under `v` iff `v u < v w`. -/
 @[fo_realize]
 theorem realize_lt {V : Type*} (v : V → Fin B) (u w : V) :
     (lt r u w).Realize v ↔ v u < v w := by
   simp [lt, hlt]
 
+/-- On `Fin B`, with `r` interpreted as `<`, `le r u w` holds under `v` iff `v u ≤ v w`. -/
 @[fo_realize]
 theorem realize_le {V : Type*} (v : V → Fin B) (u w : V) :
     (le r u w).Realize v ↔ v u ≤ v w := by

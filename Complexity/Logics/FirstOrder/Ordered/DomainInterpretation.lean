@@ -39,7 +39,9 @@ domains.
 ## Main definitions
 
 * `Cslib.Logic.FO.Ordered.DomainInterpretation`: a domain formula and target relation formulas.
-* `Cslib.Logic.FO.Ordered.DomainInterpretation.card`: the number of domain tuples.
+* `Cslib.Logic.FO.Ordered.DomainInterpretation.domainRanks`,
+  `Cslib.Logic.FO.Ordered.DomainInterpretation.card`: the set of lexicographic ranks of domain
+  tuples and their count.
 * `Cslib.Logic.FO.Ordered.DomainInterpretation.unrank`: the domain tuple of each rank.
 * `Cslib.Logic.FO.Ordered.DomainInterpretation.rank`: the rank of each domain tuple.
 * `Cslib.Logic.FO.Ordered.DomainInterpretation.inputStructure`: the target relations on ranks.
@@ -125,6 +127,8 @@ theorem card_eq_card_filter [DecidablePred fun x : Fin k → Fin M.size => I.dom
 theorem realize_domain_unrank (i : Fin (I.card M)) : I.domain.Realize (I.unrank M i) :=
   mem_domainRanks.mp (Finset.orderEmbOfFin_mem _ rfl i)
 
+/-- The lexicographic index `lexEquiv (I.unrank M i)` is the `i`-th element of `I.domainRanks M`
+in increasing order. -/
 theorem lexEquiv_unrank (i : Fin (I.card M)) :
     lexEquiv (I.unrank M i) =
       (I.domainRanks M).orderEmbOfFin (rfl : (I.domainRanks M).card = I.card M) i :=
@@ -137,13 +141,16 @@ theorem lexRank_unrank_lt_lexRank_unrank_iff {i j : Fin (I.card M)} :
   rw [lexEquiv_unrank, lexEquiv_unrank]
   exact ((I.domainRanks M).orderEmbOfFin (rfl : (I.domainRanks M).card = I.card M)).lt_iff_lt
 
+/-- `i ↦ lexRank (I.unrank M i)` is strictly monotone. -/
 theorem strictMono_lexRank_unrank : StrictMono fun i => lexRank (I.unrank M i) :=
   fun _ _ h => lexRank_unrank_lt_lexRank_unrank_iff.mpr h
 
+/-- Weak lexicographic comparison of unranked domain tuples is equivalent to `i ≤ j`. -/
 theorem lexRank_unrank_le_lexRank_unrank_iff {i j : Fin (I.card M)} :
     lexRank (I.unrank M i) ≤ lexRank (I.unrank M j) ↔ i ≤ j :=
   strictMono_lexRank_unrank.le_iff_le
 
+/-- `I.unrank M` is injective. -/
 theorem unrank_injective : Function.Injective (I.unrank M) :=
   fun _ _ h => strictMono_lexRank_unrank.injective (congrArg lexRank h)
 
@@ -164,10 +171,12 @@ variable (I M) in
 noncomputable def rank (x : Fin k → Fin M.size) (hx : I.domain.Realize x) : Fin (I.card M) :=
   (exists_unrank_eq hx).choose
 
+/-- Unranking the rank of a domain tuple `x` recovers `x`. -/
 @[simp] theorem unrank_rank {x : Fin k → Fin M.size} (hx : I.domain.Realize x) :
     I.unrank M (I.rank M x hx) = x :=
   (exists_unrank_eq hx).choose_spec
 
+/-- The rank of `I.unrank M i` is `i`. -/
 @[simp] theorem rank_unrank (i : Fin (I.card M)) :
     I.rank M (I.unrank M i) (realize_domain_unrank i) = i :=
   unrank_injective (unrank_rank _)
@@ -249,6 +258,7 @@ theorem unrank_of_forall (h : ∀ x : Fin k → Fin M.size, I.domain.Realize x)
     (i : Fin (I.card M)) : I.unrank M i = lexEquiv.symm (Fin.cast (card_of_forall h) i) :=
   (unrank_eq_of_forall h).2 i
 
+/-- When every tuple belongs to the domain, `lexRank (I.unrank M i)` equals `i`. -/
 theorem lexRank_unrank_of_forall (h : ∀ x : Fin k → Fin M.size, I.domain.Realize x)
     (i : Fin (I.card M)) : lexRank (I.unrank M i) = i := by
   rw [unrank_of_forall h, lexRank, Equiv.apply_symm_apply, Fin.val_cast]
@@ -277,6 +287,7 @@ noncomputable def map (hI : I.Admissible) (M : Structure L) : Structure L' where
   size_ge_two := hI M
   input := I.inputStructure M
 
+/-- The universe size of the image `I.map hI M` is `I.card M`. -/
 @[simp] theorem size_map (hI : I.Admissible) : (I.map hI M).size = I.card M := rfl
 
 /-- A target relation holds of some ranks when its formula holds of the unranked tuples. -/

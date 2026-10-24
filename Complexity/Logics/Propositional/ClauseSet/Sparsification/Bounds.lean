@@ -36,7 +36,9 @@ and they have at most `2 (∑_{c < k} θ c) N + 1` clauses (`card_le_of_sparse`)
 
 ## Main definitions
 
-* `Cslib.Logic.PL.ClauseSet.Sparsification.threshold`: the explicit thresholds.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.base`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.threshold`: the threshold base `X = 2 k α` and the
+  explicit thresholds.
 
 ## Main results
 
@@ -77,11 +79,13 @@ def threshold (k α j : ℕ) : ℕ := if j = 0 then 1 else α * base k α ^ (2 *
 
 variable {k α : ℕ}
 
+/-- When `1 ≤ k` and `1 ≤ α`, the threshold base `base k α` is at least `1`. -/
 theorem one_le_base (hk : 1 ≤ k) (hα : 1 ≤ α) : 1 ≤ base k α := by
   unfold base
   have : 1 ≤ k * α := Nat.one_le_iff_ne_zero.mpr (Nat.mul_ne_zero (by omega) (by omega))
   nlinarith
 
+/-- When `1 ≤ k` and `1 ≤ α`, every threshold `threshold k α j` is at least `1`. -/
 theorem one_le_threshold (hk : 1 ≤ k) (hα : 1 ≤ α) (j : ℕ) : 1 ≤ threshold k α j := by
   unfold threshold
   split_ifs
@@ -89,6 +93,7 @@ theorem one_le_threshold (hk : 1 ≤ k) (hα : 1 ≤ α) (j : ℕ) : 1 ≤ thres
   · exact Nat.one_le_iff_ne_zero.mpr
       (Nat.mul_ne_zero (by omega) (pow_ne_zero _ (by have := one_le_base hk hα; omega)))
 
+/-- For `1 ≤ j`, `threshold k α j` equals `α * base k α ^ (2 * j - 1)`. -/
 theorem threshold_of_one_le {j : ℕ} (hj : 1 ≤ j) :
     threshold k α j = α * base k α ^ (2 * j - 1) := by
   unfold threshold

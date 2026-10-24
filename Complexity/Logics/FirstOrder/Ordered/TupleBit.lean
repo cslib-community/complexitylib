@@ -21,6 +21,9 @@ finite disjunction covers source sizes two through eight.
 
 ## Main definitions
 
+* `Cslib.Logic.FO.Ordered.TupleBit.parameters`, `Cslib.Logic.FO.Ordered.TupleBit.radixFormula`,
+  `Cslib.Logic.FO.Ordered.TupleBit.smallFormula`: binary-radix parameter conditions, the radix-word
+  `BIT` formula for `n > 8`, and the finite disjunction for `2 ≤ n ≤ 8`.
 * `Cslib.Logic.FO.Ordered.tupleBit`: native BIT on the full lexicographically numbered tuple
   universe. Its syntax depends on the dimension, never on the source cardinality.
 

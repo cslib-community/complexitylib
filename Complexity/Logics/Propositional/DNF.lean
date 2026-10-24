@@ -20,9 +20,10 @@ in disjunctive normal form into the negation of a formula in conjunctive normal 
 
 ## Main definitions
 
-* `Cslib.Logic.PL.Term`, `Cslib.Logic.PL.DNF`, `Cslib.Logic.PL.DNF.eval`.
-* `Cslib.Logic.PL.DNF.negate`, `Cslib.Logic.PL.CNF.negate`: the negation, in the dual normal
-  form.
+* `Cslib.Logic.PL.Term`, `Cslib.Logic.PL.DNF`, `Cslib.Logic.PL.Term.eval`,
+  `Cslib.Logic.PL.DNF.eval`.
+* `Cslib.Logic.PL.Term.negate`, `Cslib.Logic.PL.Clause.negate`, `Cslib.Logic.PL.DNF.negate`,
+  `Cslib.Logic.PL.CNF.negate`: the negation, in the dual normal form.
 
 ## Main results
 
@@ -66,8 +67,10 @@ theorem Term.eval_update_of_forall_ne [DecidableEq V] {t : Term V} {i : V}
   rw [Bool.eq_iff_iff, Term.eval_eq_true_iff, Term.eval_eq_true_iff]
   exact forall₂_congr fun l hl => by rw [Function.update_of_ne (hi l hl)]
 
+/-- Evaluating the empty term yields `true`. -/
 @[simp] theorem Term.eval_nil (σ : V → Bool) : Term.eval σ [] = true := rfl
 
+/-- Evaluating a `cons` term conjoins the head literal with the tail term. -/
 @[simp] theorem Term.eval_cons (σ : V → Bool) (l : Literal V) (t : Term V) :
     Term.eval σ (l :: t) = (Literal.eval σ l && Term.eval σ t) := rfl
 
@@ -76,12 +79,15 @@ theorem DNF.eval_eq_true_iff (σ : V → Bool) (φ : DNF V) :
     φ.eval σ = true ↔ ∃ t ∈ φ, t.eval σ = true := by
   simp [DNF.eval]
 
+/-- Evaluating the empty DNF formula yields `false`. -/
 @[simp] theorem DNF.eval_nil (σ : V → Bool) : DNF.eval σ [] = false := rfl
 
+/-- Evaluating the concatenation of two DNF formulas disjoins their values. -/
 @[simp] theorem DNF.eval_append (σ : V → Bool) (φ ψ : DNF V) :
     DNF.eval σ (φ ++ ψ) = (DNF.eval σ φ || DNF.eval σ ψ) := by
   simp [DNF.eval, List.any_append]
 
+/-- Evaluating a `cons` DNF formula disjoins the head term with the tail formula. -/
 @[simp] theorem DNF.eval_cons (σ : V → Bool) (t : Term V) (φ : DNF V) :
     DNF.eval σ (t :: φ) = (Term.eval σ t || DNF.eval σ φ) := rfl
 
@@ -89,6 +95,7 @@ theorem DNF.eval_eq_true_iff (σ : V → Bool) (φ : DNF V) :
 def Term.negate (t : Term V) : Clause V :=
   t.map fun l => (l.1, !l.2)
 
+/-- Evaluating the negated clause of a term `t` negates `t.eval σ`. -/
 @[simp] theorem Term.eval_negate (σ : V → Bool) (t : Term V) :
     Clause.eval σ t.negate = !t.eval σ := by
   induction t with
@@ -118,6 +125,7 @@ def DNF.negate (φ : DNF V) : CNF V :=
 def Clause.negate (c : Clause V) : Term V :=
   c.map fun l => (l.1, !l.2)
 
+/-- Evaluating the negated term of a clause `c` negates `c.eval σ`. -/
 @[simp] theorem Clause.eval_negate (σ : V → Bool) (c : Clause V) :
     Term.eval σ c.negate = !c.eval σ := by
   have h := Term.eval_negate σ (Clause.negate c)
@@ -130,9 +138,11 @@ def Clause.negate (c : Clause V) : Term V :=
   rw [hc] at h
   rw [h, Bool.not_not]
 
+/-- Negating a clause preserves its length. -/
 @[simp] theorem Clause.length_negate (c : Clause V) : c.negate.length = c.length :=
   List.length_map _
 
+/-- Negating a clause preserves its list of underlying variables. -/
 theorem Clause.map_fst_negate (c : Clause V) : c.negate.map Prod.fst = c.map Prod.fst := by
   simp [Clause.negate]
 

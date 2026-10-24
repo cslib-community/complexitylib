@@ -46,10 +46,14 @@ need no reindexing.
 
 ## Main definitions
 
-* `Cslib.Logic.FO.Interpretation`: a first-order interpretation of `L'` in `L` of dimension `ι`.
-* `Cslib.Logic.FO.Interpretation.Model`: the `L'`-structure interpreted in an `L`-structure.
-* `Cslib.Logic.FO.Interpretation.onFormula`, `Cslib.Logic.FO.Interpretation.onSentence`: the
-  pullback of formulas and sentences of `L'` to formulas and sentences of `L`.
+* `Cslib.Logic.FO.Interpretation`, `Cslib.Logic.FO.Interpretation.empty`, `Cslib.Logic.FO.termVar`:
+  a first-order interpretation of `L'` in `L` of dimension `ι`, the empty interpretation, and
+  variable extraction for relational terms.
+* `Cslib.Logic.FO.Interpretation.Model`, `Cslib.Logic.FO.Interpretation.Model.mk`: the
+  `L'`-structure interpreted in an `L`-structure and its element constructor.
+* `Cslib.Logic.FO.Interpretation.snocVar`, `Cslib.Logic.FO.Interpretation.onBoundedFormula`,
+  `Cslib.Logic.FO.Interpretation.onFormula`, `Cslib.Logic.FO.Interpretation.onSentence`: the
+  pullback of bounded formulas, formulas, and sentences of `L'` to `L`.
 * `Cslib.Logic.FO.Interpretation.id`: the identity interpretation of a relational language.
 * `Cslib.Logic.FO.Interpretation.comp`: the composite of two interpretations.
 
@@ -108,6 +112,7 @@ def termVar {L' : Language.{u', v'}} [L'.IsRelational] {β : Type*} : L'.Term β
   | .var x => x
   | .func f _ => isEmptyElim f
 
+/-- Extracting the variable of `Term.var x` returns `x`. -/
 @[simp]
 theorem termVar_var {L' : Language.{u', v'}} [L'.IsRelational] {β : Type*} (x : β) :
     termVar (Term.var x : L'.Term β) = x :=
@@ -138,10 +143,12 @@ transparency. -/
 def Model.mk (x : ι → M) (hx : I.domain.Realize x) : I.Model M :=
   ⟨x, hx⟩
 
+/-- The underlying tuple of `Model.mk x hx` is `x`. -/
 @[simp, fo_realize]
 theorem Model.val_mk (x : ι → M) (hx : I.domain.Realize x) : (Model.mk x hx).1 = x :=
   rfl
 
+/-- Two elements of `I.Model M` are equal if their underlying tuples are equal. -/
 theorem Model.ext {x y : I.Model M} (h : x.1 = y.1) : x = y :=
   Subtype.ext h
 
@@ -150,6 +157,7 @@ theorem Model.ext {x y : I.Model M} (h : x.1 = y.1) : x = y :=
 theorem Model.ext_iff {x y : I.Model M} : x = y ↔ ∀ i, x.1 i = y.1 i :=
   ⟨fun h _ => h ▸ rfl, fun h => Model.ext (funext h)⟩
 
+/-- When `ι` and `M` are finite, the interpreted domain `I.Model M` is finite. -/
 instance [Finite ι] [Finite M] : Finite (I.Model M) :=
   Subtype.finite
 
@@ -160,6 +168,8 @@ defining formula holds of their coordinates. -/
 instance : L'.Structure (I.Model M) where
   RelMap R x := (I.rel R).Realize fun p => (x p.1).1 p.2
 
+/-- A relation symbol `R` holds on `x` in `I.Model M` iff `I.rel R` holds of the coordinates
+`p ↦ (x p.1).1 p.2`. -/
 @[fo_realize]
 theorem relMap_model {n : ℕ} (R : L'.Relations n) (x : Fin n → I.Model M) :
     RelMap R x ↔ (I.rel R).Realize fun p => (x p.1).1 p.2 :=
@@ -179,6 +189,7 @@ def mapEquiv (I : Interpretation L L' ι) (e : M ≃[L] N) : I.Model M ≃[L'] I
   map_fun' f := isEmptyElim f
   map_rel' R x := StrongHomClass.realize_formula e (I.rel R) (v := fun p => (x p.1).1 p.2)
 
+/-- The underlying tuple of `I.mapEquiv e x` is `e ∘ x.1`. -/
 @[simp]
 theorem mapEquiv_apply_val (e : M ≃[L] N) (x : I.Model M) : (I.mapEquiv e x).1 = e ∘ x.1 :=
   rfl
@@ -345,6 +356,8 @@ def compEquiv [Finite κ] (J : Interpretation L' L'' κ)
     rw [Formula.realize_relabel, ← realize_onFormula]
     rfl
 
+/-- Evaluating `(compEquiv J I).symm z` at outer coordinate `j` and inner coordinate `i` yields
+`z.1 (j, i)`. -/
 @[simp, fo_realize]
 theorem compEquiv_symm_apply_val_val [Finite κ] (J : Interpretation L' L'' κ)
     (I : Interpretation L L' ι) (z : (J.comp I).Model M) (j : κ) (i : ι) :

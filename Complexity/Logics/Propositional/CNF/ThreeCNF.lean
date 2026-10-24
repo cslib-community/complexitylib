@@ -23,7 +23,8 @@ with clauses of width at most three that is satisfiable exactly when the origina
 
 ## Main definitions
 
-* `Cslib.Logic.PL.Clause.split3`: the chain of width-three clauses for one clause.
+* `Cslib.Logic.PL.Clause.splitAux`, `Cslib.Logic.PL.Clause.split3`: the chain of width-three
+  clauses for one clause.
 * `Cslib.Logic.PL.CNF.to3CNF`: every clause split, over the variables `V ⊕ (ℕ × ℕ)`.
 
 ## Main results
@@ -135,6 +136,7 @@ def CNF.to3CNF (φ : CNF V) : CNF (V ⊕ (ℕ × ℕ)) :=
   φ.zipIdx.flatMap fun x =>
     Clause.split3 (fun j => Sum.inr (x.2, j)) 0 (x.1.relabel Sum.inl)
 
+/-- Every clause in `Clause.split3 fresh j c` has at most three literals. -/
 theorem Clause.length_le_three_of_mem_split3 (fresh : ℕ → W) (j : ℕ) (c : Clause W) :
     ∀ d ∈ Clause.split3 fresh j c, d.length ≤ 3 := by
   cases c with
@@ -147,6 +149,7 @@ theorem CNF.length_le_three_of_mem_to3CNF {φ : CNF V} {c : Clause (V ⊕ (ℕ �
   obtain ⟨x, -, hc⟩ := List.mem_flatMap.1 hc
   exact Clause.length_le_three_of_mem_split3 _ _ _ c hc
 
+/-- Any assignment satisfying `Clause.split3 fresh j c` satisfies `c`. -/
 theorem Clause.eval_of_eval_split3 (fresh : ℕ → W) (σ : W → Bool) (j : ℕ) (c : Clause W)
     (h : (Clause.split3 fresh j c).eval σ = true) : c.eval σ = true := by
   cases c with

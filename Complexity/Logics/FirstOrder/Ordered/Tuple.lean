@@ -73,9 +73,11 @@ theorem lexEquiv_symm_apply_val {n k : ℕ} (r : Fin (n ^ k)) (i : Fin k) :
     ((lexEquiv.symm r) i).val = r.val / n ^ i.rev.val % n :=
   tupleEquiv_symm_apply_val Fin.revPerm r i
 
+/-- The lexicographic rank of a `k`-tuple over `Fin n` is strictly less than `n ^ k`. -/
 theorem lexRank_lt {n k : ℕ} (x : Fin k → Fin n) : lexRank x < n ^ k :=
   (lexEquiv x).isLt
 
+/-- Lexicographic rank is injective on `Fin k → Fin n`. -/
 theorem lexRank_injective {n k : ℕ} : Function.Injective (lexRank (n := n) (k := k)) :=
   fun _ _ h => lexEquiv.injective (Fin.ext h)
 

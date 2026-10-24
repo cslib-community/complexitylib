@@ -52,6 +52,7 @@ namespace FullTupleInterpretation
 
 variable {L L' : Language} {k : ℕ} {I : FullTupleInterpretation L L' k} {M : Structure L}
 
+/-- The lexicographic rank of `constantTuple c` is `c.index (n ^ (k + 1))`. -/
 theorem lexRank_constantTuple {n : ℕ} [Fact (2 ≤ n)] (c : NumericFunction 0) :
     lexRank (constantTuple (n := n) (k := k) c) = c.index (n ^ (k + 1)) :=
   Ordered.lexRank_constantTuple c

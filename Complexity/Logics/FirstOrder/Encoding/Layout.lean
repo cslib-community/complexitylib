@@ -66,21 +66,27 @@ theorem drop_tableStart (a : EncodedStructure) (i : ℕ) :
   rw [encStructure_eq, tableStart, ← List.drop_drop, List.drop_left' (by simp [length_frame]), h]
   exact List.drop_left' (length_flatMap_frame _)
 
+/-- Indexing `encStructure a` at `tableStart a i + q` reads position `q` in the framed tables
+starting at index `i`. -/
 theorem getElem?_encStructure_tableStart_add (a : EncodedStructure) (i q : ℕ) :
     (encStructure a)[tableStart a i + q]? = ((a.2.drop i).flatMap frame)[q]? := by
   rw [← drop_tableStart, List.getElem?_drop]
 
+/-- The total length of `encStructure a` equals `tableStart a a.2.length`. -/
 theorem length_encStructure (a : EncodedStructure) :
     (encStructure a).length = tableStart a a.2.length := by
   rw [encStructure_eq, tableStart, List.take_length, List.length_append, length_frame,
     length_flatMap_frame, List.length_replicate]
 
+/-- For `i < a.2.length`, `tableStart a (i + 1)` advances past the framed `i`-th table of length
+`2 * a.2[i].length + 1`. -/
 theorem tableStart_succ {a : EncodedStructure} {i : ℕ} (hi : i < a.2.length) :
     tableStart a (i + 1) = tableStart a i + 2 * a.2[i].length + 1 := by
   simp only [tableStart, List.take_succ_eq_append_getElem hi, List.map_append, List.sum_append,
     List.map_singleton, List.sum_singleton]
   omega
 
+/-- `tableStart a` is monotone in the table index. -/
 theorem tableStart_mono (a : EncodedStructure) {i j : ℕ} (h : i ≤ j) :
     tableStart a i ≤ tableStart a j := by
   induction j, h using Nat.le_induction with
@@ -93,6 +99,7 @@ theorem tableStart_mono (a : EncodedStructure) {i j : ℕ} (h : i ≤ j) :
         List.take_of_length_le (show a.2.length ≤ j + 1 by omega)] at ih ⊢
       exact ih
 
+/-- Every table start position is at most `(encStructure a).length`. -/
 theorem tableStart_le_length (a : EncodedStructure) (i : ℕ) :
     tableStart a i ≤ (encStructure a).length := by
   rcases le_or_gt i a.2.length with h | h
@@ -101,6 +108,7 @@ theorem tableStart_le_length (a : EncodedStructure) (i : ℕ) :
   · simp only [tableStart, List.take_of_length_le h.le]
     rw [length_encStructure, tableStart, List.take_length]
 
+/-- The framed unary cardinality prefix of length `2 * a.1 + 1` fits within `encStructure a`. -/
 theorem two_mul_card_add_one_le_length (a : EncodedStructure) :
     2 * a.1 + 1 ≤ (encStructure a).length :=
   (Nat.le_add_right _ _).trans (tableStart_le_length a 0)

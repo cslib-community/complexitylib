@@ -62,6 +62,7 @@ def forgetEquiv : (forget L).Model (Fin n) ≃[L] Fin n where
   map_fun' f := isEmptyElim f
   map_rel' _ _ := Iff.rfl
 
+/-- `forgetEquiv` evaluates a `Unit`-indexed tuple at `()`. -/
 @[simp] theorem forgetEquiv_apply (x : (forget L).Model (Fin n)) :
     forgetEquiv x = x.val () := rfl
 

@@ -156,16 +156,20 @@ distinct variables. -/
 def CNF.IsExactThreeDistinct (φ : CNF V) : Prop :=
   ∀ c ∈ φ, c.IsExactThreeDistinct
 
+/-- Whether a clause has three distinct variables is decidable. -/
 instance [DecidableEq V] {c : Clause V} : Decidable c.IsExactThreeDistinct :=
   inferInstanceAs (Decidable (c.length = 3 ∧ (c.map Prod.fst).Nodup))
 
+/-- Whether every clause of a CNF formula has three distinct variables is decidable. -/
 instance [DecidableEq V] {φ : CNF V} : Decidable φ.IsExactThreeDistinct :=
   inferInstanceAs (Decidable (∀ c ∈ φ, c.IsExactThreeDistinct))
 
+/-- An exact 3-clause with distinct variables has length `3`. -/
 theorem Clause.IsExactThreeDistinct.length_eq {c : Clause V} (hc : c.IsExactThreeDistinct) :
     c.length = 3 :=
   hc.1
 
+/-- The variables of an exact 3-clause with distinct variables have no duplicates. -/
 theorem Clause.IsExactThreeDistinct.nodup_map_fst {c : Clause V} (hc : c.IsExactThreeDistinct) :
     (c.map Prod.fst).Nodup :=
   hc.2

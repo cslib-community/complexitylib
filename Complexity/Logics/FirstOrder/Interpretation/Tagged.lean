@@ -51,13 +51,28 @@ from it, or are arbitrary.
 
 ## Main definitions
 
-* `Cslib.Logic.FO.TaggedInterpretation`, `Cslib.Logic.FO.TaggedInterpretation.Model`: tagged
-  interpretations and the structures they interpret.
-* `Cslib.Logic.FO.TaggedInterpretation.reindex`: renaming the tags.
-* `Cslib.Logic.FO.Copies`, `Cslib.Logic.FO.CopyInvariant`: disjoint copies of a structure, and the
-  classes closed under them.
-* `Cslib.Logic.FO.TaggedInterpretation.toInterpretation`: the compiled first-order interpretation.
-* `Cslib.Logic.FO.TaggedInterpretation.Template`: templates for binary relations.
+* `Cslib.Logic.FO.TaggedInterpretation`, `Cslib.Logic.FO.TaggedInterpretation.Model`,
+  `Cslib.Logic.FO.TaggedInterpretation.Model.toSigma`, `Cslib.Logic.FO.subsingletonFormula`:
+  tagged interpretations, the structures they interpret, and the subsingleton guard formula.
+* `Cslib.Logic.FO.TaggedInterpretation.reindex`,
+  `Cslib.Logic.FO.TaggedInterpretation.reindexEquiv`: renaming the tags and the induced
+  isomorphism.
+* `Cslib.Logic.FO.Copies`, `Cslib.Logic.FO.Copies.equivProd`, `Cslib.Logic.FO.CopyInvariant`:
+  disjoint copies of a structure, their product equivalence, and the classes closed under them.
+* `Cslib.Logic.FO.TaggedInterpretation.Coord`, `Cslib.Logic.FO.TaggedInterpretation.Coord.tag`,
+  `Cslib.Logic.FO.TaggedInterpretation.Coord.data`,
+  `Cslib.Logic.FO.TaggedInterpretation.domainAt`, `Cslib.Logic.FO.TaggedInterpretation.relAt`,
+  `Cslib.Logic.FO.TaggedInterpretation.toInterpretation`: coordinates, component formulas, and
+  the compiled first-order interpretation.
+* `Cslib.Logic.FO.TaggedInterpretation.Pairs`, `Cslib.Logic.FO.TaggedInterpretation.coords`,
+  `Cslib.Logic.FO.TaggedInterpretation.ofCopies`: distinct-element pairs, coordinate encoding, and
+  the map from copies into the compiled model.
+* `Cslib.Logic.FO.TaggedInterpretation.Template`,
+  `Cslib.Logic.FO.TaggedInterpretation.Template.Compat`,
+  `Cslib.Logic.FO.TaggedInterpretation.Template.Holds`,
+  `Cslib.Logic.FO.TaggedInterpretation.Template.formula`,
+  `Cslib.Logic.FO.TaggedInterpretation.Template.listFormula`,
+  `Cslib.Logic.FO.TaggedInterpretation.binaryRel`: templates and formulas for binary relations.
 
 ## Main results
 
@@ -98,6 +113,7 @@ structure TaggedInterpretation (L : Language.{u, v}) (L' : Language.{u', v'}) (T
 def subsingletonFormula (L : Language.{u, v}) (α : Type*) : L.Formula α :=
   ∀' ∀' ((&0 : L.Term (α ⊕ Fin 2)) =' &1)
 
+/-- `subsingletonFormula L α` holds in `M` if and only if `M` is a `Subsingleton`. -/
 @[simp]
 theorem realize_subsingletonFormula {L : Language.{u, v}} {α : Type*} {M : Type w}
     [L.Structure M] (v : α → M) : (subsingletonFormula L α).Realize v ↔ Subsingleton M := by
@@ -122,6 +138,7 @@ def Model : Type _ :=
 
 variable {I M}
 
+/-- When `T`, each `ι t`, and `M` are finite, the tagged model `I.Model M` is finite. -/
 instance [Finite T] [∀ t, Finite (ι t)] [Finite M] : Finite (I.Model M) :=
   inferInstanceAs (Finite (Σ t, {x : ι t → M // (I.domain t).Realize x}))
 
@@ -129,6 +146,7 @@ instance [Finite T] [∀ t, Finite (ι t)] [Finite M] : Finite (I.Model M) :=
 def Model.toSigma (e : I.Model M) : Σ t, ι t → M :=
   ⟨e.1, e.2.1⟩
 
+/-- Two elements of `I.Model M` with equal `toSigma` projections are equal. -/
 theorem Model.ext_toSigma {e e' : I.Model M} (h : e.toSigma = e'.toSigma) : e = e' := by
   obtain ⟨t, x, hx⟩ := e
   obtain ⟨t', x', hx'⟩ := e'
@@ -143,6 +161,8 @@ for their tags holds of their coordinates. -/
 instance : L'.Structure (I.Model M) where
   RelMap R xs := (I.rel R fun j => (xs j).1).Realize fun p => (xs p.1).2.1 p.2
 
+/-- A relation `R` holds on `xs` in `I.Model M` iff `I.rel R` for their tags holds of their
+coordinates. -/
 theorem relMap_model {n : ℕ} (R : L'.Relations n) (xs : Fin n → I.Model M) :
     RelMap R xs ↔ (I.rel R fun j => (xs j).1).Realize fun p => (xs p.1).2.1 p.2 :=
   Iff.rfl
@@ -193,12 +213,17 @@ def equivProd : Copies J N ≃ J × N where
   left_inv _ := rfl
   right_inv _ := rfl
 
+/-- When `J` and `N` are finite, `Copies J N` is finite. -/
 instance [Finite J] [Finite N] : Finite (Copies J N) :=
   Finite.of_equiv _ equivProd.symm
 
+/-- Relational structure on `Copies J N`: a relation holds on a tuple iff all arguments lie in the
+same copy and the relation holds on their underlying values in `N`. -/
 instance [L'.IsRelational] [L'.Structure N] : L'.Structure (Copies J N) where
   RelMap R xs := (∀ i j, (xs i).idx = (xs j).idx) ∧ RelMap R fun i => (xs i).val
 
+/-- A relation `R` holds on `xs` in `Copies J N` iff all `xs i` share the same copy index and `R`
+holds on `i ↦ (xs i).val` in `N`. -/
 theorem relMap_copies [L'.IsRelational] [L'.Structure N] {n : ℕ} (R : L'.Relations n)
     (xs : Fin n → Copies J N) :
     RelMap R xs ↔ (∀ i j, (xs i).idx = (xs j).idx) ∧ RelMap R fun i => (xs i).val :=
@@ -308,6 +333,8 @@ noncomputable def toInterpretation (S : Interpretation L L' Unit) :
 variable {I} {M : Type w} [L.Structure M]
 
 open scoped Classical in
+/-- `I.domainAt t` holds of `c` iff `c p ≠ c q`, `c (tag t')` is `c q` at `t` and `c p` elsewhere,
+all data coordinates for tags `t' ≠ t` equal `c p`, and the `t`-coordinates satisfy `I.domain t`. -/
 theorem realize_domainAt (t : T) (c : Coord T ι → M) :
     (I.domainAt t).Realize c ↔ c p ≠ c q ∧ (∀ t', c (tag t') = if t' = t then c q else c p) ∧
       (∀ σ : Σ t', ι t', σ.1 ≠ t → c (data σ) = c p) ∧
@@ -321,6 +348,8 @@ theorem realize_domainAt (t : T) (c : Coord T ι → M) :
     split_ifs with h <;> simp [h]
 
 omit [∀ t, Finite (ι t)] in
+/-- `I.relAt R` holds of `c` iff all arguments share the same copy pair `(p, q)` and there is a tag
+assignment `ts` selected by the `tag` coordinates whose data coordinates satisfy `I.rel R ts`. -/
 theorem realize_relAt {n : ℕ} (R : L'.Relations n) (c : Fin n × Coord T ι → M) :
     (I.relAt R).Realize c ↔ (∀ j j', c (j, p) = c (j', p) ∧ c (j, q) = c (j', q)) ∧
       ∃ ts : Fin n → T, (∀ j, c (j, tag (ts j)) = c (j, q)) ∧
@@ -330,6 +359,8 @@ theorem realize_relAt {n : ℕ} (R : L'.Relations n) (c : Fin n × Coord T ι �
 
 variable (S : Interpretation L L' Unit)
 
+/-- On a subsingleton structure `M`, the domain formula of `I.toInterpretation S` reduces to
+`S.domain` at coordinate `p`. -/
 theorem realize_toInterpretation_domain_of_subsingleton [Subsingleton M] (c : Coord T ι → M) :
     (I.toInterpretation S).domain.Realize c ↔ S.domain.Realize fun _ => c p := by
   simp only [toInterpretation, Formula.realize_sup, Formula.realize_inf,
@@ -337,12 +368,16 @@ theorem realize_toInterpretation_domain_of_subsingleton [Subsingleton M] (c : Co
   simp only [show Subsingleton M from inferInstance, true_and, not_true_eq_false, false_and,
     or_false]
 
+/-- On a nontrivial structure `M`, the domain formula of `I.toInterpretation S` holds iff
+`I.domainAt t` holds for some tag `t`. -/
 theorem realize_toInterpretation_domain_of_nontrivial [Nontrivial M] (c : Coord T ι → M) :
     (I.toInterpretation S).domain.Realize c ↔ ∃ t, (I.domainAt t).Realize c := by
   simp only [toInterpretation, Formula.realize_sup, Formula.realize_inf,
     realize_subsingletonFormula, Formula.realize_not, Formula.realize_iSup, not_subsingleton,
     false_and, not_false_eq_true, true_and, false_or]
 
+/-- On a subsingleton structure `M`, the relation formula of `I.toInterpretation S` for `R` reduces
+to `S.rel R` at coordinate `p`. -/
 theorem realize_toInterpretation_rel_of_subsingleton [Subsingleton M] {n : ℕ}
     (R : L'.Relations n) (c : Fin n × Coord T ι → M) :
     ((I.toInterpretation S).rel R).Realize c ↔ (S.rel R).Realize fun x => c (x.1, p) := by
@@ -351,6 +386,8 @@ theorem realize_toInterpretation_rel_of_subsingleton [Subsingleton M] {n : ℕ}
   simp only [show Subsingleton M from inferInstance, true_and, not_true_eq_false, false_and,
     or_false]
 
+/-- On a nontrivial structure `M`, the relation formula of `I.toInterpretation S` for `R` reduces
+to `I.relAt R`. -/
 theorem realize_toInterpretation_rel_of_nontrivial [Nontrivial M] {n : ℕ}
     (R : L'.Relations n) (c : Fin n × Coord T ι → M) :
     ((I.toInterpretation S).rel R).Realize c ↔ (I.relAt R).Realize c := by
@@ -381,9 +418,11 @@ def subsingletonEquiv [L'.IsRelational] [Subsingleton M] :
 def Pairs (M : Type w) : Type w :=
   {pq : M × M // pq.1 ≠ pq.2}
 
+/-- When `M` is finite, `Pairs M` is finite. -/
 instance [Finite M] : Finite (Pairs M) :=
   inferInstanceAs (Finite {pq : M × M // pq.1 ≠ pq.2})
 
+/-- When `M` is nontrivial, `Pairs M` is nonempty. -/
 instance [Nontrivial M] : Nonempty (Pairs M) :=
   let ⟨x, y, h⟩ := exists_pair_ne M
   ⟨⟨(x, y), h⟩⟩
@@ -399,6 +438,7 @@ noncomputable def coords (a b : M) (e : I.Model M) : Coord T ι → M
   | .inr (.inr ⟨t, i⟩) => if h : t = e.1 then e.2.1 (h ▸ i) else a
 
 omit [Finite T] [∀ t, Finite (ι t)] in
+/-- At the tag `e.1` of `e`, `coords a b e` evaluates `data ⟨e.1, i⟩` to `e.2.1 i`. -/
 @[simp]
 theorem coords_data_self (a b : M) (e : I.Model M) (i : ι e.1) :
     coords a b e (data ⟨e.1, i⟩) = e.2.1 i := by
@@ -432,6 +472,8 @@ private theorem coords_injective {a b a' b' : M} (h : a ≠ b) {e e' : I.Model M
   have := congrFun heq (data ⟨t, i⟩)
   rwa [coords_data_mk, coords_data_mk] at this
 
+/-- For distinct elements `a ≠ b` and `e : I.Model M`, `coords a b e` satisfies
+`I.domainAt e.1`. -/
 theorem realize_domainAt_coords (a b : M) (h : a ≠ b) (e : I.Model M) :
     (I.domainAt e.1).Realize (coords a b e) := by
   refine (realize_domainAt _ _).2 ⟨h, fun t' => ?_, fun ⟨t', i⟩ ht => ?_, ?_⟩
@@ -445,6 +487,8 @@ noncomputable def ofCopies [Nontrivial M] (x : Copies (Pairs M) (I.Model M)) :
   ⟨coords x.idx.1.1 x.idx.1.2 x.val, (realize_toInterpretation_domain_of_nontrivial S _).2
     ⟨x.val.1, realize_domainAt_coords _ _ x.idx.2 x.val⟩⟩
 
+/-- On a nontrivial structure `M`, `ofCopies S` is a bijection from `Copies (Pairs M) (I.Model M)`
+to `(I.toInterpretation S).Model M`. -/
 theorem ofCopies_bijective [Nontrivial M] :
     Function.Bijective (ofCopies (I := I) (M := M) S) := by
   constructor
@@ -606,6 +650,8 @@ def binaryRel (F : ∀ t w : T, L.Formula (ι t ⊕ ι w)) (ts : Fin 2 → T) :
     L.Formula (Σ j : Fin 2, ι (ts j)) :=
   (F (ts 0) (ts 1)).relabel (Sum.elim (fun i => ⟨0, i⟩) fun i => ⟨1, i⟩)
 
+/-- When `I.rel R` is defined by `binaryRel F`, `RelMap R ![a, b]` holds in `I.Model M` iff
+`F a.1 b.1` holds of `Sum.elim a.2.1 b.2.1`. -/
 theorem relMap_binaryRel {L' : Language.{u', v'}} [L'.IsRelational]
     {I : TaggedInterpretation L L' T ι} {M : Type w} [L.Structure M] {R : L'.Relations 2}
     {F : ∀ t w : T, L.Formula (ι t ⊕ ι w)} (hR : ∀ ts, I.rel R ts = binaryRel F ts)

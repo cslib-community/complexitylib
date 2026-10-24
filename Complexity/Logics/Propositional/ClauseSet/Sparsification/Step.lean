@@ -35,10 +35,18 @@ of the original clause set, they preserve the width and reducedness, and the pot
 
 ## Main definitions
 
-* `Cslib.Logic.PL.ClauseSet.Sparsification.reduce`: remove the clauses containing others.
-* `Cslib.Logic.PL.ClauseSet.Sparsification.Heavy`, `.Sparse`, `.Choice`: heavy hearts, sparse
-  clause sets and valid choices.
-* `Cslib.Logic.PL.ClauseSet.Sparsification.child`: the children of a branching node.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.reduce`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Reduced`: remove the clauses containing others, and
+  reduced clause sets.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.flower`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.petals`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Heavy`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Sparse`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Choice`: flowers, petals, heavy hearts, sparse clause
+  sets and valid choices.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.intro`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.child`: introduced clauses and the children of a
+  branching node.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.potential`: the potential `∑_{C ∈ ψ} 2 ^ |C|`.
 
 ## Main results
@@ -114,6 +122,8 @@ def potential (ψ : ClauseSet V) : ℕ :=
 
 /-! ### Reduction -/
 
+/-- A clause `C` belongs to `reduce ψ` if and only if `C ∈ ψ` and no clause of `ψ` is a strict
+subset of `C`. -/
 theorem mem_reduce {ψ : ClauseSet V} {C : Finset (Literal V)} :
     C ∈ reduce ψ ↔ C ∈ ψ ∧ ∀ D ∈ ψ, ¬ D ⊂ C := by
   simp only [reduce, mem_filter]
@@ -134,8 +144,10 @@ theorem reduced_iff_isAntichain {ψ : ClauseSet V} :
   refine ⟨fun h C hC D hD hne hCD => h D hD C hC (ssubset_of_subset_of_ne hCD hne), fun h C hC D hD
     hDC => h hD hC (ne_of_ssubset hDC) hDC.subset⟩
 
+/-- `reduce ψ` is a subset of `ψ`. -/
 theorem reduce_subset (ψ : ClauseSet V) : reduce ψ ⊆ ψ := fun _ h => (mem_reduce.mp h).1
 
+/-- The reduction `reduce ψ` of any clause set is reduced. -/
 theorem reduced_reduce (ψ : ClauseSet V) : Reduced (reduce ψ) := by
   intro C hC D hD hDC
   exact (mem_reduce.mp hC).2 D (reduce_subset ψ hD) hDC
@@ -168,12 +180,16 @@ theorem exists_ssubset_of_notMem_reduce {ψ X : ClauseSet V} (hred : Reduced ψ)
 
 /-! ### Flowers, petals and choices -/
 
+/-- A clause `C` belongs to `flower ψ c H` if and only if `C ∈ ψ`, `C.card = c`, and `H ⊆ C`. -/
 theorem mem_flower {ψ : ClauseSet V} {c : ℕ} {H C : Finset (Literal V)} :
     C ∈ flower ψ c H ↔ C ∈ ψ ∧ C.card = c ∧ H ⊆ C := mem_filter
 
+/-- `flower ψ c H` is a subset of `ψ`. -/
 theorem flower_subset (ψ : ClauseSet V) (c : ℕ) (H : Finset (Literal V)) :
     flower ψ c H ⊆ ψ := filter_subset _ _
 
+/-- A clause `p` belongs to `petals ψ c H` if and only if `p = C \ H` for some
+`C ∈ flower ψ c H`. -/
 theorem mem_petals {ψ : ClauseSet V} {c : ℕ} {H p : Finset (Literal V)} :
     p ∈ petals ψ c H ↔ ∃ C ∈ flower ψ c H, C \ H = p := mem_image
 
@@ -185,12 +201,14 @@ theorem card_petals (ψ : ClauseSet V) (c : ℕ) (H : Finset (Literal V)) :
   have hH' : H ⊆ C' := (mem_flower.mp hC').2.2
   rw [← sdiff_union_of_subset hH, ← sdiff_union_of_subset hH', h]
 
+/-- Every petal in `petals ψ c H` has cardinality `c - H.card`. -/
 theorem card_of_mem_petals {ψ : ClauseSet V} {c : ℕ} {H p : Finset (Literal V)}
     (hp : p ∈ petals ψ c H) : p.card = c - H.card := by
   obtain ⟨C, hC, rfl⟩ := mem_petals.mp hp
   obtain ⟨-, hcard, hH⟩ := mem_flower.mp hC
   rw [card_sdiff_of_subset hH, hcard]
 
+/-- When all thresholds are at least `1`, the flower of a heavy heart is nonempty. -/
 theorem Heavy.flower_nonempty {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ θ j) {ψ : ClauseSet V} {c : ℕ}
     {H : Finset (Literal V)} (h : Heavy θ ψ c H) : (flower ψ c H).Nonempty := by
   rw [← card_pos]
@@ -229,6 +247,8 @@ theorem exists_flower_ssuperset {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ θ j) {ψ
     rw [← card_pos]
     exact h.1
 
+/-- When all thresholds are at least `1`, the set of clauses `intro ψ c H b` introduced at a heavy
+heart is nonempty. -/
 theorem intro_nonempty {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ θ j) {ψ : ClauseSet V} {c : ℕ}
     {H : Finset (Literal V)} (h : Heavy θ ψ c H) (b : Bool) : (intro ψ c H b).Nonempty := by
   cases b with
@@ -239,9 +259,11 @@ theorem intro_nonempty {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ θ j) {ψ : Clause
 
 /-! ### The children of a branching node -/
 
+/-- Every child `child ψ c H b` of a branching step is reduced. -/
 theorem reduced_child (ψ : ClauseSet V) (c : ℕ) (H : Finset (Literal V)) (b : Bool) :
     Reduced (child ψ c H b) := reduced_reduce _
 
+/-- Every child `child ψ c H b` is contained in `ψ ∪ intro ψ c H b`. -/
 theorem child_subset (ψ : ClauseSet V) (c : ℕ) (H : Finset (Literal V)) (b : Bool) :
     child ψ c H b ⊆ ψ ∪ intro ψ c H b := reduce_subset _
 

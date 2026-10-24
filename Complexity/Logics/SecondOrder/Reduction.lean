@@ -24,7 +24,12 @@ existential second-order definability is closed under first-order reductions
 
 ## Main definitions
 
-* `Cslib.Logic.FO.Interpretation.sumVar`: an interpretation extended to relation variables.
+* `Cslib.Logic.FO.Interpretation.blockEquiv`, `Cslib.Logic.FO.Interpretation.flatten`,
+  `Cslib.Logic.FO.Interpretation.modelRel`: coordinate concatenation of `n` tuples and induced
+  relations on `I.Model M`.
+* `Cslib.Logic.FO.Interpretation.sumVar`, `Cslib.Logic.FO.Interpretation.sumVarEquiv`: an
+  interpretation extended to relation variables and the isomorphism of its interpreted model with
+  the expanded model.
 * `Cslib.Logic.FO.Interpretation.onESOSentence`: the pullback of an existential second-order
   sentence along an interpretation.
 

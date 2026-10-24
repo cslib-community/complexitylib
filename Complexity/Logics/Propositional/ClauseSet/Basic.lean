@@ -60,6 +60,7 @@ namespace ClauseSet
 def Sat (ψ : ClauseSet V) (x : V → Bool) : Prop :=
   ∀ C ∈ ψ, ∃ l ∈ C, x l.1 = l.2
 
+/-- Whether an assignment satisfies a clause set is decidable. -/
 instance (ψ : ClauseSet V) (x : V → Bool) : Decidable (ψ.Sat x) :=
   inferInstanceAs (Decidable (∀ C ∈ ψ, ∃ l ∈ C, _))
 
@@ -67,6 +68,7 @@ instance (ψ : ClauseSet V) (x : V → Bool) : Decidable (ψ.Sat x) :=
 def solutions [Fintype V] (ψ : ClauseSet V) : Finset (V → Bool) :=
   univ.filter ψ.Sat
 
+/-- An assignment belongs to `ψ.solutions` if and only if it satisfies `ψ`. -/
 @[simp] theorem mem_solutions [Fintype V] {ψ : ClauseSet V} {x : V → Bool} :
     x ∈ ψ.solutions ↔ ψ.Sat x := by
   simp [solutions]

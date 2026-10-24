@@ -77,6 +77,7 @@ variable {V : Type*} [DecidableEq V]
 /-- The **width** of a clause: its number of distinct literals. -/
 def Clause.width (c : Clause V) : ℕ := c.toFinset.card
 
+/-- The empty clause has width `0`. -/
 @[simp] theorem Clause.width_nil : Clause.width ([] : Clause V) = 0 := rfl
 
 /-- A clause whose literals occur in another clause is at most as wide. -/
@@ -198,11 +199,13 @@ theorem RefutableInWidth.exists_refutableInSize {w : ℕ} (h : φ.RefutableInWid
   let ⟨ls, h, hnil, _⟩ := h
   ⟨_, ls, h, hnil, le_rfl⟩
 
+/-- `RefutableInSize` is monotone in the size bound. -/
 theorem RefutableInSize.mono {s t : ℕ} (h : φ.RefutableInSize s) (hst : s ≤ t) :
     φ.RefutableInSize t :=
   let ⟨ls, h, hnil, hlen⟩ := h
   ⟨ls, h, hnil, hlen.trans hst⟩
 
+/-- `RefutableInWidth` is monotone in the width bound. -/
 theorem RefutableInWidth.mono {w w' : ℕ} (h : φ.RefutableInWidth w) (hww' : w ≤ w') :
     φ.RefutableInWidth w' :=
   let ⟨ls, h, hnil, hw⟩ := h
@@ -397,6 +400,8 @@ def restrictBy (φ : CNF V) (ρ : V → Option Bool) : CNF V :=
     (List.filter fun l => decide (ρ l.1 = none))
 
 omit [DecidableEq V] in
+/-- A clause belongs to `φ.restrictBy ρ` iff it is obtained from a clause of `φ` not satisfied by
+`ρ` by keeping only the literals on variables where `ρ` is `none`. -/
 @[simp] theorem mem_restrictBy {ρ : V → Option Bool} :
     c ∈ φ.restrictBy ρ ↔
       ∃ d ∈ φ, (∀ l ∈ d, ρ l.1 ≠ some l.2) ∧ d.filter (fun l => decide (ρ l.1 = none)) = c := by

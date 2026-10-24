@@ -56,15 +56,20 @@ noncomputable def encodedMap (a : EncodedStructure) : EncodedStructure :=
 
 variable {a : EncodedStructure}
 
+/-- On a well-formed input `a`, `I.encodedMap v v' e a` encodes `I.Model (Fin a.1)` along
+`rankEquiv I e a.1`. -/
 theorem encodedMap_of_wellFormed (ha : v.WellFormed a) :
     I.encodedMap v v' e a = (letI := v.decode a;
       v'.encode (I.Model (Fin a.1)) (rankEquiv I e a.1)) :=
   ite_eq_left ha
 
+/-- On a malformed input `a`, `I.encodedMap v v' e a` returns the fixed malformed pair
+`(0, List.replicate (v'.count + 1) [])`. -/
 theorem encodedMap_of_not_wellFormed (ha : ¬ v.WellFormed a) :
     I.encodedMap v v' e a = (0, List.replicate (v'.count + 1) []) :=
   ite_eq_right ha
 
+/-- A malformed source input `a` maps to a malformed target output `I.encodedMap v v' e a`. -/
 theorem not_wellFormed_encodedMap (ha : ¬ v.WellFormed a) :
     ¬ v'.WellFormed (I.encodedMap v v' e a) := by
   rw [I.encodedMap_of_not_wellFormed v v' e ha]

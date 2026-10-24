@@ -46,6 +46,7 @@ variable {V : Type*}
 /-- At least one variable of `vs` is true. -/
 def CNF.atLeastOne (vs : List V) : CNF V := [vs.map (·, true)]
 
+/-- `CNF.atLeastOne vs` holds under `σ` if and only if some variable in `vs` is true. -/
 theorem CNF.eval_atLeastOne (σ : V → Bool) (vs : List V) :
     (CNF.atLeastOne vs).eval σ = true ↔ ∃ x ∈ vs, σ x = true := by
   simp [CNF.atLeastOne, Clause.eval_eq_true_iff]
@@ -59,6 +60,8 @@ def CNF.atMostOne (vs : List V) : CNF V :=
 /-- Exactly one variable of `vs` is true. -/
 def CNF.exactlyOne (vs : List V) : CNF V := CNF.atLeastOne vs ++ CNF.atMostOne vs
 
+/-- `CNF.atMostOne vs` holds under `σ` if and only if no two distinct variables in `vs` are both
+true. -/
 theorem CNF.eval_atMostOne (σ : V → Bool) (vs : List V) :
     (CNF.atMostOne vs).eval σ = true ↔
       ∀ x ∈ vs, ∀ y ∈ vs, σ x = true → σ y = true → x = y := by
