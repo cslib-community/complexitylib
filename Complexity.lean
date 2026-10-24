@@ -78,7 +78,6 @@ public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Member
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Model
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Program
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Successor
-public import Complexity.Computability.BitString.Padding
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
 public import Complexity.Computability.Circuit.Approximation
@@ -244,6 +243,7 @@ public import Complexity.Computability.Circuit.Boolean.MassProduction.Padding
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Pipeline
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Pipeline.Circuit
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Pipeline.Packing
+public import Complexity.Computability.Circuit.Boolean.MassProduction.Point
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Schedule
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Scheduler
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Scheduler.Basic
@@ -253,6 +253,7 @@ public import Complexity.Computability.Circuit.Boolean.MassProduction.Scheduler.
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Scheduler.State
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Synthesis
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Uhlig
+public import Complexity.Computability.Circuit.Boolean.MassProduction.Uhlig.Code
 public import Complexity.Computability.Circuit.Boolean.MassProduction.Uhlig.Layer
 public import Complexity.Computability.Circuit.Boolean.Metric
 public import Complexity.Computability.Circuit.Boolean.Minterms
@@ -282,6 +283,7 @@ public import Complexity.Computability.Circuit.Boolean.Propagation
 public import Complexity.Computability.Circuit.Boolean.Routing
 public import Complexity.Computability.Circuit.Boolean.RoutingValues
 public import Complexity.Computability.Circuit.Boolean.SeedFixing
+public import Complexity.Computability.Circuit.Boolean.Selection
 public import Complexity.Computability.Circuit.Boolean.SemiCircuit
 public import Complexity.Computability.Circuit.Boolean.SemiCircuit.Equation
 public import Complexity.Computability.Circuit.Boolean.SemiCircuit.Gate
@@ -996,6 +998,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLe
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatStream
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StepMachine
@@ -1659,7 +1662,6 @@ public import Complexity.Foundations.Data.BitString.Agree
 public import Complexity.Foundations.Data.BitString.Basic
 public import Complexity.Foundations.Data.BitString.Binary
 public import Complexity.Foundations.Data.BitString.Block
-public import Complexity.Foundations.Data.BitString.Broadcast
 public import Complexity.Foundations.Data.BitString.Counter
 public import Complexity.Foundations.Data.BitString.CoverCoding
 public import Complexity.Foundations.Data.BitString.Enumeration
@@ -1673,13 +1675,10 @@ public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Parity.Weight
 public import Complexity.Foundations.Data.BitString.PartialAssignment
 public import Complexity.Foundations.Data.BitString.PartialAssignment.Counting
-public import Complexity.Foundations.Data.BitString.Point
 public import Complexity.Foundations.Data.BitString.Propagation
-public import Complexity.Foundations.Data.BitString.Selection
 public import Complexity.Foundations.Data.BitString.ShortWords
 public import Complexity.Foundations.Data.BitString.Sign
 public import Complexity.Foundations.Data.BitString.Threshold
-public import Complexity.Foundations.Data.BitString.Uhlig
 public import Complexity.Foundations.Data.BitString.Weight
 public import Complexity.Foundations.Data.BitString.WordCount
 public import Complexity.Foundations.Data.BitString.ZModTwo

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Combinatorics.LineCode.Basic
-public import Complexity.Foundations.Data.BitString.Point
+public import Complexity.Computability.Circuit.Boolean.MassProduction.Point
 public import Cslib.Computability.Circuit.Boolean.Basic
 
 /-!

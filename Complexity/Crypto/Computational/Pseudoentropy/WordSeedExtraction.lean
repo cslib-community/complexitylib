@@ -9,7 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Pseudoentropy.MatrixExtraction
 public import Complexity.Crypto.Computational.Pseudoentropy.Seed
-public import Complexity.Computability.BitString.Padding
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 import Complexity.Crypto.Computational.Pseudoentropy.SeedExtraction
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Probabilistic.LinearHash

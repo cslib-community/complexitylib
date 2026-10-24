@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Space
-public import Complexity.Computability.BitString.Padding
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import Complexity.Foundations.Data.BitString.Enumeration
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.Nat.Size

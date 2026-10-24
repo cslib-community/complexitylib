@@ -13,7 +13,7 @@ public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.Enumeration
 public import Complexity.Foundations.Data.BitString.WordCount
-public import Complexity.Computability.BitString.Padding
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration

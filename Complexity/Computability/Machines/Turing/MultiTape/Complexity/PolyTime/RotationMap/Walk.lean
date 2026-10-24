@@ -54,17 +54,15 @@ namespace Cslib.RotationMap
 
 variable {P V W D : Type*} (rotate : P × (W × D) → W × D)
 
-/-- Follow the labels, retaining the original graph input at every rotation call. After all labels
-have been used, the walk stays at its endpoint. -/
-def walkAtWithInput {T : ℕ} (p : P × (W × (Fin T → D))) : ℕ → W
-  | 0 => p.2.1
-  | i + 1 => if h : i < T then
-      (rotate (p.1, walkAtWithInput p i, p.2.2 ⟨i, h⟩)).1
-    else walkAtWithInput p i
-
 /-- A power rotation carries the immutable input and reverses all return labels. -/
 def powRotWithInput (T : ℕ) (p : P × (W × (Fin T → D))) : W × (Fin T → D) :=
   powRot (fun q => rotate (p.1, q)) T p.2
+
+/-- Follow the labels, retaining the original graph input at every rotation call. After all labels
+have been used, the walk stays at its endpoint. -/
+def walkAtWithInput {T : ℕ} (p : P × (W × (Fin T → D))) (m : ℕ) : W :=
+  (powRotWithInput rotate (min m T)
+    (p.1, p.2.1, Fin.take (min m T) (Nat.min_le_right m T) p.2.2)).1
 
 /-- A killed power reverses only the used prefix, preserving unused labels and kill signals. -/
 def killedPowRotWithInput (T q : ℕ) [NeZero q]
@@ -88,19 +86,6 @@ variable (input : P) (G : RotationMap V D) (encode : V → W)
   (hrotate : ∀ v d, rotate (input, encode v, d) = (encode (G.rot (v, d)).1, (G.rot (v, d)).2))
 
 include hrotate in
-/-- Agreement of one rotation on encoded vertices gives agreement of every trajectory. -/
-theorem walkAtWithInput_eq {T : ℕ} (v : V) (k : Fin T → D) (m : ℕ) :
-    walkAtWithInput rotate (input, encode v, k) m = encode (G.walkAt (v, k) m) := by
-  induction m with
-  | zero => rfl
-  | succ m ih =>
-    by_cases hm : m < T
-    · simp only [walkAtWithInput, dite_eq_left hm, ih, hrotate,
-        walkAt_succ_of_lt _ _ hm, neighbor_def]
-    · simp only [walkAtWithInput, dite_eq_right hm, ih,
-        walkAt_succ_of_le _ _ (Nat.le_of_not_gt hm)]
-
-include hrotate in
 /-- A power program returns both the encoded endpoint and exactly the reversed mathematical
 return labels. No hypothesis is needed on rotations of unused vertex names. -/
 theorem powRotWithInput_eq (T : ℕ) (v : V) (k : Fin T → D) :
@@ -111,6 +96,16 @@ theorem powRotWithInput_eq (T : ℕ) (v : V) (k : Fin T → D) :
   | succ T ih =>
     simp only [powRotWithInput, pow] at ih
     simp only [powRotWithInput, hrotate, ih, pow, powRot]
+
+include hrotate in
+/-- Agreement of one rotation on encoded vertices gives agreement of every trajectory. -/
+theorem walkAtWithInput_eq {T : ℕ} (v : V) (k : Fin T → D) (m : ℕ) :
+    walkAtWithInput rotate (input, encode v, k) m = encode (G.walkAt (v, k) m) := by
+  simp only [walkAtWithInput, powRotWithInput_eq rotate input G encode hrotate, ← neighbor_def,
+    ← G.walkAt_eq_neighbor_pow (v, k) (Nat.min_le_right m T)]
+  rcases Nat.le_total m T with hm | hm
+  · rw [Nat.min_eq_left hm]
+  · rw [Nat.min_eq_right hm, G.walkAt_of_le (v, k) hm]
 
 include hrotate in
 /-- A killed power program agrees with the mathematical stopped walk, including its unused
@@ -132,22 +127,6 @@ variable {P V D : Type} {input : P ↪ List Bool} {vertex : V ↪ List Bool}
   (hrotate : ComputableTidilyInPolyTime rotate
     (encPair input (encPair vertex label)) (encPair vertex label))
 
-include hrotate in
-/-- A fixed step of a fixed-length walk uses the joint certificate for the runtime graph. -/
-@[fun_prop]
-theorem rotationMap_walkAtWithInput (T m : ℕ) :
-    ComputableTidilyInPolyTime
-      (fun p : P × (V × (Fin T → D)) => RotationMap.walkAtWithInput rotate p m)
-      (encPair input (encPair vertex (encPi label))) vertex := by
-  induction m with
-  | zero => exact (snd _ _).fst'
-  | succ m ih =>
-    by_cases hm : m < T
-    · simp only [RotationMap.walkAtWithInput, dite_eq_left hm]
-      exact (hrotate.comp ((fst _ _).prod (ih.prod ((pi_apply label ⟨m, hm⟩).comp
-        ((snd _ _).snd'))))).fst'
-    · simpa only [RotationMap.walkAtWithInput, dite_eq_right hm] using ih
-
 private theorem polytime_finTail (T : ℕ) :
     ComputableTidilyInPolyTime (@Fin.tail T (fun _ => D)) (encPi label) (encPi label) :=
   pi fun i => pi_apply label i.succ
@@ -161,6 +140,10 @@ private theorem polytime_finSnoc (T : ℕ) :
   · simpa only [Fin.snoc_last] using snd (encPi label) label
   · simpa only [Fin.snoc_castSucc, Function.comp_def] using
       (pi_apply label j).comp (fst (encPi label) label)
+
+private theorem polytime_finTake {T n : ℕ} (hn : n ≤ T) :
+    ComputableTidilyInPolyTime (Fin.take n hn (α := fun _ => D)) (encPi label) (encPi label) :=
+  pi fun i => pi_apply label (i.castLE hn)
 
 include hrotate in
 /-- A fixed power reverses all return labels while charging the runtime graph at every call. -/
@@ -181,6 +164,17 @@ theorem rotationMap_powRotWithInput (T : ℕ) :
     exact hrest.fst'.prod ((polytime_finSnoc (label := label) T).comp (hrest.snd'.prod hhead.snd'))
 
 include hrotate in
+/-- A fixed step of a fixed-length walk uses the joint certificate for the runtime graph. -/
+@[fun_prop]
+theorem rotationMap_walkAtWithInput (T m : ℕ) :
+    ComputableTidilyInPolyTime
+      (fun p : P × (V × (Fin T → D)) => RotationMap.walkAtWithInput rotate p m)
+      (encPair input (encPair vertex (encPi label))) vertex :=
+  ((rotationMap_powRotWithInput hrotate (min m T)).comp
+    ((fst _ _).prod (((snd _ _).fst').prod
+      ((polytime_finTake (Nat.min_le_right m T)).comp ((snd _ _).snd'))))).fst'
+
+include hrotate in
 /-- A killed power branches on the fixed finite signal sequence, computes the actual stopped
 walk, and retains every unused label and every signal in the result. -/
 @[fun_prop]
@@ -194,11 +188,6 @@ theorem rotationMap_killedPowRotWithInput (T q : ℕ) [NeZero q] (signal : Fin q
         RotationMap.killedPowRotWithInput rotate T q (p.1, p.2.1, p.2.2.1, c))
       (encPair input (encPair vertex (encPair (encPi label) (encPi signal))))
       (encPair vertex (encPair (encPi label) (encPi signal))) := by
-    have hprefix : ComputableTidilyInPolyTime
-        (fun k : Fin T → D => Fin.take _ (killTime_le c) k)
-        (encPi label) (encPi label) :=
-      pi fun i : Fin (killTime c) =>
-        pi_apply label (⟨i.val, i.isLt.trans_le (killTime_le c)⟩ : Fin T)
     have hwalk : ComputableTidilyInPolyTime
         (fun p : P × (V × ((Fin T → D) × (Fin T → Fin q))) =>
           RotationMap.powRotWithInput rotate (killTime c)
@@ -206,7 +195,8 @@ theorem rotationMap_killedPowRotWithInput (T q : ℕ) [NeZero q] (signal : Fin q
         (encPair input (encPair vertex (encPair (encPi label) (encPi signal))))
         (encPair vertex (encPi label)) :=
       (rotationMap_powRotWithInput hrotate (killTime c)).comp
-        ((fst _ _).prod (((snd _ _).fst').prod (hprefix.comp ((snd _ _).snd'.fst'))))
+        ((fst _ _).prod (((snd _ _).fst').prod
+          ((polytime_finTake (killTime_le c)).comp ((snd _ _).snd'.fst'))))
     dsimp only [RotationMap.killedPowRotWithInput]
     apply hwalk.fst'.prod
     apply prod ?_ (const c)

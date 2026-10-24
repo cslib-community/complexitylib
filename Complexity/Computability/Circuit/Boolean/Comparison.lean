@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.Formula
-public import Complexity.Foundations.Data.BitString.Selection
+public import Complexity.Computability.Circuit.Boolean.Selection
 import Complexity.Computability.Circuit.CompositionDepth
 import Mathlib.Tactic.FinCases
 

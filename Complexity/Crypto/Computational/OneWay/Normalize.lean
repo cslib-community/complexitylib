@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.OneWay
-public import Complexity.Computability.BitString.Padding
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 import Complexity.Probability.PMF.Bind
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Probability.PMF

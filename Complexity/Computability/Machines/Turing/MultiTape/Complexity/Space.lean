@@ -12,7 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Machine.ChoiceT
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Decode
-public import Complexity.Computability.BitString.Padding
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option

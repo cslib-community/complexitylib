@@ -8004,7 +8004,7 @@ info: 'Cslib.Crypto.OneWay.exists_pseudorandomFunction' depends on axioms:
 
 /-! ### Executable PCP powering, composition, and one amplification round -/
 
-/-- info: 'Cslib.RotationMap.walkAtWithInput_eq' depends on axioms: [propext] -/
+/-- info: 'Cslib.RotationMap.walkAtWithInput_eq' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms Cslib.RotationMap.walkAtWithInput_eq
 

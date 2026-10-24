@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Data.BitString.Uhlig
+public import Complexity.Computability.Circuit.Boolean.MassProduction.Uhlig.Code
 public import Complexity.Computability.Circuit.Boolean.Synthesis
 public import Complexity.Computability.Circuit.Replication
 public import Complexity.Foundations.Data.BitString.Basic
