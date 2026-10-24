@@ -1282,15 +1282,17 @@ Jukna coverage below is an additional target beyond the V1 port:
   single-query fixed-nonce `prfRealGame`/`prfIdealGame` reduction bounds), and the Even–Mansour
   cipher in the ideal-permutation model (algebraic permutations, one-query secrecy, one-sided query
   security, 2-query breaks when omitting either whitening key, the Boneh–Shoup Theorem 4.10
-  bad-key transcript intersection bound `2 * Q_e * Q_π / |G|`, and exact equivalence of the
-  two-sided ideal game with two independent lazy bidirectional random-permutation samplers in
-  `evenMansourIdealGame_eq_lazy`, #761, #834).
+  bad-key transcript intersection bound `2 * Q_e * Q_π / |G|`, exact equivalence of the two-sided
+  ideal and fixed-key real games with lazy bidirectional random-permutation samplers in
+  `evenMansourIdealGame_eq_lazy` and `realGameForKey_eq_lazy`, the key-shifted lazy permutation
+  coupling inequality `run_idealLazyHandler_good_le_realLazyHandler`, and the full two-sided PRP
+  `Game.advantage` bounds `2 * Q_e * Q_π / |G|` in
+  `advantage_evenMansourRealGame_evenMansourIdealGame_le` and
+  `advantage_singleKeyEvenMansourRealGame_evenMansourIdealGame_le`, #761, #834).
   Open: `IsOraclePPT` admissibility, uniform word-level forger/hash families, the asymptotic
   `PseudorandomFunction` corollary, and fresh-nonce multi-query Carter–Wegman MAC security;
-  coupling the Even–Mansour real game with the lazy ideal game via the bad-key transcript
-  intersection bound to bound full two-sided `Game.advantage`; the 4-round strong Feistel
-  information-theoretic collision bound (#748); and the Naor–Reingold PRF from the decisional
-  Diffie–Hellman assumption.
+  the 4-round strong Feistel information-theoretic collision bound (#748); and the Naor–Reingold
+  PRF from the decisional Diffie–Hellman assumption.
 
 * **Lattice Sigma protocols and post-quantum signatures (#640, track B).** Proved (#645): the
   [SIS hypothesis](Complexity/Crypto/Computational/SIS/Basic.lean) for power-of-two moduli, exact

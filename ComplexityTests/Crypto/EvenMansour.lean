@@ -90,6 +90,43 @@ example (program : OracleComp (EvenMansourSpec (BitString 4)) Bool) :
       (((OracleComp.interpret idealLazyHandler program).run ([], [])).map Prod.fst : PMF Bool) :=
   evenMansourIdealGame_eq_lazy program
 
+example (k : BitString 4 × BitString 4)
+    (program : OracleComp (EvenMansourSpec (BitString 4)) Bool) :
+    (PMF.uniformOfFintype (Equiv.Perm (BitString 4))).bind
+        (fun π => PMF.pure (evalEvenMansour π k.1 k.2 program)) =
+      (((OracleComp.interpret (realLazyHandler k) program).run []).map Prod.fst : PMF Bool) :=
+  realGameForKey_eq_lazy k program
+
+/-- A concrete two-sided distinguisher making `1` cipher query and `1` primitive query on
+`ZMod 7`. -/
+def sampleTwoSidedDistinguisher : OracleComp (EvenMansourSpec (ZMod 7)) Bool := do
+  let y ← queryCipherForward (0 : ZMod 7)
+  let u ← queryPermInverse y
+  return decide (u = 0)
+
+theorem isCallBounded_sampleTwoSidedDistinguisher :
+    IsCallBounded sampleTwoSidedDistinguisher 1 1 := by
+  constructor
+  · simpa [sampleTwoSidedDistinguisher] using
+      (isCallBounded_queryCipherForward (0 : ZMod 7)).1.bind fun y =>
+        (isCallBounded_queryPermInverse y).1.bind fun u => IsCostBounded.pure _ 0
+  · simpa [sampleTwoSidedDistinguisher] using
+      (isCallBounded_queryCipherForward (0 : ZMod 7)).2.bind fun y =>
+        (isCallBounded_queryPermInverse y).2.bind fun u => IsCostBounded.pure _ 0
+
+example :
+    (Game.advantage (evenMansourRealGame sampleTwoSidedDistinguisher)
+      (evenMansourIdealGame sampleTwoSidedDistinguisher) : ℝ) ≤
+      2 * ((1 : ℕ) : ℝ) * ((1 : ℕ) : ℝ) / (Fintype.card (ZMod 7) : ℝ) :=
+  advantage_evenMansourRealGame_evenMansourIdealGame_le isCallBounded_sampleTwoSidedDistinguisher
+
+example :
+    (Game.advantage (singleKeyEvenMansourRealGame sampleTwoSidedDistinguisher)
+      (evenMansourIdealGame sampleTwoSidedDistinguisher) : ℝ) ≤
+      2 * ((1 : ℕ) : ℝ) * ((1 : ℕ) : ℝ) / (Fintype.card (ZMod 7) : ℝ) :=
+  advantage_singleKeyEvenMansourRealGame_evenMansourIdealGame_le
+    isCallBounded_sampleTwoSidedDistinguisher
+
 /-! ### Axiom guards for headline results -/
 
 /--
@@ -195,5 +232,33 @@ info: 'Cslib.Crypto.EvenMansour.evenMansourIdealGame_eq_lazy' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms evenMansourIdealGame_eq_lazy
+
+/--
+info: 'Cslib.Crypto.EvenMansour.realGameForKey_eq_lazy' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms realGameForKey_eq_lazy
+
+/--
+info: 'Cslib.Crypto.EvenMansour.run_idealLazyHandler_good_le_realLazyHandler' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms run_idealLazyHandler_good_le_realLazyHandler
+
+/--
+info: 'Cslib.Crypto.EvenMansour.advantage_evenMansourRealGame_evenMansourIdealGame_le' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms advantage_evenMansourRealGame_evenMansourIdealGame_le
+
+/--
+info: 'Cslib.Crypto.EvenMansour.advantage_singleKeyEvenMansourRealGame_evenMansourIdealGame_le' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms advantage_singleKeyEvenMansourRealGame_evenMansourIdealGame_le
 
 end Cslib.Crypto.EvenMansour.Tests
