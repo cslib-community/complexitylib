@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Algebra.BigOperators.Group.List.Basic
 
 /-!
@@ -28,6 +30,9 @@ negative when exactly one factor is. Lists are summed and powers taken by left f
 the binary length bounds of `Int.size_natAbs_add_le` and `Int.size_natAbs_mul_le`.
 
 ## Main results
+
+* `Turing.MultiTapeTM.ComputableInPolyTime.intBin_mul'`: multiply two plain-certified binary
+  integers from the same complete input encoding.
 
 * `Int.size_natAbs_add_le`, `Int.size_natAbs_sub_le`, `Int.size_natAbs_mul_le`,
   `Int.size_natAbs_pow_le`, `Int.size_natAbs_sum_le`, `Int.size_natAbs_prod_le`: binary lengths of
@@ -373,3 +378,15 @@ theorem intBin_prod_range {α : Type} {enc : α ↪ List Bool}
     List.prod_toFinset (fun i => f (a, i)) (l := List.range (r a)) List.nodup_range
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+
+namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+/-- Multiply computed binary integers, preserving the complete input encoding. -/
+@[fun_prop]
+theorem intBin_mul' {α : Type} {input : α ↪ List Bool} {left right : α → ℤ}
+    (hleft : ComputableInPolyTime left input encIntBin)
+    (hright : ComputableInPolyTime right input encIntBin) :
+    ComputableInPolyTime (fun a => left a * right a) input encIntBin :=
+  .of_tidy (ComputableTidilyInPolyTime.intBin_mul' hleft.tidy hright.tidy)
+
+end Turing.MultiTapeTM.ComputableInPolyTime
