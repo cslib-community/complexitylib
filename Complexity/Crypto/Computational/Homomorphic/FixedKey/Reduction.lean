@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Computational.Homomorphic.FixedKey.Encoding
 public import Complexity.Crypto.Computational.Homomorphic.Efficiency
 import Complexity.Probability.PMF.Bind
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Tactic.PPT
 
 /-!
@@ -92,7 +93,7 @@ theorem isPPT_zeroAdversary
   · change IsPPTOn (encPair encUnary encBits) (encPair (encPair encBool encBool) encBits)
       (fun p => (zeroAdversary E adversary).choose p.1 p.2)
     dsimp only [zeroAdversary]
-    apply (hkeyGen.preprocess (ComputableTidilyInPolyTime.fst encUnary encBits)).bind_with
+    apply (hkeyGen.preprocess (ComputableInPolyTime.fst encUnary encBits)).bind_with
     have hbits : IsPPTOn
         (encPair (encPair encUnary encBits) (encPair encBits encBits)) (encList encBits)
         (fun p => E.encryptBits p.1.1 p.1.2 (List.replicate p.2.2.length false)) := by

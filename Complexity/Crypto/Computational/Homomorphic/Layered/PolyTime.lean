@@ -95,7 +95,7 @@ theorem isPPTOn_evaluateNode
     · apply IsPPTOn.cond hcode.fst'.snd'
       · exact isPPTOn_refreshNand hencrypt hevaluate D hD hn hpk hek hfirst hsecond
       · exact isPPTOn_refresh hencrypt hevaluate D hD hn hpk hek hfirst
-    · exact hencrypt.preprocess (hn.prod (hpk.prod hcode.fst'.snd'))
+    · exact hencrypt.preprocess (.of_tidy (hn.prod (hpk.prod hcode.fst'.snd')))
   have hcap := (computableTidilyInPolyTime_decryptionArity D hD).comp hn
   have hbounded := hraw.map_with (f := fun a ciphertext =>
     ciphertext.take (secretWidth (n a) + ciphertextWidth (n a)))
