@@ -19,6 +19,7 @@ import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Probability.PMF
 import Complexity.Tactic.PolyTime
 import Complexity.Tactic.PPT
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Uniform message authentication codes and PRF-based MACs
@@ -167,7 +168,7 @@ attribute [program_certificate] keyGen_ppt sign_ppt verify_polyTime
 private theorem isPPTOn_keyGen_comp (M : MACScheme) {γ : Type} {encIn : γ ↪ List Bool}
     {n : γ → ℕ} (hn : ComputableTidilyInPolyTime n encIn encUnary) :
     IsPPTOn encIn encBits (fun a => M.keyGen (n a)) :=
-  M.keyGen_ppt.preprocess hn
+  M.keyGen_ppt.preprocess (ComputableInPolyTime.of_tidy hn)
 
 @[local fun_prop]
 private theorem isPPTOn_sign_comp (M : MACScheme) {γ : Type} {encIn : γ ↪ List Bool}
@@ -175,7 +176,7 @@ private theorem isPPTOn_sign_comp (M : MACScheme) {γ : Type} {encIn : γ ↪ Li
     (hsk : ComputableTidilyInPolyTime sk encIn encBits)
     (hmsg : ComputableTidilyInPolyTime msg encIn encBits) :
     IsPPTOn encIn encBits (fun a => M.sign (sk a) (msg a)) :=
-  M.sign_ppt.preprocess (hsk.prod hmsg)
+  M.sign_ppt.preprocess (ComputableInPolyTime.of_tidy (hsk.prod hmsg))
 
 @[local fun_prop]
 private theorem computableTidilyInPolyTime_verify_comp (M : MACScheme)
@@ -264,7 +265,7 @@ theorem isPPTOn_eufCmaGame (M : MACScheme) {adversary : Forger}
 theorem isPPT_eufCmaGame (M : MACScheme) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsPPT encBool (fun n _ => M.eufCmaGame adversary n) :=
-  ((M.isPPTOn_eufCmaGame hadversary).preprocess (ComputableTidilyInPolyTime.fst _ _)).isPPT
+  ((M.isPPTOn_eufCmaGame hadversary).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
 /-- Fresh-message existential unforgeability under adaptive chosen-message attack (`EUFCMA`) for a
 symmetric MAC against uniform strict oracle-PPT adversaries.
@@ -383,7 +384,7 @@ input. -/
 theorem isPPT_eufOneTimeGame (M : MACScheme) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsPPT encBool (fun n _ => M.eufOneTimeGame adversary n) :=
-  ((M.isPPTOn_eufOneTimeGame hadversary).preprocess (ComputableTidilyInPolyTime.fst _ _)).isPPT
+  ((M.isPPTOn_eufOneTimeGame hadversary).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
 /-- Existential unforgeability under one-time adaptive chosen-message attack for a symmetric MAC. -/
 def OneTimeEUFCMA (M : MACScheme) : Prop :=
@@ -660,7 +661,7 @@ theorem isPPTOn_sufCmaGame (M : MACScheme) {adversary : Forger}
 theorem isPPT_sufCmaGame (M : MACScheme) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsPPT encBool (fun n _ => M.sufCmaGame adversary n) :=
-  ((M.isPPTOn_sufCmaGame hadversary).preprocess (ComputableTidilyInPolyTime.fst _ _)).isPPT
+  ((M.isPPTOn_sufCmaGame hadversary).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
 /-- Strong (fresh-pair) existential unforgeability under adaptive chosen-message attack (`SUFCMA`)
 for a symmetric MAC against uniform strict oracle-PPT adversaries

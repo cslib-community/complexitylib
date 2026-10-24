@@ -29,6 +29,7 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Map
 import Complexity.Probability.Uniform
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # MCSP in BPP rules out one-way functions
@@ -299,7 +300,8 @@ theorem isOraclePPT_mcspDistinguisher (d : ℕ)
   apply IsOraclePPTOn.isOraclePPT
   exact IsOraclePPTOn.bind_with
     (isOraclePPTOn_queryTable.preprocess (computableTidilyInPolyTime_tableQueries d))
-    ((isPPTOn_mcspRun hV).preprocess (computableTidilyInPolyTime_tableInstance d)).isOraclePPTOn
+    ((isPPTOn_mcspRun hV).preprocess
+      (ComputableInPolyTime.of_tidy (computableTidilyInPolyTime_tableInstance d))).isOraclePPTOn
 
 /-! ### The advantage of the distinguisher -/
 

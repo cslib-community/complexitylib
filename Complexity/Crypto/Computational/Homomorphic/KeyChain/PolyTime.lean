@@ -11,6 +11,7 @@ public import Complexity.Crypto.Computational.Homomorphic.KeyChain
 public import Complexity.Crypto.Computational.Homomorphic.Efficiency
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Repeat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
 /-!
@@ -54,7 +55,7 @@ theorem isPPTOn_generateKeys
     (hdepth : ComputableTidilyInPolyTime depth input encUnary) :
     IsPPTOn input (encList (encPair encBits encBits))
       (fun a => E.generateKeys (n a) (depth a)) := by
-  exact (hkeyGen.preprocess hn).replicate (by fun_prop)
+  exact (hkeyGen.preprocess (.of_tidy hn)).replicate (by fun_prop)
 
 include hencrypt in
 /-- Encrypt every adjacent secret-key link, including all copied public keys and key bits. -/

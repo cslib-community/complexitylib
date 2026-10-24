@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Reduction
 public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Hybrid.PolyTime
 import Complexity.Computability.Probabilistic.Repeat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Tactic.PPT
 
 /-!
@@ -48,7 +49,8 @@ theorem isPPTOn_publicKeyGame (bit : Bool) :
       (fun p => publicKeyGame E adversary bit p.1 p.2) := by
   have hchoose := hadversary.choose
   have hguess := hadversary.guess
-  have hpublic := (ComputableTidilyInPolyTime.snd encUnary encPublicKey).encoded
+  have hpublic := ComputableInPolyTime.of_tidy
+    (ComputableTidilyInPolyTime.snd encUnary encPublicKey).encoded
   unfold publicKeyGame
   dsimp only [encPublicKey] at hpublic ⊢
   ppt
@@ -66,7 +68,7 @@ theorem isPPT_zeroLinkAdversary
       (fun p => (zeroLinkAdversary E depth adversary).choose p.1 p.2)
     dsimp only [zeroLinkAdversary]
     have hrest := (hkeyGen.preprocess
-      (ComputableTidilyInPolyTime.fst encUnary encBits)).replicate
+      (ComputableInPolyTime.fst encUnary encBits)).replicate
         (hdepth.comp (ComputableTidilyInPolyTime.fst encUnary encBits))
     apply hrest.bind_with
     have hlinks : IsPPTOn

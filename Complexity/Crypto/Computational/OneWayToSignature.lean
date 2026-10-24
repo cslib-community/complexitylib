@@ -24,6 +24,7 @@ import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF
 import Complexity.Tactic.PolyTime
 import Complexity.Tactic.PPT
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Equivalence between one-way functions and one-time digital signatures, and necessity for EUF-CMA
@@ -178,7 +179,7 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
     have hcand : IsPPTOn (encPair (encPair encUnary encBits) encUnary) encBits
         (fun q : (ℕ × List Bool) × ℕ =>
           adversary q.2 (encPair encUnary encBits (q.1.1, q.1.2))) :=
-      hadversary.on.preprocess hprep_cand
+      hadversary.on.preprocess (ComputableInPolyTime.of_tidy hprep_cand)
     have hsk : ComputableTidilyInPolyTime
         (fun r : ((ℕ × List Bool) × ℕ) × List Bool => (evaluate r.1.1.1 r.2).2)
         (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encBits := by
@@ -646,7 +647,7 @@ theorem isPPT_lamportInverter {f : List Bool → List Bool}
           ((ComputableTidilyInPolyTime.fst _ _).comp (ComputableTidilyInPolyTime.fst _ _))
       exact listGetDWithInput (computableTidilyInPolyTime_frames hsig)
         ((ComputableTidilyInPolyTime.unary_div_const 2).comp hj_proj) []
-    exact (hrun_base.preprocess hprep).bind_with hpost.isPPTOn
+    exact (hrun_base.preprocess (ComputableInPolyTime.of_tidy hprep)).bind_with hpost.isPPTOn
   have hbranch : IsPPTOn (encPair (encPair encUnary encBits) encUnary) encBits
       (fun q : (ℕ × List Bool) × ℕ =>
         if q.2 < 2 * q.1.1 then do

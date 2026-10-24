@@ -111,7 +111,7 @@ theorem Turing.MultiTapeTM.ComputableTidilyInPolyTime.sampleBinaryNat {α : Type
     (hwidth : ComputableTidilyInPolyTime width input encUnary) :
     Cslib.Probability.IsPPTOn input encNat
       (fun a => Cslib.ProbComp.sampleBinaryNat (width a)) :=
-  Cslib.Probability.isPPTOn_sampleBinaryNat.preprocess hwidth
+  Cslib.Probability.isPPTOn_sampleBinaryNat.preprocess (.of_tidy hwidth)
 
 namespace Cslib.Probability
 

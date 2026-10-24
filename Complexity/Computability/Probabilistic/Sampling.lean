@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Probabilistic.PPT.Composition
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sampling
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Certified fair-bit and word sampling
@@ -68,4 +69,5 @@ theorem Turing.MultiTapeTM.ComputableTidilyInPolyTime.sampleList {α : Type}
     {input : α ↪ List Bool} {count : α → ℕ}
     (hcount : ComputableTidilyInPolyTime count input encUnary) :
     Cslib.Probability.IsPPTOn input encBits (fun a => Cslib.BitString.sampleList (count a)) :=
-  Cslib.Probability.isPPTOn_sampleList.preprocess hcount
+  Cslib.Probability.isPPTOn_sampleList.preprocess
+    (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy hcount)

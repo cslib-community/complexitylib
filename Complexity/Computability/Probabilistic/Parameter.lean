@@ -11,6 +11,7 @@ public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Probabilistic.PPT.Composition
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Uniform PPT with a security parameter
@@ -71,7 +72,8 @@ theorem IsPPT.preprocess {α : Type} {input : α ↪ List Bool}
     (hparameter : ComputableTidilyInPolyTime parameter input encUnary)
     (hauxiliary : ComputableTidilyInPolyTime auxiliary input encBits) :
     IsPPTOn input output (fun a => program (parameter a) (auxiliary a)) :=
-  h.on.preprocess (hparameter.prod hauxiliary)
+  h.on.preprocess
+    (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy (hparameter.prod hauxiliary))
 
 end Cslib.Probability
 

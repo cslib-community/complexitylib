@@ -238,8 +238,8 @@ example : IsPPTOn (encList encBool) (encPair encBits encBits) (fun word =>
         unfold respond
         fun_prop
       apply h.preprocess
-      exact (ComputableTidilyInPolyTime.listToBits.comp
-        (ComputableTidilyInPolyTime.fst _ _)).prod (ComputableTidilyInPolyTime.snd _ _))
+      exact ComputableInPolyTime.of_tidy ((ComputableTidilyInPolyTime.listToBits.comp
+        (ComputableTidilyInPolyTime.fst _ _)).prod (ComputableTidilyInPolyTime.snd _ _)))
     (by fun_prop)
     (fun caller state => caller.length ≤ state.length) (fun _ => le_rfl) (by fun_prop)
   intro caller request state hstate result hresult

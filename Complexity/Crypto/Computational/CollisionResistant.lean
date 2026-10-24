@@ -185,7 +185,7 @@ theorem isPPT_collisionGame {H : List Bool → List Bool → List Bool}
       (encPair encUnary encBits) encBool)
     (ha : IsPPT (encPair encBits encBits) adversary) :
     IsPPT encBool (fun n _ => collisionGame H valid adversary n) :=
-  ((isPPTOn_collisionGame hH hvalid ha).preprocess (ComputableTidilyInPolyTime.fst _ _)).isPPT
+  ((isPPTOn_collisionGame hH hvalid ha).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
 /-- Collision resistance of a keyed hash family `H` on the valid input domain `valid`: every
 uniform strict PPT collision finder has negligible success probability. -/

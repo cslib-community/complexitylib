@@ -297,7 +297,7 @@
  "Complexity/Computability/Probabilistic/OracleSimulation.lean": 1,
  "Complexity/Computability/Probabilistic/PPT.lean": 1,
  "Complexity/Computability/Probabilistic/PPT/Capture.lean": 4,
- "Complexity/Computability/Probabilistic/PPT/Composition.lean": 2,
+ "Complexity/Computability/Probabilistic/PPT/Composition.lean": 1,
  "Complexity/Computability/Probabilistic/Parameter.lean": 2,
  "Complexity/Computability/Probabilistic/Presample.lean": 2,
  "Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean": 1,

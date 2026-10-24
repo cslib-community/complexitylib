@@ -15,6 +15,7 @@ import Complexity.Crypto.Game.Hybrid
 import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Probability.PMF.Map
 import Complexity.Tactic.PPT
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Polynomial stretch from one-bit pseudorandom generators
@@ -335,7 +336,7 @@ theorem indexed_indistinguishable {generator : ℕ → ℕ → List Bool → Lis
       encBool (fun input => reduction input.1.1 input.1.2 input.2) := by
     unfold reduction
     exact isPPT_test (hgenerator.comp hprepare) (by polytime) (by polytime)
-      (hadversary.preprocess hprepare) (by polytime)
+      (hadversary.preprocess (ComputableInPolyTime.of_tidy hprepare)) (by polytime)
   have h := (hsecure reduction hreduce).polynomiallyBounded_mul (loss_polynomial hcount)
   exact h.congr' (Filter.Eventually.of_forall (fun n => (test_advantage_eq _ _ _ _).symm))
 
