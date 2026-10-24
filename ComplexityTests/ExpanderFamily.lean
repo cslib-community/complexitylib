@@ -44,6 +44,9 @@ example : (RotationMap.arithmeticExpander 0).spectralExpansion = 0 :=
   RotationMap.spectralExpansion_eq_zero_of_subsingleton _
 
 -- Pairing indices is executable in both directions, including levels above the base.
+example : (IteratedProd.equivFin (Equiv.refl (Fin 3)) (Equiv.refl (Fin 2)) 2)
+    (((2 : Fin 3), 0), 1) = 9 := by decide
+
 example : (RotationMap.ZigzagTowerVertex.equivFin (Equiv.refl (Fin 2)) 2)
     (((1 : Fin 2), 0), 1) = 5 := by decide
 

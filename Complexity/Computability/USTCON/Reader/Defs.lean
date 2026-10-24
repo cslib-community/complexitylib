@@ -11,6 +11,7 @@ public import Complexity.Algorithms.Reachability.Reingold
 public import Complexity.Algorithms.Reachability.ReingoldEval
 public import Complexity.Computability.Complexity.Problems.USTCON
 public import Complexity.Computability.Machines.ReadMachine.Basic
+public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
 
 /-!
 # A read machine for undirected connectivity
@@ -68,11 +69,11 @@ theorem card_label_eq_numLabels : Fintype.card Label = numLabels :=
   card_label
 
 /-- The labels numbered by the residues modulo their number. -/
-noncomputable def labelEquiv : Fin numLabels ≃ Label :=
-  (finCongr card_label_eq_numLabels.symm).trans (Fintype.equivFin Label).symm
+def labelEquiv : Fin numLabels ≃ Label :=
+  (affinePlaneTowerBaseNumbering (ZMod.finEquiv 257).toEquiv.symm).symm
 
 /-- The label of the digit `x % numLabels`. -/
-noncomputable def labelOfNat (x : ℕ) : Label :=
+def labelOfNat (x : ℕ) : Label :=
   labelEquiv ⟨x % numLabels, Nat.mod_lt _ numLabels_pos⟩
 
 /-- **The rotation map of the regular rotation map of the input graph**, on slots written as pairs
@@ -141,7 +142,7 @@ def slotRot (n : ℕ) (bit : Bool) (p : (ℕ × ℕ) × Label) : (ℕ × ℕ) ×
   slotRotN n p.1 p.2 bit
 
 /-- **A step**, given the bit read. -/
-noncomputable def step (q : State) (b : Bool) : State × List Bool :=
+def step (q : State) (b : Bool) : State × List Bool :=
   match q.ctl with
   | .hdrN =>
     if b then ({ q with cnt := q.cnt + 1 }, [])
@@ -194,7 +195,7 @@ def init : State :=
   ⟨.hdrN, 0, 0, 0, 0, 0, 0, 0, 0, 0, ⟨(0, 0), [], []⟩⟩
 
 /-- **The read machine for undirected connectivity.** -/
-noncomputable def machine : Turing.ReadMachine State where
+def machine : Turing.ReadMachine State where
   init := init
   halt q := decide (q.ctl = .done)
   addr := addr
