@@ -33,6 +33,9 @@ elimination (`State.Valid.step_of_minimalAnd`):
 
 * `Cslib.Circuits.Boolean.AffineDisperser.State.SharedSecondChild`,
   `Cslib.Circuits.Boolean.AffineDisperser.State.Bottleneck`: the configurations of Section 4.3.
+* `Cslib.Circuits.Boolean.AffineDisperser.State.IsolatedBelow`,
+  `Cslib.Circuits.Boolean.AffineDisperser.State.fixInputDeleted`: unpaired isolated parameters
+  sharing a child with `G` and constraints deleted by fixing an input of `G`.
 
 ## Main results
 
@@ -242,6 +245,7 @@ weight when `G` becomes constant. -/
 def IsolatedBelow (S : State n) (G u : ℕ) : Prop :=
   u ∈ S.unpaired ∧ S.deg u = 1 ∧ ∃ N ∈ S.children G, N ∈ S.children u
 
+/-- Decidability of `State.IsolatedBelow`. -/
 instance (S : State n) (G : ℕ) : DecidablePred (S.IsolatedBelow G) :=
   fun _ => inferInstanceAs (Decidable (_ ∧ _ ∧ _))
 

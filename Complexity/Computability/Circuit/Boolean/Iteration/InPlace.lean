@@ -54,6 +54,10 @@ projection `tape : Fin m → Fin w` satisfying `∀ x, e (M.init x) ∘ tape = x
 * `Cslib.Circuits.Boolean.Iteration.InPlace.Move`: clamped head moves (`left`, `stay`, `right`).
 * `Cslib.Circuits.Boolean.Iteration.InPlace.Machine`: an in-place multi-head machine.
 * `Cslib.Circuits.Boolean.Iteration.InPlace.Config`: machine configuration `(w, p, q)`.
+* `Cslib.Circuits.Boolean.Iteration.InPlace.Machine.init`,
+  `Cslib.Circuits.Boolean.Iteration.InPlace.Machine.step`,
+  `Cslib.Circuits.Boolean.Iteration.InPlace.Machine.HaltingAbsorbing`: initial configuration,
+  one-step transition, and absorbing halting-state predicate.
 * `Cslib.Circuits.Boolean.Iteration.InPlace.reach`: configurations reachable from initial inputs.
 
 ## Main results
@@ -160,6 +164,8 @@ def Machine.init [NeZero n] (M : Machine Q Γ h) (x : BitString n) : Config Q Γ
 def Machine.HaltingAbsorbing (M : Machine Q Γ h) : Prop :=
   ∀ q, M.halting q → ∀ r a b, M.δ q r a b = (q, r, fun _ => Move.stay)
 
+/-- Under `HaltingAbsorbing`, any configuration in a halting control state is a fixed point of
+`Machine.step`. -/
 theorem Machine.step_of_halting {M : Machine Q Γ h} (hM : M.HaltingAbsorbing)
     (z : Config Q Γ n h) (hz : M.halting z.2.2) : M.step z = z := by
   obtain ⟨w, p, q⟩ := z
@@ -181,14 +187,18 @@ noncomputable def reach (M : Machine Q Γ h) (n : ℕ) [NeZero n] : Finset (Conf
 
 variable (M : Machine Q Γ h)
 
+/-- A configuration belongs to `reach M n` iff it is reached in some number of steps from some
+initial configuration `M.init x`. -/
 theorem mem_reach {z : Config Q Γ n h} :
     z ∈ reach M n ↔ ∃ x t, M.step^[t] (M.init x) = z := by
   unfold reach
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
+/-- Every initial configuration `M.init x` belongs to `reach M n`. -/
 theorem init_mem_reach (x : BitString n) : M.init x ∈ reach M n :=
   (mem_reach M).mpr ⟨x, 0, rfl⟩
 
+/-- Every iterate `M.step^[t] (M.init x)` from an initial configuration belongs to `reach M n`. -/
 theorem iterate_mem_reach (x : BitString n) (t : ℕ) : M.step^[t] (M.init x) ∈ reach M n :=
   (mem_reach M).mpr ⟨x, t, rfl⟩
 

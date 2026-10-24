@@ -52,7 +52,11 @@ only inputs and earlier gates. Its correctness is proved in
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Tableau.table`: the gate at each position of a block.
+* `Cslib.Circuits.Boolean.Tableau.Attr.test`, `Cslib.Circuits.Boolean.Tableau.sitOf`,
+  `Cslib.Circuits.Boolean.Tableau.scanTerm`, `Cslib.Circuits.Boolean.Tableau.gfTerms`,
+  `Cslib.Circuits.Boolean.Tableau.colTerms`, `Cslib.Circuits.Boolean.Tableau.gfInit`,
+  `Cslib.Circuits.Boolean.Tableau.colInit`, `Cslib.Circuits.Boolean.Tableau.initBit`,
+  `Cslib.Circuits.Boolean.Tableau.table`: the gate and initial-configuration tables for a block.
 * `Cslib.Circuits.Boolean.Tableau.gateAt`, `Cslib.Circuits.Boolean.Tableau.gateCode`: the gate at
   a block position and the gate with a given number.
 * `Cslib.Circuits.Boolean.Tableau.gates`, `Cslib.Circuits.Boolean.Tableau.outWire`: the gate list
@@ -553,6 +557,8 @@ theorem isCodeFrom_gates (n T : ℕ) : Program.IsCodeFrom signature n 0 (gates t
     omega
 
 omit [DecidableEq State] in
+/-- The output wire index is strictly less than the total number of wires
+`n + numGates k State T`. -/
 theorem outWire_lt (n T : ℕ) : outWire k State n T < n + numGates k State T := by
   have := Loc.offset_lt (k := k) (State := State) (T := T)
     (l := .gf (.out (.one true)) true 7) (c := 0) rfl
@@ -560,6 +566,8 @@ theorem outWire_lt (n T : ℕ) : outWire k State n T < n + numGates k State T :=
   rw [Nat.succ_mul]
   omega
 
+/-- The raw gate list `gates tm n T` and output wire `outWire k State n T` form a valid circuit
+code. -/
 theorem isSome_ofCode (n T : ℕ) :
     (Circuit.ofCode n 1 (gates tm n T, [outWire k State n T]) :
       Option (Circuit signature n 1)).isSome := by

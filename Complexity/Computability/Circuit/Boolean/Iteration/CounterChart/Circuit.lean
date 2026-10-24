@@ -44,6 +44,8 @@ open Cslib.FunctionalGraph
 
 variable {n R a : ℕ} {f : BitVec n → BitVec n} (chart : CounterIntervalChart f R)
 
+/-- Synthesize the interval-chart encoding `chart.encode` using at most `R * (220 * (n + 3))`
+gates. -/
 theorem synthesis_encode (s : Set (BitString a → Bool)) (x : BitString a → BitVec n)
     (hx : wordWires x ⊆ s) (hc : ∀ b : Bool, (fun _ : BitString a => b) ∈ s) :
     Synthesis Boolean.interpretation s (wires fun z => chart.encode (x z))
@@ -80,6 +82,8 @@ theorem synthesis_encode (s : Set (BitString a → Bool)) (x : BitString a → B
   exact h.mono Set.Subset.rfl Set.Subset.rfl
     (Nat.mul_le_mul_left R (by dsimp [chartWidth]; lia))
 
+/-- Synthesize the interval-chart decoding `chart.decode` using at most `R * (150 * (n + 3))`
+gates. -/
 theorem synthesis_decode (s : Set (BitString a → Bool))
     (rep : BitString a → BitVec n) (p : BitString a → BitVec (chartWidth n))
     (hr : wordWires rep ⊆ s) (hp : wordWires p ⊆ s)

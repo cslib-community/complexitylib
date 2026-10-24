@@ -159,6 +159,7 @@ namespace Reduction
 
 variable {S S' : State n} {F : Finset ℕ} {D T : List (ℕ ⊕ ℕ)}
 
+/-- The empty reduction from a valid state `S` to itself. -/
 theorem refl (hS : S.Valid f) : Reduction f S S ∅ [] [] where
   valid := hS
   subset := Finset.empty_subset _
@@ -214,20 +215,25 @@ theorem mono (h : Reduction f S S' F D T) {T' : List (ℕ ⊕ ℕ)} (hT : ∀ N 
 
 /-! ### Accounting -/
 
+/-- A reduction restricting `F` decreases the number of parameters `m` by `|F|`. -/
 theorem m_add (h : Reduction f S S' F D T) : S'.m + F.card = S.m := by
   unfold m
   rw [h.params, Finset.card_sdiff_of_subset h.subset]
   have := Finset.card_le_card h.subset
   omega
 
+/-- A reduction deleting `D` decreases the size `s` by `|D|`. -/
 theorem s_add (h : Reduction f S S' F D T) : S'.s + D.length = S.s :=
   h.size
 
+/-- A reduction restricting `F` decreases the number of pairs `q` by the number of pairs meeting
+`F`. -/
 theorem q_add (h : Reduction f S S' F D T) : S'.q + (S.pairsMeeting F).card = S.q := by
   unfold q pairsMeeting
   rw [h.pairs, add_comm]
   exact Finset.card_filter_add_card_filter_not _
 
+/-- Under a reduction restricting `F`, `S'.a + |F| = S.a + (S.pairsMeeting F).card`. -/
 theorem a_add (h : Reduction f S S' F D T) (hS : S.Valid f) :
     S'.a + F.card = S.a + (S.pairsMeeting F).card := by
   have hm := h.m_add
@@ -465,21 +471,27 @@ private theorem restrictOK_fixConst {S : State n} {w : ℕ} (hw : w ∈ S.params
     push Not at h
     exact hP (Finset.mem_filter.2 ⟨hpr, h⟩)
 
+/-- Fixing a parameter to a constant preserves validity. -/
 theorem Valid.fixConst {S : State n} (hS : S.Valid f) {w : ℕ} (hw : w ∈ S.params) (b : Bool) :
     (S.fixConst w b).Valid f :=
   hS.restrict (restrictOK_fixConst hw b)
 
+/-- Fixing `w` to a constant removes `w` from `S.params`. -/
 @[simp] theorem fixConst_params (S : State n) (w : ℕ) (b : Bool) :
     (S.fixConst w b).params = S.params.erase w := rfl
 
+/-- Fixing `w` to a constant retains the pairs avoiding `w`. -/
 @[simp] theorem fixConst_pairs (S : State n) (w : ℕ) (b : Bool) :
     (S.fixConst w b).pairs = S.pairsAvoid w := rfl
 
+/-- Fixing a parameter to a constant preserves the size of the state. -/
 theorem fixConst_size (S : State n) (w : ℕ) (b : Bool) : (S.fixConst w b).size = S.size := rfl
 
+/-- Fixing `w` to `b` substitutes `w` with `Lit.const b` in every gate. -/
 @[simp] theorem fixConst_gate (S : State n) (w : ℕ) (b : Bool) (J : ℕ) :
     (S.fixConst w b).gate J = (S.gate J).subst w (Lit.const b) := rfl
 
+/-- Fixing `w` to a constant preserves the children of every `z ≠ w`. -/
 theorem fixConst_children (S : State n) {w : ℕ} (b : Bool) {z : ℕ} (hz : z ≠ w) :
     (S.fixConst w b).children z = S.children z :=
   SemiCircuit.children_subst hz (by simp [Lit.const])

@@ -148,6 +148,7 @@ def visitScheduleCount (v : BitString (visitScheduleWidth n)) (T : ℕ) : ℕ :=
     arithmeticProgressionCount (visitScheduleFirst v).toNat (visitSchedulePeriod v).toNat T
   else 0
 
+/-- `visitScheduleCount v T` counts the times `t ≤ T` satisfying `visitScheduleContains v t`. -/
 theorem visitScheduleCount_spec (v : BitString (visitScheduleWidth n)) (T : ℕ) :
     Set.ncard {t : ℕ | t ≤ T ∧ visitScheduleContains v t} = visitScheduleCount v T := by
   unfold visitScheduleCount visitScheduleContains

@@ -96,17 +96,23 @@ section Components
 
 variable (p : Program signature n g)
 
+/-- An input `u` belongs to `componentInputs p c` if and only if its connected component in
+`supportGraph p` is `c`. -/
 @[simp]
 theorem mem_componentInputs {c : (supportGraph p).ConnectedComponent} {u : Fin n} :
     u ∈ componentInputs p c ↔ (supportGraph p).connectedComponentMk u = c := by
   classical
   simp [componentInputs]
 
+/-- Coercing `componentInputs p c` to a set yields the support `c.supp` of the connected component
+`c`. -/
 theorem coe_componentInputs (c : (supportGraph p).ConnectedComponent) :
     (componentInputs p c : Set (Fin n)) = c.supp := by
   ext u
   simp [mem_componentInputs, SimpleGraph.ConnectedComponent.mem_supp_iff]
 
+/-- A gate belongs to `componentGates p c` if and only if its input support is nonempty and
+contained in `componentInputs p c`. -/
 @[simp]
 theorem mem_componentGates {c : (supportGraph p).ConnectedComponent} {j : Fin g} :
     j ∈ componentGates p c ↔ inputSupport p j ≠ ∅ ∧ inputSupport p j ⊆ componentInputs p c := by
@@ -408,12 +414,15 @@ noncomputable def residualGates (p : Program signature n g) (F b : Finset (Fin n
     Finset (Fin g) :=
   univ.filter fun j => ¬ inputSupport p j ⊆ F ∧ inputSupport p j \ F ⊆ b
 
+/-- A gate belongs to `residualGates p F b` if and only if its input support is not contained in
+`F` and its residual support outside `F` is contained in `b`. -/
 @[simp]
 theorem mem_residualGates (p : Program signature n g) (F b : Finset (Fin n)) (j : Fin g) :
     j ∈ residualGates p F b ↔ ¬ inputSupport p j ⊆ F ∧ inputSupport p j \ F ⊆ b := by
   classical
   simp [residualGates]
 
+/-- Every gate in `residualGates p F b` belongs to `inputGates p`. -/
 theorem residualGates_subset_inputGates (p : Program signature n g) (F b : Finset (Fin n)) :
     residualGates p F b ⊆ inputGates p := by
   intro j hj

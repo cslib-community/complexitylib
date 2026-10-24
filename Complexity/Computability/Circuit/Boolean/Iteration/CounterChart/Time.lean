@@ -48,6 +48,8 @@ def advanceCycleLabel (r : BitString (n + (chartWidth n + chartWidth n)))
     (addResidue (labelLength r) (labelPhase r)
       (streamRemainder (labelLength r) bits))
 
+/-- Advancing the cycle label of `x` by `bits` yields the cycle label of
+`f^[(word bits).toNat] x`. -/
 theorem advanceCycleLabel_spec (f : BitVec n → BitVec n) (x : BitVec n) (bits : Fin m → Bool) :
     advanceCycleLabel (wordCycleLabel f x) bits = wordCycleLabel f (f^[(word bits).toNat] x) := by
   let ell := BitVec.ofNat (chartWidth n) (cycleLength f x)

@@ -41,6 +41,7 @@ namespace Cslib.Circuits.Boolean.Layered
 /-- Copy every wire in order, including the empty row when `width = 0`. -/
 def identityLayer (width : ℕ) : List Node := (List.range width).map Node.copy
 
+/-- An identity layer of width `width` has `width` nodes. -/
 @[simp] theorem length_identityLayer (width : ℕ) : (identityLayer width).length = width := by
   simp [identityLayer]
 
@@ -50,6 +51,7 @@ private theorem valid_identityLayer (width : ℕ) :
   obtain ⟨i, hi, rfl⟩ := List.mem_map.mp hnode
   exact List.mem_range.mp hi
 
+/-- Evaluating an identity layer of matching width returns the input row unchanged. -/
 @[simp] theorem evalLayer_identityLayer (inputs : List Bool) :
     evalLayer inputs (identityLayer inputs.length) = inputs := by
   apply List.ext_getElem
@@ -57,12 +59,14 @@ private theorem valid_identityLayer (width : ℕ) :
   · intro i hi hi'
     simp [evalLayer, identityLayer, Node.eval, hi']
 
+/-- Evaluating any number of replicated identity layers returns the input row unchanged. -/
 @[simp] theorem eval_replicate_identityLayer (inputs : List Bool) (count : ℕ) :
     eval inputs (List.replicate count (identityLayer inputs.length)) = inputs := by
   induction count with
   | zero => rfl
   | succ count ih => simp only [List.replicate_succ, eval_cons, evalLayer_identityLayer, ih]
 
+/-- Replicated identity layers of width `width` have output width `width`. -/
 @[simp] theorem outputWidth_replicate_identityLayer (width count : ℕ) :
     outputWidth width (List.replicate count (identityLayer width)) = width := by
   induction count with
@@ -82,15 +86,18 @@ private theorem wellFormed_replicate_identityLayer (width count : ℕ) :
 def padTo (inputCount target : ℕ) (layers : List (List Node)) : List (List Node) :=
   layers ++ List.replicate (target - layers.length) (identityLayer (outputWidth inputCount layers))
 
+/-- Padding to `target` produces `max layers.length target` layers. -/
 @[simp] theorem length_padTo (inputCount target : ℕ) (layers : List (List Node)) :
     (padTo inputCount target layers).length = max layers.length target := by
   simp only [padTo, List.length_append, List.length_replicate]
   omega
 
+/-- When `layers.length ≤ target`, padding to `target` produces exactly `target` layers. -/
 theorem length_padTo_of_le (inputCount target : ℕ) (layers : List (List Node))
     (h : layers.length ≤ target) : (padTo inputCount target layers).length = target := by
   rw [length_padTo, max_eq_right h]
 
+/-- When `target ≤ layers.length`, `padTo` leaves the schedule unchanged. -/
 @[simp] theorem padTo_eq_self (inputCount target : ℕ) (layers : List (List Node))
     (h : target ≤ layers.length) : padTo inputCount target layers = layers := by
   simp [padTo, Nat.sub_eq_zero_of_le h]
@@ -100,10 +107,12 @@ theorem length_padTo_of_le (inputCount target : ℕ) (layers : List (List Node))
     eval inputs (padTo inputs.length target layers) = eval inputs layers := by
   rw [padTo, eval_append, ← length_eval, eval_replicate_identityLayer]
 
+/-- Padding preserves the output width of a layered schedule. -/
 @[simp] theorem outputWidth_padTo (inputCount target : ℕ) (layers : List (List Node)) :
     outputWidth inputCount (padTo inputCount target layers) = outputWidth inputCount layers := by
   rw [padTo, outputWidth_append, outputWidth_replicate_identityLayer]
 
+/-- Padding a well-formed layered schedule preserves `WellFormed`. -/
 theorem WellFormed.padTo {inputCount : ℕ} {layers : List (List Node)}
     (h : WellFormed inputCount layers) (target : ℕ) :
     WellFormed inputCount (padTo inputCount target layers) :=

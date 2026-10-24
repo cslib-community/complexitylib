@@ -44,7 +44,8 @@ operation.
 * `Cslib.Circuits.Boolean.pointOfBits`, `Cslib.Circuits.Boolean.bitsOfPoint`: points of `F ^ m`
   and their bits.
 * `Cslib.Circuits.Boolean.BitSynthesis`: bit-synthesizable functions.
-* `Cslib.Circuits.Boolean.glPredictor`: the Goldreich–Levin decoder of the inner code.
+* `Cslib.Circuits.Boolean.glPredictor`, `Cslib.Circuits.Boolean.glCost`: the Goldreich–Levin
+  decoder of the inner code and its gate budget.
 
 ## Main results
 

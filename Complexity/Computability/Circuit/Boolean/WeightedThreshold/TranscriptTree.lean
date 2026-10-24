@@ -34,6 +34,8 @@ This construction is semantic and noncomputable; no efficient compiler is assert
 * `Cslib.Circuits.Boolean.WeightedThreshold.inputOfSplit`: assemble the two sides of an input.
 * `Cslib.Circuits.Boolean.WeightedThreshold.lineComparison`: express an input-only threshold
   line as a separable comparison across a coordinate split.
+* `Cslib.Circuits.Boolean.WeightedThreshold.gateComparison`: express a gate query with fixed earlier
+  gate values as a separable comparison across a coordinate split.
 
 ## Main results
 

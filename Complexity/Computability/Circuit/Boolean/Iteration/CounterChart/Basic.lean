@@ -23,6 +23,7 @@ semantic chart used by the sparse live-time circuit.
 ## Main definitions
 
 * `CounterIntervalChart`: intervals on which iteration is numerical translation.
+* `nextBoundary`: the next interval start above `a`, or the upper endpoint `N`.
 
 ## Main results
 
@@ -64,9 +65,12 @@ namespace CounterIntervalChart
 
 variable {f : BitVec n → BitVec n} (chart : CounterIntervalChart f R)
 
+/-- Every interval start `chart.start j` is strictly below `2 ^ n`. -/
 theorem start_lt (j : Fin R) : chart.start j < 2 ^ n :=
   (chart.start_lt_stop j).trans_le (chart.stop_le j)
 
+/-- A word `x` inside interval `j` is reached from `chart.start j` after `x.toNat - chart.start j`
+steps of `f`. -/
 theorem point_eq (j : Fin R) (x : BitVec n)
     (hlo : chart.start j ≤ x.toNat) (hhi : x.toNat < chart.stop j) :
     f^[x.toNat - chart.start j] (BitVec.ofNat n (chart.start j)) = x := by
@@ -130,6 +134,7 @@ private theorem nextBoundary_gt (S : Finset ℕ) {N a : ℕ} (ha : a < N) :
 private theorem nextBoundary_le (S : Finset ℕ) (N a : ℕ) : nextBoundary S N a ≤ N :=
   Finset.min'_le _ _ (by simp)
 
+/-- Every element `b ∈ S` strictly above `a` is an upper bound on `nextBoundary S N a`. -/
 theorem nextBoundary_le_of_mem (S : Finset ℕ) (N a b : ℕ)
     (hb : b ∈ S) (hab : a < b) : nextBoundary S N a ≤ b :=
   Finset.min'_le _ _ (by simp [hb, hab])

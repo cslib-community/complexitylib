@@ -76,10 +76,14 @@ variable {k : ℕ}
 def remainder (T : ℕ) (x : BitString k) : BitString k :=
   fun i => (BitVec.ofNat k (if (word x).toNat = 0 then 0 else T % (word x).toNat)).getLsbD i.val
 
+/-- Packing `remainder T x` into a `BitVec k` gives `T % (word x).toNat` (or `0` when
+`(word x).toNat = 0`). -/
 theorem remainder_word (T : ℕ) (x : BitString k) :
     word (remainder T x) =
       BitVec.ofNat k (if (word x).toNat = 0 then 0 else T % (word x).toNat) := word_getLsbD _
 
+/-- When `r` encodes `T % a.toNat` for positive `a`, `addResidue a b r` encodes
+`advance a.toNat b.toNat T`. -/
 theorem addResidue_spec (a b r : BitVec k) (T : ℕ)
     (hr : 0 < a.toNat → r.toNat = T % a.toNat) :
     addResidue a b r = BitVec.ofNat k (advance a.toNat b.toNat T) := by
@@ -289,10 +293,12 @@ def counterInput (x : BitString k) : BitString (k + k) :=
 def counterOutput (y : BitString (k + k)) : BitString k :=
   fun i => y (Fin.natAdd k i)
 
+/-- The modulus word of `counterInput x` has natural value `(word x).toNat`. -/
 @[simp] theorem counterInput_modulus_toNat (x : BitString k) :
     (ModulusCounter.leftWord (counterInput x)).toNat = (word x).toNat := by
   simp [counterInput]
 
+/-- The initial counter state word of `counterInput x` has natural value `0`. -/
 @[simp] theorem counterInput_state_toNat (x : BitString k) :
     (ModulusCounter.rightWord (counterInput x)).toNat = 0 := by
   simp [counterInput]

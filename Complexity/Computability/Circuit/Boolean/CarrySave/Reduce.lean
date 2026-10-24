@@ -18,6 +18,7 @@ These are the arithmetic reductions used by modular multiplication and GSW's sel
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.pairWithZero`: put an ordinary word into carry-save form.
 * `Cslib.Circuits.Boolean.reducePairs`: balanced four-to-two reduction on shared inputs.
 * `Cslib.Circuits.Boolean.sumPairs`: reduction followed by logarithmic-depth addition.
 
@@ -46,21 +47,25 @@ def pairWithZero (C : Circuit signature n w) : Circuit signature n (w + w) :=
   C.append ((Circuit.wiring signature (fun _ : Fin w => (0 : Fin 1))).comp
     (Circuit.oneGate (.const false) Fin.elim0))
 
+/-- Evaluating `pairWithZero C` appends `w` false bits to the output of `C`. -/
 @[simp] theorem eval_pairWithZero (C : Circuit signature n w) (x : BitString n) :
     (pairWithZero C).eval interpretation x =
       Fin.append (C.eval interpretation x) (fun _ => false) := by
   simp only [pairWithZero, Circuit.eval_append, Circuit.eval_comp, Circuit.eval_wiring]
   rfl
 
+/-- The carry-save value `pairVal` of `pairWithZero C` equals the unsigned value of `C`. -/
 theorem pairVal_eval_pairWithZero (C : Circuit signature n w) (x : BitString n) :
     pairVal ((pairWithZero C).eval interpretation x) =
       (BitString.equivFin w (C.eval interpretation x) : ℕ) := by
   rw [eval_pairWithZero, pairVal_append, val_equivFin_false, Nat.add_zero]
 
+/-- `pairWithZero C` adds one shared constant gate to `C`. -/
 @[simp] theorem size_pairWithZero (C : Circuit signature n w) :
     (pairWithZero C).size = C.size + 1 := by
   simp [pairWithZero]
 
+/-- The depth of `pairWithZero C` is at most `max C.depth 1`. -/
 theorem depth_pairWithZero_le (C : Circuit signature n w) :
     (pairWithZero C).depth ≤ max C.depth 1 := by
   refine (Circuit.depth_append_le _ _).trans (max_le_max le_rfl ?_)

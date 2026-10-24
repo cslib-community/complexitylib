@@ -77,6 +77,7 @@ open Filter Uhlig
 
 /-! ### The finite recursion -/
 
+/-- `layerOverhead p w` is monotone in the suffix width `w`. -/
 theorem layerOverhead_mono {p w w' : ℕ} (h : w ≤ w') : layerOverhead p w ≤ layerOverhead p w' := by
   unfold layerOverhead
   gcongr

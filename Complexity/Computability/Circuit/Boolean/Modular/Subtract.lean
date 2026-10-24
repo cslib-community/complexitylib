@@ -23,6 +23,7 @@ discards the final carry, so underflow wraps modulo `2 ^ w` instead of truncated
 
 * `Cslib.Circuits.Boolean.Modular.val_eval_subtract`: exact modular subtraction on all words.
 * `Cslib.Circuits.Boolean.Modular.depth_subtract_le`: depth at most `8 + 2 * clog 2 (w + 1)`.
+* `Cslib.Circuits.Boolean.Modular.size_subtract_le`: size at most `21 * (w + 1) ^ 2`.
 
 ## References
 
@@ -101,6 +102,7 @@ theorem val_eval_subtract (a b : BitString w) :
   rw [hv] at hm
   exact (Nat.mod_eq_of_lt (BitString.equivFin w _).isLt).symm.trans hm
 
+/-- The depth of `subtract w` is at most `8 + 2 * Nat.clog 2 (w + 1)`. -/
 theorem depth_subtract_le (w : ℕ) :
     (subtract w).depth ≤ 8 + 2 * Nat.clog 2 (w + 1) := by
   have h := (Circuit.depth_comp_le (carryLookahead w) (subtractInputs w)).trans
@@ -109,6 +111,7 @@ theorem depth_subtract_le (w : ℕ) :
   simp only [Circuit.depth_wiring, zero_add]
   omega
 
+/-- The size of `subtract w` is at most `21 * (w + 1) ^ 2`. -/
 theorem size_subtract_le (w : ℕ) : (subtract w).size ≤ 21 * (w + 1) ^ 2 := by
   have h := size_carryLookahead_le w
   simp only [subtract, Circuit.size_comp, Circuit.size_wiring, size_subtractInputs]

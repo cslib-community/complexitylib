@@ -48,8 +48,9 @@ its gate transcript (`StrictMarginProgram.eval`):
 * `Cslib.Circuits.Boolean.WeightedThreshold.boolSign`: `{false, true} → {-1, 1} ⊂ ℝ`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.StrictMarginProgram`: straight-line threshold program
   with strictly lower-triangular gate weights and unit score margin `|Q_i(x, z)| ≥ 1`.
-* `Cslib.Circuits.Boolean.WeightedThreshold.StrictMarginProgram.score`, `.sweep`, `.faceEval`,
-  `.eval`: gate scores, topological coordinate sweep, face evaluation, and full evaluation.
+* `Cslib.Circuits.Boolean.WeightedThreshold.StrictMarginProgram.inputSum`, `.internalSum`,
+  `.score`, `.faceStep`, `.sweep`, `.faceEval`, `.eval`, `.ofProgram`: gate sums and scores,
+  topological coordinate sweep, face evaluation, full evaluation, and conversion from `Program`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.StrictMarginProgram.inTranscriptCell`, `.leftSupply`,
   `.rightDemand`, `.ilpValid`: transcript cell, split-dominance vectors, and ILP inequalities.
 * `Cslib.Circuits.Boolean.WeightedThreshold.StrictMarginProgram.priority`, `.energy`,
@@ -90,16 +91,20 @@ variable {n g : ℕ}
 def boolSign (b : Bool) : ℝ :=
   if b then 1 else -1
 
+/-- The sign of `true` is `1`. -/
 @[simp]
 theorem boolSign_true : boolSign true = 1 := rfl
 
+/-- The sign of `false` is `-1`. -/
 @[simp]
 theorem boolSign_false : boolSign false = -1 := rfl
 
+/-- For any Boolean `b`, `boolSign b = 2 * b.toNat - 1`. -/
 theorem boolSign_eq_two_mul_toNat_sub_one (b : Bool) :
     boolSign b = 2 * (b.toNat : ℝ) - 1 := by
   cases b <;> norm_num
 
+/-- The absolute value of `boolSign b` is `1`. -/
 @[simp]
 theorem abs_boolSign (b : Bool) : |boolSign b| = 1 := by
   cases b <;> norm_num
@@ -213,6 +218,7 @@ noncomputable def sweep (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin
     if hk : k < g then P.faceStep fixed val x (sweep fixed val x z k) ⟨k, hk⟩
     else sweep fixed val x z k
 
+/-- Zero steps of `sweep` leave the initial assignment `z` unchanged. -/
 @[simp]
 theorem sweep_zero (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin n → Bool)
     (z : Fin g → Bool) :
@@ -267,12 +273,15 @@ noncomputable def faceEval (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : 
 noncomputable def eval (x : Fin n → Bool) : Fin g → Bool :=
   P.faceEval ∅ (fun _ => false) x
 
+/-- At coordinate `i`, `faceEval` returns `val i` if `i ∈ fixed` and the threshold decision at
+`faceEval` otherwise. -/
 theorem faceEval_apply (fixed : Finset (Fin g)) (val : Fin g → Bool) (x : Fin n → Bool)
     (i : Fin g) :
     P.faceEval fixed val x i =
       if i ∈ fixed then val i else decide (0 < P.score x (P.faceEval fixed val x) i) :=
   P.sweep_apply fixed val x val i
 
+/-- On a fixed coordinate `i ∈ fixed`, `faceEval` evaluates to `val i`. -/
 @[simp]
 theorem faceEval_of_mem {fixed : Finset (Fin g)} {val : Fin g → Bool} {x : Fin n → Bool}
     {i : Fin g} (hi : i ∈ fixed) :
@@ -281,6 +290,7 @@ theorem faceEval_of_mem {fixed : Finset (Fin g)} {val : Fin g → Bool} {x : Fin
   split_ifs
   rfl
 
+/-- On a free coordinate `i ∉ fixed`, `faceEval` satisfies gate `i`'s local threshold equation. -/
 @[simp]
 theorem faceEval_of_notMem {fixed : Finset (Fin g)} {val : Fin g → Bool} {x : Fin n → Bool}
     {i : Fin g} (hi : i ∉ fixed) :

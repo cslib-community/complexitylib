@@ -26,8 +26,12 @@ versions; the exponential-range theorem requires further constructions.
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.MassProduction.massComplexity`: minimum cost of independent copies.
+* `Cslib.Circuits.Boolean.MassProduction.rationalCopyBudget`: discrete copy budget
+  `2 ^ (numerator * inputs / denominator)`.
 * `Cslib.Circuits.Boolean.MassProduction.MassProductionBound`: the bound at one input length.
-* `Cslib.Circuits.Boolean.MassProduction.MassProducesAt`: the eventual rational-rate statement.
+* `Cslib.Circuits.Boolean.MassProduction.MassProducesAt`,
+  `Cslib.Circuits.Boolean.MassProduction.MassProducesAtAllLengths`: the eventual and all-length
+  rational-rate statements.
 * `Cslib.Circuits.Boolean.MassProduction.ExponentialMassProduction`: the all-length statement
   for every fixed nonnegative rational exponent below one.
 
@@ -78,6 +82,7 @@ theorem massComplexity_le_complexity :
     exists_computes_size_eq_complexity (I := interpretation) (f := directProduct f k)
   exact massComplexity_le_iff.mpr ⟨c, hc, (Program.cost_nonconstantCost_le _).trans hsize.le⟩
 
+/-- Evaluating zero copies of `f` has mass complexity zero. -/
 @[simp] theorem massComplexity_zero : massComplexity f 0 = 0 :=
   ecomplexityFrom_directProduct_zero
 
@@ -100,11 +105,13 @@ theorem massComplexity_comp_wiring_le {p : ℕ} (select : Fin n → Fin p) (k : 
 def rationalCopyBudget (numerator denominator inputs : ℕ) : ℕ :=
   2 ^ (numerator * inputs / denominator)
 
+/-- `rationalCopyBudget` is monotone in the numerator. -/
 theorem rationalCopyBudget_mono_numerator {small large denominator inputs : ℕ}
     (h : small ≤ large) :
     rationalCopyBudget small denominator inputs ≤ rationalCopyBudget large denominator inputs :=
   Nat.pow_le_pow_right (by decide) (Nat.div_le_div_right (Nat.mul_le_mul_right inputs h))
 
+/-- `rationalCopyBudget` is monotone in the input length. -/
 theorem rationalCopyBudget_mono_inputs {numerator denominator small large : ℕ}
     (h : small ≤ large) :
     rationalCopyBudget numerator denominator small ≤

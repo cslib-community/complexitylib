@@ -25,7 +25,11 @@ adjacent pair for a collision and selecting one costs linearly in the array
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.Iteration.wires`: the coordinate functions of a family of bit strings.
-* `Cslib.Circuits.Boolean.Iteration.Record.wireSet`, `Record.recordsWires`: available records.
+* `Cslib.Circuits.Boolean.Iteration.Record.wireSet`,
+  `Cslib.Circuits.Boolean.Iteration.Record.pairEncode`,
+  `Cslib.Circuits.Boolean.Iteration.Record.pairWires`,
+  `Cslib.Circuits.Boolean.Iteration.Record.recordsWires`: available records, record pairs, and
+  record arrays.
 
 ## Main results
 
@@ -69,6 +73,7 @@ theorem synthesis_bits_eq {m : ℕ} (s : Set (BooleanFunction n))
       b x := funext fun i => by simp only [Function.comp_apply, Fin.append_right]
   simp only [Formula.eval_toCircuit, Formula.eval_equalBits_iff, decide_eq_true_eq, hl, hr]
 
+/-- Multiplexing two `m`-bit strings by an available Boolean flag costs `4 * m` gates. -/
 theorem synthesis_bits_mux {m : ℕ} (s : Set (BooleanFunction n))
     (a b : BitString n → BitString m) (flag : BooleanFunction n)
     (ha : wires a ⊆ s) (hb : wires b ⊆ s) (hf : flag ∈ s) :
@@ -95,22 +100,27 @@ namespace Record
 /-- The bits of an available family of records. -/
 def wireSet (a : BitString n → Record n w) : Set (BooleanFunction n) := wires fun x => encode (a x)
 
+/-- The padding bit of an available record belongs to `s`. -/
 theorem padding_mem {s : Set (BooleanFunction n)} {a : BitString n → Record n w}
     (ha : wireSet a ⊆ s) : (fun x => (a x).padding) ∈ s := by
   simpa [encode] using ha ⟨Fin.castAdd (w + n + 1) 0, rfl⟩
 
+/-- Each state bit of an available record belongs to `s`. -/
 theorem state_mem {s : Set (BooleanFunction n)} {a : BitString n → Record n w}
     (ha : wireSet a ⊆ s) (i : Fin n) : (fun x => (a x).state i) ∈ s := by
   simpa [encode] using ha ⟨Fin.castAdd (w + n + 1) i.succ, rfl⟩
 
+/-- The checkpoint bit of an available record belongs to `s`. -/
 theorem checkpoint_mem {s : Set (BooleanFunction n)} {a : BitString n → Record n w}
     (ha : wireSet a ⊆ s) : (fun x => (a x).checkpoint) ∈ s := by
   simpa [encode] using ha ⟨Fin.natAdd (n + 1) 0, rfl⟩
 
+/-- Each index bit of an available record belongs to `s`. -/
 theorem index_mem {s : Set (BooleanFunction n)} {a : BitString n → Record n w}
     (ha : wireSet a ⊆ s) (i : Fin w) : (fun x => (a x).index.getLsbD i.val) ∈ s := by
   simpa [encode] using ha ⟨Fin.natAdd (n + 1) (Fin.castAdd n i).succ, rfl⟩
 
+/-- Each payload bit of an available record belongs to `s`. -/
 theorem payload_mem {s : Set (BooleanFunction n)} {a : BitString n → Record n w}
     (ha : wireSet a ⊆ s) (i : Fin n) : (fun x => (a x).payload i) ∈ s := by
   simpa [encode] using ha ⟨Fin.natAdd (n + 1) (Fin.natAdd w i).succ, rfl⟩
@@ -135,11 +145,13 @@ def pairEncode (pair : Record n w × Record n w) : BitString (width n w + width 
 def pairWires (p : BitString n → Record n w × Record n w) : Set (BooleanFunction n) :=
   wires fun x => pairEncode (p x)
 
+/-- The wire set of the first record of a pair is contained in `pairWires p`. -/
 theorem wireSet_fst_subset (p : BitString n → Record n w × Record n w) :
     wireSet (fun x => (p x).1) ⊆ pairWires p := by
   rintro _ ⟨i, rfl⟩
   exact ⟨Fin.castAdd (width n w) i, by simp only [pairEncode, Fin.append_left]⟩
 
+/-- The wire set of the second record of a pair is contained in `pairWires p`. -/
 theorem wireSet_snd_subset (p : BitString n → Record n w × Record n w) :
     wireSet (fun x => (p x).2) ⊆ pairWires p := by
   rintro _ ⟨i, rfl⟩
@@ -184,6 +196,7 @@ theorem synthesis_detect (s : Set (BooleanFunction n)) (records : BitString n �
 def recordsWires (records : BitString n → Fin R → Record n w) : Set (BooleanFunction n) :=
   ⋃ j, wireSet fun x => records x j
 
+/-- The wire set of the `j`-th record in an array is contained in `recordsWires records`. -/
 theorem wireSet_subset_recordsWires (records : BitString n → Fin R → Record n w) (j : Fin R) :
     wireSet (fun x => records x j) ⊆ recordsWires records :=
   Set.subset_iUnion_of_subset j Set.Subset.rfl

@@ -103,6 +103,7 @@ def displacementCuts (h : BitVec n → BitVec n) : Finset ℕ :=
   (Finset.range (2 ^ n)).filter fun i =>
     displacement h (BitVec.ofNat n (i + 1)) ≠ displacement h (BitVec.ofNat n i)
 
+/-- The displacement of `h` changes across `x` and `x + 1` if and only if `h (x + 1) ≠ h x + 1`. -/
 theorem displacement_change_iff (h : BitVec n → BitVec n) (x : BitVec n) :
     displacement h (x + 1) ≠ displacement h x ↔ h (x + 1) ≠ h x + 1 := by
   unfold displacement

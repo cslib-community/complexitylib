@@ -34,6 +34,7 @@ are free.
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.Iteration.remainderStep`: one step of long division by a word.
 * `Cslib.Circuits.Boolean.Iteration.streamRemainder`: long division, most significant bit
   first.
 * `Cslib.Circuits.Boolean.Iteration.subMod`: modular difference of two words.

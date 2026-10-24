@@ -30,7 +30,8 @@ child.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.AffineDisperser.State.auxIn`,
+* `Cslib.Circuits.Boolean.AffineDisperser.State.auxArgs`,
+  `Cslib.Circuits.Boolean.AffineDisperser.State.auxIn`,
   `Cslib.Circuits.Boolean.AffineDisperser.State.childIn`: the measures of the restructuring.
 * `Cslib.Circuits.Boolean.AffineDisperser.State.MinimalAnd`: the minimal AND.
 
@@ -487,13 +488,17 @@ namespace MinimalAnd
 
 variable {S : State n} {G x y : ℕ}
 
+/-- The first input `x` of a minimal AND is a parameter of `S`. -/
 theorem mem_params_x (h : S.MinimalAnd G x y) : x ∈ S.params := (mem_unpaired.1 h.unpaired_x).1
 
+/-- The second input `y` of a minimal AND is a parameter of `S`. -/
 theorem mem_params_y (h : S.MinimalAnd G x y) : y ∈ S.params := (mem_unpaired.1 h.unpaired_y).1
 
+/-- The minimal AND gate `G` is a child of its first input `x`. -/
 theorem mem_children_x (h : S.MinimalAnd G x y) : Sum.inl G ∈ S.children x :=
   (SemiCircuit.inl_mem_children _).2 ⟨h.mem, (Gate.reads_of_args h.args).1⟩
 
+/-- The minimal AND gate `G` is a child of its second input `y`. -/
 theorem mem_children_y (h : S.MinimalAnd G x y) : Sum.inl G ∈ S.children y :=
   (SemiCircuit.inl_mem_children _).2 ⟨h.mem, (Gate.reads_of_args h.args).2⟩
 
@@ -503,6 +508,7 @@ theorem exists_op (h : S.MinimalAnd G x y) : ∃ φ : Bool → Bool → Bool, ¬
   obtain ⟨φ, hφ, hG⟩ := Gate.exists_op_of_args h.args
   exact ⟨φ, fun h' => h.and_op (hφ.1 h'), hG⟩
 
+/-- No parameter of a valid state is equal to its minimal AND gate `G`. -/
 theorem ne_gate (hS : S.Valid f) (h : S.MinimalAnd G x y) {u : ℕ} (hu : u ∈ S.params) : u ≠ G :=
   fun he => hS.wf.notMem_gates_of_mem_params hu (he ▸ h.mem)
 

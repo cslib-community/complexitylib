@@ -33,8 +33,12 @@ consistent assignments of the deletions lift to the original semi-circuit
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.SemiCircuit.restrict`, `Cslib.Circuits.Boolean.SemiCircuit.deleteGate`,
-  `Cslib.Circuits.Boolean.SemiCircuit.deleteEqn`, `Cslib.Circuits.Boolean.SemiCircuit.dropEqn`,
-  `Cslib.Circuits.Boolean.SemiCircuit.dropTrivialEqn`: the simplifications.
+  `Cslib.Circuits.Boolean.SemiCircuit.DeleteGateOK`,
+  `Cslib.Circuits.Boolean.SemiCircuit.deleteEqn`,
+  `Cslib.Circuits.Boolean.SemiCircuit.DeleteEqnOK`,
+  `Cslib.Circuits.Boolean.SemiCircuit.dropEqn`,
+  `Cslib.Circuits.Boolean.SemiCircuit.DropEqnOK`,
+  `Cslib.Circuits.Boolean.SemiCircuit.dropTrivialEqn`: the simplifications and their preconditions.
 
 ## Main results
 
@@ -63,6 +67,7 @@ parameters. -/
 def restrict (C : SemiCircuit) (x : ℕ) (ℓ : Lit) : SemiCircuit :=
   { C.subst x ℓ with params := C.params.erase x }
 
+/-- Any live node of `C` distinct from `x` remains live in `C.restrict x ℓ`. -/
 theorem mem_live_restrict {x : ℕ} {ℓ : Lit} {i : ℕ} (hi : i ∈ C.live) (hix : i ≠ x) :
     i ∈ (C.restrict x ℓ).live := by
   simp only [live, Finset.mem_union] at hi ⊢
@@ -141,6 +146,8 @@ theorem consistent_restrict (hC : C.WellFormed) {x : ℕ} {ℓ : Lit} (hx : x �
     C.Consistent (Function.update val x (ℓ.eval val)) :=
   consistent_of_subst (hC.notMem_gates_of_mem_params hx) hℓ h
 
+/-- Evaluating the output of `C.restrict x ℓ` under `val` equals evaluating the output of `C`
+after updating `x` to `ℓ.eval val`. -/
 theorem out_restrict {x : ℕ} {ℓ : Lit} (hℓ : ℓ.arg ≠ .node x) (val : ℕ → Bool) :
     (C.restrict x ℓ).out.eval val = C.out.eval (Function.update val x (ℓ.eval val)) :=
   Lit.eval_subst_update hℓ val
@@ -169,6 +176,7 @@ private theorem eqnsHold_deleteGate (hC : C.WellFormed) {J : ℕ} {ℓ : Lit} (h
     change ((C.eqn e).subst J ℓ).Holds val ↔ _
     rw [Equation.subst_of_notMem (hC.notMem_terms_of_mem_gates hJ he)]
 
+/-- Any live node of `C` distinct from `J` remains live in `C.deleteGate J ℓ`. -/
 theorem mem_live_deleteGate {J : ℕ} {ℓ : Lit} {i : ℕ} (hi : i ∈ C.live) (hiJ : i ≠ J) :
     i ∈ (C.deleteGate J ℓ).live := by
   simp only [live, Finset.mem_union] at hi ⊢
@@ -268,6 +276,7 @@ structure DeleteEqnOK (C : SemiCircuit) (e v : ℕ) (ℓ : Lit) : Prop where
   holds : ∀ val, (C.eqn e).Holds val ↔ val v = ℓ.eval val
   reads : ∀ t, ℓ.Reads t → t ∈ (C.eqn e).terms ∧ t ≠ v
 
+/-- Any live node of `C` distinct from `v` remains live in `C.deleteEqn e v ℓ`. -/
 theorem mem_live_deleteEqn {e v : ℕ} {ℓ : Lit} {i : ℕ} (hi : i ∈ C.live) (hiv : i ≠ v) :
     i ∈ (C.deleteEqn e v ℓ).live := by
   simp only [live, Finset.mem_union] at hi ⊢
@@ -466,6 +475,7 @@ private theorem eqnsHold_dropTrivialEqn (hC : C.WellFormed) {e : ℕ} (he : e �
   · subst hee; exact htriv
   · exact h e' (Finset.mem_erase.2 ⟨hee, he'⟩)
 
+/-- Dropping an equation with no terms preserves well-formedness. -/
 theorem WellFormed.dropTrivialEqn (hC : C.WellFormed) {e : ℕ} (he : e ∈ C.eqns)
     (hterms : (C.eqn e).terms = ∅) : (C.dropTrivialEqn e).WellFormed where
   disjoint_params_aux := hC.disjoint_params_aux
@@ -483,6 +493,8 @@ theorem WellFormed.dropTrivialEqn (hC : C.WellFormed) {e : ℕ} (he : e ∈ C.eq
     hC.unique val val' hagree ((eqnsHold_dropTrivialEqn hC he hterms val).1 heq)
       ((eqnsHold_dropTrivialEqn hC he hterms val').1 heq')
 
+/-- Every consistent assignment after dropping an equation with no terms is consistent for the
+original semi-circuit. -/
 theorem liftsTo_dropTrivialEqn (hC : C.WellFormed) {e : ℕ} (he : e ∈ C.eqns)
     (hterms : (C.eqn e).terms = ∅) : (C.dropTrivialEqn e).LiftsTo C := fun val hval =>
   ⟨val, ⟨(eqnsHold_dropTrivialEqn hC he hterms val).1 hval.1, hval.2⟩, fun _ _ => rfl, rfl⟩

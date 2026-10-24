@@ -79,6 +79,8 @@ noncomputable def inputActivityFrom (p : Program signature n g)
 noncomputable def gateActivityFrom (p : Program signature n g) (v : Fin g → Bool) : ℕ :=
   univ.sup fun x => hammingDist (p.eval interpretation x) v
 
+/-- A pattern belongs to `attainableTranscripts p` if and only if it is the restricted transcript
+of some input `x`. -/
 @[simp]
 theorem mem_attainableTranscripts (p : Program signature n g) (z : inputGates p → Bool) :
     z ∈ attainableTranscripts p ↔ ∃ x, transcript p x = z := by

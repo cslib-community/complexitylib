@@ -230,6 +230,7 @@ private theorem canonicalLabel_iterate_factorial (f : BitString n → BitString 
   simp only [canonicalLabel, canonicalCycle_iterate, cycleLength_iterate, phase_iterate,
     Nat.add_mod, Nat.mod_eq_zero_of_dvd hd, Nat.add_zero, Nat.mod_eq_of_lt (phase_lt f x)]
 
+/-- Iterating `f` on `BitString n` for `(2 ^ n)!` steps lands on a periodic point. -/
 theorem iterate_factorial_mem_periodicPts (f : BitString n → BitString n) (x : BitString n) :
     f^[(2 ^ n).factorial] x ∈ Function.periodicPts f := by
   apply (iterate_mem_periodicPts_iff f x _).mpr

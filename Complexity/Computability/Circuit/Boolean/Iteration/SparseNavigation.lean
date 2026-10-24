@@ -125,6 +125,8 @@ private theorem cycleLabelVisits_period (f : BitVec n → BitVec n) (hf : Functi
   rw [chart_ofNat_toNat (cycleLength_le_words f y), Nat.mod_eq_of_lt hwide,
     cycleLength_eq_minimalPeriod_of_mem_periodicPts f (hf.mem_periodicPts y)]
 
+/-- For an injective word map `f`, the visit schedule constructed from the cycle labels of `x` and
+`y` contains time `t` if and only if `f^[t] x = y`. -/
 theorem cycleLabelVisits_spec (f : BitVec n → BitVec n) (hf : Function.Injective f)
     (x y : BitVec n) (t : ℕ) :
     f^[t] x = y ↔ visitScheduleContains
@@ -211,6 +213,9 @@ theorem cycle_label_visit_circuit (f : BitVec n → BitVec n)
   obtain ⟨out, ho, hs⟩ := ((hx.union hy).trans hnav).exists_circuit_outputs
   exact ⟨out, ho, by lia⟩
 
+/-- Every permutation `f` of `BitVec n` has a circuit of size at most `1200 * (n + 3) * (r + 1)`
+computing the visit schedule between its two `n`-bit inputs from their cycle labels, where `r` is
+the number of disagreements of `f` with the unit increment. -/
 theorem sparse_counter_visit_circuit (f : Equiv.Perm (BitVec n)) :
     ∃ out : Circuit Boolean.signature (n + n) (visitScheduleWidth n),
       out.Computes Boolean.interpretation (fun z =>

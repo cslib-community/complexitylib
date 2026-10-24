@@ -29,6 +29,10 @@ are free.
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.Iteration.lookupOr`: the OR of the values stored under a key.
+* `Cslib.Circuits.Boolean.Iteration.hitRecord`,
+  `Cslib.Circuits.Boolean.Iteration.hitIndex`,
+  `Cslib.Circuits.Boolean.Iteration.hitPayload`: a flagged checkpoint-hit record and its time and
+  payload projections.
 * `Cslib.Circuits.Boolean.Iteration.finishHit`: the state reached from the last flagged hit.
 
 ## Main results
@@ -66,6 +70,7 @@ def lookupOr (keys : Fin M → BitString k) (values : Fin M → BitString v) (ke
     BitString v :=
   fun bit => decide (∃ j, keys j = key ∧ values j bit = true)
 
+/-- With injective keys, `lookupOr` returns the value at the matching entry. -/
 theorem lookupOr_of_eq {keys : Fin M → BitString k} (values : Fin M → BitString v)
     (hkeys : Function.Injective keys) {j : Fin M} {key : BitString k} (h : keys j = key) :
     lookupOr keys values key = values j := by
@@ -77,6 +82,7 @@ theorem lookupOr_of_eq {keys : Fin M → BitString k} (values : Fin M → BitStr
     rwa [hkeys (hi.trans h.symm)] at hv
   · exact fun hv => ⟨j, h, hv⟩
 
+/-- When `key` is absent from `keys`, `lookupOr` returns the all-false bit string. -/
 theorem lookupOr_of_forall_ne {keys : Fin M → BitString k} (values : Fin M → BitString v)
     {key : BitString k} (h : ∀ j, keys j ≠ key) : lookupOr keys values key = fun _ => false := by
   funext bit
@@ -129,14 +135,17 @@ def hitIndex (record : BitString (w + n + 1)) : BitVec w :=
 def hitPayload (record : BitString (w + n + 1)) : BitString n :=
   fun bit => record (Fin.natAdd w bit).succ
 
+/-- Bit zero of `hitRecord` is the set hit flag `true`. -/
 @[simp] theorem hitRecord_zero (index : ℕ) (payload : BitString n) :
     hitRecord (w := w) index payload 0 = true := rfl
 
+/-- Reading `hitIndex` from `hitRecord index payload` recovers `BitVec.ofNat w index`. -/
 @[simp] theorem hitIndex_hitRecord (index : ℕ) (payload : BitString n) :
     hitIndex (hitRecord (w := w) index payload) = BitVec.ofNat w index := by
   simpa only [hitIndex, hitRecord, Fin.cons_succ, Fin.append_left] using
     word_getLsbD (BitVec.ofNat w index)
 
+/-- Reading `hitPayload` from `hitRecord index payload` recovers `payload`. -/
 @[simp] theorem hitPayload_hitRecord (index : ℕ) (payload : BitString n) :
     hitPayload (hitRecord (w := w) index payload) = payload := by
   funext bit

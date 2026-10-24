@@ -179,6 +179,7 @@ reverse order. -/
 def chooseFirst {α : Type*} (flags : Fin R → Bool) (records : Fin R → α) (fallback : α) : α :=
   chooseRecord (fun j => flags j.rev) (fun j => records j.rev) fallback R
 
+/-- If `j` is the first flagged position, `chooseFirst` returns `records j`. -/
 theorem chooseFirst_spec {α : Type*} (flags : Fin R → Bool) (records : Fin R → α)
     (fallback : α) (j : Fin R) (hj : flags j = true)
     (hfirst : ∀ i : Fin R, i.val < j.val → flags i = false) :
@@ -194,6 +195,7 @@ theorem chooseFirst_spec {α : Type*} (flags : Fin R → Bool) (records : Fin R 
 def firstIndex (flags : Fin R → Bool) : BitVec w :=
   word (chooseFirst flags (fun j bit => (BitVec.ofNat w j.val).getLsbD bit.val) fun _ => false)
 
+/-- If `j` is the first flagged position, `firstIndex` returns `j.val` as a `w`-bit word. -/
 theorem firstIndex_spec (flags : Fin R → Bool) (j : Fin R) (hj : flags j = true)
     (hfirst : ∀ i : Fin R, i.val < j.val → flags i = false) :
     firstIndex (w := w) flags = BitVec.ofNat w j.val := by

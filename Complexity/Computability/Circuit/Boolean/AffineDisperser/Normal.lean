@@ -45,6 +45,8 @@ AND-type gate.
 * `Cslib.Circuits.Boolean.AffineDisperser.State.AndOnIsolated`, `State.DegeneratePair`,
   `State.PartnersShareChild`, `State.PairInSystem`, `State.AndOnPair`: the configurations of
   Cases 2 to 6.
+* `Cslib.Circuits.Boolean.AffineDisperser.State.Movable`, `State.freshEqn`: affine gates reading
+  no gates and a fresh equation name for moving them into the affine system.
 * `Cslib.Circuits.Boolean.AffineDisperser.State.Normal`: normal states.
 
 ## Main results
@@ -150,6 +152,7 @@ def Movable (S : State n) (J : ℕ) : Prop :=
 def freshEqn (S : State n) : ℕ :=
   S.eqns.sup id + 1
 
+/-- `S.freshEqn` is not an equation name of `S`. -/
 theorem freshEqn_notMem (S : State n) : S.freshEqn ∉ S.eqns := fun h => by
   have := Finset.le_sup (f := id) h
   simp only [id, freshEqn] at this

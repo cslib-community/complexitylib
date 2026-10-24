@@ -42,7 +42,8 @@ wire is not part of this readout.
 * `Cslib.Circuits.Boolean.WeightedThreshold.evalFrom`: gate evaluation with fixed overrides and
   parametric input contributions.
 * `Cslib.Circuits.Boolean.WeightedThreshold.DirectionRuns`: a partition of the gates into
-  consecutive runs along single input directions, with `DirectionRuns.toBlockDecomposition`.
+  consecutive runs along single input directions, with `DirectionRuns.size`, `gateRuns`,
+  `singleRun`, and `DirectionRuns.toBlockDecomposition`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.multilevelDecomposition`: a multilevel threshold
   representation `F (∑ i, w i * (x i).toNat)` as a single scalar block.
 
@@ -480,6 +481,7 @@ noncomputable def DirectionRuns.size {p : Program signature n g} {B : ℕ}
     (R : DirectionRuns p B) (i : ℕ) : ℕ :=
   ((inputGates p).filter fun gate => R.run gate = i).card
 
+/-- The sizes `R.size i` of the runs partition the input-reading gates of `p`. -/
 theorem DirectionRuns.sum_size {p : Program signature n g} {B : ℕ} (R : DirectionRuns p B) :
     ∑ i ∈ Finset.range B, R.size i = (inputGates p).card := by
   classical
@@ -609,12 +611,15 @@ private theorem cost_oneDim_le_four_mul (r : ℕ) :
   simp only [BlockKind.cost]
   split_ifs <;> omega
 
+/-- The capacity cost of `BlockKind.oneDim T` equals `max 1 (4 * T)`. -/
 theorem cost_oneDim_eq_max (T : ℕ) : (BlockKind.oneDim T).cost = max 1 (4 * T) := by
   simp only [BlockKind.cost]
   split_ifs with hT
   · simp [hT]
   · omega
 
+/-- The product of the one-dimensional block costs over all runs is at most
+`4 ^ (inputGates p).card`. -/
 theorem DirectionRuns.prod_cost_le_four_pow {p : Program signature n g} {B : ℕ}
     (R : DirectionRuns p B) :
     ∏ i ∈ Finset.range B, (BlockKind.oneDim (2 ^ R.size i - 1)).cost ≤

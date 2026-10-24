@@ -86,6 +86,8 @@ def andApprox (T : Fin ℓ → Finset (Fin m)) (u : Fin m → R) : R :=
 def modApprox (u : Fin m → R) : R :=
   (∑ i, u i) ^ (p - 1)
 
+/-- Composing `orApprox p T` with degree-`D` polynomials yields a polynomial of degree at most
+`ℓ * ((p - 1) * D)`. -/
 theorem orApprox_comp_mem {D : ℕ} (T : Fin ℓ → Finset (Fin m)) {v : Fin m → BitString n → R}
     (hv : ∀ k, v k ∈ lowDegree R (Fin n) D) :
     (fun x => orApprox p T fun k => v k x) ∈ lowDegree R (Fin n) (ℓ * ((p - 1) * D)) := by
@@ -101,6 +103,8 @@ theorem orApprox_comp_mem {D : ℕ} (T : Fin ℓ → Finset (Fin m)) {v : Fin m 
       one_sub_mem_lowDegree (pow_mem_lowDegree (sum_mem_lowDegree _ fun i _ => hv i) (p - 1))
   rwa [card_univ, Fintype.card_fin] at h
 
+/-- Composing `andApprox p T` with degree-`D` polynomials yields a polynomial of degree at most
+`ℓ * ((p - 1) * D)`. -/
 theorem andApprox_comp_mem {D : ℕ} (T : Fin ℓ → Finset (Fin m)) {v : Fin m → BitString n → R}
     (hv : ∀ k, v k ∈ lowDegree R (Fin n) D) :
     (fun x => andApprox p T fun k => v k x) ∈ lowDegree R (Fin n) (ℓ * ((p - 1) * D)) := by
@@ -113,6 +117,8 @@ theorem andApprox_comp_mem {D : ℕ} (T : Fin ℓ → Finset (Fin m)) {v : Fin m
   rw [hfun]
   exact one_sub_mem_lowDegree hmem
 
+/-- Composing `modApprox p` with degree-`D` polynomials yields a polynomial of degree at most
+`(p - 1) * D`. -/
 theorem modApprox_comp_mem {D : ℕ} {v : Fin m → BitString n → R}
     (hv : ∀ k, v k ∈ lowDegree R (Fin n) D) :
     (fun x => modApprox p fun k => v k x) ∈ lowDegree R (Fin n) ((p - 1) * D) := by

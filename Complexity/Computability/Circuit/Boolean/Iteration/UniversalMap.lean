@@ -46,7 +46,12 @@ handled by the same hardwiring argument.
 * `Cslib.Circuits.Boolean.Iteration.Universal.Description`: straight-line program description held
   in the state of the universal step map.
 * `Cslib.Circuits.Boolean.Iteration.Universal.Config`: configuration of the universal step map.
+* `Cslib.Circuits.Boolean.Iteration.Universal.read`: register lookup by natural-number index.
 * `Cslib.Circuits.Boolean.Iteration.Universal.step`: one step of the universal step map.
+* `Cslib.Circuits.Boolean.Iteration.Universal.wireIndex`,
+  `Cslib.Circuits.Boolean.Iteration.Universal.describe`,
+  `Cslib.Circuits.Boolean.Iteration.Universal.start`: encoding a circuit into a program description
+  and initial universal configuration.
 
 ## Main results
 

@@ -96,6 +96,7 @@ theorem rationalCopyBudget_le_two_pow (n : ℕ) :
     rationalCopyBudget num den n ≤ 2 ^ (num * n / den + 1) :=
   Nat.pow_le_pow_right (by norm_num) (Nat.le_succ _)
 
+/-- The core fine bound implies the rational-rate statement over `rationalCopyBudget`. -/
 theorem FineMassProducesThrough.fineMassProducesAt (h : FineMassProducesThrough num den) :
     FineMassProducesAt num den := by
   intro P _

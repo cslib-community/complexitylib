@@ -87,6 +87,8 @@ namespace Expansion
 variable {P : L.Relations 1} {N : L.Structure (Fin n)} {S : Finset (Fin n)}
 
 open Classical in
+/-- The `L`-structure on `Expansion P N S` interpreting `P` as `S` and all other relations as in
+`N`. -/
 instance : L.Structure (Expansion P N S) where
   funMap f := isEmptyElim f
   RelMap {l} R t :=

@@ -31,10 +31,16 @@ An affine operation that is neither constant nor a projection is XOR-type (`exis
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.SemiCircuit.Arg`, `Cslib.Circuits.Boolean.SemiCircuit.Lit`,
-  `Cslib.Circuits.Boolean.SemiCircuit.Gate`: arguments, literals and gates.
-* `Cslib.Circuits.Boolean.SemiCircuit.Gate.subst`: rerouting an internal value to a literal.
+  `Cslib.Circuits.Boolean.SemiCircuit.Gate`: arguments, literals and gates, with evaluation
+  (`Arg.eval`, `Lit.eval`, `Gate.eval`), constructors (`Lit.const`, `Lit.node`) and dependency
+  predicates (`Lit.Reads`, `Gate.Reads`).
+* `Cslib.Circuits.Boolean.SemiCircuit.Arg.substArg`,
+  `Cslib.Circuits.Boolean.SemiCircuit.Lit.subst`,
+  `Cslib.Circuits.Boolean.SemiCircuit.Gate.substNeg`,
+  `Cslib.Circuits.Boolean.SemiCircuit.Gate.subst`: rerouting an internal value to a literal.
 * `Cslib.Circuits.Boolean.SemiCircuit.Gate.Degenerate`,
-  `Cslib.Circuits.Boolean.SemiCircuit.Gate.lit`: degenerate gates and the literal they compute.
+  `Cslib.Circuits.Boolean.SemiCircuit.Gate.lit`,
+  `Cslib.Circuits.Boolean.SemiCircuit.unaryLit`: degenerate gates and the literal they compute.
 * `Cslib.Circuits.Boolean.SemiCircuit.IsAffineOp`,
   `Cslib.Circuits.Boolean.SemiCircuit.IsUnaryOp`: affine operations and projections.
 
@@ -76,8 +82,10 @@ def eval (val : ℕ → Bool) : Arg → Bool
   | const b => b
   | node i => val i
 
+/-- Evaluating a constant argument returns that constant. -/
 @[simp] theorem eval_const (val : ℕ → Bool) (b : Bool) : (const b).eval val = b := rfl
 
+/-- Evaluating a node argument looks up its index in the assignment. -/
 @[simp] theorem eval_node (val : ℕ → Bool) (i : ℕ) : (node i).eval val = val i := rfl
 
 /-- The argument `node v` replaced by the argument of the literal `ℓ`. -/
@@ -113,9 +121,11 @@ def const (b : Bool) : Lit := ⟨.const b, false⟩
 /-- The literal `t ⊕ c` of the internal value `t`. -/
 def node (t : ℕ) (c : Bool) : Lit := ⟨.node t, c⟩
 
+/-- Evaluating a constant literal returns that constant. -/
 @[simp] theorem eval_const (b : Bool) (val : ℕ → Bool) : (const b).eval val = b := by
   simp [const, eval]
 
+/-- Evaluating `Lit.node t c` returns `val t ^^ c`. -/
 @[simp] theorem eval_node (t : ℕ) (c : Bool) (val : ℕ → Bool) :
     (node t c).eval val = (val t ^^ c) := rfl
 
@@ -123,6 +133,7 @@ def node (t : ℕ) (c : Bool) : Lit := ⟨.node t, c⟩
 def subst (o : Lit) (v : ℕ) (ℓ : Lit) : Lit :=
   if o.arg = .node v then ⟨ℓ.arg, o.neg ^^ ℓ.neg⟩ else o
 
+/-- Rerouting `v` to `ℓ` in a literal preserves its value whenever `val v = ℓ.eval val`. -/
 theorem eval_subst {o : Lit} {v : ℕ} {ℓ : Lit} {val : ℕ → Bool} (h : val v = ℓ.eval val) :
     (o.subst v ℓ).eval val = o.eval val := by
   unfold subst
@@ -135,11 +146,14 @@ theorem eval_subst {o : Lit} {v : ℕ} {ℓ : Lit} {val : ℕ → Bool} (h : val
 def Reads (o : Lit) (t : ℕ) : Prop :=
   o.arg = .node t
 
+/-- A literal's value depends only on the internal values it reads. -/
 theorem eval_congr {o : Lit} {val val' : ℕ → Bool} (h : ∀ i, o.Reads i → val i = val' i) :
     o.eval val = o.eval val' := by
   unfold eval
   rw [Arg.eval_congr h]
 
+/-- Rerouting `v` to a literal `ℓ` that does not read `v` yields a literal that does not read
+`v`. -/
 theorem not_reads_subst {o : Lit} {v : ℕ} {ℓ : Lit} (hℓ : ¬ ℓ.Reads v) :
     ¬ (o.subst v ℓ).Reads v := by
   unfold subst Reads
@@ -147,6 +161,7 @@ theorem not_reads_subst {o : Lit} {v : ℕ} {ℓ : Lit} (hℓ : ¬ ℓ.Reads v) 
   · exact hℓ
   · exact ho
 
+/-- If `o.subst v ℓ` reads `z`, then either `o` reads `z` or `o` reads `v` and `ℓ` reads `z`. -/
 theorem reads_of_reads_subst {o : Lit} {v : ℕ} {ℓ : Lit} {z : ℕ} (h : (o.subst v ℓ).Reads z) :
     o.Reads z ∨ (o.Reads v ∧ ℓ.Reads z) := by
   unfold subst Reads at *
@@ -154,6 +169,7 @@ theorem reads_of_reads_subst {o : Lit} {v : ℕ} {ℓ : Lit} {z : ℕ} (h : (o.s
   · exact Or.inr ⟨ho, h⟩
   · exact Or.inl h
 
+/-- Rerouting `v` in a literal that does not read `v` leaves the literal unchanged. -/
 theorem subst_of_not_reads {o : Lit} {v : ℕ} {ℓ : Lit} (h : ¬ o.Reads v) : o.subst v ℓ = o :=
   ite_eq_right (show ¬ o.arg = .node v from h)
 
@@ -189,6 +205,7 @@ def eval (g : Gate) (val : ℕ → Bool) : Bool :=
 def Reads (g : Gate) (t : ℕ) : Prop :=
   g.left = .node t ∨ g.right = .node t
 
+/-- Decidability of whether a gate reads a given internal value. -/
 instance (g : Gate) : DecidablePred g.Reads :=
   fun _ => inferInstanceAs (Decidable (_ ∨ _))
 
@@ -210,6 +227,8 @@ def subst (g : Gate) (v : ℕ) (ℓ : Lit) : Gate where
   left := g.left.substArg v ℓ.arg
   right := g.right.substArg v ℓ.arg
 
+/-- Replacing `node v` by `ℓ.arg` and XORing with `substNeg a v ℓ` preserves the value of `a`
+when `val v = ℓ.eval val`. -/
 theorem eval_substArg {a : Arg} {v : ℕ} {ℓ : Lit} {val : ℕ → Bool} (h : val v = ℓ.eval val) :
     ((a.substArg v ℓ.arg).eval val ^^ substNeg a v ℓ) = a.eval val := by
   unfold Arg.substArg substNeg
@@ -237,11 +256,13 @@ private theorem eq_node_of_substArg_eq_node {a : Arg} {v z : ℕ} {target : Arg}
   · rw [ite_eq_left ha] at h; exact Or.inr ⟨ha, h⟩
   · rw [ite_eq_right ha] at h; exact Or.inl h
 
+/-- Rerouting `v` to `ℓ` preserves whether `g` reads any node `z ≠ v` not read by `ℓ`. -/
 theorem reads_subst_of_ne {g : Gate} {v : ℕ} {ℓ : Lit} {z : ℕ} (hzv : z ≠ v)
     (hzℓ : ℓ.arg ≠ .node z) : (g.subst v ℓ).Reads z ↔ g.Reads z := by
   unfold Reads subst
   simp only [substArg_eq_node_of_ne hzv hzℓ]
 
+/-- If `g.subst v ℓ` reads `z`, then either `g` reads `z` or `g` reads `v` and `ℓ` reads `z`. -/
 theorem reads_of_reads_subst {g : Gate} {v : ℕ} {ℓ : Lit} {z : ℕ} (h : (g.subst v ℓ).Reads z) :
     g.Reads z ∨ (g.Reads v ∧ ℓ.arg = .node z) := by
   unfold Reads subst at *
@@ -251,12 +272,14 @@ theorem reads_of_reads_subst {g : Gate} {v : ℕ} {ℓ : Lit} {z : ℕ} (h : (g.
   · exact Or.inl (Or.inr h')
   · exact Or.inr ⟨Or.inr h', h''⟩
 
+/-- Rerouting `v` to a literal not reading `v` eliminates `v` from the nodes read by the gate. -/
 theorem not_reads_subst {g : Gate} {v : ℕ} {ℓ : Lit} (hℓ : ℓ.arg ≠ .node v) :
     ¬ (g.subst v ℓ).Reads v := by
   intro h
   simp only [Reads, subst, Arg.substArg] at h
   rcases h with h | h <;> split_ifs at h with h' <;> first | exact hℓ h | exact h' h
 
+/-- Rerouting a variable not read by `g` leaves the gate's evaluation unchanged. -/
 theorem eval_subst_of_not_reads {g : Gate} {v : ℕ} {ℓ : Lit} (h : ¬ g.Reads v) (val : ℕ → Bool) :
     (g.subst v ℓ).eval val = g.eval val := by
   unfold Reads at h
@@ -275,6 +298,8 @@ theorem eval_subst_update {g : Gate} {v : ℕ} {ℓ : Lit} (hℓ : ℓ.arg ≠ .
   exact eval_congr fun i hi =>
     (Function.update_of_ne (by rintro rfl; exact not_reads_subst hℓ hi) _ _).symm
 
+/-- Rerouting `v` to a constant literal `Lit.const b` evaluates the gate under the updated
+assignment `Function.update val v b`. -/
 @[simp] theorem eval_subst_const (g : Gate) (v : ℕ) (b : Bool) (val : ℕ → Bool) :
     (g.subst v (Lit.const b)).eval val = g.eval (Function.update val v b) := by
   rw [eval_subst_update (by simp [Lit.const]), Lit.eval_const]
@@ -349,12 +374,14 @@ private theorem unary_cases (h : Bool → Bool) (x : Bool) :
 def unaryLit (h : Bool → Bool) (a : Arg) : Lit :=
   if h false = h true then Lit.const (h false) else ⟨a, h false⟩
 
+/-- The literal `unaryLit h a` evaluates to `h (a.eval val)`. -/
 theorem eval_unaryLit (h : Bool → Bool) (a : Arg) (val : ℕ → Bool) :
     h (a.eval val) = (unaryLit h a).eval val := by
   rw [unary_cases h (a.eval val)]
   unfold unaryLit
   split_ifs <;> simp [Lit.eval, Lit.const]
 
+/-- If `unaryLit h a` reads `t`, then `a = .node t`. -/
 theorem reads_of_unaryLit_reads {h : Bool → Bool} {a : Arg} {t : ℕ}
     (hr : (unaryLit h a).Reads t) : a = .node t := by
   unfold unaryLit at hr
@@ -362,6 +389,7 @@ theorem reads_of_unaryLit_reads {h : Bool → Bool} {a : Arg} {t : ℕ}
   · simp [Lit.Reads, Lit.const] at hr
   · exact hr
 
+/-- A degenerate gate evaluates to the same value as its simplified literal `g.lit`. -/
 theorem Gate.eval_lit {g : Gate} (hg : g.Degenerate) (val : ℕ → Bool) :
     g.eval val = g.lit.eval val := by
   obtain ⟨op, l, r⟩ := g
@@ -388,6 +416,7 @@ theorem Gate.eval_lit {g : Gate} (hg : g.Degenerate) (val : ℕ → Bool) :
         rw [unary_cases (fun x => op x x) (val t)]
         split_ifs <;> simp [Lit.eval, Lit.const]
 
+/-- Any internal value read by `g.lit` is also read by `g`. -/
 theorem Gate.reads_of_lit_reads {g : Gate} {t : ℕ} (h : g.lit.Reads t) : g.Reads t := by
   obtain ⟨op, l, r⟩ := g
   unfold Reads
@@ -410,6 +439,7 @@ theorem Gate.reads_of_lit_reads {g : Gate} {t : ℕ} (h : g.lit.Reads t) : g.Rea
       · simp [Lit.Reads, Lit.const] at h
       · exact Or.inl h
 
+/-- Rerouting a variable in a degenerate gate yields a degenerate gate. -/
 theorem Gate.degenerate_subst {g : Gate} (hg : g.Degenerate) (v : ℕ) (ℓ : Lit) :
     (g.subst v ℓ).Degenerate := by
   unfold Gate.Degenerate at *
@@ -426,6 +456,7 @@ theorem Gate.degenerate_subst {g : Gate} (hg : g.Degenerate) (v : ℕ) (ℓ : Li
 def IsAffineOp (op : Bool → Bool → Bool) : Prop :=
   (op false false ^^ op true false ^^ op false true ^^ op true true) = false
 
+/-- Decidability of whether a binary Boolean operation is affine. -/
 instance (op : Bool → Bool → Bool) : Decidable (IsAffineOp op) :=
   inferInstanceAs (Decidable (_ = _))
 

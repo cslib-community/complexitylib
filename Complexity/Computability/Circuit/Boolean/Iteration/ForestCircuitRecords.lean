@@ -23,10 +23,15 @@ circuit.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Iteration.forestLabelWord`: packs `(low x, high x)` as two `(n + 1)`-bit
-  words.
-* `Cslib.Circuits.Boolean.Iteration.forestAnchorWord`: packs `(x, forestLabelWord low high x,
-  depthWord f x)`.
+* `Cslib.Circuits.Boolean.Iteration.forestLabelWord`,
+  `Cslib.Circuits.Boolean.Iteration.forestLowWord`,
+  `Cslib.Circuits.Boolean.Iteration.forestHighWord`: pack and unpack `(low x, high x)` as two
+  `(n + 1)`-bit words.
+* `Cslib.Circuits.Boolean.Iteration.forestAnchorWord`,
+  `Cslib.Circuits.Boolean.Iteration.forestAnchorState`,
+  `Cslib.Circuits.Boolean.Iteration.forestAnchorLabels`,
+  `Cslib.Circuits.Boolean.Iteration.forestAnchorDepth`: pack and unpack
+  `(x, forestLabelWord low high x, depthWord f x)`.
 * `Cslib.Circuits.Boolean.Iteration.dictionaryCost`: gate count of a shared fixed-dictionary lookup.
 * `Cslib.Circuits.Boolean.Iteration.ForestCircuitTables`: combined mark and compressed-edge tables
   for a functional graph on `BitString n`.
@@ -70,11 +75,15 @@ def forestLowWord (r : BitString (n + 1 + (n + 1))) : BitVec (n + 1) :=
 def forestHighWord (r : BitString (n + 1 + (n + 1))) : BitVec (n + 1) :=
   word fun i : Fin (n + 1) => r (Fin.natAdd (n + 1) i)
 
+/-- Unpacking the lower word from `forestLabelWord low high x` yields `low x` as an `(n + 1)`-bit
+vector. -/
 @[simp] theorem forestLowWord_bits (low high : BitString n → Fin (Nat.card (BitString n)))
     (x : BitString n) :
     forestLowWord (forestLabelWord low high x) = BitVec.ofNat (n + 1) (low x).val := by
   simp [forestLowWord, forestLabelWord, word_getLsbD]
 
+/-- Unpacking the upper word from `forestLabelWord low high x` yields `high x` as an `(n + 1)`-bit
+vector. -/
 @[simp] theorem forestHighWord_bits (low high : BitString n → Fin (Nat.card (BitString n)))
     (x : BitString n) :
     forestHighWord (forestLabelWord low high x) = BitVec.ofNat (n + 1) (high x).val := by
@@ -129,18 +138,22 @@ def forestAnchorLabels (r : BitString (n + (n + 1 + (n + 1)) + (n + 3))) :
 def forestAnchorDepth (r : BitString (n + (n + 1 + (n + 1)) + (n + 3))) : BitVec (n + 3) :=
   word fun i : Fin (n + 3) => r (Fin.natAdd (n + (n + 1 + (n + 1))) i)
 
+/-- Unpacking the state field of `forestAnchorWord f low high x` recovers `x`. -/
 @[simp] theorem forestAnchorState_bits (f : BitString n → BitString n)
     (low high : BitString n → Fin (Nat.card (BitString n))) (x : BitString n) :
     forestAnchorState (forestAnchorWord f low high x) = x := by
   funext i
   simp [forestAnchorState, forestAnchorWord]
 
+/-- Unpacking the interval-label field of `forestAnchorWord f low high x` recovers
+`forestLabelWord low high x`. -/
 @[simp] theorem forestAnchorLabels_bits (f : BitString n → BitString n)
     (low high : BitString n → Fin (Nat.card (BitString n))) (x : BitString n) :
     forestAnchorLabels (forestAnchorWord f low high x) = forestLabelWord low high x := by
   funext i
   simp [forestAnchorLabels, forestAnchorWord]
 
+/-- Unpacking the depth field of `forestAnchorWord f low high x` recovers `depthWord f x`. -/
 @[simp] theorem forestAnchorDepth_bits (f : BitString n → BitString n)
     (low high : BitString n → Fin (Nat.card (BitString n))) (x : BitString n) :
     forestAnchorDepth (forestAnchorWord f low high x) = depthWord f x := by

@@ -28,7 +28,10 @@ parameter map is unchanged:
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.AffineDisperser.State.swap`,
-  `Cslib.Circuits.Boolean.AffineDisperser.State.quad`: the reparameterisations.
+  `Cslib.Circuits.Boolean.AffineDisperser.State.SwapOK`,
+  `Cslib.Circuits.Boolean.AffineDisperser.State.quad`,
+  `Cslib.Circuits.Boolean.AffineDisperser.State.QuadOK`: the reparameterisations and their
+  hypotheses.
 
 ## Main results
 
@@ -69,15 +72,19 @@ structure SwapOK (S : State n) (x Q : ℕ) (c : Bool) (T : Finset ℕ) : Prop wh
   affine : S.AffineIn Q c T
   mem_T : x ∈ T
 
+/-- Exchanging `x` and `Q` replaces `x` with `Q` in `S.params`. -/
 @[simp] theorem swap_params (S : State n) (x Q : ℕ) (c : Bool) (T : Finset ℕ) :
     (S.swap x Q c T).params = insert Q (S.params.erase x) := rfl
 
+/-- Exchanging `x` and `Q` preserves the pairs of the state. -/
 @[simp] theorem swap_pairs (S : State n) (x Q : ℕ) (c : Bool) (T : Finset ℕ) :
     (S.swap x Q c T).pairs = S.pairs := rfl
 
+/-- Exchanging `x` and `Q` preserves the size of the state. -/
 theorem swap_size (S : State n) (x Q : ℕ) (c : Bool) (T : Finset ℕ) :
     (S.swap x Q c T).size = S.size := rfl
 
+/-- Exchanging `x` and `Q` preserves the children of every variable. -/
 theorem swap_children (S : State n) (x Q : ℕ) (c : Bool) (T : Finset ℕ) (z : ℕ) :
     (S.swap x Q c T).children z = S.children z := rfl
 
@@ -187,12 +194,15 @@ structure QuadOK (S : State n) (x y z G D : ℕ) (α β γ c : Bool) : Prop
   unpaired_y : ¬ S.Paired y
   unpaired_z : ¬ S.Paired z
 
+/-- The quadratic reparameterisation replaces `z` with `D` in `S.params`. -/
 @[simp] theorem quad_params (S : State n) (x y z G D : ℕ) (α β γ c : Bool) :
     (S.quad x y z G D α β γ c).params = insert D (S.params.erase z) := rfl
 
+/-- The quadratic reparameterisation inserts `(x, y)` into `S.pairs`. -/
 @[simp] theorem quad_pairs (S : State n) (x y z G D : ℕ) (α β γ c : Bool) :
     (S.quad x y z G D α β γ c).pairs = insert (x, y) S.pairs := rfl
 
+/-- The quadratic reparameterisation decreases the size of the state by `2`. -/
 theorem quad_size {S : State n} {x y z G D : ℕ} {α β γ c : Bool}
     (h : S.QuadOK x y z G D α β γ c) : (S.quad x y z G D α β γ c).size + 2 = S.size := by
   have h1 := Finset.card_erase_add_one h.mem_D
@@ -201,6 +211,8 @@ theorem quad_size {S : State n} {x y z G D : ℕ} {α β γ c : Bool}
   change ((S.gates.erase D).erase G).card + S.eqns.card + 2 = _
   omega
 
+/-- After the quadratic reparameterisation, the children of `w` are contained in `S.children w`
+with `.inl D` and `.inl G` removed. -/
 theorem quad_children_subset (S : State n) (x y z G D : ℕ) (α β γ c : Bool) (w : ℕ) :
     (S.quad x y z G D α β γ c).children w ⊆ ((S.children w).erase (.inl D)).erase (.inl G) := by
   intro v hv

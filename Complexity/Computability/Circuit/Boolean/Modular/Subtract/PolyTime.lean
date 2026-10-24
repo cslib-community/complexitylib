@@ -22,6 +22,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 The complete complement-plus-carry construction is generated from unary width. All circuit gates,
 wire references and output selectors are charged.
 
+## Main definitions
+
+* `Cslib.Circuits.Boolean.Modular.subtractCode`: raw circuit code for modular subtraction.
+
 ## Main results
 
 * `Cslib.Circuits.Boolean.Modular.subtractCode_eq_code`: exact generated code.

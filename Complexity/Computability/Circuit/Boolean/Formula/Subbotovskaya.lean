@@ -82,6 +82,7 @@ namespace Formula
 def restrictAt (i : Fin n) (b : Bool) (F : Formula signature n) : Formula signature n :=
   F.restrict (update PartialAssignment.empty i (some b))
 
+/-- Evaluating `F.restrictAt i b` at `x` equals evaluating `F` at `update x i b`. -/
 @[simp] theorem eval_restrictAt (i : Fin n) (b : Bool) (F : Formula signature n)
     (x : BitString n) :
     (F.restrictAt i b).eval interpretation x = F.eval interpretation (update x i b) := by
@@ -92,22 +93,27 @@ private theorem leafSize_restrictAt_add_leafSizeIn_le (F : Formula signature n) 
     (F.restrictAt i b).leafSize + F.leafSizeIn {i} ≤ F.leafSize :=
   leafSize_restrict_update_le F i b
 
+/-- Restricting a constant formula `const c` at input `i` leaves it unchanged. -/
 @[simp] theorem restrictAt_const (i : Fin n) (b c : Bool) :
     (const c : Formula signature n).restrictAt i b = const c :=
   rfl
 
+/-- Restricting a negation at input `i` applies `mkNot` to the restricted argument. -/
 @[simp] theorem restrictAt_not (i : Fin n) (b : Bool) (F : Formula signature n) :
     F.not.restrictAt i b = mkNot (F.restrictAt i b) :=
   rfl
 
+/-- Restricting a conjunction at input `i` applies `mkAnd` to the restricted arguments. -/
 @[simp] theorem restrictAt_and (i : Fin n) (b : Bool) (F G : Formula signature n) :
     (F.and G).restrictAt i b = mkAnd (F.restrictAt i b) (G.restrictAt i b) :=
   rfl
 
+/-- Restricting a disjunction at input `i` applies `mkOr` to the restricted arguments. -/
 @[simp] theorem restrictAt_or (i : Fin n) (b : Bool) (F G : Formula signature n) :
     (F.or G).restrictAt i b = mkOr (F.restrictAt i b) (G.restrictAt i b) :=
   rfl
 
+/-- Restricting `input i` at input `i` to `b` yields `const b`. -/
 theorem restrictAt_input_self (i : Fin n) (b : Bool) :
     (input i : Formula signature n).restrictAt i b = const b := by
   simp [restrictAt]

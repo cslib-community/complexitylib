@@ -47,6 +47,10 @@ internal weights (`two_pow_lt_of_directionMenus_intWeight`, `two_pow_lt_of_direc
   direction `a : Fin d`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.directionMenuSum`: sum of bias-menu cardinalities over
   `directionGates p dir a`.
+* `Cslib.Circuits.Boolean.WeightedThreshold.MenuTable`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.trueMenuTable`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.menuHistory`: precomputed bias-menu threshold tables and
+  flattened block histories.
 * `Cslib.Circuits.Boolean.WeightedThreshold.menuBlockDecomposition`: the `(d + g)`-block
   decomposition precomputing menu tables for a chosen subset of directions.
 
@@ -89,12 +93,14 @@ noncomputable def gateSupport (p : Program signature n g) (gate : Fin g) : Finse
   open scoped Classical in
   univ.filter fun prior => gateWeight p gate prior ≠ 0
 
+/-- A gate `prior` belongs to `gateSupport p gate` if and only if `gateWeight p gate prior ≠ 0`. -/
 @[simp]
 theorem mem_gateSupport (p : Program signature n g) (gate prior : Fin g) :
     prior ∈ gateSupport p gate ↔ gateWeight p gate prior ≠ 0 := by
   classical
   simp [gateSupport]
 
+/-- Every gate in `gateSupport p gate` precedes `gate` in the topological order. -/
 theorem gateSupport_subset_Iio (p : Program signature n g) (gate : Fin g) :
     ∀ prior ∈ gateSupport p gate, prior < gate := by
   intro prior h
@@ -107,11 +113,14 @@ noncomputable def biasMenu (p : Program signature n g) (gate : Fin g) : Finset �
   open scoped Classical in
   univ.image fun u : Fin g → Bool => ∑ j, gateWeight p gate j * (u j).toNat
 
+/-- The internal gate sum of `gate` under any Boolean valuation `u` belongs to
+`biasMenu p gate`. -/
 theorem gateBias_mem_biasMenu (p : Program signature n g) (gate : Fin g) (u : Fin g → Bool) :
     (∑ j, gateWeight p gate j * (u j).toNat) ∈ biasMenu p gate := by
   classical
   exact mem_image_of_mem _ (mem_univ u)
 
+/-- The syntactic bias menu `biasMenu p gate` is nonempty. -/
 theorem card_biasMenu_pos (p : Program signature n g) (gate : Fin g) :
     0 < (biasMenu p gate).card := by
   classical
@@ -208,6 +217,8 @@ noncomputable def directionGates (p : Program signature n g) (dir : Fin g → Fi
     (a : Fin d) : Finset (Fin g) :=
   (inputGates p).filter fun gate => dir gate = a
 
+/-- A gate belongs to `directionGates p dir a` if and only if it is an input-reading gate with
+`dir gate = a`. -/
 @[simp]
 theorem mem_directionGates (p : Program signature n g) (dir : Fin g → Fin d)
     (a : Fin d) (gate : Fin g) :
@@ -219,12 +230,15 @@ noncomputable def directionMenuSum (p : Program signature n g) (dir : Fin g → 
     (a : Fin d) : ℕ :=
   ∑ gate ∈ directionGates p dir a, (biasMenu p gate).card
 
+/-- The sets `directionGates p dir a` partition `inputGates p` across all directions `a`. -/
 theorem sum_card_directionGates (p : Program signature n g) (dir : Fin g → Fin d) :
     ∑ a : Fin d, (directionGates p dir a).card = (inputGates p).card := by
   classical
   unfold directionGates
   exact (card_eq_sum_card_fiberwise fun gate _ => mem_univ (dir gate)).symm
 
+/-- If direction `a` has at least one input-reading gate, then `directionMenuSum p dir a` is
+positive. -/
 theorem directionMenuSum_pos_of_nonempty (p : Program signature n g) (dir : Fin g → Fin d)
     {a : Fin d} (h : (directionGates p dir a).Nonempty) :
     0 < directionMenuSum p dir a := by

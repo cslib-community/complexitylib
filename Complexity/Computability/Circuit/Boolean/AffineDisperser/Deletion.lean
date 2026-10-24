@@ -51,6 +51,8 @@ namespace State
 
 variable {n : ℕ} {f : BooleanFunction n}
 
+/-- A parameter `p` of degree `1` containing `H` among its children has `{H}` as its set of
+children. -/
 theorem children_eq_singleton {S : State n} {p : ℕ} {H : ℕ ⊕ ℕ} (h1 : S.deg p = 1)
     (hH : H ∈ S.children p) : S.children p = {H} := by
   obtain ⟨a, ha⟩ := Finset.card_eq_one.1 h1

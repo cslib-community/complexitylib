@@ -26,7 +26,8 @@ reparameterisations (AR) and (QR) of [Mishra and Santhanam, Section 3.2][MishraS
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.SemiCircuit.swap`, `Cslib.Circuits.Boolean.SemiCircuit.quad`.
+* `Cslib.Circuits.Boolean.SemiCircuit.swap`, `Cslib.Circuits.Boolean.SemiCircuit.quad`,
+  `Cslib.Circuits.Boolean.SemiCircuit.QuadOK`, `Cslib.Circuits.Boolean.SemiCircuit.quadValue`.
 
 ## Main results
 
@@ -148,6 +149,7 @@ theorem WellFormed.swap (hC : C.WellFormed) {x Q : ℕ} {c : Bool} {T : Finset �
 def quad (C : SemiCircuit) (z G D : ℕ) : SemiCircuit :=
   { C with params := insert D (C.params.erase z), gates := (C.gates.erase D).erase G }
 
+/-- Any live node of `C` distinct from `z` and `G` remains live in `C.quad z G D`. -/
 theorem mem_live_quad {z G D i : ℕ} (hi : i ∈ C.live) (hiz : i ≠ z) (hiG : i ≠ G) :
     i ∈ (C.quad z G D).live := by
   simp only [live, Finset.mem_union] at hi ⊢

@@ -31,6 +31,10 @@ the number of true flags (`eq_true_iff_lt_card_of_sorted`).
 Gate counts are synthesis budgets: they count every gate, including constants, and do not
 certify the running time of any construction.
 
+## Main definitions
+
+* `Cslib.Circuits.Boolean.prefixOr`: the disjunction of the first `j + 1` of `r` functions.
+
 ## Main results
 
 * `Cslib.Circuits.Synthesis.prefixOr`: all prefix disjunctions of `r` available functions.

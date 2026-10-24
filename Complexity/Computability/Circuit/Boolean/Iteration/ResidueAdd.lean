@@ -20,9 +20,10 @@ division is needed: three subtractions, one comparison, and one word selection s
 
 ## Main definitions
 
-* `addResidue a b r`: modulus `a`, initial residue `b`, and increment `r`;
-  return `b` unchanged when `b ≥ a`.
-* `subtractResidues a b d`: modular difference `(a - b) mod d` of reduced residues `a, b < d`.
+* `Cslib.Circuits.Boolean.Iteration.addResidue`: modular sum `(b + r) mod a` of reduced residues
+  `b, r < a`, returning `b` unchanged when `b ≥ a`.
+* `Cslib.Circuits.Boolean.Iteration.subtractResidues`: modular difference `(a - b) mod d` of
+  reduced residues `a, b < d`.
 
 ## Main results
 

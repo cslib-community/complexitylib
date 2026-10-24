@@ -31,6 +31,8 @@ abelian group; the circuit construction uses `ZMod k`.
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.ShallowSymmetric.residueSum`: the sum of all elements in a finite
+  additive commutative group.
 * `Cslib.Circuits.Boolean.ShallowSymmetric.ShiftTest`: the shifted distinctness tests.
 
 ## Main results

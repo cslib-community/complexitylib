@@ -134,6 +134,8 @@ noncomputable def easyCounterPowers (k q : ℕ) : Finset (Fin (ModulusCounter.pe
 noncomputable def hardCounterPowers (k q : ℕ) : Finset (Fin (ModulusCounter.period k)) :=
   Finset.univ \ easyCounterPowers k q
 
+/-- An exponent `T < ModulusCounter.period k` belongs to `easyCounterPowers k q` iff
+`ModulusCounter.power T.val` is computed by a circuit of size at most `q`. -/
 theorem mem_easyCounterPowers (k q : ℕ) (T : Fin (ModulusCounter.period k)) :
     T ∈ easyCounterPowers k q ↔
       ∃ c : Circuit signature (k + k) (k + k),
@@ -156,6 +158,8 @@ private theorem easyCounterPowers_card_le (k q : ℕ) :
     _ ≤ _ := (Finset.card_le_card hsub).trans
       (Circuit.card_functionsAtMost_le interpretation)
 
+/-- At least `ModulusCounter.period k - signature.orderedBudget (k + k) (k + k) q` exponents below
+`ModulusCounter.period k` require more than `q` gates. -/
 theorem hardCounterPowers_card_ge (k q : ℕ) :
     ModulusCounter.period k - signature.orderedBudget (k + k) (k + k) q ≤
       (hardCounterPowers k q).card := by

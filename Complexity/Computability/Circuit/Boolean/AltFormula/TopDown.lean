@@ -27,6 +27,10 @@ for parity or majority have `S + 2 n + 1 > 2 ^ (ε n ^ (1 / (d - 1)))` for large
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.AltFormula.speaker`, `Cslib.Circuits.Boolean.AltFormula.witness`,
+  `Cslib.Circuits.Boolean.AltFormula.childIndex`,
+  `Cslib.Circuits.Boolean.AltFormula.childLiteral`: the speaker, witness bit, and selected child
+  or literal at a gate layer.
 * `Cslib.Circuits.Boolean.AltFormula.kwProtocol`: the Karchmer–Wigderson protocol of an alternating
   formula.
 
@@ -92,6 +96,8 @@ def kwProtocol (S : ℕ) (i₀ : Fin n) :
         else .output i₀
       | .inr _ => .output i₀
 
+/-- When some child of `fs` evaluates to `b` on `x`, `childIndex op fs b x` is the index of a
+child evaluating to `b`. -/
 theorem childIndex_spec {d : ℕ} {op : AltOp} {fs : List (AltFormula n d)} {b : Bool}
     {x : BitString n} (h : ∃ j : Fin fs.length, eval op (fs.get j) x = b) :
     ∃ j : Fin fs.length, childIndex op fs b x = j ∧ eval op (fs.get j) x = b := by
@@ -102,6 +108,8 @@ theorem childIndex_spec {d : ℕ} {op : AltOp} {fs : List (AltFormula n d)} {b :
     exact absurd hj (by simpa using Fin.find?_eq_none_iff.1 hf j)
   | some j => exact ⟨j, rfl, by simpa using Fin.eq_true_of_find?_eq_some hf⟩
 
+/-- When some literal of `ls` evaluates to `b` on `x`, `childLiteral i₀ ls b x` is a literal in
+`ls` evaluating to `b`. -/
 theorem childLiteral_spec {i₀ : Fin n} {ls : List (Literal (Fin n))} {b : Bool}
     {x : BitString n} (h : ∃ l ∈ ls, Literal.eval x l = b) :
     childLiteral i₀ ls b x ∈ ls ∧ Literal.eval x (childLiteral i₀ ls b x) = b := by
@@ -113,6 +121,7 @@ theorem childLiteral_spec {i₀ : Fin n} {ls : List (Literal (Fin n))} {b : Bool
   | some l =>
     exact ⟨List.mem_of_find?_eq_some hf, by simpa using List.find?_some hf⟩
 
+/-- Every alternating formula of positive depth `d + 1` has at least `1` gate. -/
 theorem one_le_size {d : ℕ} (f : AltFormula n (d + 1)) : 1 ≤ size f := by
   simp [size]
 

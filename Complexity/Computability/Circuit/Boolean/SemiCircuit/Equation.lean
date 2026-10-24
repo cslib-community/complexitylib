@@ -26,7 +26,8 @@ terms (`affEqn`, `affEqn_holds`).
 
 * `Cslib.Circuits.Boolean.SemiCircuit.Equation`: equations, with `Equation.Holds` and
   `Equation.subst`.
-* `Cslib.Circuits.Boolean.SemiCircuit.affEqn`: the equation of an affine gate.
+* `Cslib.Circuits.Boolean.SemiCircuit.addArg`,
+  `Cslib.Circuits.Boolean.SemiCircuit.affEqn`: the equation of an affine gate.
 
 ## Main results
 
@@ -75,6 +76,8 @@ private theorem sum_symmDiff_singleton (s : Finset ℕ) (t : ℕ) (val : ℕ →
       add_zero]
   · rw [Finset.sum_insert ht, add_comm]
 
+/-- An element belongs to `s ∆ {t}` if and only if its membership in `s` differs from equality
+with `t`. -/
 theorem mem_symmDiff_singleton {s : Finset ℕ} {t z : ℕ} : z ∈ s ∆ {t} ↔ (z ∈ s ↔ z ≠ t) := by
   rw [symmDiff_singleton_eq]
   by_cases hz : z = t
@@ -95,6 +98,7 @@ namespace Equation
 def Holds (E : Equation) (val : ℕ → Bool) : Prop :=
   ∑ i ∈ E.terms, val i = E.rhs
 
+/-- Decidability of whether an equation holds under a value assignment. -/
 instance (E : Equation) (val : ℕ → Bool) : Decidable (E.Holds val) :=
   inferInstanceAs (Decidable (_ = _))
 
@@ -129,6 +133,8 @@ theorem holds_subst {E : Equation} {v : ℕ} {ℓ : Lit} {val : ℕ → Bool}
       revert S r x c; decide
   · exact Iff.rfl
 
+/-- Rerouting `v` to `ℓ` preserves membership in `E.terms` for any node distinct from `v` and not
+read by `ℓ`. -/
 theorem mem_subst_of_ne {E : Equation} {v : ℕ} {ℓ : Lit} {z : ℕ} (hzv : z ≠ v)
     (hzℓ : ℓ.arg ≠ .node z) : z ∈ (E.subst v ℓ).terms ↔ z ∈ E.terms := by
   unfold subst
@@ -140,6 +146,8 @@ theorem mem_subst_of_ne {E : Equation} {v : ℕ} {ℓ : Lit} {z : ℕ} (hzv : z 
       exact ⟨fun h => h.2 hzt, fun h => ⟨fun _ => hzt, fun _ => h⟩⟩
   · exact Iff.rfl
 
+/-- Every term of `E.subst v ℓ` either already belongs to `E.terms` or arises from `v ∈ E.terms`
+with `ℓ` reading that node. -/
 theorem mem_of_mem_subst {E : Equation} {v : ℕ} {ℓ : Lit} {z : ℕ}
     (h : z ∈ (E.subst v ℓ).terms) : z ∈ E.terms ∨ (v ∈ E.terms ∧ ℓ.arg = .node z) := by
   unfold subst at h
@@ -151,6 +159,7 @@ theorem mem_of_mem_subst {E : Equation} {v : ℕ} {ℓ : Lit} {z : ℕ}
       · exact Or.inl (Finset.mem_of_mem_erase ((mem_symmDiff_singleton.1 h).2 hzt))
   · exact Or.inl h
 
+/-- Rerouting a variable in an equation does not increase the number of terms. -/
 theorem card_subst_le {E : Equation} {v : ℕ} {ℓ : Lit} :
     (E.subst v ℓ).terms.card ≤ E.terms.card := by
   unfold subst
@@ -164,6 +173,7 @@ theorem card_subst_le {E : Equation} {v : ℕ} {ℓ : Lit} :
         _ = E.terms.card := by omega
   · exact le_rfl
 
+/-- Rerouting `v` to a literal not reading `v` eliminates `v` from the terms of the equation. -/
 theorem notMem_subst {E : Equation} {v : ℕ} {ℓ : Lit} (hℓ : ℓ.arg ≠ .node v) :
     v ∉ (E.subst v ℓ).terms := by
   intro h
@@ -175,10 +185,12 @@ theorem notMem_subst {E : Equation} {v : ℕ} {ℓ : Lit} (hℓ : ℓ.arg ≠ .n
       exact Finset.notMem_erase v _ ((mem_symmDiff_singleton.1 h).2 ht)
   · exact hv h
 
+/-- Rerouting a variable that does not occur in `E.terms` leaves the equation unchanged. -/
 theorem subst_of_notMem {E : Equation} {v : ℕ} {ℓ : Lit} (h : v ∉ E.terms) : E.subst v ℓ = E := by
   unfold subst
   rw [ite_eq_right h]
 
+/-- Whether `E` holds depends only on the values assigned to `E.terms`. -/
 theorem holds_congr {E : Equation} {val val' : ℕ → Bool} (h : ∀ i ∈ E.terms, val i = val' i) :
     E.Holds val ↔ E.Holds val' := by
   unfold Holds
@@ -233,6 +245,7 @@ private theorem sum_addArg (p : Finset ℕ × Bool) (b : Bool) (a : Arg) (val : 
       generalize ∑ i ∈ p.1, val i = s; generalize p.2 = r
       revert s v r; decide
 
+/-- Any term in `(addArg p b a).1` either belongs to `p.1` or is the node read by `a`. -/
 theorem mem_addArg {p : Finset ℕ × Bool} {b : Bool} {a : Arg} {z : ℕ}
     (h : z ∈ (addArg p b a).1) : z ∈ p.1 ∨ a = .node z := by
   unfold addArg at h
@@ -262,6 +275,8 @@ def affEqn (g : Gate) (J : ℕ) : Equation :=
     g.right
   ⟨p.1, p.2⟩
 
+/-- For an affine gate `g`, the equation `affEqn g J` holds under `val` if and only if
+`val J = g.eval val`. -/
 theorem affEqn_holds {g : Gate} (hg : IsAffineOp g.op) (J : ℕ) (val : ℕ → Bool) :
     (affEqn g J).Holds val ↔ val J = g.eval val := by
   unfold affEqn Equation.Holds
@@ -289,6 +304,7 @@ theorem affEqn_holds {g : Gate} (hg : IsAffineOp g.op) (J : ℕ) (val : ℕ → 
     generalize g.op true true = d
     revert s r j a b c d; decide
 
+/-- Every term of `affEqn g J` is either the output wire `J` or a node read by `g`. -/
 theorem mem_affEqn {g : Gate} {J z : ℕ} (h : z ∈ (affEqn g J).terms) : z = J ∨ g.Reads z := by
   unfold affEqn at h
   rcases mem_addArg h with h | h
@@ -297,6 +313,7 @@ theorem mem_affEqn {g : Gate} {J z : ℕ} (h : z ∈ (affEqn g J).terms) : z = J
     · exact Or.inr (Or.inl h)
   · exact Or.inr (Or.inr h)
 
+/-- The equation `affEqn g J` of a binary gate has at most three terms. -/
 theorem card_affEqn_le (g : Gate) (J : ℕ) : (affEqn g J).terms.card ≤ 3 := by
   unfold affEqn
   have h1 := card_addArg_le ({J}, g.op false false) (g.op true false ^^ g.op false false) g.left

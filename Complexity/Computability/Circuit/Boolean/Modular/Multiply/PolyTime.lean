@@ -23,6 +23,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 All shifted partial products, balanced carry-save gates and the final adder are generated from
 unary width. The output is the full existing circuit code, including unused fallback gates.
 
+## Main definitions
+
+* `Cslib.Circuits.Boolean.Modular.multiplyCode`: raw circuit code for the modular multiplier.
+
 ## Main results
 
 * `Cslib.Circuits.Boolean.Modular.multiplyCode_eq_code`: exact code agreement.

@@ -26,7 +26,8 @@ the original semi-circuit (`SemiCircuit.MoveOK.liftsTo`, `SemiCircuit.RewireOK.l
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.SemiCircuit.moveAffine`, `Cslib.Circuits.Boolean.SemiCircuit.rewire`.
+* `Cslib.Circuits.Boolean.SemiCircuit.moveAffine`, `Cslib.Circuits.Boolean.SemiCircuit.MoveOK`,
+  `Cslib.Circuits.Boolean.SemiCircuit.rewire`, `Cslib.Circuits.Boolean.SemiCircuit.RewireOK`.
 
 ## Main results
 
@@ -71,6 +72,8 @@ namespace MoveOK
 variable {J e : ℕ} (h : C.MoveOK J e)
 include h
 
+/-- Moving gate `J` with fresh equation index `e` leaves all existing equations of `C`
+unchanged. -/
 theorem eqn_of_mem {e' : ℕ} (he' : e' ∈ C.eqns) : (C.moveAffine J e).eqn e' = C.eqn e' :=
   Function.update_of_ne (show e' ≠ e from fun he => h.fresh (he ▸ he')) _ _
 
@@ -102,6 +105,8 @@ private theorem live_eq : (C.moveAffine J e).live = C.live := by
 
 end MoveOK
 
+/-- In a well-formed semi-circuit, any node read by a gate `J` satisfying `MoveOK J e` is a
+parameter or auxiliary variable. -/
 theorem MoveOK.mem_params_or_aux (hC : C.WellFormed) {J e : ℕ} (h : C.MoveOK J e) {i : ℕ}
     (hi : (C.gate J).Reads i) : i ∈ C.params ∪ C.aux := by
   have := hC.reads_live J h.mem i hi

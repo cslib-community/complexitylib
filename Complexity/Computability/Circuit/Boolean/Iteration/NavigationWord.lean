@@ -28,8 +28,16 @@ These are word-level identities. The circuits that compute depths and labels are
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Iteration.navigationFlag`, `navigationTime`: reachability and first
-  hitting time as word computations.
+* `Cslib.Circuits.Boolean.Iteration.depthWord`,
+  `Cslib.Circuits.Boolean.Iteration.phaseWord`,
+  `Cslib.Circuits.Boolean.Iteration.lengthWord`: `(n + 3)`-bit words for transient depth, phase,
+  and cycle length.
+* `Cslib.Circuits.Boolean.Iteration.navigationGap`,
+  `Cslib.Circuits.Boolean.Iteration.navigationDistance`: depth difference and cyclic phase
+  difference as `(n + 3)`-bit words.
+* `Cslib.Circuits.Boolean.Iteration.navigationFlag`,
+  `Cslib.Circuits.Boolean.Iteration.navigationTime`: reachability and first hitting time as word
+  computations.
 * `Cslib.Circuits.Boolean.Iteration.navigationBits`: one flag bit and `n + 1` time bits.
 
 ## Main results
@@ -68,18 +76,22 @@ noncomputable def phaseWord (x : BitString n) : BitVec (n + 3) :=
 noncomputable def lengthWord (x : BitString n) : BitVec (n + 3) :=
   BitVec.ofNat (n + 3) (cycleLength f x)
 
+/-- The transient depth of any `n`-bit state is strictly less than `2 ^ n`. -/
 theorem transientDepth_lt_two_pow (x : BitString n) : transientDepth f x < 2 ^ n := by
   simpa using transientDepth_lt_card f x
 
+/-- `depthWord f x` has natural value `transientDepth f x`. -/
 @[simp] theorem toNat_depthWord (x : BitString n) : (depthWord f x).toNat = transientDepth f x := by
   have h := transientDepth_lt_two_pow f x
   rw [depthWord, BitVec.toNat_ofNat, Nat.mod_eq_of_lt]
   simp only [Nat.pow_succ]
   omega
 
+/-- `phaseWord f x` has natural value `phase f x`. -/
 @[simp] theorem toNat_phaseWord (x : BitString n) : (phaseWord f x).toNat = phase f x :=
   toNat_ofNat_phase f x
 
+/-- `lengthWord f x` has natural value `cycleLength f x`. -/
 @[simp] theorem toNat_lengthWord (x : BitString n) : (lengthWord f x).toNat = cycleLength f x :=
   toNat_ofNat_cycleLength f x
 
@@ -102,6 +114,8 @@ noncomputable def navigationFlag (x y : BitString n) : Bool :=
 noncomputable def navigationTime (x y : BitString n) : BitVec (n + 3) :=
   if depthWord f y = 0 then depthWord f x + navigationDistance f x y else navigationGap f x y
 
+/-- When `transientDepth f y ≤ transientDepth f x`, `navigationGap f x y` has natural value
+`transientDepth f x - transientDepth f y`. -/
 theorem toNat_navigationGap (x y : BitString n)
     (hle : transientDepth f y ≤ transientDepth f x) :
     (navigationGap f x y).toNat = transientDepth f x - transientDepth f y := by
@@ -121,10 +135,12 @@ private theorem toNat_navigationDistance (x y : BitString n) :
     toNat_phaseWord, toNat_phaseWord, toNat_depthWord, toNat_lengthWord, Nat.mod_eq_of_lt hsum]
   rfl
 
+/-- `depthWord f x` is zero if and only if `transientDepth f x = 0`. -/
 theorem depthWord_eq_zero_iff (x : BitString n) : depthWord f x = 0 ↔ transientDepth f x = 0 := by
   rw [← BitVec.toNat_inj, toNat_depthWord]
   rfl
 
+/-- The word-level reachability flag `navigationFlag f x y` agrees with `reaches f x y`. -/
 theorem navigationFlag_eq_reaches (x y : BitString n) : navigationFlag f x y = reaches f x y := by
   unfold navigationFlag reaches
   simp only [depthWord_eq_zero_iff]
@@ -138,6 +154,7 @@ theorem navigationFlag_eq_reaches (x y : BitString n) : navigationFlag f x y = r
     · simp only [BitVec.ult, toNat_depthWord, show transientDepth f x < transientDepth f y by
         omega, decide_true, Bool.not_true, Bool.false_and, hle, decide_false]
 
+/-- When `y` is reachable from `x`, `navigationTime f x y` has natural value `hittingTime f x y`. -/
 theorem toNat_navigationTime (x y : BitString n) (h : reaches f x y = true) :
     (navigationTime f x y).toNat = hittingTime f x y := by
   unfold navigationTime hittingTime
@@ -158,6 +175,7 @@ theorem toNat_navigationTime (x y : BitString n) (h : reaches f x y = true) :
 noncomputable def navigationBits (x y : BitString n) : BitString (1 + (n + 1)) :=
   Fin.append (fun _ => navigationFlag f x y) fun i => (navigationTime f x y).getLsbD i.val
 
+/-- Bit `0` of `navigationBits f x y` is `true` iff `y` is reachable from `x` under `f`. -/
 theorem navigationBits_flag (x y : BitString n) :
     navigationBits f x y 0 = true ↔ ∃ t, f^[t] x = y := by
   change navigationFlag f x y = true ↔ _

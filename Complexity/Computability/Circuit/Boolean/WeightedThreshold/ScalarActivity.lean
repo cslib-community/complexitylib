@@ -38,6 +38,9 @@ enumerative coding for weight-bounded words (Theorem 4.3) is in
 
 * `Cslib.Circuits.Boolean.WeightedThreshold.scalarScore`: directional projection
   `∑ i, w i * (x i).toNat`.
+* `Cslib.Circuits.Boolean.WeightedThreshold.leInputs`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.scalarRep`: inputs with scalar score at most `t` and a
+  canonical representative input for `t`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.scalarEval`,
   `Cslib.Circuits.Boolean.WeightedThreshold.scalarTranscript`,
   `Cslib.Circuits.Boolean.WeightedThreshold.scalarReadout`: extension of gate evaluation,
@@ -182,6 +185,7 @@ theorem attainableTranscripts_nonempty (p : Program signature n g) :
   classical
   exact ⟨transcript p (fun _ => false), mem_image_of_mem _ (mem_univ _)⟩
 
+/-- The number of attainable transcripts of `p` is positive. -/
 theorem card_attainableTranscripts_pos (p : Program signature n g) :
     0 < (attainableTranscripts p).card :=
   (attainableTranscripts_nonempty p).card_pos

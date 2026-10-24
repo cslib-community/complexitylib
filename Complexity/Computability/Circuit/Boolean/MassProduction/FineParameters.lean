@@ -84,6 +84,7 @@ def depth (n : ℕ) : ℕ :=
 
 variable {num den X}
 
+/-- When `num ≤ den`, the prefix width is at most the input length `n`. -/
 theorem prefixWidth_le (hnd : num ≤ den) (n : ℕ) : prefixWidth num den X n ≤ n := by
   rcases Nat.eq_zero_or_pos den with rfl | hden
   · simp [prefixWidth]
@@ -93,6 +94,7 @@ theorem prefixWidth_le (hnd : num ≤ den) (n : ℕ) : prefixWidth num den X n �
         nlinarith
     _ = (X + 1) * den * n := by ring
 
+/-- When `num ≤ den`, the prefix width and suffix width sum to `n`. -/
 theorem prefixWidth_add_suffixWidth (hnd : num ≤ den) (n : ℕ) :
     prefixWidth num den X n + suffixWidth num den X n = n :=
   Nat.add_sub_of_le (prefixWidth_le hnd n)
@@ -115,9 +117,11 @@ private theorem three_le_dimension : 3 ≤ dimension num den X := by
   unfold dimension
   omega
 
+/-- The code dimension is at most `2 ^ blockWidth`. -/
 theorem dimension_le_two_pow_blockWidth : dimension num den X ≤ 2 ^ blockWidth num den X :=
   Nat.le_pow_clog (by norm_num) _
 
+/-- The block width is positive. -/
 theorem blockWidth_pos : 0 < blockWidth num den X := by
   unfold blockWidth
   have h := three_le_dimension (num := num) (den := den) (X := X)

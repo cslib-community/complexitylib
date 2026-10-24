@@ -37,8 +37,9 @@ obligations `State.Transport` (`State.Valid.of_transport`).
 
 * `Cslib.Circuits.Boolean.AffineDisperser.State.Transport`: the obligations of transporting
   validity.
-* `Cslib.Circuits.Boolean.AffineDisperser.State.restrict`, `State.deleteGate`, `State.deleteEqn`,
-  `State.dropEqn`, `State.dropTrivialEqn`: the operations.
+* `Cslib.Circuits.Boolean.AffineDisperser.State.restrict`, `State.RestrictOK`,
+  `State.deleteGate`, `State.deleteEqn`, `State.dropEqn`, `State.dropTrivialEqn`: the operations
+  and the restriction hypotheses.
 
 ## Main results
 
@@ -58,6 +59,8 @@ namespace Cslib.Circuits.Boolean.AffineDisperser
 
 open Finset Cslib.BitString SemiCircuit
 
+/-- Evaluating a literal `ℓ` along an affine family of assignments `τ` defines an affine Boolean
+function. -/
 theorem isAffine_lit_eval {k : ℕ} {τ : BitString k → ℕ → Bool} (hτ : IsAffine τ) (ℓ : Lit) :
     IsAffine fun u => ℓ.eval (τ u) := by
   intro u v w
@@ -162,21 +165,27 @@ structure RestrictOK (S : State n) (x : ℕ) (ℓ : Lit) (P : Finset (ℕ × ℕ
   avoid : ∀ pr ∈ P, pr.1 ≠ x ∧ pr.2 ≠ x
   drop : ∀ pr ∈ S.pairs, pr ∉ P → (pr.1 = x ∨ pr.2 = x) ∧ ∀ y, ℓ.Reads y → y = pr.1 ∨ y = pr.2
 
+/-- Restricting `x` removes `x` from the parameters of `S`. -/
 @[simp] theorem restrict_params (S : State n) (x : ℕ) (ℓ : Lit) (P : Finset (ℕ × ℕ)) :
     (S.restrict x ℓ P).params = S.params.erase x := rfl
 
+/-- The pairs of `S.restrict x ℓ P` are `P`. -/
 @[simp] theorem restrict_pairs (S : State n) (x : ℕ) (ℓ : Lit) (P : Finset (ℕ × ℕ)) :
     (S.restrict x ℓ P).pairs = P := rfl
 
+/-- The children of `z` in `S.restrict x ℓ P` are its children after substituting `x` with `ℓ`. -/
 theorem restrict_children (S : State n) (x : ℕ) (ℓ : Lit) (P : Finset (ℕ × ℕ)) (z : ℕ) :
     (S.restrict x ℓ P).children z = (S.toSemiCircuit.subst x ℓ).children z := rfl
 
+/-- Restricting a parameter preserves the size of the state. -/
 theorem restrict_size (S : State n) (x : ℕ) (ℓ : Lit) (P : Finset (ℕ × ℕ)) :
     (S.restrict x ℓ P).size = S.size := rfl
 
+/-- Restricting `x` to `ℓ` substitutes `x` with `ℓ` in every gate. -/
 @[simp] theorem restrict_gate (S : State n) (x : ℕ) (ℓ : Lit) (P : Finset (ℕ × ℕ)) (J : ℕ) :
     (S.restrict x ℓ P).gate J = (S.gate J).subst x ℓ := rfl
 
+/-- Restricting `x` to `ℓ` substitutes `x` with `ℓ` in every equation. -/
 @[simp] theorem restrict_eqn (S : State n) (x : ℕ) (ℓ : Lit) (P : Finset (ℕ × ℕ)) (e : ℕ) :
     (S.restrict x ℓ P).eqn e = (S.eqn e).subst x ℓ := rfl
 
@@ -254,24 +263,31 @@ theorem Valid.restrict {S : State n} (hS : S.Valid f) {x : ℕ} {ℓ : Lit} {P :
 def deleteGate (S : State n) (J : ℕ) (ℓ : Lit) : State n :=
   { S with toSemiCircuit := S.toSemiCircuit.deleteGate J ℓ }
 
+/-- Deleting a gate preserves the parameters of the state. -/
 @[simp] theorem deleteGate_params (S : State n) (J : ℕ) (ℓ : Lit) :
     (S.deleteGate J ℓ).params = S.params := rfl
 
+/-- Deleting a gate preserves the pairs of the state. -/
 @[simp] theorem deleteGate_pairs (S : State n) (J : ℕ) (ℓ : Lit) :
     (S.deleteGate J ℓ).pairs = S.pairs := rfl
 
+/-- Deleting a gate preserves the parameter map `phi`. -/
 @[simp] theorem deleteGate_phi (S : State n) (J : ℕ) (ℓ : Lit) :
     (S.deleteGate J ℓ).phi = S.phi := rfl
 
+/-- Deleting gate `J` with replacement `ℓ` substitutes `J` with `ℓ` in every gate. -/
 @[simp] theorem deleteGate_gate (S : State n) (J : ℕ) (ℓ : Lit) (K : ℕ) :
     (S.deleteGate J ℓ).gate K = (S.gate K).subst J ℓ := rfl
 
+/-- Deleting gate `J` with replacement `ℓ` substitutes `J` with `ℓ` in every equation. -/
 @[simp] theorem deleteGate_eqn (S : State n) (J : ℕ) (ℓ : Lit) (e : ℕ) :
     (S.deleteGate J ℓ).eqn e = (S.eqn e).subst J ℓ := rfl
 
+/-- Deleting gate `J` removes `J` from `S.gates`. -/
 @[simp] theorem deleteGate_gates (S : State n) (J : ℕ) (ℓ : Lit) :
     (S.deleteGate J ℓ).gates = S.gates.erase J := rfl
 
+/-- Deleting a gate decreases the size of the state by `1`. -/
 theorem deleteGate_size {S : State n} {J : ℕ} {ℓ : Lit}
     (h : S.DeleteGateOK J ℓ) : (S.deleteGate J ℓ).size + 1 = S.size := by
   have := Finset.card_erase_add_one h.mem
@@ -279,6 +295,8 @@ theorem deleteGate_size {S : State n} {J : ℕ} {ℓ : Lit}
   change (S.gates.erase J).card + S.eqns.card + 1 = _
   omega
 
+/-- After deleting gate `J` with replacement `ℓ`, the children of `z` are contained in the
+children of `z` after substituting `J` with `ℓ` with `.inl J` removed. -/
 theorem deleteGate_children_subset {S : State n} {J : ℕ} {ℓ : Lit} (z : ℕ) :
     (S.deleteGate J ℓ).children z ⊆ ((S.toSemiCircuit.subst J ℓ).children z).erase (.inl J) := by
   intro w hw
@@ -311,15 +329,19 @@ to `ℓ`. -/
 def deleteEqn (S : State n) (e v : ℕ) (ℓ : Lit) : State n :=
   { S with toSemiCircuit := S.toSemiCircuit.deleteEqn e v ℓ }
 
+/-- Deleting an equation preserves the parameters of the state. -/
 @[simp] theorem deleteEqn_params (S : State n) (e v : ℕ) (ℓ : Lit) :
     (S.deleteEqn e v ℓ).params = S.params := rfl
 
+/-- Deleting an equation preserves the pairs of the state. -/
 @[simp] theorem deleteEqn_pairs (S : State n) (e v : ℕ) (ℓ : Lit) :
     (S.deleteEqn e v ℓ).pairs = S.pairs := rfl
 
+/-- Deleting an equation preserves the parameter map `phi`. -/
 @[simp] theorem deleteEqn_phi (S : State n) (e v : ℕ) (ℓ : Lit) :
     (S.deleteEqn e v ℓ).phi = S.phi := rfl
 
+/-- Deleting an equation decreases the size of the state by `1`. -/
 theorem deleteEqn_size {S : State n} {e v : ℕ} {ℓ : Lit} (h : S.DeleteEqnOK e v ℓ) :
     (S.deleteEqn e v ℓ).size + 1 = S.size := by
   have := Finset.card_erase_add_one h.mem
@@ -327,6 +349,8 @@ theorem deleteEqn_size {S : State n} {e v : ℕ} {ℓ : Lit} (h : S.DeleteEqnOK 
   change S.gates.card + (S.eqns.erase e).card + 1 = _
   omega
 
+/-- After deleting equation `e` and auxiliary variable `v` with replacement `ℓ`, the children of
+`z` are contained in the children of `z` after substituting `v` with `ℓ` with `.inr e` removed. -/
 theorem deleteEqn_children_subset {S : State n} {e v : ℕ} {ℓ : Lit} (z : ℕ) :
     (S.deleteEqn e v ℓ).children z ⊆ ((S.toSemiCircuit.subst v ℓ).children z).erase (.inr e) := by
   intro w hw
@@ -338,6 +362,8 @@ theorem deleteEqn_children_subset {S : State n} {e v : ℕ} {ℓ : Lit} (z : ℕ
     · cases he; exact Finset.notMem_erase e _ hw.1
     · exact (SemiCircuit.inr_mem_children _).2 ⟨Finset.mem_of_mem_erase hw.1, hw.2⟩
 
+/-- Deleting an equation removes it from the children of every parameter other than the target of
+`ℓ`. -/
 theorem deleteEqn_children_of_ne {S : State n} (hS : S.Valid f) {e v : ℕ} {ℓ : Lit}
     (h : S.DeleteEqnOK e v ℓ) {z : ℕ} (hz : z ∈ S.params) (hzℓ : ¬ ℓ.Reads z) :
     (S.deleteEqn e v ℓ).children z ⊆ (S.children z).erase (.inr e) := by
@@ -356,10 +382,13 @@ theorem Valid.deleteEqn {S : State n} (hS : S.Valid f) {e v : ℕ} {ℓ : Lit}
 def dropEqn (S : State n) (e v : ℕ) : State n :=
   { S with toSemiCircuit := S.toSemiCircuit.dropEqn e v }
 
+/-- Dropping an equation preserves the parameters of the state. -/
 @[simp] theorem dropEqn_params (S : State n) (e v : ℕ) : (S.dropEqn e v).params = S.params := rfl
 
+/-- Dropping an equation preserves the pairs of the state. -/
 @[simp] theorem dropEqn_pairs (S : State n) (e v : ℕ) : (S.dropEqn e v).pairs = S.pairs := rfl
 
+/-- Dropping an equation decreases the size of the state by `1`. -/
 theorem dropEqn_size {S : State n} {e v : ℕ} (h : S.DropEqnOK e v) :
     (S.dropEqn e v).size + 1 = S.size := by
   have := Finset.card_erase_add_one h.mem
@@ -367,6 +396,7 @@ theorem dropEqn_size {S : State n} {e v : ℕ} (h : S.DropEqnOK e v) :
   change S.gates.card + (S.eqns.erase e).card + 1 = _
   omega
 
+/-- Dropping equation `e` removes `.inr e` from the children of `z`. -/
 theorem dropEqn_children (S : State n) (e v z : ℕ) :
     (S.dropEqn e v).children z = (S.children z).erase (.inr e) := by
   ext (K | e')
@@ -387,12 +417,15 @@ theorem Valid.dropEqn {S : State n} (hS : S.Valid f) {e v : ℕ} (h : S.DropEqnO
 def dropTrivialEqn (S : State n) (e : ℕ) : State n :=
   { S with toSemiCircuit := S.toSemiCircuit.dropTrivialEqn e }
 
+/-- Dropping a trivial equation preserves the parameters of the state. -/
 @[simp] theorem dropTrivialEqn_params (S : State n) (e : ℕ) :
     (S.dropTrivialEqn e).params = S.params := rfl
 
+/-- Dropping a trivial equation preserves the pairs of the state. -/
 @[simp] theorem dropTrivialEqn_pairs (S : State n) (e : ℕ) :
     (S.dropTrivialEqn e).pairs = S.pairs := rfl
 
+/-- Dropping a trivial equation decreases the size of the state by `1`. -/
 theorem dropTrivialEqn_size {S : State n} {e : ℕ} (he : e ∈ S.eqns) :
     (S.dropTrivialEqn e).size + 1 = S.size := by
   have := Finset.card_erase_add_one he
@@ -400,6 +433,7 @@ theorem dropTrivialEqn_size {S : State n} {e : ℕ} (he : e ∈ S.eqns) :
   change S.gates.card + (S.eqns.erase e).card + 1 = _
   omega
 
+/-- Dropping trivial equation `e` removes `.inr e` from the children of `z`. -/
 theorem dropTrivialEqn_children (S : State n) (e z : ℕ) :
     (S.dropTrivialEqn e).children z = (S.children z).erase (.inr e) := by
   ext (K | e')

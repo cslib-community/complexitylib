@@ -105,6 +105,7 @@ def andreev (b m : ℕ) : BooleanFunction (2 ^ b + b * m) :=
   fun w => w (andreevTableIndex b m
     (BitString.equivFin b fun j => parity m fun t => w (andreevBlockVar b m j t)))
 
+/-- Within each block `j`, the block variable map `andreevBlockVar b m j` is injective. -/
 theorem andreevBlockVar_injective (b m : ℕ) (j : Fin b) :
     Function.Injective (andreevBlockVar b m j) := by
   intro t₁ t₂ h
@@ -112,6 +113,7 @@ theorem andreevBlockVar_injective (b m : ℕ) (j : Fin b) :
   have h2 := finProdFinEquiv.injective h1
   exact (Prod.ext_iff.1 h2).2
 
+/-- Each parity block `andreevBlock b m j` has cardinality `m`. -/
 @[simp] theorem card_andreevBlock (b m : ℕ) (j : Fin b) :
     #(andreevBlock b m j) = m := by
   rw [andreevBlock, card_image_of_injective _ (andreevBlockVar_injective b m j), card_univ,
@@ -123,16 +125,21 @@ def andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
     PartialAssignment (Fin (2 ^ b + b * m)) :=
   Fin.addCases (fun idx => some (h ((BitString.equivFin b).symm idx))) (fun _ => none)
 
+/-- `andreevFixTable b m h` fixes the `idx`-th truth-table coordinate to the value of `h` at
+`idx`. -/
 @[simp] theorem andreevFixTable_tableIndex (b m : ℕ) (h : BooleanFunction b)
     (idx : Fin (2 ^ b)) :
     andreevFixTable b m h (andreevTableIndex b m idx) =
       some (h ((BitString.equivFin b).symm idx)) := by
   simp [andreevFixTable, andreevTableIndex]
 
+/-- `andreevFixTable b m h` leaves every coordinate past the first `2 ^ b` truth-table bits
+free. -/
 @[simp] theorem andreevFixTable_natAdd (b m : ℕ) (h : BooleanFunction b) (u : Fin (b * m)) :
     andreevFixTable b m h (Fin.natAdd (2 ^ b) u) = none := by
   simp [andreevFixTable]
 
+/-- `andreevFixTable b m h` leaves every block variable `andreevBlockVar b m j t` free. -/
 @[simp] theorem andreevFixTable_blockVar (b m : ℕ) (h : BooleanFunction b)
     (j : Fin b) (t : Fin m) :
     andreevFixTable b m h (andreevBlockVar b m j t) = none := by
@@ -148,11 +155,14 @@ private theorem free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
   · rintro ⟨u, rfl⟩
     exact andreevFixTable_natAdd b m h u
 
+/-- `andreevFixTable b m h` has `b * m` free variables. -/
 @[simp] theorem card_free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) :
     #(andreevFixTable b m h).free = b * m := by
   rw [free_andreevFixTable, card_image_of_injective _ (Fin.natAdd_injective (b * m) (2 ^ b)),
     card_univ, Fintype.card_fin]
 
+/-- Every parity block `andreevBlock b m j` is contained in the free variables of
+`andreevFixTable b m h`. -/
 theorem andreevBlock_subset_free_andreevFixTable (b m : ℕ) (h : BooleanFunction b) (j : Fin b) :
     andreevBlock b m j ⊆ (andreevFixTable b m h).free := by
   intro i hi

@@ -26,7 +26,16 @@ justify the loop, including tags, delimiters and output references.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.CarryLookahead.stepCode`: one round on raw parameters.
+* `Cslib.Circuits.Boolean.CarryLookahead.neighbourIndex`,
+  `Cslib.Circuits.Boolean.CarryLookahead.generateCode`,
+  `Cslib.Circuits.Boolean.CarryLookahead.propagateCode`,
+  `Cslib.Circuits.Boolean.CarryLookahead.stepCode`: one round on raw parameters.
+* `Cslib.Circuits.Boolean.CarryLookahead.initialGenerateCode`,
+  `Cslib.Circuits.Boolean.CarryLookahead.initialPropagateCode`,
+  `Cslib.Circuits.Boolean.CarryLookahead.initialCode`,
+  `Cslib.Circuits.Boolean.CarryLookahead.sumCode`,
+  `Cslib.Circuits.Boolean.CarryLookahead.finishCode`: initial generate/propagate, sum, and
+  finishing codes.
 
 ## Main results
 

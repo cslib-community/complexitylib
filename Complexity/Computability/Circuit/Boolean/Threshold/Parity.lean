@@ -32,7 +32,9 @@ constant depth (`Threshold.parity_mem_constDepth`), and is in TC⁰
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Threshold.parityCircuit`: the depth-two threshold circuit for parity.
+* `Cslib.Circuits.Boolean.Threshold.negIf`,
+  `Cslib.Circuits.Boolean.Threshold.signedLayerGate`,
+  `Cslib.Circuits.Boolean.Threshold.parityCircuit`: the depth-two threshold circuit for parity.
 
 ## Main results
 
@@ -60,6 +62,7 @@ def negIf : Bool → Circuit signature 1 1
   | true => Circuit.oneGate (σ := signature) .not id
   | false => Circuit.id signature 1
 
+/-- Evaluating `negIf b` XORs the input bit with `b`. -/
 @[simp] theorem eval_negIf (b : Bool) (y : Fin 1 → Bool) (o : Fin 1) :
     (negIf b).eval interpretation y o = (b ^^ y 0) := by
   cases b
@@ -69,12 +72,15 @@ def negIf : Bool → Circuit signature 1 1
 private theorem cost_program_negIf (b : Bool) : (negIf b).program.cost thresholdCost = 0 := by
   cases b <;> rfl
 
+/-- The gate count of `negIf b` is `b.toNat`. -/
 @[simp] theorem size_negIf (b : Bool) : (negIf b).size = b.toNat := by
   cases b <;> rfl
 
+/-- Under `thresholdCost`, `negIf b` has weighted depth `0`. -/
 @[simp] theorem depthWith_negIf (b : Bool) : (negIf b).depthWith thresholdCost = 0 := by
   cases b <;> simp [negIf]
 
+/-- The unweighted depth of `negIf b` is at most `1`. -/
 theorem depth_negIf_le (b : Bool) : (negIf b).depth ≤ 1 := by
   cases b <;> simp [negIf]
 
@@ -90,6 +96,8 @@ def parityCircuit (n : ℕ) : Circuit signature n 1 :=
   (Circuit.oneGate (σ := signature) (.threshold n (n / 2 + 1)) id).comp
     (Circuit.pi (signedLayerGate n))
 
+/-- Evaluating `signedLayerGate n j` on `x` returns `threshold n (j + 1) x` negated when `j` is
+odd. -/
 theorem eval_signedLayerGate (j : Fin n) (x : BitString n) :
     (signedLayerGate n j).eval interpretation x 0 =
       (decide (j.val % 2 = 1) ^^ threshold n (j + 1) x) := by

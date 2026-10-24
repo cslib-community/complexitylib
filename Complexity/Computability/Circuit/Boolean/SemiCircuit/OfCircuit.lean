@@ -23,7 +23,9 @@ the circuit on the values of the parameters (`SemiCircuit.out_eval_ofCircuit`).
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.SemiCircuit.ofCircuit`: the semi-circuit of a circuit.
+* `Cslib.Circuits.Boolean.SemiCircuit.wireName`,
+  `Cslib.Circuits.Boolean.SemiCircuit.lineGate`,
+  `Cslib.Circuits.Boolean.SemiCircuit.ofCircuit`: the semi-circuit of a circuit.
 
 ## Main results
 
@@ -56,6 +58,8 @@ def lineGate {g : ℕ} : Line (fullSignature 2 Bool) n g → Gate
       .node (wireName (w ⟨1, by simp [fullSignature]⟩))⟩
   | ⟨.con c, _⟩ => ⟨fun _ _ => c, .const false, .const false⟩
 
+/-- Evaluating `lineGate line` under `val` equals applying `fullInterpretation line.op` to the
+values of `line`'s input wires. -/
 theorem eval_lineGate {g : ℕ} (line : Line (fullSignature 2 Bool) n g) (val : ℕ → Bool) :
     (lineGate line).eval val =
       fullInterpretation line.op fun a => val (wireName (line.wires a)) := by
@@ -89,15 +93,19 @@ def ofCircuit (C : Circuit (fullSignature 2 Bool) n 1) : SemiCircuit where
   eqn _ := ⟨∅, false⟩
   out := ⟨.node (wireName (C.outputs 0)), false⟩
 
+/-- The parameters of `ofCircuit C` are `Finset.range n`. -/
 @[simp] theorem ofCircuit_params (C : Circuit (fullSignature 2 Bool) n 1) :
     (ofCircuit C).params = Finset.range n := rfl
 
+/-- The semi-circuit `ofCircuit C` has no auxiliary variables. -/
 @[simp] theorem ofCircuit_aux (C : Circuit (fullSignature 2 Bool) n 1) :
     (ofCircuit C).aux = ∅ := rfl
 
+/-- The gate indices of `ofCircuit C` are `Finset.Ico n (n + C.size)`. -/
 @[simp] theorem ofCircuit_gates (C : Circuit (fullSignature 2 Bool) n 1) :
     (ofCircuit C).gates = Finset.Ico n (n + C.size) := rfl
 
+/-- The semi-circuit `ofCircuit C` has no affine equations. -/
 @[simp] theorem ofCircuit_eqns (C : Circuit (fullSignature 2 Bool) n 1) :
     (ofCircuit C).eqns = ∅ := rfl
 
@@ -108,12 +116,14 @@ private theorem ofCircuit_gate (C : Circuit (fullSignature 2 Bool) n 1) (k : Fin
   congr 2
   exact Fin.ext (by simp)
 
+/-- The node index `wireName w` of any wire `w` of `C` is live in `ofCircuit C`. -/
 theorem wireName_mem_live (C : Circuit (fullSignature 2 Bool) n 1) (w : Wire n C.size) :
     wireName w ∈ (ofCircuit C).live := by
   cases w with
   | input i => simp [live, ofCircuit, wireName]
   | gate j => simp [live, ofCircuit, wireName]
 
+/-- Every gate index of `ofCircuit C` has the form `n + k` for some `k : Fin C.size`. -/
 theorem exists_eq_add_of_mem_gates {C : Circuit (fullSignature 2 Bool) n 1} {J : ℕ}
     (hJ : J ∈ (ofCircuit C).gates) : ∃ k : Fin C.size, J = n + k := by
   simp only [ofCircuit, Finset.mem_Ico] at hJ

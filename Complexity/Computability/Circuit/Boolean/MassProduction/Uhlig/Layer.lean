@@ -35,7 +35,16 @@ does not certify the running time of any circuit constructor.
 * `Cslib.Circuits.Boolean.MassProduction.Uhlig.restriction`: the restrictions of `f` to
   prefixes, numbered by `BitString.equivFin`.
 * `Cslib.Circuits.Boolean.MassProduction.Uhlig.resource`: Uhlig's resource functions.
-* `Cslib.Circuits.Boolean.MassProduction.Uhlig.layerOverhead`: the per-pair gate budget.
+* `Cslib.Circuits.Boolean.MassProduction.Uhlig.rank`,
+  `Cslib.Circuits.Boolean.MassProduction.Uhlig.pairCopy`,
+  `Cslib.Circuits.Boolean.MassProduction.Uhlig.pairWires`,
+  `Cslib.Circuits.Boolean.MassProduction.Uhlig.pairSelect`,
+  `Cslib.Circuits.Boolean.MassProduction.Uhlig.routedBit`,
+  `Cslib.Circuits.Boolean.MassProduction.Uhlig.decoded`: prefix ranking, pair wiring, suffix
+  routing, and resource decoding.
+* `Cslib.Circuits.Boolean.MassProduction.Uhlig.selectorCost`,
+  `Cslib.Circuits.Boolean.MassProduction.Uhlig.layerOverhead`: the DNF selector cost and per-pair
+  gate budget.
 
 ## Main results
 
@@ -69,6 +78,7 @@ def restriction (f : BooleanFunction (p + w)) (z : BitString w) (a : ℕ) : Bool
 def resource (f : BooleanFunction (p + w)) (j : ℕ) : BooleanFunction w :=
   fun z => code (restriction f z) j
 
+/-- At index `2 ^ p`, out of range of `p`-bit prefixes, `restriction f z (2 ^ p)` is `false`. -/
 @[simp] theorem restriction_two_pow (f : BooleanFunction (p + w)) (z : BitString w) :
     restriction f z (2 ^ p) = false := by
   simp [restriction]
@@ -97,6 +107,8 @@ def pairSelect (s : Fin 2) (j : ℕ) (q : BitString (p + p)) : Bool :=
   ![first, second] s (BitString.equivFin p (q ∘ Fin.castAdd p))
     (BitString.equivFin p (q ∘ Fin.natAdd p)) j
 
+/-- Composing `pairSelect` with `pairWires i` selects code positions from the prefix ranks of the
+two copies in pair `i`. -/
 theorem pairSelect_comp_pairWires (s : Fin 2) (j : ℕ) (i : Fin t)
     (x : BitString (2 * t * (p + w))) :
     pairSelect s j (x ∘ pairWires i) =

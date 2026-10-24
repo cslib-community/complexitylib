@@ -12,6 +12,9 @@ public import Complexity.Computability.Circuit.Boolean.Iteration.CounterChart.En
 /-! # Decoding sparse interval coordinates, including intervals crossing phase zero 
 ## Main definitions
 
+* `CounterIntervalChart.negativePhase`, `CounterIntervalChart.phaseDistance`,
+  `CounterIntervalChart.decodedRow`, `CounterIntervalChart.decodeFlag`: per-interval phase
+  offset, decoded candidate word, and interval match test.
 * `CounterIntervalChart.decode`: recover a state from its representative and phase.
 
 ## Main results
@@ -41,6 +44,8 @@ noncomputable def negativePhase (j : Fin R) : BitVec (chartWidth n) :=
   BitVec.ofNat (chartWidth n) ((cycleLength f (chart.first j) - phase f (chart.first j)) %
     cycleLength f (chart.first j))
 
+/-- The natural-number value of `chart.negativePhase j` is the additive inverse of the initial
+phase of interval `j` modulo its cycle length. -/
 @[simp] theorem negativePhase_toNat (j : Fin R) :
     (chart.negativePhase j).toNat =
       (cycleLength f (chart.first j) - phase f (chart.first j)) %
@@ -145,6 +150,7 @@ noncomputable def decode (rep : BitVec n) (p : BitVec (chartWidth n)) : BitStrin
   chooseRecord (fun j => chart.decodeFlag j rep p)
     (fun j i => (chart.decodedRow j p).getLsbD i.val) (fun _ => false) R
 
+/-- Decoding the canonical cycle representative and phase of `y` recovers the bits of `y`. -/
 theorem decode_spec (hf : Function.Injective f) (y : BitVec n) :
     chart.decode (canonicalCycle f y) (BitVec.ofNat (chartWidth n) (phase f y)) =
       fun i => y.getLsbD i.val := by

@@ -101,6 +101,8 @@ noncomputable def Circuit.functionsAtMost (I : Interpretation σ U) (n m G : ℕ
     Finset.univ.image fun p : Program σ n g × (Fin m → Wire n g) =>
       (⟨p.1, p.2⟩ : Circuit σ n m).eval I
 
+/-- A function belongs to `Circuit.functionsAtMost I n m G` iff it is computed by a circuit of
+size at most `G`. -/
 theorem Circuit.mem_functionsAtMost_iff {I : Interpretation σ U} {n m G : ℕ}
     {target : (Fin n → U) → Fin m → U} :
     target ∈ Circuit.functionsAtMost I n m G ↔

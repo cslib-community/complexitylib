@@ -28,10 +28,19 @@ visit to the least state give its label directly (`shortLabel_eq_canonicalLabel`
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.Iteration.labelBits`,
+  `Cslib.Circuits.Boolean.Iteration.labelRepresentative`,
+  `Cslib.Circuits.Boolean.Iteration.labelLength`,
+  `Cslib.Circuits.Boolean.Iteration.labelPhase`,
+  `Cslib.Circuits.Boolean.Iteration.labelWidth`: bit-string packing and projections for cycle
+  labels.
 * `Cslib.Circuits.Boolean.Iteration.canonicalLabel`: representative, cycle length and phase.
 * `Cslib.Circuits.Boolean.Iteration.correctLabel`: shift a label back along the orbit.
-* `Cslib.Circuits.Boolean.Iteration.shortLabel`: the label read from one traversal of a short
-  cycle.
+* `Cslib.Circuits.Boolean.Iteration.shortRepresentative`,
+  `Cslib.Circuits.Boolean.Iteration.shortLength`,
+  `Cslib.Circuits.Boolean.Iteration.shortTime`,
+  `Cslib.Circuits.Boolean.Iteration.shortLabel`: the label components and label read from one
+  traversal of a short cycle.
 
 ## Main results
 
@@ -75,15 +84,18 @@ def labelLength (r : BitString (n + (w + w))) : BitVec w :=
 def labelPhase (r : BitString (n + (w + w))) : BitVec w :=
   word fun i => r (Fin.natAdd n (Fin.natAdd w i))
 
+/-- Unpacking the representative from `labelBits c ell phi` recovers `c`. -/
 @[simp] theorem labelRepresentative_labelBits (c : BitString n) (ell phi : BitVec w) :
     labelRepresentative (labelBits c ell phi) = c := by
   funext i
   simp only [labelRepresentative, labelBits, Fin.append_left]
 
+/-- Unpacking the cycle-length word from `labelBits c ell phi` recovers `ell`. -/
 @[simp] theorem labelLength_labelBits (c : BitString n) (ell phi : BitVec w) :
     labelLength (labelBits c ell phi) = ell := by
   simp only [labelLength, labelBits, Fin.append_left, Fin.append_right, word_getLsbD]
 
+/-- Unpacking the phase word from `labelBits c ell phi` recovers `phi`. -/
 @[simp] theorem labelPhase_labelBits (c : BitString n) (ell phi : BitVec w) :
     labelPhase (labelBits c ell phi) = phi := by
   simp only [labelPhase, labelBits, Fin.append_right, word_getLsbD]
@@ -98,12 +110,14 @@ noncomputable def canonicalLabel (f : BitString n → BitString n) (x : BitStrin
   labelBits (canonicalCycle f x) (BitVec.ofNat (n + 3) (cycleLength f x))
     (BitVec.ofNat (n + 3) (phase f x))
 
+/-- The cycle length of any `n`-bit state is at most `2 ^ n`. -/
 theorem cycleLength_le_two_pow (f : BitString n → BitString n) (x : BitString n) :
     cycleLength f x ≤ 2 ^ n := by
   have h := transientDepth_add_cycleLength_le_card f x
   simp only [Fintype.card_fun, Fintype.card_fin, Fintype.card_bool] at h
   omega
 
+/-- The `(n + 3)`-bit encoding of `cycleLength f x` evaluates to `cycleLength f x`. -/
 theorem toNat_ofNat_cycleLength (f : BitString n → BitString n) (x : BitString n) :
     (BitVec.ofNat (n + 3) (cycleLength f x)).toNat = cycleLength f x := by
   have h := cycleLength_le_two_pow f x
@@ -112,6 +126,7 @@ theorem toNat_ofNat_cycleLength (f : BitString n → BitString n) (x : BitString
   simp only [Nat.pow_succ]
   omega
 
+/-- The `(n + 3)`-bit encoding of `phase f x` evaluates to `phase f x`. -/
 theorem toNat_ofNat_phase (f : BitString n → BitString n) (x : BitString n) :
     (BitVec.ofNat (n + 3) (phase f x)).toNat = phase f x := by
   have h := (phase_lt f x).trans_le (cycleLength_le_two_pow f x)

@@ -25,7 +25,11 @@ fixed exponent `T` only through its residues, and then adds the period while the
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Iteration.liftResidue`: one bounded correction of a residue.
+* `Cslib.Circuits.Boolean.Iteration.liftResidue`,
+  `Cslib.Circuits.Boolean.Iteration.liftWord`: one bounded correction of a residue, on natural
+  numbers and on words.
+* `Cslib.Circuits.Boolean.Iteration.residueWord`: table lookup of the residue of `T` modulo a
+  period word.
 * `Cslib.Circuits.Boolean.Iteration.repeatWordIndex`: the word computation of the time in the
   repeated interval.
 

@@ -29,10 +29,24 @@ state good (`good_next`).
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.MassProduction.Scheduler.pending`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.accepted`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.acceptedLines`: positions and lines of pending
+  and accepted requests.
 * `Cslib.Circuits.Boolean.MassProduction.Scheduler.candidate`: the bits of a candidate point.
-* `Cslib.Circuits.Boolean.MassProduction.Scheduler.clean`: the clean flags.
-* `Cslib.Circuits.Boolean.MassProduction.Scheduler.chosen`: the first successful entry.
-* `Cslib.Circuits.Boolean.MassProduction.Scheduler.next`: the state after the phase.
+* `Cslib.Circuits.Boolean.MassProduction.Scheduler.occupied`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.duplicate`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.clean`: conflict and cleanliness predicates.
+* `Cslib.Circuits.Boolean.MassProduction.Scheduler.success`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.chosen`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.flag`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.newLine`: menu selection and selected candidate
+  flags and lines.
+* `Cslib.Circuits.Boolean.MassProduction.Scheduler.enriched`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.flagKey`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.sortedPending`,
+  `Cslib.Circuits.Boolean.MassProduction.Scheduler.next`: sorting pending records by cleanliness
+  and forming the state after the phase.
 
 ## Main results
 

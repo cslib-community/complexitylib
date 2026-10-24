@@ -24,11 +24,26 @@ records repeat. Sorting uses the native Batcher circuit `bitonicSortCircuit`.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Iteration.Record`: a complete record and its bit encoding.
-* `Cslib.Circuits.Boolean.Iteration.Record.initial`: checkpoints, then the orbit prefix, then
-  padding.
+* `Cslib.Circuits.Boolean.Iteration.Record`,
+  `Cslib.Circuits.Boolean.Iteration.Record.width`,
+  `Cslib.Circuits.Boolean.Iteration.Record.key`,
+  `Cslib.Circuits.Boolean.Iteration.Record.keyBits`,
+  `Cslib.Circuits.Boolean.Iteration.Record.encode`,
+  `Cslib.Circuits.Boolean.Iteration.Record.decode`: a complete record, its sort key, and its bit
+  encoding.
+* `Cslib.Circuits.Boolean.Iteration.Record.query`,
+  `Cslib.Circuits.Boolean.Iteration.Record.stored`,
+  `Cslib.Circuits.Boolean.Iteration.Record.pad`,
+  `Cslib.Circuits.Boolean.Iteration.Record.collision`,
+  `Cslib.Circuits.Boolean.Iteration.Record.initial`,
+  `Cslib.Circuits.Boolean.Iteration.Record.Valid`: query, checkpoint, and padding records,
+  collision test, initial array, and validity predicate.
 * `Cslib.Circuits.Boolean.Iteration.Record.Witness`: what a detected collision certifies.
-* `Cslib.Circuits.Boolean.Iteration.Record.sorted`, `Record.detect`: sort and scan.
+* `Cslib.Circuits.Boolean.Iteration.Record.pack`,
+  `Cslib.Circuits.Boolean.Iteration.Record.sorted`,
+  `Cslib.Circuits.Boolean.Iteration.Record.adjacentPair`,
+  `Cslib.Circuits.Boolean.Iteration.Record.detect`: array packing, sorting, and adjacent-collision
+  scan.
 
 ## Main results
 
@@ -86,9 +101,11 @@ def decode (bits : BitString (width n w)) : Record n w where
   index := word fun i => bits (Fin.natAdd (n + 1) (Fin.castAdd n i).succ)
   payload i := bits (Fin.natAdd (n + 1) (Fin.natAdd w i).succ)
 
+/-- Decoding the bit encoding of a record recovers the record. -/
 @[simp] theorem decode_encode (r : Record n w) : decode (encode r) = r := by
   ext <;> simp [decode, encode, Fin.cons]
 
+/-- Encoding the decoded record of a bit string recovers the bit string. -/
 @[simp] theorem encode_decode (bits : BitString (width n w)) : encode (decode bits) = bits := by
   funext i
   induction i using Fin.addCases with
@@ -104,6 +121,7 @@ def decode (bits : BitString (width n w)) : Record n w where
       | left i => simp [encode, decode]
       | right i => simp [encode, decode]
 
+/-- Record bit encoding `encode` is injective. -/
 theorem encode_injective : Function.Injective (encode : Record n w → BitString (width n w)) :=
   Function.LeftInverse.injective decode_encode
 
@@ -114,6 +132,7 @@ private theorem key_decode (bits : BitString (width n w)) :
   funext i
   induction i using Fin.cases <;> rfl
 
+/-- Two records have equal sort keys iff they have the same padding flag and state. -/
 theorem key_eq_iff (a b : Record n w) :
     a.key = b.key ↔ a.padding = b.padding ∧ a.state = b.state := by
   constructor
@@ -137,6 +156,8 @@ def pad : Record n w := ⟨true, fun _ => false, false, 0, fun _ => false⟩
 def collision (a b : Record n w) : Bool :=
   !a.padding && !b.padding && decide (a.state = b.state) && decide (a ≠ b)
 
+/-- `collision a b` holds iff neither record is padding, their states are equal, and the records
+are distinct. -/
 theorem collision_iff (a b : Record n w) :
     collision a b = true ↔ a.padding = false ∧ b.padding = false ∧
       a.state = b.state ∧ a ≠ b := by
@@ -219,6 +240,7 @@ private theorem collision_witness (f : BitString n → BitString n) (T K : ℕ)
 def pack (records : Fin R → Record n w) : BitString (R * width n w) :=
   fun bit => encode (records (finProdFinEquiv.symm bit).1) (finProdFinEquiv.symm bit).2
 
+/-- Extracting the `j`-th block of `pack records` gives `encode (records j)`. -/
 @[simp] theorem directProductInput_pack (records : Fin R → Record n w) (j : Fin R) :
     directProductInput (pack records) j = encode (records j) := by
   funext bit
