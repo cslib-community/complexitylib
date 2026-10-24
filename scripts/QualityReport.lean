@@ -197,9 +197,21 @@ unsafe def run (libDir : System.FilePath) (pairs : Option String := none) : IO U
     let mod := line.trimAscii.toString
     if mod.isEmpty then continue
     let base := (libDir / System.FilePath.mk (mod.replace "." "/")).addExtension "olean"
-    let parts ← readModuleDataParts #[base, base.addExtension "server", base.addExtension "private"]
+    -- Ordinary test/guide-style imports without `module` use one complete .olean, whereas
+    -- the library's `module` files split exported/server/private parts. Do not silently accept
+    -- a partially missing split output as a classic module.
+    let split ← (base.addExtension "private").pathExists
+    let server ← (base.addExtension "server").pathExists
+    unless split == server do
+      throw <| IO.userError s!"incomplete split module outputs for {base}"
+    let paths := if split then #[base, base.addExtension "server", base.addExtension "private"]
+      else #[base]
+    let parts ← readModuleDataParts paths
     let some (exportedData, r0) := parts[0]? | throw <| IO.userError s!"cannot read {base}"
-    let some (fullData, r2) := parts[2]? | throw <| IO.userError s!"cannot read {base}.private"
+    unless exportedData.isModule == split do
+      throw <| IO.userError s!"incomplete split module outputs for {base}"
+    let some (fullData, r2) := parts[if split then 2 else 0]? |
+      throw <| IO.userError s!"cannot read private data of {base}"
     regions := regions ++ #[r0, r2]
     let mut exported : Std.HashMap Name ConstantInfo := {}
     for c in exportedData.constants do

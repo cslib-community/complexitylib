@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import filecmp
+import hashlib
 import json
 import re
 import subprocess
@@ -495,6 +496,7 @@ class Library:
 
     def __init__(self, build_dir: Path, pairs: str | None = None,
                  missing: list[str] | None = None):
+        self.build_dir = build_dir
         self.ileans = load_ileans(build_dir, missing)
         self.modules = sorted(m for m in self.ileans if m.startswith("Complexity."))
         self.constants, self.duplicate_rows = load_constants(build_dir, self.modules, pairs)
@@ -561,6 +563,177 @@ def command_spans(code: str, command: re.Pattern) -> list[tuple[int, int, str]]:
         end = next((m.start() for m in COMMAND_START.finditer(code, match.end())), len(code))
         spans.append((match.start(), end, match[1] if command.groups else match[0]))
     return spans
+
+
+# Report-only S4 measurement. These prefixes describe the proposed target, not an exemption
+# from S3 or an assertion that the boundary migration has already happened.
+TIDY_INTERNAL_PREFIXES = (
+    "Complexity/Computability/Machines/Turing/MultiTape/Internal/",
+    "ComplexityTests/Machines/Turing/MultiTape/Internal/",
+)
+BRIDGE_TOKEN = re.compile(r"\.(?:tidy|of_tidy)(?![\w'!?])")
+LOCAL_FUN_PROP = re.compile(r"(?:^|,)\s*local\s+fun_prop\s*(?:,|$)")
+
+
+def tidy_source_signals(text: str, tidy_names: set[str], known_names: set[str] | None = None
+                        ) -> dict:
+    """Lexical bridge occurrences and local registrations of known tidy-typed constants.
+
+    Reuse the comment/string/character masks and attribute parser. Name suffix matching is
+    conservative: an ambiguous suffix counts if any candidate has a tidy type. Unresolved
+    local registrations are retained for review, not silently called plain. This does not
+    expand macros, resolve local notation, or count semantic pairs of bridge applications.
+    """
+    code = masks(text)[1]
+    bridges = [{"line": code.count("\n", 0, m.start()) + 1,
+                "bridge": m[0][1:]} for m in BRIDGE_TOKEN.finditer(code)]
+    local, unresolved = [], []
+    blocks = [(m, False) for m in ATTR_BLOCK.finditer(code)]
+    blocks += [(m, True) for m in ATTRIBUTE_COMMAND.finditer(code)]
+    for block, command in sorted(blocks, key=lambda x: x[0].start()):
+        if not LOCAL_FUN_PROP.search(block[1]):
+            continue
+        after = code[block.end():]
+        # An attribute command names one or more targets; an inline attribute precedes a decl.
+        if command:
+            following = next(COMMAND_START.finditer(code, block.end()), None)
+            target_text = code[block.end():following.start() if following else len(code)]
+            targets = IDENT.findall(target_text)
+            targets = targets[:targets.index("in")] if "in" in targets else targets
+        else:
+            decl = re.match(r"\s*(?:(?:public|private|protected|noncomputable|unsafe|partial|"
+                            r"nonrec|meta)\s+)*(?:theorem|lemma|def|abbrev|instance|opaque)\s+",
+                            after)
+            target = IDENT.match(after, decl.end()) if decl else None
+            targets = [target[0]] if target else []
+        line = code.count("\n", 0, block.start()) + 1
+        if not targets:
+            unresolved.append({"line": line, "target": None})
+        for target in targets:
+            row = {"line": line, "target": target}
+            candidates = [n for n in tidy_names if n == target or n.endswith("." + target)]
+            if candidates:
+                local.append({**row, "candidates": sorted(candidates)})
+            elif target not in (known_names or set()):
+                unresolved.append(row)
+    return {"bridges": bridges, "local_tidy_fun_prop": local,
+            "unresolved_local_fun_prop": unresolved}
+
+
+def private_tidy_declarations(constants: dict[str, dict], source) -> dict[str, list[dict]]:
+    """Private source declarations with tidy in their type, excluding generated children."""
+    found: dict[str, list[dict]] = defaultdict(list)
+    for name, c in constants.items():
+        if not (name.startswith("_private.") and c["tidy"] and c["r"]):
+            continue
+        r = c["r"]
+        selected = source(c["m"]).span(*r[4:]).strip()
+        if selected and name.endswith("." + selected):
+            found[c["m"]].append({"name": name, "line": r[4], "mentions": c["tidy"]})
+    return found
+
+
+def tidy_usage_report(lib: Library, prefixes: tuple[str, ...] = TIDY_INTERNAL_PREFIXES) -> dict:
+    """Per-module report of the S4 boundary, with no baseline comparison or enforcement.
+
+    Public statement counts use exactly S3's source-declaration/type rule. Private counts
+    require a source declaration range and a tidy constant in its elaborated type; generated
+    constants sharing the owner's range are excluded by matching the selected source name.
+    Tests/abstracts use their own metadata. Guide files have source-only signals and explicitly
+    unknown statement counts, since the root build does not elaborate the separate guide.
+    """
+    modules = sorted(m for m in lib.ileans if m.startswith(
+        ("Complexity.", "ComplexityTests.", "ComplexityAbstracts.")))
+    extra = [m for m in modules if m not in lib.modules]
+    constants = dict(lib.constants)
+    if extra:
+        more, _ = load_constants(lib.build_dir, extra)
+        constants.update(more)
+    tidy_names = {n for n, c in constants.items() if c["tidy"]}
+    # Known suffixes distinguish resolved plain targets from unknown ones without rescanning
+    # the entire constant inventory for every source attribute.
+    known_suffixes = {".".join(parts[i:]) for n in constants
+                      for parts in [n.split(".")] for i in range(len(parts))}
+    public_tidy_names = {n for n in tidy_names if not n.startswith("_private.")}
+    private_tidy_names: dict[str, set[str]] = defaultdict(set)
+    for n in tidy_names - public_tidy_names:
+        private_tidy_names[constants[n]["m"]].add(n)
+    public, _, _ = collect_declarations(lib)
+    public_by_module = Counter(d["module"] for n, d in public.items()
+                               if d["role"] != "generated" and
+                               (constants[n]["tidy"] or constants[n].get("tb")))
+    private_by_module = private_tidy_declarations(constants, lib.source)
+    rows = []
+    sources = [(m, source_path(m), True) for m in modules]
+    sources += [(str(p.relative_to(ROOT)), p, False) for p in sorted(
+        (ROOT / "guide").rglob("*.lean")) if ".lake" not in p.parts]
+    for module, path, metadata in sources:
+        rel = path.relative_to(ROOT).as_posix()
+        if any(rel.startswith(p) for p in prefixes):
+            continue
+        text = path.read_text()
+        signals = tidy_source_signals(text,
+                                      public_tidy_names | private_tidy_names[module],
+                                      known_suffixes)
+        private = private_by_module[module] if metadata else None
+        counts = {"public_tidy_statements": public_by_module[module]
+                  if module.startswith("Complexity.") else None,
+                  "private_tidy_declarations": len(private) if metadata else None,
+                  "local_tidy_fun_prop": len(signals["local_tidy_fun_prop"]),
+                  "bridge_occurrences": len(signals["bridges"])}
+        rows.append({"module": module, "path": rel,
+                     "role": module_role(module) if metadata else "guide", "counts": counts,
+                     "mentions_tidy": bool(re.search(r"Tidily|IsTidy|\.(?:of_)?tidy\b",
+                                                       masks(text)[1])),
+                     "private_tidy_declarations": private, **signals})
+    keys = ("public_tidy_statements", "private_tidy_declarations",
+            "local_tidy_fun_prop", "bridge_occurrences")
+    source_hash = hashlib.sha256()
+    for path in [source_path(root) for root in ROOTS] + [p for _, p, _ in sources]:
+        source_hash.update(path.relative_to(ROOT).as_posix().encode() + b"\0")
+        source_hash.update(path.read_bytes() + b"\0")
+    provenance = {"revision": run(["git", "rev-parse", "HEAD"], capture_output=True).stdout.strip(),
+                  "tree": run(["git", "rev-parse", "HEAD^{tree}"], capture_output=True).stdout.strip(),
+                  "dirty": bool(run(["git", "status", "--porcelain"],
+                                    capture_output=True).stdout.strip()),
+                  "source_dirty": bool(run(["git", "status", "--porcelain", "--",
+                      "Complexity", "ComplexityTests", "abstracts", "guide",
+                      "Complexity.lean", "ComplexityTests.lean"],
+                      capture_output=True).stdout.strip()),
+                  "scanned_source_sha256": source_hash.hexdigest(),
+                  "scanned_files": len(sources), "build_dir": str(lib.build_dir)}
+    return {"provenance": provenance, "internal_prefixes": list(prefixes), "report_only": True,
+            "totals": {k: sum(r["counts"][k] or 0 for r in rows) for k in keys},
+            "files_mentioning_tidy": sum(r["mentions_tidy"] for r in rows),
+            "modules": rows,
+            "notes": ["The prefixes are a proposed measurement boundary, not S3 exemptions.",
+                "Public counts use S3's declaration/type rule only for library modules, but "
+                "this report's stated boundary replaces S3's allowlist. Null is not zero.",
+                "Private counts inspect elaborated types, not names or proof bodies; generated "
+                "constants are excluded by source selection. Type aliases are not unfolded. "
+                "Guide metadata is unavailable.",
+                "Bridge counts are lexical occurrences, not semantic round-trip pairs; comments "
+                "and literals are masked. Other named erasure APIs are not included.",
+                "Local registration targets use conservative suffix matching, without elaborated "
+                "name resolution; unresolved targets are listed, not assumed plain."]}
+
+
+def tidy_usage_markdown(report: dict, top: int = 20) -> str:
+    """Human view of the same report-only per-module data, with full detail in JSON."""
+    out = ["### Proof-internal tidy usage (S4, report only)", "",
+           "Measurement excludes: " + ", ".join(f"`{p}`" for p in report["internal_prefixes"]),
+           "", "| Module | Public tidy statements | Private tidy declarations | Local tidy "
+           "fun_prop targets | Bridge occurrences |", "|---|---:|---:|---:|---:|"]
+    rows = sorted(report["modules"], key=lambda r: (
+        -sum(v or 0 for v in r["counts"].values()), r["path"]))
+    for row in [r for r in rows if any(r["counts"].values())][:top]:
+        values = ["unknown" if v is None else str(v) for v in row["counts"].values()]
+        out.append(f"| `{row['path']}` | " + " | ".join(values) + " |")
+    out += ["| Total (known counts) | " + " | ".join(map(str, report["totals"].values())) + " |",
+            "", f"{report['files_mentioning_tidy']} files mention tidy outside the measurement "
+            "boundary. Full per-module locations and unresolved targets are in the JSON report.",
+            "", *["- " + note for note in report["notes"]]]
+    return "\n".join(out) + "\n"
 
 
 def annotate_headers(lib: Library, decls: dict[str, dict]) -> None:
@@ -772,6 +945,7 @@ def analyse(build_dir: Path) -> dict:
         "fanout": rebuild_fanout(imports), "importers": transitive_importers(imports),
         "private_count": sum(private_count.values()), "generated_public": generated_public,
         "lib_modules": lib.modules, "proofs_unparsed": unparsed,
+        "tidy_usage": tidy_usage_report(lib),
     }
 
 
@@ -936,6 +1110,7 @@ def markdown(report: dict, top: int) -> str:
     out += ["", "Rebuild fan-out: the modules Lake rebuilds when the module's exported interface "
             "changes, namely its direct importers and the importers of modules that reexport it "
             "through `public import` chains.", "", "Limitations: " + " ".join(report["notes"])]
+    out += ["", tidy_usage_markdown(report["tidy_usage"], top)]
     return "\n".join(out) + "\n"
 
 
@@ -945,7 +1120,7 @@ NOTES = [
     "Uses through simp sets, instances, fun_prop, Aesop rules, notation and macros leave no "
     "reference; such declarations are flagged and never candidates.",
     "Definitional unfolding without naming a definition (rfl, decide) is not detected.",
-    "The guide (#585) is not scanned.",
+    "The guide (#585) is scanned only for S4 source-level tidy signals, not API quality.",
 ]
 
 
@@ -979,6 +1154,7 @@ def build_report(result: dict, top: int) -> dict:
                           "scanner cannot parse; see `proofs_unparsed`."] * bool(
                               result["proofs_unparsed"]),
         "proofs_unparsed": result["proofs_unparsed"],
+        "tidy_usage": result["tidy_usage"],
         "private_declarations": result["private_count"],
         "generated_public": result["generated_public"],
         "areas": {a: group_metrics(by_area[a], modules_by_area[a], result) for a in order},
@@ -1011,6 +1187,7 @@ def main() -> None:
     outputs = check_outputs(args.build_dir, args.no_build_check)
     report = build_report(analyse(args.build_dir), args.top)
     report["build_dir"], report["outputs"] = str(args.build_dir), outputs
+    report["tidy_usage"]["provenance"]["outputs"] = outputs
     text = markdown(report, args.top)
     if args.markdown:
         args.markdown.write_text(text)
