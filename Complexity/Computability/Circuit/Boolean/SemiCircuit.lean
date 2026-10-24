@@ -45,11 +45,12 @@ moved into the affine system as an equation (`affEqn_holds`).
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.SemiCircuit`: semi-circuits, with `SemiCircuit.Consistent`
-  assignments, `SemiCircuit.WellFormed`, `SemiCircuit.children`, `SemiCircuit.deg` and
-  `SemiCircuit.size` (building on `SemiCircuit.Lit`, `SemiCircuit.Gate` and
-  `SemiCircuit.IsAffineOp` in `Complexity/Computability/Circuit/Boolean/SemiCircuit/Gate.lean`, and
-  `SemiCircuit.Equation` in
+* `Cslib.Circuits.Boolean.SemiCircuit`: semi-circuits, with `SemiCircuit.live`,
+  `SemiCircuit.EqnsHold`, `SemiCircuit.GatesHold`, `SemiCircuit.Consistent` assignments,
+  `SemiCircuit.WellFormed`, `SemiCircuit.gateChildren`, `SemiCircuit.eqnChildren`,
+  `SemiCircuit.children`, `SemiCircuit.deg` and `SemiCircuit.size` (building on `SemiCircuit.Lit`,
+  `SemiCircuit.Gate` and `SemiCircuit.IsAffineOp` in
+  `Complexity/Computability/Circuit/Boolean/SemiCircuit/Gate.lean`, and `SemiCircuit.Equation` in
   `Complexity/Computability/Circuit/Boolean/SemiCircuit/Equation.lean`).
 * `Cslib.Circuits.Boolean.SemiCircuit.subst`: rerouting an internal value to a literal.
 * `Cslib.Circuits.Boolean.SemiCircuit.AffineIn`,
@@ -140,13 +141,17 @@ def children (t : ℕ) : Finset (ℕ ⊕ ℕ) :=
 def deg (t : ℕ) : ℕ :=
   (C.children t).card
 
+/-- The degree of `t` is the number of gates reading `t` plus the number of equations containing
+`t`. -/
 theorem deg_eq (t : ℕ) : C.deg t = (C.gateChildren t).card + (C.eqnChildren t).card :=
   Finset.card_disjSum _ _
 
+/-- `Sum.inl J` is a child of `t` iff `J` is a gate of `C` that reads `t`. -/
 @[simp] theorem inl_mem_children {t J : ℕ} :
     Sum.inl J ∈ C.children t ↔ J ∈ C.gates ∧ (C.gate J).Reads t := by
   simp [children, gateChildren]
 
+/-- `Sum.inr e` is a child of `t` iff `e` is an equation of `C` whose terms contain `t`. -/
 @[simp] theorem inr_mem_children {t e : ℕ} :
     Sum.inr e ∈ C.children t ↔ e ∈ C.eqns ∧ t ∈ (C.eqn e).terms := by
   simp [children, eqnChildren]
@@ -184,21 +189,27 @@ namespace WellFormed
 variable {C} (hC : C.WellFormed) {i : ℕ}
 include hC
 
+/-- A parameter of a well-formed semi-circuit is not a gate. -/
 theorem notMem_gates_of_mem_params (hi : i ∈ C.params) : i ∉ C.gates :=
   Finset.disjoint_left.1 hC.disjoint_params_gates hi
 
+/-- A parameter of a well-formed semi-circuit is not an auxiliary variable. -/
 theorem notMem_aux_of_mem_params (hi : i ∈ C.params) : i ∉ C.aux :=
   Finset.disjoint_left.1 hC.disjoint_params_aux hi
 
+/-- A gate of a well-formed semi-circuit is not a parameter. -/
 theorem notMem_params_of_mem_gates (hi : i ∈ C.gates) : i ∉ C.params :=
   Finset.disjoint_right.1 hC.disjoint_params_gates hi
 
+/-- A gate of a well-formed semi-circuit is not an auxiliary variable. -/
 theorem notMem_aux_of_mem_gates (hi : i ∈ C.gates) : i ∉ C.aux :=
   Finset.disjoint_right.1 hC.disjoint_aux_gates hi
 
+/-- An auxiliary variable of a well-formed semi-circuit is not a parameter. -/
 theorem notMem_params_of_mem_aux (hi : i ∈ C.aux) : i ∉ C.params :=
   Finset.disjoint_right.1 hC.disjoint_params_aux hi
 
+/-- An auxiliary variable of a well-formed semi-circuit is not a gate. -/
 theorem notMem_gates_of_mem_aux (hi : i ∈ C.aux) : i ∉ C.gates :=
   Finset.disjoint_left.1 hC.disjoint_aux_gates hi
 
@@ -239,6 +250,7 @@ private theorem gatesHold_subst {v : ℕ} {ℓ : Lit} {val : ℕ → Bool} (h : 
   unfold GatesHold
   simp only [subst, Gate.eval_subst h]
 
+/-- On any assignment giving `v` the value of `ℓ`, rerouting `v` to `ℓ` preserves consistency. -/
 theorem consistent_subst {v : ℕ} {ℓ : Lit} {val : ℕ → Bool} (h : val v = ℓ.eval val) :
     (C.subst v ℓ).Consistent val ↔ C.Consistent val := by
   unfold Consistent
@@ -270,6 +282,7 @@ theorem children_subst_subset (v : ℕ) (ℓ : Lit) (z : ℕ) :
     · exact Or.inl ⟨hx.1, h⟩
     · exact Or.inr ⟨hx.1, h⟩
 
+/-- Rerouting an internal value to a literal preserves the size of the semi-circuit. -/
 theorem size_subst (v : ℕ) (ℓ : Lit) : (C.subst v ℓ).size = C.size := rfl
 
 /-! ### Solutions of the affine system -/
@@ -286,6 +299,8 @@ private theorem eqnsHold_add_add {val val' val'' : ℕ → Bool} (h : C.EqnsHold
     (h'' : C.EqnsHold val'') : C.EqnsHold (val + val' + val'') :=
   fun e he => Equation.holds_add_add (h e he) (h' e he) (h'' e he)
 
+/-- In a well-formed semi-circuit, `EqnsHold` depends only on the values assigned to parameters and
+auxiliary variables. -/
 theorem eqnsHold_congr {val val' : ℕ → Bool} (hC : C.WellFormed)
     (h : ∀ i ∈ C.params ∪ C.aux, val i = val' i) : C.EqnsHold val ↔ C.EqnsHold val' := by
   unfold EqnsHold Equation.Holds

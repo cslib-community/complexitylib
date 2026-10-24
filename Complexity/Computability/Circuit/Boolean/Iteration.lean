@@ -42,6 +42,8 @@ the checkpoints are chosen nonconstructively, so nothing here bounds the time to
 * `Cslib.Circuits.Boolean.Iteration.powerBudget`: the size tradeoff.
 * `Cslib.Circuits.Boolean.Iteration.FixedPowerOnBound`, `FixedPowerBound`: the tradeoffs with
   some constant.
+* `Cslib.Circuits.Boolean.Iteration.fixedOutput`: output function of the fixed-power circuit for a
+  given exponent, prefix length, sorting depth, and checkpoint table.
 
 ## Main results
 
@@ -83,6 +85,8 @@ def FixedPowerBound : Prop :=
 
 variable {n w M : ℕ}
 
+/-- The wire functions of `Record.initial` lie in `s` whenever `s` contains the orbit prefix wires
+and both Boolean constants. -/
 theorem Record.initial_wires_subset (s : Set (BooleanFunction n)) (f : BitString n → BitString n)
     {R : ℕ} (T K : ℕ) (cp : Fin M → BitString n) (hp : prefixWires f K ⊆ s)
     (hc : ∀ b : Bool, (fun _ : BitString n => b) ∈ s) :
@@ -110,6 +114,8 @@ def fixedOutput (c : Circuit signature n n) (T K d : ℕ) (cp : Fin M → BitStr
     (c.eval interpretation) T K cp x))
   reconstruct (c.eval interpretation) T K x pair.1 pair.2
 
+/-- There exists a circuit computing `fixedOutput c T K d cp` within the combined gate budget for
+orbit generation, sorting, collision detection, and state reconstruction. -/
 theorem exists_fixedOutput (c : Circuit signature n n) (T K d : ℕ) (cp : Fin M → BitString n) :
     ∃ out : Circuit signature n n,
       out.Computes interpretation (fixedOutput (w := w) c T K d cp) ∧
@@ -149,6 +155,8 @@ theorem exists_fixedOutput (c : Circuit signature n n) (T K d : ℕ) (cp : Fin M
     exact le_rfl
   exact hfinal.exists_circuit_outputs
 
+/-- Arithmetic bound bounding the raw `exists_fixedOutput` gate count for prefix length `2 * L` and
+time width `n + 2` by `40000 * (L * s + (n + 1) ^ 3 * (L + M + 1))`. -/
 theorem construction_cost (n s M L d : ℕ) (hL : 0 < L) (hd : d ≤ n + 2)
     (hR : 2 ^ d ≤ 2 * (M + 2 * L + 1)) :
     2 + 5 * (2 * L) * s + (18 * d ^ 2 + 30) * 2 ^ d * (Record.width n (n + 2) + 1) +
@@ -220,6 +228,7 @@ theorem fixed_power_on (n : ℕ) (c : Circuit signature n n) (S : Finset (BitStr
     unfold powerBudget
     gcongr
 
+/-- The invariant-set fixed-power bound holds with universal constant `40000`. -/
 theorem fixedPowerOnBound : FixedPowerOnBound := ⟨40000, fixed_power_on⟩
 
 /-- **Fixed powers.** For every exponent `T` and every `0 < L ≤ 2 ^ n` some circuit of size at
@@ -236,6 +245,7 @@ theorem fixed_power (n : ℕ) (c : Circuit signature n n) (T L : ℕ)
     simpa only [Finset.card_univ, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool]
       using hsize⟩
 
+/-- The global fixed-power bound holds with universal constant `40000`. -/
 theorem fixedPowerBound : FixedPowerBound := ⟨40000, fixed_power⟩
 
 end Cslib.Circuits.Boolean.Iteration

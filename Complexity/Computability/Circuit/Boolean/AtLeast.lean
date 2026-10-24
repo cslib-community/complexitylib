@@ -29,7 +29,8 @@ size `O(k ^ 2)` on top of them.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.atLeast`: the counting functions.
+* `Cslib.Circuits.Boolean.atLeast`, `Cslib.Circuits.Boolean.atLeastUpTo`: the counting functions,
+  and the counting functions up to a given level.
 
 ## Main results
 
@@ -51,10 +52,12 @@ def atLeast (f : ℕ → BooleanFunction n) (i j : ℕ) : BooleanFunction n :=
 
 variable (f : ℕ → BooleanFunction n)
 
+/-- At least `0` of the first `i` functions are always true. -/
 @[simp] theorem atLeast_zero_right (i : ℕ) : atLeast f i 0 = fun _ => true := by
   funext x
   simp [atLeast]
 
+/-- Among `0` functions, at least `j + 1` are never true. -/
 theorem atLeast_zero_succ (j : ℕ) : atLeast f 0 (j + 1) = fun _ => false := by
   funext x
   simp [atLeast]
@@ -123,6 +126,7 @@ theorem synthesis_atLeast {s : Set (BooleanFunction n)} {k j : ℕ} (hf : ∀ i 
   (synthesis_atLeastUpTo f k hf k le_rfl).mono Set.Subset.rfl
     (Set.singleton_subset_iff.2 ⟨k, le_rfl, j, hj, rfl⟩) le_rfl
 
+/-- On the `m` coordinate projections, `atLeast` at level `m` is `threshold m j`. -/
 theorem atLeast_eq_threshold (m j : ℕ) :
     atLeast (fun l y => if h : l < m then y ⟨l, h⟩ else false) m j = threshold m j := by
   funext y

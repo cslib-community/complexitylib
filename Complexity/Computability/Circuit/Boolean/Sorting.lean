@@ -32,11 +32,29 @@ The circuit constructor is executable; the gate-count theorems do not certify it
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.bitonicLayerCircuit`: compare corresponding records in two halves.
-* `Cslib.Circuits.Boolean.bitonicMergeCircuit`: merge a bitonic record array.
+* `Cslib.Circuits.Boolean.bitonicLayerCircuit`,
+  `Cslib.Circuits.Boolean.bitonicLayerCircuit.pairInput`,
+  `Cslib.Circuits.Boolean.bitonicLayerCircuit.gather`,
+  `Cslib.Circuits.Boolean.bitonicLayerCircuit.scatter`: compare corresponding records in two halves.
+* `Cslib.Circuits.Boolean.bitonicMergeCircuit`,
+  `Cslib.Circuits.Boolean.bitonicMergeCircuit.firstHalf`,
+  `Cslib.Circuits.Boolean.bitonicMergeCircuit.secondHalf`,
+  `Cslib.Circuits.Boolean.bitonicMergeTraceCircuit`: merge a bitonic record array, with or without
+  retaining comparison controls.
 * `Cslib.Circuits.Boolean.bitonicSortCircuit`: sort a power-of-two record array.
-* `Cslib.Circuits.Boolean.bitonicSortTraceCircuit`: sort and retain the comparison controls.
-* `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.pack`: controls followed by records.
+* `Cslib.Circuits.Boolean.bitonicSortTraceCircuit`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.layer`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.pair`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.pairs`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.halves`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.collect`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.chain`: sort and retain the comparison controls.
+* `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.flatten`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.controls`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.records`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.pack`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.layout`: wire layout of controls followed by
+  records.
 
 ## Main results
 
@@ -126,6 +144,7 @@ namespace bitonicSortTraceCircuit
 def flatten {n r : ℕ} (x : Fin n → BitString r) : BitString (n * r) :=
   fun i => x (finProdFinEquiv.symm i).1 (finProdFinEquiv.symm i).2
 
+/-- Taking the record view of a flattened record array recovers the array. -/
 @[simp] theorem directProductInput_flatten {n r : ℕ} (x : Fin n → BitString r) :
     directProductInput (flatten x) = x := by
   funext i b
@@ -144,18 +163,21 @@ def pack {t n r : ℕ} (c : Fin t → BitString 2) (x : Fin n → BitString r) :
     BitString (t * 2 + n * r) :=
   Fin.append (flatten c) (flatten x)
 
+/-- Reading the controls of `pack c x` recovers `c`. -/
 @[simp] theorem controls_pack {t n r : ℕ} (c : Fin t → BitString 2)
     (x : Fin n → BitString r) : controls (pack c x) = c := by
   funext i b
   simp only [controls, pack, flatten, directProductInput, Function.comp_apply,
     Fin.append_left, Equiv.symm_apply_apply]
 
+/-- Reading the records of `pack c x` recovers `x`. -/
 @[simp] theorem records_pack {t n r : ℕ} (c : Fin t → BitString 2)
     (x : Fin n → BitString r) : records (pack c x) = x := by
   funext i b
   simp only [records, pack, flatten, directProductInput, Function.comp_apply,
     Fin.append_right, Equiv.symm_apply_apply]
 
+/-- Restricting `pack c x` to the suffix past the control wires yields `flatten x`. -/
 @[simp] theorem pack_comp_natAdd {t n r : ℕ} (c : Fin t → BitString 2)
     (x : Fin n → BitString r) : pack c x ∘ Fin.natAdd (t * 2) = flatten x :=
   Fin.append_comp_natAdd _ _

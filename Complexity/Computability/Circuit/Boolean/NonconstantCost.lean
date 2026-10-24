@@ -42,11 +42,16 @@ def Boolean.nonconstantCost : Boolean.Op → ℕ
   | .const _ => 0
   | .not | .and | .or => 1
 
+/-- Constant gates have `nonconstantCost` equal to `0`. -/
 @[simp] theorem Boolean.nonconstantCost_const (b : Bool) : nonconstantCost (.const b) = 0 := rfl
+/-- Negation gates have `nonconstantCost` equal to `1`. -/
 @[simp] theorem Boolean.nonconstantCost_not : nonconstantCost .not = 1 := rfl
+/-- Conjunction gates have `nonconstantCost` equal to `1`. -/
 @[simp] theorem Boolean.nonconstantCost_and : nonconstantCost .and = 1 := rfl
+/-- Disjunction gates have `nonconstantCost` equal to `1`. -/
 @[simp] theorem Boolean.nonconstantCost_or : nonconstantCost .or = 1 := rfl
 
+/-- Every De Morgan operation has `nonconstantCost` at most `1`. -/
 theorem Boolean.nonconstantCost_le_one (op : Boolean.Op) : nonconstantCost op ≤ 1 := by
   cases op <;> simp
 

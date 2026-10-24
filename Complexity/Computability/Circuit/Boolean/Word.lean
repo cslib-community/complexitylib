@@ -64,14 +64,17 @@ variable {n k w R : ℕ}
 def word (bits : BitString w) : BitVec w :=
   (BitVec.ofBoolListLE (List.ofFn bits)).cast (by simp)
 
+/-- Bit `i` (least significant first) of `word bits` is `bits i`. -/
 theorem getLsbD_word (bits : BitString w) (i : Fin w) :
     (word bits).getLsbD i.val = bits i := by
   rw [word, BitVec.getLsbD_cast, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD]
   simp
 
+/-- Indexing `word bits` at `i < w` returns `bits ⟨i, hi⟩`. -/
 @[simp] theorem getElem_word (bits : BitString w) (i : ℕ) (hi : i < w) :
     (word bits)[i] = bits ⟨i, hi⟩ := getLsbD_word bits ⟨i, hi⟩
 
+/-- Rebuilding a `word` from the bits `a.getLsbD i` recovers `a`. -/
 theorem word_getLsbD (a : BitVec w) : word (fun i : Fin w => a.getLsbD i.val) = a :=
   BitVec.eq_of_getLsbD_eq fun i hi => getLsbD_word _ ⟨i, hi⟩
 

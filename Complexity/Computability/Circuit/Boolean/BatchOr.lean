@@ -31,6 +31,11 @@ and cannot introduce a spurious source. These gate bounds do not certify constru
 
 * `Cslib.Circuits.Boolean.batchOrCircuit`: shared OR lookup with automatic padding.
 * `Cslib.Circuits.Boolean.batchOrCircuit.withPadding`: the same construction with supplied padding.
+* `Cslib.Circuits.Boolean.batchOrCircuit.rows`, `batchOrCircuit.substitution`,
+  `batchOrCircuit.requestIndex`, `batchOrCircuit.outputs`: record layout and output wiring for the
+  padded network.
+* `Cslib.Circuits.Boolean.batchOrCircuit.depth`, `batchOrCircuit.padding`: canonical sorting depth
+  and padding count for a batch of requests and sources.
 
 ## Main results
 

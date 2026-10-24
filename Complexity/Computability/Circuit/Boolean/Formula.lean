@@ -30,6 +30,7 @@ formulas are at least as strong as for formulas whose negations sit at the leave
 * `Cslib.Circuits.Formula.xor`: the exclusive or `(F ∧ ¬G) ∨ (¬F ∧ G)`.
 * `Cslib.Circuits.Formula.orList`, `Cslib.Circuits.Formula.andList`: the disjunction and the
   conjunction of a list of formulas as balanced trees of binary gates (`Formula.balanced`).
+* `Cslib.Circuits.Formula.literal`: the literal of bit `i` that is true at `z`.
 * `Cslib.Circuits.Boolean.formulaDepth`: the least depth of a De Morgan formula for a function,
   with negations and constants free.
 
@@ -78,53 +79,67 @@ def or : Formula signature n :=
 def xor : Formula signature n :=
   (F.and G.not).or (F.not.and G)
 
+/-- Evaluating `const c` returns `c`. -/
 @[simp] theorem eval_const (c : Bool) : (const c : Formula signature n).eval interpretation x = c :=
   rfl
 
+/-- Evaluating `F.not` negates the value of `F`. -/
 @[simp] theorem eval_not : F.not.eval interpretation x = !F.eval interpretation x :=
   rfl
 
+/-- Evaluating `F.and G` takes the conjunction of the values of `F` and `G`. -/
 @[simp] theorem eval_and :
     (F.and G).eval interpretation x = (F.eval interpretation x && G.eval interpretation x) :=
   rfl
 
+/-- Evaluating `F.or G` takes the disjunction of the values of `F` and `G`. -/
 @[simp] theorem eval_or :
     (F.or G).eval interpretation x = (F.eval interpretation x || G.eval interpretation x) :=
   rfl
 
+/-- Evaluating `F.xor G` takes the exclusive or of the values of `F` and `G`. -/
 @[simp] theorem eval_xor :
     (F.xor G).eval interpretation x = (F.eval interpretation x ^^ G.eval interpretation x) := by
   simp only [xor, eval_or, eval_and, eval_not]
   cases F.eval interpretation x <;> cases G.eval interpretation x <;> rfl
 
+/-- Negation preserves the leaf size of a formula. -/
 @[simp] theorem leafSize_not : F.not.leafSize = F.leafSize :=
   Fin.sum_univ_one _
 
+/-- The leaf size of a conjunction is the sum of the leaf sizes of its conjuncts. -/
 @[simp] theorem leafSize_and : (F.and G).leafSize = F.leafSize + G.leafSize :=
   Fin.sum_univ_two _
 
+/-- The leaf size of a disjunction is the sum of the leaf sizes of its disjuncts. -/
 @[simp] theorem leafSize_or : (F.or G).leafSize = F.leafSize + G.leafSize :=
   Fin.sum_univ_two _
 
+/-- The leaf size of `F.xor G` is twice the sum of the leaf sizes of `F` and `G`. -/
 @[simp] theorem leafSize_xor : (F.xor G).leafSize = 2 * F.leafSize + 2 * G.leafSize := by
   simp only [xor, leafSize_or, leafSize_and, leafSize_not]
   omega
 
+/-- A constant formula has no input leaves. -/
 @[simp] theorem leafSize_const (c : Bool) : (const c : Formula signature n).leafSize = 0 :=
   rfl
 
+/-- A constant formula has no leaves in `Y`. -/
 @[simp] theorem leafSizeIn_const (Y : Finset (Fin n)) (c : Bool) :
     (const c : Formula signature n).leafSizeIn Y = 0 :=
   rfl
 
+/-- Negation preserves the number of leaves in `Y`. -/
 @[simp] theorem leafSizeIn_not (Y : Finset (Fin n)) :
     F.not.leafSizeIn Y = F.leafSizeIn Y :=
   Fin.sum_univ_one _
 
+/-- The number of leaves in `Y` of a conjunction is the sum of those of its conjuncts. -/
 @[simp] theorem leafSizeIn_and (Y : Finset (Fin n)) :
     (F.and G).leafSizeIn Y = F.leafSizeIn Y + G.leafSizeIn Y :=
   Fin.sum_univ_two _
 
+/-- The number of leaves in `Y` of a disjunction is the sum of those of its disjuncts. -/
 @[simp] theorem leafSizeIn_or (Y : Finset (Fin n)) :
     (F.or G).leafSizeIn Y = F.leafSizeIn Y + G.leafSizeIn Y :=
   Fin.sum_univ_two _
@@ -171,18 +186,23 @@ theorem depth_xor_le : (F.xor G).depth ≤ max F.depth G.depth + 3 := by
   simp only [xor, depth_or, depth_and, depth_not]
   omega
 
+/-- The weighted depth of `const c` is `cost (.const c)`. -/
 @[simp] theorem depthWith_const (cost : Op → ℕ) (c : Bool) :
     (const c : Formula signature n).depthWith cost = cost (.const c) := by
   simp [const]
 
+/-- The weighted depth of `F.not` adds `cost .not` to the weighted depth of `F`. -/
 @[simp] theorem depthWith_not (cost : Op → ℕ) :
     F.not.depthWith cost = F.depthWith cost + cost .not := by
   simp [not]
 
+/-- The weighted depth of `F.and G` adds `cost .and` to the maximum weighted depth of `F` and
+`G`. -/
 @[simp] theorem depthWith_and (cost : Op → ℕ) :
     (F.and G).depthWith cost = max (F.depthWith cost) (G.depthWith cost) + cost .and := by
   simp [and, Fin.univ_succ]
 
+/-- The weighted depth of `F.or G` adds `cost .or` to the maximum weighted depth of `F` and `G`. -/
 @[simp] theorem depthWith_or (cost : Op → ℕ) :
     (F.or G).depthWith cost = max (F.depthWith cost) (G.depthWith cost) + cost .or := by
   simp [or, Fin.univ_succ]
@@ -205,6 +225,7 @@ constant `true` for no formulas. -/
 def andList (l : List (Formula signature n)) : Formula signature n :=
   balanced .and rfl (const true) l
 
+/-- Evaluating `orList l` tests whether any formula in `l` evaluates to `true`. -/
 @[simp] theorem eval_orList (l : List (Formula signature n)) :
     (orList l).eval interpretation x = l.any fun F => F.eval interpretation x := by
   rw [orList, eval_balanced]
@@ -212,6 +233,7 @@ def andList (l : List (Formula signature n)) : Formula signature n :=
   rw [List.balancedFold_eq_foldr]
   induction l <;> simp_all
 
+/-- Evaluating `andList l` tests whether every formula in `l` evaluates to `true`. -/
 @[simp] theorem eval_andList (l : List (Formula signature n)) :
     (andList l).eval interpretation x = l.all fun F => F.eval interpretation x := by
   rw [andList, eval_balanced]
@@ -277,11 +299,13 @@ theorem depthWith_binaryCost_andList_le {l : List (Formula signature n)} {d : �
 def literal (z : BitString n) (i : Fin n) : Formula signature n :=
   if z i then input i else (input i).not
 
+/-- Evaluating `literal z i` at `x` tests whether `x i` equals `z i`. -/
 @[simp] theorem eval_literal (z : BitString n) (i : Fin n) :
     (literal z i).eval interpretation x = (x i == z i) := by
   unfold literal
   cases z i <;> cases hx : x i <;> simp [hx]
 
+/-- A literal has binary-gate depth zero. -/
 @[simp] theorem depthWith_literal (z : BitString n) (i : Fin n) :
     (literal z i).depthWith binaryCost = 0 := by
   unfold literal

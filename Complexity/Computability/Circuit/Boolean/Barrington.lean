@@ -49,6 +49,8 @@ polynomial-length branching programs and logarithmic-depth formulas compute the 
 
 ## Main definitions
 
+* `Cslib.BranchingPrograms.Instruction.entryFormula`: the formula saying that an instruction maps
+  `a` to `b`.
 * `Cslib.BranchingPrograms.MonoidProgram.entryFormula`: the formula saying that a branching
   program maps `a` to `b`.
 * `Cslib.BranchingPrograms.MonoidProgram.entryFormulaMul`: the formulas of a program from those of
@@ -232,6 +234,7 @@ def Instruction.entryFormula (I : Instruction (Fin n) Bool (Function.End (Fin w)
   | true, false => (Formula.input I.var).not
   | false, false => .const false
 
+/-- Evaluating `I.entryFormula a b` at `x` decides whether `I.eval x` maps `a` to `b`. -/
 @[simp] theorem Instruction.eval_entryFormula
     (I : Instruction (Fin n) Bool (Function.End (Fin w))) (a b : Fin w) (x : BitString n) :
     (I.entryFormula a b).eval interpretation x = decide ((I.eval x) a = b) := by
@@ -239,6 +242,7 @@ def Instruction.entryFormula (I : Instruction (Fin n) Bool (Function.End (Fin w)
   cases h₀ : decide (I.select false a = b) <;> cases h₁ : decide (I.select true a = b) <;>
     cases hx : x I.var <;> simp_all [Instruction.eval]
 
+/-- The entry formula of an instruction has binary-gate depth zero. -/
 @[simp] theorem Instruction.depthWith_entryFormula
     (I : Instruction (Fin n) Bool (Function.End (Fin w))) (a b : Fin w) :
     (I.entryFormula a b).depthWith binaryCost = 0 := by
@@ -268,6 +272,7 @@ def entryFormula (P : MonoidProgram (Fin n) Bool (Function.End (Fin w))) (a b : 
   P.toList.balancedFold entryFormulaMul (fun a b => .const (decide (a = b)))
     Instruction.entryFormula a b
 
+/-- Evaluating `P.entryFormula a b` at `x` decides whether `P.eval x` maps `a` to `b`. -/
 @[simp] theorem eval_entryFormula (P : MonoidProgram (Fin n) Bool (Function.End (Fin w)))
     (a b : Fin w) (x : BitString n) :
     (P.entryFormula a b).eval interpretation x = decide ((P.eval x) a = b) := by
@@ -300,6 +305,8 @@ private theorem isNNF_entryFormula (P : MonoidProgram (Fin n) Bool (Function.End
   obtain ⟨c, -, rfl⟩ := List.mem_map.1 hF
   exact .and (hv a c) (hu c b)
 
+/-- The entry formula of a width-`w` branching program `P` has binary-gate depth at most
+`(⌈log₂ w⌉ + 1) ⌈log₂ P.length⌉`. -/
 theorem depthWith_entryFormula_le (P : MonoidProgram (Fin n) Bool (Function.End (Fin w)))
     (a b : Fin w) :
     (P.entryFormula a b).depthWith binaryCost ≤ (Nat.clog 2 w + 1) * Nat.clog 2 P.length := by

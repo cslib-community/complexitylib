@@ -25,8 +25,12 @@ exactly two layers per designated-output depth, with output selection as separat
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Layered.Node`: constants, copies and NANDs.
-* `Cslib.Circuits.Boolean.Layered.eval`: evaluation of a list of layers.
+* `Cslib.Circuits.Boolean.Layered.Node`, `Cslib.Circuits.Boolean.Layered.Node.code`,
+  `Cslib.Circuits.Boolean.Layered.Node.Valid`, `Cslib.Circuits.Boolean.Layered.Node.eval`:
+  constants, copies and NANDs, together with their tuple code, reference validity, and node
+  evaluation.
+* `Cslib.Circuits.Boolean.Layered.evalLayer`, `Cslib.Circuits.Boolean.Layered.eval`: evaluation of a
+  single layer and of a list of layers.
 * `Cslib.Circuits.Boolean.Layered.outputWidth`: the number of wires in the final row.
 * `Cslib.Circuits.Boolean.Layered.select`: ordered output wiring, allowing repeated wires.
 * `Cslib.Circuits.Boolean.Layered.WellFormed`: all references read the preceding layer.
@@ -57,6 +61,7 @@ def Node.code : Node → (Bool × Bool) × ℕ × ℕ
   | .copy i => ((true, false), i, 0)
   | .nand i j => ((true, true), i, j)
 
+/-- A node is uniquely determined by its tag-and-index tuple `Node.code`. -/
 theorem Node.code_injective : Function.Injective Node.code := by
   intro a b h
   cases a <;> cases b <;> simp_all [Node.code]
@@ -84,6 +89,7 @@ def Node.eval (inputs : List Bool) : Node → Bool
 def evalLayer (inputs : List Bool) (layer : List Node) : List Bool :=
   layer.map (Node.eval inputs)
 
+/-- Evaluating a layer produces one output bit per node in the layer. -/
 @[simp] theorem length_evalLayer (inputs : List Bool) (layer : List Node) :
     (evalLayer inputs layer).length = layer.length := List.length_map _
 
@@ -92,11 +98,14 @@ def eval (inputs : List Bool) : List (List Node) → List Bool
   | [] => inputs
   | layer :: layers => eval (evalLayer inputs layer) layers
 
+/-- Evaluating an empty schedule leaves the inputs unchanged. -/
 @[simp] theorem eval_nil (inputs : List Bool) : eval inputs [] = inputs := rfl
 
+/-- Evaluating `layer :: layers` evaluates `layer` on the inputs and then runs `layers`. -/
 @[simp] theorem eval_cons (inputs : List Bool) (layer : List Node) (layers : List (List Node)) :
     eval inputs (layer :: layers) = eval (evalLayer inputs layer) layers := rfl
 
+/-- Evaluating a concatenation of layer schedules runs the first schedule and then the second. -/
 theorem eval_append (inputs : List Bool) (first second : List (List Node)) :
     eval inputs (first ++ second) = eval (eval inputs first) second := by
   induction first generalizing inputs with
@@ -108,12 +117,15 @@ def outputWidth (inputCount : ℕ) : List (List Node) → ℕ
   | [] => inputCount
   | layer :: layers => outputWidth layer.length layers
 
+/-- The output width of an empty schedule is the input width. -/
 @[simp] theorem outputWidth_nil (inputCount : ℕ) : outputWidth inputCount [] = inputCount := rfl
 
+/-- The output width of `layer :: layers` is the output width of `layers` from `layer.length`. -/
 @[simp] theorem outputWidth_cons (inputCount : ℕ) (layer : List Node)
     (layers : List (List Node)) :
     outputWidth inputCount (layer :: layers) = outputWidth layer.length layers := rfl
 
+/-- The output width of a concatenated schedule is the output width of the second from the first. -/
 theorem outputWidth_append (inputCount : ℕ) (first second : List (List Node)) :
     outputWidth inputCount (first ++ second) =
       outputWidth (outputWidth inputCount first) second := by
@@ -132,6 +144,7 @@ theorem outputWidth_append (inputCount : ℕ) (first second : List (List Node)) 
 def select (inputs : List Bool) (outputs : List ℕ) : List Bool :=
   outputs.map (inputs.getD · false)
 
+/-- Output selection produces one bit per requested wire index. -/
 @[simp] theorem length_select (inputs : List Bool) (outputs : List ℕ) :
     (select inputs outputs).length = outputs.length := List.length_map _
 
@@ -148,13 +161,18 @@ def WellFormed (inputCount : ℕ) : List (List Node) → Prop
   | [] => True
   | layer :: layers => (∀ node ∈ layer, node.Valid inputCount) ∧ WellFormed layer.length layers
 
+/-- The empty layer schedule is well-formed for any input width. -/
 @[simp] theorem wellFormed_nil (inputCount : ℕ) : WellFormed inputCount [] := trivial
 
+/-- `layer :: layers` is well-formed iff every node in `layer` is valid for `inputCount` and
+`layers` is well-formed for `layer.length`. -/
 @[simp] theorem wellFormed_cons (inputCount : ℕ) (layer : List Node)
     (layers : List (List Node)) :
     WellFormed inputCount (layer :: layers) ↔
       (∀ node ∈ layer, node.Valid inputCount) ∧ WellFormed layer.length layers := Iff.rfl
 
+/-- A concatenated schedule is well-formed iff the first is well-formed and the second is
+well-formed for the output width of the first. -/
 theorem wellFormed_append (inputCount : ℕ) (first second : List (List Node)) :
     WellFormed inputCount (first ++ second) ↔
       WellFormed inputCount first ∧ WellFormed (outputWidth inputCount first) second := by

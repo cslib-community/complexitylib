@@ -23,6 +23,8 @@ The number of binary gates is optimal by Schnorr's bound,
 
 ## Main definitions
 
+* `Cslib.Circuits.Program.appendXor`: append four De Morgan gates computing the exclusive or of two
+  wires.
 * `Cslib.Circuits.Boolean.parityProgram`: a De Morgan program for the parity of the first bits.
 
 ## Main results
@@ -62,6 +64,7 @@ private theorem Program.trace_appendXor (p : Program Boolean.signature n g) (u v
     Boolean.interpretation, trace_eq, trace_gate_castSucc]
   cases p.trace Boolean.interpretation x u <;> cases p.trace Boolean.interpretation x v <;> rfl
 
+/-- Appending an exclusive-or gadget adds `3` to the binary gate cost of a De Morgan program. -/
 @[simp] theorem Program.cost_appendXor (p : Program Boolean.signature n g) (u v : Wire n g) :
     (p.appendXor u v).cost Boolean.binaryCost = p.cost Boolean.binaryCost + 3 := by
   simp [appendXor]

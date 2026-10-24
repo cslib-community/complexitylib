@@ -59,10 +59,12 @@ variable {n N : ℕ}
 def substitute (ρ : Fin N → Fin n ⊕ Bool) (x : Fin n → Bool) : Fin N → Bool :=
   fun j => (ρ j).elim x id
 
+/-- At an input mapped by `ρ` to variable `.inl i`, `substitute ρ x` evaluates to `x i`. -/
 @[simp] theorem substitute_inl {ρ : Fin N → Fin n ⊕ Bool} {x : Fin n → Bool} {j : Fin N}
     {i : Fin n} (h : ρ j = .inl i) : substitute ρ x j = x i := by
   simp [substitute, h]
 
+/-- At an input mapped by `ρ` to constant `.inr b`, `substitute ρ x` evaluates to `b`. -/
 @[simp] theorem substitute_inr {ρ : Fin N → Fin n ⊕ Bool} {x : Fin n → Bool} {j : Fin N}
     {b : Bool} (h : ρ j = .inr b) : substitute ρ x j = b := by
   simp [substitute, h]
@@ -130,6 +132,7 @@ theorem complexity_substitute_le (ρ : Fin N → Fin n ⊕ Bool) (f : BooleanFun
 def appendInputs {p : ℕ} (r : Fin p → Bool) : Fin (n + p) → Fin n ⊕ Bool :=
   Fin.append Sum.inl (Sum.inr ∘ r)
 
+/-- Substituting `appendInputs r` on `x` appends `r` after `x`. -/
 @[simp] theorem substitute_appendInputs {p : ℕ} (r : Fin p → Bool) (x : Fin n → Bool) :
     substitute (appendInputs r) x = Fin.append x r := by
   funext j
@@ -139,6 +142,7 @@ def appendInputs {p : ℕ} (r : Fin p → Bool) : Fin (n + p) → Fin n ⊕ Bool
 def prependInputs {p : ℕ} (r : Fin p → Bool) : Fin (p + n) → Fin n ⊕ Bool :=
   Fin.append (Sum.inr ∘ r) Sum.inl
 
+/-- Substituting `prependInputs r` on `x` prepends `r` before `x`. -/
 @[simp] theorem substitute_prependInputs {p : ℕ} (r : Fin p → Bool) (x : Fin n → Bool) :
     substitute (prependInputs r) x = Fin.append r x := by
   funext j

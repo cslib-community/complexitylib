@@ -93,6 +93,7 @@ below `s`. -/
 def Shallow (s : ℕ) (ρ : PartialAssignment (Fin n)) (f : BitString n → Bool) : Prop :=
   DecisionTree.complexity (fun x => f (ρ.fill x)) < s
 
+/-- Classical decidability of `Shallow s ρ f`. -/
 noncomputable instance (s : ℕ) (ρ : PartialAssignment (Fin n)) (f : BitString n → Bool) :
     Decidable (Shallow s ρ f) :=
   inferInstanceAs (Decidable (_ < s))

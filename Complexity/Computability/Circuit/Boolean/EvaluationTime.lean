@@ -85,9 +85,12 @@ def evalCode (I : Interpretation σ U) (d : U) (x : List U) (gates : List (σ.Op
     List U :=
   gates.foldl (fun values g => values ++ [I g.1 fun a => g.2[a.val]?.elim d (values.getD · d)]) x
 
+/-- Evaluating an empty gate list returns the initial wire values unchanged. -/
 @[simp] theorem evalCode_nil (I : Interpretation σ U) (d : U) (x : List U) :
     evalCode I d x [] = x := rfl
 
+/-- Evaluating a gate list followed by one gate `g` appends `g`'s evaluated output to the wire
+values computed by `gates`. -/
 theorem evalCode_append_singleton (I : Interpretation σ U) (d : U) (x : List U)
     (gates : List (σ.Op × List ℕ)) (g : σ.Op × List ℕ) :
     evalCode I d x (gates ++ [g]) =
@@ -95,6 +98,8 @@ theorem evalCode_append_singleton (I : Interpretation σ U) (d : U) (x : List U)
         [I g.1 fun a => g.2[a.val]?.elim d ((evalCode I d x gates).getD · d)] := by
   simp [evalCode, List.foldl_append]
 
+/-- Evaluating a concatenation of gate lists evaluates the second list starting from the wire
+values produced by the first. -/
 theorem evalCode_append (I : Interpretation σ U) (d : U) (x : List U)
     (gates gates' : List (σ.Op × List ℕ)) :
     evalCode I d x (gates ++ gates') = evalCode I d (evalCode I d x gates) gates' := by

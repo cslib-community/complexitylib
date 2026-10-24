@@ -25,15 +25,18 @@ bases of TC⁰ (majority gates) and AC⁰[q] (`MOD_q` gates): `extSignature` and
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Unbounded.signature`: negation, and conjunction and disjunction of every
+* `Cslib.Circuits.Boolean.Unbounded.Op`, `Cslib.Circuits.Boolean.Unbounded.Op.arity`,
+  `Cslib.Circuits.Boolean.Unbounded.signature`: negation, and conjunction and disjunction of every
   arity.
 * `Cslib.Circuits.Boolean.Unbounded.interpretation`: their Boolean meaning.
 * `Cslib.Circuits.Boolean.Unbounded.andOrCost`: the costs of the AND/OR depth, in which
   negations are free.
-* `Cslib.Circuits.Boolean.Unbounded.deMorganToUnbounded`: the De Morgan basis inside it.
-* `Cslib.Circuits.Boolean.Unbounded.extSignature`,
-  `Cslib.Circuits.Boolean.Unbounded.extInterpretation`: the basis with one extra gate of every
-  arity.
+* `Cslib.Circuits.Boolean.Unbounded.deMorganOp`,
+  `Cslib.Circuits.Boolean.Unbounded.deMorganToUnbounded`: the De Morgan basis inside it.
+* `Cslib.Circuits.Boolean.Unbounded.ExtOp`, `Cslib.Circuits.Boolean.Unbounded.ExtOp.arity`,
+  `Cslib.Circuits.Boolean.Unbounded.extSignature`,
+  `Cslib.Circuits.Boolean.Unbounded.extInterpretation`,
+  `Cslib.Circuits.Boolean.Unbounded.toExt`: the basis with one extra gate of every arity.
 
 ## Main results
 
@@ -78,14 +81,17 @@ def interpretation : Interpretation signature Bool
   | .and _, x => decide (∀ j, x j = true)
   | .or _, x => decide (∃ j, x j = true)
 
+/-- `interpretation .not` negates its single input bit. -/
 @[simp] theorem interpretation_not (x : Fin 1 → Bool) :
     interpretation .not x = !x 0 :=
   rfl
 
+/-- `interpretation (.and m)` is `true` iff all `m` arguments are `true`. -/
 @[simp] theorem interpretation_and (m : ℕ) (x : Fin m → Bool) :
     interpretation (.and m) x = decide (∀ j, x j = true) :=
   rfl
 
+/-- `interpretation (.or m)` is `true` iff at least one of its `m` arguments is `true`. -/
 @[simp] theorem interpretation_or (m : ℕ) (x : Fin m → Bool) :
     interpretation (.or m) x = decide (∃ j, x j = true) :=
   rfl
@@ -136,12 +142,16 @@ def andOrCost : Op → ℕ
   | .and _ => 1
   | .or _ => 1
 
+/-- Negation has zero AND/OR cost. -/
 @[simp] theorem andOrCost_not : andOrCost .not = 0 := rfl
 
+/-- Unbounded conjunction has AND/OR cost `1`. -/
 @[simp] theorem andOrCost_and (m : ℕ) : andOrCost (.and m) = 1 := rfl
 
+/-- Unbounded disjunction has AND/OR cost `1`. -/
 @[simp] theorem andOrCost_or (m : ℕ) : andOrCost (.or m) = 1 := rfl
 
+/-- Every operation in the unbounded fan-in basis has AND/OR cost at most `1`. -/
 theorem andOrCost_le_one (op : Op) : andOrCost op ≤ 1 := by
   cases op <;> simp
 
@@ -183,10 +193,12 @@ def extInterpretation (g : ∀ m, BooleanFunction m) : Interpretation extSignatu
   | .ac op, x => interpretation op x
   | .gate m, x => g m x
 
+/-- On an `AC⁰` operation `.ac op`, `extInterpretation g` agrees with `interpretation op`. -/
 @[simp] theorem extInterpretation_ac (g : ∀ m, BooleanFunction m) (op : Op)
     (x : Fin op.arity → Bool) : extInterpretation g (.ac op) x = interpretation op x :=
   rfl
 
+/-- On an extra gate `.gate m`, `extInterpretation g` evaluates `g m`. -/
 @[simp] theorem extInterpretation_gate (g : ∀ m, BooleanFunction m) (m : ℕ) (x : Fin m → Bool) :
     extInterpretation g (.gate m) x = g m x :=
   rfl
@@ -195,6 +207,7 @@ def extInterpretation (g : ∀ m, BooleanFunction m) : Interpretation extSignatu
 def toExt : signature.Hom extSignature :=
   ⟨ExtOp.ac, fun _ => rfl⟩
 
+/-- The inclusion `toExt` preserves Boolean semantics for every family of gate functions `g`. -/
 instance preserves_toExt (g : ∀ m, BooleanFunction m) :
     toExt.Preserves interpretation (extInterpretation g) :=
   ⟨fun _ _ => rfl⟩
@@ -212,10 +225,12 @@ def deMorganOp : Boolean.Op → Op
 def deMorganToUnbounded : Boolean.signature.Hom signature :=
   ⟨deMorganOp, fun op => by rcases op with (_ | _) | _ | _ | _ <;> rfl⟩
 
+/-- `deMorganToUnbounded` acts on operations via `deMorganOp`. -/
 @[simp] theorem deMorganToUnbounded_apply (op : Boolean.Op) :
     deMorganToUnbounded op = deMorganOp op :=
   rfl
 
+/-- The embedding `deMorganToUnbounded` preserves Boolean semantics. -/
 instance preserves_deMorganToUnbounded :
     deMorganToUnbounded.Preserves Boolean.interpretation interpretation :=
   ⟨fun op x => by

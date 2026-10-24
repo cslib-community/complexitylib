@@ -37,10 +37,13 @@ size at the polynomially bounded arities of the queries, shows the converse
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.OracleOp`, `Cslib.Circuits.Boolean.oracleSignature`,
-  `Cslib.Circuits.Boolean.oracleInterpretation`: the De Morgan basis with oracle gates.
+* `Cslib.Circuits.Boolean.OracleOp`, `Cslib.Circuits.Boolean.OracleOp.arity`,
+  `Cslib.Circuits.Boolean.oracleSignature`, `Cslib.Circuits.Boolean.oracleInterpretation`: the De
+  Morgan basis with oracle gates.
 * `Cslib.Circuits.Boolean.toOracle`: the De Morgan basis inside it.
-* `Cslib.Circuits.Boolean.inlineOracle`: the circuit with its oracle gates replaced.
+* `Cslib.Circuits.Boolean.oracleImpl`, `Cslib.Circuits.Boolean.oracleSize`,
+  `Cslib.Circuits.Boolean.oracleDepth`, `Cslib.Circuits.Boolean.inlineOracle`: gate replacement and
+  cost functions for inlining oracle gates.
 * `Cslib.Circuits.Boolean.PPolyOracle`: `P/poly` relative to an oracle.
 
 ## Main results
@@ -83,11 +86,14 @@ noncomputable def oracleInterpretation (A : Language Bool) : Interpretation orac
   | .base op, x => interpretation op x
   | .query q, x => A.slice q x
 
+/-- `oracleInterpretation A` interprets a base operation using the standard De Morgan
+interpretation. -/
 @[simp] theorem oracleInterpretation_base (A : Language Bool) (op : Op)
     (x : Fin (signature.Arity op) → Bool) :
     oracleInterpretation A (.base op) x = interpretation op x :=
   rfl
 
+/-- `oracleInterpretation A` interprets an arity-`q` query gate using `A.slice q`. -/
 @[simp] theorem oracleInterpretation_query (A : Language Bool) (q : ℕ) (x : Fin q → Bool) :
     oracleInterpretation A (.query q) x = A.slice q x :=
   rfl
@@ -96,6 +102,7 @@ noncomputable def oracleInterpretation (A : Language Bool) : Interpretation orac
 def toOracle : signature.Hom oracleSignature :=
   ⟨OracleOp.base, fun _ => rfl⟩
 
+/-- The embedding `toOracle` of the De Morgan basis into the oracle basis preserves semantics. -/
 instance preserves_toOracle (A : Language Bool) :
     toOracle.Preserves interpretation (oracleInterpretation A) :=
   ⟨fun _ _ => rfl⟩

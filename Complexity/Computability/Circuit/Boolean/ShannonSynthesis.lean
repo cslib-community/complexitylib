@@ -25,6 +25,9 @@ the resulting circuit's size; it does not certify the synthesizer's running time
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.ShannonSynthesis.addressWidth`,
+  `Cslib.Circuits.Boolean.ShannonSynthesis.dataWidth`: widths of the address and data blocks in the
+  finite Shannon split.
 * `Cslib.Circuits.Boolean.ShannonSynthesis.synthesize`: choose the split and build a circuit.
 
 ## Main results
@@ -53,6 +56,7 @@ def addressWidth (n : ℕ) : ℕ := Nat.log 2 n - 1
 /-- Width of the remaining data block. -/
 def dataWidth (n : ℕ) : ℕ := n - addressWidth n
 
+/-- The address width and data width sum to the total input width `n`. -/
 @[simp] theorem addressWidth_add_dataWidth (n : ℕ) : addressWidth n + dataWidth n = n :=
   Nat.add_sub_of_le ((Nat.sub_le _ _).trans (Nat.log_le_self 2 n))
 
@@ -121,6 +125,7 @@ def synthesize (f : BooleanFunction n) : Circuit signature n 1 :=
   (circuit (fun x => f (x ∘ Fin.cast (addressWidth_add_dataWidth n).symm))).comp
     (Circuit.wiring signature (Fin.cast (addressWidth_add_dataWidth n)))
 
+/-- `synthesize f` evaluates to `f x` at its single output wire. -/
 @[simp] theorem eval_synthesize (f : BooleanFunction n) (x : BitString n) (i : Fin 1) :
     (synthesize f).eval interpretation x i = f x := by
   simp [synthesize, Function.comp_def]

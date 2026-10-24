@@ -31,10 +31,11 @@ larger depth, and every gate reading at most `n + s` wires (`Unbounded.arity_lin
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Unbounded.multSignature`,
+* `Cslib.Circuits.Boolean.Unbounded.MultOp`, `Cslib.Circuits.Boolean.Unbounded.MultOp.arity`,
+  `Cslib.Circuits.Boolean.Unbounded.multSignature`,
   `Cslib.Circuits.Boolean.Unbounded.multInterpretation`: symmetric gates with multiplicities.
-* `Cslib.Circuits.Boolean.Unbounded.multCircuit`: the circuit whose symmetric gates read their
-  distinct wires with multiplicities.
+* `Cslib.Circuits.Boolean.Unbounded.multLine`, `Cslib.Circuits.Boolean.Unbounded.multCircuit`:
+  the line and circuit whose symmetric gates read their distinct wires with multiplicities.
 
 ## Main results
 
@@ -85,10 +86,14 @@ def multInterpretation (G : ℕ → ℕ → Bool) : Interpretation multSignature
   | .ac op, x => interpretation op x
   | .gate _ mult, x => G (∑ i, mult i) (multWeight mult x)
 
+/-- Evaluating an unbounded fan-in gate `.ac op` under `multInterpretation G` agrees with
+`interpretation op`. -/
 @[simp] theorem multInterpretation_ac (G : ℕ → ℕ → Bool) (op : Op) (x : Fin op.arity → Bool) :
     multInterpretation G (.ac op) x = interpretation op x :=
   rfl
 
+/-- Evaluating a symmetric gate `.gate N mult` under `multInterpretation G` applies
+`G (∑ i, mult i)` to `multWeight mult x`. -/
 @[simp] theorem multInterpretation_gate (G : ℕ → ℕ → Bool) (N : ℕ) (mult : Fin N → ℕ)
     (x : Fin N → Bool) :
     multInterpretation G (.gate N mult) x = G (∑ i, mult i) (multWeight mult x) :=

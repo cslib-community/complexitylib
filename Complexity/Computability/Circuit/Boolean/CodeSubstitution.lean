@@ -25,8 +25,10 @@ polynomial time, with `n` in binary and all wire numbers in binary.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.prefixCode`: hardwiring on raw circuit codes.
-* `Cslib.Circuits.Boolean.prefixCircuit`: the corresponding typed circuit.
+* `Cslib.Circuits.Boolean.prefixWire`, `Cslib.Circuits.Boolean.prefixCode`: hardwiring a prefix of
+  inputs on raw circuit codes.
+* `Cslib.Circuits.Boolean.prefixInputs`, `Cslib.Circuits.Boolean.prefixCircuit`: the corresponding
+  input substitution and typed circuit.
 
 ## Main results
 

@@ -112,6 +112,7 @@ theorem initialState_valid {C : Circuit (fullSignature 2 Bool) n 1}
     rw [show (initialState C).out.eval val = _ from out_eval_ofCircuit C hval, hC]
     rfl
 
+/-- The initial state of an `n`-input circuit has affine dimension `n`. -/
 theorem initialState_a (C : Circuit (fullSignature 2 Bool) n 1) : (initialState C).a = n := by
   simp [State.a, State.m, State.q, initialState]
 

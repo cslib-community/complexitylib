@@ -24,8 +24,17 @@ finite gate bound counts constants and negations, as well as binary gates. The c
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.ShannonSynthesis.columnLibrary`: all disjunctions of a minterm table.
-* `Cslib.Circuits.Boolean.ShannonSynthesis.circuit`: synthesize any function on split inputs.
+* `Cslib.Circuits.Boolean.ShannonSynthesis.columnFormula`,
+  `Cslib.Circuits.Boolean.ShannonSynthesis.columnLibrary`: disjunction formula for a bit pattern and
+  circuit computing all disjunctions of an address minterm table.
+* `Cslib.Circuits.Boolean.ShannonSynthesis.column`,
+  `Cslib.Circuits.Boolean.ShannonSynthesis.rowFormula`,
+  `Cslib.Circuits.Boolean.ShannonSynthesis.outputFormula`: truth-table column index, single-row
+  conjunction formula, and final disjunction of rows.
+* `Cslib.Circuits.Boolean.ShannonSynthesis.splitMinterms`,
+  `Cslib.Circuits.Boolean.ShannonSynthesis.libraryAndData`,
+  `Cslib.Circuits.Boolean.ShannonSynthesis.circuit`: block minterm tables, address library paired
+  with data minterms, and synthesized circuit on split inputs.
 * `Cslib.Circuits.Boolean.ShannonSynthesis.bound`: the finite construction budget.
 
 ## Main results
@@ -50,6 +59,8 @@ variable {k d n : ℕ}
 def columnFormula (pattern : BitString n) : Formula signature n :=
   Formula.orList (((List.finRange n).filter pattern).map Formula.input)
 
+/-- `columnFormula pattern` evaluates to `true` on `x` if and only if some coordinate `i` has both
+`pattern i = true` and `x i = true`. -/
 @[simp] theorem eval_columnFormula (pattern x : BitString n) :
     (columnFormula pattern).eval interpretation x =
       decide (∃ i, pattern i = true ∧ x i = true) := by
@@ -76,6 +87,8 @@ theorem size_columnFormula_le (hn : 0 < n) (pattern : BitString n) :
 def columnLibrary (k : ℕ) : Circuit signature (2 ^ k) (2 ^ (2 ^ k)) :=
   Circuit.pi fun p => (columnFormula ((BitString.equivFin (2 ^ k)).symm p)).toCircuit
 
+/-- Evaluating `columnLibrary k` on the minterm indicators of `x` yields at output `p` the value of
+the `p`th Boolean function at the index of `x`. -/
 @[simp] theorem eval_columnLibrary_minterms (x : BitString k) (p : Fin (2 ^ (2 ^ k))) :
     (columnLibrary k).eval interpretation ((mintermCircuit k).eval interpretation x) p =
       (BitString.equivFin (2 ^ k)).symm p (BitString.equivFin k x) := by
@@ -84,6 +97,7 @@ def columnLibrary (k : ℕ) : Circuit signature (2 ^ k) (2 ^ (2 ^ k)) :=
   apply Bool.eq_iff_iff.mpr
   simp only [decide_eq_true_eq, exists_eq_right']
 
+/-- `columnLibrary k` has size at most `2 ^ (2 ^ k) * 2 ^ k`. -/
 theorem size_columnLibrary_le (k : ℕ) :
     (columnLibrary k).size ≤ 2 ^ (2 ^ k) * 2 ^ k := by
   simp only [columnLibrary, Circuit.size_pi, Formula.size_toCircuit]
@@ -106,6 +120,7 @@ def rowFormula (f : BooleanFunction (k + d)) (y : Fin (2 ^ d)) :
 def outputFormula (f : BooleanFunction (k + d)) : Formula signature (2 ^ (2 ^ k) + 2 ^ d) :=
   Formula.orList (List.ofFn (rowFormula f))
 
+/-- `outputFormula f` has size at most `2 * 2 ^ d`. -/
 theorem size_outputFormula_le (f : BooleanFunction (k + d)) :
     (outputFormula f).size ≤ 2 * 2 ^ d := by
   have h := Formula.size_orList_add_one (l := List.ofFn (rowFormula f))

@@ -88,6 +88,7 @@ theorem circuitDist_eq_diffDist (f g : BooleanFunction n) :
     circuitDist f g = diffDist interpretation 4 f g :=
   rfl
 
+/-- The computational Hamming distance is `0` when `f = g` and `C(f + g) + 4` otherwise. -/
 theorem circuitDist_def (f g : BooleanFunction n) :
     circuitDist f g = if f = g then 0 else complexity interpretation (single (f + g)) + 4 := by
   by_cases h : f = g
@@ -96,6 +97,7 @@ theorem circuitDist_def (f g : BooleanFunction n) :
     simp only [h, ↓reduceIte]
     rfl
 
+/-- The computational Hamming distance from a Boolean function to itself is zero. -/
 @[simp] theorem circuitDist_self (f : BooleanFunction n) : circuitDist f f = 0 :=
   diffDist_self f
 
@@ -104,9 +106,11 @@ theorem circuitDist_of_ne {f g : BooleanFunction n} (h : f ≠ g) :
     circuitDist f g = complexity interpretation (single fun x => f x ^^ g x) + 4 :=
   diffDist_of_ne h
 
+/-- The computational Hamming distance between `f` and `g` is zero if and only if `f = g`. -/
 theorem circuitDist_eq_zero_iff {f g : BooleanFunction n} : circuitDist f g = 0 ↔ f = g :=
   diffDist_eq_zero_iff (by norm_num)
 
+/-- The computational Hamming distance is symmetric. -/
 theorem circuitDist_comm (f g : BooleanFunction n) : circuitDist f g = circuitDist g f :=
   diffDist_comm complexity_single_neg f g
 
@@ -115,10 +119,12 @@ theorem circuitDist_triangle (f g h : BooleanFunction n) :
     circuitDist f h ≤ circuitDist f g + circuitDist g h :=
   diffDist_triangle complexity_single_add_le f g h
 
+/-- The computational Hamming distance is invariant under right translation. -/
 @[simp] theorem circuitDist_add_right (f g a : BooleanFunction n) :
     circuitDist (f + a) (g + a) = circuitDist f g :=
   diffDist_add_right f g a
 
+/-- The computational Hamming distance is invariant under left translation. -/
 @[simp] theorem circuitDist_add_left (a f g : BooleanFunction n) :
     circuitDist (a + f) (a + g) = circuitDist f g :=
   diffDist_add_left a f g
@@ -138,6 +144,7 @@ theorem dist_complexity_single_le_circuitDist (f g : BooleanFunction n) :
 noncomputable def circuitNorm (n : ℕ) : AddGroupNorm (BooleanFunction n) :=
   diffNorm interpretation 4 (by norm_num) complexity_single_add_le complexity_single_neg
 
+/-- The computational Hamming norm of `f` is its computational Hamming distance from `0`. -/
 theorem circuitNorm_apply (f : BooleanFunction n) :
     circuitNorm n f = ((circuitDist f 0 : ℕ) : ℝ) :=
   diffNorm_apply f

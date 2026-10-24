@@ -57,12 +57,15 @@ namespace Cslib.Circuits.Boolean
 def SIZE (s : ℕ → ℕ) : Set (Language Bool) :=
   {L | ∀ n, complexity interpretation (single (L.slice n)) ≤ s n}
 
+/-- `SIZE` is monotone in the size bound. -/
 theorem SIZE_mono : Monotone SIZE := fun _ _ h _ hL n => (hL n).trans (h n)
 
 /-- The languages over `Bool` whose slices have circuits of polynomial size. -/
 def PPoly : Set (Language Bool) :=
   {L | PolynomiallyBounded fun n => complexity interpretation (single (L.slice n))}
 
+/-- A language is in `P/poly` if and only if the circuit complexity of its slices is polynomially
+bounded. -/
 theorem mem_PPoly {L : Language Bool} :
     L ∈ PPoly ↔ PolynomiallyBounded fun n => complexity interpretation (single (L.slice n)) :=
   Iff.rfl
@@ -106,9 +109,11 @@ theorem of_synthesis {cost : ℕ → ℕ} (hcost : PolynomiallyBounded cost)
 theorem of_slice_const (b : ℕ → Bool) (h : ∀ n x, L.slice n x = b n) : L ∈ PPoly :=
   of_synthesis (PolynomiallyBounded.const 1) fun n => Synthesis.of_forall_eq_const _ (h n)
 
+/-- The empty language is in `P/poly`. -/
 theorem zero_mem : (0 : Language Bool) ∈ PPoly :=
   of_slice_const (fun _ => false) fun _ _ => Language.slice_zero
 
+/-- The universal language is in `P/poly`. -/
 theorem top_mem : (⊤ : Language Bool) ∈ PPoly :=
   of_slice_const (fun _ => true) fun _ _ => Language.slice_top
 

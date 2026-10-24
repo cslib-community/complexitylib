@@ -37,7 +37,8 @@ For circuits of polynomial size `log (n + s)` is `O(log n)`, so polynomial-size 
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Unbounded.dedup`: the circuit whose gates read their distinct wires.
+* `Cslib.Circuits.Boolean.Unbounded.dedupLine`, `Cslib.Circuits.Boolean.Unbounded.dedup`: the line
+  and circuit whose gates read their distinct wires, each once.
 * `Cslib.Circuits.Boolean.Unbounded.Op.deMorganFormula`: a De Morgan formula for each operation of
   the unbounded fan-in basis.
 

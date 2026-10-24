@@ -28,6 +28,11 @@ commutative ring of characteristic `p`) on all but `size · 2 ^ n / 2 ^ ℓ` inp
 (`exists_lowDegree_approx`), while such a function agrees with parity on at most `6 / 10` of the
 inputs (`BitString.card_agree_parity_le`, `ten_mul_card_filter_card_le_le`).
 
+## Main definitions
+
+* `Cslib.Circuits.Boolean.Smolensky.invertibleTwo`: `2` is invertible in `ZMod p` for an odd prime
+  `p`.
+
 ## Main results
 
 * `Cslib.Circuits.Boolean.Smolensky.two_mul_two_pow_le_size_of_computes_parity`: the tradeoff.

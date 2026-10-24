@@ -30,8 +30,8 @@ does not specify which tied record wins.
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.tournamentCircuit`: the tournament among records computed by circuits.
-* `Cslib.BitString.packRecords`, `Cslib.Circuits.Boolean.packedTournamentCircuit`: the
-  tournament among records given as inputs.
+* `Cslib.Circuits.Boolean.packedTournamentCircuit`: the tournament among records given as inputs via
+  `Cslib.BitString.packRecords`.
 
 ## Main results
 
@@ -140,6 +140,8 @@ theorem exists_eval_packedTournamentCircuit (records : Fin (m + 1) → BitString
   simp only [Circuit.eval_wiring, packRecords_comp] at hi hle
   exact ⟨i, hi, hle⟩
 
+/-- The packed tournament among `m + 1` records of key width `k` and payload width `p` has size
+`m * (8 * k + 3 * p + 2)`. -/
 @[simp] theorem size_packedTournamentCircuit (k p m : ℕ) :
     (packedTournamentCircuit k p m).size = m * (8 * k + 3 * p + 2) := by
   simp [packedTournamentCircuit]

@@ -41,6 +41,8 @@ depth, both need more than `n ^ k` gates for large `n` (`Unbounded.pow_lt_size_o
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.Unbounded.argWith`, `Cslib.Circuits.Boolean.Unbounded.firstArg`:
+  argument-wire selection helpers for top-down traversal of a gate.
 * `Cslib.Circuits.Boolean.Unbounded.kwProtocol`: the Karchmer–Wigderson protocol of a wire.
 
 ## Main results
@@ -73,6 +75,8 @@ def argWith (p : Program signature n g) (k : Fin g) (b : Bool) (x : BitString n)
   | some a => (p.lines k).wires a
   | none => .gate k
 
+/-- If some argument wire of gate `k` evaluates to `b` on `x`, then `argWith p k b x` is such an
+argument wire. -/
 theorem argWith_spec {p : Program signature n g} {k : Fin g} {b : Bool} {x : BitString n}
     (h : ∃ a, p.trace interpretation x ((p.lines k).wires a) = b) :
     ∃ a, argWith p k b x = (p.lines k).wires a ∧
@@ -88,6 +92,7 @@ theorem argWith_spec {p : Program signature n g} {k : Fin g} {b : Bool} {x : Bit
 def firstArg (p : Program signature n g) (i₀ : Fin n) (k : Fin g) : Wire n g :=
   if h : 0 < signature.Arity (p.lines k).op then (p.lines k).wires ⟨0, h⟩ else .input i₀
 
+/-- The wire depth of `firstArg p i₀ k` is strictly less than the depth of gate `k`. -/
 theorem wireDepths_firstArg_lt (p : Program signature n g) (i₀ : Fin n) (k : Fin g) :
     p.wireDepths (firstArg p i₀ k) < p.depths k := by
   unfold firstArg
@@ -95,6 +100,7 @@ theorem wireDepths_firstArg_lt (p : Program signature n g) (i₀ : Fin n) (k : F
   · exact p.wireDepths_lines_lt k _
   · exact p.depths_pos k
 
+/-- When gate `k` is a negation, `firstArg p i₀ k` is its sole argument wire. -/
 theorem firstArg_of_op_eq_not {p : Program signature n g} {k : Fin g} (i₀ : Fin n)
     (h : (p.lines k).op = .not) : firstArg p i₀ k = (p.lines k).wires ⟨0, by simp [h]⟩ := by
   unfold firstArg

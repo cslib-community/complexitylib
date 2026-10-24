@@ -29,8 +29,20 @@ the core of `P ⊆ P/poly` [Arora and Barak, Theorem 6.6][AroraBarak09].
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.MachineSimulation.featureFn`: a feature at time `t`, as a Boolean
-  function of the input.
+* `Cslib.Circuits.Boolean.MachineSimulation.cfgAt`,
+  `Cslib.Circuits.Boolean.MachineSimulation.featureFn`: the configuration after `t` steps and a
+  feature at time `t` as a Boolean function of the input.
+* `Cslib.Circuits.Boolean.MachineSimulation.basicFeatures`,
+  `Cslib.Circuits.Boolean.MachineSimulation.basicAt`,
+  `Cslib.Circuits.Boolean.MachineSimulation.readsAt`,
+  `Cslib.Circuits.Boolean.MachineSimulation.sitsAt`,
+  `Cslib.Circuits.Boolean.MachineSimulation.stepSources`: the feature sets tracked across one step
+  of the simulation.
+* `Cslib.Circuits.Boolean.MachineSimulation.featureCount`,
+  `Cslib.Circuits.Boolean.MachineSimulation.readsCost`,
+  `Cslib.Circuits.Boolean.MachineSimulation.featureCost`,
+  `Cslib.Circuits.Boolean.MachineSimulation.stepCost`: gate budgets for each phase and step of the
+  simulation.
 * `Cslib.Circuits.Boolean.MachineSimulation.acceptedWithin`: the inputs on which the output after
   `T n` steps is `[true]`.
 
@@ -60,6 +72,8 @@ variable {k : ℕ} {State : Type} (tm : MultiTapeTM k Bool State) {n : ℕ}
 noncomputable def cfgAt (t : ℕ) (x : Fin n → Bool) : Cfg k Bool State (List.ofFn x) :=
   tm.runFrom (tm.initCfg (List.ofFn x)) t
 
+/-- The configuration at step `t + 1` is obtained by applying `tm.step` to the configuration at
+step `t`. -/
 theorem cfgAt_succ (t : ℕ) (x : Fin n → Bool) : cfgAt tm (t + 1) x = tm.step (cfgAt tm t x) :=
   runFrom_succ _ _
 
@@ -83,6 +97,7 @@ private theorem featureFn_eq_true {t : ℕ} {φ : Feature k State} {x : Fin n �
     featureFn tm t φ x = true ↔ φ.Holds (cfgAt tm t x) :=
   decide_eq_true_iff
 
+/-- `featureFn tm t φ x` is `false` iff the feature `φ` does not hold at step `t` on input `x`. -/
 theorem featureFn_eq_false {t : ℕ} {φ : Feature k State} {x : Fin n → Bool} :
     featureFn tm t φ x = false ↔ ¬φ.Holds (cfgAt tm t x) :=
   decide_eq_false_iff_not
@@ -107,22 +122,27 @@ private theorem card_basicFeatures_le (n T : ℕ) :
 
 variable {T : ℕ}
 
+/-- Every control-state feature belongs to `basicFeatures n T`. -/
 theorem state_mem_basicFeatures (q : Option State) :
     Feature.state q ∈ basicFeatures (k := k) n T :=
   List.mem_toFinset.2 (state_mem_basic q)
 
+/-- Every input-head position feature for `j < n + 2` belongs to `basicFeatures n T`. -/
 theorem inPos_mem_basicFeatures {j : ℕ} (hj : j < n + 2) :
     (Feature.inPos j : Feature k State) ∈ basicFeatures n T :=
   List.mem_toFinset.2 (inPos_mem_basic hj)
 
+/-- Every work-head position feature within the window `|z| ≤ T` belongs to `basicFeatures n T`. -/
 theorem head_mem_basicFeatures (i : Fin k) {z : ℤ} (hz : |z| ≤ T) :
     (Feature.head i z : Feature k State) ∈ basicFeatures n T :=
   List.mem_toFinset.2 (head_mem_basic i hz)
 
+/-- Every work-cell symbol feature within the window `|z| ≤ T` belongs to `basicFeatures n T`. -/
 theorem cell_mem_basicFeatures (i : Fin k) {z : ℤ} (hz : |z| ≤ T) (s : Option Bool) :
     (Feature.cell i z s : Feature k State) ∈ basicFeatures n T :=
   List.mem_toFinset.2 (cell_mem_basic i hz s)
 
+/-- Every output-view feature belongs to `basicFeatures n T`. -/
 theorem out_mem_basicFeatures (o : OutView) :
     (Feature.out o : Feature k State) ∈ basicFeatures n T :=
   List.mem_toFinset.2 (out_mem_basic o)
@@ -144,14 +164,19 @@ read and the situations. -/
 noncomputable def stepSources (T t : ℕ) : Set (BooleanFunction n) :=
   inputs n ∪ basicAt tm T t ∪ (readsAt tm t ∪ sitsAt tm t)
 
+/-- The Boolean function of any basic feature `φ ∈ basicFeatures n T` at time `t` belongs to
+`basicAt tm T t`. -/
 theorem featureFn_mem_basicAt {t : ℕ} {φ : Feature k State} (h : φ ∈ basicFeatures n T) :
     featureFn (n := n) tm t φ ∈ basicAt tm T t :=
   Set.mem_image_of_mem _ h
 
+/-- The Boolean function of any basic feature `φ ∈ basicFeatures n T` at time `t` belongs to
+`stepSources tm T t`. -/
 theorem featureFn_mem_stepSources {t : ℕ} {φ : Feature k State} (h : φ ∈ basicFeatures n T) :
     featureFn (n := n) tm t φ ∈ stepSources tm T t :=
   Or.inl (Or.inr (featureFn_mem_basicAt tm h))
 
+/-- Every situation indicator at time `t` belongs to `stepSources tm T t`. -/
 theorem sit_mem_stepSources {t : ℕ} (y : Situation k State) :
     featureFn (n := n) tm t (.sit y) ∈ stepSources tm T t :=
   Or.inr (Or.inr ⟨y, rfl⟩)

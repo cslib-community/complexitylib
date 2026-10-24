@@ -110,10 +110,13 @@ size of the smallest circuits deciding `C` from truth tables. -/
 noncomputable def truthTableTest (C : Set (BooleanFunction n)) : BooleanFunction (2 ^ n) :=
   open scoped Classical in fun T => decide ((truthTable n).symm T ∈ C)
 
+/-- `truthTableTest C` accepts a truth table `T` if and only if the function with truth table `T`
+belongs to `C`. -/
 @[simp] theorem truthTableTest_eq_true_iff {C : Set (BooleanFunction n)} {T : BitString (2 ^ n)} :
     truthTableTest C T = true ↔ (truthTable n).symm T ∈ C :=
   @decide_eq_true_iff _ (Classical.propDecidable _)
 
+/-- `truthTableTest C` accepts the truth table of `f` if and only if `f ∈ C`. -/
 theorem truthTableTest_truthTable_eq_true_iff {C : Set (BooleanFunction n)}
     {f : BooleanFunction n} : truthTableTest C (truthTable n f) = true ↔ f ∈ C := by
   rw [truthTableTest_eq_true_iff, Equiv.symm_apply_apply]
@@ -136,6 +139,8 @@ def truthTableLanguage (C : ∀ n, Set (BooleanFunction n)) : Language Bool :=
   {w | ∃ n, ∃ h : w.length = 2 ^ n,
     (truthTable n).symm (fun i => w[(i : ℕ)]'(i.isLt.trans_eq h.symm)) ∈ C n}
 
+/-- A `2 ^ n`-bit string `T`, viewed as a list via `List.ofFn`, belongs to `truthTableLanguage C`
+if and only if its corresponding Boolean function lies in `C n`. -/
 theorem ofFn_mem_truthTableLanguage {C : ∀ n, Set (BooleanFunction n)} {T : BitString (2 ^ n)} :
     List.ofFn T ∈ truthTableLanguage C ↔ (truthTable n).symm T ∈ C n := by
   constructor
@@ -176,6 +181,7 @@ every polynomial bound, eventually every function in `C n` needs more gates
 def IsUseful (Λ : Set (Language Bool)) (C : ∀ n, Set (BooleanFunction n)) : Prop :=
   ∀ L ∈ Λ, ∀ᶠ n in atTop, L.slice n ∉ C n
 
+/-- Any property containing a large property at every input length is itself large. -/
 theorem IsLarge.mono (hC : IsLarge C) (h : ∀ n, C n ⊆ C' n) : IsLarge C' := by
   obtain ⟨c, hc⟩ := hC
   exact ⟨c, hc.mono fun n hn => hn.trans (Nat.mul_le_mul_left _ (Set.ncard_le_ncard (h n)))⟩

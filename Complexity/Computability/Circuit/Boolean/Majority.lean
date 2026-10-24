@@ -28,6 +28,8 @@ polynomial-size constant-depth circuits then so does parity
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.padCircuit`: pad an `n`-bit input with `a` copies of `true` and
+  `n + 2 - a` copies of `false`.
 * `Cslib.Circuits.Boolean.parityCircuitOfMajority`: parity from a circuit for majority.
 
 ## Main results
@@ -143,6 +145,8 @@ variable [φ.Preserves Unbounded.interpretation I]
 include hM
 
 omit hM in
+/-- Evaluating `padCircuit φ n a` appends `a` copies of `true` followed by `n + 2 - a` copies of
+`false` to the input `x`. -/
 theorem eval_padCircuit (a : ℕ) (x : BitString n) :
     (padCircuit φ n a).eval I x = Fin.append x fun j => decide (j.val < a) := by
   simp only [padCircuit, Circuit.eval_append, Circuit.eval_comp, Circuit.eval_wiring,

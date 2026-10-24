@@ -39,9 +39,14 @@ are about structures rather than an encoding of structures as bit strings.
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.ModelChecking.Atom`: the atomic facts of a structure on `Fin n`.
-* `Cslib.Circuits.Boolean.ModelChecking.Model`: the structure with given true atomic facts.
-* `Cslib.Circuits.Boolean.ModelChecking.toUnbounded`: a first-order formula as a formula over the
-  unbounded fan-in basis.
+* `Cslib.Circuits.Boolean.ModelChecking.Model`,
+  `Cslib.Circuits.Boolean.ModelChecking.atomsOf`: the structure with given true atomic facts, and
+  the atomic facts of an arbitrary finite structure through an enumeration.
+* `Cslib.Circuits.Boolean.ModelChecking.constUnbounded`,
+  `Cslib.Circuits.Boolean.ModelChecking.toUnbounded`: a Boolean constant and a first-order formula
+  as formulas over the unbounded fan-in basis.
+* `Cslib.Circuits.Boolean.ModelChecking.foDepth`,
+  `Cslib.Circuits.Boolean.ModelChecking.foSize`: depth and node count of a first-order formula.
 
 ## Main results
 
@@ -77,10 +82,12 @@ def Atom (L : Language) (n : ℕ) : Type _ :=
 def Model (_x : Atom L n → Bool) : Type :=
   Fin n
 
+/-- The first-order `L.Structure` on `Model x` whose relations are given by the truth table `x`. -/
 instance (x : Atom L n → Bool) : L.Structure (Model x) where
   funMap f := isEmptyElim f
   RelMap {l} R t := x ⟨⟨l, R⟩, t⟩ = true
 
+/-- There are finitely many atomic facts on `Fin n` when `L` has finitely many relation symbols. -/
 instance [Fintype (Σ l, L.Relations l)] : Fintype (Atom L n) :=
   inferInstanceAs (Fintype (Σ R : Σ l, L.Relations l, Fin R.1 → Fin n))
 
@@ -88,6 +95,7 @@ instance [Fintype (Σ l, L.Relations l)] : Fintype (Atom L n) :=
 def constUnbounded (b : Bool) : Formula Unbounded.signature N :=
   if b then .gate (.and 0) Fin.elim0 else .gate (.or 0) Fin.elim0
 
+/-- `constUnbounded b` evaluates to `b` on every input. -/
 @[simp] theorem eval_constUnbounded (b : Bool) (y : Fin N → Bool) :
     (constUnbounded b).eval Unbounded.interpretation y = b := by
   cases b <;> simp [constUnbounded]
@@ -150,6 +158,7 @@ def foSize : ∀ {k}, L.BoundedFormula Empty k → ℕ
   | _, .all φ => foSize φ + 1
 
 omit [L.IsRelational] in
+/-- Every first-order formula has positive node count. -/
 theorem foSize_pos {k : ℕ} (φ : L.BoundedFormula Empty k) : 0 < foSize φ := by
   cases φ <;> simp [foSize]
 

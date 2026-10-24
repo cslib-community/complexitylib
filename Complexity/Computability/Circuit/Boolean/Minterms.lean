@@ -21,6 +21,8 @@ linear bound in the number of assignments, including all constants and negations
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.mintermExtension`: one-step formula extending a tail minterm by testing
+  the head bit.
 * `Cslib.Circuits.Boolean.mintermCircuit`: all assignment indicators in `BitString.equivFin` order.
 
 ## Main results

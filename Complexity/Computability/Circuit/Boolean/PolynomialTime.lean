@@ -29,6 +29,14 @@ form a language in `P/poly` (`MachineSimulation.acceptedWithin_mem_PPoly`). With
 bits are bits of `x`, bits of `r` or constants (`frameWiring`), so they are circuits for a function
 of `x ++ r` of the same size up to two gates.
 
+## Main definitions
+
+* `Cslib.Circuits.Boolean.frameWiring`, `Cslib.Circuits.Boolean.framedSlice`: the input-and-constant
+  substitution building `frame x ++ r` from `x ++ r`, and the slice of a language pulled back along
+  that framing.
+* `Cslib.Circuits.Boolean.encodes`, `Cslib.Circuits.Boolean.encodesMember`: the words of length `n`
+  in the image of an encoding `enc`, and the indicator of encoded members of a set `A`.
+
 ## Main results
 
 * `Cslib.Circuits.Boolean.PPoly.exists_of_polyTime`: the instances on which a Boolean function
@@ -96,6 +104,8 @@ def frameWiring (n P : ℕ) (j : Fin (2 * n + 1 + P)) : Fin (n + P) ⊕ Bool :=
   else if h' : j.val = 2 * n then .inr false
   else .inl (Fin.natAdd n ⟨j.val - (2 * n + 1), by have := j.isLt; omega⟩)
 
+/-- Substituting `Fin.append x r` along `frameWiring n P` produces the word
+`frame (List.ofFn x) ++ List.ofFn r`. -/
 theorem ofFn_substitute_frameWiring {n P : ℕ} (x : Fin n → Bool) (r : Fin P → Bool) :
     List.ofFn (substitute (frameWiring n P) (Fin.append x r)) =
       frame (List.ofFn x) ++ List.ofFn r := by
@@ -148,6 +158,7 @@ open scoped Classical in
 noncomputable def encodesMember (enc : α ↪ List Bool) (A : Set α) (n : ℕ) : BooleanFunction n :=
   fun x => decide (∃ a ∈ A, enc a = List.ofFn x)
 
+/-- On a word `x` encoding `a`, `encodesMember enc A n x` is `true` iff `a ∈ A`. -/
 theorem encodesMember_eq_true_iff {A : Set α} {n : ℕ} {x : Fin n → Bool} {a : α}
     (ha : enc a = List.ofFn x) : encodesMember enc A n x = true ↔ a ∈ A := by
   rw [encodesMember, @decide_eq_true_iff _ (Classical.propDecidable _)]

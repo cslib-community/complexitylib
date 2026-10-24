@@ -27,7 +27,14 @@ wiring, not bounds on retained storage or the circuit constructor's runtime.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.bitonicUnsortCircuit`: reverse saved decisions on new payloads.
+* `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.select`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.unlayer`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.unhalves`,
+  `Cslib.Circuits.Boolean.bitonicSortTraceCircuit.unchain`: wiring and combinators for reversing
+  comparison layers and recursive sorting stages using saved controls.
+* `Cslib.Circuits.Boolean.bitonicUnmergeCircuit`,
+  `Cslib.Circuits.Boolean.bitonicUnsortCircuit`: reverse saved merge and sort decisions on new
+  payloads.
 
 ## Main results
 

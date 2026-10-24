@@ -34,6 +34,9 @@ Costs include constants and negations. Gate counts do not certify construction r
 
 * `Cslib.Circuits.Boolean.adjacentDuplicateCircuit`: share adjacent-key equality tests.
 * `Cslib.Circuits.Boolean.duplicateFlagsCircuit`: duplicate flags in original input order.
+* `Cslib.Circuits.Boolean.duplicateFlagsCircuit.rows`,
+  `Cslib.Circuits.Boolean.duplicateFlagsCircuit.outputs`: wiring adapters between a vector of flags
+  and an array of one-bit records.
 
 ## Main results
 

@@ -40,8 +40,13 @@ gate reading the first one, or reading the other reader of `xᵢ` if that is the
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.GateElimination.EqUpToNeg`,
+  `Cslib.Circuits.Boolean.GateElimination.IsConstOrLiteral`: equality of Boolean functions up to
+  negation, and functions that are constant or a literal.
 * `Cslib.Circuits.Boolean.GateElimination.restricted`: the function of a wire under a restriction.
-* `Cslib.Circuits.Boolean.GateElimination.NonRedundant`: nonredundant gates under a restriction.
+* `Cslib.Circuits.Boolean.GateElimination.NonRedundant`,
+  `Cslib.Circuits.Boolean.GateElimination.nonRedundant`: the predicate and finite set of
+  nonredundant binary gates under a restriction.
 
 ## Main results
 
@@ -82,13 +87,16 @@ def EqUpToNeg (φ ψ : BooleanFunction n) : Prop :=
 def IsConstOrLiteral (φ : BooleanFunction n) : Prop :=
   IsConst φ ∨ ∃ i, EqUpToNeg φ (· i)
 
+/-- Every Boolean function is equal to itself up to negation. -/
 @[refl] theorem EqUpToNeg.refl (φ : BooleanFunction n) : EqUpToNeg φ φ :=
   ⟨false, fun _ => (Bool.xor_false _).symm⟩
 
+/-- Equality up to negation is symmetric. -/
 @[symm] theorem EqUpToNeg.symm (h : EqUpToNeg φ ψ) : EqUpToNeg ψ φ := by
   obtain ⟨c, h⟩ := h
   exact ⟨c, fun x => by rw [h x, Bool.xor_assoc, Bool.xor_self, Bool.xor_false]⟩
 
+/-- Equality up to negation is transitive. -/
 @[trans] theorem EqUpToNeg.trans (h₁ : EqUpToNeg φ ψ) (h₂ : EqUpToNeg ψ χ) : EqUpToNeg φ χ := by
   obtain ⟨c, h₁⟩ := h₁
   obtain ⟨d, h₂⟩ := h₂
@@ -251,6 +259,8 @@ variable (p : Program signature n g)
 def restricted (ρ : PartialAssignment (Fin n)) (w : Wire n g) : BooleanFunction n :=
   p.wireFunction interpretation w ∘ ρ.fill
 
+/-- The restricted function at gate `k` applies the operation of line `k` to the restricted
+functions of its input wires. -/
 theorem restricted_gate_apply (ρ : PartialAssignment (Fin n)) (k : Fin g) (x : BitString n) :
     restricted p ρ (.gate k) x =
       interpretation (p.lines k).op fun s => restricted p ρ ((p.lines k).wires s) x := by
@@ -324,6 +334,7 @@ noncomputable def nonRedundant (ρ : PartialAssignment (Fin n)) : Finset (Fin g)
 
 variable {p} {ρ : PartialAssignment (Fin n)} {i : Fin n}
 
+/-- Membership in `nonRedundant p ρ` is `NonRedundant p ρ`. -/
 @[simp] theorem mem_nonRedundant {k : Fin g} : k ∈ nonRedundant p ρ ↔ NonRedundant p ρ k := by
   simp [nonRedundant]
 

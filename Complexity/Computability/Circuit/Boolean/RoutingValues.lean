@@ -32,6 +32,9 @@ complements. Gate counts do not certify construction runtime or retained storage
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.routeValuesCircuit.answerWiring`,
+  `Cslib.Circuits.Boolean.routeValuesCircuit.matchingSelector`: value extraction wiring and sort
+  key selector for batched routing.
 * `Cslib.Circuits.Boolean.routeValuesCircuit`: one sort, shared broadcast, and reverse routing.
 
 ## Main results
