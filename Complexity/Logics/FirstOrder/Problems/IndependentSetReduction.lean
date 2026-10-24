@@ -41,6 +41,9 @@ classes remain a separate development; definability of the target classes is pro
 
 ## Main definitions
 
+* `Cslib.Logic.FO.cnf.OccurrenceTag`, `Cslib.Logic.FO.cnf.OccurrenceTag.Coord`,
+  `Cslib.Logic.FO.cnf.occurrenceEdges`, `Cslib.Logic.FO.cnf.occurrenceAdj`: the vertex tags,
+  coordinates, and edge templates of the occurrence graph.
 * `Cslib.Logic.FO.cnf.independentSetInterpretation`: the occurrence graph, a tagged
   interpretation.
 
@@ -169,6 +172,7 @@ inductive OccurrenceTag : Type
   | sizeV
   deriving DecidableEq
 
+/-- There are finitely many vertex tags in `OccurrenceTag`. -/
 instance : Finite OccurrenceTag := by
   refine Finite.of_injective (β := Option Bool)
     (fun | .occ b => some b | .sizeV => none) ?_
@@ -181,6 +185,7 @@ abbrev OccurrenceTag.Coord : OccurrenceTag → Type
   | .occ _ => Fin 2
   | .sizeV => Fin 1
 
+/-- Every vertex tag in `OccurrenceTag` has a finite coordinate type. -/
 instance instFiniteOccurrenceTagCoord : ∀ t : OccurrenceTag, Finite t.Coord
   | .occ _ => inferInstanceAs (Finite (Fin 2))
   | .sizeV => inferInstanceAs (Finite (Fin 1))

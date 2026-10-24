@@ -26,8 +26,10 @@ transducer for the interpretation does.
 ## Main definitions
 
 * `Cslib.Logic.FO.Interpretation.InDomain`: the indices of the tuples of the domain.
-* `Cslib.Logic.FO.Interpretation.domainRank`: the number of indices of the domain below a number.
-* `Cslib.Logic.FO.Interpretation.rankEquiv`: the numbering of the interpreted structure by ranks.
+* `Cslib.Logic.FO.Interpretation.domainRank`, `Cslib.Logic.FO.Interpretation.modelCard`: the number
+  of indices of the domain below a bound, and the total cardinality of the interpreted domain.
+* `Cslib.Logic.FO.Interpretation.rankOf`, `Cslib.Logic.FO.Interpretation.rankEquiv`: the rank of an
+  interpreted element and the numbering equivalence of the interpreted structure by ranks.
 
 ## Main results
 
@@ -62,6 +64,7 @@ noncomputable def domainRank (u : ℕ) : ℕ := Nat.count (I.InDomain e n) u
 
 variable {I e n}
 
+/-- There are zero domain indices below `0`. -/
 theorem domainRank_zero : I.domainRank e n 0 = 0 := by simp [domainRank]
 
 /-- Ranks count the indices of the domain: the rank of `u + 1` is that of `u`, plus one when `u`
@@ -70,15 +73,20 @@ theorem domainRank_succ (u : ℕ) [Decidable (I.InDomain e n u)] :
     I.domainRank e n (u + 1) = I.domainRank e n u + if I.InDomain e n u then 1 else 0 := by
   by_cases h : I.InDomain e n u <;> simp [domainRank, Nat.count_succ, h]
 
+/-- `I.domainRank e n` is monotone. -/
 theorem domainRank_mono {u u' : ℕ} (h : u ≤ u') : I.domainRank e n u ≤ I.domainRank e n u' := by
   classical
   exact Nat.count_monotone (I.InDomain e n) h
 
+/-- If `u` belongs to `I.InDomain e n` and `u < u'`, then
+`I.domainRank e n u < I.domainRank e n u'`. -/
 theorem domainRank_lt_of_inDomain {u u' : ℕ} (hu : I.InDomain e n u) (h : u < u') :
     I.domainRank e n u < I.domainRank e n u' := by
   classical
   exact Nat.count_strict_mono hu h
 
+/-- For any `x : I.Model (Fin n)`, the tuple index `(tupleEquiv e x.1).val` satisfies
+`I.InDomain e n`. -/
 theorem inDomain_tupleEquiv (x : I.Model (Fin n)) : I.InDomain e n (tupleEquiv e x.1).val :=
   ⟨(tupleEquiv e x.1).isLt, by simpa only [Fin.eta, Equiv.symm_apply_apply] using x.2⟩
 
@@ -86,6 +94,7 @@ variable (I e n) in
 /-- The number of elements of the interpreted structure: the number of indices of the domain. -/
 noncomputable def modelCard : ℕ := I.domainRank e n (n ^ d)
 
+/-- The cardinality `modelCard I e n` of the interpreted domain is at most `n ^ d`. -/
 theorem modelCard_le_pow : modelCard I e n ≤ n ^ d := by
   classical
   exact Nat.count_le (I.InDomain e n)
@@ -95,6 +104,7 @@ noncomputable def rankOf (x : I.Model (Fin n)) : Fin (modelCard I e n) :=
   ⟨I.domainRank e n (tupleEquiv e x.1).val, domainRank_lt_of_inDomain (inDomain_tupleEquiv x)
     (tupleEquiv e x.1).isLt⟩
 
+/-- `rankOf` is injective on `I.Model (Fin n)`. -/
 theorem rankOf_injective : Function.Injective (rankOf (I := I) (e := e) (n := n)) := by
   classical
   intro x y h
@@ -111,6 +121,7 @@ theorem exists_inDomain_of_lt {r : ℕ} (hr : r < modelCard I e n) :
     hr.trans_le (Nat.count_le_card hf (n ^ d))
   exact ⟨Nat.nth (I.InDomain e n) r, Nat.nth_mem _ hbound, Nat.count_nth hbound⟩
 
+/-- `rankOf` is surjective onto `Fin (modelCard I e n)`. -/
 theorem rankOf_surjective : Function.Surjective (rankOf (I := I) (e := e) (n := n)) := by
   intro r
   obtain ⟨u, ⟨hu, hdom⟩, hr⟩ := exists_inDomain_of_lt r.2
@@ -123,6 +134,8 @@ of indices of the domain below its index. -/
 noncomputable def rankEquiv : I.Model (Fin n) ≃ Fin (modelCard I e n) :=
   Equiv.ofBijective rankOf ⟨rankOf_injective, rankOf_surjective⟩
 
+/-- The underlying natural number of `rankEquiv I e n x` is
+`I.domainRank e n (tupleEquiv e x.1).val`. -/
 @[simp]
 theorem rankEquiv_apply_val (x : I.Model (Fin n)) :
     (rankEquiv I e n x).val = I.domainRank e n (tupleEquiv e x.1).val := rfl

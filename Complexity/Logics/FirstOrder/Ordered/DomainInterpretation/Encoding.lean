@@ -55,10 +55,12 @@ has at least two elements. -/
 def decode? (v : Vocabulary L) (a : EncodedStructure) : Option (Structure L) :=
   if h : v.WellFormed a ∧ 2 ≤ a.1 then some (decoded v a h.2) else none
 
+/-- A well-formed encoding of size at least two decodes to `some (decoded v a hn)`. -/
 theorem decode?_of_admissible (v : Vocabulary L) {a : EncodedStructure} (ha : v.WellFormed a)
     (hn : 2 ≤ a.1) : decode? v a = some (decoded v a hn) :=
   dite_eq_left ⟨ha, hn⟩
 
+/-- An encoding that is not well formed or has size below two decodes to `none`. -/
 theorem decode?_of_not_admissible (v : Vocabulary L) {a : EncodedStructure}
     (ha : ¬(v.WellFormed a ∧ 2 ≤ a.1)) : decode? v a = none :=
   dite_eq_right ha
@@ -69,6 +71,7 @@ theorem decode?_of_not_admissible (v : Vocabulary L) {a : EncodedStructure}
   (decode?_of_admissible v (v.wellFormed_encode M (Equiv.refl _)) M.size_ge_two).trans
     (congrArg some (decoded_encode v M))
 
+/-- `decode? v a = some M` iff `a` is well formed of size at least two and decodes to `M`. -/
 theorem decode?_eq_some_iff (v : Vocabulary L) {a : EncodedStructure} {M : Structure L} :
     decode? v a = some M ↔ ∃ (_ : v.WellFormed a) (hn : 2 ≤ a.1), decoded v a hn = M := by
   by_cases h : v.WellFormed a ∧ 2 ≤ a.1
@@ -102,12 +105,16 @@ noncomputable def encodedMap (a : EncodedStructure) : EncodedStructure :=
 
 variable {a : EncodedStructure}
 
+/-- On a well-formed encoding of size at least two, `encodedMap` encodes the target input
+structure on the domain ranks. -/
 theorem encodedMap_of_admissible (ha : v.WellFormed a) (hn : 2 ≤ a.1) :
     I.encodedMap v v' a =
       (letI := I.inputStructure (decoded v a hn)
        v'.encode (Fin (I.card (decoded v a hn))) (Equiv.refl _)) :=
   dite_eq_left ⟨ha, hn⟩
 
+/-- On an inadmissible encoding, `encodedMap` returns the fixed malformed encoding
+`(0, List.replicate (v'.count + 1) [])`. -/
 theorem encodedMap_of_not_admissible (ha : ¬(v.WellFormed a ∧ 2 ≤ a.1)) :
     I.encodedMap v v' a = (0, List.replicate (v'.count + 1) []) :=
   dite_eq_right ha

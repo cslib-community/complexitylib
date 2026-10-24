@@ -84,6 +84,7 @@ def tupleModelEquiv (hdom : ∀ x : ι → M, I.domain.Realize x) :
     map_fun' f := isEmptyElim f
     map_rel' _ _ := Iff.rfl }
 
+/-- `I.tupleModelEquiv M hdom` maps an interpreted element `x` to its underlying tuple `x.1`. -/
 @[simp]
 theorem tupleModelEquiv_apply (hdom : ∀ x : ι → M, I.domain.Realize x) (x : I.Model M) :
     I.tupleModelEquiv M hdom x = x.1 :=

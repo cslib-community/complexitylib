@@ -31,7 +31,11 @@ interreducible.
 
 ## Main definitions
 
-* `Cslib.Logic.FO.graph.cnfInterpretation`: the 3-CNF structure of the colorings of a graph.
+* `Cslib.Logic.FO.graph.ColoringClauseTag`, `Cslib.Logic.FO.graph.ColoringClauseTag.Coord`,
+  `Cslib.Logic.FO.graph.coloringClauseTemplates`: the element tags, coordinates, and literal
+  templates of the 3-CNF encoding of three-colorability.
+* `Cslib.Logic.FO.graph.cnfInterpretation`, `Cslib.Logic.FO.graph.cnfSubsingleton`: the 3-CNF
+  structure of the colorings of a graph, as a tagged interpretation and on subsingletons.
 
 ## Main results
 
@@ -71,6 +75,7 @@ private def ColoringClauseTag.toSum : ColoringClauseTag → Fin 3 ⊕ Unit ⊕ F
   | .vertex => .inr (.inl ())
   | .edge c => .inr (.inr c)
 
+/-- There are finitely many element tags in `ColoringClauseTag`. -/
 instance : Finite ColoringClauseTag := by
   refine Finite.of_injective ColoringClauseTag.toSum ?_
   intro a b h
@@ -83,6 +88,7 @@ abbrev ColoringClauseTag.Coord : ColoringClauseTag → Type
   | .vertex => Fin 1
   | .edge _ => Fin 2
 
+/-- Every element tag in `ColoringClauseTag` has a finite coordinate type. -/
 instance instFiniteColoringClauseTagCoord : ∀ t : ColoringClauseTag, Finite t.Coord
   | .var _ => inferInstanceAs (Finite (Fin 1))
   | .vertex => inferInstanceAs (Finite (Fin 1))

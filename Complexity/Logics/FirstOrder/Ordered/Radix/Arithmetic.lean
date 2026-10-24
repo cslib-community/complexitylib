@@ -22,7 +22,8 @@ zero initial and final carries make these equations exact rather than modular.
 
 * `Cslib.Logic.FO.Ordered.mulEq`: apply native TIMES to arbitrary terms.
 * `Cslib.Logic.FO.Ordered.Radix.digits`: bound every digit by the radix.
-* `Cslib.Logic.FO.Ordered.Radix.affine`: multiply one word by a digit and add another word.
+* `Cslib.Logic.FO.Ordered.Radix.cell`, `Cslib.Logic.FO.Ordered.Radix.affine`: one affine digit
+  equation, and multiplying one word by a digit and adding another word.
 
 ## Main results
 
@@ -46,6 +47,7 @@ open FirstOrder Language Structure
 noncomputable def mulEq (L : Language) {α : Type*} (x y z : (language L).Term α) :
     (language L).Formula α := (multiplication L).subst ![x, y, z]
 
+/-- `mulEq L x y z` holds iff the product of `x` and `y` equals `z`. -/
 @[simp, fo_realize]
 theorem realize_mulEq {L : Language} {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)]
     {α : Type*} (x y z : (language L).Term α) (v : α → Fin n) :
@@ -88,12 +90,14 @@ noncomputable def affine {α : Type*} {d : ℕ} (B b : (language L).Term α)
 
 variable {L : Language} {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)] {α : Type*}
 
+/-- `digits L B x` holds iff every digit `x i` is strictly less than `B`. -/
 @[simp, fo_realize]
 theorem realize_digits {d : ℕ} (B : (language L).Term α)
     (x : Fin d → (language L).Term α) (v : α → Fin n) :
     (digits L B x).Realize v ↔ ∀ i, (x i |>.realize v).val < (B.realize v).val := by
   simp [digits, not_le]
 
+/-- `cell L B a b y c z c'` holds iff `a * b + y + c = z + B * c'` and `a * b + y + c < n`. -/
 @[fo_realize]
 theorem realize_cell (B a b y c z c' : (language L).Term α) (v : α → Fin n) :
     (cell L B a b y c z c').Realize v ↔

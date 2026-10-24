@@ -66,6 +66,8 @@ other than `¬v`. -/
 def Clause.resolvent (c₁ c₂ : Clause V) (v : V) : Clause V :=
   c₁.filter (· ≠ (v, true)) ++ c₂.filter (· ≠ (v, false))
 
+/-- A literal belongs to `c₁.resolvent c₂ v` iff it belongs to `c₁` and is not `(v, true)`, or
+belongs to `c₂` and is not `(v, false)`. -/
 @[simp] theorem Clause.mem_resolvent {c₁ c₂ : Clause V} {v : V} {l : Literal V} :
     l ∈ c₁.resolvent c₂ v ↔ (l ∈ c₁ ∧ l ≠ (v, true)) ∨ (l ∈ c₂ ∧ l ≠ (v, false)) := by
   simp [resolvent]
@@ -138,6 +140,8 @@ namespace CNF
 
 variable {φ : CNF V} {v : V} {b : Bool}
 
+/-- A clause belongs to `φ.restrict v b` iff it is obtained from a clause of `φ` not containing
+`(v, b)` by removing `(v, !b)`. -/
 @[simp] theorem mem_restrict {c : Clause V} :
     c ∈ φ.restrict v b ↔ ∃ d ∈ φ, (v, b) ∉ d ∧ d.filter (· ≠ (v, !b)) = c := by
   simp [restrict, and_assoc]

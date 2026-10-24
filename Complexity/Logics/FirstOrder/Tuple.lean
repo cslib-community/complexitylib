@@ -46,13 +46,16 @@ namespace Cslib.Logic
 def tupleIndex {n k : ℕ} (x : Fin k → Fin n) : ℕ :=
   finFunctionFinEquiv x
 
+/-- `tupleIndex x` is the base-`n` sum `∑ i, x i * n ^ i`. -/
 theorem tupleIndex_apply {n k : ℕ} (x : Fin k → Fin n) :
     tupleIndex x = ∑ i : Fin k, (x i : ℕ) * n ^ (i : ℕ) :=
   finFunctionFinEquiv_apply x
 
+/-- Every `k`-tuple over `Fin n` has `tupleIndex` strictly less than `n ^ k`. -/
 theorem tupleIndex_lt {n k : ℕ} (x : Fin k → Fin n) : tupleIndex x < n ^ k :=
   (finFunctionFinEquiv x).2
 
+/-- `tupleIndex` is injective. -/
 theorem tupleIndex_injective {n k : ℕ} : Function.Injective (tupleIndex (n := n) (k := k)) :=
   fun _ _ h => finFunctionFinEquiv.injective (Fin.ext h)
 
@@ -61,14 +64,17 @@ indexing as `tupleIndex`. -/
 def tupleEquiv {ι : Type*} {n d : ℕ} (e : ι ≃ Fin d) : (ι → Fin n) ≃ Fin (n ^ d) :=
   (e.arrowCongr (Equiv.refl (Fin n))).trans finFunctionFinEquiv
 
+/-- The numerical value of `tupleEquiv e x` is `tupleIndex (x ∘ e.symm)`. -/
 @[simp]
 theorem tupleEquiv_apply_val {ι : Type*} {n d : ℕ} (e : ι ≃ Fin d) (x : ι → Fin n) :
     (tupleEquiv e x).val = tupleIndex (x ∘ e.symm) := rfl
 
+/-- `(tupleEquiv e).symm u` at coordinate `i` is `finFunctionFinEquiv.symm u (e i)`. -/
 @[simp]
 theorem tupleEquiv_symm_apply {ι : Type*} {n d : ℕ} (e : ι ≃ Fin d) (u : Fin (n ^ d))
     (i : ι) : (tupleEquiv e).symm u i = finFunctionFinEquiv.symm u (e i) := rfl
 
+/-- The `i`-th coordinate of `(tupleEquiv e).symm u` is the `(e i)`-th base-`n` digit of `u`. -/
 theorem tupleEquiv_symm_apply_val {ι : Type*} {n d : ℕ} (e : ι ≃ Fin d)
     (u : Fin (n ^ d)) (i : ι) :
     ((tupleEquiv e).symm u i : ℕ) = u / n ^ (e i : ℕ) % n := by
@@ -79,6 +85,7 @@ theorem tupleIndex_symm {n k : ℕ} (i : Fin (n ^ k)) :
     tupleIndex (finFunctionFinEquiv.symm i) = i := by
   simp [tupleIndex]
 
+/-- Precomposing a tuple with `Fin.cast` leaves its `tupleIndex` unchanged. -/
 theorem tupleIndex_comp_cast {n k l : ℕ} (h : k = l) (x : Fin l → Fin n) :
     tupleIndex (x ∘ Fin.cast h) = tupleIndex x := by
   subst h

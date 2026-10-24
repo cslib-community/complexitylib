@@ -71,6 +71,8 @@ noncomputable def carryStep {α : Type*} (x y z i c c' : (language L).Term α) :
 
 variable {L : Language} {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)] {α : Type*}
 
+/-- `columnWord L x y j w` holds iff `w` is the bit mask `BitString.mulColumnWord` of rows
+contributing to column `j` of the product of `x` and `y`. -/
 @[simp, fo_realize]
 theorem realize_columnWord (x y j w : (language L).Term α) (v : α → Fin n) :
     (columnWord L x y j w).Realize v ↔ (w.realize v).val =

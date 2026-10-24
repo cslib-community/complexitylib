@@ -206,6 +206,8 @@ variable {ends : E → Sym2 V} {χ : V → Bool}
 
 namespace CNF
 
+/-- A clause belongs to `tseitinFormula ends χ` iff it belongs to the parity constraint
+`parityOnEq (Multigraph.incidence ends v) (χ v)` of some vertex `v`. -/
 theorem mem_tseitinFormula {c : Clause E} :
     c ∈ tseitinFormula ends χ ↔ ∃ v, c ∈ parityOnEq (Multigraph.incidence ends v) (χ v) := by
   simp [tseitinFormula]

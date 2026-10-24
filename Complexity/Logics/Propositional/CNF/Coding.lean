@@ -44,7 +44,12 @@ solutions isolated in every direction (`CNF.card_isolatedInputs_mul_two_rpow_le`
 
 ## Main definitions
 
-* `Cslib.Logic.PL.CNF.forced`: the variables forced on a solution for an order of the variables.
+* `Cslib.Logic.PL.CNF.Forces`, `Cslib.Logic.PL.CNF.forced`,
+  `Cslib.Logic.PL.CNF.agreeOffForced`: forcing of a variable by a clause under an order of the
+  variables, the variables forced on a solution, and the assignments agreeing off the forced
+  variables.
+* `Cslib.Logic.PL.CNF.Critical`, `Cslib.Logic.PL.CNF.critWidth`: critical clauses for a direction
+  at an assignment, and the minimum width of a critical clause.
 
 ## Main results
 
@@ -77,6 +82,7 @@ unit clause there; the definition rules it out, since that literal would need `�
 def Forces (σ : Equiv.Perm (Fin N)) (x : BitString N) (c : Clause (Fin N)) (v : Fin N) : Prop :=
   (v, x v) ∈ c ∧ ∀ l ∈ c, l ≠ (v, x v) → σ l.1 < σ v ∧ x l.1 ≠ l.2
 
+/-- Whether a clause forces a variable on an assignment for a given order is decidable. -/
 instance (σ : Equiv.Perm (Fin N)) (x : BitString N) (c : Clause (Fin N)) (v : Fin N) :
     Decidable (Forces σ x c v) :=
   inferInstanceAs (Decidable (_ ∧ ∀ l ∈ c, _))
@@ -87,6 +93,8 @@ def forced (φ : CNF (Fin N)) (σ : Equiv.Perm (Fin N)) (x : BitString N) : Fins
 
 variable {φ : CNF (Fin N)} {σ : Equiv.Perm (Fin N)}
 
+/-- A variable `v` belongs to `φ.forced σ x` if and only if some clause of `φ` forces `v` on `x`
+for `σ`. -/
 @[simp] theorem mem_forced {φ : CNF (Fin N)} {σ : Equiv.Perm (Fin N)} {x : BitString N}
     {v : Fin N} : v ∈ φ.forced σ x ↔ ∃ c ∈ φ, Forces σ x c v := by
   simp [forced]
@@ -155,6 +163,7 @@ of `x` falsifies a critical clause. -/
 def Critical (x : BitString N) (c : Clause (Fin N)) (i : Fin N) : Prop :=
   (i, x i) ∈ c ∧ ∀ l ∈ c, l ≠ (i, x i) → l.1 ≠ i ∧ x l.1 ≠ l.2
 
+/-- Whether a clause is critical for a direction at an assignment is decidable. -/
 instance (x : BitString N) (c : Clause (Fin N)) (i : Fin N) : Decidable (Critical x c i) :=
   inferInstanceAs (Decidable (_ ∧ ∀ l ∈ c, _))
 
@@ -373,6 +382,8 @@ if no clause is. -/
 noncomputable def critWidth (φ : CNF (Fin N)) (x : BitString N) (i : Fin N) : ℕ :=
   sInf {v | ∃ c ∈ φ, Critical x c i ∧ (c.map Prod.fst).toFinset.card = v}
 
+/-- When some clause of `φ` is critical for direction `i` at `x`, there is a critical clause whose
+number of distinct variables equals `φ.critWidth x i`. -/
 theorem exists_critical_card_eq_critWidth {x : BitString N} {i : Fin N}
     (h : ∃ c ∈ φ, Critical x c i) :
     ∃ c ∈ φ, Critical x c i ∧ (c.map Prod.fst).toFinset.card = φ.critWidth x i := by
@@ -386,6 +397,7 @@ private theorem critWidth_eq_zero {x : BitString N} {i : Fin N} (h : ¬ ∃ c �
   obtain ⟨c, hc, hcrit, -⟩ := hv
   exact h ⟨c, hc, hcrit⟩
 
+/-- When some clause of `φ` is critical for direction `i` at `x`, `φ.critWidth x i` is positive. -/
 theorem critWidth_pos {x : BitString N} {i : Fin N} (h : ∃ c ∈ φ, Critical x c i) :
     0 < φ.critWidth x i := by
   obtain ⟨c, -, hcrit, hcard⟩ := exists_critical_card_eq_critWidth h

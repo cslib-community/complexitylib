@@ -105,6 +105,8 @@ def sumAssoc :
     | .inl (.inr r) => .inr ⟨.inl r.1, r.2⟩
     | .inr r => .inr ⟨.inr r.1, r.2⟩
 
+/-- The structure for `Sum.rec R₁ R₂` is an expansion along `sumAssoc` of the iterated sum
+structure for `R₁` and `R₂`. -/
 theorem sumAssoc_isExpansionOn (R₁ : ∀ i, Set (Fin (ar₁ i) → M))
     (R₂ : ∀ j, Set (Fin (ar₂ j) → M)) :
     @LHom.IsExpansionOn _ _ (sumAssoc (L := L) (ar₁ := ar₁) (ar₂ := ar₂)) M
@@ -191,6 +193,7 @@ def isStrictLinearOrderSentence : orderLanguage.Sentence :=
 def orderRelOfEquiv {N : Type w} {n : ℕ} (e : N ≃ Fin n) : ∀ _ : Unit, Set (Fin 2 → N) :=
   fun _ => {x | e (x 0) < e (x 1)}
 
+/-- In `varLanguage.structure R`, the relation symbol `ltSym` holds of `x` iff `x ∈ R ()`. -/
 theorem relMap_ltSym {N : Type w} (R : ∀ _ : Unit, Set (Fin 2 → N)) (x : Fin 2 → N) :
     (varLanguage.structure (arity := fun _ : Unit => 2) R).RelMap ltSym x ↔ x ∈ R () :=
   Iff.rfl

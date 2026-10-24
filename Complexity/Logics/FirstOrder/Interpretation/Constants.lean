@@ -27,9 +27,12 @@ validity hypotheses for arbitrary interpreted domains.
 ## Main definitions
 
 * `Cslib.Logic.FO.Interpretation.WithConstants`: formulas defining additional target constants.
-* `Cslib.Logic.FO.Interpretation.WithConstants.Valid`: unique selection of a domain tuple.
+* `Cslib.Logic.FO.Interpretation.WithConstants.Valid`,
+  `Cslib.Logic.FO.Interpretation.WithConstants.value`: unique existence and selection of the
+  interpreted-domain tuple for each constant.
 * `Cslib.Logic.FO.Interpretation.WithConstants.modelStructure`: the expanded interpreted structure.
-* `Cslib.Logic.FO.Interpretation.WithConstants.onFormula`: native formula pullback.
+* `Cslib.Logic.FO.Interpretation.WithConstants.onFormula`,
+  `Cslib.Logic.FO.Interpretation.WithConstants.onSentence`: formula and sentence pullbacks.
 
 ## Main results
 
@@ -70,6 +73,7 @@ variable {M}
 /-- The unique interpreted-domain tuple selected by a valid constant definition. -/
 noncomputable def value (h : D.Valid M) (c : γ) : I.Model M := (h c).exists.choose
 
+/-- The selected tuple `D.value h c` satisfies its defining formula `D.constant c`. -/
 theorem value_spec (h : D.Valid M) (c : γ) :
     (D.constant c).Realize (D.value h c).val := (h c).exists.choose_spec
 

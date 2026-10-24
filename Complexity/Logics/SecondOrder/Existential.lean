@@ -29,8 +29,12 @@ ones, are closed under intersection and union, and are closed under isomorphism.
 
 ## Main definitions
 
-* `Cslib.Logic.ESO.varLanguage`: the relational language of relation variables of given arities.
-* `Cslib.Logic.ESO.Sentence`: existential second-order sentences, with `Sentence.Realize`.
+* `Cslib.Logic.ESO.varLanguage`, `Cslib.Logic.ESO.varLanguage.structure`: the relational language
+  of relation variables of given arities and its interpretation on a domain.
+* `Cslib.Logic.ESO.varLanguage.sumInl`, `Cslib.Logic.ESO.varLanguage.sumInr`: the embeddings of two
+  blocks of relation variables into their sum.
+* `Cslib.Logic.ESO.Sentence`, `Cslib.Logic.ESO.Sentence.expansionEquiv`: existential second-order
+  sentences, with `Sentence.Realize` and the isomorphism of expanded structures.
 * `Cslib.Logic.ESO.Sentence.ofSentence`: a first-order sentence as an existential second-order one.
 * `Cslib.Logic.ESO.Definable`: existential second-order definability of a class of finite
   structures.
@@ -66,6 +70,7 @@ def varLanguage {ι : Type} (arity : ι → ℕ) : Language.{0, 0} where
   Functions _ := Empty
   Relations n := {i : ι // arity i = n}
 
+/-- `varLanguage arity` is a relational language. -/
 instance {ι : Type} (arity : ι → ℕ) : (varLanguage arity).IsRelational :=
   fun _ => inferInstanceAs (IsEmpty Empty)
 
@@ -79,6 +84,8 @@ namespace varLanguage
 
 variable {ι ι' : Type} {arity : ι → ℕ} {arity' : ι' → ℕ} {M : Type w}
 
+/-- In `varLanguage.structure R`, the relation symbol `r` holds of `x` iff `x ∘ Fin.cast r.2`
+belongs to `R r.1`. -/
 theorem relMap_structure (R : ∀ i, Set (Fin (arity i) → M)) {n : ℕ}
     (r : (varLanguage arity).Relations n) (x : Fin n → M) :
     (varLanguage.structure R).RelMap r x ↔ x ∘ Fin.cast r.2 ∈ R r.1 :=
@@ -92,12 +99,16 @@ def sumInl : varLanguage arity →ᴸ varLanguage (Sum.elim arity arity') where
 def sumInr : varLanguage arity' →ᴸ varLanguage (Sum.elim arity arity') where
   onRelation _ r := ⟨.inr r.1, r.2⟩
 
+/-- `varLanguage.structure R` is an expansion along `sumInl` of the structure for the left
+relation variables. -/
 theorem sumInl_isExpansionOn (R : ∀ i, Set (Fin (Sum.elim arity arity' i) → M)) :
     @LHom.IsExpansionOn _ _ (sumInl (arity' := arity')) M
       (varLanguage.structure fun i => R (.inl i)) (varLanguage.structure R) :=
   @LHom.IsExpansionOn.mk _ _ _ M (varLanguage.structure _) (varLanguage.structure _)
     (fun f => isEmptyElim f) fun _ _ => rfl
 
+/-- `varLanguage.structure R` is an expansion along `sumInr` of the structure for the right
+relation variables. -/
 theorem sumInr_isExpansionOn (R : ∀ i, Set (Fin (Sum.elim arity arity' i) → M)) :
     @LHom.IsExpansionOn _ _ (sumInr (arity := arity)) M
       (varLanguage.structure fun i => R (.inr i)) (varLanguage.structure R) :=
@@ -246,6 +257,8 @@ def expansionEquiv (Φ : Sentence L) (e : M ≃[L] N) (R : ∀ i, Set (Fin (Φ.a
         change e.symm ∘ (e ∘ x) ∘ Fin.cast r.2 ∈ R r.1 ↔ x ∘ Fin.cast r.2 ∈ R r.1
         simp [Function.comp_def] }
 
+/-- An isomorphism `M ≃[L] N` transports satisfaction of an existential second-order sentence `Φ`
+from `M` to `N`. -/
 theorem realize_of_equiv (Φ : Sentence L) (e : M ≃[L] N) (h : Φ.Realize M) : Φ.Realize N := by
   obtain ⟨R, hR⟩ := h
   let _ := varLanguage.structure R

@@ -99,11 +99,13 @@ end BoundedFormula.IsQF
 
 namespace BoundedFormula
 
+/-- A unary relation applied to a term is an atomic bounded formula. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isAtomic_rel₁ (r : L.Relations 1) (t : L.Term (α ⊕ Fin n)) :
     (r.boundedFormula₁ t).IsAtomic :=
   .rel _ _
 
+/-- A binary relation applied to two terms is an atomic bounded formula. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isAtomic_rel₂ (r : L.Relations 2) (t₁ t₂ : L.Term (α ⊕ Fin n)) :
     (r.boundedFormula₂ t₁ t₂).IsAtomic :=
@@ -113,18 +115,22 @@ end BoundedFormula
 
 namespace Formula
 
+/-- Equality of two terms is an atomic formula. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isAtomic_equal (t₁ t₂ : L.Term α) : (t₁.equal t₂).IsAtomic :=
   .equal _ _
 
+/-- A relation symbol applied to a tuple of terms is an atomic formula. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isAtomic_rel (R : L.Relations n) (ts : Fin n → L.Term α) : (R.formula ts).IsAtomic :=
   .rel _ _
 
+/-- A unary relation applied to a term is an atomic formula. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isAtomic_rel₁ (r : L.Relations 1) (t : L.Term α) : (r.formula₁ t).IsAtomic :=
   .rel _ _
 
+/-- A binary relation applied to two terms is an atomic formula. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isAtomic_rel₂ (r : L.Relations 2) (t₁ t₂ : L.Term α) : (r.formula₂ t₁ t₂).IsAtomic :=
   .rel _ _
@@ -175,10 +181,12 @@ theorem isAtomic_rel₁ (r : L.Relations 1) (u : V) : (rel₁ r u).IsAtomic :=
 theorem isAtomic_rel₂ (r : L.Relations 2) (u w : V) : (rel₂ r u w).IsAtomic :=
   Formula.isAtomic_rel₂ _ _ _
 
+/-- The strict order combinator `lt r u w` is atomic. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isAtomic_lt (r : L.Relations 2) (u w : V) : (lt r u w).IsAtomic :=
   isAtomic_rel₂ r u w
 
+/-- The weak order combinator `le r u w` is quantifier-free. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isQF_le (r : L.Relations 2) (u w : V) : (le r u w).IsQF :=
   (isAtomic_lt r w u).isQF.not
@@ -207,6 +215,8 @@ structure IsQF (I : Interpretation L L' ι) : Prop where
 attribute [aesop safe 10 apply (rule_sets := [FirstOrder])] IsQF.mk
 attribute [aesop safe forward (rule_sets := [FirstOrder])] IsQF.domain IsQF.rel
 
+/-- Pulling a quantifier-free bounded formula back along a quantifier-free interpretation preserves
+quantifier-freeness. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem IsQF.onBoundedFormula [Finite ι] [L'.IsRelational] {I : Interpretation L L' ι}
     (hI : I.IsQF) {n : ℕ} {φ : L'.BoundedFormula α n} (hφ : φ.IsQF) :
@@ -225,6 +235,7 @@ theorem IsQF.onFormula [Finite ι] [L'.IsRelational] {I : Interpretation L L' ι
     (hI : I.IsQF) {φ : L'.Formula α} (hφ : φ.IsQF) : (I.onFormula φ).IsQF :=
   (hI.onBoundedFormula hφ).relabel _
 
+/-- The identity interpretation is quantifier-free. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isQF_id (L : Language) : (Interpretation.id L).IsQF :=
   ⟨.top, fun _ => (BoundedFormula.IsAtomic.rel _ _).isQF⟩

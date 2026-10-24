@@ -35,9 +35,17 @@ tree applies.
 
 ## Main definitions
 
-* `Cslib.Logic.PL.CNF.Sparsification.child`, `.choice`, `.next`: the list-level step.
+* `Cslib.Logic.PL.CNF.Sparsification.subclause`, `Cslib.Logic.PL.CNF.Sparsification.reduce`,
+  `Cslib.Logic.PL.CNF.Sparsification.flower`, `Cslib.Logic.PL.CNF.Sparsification.petals`,
+  `Cslib.Logic.PL.CNF.Sparsification.intro`, `Cslib.Logic.PL.CNF.Sparsification.child`,
+  `Cslib.Logic.PL.CNF.Sparsification.heavy`, `Cslib.Logic.PL.CNF.Sparsification.hearts`,
+  `Cslib.Logic.PL.CNF.Sparsification.candidates`, `Cslib.Logic.PL.CNF.Sparsification.rank`,
+  `Cslib.Logic.PL.CNF.Sparsification.choice`, `Cslib.Logic.PL.CNF.Sparsification.next`: the
+  list-level step.
 * `Cslib.Logic.PL.CNF.Sparsification.isSparse`: the list-level test for sparseness.
-* `Cslib.Logic.PL.CNF.Sparsification.Normalized`, `.normalize`: the normal form.
+* `Cslib.Logic.PL.CNF.Sparsification.dedup`, `Cslib.Logic.PL.CNF.Sparsification.dedupClauses`,
+  `Cslib.Logic.PL.CNF.Sparsification.normalize`, `Cslib.Logic.PL.CNF.Sparsification.Normalized`:
+  the normal form.
 * `Cslib.Logic.PL.CNF.Sparsification.rule`: the list-level branching rule.
 
 ## Main results
@@ -137,6 +145,8 @@ def normalize (φ : CNF V) : CNF V :=
 
 /-! ### Clause sets of formulas -/
 
+/-- A clause set `C` belongs to `ψ.toClauseSet` if and only if `D.toFinset = C` for some clause
+`D ∈ ψ`. -/
 theorem mem_toClauseSet {ψ : CNF V} {C : Finset (Literal V)} :
     C ∈ ψ.toClauseSet ↔ ∃ D ∈ ψ, D.toFinset = C := by
   simp [CNF.toClauseSet]
@@ -159,6 +169,7 @@ private theorem subclause_eq_true_iff {D C : Clause V} :
   · intro h l hl
     exact List.mem_toFinset.mp (h (List.mem_toFinset.mpr hl))
 
+/-- `reduce ψ` is a sublist of `ψ`. -/
 theorem reduce_sublist (ψ : CNF V) : reduce ψ <+ ψ := List.filter_sublist
 
 private theorem not_and_not_subclause_iff {D C : Clause V} :
@@ -254,6 +265,7 @@ theorem Normalized.card_toClauseSet {k : ℕ} {ψ : CNF V} (h : Normalized k ψ)
     ψ.toClauseSet.card = ψ.length := by
   rw [CNF.toClauseSet, List.toFinset_card_of_nodup h.nodup_toFinset, List.length_map]
 
+/-- Every clause in the clause set of a `k`-normalized formula has at most `k` literals. -/
 theorem Normalized.card_le {k : ℕ} {ψ : CNF V} (h : Normalized k ψ) :
     ∀ C ∈ ψ.toClauseSet, C.card ≤ k := by
   intro C hC
@@ -516,11 +528,13 @@ private theorem normalized_child {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ θ j) {k
   · rw [child, toClauseSet_reduce]
     exact reduced_reduce _
 
+/-- The clause set of `next θ k ψ b` equals the clause-set child for the computed choice. -/
 theorem toClauseSet_next {θ : ℕ → ℕ} {k : ℕ} {ψ : CNF V} (h : Normalized k ψ) (b : Bool) :
     (next θ k ψ b).toClauseSet = ClauseSet.Sparsification.child ψ.toClauseSet
       (choice θ k ψ).1 (choice θ k ψ).2.toFinset b :=
   toClauseSet_child h.nodup _ _ b
 
+/-- At a non-sparse `k`-normalized formula, one branching step preserves normal form. -/
 theorem normalized_next {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ θ j) {k : ℕ} {ψ : CNF V} (h : Normalized k ψ)
     (hns : ¬ Sparse θ ψ.toClauseSet) (b : Bool) : Normalized k (next θ k ψ b) :=
   normalized_child hθ h (choice_spec hθ h hns).2 (choice_spec hθ h hns).1.1 b
@@ -574,10 +588,12 @@ private theorem length_dedup_le (C : Clause V) : (dedup C).length ≤ C.length :
   refine (card_le_card fun l hl => ?_).trans (List.toFinset_card_le C)
   exact List.mem_toFinset.mpr (mem_dedup.mp (List.mem_toFinset.mp hl))
 
+/-- Deduplicating a clause preserves its set of literals. -/
 theorem toFinset_dedup (C : Clause V) : (dedup C).toFinset = C.toFinset := by
   ext l
   simp [mem_dedup]
 
+/-- `dedupClauses ψ` is a sublist of `ψ`. -/
 theorem dedupClauses_sublist (ψ : CNF V) : dedupClauses ψ <+ ψ := by
   conv_rhs => rw [← List.zipIdx_map_fst 0 ψ]
   exact List.filter_sublist.map _
@@ -651,6 +667,7 @@ theorem normalized_normalize {k : ℕ} {φ : CNF V} (hφ : ∀ C ∈ φ, C.lengt
   · rw [toClauseSet_normalize]
     exact reduced_reduce _
 
+/-- The clause set of `normalize φ` has the same solutions as `φ`. -/
 theorem sat_toClauseSet_normalize_iff (φ : CNF V) (x : V → Bool) :
     (normalize φ).toClauseSet.Sat x ↔ φ.eval x = true := by
   rw [toClauseSet_normalize, sat_reduce_iff, CNF.sat_toClauseSet_iff]

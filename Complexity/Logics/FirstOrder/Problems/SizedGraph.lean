@@ -53,7 +53,8 @@ these facts about sets of vertices.
 
 ## Main definitions
 
-* `Cslib.Logic.FO.sizedGraph`: the vocabulary of graphs with a size relation.
+* `Cslib.Logic.FO.SizedGraphRel`, `Cslib.Logic.FO.sizedGraph`: the relation symbols and vocabulary
+  of graphs with a size relation.
 * `Cslib.Logic.FO.sizedGraph.IndependentSet`, `Cslib.Logic.FO.sizedGraph.Clique`,
   `Cslib.Logic.FO.sizedGraph.VertexCover`: the classes of finite structures.
 * `Cslib.Logic.FO.sizedGraph.complementEdges`, `Cslib.Logic.FO.sizedGraph.complementSize`:
@@ -130,16 +131,21 @@ def VertexCover : Set (Bundled.{w} sizedGraph.Structure) :=
 
 variable {M : Bundled.{w} sizedGraph.Structure}
 
+/-- A structure belongs to `IndependentSet` iff it has a pairwise nonadjacent set of `|size|`
+vertices. -/
 theorem mem_IndependentSet : M ∈ IndependentSet ↔ ∃ s : Set M,
     s.ncard = {x : M | RelMap sizedGraph.size ![x]}.ncard ∧
       s.Pairwise fun x y => ¬ RelMap sizedGraph.adj ![x, y] :=
   Iff.rfl
 
+/-- A structure belongs to `Clique` iff it has a pairwise adjacent set of `|size|` vertices. -/
 theorem mem_Clique : M ∈ Clique ↔ ∃ s : Set M,
     s.ncard = {x : M | RelMap sizedGraph.size ![x]}.ncard ∧
       s.Pairwise fun x y => RelMap sizedGraph.adj ![x, y] :=
   Iff.rfl
 
+/-- A structure belongs to `VertexCover` iff it has a set of `|size|` vertices meeting every edge
+between distinct vertices. -/
 theorem mem_VertexCover : M ∈ VertexCover ↔ ∃ s : Set M,
     s.ncard = {x : M | RelMap sizedGraph.size ![x]}.ncard ∧
       ∀ x y, x ≠ y → RelMap sizedGraph.adj ![x, y] → x ∈ s ∨ y ∈ s :=

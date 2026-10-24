@@ -27,6 +27,9 @@ three-colorability (`n = 3`) are existential second-order definable.
 
 ## Main definitions
 
+* `Cslib.Logic.ESO.Sentence.color`, `Cslib.Logic.ESO.Sentence.edge`,
+  `Cslib.Logic.ESO.Sentence.colorableMatrix`: the color and edge relation symbols and the
+  first-order matrix of the colorability sentence.
 * `Cslib.Logic.ESO.Sentence.colorable`: the existential second-order sentence saying that a graph
   is `n`-colorable.
 

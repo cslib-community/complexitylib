@@ -28,6 +28,8 @@ the inner one certifies the composite. This is the substitution proof of
 
 ## Main definitions
 
+* `Cslib.Logic.FO.Ordered.DomainInterpretation.Certificate.pullback`: flattened pullback of a
+  formula on blocks of target variables.
 * `Cslib.Logic.FO.Ordered.DomainInterpretation.comp`: composition with a certified interpretation.
 * `Cslib.Logic.FO.Ordered.DomainInterpretation.Certificate.comp`: the composite certificate.
 
@@ -71,6 +73,8 @@ noncomputable def comp (J : DomainInterpretation L' L'' l) {I : DomainInterpreta
 variable (J : DomainInterpretation L' L'' l) {I : DomainInterpretation L L' k}
   (C : I.Certificate) {M : Structure L}
 
+/-- A flattened tuple satisfies `(J.comp C).domain` iff each block satisfies `I.domain` and the
+blocks satisfy the pullback `C.onFormula J.domain`. -/
 theorem realize_comp_domain (x : Fin (l * k) → Fin M.size) :
     (J.comp C).domain.Realize x ↔
       (∀ j, I.domain.Realize fun i => x (finProdFinEquiv (j, i))) ∧

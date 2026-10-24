@@ -33,7 +33,13 @@ clauses of size `j` (`mul_card_petalSteps_le`).
 
 ## Main definitions
 
-* `Cslib.Logic.PL.ClauseSet.Sparsification.Path`: a branch of the procedure.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.Path`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Path.introAt`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Path.introduced`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Path.introducedOfCard`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Path.newContaining`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Path.petalSteps`: a branch of the procedure, its
+  introduced clauses, new clauses containing a fixed clause, and petal steps of a given size.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.Refines`: every clause is contained in another.
 
 ## Main results
@@ -85,6 +91,7 @@ def Refines (α β : ClauseSet V) : Prop :=
   ∀ a ∈ α, ∃ b ∈ β, a ⊆ b
 
 omit [DecidableEq V] in
+/-- Clause-set refinement `Refines` is transitive. -/
 theorem Refines.trans {α β γ : ClauseSet V} (h₁ : Refines α β) (h₂ : Refines β γ) :
     Refines α γ := by
   intro a ha
@@ -165,6 +172,7 @@ private theorem reduced_node : ∀ i ≤ P.len, Reduced (P.node i)
     rw [P.step i hi]
     exact reduced_child _ _ _ _
 
+/-- The clause set at node `i + 1` is contained in `P.node i ∪ P.introAt i`. -/
 theorem node_succ_subset {i : ℕ} (hi : i < P.len) : P.node (i + 1) ⊆ P.node i ∪ P.introAt i := by
   rw [P.step i hi]
   exact child_subset _ _ _ _

@@ -33,6 +33,7 @@ width `k` when `k` divides `n` (`CNF.exists_any_eval_eq_parity`).
 * `Cslib.Logic.PL.IsSigmaThree`, `Cslib.Logic.PL.IsPiThree`: depth-three formulas of bottom
   fan-in `k`.
 * `Cslib.Logic.PL.sigmaThreeSize`, `Cslib.Logic.PL.piThreeSize`: `Σ₃^k(f)` and `Π₃^k(f)`.
+* `Cslib.Logic.PL.CNF.minterm`: the CNF formula of unit clauses accepting a single input.
 
 ## Main results
 
@@ -80,6 +81,7 @@ noncomputable def piThreeSize (k : ℕ) (f : BitString N → Bool) : ℕ :=
 def CNF.minterm (x : BitString N) : CNF (Fin N) :=
   (List.finRange N).map fun i => [(i, x i)]
 
+/-- `CNF.minterm x` evaluates to `true` on `y` iff `y = x`. -/
 theorem CNF.eval_minterm_eq_true_iff (x y : BitString N) :
     (CNF.minterm x).eval y = true ↔ y = x := by
   rw [funext_iff]
@@ -102,12 +104,14 @@ theorem exists_isSigmaThree {k : ℕ} (hk : 1 ≤ k) (f : BitString N → Bool) 
     · rintro ⟨F, ⟨x, hx, rfl⟩, hFy⟩
       rwa [(CNF.eval_minterm_eq_true_iff x y).mp hFy]
 
+/-- For `k ≥ 1`, there exists a `Σ₃^k` formula for `f` attaining `sigmaThreeSize k f`. -/
 theorem exists_isSigmaThree_length_eq_sigmaThreeSize {k : ℕ} (hk : 1 ≤ k)
     (f : BitString N → Bool) : ∃ Fs, IsSigmaThree k f Fs ∧ Fs.length = sigmaThreeSize k f := by
   obtain ⟨Fs, hFs⟩ := exists_isSigmaThree hk f
   exact Nat.sInf_mem (s := {t | ∃ Fs, IsSigmaThree k f Fs ∧ Fs.length = t})
     ⟨Fs.length, Fs, hFs, rfl⟩
 
+/-- Every `Σ₃^k` formula for `f` has at least `sigmaThreeSize k f` CNF formulas. -/
 theorem sigmaThreeSize_le_length {k : ℕ} {f : BitString N → Bool} {Fs : List (CNF (Fin N))}
     (h : IsSigmaThree k f Fs) : sigmaThreeSize k f ≤ Fs.length :=
   Nat.sInf_le ⟨Fs, h, rfl⟩

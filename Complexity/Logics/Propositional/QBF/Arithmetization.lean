@@ -52,16 +52,20 @@ variables is simpler to compute and costs only polynomially many more rounds.
 
 ## Main definitions
 
-* `Cslib.Logic.PL.ArithQBF`: arithmetic formulas with the operators `∃`, `∀` and `L`.
+* `Cslib.Logic.PL.ArithQBF`, `Cslib.Logic.PL.ArithQBF.Connective`: arithmetic formulas with
+  connectives and the operators `∃`, `∀` and `L`.
+* `Cslib.Logic.PL.ArithQBF.Connective.apply`, `Cslib.Logic.PL.ArithQBF.Operator.apply`: evaluation
+  of connectives and operators over a commutative ring.
 * `Cslib.Logic.PL.ArithQBF.eval`, `Cslib.Logic.PL.ArithQBF.restrict`: values and univariate
   restrictions.
-* `Cslib.Logic.PL.ArithQBF.degBound`, `Cslib.Logic.PL.ArithQBF.roundDegree`: syntactic degree
-  bounds.
+* `Cslib.Logic.PL.ArithQBF.Operator.degMul`, `Cslib.Logic.PL.ArithQBF.degBound`,
+  `Cslib.Logic.PL.ArithQBF.roundDegree`: syntactic degree bounds.
 * `Cslib.Logic.PL.ArithQBF.ops`, `Cslib.Logic.PL.ArithQBF.maxRoundDegree`: the number of
   operators and the largest degree of their bodies.
 * `Cslib.Logic.PL.ArithQBF.vars`: the variables of an arithmetic formula.
 * `Cslib.Logic.PL.ArithQBF.toQBF`: the formula without its linearizations.
-* `Cslib.Logic.PL.QBF.arithmetize`: the arithmetization with linearization.
+* `Cslib.Logic.PL.ArithQBF.lins`, `Cslib.Logic.PL.QBF.arithmetize`: linearization of a list of
+  variables and the arithmetization with linearization.
 
 ## Main results
 
@@ -148,10 +152,12 @@ def Operator.apply : Operator → R → R → R → R
   | .all, _, a, b => a * b
   | .lin, t, a, b => (1 - t) * a + t * b
 
+/-- Ring homomorphisms commute with `Connective.apply`. -/
 theorem Connective.map_apply (f : R →+* S) (o : Connective) (a b : R) :
     f (o.apply a b) = o.apply (f a) (f b) := by
   cases o <;> simp only [apply, map_mul, map_sub, map_one]
 
+/-- Ring homomorphisms commute with `Operator.apply`. -/
 theorem Operator.map_apply (f : R →+* S) (o : Operator) (t a b : R) :
     f (o.apply t a b) = o.apply (f t) (f a) (f b) := by
   cases o <;> simp only [apply, map_add, map_mul, map_sub, map_one]
@@ -170,17 +176,23 @@ def eval (r : V → R) : ArithQBF V → R
 
 variable (r : V → R) (v : V) (e e₁ e₂ : ArithQBF V)
 
+/-- Evaluating a variable returns its value under the assignment `r`. -/
 @[simp] theorem eval_var : (var v).eval r = r v := rfl
 
+/-- Evaluating `top` yields `1`. -/
 @[simp] theorem eval_top : (top : ArithQBF V).eval r = 1 := rfl
 
+/-- Evaluating `bot` yields `0`. -/
 @[simp] theorem eval_bot : (bot : ArithQBF V).eval r = 0 := rfl
 
+/-- Evaluating `e.not` yields `1 - e.eval r`. -/
 @[simp] theorem eval_not : e.not.eval r = 1 - e.eval r := rfl
 
+/-- Evaluating a binary connective applies `o.apply` to the values of its subformulas. -/
 @[simp] theorem eval_bin (o : Connective) :
     (bin o e₁ e₂).eval r = o.apply (e₁.eval r) (e₂.eval r) := rfl
 
+/-- Evaluating an operator binding `v` applies `o.apply` to `r v` and the values at `0` and `1`. -/
 @[simp] theorem eval_op (o : Operator) :
     (op o v e).eval r =
       o.apply (r v) (e.eval (Function.update r v 0)) (e.eval (Function.update r v 1)) := rfl
@@ -244,6 +256,8 @@ def degBound (x : V) : ArithQBF V → ℕ
 private theorem natDegree_one_sub_le (p : R[X]) : (1 - p).natDegree ≤ p.natDegree :=
   (natDegree_sub_le 1 p).trans (by rw [natDegree_one, Nat.zero_max])
 
+/-- Applying a binary connective to polynomials `p` and `q` has degree at most the sum of their
+degrees. -/
 theorem Connective.natDegree_apply_le (o : Connective) (p q : R[X]) :
     (o.apply p q).natDegree ≤ p.natDegree + q.natDegree := by
   cases o
@@ -251,6 +265,8 @@ theorem Connective.natDegree_apply_le (o : Connective) (p q : R[X]) :
   · exact (natDegree_one_sub_le _).trans (natDegree_mul_le.trans
       (Nat.add_le_add (natDegree_one_sub_le p) (natDegree_one_sub_le q)))
 
+/-- Applying an operator at a constant `C t` to polynomials of degree at most `d` has degree at
+most `o.degMul * d`. -/
 theorem Operator.natDegree_apply_le (o : Operator) (t : R) {p q : R[X]} {d : ℕ}
     (hp : p.natDegree ≤ d) (hq : q.natDegree ≤ d) :
     (o.apply (C t) p q).natDegree ≤ o.degMul * d := by
@@ -271,6 +287,7 @@ theorem Operator.natDegree_apply_le (o : Operator) (t : R) {p q : R[X]} {d : ℕ
       rw [natDegree_C, degMul, one_mul, zero_add]
       exact hq
 
+/-- Applying an operator at `X` to constant polynomials `C a` and `C b` has degree at most `1`. -/
 theorem Operator.natDegree_apply_X_le (o : Operator) (a b : R) :
     (o.apply X (C a) (C b)).natDegree ≤ 1 := by
   cases o
@@ -478,12 +495,15 @@ theorem eval_boolean (σ : V → Bool) :
 def lins (xs : List V) (e : ArithQBF V) : ArithQBF V := xs.foldr (op .lin) e
 
 omit [DecidableEq V] in
+/-- Linearizing over the empty list of variables leaves the formula unchanged. -/
 @[simp] theorem lins_nil : lins [] e = e := rfl
 
 omit [DecidableEq V] in
+/-- Linearizing over `x :: xs` applies `.op .lin x` to `lins xs e`. -/
 @[simp] theorem lins_cons (x : V) (xs : List V) : lins (x :: xs) e = op .lin x (lins xs e) := rfl
 
 omit [DecidableEq V] in
+/-- Dropping linearizations from `lins xs e` yields `e.toQBF`. -/
 @[simp] theorem toQBF_lins (xs : List V) : (lins xs e).toQBF = e.toQBF := by
   induction xs with
   | nil => rfl
@@ -512,6 +532,7 @@ private theorem roundDegree_lins_le (xs : List V) {D : ℕ} (h : ∀ x, e.degBou
     nlinarith
 
 omit [DecidableEq V] in
+/-- Linearizing `xs` adds `xs.length` operators to `e.ops`. -/
 @[simp] theorem ops_lins (xs : List V) : (lins xs e).ops = xs.length + e.ops := by
   induction xs with
   | nil => simp
@@ -566,6 +587,7 @@ def arithmetize (xs : List V) : QBF V → ArithQBF V
   | .all v φ => lins xs (.op .all v (arithmetize xs φ))
 
 omit [DecidableEq V] in
+/-- Dropping linearizations from `φ.arithmetize xs` recovers `φ`. -/
 @[simp] theorem toQBF_arithmetize (xs : List V) (φ : QBF V) : (φ.arithmetize xs).toQBF = φ := by
   induction φ with
   | var v => rfl

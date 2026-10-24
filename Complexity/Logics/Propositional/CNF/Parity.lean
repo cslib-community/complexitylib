@@ -51,10 +51,13 @@ some variable in `B`. -/
 noncomputable def Clause.exclude (B : Finset ι) (y : ι → Bool) : Clause ι :=
   B.toList.map fun i => (i, !y i)
 
+/-- `Clause.exclude B y` holds under `x` if and only if `x` differs from `y` on some variable in
+`B`. -/
 theorem Clause.eval_exclude_eq_true_iff (B : Finset ι) (y x : ι → Bool) :
     (Clause.exclude B y).eval x = true ↔ ∃ i ∈ B, x i ≠ y i := by
   simp [Clause.exclude, Clause.eval_eq_true_iff, Bool.eq_not_iff]
 
+/-- `Clause.exclude B y` has `#B` literals. -/
 @[simp] theorem Clause.length_exclude (B : Finset ι) (y : ι → Bool) :
     (Clause.exclude B y).length = #B := by
   simp [Clause.exclude]

@@ -45,11 +45,14 @@ spelled out.
 
 ## Main definitions
 
-* `Cslib.Logic.Vocabulary`: an enumeration of the relation symbols of a language.
-* `Cslib.Logic.EncodedStructure`, `Cslib.Logic.encStructure`: inputs and their binary encoding.
-* `Cslib.Logic.Vocabulary.decode`, `Cslib.Logic.Vocabulary.WellFormed`,
-  `Cslib.Logic.Vocabulary.checkShape`, `Cslib.Logic.Vocabulary.encode`: decoding,
-  well-formedness and its check, and encoding along a numbering.
+* `Cslib.Logic.Vocabulary`, `Cslib.Logic.Vocabulary.index`, `Cslib.Logic.Vocabulary.arity`: an
+  enumeration of the relation symbols of a language, with their indices and arities.
+* `Cslib.Logic.EncodedStructure`, `Cslib.Logic.encStructure`, `Cslib.Logic.Vocabulary.table`:
+  inputs, their binary encoding, and relation table lookup.
+* `Cslib.Logic.Vocabulary.decode`, `Cslib.Logic.Vocabulary.decoded`,
+  `Cslib.Logic.Vocabulary.WellFormed`, `Cslib.Logic.Vocabulary.checkShape`,
+  `Cslib.Logic.Vocabulary.relTable`, `Cslib.Logic.Vocabulary.encode`: decoding, well-formedness and
+  its check, and encoding along a numbering.
 * `Cslib.Logic.Vocabulary.queryLanguage`: the inputs encoding the members of a class.
 
 ## Main results
@@ -108,6 +111,7 @@ variable {L : Language.{u, v}} (v : Vocabulary L)
 def index (r : Σ n, L.Relations n) : ℕ :=
   v.symbol.symm r
 
+/-- The table index of any relation symbol `r` is strictly less than `v.count`. -/
 theorem index_lt (r : Σ n, L.Relations n) : v.index r < v.count :=
   (v.symbol.symm r).2
 
@@ -128,6 +132,8 @@ def decode [L.IsRelational] (a : EncodedStructure) : L.Structure (Fin a.1) where
   funMap f := isEmptyElim f
   RelMap r x := (v.table a ⟨_, r⟩).getD (tupleIndex x) false = true
 
+/-- In the decoded structure `v.decode a`, relation `r` holds on `x` iff its truth table has
+`true` at `tupleIndex x`. -/
 theorem relMap_decode [L.IsRelational] (a : EncodedStructure) {n : ℕ} (r : L.Relations n)
     (x : Fin n → Fin a.1) :
     (v.decode a).RelMap r x ↔ (v.table a ⟨_, r⟩).getD (tupleIndex x) false = true :=
@@ -147,12 +153,16 @@ def checkShape (a : EncodedStructure) : Bool :=
   (a.2.length == v.count) && (List.finRange v.count).all fun i =>
     (a.2.getD i []).length == a.1 ^ v.arity i
 
+/-- `v.checkShape a` returns `true` if and only if `v.WellFormed a` holds. -/
 theorem checkShape_eq_true_iff (a : EncodedStructure) : v.checkShape a = true ↔ v.WellFormed a := by
   simp [checkShape, WellFormed]
 
+/-- Decidability of `v.WellFormed a` via `v.checkShape a`. -/
 instance (a : EncodedStructure) : Decidable (v.WellFormed a) :=
   decidable_of_iff _ (v.checkShape_eq_true_iff a)
 
+/-- In a well-formed input `a`, the table for a relation symbol `r` of arity `r.1` has length
+`a.1 ^ r.1`. -/
 theorem WellFormed.length_table {a : EncodedStructure} (h : v.WellFormed a)
     (r : Σ n, L.Relations n) : (v.table a r).length = a.1 ^ r.1 := by
   have := h.2 (v.symbol.symm r)
@@ -174,11 +184,15 @@ noncomputable def encode (M : Type) [L.Structure M] {n : ℕ} (e : M ≃ Fin n) 
 
 variable {v}
 
+/-- The truth table `relTable M e r` of a relation of arity `r.1` over `Fin n` has length
+`n ^ r.1`. -/
 theorem length_relTable (M : Type) [L.Structure M] {n : ℕ} (e : M ≃ Fin n)
     (r : Σ k, L.Relations k) : (relTable M e r).length = n ^ r.1 := by
   simp [relTable]
 
 open scoped Classical in
+/-- Looking up `tupleIndex x` in `relTable M e ⟨k, r⟩` yields `true` iff `RelMap r (e.symm ∘ x)`
+holds in `M`. -/
 theorem getD_relTable_eq_true_iff (M : Type) [L.Structure M] {n : ℕ} (e : M ≃ Fin n) {k : ℕ}
     (r : L.Relations k) (x : Fin k → Fin n) :
     (relTable M e ⟨k, r⟩).getD (tupleIndex x) false = true ↔ RelMap r (e.symm ∘ x) := by
@@ -187,6 +201,7 @@ theorem getD_relTable_eq_true_iff (M : Type) [L.Structure M] {n : ℕ} (e : M �
   simp only [tupleIndex]
   rw [Fin.eta, finFunctionFinEquiv.symm_apply_apply x]
 
+/-- In `v.encode M e`, the table associated to relation symbol `r` is `relTable M e r`. -/
 theorem table_encode (M : Type) [L.Structure M] {n : ℕ} (e : M ≃ Fin n)
     (r : Σ k, L.Relations k) : v.table (v.encode M e) r = relTable M e r := by
   rw [table, encode, List.getD_eq_getElem _ _ (by rw [List.length_ofFn]; exact v.index_lt r),
@@ -267,10 +282,12 @@ def queryLanguage [L.IsRelational] (K : Set (Bundled.{0} L.Structure)) : Set Enc
 
 variable {v}
 
+/-- An input `a` belongs to `v.queryLanguage K` iff `v.WellFormed a` and `v.decoded a ∈ K`. -/
 theorem mem_queryLanguage [L.IsRelational] {K : Set (Bundled.{0} L.Structure)}
     {a : EncodedStructure} : a ∈ v.queryLanguage K ↔ v.WellFormed a ∧ v.decoded a ∈ K :=
   Iff.rfl
 
+/-- For a well-formed input `a`, `a ∈ v.queryLanguage K` iff `v.decoded a ∈ K`. -/
 theorem WellFormed.mem_queryLanguage_iff [L.IsRelational] {K : Set (Bundled.{0} L.Structure)}
     {a : EncodedStructure} (h : v.WellFormed a) : a ∈ v.queryLanguage K ↔ v.decoded a ∈ K :=
   and_iff_right h

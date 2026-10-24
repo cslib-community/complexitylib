@@ -37,8 +37,16 @@ encoded formulas and graphs, is `Cslib.Complexity.SAT.toThreeColoring`.
 
 ## Main definitions
 
-* `Cslib.Logic.FO.cnf.coloringInterpretation`: the graph built from a CNF structure, a tagged
-  interpretation.
+* `Cslib.Logic.FO.cnf.orGate`, `Cslib.Logic.FO.cnf.gadgetColor`,
+  `Cslib.Logic.FO.cnf.GadgetProper`: the OR-gate coloring and properness condition for the
+  six-vertex clause gadget.
+* `Cslib.Logic.FO.cnf.ColoringTag`, `Cslib.Logic.FO.cnf.ColoringTag.Coord`,
+  `Cslib.Logic.FO.cnf.GadgetDomain`, `Cslib.Logic.FO.cnf.gadgetDomain`,
+  `Cslib.Logic.FO.cnf.badSentence`, `Cslib.Logic.FO.cnf.coloringEdges`,
+  `Cslib.Logic.FO.cnf.coloringAdj`: the vertex tags, coordinates, gadget domain, and edge templates
+  of the reduction graph.
+* `Cslib.Logic.FO.cnf.coloringInterpretation`, `Cslib.Logic.FO.cnf.coloringSubsingleton`: the graph
+  built from a CNF structure, as a tagged interpretation and on subsingletons.
 
 ## Main results
 
@@ -139,6 +147,7 @@ private def ColoringTag.toSum : ColoringTag → Fin 3 ⊕ Bool ⊕ (Fin 6 × (Fi
   | .lit p => .inr (.inl p)
   | .gadget g ps => .inr (.inr (g, ps))
 
+/-- There are finitely many vertex tags in `ColoringTag`. -/
 instance : Finite ColoringTag := by
   refine Finite.of_injective ColoringTag.toSum ?_
   intro a b h
@@ -153,6 +162,7 @@ abbrev ColoringTag.Coord : ColoringTag → Type
   | .lit _ => Fin 1
   | .gadget _ _ => Fin 4
 
+/-- Every vertex tag in `ColoringTag` has a finite coordinate type. -/
 instance instFiniteColoringTagCoord : ∀ u : ColoringTag, Finite u.Coord
   | .trueV | .falseV | .baseV => inferInstanceAs (Finite (Fin 0))
   | .lit _ => inferInstanceAs (Finite (Fin 1))

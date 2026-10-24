@@ -27,7 +27,9 @@ Machine and circuit capture theorems require separate developments.
 
 ## Main definitions
 
-* `Cslib.Logic.FO.Ordered.numericLanguage`: the numeric symbols.
+* `Cslib.Logic.FO.Ordered.NumericFunction`, `Cslib.Logic.FO.Ordered.NumericFunction.index`,
+  `Cslib.Logic.FO.Ordered.NumericRelation`, `Cslib.Logic.FO.Ordered.numericLanguage`: the numeric
+  function and relation symbols and their language.
 * `Cslib.Logic.FO.Ordered.language`: expansion of an input language by the numeric vocabulary.
 * `Cslib.Logic.FO.Ordered.numericStructure`: canonical numeric semantics on `Fin n`, for `n ≥ 2`.
 * `Cslib.Logic.FO.Ordered.zero`, `Cslib.Logic.FO.Ordered.one`, `Cslib.Logic.FO.Ordered.max`:
@@ -65,6 +67,7 @@ inductive NumericFunction : ℕ → Type
   | max : NumericFunction 0
   deriving DecidableEq
 
+/-- Finite enumeration of the nullary numeric function symbols `zero`, `one`, and `max`. -/
 instance : Fintype (NumericFunction 0) :=
   ⟨{.zero, .one, .max}, by intro c; cases c <;> simp⟩
 
@@ -75,6 +78,8 @@ abbrev NumericFunction.index {k : ℕ} (c : NumericFunction k) (m : ℕ) : ℕ :
   | .one => 1
   | .max => m - 1
 
+/-- When `2 ≤ m`, the natural index `c.index m` of any numeric constant is strictly less than
+`m`. -/
 theorem NumericFunction.index_lt {k m : ℕ} (hm : 2 ≤ m) (c : NumericFunction k) :
     c.index m < m := by
   cases c <;> simp only [NumericFunction.index] <;> lia
@@ -103,6 +108,7 @@ def numericStructure {n : ℕ} (hn : 2 ≤ n) : numericLanguage.Structure (Fin n
     | .le => x 0 ≤ x 1
     | .bit => (x 0).val.testBit (x 1).val = true
 
+/-- Canonical `numericLanguage.Structure (Fin n)` instance when `Fact (2 ≤ n)` holds. -/
 instance {n : ℕ} [Fact (2 ≤ n)] : numericLanguage.Structure (Fin n) :=
   numericStructure Fact.out
 
@@ -130,12 +136,15 @@ def bit (s i : (language L).Term α) : (language L).Formula α :=
 
 variable {L} {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)]
 
+/-- The numeric constant `zero L` evaluates to `0 : Fin n`. -/
 @[simp] theorem realize_zero_val (v : α → Fin n) :
     ((zero L).realize v).val = 0 := rfl
 
+/-- The numeric constant `one L` evaluates to `1 : Fin n`. -/
 @[simp] theorem realize_one_val (v : α → Fin n) :
     ((one L).realize v).val = 1 := rfl
 
+/-- The numeric constant `max L` evaluates to `n - 1 : Fin n`. -/
 @[simp] theorem realize_max_val (v : α → Fin n) :
     ((max L).realize v).val = n - 1 := rfl
 
@@ -146,6 +155,7 @@ theorem realize_zero_ne_one (v : α → Fin n) : (zero L).realize v ≠ (one L).
   simp only [realize_zero_val, realize_one_val] at this
   contradiction
 
+/-- `le L s t` holds under `v` if and only if `s.realize v ≤ t.realize v`. -/
 @[simp, fo_realize] theorem realize_le (s t : (language L).Term α) (v : α → Fin n) :
     (le L s t).Realize v ↔ s.realize v ≤ t.realize v := by
   rw [le, Formula.realize_rel₂]

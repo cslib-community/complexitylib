@@ -93,6 +93,8 @@ noncomputable def shiftLeft {α : Type*} (x e z : (language L).Term α) :
 
 variable {L : Language} {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)] {α : Type*}
 
+/-- `addEq L x y z` holds under `v` if and only if
+`(x.realize v).val + (y.realize v).val = (z.realize v).val`. -/
 @[simp, fo_realize]
 theorem realize_addEq (x y z : (language L).Term α) (v : α → Fin n) :
     (addEq L x y z).Realize v ↔ (x.realize v).val + (y.realize v).val = (z.realize v).val := by
@@ -112,6 +114,7 @@ theorem realize_natEq (k : ℕ) (x : (language L).Term α) (v : α → Fin n) :
     exact ⟨fun ⟨a, ha, he⟩ => by lia,
       fun hx => ⟨fun _ => ⟨k, by have := (x.realize v).isLt; lia⟩, rfl, hx.symm⟩⟩
 
+/-- `scaleEq L k x z` holds under `v` iff `k * (x.realize v).val = (z.realize v).val`. -/
 @[simp, fo_realize]
 theorem realize_scaleEq (k : ℕ) (x z : (language L).Term α) (v : α → Fin n) :
     (scaleEq L k x z).Realize v ↔ k * (x.realize v).val = (z.realize v).val := by
@@ -128,6 +131,8 @@ omit [Fact (2 ≤ n)] in
 private theorem bitIndex_lt {x : Fin n} {i : ℕ} (hi : x.val.testBit i = true) : i < n :=
   lt_trans (lt_of_lt_of_le Nat.lt_two_pow_self (Nat.ge_two_pow_of_testBit hi)) x.isLt
 
+/-- `highestBit L x h` holds under `v` iff `2 ^ (h.realize v).val ≤ (x.realize v).val` and
+`(x.realize v).val < 2 ^ ((h.realize v).val + 1)`. -/
 @[simp, fo_realize]
 theorem realize_highestBit (x h : (language L).Term α) (v : α → Fin n) :
     (highestBit L x h).Realize v ↔

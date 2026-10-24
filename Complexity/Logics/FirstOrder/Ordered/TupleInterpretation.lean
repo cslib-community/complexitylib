@@ -30,7 +30,8 @@ infer numeric predicates for arbitrary restricted domains.
 
 * `Cslib.Logic.FO.Ordered.tupleLt`, `Cslib.Logic.FO.Ordered.tupleLe`: native tuple-order formulas.
 * `Cslib.Logic.FO.Ordered.fullTuple`: the full tuple domain, with empty relational target language.
-* `Cslib.Logic.FO.Ordered.tupleConstants`: coordinate definitions of the canonical target constants.
+* `Cslib.Logic.FO.Ordered.constantTuple`, `Cslib.Logic.FO.Ordered.tupleConstants`: the canonical
+  constant tuples and the coordinate definitions of the canonical target constants.
 
 ## Main results
 
@@ -53,11 +54,13 @@ namespace Cslib.Logic.FO.Ordered
 
 open FirstOrder Language Structure
 
+/-- The canonical order relation formula `le L s t` is atomic. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isAtomic_le (L : Language) {α : Type*} (s t : (language L).Term α) :
     (le L s t).IsAtomic :=
   .rel _ _
 
+/-- The canonical `BIT` relation formula `bit L s i` is atomic. -/
 @[aesop safe apply (rule_sets := [FirstOrder])]
 theorem isAtomic_bit (L : Language) {α : Type*} (s i : (language L).Term α) :
     (bit L s i).IsAtomic :=

@@ -58,7 +58,8 @@ Let `P ⊆ Fin m` and `H ⊆ Fin n` be sets of remaining pigeons and holes with 
 
 ## Main definitions
 
-* `Cslib.Logic.PL.Pigeonhole.pigeonholeOn`: the pigeonhole formula on subsets `P` and `H`.
+* `Cslib.Logic.PL.Pigeonhole.pigeonClauseOn`, `Cslib.Logic.PL.Pigeonhole.pigeonholeOn`: the pigeon
+  clauses and pigeonhole formula on subsets `P` and `H`.
 * `Cslib.Logic.PL.Pigeonhole.matchPair`: the partial assignment matching a pigeon to a hole.
 * `Cslib.Logic.PL.Pigeonhole.satPairs`: the pairs in `P ×ˢ H` whose matching assignment satisfies a
   clause (its monotone translation).
@@ -108,10 +109,12 @@ def pigeonholeOn (P : Finset (Fin m)) (H : Finset (Fin n)) : CNF (Fin m × Fin n
       ((List.finRange m).filter (· ∈ P)).flatMap fun i =>
         ((List.finRange m).filter (fun i' => i' ∈ P ∧ i < i')).map fun i' => CNF.holeClause i i' j
 
+/-- Restricting the pigeon clause of `i` to all holes gives `CNF.pigeonClause n i`. -/
 @[simp] theorem pigeonClauseOn_univ (i : Fin m) :
     pigeonClauseOn (univ : Finset (Fin n)) i = CNF.pigeonClause n i := by
   simp [pigeonClauseOn, CNF.pigeonClause]
 
+/-- Restricting the pigeonhole formula to all pigeons and holes gives `CNF.pigeonhole m n`. -/
 @[simp] theorem pigeonholeOn_univ :
     pigeonholeOn (univ : Finset (Fin m)) (univ : Finset (Fin n)) = CNF.pigeonhole m n := by
   simp [pigeonholeOn, CNF.pigeonhole]
@@ -129,6 +132,7 @@ theorem mem_pigeonholeOn {P : Finset (Fin m)} {H : Finset (Fin n)} {c : Clause (
   · rintro (⟨i, hi, rfl⟩ | ⟨i, hi, i', hi', j, hj, hii', rfl⟩)
     exacts [Or.inl ⟨i, hi, rfl⟩, Or.inr ⟨j, hj, i, hi, i', ⟨hi', hii'⟩, rfl⟩]
 
+/-- `pigeonClauseOn H i` evaluates to `true` under `σ` iff `σ (i, j) = true` for some `j ∈ H`. -/
 @[simp] theorem eval_pigeonClauseOn (σ : Fin m × Fin n → Bool) (H : Finset (Fin n)) (i : Fin m) :
     (pigeonClauseOn H i).eval σ = true ↔ ∃ j ∈ H, σ (i, j) = true := by
   simp [pigeonClauseOn, Clause.eval_eq_true_iff]
@@ -142,9 +146,11 @@ def matchPair (i : Fin m) (j : Fin n) (v : Fin m × Fin n) : Option Bool :=
   else if v.1 = i ∨ v.2 = j then some false
   else none
 
+/-- `matchPair i j` assigns `some true` to `(i, j)`. -/
 @[simp] theorem matchPair_self (i : Fin m) (j : Fin n) : matchPair i j (i, j) = some true := by
   simp [matchPair]
 
+/-- `matchPair i j` leaves `v` unassigned iff `v.1 ≠ i` and `v.2 ≠ j`. -/
 theorem matchPair_eq_none {i : Fin m} {j : Fin n} {v : Fin m × Fin n} :
     matchPair i j v = none ↔ v.1 ≠ i ∧ v.2 ≠ j := by
   simp only [matchPair]
@@ -336,6 +342,8 @@ noncomputable def falsifiedPigeons (P : Finset (Fin m)) (H : Finset (Fin n))
   open Classical in
   P.filter fun i => ∃ g, IsCrit P H g ∧ i ∉ H.image g ∧ c.eval (critAssign H g) = false
 
+/-- A pigeon `i` belongs to `falsifiedPigeons P H c` iff `i ∈ P` and `i` is the missing pigeon of
+some critical assignment falsifying `c`. -/
 theorem mem_falsifiedPigeons {P : Finset (Fin m)} {H : Finset (Fin n)}
     {c : Clause (Fin m × Fin n)} {i : Fin m} :
     i ∈ falsifiedPigeons P H c ↔
@@ -343,6 +351,7 @@ theorem mem_falsifiedPigeons {P : Finset (Fin m)} {H : Finset (Fin n)}
   classical
   simp [falsifiedPigeons]
 
+/-- `falsifiedPigeons P H c` is a subset of `P`. -/
 theorem falsifiedPigeons_subset (P : Finset (Fin m)) (H : Finset (Fin n))
     (c : Clause (Fin m × Fin n)) : falsifiedPigeons P H c ⊆ P := by
   intro i hi

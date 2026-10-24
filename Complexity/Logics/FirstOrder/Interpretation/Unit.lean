@@ -72,6 +72,7 @@ def unitModelEquiv (hdom : ∀ x : M, I.domain.Realize fun _ => x) :
     map_fun' f := isEmptyElim f
     map_rel' _ _ := Iff.rfl }
 
+/-- `I.unitModelEquiv M hdom` maps a 1-dimensional interpreted element `x` to `x.1 ()`. -/
 @[simp]
 theorem unitModelEquiv_apply (hdom : ∀ x : M, I.domain.Realize fun _ => x) (x : I.Model M) :
     I.unitModelEquiv M hdom x = x.1 () :=
