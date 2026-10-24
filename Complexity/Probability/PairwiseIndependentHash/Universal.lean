@@ -111,9 +111,8 @@ theorem isUniversalHash [Nonempty ι] (hh : IsPairwiseIndependentHash h) :
 
 /-- A pairwise independent family with a uniform seed is two-universal. -/
 theorem isTwoUniversal [Nonempty ι] (hh : IsPairwiseIndependentHash h) :
-    IsTwoUniversal (PMF.uniformOfFintype ι) h := fun x x' hx => by
-  have : Nonempty Y := ⟨h (Classical.arbitrary ι) x⟩
-  exact isTwoUniversal_iff_isUniversalHash.mpr hh.isUniversalHash x x' hx
+    IsTwoUniversal (PMF.uniformOfFintype ι) h :=
+  hh.isUniversalHash
 
 /-- A pairwise independent family with a uniform seed, into an additive group, is
 `1 / |Y|`-Δ-universal. -/

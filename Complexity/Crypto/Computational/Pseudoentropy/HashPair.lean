@@ -98,11 +98,11 @@ def prefixHash {n count : ℕ} (i : Fin count) (seed : Seed n count) (x : BitStr
 theorem prefixHash_isTwoUniversal {n count : ℕ} (i : Fin count) :
     IsTwoUniversal (PMF.uniformOfFintype (Seed n count)) (prefixHash i) := by
   unfold prefixHash
-  refine IsTwoUniversal.precompose_seed _ Prod.fst (hash := fun matrix =>
+  refine IsUniversalHash.precompose_seed _ Prod.fst (hash := fun matrix =>
     LinearHash.hash (blocksEquiv (m := count) (k := n) matrix ∘
       Fin.castLE (Nat.succ_le_of_lt i.isLt))) ?_
   rw [uniformOfFintype_prod_map_fst]
-  refine IsTwoUniversal.precompose_seed _ (blocksEquiv (m := count) (k := n)) (hash := fun rows =>
+  refine IsUniversalHash.precompose_seed _ (blocksEquiv (m := count) (k := n)) (hash := fun rows =>
     LinearHash.hash (rows ∘ Fin.castLE (Nat.succ_le_of_lt i.isLt))) ?_
   rw [uniformOfFintype_map_equiv]
   exact LinearHash.isTwoUniversal_prefix (Nat.succ_le_of_lt i.isLt)

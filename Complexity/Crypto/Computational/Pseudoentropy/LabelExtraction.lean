@@ -57,7 +57,7 @@ polynomial-size family. The choices need not be computable: the reduction handle
 uniformly, and only the proof uses the chosen index. Observations and hash seeds stay public. -/
 theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (realization : pair.SeedRealization) (choose : ℕ → ℕ)
-    {Seed Output : ℕ → ℕ → Type} [∀ n i, Fintype (Seed n i)] [∀ n i, Fintype (Output n i)]
+    {Seed Output : ℕ → ℕ → Type} [∀ n i, Finite (Seed n i)] [∀ n i, Fintype (Output n i)]
     [∀ n i, Nonempty (Output n i)] (seed : ∀ n i, ProbComp (Seed n i))
     (hash : ∀ n i, Seed n i → List Bool → Output n i)
     (test : ∀ n i, List (List Bool) × Seed n i × Output n i → ProbComp Bool)
@@ -166,7 +166,7 @@ uniform. Only the proof uses the chosen indices; the sampler, hash, and test for
 efficient family. The entropy budget discharges the complete statistical error. -/
 theorem HasGap.extract_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (realization : pair.SeedRealization) (choose : ℕ → ℕ)
-    {Seed : ℕ → ℕ → Type} [∀ n i, Fintype (Seed n i)]
+    {Seed : ℕ → ℕ → Type} [∀ n i, Finite (Seed n i)]
     {outputBits : ℕ → ℕ → ℕ} {candidates inverseSlack : ℕ → ℕ}
     (seed : ∀ n i, ProbComp (Seed n i))
     (hash : ∀ n i, Seed n i → List Bool → BitString (outputBits n i))

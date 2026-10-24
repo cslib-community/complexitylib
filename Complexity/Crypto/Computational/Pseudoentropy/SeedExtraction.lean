@@ -47,7 +47,7 @@ open Probability Probability.PMF BitString Filter
 
 /-- Repeated public observations supply their Shannon entropy to the first extractor. -/
 theorem observation_extraction {pair : SamplablePair} (saved : pair.SeedRealization)
-    (inverseSlack outputBits : ℕ → ℕ) {Key : ℕ → Type} [∀ n, Fintype (Key n)]
+    (inverseSlack outputBits : ℕ → ℕ) {Key : ℕ → Type} [∀ n, Finite (Key n)]
     (key : ∀ n, ProbComp (Key n))
     (hash : ∀ n, Key n → List (pair.Observation n) → BitString (outputBits n))
     (hhash : ∀ n, IsTwoUniversal (ProbComp.eval (key n))
@@ -81,7 +81,7 @@ theorem observation_extraction {pair : SamplablePair} (saved : pair.SeedRealizat
 /-- The first statistical transition on ordinary sampled observation words. Its hash's finite
 two-universality premise includes the public encoding; no observation is sampled conditionally. -/
 theorem observation_word_extraction {pair : SamplablePair} (saved : pair.SeedRealization)
-    (inverseSlack outputBits : ℕ → ℕ) {Key : ℕ → Type} [∀ n, Fintype (Key n)]
+    (inverseSlack outputBits : ℕ → ℕ) {Key : ℕ → Type} [∀ n, Finite (Key n)]
     (key : ∀ n, ProbComp (Key n))
     (hash : ∀ n, Key n → List (List Bool) → BitString (outputBits n))
     (hhash : ∀ n, IsTwoUniversal (ProbComp.eval (key n))
@@ -120,7 +120,7 @@ theorem observation_word_extraction {pair : SamplablePair} (saved : pair.SeedRea
 /-- Extract the unused seed entropy, preserving the complete pair output and hash seed.
 The entropy chain rule pays for both the public observations and the labels already revealed. -/
 theorem remainingSeed_extraction {pair : SamplablePair} (saved : pair.SeedRealization)
-    (inverseSlack outputBits : ℕ → ℕ) {Key : ℕ → Type} [∀ n, Fintype (Key n)]
+    (inverseSlack outputBits : ℕ → ℕ) {Key : ℕ → Type} [∀ n, Finite (Key n)]
     (key : ∀ n, ProbComp (Key n))
     (hash : ∀ n, Key n → List (BitString (saved.length n)) → BitString (outputBits n))
     (hhash : ∀ n, IsTwoUniversal (ProbComp.eval (key n))
@@ -163,7 +163,7 @@ theorem remainingSeed_extraction {pair : SamplablePair} (saved : pair.SeedRealiz
 /-- The remaining-seed transition for the actual word sampler. Every observation and label
 stays public; finite representations are confined to the two-universality hypothesis. -/
 theorem remainingSeed_word_extraction {pair : SamplablePair} (saved : pair.SeedRealization)
-    (inverseSlack outputBits : ℕ → ℕ) {Key : ℕ → Type} [∀ n, Fintype (Key n)]
+    (inverseSlack outputBits : ℕ → ℕ) {Key : ℕ → Type} [∀ n, Finite (Key n)]
     (key : ∀ n, ProbComp (Key n))
     (hash : ∀ n, Key n → List (List Bool) → BitString (outputBits n))
     (hhash : ∀ n, IsTwoUniversal (ProbComp.eval (key n))

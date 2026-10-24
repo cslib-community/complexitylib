@@ -78,7 +78,7 @@ example : (PMF.uniformOfFintype Bool).toOuterMeasure
 example : IsUniversalHash (PMF.uniformOfFintype Bool)
     (fun key (input : Bool × Bool) => if key then input.1 else input.2)
     (Fintype.card Bool : ℝ≥0∞)⁻¹ :=
-  isTwoUniversal_iff_isUniversalHash.mp <| by
+  isTwoUniversal_iff_sum_ite_le.mpr <| by
     rintro ⟨a, b⟩ ⟨c, d⟩ hne
     cases a <;> cases b <;> cases c <;> cases d <;>
       norm_num [Fintype.sum_bool, PMF.uniformOfFintype_apply] at *

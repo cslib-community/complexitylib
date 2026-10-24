@@ -202,7 +202,7 @@ samples against every randomized finite-output test. The test receives all obser
 the independent seed. It has no efficiency restriction. -/
 theorem extractLabels_dist_bind_le {Observation Label Seed Output : Type}
     [Finite Observation] [Finite Label]
-    [Fintype Seed] [Fintype Output] [Nonempty Output]
+    [Finite Seed] [Fintype Output] [Nonempty Output]
     (source : ProbComp (Observation × Label)) (count informationBits : ℕ)
     (hsource : ∀ pair ∈ (ProbComp.eval source).support,
       (2 : ℝ) ^ (-(informationBits : ℝ)) ≤ (ProbComp.eval source pair).toReal)
@@ -216,6 +216,7 @@ theorem extractLabels_dist_bind_le {Observation Label Seed Output : Type}
       2 * Real.exp (-2 * slack ^ 2 / (count * (informationBits : ℝ) ^ 2)) +
         Real.sqrt (Fintype.card Output * (2 * (2 : ℝ) ^ (-(count * δ - slack)))) / 2 := by
   let := Fintype.ofFinite Observation
+  let := Fintype.ofFinite Seed
   have h := hhash.leftover_hash_pi_conditional (fun _ : Fin count => ProbComp.eval source)
     (bound := informationBits) (by positivity) (fun _ => hsource) hslack
   simp only [Fintype.card_fin, Finset.sum_const, Finset.card_univ, nsmul_eq_mul] at h
@@ -261,7 +262,7 @@ zero-bit output is always permitted; positive lengths reserve two slacks below c
 entropy. Every randomized Boolean test is admissible, with no computability assumption on
 entropy or its numerical bound. -/
 theorem extractLabels_indistinguishable {Observation Label Seed : ℕ → Type}
-    [∀ n, Finite (Observation n)] [∀ n, Finite (Label n)] [∀ n, Fintype (Seed n)]
+    [∀ n, Finite (Observation n)] [∀ n, Finite (Label n)] [∀ n, Finite (Seed n)]
     (source : ∀ n, ProbComp (Observation n × Label n))
     (sourceBits inverseSlack outputBits : ℕ → ℕ)
     (hmass : ∀ n value, value ∈ (ProbComp.eval (source n)).support →
@@ -310,7 +311,7 @@ open Filter in
 /-- Unconditional extraction is the constant-observation specialization. It hashes ordinary
 lists and reveals the entire seed; zero-bit outputs need no entropy. -/
 theorem seededHash_replicate_indistinguishable {Label Seed : ℕ → Type}
-    [∀ n, Finite (Label n)] [∀ n, Fintype (Seed n)]
+    [∀ n, Finite (Label n)] [∀ n, Finite (Seed n)]
     (source : ∀ n, ProbComp (Label n)) (sourceBits inverseSlack outputBits : ℕ → ℕ)
     (hmass : ∀ n value, value ∈ (ProbComp.eval (source n)).support →
       (2 : ℝ) ^ (-(sourceBits n : ℝ)) ≤ (ProbComp.eval (source n) value).toReal)

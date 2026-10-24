@@ -4,30 +4,37 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Probability.HashFamily.Polynomial
 import Complexity.Probability.HashIsolation
+import Mathlib.Algebra.Field.ZMod
 
 /-! Public-seed extraction, nonuniform seeds, empty digests and preimage isolation. -/
 
 namespace ComplexityTests.UniversalHash
 
 open Cslib.Probability Cslib.Probability.PMF
+open scoped ENNReal
 
 private def xorHash (seed value : Bool) : Bool := value ^^ seed
 
 -- The seed distribution need not be uniform: every individual hash here is injective.
 private theorem xor_twoUniversal (seed : PMF Bool) : IsTwoUniversal seed xorHash := by
   intro x y hxy
-  cases x <;> cases y <;> simp_all [xorHash]
+  have hempty : {s | xorHash s x = xorHash s y} = ∅ := by
+    ext s
+    cases x <;> cases y <;> cases s <;> simp_all [xorHash]
+  simp [hempty]
 
 example : IsTwoUniversal (PMF.pure false) xorHash := xor_twoUniversal _
 
 -- Choosing one of two coordinates is not injective; its collision bound can be tight.
 private theorem coord_twoUniversal :
     IsTwoUniversal (PMF.uniformOfFintype Bool)
-      (fun key (input : Bool × Bool) => if key then input.1 else input.2) := by
-  rintro ⟨a, b⟩ ⟨c, d⟩ hne
-  cases a <;> cases b <;> cases c <;> cases d <;>
-    norm_num [Fintype.sum_bool, PMF.uniformOfFintype_apply] at *
+      (fun key (input : Bool × Bool) => if key then input.1 else input.2) :=
+  isTwoUniversal_iff_sum_ite_le.mpr <| by
+    rintro ⟨a, b⟩ ⟨c, d⟩ hne
+    cases a <;> cases b <;> cases c <;> cases d <;>
+      norm_num [Fintype.sum_bool, PMF.uniformOfFintype_apply] at *
 
 example : IsTwoUniversal (PMF.uniformOfFintype Bool)
     (fun key (input : Bool × Bool) => if key then input.1 else input.2) :=
@@ -86,6 +93,28 @@ example (side : PMF Bool) (source : Bool → PMF Bool) :
       2 * ∑ info, (side info).toReal * collisionProbability (source info) := by
   simpa using (xor_twoUniversal (PMF.pure false)).leftover_hash_conditional_sq side source
 
+instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
+-- Leftover hash lemma for an ε-universal family with ε = 2 / 5 ≠ 1 / |ZMod 5|:
+-- two-block polynomial hashing over ZMod 5.
+example (source : PMF (ZMod 5 × ZMod 5)) :
+    dist (seededHash (PMF.uniformOfFintype (ZMod 5)) source (fun k p => polyHash k [p.1, p.2]))
+      ((PMF.uniformOfFintype (ZMod 5)).bind
+        (fun k => (PMF.uniformOfFintype (ZMod 5)).map (k, ·))) ≤
+      Real.sqrt (5 * (collisionProbability source + 2 / 5) - 1) / 2 := by
+  have hpoly : IsUniversalHash (PMF.uniformOfFintype (ZMod 5))
+      (fun k (p : ZMod 5 × ZMod 5) => polyHash k [p.1, p.2]) (2 / 5) := by
+    have h2 : IsUniversalHash (PMF.uniformOfFintype (ZMod 5))
+        (fun k (m : {m : List (ZMod 5) // m.length ≤ 2}) => polyHash k m) (2 / 5) := by
+      simpa using isUniversalHash_polyHash (F := ZMod 5) 2
+    exact h2.precompose (encode := fun p : ZMod 5 × ZMod 5 => ⟨[p.1, p.2], by simp⟩)
+      (fun p q h => by
+        have h' := congrArg Subtype.val h
+        simp only [List.cons.injEq, and_true] at h'
+        exact Prod.ext h'.1 h'.2)
+  have hne : (2 / 5 : ℝ≥0∞) ≠ ⊤ := ENNReal.div_ne_top (by norm_num) (by norm_num)
+  simpa [ENNReal.toReal_div] using hpoly.leftover_hash hne source
+
 /--
 info: 'Cslib.Probability.IsDeltaUniversalHash.isTwoUniversal' depends on axioms:
 [propext, Classical.choice, Quot.sound]
@@ -106,5 +135,26 @@ info: 'Cslib.Probability.IsTwoUniversal.expect_boole_le' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms IsTwoUniversal.expect_boole_le
+
+/--
+info: 'Cslib.Probability.IsUniversalHash.collision_with_set_le' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms IsUniversalHash.collision_with_set_le
+
+/--
+info: 'Cslib.Probability.IsUniversalHash.leftover_hash_sq' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms IsUniversalHash.leftover_hash_sq
+
+/--
+info: 'Cslib.Probability.IsUniversalHash.leftover_hash' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms IsUniversalHash.leftover_hash
 
 end ComplexityTests.UniversalHash

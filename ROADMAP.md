@@ -1182,9 +1182,12 @@ Jukna coverage below is an additional target beyond the V1 port:
   [`ε`-universal and `ε`-Δ-universal](Complexity/Probability/HashFamily.lean) families;
   pairwise independent families are
   [universal and Δ-universal](Complexity/Probability/PairwiseIndependentHash/Universal.lean), the
-  Boolean-matrix and subset-sum families are Δ-universal, and the
+  Boolean-matrix and subset-sum families are Δ-universal, the
   [Carter–Wegman polynomial](Complexity/Probability/HashFamily/Polynomial.lean) and
-  [multiply-shift](Complexity/Probability/HashFamily/MultiplyShift.lean) families are proved.
+  [multiply-shift](Complexity/Probability/HashFamily/MultiplyShift.lean) families are proved, and
+  the [leftover hash lemma](Complexity/Probability/UniversalHash.lean) is proved over
+  `ε`-universal families (`IsUniversalHash.leftover_hash`) with `IsTwoUniversal` as its
+  `1 / |Output|` case and the pseudoentropy clients updated.
   [Feistel networks and the Luby–Rackoff theorem](Complexity/Crypto/Protocols/Cipher/LubyRackoff.lean)
   (#748, #834, Boneh–Shoup Section 4.4 / Luby–Rackoff 1988), backed by the shared
   [lazy bidirectional random-permutation sampler](Complexity/Languages/Probabilistic/RandomPermutation.lean)
@@ -1208,8 +1211,6 @@ Jukna coverage below is an additional target beyond the V1 port:
   and the separate exact `1 - |G|⁻¹` bound against the independent-table benchmark
   `independentTableStrongGame` in `advantage_feistel3CCAAttack_independentTable`). Open in #748:
   the 4-round information-theoretic bidirectional random-round collision bound.
-  Open: the leftover hash lemma stated over `ε`-universal families, with `IsTwoUniversal` as its
-  `1 / |Y|` case and the pseudoentropy clients updated.
 * **Sigma protocols, Schnorr identification and Fiat–Shamir (#581).** Boneh–Shoup Chapter 19.
   The exact algebraic core is proved:
   [Sigma protocols](Complexity/Crypto/Protocols/SigmaProtocol/Basic.lean) with explicit

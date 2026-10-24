@@ -114,7 +114,7 @@ private theorem uniform_prefix {n m count : ℕ} (h : m ≤ count) :
 theorem isTwoUniversal_prefix {n m count : ℕ} (h : m ≤ count) :
     IsTwoUniversal (PMF.uniformOfFintype (Fin count → BitString n))
       (fun rows => hash (rows ∘ Fin.castLE h)) := by
-  apply IsTwoUniversal.precompose_seed
+  apply IsUniversalHash.precompose_seed
   rw [uniform_prefix]
   exact isTwoUniversal n m
 
@@ -122,7 +122,7 @@ theorem isTwoUniversal_prefix {n m count : ℕ} (h : m ≤ count) :
 theorem isTwoUniversal_flat (inputBits outputBits : ℕ) :
     IsTwoUniversal (PMF.uniformOfFintype (BitString (outputBits * inputBits)))
       (fun seed => hash (blocksEquiv (m := outputBits) (k := inputBits) seed)) := by
-  apply IsTwoUniversal.precompose_seed
+  apply IsUniversalHash.precompose_seed
   rw [PMF.uniformOfFintype_map_equiv]
   exact isTwoUniversal inputBits outputBits
 

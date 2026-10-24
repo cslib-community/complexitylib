@@ -215,7 +215,7 @@ theorem maskedSample_weight_mass_ge_eventually {α β : ℕ → Type}
 finite-output test receives all observations, the seed and the extracted value. The finite
 latent draw supplies the information bound; the public observation type may be infinite. -/
 theorem maskedSample_extract_dist_bind_le {α β Seed Output : Type} [Finite α]
-    [Fintype Seed] [Fintype Output] [Nonempty Output]
+    [Finite Seed] [Fintype Output] [Nonempty Output]
     (source : ProbComp α) (observe : α → β) (truth : α → Bool) (mask : α → ProbComp Bool)
     (count informationBits : ℕ)
     (hmass : ∀ pair ∈ (ProbComp.eval (maskedSample source id truth mask)).support,
@@ -253,7 +253,7 @@ theorem maskedSample_extract_dist_bind_le {α β Seed Output : Type} [Finite α]
 extraction. The bound is uniform over all vote lists and thresholds of that density; the test
 retains every public observation and the complete independent hash seed. -/
 theorem maskedSample_weight_extract_dist_bind_le {α β Seed Output : Type} [Fintype α]
-    [Fintype Seed] [Fintype Output] [Nonempty Output]
+    [Finite Seed] [Fintype Output] [Nonempty Output]
     (source : ProbComp α) (observe : α → β) (truth : α → Bool) (votes : α → List Bool)
     (count sourceBits bound numerator threshold : ℕ)
     (hsource : ∀ value ∈ (ProbComp.eval source).support,
