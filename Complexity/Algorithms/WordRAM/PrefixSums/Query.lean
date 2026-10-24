@@ -60,7 +60,7 @@ def queryNext (x : Data 14) (b n i a : ℕ) : Data 14 :=
 
 variable {w h b n i δ a : ℕ} {x : Data 14}
 
-theorem queryBody_exec (hx : Entry b n i δ x) (hi : i ≤ n) (hn : 0 < n)
+private theorem queryBody_exec (hx : Entry b n i δ x) (hi : i ≤ n) (hn : 0 < n)
     (hxans : x.regs ans = a) (ha : Fits w (b + 2 * n))
     (hv : Fits w (a + x.mem b))
     (hl : i ≠ n → n / 2 ≤ i → Fits w (a + x.mem (b + 1))) :
@@ -86,14 +86,14 @@ theorem queryNext_mem : (queryNext x b n i a).mem = x.mem := by
   · rfl
   · split <;> rfl
 
-theorem queryNext_entry (hx : Entry b n i δ x) (he : i ≠ n) :
+private theorem queryNext_entry (hx : Entry b n i δ x) (he : i ≠ n) :
     Entry (if i < n / 2 then b + 1 else b + n / 2 + n / 2) (n / 2)
       (if i < n / 2 then i else i - n / 2) δ (queryNext x b n i a) := by
   rcases hx with ⟨hz, ho, ht, hp, hn, hi, hd⟩
   by_cases hc : i < n / 2 <;>
     simp +decide [queryNext, he, hc, Entry.mk, hz, ho, ht, hi, hd]
 
-theorem queryLoop_full (hx : Entry b n n δ x) (hn : 0 < n)
+private theorem queryLoop_full (hx : Entry b n n δ x) (hn : 0 < n)
     (hxans : x.regs ans = a) (ha : Fits w (b + 2 * n)) (hv : Fits w (a + x.mem b)) :
     ∃ y, ExecWithin w queryLoop x y 15 ∧ y.regs ans = a + x.mem b ∧ y.mem = x.mem := by
   have he := queryBody_exec hx le_rfl hn hxans ha hv (fun h => (h rfl).elim)

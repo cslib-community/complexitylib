@@ -68,7 +68,7 @@ theorem bank_injective {k offset : ℕ} (hk : offset + k ≤ registers) :
 
 /-- A renamed subroutine cannot write a register outside its embedding. This proof treats
 the subroutine structurally and does not expand its instruction graph. -/
-theorem preserves_rename {k : ℕ} {f : Fin k → Fin registers} (c : Code .standard k)
+private theorem preserves_rename {k : ℕ} {f : Fin k → Fin registers} (c : Code .standard k)
     (i : Fin registers) (hi : ∀ j, f j ≠ i) : (c.rename f).Preserves i := by
   induction c with
   | op o =>

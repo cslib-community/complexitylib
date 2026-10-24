@@ -58,7 +58,7 @@ def cell (a d : Fin (r + 4)) : Code .standard (r + 4) := ram[
   carry ← carry % zero ]
 
 /-- Full result of a division digit, including the remainder workspace. -/
-def cellResult (x : Data (r + 4)) (a d : Fin (r + 4)) : Data (r + 4) :=
+private def cellResult (x : Data (r + 4)) (a d : Fin (r + 4)) : Data (r + 4) :=
   let t := x.regs carry * x.regs base + x.regs a
   ((x.set carry t).set d (t >>> x.regs total)).set carry (t % x.regs zero)
 
@@ -416,7 +416,7 @@ theorem exec {w : ℕ} (hw : 2 ≤ w)
   · exact hf.2 s (by simp [hsb, hsz, hsout]) hst hsc
 
 /-- Extract the outside-output register guarantee from the complete four-register frame. -/
-theorem regs_eq_of_frame {x y : Data (r + 4)} {ds : List (Fin (r + 4))}
+private theorem regs_eq_of_frame {x y : Data (r + 4)} {ds : List (Fin (r + 4))}
     (hf : Frame x y (base :: zero :: ds)) {i : Fin (r + 4)}
     (hi : IsDigit i) (hnot : i ∉ ds) : y.regs i = x.regs i := by
   obtain ⟨ht, hc, hb, hz⟩ := digit_ne hi

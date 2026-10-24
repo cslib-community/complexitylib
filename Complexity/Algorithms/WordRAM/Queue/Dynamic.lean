@@ -72,7 +72,7 @@ def certificate {w base capacity : ℕ} (h1 : Fits w 1)
 
 /-- The expensive transfer consumes eight credits per rear element, including loop control.
 The final halt contributes the extra one in the left side. -/
-theorem bodyCost_potential (front back : List ℕ) (o : QueueOp ℕ) :
+private theorem bodyCost_potential (front back : List ℕ) (o : QueueOp ℕ) :
     bodyCost front back o + 1 + 8 * (pairStep (front, back) o).1.2.length ≤
       14 + 8 * back.length := by
   cases o with

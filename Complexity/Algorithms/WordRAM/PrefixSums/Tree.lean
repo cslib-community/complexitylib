@@ -57,7 +57,7 @@ def increment : List ℕ → ℕ → ℕ → List ℕ
   | a :: as, i + 1, δ => a :: increment as i δ
 
 /-- Point increments split over concatenation at the left array's length. -/
-theorem increment_append (as bs : List ℕ) (i δ : ℕ) :
+private theorem increment_append (as bs : List ℕ) (i δ : ℕ) :
     increment (as ++ bs) i δ =
       if i < as.length then increment as i δ ++ bs
       else as ++ increment bs (i - as.length) δ := by
@@ -162,7 +162,7 @@ def words (h : ℕ) : ℕ := 2 * 2 ^ h - 1
 @[simp]
 theorem words_zero : words 0 = 1 := rfl
 
-theorem words_succ (h : ℕ) : words (h + 1) = 1 + words h + words h := by
+private theorem words_succ (h : ℕ) : words (h + 1) = 1 + words h + words h := by
   have := Nat.two_pow_pos h
   simp only [words, pow_succ]
   omega

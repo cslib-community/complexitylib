@@ -103,7 +103,7 @@ def ops (s : ℕ) : Fin 44 → Operation 44 :=
     .binary .add 31 42]
 
 /-- Slot zero is the supplied input. -/
-theorem values_input (s x : ℕ) : values s x 0 = x := rfl
+private theorem values_input (s x : ℕ) : values s x 0 = x := rfl
 
 -- Reducing both 44-entry vectors in the last finite cases exceeds the default depth.
 set_option maxRecDepth 2048 in
@@ -118,7 +118,7 @@ theorem ops_earlier (s : ℕ) (i : Fin 44) : (ops s i).Earlier i := by
   fin_cases i <;> first | exact True.intro | exact ⟨by decide, by decide⟩
 
 /-- On nonzero inputs, the last slot is exactly the arithmetic expression `msb`. -/
-theorem values_output_msb (s x : ℕ) (hx : 0 < x) :
+private theorem values_output_msb (s x : ℕ) (hx : 0 < x) :
     values s x 43 = msb s x := by
   simp [values, msb, show x ≠ 0 by omega]
 
@@ -131,7 +131,7 @@ theorem values_output {w x : ℕ} (hx0 : 0 < x) (hx : x < 2 ^ w) :
 
 /-- Each virtual value occurs in an audited stage list, apart from the unit constant,
 the selected-cluster offset, the unmasked selected input, and the final output. -/
-theorem values_mem (s x : ℕ) (i : Fin 44) :
+private theorem values_mem (s x : ℕ) (i : Fin 44) :
     values s x i ∈ clusterStageValues s x ∨
     values s x i ∈ powerStageValues s (clusterSummary s x) ∨
     values s x i ∈ powerStageValues s
@@ -143,7 +143,7 @@ theorem values_mem (s x : ℕ) (i : Fin 44) :
   fin_cases i <;> simp [values, clusterStageValues, powerStageValues]
 
 /-- All 44 virtual values fit in the audited `6w` virtual bits. -/
-theorem values_lt {w x : ℕ} (hw : 0 < w) (hx0 : 0 < x) (hx : x < 2 ^ w)
+private theorem values_lt {w x : ℕ} (hw : 0 < w) (hx0 : 0 < x) (hx : x < 2 ^ w)
     (i : Fin 44) : values (clusterSize w) x i < 2 ^ (6 * w) := by
   obtain ⟨hc, hz, hv, hoff, hout⟩ := widthMSB_virtual_bounds hw hx
   rcases values_mem (clusterSize w) x i with h | h | h | h | h | h | h
@@ -162,7 +162,7 @@ theorem values_lt {w x : ℕ} (hw : 0 < w) (hx0 : 0 < x) (hx : x < 2 ^ w)
 
 /-- At widths at least three, the precomputed cluster size is strictly smaller than
 the physical width. -/
-theorem clusterSize_lt {w : ℕ} (hw : 3 ≤ w) : clusterSize w < w := by
+private theorem clusterSize_lt {w : ℕ} (hw : 3 ≤ w) : clusterSize w < w := by
   obtain ⟨_, _, hsq, hsw⟩ := clusterSize_bounds (show 0 < w by omega)
   by_contra h
   have he : clusterSize w = w := by omega
@@ -170,7 +170,7 @@ theorem clusterSize_lt {w : ℕ} (hw : 3 ≤ w) : clusterSize w < w := by
   nlinarith
 
 /-- Twice the physical width itself fits in a physical word at widths at least three. -/
-theorem twice_width_lt {w : ℕ} (hw : 3 ≤ w) : 2 * w < 2 ^ w := by
+private theorem twice_width_lt {w : ℕ} (hw : 3 ≤ w) : 2 * w < 2 ^ w := by
   induction w, hw using Nat.le_induction with
   | base => decide
   | succ w hw ih =>
@@ -178,7 +178,7 @@ theorem twice_width_lt {w : ℕ} (hw : 3 ≤ w) : 2 * w < 2 ^ w := by
     nlinarith
 
 /-- The two guarded comparison inputs and their sums fit in physical words. -/
-theorem guarded_fits {w z : ℕ} (hw : 3 ≤ w) (hz : z < 2 ^ clusterSize w) :
+private theorem guarded_fits {w z : ℕ} (hw : 3 ≤ w) (hz : z < 2 ^ clusterSize w) :
     Fits w (2 ^ clusterSize w) ∧ Fits w z ∧ Fits w (2 ^ clusterSize w + z) := by
   have hs := clusterSize_lt hw
   have hp : 2 ^ clusterSize w < 2 ^ w := Nat.pow_lt_pow_right (by decide) hs
@@ -189,7 +189,7 @@ theorem guarded_fits {w z : ℕ} (hw : 3 ≤ w) (hz : z < 2 ^ clusterSize w) :
   exact hadd.trans_le (Nat.pow_le_pow_right (by decide) (by omega))
 
 /-- Every shift count used by the source graph fits in one physical word. -/
-theorem shift_amounts_fit {w x : ℕ} (hw : 3 ≤ w) :
+private theorem shift_amounts_fit {w x : ℕ} (hw : 3 ≤ w) :
     Fits w (clusterSize w * clusterSize w) ∧ Fits w (clusterSize w) ∧
     Fits w ((clusterSize w - 1) * (clusterSize w + 1)) ∧
     Fits w (smallMSB (clusterSize w) (clusterSummary (clusterSize w) x) *
@@ -208,7 +208,7 @@ theorem shift_amounts_fit {w x : ℕ} (hw : 3 ≤ w) :
     exact (hmul.trans hsq).trans_lt htw
 
 /-- The final addition has fitting operands and result. -/
-theorem output_add_fits {w x : ℕ} (hx0 : 0 < x) (hx : x < 2 ^ w) :
+private theorem output_add_fits {w x : ℕ} (hx0 : 0 < x) (hx : x < 2 ^ w) :
     let s := clusterSize w
     let c := smallMSB s (clusterSummary s x)
     let v := (x >>> (c * s)) &&& (2 ^ s - 1)
@@ -226,7 +226,7 @@ theorem output_add_fits {w x : ℕ} (hx0 : 0 < x) (hx : x < 2 ^ w) :
 
 /-- Every executed node satisfies the concrete multiword compiler's admissibility
 contract. Only the additions and shift counts require physical-word bounds. -/
-theorem ops_admissible {w x : ℕ} (hw : 3 ≤ w) (hx0 : 0 < x) (hx : x < 2 ^ w)
+private theorem ops_admissible {w x : ℕ} (hw : 3 ≤ w) (hx0 : 0 < x) (hx : x < 2 ^ w)
     (i : Fin 44) (hi : i ≠ 0) :
     (ops (clusterSize w) i).Admissible w (values (clusterSize w) x) := by
   have hbound : (ops (clusterSize w) i).eval (values (clusterSize w) x) <
@@ -266,7 +266,7 @@ def positiveCode (w : ℕ) : Code .standard (Bank.capacity 44 + 4) :=
   .seq (Circuit.run (Circuit.emit w) (ops (clusterSize w)) 1 43)
     (Transfer.assemble (Bank.regs (43 : Fin 44)) output)
 
-theorem size_positiveCode (w : ℕ) : (positiveCode w).size ≤ 172045 := by
+private theorem size_positiveCode (w : ℕ) : (positiveCode w).size ≤ 172045 := by
   have hrun := Circuit.size_run (Circuit.emit w) (Circuit.size_emit w)
     (ops (clusterSize w)) 1 43
   simp only [positiveCode, Code.size, Transfer.size_assemble, Bank.length_regs]
@@ -274,7 +274,7 @@ theorem size_positiveCode (w : ℕ) : (positiveCode w).size ≤ 172045 := by
 
 /-- Execution of the actual expanded graph on a positive input. Every virtual operation is
 discharged by `Circuit.exec_emit`, which uses the checked single-word routines. -/
-theorem exec_positiveCode {w z : ℕ} (hw : 3 ≤ w) (hz0 : 0 < z) (hz : z < 2 ^ w)
+private theorem exec_positiveCode {w z : ℕ} (hw : 3 ≤ w) (hz0 : 0 < z) (hz : z < 2 ^ w)
     (x : Data (Bank.capacity 44 + 4))
     (hx : Bank.Encodes w x (Circuit.prefix (values (clusterSize w) z) 1)) :
     ∃ y, ExecWithin w (positiveCode w) x y 172045 ∧

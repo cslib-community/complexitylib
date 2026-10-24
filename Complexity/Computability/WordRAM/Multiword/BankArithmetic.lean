@@ -54,10 +54,10 @@ def productLow (n : ℕ) : List (Fin (capacity n + 4)) :=
 def productHigh (n : ℕ) : List (Fin (capacity n + 4)) :=
   registers 22 18 (by dsimp [capacity]; omega)
 
-theorem length_productLow (n : ℕ) : (productLow n).length = 18 := by
+private theorem length_productLow (n : ℕ) : (productLow n).length = 18 := by
   simp [productLow, registers]
 
-theorem length_productHigh (n : ℕ) : (productHigh n).length = 18 := by
+private theorem length_productHigh (n : ℕ) : (productHigh n).length = 18 := by
   simp [productHigh, registers]
 
 private theorem register_bounds {start len r : ℕ} {h : start + len ≤ r}

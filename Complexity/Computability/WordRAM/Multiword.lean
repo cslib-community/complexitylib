@@ -123,11 +123,11 @@ def setup : Code .standard 7 := ram[
   base ← digit <<< base ]
 
 /-- The result of radix setup. -/
-def setupResult (w : ℕ) (x : Data 7) : Data 7 :=
+private def setupResult (w : ℕ) (x : Data 7) : Data 7 :=
   ((((x.set total w).set digit 2).set base (w / 2)).set digit 1).set base (radix w)
 
 /-- Radix setup costs five instructions for every physical word size at least two. -/
-theorem exec_setup {w : ℕ} (x : Data 7) (hw : 2 ≤ w) :
+private theorem exec_setup {w : ℕ} (x : Data 7) (hw : 2 ≤ w) :
     Exec w setup x (setupResult w x) 5 := by
   have h2 : Fits w 2 := by
     have := Nat.pow_le_pow_right (n := 2) (by decide) hw
@@ -144,13 +144,13 @@ def initializedProgram : Code .standard 7 := .seq setup program
 theorem size_initializedProgram : initializedProgram.size = 10 := rfl
 
 /-- The mathematical result of the five instructions, including the workspace. -/
-def result (x : Data 7) : Data 7 :=
+private def result (x : Data 7) : Data 7 :=
   let s := x.regs left * x.regs right + x.regs addend + x.regs carry
   ((x.set total s).set digit (s % x.regs base)).set carry (s / x.regs base)
 
 /-- Checked execution of the elementary update. All three intermediate results are justified
 from the digit bounds; no high-product primitive or enlarged physical word is assumed. -/
-theorem exec_exact {w : ℕ} (x : Data 7)
+private theorem exec_exact {w : ℕ} (x : Data 7)
     (ha : x.regs left < radix w) (hb : x.regs right < radix w)
     (hd : x.regs addend < radix w) (hc : x.regs carry < radix w) :
     Exec w program x (result x) 5 := by

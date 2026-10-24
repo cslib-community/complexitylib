@@ -47,12 +47,12 @@ open scoped BigOperators
 /-- One guard bit per field, with all other bits zero. -/
 def guardMask (b n : ℕ) : ℕ := packedNode b n (fun _ => 0)
 
-theorem guardMask_eq_sum (b n : ℕ) :
+private theorem guardMask_eq_sum (b n : ℕ) :
     guardMask b n = ∑ i ∈ Finset.range n, 2 ^ (b + (b + 1) * i) := by
   simp only [guardMask, packedNode_eq_sum, add_zero, pow_add]
 
 /-- The guard mask has no other set bits. -/
-theorem guardMask_testBit (b n k : ℕ) :
+private theorem guardMask_testBit (b n k : ℕ) :
     (guardMask b n).testBit k = true ↔
       ∃ i ∈ Finset.range n, b + (b + 1) * i = k := by
   have hf : Function.Injective (fun i : ℕ => b + (b + 1) * i) := by

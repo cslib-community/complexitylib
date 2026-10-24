@@ -68,7 +68,7 @@ def layerFlags [LinearOrder κ] (key : α → κ) {n : ℕ} (ascending : Bool)
   fun i => decide (if ascending then key (x (Fin.natAdd n i)) < key (x (Fin.castAdd n i))
     else ¬key (x (Fin.natAdd n i)) < key (x (Fin.castAdd n i)))
 
-theorem routeLayer_layerFlags [LinearOrder κ] (key : α → κ) {n : ℕ}
+private theorem routeLayer_layerFlags [LinearOrder κ] (key : α → κ) {n : ℕ}
     (ascending : Bool) (x : Fin (n + n) → α) :
     routeLayer (layerFlags key ascending x) x = compareLayer key ascending x := by
   funext i
@@ -192,7 +192,7 @@ def unrouteSort : (d : ℕ) → (Fin (sortTraceSize d) → Bool) →
     simp only [Function.comp_def, Fin.append_left, Fin.append_right, ih]
     erw [Fin.append_castAdd_natAdd, routeMerge_unrouteMerge]
 
-theorem routeMerge_mergeTrace [LinearOrder κ] (key : α → κ) (d : ℕ)
+private theorem routeMerge_mergeTrace [LinearOrder κ] (key : α → κ) (d : ℕ)
     (ascending : Bool) (x : Fin (arity d) → α) :
     routeMerge d (mergeTrace key d ascending x) x = merge key d ascending x := by
   induction d with
@@ -215,13 +215,13 @@ theorem routeSort_sortTrace [LinearOrder κ] (key : α → κ) (d : ℕ)
     simp only [Function.comp_def, Fin.append_left, Fin.append_right, ih]
     exact routeMerge_mergeTrace _ _ _ _
 
-theorem unrouteSort_sort [LinearOrder κ] (key : α → κ) (d : ℕ)
+private theorem unrouteSort_sort [LinearOrder κ] (key : α → κ) (d : ℕ)
     (ascending : Bool) (x : Fin (arity d) → α) :
     unrouteSort d (sortTrace key d ascending x) (sort key d ascending x) = x := by
   rw [← routeSort_sortTrace, unrouteSort_routeSort]
 
 /-- Moving a payload and then transforming it is the same as transforming before moving. -/
-theorem routeLayer_comp {n : ℕ} (flags : Fin n → Bool) (f : α → β)
+private theorem routeLayer_comp {n : ℕ} (flags : Fin n → Bool) (f : α → β)
     (x : Fin (n + n) → α) : routeLayer flags (f ∘ x) = f ∘ routeLayer flags x := by
   funext i
   cases i using Fin.addCases <;>
@@ -229,7 +229,7 @@ theorem routeLayer_comp {n : ℕ} (flags : Fin n → Bool) (f : α → β)
     split_ifs <;> rfl
 
 /-- Saved merge decisions do not inspect the payload. -/
-theorem routeMerge_comp (d : ℕ) (flags : Fin (mergeTraceSize d) → Bool) (f : α → β)
+private theorem routeMerge_comp (d : ℕ) (flags : Fin (mergeTraceSize d) → Bool) (f : α → β)
     (x : Fin (arity d) → α) : routeMerge d flags (f ∘ x) = f ∘ routeMerge d flags x := by
   induction d with
   | zero => rfl

@@ -393,7 +393,8 @@ def Code.eval (w fuel : ℕ) : Code B r → Data r → Option (Data r × ℕ)
     else (neg.eval w fuel x).map fun yn => (yn.1, yn.2 + 2)
   | .loop c body, x => evalLoop c (fun y => body.eval w fuel y) fuel x
 
-theorem Exec.of_evalLoop {w : ℕ} {c : Cond r} {body : Code B r} {f : Data r → Option (Data r × ℕ)}
+private theorem Exec.of_evalLoop {w : ℕ} {c : Cond r} {body : Code B r}
+    {f : Data r → Option (Data r × ℕ)}
     (hf : ∀ {x y : Data r} {n : ℕ}, f x = some (y, n) → Exec w body x y n) {fuel : ℕ}
     {x y : Data r} {n : ℕ} (h : Code.evalLoop c f fuel x = some (y, n)) :
     Exec w (.loop c body) x y n := by
@@ -479,7 +480,7 @@ instance Code.decidablePreserves (i : Fin r) : (c : Code B r) → Decidable (c.P
     inferInstanceAs (Decidable (_ ∧ _))
   | .loop _ body => body.decidablePreserves i
 
-theorem Op.regs_eq {w : ℕ} {o : Op B r} {x y : Data r} {i : Fin r} (hi : o.dest ≠ some i)
+private theorem Op.regs_eq {w : ℕ} {o : Op B r} {x y : Data r} {i : Fin r} (hi : o.dest ≠ some i)
     (h : o.eval w x = some y) : y.regs i = x.regs i := by
   have hne {d : Fin r} (hd : o.dest = some d) : i ≠ d := fun hid => hi (hid ▸ hd)
   cases o with
@@ -574,13 +575,13 @@ theorem Data.comap_regs (x : Data r') (i : Fin r) : (x.comap f).regs i = x.regs 
 @[simp]
 theorem Data.comap_mem (x : Data r') : (x.comap f).mem = x.mem := rfl
 
-theorem Data.comap_extend (hf : f.Injective) (y : Data r) (x : Data r') :
+private theorem Data.comap_extend (hf : f.Injective) (y : Data r) (x : Data r') :
     (y.extend f x).comap f = y := by
   ext i
   · exact hf.extend_apply _ _ i
   · rfl
 
-theorem Data.extend_extend (hf : f.Injective) (y z : Data r) (x : Data r') :
+private theorem Data.extend_extend (hf : f.Injective) (y z : Data r) (x : Data r') :
     z.extend f (y.extend f x) = z.extend f x := by
   ext j
   · simp only [Data.extend]
@@ -590,7 +591,8 @@ theorem Data.extend_extend (hf : f.Injective) (y z : Data r) (x : Data r') :
     · simp [Function.extend_apply' _ _ _ hj]
   · rfl
 
-theorem Data.extend_comap (hf : f.Injective) (x : Data r') : (x.comap f).extend f x = x := by
+private theorem Data.extend_comap (hf : f.Injective) (x : Data r') :
+    (x.comap f).extend f x = x := by
   ext j
   · change Function.extend f (x.regs ∘ f) x.regs j = x.regs j
     by_cases hj : ∃ i, f i = j
@@ -599,11 +601,11 @@ theorem Data.extend_comap (hf : f.Injective) (x : Data r') : (x.comap f).extend 
     · exact Function.extend_apply' _ _ _ hj
   · rfl
 
-theorem Data.extend_set (hf : f.Injective) (y : Data r) (x : Data r') (i : Fin r) (v : ℕ) :
+private theorem Data.extend_set (hf : f.Injective) (y : Data r) (x : Data r') (i : Fin r) (v : ℕ) :
     (y.set i v).extend f x = (y.extend f x).set (f i) v :=
   Data.ext (hf.extend_update _ _ _ _) rfl
 
-theorem Data.extend_write (y : Data r) (x : Data r') (a v : ℕ) :
+private theorem Data.extend_write (y : Data r) (x : Data r') (a v : ℕ) :
     (y.write a v).extend f x = (y.extend f x).write a v := rfl
 
 theorem Cond.holds_rename (c : Cond r) (x : Data r') : (c.rename f).Holds x ↔ c.Holds (x.comap f) :=

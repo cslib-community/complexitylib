@@ -48,7 +48,7 @@ open Cslib.WordRAM
 open Cslib.Algorithms.Lean.FusionTree
 
 /-- A nonempty valid tree's cached minimum is one of its actual leaf keys. -/
-theorem minimum_mem {B : ℕ} {t : Tree} (ht : Tree.Valid B t)
+private theorem minimum_mem {B : ℕ} {t : Tree} (ht : Tree.Valid B t)
     (hne : t.keys ≠ []) : t.minimum ∈ t.keys := by
   rw [Tree.minimum_eq_headD ht]
   obtain ⟨x, xs, hx⟩ := List.exists_cons_of_ne_nil hne
@@ -65,7 +65,7 @@ private theorem minimum_fit {B w : ℕ} {t : Tree} (ht : Tree.Valid B t)
 def childMinima (cs : List Tree) : Fin cs.length → ℕ := fun i => cs[i].minimum
 
 /-- Each valid nonempty child supplies an actual leaf key to the node's query table. -/
-theorem childMinima_mem {B m : ℕ} {cs : List Tree}
+private theorem childMinima_mem {B m : ℕ} {cs : List Tree}
     (ht : Tree.Valid B (.node m cs)) (i : Fin cs.length) :
     childMinima cs i ∈ cs[i].keys := by
   simp only [Tree.Valid] at ht

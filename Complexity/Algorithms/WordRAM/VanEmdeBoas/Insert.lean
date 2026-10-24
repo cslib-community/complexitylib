@@ -91,7 +91,7 @@ def insertNext (s : Data 32) (base key : ℕ) : Data 32 :=
         else (h.set p ch).set x lo
 
 /-- Constant registers are preserved by an insertion iteration. -/
-theorem insertNext_constants {base key : ℕ} {s : Data 32}
+private theorem insertNext_constants {base key : ℕ} {s : Data 32}
     (hs : InsertEntry base key s) :
     (insertNext s base key).regs zero = 0 ∧
     (insertNext s base key).regs one = 1 ∧
@@ -105,7 +105,7 @@ theorem insertNext_constants {base key : ℕ} {s : Data 32}
 
 /-- Updating `base + 1` and `base + 2` in place on a valid occupied header agrees with
 `writeBounds` at every memory cell. -/
-theorem writeBounds_update_min_max {mem : ℕ → ℕ} {base m M key : ℕ}
+private theorem writeBounds_update_min_max {mem : ℕ → ℕ} {base m M key : ℕ}
     (hpres : mem base = 1) (hm : mem (base + 1) = m) (hM : mem (base + 2) = M)
     (hle : m ≤ M) :
     (let m₁ := if key < m then Function.update mem (base + 1) key else mem
@@ -124,7 +124,7 @@ theorem writeBounds_update_min_max {mem : ℕ → ℕ} {base m M key : ℕ}
 
 /-- An occupied node's displaced key `max m key` has valid cluster coordinates and lies in the
 parent record interval whenever `key < universeSize (d + 1)`. -/
-theorem insert_descent_safe {d base m M key : ℕ} {s : Tree d}
+private theorem insert_descent_safe {d base m M key : ℕ} {s : Tree d}
     {c : Fin (universeSize d) → Tree d}
     (ht : (Tree.node (some (m, M)) s c).Valid) (hkey : key < universeSize (d + 1)) :
     let displaced := max m key

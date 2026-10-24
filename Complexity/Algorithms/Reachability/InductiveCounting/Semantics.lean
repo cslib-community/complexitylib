@@ -48,7 +48,7 @@ open scoped Classical in
 noncomputable def roundSet (N : ℕ) (edge : ℕ → ℕ → Bool) (source k : ℕ) : Finset ℕ :=
   (Finset.range N).filter (· ∈ Relation.reachableWithin (Graph N edge) source k)
 
-theorem reachable_lt (hsource : source < N)
+private theorem reachable_lt (hsource : source < N)
     (h : Relation.ReflTransGen (Graph N edge) source u) : u < N := by
   induction h with
   | refl => exact hsource
@@ -65,7 +65,7 @@ theorem mem_roundSet (hsource : source < N) :
   exact (Finset.mem_filter).trans ⟨And.right, fun h => ⟨Finset.mem_range.mpr
     (within_lt hsource h), h⟩⟩
 
-theorem roundSet_zero (hsource : source < N) : roundSet N edge source 0 = {source} := by
+private theorem roundSet_zero (hsource : source < N) : roundSet N edge source 0 = {source} := by
   ext u
   rw [mem_roundSet hsource, ← Relation.mem_reachableWithin, Relation.reachableWithin_zero]
   simp
@@ -74,7 +74,7 @@ theorem roundSet_card_le : (roundSet N edge source k).card ≤ N := by
   classical
   exact (Finset.card_le_card (Finset.filter_subset _ _)).trans_eq (Finset.card_range N)
 
-theorem mem_roundSet_succ (hsource : source < N) (hv : v < N) :
+private theorem mem_roundSet_succ (hsource : source < N) (hv : v < N) :
     v ∈ roundSet N edge source (k + 1) ↔
       ∃ u ∈ roundSet N edge source k, u = v ∨ edge u v = true := by
   rw [mem_roundSet hsource, ← Relation.mem_reachableWithin, Relation.mem_reachableWithin_succ]
@@ -92,7 +92,7 @@ theorem mem_roundSet_succ (hsource : source < N) (hv : v < N) :
     · exact .single ⟨within_lt hsource hu', hv, huv⟩
 
 /-- Round `N - 1` is already the entire reachable set. -/
-theorem mem_roundSet_final (hsource : source < N) (hk : k + 1 = N) :
+private theorem mem_roundSet_final (hsource : source < N) (hk : k + 1 = N) :
     u ∈ roundSet N edge source k ↔ Relation.ReflTransGen (Graph N edge) source u := by
   have hs : {u | Relation.ReflTransGen (Graph N edge) source u} ⊆
       (Finset.range N : Set ℕ) := fun u hu => Finset.mem_range.mpr (reachable_lt hsource hu)
@@ -112,7 +112,7 @@ noncomputable def prefixCount (N : ℕ) (edge : ℕ → ℕ → Bool) (source k 
 @[simp] theorem prefixCount_zero : prefixCount N edge source k 0 = 0 := by
   simp [prefixCount]
 
-theorem prefixCount_full : prefixCount N edge source k N =
+private theorem prefixCount_full : prefixCount N edge source k N =
     (roundSet N edge source (k + 1)).card := by
   classical
   unfold prefixCount
@@ -121,7 +121,7 @@ theorem prefixCount_full : prefixCount N edge source k N =
   intro u hu
   exact Finset.mem_range.mp (Finset.mem_of_mem_filter u hu)
 
-theorem prefixCount_succ (v : ℕ) : prefixCount N edge source k (v + 1) =
+private theorem prefixCount_succ (v : ℕ) : prefixCount N edge source k (v + 1) =
     prefixCount N edge source k v +
       (if v ∈ roundSet N edge source (k + 1) then 1 else 0) := by
   classical
@@ -201,17 +201,17 @@ theorem scan_exhaustive (hc : RoundCorrect N edge source s)
     Finset.eq_of_subset_of_card_le hsub (by omega)
   simpa only [heq] using hh
 
-theorem scanPrefix_start (s : State) :
+private theorem scanPrefix_start (s : State) :
     ScanPrefix N edge bad source { s with candidate := 0, selected := 0, hit := false } := by
   refine ⟨∅, Finset.empty_subset _, ?_⟩
   simp
 
-theorem scanPrefix_skip (h : ScanPrefix N edge bad source s) :
+private theorem scanPrefix_skip (h : ScanPrefix N edge bad source s) :
     ScanPrefix N edge bad source { s with candidate := s.candidate + 1 } := by
   obtain ⟨S, hsub, hlt, hd, hh⟩ := h
   exact ⟨S, hsub, fun u hu => (hlt u hu).trans (Nat.lt_succ_self _), hd, hh⟩
 
-theorem scanPrefix_observe (h : ScanPrefix N edge bad source s)
+private theorem scanPrefix_observe (h : ScanPrefix N edge bad source s)
     (hu : s.candidate ∈ roundSet N edge source s.round) (hp : s.phase = .observe) :
     ScanPrefix N edge bad source
       (instruction N width source s (answer edge bad s) choice) := by
@@ -229,14 +229,14 @@ theorem scanPrefix_observe (h : ScanPrefix N edge bad source s)
   · cases hf : s.finalScan <;>
       simp_all [answer, query, Observed, Finset.mem_insert, or_assoc, or_left_comm, or_comm]
 
-theorem scan_hit_succ (hsource : source < N) (hc : RoundCorrect N edge source s)
+private theorem scan_hit_succ (hsource : source < N) (hc : RoundCorrect N edge source s)
     (hp : ScanPrefix N edge bad source s) (he : s.selected = s.count)
     (hf : s.finalScan = false) (hv : s.target < N) :
     s.hit = true ↔ s.target ∈ roundSet N edge source (s.round + 1) := by
   rw [scan_exhaustive hc hp he, mem_roundSet_succ hsource hv]
   simp [Observed, hf]
 
-theorem scan_final_safe (hsource : source < N) (hc : RoundCorrect N edge source s)
+private theorem scan_final_safe (hsource : source < N) (hc : RoundCorrect N edge source s)
     (hp : ScanPrefix N edge bad source s) (he : s.selected = s.count)
     (hf : s.finalScan = true) (hk : s.round + 1 = N) (hh : s.hit = false) :
     Safe N source edge bad := by
@@ -254,7 +254,7 @@ theorem invariant_initial (hsource : source < N) :
 
 /-- Every underlying instruction preserves the semantic assertion. A rejected branch has no
 proof obligation; dishonest omissions can survive temporarily but cannot pass a count check. -/
-theorem invariant_instruction (hsource : source < N)
+private theorem invariant_instruction (hsource : source < N)
     (h : Invariant N edge bad source s) (choice : Bool) :
     Invariant N edge bad source (instruction N width source s (answer edge bad s) choice) := by
   classical
@@ -382,7 +382,7 @@ theorem invariant_advance (hsource : source < N) (h : Invariant N edge bad sourc
     · exact invariant_instruction hsource h choice
     · trivial
 
-theorem invariant_replay (hsource : source < N) (h : Invariant N edge bad source s)
+private theorem invariant_replay (hsource : source < N) (h : Invariant N edge bad source s)
     (bs : List Bool) : Invariant N edge bad source (replay N width source edge bad s bs) := by
   induction bs generalizing s with
   | nil => exact h

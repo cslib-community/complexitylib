@@ -111,7 +111,7 @@ def successorDescentNext (s : Data 32) (sp₀ base query : ℕ) : Data 32 :=
         ((c.set out 0).set found 0).set runFlag 0
 
 /-- Constant and `stackBase` registers are preserved by `successorDescentNext`. -/
-theorem successorDescentNext_constants {stackBase₀ sp₀ base query : ℕ} {s : Data 32}
+private theorem successorDescentNext_constants {stackBase₀ sp₀ base query : ℕ} {s : Data 32}
     (hs : SuccessorEntry stackBase₀ sp₀ base query s) :
     (successorDescentNext s sp₀ base query).regs zero = 0 ∧
     (successorDescentNext s sp₀ base query).regs one = 1 ∧
@@ -125,7 +125,7 @@ theorem successorDescentNext_constants {stackBase₀ sp₀ base query : ℕ} {s 
   split_ifs <;> simp +decide [hz, ho, ht, hthree, hfour, hfive, hsb]
 
 /-- Pushing a four-word frame modifies memory only in `[sp₀, sp₀ + 4)`. -/
-theorem pushFrameData_mem_away (s : Data 32) (sp₀ k pay qv tv a : ℕ)
+private theorem pushFrameData_mem_away (s : Data 32) (sp₀ k pay qv tv a : ℕ)
     (ha : a < sp₀ ∨ sp₀ + 4 ≤ a) :
     (pushFrameData s sp₀ k pay qv tv).mem a = s.mem a := by
   have h0 : a ≠ sp₀ := by omega
@@ -264,8 +264,8 @@ def successorUnwindNext (s : Data 32) (sp₀ : ℕ) : Data 32 :=
     (b.set out (hi * qv)).set out (hi * qv + lo)
 
 /-- Invariant registers and memory preserved across `successorUnwindNext`. -/
-theorem successorUnwindNext_preserved {stackBase₀ sp₀ childAns : ℕ} {mem : ℕ → ℕ} {s : Data 32}
-    (hs : UnwindState stackBase₀ (sp₀ + 4) childAns mem s) :
+private theorem successorUnwindNext_preserved {stackBase₀ sp₀ childAns : ℕ} {mem : ℕ → ℕ}
+    {s : Data 32} (hs : UnwindState stackBase₀ (sp₀ + 4) childAns mem s) :
     (successorUnwindNext s sp₀).regs zero = 0 ∧
     (successorUnwindNext s sp₀).regs one = 1 ∧
     (successorUnwindNext s sp₀).regs five = 5 ∧
@@ -333,9 +333,9 @@ theorem successorUnwindBody_summary_exec {d w stackBase₀ sp₀ base j cm : ℕ
 
 /-- Combined inductive certification of `successorDescent` and CPS `successorUnwind` whenever
 `tree.successor query = some ans`. -/
-theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ} {tree : Tree d} {s : Data 32}
-    (hs : SuccessorEntry stackBase₀ sp₀ base query s) (ht : tree.Valid) (hr : Rep tree base s.mem)
-    (hans : tree.successor query = some ans)
+private theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ} {tree : Tree d}
+    {s : Data 32} (hs : SuccessorEntry stackBase₀ sp₀ base query s) (ht : tree.Valid)
+    (hr : Rep tree base s.mem) (hans : tree.successor query = some ans)
     (hsp_le : stackBase₀ ≤ sp₀) (hdisj : base + span d ≤ sp₀) (hfit : Fits w (sp₀ + 4 * d)) :
     ∃ s₁ s₃, ExecWithin w successorDescent s s₁ (44 * (d + 1) + 2) ∧
       (∀ a, a < sp₀ ∨ sp₀ + 4 * d ≤ a → s₁.mem a = s.mem a) ∧
@@ -703,9 +703,9 @@ theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ} {tree 
 
 /-- When `tree.successor query = none`, `successorDescent` terminates in one iteration (46
 instructions) with `found = 0`, `out = 0`, `sp = sp₀`, and unchanged memory. -/
-theorem successor_none_spec {d w stackBase₀ sp₀ base query : ℕ} {tree : Tree d} {s : Data 32}
-    (hs : SuccessorEntry stackBase₀ sp₀ base query s) (ht : tree.Valid) (hr : Rep tree base s.mem)
-    (hnone : tree.successor query = none)
+private theorem successor_none_spec {d w stackBase₀ sp₀ base query : ℕ} {tree : Tree d}
+    {s : Data 32} (hs : SuccessorEntry stackBase₀ sp₀ base query s) (ht : tree.Valid)
+    (hr : Rep tree base s.mem) (hnone : tree.successor query = none)
     (hdisj : base + span d ≤ sp₀) (hfit : Fits w (sp₀ + 4 * d)) :
     ∃ s₁, ExecWithin w successorDescent s s₁ 46 ∧
       s₁.regs stackBase = stackBase₀ ∧ s₁.regs sp = sp₀ ∧

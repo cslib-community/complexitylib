@@ -123,25 +123,25 @@ construction or its shape bounds. -/
 def build (B : ℕ) (xs : List ℕ) : Tree :=
   buildAux B (Nat.clog B xs.length) xs
 
-theorem keys_join (cs : List Tree) : (join cs).keys = cs.flatMap keys := by
+private theorem keys_join (cs : List Tree) : (join cs).keys = cs.flatMap keys := by
   rcases cs with _ | ⟨t, _ | ⟨u, ts⟩⟩ <;> simp [join, keys]
 
-theorem chunks_length_le (B k : ℕ) (xs : List ℕ) : (chunks B k xs).length ≤ B := by
+private theorem chunks_length_le (B k : ℕ) (xs : List ℕ) : (chunks B k xs).length ≤ B := by
   exact (List.length_filter_le _ _).trans (by simp)
 
-theorem chunks_mem {B k : ℕ} {xs ys : List ℕ} (h : ys ∈ chunks B k xs) :
+private theorem chunks_mem {B k : ℕ} {xs ys : List ℕ} (h : ys ∈ chunks B k xs) :
     ys ≠ [] ∧ ys.length ≤ k := by
   obtain ⟨hm, hn⟩ := List.mem_filter.mp h
   exact ⟨by simpa using hn,
     List.length_mem_splitLengths xs _ k (by simp) ys hm⟩
 
-theorem flatten_chunks {B k : ℕ} {xs : List ℕ} (h : xs.length ≤ B * k) :
+private theorem flatten_chunks {B k : ℕ} {xs : List ℕ} (h : xs.length ≤ B * k) :
     (chunks B k xs).flatten = xs := by
   rw [chunks, List.flatten_filter_ne_nil]
   apply List.flatten_splitLengths
   simpa using h
 
-theorem keys_buildAux {B h : ℕ} {xs : List ℕ} (hn : xs.length ≤ B ^ h) :
+private theorem keys_buildAux {B h : ℕ} {xs : List ℕ} (hn : xs.length ≤ B ^ h) :
     (buildAux B h xs).keys = xs := by
   induction h generalizing xs with
   | zero => simp [buildAux, keys]
@@ -154,7 +154,7 @@ theorem keys_buildAux {B h : ℕ} {xs : List ℕ} (hn : xs.length ≤ B ^ h) :
     rw [heq, List.map_id]
     exact flatten_chunks (by simpa [Nat.pow_succ, Nat.mul_comm] using hn)
 
-theorem valid_join {B : ℕ} {cs : List Tree} (hl : cs.length ≤ B)
+private theorem valid_join {B : ℕ} {cs : List Tree} (hl : cs.length ≤ B)
     (hc : ∀ t ∈ cs, Valid B t ∧ t.keys ≠ []) : Valid B (join cs) := by
   rcases cs with _ | ⟨t, _ | ⟨u, ts⟩⟩
   · simp [join, Valid]
@@ -162,7 +162,7 @@ theorem valid_join {B : ℕ} {cs : List Tree} (hl : cs.length ≤ B)
   · simp only [join, Valid]
     exact ⟨by simp, hl, trivial, hc⟩
 
-theorem valid_buildAux {B h : ℕ} {xs : List ℕ} (hn : xs.length ≤ B ^ h) :
+private theorem valid_buildAux {B h : ℕ} {xs : List ℕ} (hn : xs.length ≤ B ^ h) :
     Valid B (buildAux B h xs) := by
   induction h generalizing xs with
   | zero => simpa [buildAux, Valid] using hn
@@ -182,7 +182,7 @@ private theorem foldr_max_le {ns : List ℕ} {h : ℕ} (hs : ∀ n ∈ ns, n ≤
     simp only [List.foldr_cons, max_le_iff]
     exact ⟨hs n (by simp), ih (fun n hn => hs n (by simp [hn]))⟩
 
-theorem height_join_le {cs : List Tree} {h : ℕ} (hc : ∀ t ∈ cs, t.height ≤ h) :
+private theorem height_join_le {cs : List Tree} {h : ℕ} (hc : ∀ t ∈ cs, t.height ≤ h) :
     (join cs).height ≤ h + 1 := by
   rcases cs with _ | ⟨t, _ | ⟨u, ts⟩⟩
   · simp [join, height]
@@ -194,7 +194,7 @@ theorem height_join_le {cs : List Tree} {h : ℕ} (hc : ∀ t ∈ cs, t.height �
     obtain ⟨t, ht, rfl⟩ := List.mem_map.mp hn
     exact hc t ht
 
-theorem height_buildAux_le (B h : ℕ) (xs : List ℕ) : (buildAux B h xs).height ≤ h := by
+private theorem height_buildAux_le (B h : ℕ) (xs : List ℕ) : (buildAux B h xs).height ≤ h := by
   induction h generalizing xs with
   | zero => simp [buildAux, height]
   | succ h ih =>
@@ -223,7 +223,7 @@ theorem height_build_le_log_add_one {B : ℕ} (hB : 2 ≤ B) (xs : List ℕ) :
     (Nat.clog_le_of_le_pow (Nat.le_of_lt (Nat.lt_pow_succ_log_self hB xs.length)))
 
 /-- Nonempty valid trees have storage bounded uniformly in their maximum node capacity. -/
-theorem slots_add_nine_le {B : ℕ} {t : Tree} (ht : Valid B t) (hne : t.keys ≠ []) :
+private theorem slots_add_nine_le {B : ℕ} {t : Tree} (ht : Valid B t) (hne : t.keys ≠ []) :
     t.slots + 9 ≤ 14 * t.keys.length := by
   revert ht hne
   induction t using Tree.rec
@@ -250,7 +250,7 @@ theorem slots_add_nine_le {B : ℕ} {t : Tree} (ht : Valid B t) (hne : t.keys �
     omega
 
 /-- Empty valid trees are empty leaves, with a tag and a reference to the empty list. -/
-theorem slots_of_keys_eq_nil {B : ℕ} {t : Tree} (ht : Valid B t) (hne : t.keys = []) :
+private theorem slots_of_keys_eq_nil {B : ℕ} {t : Tree} (ht : Valid B t) (hne : t.keys = []) :
     t.slots = 2 := by
   cases t with
   | leaf xs =>
@@ -350,7 +350,7 @@ theorem listPredecessor_eq_none_iff (q : ℕ) (xs : List ℕ) :
         contradiction
       simp [listPredecessor, hs, Option.or, ht]
 
-theorem listPredecessor_append (q : ℕ) (xs ys : List ℕ) :
+private theorem listPredecessor_append (q : ℕ) (xs ys : List ℕ) :
     listPredecessor q (xs ++ ys) = (listPredecessor q ys).or (listPredecessor q xs) := by
   induction xs with
   | nil => simp [listPredecessor]
@@ -358,7 +358,7 @@ theorem listPredecessor_append (q : ℕ) (xs ys : List ℕ) :
     simp only [List.cons_append, listPredecessor, ih]
     cases listPredecessor q ys <;> cases listPredecessor q xs <;> rfl
 
-theorem listPredecessor_ne_none_iff {q : ℕ} {xs : List ℕ}
+private theorem listPredecessor_ne_none_iff {q : ℕ} {xs : List ℕ}
     (hn : xs ≠ []) (hs : xs.Pairwise (· ≤ ·)) :
     listPredecessor q xs ≠ none ↔ xs.headD 0 ≤ q := by
   obtain ⟨x, xs, rfl⟩ := List.exists_cons_of_ne_nil hn
@@ -447,7 +447,7 @@ decreasing_by
   simp_wf
   omega
 
-theorem listPredecessor_some_spec {q p : ℕ} {xs : List ℕ}
+private theorem listPredecessor_some_spec {q p : ℕ} {xs : List ℕ}
     (hs : xs.Pairwise (· ≤ ·)) (hp : listPredecessor q xs = some p) :
     p ∈ xs ∧ p ≤ q ∧ ∀ x ∈ xs, x ≤ q → x ≤ p := by
   revert hs hp

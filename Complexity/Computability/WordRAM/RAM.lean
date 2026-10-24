@@ -198,7 +198,7 @@ namespace Represents
 
 variable {x : Data r} {σ : URM.Regs}
 
-theorem set (h : Represents x σ) (i : Fin r) (v : ℕ) :
+private theorem set (h : Represents x σ) (i : Fin r) (v : ℕ) :
     Represents (x.set i v) (σ.write (i + 1) v) := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · rw [URM.Regs.write_read_of_ne _ _ _ _ (by lia), h.zero]

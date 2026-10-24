@@ -229,8 +229,8 @@ theorem DecidableInTime.of_code {α : Type*} {encode : ℕ → α → List ℕ} 
 /-! ## Reading the word size -/
 
 /-- An assembled program reads the word size only if the structured program does. -/
-theorem Code.readsWidth_of_assemble {c : Code B r} {pc : ℕ} (h : (c.assemble pc).ReadsWidth) :
-    c.ReadsWidth := by
+private theorem Code.readsWidth_of_assemble {c : Code B r} {pc : ℕ}
+    (h : (c.assemble pc).ReadsWidth) : c.ReadsWidth := by
   obtain ⟨i, hi, hr⟩ := h
   induction c generalizing pc with
   | op o =>

@@ -41,12 +41,12 @@ inductive BinaryExtension : ℕ → ℕ → ℕ → Prop
 
 variable {n g v bits : ℕ}
 
-theorem BinaryExtension.le (h : BinaryExtension n g v) : g ≤ v := by
+private theorem BinaryExtension.le (h : BinaryExtension n g v) : g ≤ v := by
   induction h with
   | done => exact Nat.le_refl _
   | bit b h ih => omega
 
-theorem binaryExtension_exists (hlo : g * 2 ^ bits ≤ v)
+private theorem binaryExtension_exists (hlo : g * 2 ^ bits ≤ v)
     (hhi : v < (g + 1) * 2 ^ bits) : BinaryExtension bits g v := by
   induction bits generalizing g v with
   | zero =>
@@ -62,7 +62,7 @@ theorem binaryExtension_exists (hlo : g * 2 ^ bits ≤ v)
     · apply BinaryExtension.bit true
       apply ih <;> simp only [Bool.toNat_true] <;> nlinarith
 
-theorem binaryExtension_zero {g v : ℕ} (h : BinaryExtension 0 g v) : g = v := by
+private theorem binaryExtension_zero {g v : ℕ} (h : BinaryExtension 0 g v) : g = v := by
   cases h
   rfl
 
@@ -78,17 +78,17 @@ private theorem filter_below_succ (S : Finset ℕ) (u : ℕ) :
   split_ifs with hu <;> by_cases hv : v ∈ S <;> by_cases huv : v = u <;>
     simp_all [Finset.mem_filter, Finset.mem_insert] <;> omega
 
-theorem fullPrefix_start (s : State) :
+private theorem fullPrefix_start (s : State) :
     FullPrefix N edge source { s with candidate := 0, selected := 0 } := by
   simp [FullPrefix]
 
-theorem fullPrefix_skip (h : FullPrefix N edge source s)
+private theorem fullPrefix_skip (h : FullPrefix N edge source s)
     (hu : s.candidate ∉ roundSet N edge source s.round) :
     FullPrefix N edge source { s with candidate := s.candidate + 1 } := by
   classical
   simpa only [FullPrefix, filter_below_succ, hu, ↓reduceIte] using h
 
-theorem fullPrefix_observe (h : FullPrefix N edge source s)
+private theorem fullPrefix_observe (h : FullPrefix N edge source s)
     (hu : s.candidate ∈ roundSet N edge source s.round) :
     FullPrefix N edge source
       { s with candidate := s.candidate + 1, selected := s.selected + 1 } := by
@@ -99,7 +99,7 @@ theorem fullPrefix_observe (h : FullPrefix N edge source s)
   simp only [hu, ↓reduceIte]
   rw [Finset.card_insert_of_notMem (by simp), h]
 
-theorem fullPrefix_end (h : FullPrefix N edge source s) (hc : RoundCorrect N edge source s)
+private theorem fullPrefix_end (h : FullPrefix N edge source s) (hc : RoundCorrect N edge source s)
     (hu : s.candidate = N) : s.selected = s.count := by
   classical
   have he : (roundSet N edge source s.round).filter (· < N) =
@@ -125,15 +125,15 @@ def Honest (N _width : ℕ) (edge : ℕ → ℕ → Bool) (source : ℕ) (s : St
       Relation.RelatesWithinSteps (Graph N edge) s.guess s.candidate (s.remaining - 1)
   | .reject => False
 
-theorem honest_initial (hsource : source < N) :
+private theorem honest_initial (hsource : source < N) :
     Honest N width edge source (initial N source) := by simp [initial, hsource, Honest]
 
 /-- At a genuine binary-guess instruction, an honest choice produces a bounded prefix. -/
-def ChoiceFits (N : ℕ) (s : State) (choice : Bool) : Prop :=
+private def ChoiceFits (N : ℕ) (s : State) (choice : Bool) : Prop :=
   s.phase = .guess → s.bits ≠ 0 → 2 * s.guess + choice.toNat < N
 
 /-- Every honest, semantically valid nonrejecting state has an honest next choice. -/
-theorem exists_honest_instruction (hsource : source < N) (hwidth : N ≤ 2 ^ width)
+private theorem exists_honest_instruction (hsource : source < N) (hwidth : N ≤ 2 ^ width)
     (hsafe : Safe N source edge bad) (hi : Invariant N edge bad source s)
     (hh : Honest N width edge source s) :
     ∃ choice, Honest N width edge source
@@ -243,7 +243,7 @@ theorem exists_honest_instruction (hsource : source < N) (hwidth : N ≤ 2 ^ wid
   | reject => simp [Honest, hp] at hh
 
 /-- Honest guesses pass the uniform register check; no state bound is assumed of an oracle. -/
-theorem bounded_instruction (hsource : source < N) (hi : Invariant N edge bad source s)
+private theorem bounded_instruction (hsource : source < N) (hi : Invariant N edge bad source s)
     (hb : Bounded N width s) (hc : ChoiceFits N s choice) :
     Bounded N width (instruction N width source s (answer edge bad s) choice) := by
   have hpow : 0 < 2 ^ width := Nat.pow_pos (by omega)
@@ -315,7 +315,7 @@ theorem bounded_instruction (hsource : source < N) (hi : Invariant N edge bad so
   | reject => simpa only [instruction, hp] using hb
 
 /-- Honest next instructions pass both executable checks. -/
-theorem exists_honest_step (hsource : source < N) (hwidth : N ≤ 2 ^ width)
+private theorem exists_honest_step (hsource : source < N) (hwidth : N ≤ 2 ^ width)
     (hsafe : Safe N source edge bad) (hi : Invariant N edge bad source s)
     (hb : Bounded N width s) (hh : Honest N width edge source s) :
     ∃ choice, Honest N width edge source (step N width source edge bad s choice) := by

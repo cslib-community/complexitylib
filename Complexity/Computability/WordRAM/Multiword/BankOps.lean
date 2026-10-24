@@ -45,13 +45,13 @@ performed by the constant installer. -/
 def constantDigits (w z : ℕ) : List ℕ :=
   List.ofFn fun i : Fin 18 => z / radix w ^ i.val % radix w
 
-theorem constantDigits_bounded {w : ℕ} (hw : 2 ≤ w) (z : ℕ) :
+private theorem constantDigits_bounded {w : ℕ} (hw : 2 ≤ w) (z : ℕ) :
     ∀ c ∈ constantDigits w z, c < radix w := by
   intro c hc
   obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hc
   exact Nat.mod_lt _ (by have := one_lt_radix hw; omega)
 
-theorem value_constantDigits {w z : ℕ} (hz : z < radix w ^ 18) :
+private theorem value_constantDigits {w z : ℕ} (hz : z < radix w ^ 18) :
     Nat.ofDigits (radix w) (constantDigits w z) = z := by
   obtain ⟨cs, hcs, hval⟩ := Nat.exists_ofDigits_ofFn hz
   have he : (fun i : Fin 18 => z / radix w ^ i.val % radix w) = cs := by

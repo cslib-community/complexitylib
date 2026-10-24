@@ -140,11 +140,11 @@ theorem step_mapOp (w : ℕ) (p : Program B r) (s : State r) :
     | op o => simp only [Option.map_some, Instr.mapOp, Op.eval_mapOp]
     | _ => rfl
 
-theorem next_mapOp (w : ℕ) (p : Program B r) : Next w (p.mapOp φ) = Next w p := by
+private theorem next_mapOp (w : ℕ) (p : Program B r) : Next w (p.mapOp φ) = Next w p := by
   funext s t
   simp only [Next, step_mapOp]
 
-theorem runs_mapOp (w : ℕ) (p : Program B r) : Runs w (p.mapOp φ) = Runs w p := by
+private theorem runs_mapOp (w : ℕ) (p : Program B r) : Runs w (p.mapOp φ) = Runs w p := by
   rw [Runs, Runs, next_mapOp]
 
 /-- **Translation preserves halting runs.** The translated program halts with the same output

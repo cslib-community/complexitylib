@@ -44,7 +44,7 @@ open Cslib.WordRAM Cslib.WordRAM.Multiword
 /-- Embed the multiplication workspace in the first sixteen registers. -/
 def embed (i : Fin 16) : Fin 21 := ⟨i.val, by omega⟩
 
-theorem embed_injective : Function.Injective embed := by
+private theorem embed_injective : Function.Injective embed := by
   intro i j h
   exact Fin.ext (congrArg (fun i : Fin 21 => i.val) h)
 
@@ -81,13 +81,13 @@ def split : Code .standard 21 := ram[
   a₂ ← out % base ]
 
 /-- The exact data after query conversion, with an already initialized radix. -/
-def splitResult (w : ℕ) (x : Data 21) : Data 21 :=
+private def splitResult (w : ℕ) (x : Data 21) : Data 21 :=
   let a := x.regs query &&& x.regs positions
   let β := radix w
   (((((x.set out a).set 4 (a % β)).set out (a / β)).set 5
     (a / β % β)).set out (a / β / β)).set 6 (a / β / β % β)
 
-theorem exec_split {w : ℕ} (x : Data 21)
+private theorem exec_split {w : ℕ} (x : Data 21)
     (hx : Fits w (x.regs query)) (hbase : x.regs 2 = radix w) :
     Exec w split x (splitResult w x) 6 := by
   have ha : Fits w (x.regs query &&& x.regs positions) := hx.of_le Nat.and_le_left
@@ -99,7 +99,7 @@ theorem exec_split {w : ℕ} (x : Data 21)
   ram_eval [split, splitResult, hbase, ha, hq, hqq, hm, hqm, hqqm]
 
 /-- A masked window inside the third half-word digit depends only on that digit. -/
-theorem window_eq {w L p D : ℕ} (hL : L + (w - 2 * (w / 2)) ≤ w / 2)
+private theorem window_eq {w L p D : ℕ} (hL : L + (w - 2 * (w / 2)) ≤ w / 2)
     (hD : D < 2 ^ L) :
     ((p / radix w ^ 2 % radix w) >>> (w - 2 * (w / 2))) &&& D =
       (p >>> w) &&& D := by

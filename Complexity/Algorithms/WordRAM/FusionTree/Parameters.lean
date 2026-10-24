@@ -57,7 +57,7 @@ def sourcePositions {n : ℕ} (w : ℕ) (keys : Fin n → ℕ) :
   (relevantBits w keys).orderEmbOfFin rfl
 
 /-- The source-position list is exactly the list defining the perfect sketch. -/
-theorem sourcePositions_list {n : ℕ} (w : ℕ) (keys : Fin n → ℕ) :
+private theorem sourcePositions_list {n : ℕ} (w : ℕ) (keys : Fin n → ℕ) :
     List.ofFn (sourcePositions w keys) = (relevantBits w keys).sort (· ≤ ·) := by
   rw [List.ofFn_eq_map]
   exact Finset.listMap_orderEmbOfFin_finRange _ rfl
@@ -120,9 +120,9 @@ def radix (p : NodeParameters w keys) : ℕ := 2 ^ (p.b + 1)
 /-- Largest compressed payload. -/
 def maximum (p : NodeParameters w keys) : ℕ := 2 ^ p.b - 1
 
-theorem r_le (p : NodeParameters w keys) : p.r ≤ n - 1 := relevantBits_card_le w keys
+private theorem r_le (p : NodeParameters w keys) : p.r ≤ n - 1 := relevantBits_card_le w keys
 
-theorem diagonal_strictMono_sub (p : NodeParameters w keys) :
+private theorem diagonal_strictMono_sub (p : NodeParameters w keys) :
     StrictMono (fun i => sourcePositions w keys i + p.shifts i - w) := by
   intro i j hij
   have := p.diagonal_strictMono hij
@@ -183,7 +183,7 @@ theorem window (p : NodeParameters w keys) (hn : 0 < n) (hnB : n ≤ branching w
     (hw : 9 ≤ Nat.log 2 w) : p.b + (w - 2 * (w / 2)) ≤ w / 2 :=
   compression_window_le hw hn hnB (p.r_le.trans (by omega))
 
-theorem C_fit (p : NodeParameters w keys) (hsorted : StrictMono keys)
+private theorem C_fit (p : NodeParameters w keys) (hsorted : StrictMono keys)
     (hbound : ∀ i, keys i < 2 ^ w) : Fits w p.C := by
   apply positionMask_lt _ (sourcePositions w keys).injective
   intro i

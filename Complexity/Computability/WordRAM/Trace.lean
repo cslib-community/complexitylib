@@ -160,7 +160,7 @@ theorem writes_append (ts us : List Probe) : writes (ts ++ us) = writes ts ∪ w
 end Probe
 
 /-- A successful primitive instruction preserves every cell absent from its write transcript. -/
-theorem Op.eval_modifies {w : ℕ} {o : Op B r} {x y : Data r} (h : o.eval w x = some y) :
+private theorem Op.eval_modifies {w : ℕ} {o : Op B r} {x y : Data r} (h : o.eval w x = some y) :
     Modifies (Probe.writes (o.probes x)) x.mem y.mem := by
   cases o with
   | const =>

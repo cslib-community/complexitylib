@@ -120,7 +120,7 @@ def implementation (w capacity : ℕ) : DynamicProgram (spec w capacity) 11 wher
     | .dequeue => some (if regs present = 0 then none else some (regs out))
 
 /-- Enqueue body correctness with an exact four-instruction execution. -/
-theorem enqueue_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11}
+private theorem enqueue_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11}
     (hc : Fits w (base + 2 * capacity)) (hr : Rep w base capacity front back x)
     (hs : front.length + back.length < capacity) (hv : x.regs arg = v) :
     ∃ y, Exec w enqueue x y 4 ∧ Rep w base capacity front (v :: back) y ∧
@@ -155,7 +155,7 @@ theorem enqueue_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data
   · exact Modifies.write_of_owns ⟨by omega, by omega⟩ v
 
 /-- A rear-to-front move performs six instructions and preserves the reserved-region frame. -/
-theorem move_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11}
+private theorem move_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11}
     (hc : Fits w (base + 2 * capacity)) (hr : Rep w base capacity front (v :: back) x) :
     ∃ y, Exec w move x y 6 ∧ Rep w base capacity (v :: front) back y ∧
       Modifies (footprint base capacity) x.mem y.mem := by
@@ -200,7 +200,7 @@ theorem move_exec {w base capacity v : ℕ} {front back : List ℕ} {x : Data 11
   · exact Modifies.write_of_owns ⟨by omega, by omega⟩ v
 
 /-- Transfer costs eight instructions per moved word and two instructions to exit the loop. -/
-theorem transfer_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 11}
+private theorem transfer_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 11}
     (hc : Fits w (base + 2 * capacity)) (hr : Rep w base capacity front back x) :
     ∃ y, Exec w transfer x y (8 * back.length + 2) ∧
       Rep w base capacity (back.reverse ++ front) [] y ∧
@@ -228,7 +228,7 @@ theorem transfer_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 
     · exact fun a ha => (hfz a ha).trans (hf a ha)
 
 /-- Front-pop execution counts include the empty/nonempty branch and distinguish returned zero. -/
-theorem pop_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 11}
+private theorem pop_exec {w base capacity : ℕ} {front back : List ℕ} {x : Data 11}
     (hc : Fits w (base + 2 * capacity)) (hr : Rep w base capacity front back x) :
     ∃ y, Exec w pop x y (if front = [] then 3 else 6) ∧
       Rep w base capacity front.tail back y ∧

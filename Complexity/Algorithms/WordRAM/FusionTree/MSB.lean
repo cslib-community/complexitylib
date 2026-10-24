@@ -118,7 +118,7 @@ private theorem guards_eq (s : ℕ) :
 
 /-- The comparison expression has exactly the promised Boolean digits; subtraction
 does not borrow between fields and no correctness oracle is a hypothesis. -/
-theorem powerFlags_eq {s z : ℕ} (hz : z < 2 ^ s) :
+private theorem powerFlags_eq {s z : ℕ} (hz : z < 2 ^ s) :
     powerFlags s z =
       packRadix (2 ^ (s + 1)) s (fun i => (decide (2 ^ i ≤ z)).toNat) := by
   have hinj : Function.Injective (fun i : Fin s => s + (s + 1) * i.val) := by
@@ -138,7 +138,7 @@ theorem powerFlags_eq {s z : ℕ} (hz : z < 2 ^ s) :
   rw [he, Nat.mul_div_right _ (Nat.two_pow_pos _)]
 
 /-- Counting the packed flags gives the number of powers of two at most the input. -/
-theorem powerCount_eq {s z : ℕ} (hs : 0 < s) (hz : z < 2 ^ s) :
+private theorem powerCount_eq {s z : ℕ} (hs : 0 < s) (hz : z < 2 ^ s) :
     powerCount s z = ∑ i ∈ Finset.range s, (decide (2 ^ i ≤ z)).toNat := by
   rw [powerCount, powerFlags_eq hz, Nat.and_two_pow_sub_one_eq_mod,
     Nat.shiftRight_eq_div_pow]
@@ -379,7 +379,7 @@ theorem clusterMarkers_guard {s x i : ℕ} (hs : 0 < s) (hx : x < 2 ^ (s * s))
 
 /-- The masked product compresses exactly the original cluster-marker bits. Cross terms
 are collision-free everywhere, including outside the final retained interval. -/
-theorem clusterSummary_eq {s : ℕ} (hs : 0 < s) (x : ℕ) :
+private theorem clusterSummary_eq {s : ℕ} (hs : 0 < s) (x : ℕ) :
     clusterSummary s x =
       ∑ i : Fin s, ((clusterMarkers s x).testBit (s - 1 + i.val * s)).toNat * 2 ^ i.val := by
   have hd (i : Fin s) :
@@ -403,7 +403,7 @@ theorem clusterSummary_lt (s x : ℕ) : clusterSummary s x < 2 ^ s := by
   exact Nat.mod_lt _ (Nat.two_pow_pos _)
 
 /-- A summary bit is set exactly when the corresponding original cluster is nonzero. -/
-theorem clusterSummary_testBit {s x i : ℕ} (hs : 0 < s) (hx : x < 2 ^ (s * s))
+private theorem clusterSummary_testBit {s x i : ℕ} (hs : 0 < s) (hx : x < 2 ^ (s * s))
     (hi : i < s) :
     (clusterSummary s x).testBit i = decide (x / 2 ^ (s * i) % 2 ^ s ≠ 0) := by
   rw [clusterSummary_eq hs]
@@ -459,7 +459,7 @@ private theorem highestCluster {s x : ℕ} (hs : 0 < s) (hx0 : 0 < x)
     simp [Nat.div_eq_of_lt hxi]
 
 /-- The first comparison/count stage identifies the highest nonempty cluster. -/
-theorem clusterSummary_log2 {s x : ℕ} (hs : 0 < s) (hx0 : 0 < x)
+private theorem clusterSummary_log2 {s x : ℕ} (hs : 0 < s) (hx0 : 0 < x)
     (hx : x < 2 ^ (s * s)) :
     0 < clusterSummary s x ∧ (clusterSummary s x).log2 = x.log2 / s := by
   obtain ⟨hc, hv, _, habove⟩ := highestCluster hs hx0 hx

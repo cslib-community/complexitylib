@@ -113,11 +113,11 @@ def spreadShift (w M b i m : ℕ) : ℕ :=
   m + ((w - b) / M + 2 * i + 1) * M
 
 /-- Adding a multiple of the collision modulus preserves a chosen shift's residue. -/
-theorem spreadShift_mod (w M b i m : ℕ) : spreadShift w M b i m % M = m % M := by
+private theorem spreadShift_mod (w M b i m : ℕ) : spreadShift w M b i m % M = m % M := by
   simp [spreadShift]
 
 /-- The `i`th diagonal term lies strictly between the endpoints of its two-slot interval. -/
-theorem spreadShift_bounds {w M b i m : ℕ} (hM : 0 < M) (hb : b ≤ w) (hm : m < M) :
+private theorem spreadShift_bounds {w M b i m : ℕ} (hM : 0 < M) (hb : b ≤ w) (hm : m < M) :
     w + 2 * i * M < b + spreadShift w M b i m ∧
       b + spreadShift w M b i m < w + (2 * i + 2) * M := by
   have hdiv := Nat.div_add_mod (w - b) M
@@ -186,7 +186,7 @@ theorem positionMask_lt {r L : ℕ} (b : Fin r → ℕ) (hb : Function.Injective
       (fun _ _ _ _ he => hb he) (fun _ => true) (fun i _ => hL i)
 
 /-- Expand the masked product into all its binary cross terms. -/
-theorem maskedProduct_eq {r : ℕ} (b m : Fin r → ℕ) (hb : Function.Injective b) (x : ℕ) :
+private theorem maskedProduct_eq {r : ℕ} (b m : Fin r → ℕ) (hb : Function.Injective b) (x : ℕ) :
     (x &&& positionMask b) * positionMask m =
       ∑ p : Fin r × Fin r, (x.testBit (b p.1)).toNat * 2 ^ (b p.1 + m p.2) := by
   rw [positionMask, Nat.and_sum_two_pow b hb]
@@ -194,7 +194,7 @@ theorem maskedProduct_eq {r : ℕ} (b m : Fin r → ℕ) (hb : Function.Injectiv
 
 /-- No carries occur anywhere in a collision-free product. At every cross-term position,
 the original significant bit is recovered exactly. -/
-theorem maskedProduct_testBit {r : ℕ} (b m : Fin r → ℕ)
+private theorem maskedProduct_testBit {r : ℕ} (b m : Fin r → ℕ)
     (h : Function.Injective (fun p : Fin r × Fin r => b p.1 + m p.2))
     (hb : Function.Injective b) (x : ℕ) (i j : Fin r) :
     ((x &&& positionMask b) * positionMask m).testBit (b i + m j) = x.testBit (b i) := by

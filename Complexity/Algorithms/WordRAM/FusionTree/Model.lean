@@ -238,7 +238,7 @@ theorem rep_memory (p : Parameters) (t : Tree) (base : ℕ) :
   simp [memory, List.getElem?_eq_getElem hi]
 
 /-- A represented internal node exposes its header, minima, pointers and child-record interval. -/
-theorem Rep.node_parts {p : Parameters} {m base : ℕ} {cs : List Tree} {mem : ℕ → ℕ}
+private theorem Rep.node_parts {p : Parameters} {m base : ℕ} {cs : List Tree} {mem : ℕ → ℕ}
     (hr : Rep p (.node m cs) base mem) :
     Stores (header p m cs) base mem ∧
     Stores (childTable base cs) (base + headerWords) mem ∧
@@ -313,7 +313,7 @@ private theorem prefix_span_le (cs : List Tree) (i : ℕ) (hi : i < cs.length) :
       simpa [List.take_succ_cons, Nat.add_assoc] using Nat.add_le_add_left hh (span t)
 
 /-- Every record is nonempty, including the empty leaf. -/
-theorem span_pos (t : Tree) : 0 < span t := by
+private theorem span_pos (t : Tree) : 0 < span t := by
   cases t <;> simp [span, headerWords]
 
 /-- A whole child allocation lies inside its parent's allocation. -/
@@ -330,7 +330,7 @@ theorem access_owned (base : ℕ) (t : Tree) (a : ℕ) (ha : a < span t) :
   ⟨Nat.le_add_right _ _, Nat.add_lt_add_left ha _⟩
 
 /-- Every direct header/table read is an owned parent word. Tables use their actual lengths. -/
-theorem node_access_owned (base m : ℕ) (cs : List Tree) (a : ℕ)
+private theorem node_access_owned (base m : ℕ) (cs : List Tree) (a : ℕ)
     (ha : a < headerWords + 2 * cs.length) :
     (Block.mk base (span (.node m cs))).Owns (base + a) := by
   simp only [Block.Owns, span]
@@ -359,7 +359,7 @@ theorem child_access_owned (base m : ℕ) (cs : List Tree) (i : Fin cs.length) (
   omega
 
 /-- The concrete allocation is at most nine times the structural scalar-slot count. -/
-theorem span_le_slots (t : Tree) : span t ≤ 9 * t.slots := by
+private theorem span_le_slots (t : Tree) : span t ≤ 9 * t.slots := by
   induction t using Tree.rec
       (motive_2 := fun cs => (cs.map span).sum ≤ 9 * (cs.map Tree.slots).sum) with
   | leaf xs => simp only [span, Tree.slots, headerWords]; omega
@@ -481,7 +481,7 @@ theorem ArenaFits.child {w base m : ℕ} {cs : List Tree}
   ha.of_le (child_span_le base m cs i).2
 
 /-- Every serialized data word fits under explicit content and arena assumptions. -/
-theorem encode_fits {w : ℕ} {p : Parameters} (t : Tree) :
+private theorem encode_fits {w : ℕ} {p : Parameters} (t : Tree) :
     ∀ base, ArenaFits w base t → ContentFits w p t →
       ∀ v ∈ encode p base t, Fits w v := by
   induction t using Tree.rec
