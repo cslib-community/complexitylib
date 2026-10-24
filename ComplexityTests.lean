@@ -346,8 +346,8 @@ import ComplexityTests.PartialMCSP
 import ComplexityTests.PlainAutomationSupport
 import ComplexityTests.PlainCapturedMap
 import ComplexityTests.PlainLawfulBEq
-import ComplexityTests.PlainPurePPT
 import ComplexityTests.PlainPPTPreprocess
+import ComplexityTests.PlainPurePPT
 import ComplexityTests.PolySpaceFold
 import ComplexityTests.PolyTimeBinaryWord
 import ComplexityTests.PolyTimeContracts
