@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyT
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # A decidable problem outside P
@@ -27,7 +28,7 @@ exactly when the described machine has halted with output `[true]` by then. The 
 hierarchy theorem in `Complexity.Computability.Complexity.Classes.Hierarchy.Time`.
 
 The diagonal is itself computed, by one fixed machine, within time `O(2 ^ (4 * n))` and space
-`O(2 ^ (2 * n))` on inputs of length `n` (`Cslib.Complexity.computableTidilyInO_diagonal`). The
+`O(2 ^ (2 * n))` on inputs of length `n` (`Cslib.Complexity.computableInO_diagonal`). The
 bound charges decoding, converting the input to symbols through the universal input-coding API,
 writing the clock `2 ^ n` in binary, the universal run and the final test. The universal run
 dominates, within time polynomial in `n` times
@@ -50,7 +51,7 @@ an explicit exponential-time computation is not in `P`. No time-bounded classes 
 
 ## Main results
 
-* `Cslib.Complexity.computableTidilyInO_diagonal`: the diagonal in exponential time and space.
+* `Cslib.Complexity.computableInO_diagonal`: the diagonal in exponential time and space.
 * `Cslib.Complexity.diagonal_notMem_P`: the diagonal problem is not in `P`.
 * `Cslib.Complexity.not_computableInTimeAndSpace_diagonal`: no plain machine computes the
   diagonal within a polynomial time bound.
@@ -147,8 +148,8 @@ theorem not_forall_halted_diagonal {k : ℕ} {State : Type} [Finite State]
 /-- **The diagonal problem is not in `P`**, by the diagonal argument of the time hierarchy
 theorem [Arora and Barak, Theorem 3.1][AroraBarak09]. -/
 theorem diagonal_notMem_P : {x | diagonal x = true} ∉ P encBits := by
-  rw [mem_P_iff_tidy]
-  rintro ⟨f, ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩, hf⟩
+  rintro ⟨f, hfpoly, hf⟩
+  obtain ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩ := hfpoly.tidy
   have hfx (x : List Bool) : f x = diagonal x := by
     cases h : diagonal x
     · cases hfx : f x
@@ -171,23 +172,26 @@ namespace Diagonal
 /-! ### The resources of the diagonal -/
 
 /-- The test is within time quadratic and space linear in the encoded result. -/
-theorem computableTidilyInO_verdict :
-    ComputableTidilyInO verdict eOut encBool (fun r => ((eOut r).length + 1) ^ 2)
+theorem computableInO_verdict :
+    ComputableInO verdict eOut encBool (fun r => ((eOut r).length + 1) ^ 2)
       fun r => (eOut r).length := by
-  have heq := (ComputableTidilyInO.eq (encList encUnary)).comp
-    ((ComputableTidilyInO.fst (encList encUnary) encBool).prod
-      (ComputableTidilyInO.const (encMid := encList encUnary) [eBit true]))
-  have hfin := (ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool)
-    (encMid := encBool) fun q : Bool × Bool => !(q.1 && q.2)).inO_one
-  refine (hfin.comp ((ComputableTidilyInO.snd (encList encUnary) encBool).prod heq)).mono 64
-    (fun r => ?_) fun r => ?_
-  all_goals
-    have h₁ := length_le_encPair_left (encList encUnary) encBool r
-    have h₂ : (encList encUnary [eBit true]).length = 3 := rfl
-    simp only [Function.comp_apply, length_encPair, encBool_apply, List.length_singleton,
-      h₂] at h₁ ⊢
-  · nlinarith
-  · omega
+  have this : ComputableTidilyInO verdict eOut encBool (fun r => ((eOut r).length + 1) ^ 2) fun r =>
+      (eOut r).length := by
+    have heq := (ComputableTidilyInO.eq (encList encUnary)).comp
+      ((ComputableTidilyInO.fst (encList encUnary) encBool).prod
+        (ComputableTidilyInO.const (encMid := encList encUnary) [eBit true]))
+    have hfin := (ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool)
+      (encMid := encBool) fun q : Bool × Bool => !(q.1 && q.2)).inO_one
+    refine (hfin.comp ((ComputableTidilyInO.snd (encList encUnary) encBool).prod heq)).mono 64
+      (fun r => ?_) fun r => ?_
+    all_goals
+      have h₁ := length_le_encPair_left (encList encUnary) encBool r
+      have h₂ : (encList encUnary [eBit true]).length = 3 := rfl
+      simp only [Function.comp_apply, length_encPair, encBool_apply, List.length_singleton,
+        h₂] at h₁ ⊢
+    · nlinarith
+    · omega
+  simpa only [computableInO_iff_computableTidilyInO] using this
 
 /-- The numeric core of the resources of the diagonal: for an input of length `n`, a decoded
 description of encoded length `D`, encoded symbols of length `N`, a clock `J ≥ 1` and a result of
@@ -257,57 +261,61 @@ open Diagonal in
 /-- **The diagonal is decidable in exponential time**, within time `O(2 ^ (4 * n))` and space
 `O(2 ^ (2 * n))` on inputs of length `n`, charging decoding, the symbols, the clock, the universal
 run and the test. -/
-theorem computableTidilyInO_diagonal :
-    ComputableTidilyInO diagonal encBits encBool (fun x => 2 ^ (4 * x.length))
+theorem computableInO_diagonal :
+    ComputableInO diagonal encBits encBool (fun x => 2 ^ (4 * x.length))
       fun x => 2 ^ (2 * x.length) := by
-  obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
-  have hu : ComputableTidilyInDegree unframe encBits encBits 1 1 :=
-    .of_linear (.of_unframe fun _ => rfl)
-  have hdesc := (hdec.comp hu).inO
-  have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
-  have hclock := (ComputableTidilyInDegree.two_pow_length encBits).inO_one
-  have hpre := hdesc.prod (hsym.prod hclock)
-  have hU := computableTidilyInO_universal.comp hpre
-  have h := computableTidilyInO_verdict.comp hU
-  -- the sizes of the decoded description and of the result
-  obtain ⟨cD, hcD⟩ := hdesc.length_le
-  obtain ⟨cO, hcO⟩ := hU.length_le
-  -- one power of two absorbs every polynomial factor
-  obtain ⟨C, hC⟩ := PolynomiallyBounded.exists_le_mul_two_pow
-    (p := fun n => (cD * ((n + 1) ^ max 1 (1 * dd) + 1) + (n + 1) ^ max 1 (1 * dd) + 4 * n + 2) ^ 5)
-    (by fun_prop)
-  set K := 100100 + 44100 * (cO + 1) ^ 2 with hK
-  have hbounds (x : List Bool) := by
-    have hL : (encNat (2 ^ x.length)).length = x.length + 1 := by
-      rw [encNat_two_pow, List.length_append, List.length_replicate, List.length_singleton]
-    have hN : (encList encUnary (x.map eBit)).length ≤ 3 * x.length :=
-      (length_encList_le encUnary _ (b := 1) fun s hs => by
-        obtain ⟨b, -, rfl⟩ := List.mem_map.mp hs
-        cases b
-        · exact Nat.zero_le _
-        · exact le_rfl).trans (by rw [List.length_map]; omega)
-    have hE := hcO x
-    simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply] at hE
-    exact bounds_aux
-      (I := (eIn (decodeDesc (unframe x), x.map eBit, 2 ^ x.length)).length) Nat.one_le_two_pow
-      (hcD x) hN hL (by rw [length_encPair, length_encPair]; rfl) rfl hK hE
-  refine h.mono (K * C) (fun x => ?_) fun x => ?_
-  · obtain ⟨h₁, -⟩ := hbounds x
-    simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply] at h₁ ⊢
-    have hJ4 : 2 ^ (4 * x.length) = 2 ^ x.length * (2 ^ x.length) ^ 3 := by
-      ring
-    have := hC x.length
-    calc _ ≤ K * (_ ^ 5 * (2 ^ x.length) ^ 3) := h₁
-      _ ≤ K * (C * 2 ^ x.length * (2 ^ x.length) ^ 3) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ this)
-      _ ≤ K * C * (2 ^ (4 * x.length) + 1) := by rw [hJ4]; nlinarith
-  · obtain ⟨-, h₂⟩ := hbounds x
-    simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply] at h₂ ⊢
-    have hJ2 : 2 ^ (2 * x.length) = 2 ^ x.length * 2 ^ x.length := by rw [two_mul, pow_add]
-    have := hC x.length
-    calc _ ≤ K * (_ ^ 5 * 2 ^ x.length) := h₂
-      _ ≤ K * (C * 2 ^ x.length * 2 ^ x.length) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ this)
-      _ ≤ K * C * (2 ^ (2 * x.length) + 1) := by rw [hJ2]; nlinarith
+  have this : ComputableTidilyInO diagonal encBits encBool (fun x => 2 ^ (4 * x.length))
+      fun x => 2 ^ (2 * x.length) := by
+    obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
+    have hu : ComputableTidilyInDegree unframe encBits encBits 1 1 :=
+      .of_linear (.of_unframe fun _ => rfl)
+    have hdesc := (hdec.comp hu).inO
+    have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
+    have hclock := (ComputableTidilyInDegree.two_pow_length encBits).inO_one
+    have hpre := hdesc.prod (hsym.prod hclock)
+    have hU := computableTidilyInO_universal.comp hpre
+    have h := computableInO_verdict.tidy.comp hU
+    -- the sizes of the decoded description and of the result
+    obtain ⟨cD, hcD⟩ := hdesc.length_le
+    obtain ⟨cO, hcO⟩ := hU.length_le
+    -- one power of two absorbs every polynomial factor
+    obtain ⟨C, hC⟩ := PolynomiallyBounded.exists_le_mul_two_pow
+      (p := fun n => (cD * ((n + 1) ^ max 1 (1 * dd) + 1) + (n + 1) ^ max 1 (1 * dd) + 4 * n + 2) ^
+        5)
+      (by fun_prop)
+    set K := 100100 + 44100 * (cO + 1) ^ 2 with hK
+    have hbounds (x : List Bool) := by
+      have hL : (encNat (2 ^ x.length)).length = x.length + 1 := by
+        rw [encNat_two_pow, List.length_append, List.length_replicate, List.length_singleton]
+      have hN : (encList encUnary (x.map eBit)).length ≤ 3 * x.length :=
+        (length_encList_le encUnary _ (b := 1) fun s hs => by
+          obtain ⟨b, -, rfl⟩ := List.mem_map.mp hs
+          cases b
+          · exact Nat.zero_le _
+          · exact le_rfl).trans (by rw [List.length_map]; omega)
+      have hE := hcO x
+      simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply] at hE
+      exact bounds_aux
+        (I := (eIn (decodeDesc (unframe x), x.map eBit, 2 ^ x.length)).length) Nat.one_le_two_pow
+        (hcD x) hN hL (by rw [length_encPair, length_encPair]; rfl) rfl hK hE
+    refine h.mono (K * C) (fun x => ?_) fun x => ?_
+    · obtain ⟨h₁, -⟩ := hbounds x
+      simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply] at h₁ ⊢
+      have hJ4 : 2 ^ (4 * x.length) = 2 ^ x.length * (2 ^ x.length) ^ 3 := by
+        ring
+      have := hC x.length
+      calc _ ≤ K * (_ ^ 5 * (2 ^ x.length) ^ 3) := h₁
+        _ ≤ K * (C * 2 ^ x.length * (2 ^ x.length) ^ 3) :=
+            Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ this)
+        _ ≤ K * C * (2 ^ (4 * x.length) + 1) := by rw [hJ4]; nlinarith
+    · obtain ⟨-, h₂⟩ := hbounds x
+      simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply] at h₂ ⊢
+      have hJ2 : 2 ^ (2 * x.length) = 2 ^ x.length * 2 ^ x.length := by rw [two_mul, pow_add]
+      have := hC x.length
+      calc _ ≤ K * (_ ^ 5 * 2 ^ x.length) := h₂
+        _ ≤ K * (C * 2 ^ x.length * 2 ^ x.length) :=
+            Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ this)
+        _ ≤ K * C * (2 ^ (2 * x.length) + 1) := by rw [hJ2]; nlinarith
+  simpa only [computableInO_iff_computableTidilyInO] using this
 
 end Cslib.Complexity

@@ -49,7 +49,7 @@ variable {α : Type}
 Preparation, framing, buffers and tidy restoration are included in the polynomial clock. -/
 theorem exists_verifier_counting_machine (enc : α ↪ List Bool) (p : Polynomial ℕ)
     (verifier : α × List Bool → Bool)
-    (hverify : ComputableTidilyInPolyTime verifier (encPair enc encBits) encBool) :
+    (hverify : ComputableInPolyTime verifier (encPair enc encBits) encBool) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCTM k Bool State)
       (clock : Polynomial ℕ), machine.Nonblocking ∧ ∀ a,
         machine.HaltsWithin (clock.eval (enc a).length) (Cfg.init machine.initial (enc a)) ∧
@@ -58,6 +58,7 @@ theorem exists_verifier_counting_machine (enc : α ↪ List Bool) (p : Polynomia
         machine.rejectCount (clock.eval (enc a).length) (Cfg.init machine.initial (enc a)) =
           2 ^ (p.eval (enc a).length) -
             Complexity.acceptCount verifier a (p.eval (enc a).length) := by
+  have hverify := hverify.tidy
   obtain ⟨k, State, hfinite, machine, clock, hnon, hm⟩ :=
     exists_verifier_machine enc p verifier hverify
   refine ⟨k, State, hfinite, machine, clock, hnon, fun a => ?_⟩
@@ -109,7 +110,7 @@ theorem mem_SharpP_iff_exists_machine :
   constructor
   · rintro ⟨p, verifier, hverify, hf⟩
     obtain ⟨k, State, hfinite, machine, clock, hnon, hm⟩ :=
-      MultiTapeCTM.exists_verifier_counting_machine enc p verifier hverify.tidy
+      MultiTapeCTM.exists_verifier_counting_machine enc p verifier hverify
     exact ⟨k, State, hfinite, machine, clock, hnon,
       fun a => ⟨(hm a).1, (hm a).2.1.trans (hf a).symm⟩⟩
   · rintro ⟨k, State, hfinite, machine, clock, _, hm⟩

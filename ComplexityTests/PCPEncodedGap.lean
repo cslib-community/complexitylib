@@ -16,19 +16,19 @@ namespace ComplexityTests.PCPEncodedGap
 open Cslib.Logic.PL Cslib.PCP.Encoded Turing.MultiTapeTM
 open Cslib.PCP.ConstraintGraph.Amplification.Arithmetic
 
-example : ComputableTidilyInPolyTime (gapGraph (V := ℕ))
+example : ComputableInPolyTime (gapGraph (V := ℕ))
     (encList (encList (encPair encNat encBool)))
     (Graph.encoding (encPi (encPi encBool))) := by polytime
 
-example : ComputableTidilyInPolyTime (gapGraph (V := List Bool))
+example : ComputableInPolyTime (gapGraph (V := List Bool))
     (encList (encList (encPair encBits encBool)))
     (Graph.encoding (encPi (encPi encBool))) := by polytime
 
-example : ComputableTidilyInPolyTime (gapGraph (V := List Bool))
+example : ComputableInPolyTime (gapGraph (V := List Bool))
     (encList (encList (encPair (encList encBool) encBool)))
     (Graph.encoding (encPi (encPi encBool))) := by fun_prop
 
-example (empty : Empty ↪ List Bool) : ComputableTidilyInPolyTime (gapGraph (V := Empty))
+example (empty : Empty ↪ List Bool) : ComputableInPolyTime (gapGraph (V := Empty))
     (encList (encList (encPair empty encBool)))
     (Graph.encoding (encPi (encPi encBool))) := by polytime
 
@@ -39,12 +39,12 @@ variable {V Input : Type} [DecidableEq V] {enc : V ↪ List Bool}
   (hformula : ComputableTidilyInPolyTime formula input
     (encList (encList (encPair enc encBool))))
 
-example : ComputableTidilyInPolyTime (fun x => gapGraph (formula x)) input
+example : ComputableInPolyTime (fun x => gapGraph (formula x)) input
     (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hformula; fun_prop)
   fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun x => let φ := formula x; gapGraph (φ ++ φ)) input
     (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hformula; polytime)

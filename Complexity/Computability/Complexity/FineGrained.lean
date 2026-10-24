@@ -15,6 +15,7 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # The exponential time hypotheses
@@ -60,9 +61,9 @@ The negation of `ETH` is `Cslib.Complexity.DecidableInSubexpTime`: decidability 
 
 * `Cslib.Complexity.mem_DTIME_iff_decidableInTimeO`: `DTIME` is `DecidableInTimeO` for bounds in
   the length of the encoded instance.
-* `Cslib.Complexity.DecidableInTimeO.exists_computableTidilyInO`,
-  `Cslib.Complexity.DecidableInTimeO.of_computableTidilyInO`: deciders within time `O(T)` are tidy
-  deciders within time `O(T)`, which compose.
+* `Cslib.Complexity.DecidableInTimeO.exists_computableInO`,
+  `Cslib.Complexity.DecidableInTimeO.of_computableInO`: deciders within time `O(T)` are the
+  Boolean functions computable within time `O(T)`, which compose.
 * `Cslib.Complexity.DecidableInTimeO.inter`: restricting to a set decided in polynomial time.
 * `Cslib.Complexity.DecidableInExpTime.mono`: larger exponents allow more problems.
 * `Cslib.Complexity.ETH_iff_not_decidableInSubexpTime`.
@@ -130,27 +131,28 @@ section Machines
 
 variable {α : Type} {enc : α ↪ List Bool} {A B : Set α} {T : α → ℝ}
 
-/-- A decider within time `O(T)` is a tidy decider within time and space `O(t)`, for a bound `t`
+/-- A decider within time `O(T)` is a decider within time and space `O(t)`, for a bound `t`
 within `O(T)`. -/
-theorem DecidableInTimeO.exists_computableTidilyInO (h : DecidableInTimeO A enc T) :
-    ∃ (g : α → Bool) (t : α → ℕ) (c : ℕ), ComputableTidilyInO g enc encBool t t ∧
+theorem DecidableInTimeO.exists_computableInO (h : DecidableInTimeO A enc T) :
+    ∃ (g : α → Bool) (t : α → ℕ) (c : ℕ), ComputableInO g enc encBool t t ∧
       (∀ a, a ∈ A ↔ g a = true) ∧ ∀ a, (t a : ℝ) ≤ c * T a + c := by
   obtain ⟨c, t, s, ht, h⟩ := h
   obtain ⟨g, hg, hA⟩ := decidableInTimeAndSpace_iff.mp h
   obtain ⟨k, hg⟩ := ComputableInTimeAndSpace.exists_space_linear hg
   obtain ⟨d, hg⟩ := ComputableInTimeAndSpace.exists_computableTidilyInTimeAndSpace hg
-  refine ⟨g, t, c, ComputableTidilyInO.of_bounds hg (2 + 3 * k + d + d * k + d) (fun a => ?_)
-    (fun a => ?_) (fun a => ?_), hA, ht⟩
+  refine ⟨g, t, c, .of_tidy <| ComputableTidilyInO.of_bounds hg (2 + 3 * k + d + d * k + d)
+    (fun a => ?_) (fun a => ?_) (fun a => ?_), hA, ht⟩
   all_goals
     have e : (2 + 3 * k + d + d * k + d) * (t a + 1) = 2 * t a + 3 * (k * t a + k) + d +
         (2 + d * t a + d * (k * t a + k + 1) + d * t a) := by ring
     try simp only [encBool_apply, List.length_singleton]
     omega
 
-/-- A tidy decider within time `O(t)`, for `t ≤ T`, decides within time `O(T)`. -/
-theorem DecidableInTimeO.of_computableTidilyInO {g : α → Bool} {t S : α → ℕ}
-    (hg : ComputableTidilyInO g enc encBool t S) (hA : ∀ a, a ∈ A ↔ g a = true)
+/-- A decider within time `O(t)`, for `t ≤ T`, decides within time `O(T)`. -/
+theorem DecidableInTimeO.of_computableInO {g : α → Bool} {t S : α → ℕ}
+    (hg : ComputableInO g enc encBool t S) (hA : ∀ a, a ∈ A ↔ g a = true)
     (hT : ∀ a, (t a : ℝ) ≤ T a) : DecidableInTimeO A enc T := by
+  have hg := hg.tidy
   obtain ⟨c, hg, -⟩ := hg
   refine ⟨c, _, _, fun a => ?_,
     decidableInTimeAndSpace_iff.mpr ⟨g, hg.computableInTimeAndSpace, hA⟩⟩
@@ -161,16 +163,18 @@ theorem DecidableInTimeO.of_computableTidilyInO {g : α → Bool} {t S : α → 
 and `B` is decidable within time `O(T)`, then the instances of `B` satisfying `p` are decidable
 within time `O(T)` on instances satisfying `p`, plus a polynomial in the length of the encoded
 instance: the decider tests `p` first, and rejects at once when it fails. -/
-theorem DecidableInTimeO.inter {p : α → Bool} (hp : ComputableTidilyInPolyTime p enc encBool)
+theorem DecidableInTimeO.inter {p : α → Bool} (hp : ComputableInPolyTime p enc encBool)
     (hB : DecidableInTimeO B enc T) (hT : ∀ a, 0 ≤ T a) :
     ∃ e : ℕ, DecidableInTimeO ({a | p a = true} ∩ B) enc
       fun a => (if p a = true then T a else 0) + ((enc a).length + 1) ^ e := by
-  obtain ⟨g, t, c, hg, hgB, ht⟩ := hB.exists_computableTidilyInO
+  have hp := hp.tidy
+  obtain ⟨g, t, c, hg, hgB, ht⟩ := hB.exists_computableInO
+  have hg := hg.tidy
   obtain ⟨d, _, hp⟩ := hp.exists_degree
   have h := hp.inO.ite hg (ComputableTidilyInO.const false)
   refine ⟨d + 1, DecidableInTimeO.mono (T := fun a => ((((enc a).length + 1) ^ d +
     if p a then t a else (enc a).length : ℕ) : ℝ))
-    (DecidableInTimeO.of_computableTidilyInO h (fun a => ?_) fun a => le_rfl) (c + 2)
+    (DecidableInTimeO.of_computableInO (.of_tidy h) (fun a => ?_) fun a => le_rfl) (c + 2)
     (fun a => ?_) fun a => ?_⟩
   · simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, hgB]
     cases p a <;> simp
@@ -226,18 +230,18 @@ section Machines
 
 variable {α : Type} {enc : α ↪ List Bool} {A B : Set α}
 
-/-- A tidy decider within time `O(t)`, for `t` within a constant times `2 ^ (δ μ a)` times a
+/-- A decider within time `O(t)`, for `t` within a constant times `2 ^ (δ μ a)` times a
 polynomial, decides within time `2 ^ (δ μ a)` times a polynomial. -/
-theorem DecidableInExpTime.of_computableTidilyInO {μ : α → ℕ} {δ : ℝ} {g : α → Bool}
-    {t S : α → ℕ} (hg : ComputableTidilyInO g enc encBool t S) (hA : ∀ a, a ∈ A ↔ g a = true)
+theorem DecidableInExpTime.of_computableInO {μ : α → ℕ} {δ : ℝ} {g : α → Bool}
+    {t S : α → ℕ} (hg : ComputableInO g enc encBool t S) (hA : ∀ a, a ∈ A ↔ g a = true)
     (c e : ℕ) (ht : ∀ a, (t a : ℝ) ≤ c * (2 ^ (δ * μ a) * ((enc a).length + 1) ^ e)) :
     DecidableInExpTime A enc μ δ :=
-  ⟨e, (DecidableInTimeO.of_computableTidilyInO hg hA ht).mono c
+  ⟨e, (DecidableInTimeO.of_computableInO hg hA ht).mono c
     (fun a => le_add_of_nonneg_right (Nat.cast_nonneg c)) fun a => by positivity⟩
 
 /-- **Restriction to a set decided in polynomial time**, for exponential bounds with `δ ≥ 0`. -/
 theorem DecidableInExpTime.inter {μ : α → ℕ} {δ : ℝ} {p : α → Bool}
-    (hp : ComputableTidilyInPolyTime p enc encBool) (h : DecidableInExpTime B enc μ δ)
+    (hp : ComputableInPolyTime p enc encBool) (h : DecidableInExpTime B enc μ δ)
     (hδ : 0 ≤ δ) : DecidableInExpTime ({a | p a = true} ∩ B) enc μ δ := by
   obtain ⟨e, h⟩ := h
   obtain ⟨e', h⟩ := h.inter hp fun a => by positivity

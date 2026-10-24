@@ -117,25 +117,27 @@ private theorem card_majority_eq {β : Type} [Fintype β] (V : β → Bool) (R :
 /-- The majority polynomial is uniformly GapP for polynomial-time unary repetition counts. -/
 theorem majorityPolynomial_mem {α : Type} {enc : α ↪ List Bool} {g D : α → ℤ}
     {r : α → ℕ} (hg : g ∈ GapP enc) (hD : D ∈ GapP enc)
-    (hr : ComputableTidilyInPolyTime r enc encUnary) :
+    (hr : ComputableInPolyTime r enc encUnary) :
     (fun a => majorityPolynomial (g a) (D a) (r a)) ∈ GapP enc := by
   let ones : α × List Bool → ℕ := fun x => x.2.countP id
-  have hones : ComputableTidilyInPolyTime ones (encPair enc encBits) encUnary := by
+  have hones : ComputableInPolyTime ones (encPair enc encBits) encUnary := by
     dsimp [ones]
     fun_prop
-  have hR : ComputableTidilyInPolyTime (fun x : α × List Bool => r x.1)
+  have hR : ComputableInPolyTime (fun x : α × List Bool => r x.1)
       (encPair enc encBits) encUnary := hr.comp (.fst enc encBits)
-  have hz : ComputableTidilyInPolyTime (fun x : α × List Bool => 2 * r x.1 - ones x)
+  have hz : ComputableInPolyTime (fun x : α × List Bool => 2 * r x.1 - ones x)
       (encPair enc encBits) encUnary := by fun_prop
   have hg' := GapP.pow_mem_polyTime (GapP.comp_mem hg (.fst enc encBits)) hones
   have hd' := GapP.pow_mem_polyTime (GapP.comp_mem (GapP.sub_mem' hD hg) (.fst enc encBits)) hz
-  have htest : ComputableTidilyInPolyTime
+  have htest : ComputableInPolyTime
       (fun x : α × List Bool => if r x.1 < ones x then (1 : ℕ) else 0)
-      (encPair enc encBits) encNat := by fun_prop
+      (encPair enc encBits) encNat :=
+    .of_tidy (ComputableTidilyInPolyTime.ite_decide (ComputableTidilyInPolyTime.unary_lt' hR.tidy
+      hones.tidy) (.const 1) (.const 0))
   have hweight := GapP.mul_mem (GapP.mul_mem hg' hd')
     (SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime htest))
   have hsum := GapP.sum_bits_mem hweight
-    (ComputableTidilyInPolyTime.unary_mul.comp ((ComputableTidilyInPolyTime.const 2).prod hr))
+    (ComputableInPolyTime.unary_mul.comp ((ComputableInPolyTime.const 2).prod hr))
   convert hsum using 1
   ext a
   unfold majorityPolynomial
@@ -240,7 +242,7 @@ theorem amplify {α : Type} {enc : α ↪ List Bool} {A : Set α}
       (0 ≤ G a ∧ G a ≤ D) ∧
         (a ∈ A → (2 : ℤ) ^ q.eval (enc a).length * (D - G a) ≤ D) ∧
         (a ∉ A → (2 : ℤ) ^ q.eval (enc a).length * G a ≤ D) := by
-  refine ⟨majorityPolynomial_mem hg (GapP.two_pow_mem p) (by fun_prop), fun a => ?_⟩
+  refine ⟨majorityPolynomial_mem hg (GapP.two_pow_mem p) (.of_tidy (by fun_prop)), fun a => ?_⟩
   obtain ⟨hb, hy, hn⟩ := hA a
   have h := majorityPolynomial_bounds (e := q.eval (enc a).length) hb.1 hb.2
   have he : (12 * q * p).eval (enc a).length =

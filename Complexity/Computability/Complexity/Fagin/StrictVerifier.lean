@@ -38,7 +38,7 @@ polynomial `p` in first-order logic.
 
 * `Cslib.Complexity.IsVerifier.strictVerifier`: `strictVerifier` verifies the same problem with the
   same certificate polynomial.
-* `Cslib.Complexity.computableTidilyInPolyTime_strictVerifier`: `strictVerifier` is computable in
+* `Cslib.Complexity.computableInPolyTime_strictVerifier`: `strictVerifier` is computable in
   polynomial time when `V` is.
 * `Cslib.Complexity.CookLevin.strictVerifier_eq_true_of_tableau_satisfiable`,
   `Cslib.Complexity.CookLevin.exists_tableau_satisfiable_iff_of_strictVerifier`: when `tm` computes
@@ -99,10 +99,10 @@ theorem IsVerifier.exists_strictVerifier_eq_true_iff {enc : α ↪ List Bool} {p
 /-- Guarding a polynomial-time verifier by its certificate-length check preserves polynomial-time
 computability. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_strictVerifier (enc : α ↪ List Bool) (p : Polynomial ℕ)
+theorem computableInPolyTime_strictVerifier (enc : α ↪ List Bool) (p : Polynomial ℕ)
     {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) :
-    ComputableTidilyInPolyTime (strictVerifier enc p V) (encPair enc encBits) encBool := by
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
+    ComputableInPolyTime (strictVerifier enc p V) (encPair enc encBits) encBool := by
   unfold strictVerifier
   fun_prop
 

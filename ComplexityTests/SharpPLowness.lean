@@ -43,7 +43,8 @@ theorem headTrue_mem_SPP : headTrue ∈ SPP encBits :=
 
 theorem oracleId_computableInPolyTimeWithOracle :
     ComputableInPolyTimeWithOracle headTrue (fun w : List Bool => w) encBits encBits :=
-  (ComputableTidilyInPolyTime.id').computableInPolyTimeWithOracle headTrue
+  (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.id').computableInPolyTimeWithOracle
+    headTrue
 
 example : ((fun _ : List Bool => (1 : ℕ)) ∘ fun w : List Bool => w) ∈ SharpP encBits :=
   SharpP.comp_mem_of_computableInPolyTimeWithOracle headTrue_mem_UP headTrue_mem_coUP

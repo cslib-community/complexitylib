@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Ba
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Exhaustive search for satisfiability
@@ -24,7 +25,7 @@ variables of a formula (`Cslib.Logic.PL.CNF.satisfiable_iff_exists_bitsAssignmen
 polynomial-time step `2 ^ n` times with a binary counter
 (`Turing.MultiTapeTM.ComputableTidilyInO.iterate`), so it runs within time `2 ^ n` times a
 polynomial in the length of the encoded formula
-(`Cslib.Complexity.BruteForce.exists_computableTidilyInO_search`). Hence `SAT`, and every
+(`Cslib.Complexity.BruteForce.exists_computableInO_search`). Hence `SAT`, and every
 `k`-SAT, is decidable within time `2 ^ n` times a polynomial
 (`Cslib.Complexity.SAT_decidableInExpTime_one`, `Cslib.Complexity.KSAT_decidableInExpTime_one`).
 
@@ -35,7 +36,7 @@ polynomial in the length of the encoded formula
 ## Main results
 
 * `Cslib.Complexity.BruteForce.search_eq_true_iff`: exhaustive search decides `SAT`.
-* `Cslib.Complexity.BruteForce.exists_computableTidilyInO_search`: its running time.
+* `Cslib.Complexity.BruteForce.exists_computableInO_search`: its running time.
 * `Cslib.Complexity.SAT_decidableInExpTime_one`, `Cslib.Complexity.KSAT_decidableInExpTime_one`:
   `SAT` and `k`-SAT are decidable within time `2 ^ n` times a polynomial.
 
@@ -122,7 +123,7 @@ private theorem computableTidilyInPolyTime_step
     : ComputableTidilyInPolyTime step encState encState := by
   have h : ComputableTidilyInPolyTime (fun s : State => s.1.1.eval (bitsAssignment s.1.2 s.2.1))
       encState encBool :=
-    computableTidilyInPolyTime_eval_bitsAssignment.comp
+    computableInPolyTime_eval_bitsAssignment.tidy.comp
       (show ComputableTidilyInPolyTime (fun s : State => (s.1, s.2.1)) encState
         (encPair (encPair encCNF (encList encNat)) encNat) by fun_prop)
   unfold step
@@ -133,6 +134,7 @@ open ComputableTidilyInPolyTime in
 /-- The initial state is computed in polynomial time. -/
 private theorem computableTidilyInPolyTime_init
     : ComputableTidilyInPolyTime init encCNF encState := by
+  have hvars := SAT.computableInPolyTime_distinctVars.tidy
   unfold init
   fun_prop
 
@@ -145,89 +147,94 @@ private theorem computableTidilyInPolyTime_count :
 
 /-- **The running time of exhaustive search**: within time `2 ^ n` times a polynomial in the
 length of the encoded formula, on formulas with `n` variables. -/
-theorem exists_computableTidilyInO_search : ∃ e, ComputableTidilyInO search encCNF encBool
+theorem exists_computableInO_search : ∃ e, ComputableInO search encCNF encBool
     (fun φ => 2 ^ φ.numVars * ((encCNF φ).length + 1) ^ e)
     fun φ => 2 ^ φ.numVars * ((encCNF φ).length + 1) ^ e := by
-  obtain ⟨d, _, hstep⟩ := computableTidilyInPolyTime_step.exists_degree
-  obtain ⟨d₀, _, hinit⟩ := computableTidilyInPolyTime_init.exists_degree
-  obtain ⟨d₁, _, hcount⟩ := computableTidilyInPolyTime_count.exists_degree
-  obtain ⟨d₂, _, hans⟩ := (show ComputableTidilyInPolyTime (fun s : State => s.2.2) encState encBool
-    by fun_prop).exists_degree
-  obtain ⟨cv, dv, hvs⟩ :=
-    SAT.computableInPolyTime_distinctVars.tidy.polyBounded_length.exists_le
-  set size : CNF ℕ → ℕ := fun φ => (encCNF φ).length
-  set B : CNF ℕ → ℕ := fun φ => (2 * cv + 13) * (size φ + 1) ^ (dv + 1)
-  have hn (φ : CNF ℕ) : φ.distinctVars.length ≤ size φ := by
-    rw [CNF.length_distinctVars]
-    exact φ.numVars_le_length_vars.trans (SAT.length_vars_le φ)
-  have hstate : ∀ φ, ∀ k ≤ 2 ^ φ.distinctVars.length,
-      (encState (step^[k] (init φ))).length ≤ B φ := by
-    intro φ k hk
-    have hK := ComputableTidilyInO.length_encNat_mono hk
-    rw [encNat_two_pow] at hK
-    have hV := hvs φ
-    have h₁ : size φ + 1 ≤ (size φ + 1) ^ (dv + 1) := by
-      simpa using Nat.pow_le_pow_right (Nat.succ_pos (size φ)) (Nat.le_add_left 1 dv)
-    have h₂ : (size φ + 1) ^ dv ≤ (size φ + 1) ^ (dv + 1) :=
-      Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ dv)
-    have h₃ := Nat.mul_le_mul_left cv h₂
-    have h₄ := hn φ
-    rw [iterate_step_init]
-    simp only [List.length_append, List.length_replicate, List.length_singleton] at hK
-    simp only [encState, length_encPair, encBool_apply, List.length_singleton, B, size]
-      at hV h₁ h₃ h₄ ⊢
-    nlinarith
-  have hiter := ComputableTidilyInO.iterate hcount.inO hinit.inO hstep.inO
-    (R := fun φ => (B φ + 1) ^ d) (Q := fun φ => (B φ + 1) ^ d) (B := B)
-    (fun φ k hk => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate φ k hk) 1) d)
-    (fun φ k hk => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate φ k hk) 1) d) hstate
-  have h := hans.inO.comp hiter
-  have hB : PolyBounded size B := .of_forall_le (2 * cv + 13) (dv + 1) fun φ => le_rfl
-  have hpow (j : ℕ) : PolyBounded size fun φ => (B φ + 1) ^ j :=
-    ((PolyBounded.of_polynomiallyBounded id (bound := fun x => (x + 1) ^ j) (by fun_prop)).comp
-      hB).mono fun φ => le_rfl
-  have hL (j : ℕ) : PolyBounded size fun φ => (size φ + 1) ^ j :=
-    .of_forall_le 1 j fun φ => by simp
-  obtain ⟨c, e, hT⟩ := exists_le_mul_two_pow_of_polyBounded (size := size) (μ := CNF.numVars)
-    ((hpow d).add (hB.add (.of_forall_le 4 2 fun φ => le_rfl)))
-    ((hL d₁).add ((hL d₀).add (hpow d₂)))
-    (T := fun φ => ((encCNF φ).length + 1) ^ d₁ + ((encCNF φ).length + 1) ^ d₀ +
-      (2 ^ φ.distinctVars.length + 1) * ((B φ + 1) ^ d + B φ +
-        ((encNat (2 ^ φ.distinctVars.length)).length + 1) ^ 2) +
-      ((encState (step^[2 ^ φ.distinctVars.length] (init φ))).length + 1) ^ d₂)
-    (fun φ => by
-      have hK : ((encNat (2 ^ φ.distinctVars.length)).length + 1) ^ 2 ≤
-          4 * (size φ + 1) ^ 2 := by
-        rw [encNat_two_pow]
-        simp only [List.length_append, List.length_replicate, List.length_singleton]
-        calc (φ.distinctVars.length + 1 + 1) ^ 2 ≤ (2 * (size φ + 1)) ^ 2 :=
-              Nat.pow_le_pow_left (by have := hn φ; omega) 2
-          _ = 4 * (size φ + 1) ^ 2 := by ring
-      have hS := Nat.pow_le_pow_left (Nat.add_le_add_right (hstate φ _ le_rfl) 1) d₂
-      rw [CNF.length_distinctVars] at hK hS ⊢
-      have := Nat.mul_le_mul_left (2 ^ φ.numVars + 1)
-        (Nat.add_le_add_left hK ((B φ + 1) ^ d + B φ))
-      simp only [size] at this hS ⊢
-      nlinarith)
-  refine ⟨e, (h.mono c (fun φ => ?_) fun φ => ?_).of_enc_eq fun φ => rfl⟩
-  all_goals
-    have h₁ := hT φ
-    simp only [size] at h₁
-    generalize 2 ^ φ.distinctVars.length = N at h₁ ⊢
-    generalize (encNat N).length = K at h₁ ⊢
-    obtain ⟨X, hX⟩ : ∃ X, (B φ + 1) ^ d + B φ = X := ⟨_, rfl⟩
-    rw [hX] at h₁
-    have h₂ : K ≤ (K + 1) ^ 2 := by nlinarith
-    have h₃ : X + (K + 1) ^ 2 ≤ (N + 1) * (X + (K + 1) ^ 2) := Nat.le_mul_of_pos_left _ (by omega)
-    nlinarith
+  have this : ∃ e, ComputableTidilyInO search encCNF encBool
+      (fun φ => 2 ^ φ.numVars * ((encCNF φ).length + 1) ^ e) fun φ => 2 ^ φ.numVars *
+      ((encCNF φ).length + 1) ^ e := by
+    obtain ⟨d, _, hstep⟩ := computableTidilyInPolyTime_step.exists_degree
+    obtain ⟨d₀, _, hinit⟩ := computableTidilyInPolyTime_init.exists_degree
+    obtain ⟨d₁, _, hcount⟩ := computableTidilyInPolyTime_count.exists_degree
+    obtain ⟨d₂, _, hans⟩ :=
+      (show ComputableTidilyInPolyTime (fun s : State => s.2.2) encState encBool
+      by fun_prop).exists_degree
+    obtain ⟨cv, dv, hvs⟩ :=
+      SAT.computableInPolyTime_distinctVars.tidy.polyBounded_length.exists_le
+    set size : CNF ℕ → ℕ := fun φ => (encCNF φ).length
+    set B : CNF ℕ → ℕ := fun φ => (2 * cv + 13) * (size φ + 1) ^ (dv + 1)
+    have hn (φ : CNF ℕ) : φ.distinctVars.length ≤ size φ := by
+      rw [CNF.length_distinctVars]
+      exact φ.numVars_le_length_vars.trans (SAT.length_vars_le φ)
+    have hstate : ∀ φ, ∀ k ≤ 2 ^ φ.distinctVars.length,
+        (encState (step^[k] (init φ))).length ≤ B φ := by
+      intro φ k hk
+      have hK := ComputableTidilyInO.length_encNat_mono hk
+      rw [encNat_two_pow] at hK
+      have hV := hvs φ
+      have h₁ : size φ + 1 ≤ (size φ + 1) ^ (dv + 1) := by
+        simpa using Nat.pow_le_pow_right (Nat.succ_pos (size φ)) (Nat.le_add_left 1 dv)
+      have h₂ : (size φ + 1) ^ dv ≤ (size φ + 1) ^ (dv + 1) :=
+        Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ dv)
+      have h₃ := Nat.mul_le_mul_left cv h₂
+      have h₄ := hn φ
+      rw [iterate_step_init]
+      simp only [List.length_append, List.length_replicate, List.length_singleton] at hK
+      simp only [encState, length_encPair, encBool_apply, List.length_singleton, B, size]
+        at hV h₁ h₃ h₄ ⊢
+      nlinarith
+    have hiter := ComputableTidilyInO.iterate hcount.inO hinit.inO hstep.inO
+      (R := fun φ => (B φ + 1) ^ d) (Q := fun φ => (B φ + 1) ^ d) (B := B)
+      (fun φ k hk => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate φ k hk) 1) d)
+      (fun φ k hk => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate φ k hk) 1) d) hstate
+    have h := hans.inO.comp hiter
+    have hB : PolyBounded size B := .of_forall_le (2 * cv + 13) (dv + 1) fun φ => le_rfl
+    have hpow (j : ℕ) : PolyBounded size fun φ => (B φ + 1) ^ j :=
+      ((PolyBounded.of_polynomiallyBounded id (bound := fun x => (x + 1) ^ j) (by fun_prop)).comp
+        hB).mono fun φ => le_rfl
+    have hL (j : ℕ) : PolyBounded size fun φ => (size φ + 1) ^ j :=
+      .of_forall_le 1 j fun φ => by simp
+    obtain ⟨c, e, hT⟩ := exists_le_mul_two_pow_of_polyBounded (size := size) (μ := CNF.numVars)
+      ((hpow d).add (hB.add (.of_forall_le 4 2 fun φ => le_rfl)))
+      ((hL d₁).add ((hL d₀).add (hpow d₂)))
+      (T := fun φ => ((encCNF φ).length + 1) ^ d₁ + ((encCNF φ).length + 1) ^ d₀ +
+        (2 ^ φ.distinctVars.length + 1) * ((B φ + 1) ^ d + B φ +
+          ((encNat (2 ^ φ.distinctVars.length)).length + 1) ^ 2) +
+        ((encState (step^[2 ^ φ.distinctVars.length] (init φ))).length + 1) ^ d₂)
+      (fun φ => by
+        have hK : ((encNat (2 ^ φ.distinctVars.length)).length + 1) ^ 2 ≤
+            4 * (size φ + 1) ^ 2 := by
+          rw [encNat_two_pow]
+          simp only [List.length_append, List.length_replicate, List.length_singleton]
+          calc (φ.distinctVars.length + 1 + 1) ^ 2 ≤ (2 * (size φ + 1)) ^ 2 :=
+                Nat.pow_le_pow_left (by have := hn φ; omega) 2
+            _ = 4 * (size φ + 1) ^ 2 := by ring
+        have hS := Nat.pow_le_pow_left (Nat.add_le_add_right (hstate φ _ le_rfl) 1) d₂
+        rw [CNF.length_distinctVars] at hK hS ⊢
+        have := Nat.mul_le_mul_left (2 ^ φ.numVars + 1)
+          (Nat.add_le_add_left hK ((B φ + 1) ^ d + B φ))
+        simp only [size] at this hS ⊢
+        nlinarith)
+    refine ⟨e, (h.mono c (fun φ => ?_) fun φ => ?_).of_enc_eq fun φ => rfl⟩
+    all_goals
+      have h₁ := hT φ
+      simp only [size] at h₁
+      generalize 2 ^ φ.distinctVars.length = N at h₁ ⊢
+      generalize (encNat N).length = K at h₁ ⊢
+      obtain ⟨X, hX⟩ : ∃ X, (B φ + 1) ^ d + B φ = X := ⟨_, rfl⟩
+      rw [hX] at h₁
+      have h₂ : K ≤ (K + 1) ^ 2 := by nlinarith
+      have h₃ : X + (K + 1) ^ 2 ≤ (N + 1) * (X + (K + 1) ^ 2) := Nat.le_mul_of_pos_left _ (by omega)
+      nlinarith
+  simpa only [computableInO_iff_computableTidilyInO] using this
 
 end BruteForce
 
 /-- **`SAT` by exhaustive search**: `SAT` is decidable within time `2 ^ n` times a polynomial in the
 length of the encoded formula, on formulas with `n` variables. -/
 theorem SAT_decidableInExpTime_one : DecidableInExpTime SAT encCNF CNF.numVars 1 := by
-  obtain ⟨e, h⟩ := BruteForce.exists_computableTidilyInO_search
-  refine .of_computableTidilyInO h (fun φ => (BruteForce.search_eq_true_iff φ).symm) 1 e
+  obtain ⟨e, h⟩ := BruteForce.exists_computableInO_search
+  refine DecidableInExpTime.of_computableInO h (fun φ => (BruteForce.search_eq_true_iff φ).symm) 1 e
     fun φ => ?_
   rw [one_mul, Real.rpow_natCast]
   push_cast
@@ -236,8 +243,8 @@ theorem SAT_decidableInExpTime_one : DecidableInExpTime SAT encCNF CNF.numVars 1
 open ComputableTidilyInPolyTime in
 /-- Checking that every clause has at most `k` literals is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_all_length_le (k : ℕ) :
-    ComputableTidilyInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ k)) encCNF
+theorem computableInPolyTime_all_length_le (k : ℕ) :
+    ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ k)) encCNF
       encBool := by
   unfold encCNF
   fun_prop
@@ -253,6 +260,6 @@ theorem KSAT_eq_inter (k : ℕ) {B : Set (CNF ℕ)} (hB : KSAT k ⊆ B) (hBSAT :
 in the length of the encoded formula, on formulas with `n` variables. -/
 theorem KSAT_decidableInExpTime_one (k : ℕ) : DecidableInExpTime (KSAT k) encCNF CNF.numVars 1 := by
   rw [KSAT_eq_inter k (KSAT_subset_SAT k) le_rfl]
-  exact SAT_decidableInExpTime_one.inter (computableTidilyInPolyTime_all_length_le k) zero_le_one
+  exact SAT_decidableInExpTime_one.inter (computableInPolyTime_all_length_le k) zero_le_one
 
 end Cslib.Complexity

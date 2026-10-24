@@ -81,7 +81,8 @@ example : exampleGraph.preprocessRelation constraintEval false
 example : exampleGraph.preprocessRelation constraintEval false
     ((0, false), whole false) true false = true := by decide
 
-example : ComputableTidilyInPolyTime
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example : ComputableInPolyTime
     (fun p : Graph Bool × ((ℕ × Bool) × Graph.PreprocessLabel Bool) =>
       p.1.preprocessRotation false rotateReflection p.2)
     (encPair (Graph.encoding encBool)
@@ -90,7 +91,8 @@ example : ComputableTidilyInPolyTime
   have h := isPolyTime_rotateReflection
   fun_prop
 
-example : ComputableTidilyInPolyTime
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example : ComputableInPolyTime
     (fun g : Graph Bool => g.preprocessRotation false rotateReflection ((g.edges.length, false),
       cloud false))
     (Graph.encoding encBool)
@@ -98,14 +100,25 @@ example : ComputableTidilyInPolyTime
   have h := isPolyTime_rotateReflection
   fun_prop
 
-example (T : ℕ) : ComputableTidilyInPolyTime
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+private theorem isPolyTime_preprocessRotation_finEnum : ComputableInPolyTime
+    (fun p : Graph Bool × ((ℕ × Bool) × Graph.PreprocessLabel Bool) =>
+      p.1.preprocessRotation false rotateReflection p.2)
+    (encPair (Graph.encoding encBool)
+      (encPair (encPair encUnary encBool) (encFinEnum (Graph.PreprocessLabel Bool))))
+    (encPair (encPair encUnary encBool) (encFinEnum (Graph.PreprocessLabel Bool))) := by
+  have h := isPolyTime_rotateReflection
+  fun_prop
+
+example (T : ℕ) : ComputableInPolyTime
     (RotationMap.powRotWithInput
       (fun p : Graph Bool × ((ℕ × Bool) × Graph.PreprocessLabel Bool) =>
         p.1.preprocessRotation false rotateReflection p.2) T)
     (encPair (Graph.encoding encBool)
       (encPair (encPair encUnary encBool) (encPi (encFinEnum (Graph.PreprocessLabel Bool)))))
     (encPair (encPair encUnary encBool) (encPi (encFinEnum (Graph.PreprocessLabel Bool)))) := by
-  have h := isPolyTime_rotateReflection
+  have hrot := isPolyTime_preprocessRotation_finEnum.tidy
+  refine .of_tidy ?_
   fun_prop
 
 end ComplexityTests.PreprocessPrograms

@@ -27,14 +27,14 @@ example : PolyTimeReducible (encPair encGraph (encPair encNat encNat))
 example : PolyTimeReducible encGraph encGraph DirHamCycle HamCycle :=
   polyTimeReducible_DirHamCycle_HamCycle
 
-example : ComputableTidilyInPolyTime Graph.split encGraph encGraph := by fun_prop
+example : ComputableInPolyTime Graph.split encGraph encGraph := by fun_prop
 
-example : ComputableTidilyInPolyTime DirHamPath.toHamPath
+example : ComputableInPolyTime DirHamPath.toHamPath
     (encPair encGraph (encPair encNat encNat)) (encPair encGraph (encPair encNat encNat)) := by
   fun_prop
 
 -- Certificates compose: splitting twice is polynomial-time.
-example : ComputableTidilyInPolyTime (fun G : Graph => G.split.split) encGraph encGraph := by
+example : ComputableInPolyTime (fun G : Graph => G.split.split) encGraph encGraph := by
   fun_prop
 
 /-! ### The split graph -/

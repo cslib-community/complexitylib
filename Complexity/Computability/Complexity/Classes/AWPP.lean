@@ -116,14 +116,15 @@ theorem AWPP_subset_PP : AWPP enc ⊆ PP enc := by
 /-- An efficiently computed unary exponent can be padded to a polynomial in input length.
 Multiplying numerator and denominator by the same power of two preserves the ratio. -/
 theorem mem_AWPP_of_polyTime_exponent {g : α → ℤ} {r : α → ℕ}
-    (hg : g ∈ GapP enc) (hr : ComputableTidilyInPolyTime r enc encUnary)
+    (hg : g ∈ GapP enc) (hr : ComputableInPolyTime r enc encUnary)
     (hA : ∀ a, (0 ≤ g a ∧ g a ≤ (2 : ℤ) ^ r a) ∧
       (a ∈ A → 2 * (2 : ℤ) ^ r a ≤ 3 * g a) ∧
       (a ∉ A → 3 * g a ≤ (2 : ℤ) ^ r a)) : A ∈ AWPP enc := by
+  have hr := hr.tidy
   obtain ⟨p, hle⟩ := hr.polyBounded.exists_polynomial
   have hs : ComputableTidilyInPolyTime
       (fun a => 2 ^ (p.eval (enc a).length - r a)) enc encNat := by fun_prop
-  have hsG := SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime hs)
+  have hsG := SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime (.of_tidy hs))
   refine ⟨_, GapP.mul_mem hg hsG, p, fun a => ?_⟩
   have he : (2 : ℤ) ^ p.eval (enc a).length =
       (2 : ℤ) ^ r a * (2 : ℤ) ^ (p.eval (enc a).length - r a) := by
@@ -140,10 +141,11 @@ theorem mem_AWPP_of_polyTime_exponent {g : α → ℤ} {r : α → ℕ}
 /-- Polynomial-time many-one reductions preserve AWPP after dyadic denominator padding. -/
 theorem PolyTimeReducible.mem_AWPP {β : Type} {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ AWPP encB) : A ∈ AWPP enc := by
-  obtain ⟨r, hr, hAB⟩ := polyTimeReducible_iff_tidy.mp h
+  obtain ⟨r, hr, hAB⟩ := h
   obtain ⟨g, hg, p, hB⟩ := hB
   refine mem_AWPP_of_polyTime_exponent (GapP.comp_mem hg hr)
-    (r := fun a => p.eval (encB (r a)).length) (by fun_prop) (fun a => ?_)
+    (r := fun a => p.eval (encB (r a)).length) (.of_tidy (by have hr := hr.tidy; fun_prop))
+    (fun a => ?_)
   simpa only [Function.comp_apply, ← hAB a] using hB (r a)
 
 end Cslib.Complexity

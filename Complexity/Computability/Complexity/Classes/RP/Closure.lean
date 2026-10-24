@@ -88,8 +88,8 @@ theorem ZPP_subset_NP_inter_coNP : ZPP enc ⊆ NP enc ∩ coNP enc := fun _ hA =
 /-- **`RP` is closed under union**: accept when the decider for either problem accepts, on
 disjoint parts of the random string. -/
 theorem union_mem_RP {A B : Set α} (hA : A ∈ RP enc) (hB : B ∈ RP enc) : A ∪ B ∈ RP enc := by
-  obtain ⟨p₁, V₁, hV₁, h₁⟩ := mem_RP_iff_tidy.mp hA
-  obtain ⟨p₂, V₂, hV₂, h₂⟩ := mem_RP_iff_tidy.mp hB
+  obtain ⟨p₁, V₁, hV₁, h₁⟩ := mem_RP.mp hA
+  obtain ⟨p₂, V₂, hV₂, h₂⟩ := mem_RP.mp hB
   refine ⟨p₁ + p₂, orVerifier (fun a => p₁.eval (enc a).length) V₁ V₂, by fun_prop,
     fun a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
   · change 2 ^ (p₁ + p₂).eval (enc a).length ≤

@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Classes.Operators
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Foundations.Data.BitString.WordCount
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # The class parity-P
@@ -101,20 +102,20 @@ end Counting
 
 /-- `succTest` is polynomial-time, with a test that may use the input. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_succTest {γ : Type} {input : γ ↪ List Bool}
+theorem computableInPolyTime_succTest {γ : Type} {input : γ ↪ List Bool}
     {g : γ → List Bool → Bool} {w : γ → List Bool}
-    (hg : ComputableTidilyInPolyTime (fun p : γ × List Bool => g p.1 p.2) (encPair input encBits)
+    (hg : ComputableInPolyTime (fun p : γ × List Bool => g p.1 p.2) (encPair input encBits)
       encBool)
-    (hw : ComputableTidilyInPolyTime w input encBits) :
-    ComputableTidilyInPolyTime (fun x => succTest (g x) (w x)) input encBool := by
+    (hw : ComputableInPolyTime w input encBits) :
+    ComputableInPolyTime (fun x => succTest (g x) (w x)) input encBool := by
   unfold succTest
   fun_prop
 
 /-- `succVerifier V` is polynomial-time when `V` is. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_succVerifier {enc : α ↪ List Bool}
-    {V : α × List Bool → Bool} (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) :
-    ComputableTidilyInPolyTime (succVerifier V) (encPair enc encBits) encBool := by
+theorem computableInPolyTime_succVerifier {enc : α ↪ List Bool}
+    {V : α × List Bool → Bool} (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
+    ComputableInPolyTime (succVerifier V) (encPair enc encBits) encBool := by
   unfold succVerifier
   fun_prop
 
@@ -131,17 +132,23 @@ variable {enc : α ↪ List Bool} {L : Set α}
 
 /-- **`⊕P` through verifiers.** -/
 theorem mem_ParityP : L ∈ ParityP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-    ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
+    ComputableInPolyTime V (encPair enc encBits) encBool ∧
       ∀ a, a ∈ L ↔ Odd (acceptCount V a (p.eval (enc a).length)) := by
-  classical
-  constructor
-  · rintro ⟨p, L', ⟨f, hf, hL'⟩, h⟩
-    refine ⟨p, f, hf.tidy, fun a => (h a).trans ?_⟩
-    rw [acceptCount_congr (W := f) fun w => by simp [hL' (a, w)]]
-  · rintro ⟨p, V, hV, h⟩
-    refine ⟨p, {x | V x = true}, ⟨V, .of_tidy hV, fun _ => Iff.rfl⟩, fun a => (h a).trans ?_⟩
-    exact Iff.of_eq (congrArg Odd (acceptCount_congr (W := V) (fun w => by simp) _).symm)
+  have this : L ∈ ParityP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
+      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧ ∀ a, a ∈ L ↔ Odd
+      (acceptCount V a (p.eval (enc a).length)) := by
+    classical
+    constructor
+    · rintro ⟨p, L', ⟨f, hf, hL'⟩, h⟩
+      refine ⟨p, f, hf.tidy, fun a => (h a).trans ?_⟩
+      rw [acceptCount_congr (W := f) fun w => by simp [hL' (a, w)]]
+    · rintro ⟨p, V, hV, h⟩
+      refine ⟨p, {x | V x = true}, ⟨V, .of_tidy hV, fun _ => Iff.rfl⟩, fun a => (h a).trans ?_⟩
+      exact Iff.of_eq (congrArg Odd (acceptCount_congr (W := V) (fun w => by simp) _).symm)
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **`⊕P` through `#P`**: a problem is in `⊕P` exactly when it is the set of instances where some
 function in `#P` is odd. -/
 theorem mem_ParityP_iff_exists_SharpP :
@@ -149,9 +156,9 @@ theorem mem_ParityP_iff_exists_SharpP :
   rw [mem_ParityP]
   constructor
   · rintro ⟨p, V, hV, h⟩
-    exact ⟨_, ⟨p, V, .of_tidy hV, fun _ => rfl⟩, h⟩
+    exact ⟨_, ⟨p, V, hV, fun _ => rfl⟩, h⟩
   · rintro ⟨f, ⟨p, V, hV, hf⟩, h⟩
-    exact ⟨p, V, hV.tidy, fun a => by rw [h a, hf a]⟩
+    exact ⟨p, V, hV, fun a => by rw [h a, hf a]⟩
 
 /-- **`⊕P` is closed under complement**: `succVerifier` accepts one more string. -/
 theorem compl_mem_ParityP (hL : L ∈ ParityP enc) : Lᶜ ∈ ParityP enc := by
@@ -160,10 +167,12 @@ theorem compl_mem_ParityP (hL : L ∈ ParityP enc) : Lᶜ ∈ ParityP enc := by
   rw [Set.mem_compl_iff, h a, Polynomial.eval_add, Polynomial.eval_one,
     odd_acceptCount_succVerifier_iff]
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **`P ⊆ ⊕P`**: a decider accepts the empty string or nothing. -/
 theorem P_subset_ParityP : P enc ⊆ ParityP enc := by
   rintro L ⟨f, hf, h⟩
-  refine mem_ParityP.2 ⟨0, fun x => f x.1, hf.tidy.comp (.fst enc encBits), fun a => ?_⟩
+  refine mem_ParityP.2 ⟨0, fun x => f x.1, .of_tidy (hf.tidy.comp (.fst enc encBits)), fun a => ?_⟩
   rw [h a, Polynomial.eval_zero]
   cases hfa : f a <;> simp [acceptCount, hfa]
 

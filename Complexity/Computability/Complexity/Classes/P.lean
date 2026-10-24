@@ -26,17 +26,12 @@ bounded functions of the length of the encoded instance
 definition, a polynomial time bound alone suffices
 (`Cslib.Complexity.mem_P_of_decidableInTimeAndSpace`).
 
-Proofs usually build deciders with the tidy calculus, in which polynomial-time computability is
-closed under composition. `Cslib.Complexity.mem_P_iff_tidy` states membership with a tidy decider
-(`Turing.MultiTapeTM.ComputableTidilyInPolyTime`); the two notions agree
-(`Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime`).
-
 Mathlib's `Turing.TM2ComputableInPolyTime` is stated for Mathlib's stack machines; this file
 uses cslib's multi-tape machines, which carry the time and space measures the rest of the
-development is built on. For finite working alphabets and injective word encoders,
-`Turing.TM2ComputableInPolyTime.computableTidilyInPolyTime` in
-`Complexity.Computability.Machines.Turing.TM2.PolyTime` transfers Mathlib certificates to tidy
-polynomial time, and so to this notion, under the standard binary encodings of their words.
+development is built on. For machines with finite stack alphabets,
+`Turing.TM2ComputableInPolyTime.computableInPolyTime` in
+`Complexity.Computability.Machines.Turing.TM2.Recoding` transfers Mathlib certificates over binary
+encodings to this notion.
 
 ## Main definitions
 
@@ -44,7 +39,6 @@ polynomial time, and so to this notion, under the standard binary encodings of t
 
 ## Main results
 
-* `Cslib.Complexity.mem_P_iff_tidy`: `P` with tidy deciders.
 * `Cslib.Complexity.mem_P_iff_exists_decidableInTimeAndSpace`: `P` in terms of upstream
   `Turing.MultiTapeTM.DecidableInTimeAndSpace` with polynomially bounded time and space.
 * `Cslib.Complexity.mem_P_of_decidableInTimeAndSpace`: a polynomial time bound alone suffices.
@@ -75,12 +69,6 @@ def P (enc : α ↪ List Bool) : Set (Set α) :=
 theorem mem_P {enc : α ↪ List Bool} {A : Set α} :
     A ∈ P enc ↔ ∃ f : α → Bool, ComputableInPolyTime f enc encBool ∧ ∀ a, a ∈ A ↔ f a = true :=
   Iff.rfl
-
-/-- `P` with tidy deciders, the form in which proofs build them. -/
-theorem mem_P_iff_tidy {enc : α ↪ List Bool} {A : Set α} :
-    A ∈ P enc ↔
-      ∃ f : α → Bool, ComputableTidilyInPolyTime f enc encBool ∧ ∀ a, a ∈ A ↔ f a = true := by
-  simp only [mem_P, computableInPolyTime_iff_computableTidilyInPolyTime]
 
 /-- **`P` in upstream terms:** `A ∈ P enc` exactly when some machine with a binary alphabet and
 finitely many states decides `A` within time and space bounded by polynomially bounded functions

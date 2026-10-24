@@ -53,7 +53,7 @@ exactly when `c` is the largest certificate above the last one listed.
 ## Main results
 
 * `Cslib.Complexity.SortedSubsets.signedSum_eq`: the signed count of the listings.
-* `Cslib.Complexity.SortedSubsets.computableTidilyInPolyTime_verifier`: the verifier is
+* `Cslib.Complexity.SortedSubsets.computableInPolyTime_verifier`: the verifier is
   polynomial-time.
 * `Cslib.Complexity.FewP_subset_SPP`: **`FewP ⊆ SPP`**.
 
@@ -321,10 +321,12 @@ private theorem length_encState_step (acc : List Bool → Bool) (s : State) (slo
     List.length_tail] <;> omega
 
 /-- **The verifiers are polynomial-time.** -/
-theorem computableTidilyInPolyTime_verifier {enc : α ↪ List Bool} {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) (p q : Polynomial ℕ)
+theorem computableInPolyTime_verifier {enc : α ↪ List Bool} {V : α × List Bool → Bool}
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (p q : Polynomial ℕ)
     (b : Bool) :
-    ComputableTidilyInPolyTime (verifier enc p q V b) (encPair enc encBits) encBool := by
+    ComputableInPolyTime (verifier enc p q V b) (encPair enc encBits) encBool := by
+  have hV := hV.tidy
+  refine .of_tidy ?_
   have hP : ComputableTidilyInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length + 1)
       (encPair enc encBits) encUnary := by fun_prop
   have hQ : ComputableTidilyInPolyTime (fun x : α × List Bool => q.eval (enc x.1).length)
@@ -370,9 +372,9 @@ theorem FewP_subset_SPP : FewP enc ⊆ SPP enc := by
   set O : α → ℕ := fun a =>
     acceptCount (verifier enc p q V true) a ((q * (p + 1)).eval (enc a).length) with hO_def
   have hE : E ∈ SharpP enc :=
-    ⟨q * (p + 1), _, .of_tidy (computableTidilyInPolyTime_verifier hV.tidy p q false), fun _ => rfl⟩
+    ⟨q * (p + 1), _, (computableInPolyTime_verifier hV p q false), fun _ => rfl⟩
   have hO : O ∈ SharpP enc :=
-    ⟨q * (p + 1), _, .of_tidy (computableTidilyInPolyTime_verifier hV.tidy p q true), fun _ => rfl⟩
+    ⟨q * (p + 1), _, (computableInPolyTime_verifier hV p q true), fun _ => rfl⟩
   have hdiff (a : α) : (E a : ℤ) - O a = if 0 < f a then 0 else 1 := by
     have hsum : (E a : ℤ) - O a =
         signedSum (fun c => V (a, c)) (p.eval (enc a).length) (q.eval (enc a).length) init := by

@@ -263,11 +263,11 @@ info: 'Cslib.HardnessEncoding.encodedProgram_eq' depends on axioms:
 #print axioms Cslib.HardnessEncoding.encodedProgram_eq
 
 /--
-info: 'Cslib.HardnessEncoding.computableTidilyInPolyTime_paddedProgram' depends on axioms:
+info: 'Cslib.HardnessEncoding.computableInPolyTime_paddedProgram' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.HardnessEncoding.computableTidilyInPolyTime_paddedProgram
+#print axioms Cslib.HardnessEncoding.computableInPolyTime_paddedProgram
 
 /--
 info: 'Cslib.HardnessEncoding.eventually_isAverageCaseHard_encodedSlice' depends on axioms:
@@ -291,11 +291,11 @@ info: 'Cslib.Complexity.BPP_subset_P_of_eventually_two_pow_le_complexity' depend
 #print axioms Cslib.Complexity.BPP_subset_P_of_eventually_two_pow_le_complexity
 
 /--
-info: 'Cslib.Complexity.setOf_mem_E_of_computableTidilyInPolyTime_pad' depends on axioms:
+info: 'Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.setOf_mem_E_of_computableTidilyInPolyTime_pad
+#print axioms Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad
 
 /--
 info: 'Cslib.BinaryField.card' depends on axioms:

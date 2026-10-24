@@ -179,11 +179,11 @@ example (h : P encBits ≠ NP encBits) :
 /-! ### Axioms -/
 
 /--
-info: 'Cslib.Complexity.Ladner.computableTidilyInPolyTime_H' depends on axioms:
+info: 'Cslib.Complexity.Ladner.computableInPolyTime_H' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.Ladner.computableTidilyInPolyTime_H
+#print axioms Cslib.Complexity.Ladner.computableInPolyTime_H
 
 /--
 info: 'Cslib.Complexity.Ladner.SATH_mem_NP' depends on axioms:

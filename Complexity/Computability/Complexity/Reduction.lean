@@ -24,7 +24,6 @@ lemmas are instances of the core's. Its body is kept as the `∃` statement, so 
 admissibility goal of an anonymous constructor is `ComputableInPolyTime f encA encB` itself, as
 `fun_prop` expects. The checked client in `ComplexityTests.NPCompleteness` supplies plain decider,
 verifier and reduction certificates, then transfers IndependentSet hardness to Clique.
-`Cslib.Complexity.polyTimeReducible_iff_tidy` also gives the equivalent tidy formulation.
 
 A class of problems is given, as `NP` or `coNP`, by a set of problems for every type of instances
 and every encoding of them. A problem `B` is hard for such a class `C` when every problem in `C`,
@@ -99,7 +98,7 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 
 ## Main definitions
 
-* `Cslib.Complexity.PolyTimeReducible`, with `Cslib.Complexity.polyTimeReducible_iff_tidy`.
+* `Cslib.Complexity.PolyTimeReducible`.
 * `Cslib.Complexity.PolyTimeHard`, `Cslib.Complexity.PolyTimeComplete`: hardness and completeness
   for a class.
 * `Cslib.Complexity.NPHard`, `Cslib.Complexity.NPComplete`.
@@ -159,13 +158,6 @@ theorem polyTimeReducible_iff_manyOneReducibleBy {encA : α ↪ List Bool} {encB
     {A : Set α} {B : Set β} :
     PolyTimeReducible encA encB A B ↔ ManyOneReducibleBy (ComputableInPolyTime · encA encB) A B :=
   Iff.rfl
-
-/-- Polynomial-time reducibility with a reduction computable tidily in polynomial time, the form
-in which proofs build reductions. -/
-theorem polyTimeReducible_iff_tidy {encA : α ↪ List Bool} {encB : β ↪ List Bool} {A : Set α}
-    {B : Set β} : PolyTimeReducible encA encB A B ↔
-      ∃ f : α → β, ComputableTidilyInPolyTime f encA encB ∧ ∀ a, a ∈ A ↔ f a ∈ B := by
-  simp only [PolyTimeReducible, computableInPolyTime_iff_computableTidilyInPolyTime]
 
 /-- `B` is hard for the class `C` under polynomial-time many-one reductions: every problem in `C`,
 with any encoding of its instances, reduces to `B`. This is `HardUnder` for `PolyTimeReducible`. -/

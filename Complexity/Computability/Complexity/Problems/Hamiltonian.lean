@@ -14,6 +14,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Hamiltonian paths and cycles
@@ -344,8 +345,8 @@ theorem arcBool_eq_true_iff (G : Graph) (u v : ℕ) : G.arcBool u v = true ↔ (
 
 /-- Testing for an arc in an encoded graph is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_arcBool :
-    ComputableTidilyInPolyTime (fun p : (Graph × ℕ) × ℕ => p.1.1.arcBool p.1.2 p.2)
+theorem computableInPolyTime_arcBool :
+    ComputableInPolyTime (fun p : (Graph × ℕ) × ℕ => p.1.1.arcBool p.1.2 p.2)
       (encPair (encPair encGraph encNat) encNat) encBool := by
   unfold arcBool encGraph
   fun_prop
@@ -409,12 +410,15 @@ theorem cycleChainBool_eq_true_iff {r : ℕ → ℕ → Bool} {R : ℕ → ℕ �
 /-- Testing whether `r` holds between consecutive entries of a computed list is polynomial-time,
 for an input-dependent polynomial-time test `r`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_chainBool {γ : Type} {encIn : γ ↪ List Bool}
+theorem computableInPolyTime_chainBool {γ : Type} {encIn : γ ↪ List Bool}
     {r : γ → ℕ → ℕ → Bool} {p : γ → List ℕ}
-    (hr : ComputableTidilyInPolyTime (fun q : (γ × ℕ) × ℕ => r q.1.1 q.1.2 q.2)
+    (hr : ComputableInPolyTime (fun q : (γ × ℕ) × ℕ => r q.1.1 q.1.2 q.2)
       (encPair (encPair encIn encNat) encNat) encBool)
-    (hp : ComputableTidilyInPolyTime p encIn (encList encNat)) :
-    ComputableTidilyInPolyTime (fun x => chainBool (r x) (p x)) encIn encBool := by
+    (hp : ComputableInPolyTime p encIn (encList encNat)) :
+    ComputableInPolyTime (fun x => chainBool (r x) (p x)) encIn encBool := by
+  have hr := hr.tidy
+  have hp := hp.tidy
+  refine .of_tidy ?_
   have hget : ∀ {i : γ × ℕ → ℕ}, ComputableTidilyInPolyTime i (encPair encIn encUnary) encUnary →
       ComputableTidilyInPolyTime (fun q => (p q.1).getD (i q) 0) (encPair encIn encUnary) encNat :=
     fun hi => (listGetD 0).comp ((hp.comp (fst _ _)).prod hi)
@@ -425,12 +429,15 @@ theorem computableTidilyInPolyTime_chainBool {γ : Type} {encIn : γ ↪ List Bo
 /-- Testing whether `r` holds between cyclically consecutive entries of a computed list is
 polynomial-time, for an input-dependent polynomial-time test `r`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_cycleChainBool {γ : Type} {encIn : γ ↪ List Bool}
+theorem computableInPolyTime_cycleChainBool {γ : Type} {encIn : γ ↪ List Bool}
     {r : γ → ℕ → ℕ → Bool} {p : γ → List ℕ}
-    (hr : ComputableTidilyInPolyTime (fun q : (γ × ℕ) × ℕ => r q.1.1 q.1.2 q.2)
+    (hr : ComputableInPolyTime (fun q : (γ × ℕ) × ℕ => r q.1.1 q.1.2 q.2)
       (encPair (encPair encIn encNat) encNat) encBool)
-    (hp : ComputableTidilyInPolyTime p encIn (encList encNat)) :
-    ComputableTidilyInPolyTime (fun x => cycleChainBool (r x) (p x)) encIn encBool := by
+    (hp : ComputableInPolyTime p encIn (encList encNat)) :
+    ComputableInPolyTime (fun x => cycleChainBool (r x) (p x)) encIn encBool := by
+  have hr := hr.tidy
+  have hp := hp.tidy
+  refine .of_tidy ?_
   have hget : ∀ {i : γ × ℕ → ℕ}, ComputableTidilyInPolyTime i (encPair encIn encUnary) encUnary →
       ComputableTidilyInPolyTime (fun q => (p q.1).getD (i q) 0) (encPair encIn encUnary) encNat :=
     fun hi => (listGetD 0).comp ((hp.comp (fst _ _)).prod hi)
@@ -453,6 +460,8 @@ private theorem length_vertices_le_encPath (x : Graph × ℕ × ℕ) :
   simp only [length_encPair]
   omega
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The endpoint and edge checks of the path verifiers are polynomial-time for a polynomial-time
 edge test `r`. -/
 private theorem computableTidilyInPolyTime_pathCheck {r : Graph → ℕ → ℕ → Bool}
@@ -480,8 +489,11 @@ private theorem computableTidilyInPolyTime_pathCheck {r : Graph → ℕ → ℕ 
   simp only [← List.head?_reverse]
   exact bool_and' (bool_and' (((head? encNat).comp hp).decide_eq' hs)
       (((head? encNat).comp ((listReverse encNat).comp hp)).decide_eq' ht))
-    (Graph.computableTidilyInPolyTime_chainBool (hr.comp hproj) hp)
+    (ComputableInPolyTime.tidy
+      (Graph.computableInPolyTime_chainBool (.of_tidy (hr.comp hproj)) (.of_tidy hp)))
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The cyclic edge check of the cycle verifiers is polynomial-time for a polynomial-time edge
 test `r`. -/
 private theorem computableTidilyInPolyTime_cycleCheck {r : Graph → ℕ → ℕ → Bool}
@@ -494,7 +506,8 @@ private theorem computableTidilyInPolyTime_cycleCheck {r : Graph → ℕ → ℕ
       (encPair (encPair (encPair encGraph (encList encNat)) encNat) encNat)
       (encPair (encPair encGraph encNat) encNat) := by
     fun_prop
-  exact Graph.computableTidilyInPolyTime_cycleChainBool (hr.comp hproj) (snd _ _)
+  exact ComputableInPolyTime.tidy
+    (Graph.computableInPolyTime_cycleChainBool (.of_tidy (hr.comp hproj)) (.of_tidy (snd _ _)))
 
 namespace DirHamPath
 
@@ -519,15 +532,15 @@ theorem isVerifier :
 
 /-- The `DirHamPath` verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier
       (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool :=
-  Graph.computableTidilyInPolyTime_verifyOrdering (by unfold encGraph; fun_prop)
-    (computableTidilyInPolyTime_pathCheck Graph.computableTidilyInPolyTime_arcBool)
+  (Graph.computableInPolyTime_verifyOrdering (.of_tidy (by unfold encGraph; fun_prop))
+    (.of_tidy (computableTidilyInPolyTime_pathCheck Graph.computableInPolyTime_arcBool.tidy)))
 
 /-- `DirHamPath` belongs to `NP`. -/
 theorem mem_NP : DirHamPath ∈ NP (encPair encGraph (encPair encNat encNat)) :=
-  ⟨_, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨_, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end DirHamPath
 
@@ -551,15 +564,15 @@ theorem isVerifier : IsVerifier encGraph (Polynomial.X ^ 2) verifier DirHamCycle
 
 /-- The `DirHamCycle` verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair encGraph encBits) encBool :=
-  Graph.computableTidilyInPolyTime_verifyOrdering (by unfold encGraph; fun_prop)
-    (bool_and' (by fun_prop) (computableTidilyInPolyTime_cycleCheck
-      Graph.computableTidilyInPolyTime_arcBool))
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair encGraph encBits) encBool :=
+  (Graph.computableInPolyTime_verifyOrdering (.of_tidy (by unfold encGraph; fun_prop))
+    (.of_tidy (bool_and' (by fun_prop) (computableTidilyInPolyTime_cycleCheck
+      Graph.computableInPolyTime_arcBool.tidy))))
 
 /-- `DirHamCycle` belongs to `NP`. -/
 theorem mem_NP : DirHamCycle ∈ NP encGraph :=
-  ⟨_, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨_, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end DirHamCycle
 
@@ -588,15 +601,15 @@ theorem isVerifier :
 
 /-- The `HamPath` verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier
       (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool :=
-  Graph.computableTidilyInPolyTime_verifyOrdering (by unfold encGraph; fun_prop)
-    (computableTidilyInPolyTime_pathCheck Graph.computableTidilyInPolyTime_adjBool)
+  (Graph.computableInPolyTime_verifyOrdering (.of_tidy (by unfold encGraph; fun_prop))
+    (.of_tidy (computableTidilyInPolyTime_pathCheck Graph.computableInPolyTime_adjBool.tidy)))
 
 /-- `HamPath` belongs to `NP`. -/
 theorem mem_NP : HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) :=
-  ⟨_, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨_, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end HamPath
 
@@ -622,15 +635,15 @@ theorem isVerifier : IsVerifier encGraph (Polynomial.X ^ 2) verifier HamCycle :=
 
 /-- The `HamCycle` verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair encGraph encBits) encBool :=
-  Graph.computableTidilyInPolyTime_verifyOrdering (by unfold encGraph; fun_prop)
-    (bool_and' (by fun_prop) (computableTidilyInPolyTime_cycleCheck
-      Graph.computableTidilyInPolyTime_adjBool))
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair encGraph encBits) encBool :=
+  (Graph.computableInPolyTime_verifyOrdering (.of_tidy (by unfold encGraph; fun_prop))
+    (.of_tidy (bool_and' (by fun_prop) (computableTidilyInPolyTime_cycleCheck
+      Graph.computableInPolyTime_adjBool.tidy))))
 
 /-- `HamCycle` belongs to `NP`. -/
 theorem mem_NP : HamCycle ∈ NP encGraph :=
-  ⟨_, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨_, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end HamCycle
 

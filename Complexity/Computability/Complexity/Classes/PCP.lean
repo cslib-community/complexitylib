@@ -95,9 +95,9 @@ def accepts (V : PCPVerifier α) (a : α) (π ρ : List Bool) : Bool :=
 number of random bits, its queries and its verdict are computable in polynomial time, the numbers
 in binary. -/
 def PolyTime (enc : α ↪ List Bool) (V : PCPVerifier α) : Prop :=
-  ComputableTidilyInPolyTime V.coins enc encNat ∧
-    ComputableTidilyInPolyTime V.queries (encPair enc encBits) (encList encNat) ∧
-    ComputableTidilyInPolyTime V.verdict (encPair (encPair enc encBits) encBits) encBool
+  ComputableInPolyTime V.coins enc encNat ∧
+    ComputableInPolyTime V.queries (encPair enc encBits) (encList encNat) ∧
+    ComputableInPolyTime V.verdict (encPair (encPair enc encBits) encBits) encBool
 
 end PCPVerifier
 

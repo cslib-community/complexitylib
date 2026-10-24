@@ -24,8 +24,7 @@ Parsimonious reductions compose (`ParsimoniousReducible.trans`) and `#P` is clos
 
 ## Main definitions
 
-* `Cslib.Complexity.ParsimoniousReducible`: parsimonious polynomial-time reductions, with
-  `Cslib.Complexity.parsimoniousReducible_iff_tidy` for tidily computable reductions.
+* `Cslib.Complexity.ParsimoniousReducible`: parsimonious polynomial-time reductions.
 * `Cslib.Complexity.SharpPHard`, `Cslib.Complexity.SharpPComplete`.
 
 ## Main results
@@ -55,13 +54,6 @@ variable {α β γ : Type}
 def ParsimoniousReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (f : α → ℕ)
     (g : β → ℕ) : Prop :=
   ∃ r : α → β, ComputableInPolyTime r encA encB ∧ ∀ a, f a = g (r a)
-
-/-- Parsimonious reducibility with a reduction computable tidily in polynomial time, the form in
-which proofs build reductions. -/
-theorem parsimoniousReducible_iff_tidy {encA : α ↪ List Bool} {encB : β ↪ List Bool} {f : α → ℕ}
-    {g : β → ℕ} : ParsimoniousReducible encA encB f g ↔
-      ∃ r : α → β, ComputableTidilyInPolyTime r encA encB ∧ ∀ a, f a = g (r a) := by
-  simp only [ParsimoniousReducible, computableInPolyTime_iff_computableTidilyInPolyTime]
 
 /-- Every function in `#P`, with any encoding of its instances, reduces parsimoniously to `g`. This
 is `HardUnder` for `ParsimoniousReducible`. -/
@@ -105,7 +97,7 @@ theorem ParsimoniousReducible.trans (hfg : ParsimoniousReducible encA encB f g)
 /-- **`#P` is closed under parsimonious reductions.** -/
 theorem ParsimoniousReducible.mem_SharpP (hfg : ParsimoniousReducible encA encB f g)
     (hg : g ∈ SharpP encB) : f ∈ SharpP encA := by
-  obtain ⟨r, hr, hfg⟩ := parsimoniousReducible_iff_tidy.mp hfg
+  obtain ⟨r, hr, hfg⟩ := hfg
   have h := SharpP.comp_mem hg hr
   rwa [show g ∘ r = f from funext fun a => (hfg a).symm] at h
 

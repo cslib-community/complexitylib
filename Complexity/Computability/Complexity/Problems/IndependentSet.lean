@@ -57,7 +57,7 @@ first-order interpretations.
   assignment satisfying as many clauses.
 * `Cslib.Complexity.Graph.le_indepNum_iff`: the independence number is the largest target of
   `IndependentSet`.
-* `Cslib.Complexity.SAT.computableTidilyInPolyTime_toIndependentSet`: Karp's reduction is
+* `Cslib.Complexity.SAT.computableInPolyTime_toIndependentSet`: Karp's reduction is
   polynomial-time.
 * `Cslib.Complexity.IndependentSet.isVerifier`, `Cslib.Complexity.IndependentSet.mem_NP`:
   `IndependentSet ∈ NP (encPair encGraph encNat)`.
@@ -274,23 +274,26 @@ theorem toIndependentSet_mem_iff (φ : CNF ℕ) : toIndependentSet φ ∈ Indepe
 
 /-- Computing the binary vertex label of an occurrence from its unary indices is polynomial-time. -/
 @[fun_prop]
-theorem _root_.Cslib.Logic.PL.Occurrence.computableTidilyInPolyTime_vertex :
-    ComputableTidilyInPolyTime Occurrence.vertex encOccurrence encNat := by
+theorem _root_.Cslib.Logic.PL.Occurrence.computableInPolyTime_vertex :
+    ComputableInPolyTime Occurrence.vertex encOccurrence encNat := by
+  refine .of_tidy ?_
   unfold Occurrence.vertex encOccurrence Cslib.Logic.PL.encOccurrence
   exact unary_to_binary.comp (by fun_prop)
 
 /-- Testing whether two occurrences conflict is polynomial-time. -/
 @[fun_prop]
-theorem _root_.Cslib.Logic.PL.Occurrence.computableTidilyInPolyTime_conflict :
-    ComputableTidilyInPolyTime (fun p : Occurrence ℕ × Occurrence ℕ => decide (p.1.Conflict p.2))
+theorem _root_.Cslib.Logic.PL.Occurrence.computableInPolyTime_conflict :
+    ComputableInPolyTime (fun p : Occurrence ℕ × Occurrence ℕ => decide (p.1.Conflict p.2))
       (encPair encOccurrence encOccurrence) encBool := by
   unfold Occurrence.Conflict encOccurrence Cslib.Logic.PL.encOccurrence
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Karp's reduction `toIndependentSet` is computable in polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toIndependentSet :
-    ComputableTidilyInPolyTime toIndependentSet encCNF (encPair encGraph encNat) := by
+theorem computableInPolyTime_toIndependentSet :
+    ComputableInPolyTime toIndependentSet encCNF (encPair encGraph encNat) := by
+  refine .of_tidy ?_
   have hocc := computableInPolyTime_occurrences.tidy
   have hlen : ComputableTidilyInPolyTime (fun φ : CNF ℕ => φ.length) encCNF encNat :=
     (ComputableInPolyTime.length_list_binary _).tidy
@@ -318,21 +321,21 @@ theorem isVerifier :
 
 /-- The `IndependentSet` verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier
       (encPair (encPair encGraph encNat) encBits) encBool :=
-  Graph.computableTidilyInPolyTime_verifySubset (by fun_prop)
+  Graph.computableInPolyTime_verifySubset (by fun_prop)
 
 /-- `IndependentSet` belongs to `NP`. -/
 theorem mem_NP : IndependentSet ∈ NP (encPair encGraph encNat) :=
-  ⟨Polynomial.X, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end IndependentSet
 
 /-- `SAT` reduces to `IndependentSet` in polynomial time via `SAT.toIndependentSet`. -/
 theorem polyTimeReducible_SAT_IndependentSet :
     PolyTimeReducible encCNF (encPair encGraph encNat) SAT IndependentSet :=
-  ⟨SAT.toIndependentSet, .of_tidy SAT.computableTidilyInPolyTime_toIndependentSet,
+  ⟨SAT.toIndependentSet, SAT.computableInPolyTime_toIndependentSet,
     fun φ => (SAT.toIndependentSet_mem_iff φ).symm⟩
 
 /-- `IndependentSet` is `NP`-hard. -/

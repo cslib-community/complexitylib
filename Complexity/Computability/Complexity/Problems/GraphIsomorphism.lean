@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Problems.Graph
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Graph isomorphism
@@ -69,13 +70,17 @@ private theorem induced_adj_vertexEquiv (G : Graph) (i j : Fin G.distinctVertice
 
 /-- Adjacency of computed positions in a computed graph is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_adjIndex {γ : Type} {input : γ ↪ List Bool} {G : γ → Graph}
-    {i j : γ → ℕ} (hG : ComputableTidilyInPolyTime G input encGraph)
-    (hi : ComputableTidilyInPolyTime i input encUnary)
-    (hj : ComputableTidilyInPolyTime j input encUnary) :
-    ComputableTidilyInPolyTime (fun x => (G x).adjIndex (i x) (j x)) input encBool := by
-  have hV := computableTidilyInPolyTime_distinctVertices.comp hG
-  exact computableTidilyInPolyTime_adjBool.comp ((hG.prod
+theorem computableInPolyTime_adjIndex {γ : Type} {input : γ ↪ List Bool} {G : γ → Graph}
+    {i j : γ → ℕ} (hG : ComputableInPolyTime G input encGraph)
+    (hi : ComputableInPolyTime i input encUnary)
+    (hj : ComputableInPolyTime j input encUnary) :
+    ComputableInPolyTime (fun x => (G x).adjIndex (i x) (j x)) input encBool := by
+  have hG := hG.tidy
+  have hi := hi.tidy
+  have hj := hj.tidy
+  refine .of_tidy ?_
+  have hV := computableInPolyTime_distinctVertices.tidy.comp hG
+  exact computableInPolyTime_adjBool.tidy.comp ((hG.prod
     ((listGetD (encA := encNat) 0).comp (hV.prod hi))).prod
     ((listGetD (encA := encNat) 0).comp (hV.prod hj)))
 
@@ -139,23 +144,26 @@ def verifier : (Graph × Graph) × List Bool → Bool :=
         (List.range x.1.distinctVertices.length).all fun j =>
           x.2.adjBool (p.getD i 0) (p.getD j 0) == x.1.adjIndex i j
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair (encPair encGraph encGraph) encBits) encBool := by
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair (encPair encGraph encGraph) encBits) encBool := by
+  refine .of_tidy ?_
   have hadj : ∀ {γ : Type} {enc : γ ↪ List Bool} {H : γ → Graph} {u v : γ → ℕ},
       ComputableTidilyInPolyTime H enc encGraph →
       ComputableTidilyInPolyTime u enc encNat →
       ComputableTidilyInPolyTime v enc encNat →
       ComputableTidilyInPolyTime (fun x => (H x).adjBool (u x) (v x)) enc encBool :=
-    fun hH hu hv => Graph.computableTidilyInPolyTime_adjBool.comp ((hH.prod hu).prod hv)
-  refine Graph.computableTidilyInPolyTime_verifyOrdering (by unfold encGraph; fun_prop)
-    (bool_and'
+    fun hH hu hv => Graph.computableInPolyTime_adjBool.tidy.comp ((hH.prod hu).prod hv)
+  refine (Graph.computableInPolyTime_verifyOrdering (.of_tidy (by unfold encGraph; fun_prop))
+    (.of_tidy (bool_and'
       (((length_list encNat).comp (snd _ _)).decide_eq'
-        ((length_list encNat).comp (by fun_prop))) ?_)
+        ((length_list encNat).comp (by fun_prop))) ?_))).tidy
   refine allWithInput (by fun_prop) (allWithInput (by fun_prop) ?_)
   exact bool_beq.comp ((hadj (by fun_prop) (by fun_prop) (by fun_prop)).prod
-    (Graph.computableTidilyInPolyTime_adjIndex (by fun_prop) (by fun_prop) (by fun_prop)))
+    (Graph.computableInPolyTime_adjIndex (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
+      (.of_tidy (by fun_prop))).tidy)
 
 /-- `verifier` is a verifier for `GraphIsomorphism` with certificates whose length is the square
 of the length of the encoded pair of graphs. -/
@@ -207,9 +215,11 @@ theorem isVerifier :
     fun x p => ?_
   simp only [Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true, List.mem_range, beq_iff_eq]
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **`GraphIsomorphism ∈ NP`.** -/
 theorem mem_NP : GraphIsomorphism ∈ NP (encPair encGraph encGraph) :=
-  ⟨Polynomial.X ^ 2, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨Polynomial.X ^ 2, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end GraphIsomorphism
 

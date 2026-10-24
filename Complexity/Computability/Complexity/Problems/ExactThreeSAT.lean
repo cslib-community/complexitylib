@@ -101,8 +101,8 @@ theorem eval_padClause (σ : ℕ → Bool) (c : Clause ℕ) :
 
 /-- Padding a clause is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_padClause :
-    ComputableTidilyInPolyTime padClause (encList (encPair encNat encBool))
+theorem computableInPolyTime_padClause :
+    ComputableInPolyTime padClause (encList (encPair encNat encBool))
       (encList (encPair encNat encBool)) := by
   unfold padClause
   fun_prop
@@ -123,14 +123,14 @@ theorem isVerifier : IsVerifier encCNF Polynomial.X verifier ExactThreeSAT := by
 
 /-- Checking the clause widths and evaluating the formula is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair encCNF encBits) encBool := by
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
   unfold verifier
   fun_prop
 
 /-- `ExactThreeSAT` belongs to `NP`. -/
 theorem mem_NP : ExactThreeSAT ∈ NP encCNF :=
-  ⟨Polynomial.X, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end ExactThreeSAT
 
@@ -141,9 +141,9 @@ def toExactThreeSAT (φ : CNF ℕ) : CNF ℕ := φ.map padClause
 
 /-- Padding every clause is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toExactThreeSAT :
-    ComputableTidilyInPolyTime toExactThreeSAT encCNF encCNF :=
-  ComputableTidilyInPolyTime.map computableTidilyInPolyTime_padClause
+theorem computableInPolyTime_toExactThreeSAT :
+    ComputableInPolyTime toExactThreeSAT encCNF encCNF :=
+  .of_tidy (ComputableTidilyInPolyTime.map computableInPolyTime_padClause.tidy)
 
 /-- A formula is in `ThreeSAT` exactly when padding its clauses puts it in `ExactThreeSAT`. -/
 theorem mem_ExactThreeSAT_toExactThreeSAT_iff (φ : CNF ℕ) :
@@ -165,7 +165,7 @@ theorem mem_ExactThreeSAT_toExactThreeSAT_iff (φ : CNF ℕ) :
 /-- `ThreeSAT` reduces to `ExactThreeSAT` in polynomial time via `toExactThreeSAT`. -/
 theorem polyTimeReducible_ThreeSAT_ExactThreeSAT :
     PolyTimeReducible encCNF encCNF ThreeSAT ExactThreeSAT :=
-  ⟨toExactThreeSAT, .of_tidy computableTidilyInPolyTime_toExactThreeSAT,
+  ⟨toExactThreeSAT, computableInPolyTime_toExactThreeSAT,
     fun φ => (mem_ExactThreeSAT_toExactThreeSAT_iff φ).symm⟩
 
 /-- `ExactThreeSAT` is `NP`-hard. -/

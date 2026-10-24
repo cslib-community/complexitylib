@@ -68,8 +68,8 @@ def cloud (fallback : C) (g : Graph C) (vertex : ℕ) : List (ℕ × Bool) :=
 /-- Enumerating both ends of every edge is polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_halfEdges {graph : Input → Graph C}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc)) :
-    ComputableTidilyInPolyTime (fun x => (graph x).halfEdges)
+    (hgraph : ComputableInPolyTime graph input (encoding enc)) :
+    ComputableInPolyTime (fun x => (graph x).halfEdges)
       input (encList (encPair encUnary encBool)) := by
   unfold halfEdges List.product
   polytime
@@ -77,10 +77,10 @@ theorem isPolyTime_halfEdges {graph : Input → Graph C}
 /-- Endpoint lookup is uniform in the graph and the half-edge. -/
 @[fun_prop]
 theorem isPolyTime_endpoint {graph : Input → Graph C} {halfEdge : Input → ℕ × Bool}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc))
-    (hhalfEdge : ComputableTidilyInPolyTime halfEdge input (encPair encUnary encBool))
+    (hgraph : ComputableInPolyTime graph input (encoding enc))
+    (hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool))
     (fallback : C) :
-    ComputableTidilyInPolyTime (fun x => (graph x).endpoint fallback (halfEdge x))
+    ComputableInPolyTime (fun x => (graph x).endpoint fallback (halfEdge x))
       input encUnary := by
   unfold endpoint
   polytime
@@ -88,9 +88,9 @@ theorem isPolyTime_endpoint {graph : Input → Graph C} {halfEdge : Input → �
 /-- Cloud enumeration charges each endpoint lookup and the entire filtered output. -/
 @[fun_prop]
 theorem isPolyTime_cloud {graph : Input → Graph C} {vertex : Input → ℕ}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc))
-    (hvertex : ComputableTidilyInPolyTime vertex input encUnary) (fallback : C) :
-    ComputableTidilyInPolyTime (fun x => (graph x).cloud fallback (vertex x))
+    (hgraph : ComputableInPolyTime graph input (encoding enc))
+    (hvertex : ComputableInPolyTime vertex input encUnary) (fallback : C) :
+    ComputableInPolyTime (fun x => (graph x).cloud fallback (vertex x))
       input (encList (encPair encUnary encBool)) := by
   unfold cloud
   polytime

@@ -74,10 +74,10 @@ def composeSelectedTabulated (number : SelectedComposeSlot α ≃ Fin width)
 @[fun_prop]
 theorem isPolyTime_composeSelectedTabulated {Input : Type} {input : Input ↪ List Bool}
     {graph : Input → Graph (α → α → Bool)}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding (encPi (encPi encBool))))
+    (hgraph : ComputableInPolyTime graph input (encoding (encPi (encPi encBool))))
     (number : SelectedComposeSlot α ≃ Fin width)
     (coins : List (Fin 5 × Rand α)) (queries : List (Fin 6)) :
-    ComputableTidilyInPolyTime (fun x => (graph x).composeSelectedTabulated number coins queries)
+    ComputableInPolyTime (fun x => (graph x).composeSelectedTabulated number coins queries)
       input (encoding (encPi (encPi encBool))) :=
   SelectedHadamardTester.implementation.isPolyTime_composeTabulated hgraph number coins queries
 

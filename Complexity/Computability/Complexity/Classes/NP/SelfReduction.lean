@@ -33,7 +33,7 @@ one bit for each literal occurrence.
 
 The self-reduction makes one query for each literal occurrence, so it runs in polynomial time when
 the queries are answered in polynomial time
-(`Cslib.Complexity.SAT.computableTidilyInPolyTime_search`). In particular, if `SAT` is in `P`,
+(`Cslib.Complexity.SAT.computableInPolyTime_search`). In particular, if `SAT` is in `P`,
 satisfying assignments can be found in polynomial time (`Cslib.Complexity.SAT.exists_search`).
 
 ## Main definitions
@@ -46,7 +46,7 @@ satisfying assignments can be found in polynomial time (`Cslib.Complexity.SAT.ex
 
 * `Cslib.Complexity.SAT.verifier_search`: with answers correct up to `queryBound`, the
   self-reduction finds a satisfying assignment of every satisfiable formula.
-* `Cslib.Complexity.SAT.computableTidilyInPolyTime_search`: the self-reduction is polynomial-time
+* `Cslib.Complexity.SAT.computableInPolyTime_search`: the self-reduction is polynomial-time
   when the queries are answered in polynomial time.
 * `Cslib.Complexity.SAT.exists_search`: if `SAT ∈ P`, satisfying assignments are found in
   polynomial time.
@@ -233,14 +233,17 @@ open ComputableTidilyInPolyTime
 
 /-- **The self-reduction is polynomial-time** when its queries are answered in polynomial time,
 with a procedure `D x` that may depend on the input `x`. -/
-theorem computableTidilyInPolyTime_search {γ : Type} {encIn : γ ↪ List Bool}
+theorem computableInPolyTime_search {γ : Type} {encIn : γ ↪ List Bool}
     {D : γ → CNF ℕ → Bool} {φ : γ → CNF ℕ}
-    (hD : ComputableTidilyInPolyTime (fun p : γ × CNF ℕ => D p.1 p.2) (encPair encIn encCNF)
+    (hD : ComputableInPolyTime (fun p : γ × CNF ℕ => D p.1 p.2) (encPair encIn encCNF)
       encBool)
-    (hφ : ComputableTidilyInPolyTime φ encIn encCNF) :
-    ComputableTidilyInPolyTime (fun x => search (D x) (φ x)) encIn encBits := by
+    (hφ : ComputableInPolyTime φ encIn encCNF) :
+    ComputableInPolyTime (fun x => search (D x) (φ x)) encIn encBits := by
+  have hD := hD.tidy
+  have hφ := hφ.tidy
+  refine .of_tidy ?_
   have hvars : ComputableTidilyInPolyTime (fun x => (φ x).vars) encIn (encList encNat) :=
-    computableTidilyInPolyTime_vars.comp hφ
+    computableInPolyTime_vars.tidy.comp hφ
   have hquery : ComputableTidilyInPolyTime (fun p : (γ × List (Literal ℕ)) × ℕ =>
       φ p.1.1 ++ units p.1.2 ++ [[(p.2, true)]])
       (encPair (encPair encIn (encList (encPair encNat encBool))) encNat) encCNF := by
@@ -270,10 +273,15 @@ theorem computableTidilyInPolyTime_search {γ : Type} {encIn : γ ↪ List Bool}
 /-- **Search reduces to decision for `SAT`**: if `SAT` is in `P`, a polynomial-time function
 finds a satisfying assignment of every satisfiable formula, as a certificate for `SAT.verifier`. -/
 theorem exists_search (h : SAT ∈ P encCNF) :
-    ∃ g : CNF ℕ → List Bool, ComputableTidilyInPolyTime g encCNF encBits ∧
+    ∃ g : CNF ℕ → List Bool, ComputableInPolyTime g encCNF encBits ∧
       ∀ φ, verifier (φ, g φ) = true ↔ φ ∈ SAT := by
-  obtain ⟨D, hD, hSAT⟩ := mem_P_iff_tidy.mp h
-  exact ⟨search D, computableTidilyInPolyTime_search (D := fun _ => D) (hD.comp (snd _ _)) id',
-    fun φ => verifier_search_iff fun ψ _ => (hSAT ψ).symm⟩
+  have this : ∃ g : CNF ℕ → List Bool, ComputableTidilyInPolyTime g encCNF encBits ∧ ∀ φ, verifier
+      (φ, g φ) = true ↔ φ ∈ SAT := by
+    obtain ⟨D, hD, hSAT⟩ := mem_P.mp h
+    exact ⟨search D,
+      (computableInPolyTime_search (D := fun _ => D) (.of_tidy (hD.comp (.of_tidy (snd _ _))).tidy)
+      (.of_tidy id')).tidy,
+      fun φ => verifier_search_iff fun ψ _ => (hSAT ψ).symm⟩
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 end Cslib.Complexity.SAT

@@ -95,9 +95,9 @@ def sigmaTwoVerifier (enc : α ↪ List Bool) (q k p : Polynomial ℕ) (W : α �
 
 /-- The `Σ₂` verifier of a polynomial-time Merlin–Arthur verifier takes polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_sigmaTwoVerifier {W : α × List Bool → Bool}
-    (hW : ComputableTidilyInPolyTime W (encPair enc encBits) encBool) (q k p : Polynomial ℕ) :
-    ComputableTidilyInPolyTime (sigmaTwoVerifier enc q k p W) (encPair enc encBits) encBool := by
+theorem computableInPolyTime_sigmaTwoVerifier {W : α × List Bool → Bool}
+    (hW : ComputableInPolyTime W (encPair enc encBits) encBool) (q k p : Polynomial ℕ) :
+    ComputableInPolyTime (sigmaTwoVerifier enc q k p W) (encPair enc encBits) encBool := by
   unfold sigmaTwoVerifier
   fun_prop
 
@@ -185,9 +185,11 @@ def piTwoVerifier (enc : α ↪ List Bool) (k p q : Polynomial ℕ) (W : α × L
 
 /-- The `Π₂` verifier of a polynomial-time Arthur–Merlin verifier takes polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_piTwoVerifier {W : α × List Bool → Bool}
-    (hW : ComputableTidilyInPolyTime W (encPair enc encBits) encBool) (k p q : Polynomial ℕ) :
-    ComputableTidilyInPolyTime (piTwoVerifier enc k p q W) (encPair enc encBits) encBool := by
+theorem computableInPolyTime_piTwoVerifier {W : α × List Bool → Bool}
+    (hW : ComputableInPolyTime W (encPair enc encBits) encBool) (k p q : Polynomial ℕ) :
+    ComputableInPolyTime (piTwoVerifier enc k p q W) (encPair enc encBits) encBool := by
+  have hW := hW.tidy
+  refine .of_tidy ?_
   unfold piTwoVerifier
   fun_prop
 
@@ -284,8 +286,8 @@ theorem MA_subset_SigmaP_two : MA enc ⊆ SigmaP 2 enc := by
   exact ⟨[q + (12 * p + 1) * (12 * (12 * p + 1) * p), 12 * (12 * p + 1) * p],
     sigmaTwoVerifier enc q (12 * p + 1) (12 * (12 * p + 1) * p)
       (merlinArthurRepeat enc q (6 * (12 * p + 1)) p V), rfl,
-    .of_tidy (computableTidilyInPolyTime_sigmaTwoVerifier
-      (computableTidilyInPolyTime_merlinArthurRepeat hV.tidy _ _ _) _ _ _),
+    (computableInPolyTime_sigmaTwoVerifier
+      (computableInPolyTime_merlinArthurRepeat hV _ _ _) _ _ _),
     isAlternatingVerifier_sigmaTwoVerifier (h.repeatMajority _) (eval_lt_mul p)
       fun _ => Nat.lt_two_pow_self⟩
 
@@ -298,8 +300,8 @@ theorem AM_subset_PiP_two : AM enc ⊆ PiP 2 enc := by
       12 * (12 * p + 1) * p + (12 * p + 1) * (12 * (12 * p + 1) * q)],
     piTwoVerifier enc (12 * p + 1) (12 * (12 * p + 1) * p) (12 * (12 * p + 1) * q)
       (arthurMerlinRepeat enc (6 * (12 * p + 1)) p q V), rfl,
-    .of_tidy (computableTidilyInPolyTime_piTwoVerifier
-      (computableTidilyInPolyTime_arthurMerlinRepeat hV.tidy _ _ _) _ _ _),
+    (computableInPolyTime_piTwoVerifier
+      (computableInPolyTime_arthurMerlinRepeat hV _ _ _) _ _ _),
     isAlternatingVerifier_piTwoVerifier (h.repeatMajority _) (eval_lt_mul p)
       fun _ => Nat.lt_two_pow_self⟩
 

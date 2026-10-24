@@ -42,7 +42,7 @@ affine subspace of `BitString N` of dimension greater than
 `d(N) + 1` (`Cslib.AffineDisperser.isAffineDisperser_explicitDisperser`). Downstream, in the
 computability layer, the function is shown not to depend on the roots chosen for the basis
 (`Cslib.AffineDisperser.traceSymBits_rootBasis_eq_explicitDisperser`) and to be computable in
-polynomial time (`Cslib.AffineDisperser.computableTidilyInPolyTime_explicitDisperser`).
+polynomial time (`Cslib.AffineDisperser.computableInPolyTime_explicitDisperser`).
 
 Ben-Sasson and Kopparty take `n` prime and reach dimension `6 N ^ (4 / 5)`
 [BenSassonKopparty2012]; the field then needs an irreducible polynomial of large prime degree,

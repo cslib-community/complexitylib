@@ -52,7 +52,7 @@ theorem SharpSAT_sharpPHard : SharpPHard encCNF SharpSAT := by
   have := Fintype.ofFinite State
   classical
   have htm' := htm.mono (fun x => ht x) (fun _ => le_rfl)
-  exact ⟨reduce tm p c d enc, .of_tidy (computableTidilyInPolyTime_reduce tm p c d enc), fun a => by
+  exact ⟨reduce tm p c d enc, (computableInPolyTime_reduce tm p c d enc), fun a => by
     rw [hf a, SharpSAT, modelCount_reduce a fun w _ => (htm' (a, w)).runFrom_initCfg]⟩
 
 /-- **`#SAT` is `#P`-complete** under parsimonious polynomial-time reductions. -/

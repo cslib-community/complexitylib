@@ -11,12 +11,13 @@ public import Complexity.Computability.TreeEval.Reader.Cert.Residue
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Bit
 public import Mathlib.Data.Nat.Bitwise
 public import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 
 /-!
 # The weights of table entries within linear work space
 
 The weight `Cslib.TreeEval.Reader.weight p ℓ k x y`, the product of `x j` or `1 - x j` over the low
-bits of `k` and the same over its high bits for `y`, is tidily computable within work space
+bits of `k` and the same over its high bits for `y`, is computable within work space
 linear in the lengths of its encoded arguments and in `ℓ`. Its products are taken over a counter
 rather than a list of indices, and they stay short: below `p`, or, for `p = 0`, no longer than the
 registers together.
@@ -140,8 +141,8 @@ private theorem halfStep_inSpace :
     have := length_encNat_add_le_add s.1.1.2.2 s.2.1
     simp only [length_encPair] at this ⊢; omega)
   have hxj := budget_comp_lin getD (linear_mul _) (budget_prod hx hj)
-  have hc := budget_comp_linear chi_inSpace (budget_prod (budget_prod hp hxj) hbit)
-  have hm := budget_comp_linear mulMod_inSpace (budget_prod hp (budget_prod ha hc))
+  have hc := budget_comp_linear chi_inSpace.tidy (budget_prod (budget_prod hp hxj) hbit)
+  have hm := budget_comp_linear mulMod_inSpace.tidy (budget_prod hp (budget_prod ha hc))
   exact budget_prod hpar (budget_prod hsucc hm)
 
 /-- The encoding of the arguments of half of a weight. -/
@@ -184,27 +185,32 @@ abbrev encWeightIn : (ℕ × ℕ × ℕ) × List ℕ × List ℕ ↪ List Bool :
 
 /-- **The weight**, `weight p ℓ k x y` from `((p, ℓ, k), x, y)`. -/
 theorem weight_inSpace :
-    ComputableTidilyInSpace (fun w : (ℕ × ℕ × ℕ) × List ℕ × List ℕ =>
+    ComputableInSpace (fun w : (ℕ × ℕ × ℕ) × List ℕ × List ℕ =>
         weight w.1.1 w.1.2.1 w.1.2.2 w.2.1 w.2.2)
       encWeightIn encNat fun w => 64 * ((encWeightIn w).length + w.1.2.1 + 1) := by
-  have hl : (fun w => (encWeightIn w).length) ≼ fun w => 64 * ((encWeightIn w).length + w.1.2.1 + 1)
-    := .of_le fun _ => by omega
-  have hℓle : (fun w : (ℕ × ℕ × ℕ) × List ℕ × List ℕ => w.1.2.1) ≼
-      fun w => 64 * ((encWeightIn w).length + w.1.2.1 + 1) := .of_le fun _ => by omega
-  have hpkl := (fst encNat3 (encPair (encList encNat) (encList encNat))).weaken hl
-  have hxy := (snd encNat3 (encPair (encList encNat) (encList encNat))).weaken hl
-  have hp := fst' hpkl
-  have hℓ := fst' (snd' hpkl)
-  have hk := snd' (snd' hpkl)
-  have hlo₀ := budget_prod (budget_prod (budget_prod hp
-    (budget_prod hk (budget_const (encB := encNat) 0 hl))) (fst' hxy)) hℓ
-  have hhi₀ := budget_prod (budget_prod (budget_prod hp (budget_prod hk hℓ)) (snd' hxy)) hℓ
-  have hlo := budget_comp half_inSpace hlo₀
-    (.const_mul 256 (((length_le hlo₀).add hℓle).add (.const 1 _)))
-  have hhi := budget_comp half_inSpace hhi₀
-    (.const_mul 256 (((length_le hhi₀).add hℓle).add (.const 1 _)))
-  exact (budget_comp_linear mulMod_inSpace (budget_prod hp (budget_prod hlo hhi))).of_enc_eq
-    fun w => by rw [weight_eq]
+  have this : ComputableTidilyInSpace
+      (fun w : (ℕ × ℕ × ℕ) × List ℕ × List ℕ => weight w.1.1 w.1.2.1 w.1.2.2 w.2.1 w.2.2)
+      encWeightIn encNat fun w => 64 * ((encWeightIn w).length + w.1.2.1 + 1) := by
+    have hl : (fun w => (encWeightIn w).length) ≼ fun w => 64 *
+        ((encWeightIn w).length + w.1.2.1 + 1)
+      := .of_le fun _ => by omega
+    have hℓle : (fun w : (ℕ × ℕ × ℕ) × List ℕ × List ℕ => w.1.2.1) ≼
+        fun w => 64 * ((encWeightIn w).length + w.1.2.1 + 1) := .of_le fun _ => by omega
+    have hpkl := (fst encNat3 (encPair (encList encNat) (encList encNat))).weaken hl
+    have hxy := (snd encNat3 (encPair (encList encNat) (encList encNat))).weaken hl
+    have hp := fst' hpkl
+    have hℓ := fst' (snd' hpkl)
+    have hk := snd' (snd' hpkl)
+    have hlo₀ := budget_prod (budget_prod (budget_prod hp
+      (budget_prod hk (budget_const (encB := encNat) 0 hl))) (fst' hxy)) hℓ
+    have hhi₀ := budget_prod (budget_prod (budget_prod hp (budget_prod hk hℓ)) (snd' hxy)) hℓ
+    have hlo := budget_comp half_inSpace hlo₀
+      (.const_mul 256 (((length_le hlo₀).add hℓle).add (.const 1 _)))
+    have hhi := budget_comp half_inSpace hhi₀
+      (.const_mul 256 (((length_le hhi₀).add hℓle).add (.const 1 _)))
+    exact (budget_comp_linear mulMod_inSpace.tidy (budget_prod hp (budget_prod hlo hhi))).of_enc_eq
+      fun w => by rw [weight_eq]
+  simpa only [computableInSpace_iff_computableTidilyInSpace] using this
 
 end Reader
 

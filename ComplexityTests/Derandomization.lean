@@ -126,18 +126,18 @@ info: 'Cslib.Complexity.P_eq_BPP_of_isAverageCaseHard' depends on axioms:
 #print axioms Cslib.Complexity.P_eq_BPP_of_isAverageCaseHard
 
 /--
-info: 'Cslib.Complexity.computableTidilyInPolyTime_nwDecider' depends on axioms:
+info: 'Cslib.Complexity.computableInPolyTime_nwDecider' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.computableTidilyInPolyTime_nwDecider
+#print axioms Cslib.Complexity.computableInPolyTime_nwDecider
 
 /--
-info: 'Cslib.Complexity.exists_computableTidilyInO_of_mem_DTIME' depends on axioms:
+info: 'Cslib.Complexity.exists_computableInO_of_mem_DTIME' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.exists_computableTidilyInO_of_mem_DTIME
+#print axioms Cslib.Complexity.exists_computableInO_of_mem_DTIME
 
 /--
 info: 'Cslib.Crypto.PRG.NisanWigderson.abs_card_div_sub_card_div_lt' depends on axioms:
@@ -154,11 +154,11 @@ info: 'Cslib.Crypto.PRG.NisanWigderson.choose_le_length_greedyMasks_mul' depends
 #print axioms Cslib.Crypto.PRG.NisanWigderson.choose_le_length_greedyMasks_mul
 
 /--
-info: 'Cslib.Crypto.PRG.NisanWigderson.computableTidilyInPolyTime_greedyMasks' depends on axioms:
+info: 'Cslib.Crypto.PRG.NisanWigderson.computableInPolyTime_greedyMasks' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Crypto.PRG.NisanWigderson.computableTidilyInPolyTime_greedyMasks
+#print axioms Cslib.Crypto.PRG.NisanWigderson.computableInPolyTime_greedyMasks
 
 /--
 info: 'Cslib.Circuits.Boolean.isAverageCaseHard_xorPower' depends on axioms:

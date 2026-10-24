@@ -97,7 +97,7 @@ theorem PolyTimeReducible.mem_ModP {β : Type} {encB : β ↪ List Bool} {B : Se
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ ModP k encB) : A ∈ ModP k enc := by
   obtain ⟨g, hg, hAB⟩ := h
   obtain ⟨f, hf, hB⟩ := hB
-  exact ⟨f ∘ g, SharpP.comp_mem hf hg.tidy, fun a => (hAB a).trans (hB (g a))⟩
+  exact ⟨f ∘ g, SharpP.comp_mem hf hg, fun a => (hAB a).trans (hB (g a))⟩
 
 /-- Prime divisibility of a product gives intersection closure. -/
 theorem inter_mem_ModP (hk : k.Prime) (hA : A ∈ ModP k enc) (hB : B ∈ ModP k enc) :

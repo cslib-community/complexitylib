@@ -96,9 +96,9 @@ example (h : CircuitValue ∈ L encCircuitValue) : P encBits ⊆ L encBits :=
 
 /-- A single certified constructor provides circuits for every encoded input length. -/
 example {α : Type} {enc : α ↪ List Bool} {f : α → Bool}
-    (hf : ComputableTidilyInPolyTime f enc encBool) :
+    (hf : ComputableInPolyTime f enc encBool) :
     ∃ circuits : (n : ℕ) → Circuit signature n 1,
-      ComputableTidilyInPolyTime (fun n => (circuits n).code) encUnary encCode ∧
+      ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode ∧
       ∀ a, (circuits (enc a).length).eval interpretation (fun i => (enc a)[i]) 0 = f a :=
   CircuitValue.exists_uniformCircuits hf
 
@@ -107,10 +107,10 @@ example {α : Type} {enc : α ↪ List Bool} {f : α → Bool}
 #guard_msgs (whitespace := lax) in
 #print axioms CircuitValue.exists_uniformCircuits
 
-/-- info: 'Cslib.Complexity.CircuitValue.computableTidilyInPolyTime_tableauCode' depends on axioms:
+/-- info: 'Cslib.Complexity.CircuitValue.computableInPolyTime_tableauCode' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms CircuitValue.computableTidilyInPolyTime_tableauCode
+#print axioms CircuitValue.computableInPolyTime_tableauCode
 
 /-- info: 'Cslib.Complexity.CircuitValue.logSpaceComplete' depends on axioms: [propext,
 Classical.choice, Quot.sound] -/

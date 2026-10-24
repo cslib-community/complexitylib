@@ -67,4 +67,10 @@ example : ((([], []) : Graph), 1) ∉ Clique := by
   have := Graph.le_card_of_mem_Clique h
   simp at this
 
+/-- Plain `fun_prop` composes the plain `Clique` verifier certificate with a plain map. -/
+example {γ : Type} {enc : γ ↪ List Bool} {f : γ → (Graph × ℕ) × List Bool}
+    (hf : ComputableInPolyTime f enc (encPair (encPair encGraph encNat) encBits)) :
+    ComputableInPolyTime (fun c => Clique.verifier (f c)) enc encBool := by
+  fun_prop
+
 end ComplexityTests.NPCompleteness

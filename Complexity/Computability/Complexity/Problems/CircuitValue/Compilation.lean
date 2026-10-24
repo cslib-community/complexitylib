@@ -90,7 +90,7 @@ private theorem exists_uniformOutputBits {α : Type} {enc : α ↪ List Bool}
       (∀ a j, j ≤ m a → (cs a j).size = (cs a 0).size) ∧
       ∀ a j (x : Fin (n a) → Bool),
         (cs a j).eval interpretation x 0 = (F (a, List.ofFn x)).getD j false := by
-  obtain ⟨circuits, hcode, hcorrect⟩ := exists_uniformCircuits (polytime_outputBit hF)
+  obtain ⟨circuits, hcode, hcorrect⟩ := exists_uniformCircuits (.of_tidy (polytime_outputBit hF))
   let cs (a : α) (j : ℕ) : Circuit signature (n a) 1 :=
     prefixCircuit (bitPrefix enc m a j)
       (circuits ((bitPrefix enc m a j).length + n a))
@@ -102,7 +102,7 @@ private theorem exists_uniformOutputBits {α : Type} {enc : α ↪ List Bool}
   refine ⟨cs, ?_, ?_, ?_⟩
   · have h := (computableInPolyTime_prefixCode (.of_tidy hprefix)
       (.of_tidy (ComputableTidilyInPolyTime.unary_to_binary.comp (hn.comp
-        (ComputableTidilyInPolyTime.fst enc encUnary)))) (.of_tidy (hcode.comp hlength))).tidy
+        (ComputableTidilyInPolyTime.fst enc encUnary)))) (hcode.comp (.of_tidy hlength))).tidy
     exact h.of_enc_eq fun p => by
       rw [show (cs p.1 p.2).code = _ from code_prefixCircuit _ _]
       rfl
@@ -137,38 +137,45 @@ widths. One polynomial-time constructor outputs the code for every instance. Out
 `j`th bit of the function value, defaulting to `false` when that value is shorter than `m a`. -/
 theorem exists_uniformCircuitFamily {α : Type} {enc : α ↪ List Bool}
     {n m : α → ℕ} {F : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hm : ComputableTidilyInPolyTime m enc encUnary)
-    (hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits) :
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hm : ComputableInPolyTime m enc encUnary)
+    (hF : ComputableInPolyTime F (encPair enc encBits) encBits) :
     ∃ circuits : (a : α) → Circuit signature (n a) (m a),
-      ComputableTidilyInPolyTime (fun a => (circuits a).code) enc encCode ∧
+      ComputableInPolyTime (fun a => (circuits a).code) enc encCode ∧
       ∀ a (x : Fin (n a) → Bool) (j : Fin (m a)),
         (circuits a).eval interpretation x j = (F (a, List.ofFn x)).getD j.val false := by
-  obtain ⟨bits, hbits, hsize, hsem⟩ := exists_uniformOutputBits hn hm hF
-  let circuits (a : α) : Circuit signature (n a) (m a) :=
-    Circuit.pi (fun j : Fin (m a) => bits a j.val)
-  have hzero := hbits.comp ((ComputableTidilyInPolyTime.id' (encIn := enc)).prod
-    (ComputableTidilyInPolyTime.const 0))
-  have hblock : ComputableTidilyInPolyTime (fun a => (bits a 0).size) enc encNat := by
-    have h := (ComputableInPolyTime.length_list_binary encGate).tidy.comp hzero.fst'
-    convert h using 1
-    funext a
-    exact (Circuit.length_code_fst (bits a 0)).symm
-  have hlist := ComputableTidilyInPolyTime.mapWith hbits
-    (ComputableTidilyInPolyTime.id' (encIn := enc))
-    (ComputableTidilyInPolyTime.range.comp hm)
-  have hlistEq (a : α) : (List.range (m a)).map (fun j => (bits a j).code) =
-      List.ofFn (fun j : Fin (m a) => (bits a j.val).code) := by
-    apply List.ext_getElem (by simp)
-    intro i hi hj
-    simp
-  have hcompiled := (computableInPolyTime_bundleCode
-    (.of_tidy (ComputableTidilyInPolyTime.unary_to_binary.comp hn)) (.of_tidy hblock) (.of_tidy
-      hlist)).tidy
-  refine ⟨circuits, hcompiled.of_enc_eq (fun a => ?_), fun a x j => ?_⟩
-  · change encCode (circuits a).code = encCode
-      (bundleCode (n a) (bits a 0).size ((List.range (m a)).map (fun j => (bits a j).code)))
-    rw [hlistEq, bundleCode_code _ _ (fun j => hsize a j.val j.isLt.le)]
-  · exact (congrFun (Circuit.eval_pi _ x) j).trans (hsem a j.val x)
+  have hn := hn.tidy
+  have hm := hm.tidy
+  have hF := hF.tidy
+  have this : ∃ circuits : (a : α) → Circuit signature (n a) (m a), ComputableTidilyInPolyTime
+      (fun a => (circuits a).code) enc encCode ∧ ∀ a (x : Fin (n a) → Bool) (j : Fin (m a)),
+      (circuits a).eval interpretation x j = (F (a, List.ofFn x)).getD j.val false := by
+    obtain ⟨bits, hbits, hsize, hsem⟩ := exists_uniformOutputBits hn hm hF
+    let circuits (a : α) : Circuit signature (n a) (m a) :=
+      Circuit.pi (fun j : Fin (m a) => bits a j.val)
+    have hzero := hbits.comp ((ComputableTidilyInPolyTime.id' (encIn := enc)).prod
+      (ComputableTidilyInPolyTime.const 0))
+    have hblock : ComputableTidilyInPolyTime (fun a => (bits a 0).size) enc encNat := by
+      have h := (ComputableInPolyTime.length_list_binary encGate).tidy.comp hzero.fst'
+      convert h using 1
+      funext a
+      exact (Circuit.length_code_fst (bits a 0)).symm
+    have hlist := ComputableTidilyInPolyTime.mapWith hbits
+      (ComputableTidilyInPolyTime.id' (encIn := enc))
+      (ComputableTidilyInPolyTime.range.comp hm)
+    have hlistEq (a : α) : (List.range (m a)).map (fun j => (bits a j).code) =
+        List.ofFn (fun j : Fin (m a) => (bits a j.val).code) := by
+      apply List.ext_getElem (by simp)
+      intro i hi hj
+      simp
+    have hcompiled := (computableInPolyTime_bundleCode
+      (.of_tidy (ComputableTidilyInPolyTime.unary_to_binary.comp hn)) (.of_tidy hblock) (.of_tidy
+        hlist)).tidy
+    refine ⟨circuits, hcompiled.of_enc_eq (fun a => ?_), fun a x j => ?_⟩
+    · change encCode (circuits a).code = encCode
+        (bundleCode (n a) (bits a 0).size ((List.range (m a)).map (fun j => (bits a j).code)))
+      rw [hlistEq, bundleCode_code _ _ (fun j => hsize a j.val j.isLt.le)]
+    · exact (congrFun (Circuit.eval_pi _ x) j).trans (hsem a j.val x)
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 end Cslib.Complexity.CircuitValue

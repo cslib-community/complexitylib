@@ -58,7 +58,7 @@ private theorem polytime_unitEval : ComputableTidilyInPolyTime
   fun_prop
 
 -- The full complete round has a uniform certificate, including for arbitrary runtime graphs.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun g : Graph Bool => g.amplifyEnumerated unitEval false rotateLoops 1 2)
     (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool))) := by
   have hr := polytime_rotateLoops
@@ -93,7 +93,7 @@ variable {C α D Input : Type} [FinEnum α] [FinEnum D]
   (he : ComputableTidilyInPolyTime (fun p : C × (α × α) => eval p.1 p.2.1 p.2.2)
     (encPair enc (encPair alphabet alphabet)) encBool)
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun x => (graph x).amplifyEnumerated eval fallback rotate T q)
     input (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hg; fun_prop)
@@ -101,7 +101,7 @@ example : ComputableTidilyInPolyTime
   fail_if_success (clear he; fun_prop)
   fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun x => let g := graph x; g.amplifyEnumerated eval fallback rotate T q)
     input (Graph.encoding (encPi (encPi encBool))) := by
   polytime

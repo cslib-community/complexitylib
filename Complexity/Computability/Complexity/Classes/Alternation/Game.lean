@@ -238,10 +238,13 @@ variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
 /-- **Every problem in `AP` has a polynomial-time game verifier.** -/
 theorem exists_isGameVerifier_of_mem_AP (h : A ∈ AP enc) :
     ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧ IsGameVerifier enc p V A := by
-  obtain ⟨t, ht, k, State, hfinite, atm, hdecides⟩ := h
-  obtain ⟨c, d, hle⟩ := ht.exists_le
-  exact ⟨_, atm.gameVerifier enc, atm.computableTidilyInPolyTime_gameVerifier,
-    (hdecides.mono hle).isGameVerifier⟩
+      ComputableInPolyTime V (encPair enc encBits) encBool ∧ IsGameVerifier enc p V A := by
+  have this : ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool), ComputableTidilyInPolyTime V
+      (encPair enc encBits) encBool ∧ IsGameVerifier enc p V A := by
+    obtain ⟨t, ht, k, State, hfinite, atm, hdecides⟩ := h
+    obtain ⟨c, d, hle⟩ := ht.exists_le
+    exact ⟨_, atm.gameVerifier enc, atm.computableTidilyInPolyTime_gameVerifier,
+      (hdecides.mono hle).isGameVerifier⟩
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 end Cslib.Complexity

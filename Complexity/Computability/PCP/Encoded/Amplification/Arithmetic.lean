@@ -13,6 +13,7 @@ public import Complexity.Computability.PCP.Amplification.Arithmetic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.TowerTable.Family
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.Family
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # A concrete executable gap amplifier
@@ -67,16 +68,18 @@ def arithmeticAmplify (g : Graph Constraint) : Graph Constraint :=
 @[fun_prop]
 theorem isPolyTime_arithmeticAmplify {Input : Type} {input : Input ↪ List Bool}
     {graph : Input → Graph Constraint}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding (encPi (encPi encBool))))
+    (hgraph : ComputableInPolyTime graph input (encoding (encPi (encPi encBool))))
     (hwellFormed : ∀ x, (graph x).WellFormed) :
-    ComputableTidilyInPolyTime (fun x => arithmeticAmplify (graph x))
+    ComputableInPolyTime (fun x => arithmeticAmplify (graph x))
       input (encoding (encPi (encPi encBool))) := by
+  have hgraph := hgraph.tidy
+  refine .of_tidy ?_
   have hcost := RotationMap.polytime_arithmeticExpanderRotate (encFinEnum Label)
   unfold arithmeticAmplify
-  exact isPolyTime_amplifyIter_clog hgraph hwellFormed RotationMap.arithmeticExpander
-    RotationMap.arithmeticExpanderRotate RotationMap.arithmeticExpanderRotate_eq hcost
+  exact (isPolyTime_amplifyIter_clog (.of_tidy hgraph) hwellFormed RotationMap.arithmeticExpander
+    RotationMap.arithmeticExpanderRotate RotationMap.arithmeticExpanderRotate_eq (.of_tidy hcost)
     (fun _ _ => true) walkLength killRate (FinEnum.toList _) FinEnum.equiv
-    (FinEnum.toList _) (FinEnum.toList _)
+    (FinEnum.toList _) (FinEnum.toList _)).tidy
 
 /-- Valid endpoint indices are preserved, including when the program performs no rounds. -/
 theorem wellFormed_arithmeticAmplify {g : Graph Constraint} (hg : g.WellFormed) :

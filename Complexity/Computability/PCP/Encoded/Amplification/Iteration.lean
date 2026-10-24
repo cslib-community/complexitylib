@@ -11,6 +11,7 @@ public import Complexity.Computability.PCP.Encoded.Amplification
 public import Complexity.Computability.PCP.Encoded.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Iterating executable amplification rounds
@@ -67,20 +68,23 @@ encoding. Well-formed endpoints and the full table bound supply the loop's size 
 @[fun_prop]
 theorem isPolyTime_amplifyIter_clog {Input : Type} {input : Input ↪ List Bool}
     {graph : Input → Graph Constraint} {labelEncoding : D ↪ List Bool}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding (encPi (encPi encBool))))
+    (hgraph : ComputableInPolyTime graph input (encoding (encPi (encPi encBool))))
     (hwellFormed : ∀ x, (graph x).WellFormed)
     (family : (n : ℕ) → RotationMap (Fin n) D) (rotate : ℕ × (ℕ × D) → ℕ × D)
     (hrotate : ∀ n (v : Fin n) d, rotate (n, v.val, d) =
       (((family n).rot (v, d)).1.val, ((family n).rot (v, d)).2))
-    (hcost : ComputableTidilyInPolyTime rotate
+    (hcost : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding))
     (fallback : Constraint) (T q : ℕ) [NeZero q] (walks : List (PowerLabel D T q))
     (number : SelectedComposeSlot (PowerAlphabet D SelectedAlphabet T) ≃ Fin width)
     (coins : List (Fin 5 × Rand (PowerAlphabet D SelectedAlphabet T))) (queries : List (Fin 6)) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun x => amplifyIter fallback rotate T q walks number coins queries
         (Nat.clog 2 (graph x).edges.length) (graph x))
       input (encoding (encPi (encPi encBool))) := by
+  have hgraph := hgraph.tidy
+  have hcost := hcost.tidy
+  refine .of_tidy ?_
   let factor := (2 + 2 * walks.length) * width + 2 * walks.length * coins.length * queries.length
   let descriptorBound := Fintype.card SelectedAlphabet * (6 * Fintype.card SelectedAlphabet + 1)
   have hgrowth (g : Graph Constraint) :
@@ -92,10 +96,15 @@ theorem isPolyTime_amplifyIter_clog {Input : Type} {input : Input ↪ List Bool}
            ring
       _ ≤ _ := Nat.mul_le_mul_left _ (Nat.le_add_left _ _)
   have heval :=
-    isPolyTime_constraintTableEval (α := SelectedAlphabet) (encPair encBool (encPi encBool))
+    (isPolyTime_constraintTableEval (α := SelectedAlphabet) (encPair encBool (encPi encBool))).tidy
+  have hedges := (isPolyTime_edges (graph := fun g : Graph Constraint => g)
+    (enc := encPi (encPi encBool)) (.of_tidy .id')).tidy
+  have hamplify := ComputableInPolyTime.tidy (isPolyTime_amplify (graph := id) (eval := id)
+    (alphabet := encPair encBool (encPi encBool)) (.of_tidy .id') (.of_tidy hcost)
+    (.of_tidy heval) fallback T q walks number coins queries)
   unfold amplifyIter
   apply ComputableTidilyInPolyTime.iterate (by fun_prop) hgraph (by fun_prop)
-    (polyBounded_iterationSize_clog hgraph factor descriptorBound)
+    (polyBounded_iterationSize_clog (.of_tidy hgraph) factor descriptorBound)
   exact fun x _ hi => iterate_length_encoding_le (valid := WellFormed) factor descriptorBound
     (fun g _ =>
       g.wellFormed_amplify id fallback family rotate hrotate T q walks number coins queries)

@@ -88,14 +88,15 @@ problem in `NP` on words, when the encoding has a decoder: the verifier decodes 
 that it encodes what was decoded, and runs the verifier of the problem. -/
 theorem mem_NP_image {β : Type} {encB : β ↪ List Bool} (D : Decoder encB) {B : Set β}
     (hB : B ∈ NP encB) : encB '' B ∈ NP encBits := by
-  obtain ⟨p, V, hV, hBV⟩ := mem_NP_iff_tidy.mp hB
+  obtain ⟨p, V, hV, hBV⟩ := mem_NP.mp hB
   obtain ⟨d, e, hD⟩ := D.computable
   have hdec : ComputableTidilyInPolyTime (fun x : List Bool × List Bool => D.decode x.1)
       (encPair encBits encBits) encB :=
     hD.computableTidilyInPolyTime.comp (fst _ _)
-  refine mem_NP_iff_tidy.mpr
+  refine mem_NP.mpr
     ⟨p, fun x => decide (encB (D.decode x.1) = x.1) && V (D.decode x.1, x.2),
-      bool_and' (decide_eq' ((encode encB).comp hdec) (fst _ _)) (hV.comp (hdec.prod (snd _ _))),
+      .of_tidy (bool_and' (decide_eq' ((encode encB).comp hdec) (fst _ _))
+        (hV.tidy.comp (hdec.prod (snd _ _)))),
       fun w => ?_⟩
   simp only [encBits_apply, Bool.and_eq_true, decide_eq_true_eq]
   constructor
@@ -484,11 +485,11 @@ private theorem computableTidilyInPolyTime_verifier (k : ℕ) :
     exact bitsGetDWithInput hT (bitsBoundedBinaryValueWithInput (length_bits.comp hT)
       (bitsReverse.comp (bitsTakeWithInput (fst _ _) hm))) false
   unfold verifier
-  exact bool_and' (bool_and' (bool_not.comp (MCSP.computableTidilyInPolyTime_tableVerifier.comp
+  exact bool_and' (bool_and' (bool_not.comp (MCSP.computableInPolyTime_tableVerifier.tidy.comp
     ((hT.prod hs).prod hc))) (bool_or.comp ((bool_not.comp (binary_lt'
       (computableTidilyInPolyTime_binaryValue.comp hT')
       (computableTidilyInPolyTime_binaryValue.comp hT))).prod
-        (MCSP.computableTidilyInPolyTime_tableVerifier.comp ((hT'.prod hs).prod hc'))))) hval
+        (MCSP.computableInPolyTime_tableVerifier.tidy.comp ((hT'.prod hs).prod hc'))))) hval
 
 /-- **Kannan's language is in `Σ₃`.** -/
 theorem language_mem_SigmaP_three (k : ℕ) :

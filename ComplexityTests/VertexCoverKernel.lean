@@ -105,10 +105,10 @@ example : IsKernelization (encPair encGraph encNat) Prod.snd VertexCover bussKer
 example : HasPolyKernel (encPair encGraph encNat) Prod.snd VertexCover :=
   VertexCover_hasPolyKernel
 
-/-- The kernelization is tidily computable in polynomial time, for proofs that compose it. -/
+/-- The kernelization is computable in polynomial time. -/
 example :
-    ComputableTidilyInPolyTime bussKernel (encPair encGraph encNat) (encPair encGraph encNat) :=
-  (isKernelization_iff_tidy.mp isKernelization_bussKernel).1
+    ComputableInPolyTime bussKernel (encPair encGraph encNat) (encPair encGraph encNat) :=
+  isKernelization_bussKernel.polyTime
 
 /-! ### Axioms -/
 
@@ -148,11 +148,11 @@ info: 'Cslib.Complexity.VertexCover.length_encode_bussKernel_le' depends on axio
 #print axioms Cslib.Complexity.VertexCover.length_encode_bussKernel_le
 
 /--
-info: 'Cslib.Complexity.VertexCover.computableTidilyInPolyTime_bussKernel' depends on axioms:
+info: 'Cslib.Complexity.VertexCover.computableInPolyTime_bussKernel' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.VertexCover.computableTidilyInPolyTime_bussKernel
+#print axioms Cslib.Complexity.VertexCover.computableInPolyTime_bussKernel
 
 /--
 info: 'Cslib.Complexity.VertexCover.isKernelization_bussKernel' depends on axioms:
@@ -167,5 +167,18 @@ info: 'Cslib.Complexity.VertexCover_hasPolyKernel' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Complexity.VertexCover_hasPolyKernel
+
+/-! ### Plain automation over the restated kernel certificates -/
+
+/-- Plain `fun_prop` composes the plain kernel certificates with plain hypotheses. -/
+example {γ : Type} {enc : γ ↪ List Bool} {x : γ → Graph × ℕ}
+    (hx : ComputableInPolyTime x enc (encPair encGraph encNat)) :
+    ComputableInPolyTime (fun c => high (x c)) enc (encList encNat) := by
+  fun_prop
+
+example {γ : Type} {enc : γ ↪ List Bool} {G : γ → Graph} {v : γ → ℕ}
+    (hG : ComputableInPolyTime G enc encGraph) (hv : ComputableInPolyTime v enc encNat) :
+    ComputableInPolyTime (fun c => degree (G c) (v c)) enc encUnary := by
+  fun_prop
 
 end ComplexityTests.VertexCoverKernel

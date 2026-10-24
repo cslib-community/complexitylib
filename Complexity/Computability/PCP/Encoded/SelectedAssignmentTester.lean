@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.PCP.Encoded.AssignmentTester
 public import Complexity.Computability.PCP.AssignmentTester.Selection
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 
 /-!
@@ -88,17 +89,17 @@ theorem accepts_eq_true (constraint : α → α → Bool) (coins : Fin 5 × Rand
 @[fun_prop]
 theorem isPolyTime_query (coinsEncoding : (Fin 5 × Rand α) ↪ List Bool)
     (queryEncoding : Fin 6 ↪ List Bool) (positionEncoding : Pos α ↪ List Bool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (α → α → Bool) × (Fin 5 × Rand α) × Fin 6 ↦ query p.1 p.2.1 p.2.2)
       (encPair (encPi (encPi encBool)) (encPair coinsEncoding queryEncoding)) positionEncoding :=
-  ComputableTidilyInPolyTime.of_finite _
+  ComputableInPolyTime.of_finite _
 
 /-- Acceptance charges the full supplied input, including all six answers. -/
 @[fun_prop]
 theorem isPolyTime_accepts (coinsEncoding : (Fin 5 × Rand α) ↪ List Bool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (α → α → Bool) × (Fin 5 × Rand α) × (Fin 6 → Bool) ↦ accepts p.1 p.2.1 p.2.2)
       (encPair (encPi (encPi encBool)) (encPair coinsEncoding (encPi encBool))) encBool :=
-  ComputableTidilyInPolyTime.of_finite _
+  ComputableInPolyTime.of_finite _
 
 end Cslib.PCP.Encoded.SelectedHadamardTester

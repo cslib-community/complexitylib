@@ -67,7 +67,7 @@ theorem DecidableInExpTime.KSAT_of_le {k k' : ℕ} (hk : k ≤ k') {δ : ℝ} (h
     DecidableInExpTime (KSAT k) encCNF CNF.numVars δ := by
   rw [KSAT_eq_inter k (B := KSAT k') (fun φ hφ => ⟨fun c hc => (hφ.1 c hc).trans hk, hφ.2⟩)
     (KSAT_subset_SAT k')]
-  exact h.inter (computableTidilyInPolyTime_all_length_le k) hδ
+  exact h.inter (computableInPolyTime_all_length_le k) hδ
 
 /-- The exponents of `k`-SAT. -/
 private abbrev exponents (k : ℕ) : Set ℝ :=
@@ -159,7 +159,7 @@ theorem DecidableInExpTime.length_of_numVars {k : ℕ} {δ : ℝ} (hδ : 0 ≤ �
     (h : DecidableInExpTime (KSAT k) encCNF CNF.numVars δ) :
     DecidableInExpTime (KSAT k) encCNF List.length (k * δ) := by
   obtain ⟨e, h⟩ := h
-  obtain ⟨e', h⟩ := h.inter (computableTidilyInPolyTime_all_length_le k) fun φ => by positivity
+  obtain ⟨e', h⟩ := h.inter (computableInPolyTime_all_length_le k) fun φ => by positivity
   rw [← KSAT_eq_inter k le_rfl (KSAT_subset_SAT k)] at h
   refine ⟨e + e', h.mono 2 (fun φ => ?_) fun φ => by positivity⟩
   have hL : (1 : ℝ) ≤ (encCNF φ).length + 1 := by

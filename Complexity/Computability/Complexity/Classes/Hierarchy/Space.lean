@@ -17,6 +17,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Space
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # The space hierarchy theorem
@@ -35,7 +36,7 @@ the configurations of the simulation encoded within `G n` bits. It negates the v
 test at the end of each pass, within space linear in the description, the budget and the lengths
 of the clock and of `n` in binary (`Turing.MultiTapeTM.Universal.budgetSpace_le`). The diagonal
 also holds its input, to test shortness and to convert it to symbols, so it takes space
-`O(n + G n)` (`Cslib.Complexity.computableTidilyInO_spaceDiagonal`) and decides a problem in
+`O(n + G n)` (`Cslib.Complexity.computableInO_spaceDiagonal`) and decides a problem in
 `DSPACE G` when `n ≤ G n` (`Cslib.Complexity.setOf_spaceDiagonal_mem_DSPACE`).
 
 Let a machine decide the same problem within space `c₁ * f n + c₂`, where every `c * f n + c` is
@@ -117,65 +118,69 @@ budget `G n` in unary, the clock `2 ^ G n` in binary, the budgeted universal run
 description is short, so decoding it takes space `O(n)`, and the budgeted universal run takes
 space linear in the description, the budget and the lengths of the clock and of `n` in binary
 (`Turing.MultiTapeTM.Universal.budgetSpace_le`). -/
-theorem computableTidilyInO_spaceDiagonal {G : ℕ → ℕ} (hG : SpaceConstructible G) :
-    ∃ T, ComputableTidilyInO (spaceDiagonal G) encBits encBool T
+theorem computableInO_spaceDiagonal {G : ℕ → ℕ} (hG : SpaceConstructible G) :
+    ∃ T, ComputableInO (spaceDiagonal G) encBits encBool T
       fun x => x.length + G x.length := by
-  obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
-  have hu : ComputableTidilyInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
-    ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)
-  have hdesc := hdec.inO.comp hu
-  have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
-  obtain ⟨TG, hGb⟩ := hG.computableTidilyInO
-  have hGu := ComputableTidilyInO.natToUnary.comp hGb
-  have hclock := ((ComputableTidilyInDegree.two_pow_length encUnary).inO_one.comp_linear
-    hGu).of_enc_eq (encOut := encNat) (g := fun x : List Bool => 2 ^ G x.length) fun x => by
-      simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
-  have hU := computableTidilyInO_budgetedUniversal.comp (hdesc.prod (hsym.prod (hclock.prod hGu)))
-  have h := computableTidilyInO_shortDesc.ite (computableTidilyInO_verdict.comp hU)
-    (ComputableTidilyInO.const (encMid := encBool) false)
-  obtain ⟨cD, hcD⟩ := hdesc.length_le
-  obtain ⟨cA, hcA⟩ := PolynomiallyBounded.exists_le_mul_two_pow (p := fun u => (u + 1) ^ dd)
-    (by fun_prop)
-  refine exists_computableTidilyInO_of_space h (300 * (cD + 1) * (cA + 1) + 300)
-    fun x => ?_
-  dsimp only [Function.comp_apply, encBits_apply]
-  have hK : ∀ m, 2 * m ≤ (300 * (cD + 1) * (cA + 1) + 300) * m := fun m =>
-    Nat.mul_le_mul_right _ (by omega)
-  split_ifs with hs
-  · have hA : ((unframe x).length + 1) ^ dd ≤ cA * x.length :=
-      (hcA _).trans (Nat.mul_le_mul_left _ (of_decide_eq_true hs))
-    have hD := hcD x
-    have hB := budgetSpace_le (decodeDesc (unframe x)) (x.map eBit) (G x.length) (2 ^ G x.length)
-    have hO := length_eOut_budgetedUniversal_le (decodeDesc (unframe x)) (x.map eBit) (G x.length)
-      (2 ^ G x.length)
-    have hclk : (encNat (2 ^ G x.length)).length = G x.length + 1 := by
-      rw [encNat_two_pow, List.length_append, List.length_replicate, List.length_singleton]
-    have hlen : (encNat ((x.map eBit).length + 1)).length ≤ x.length + 1 := by
-      rw [List.length_map]; exact Universal.length_encNat_le _
-    have hmax : (x.map eBit).foldr max 0 ≤ 1 := listMax_le fun b _ => by cases b <;> decide
-    simp only [descLen, Function.comp_apply, encBits_apply] at hB hD
-    have e₁ : cD * (x.length + ((unframe x).length + 1) ^ dd + 1) ≤
-        cD * (x.length + cA * x.length + 1) := Nat.mul_le_mul_left _ (by omega)
-    have e₂ : cD * (x.length + cA * x.length + 1) + cA * x.length ≤
-        (cD + 1) * (cA + 1) * (x.length + G x.length + 1) := by
-      have : (cD + 1) * (cA + 1) * (x.length + G x.length + 1) =
-          cD * (x.length + cA * x.length + 1) + cA * x.length + (cD * cA * G x.length + cD * cA +
-            cD * G x.length + cA * G x.length + cA + x.length + G x.length + 1) := by ring
+  have this : ∃ T, ComputableTidilyInO (spaceDiagonal G) encBits encBool T fun x => x.length + G
+      x.length := by
+    obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
+    have hu : ComputableTidilyInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
+      ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)
+    have hdesc := hdec.inO.comp hu
+    have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
+    obtain ⟨TG, hGb⟩ := hG.computableInO
+    have hGb := hGb.tidy
+    have hGu := ComputableTidilyInO.natToUnary.comp hGb
+    have hclock := ((ComputableTidilyInDegree.two_pow_length encUnary).inO_one.comp_linear
+      hGu).of_enc_eq (encOut := encNat) (g := fun x : List Bool => 2 ^ G x.length) fun x => by
+        simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
+    have hU := computableTidilyInO_budgetedUniversal.comp (hdesc.prod (hsym.prod (hclock.prod hGu)))
+    have h := computableInO_shortDesc.tidy.ite (computableInO_verdict.tidy.comp hU)
+      (ComputableTidilyInO.const (encMid := encBool) false)
+    obtain ⟨cD, hcD⟩ := hdesc.length_le
+    obtain ⟨cA, hcA⟩ := PolynomiallyBounded.exists_le_mul_two_pow (p := fun u => (u + 1) ^ dd)
+      (by fun_prop)
+    refine exists_computableTidilyInO_of_space h (300 * (cD + 1) * (cA + 1) + 300)
+      fun x => ?_
+    dsimp only [Function.comp_apply, encBits_apply]
+    have hK : ∀ m, 2 * m ≤ (300 * (cD + 1) * (cA + 1) + 300) * m := fun m =>
+      Nat.mul_le_mul_right _ (by omega)
+    split_ifs with hs
+    · have hA : ((unframe x).length + 1) ^ dd ≤ cA * x.length :=
+        (hcA _).trans (Nat.mul_le_mul_left _ (of_decide_eq_true hs))
+      have hD := hcD x
+      have hB := budgetSpace_le (decodeDesc (unframe x)) (x.map eBit) (G x.length) (2 ^ G x.length)
+      have hO := length_eOut_budgetedUniversal_le (decodeDesc (unframe x)) (x.map eBit) (G x.length)
+        (2 ^ G x.length)
+      have hclk : (encNat (2 ^ G x.length)).length = G x.length + 1 := by
+        rw [encNat_two_pow, List.length_append, List.length_replicate, List.length_singleton]
+      have hlen : (encNat ((x.map eBit).length + 1)).length ≤ x.length + 1 := by
+        rw [List.length_map]; exact Universal.length_encNat_le _
+      have hmax : (x.map eBit).foldr max 0 ≤ 1 := listMax_le fun b _ => by cases b <;> decide
+      simp only [descLen, Function.comp_apply, encBits_apply] at hB hD
+      have e₁ : cD * (x.length + ((unframe x).length + 1) ^ dd + 1) ≤
+          cD * (x.length + cA * x.length + 1) := Nat.mul_le_mul_left _ (by omega)
+      have e₂ : cD * (x.length + cA * x.length + 1) + cA * x.length ≤
+          (cD + 1) * (cA + 1) * (x.length + G x.length + 1) := by
+        have : (cD + 1) * (cA + 1) * (x.length + G x.length + 1) =
+            cD * (x.length + cA * x.length + 1) + cA * x.length + (cD * cA * G x.length + cD * cA +
+              cD * G x.length + cA * G x.length + cA + x.length + G x.length + 1) := by ring
+        omega
+      have e₃ : (300 * (cD + 1) * (cA + 1) + 300) * (x.length + G x.length + 1) =
+          300 * ((cD + 1) * (cA + 1) * (x.length + G x.length + 1)) +
+            300 * (x.length + G x.length + 1) := by ring
       omega
-    have e₃ : (300 * (cD + 1) * (cA + 1) + 300) * (x.length + G x.length + 1) =
-        300 * ((cD + 1) * (cA + 1) * (x.length + G x.length + 1)) +
-          300 * (x.length + G x.length + 1) := by ring
-    omega
-  · have := hK (x.length + G x.length + 1)
-    omega
+    · have := hK (x.length + G x.length + 1)
+      omega
+  simpa only [computableInO_iff_computableTidilyInO] using this
 
 /-- **The diagonal within space `G` decides a problem in `DSPACE G`**, for a space-constructible
 `G` with `n ≤ G n`. -/
 theorem setOf_spaceDiagonal_mem_DSPACE {G : ℕ → ℕ} (hG : SpaceConstructible G)
     (hn : ∀ n, n ≤ G n) : {x | spaceDiagonal G x = true} ∈ DSPACE encBits G := by
-  obtain ⟨T, c, hc, -⟩ := computableTidilyInO_spaceDiagonal hG
+  obtain ⟨T, c, hc, -⟩ := computableInO_spaceDiagonal hG
   refine mem_DSPACE_iff.mpr ⟨2 * c, 2 * c, _, decidableInTimeAndSpace_iff.mpr
-    ⟨spaceDiagonal G, hc.computableInTimeAndSpace.mono (fun _ => le_rfl) fun x => ?_,
+    ⟨spaceDiagonal G, hc.mono (fun _ => le_rfl) fun x => ?_,
       fun x => Iff.rfl⟩⟩
   have := hn x.length
   simp only [encBits_apply]

@@ -115,6 +115,6 @@ theorem PolyTimeReducible.mem_SPP {β : Type} {encB : β ↪ List Bool} {B : Set
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ SPP encB) : A ∈ SPP enc := by
   obtain ⟨g, hg, hAB⟩ := h
   obtain ⟨f, hf, hr, hB⟩ := hB
-  exact ⟨f ∘ g, GapP.comp_mem hf hg.tidy, fun a => hr (g a), fun a => (hAB a).trans (hB (g a))⟩
+  exact ⟨f ∘ g, GapP.comp_mem hf hg, fun a => hr (g a), fun a => (hAB a).trans (hB (g a))⟩
 
 end Cslib.Complexity

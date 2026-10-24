@@ -124,10 +124,11 @@ info: 'Cslib.Complexity.SAT.verifier_search' depends on axioms: [propext, Classi
 #print axioms Cslib.Complexity.SAT.verifier_search
 
 /--
-info: 'Cslib.Complexity.SAT.computableTidilyInPolyTime_search' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'Cslib.Complexity.SAT.computableInPolyTime_search' depends on axioms:
+  [propext, Classical.choice, Quot.sound]
 -/
-#guard_msgs in
-#print axioms Cslib.Complexity.SAT.computableTidilyInPolyTime_search
+#guard_msgs (whitespace := lax) in
+#print axioms Cslib.Complexity.SAT.computableInPolyTime_search
 
 /--
 info: 'Cslib.Complexity.SAT.exists_search' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -142,12 +143,11 @@ info: 'Cslib.Circuits.Boolean.evalAdvice_familyAdvice' depends on axioms: [prope
 #print axioms Cslib.Circuits.Boolean.evalAdvice_familyAdvice
 
 /--
-info: 'Cslib.Circuits.Boolean.computableTidilyInPolyTime_evalAdvice' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
+info: 'Cslib.Circuits.Boolean.computableInPolyTime_evalAdvice' depends on axioms:
+  [propext, Classical.choice, Quot.sound]
 -/
-#guard_msgs in
-#print axioms Cslib.Circuits.Boolean.computableTidilyInPolyTime_evalAdvice
+#guard_msgs (whitespace := lax) in
+#print axioms Cslib.Circuits.Boolean.computableInPolyTime_evalAdvice
 
 /--
 info: 'Cslib.Complexity.PiP_two_subset_SigmaP_two_of_SAT' depends on axioms: [propext, Classical.choice, Quot.sound]

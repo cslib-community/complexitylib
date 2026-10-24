@@ -11,6 +11,7 @@ public import Complexity.Computability.PCP.Power.WithInput
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.Walk
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Polynomial-time evaluation of powered constraints
@@ -51,13 +52,16 @@ variable {input : P ↪ List Bool} {vertex : W ↪ List Bool}
 lookup is charged. The finite dispatch depends only on the fixed walk parameters. -/
 @[fun_prop]
 theorem isPolyTime_powerRelationWithInput
-    (hrotate : ComputableTidilyInPolyTime rotate
+    (hrotate : ComputableInPolyTime rotate
       (encPair input (encPair vertex label)) (encPair vertex label))
-    (hrel : ComputableTidilyInPolyTime rel
+    (hrel : ComputableInPolyTime rel
       (encPair input (encPair (encPair vertex label) (encPair alphabet alphabet))) encBool)
     (T q : ℕ) [NeZero q] (signal : Fin q ↪ List Bool) :
-    ComputableTidilyInPolyTime (powerRelationWithInput rotate rel T q)
+    ComputableInPolyTime (powerRelationWithInput rotate rel T q)
       (powerInputEncoding input vertex label alphabet T q signal) encBool := by
+  have hrotate := hrotate.tidy
+  have hrel := hrel.tidy
+  refine .of_tidy ?_
   let enc := powerInputEncoding input vertex label alphabet T q signal
   have hbranch (s : (Fin T → D) × (Fin T → Fin q)) : ComputableTidilyInPolyTime
       (fun p : PowerInput P W D α T q =>

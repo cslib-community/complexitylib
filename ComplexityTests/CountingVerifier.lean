@@ -132,7 +132,7 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCT
   simpa only [MultiTapeTM.encBits_apply, Polynomial.eval_zero, Complexity.acceptCount_true,
     pow_zero, Nat.sub_self] using
     exists_verifier_counting_machine MultiTapeTM.encBits 0 (fun _ => true)
-    (MultiTapeTM.ComputableTidilyInPolyTime.const true)
+    (.of_tidy (MultiTapeTM.ComputableTidilyInPolyTime.const true))
 
 -- Four distinct witnesses may have the identical Boolean output; all four occurrences count.
 example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCTM k Bool State)
@@ -143,7 +143,7 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCT
   simpa only [MultiTapeTM.encBits_apply, Polynomial.eval_C, Complexity.acceptCount_true,
     Nat.reducePow, Nat.sub_self] using
     exists_verifier_counting_machine MultiTapeTM.encBits (Polynomial.C 2) (fun _ => true)
-    (MultiTapeTM.ComputableTidilyInPolyTime.const true)
+    (.of_tidy (MultiTapeTM.ComputableTidilyInPolyTime.const true))
 
 -- The all-rejecting empty witness is still a terminal branch, and supplies the zero #P function.
 example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCTM k Bool State)
@@ -154,7 +154,7 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCT
   simpa only [MultiTapeTM.encBits_apply, Polynomial.eval_zero, Complexity.acceptCount_false,
     pow_zero, Nat.sub_zero] using
     exists_verifier_counting_machine MultiTapeTM.encBits 0 (fun _ => false)
-    (MultiTapeTM.ComputableTidilyInPolyTime.const false)
+    (.of_tidy (MultiTapeTM.ComputableTidilyInPolyTime.const false))
 
 /--
 info: 'Turing.MultiTapeCTM.exists_verifier_machine' depends on axioms:

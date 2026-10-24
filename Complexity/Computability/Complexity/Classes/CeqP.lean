@@ -104,7 +104,7 @@ theorem PolyTimeReducible.mem_CeqP {β : Type} {encB : β ↪ List Bool} {B : Se
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ CeqP encB) : A ∈ CeqP enc := by
   obtain ⟨g, hg, hAB⟩ := h
   obtain ⟨f, hf, hB⟩ := hB
-  exact ⟨f ∘ g, GapP.comp_mem hf hg.tidy, fun a => (hAB a).trans (hB (g a))⟩
+  exact ⟨f ∘ g, GapP.comp_mem hf hg, fun a => (hAB a).trans (hB (g a))⟩
 
 /-- The complement class coC=P. See [Fortnow, Classifications 4.8–4.9][Fortnow1997]. -/
 def coCeqP (enc : α ↪ List Bool) : Set (Set α) := {A | Aᶜ ∈ CeqP enc}

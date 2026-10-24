@@ -65,16 +65,19 @@ namespace ComputableInPolyTimeWithOracle
 
 /-- Polynomial-time preprocessing of the argument. -/
 theorem preprocess {f : β → γ} {g : α → β} (hf : ComputableInPolyTimeWithOracle A f middle output)
-    (hg : ComputableTidilyInPolyTime g input middle) :
-    ComputableInPolyTimeWithOracle A (fun a => f (g a)) input output :=
-  let ⟨program, hprogram, heq⟩ := hf
-  ⟨fun a => program (g a), hprogram.preprocess hg, fun a => heq (g a)⟩
+    (hg : Turing.MultiTapeTM.ComputableInPolyTime g input middle) :
+    ComputableInPolyTimeWithOracle A (fun a => f (g a)) input output := by
+  have hg := hg.tidy
+  exact let ⟨program, hprogram, heq⟩ := hf
+    ⟨fun a => program (g a), hprogram.preprocess hg, fun a => heq (g a)⟩
 
 /-- Polynomial-time postprocessing of the result, which may also use the argument. -/
 theorem map_with {f : α → β} {g : α → β → γ}
     (hf : ComputableInPolyTimeWithOracle A f input middle)
-    (hg : ComputableTidilyInPolyTime (fun pair => g pair.1 pair.2) (encPair input middle) output) :
+    (hg : Turing.MultiTapeTM.ComputableInPolyTime (fun pair => g pair.1 pair.2)
+      (encPair input middle) output) :
     ComputableInPolyTimeWithOracle A (fun a => g a (f a)) input output := by
+  have hg := hg.tidy
   obtain ⟨program, hprogram, heq⟩ := hf
   refine ⟨fun a => g a <$> program a, ?_, fun a => ?_⟩
   · simpa only [OracleComp.interpret_map] using hprogram.map_with hg
@@ -83,8 +86,9 @@ theorem map_with {f : α → β} {g : α → β → γ}
 
 /-- Polynomial-time postprocessing of the result. -/
 theorem map {f : α → β} {g : β → γ} (hf : ComputableInPolyTimeWithOracle A f input middle)
-    (hg : ComputableTidilyInPolyTime g middle output) :
+    (hg : Turing.MultiTapeTM.ComputableInPolyTime g middle output) :
     ComputableInPolyTimeWithOracle A (fun a => g (f a)) input output := by
+  have hg := hg.tidy
   obtain ⟨program, hprogram, heq⟩ := hf
   refine ⟨fun a => g <$> program a, ?_, fun a => ?_⟩
   · simpa only [OracleComp.interpret_map] using hprogram.map hg
@@ -145,7 +149,8 @@ theorem mem_PWithOracle_self (A : Set (List Bool)) : A ∈ PWithOracle A encBits
 certificate. -/
 theorem PWithOracle_subset_NPWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     PWithOracle A enc ⊆ NPWithOracle A enc := fun _ ⟨f, hf, h⟩ =>
-  ⟨0, fun aw => f aw.1, hf.preprocess (ComputableTidilyInPolyTime.fst enc encBits), fun a => by
+  ⟨0, fun aw => f aw.1, hf.preprocess (.of_tidy (ComputableTidilyInPolyTime.fst enc encBits)),
+    fun a => by
     simp only [Polynomial.eval_zero, List.length_eq_zero_iff, exists_eq_left, h]⟩
 
 /-- **`P` relative to an oracle is closed under polynomial-time many-one reductions.** -/
@@ -154,7 +159,7 @@ theorem PolyTimeReducible.mem_PWithOracle {encA : α ↪ List Bool} {encB : β �
     (hL' : L' ∈ PWithOracle A encB) : L ∈ PWithOracle A encA :=
   let ⟨g, hg, hL⟩ := h
   let ⟨f, hf, hL'⟩ := hL'
-  ⟨fun a => f (g a), hf.preprocess hg.tidy, fun a => (hL a).trans (hL' (g a))⟩
+  ⟨fun a => f (g a), hf.preprocess hg, fun a => (hL a).trans (hL' (g a))⟩
 
 /-- **`NP` relative to an oracle is closed under polynomial-time many-one reductions.** The
 certificates are padded to a polynomial of the instance length; the verifier reads the prefix of
@@ -162,7 +167,7 @@ the length required by the reduced instance. -/
 theorem PolyTimeReducible.mem_NPWithOracle {encA : α ↪ List Bool} {encB : β ↪ List Bool}
     {L : Set α} {L' : Set β} (h : PolyTimeReducible encA encB L L')
     (hL' : L' ∈ NPWithOracle A encB) : L ∈ NPWithOracle A encA := by
-  obtain ⟨g, hg, hL⟩ := polyTimeReducible_iff_tidy.mp h
+  obtain ⟨g, hg, hL⟩ := h
   obtain ⟨p, V, hV, hL'⟩ := hL'
   obtain ⟨r, hlen⟩ := hg.polyBounded_length.exists_polynomial
   -- the certificate length of the reduced instance, as a polynomial of the instance length
@@ -170,9 +175,10 @@ theorem PolyTimeReducible.mem_NPWithOracle {encA : α ↪ List Bool} {encB : β 
   have hpq (a : α) : p.eval (encB (g a)).length ≤ q.eval (encA a).length := by
     rw [hq, Polynomial.eval_comp]
     exact p.eval_mono (hlen a)
+  have hg := hg.tidy
   refine ⟨q, fun aw => V (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length)),
     hV.preprocess (f := V) (g := fun aw : α × List Bool =>
-      (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length))) (by fun_prop), fun a => ?_⟩
+      (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length))) (.of_tidy (by fun_prop)), fun a => ?_⟩
   rw [hL a, hL' (g a)]
   constructor
   · rintro ⟨w, hw, hV⟩

@@ -24,11 +24,11 @@ polynomial time the instruction is polynomial-time
 (`Turing.MultiTapePTM.computableTidilyInPolyTime_answerStep`), the storage grows by a bounded amount
 per instruction, and the clock is polynomial, so the run is polynomial-time
 (`Turing.MultiTapePTM.computableTidilyInPolyTime_run`,
-`Cslib.Complexity.ComputableInPolyTimeWithOracle.computableTidilyInPolyTime`).
+`Cslib.Complexity.ComputableInPolyTimeWithOracle.computableInPolyTime`).
 
 ## Main results
 
-* `Cslib.Complexity.ComputableInPolyTimeWithOracle.computableTidilyInPolyTime`: polynomial time
+* `Cslib.Complexity.ComputableInPolyTimeWithOracle.computableInPolyTime`: polynomial time
   relative to an oracle in `P` is polynomial time.
 * `Cslib.Complexity.PWithOracle_eq_P`, `Cslib.Complexity.NPWithOracle_eq_NP`: `P^A = P` and
   `NP^A = NP` for `A ∈ P`.
@@ -50,10 +50,11 @@ open Classical in
 /-- **Polynomial time relative to an oracle in `P` is polynomial time.** Relative to an oracle
 language decided in polynomial time, a function computable in polynomial time relative to it is
 computable in polynomial time: every query is answered by running the decider. -/
-theorem ComputableInPolyTimeWithOracle.computableTidilyInPolyTime {f : α → β}
+theorem ComputableInPolyTimeWithOracle.computableInPolyTime {f : α → β}
     {output : β ↪ List Bool} (hA : A ∈ P encBits)
     (hf : ComputableInPolyTimeWithOracle A f enc output) :
-    ComputableTidilyInPolyTime f enc output := by
+    ComputableInPolyTime f enc output := by
+  refine .of_tidy ?_
   obtain ⟨g, hg, hgA⟩ := hA
   have hg' : g = fun w => decide (w ∈ A) := funext fun w =>
     Bool.eq_iff_iff.mpr ⟨fun h => decide_eq_true ((hgA w).mpr h),
@@ -68,14 +69,14 @@ theorem ComputableInPolyTimeWithOracle.computableTidilyInPolyTime {f : α → β
 /-- **`P` relative to an oracle in `P` is `P`.** -/
 theorem PWithOracle_eq_P (hA : A ∈ P encBits) (enc : α ↪ List Bool) :
     PWithOracle A enc = P enc :=
-  Set.Subset.antisymm (fun _ ⟨f, hf, hL⟩ => ⟨f, .of_tidy (hf.computableTidilyInPolyTime hA), hL⟩)
+  Set.Subset.antisymm (fun _ ⟨f, hf, hL⟩ => ⟨f, hf.computableInPolyTime hA, hL⟩)
     (P_subset_PWithOracle A enc)
 
 /-- **`NP` relative to an oracle in `P` is `NP`.** -/
 theorem NPWithOracle_eq_NP (hA : A ∈ P encBits) (enc : α ↪ List Bool) :
     NPWithOracle A enc = NP enc :=
   Set.Subset.antisymm
-    (fun _ ⟨p, V, hV, hL⟩ => ⟨p, V, .of_tidy (hV.computableTidilyInPolyTime hA), hL⟩)
+    (fun _ ⟨p, V, hV, hL⟩ => ⟨p, V, hV.computableInPolyTime hA, hL⟩)
     (NP_subset_NPWithOracle A enc)
 
 end Cslib.Complexity

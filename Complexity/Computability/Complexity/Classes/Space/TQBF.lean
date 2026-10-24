@@ -29,9 +29,9 @@ problem [Sipser, Theorem 8.9][Sipser2013] [Arora and Barak, Theorem 4.13][AroraB
   Acceptance is reachability between the codes of its finite views
   (`Turing.MultiTapeNTM.savitchDecide_eq_true_iff`), which Savitch's formula expresses with a
   polynomial number of tokens (`Cslib.Complexity.TQBF.reduce_mem_TQBF_iff`), constructed in
-  polynomial time (`Cslib.Complexity.TQBF.computableTidilyInPolyTime_reduce`). Its formula of level
+  polynomial time (`Cslib.Complexity.TQBF.computableInPolyTime_reduce`). Its formula of level
   `0` is the Cook–Levin tableau of a polynomial-time machine testing one step or none between codes
-  (`Cslib.Complexity.TQBF.computableTidilyInPolyTime_edgeTest`).
+  (`Cslib.Complexity.TQBF.computableInPolyTime_edgeTest`).
 
 The reduction maps every instance to a closed formula: the quantified variables of the formula of
 level `0` are odd, those of the blocks of the midpoint recursion even, and the source and target
@@ -72,12 +72,12 @@ theorem TQBF_pspaceHard : PSPACEHard encQBF TQBF := by
   obtain ⟨k, State, hfinite, ntm, s, hs, hA⟩ := PSPACE_subset_NPSPACE hA
   obtain ⟨c, d, hcd⟩ := hs.exists_le
   obtain ⟨tV, sV, htV, -, kV, StateV, hfiniteV, tmV, htmV⟩ :=
-    TQBF.computableTidilyInPolyTime_edgeTest (enc := enc) (ntm := ntm) (c := c) (d := d)
+    (TQBF.computableInPolyTime_edgeTest (enc := enc) (ntm := ntm) (c := c) (d := d)).tidy
   obtain ⟨cV, dV, htV⟩ := htV.exists_le
   have := Fintype.ofFinite StateV
   classical
   refine ⟨TQBF.reduce enc ntm c d tmV cV dV,
-    .of_tidy (TQBF.computableTidilyInPolyTime_reduce tmV cV dV), fun a => ?_⟩
+    (TQBF.computableInPolyTime_reduce tmV cV dV), fun a => ?_⟩
   rw [TQBF.reduce_mem_TQBF_iff (htmV.mono htV fun _ => le_rfl) (hA.recognizesInSpace a).1
     (hcd a)]
   exact (hA.recognizesInSpace a).2

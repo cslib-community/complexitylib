@@ -12,13 +12,14 @@ public import Complexity.Computability.Machines.ReadMachine.Tidy
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 
 /-!
 # The read machine for undirected connectivity within linear work space
 
-The halting test, the address and the step of `Cslib.USTCON.Reader.machine` are tidily computable
-within work space linear in the length of the encoded state (and the bit read): every step is a
-bounded number of operations on the numbers and the heads of the lists of the state — comparisons,
+The halting test, the address and the step of `Cslib.USTCON.Reader.machine` are computable within
+work space linear in the length of the encoded state (and the bit read): every step is a bounded
+number of operations on the numbers and the heads of the lists of the state — comparisons,
 successors and predecessors, products for the address, divisions by the number of labels, and
 functions of the finitely many controls, labels and frames. So the step machine simulating the read
 machine is tidy within space linear in its states and the position of its head
@@ -472,32 +473,35 @@ private theorem stepBudget_bool (x : Tuple) (b : Bool) : stepBudget (x, b) = ste
     (x, false) := by
   cases b <;> simp [stepBudget, encBool_apply]
 
-/-- The halting test of `machine` is tidily computable within the space budget of the state. -/
-theorem halt_inSpace : ComputableTidilyInSpace machine.halt encState encBool stateBudget :=
-  (haltT_inSpace.of_encIn_eq State.toTuple fun _ ↦ rfl).of_enc_eq fun _ ↦ rfl
+/-- The halting test of `machine` is computable within the space budget of the state. -/
+theorem halt_inSpace : ComputableInSpace machine.halt encState encBool stateBudget :=
+  .of_tidy ((haltT_inSpace.of_encIn_eq State.toTuple fun _ ↦ rfl).of_enc_eq fun _ ↦ rfl)
 
-/-- The address of `machine` is tidily computable within the space budget of the state. -/
-theorem addr_inSpace : ComputableTidilyInSpace machine.addr encState (encOption encNat)
+/-- The address of `machine` is computable within the space budget of the state. -/
+theorem addr_inSpace : ComputableInSpace machine.addr encState (encOption encNat)
     stateBudget :=
-  (addrT_inSpace.of_encIn_eq State.toTuple fun _ ↦ rfl).of_enc_eq fun _ ↦ rfl
+  .of_tidy ((addrT_inSpace.of_encIn_eq State.toTuple fun _ ↦ rfl).of_enc_eq fun _ ↦ rfl)
 
-/-- The step of `machine`, on a state and the bit read, is tidily computable within the space
-budget of the state. -/
+/-- The step of `machine`, on a state and the bit read, is computable within the space budget of
+the state. -/
 theorem step_inSpace :
-    ComputableTidilyInSpace (fun p : State × Bool => machine.step p.1 p.2)
+    ComputableInSpace (fun p : State × Bool => machine.step p.1 p.2)
       (encPair encState encBool) (encPair encState encBits) fun p => stateBudget p.1 := by
-  have h := stepT_inSpace.of_encIn_eq (α' := State × Bool) (encIn' := encPair encState encBool)
-    (fun p ↦ (p.1.toTuple, p.2)) fun _ ↦ rfl
-  refine (h.mono_le fun p ↦ ?_).of_enc_eq fun _ ↦ rfl
-  rw [stateBudget, stepBudget_bool]
+  have this : ComputableTidilyInSpace (fun p : State × Bool => machine.step p.1 p.2)
+      (encPair encState encBool) (encPair encState encBits) fun p => stateBudget p.1 := by
+    have h := stepT_inSpace.of_encIn_eq (α' := State × Bool) (encIn' := encPair encState encBool)
+      (fun p ↦ (p.1.toTuple, p.2)) fun _ ↦ rfl
+    refine (h.mono_le fun p ↦ ?_).of_enc_eq fun _ ↦ rfl
+    rw [stateBudget, stepBudget_bool]
+  simpa only [computableInSpace_iff_computableTidilyInSpace] using this
 
 /-- **The step machine simulating the read machine is tidy**, within the space of its states
 together with the position of its head. -/
 theorem tidy_machine : ∃ T, machine.toStepMachine.Tidy (encPair encState encNat)
     (ReadMachine.stateT encState T stateBudget) (ReadMachine.stateS encState stateBudget) := by
-  obtain ⟨T₁, h₁⟩ := halt_inSpace
-  obtain ⟨T₂, h₂⟩ := addr_inSpace
-  obtain ⟨T₃, h₃⟩ := step_inSpace
+  obtain ⟨T₁, h₁⟩ := halt_inSpace.tidy
+  obtain ⟨T₂, h₂⟩ := addr_inSpace.tidy
+  obtain ⟨T₃, h₃⟩ := step_inSpace.tidy
   let T : State → ℕ := fun s => T₁ s + T₂ s + T₃ (s, false) + T₃ (s, true)
   exact ⟨T, ReadMachine.tidy_toStepMachine (h₁.mono_le (fun s => by simp only [T]; omega)
     fun _ => le_rfl) (h₂.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)

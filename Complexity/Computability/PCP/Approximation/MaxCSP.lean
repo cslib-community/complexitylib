@@ -83,7 +83,7 @@ theorem GapTwoCSP_npHard :
     PromiseProblem.NPHard (Graph.encoding (encPi (encPi encBool)))
       (GapTwoCSP (Bool × (Fin 6 → Bool)) (1 - 1 / 2 ^ 61)) := by
   refine PromiseProblem.npHard_of_polyTimeReducible_SAT
-    ⟨gapGraph, .of_tidy (isPolyTime_gapGraph ComputableTidilyInPolyTime.id'), fun φ hφ => ?_,
+    ⟨gapGraph, (isPolyTime_gapGraph (.of_tidy ComputableTidilyInPolyTime.id')), fun φ hφ => ?_,
       fun φ hφ => ?_⟩
   · exact mem_yes_GapTwoCSP.2 ((satisfiable_gapGraph_iff φ).2 hφ)
   · refine (mem_no_GapTwoCSP (by norm_num)).2 ?_

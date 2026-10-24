@@ -56,7 +56,7 @@ exactly those in `PSPACE` (`Cslib.Complexity.mem_PSPACE_iff_exists_isGameVerifie
 
 * `Cslib.Complexity.alternation_append_iff`: trailing moves that do not matter.
 * `Cslib.Reachability.alternation_midpointGame_iff`: the midpoint game is Savitch's recursion.
-* `Cslib.Complexity.computableTidilyInPolyTime_savitchVerifier`: the game is polynomial-time.
+* `Cslib.Complexity.computableInPolyTime_savitchVerifier`: the game is polynomial-time.
 * `Cslib.Complexity.exists_isGameVerifier_of_mem_PSPACE`: every problem in `PSPACE` has a
   polynomial-time game verifier.
 * `Cslib.Complexity.PSPACE_subset_AP`, `Cslib.Complexity.AP_eq_PSPACE`: `AP = PSPACE`.
@@ -263,8 +263,8 @@ open _root_.Turing _root_.Turing.MultiTapeTM
 
 /-- A level of the midpoint game is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_midpointStep :
-    ComputableTidilyInPolyTime (fun p : ℕ × List Bool × List Bool × List Bool =>
+theorem computableInPolyTime_midpointStep :
+    Turing.MultiTapeTM.ComputableInPolyTime (fun p : ℕ × List Bool × List Bool × List Bool =>
       midpointStep p.1 p.2) (encPair encUnary (encPair encBits (encPair encBits encBits)))
       (encPair encBits (encPair encBits encBits)) := by
   unfold midpointStep midpointMoves
@@ -295,9 +295,11 @@ noncomputable def savitchVerifier (x : α × List Bool) : Bool :=
     (MultiTapeNTM.acceptCode (ntm.codeWidth c d (enc x.1))) x.2
 
 /-- The verifier of the midpoint game is polynomial-time. -/
-theorem computableTidilyInPolyTime_savitchVerifier :
-    ComputableTidilyInPolyTime (savitchVerifier (enc := enc) ntm c d) (encPair enc encBits)
+theorem computableInPolyTime_savitchVerifier :
+    Turing.MultiTapeTM.ComputableInPolyTime (savitchVerifier (enc := enc) ntm c d)
+      (encPair enc encBits)
       encBool := by
+  refine .of_tidy ?_
   have hwidth : ComputableTidilyInPolyTime (fun x : α × List Bool => ntm.codeWidth c d (enc x.1))
       (encPair enc encBits) encUnary :=
     (MultiTapeNTM.computableTidilyInPolyTime_codeWidth c d).comp
@@ -317,7 +319,7 @@ theorem computableTidilyInPolyTime_savitchVerifier :
       ((MultiTapeNTM.computableTidilyInPolyTime_acceptCode hwidth).prod
         (ComputableTidilyInPolyTime.snd enc encBits))
   have hloop := ComputableTidilyInPolyTime.iterateWith_of_bounded_growth hw hw hinit
-    computableTidilyInPolyTime_midpointStep
+    computableInPolyTime_midpointStep.tidy
     (growth := fun x => 2 * savitchWidth (enc := enc) ntm c d x.1)
     (ComputableTidilyInPolyTime.polyBounded (by unfold savitchWidth; fun_prop)) fun x s => by
       unfold midpointStep
@@ -345,29 +347,33 @@ space. The game has `2 * ((W + 1) * W)` moves for the width `W` of the codes, pa
 polynomial number. -/
 theorem exists_isGameVerifier_of_mem_PSPACE (h : A ∈ PSPACE enc) :
     ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧ IsGameVerifier enc p V A := by
-  obtain ⟨k, State, _, ntm, s, hs, hA⟩ := PSPACE_subset_NPSPACE h
-  obtain ⟨c, d, hcd⟩ := hs.exists_le
-  -- the number of rounds of the game is polynomially bounded
-  have hrounds : ComputableTidilyInPolyTime
-      (fun a => (savitchWidth (enc := enc) ntm c d a + 1) * savitchWidth (enc := enc) ntm c d a)
-      enc encUnary := by
-    have := MultiTapeNTM.computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
-    unfold savitchWidth
-    fun_prop
-  obtain ⟨p, hr⟩ := hrounds.polyBounded.exists_polynomial
-  refine ⟨p, savitchVerifier (enc := enc) ntm c d,
-    computableTidilyInPolyTime_savitchVerifier ntm c d, fun a => ?_⟩
-  set w := savitchWidth (enc := enc) ntm c d a
-  have hle : 2 * ((w + 1) * w) ≤ 2 * p.eval (enc a).length :=
-    Nat.mul_le_mul_left 2 (hr a)
-  rw [(hA.recognizesInSpace a).2,
-    ← MultiTapeNTM.savitchDecide_eq_true_iff (hA.recognizesInSpace a).1 (hcd a),
-    MultiTapeNTM.savitchDecide,
-    savitch_eq, ← Nat.add_sub_cancel' hle, List.replicate_add, alternation_append_iff
-      fun z => by rw [Cslib.Complexity.sum_replicate_one, savitchVerifier, savitchVerifier,
-        midpointGame_take]]
-  exact (alternation_midpointGame_iff _ _ _).symm
+      Turing.MultiTapeTM.ComputableInPolyTime V (encPair enc encBits) encBool ∧ IsGameVerifier enc p
+        V A := by
+  have this : ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool), ComputableTidilyInPolyTime V
+      (encPair enc encBits) encBool ∧ IsGameVerifier enc p V A := by
+    obtain ⟨k, State, _, ntm, s, hs, hA⟩ := PSPACE_subset_NPSPACE h
+    obtain ⟨c, d, hcd⟩ := hs.exists_le
+    -- the number of rounds of the game is polynomially bounded
+    have hrounds : ComputableTidilyInPolyTime
+        (fun a => (savitchWidth (enc := enc) ntm c d a + 1) * savitchWidth (enc := enc) ntm c d a)
+        enc encUnary := by
+      have := MultiTapeNTM.computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
+      unfold savitchWidth
+      fun_prop
+    obtain ⟨p, hr⟩ := hrounds.polyBounded.exists_polynomial
+    refine ⟨p, savitchVerifier (enc := enc) ntm c d,
+      (computableInPolyTime_savitchVerifier ntm c d).tidy, fun a => ?_⟩
+    set w := savitchWidth (enc := enc) ntm c d a
+    have hle : 2 * ((w + 1) * w) ≤ 2 * p.eval (enc a).length :=
+      Nat.mul_le_mul_left 2 (hr a)
+    rw [(hA.recognizesInSpace a).2,
+      ← MultiTapeNTM.savitchDecide_eq_true_iff (hA.recognizesInSpace a).1 (hcd a),
+      MultiTapeNTM.savitchDecide,
+      savitch_eq, ← Nat.add_sub_cancel' hle, List.replicate_add, alternation_append_iff
+        fun z => by rw [Cslib.Complexity.sum_replicate_one, savitchVerifier, savitchVerifier,
+          midpointGame_take]]
+    exact (alternation_midpointGame_iff _ _ _).symm
+  simpa only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 /-- **`PSPACE ⊆ AP`** [Chandra, Kozen and Stockmeyer][ChandraKozenStockmeyer1981]: a problem in
 `PSPACE` is Savitch's midpoint game on the views of a machine deciding it, which the
@@ -384,7 +390,8 @@ theorem AP_eq_PSPACE : AP enc = PSPACE enc :=
 /-- **The problems with polynomial-time game verifiers are exactly those in `PSPACE`.** -/
 theorem mem_PSPACE_iff_exists_isGameVerifier : A ∈ PSPACE enc ↔
     ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧ IsGameVerifier enc p V A :=
+      Turing.MultiTapeTM.ComputableInPolyTime V (encPair enc encBits) encBool ∧ IsGameVerifier enc p
+        V A :=
   ⟨exists_isGameVerifier_of_mem_PSPACE, fun ⟨_, _, hV, h⟩ => h.mem_PSPACE hV⟩
 
 end Cslib.Complexity

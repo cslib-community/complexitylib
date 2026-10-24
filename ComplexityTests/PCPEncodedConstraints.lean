@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.PCP.Encoded.Constraints
 import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Fixed-alphabet tabulation of unbounded executable descriptors and exact graph interpretation. -/
 
@@ -56,20 +57,25 @@ example : normalized.mapConstraints (fun table => table) = normalized :=
 
 example : ComputableTidilyInPolyTime (Graph.mapConstraints evalBits)
     (Graph.encoding encBits) (Graph.encoding (encPi (encPi encBool))) :=
-  Graph.isPolyTime_tabulateConstraints isPolyTime_evalBits
+  (Graph.isPolyTime_tabulateConstraints (.of_tidy isPolyTime_evalBits)).tidy
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Equivalent functional spelling uses constructor, projection, mapping, and finite-Pi certificates.
 example : ComputableTidilyInPolyTime (fun g : Graph (List Bool) =>
       Graph.mk g.vertices (g.edges.map fun e => Edge.mk e.src e.dst (evalBits e.constraint)))
     (Graph.encoding encBits) (Graph.encoding (encPi (encPi encBool))) := by
-  have htable := Graph.isPolyTime_constraintTable isPolyTime_evalBits
+  have htable := (Graph.isPolyTime_constraintTable (.of_tidy isPolyTime_evalBits)).tidy
   fun_prop
 
 example (table : Bool → Bool → Bool) : (encPi (encPi encBool) table).length ≤ 26 := by
   exact Graph.length_constraintTable_le table
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Table lookup is itself certified for runtime table and both runtime symbols.
-example : ComputableTidilyInPolyTime
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example : ComputableInPolyTime
     (fun p : (Bool → Bool → Bool) × Bool × Bool => p.1 p.2.1 p.2.2)
     (encPair (encPi (encPi encBool)) (encPair encBool encBool)) encBool := by
   fun_prop

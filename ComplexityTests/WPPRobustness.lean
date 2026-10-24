@@ -18,7 +18,8 @@ private def language : Set (List Bool) := {w | w.headD false = true}
 
 private def gap (w : List Bool) : ℤ := if w.headD false then -1 else 0
 
-private theorem gap_mem : gap ∈ GapP encBits := mem_GapP_of_polyTime (by unfold gap; fun_prop)
+private theorem gap_mem : gap ∈ GapP encBits := mem_GapP_of_polyTime
+  (.of_tidy (by unfold gap; fun_prop))
 
 private def targets (n : ℕ) : List ℤ := -1 :: -1 :: List.replicate n (-2)
 

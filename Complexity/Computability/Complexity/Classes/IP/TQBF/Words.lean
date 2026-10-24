@@ -342,35 +342,39 @@ open ComputableTidilyInPolyTime
 variable {γ : Type} {encIn : γ ↪ List Bool}
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_subMod {p a b : γ → ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (ha : ComputableTidilyInPolyTime a encIn encUnary)
-    (hb : ComputableTidilyInPolyTime b encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => subMod (p x) (a x) (b x)) encIn encUnary := by
+theorem computableInPolyTime_subMod {p a b : γ → ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hb : ComputableInPolyTime b encIn encUnary) :
+    ComputableInPolyTime (fun x => subMod (p x) (a x) (b x)) encIn encUnary := by
   unfold subMod
   fun_prop
 
-theorem computableTidilyInPolyTime_connectiveMod (o : ArithQBF.Connective) {p a b : γ → ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (ha : ComputableTidilyInPolyTime a encIn encUnary)
-    (hb : ComputableTidilyInPolyTime b encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => connectiveMod (p x) o (a x) (b x)) encIn encUnary := by
+theorem computableInPolyTime_connectiveMod (o : ArithQBF.Connective) {p a b : γ → ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hb : ComputableInPolyTime b encIn encUnary) :
+    ComputableInPolyTime (fun x => connectiveMod (p x) o (a x) (b x)) encIn encUnary := by
   cases o <;> simp only [connectiveMod] <;> fun_prop
 
-theorem computableTidilyInPolyTime_operatorMod (o : ArithQBF.Operator) {p t a b : γ → ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (ht : ComputableTidilyInPolyTime t encIn encUnary)
-    (ha : ComputableTidilyInPolyTime a encIn encUnary)
-    (hb : ComputableTidilyInPolyTime b encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => operatorMod (p x) o (t x) (a x) (b x)) encIn encUnary := by
+theorem computableInPolyTime_operatorMod (o : ArithQBF.Operator) {p t a b : γ → ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (ht : ComputableInPolyTime t encIn encUnary)
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hb : ComputableInPolyTime b encIn encUnary) :
+    ComputableInPolyTime (fun x => operatorMod (p x) o (t x) (a x) (b x)) encIn encUnary := by
   cases o <;> simp only [operatorMod] <;> fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_hornerMod {p z : γ → ℕ} {l : γ → List ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hz : ComputableTidilyInPolyTime z encIn encUnary)
-    (hl : ComputableTidilyInPolyTime l encIn (encList encUnary)) :
-    ComputableTidilyInPolyTime (fun x => hornerMod (p x) (z x) (l x)) encIn encUnary := by
+theorem computableInPolyTime_hornerMod {p z : γ → ℕ} {l : γ → List ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hz : ComputableInPolyTime z encIn encUnary)
+    (hl : ComputableInPolyTime l encIn (encList encUnary)) :
+    ComputableInPolyTime (fun x => hornerMod (p x) (z x) (l x)) encIn encUnary := by
+  have hp := hp.tidy
+  have hz := hz.tidy
+  have hl := hl.tidy
+  refine .of_tidy ?_
   unfold hornerMod
   refine foldlWithInput_of_bounded_growth (encA := encUnary) (encL := encList encUnary)
     (const 0) ⟨by fun_prop, by fun_prop, inferInstance, inferInstance⟩
@@ -380,74 +384,88 @@ theorem computableTidilyInPolyTime_hornerMod {p z : γ → ℕ} {l : γ → List
   omega
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_lookupPt {pt : γ → List (ℕ × ℕ)} {w : γ → ℕ}
-    (hpt : ComputableTidilyInPolyTime pt encIn (encList (encPair encNat encUnary)))
-    (hw : ComputableTidilyInPolyTime w encIn encNat) :
-    ComputableTidilyInPolyTime (fun x => lookupPt (pt x) (w x)) encIn encUnary := by
+theorem computableInPolyTime_lookupPt {pt : γ → List (ℕ × ℕ)} {w : γ → ℕ}
+    (hpt : ComputableInPolyTime pt encIn (encList (encPair encNat encUnary)))
+    (hw : ComputableInPolyTime w encIn encNat) :
+    ComputableInPolyTime (fun x => lookupPt (pt x) (w x)) encIn encUnary := by
+  have hpt := hpt.tidy
+  have hw := hw.tidy
+  refine .of_tidy ?_
   unfold lookupPt
   have htest : ComputableTidilyInPolyTime (fun q : γ × (ℕ × ℕ) => q.2.1 == w q.1)
       (encPair encIn (encPair encNat encUnary)) encBool := by fun_prop
   exact optionElimWithInput (findWithInput hpt htest) (const 0) (by fun_prop)
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_normPt {p : γ → ℕ} {xs : γ → List ℕ}
-    {pt : γ → List (ℕ × ℕ)} (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hxs : ComputableTidilyInPolyTime xs encIn (encList encNat))
-    (hpt : ComputableTidilyInPolyTime pt encIn (encList (encPair encNat encUnary))) :
-    ComputableTidilyInPolyTime (fun x => normPt (p x) (xs x) (pt x)) encIn
+theorem computableInPolyTime_normPt {p : γ → ℕ} {xs : γ → List ℕ}
+    {pt : γ → List (ℕ × ℕ)} (hp : ComputableInPolyTime p encIn encUnary)
+    (hxs : ComputableInPolyTime xs encIn (encList encNat))
+    (hpt : ComputableInPolyTime pt encIn (encList (encPair encNat encUnary))) :
+    ComputableInPolyTime (fun x => normPt (p x) (xs x) (pt x)) encIn
       (encList (encPair encNat encUnary)) := by
   unfold normPt
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_updatePt {p : γ → ℕ} {xs : γ → List ℕ}
-    {pt : γ → List (ℕ × ℕ)} {v z : γ → ℕ} (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hxs : ComputableTidilyInPolyTime xs encIn (encList encNat))
-    (hpt : ComputableTidilyInPolyTime pt encIn (encList (encPair encNat encUnary)))
-    (hv : ComputableTidilyInPolyTime v encIn encNat)
-    (hz : ComputableTidilyInPolyTime z encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => updatePt (p x) (xs x) (pt x) (v x) (z x)) encIn
+theorem computableInPolyTime_updatePt {p : γ → ℕ} {xs : γ → List ℕ}
+    {pt : γ → List (ℕ × ℕ)} {v z : γ → ℕ} (hp : ComputableInPolyTime p encIn encUnary)
+    (hxs : ComputableInPolyTime xs encIn (encList encNat))
+    (hpt : ComputableInPolyTime pt encIn (encList (encPair encNat encUnary)))
+    (hv : ComputableInPolyTime v encIn encNat)
+    (hz : ComputableInPolyTime z encIn encUnary) :
+    ComputableInPolyTime (fun x => updatePt (p x) (xs x) (pt x) (v x) (z x)) encIn
       (encList (encPair encNat encUnary)) := by
+  have hp := hp.tidy
+  have hxs := hxs.tidy
+  have hpt := hpt.tidy
+  have hv := hv.tidy
+  have hz := hz.tidy
+  refine .of_tidy ?_
   unfold updatePt
   fun_prop
 
 /-- An entry of a computed list of unary numbers, `0` outside the list. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_getD_zero {l : γ → List ℕ} {i : γ → ℕ}
-    (hl : ComputableTidilyInPolyTime l encIn (encList encUnary))
-    (hi : ComputableTidilyInPolyTime i encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => (l x).getD (i x) 0) encIn encUnary := by
+theorem computableInPolyTime_getD_zero {l : γ → List ℕ} {i : γ → ℕ}
+    (hl : ComputableInPolyTime l encIn (encList encUnary))
+    (hi : ComputableInPolyTime i encIn encUnary) :
+    ComputableInPolyTime (fun x => (l x).getD (i x) 0) encIn encUnary := by
+  have hl := hl.tidy
+  have hi := hi.tidy
+  refine .of_tidy ?_
   simp only [List.getD_eq_getElem?_getD]
   exact optionGetDWithInput (getElem? hl hi) (const 0)
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_width {p : γ → ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => width (p x)) encIn encUnary := by
+theorem computableInPolyTime_width {p : γ → ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary) :
+    ComputableInPolyTime (fun x => width (p x)) encIn encUnary := by
   unfold width
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_replyLimit {p D : γ → ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hD : ComputableTidilyInPolyTime D encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => replyLimit (p x) (D x)) encIn encUnary := by
+theorem computableInPolyTime_replyLimit {p D : γ → ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hD : ComputableInPolyTime D encIn encUnary) :
+    ComputableInPolyTime (fun x => replyLimit (p x) (D x)) encIn encUnary := by
   unfold replyLimit
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_decodeReply {p D : γ → ℕ} {word : γ → List Bool}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hD : ComputableTidilyInPolyTime D encIn encUnary)
-    (hword : ComputableTidilyInPolyTime word encIn encBits) :
-    ComputableTidilyInPolyTime (fun x => decodeReply (p x) (D x) (word x)) encIn
+theorem computableInPolyTime_decodeReply {p D : γ → ℕ} {word : γ → List Bool}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hD : ComputableInPolyTime D encIn encUnary)
+    (hword : ComputableInPolyTime word encIn encBits) :
+    ComputableInPolyTime (fun x => decodeReply (p x) (D x) (word x)) encIn
       (encList encUnary) := by
   unfold decodeReply
   fun_prop
 
 /-- The samples are strict PPT in a unary modulus. -/
-theorem isPPTOn_sampleMod {p : γ → ℕ} (hp : ComputableTidilyInPolyTime p encIn encUnary) :
+theorem isPPTOn_sampleMod {p : γ → ℕ} (hp : ComputableInPolyTime p encIn encUnary) :
     IsPPTOn encIn encUnary (fun x => sampleMod (p x)) := by
+  have hp := hp.tidy
   unfold sampleMod
   exact IsPPTOn.map_with (f := fun x i => i % p x) (isPPTOn_sampleDyadicIndex hp) (by fun_prop)
 

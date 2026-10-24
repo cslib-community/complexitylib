@@ -47,9 +47,9 @@ satisfying assignment once for every setting of the ignored bits. The counting v
   `USAT` through `#SAT`.
 * `Cslib.Complexity.SharpSAT.acceptCount_verifier`: the verifier accepts one certificate for each
   satisfying assignment.
-* `Cslib.Complexity.SharpSAT.computableTidilyInPolyTime_card_vars`: the number of occurring
+* `Cslib.Complexity.SharpSAT.computableInPolyTime_card_vars`: the number of occurring
   variables is computable in polynomial time in unary.
-* `Cslib.Complexity.SharpSAT.computableTidilyInPolyTime_verifier`: the verifier is
+* `Cslib.Complexity.SharpSAT.computableInPolyTime_verifier`: the verifier is
   polynomial-time.
 * `Cslib.Complexity.SharpSAT.mem_SharpP`: `#SAT` belongs to `#P`.
 
@@ -158,28 +158,32 @@ theorem acceptCount_verifier (φ : CNF ℕ) :
 
 /-! ### Polynomial time -/
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Testing for a first occurrence is polynomial-time, with the position in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_isFirst :
-    ComputableTidilyInPolyTime (fun p : CNF ℕ × ℕ => isFirst p.1 p.2)
+theorem computableInPolyTime_isFirst :
+    ComputableInPolyTime (fun p : CNF ℕ × ℕ => isFirst p.1 p.2)
       (encPair encCNF encUnary) encBool := by
+  refine .of_tidy ?_
   fun_prop [isFirst]
 
 /-- The number of distinct variables occurring in `φ` is computable in polynomial time in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_card_vars :
-    ComputableTidilyInPolyTime (fun φ : CNF ℕ => φ.vars.toFinset.card) encCNF encUnary :=
-  (CNF.computableInPolyTime_numVars encNat).tidy
+theorem computableInPolyTime_card_vars :
+    ComputableInPolyTime (fun φ : CNF ℕ => φ.vars.toFinset.card) encCNF encUnary :=
+  (CNF.computableInPolyTime_numVars encNat)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The counting verifier is polynomial-time, including on certificates of arbitrary length. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair encCNF encBits) encBool := by
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
+  refine .of_tidy ?_
   fun_prop [verifier, canonical]
 
 /-- **`#SAT` belongs to `#P`**, with certificates as long as the encoded formula. -/
 theorem mem_SharpP : SharpSAT ∈ SharpP encCNF :=
-  ⟨Polynomial.X, verifier, .of_tidy computableTidilyInPolyTime_verifier, fun φ => by
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, fun φ => by
     rw [Polynomial.eval_X, acceptCount_verifier]⟩
 
 end SharpSAT

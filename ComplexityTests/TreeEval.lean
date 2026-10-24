@@ -75,19 +75,19 @@ example : encInstance ⟨2, 2, sample⟩ ≠ encInstance ⟨2, 0, .leaf ![false,
 
 open Turing MultiTapeTM Reader in
 /-- **Tree Evaluation in small space**: `O((ℓ + H + 1) · log (ℓ + 2) + log (n + 2))`. -/
-example : ∃ t, ComputableTidilyInBigO (fun I : Instance => List.ofFn I.tree.eval) encInstance
+example : ∃ t, ComputableInBigO (fun I : Instance => List.ofFn I.tree.eval) encInstance
     encBits t fun I => spaceBound I.ell I.height + (encNat ((encInstance I).length + 1)).length :=
-  computableTidilyInSpace_eval
+  computableInSpace_eval
 
 open Turing MultiTapeTM Reader in
-/-- Instantiating `computableTidilyInSpace_eval` on `sample` (`spaceBound 2 2 + 7 = 22`) yields a
-finite-state multi-tape machine that tidily computes `[false, true]` from
+/-- Instantiating `computableInSpace_eval` on `sample` (`spaceBound 2 2 + 7 = 22`) yields a
+finite-state multi-tape machine that computes `[false, true]` from
 `encInstance ⟨2, 2, sample⟩` within `c * 23` space cells. -/
 example : ∃ (t c k : ℕ) (State : Type) (_ : Finite State) (tm : MultiTapeTM k Bool State),
-    tm.ComputesTidilyInTimeAndSpace (encInstance ⟨2, 2, sample⟩) [false, true]
+    tm.ComputesInTimeAndSpace (encInstance ⟨2, 2, sample⟩) [false, true]
       (c * (t + 1)) (c * 23) := by
-  obtain ⟨t, c, k, State, hfinite, tm, htm⟩ := computableTidilyInSpace_eval
-  have h : tm.ComputesTidilyInTimeAndSpace (encInstance ⟨2, 2, sample⟩)
+  obtain ⟨t, c, k, State, hfinite, tm, htm⟩ := computableInSpace_eval
+  have h : tm.ComputesInTimeAndSpace (encInstance ⟨2, 2, sample⟩)
       (List.ofFn sample.eval) (c * (t ⟨2, 2, sample⟩ + 1))
       (c * (spaceBound 2 2 + (encNat ((encInstance ⟨2, 2, sample⟩).length + 1)).length + 1)) :=
     htm ⟨2, 2, sample⟩
@@ -130,21 +130,21 @@ example : spaceBound sampleNontrivial.1.ell sampleNontrivial.1.height +
 
 open Turing MultiTapeTM in
 /-- **Tree Evaluation in space `O(log n · log log n)`** on nontrivial instances. -/
-example : ∃ t, ComputableTidilyInBigO
+example : ∃ t, ComputableInBigO
     (fun I : NontrivialInstance => List.ofFn I.1.tree.eval) encNontrivialInstance encBits t
     fun I => (encNat (encNontrivialInstance I).length).length *
       (encNat (encNat (encNontrivialInstance I).length).length).length :=
-  computableTidilyInSpace_eval_log_mul_log_log
+  computableInSpace_eval_log_mul_log_log
 
 open Turing MultiTapeTM in
-/-- Instantiating `computableTidilyInSpace_eval_log_mul_log_log` on `sampleNontrivial`
-(`7 * 3 = 21`) yields a finite-state multi-tape machine that tidily computes `[false, true]` from
+/-- Instantiating `computableInSpace_eval_log_mul_log_log` on `sampleNontrivial`
+(`7 * 3 = 21`) yields a finite-state multi-tape machine that computes `[false, true]` from
 `encNontrivialInstance sampleNontrivial` within `c * 22` space cells. -/
 example : ∃ (t c k : ℕ) (State : Type) (_ : Finite State) (tm : MultiTapeTM k Bool State),
-    tm.ComputesTidilyInTimeAndSpace (encNontrivialInstance sampleNontrivial) [false, true]
+    tm.ComputesInTimeAndSpace (encNontrivialInstance sampleNontrivial) [false, true]
       (c * (t + 1)) (c * 22) := by
-  obtain ⟨t, c, k, State, hfinite, tm, htm⟩ := computableTidilyInSpace_eval_log_mul_log_log
-  have h : tm.ComputesTidilyInTimeAndSpace (encNontrivialInstance sampleNontrivial)
+  obtain ⟨t, c, k, State, hfinite, tm, htm⟩ := computableInSpace_eval_log_mul_log_log
+  have h : tm.ComputesInTimeAndSpace (encNontrivialInstance sampleNontrivial)
       (List.ofFn sampleNontrivial.1.tree.eval) (c * (t sampleNontrivial + 1))
       (c * ((encNat (encNontrivialInstance sampleNontrivial).length).length *
         (encNat (encNat (encNontrivialInstance sampleNontrivial).length).length).length + 1)) :=
@@ -220,11 +220,11 @@ info: 'Cslib.TreeEval.encode_injective' depends on axioms:
 #print axioms Cslib.TreeEval.encode_injective
 
 /--
-info: 'Cslib.TreeEval.computableTidilyInSpace_eval' depends on axioms:
+info: 'Cslib.TreeEval.computableInSpace_eval' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.TreeEval.computableTidilyInSpace_eval
+#print axioms Cslib.TreeEval.computableInSpace_eval
 
 /--
 info: 'Cslib.TreeEval.ell_lt_length_encNat_length_encInstance' depends on axioms:
@@ -248,8 +248,8 @@ info: 'Cslib.TreeEval.spaceBound_add_length_le_log_mul_log_log' depends on axiom
 #print axioms Cslib.TreeEval.spaceBound_add_length_le_log_mul_log_log
 
 /--
-info: 'Cslib.TreeEval.computableTidilyInSpace_eval_log_mul_log_log' depends on axioms:
+info: 'Cslib.TreeEval.computableInSpace_eval_log_mul_log_log' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.TreeEval.computableTidilyInSpace_eval_log_mul_log_log
+#print axioms Cslib.TreeEval.computableInSpace_eval_log_mul_log_log

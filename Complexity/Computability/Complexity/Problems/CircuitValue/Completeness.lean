@@ -15,6 +15,7 @@ public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # The circuit value problem is `P`-complete
@@ -49,7 +50,7 @@ copies the input.
 * `Cslib.Complexity.CircuitValue.run_writer`: the writer writes the encoded instance.
 * `Cslib.Complexity.CircuitValue.computableInLogSpace_tableauInstance`: the instances are
   computable in logarithmic space.
-* `Cslib.Complexity.CircuitValue.computableTidilyInPolyTime_tableauCode`: the whole code is
+* `Cslib.Complexity.CircuitValue.computableInPolyTime_tableauCode`: the whole code is
   constructed in polynomial time from the unary input length.
 * `Cslib.Complexity.CircuitValue.exists_uniformCircuits`: polynomial-time Boolean functions
   admit polynomial-time circuit constructors, correct on the encoding's image.
@@ -177,17 +178,20 @@ variable {α : Type} {encIn : α ↪ List Bool} {Bs : α → ℕ}
 include hin
 
 /-- Evaluating the fixed polynomial tableau time bound preserves a space budget. -/
-theorem timeBound_inSpace {n : α → ℕ} (hn : ComputableTidilyInSpace n encIn encNat Bs) :
-    ComputableTidilyInSpace (fun x => timeBound C d (n x)) encIn encNat Bs :=
-  budget_natAdd (budget_natAdd (budget_natMul (budget_const C hin)
-    (budget_natPow (budget_natAdd hn (budget_const 1 hin)) hin d)) hn) (budget_const 1 hin)
+theorem timeBound_inSpace {n : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs) :
+    ComputableInSpace (fun x => timeBound C d (n x)) encIn encNat Bs := by
+  have hn := hn.tidy
+  exact .of_tidy (budget_natAdd (budget_natAdd (budget_natMul (budget_const C hin)
+    (budget_natPow (budget_natAdd hn (budget_const 1 hin)) hin d)) hn) (budget_const 1 hin))
 
 omit [DecidableEq State] in
 /-- Computing the tableau gate count preserves a space budget. -/
-theorem numGates_inSpace {T : α → ℕ} (hT : ComputableTidilyInSpace T encIn encNat Bs) :
-    ComputableTidilyInSpace (fun x => numGates k State (T x)) encIn encNat Bs :=
-  budget_natAdd (budget_const 2 hin) (budget_natMul (budget_natAdd hT (budget_const 1 hin))
-    (blockSize_inSpace (k := k) (State := State) (.of_tidy hT) hin).tidy)
+theorem numGates_inSpace {T : α → ℕ} (hT : ComputableInSpace T encIn encNat Bs) :
+    ComputableInSpace (fun x => numGates k State (T x)) encIn encNat Bs := by
+  have hT := hT.tidy
+  exact .of_tidy
+    (budget_natAdd (budget_const 2 hin) (budget_natMul (budget_natAdd hT (budget_const 1 hin))
+    (blockSize_inSpace (k := k) (State := State) (.of_tidy hT) hin).tidy))
 
 private theorem gateChunk_inSpace {n i : α → ℕ} (hn : ComputableTidilyInSpace n encIn encNat Bs)
     (hi : ComputableTidilyInSpace i encIn encNat Bs) :
@@ -197,13 +201,13 @@ private theorem gateChunk_inSpace {n i : α → ℕ} (hn : ComputableTidilyInSpa
     of_inO (.of_linear (.of_frame fun _ => rfl))
   exact budget_comp_linear doubled_inSpace (budget_comp_linear doubled_inSpace
     (budget_comp_linear (g := fun g => frame (encGate g)) hframe
-      (gateCode_inSpace tm (.of_tidy hn) (.of_tidy (timeBound_inSpace C d hin hn)) hin
+      (gateCode_inSpace tm (.of_tidy hn) (timeBound_inSpace C d hin (.of_tidy hn)) hin
         (.of_tidy hi)).tidy))
 
 omit [DecidableEq State] in
 private theorem trailer_inSpace {n : α → ℕ} (hn : ComputableTidilyInSpace n encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => trailer k State C d (n x)) encIn encBits Bs := by
-  have hT := timeBound_inSpace C d hin hn
+  have hT := (timeBound_inSpace C d hin (.of_tidy hn)).tidy
   have ho : ComputableTidilyInSpace (fun x => outWire k State (n x) (timeBound C d (n x)))
       encIn encNat Bs :=
     budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
@@ -225,6 +229,8 @@ private theorem trailer_inSpace {n : α → ℕ} (hn : ComputableTidilyInSpace n
 
 end Components
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **The instances are computable in logarithmic space**, from the framed input. -/
 theorem computableInLogSpace_tableauInstance :
     ComputableInLogSpace (tableauInstance tm C d) (encFramed encBits) encCircuitValue := by
@@ -238,9 +244,9 @@ theorem computableInLogSpace_tableauInstance :
   have hn := fst' (snd' hs)
   have hi := snd' (snd' hs)
   refine (tableauSpec tm C d).computableInLogSpace (tableauSpec_output tm C d)
-    (numGates_inSpace (k := k) (State := State) hin (timeBound_inSpace C d hin hn))
-    (gateChunk_inSpace tm C d hin hn hi)
-    (trailer_inSpace (k := k) (State := State) C d hin hn) ?_
+    (numGates_inSpace (k := k) (State := State) hin (timeBound_inSpace C d hin (.of_tidy hn)))
+    (.of_tidy (gateChunk_inSpace tm C d hin hn hi))
+    (.of_tidy (trailer_inSpace (k := k) (State := State) C d hin hn)) ?_
   change PolynomiallyBounded fun n => numGates k State (timeBound C d n)
   simp only [numGates, blockSize, colStart, gfStart, globStart, numCols, timeBound]
   fun_prop
@@ -261,8 +267,9 @@ noncomputable def tableauCode (n : ℕ) : List (Op × List ℕ) × List ℕ :=
 
 /-- Writing the tableau code takes polynomial time in the unary input length. This reuses the
 certified logarithmic-space writer and discards its dummy input assignment. -/
-theorem computableTidilyInPolyTime_tableauCode :
-    ComputableTidilyInPolyTime (tableauCode tm C d) encUnary encCode := by
+theorem computableInPolyTime_tableauCode :
+    ComputableInPolyTime (tableauCode tm C d) encUnary encCode := by
+  refine .of_tidy ?_
   have hwriter := (computableInLogSpace_tableauInstance tm C d).computableTidilyInPolyTime
   have hcode := ComputableTidilyInPolyTime.dropFrame.comp
     (ComputableTidilyInPolyTime.unframe.comp hwriter.encoded)
@@ -278,26 +285,31 @@ theorem computableTidilyInPolyTime_tableauCode :
 polynomial time from the unary encoded input length. Correctness is required on the encoding's
 image; no decoder or efficient membership test for that image is assumed. -/
 theorem exists_uniformCircuits {α : Type} {enc : α ↪ List Bool} {f : α → Bool}
-    (hf : ComputableTidilyInPolyTime f enc encBool) :
+    (hf : ComputableInPolyTime f enc encBool) :
     ∃ circuits : (n : ℕ) → Circuit signature n 1,
-      ComputableTidilyInPolyTime (fun n => (circuits n).code) encUnary encCode ∧
+      ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode ∧
       ∀ a, (circuits (enc a).length).eval interpretation (fun i => (enc a)[i]) 0 = f a := by
-  obtain ⟨t, s, ht, -, tapes, Control, hfin, machine, hmachine⟩ := hf
-  have := Fintype.ofFinite Control
-  classical
-  obtain ⟨C, d, hbound⟩ := ht.exists_le
-  refine ⟨fun n => Tableau.circuit machine n (timeBound C d n),
-    computableTidilyInPolyTime_tableauCode machine C d, fun a => ?_⟩
-  rw [Tableau.eval_circuit machine (by simp only [timeBound]; omega)]
-  have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
-  rw [hw]
-  obtain ⟨hhalt, hout⟩ := ComputesTidilyInTimeAndSpace.runFrom_initCfg (hmachine a)
-  have hle : t a ≤ timeBound C d (enc a).length := by
-    have h := hbound a
-    dsimp only [timeBound]
-    omega
-  rw [MultiTapeTM.runFrom_eq_of_halt machine _ hle hhalt, hout, encBool_apply]
-  cases f a <;> simp [OutView.ofList]
+  have hf := hf.tidy
+  have this : ∃ circuits : (n : ℕ) → Circuit signature n 1, ComputableTidilyInPolyTime
+      (fun n => (circuits n).code) encUnary encCode ∧ ∀ a, (circuits (enc a).length).eval
+      interpretation (fun i => (enc a)[i]) 0 = f a := by
+    obtain ⟨t, s, ht, -, tapes, Control, hfin, machine, hmachine⟩ := hf
+    have := Fintype.ofFinite Control
+    classical
+    obtain ⟨C, d, hbound⟩ := ht.exists_le
+    refine ⟨fun n => Tableau.circuit machine n (timeBound C d n),
+      (computableInPolyTime_tableauCode machine C d).tidy, fun a => ?_⟩
+    rw [Tableau.eval_circuit machine (by simp only [timeBound]; omega)]
+    have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
+    rw [hw]
+    obtain ⟨hhalt, hout⟩ := ComputesTidilyInTimeAndSpace.runFrom_initCfg (hmachine a)
+    have hle : t a ≤ timeBound C d (enc a).length := by
+      have h := hbound a
+      dsimp only [timeBound]
+      omega
+    rw [MultiTapeTM.runFrom_eq_of_halt machine _ hle hhalt, hout, encBool_apply]
+    cases f a <;> simp [OutView.ofList]
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 end Construction
 
@@ -308,7 +320,8 @@ instance is mapped to the tableau circuit of a polynomial-time decider on inputs
 the encoded instance, with the encoded instance as its input. -/
 theorem logSpaceReducible_of_mem_P {α : Type} {enc : α ↪ List Bool} {A : Set α}
     (hA : A ∈ P enc) : LogSpaceReducible enc encCircuitValue A CircuitValue := by
-  obtain ⟨f, ⟨t, s, ht, -, k, State, hfin, tm, htm⟩, hAf⟩ := mem_P_iff_tidy.mp hA
+  obtain ⟨f, hfpoly, hAf⟩ := hA
+  obtain ⟨t, s, ht, -, k, State, hfin, tm, htm⟩ := hfpoly.tidy
   have := Fintype.ofFinite State
   classical
   obtain ⟨C, d, htle⟩ := ht.exists_le

@@ -8,6 +8,7 @@ Authors: Samuel Schlesinger
 import ComplexityTests.PCPNumbering
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Tests for exact gadget enumeration, numbering, soundness, and composition certificates. -/
 
@@ -89,12 +90,16 @@ example (g : Graph (Bool → Bool → Bool)) :
         Graph.composeEval).unsatVal :=
   Graph.le_unsatVal_compose _ _ _ g (nodup_coins _) nodup_queries (mem_coins _) mem_queries
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (Graph.compose (numberSlots boolAlphabet).2 boolCoins queries)
     (Graph.encoding (encPi (encPi encBool)))
     (Graph.encoding (encPair (encPi (encPi encBool))
       (encPair (encFinite (Rand Bool)) (encFinEnum Query)))) := by fun_prop
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The composed descriptors normalize to fixed tables over the 17-query answer alphabet.
 example : ComputableTidilyInPolyTime
     (fun g : Graph (Bool → Bool → Bool) =>
@@ -103,6 +108,8 @@ example : ComputableTidilyInPolyTime
     (Graph.encoding (encPi (encPi encBool))) := by
   polytime
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- A captured graph may use an arbitrary outer representation; its certificate is still required.
 example {Input : Type} (input : Input ↪ List Bool) (graph : Input → Graph (Bool → Bool → Bool))
     (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))) :

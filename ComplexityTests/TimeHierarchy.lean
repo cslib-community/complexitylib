@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Complexity.Classes.Hierarchy
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-! Decoding descriptions from malformed, empty and padded words, the binary clock, the diagonal
 on the padded descriptions of concrete accepting and rejecting machines, and the exponential
@@ -97,7 +98,7 @@ example (b : Bool) (pad : List Bool) :
 /-- The diagonal is computed in exponential time, up to a constant factor. -/
 example : ∃ c, ComputableTidilyInTimeAndSpace diagonal encBits encBool
     (fun x => c * (2 ^ (4 * x.length) + 1)) fun x => c * (2 ^ (2 * x.length) + 1) := by
-  obtain ⟨c, h, -⟩ := computableTidilyInO_diagonal
+  obtain ⟨c, h, -⟩ := computableInO_diagonal.tidy
   exact ⟨c, h⟩
 
 example : {x | diagonal x = true} ∉ P encBits := diagonal_notMem_P
@@ -123,11 +124,11 @@ info: 'Cslib.Complexity.not_computableInTimeAndSpace_diagonal' depends on axioms
 #print axioms Cslib.Complexity.not_computableInTimeAndSpace_diagonal
 
 /--
-info: 'Cslib.Complexity.computableTidilyInO_diagonal' depends on axioms:
+info: 'Cslib.Complexity.computableInO_diagonal' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.computableTidilyInO_diagonal
+#print axioms Cslib.Complexity.computableInO_diagonal
 
 /--
 info: 'Turing.MultiTapeTM.Universal.exists_computableTidilyInDegree_decodeDesc' depends on axioms:

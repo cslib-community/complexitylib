@@ -79,11 +79,13 @@ theorem proofVerdict_answers (width : ℕ) (decode : (Fin width → Bool) → α
   · simp [PCPVerifier.answers, proofQueries, List.getElem?_append, i.isLt]
   · simp [PCPVerifier.answers, proofQueries, i.isLt]
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Query construction is efficient, with positions returned in binary. -/
 @[fun_prop]
 theorem isPolyTime_proofQueries (width : ℕ) (enc : C ↪ List Bool) :
-    ComputableTidilyInPolyTime (proofQueries width : Edge C → List ℕ)
+    ComputableInPolyTime (proofQueries width : Edge C → List ℕ)
       (encoding enc) (encList encNat) := by
+  refine .of_tidy ?_
   have h : ComputableTidilyInPolyTime (proofQueries width : Edge C → List ℕ)
       (encoding enc) (encList encUnary) := by
     unfold proofQueries
@@ -91,15 +93,18 @@ theorem isPolyTime_proofQueries (width : ℕ) (enc : C ↪ List Bool) :
   simpa only [List.map_id', Function.comp_def] using
     ComputableTidilyInPolyTime.unary_to_binary.map.comp h
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- A fixed finite decoder and a joint evaluator give an efficient verdict on arbitrary answers. -/
 @[fun_prop]
 theorem isPolyTime_proofVerdict (width : ℕ) (decode : (Fin width → Bool) → α)
     {enc : C ↪ List Bool} {alphabet : α ↪ List Bool} {eval : C → α → α → Bool}
-    (heval : ComputableTidilyInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : Edge C × List Bool => p.1.proofVerdict width decode eval p.2)
       (encPair (encoding enc) encBits) encBool := by
+  have heval := heval.tidy
+  refine .of_tidy ?_
   have hdecode : ComputableTidilyInPolyTime decode (encPi encBool) alphabet := .of_finite _
   unfold proofVerdict
   fun_prop
@@ -118,9 +123,9 @@ def sampleEdge (g : Graph C) (random : List Bool) : Option (Edge C) :=
 @[fun_prop]
 theorem isPolyTime_sampleEdge {Input : Type} {input : Input ↪ List Bool} {enc : C ↪ List Bool}
     {graph : Input → Graph C} {random : Input → List Bool}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc))
-    (hrandom : ComputableTidilyInPolyTime random input encBits) :
-    ComputableTidilyInPolyTime (fun x => (graph x).sampleEdge (random x))
+    (hgraph : ComputableInPolyTime graph input (encoding enc))
+    (hrandom : ComputableInPolyTime random input encBits) :
+    ComputableInPolyTime (fun x => (graph x).sampleEdge (random x))
       input (encOption (Edge.encoding enc)) := by
   unfold sampleEdge
   fun_prop
@@ -225,13 +230,15 @@ theorem accepts_proofOfLabels (width : ℕ) (encode : α → Fin width → Bool)
     obtain ⟨i, hi⟩ := List.get_of_mem hmem
     simpa only [ConstraintGraph.Satisfies, toGraph, hi] using hsat i
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- All verifier functions are polynomial-time, including on random strings of the wrong length. -/
 theorem polyTime_edgeVerifier (width : ℕ) (decode : (Fin width → Bool) → α)
     {enc : C ↪ List Bool} {alphabet : α ↪ List Bool} {eval : C → α → α → Bool}
-    (heval : ComputableTidilyInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
     (edgeVerifier width decode eval).PolyTime (encoding enc) := by
-  refine ⟨?_, ?_, ?_⟩
+  have heval := heval.tidy
+  refine ⟨.of_tidy ?_, .of_tidy ?_, .of_tidy ?_⟩
   · exact ComputableTidilyInPolyTime.unary_to_binary.comp (by
       change ComputableTidilyInPolyTime (fun g : Graph C => Nat.clog 2 g.edges.length)
         (encoding enc) encUnary

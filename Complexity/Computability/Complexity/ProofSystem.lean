@@ -194,10 +194,10 @@ theorem PolynomiallyBounded.mem_NP {P : ProofSystem enc L} (hP : P.PolynomiallyB
     L ∈ NP enc := by
   classical
   obtain ⟨p, hp⟩ := hP
-  have hcheck : ComputableTidilyInPolyTime (fun x : α × List Bool => decide (P x.2 = x.1))
+  have hcheck : ComputableInPolyTime (fun x : α × List Bool => decide (P x.2 = x.1))
       (encPair enc encBits) encBool :=
-    ComputableTidilyInPolyTime.decide_eq' (P.computable.tidy.comp (.snd enc encBits))
-      (.fst enc encBits)
+    .of_tidy (ComputableTidilyInPolyTime.decide_eq' (P.computable.tidy.comp (.snd enc encBits))
+      (.fst enc encBits))
   have h := mem_NP_of_witness (p := p) Decoder.bits hcheck (R := fun a π => P π = a)
     (fun _ _ => decide_eq_true_iff) fun a π hπ => hp a (hπ ▸ P.mem π)
   have hL : {a | ∃ π, P π = a} = L := P.range_eq

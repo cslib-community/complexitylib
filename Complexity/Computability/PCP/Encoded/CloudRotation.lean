@@ -60,13 +60,13 @@ vertex and label. A separate machine for each size is insufficient. -/
 @[fun_prop]
 theorem isPolyTime_cloudRotation {graph : Input → Graph C}
     {halfEdge : Input → (ℕ × Bool) × D} {rotate : ℕ × (ℕ × D) → ℕ × D}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc))
-    (hhalfEdge : ComputableTidilyInPolyTime halfEdge input
+    (hgraph : ComputableInPolyTime graph input (encoding enc))
+    (hhalfEdge : ComputableInPolyTime halfEdge input
       (encPair (encPair encUnary encBool) labelEncoding))
-    (hrotate : ComputableTidilyInPolyTime rotate
+    (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding))
     (fallback : C) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun x => (graph x).cloudRotation fallback rotate (halfEdge x))
       input (encPair (encPair encUnary encBool) labelEncoding) := by
   unfold cloudRotation

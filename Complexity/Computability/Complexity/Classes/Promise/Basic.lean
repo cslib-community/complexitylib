@@ -191,8 +191,8 @@ def PromiseP (enc : α ↪ List Bool) : Set (PromiseProblem α) := promiseClass 
 /-- **Goldreich's definition of promise-P**: a promise problem is in `PromiseP` when a
 polynomial-time function solves it. -/
 theorem mem_PromiseP_iff :
-    Q ∈ PromiseP enc ↔ ∃ f : α → Bool, ComputableTidilyInPolyTime f enc encBool ∧ Q.SolvedBy f :=
-  mem_promiseClass_iff_solvedBy fun _ => mem_P_iff_tidy
+    Q ∈ PromiseP enc ↔ ∃ f : α → Bool, ComputableInPolyTime f enc encBool ∧ Q.SolvedBy f :=
+  mem_promiseClass_iff_solvedBy fun _ => mem_P
 
 @[simp] theorem ofSet_mem_PromiseP {A : Set α} : ofSet A ∈ PromiseP enc ↔ A ∈ P enc :=
   ofSet_mem_promiseClass
@@ -211,18 +211,24 @@ def PromiseNP (enc : α ↪ List Bool) : Set (PromiseProblem α) := promiseClass
 polynomial-time verifier accepts some certificate for every yes-instance and none for any
 no-instance. -/
 theorem mem_PromiseNP_iff : Q ∈ PromiseNP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-    ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
+    ComputableInPolyTime V (encPair enc encBits) encBool ∧
       (∀ a ∈ Q.yes, ∃ w : List Bool, w.length = p.eval (enc a).length ∧ V (a, w) = true) ∧
       ∀ a ∈ Q.no, ∀ w : List Bool, w.length = p.eval (enc a).length → V (a, w) = false := by
-  constructor
-  · rintro ⟨A, ⟨p, V, hV, h⟩, hyes, hno⟩
-    refine ⟨p, V, hV.tidy, fun a ha => (h a).1 (hyes ha), fun a ha w hw => ?_⟩
-    rw [← Bool.not_eq_true]
-    exact fun hVw => Set.disjoint_right.1 hno ha ((h a).2 ⟨w, hw, hVw⟩)
-  · rintro ⟨p, V, hV, hyes, hno⟩
-    refine ⟨{a | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ V (a, w) = true},
-      ⟨p, V, .of_tidy hV, fun _ => Iff.rfl⟩, hyes, Set.disjoint_right.2 fun a ha ⟨w, hw, hVw⟩ => ?_⟩
-    simp [hno a ha w hw] at hVw
+  have this : Q ∈ PromiseNP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
+      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
+      (∀ a ∈ Q.yes, ∃ w : List Bool, w.length = p.eval (enc a).length ∧ V (a, w) = true) ∧ ∀ a ∈
+      Q.no, ∀ w : List Bool, w.length = p.eval (enc a).length → V (a, w) = false := by
+    constructor
+    · rintro ⟨A, ⟨p, V, hV, h⟩, hyes, hno⟩
+      refine ⟨p, V, hV.tidy, fun a ha => (h a).1 (hyes ha), fun a ha w hw => ?_⟩
+      rw [← Bool.not_eq_true]
+      exact fun hVw => Set.disjoint_right.1 hno ha ((h a).2 ⟨w, hw, hVw⟩)
+    · rintro ⟨p, V, hV, hyes, hno⟩
+      refine ⟨{a | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ V (a, w) = true},
+        ⟨p, V, .of_tidy hV, fun _ => Iff.rfl⟩, hyes, Set.disjoint_right.2 fun a ha ⟨w, hw, hVw⟩ =>
+          ?_⟩
+      simp [hno a ha w hw] at hVw
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 @[simp] theorem ofSet_mem_PromiseNP {A : Set α} : ofSet A ∈ PromiseNP enc ↔ A ∈ NP enc :=
   ofSet_mem_promiseClass

@@ -152,11 +152,11 @@ info: 'Turing.MultiTapeTM.Universal.budgetSpace_le' depends on axioms:
 #print axioms Turing.MultiTapeTM.Universal.budgetSpace_le
 
 /--
-info: 'Cslib.Complexity.computableTidilyInO_spaceDiagonal' depends on axioms:
+info: 'Cslib.Complexity.computableInO_spaceDiagonal' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.computableTidilyInO_spaceDiagonal
+#print axioms Cslib.Complexity.computableInO_spaceDiagonal
 
 /--
 info: 'Cslib.Complexity.setOf_spaceDiagonal_notMem_DSPACE' depends on axioms:

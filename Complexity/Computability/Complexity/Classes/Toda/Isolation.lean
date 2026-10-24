@@ -84,12 +84,12 @@ def hashesToZero (k : ℕ) (seed w : List Bool) : Bool :=
 
 /-- The test is polynomial-time, with all its arguments computed. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_hashesToZero {γ : Type} {input : γ ↪ List Bool} {k : γ → ℕ}
+theorem computableInPolyTime_hashesToZero {γ : Type} {input : γ ↪ List Bool} {k : γ → ℕ}
     {seed w : γ → List Bool}
-    (hk : ComputableTidilyInPolyTime k input encUnary)
-    (hseed : ComputableTidilyInPolyTime seed input encBits)
-    (hw : ComputableTidilyInPolyTime w input encBits) :
-    ComputableTidilyInPolyTime (fun x => hashesToZero (k x) (seed x) (w x)) input encBool := by
+    (hk : ComputableInPolyTime k input encUnary)
+    (hseed : ComputableInPolyTime seed input encBits)
+    (hw : ComputableInPolyTime w input encBits) :
+    ComputableInPolyTime (fun x => hashesToZero (k x) (seed x) (w x)) input encBool := by
   unfold hashesToZero
   fun_prop
 

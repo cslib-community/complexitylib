@@ -35,7 +35,7 @@ evaluates the gate list with the polynomial-time evaluator
 
 ## Main results
 
-* `Cslib.Complexity.CircuitValue.computableTidilyInPolyTime_eval`: evaluation is polynomial-time.
+* `Cslib.Complexity.CircuitValue.computableInPolyTime_eval`: evaluation is polynomial-time.
 * `Cslib.Complexity.CircuitValue.mem_P`: the circuit value problem is in `P`.
 
 ## References
@@ -88,14 +88,14 @@ private theorem eval_eq_evalOutput (x : Σ n, Circuit signature n 1 × BitString
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Evaluating a circuit on an input is polynomial-time, on the encoding `encCircuitValue`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_eval :
-    ComputableTidilyInPolyTime (fun x : Σ n, Circuit signature n 1 × BitString n =>
+theorem computableInPolyTime_eval :
+    ComputableInPolyTime (fun x : Σ n, Circuit signature n 1 × BitString n =>
       x.2.1.eval interpretation x.2.2 0) encCircuitValue encBool := by
-  have hraw : ComputableTidilyInPolyTime
+  have hraw : ComputableInPolyTime
       (fun x : Σ n, Circuit signature n 1 × BitString n => ((x.1, x.2.1.code), List.ofFn x.2.2))
       encCircuitValue (encPair (encPair encUnary encCode) encBits) :=
     .of_eq fun _ => rfl
-  have hout : ComputableTidilyInPolyTime
+  have hout : ComputableInPolyTime
       (fun r : (ℕ × (List (Op × List ℕ) × List ℕ)) × List Bool =>
         evalOutput r.2 r.1.2.1 (r.1.2.2.headD 0))
       (encPair (encPair encUnary encCode) encBits) encBool := by
@@ -106,7 +106,7 @@ theorem computableTidilyInPolyTime_eval :
 /-- **The circuit value problem is in `P`**, for the binary encoding of circuits followed by the
 input bits. -/
 theorem mem_P : CircuitValue ∈ P encCircuitValue :=
-  ⟨_, .of_tidy computableTidilyInPolyTime_eval, fun _ => Iff.rfl⟩
+  ⟨_, computableInPolyTime_eval, fun _ => Iff.rfl⟩
 
 end CircuitValue
 

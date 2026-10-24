@@ -24,8 +24,8 @@ and polynomial work for every encoded instance.
 
 ## Main results
 
-* `Cslib.Complexity.CookLevin.computableTidilyInPolyTime_tableau`: the entire original tableau.
-* `Cslib.Complexity.CookLevin.computableTidilyInPolyTime_reduce`: the complete SAT reduction.
+* `Cslib.Complexity.CookLevin.computableInPolyTime_tableau`: the entire original tableau.
+* `Cslib.Complexity.CookLevin.computableInPolyTime_reduce`: the complete SAT reduction.
 
 ## References
 
@@ -40,21 +40,23 @@ open Turing Turing.MultiTapeTM
 
 variable {k : ℕ} {State : Type} [Fintype State] [DecidableEq State]
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Construct the whole tableau from its prefix and unary certificate/time bounds. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_tableau (tm : MultiTapeTM k Bool State) :
-    ComputableTidilyInPolyTime (fun q : List Bool × ℕ × ℕ => tableau tm q.1 q.2.1 q.2.2)
+theorem computableInPolyTime_tableau (tm : MultiTapeTM k Bool State) :
+    ComputableInPolyTime (fun q : List Bool × ℕ × ℕ => tableau tm q.1 q.2.1 q.2.2)
       (encPair encBits (encPair encUnary encUnary))
       (encList (encList (encPair encVar encBool))) := by
+  refine .of_tidy ?_
   unfold tableau
   polytime
 
 /-- The existing Cook–Levin reduction is polynomial-time for every fixed verifier and bounds. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_reduce (tm : MultiTapeTM k Bool State) (p : Polynomial ℕ)
+theorem computableInPolyTime_reduce (tm : MultiTapeTM k Bool State) (p : Polynomial ℕ)
     (c d : ℕ) {α : Type} (enc : α ↪ List Bool) :
-    ComputableTidilyInPolyTime (reduce tm p c d enc) enc encCNF :=
-  computableTidilyInPolyTime_relabel.comp
-    ((computableTidilyInPolyTime_tableau tm).comp (computableTidilyInPolyTime_parameters p c d enc))
+    ComputableInPolyTime (reduce tm p c d enc) enc encCNF :=
+  computableInPolyTime_relabel.comp
+    ((computableInPolyTime_tableau tm).comp (computableInPolyTime_parameters p c d enc))
 
 end Cslib.Complexity.CookLevin

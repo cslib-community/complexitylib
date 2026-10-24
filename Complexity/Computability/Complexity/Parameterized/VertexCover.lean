@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Mathlib.Data.Nat.Bitwise
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Fixed-parameter tractability of vertex cover
@@ -48,7 +49,7 @@ tractable in the target size `k` (`Cslib.Complexity.VertexCover_mem_FPT`).
 * `Cslib.Complexity.VertexCover.exists_lt_two_pow_isCover_foldBranch`: if a graph has a vertex
   cover of at most `m` vertices, one of the `2 ^ m` paths of length `m` finds a cover.
 * `Cslib.Complexity.VertexCover.search_eq_true_iff`: `VertexCover.search` decides `VertexCover`.
-* `Cslib.Complexity.VertexCover.exists_computableTidilyInO_search`: its running time.
+* `Cslib.Complexity.VertexCover.exists_computableInO_search`: its running time.
 * `Cslib.Complexity.VertexCover_decidableInExpTime_one`: `VertexCover` is decidable within time
   `2 ^ k` times a polynomial in the length of the encoded instance.
 * `Cslib.Complexity.VertexCover_mem_FPT`, `Cslib.Complexity.VertexCover_hasKernel`: `VertexCover`
@@ -288,8 +289,9 @@ theorem search_eq_true_iff (x : Graph × ℕ) : search x = true ↔ x ∈ Vertex
 open ComputableTidilyInPolyTime in
 /-- The capped depth `cap` is computable in polynomial time in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_cap :
-    ComputableTidilyInPolyTime cap (encPair encGraph encNat) encUnary := by
+theorem computableInPolyTime_cap :
+    ComputableInPolyTime cap (encPair encGraph encNat) encUnary := by
+  refine .of_tidy ?_
   have heq : cap = fun x : Graph × ℕ =>
       Cslib.BitString.boundedBinaryValue x.1.distinctVertices.length (encNat x.2).reverse := by
     funext x
@@ -297,14 +299,14 @@ theorem computableTidilyInPolyTime_cap :
       Cslib.BitString.binaryValue_reverse_bits]
   rw [heq]
   exact bitsBoundedBinaryValueWithInput
-    ((length_list encNat).comp (Graph.computableTidilyInPolyTime_distinctVertices.comp (fst _ _)))
+    ((length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.tidy.comp (fst _ _)))
     (bitsReverse.comp ((encode encNat).comp (snd _ _)))
 
 open ComputableTidilyInPolyTime in
 /-- A single step of the bounded search tree is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_branchStep :
-    ComputableTidilyInPolyTime (fun p : (Graph × List ℕ) × Bool => branchStep p.1.1 p.1.2 p.2)
+theorem computableInPolyTime_branchStep :
+    ComputableInPolyTime (fun p : (Graph × List ℕ) × Bool => branchStep p.1.1 p.1.2 p.2)
       (encPair (encPair encGraph (encList encNat)) encBool) (encList encNat) := by
   unfold branchStep
   fun_prop
@@ -362,7 +364,7 @@ private theorem computableTidilyInPolyTime_foldBranch :
       (fun s : State => 2 * (encGraph s.1.1.1).length + 2) :=
     ((PolyBounded.const 2).mul hG.polyBounded_length).add (.const 2)
   exact foldlWith_of_bounded_growth hG computableTidilyInPolyTime_branchBits (const [])
-    computableTidilyInPolyTime_branchStep hgrowth_poly
+    computableInPolyTime_branchStep.tidy hgrowth_poly
     fun s C b _ => length_encList_branchStep_le s.1.1.1 C b
 
 open ComputableTidilyInPolyTime in
@@ -372,7 +374,7 @@ private theorem computableTidilyInPolyTime_step
   have hcov : ComputableTidilyInPolyTime
       (fun s : State => isCover s.1.1.1 (foldBranch s.1.1.1 ((List.range s.1.2).map s.2.1.testBit)))
       encState encBool :=
-    computableTidilyInPolyTime_isCover.comp
+    computableInPolyTime_isCover.tidy.comp
       ((show ComputableTidilyInPolyTime (fun s : State => s.1.1.1) encState encGraph
         by fun_prop).prod computableTidilyInPolyTime_foldBranch)
   have hor : ComputableTidilyInPolyTime
@@ -387,6 +389,7 @@ open ComputableTidilyInPolyTime in
 /-- The initial state of the search is computed in polynomial time. -/
 private theorem computableTidilyInPolyTime_init :
     ComputableTidilyInPolyTime init (encPair encGraph encNat) encState := by
+  have hcap := computableInPolyTime_cap.tidy
   unfold init
   fun_prop
 
@@ -394,6 +397,7 @@ open ComputableTidilyInPolyTime in
 /-- The number `2 ^ cap x` of paths is computed in binary in polynomial time. -/
 private theorem computableTidilyInPolyTime_count :
     ComputableTidilyInPolyTime (fun x => 2 ^ cap x) (encPair encGraph encNat) encNat := by
+  have hcap := computableInPolyTime_cap.tidy
   fun_prop
 
 open ComputableTidilyInPolyTime in
@@ -407,71 +411,75 @@ private theorem computableTidilyInPolyTime_finish :
 
 /-- **Running time of the bounded search tree for `VertexCover`**: within time `2 ^ k` times a
 polynomial in the length of the encoded instance. -/
-theorem exists_computableTidilyInO_search : ∃ e, ComputableTidilyInO search
+theorem exists_computableInO_search : ∃ e, ComputableInO search
     (encPair encGraph encNat) encBool
     (fun x => 2 ^ x.2 * ((encPair encGraph encNat x).length + 1) ^ e)
     fun x => 2 ^ x.2 * ((encPair encGraph encNat x).length + 1) ^ e := by
-  obtain ⟨d, _, hstep⟩ := computableTidilyInPolyTime_step.exists_degree
-  obtain ⟨d₀, _, hinit⟩ := computableTidilyInPolyTime_init.exists_degree
-  obtain ⟨d₁, _, hcount⟩ := computableTidilyInPolyTime_count.exists_degree
-  obtain ⟨d₂, _, hans⟩ := computableTidilyInPolyTime_finish.exists_degree
-  set size : Graph × ℕ → ℕ := fun x => (encPair encGraph encNat x).length
-  set B : Graph × ℕ → ℕ := fun x => 16 * (size x + 1)
-  have hcap (x : Graph × ℕ) : cap x ≤ size x :=
-    (cap_le_length x).trans (by simp only [size, length_encPair]; omega)
-  have hstate : ∀ x, ∀ j ≤ 2 ^ cap x,
-      (encState (step^[j] (init x))).length ≤ B x := by
-    intro x j hj
-    have hK := ComputableTidilyInO.length_encNat_mono hj
-    rw [encNat_two_pow] at hK
-    have h₁ := hcap x
-    rw [iterate_step_init]
-    simp only [List.length_append, List.length_replicate, List.length_singleton] at hK
-    simp only [encState, length_encPair, encUnary_apply, List.length_replicate, encBool_apply,
-      List.length_singleton, B, size] at h₁ ⊢
-    omega
-  have hiter := ComputableTidilyInO.iterate hcount.inO hinit.inO hstep.inO
-    (R := fun x => (B x + 1) ^ d) (Q := fun x => (B x + 1) ^ d) (B := B)
-    (fun x j hj => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate x j hj) 1) d)
-    (fun x j hj => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate x j hj) 1) d) hstate
-  have h := hans.inO.comp hiter
-  have hB : PolyBounded size B := .of_forall_le 16 1 fun _ => by simp [B]
-  have hpow (j : ℕ) : PolyBounded size fun x => (B x + 1) ^ j :=
-    ((PolyBounded.of_polynomiallyBounded id (bound := fun n => (n + 1) ^ j) (by fun_prop)).comp
-      hB).mono fun _ => le_rfl
-  have hL (j : ℕ) : PolyBounded size fun x => (size x + 1) ^ j :=
-    .of_forall_le 1 j fun _ => by simp
-  obtain ⟨c, e, hT⟩ := exists_le_mul_two_pow_of_polyBounded (size := size) (μ := Prod.snd)
-    ((hpow d).add (hB.add (.of_forall_le 4 2 fun _ => le_rfl)))
-    ((hL d₁).add ((hL d₀).add (hpow d₂)))
-    (T := fun x => ((encPair encGraph encNat x).length + 1) ^ d₁ +
-      ((encPair encGraph encNat x).length + 1) ^ d₀ +
-      (2 ^ cap x + 1) * ((B x + 1) ^ d + B x + ((encNat (2 ^ cap x)).length + 1) ^ 2) +
-      ((encState (step^[2 ^ cap x] (init x))).length + 1) ^ d₂)
-    (fun x => by
-      have hK : ((encNat (2 ^ cap x)).length + 1) ^ 2 ≤ 4 * (size x + 1) ^ 2 := by
-        rw [encNat_two_pow]
-        simp only [List.length_append, List.length_replicate, List.length_singleton]
-        calc (cap x + 1 + 1) ^ 2 ≤ (2 * (size x + 1)) ^ 2 :=
-              Nat.pow_le_pow_left (by have := hcap x; omega) 2
-          _ = 4 * (size x + 1) ^ 2 := by ring
-      have hS := Nat.pow_le_pow_left (Nat.add_le_add_right (hstate x _ le_rfl) 1) d₂
-      have h2 : 2 ^ cap x ≤ 2 ^ x.2 := Nat.pow_le_pow_right (by norm_num) (cap_le_snd x)
-      have h3 := Nat.mul_le_mul (Nat.add_le_add_right h2 1)
-        (Nat.add_le_add_left hK ((B x + 1) ^ d + B x))
-      simp only [size] at h3 hS ⊢
-      nlinarith)
-  refine ⟨e, (h.mono c (fun x => ?_) fun x => ?_).of_enc_eq fun x => rfl⟩
-  all_goals
-    have h₁ := hT x
-    simp only [size] at h₁
-    generalize 2 ^ cap x = N at h₁ ⊢
-    generalize (encNat N).length = K at h₁ ⊢
-    obtain ⟨X, hX⟩ : ∃ X, (B x + 1) ^ d + B x = X := ⟨_, rfl⟩
-    rw [hX] at h₁
-    have h₂ : K ≤ (K + 1) ^ 2 := by nlinarith
-    have h₃ : X + (K + 1) ^ 2 ≤ (N + 1) * (X + (K + 1) ^ 2) := Nat.le_mul_of_pos_left _ (by omega)
-    nlinarith
+  have this : ∃ e, ComputableTidilyInO search (encPair encGraph encNat) encBool
+      (fun x => 2 ^ x.2 * ((encPair encGraph encNat x).length + 1) ^ e) fun x => 2 ^ x.2 *
+      ((encPair encGraph encNat x).length + 1) ^ e := by
+    obtain ⟨d, _, hstep⟩ := computableTidilyInPolyTime_step.exists_degree
+    obtain ⟨d₀, _, hinit⟩ := computableTidilyInPolyTime_init.exists_degree
+    obtain ⟨d₁, _, hcount⟩ := computableTidilyInPolyTime_count.exists_degree
+    obtain ⟨d₂, _, hans⟩ := computableTidilyInPolyTime_finish.exists_degree
+    set size : Graph × ℕ → ℕ := fun x => (encPair encGraph encNat x).length
+    set B : Graph × ℕ → ℕ := fun x => 16 * (size x + 1)
+    have hcap (x : Graph × ℕ) : cap x ≤ size x :=
+      (cap_le_length x).trans (by simp only [size, length_encPair]; omega)
+    have hstate : ∀ x, ∀ j ≤ 2 ^ cap x,
+        (encState (step^[j] (init x))).length ≤ B x := by
+      intro x j hj
+      have hK := ComputableTidilyInO.length_encNat_mono hj
+      rw [encNat_two_pow] at hK
+      have h₁ := hcap x
+      rw [iterate_step_init]
+      simp only [List.length_append, List.length_replicate, List.length_singleton] at hK
+      simp only [encState, length_encPair, encUnary_apply, List.length_replicate, encBool_apply,
+        List.length_singleton, B, size] at h₁ ⊢
+      omega
+    have hiter := ComputableTidilyInO.iterate hcount.inO hinit.inO hstep.inO
+      (R := fun x => (B x + 1) ^ d) (Q := fun x => (B x + 1) ^ d) (B := B)
+      (fun x j hj => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate x j hj) 1) d)
+      (fun x j hj => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate x j hj) 1) d) hstate
+    have h := hans.inO.comp hiter
+    have hB : PolyBounded size B := .of_forall_le 16 1 fun _ => by simp [B]
+    have hpow (j : ℕ) : PolyBounded size fun x => (B x + 1) ^ j :=
+      ((PolyBounded.of_polynomiallyBounded id (bound := fun n => (n + 1) ^ j) (by fun_prop)).comp
+        hB).mono fun _ => le_rfl
+    have hL (j : ℕ) : PolyBounded size fun x => (size x + 1) ^ j :=
+      .of_forall_le 1 j fun _ => by simp
+    obtain ⟨c, e, hT⟩ := exists_le_mul_two_pow_of_polyBounded (size := size) (μ := Prod.snd)
+      ((hpow d).add (hB.add (.of_forall_le 4 2 fun _ => le_rfl)))
+      ((hL d₁).add ((hL d₀).add (hpow d₂)))
+      (T := fun x => ((encPair encGraph encNat x).length + 1) ^ d₁ +
+        ((encPair encGraph encNat x).length + 1) ^ d₀ +
+        (2 ^ cap x + 1) * ((B x + 1) ^ d + B x + ((encNat (2 ^ cap x)).length + 1) ^ 2) +
+        ((encState (step^[2 ^ cap x] (init x))).length + 1) ^ d₂)
+      (fun x => by
+        have hK : ((encNat (2 ^ cap x)).length + 1) ^ 2 ≤ 4 * (size x + 1) ^ 2 := by
+          rw [encNat_two_pow]
+          simp only [List.length_append, List.length_replicate, List.length_singleton]
+          calc (cap x + 1 + 1) ^ 2 ≤ (2 * (size x + 1)) ^ 2 :=
+                Nat.pow_le_pow_left (by have := hcap x; omega) 2
+            _ = 4 * (size x + 1) ^ 2 := by ring
+        have hS := Nat.pow_le_pow_left (Nat.add_le_add_right (hstate x _ le_rfl) 1) d₂
+        have h2 : 2 ^ cap x ≤ 2 ^ x.2 := Nat.pow_le_pow_right (by norm_num) (cap_le_snd x)
+        have h3 := Nat.mul_le_mul (Nat.add_le_add_right h2 1)
+          (Nat.add_le_add_left hK ((B x + 1) ^ d + B x))
+        simp only [size] at h3 hS ⊢
+        nlinarith)
+    refine ⟨e, (h.mono c (fun x => ?_) fun x => ?_).of_enc_eq fun x => rfl⟩
+    all_goals
+      have h₁ := hT x
+      simp only [size] at h₁
+      generalize 2 ^ cap x = N at h₁ ⊢
+      generalize (encNat N).length = K at h₁ ⊢
+      obtain ⟨X, hX⟩ : ∃ X, (B x + 1) ^ d + B x = X := ⟨_, rfl⟩
+      rw [hX] at h₁
+      have h₂ : K ≤ (K + 1) ^ 2 := by nlinarith
+      have h₃ : X + (K + 1) ^ 2 ≤ (N + 1) * (X + (K + 1) ^ 2) := Nat.le_mul_of_pos_left _ (by omega)
+      nlinarith
+  simpa only [computableInO_iff_computableTidilyInO] using this
 
 end VertexCover
 
@@ -479,8 +487,9 @@ end VertexCover
 a polynomial in the length of the encoded instance, for target cover size `k`. -/
 theorem VertexCover_decidableInExpTime_one :
     DecidableInExpTime VertexCover (encPair encGraph encNat) Prod.snd 1 := by
-  obtain ⟨e, h⟩ := VertexCover.exists_computableTidilyInO_search
-  refine .of_computableTidilyInO h (fun x => (VertexCover.search_eq_true_iff x).symm) 1 e
+  obtain ⟨e, h⟩ := VertexCover.exists_computableInO_search
+  refine DecidableInExpTime.of_computableInO h (fun x => (VertexCover.search_eq_true_iff x).symm) 1
+    e
     fun x => ?_
   rw [one_mul, Real.rpow_natCast]
   push_cast

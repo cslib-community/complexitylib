@@ -189,10 +189,6 @@ theorem id_computableInFPTTime (κ : List Bool → ℕ) :
   ⟨fun _ => 1, 1, computableInTimeAndSpace_id.mono (fun w => by simp [encBits])
     fun _ => Nat.zero_le _⟩
 
-example (κ : List Bool → ℕ) :
-    ComputableTidilyInFPTTime (id : List Bool → List Bool) encBits encBits κ :=
-  (id_computableInFPTTime κ).tidy
-
 /-- A time bound alone suffices for fpt time: the space bound may be exponential. -/
 example (κ : List Bool → ℕ) :
     ComputableInFPTTime (id : List Bool → List Bool) encBits encBits κ :=
@@ -218,16 +214,16 @@ example : single ∈ PSPACE encBits := by
   have hf : ComputableInPolySpace (fun w : List Bool => decide (w = [true])) encBits encBool :=
     ⟨_, fun _ => 1, by fun_prop, h.mono (fun _ => le_rfl) fun _ => Nat.zero_le _,
       fun _ => by simp⟩
-  exact mem_PSPACE_iff_computableTidilyInPolySpace.mpr
-    ⟨_, hf.tidy, fun w => by simp [single]⟩
+  exact mem_PSPACE_iff_computableInPolySpace.mpr
+    ⟨_, hf, fun w => by simp [single]⟩
 
 /-- A plain fpt-time decider gives membership in `FPT`, for every parameter. -/
 example (κ : List Bool → ℕ) : single ∈ FPT encBits κ := by
   obtain ⟨c, h⟩ := exists_computableInTimeAndSpace_single
   have hf : ComputableInFPTTime (fun w : List Bool => decide (w = [true])) encBits encBool κ :=
     ⟨fun _ => c, 0, h.mono (fun _ => by simp) fun _ => Nat.zero_le _⟩
-  exact mem_FPT_iff_computableTidilyInFPTTime.mpr
-    ⟨_, hf.tidy, fun w => by simp [single]⟩
+  exact mem_FPT_iff_computableInFPTTime.mpr
+    ⟨_, hf, fun w => by simp [single]⟩
 
 /-! ### From library certificates to plain ones -/
 
@@ -249,22 +245,22 @@ example : ComputableInPolySpace
 
 /-- `TQBF` has a plain polynomial-space decider. -/
 example : ∃ f, ComputableInPolySpace f encQBF encBool ∧ ∀ φ, φ ∈ TQBF ↔ f φ = true := by
-  obtain ⟨f, hf, hA⟩ := mem_PSPACE_iff_computableTidilyInPolySpace.mp TQBF_mem_PSPACE
-  exact ⟨f, .of_tidy hf, hA⟩
+  obtain ⟨f, hf, hA⟩ := mem_PSPACE_iff_computableInPolySpace.mp TQBF_mem_PSPACE
+  exact ⟨f, .of_tidy hf.tidy, hA⟩
 
 /-- A plain polynomial-time preprocessing of the existing TQBF decider stays in `PSPACE`.
 The decider's tidy certificate and the preprocessing's plain certificate compose automatically. -/
 example {α : Type} {enc : α ↪ List Bool} {f : α → Logic.PL.QBF ℕ}
     (hf : ComputableInPolyTime f enc encQBF) : {a | f a ∈ TQBF} ∈ PSPACE enc := by
-  obtain ⟨dec, hdec, hA⟩ := mem_PSPACE_iff_computableTidilyInPolySpace.mp TQBF_mem_PSPACE
+  obtain ⟨dec, hdec, hA⟩ := mem_PSPACE_iff_computableInPolySpace.mp TQBF_mem_PSPACE
   have hcomp : ComputableInPolySpace (fun a => dec (f a)) enc encBool := by fun_prop
-  exact mem_PSPACE_iff_computableTidilyInPolySpace.mpr ⟨_, hcomp.tidy, fun a => hA (f a)⟩
+  exact mem_PSPACE_iff_computableInPolySpace.mpr ⟨_, hcomp, fun a => hA (f a)⟩
 
 /-- `SAT` has a plain fpt-time decider in the number of variables. -/
 example : ∃ g, ComputableInFPTTime g encCNF encBool Logic.PL.CNF.numVars ∧
     ∀ φ, φ ∈ SAT ↔ g φ = true := by
-  obtain ⟨g, hg, hA⟩ := mem_FPT_iff_computableTidilyInFPTTime.mp SAT_mem_FPT
-  exact ⟨g, hg.computableInFPTTime, hA⟩
+  obtain ⟨g, hg, hA⟩ := mem_FPT_iff_computableInFPTTime.mp SAT_mem_FPT
+  exact ⟨g, hg, hA⟩
 
 /-! ### Axioms -/
 
@@ -302,12 +298,5 @@ info: 'Turing.MultiTapeTM.ComputableInTimeAndSpace.computableInFPTTime' depends 
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputableInTimeAndSpace.computableInFPTTime
-
-/--
-info: 'Cslib.Complexity.computableInFPTTime_iff_computableTidilyInFPTTime' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms computableInFPTTime_iff_computableTidilyInFPTTime
 
 end ComplexityTests.ResourceBoundsPlain

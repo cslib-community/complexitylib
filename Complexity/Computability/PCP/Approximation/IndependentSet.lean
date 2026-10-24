@@ -180,7 +180,7 @@ gives an assignment satisfying as many clauses. -/
 theorem polyTimeReducible_GapThreeSAT_GapIndependentSet (hs : s < 1) :
     PromiseProblem.PolyTimeReducible encCNF (encPair encGraph encNat) (GapThreeSAT s)
       (GapIndependentSet s) := by
-  refine ⟨SAT.toIndependentSet, .of_tidy SAT.computableTidilyInPolyTime_toIndependentSet,
+  refine ⟨SAT.toIndependentSet, SAT.computableInPolyTime_toIndependentSet,
     fun φ hφ => ?_, fun φ hφ => ?_⟩
   · rw [yes_GapThreeSAT] at hφ
     rw [yes_GapIndependentSet]
@@ -228,8 +228,8 @@ theorem polyTimeReducible_GapExactThreeSAT_GapVertexCover (hs : s < 1) :
     push_cast
     ring
   refine ⟨fun φ => IndependentSet.toVertexCover (SAT.toIndependentSet φ),
-    .of_tidy (IndependentSet.computableTidilyInPolyTime_toVertexCover.comp
-      SAT.computableTidilyInPolyTime_toIndependentSet), fun φ hφ => ?_, fun φ hφ => ?_⟩
+    .of_tidy (IndependentSet.computableInPolyTime_toVertexCover.tidy.comp
+      SAT.computableInPolyTime_toIndependentSet.tidy), fun φ hφ => ?_, fun φ hφ => ?_⟩
   · rw [yes_GapExactThreeSAT] at hφ
     obtain ⟨h3, hsat⟩ := hφ
     have hα : (φ.length : ℝ) ≤ (SAT.toIndependentSet φ).1.indepNum := by

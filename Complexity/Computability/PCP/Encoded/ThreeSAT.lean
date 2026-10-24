@@ -81,8 +81,9 @@ def ofCompactCNF {V : Type} [DecidableEq V] (φ : CNF V) :
 /-- Checking a clause label includes lookup of the literals at its three positions. -/
 @[fun_prop]
 theorem isPolyTime_clauseHolds :
-    ComputableTidilyInPolyTime (fun p : Clause ℕ × (Fin 3 → Bool) => clauseHolds p.1 p.2)
+    ComputableInPolyTime (fun p : Clause ℕ × (Fin 3 → Bool) => clauseHolds p.1 p.2)
       (encPair (encList (encPair encUnary encBool)) (encPi encBool)) encBool := by
+  refine .of_tidy ?_
   unfold clauseHolds
   apply anyWithInput (encA := encFinEnum (Fin 3)) (by fun_prop)
   apply finite_cases (branch := fun (i : Fin 3) (p : (Clause ℕ × (Fin 3 → Bool)) × Fin 3) =>
@@ -90,13 +91,15 @@ theorem isPolyTime_clauseHolds :
   intro i
   apply optionElimWithInput (encB := encPair encUnary encBool) <;> fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The per-edge program charges clause lookup, endpoints, and all 64 entries of its relation. -/
 @[fun_prop]
 theorem isPolyTime_cnfEdge :
-    ComputableTidilyInPolyTime (fun p : CNF ℕ × (ℕ × Fin 3) => cnfEdge p.1 p.2)
+    ComputableInPolyTime (fun p : CNF ℕ × (ℕ × Fin 3) => cnfEdge p.1 p.2)
       (encPair (encList (encList (encPair encUnary encBool)))
         (encPair encUnary (encFinEnum (Fin 3))))
       (Edge.encoding (encPi (encPi encBool))) := by
+  refine .of_tidy ?_
   have hindex : ComputableTidilyInPolyTime (Fin.val (n := 3))
       (encFinEnum (Fin 3)) encUnary := .of_finite _
   have hclause : ComputableTidilyInPolyTime
@@ -107,7 +110,8 @@ theorem isPolyTime_cnfEdge :
   have hliteral := ComputableTidilyInPolyTime.getElem? (encA := encPair encUnary encBool)
     hclause (hindex.comp ((snd _ _).snd'))
   unfold cnfEdge
-  apply Edge.isPolyTime_mk (by fun_prop) (by fun_prop)
+  refine ComputableInPolyTime.tidy
+    (Edge.isPolyTime_mk (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy ?_))
   refine pi fun a => pi fun b => ?_
   have ha : ComputableTidilyInPolyTime a (encFinEnum (Fin 3)) encBool := .of_finite _
   fun_prop
@@ -115,10 +119,10 @@ theorem isPolyTime_cnfEdge :
 /-- Constructing all edges and copying their constraints is polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_ofCNF :
-    ComputableTidilyInPolyTime (fun p : ℕ × CNF ℕ => ofCNF p.1 p.2)
+    ComputableInPolyTime (fun p : ℕ × CNF ℕ => ofCNF p.1 p.2)
       (encPair encUnary (encList (encList (encPair encUnary encBool))))
       (encoding (encPi (encPi encBool))) := by
-  have hdarts : ComputableTidilyInPolyTime
+  have hdarts : ComputableInPolyTime
       (fun p : ℕ × CNF ℕ => (List.range p.2.length).product (List.finRange 3))
       (encPair encUnary (encList (encList (encPair encUnary encBool))))
       (encList (encPair encUnary (encFinEnum (Fin 3)))) := by
@@ -132,9 +136,9 @@ attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
 theorem isPolyTime_ofCompactCNF {V Input : Type} [DecidableEq V]
     {enc : V ↪ List Bool} {input : Input ↪ List Bool} {formula : Input → CNF V}
-    (hformula : ComputableTidilyInPolyTime formula input
+    (hformula : ComputableInPolyTime formula input
       (encList (encList (encPair enc encBool)))) :
-    ComputableTidilyInPolyTime (fun x => ofCompactCNF (formula x))
+    ComputableInPolyTime (fun x => ofCompactCNF (formula x))
       input (encoding (encPi (encPi encBool))) := by
   unfold ofCompactCNF
   polytime

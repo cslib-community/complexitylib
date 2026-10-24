@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # The explicit affine disperser in polynomial time
@@ -37,13 +38,13 @@ numbers in unary. All runtime sizes are polynomial in the input length `N`:
   division with remainders computed by repeated multiplication by `X`;
 * the multiplication table has `n ^ 3` entries, each a product over the prime factors of `n`;
 * a field multiplication sums at most `n ^ 2` table entries, uniformly in the table
-  (`Cslib.AffineDisperser.computableTidilyInPolyTime_fieldMul`); the `r` powers take at most
+  (`Cslib.AffineDisperser.computableInPolyTime_fieldMul`); the `r` powers take at most
   `2 r` multiplications each, the elementary symmetric polynomial `r t` more, and the trace reads
   the diagonals of the table.
 
 Every loop is certified with a bound on its intermediate states, so the certificate charges the
 whole computation, including every field operation
-(`Cslib.AffineDisperser.computableTidilyInPolyTime_explicitDisperser`). The exponent of the
+(`Cslib.AffineDisperser.computableInPolyTime_explicitDisperser`). The exponent of the
 polynomial is not computed.
 
 ## Main definitions
@@ -53,12 +54,12 @@ polynomial is not computed.
 
 ## Main results
 
-* `Cslib.AffineDisperser.computableTidilyInPolyTime_leastIrreducibleCode`: the search for the
+* `Cslib.AffineDisperser.computableInPolyTime_leastIrreducibleCode`: the search for the
   irreducible polynomials.
-* `Cslib.AffineDisperser.computableTidilyInPolyTime_explicitTable`: the multiplication table.
-* `Cslib.AffineDisperser.computableTidilyInPolyTime_traceSymCoords`: `traceSym 1 r t` in
+* `Cslib.AffineDisperser.computableInPolyTime_explicitTable`: the multiplication table.
+* `Cslib.AffineDisperser.computableInPolyTime_traceSymCoords`: `traceSym 1 r t` in
   coordinates, uniformly in the multiplication table.
-* `Cslib.AffineDisperser.computableTidilyInPolyTime_explicitDisperser`: the explicit disperser is
+* `Cslib.AffineDisperser.computableInPolyTime_explicitDisperser`: the explicit disperser is
   computable in polynomial time.
 * `Cslib.AffineDisperser.setOf_explicitDisperser_mem_P`: it decides a problem in `P`.
 
@@ -78,8 +79,8 @@ open Turing.MultiTapeTM ComputableTidilyInPolyTime Explicit
 
 /-- Multiplication by `X` modulo a binary polynomial, on coefficient lists. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_mulXMod :
-    ComputableTidilyInPolyTime (fun p : List Bool × List Bool => mulXMod p.1 p.2)
+theorem computableInPolyTime_mulXMod :
+    ComputableInPolyTime (fun p : List Bool × List Bool => mulXMod p.1 p.2)
       (encPair encBits encBits) encBits := by
   unfold mulXMod
   fun_prop
@@ -87,12 +88,14 @@ theorem computableTidilyInPolyTime_mulXMod :
 private theorem length_mulXMod_le (g r : List Bool) : (mulXMod g r).length ≤ g.length - 1 :=
   List.length_take_le _ _
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The remainder modulo a binary polynomial, by a left fold over the coefficients whose state, the
 current power of `X` and the partial remainder, never exceeds the degree of the modulus. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_modBits :
-    ComputableTidilyInPolyTime (fun p : List Bool × List Bool => modBits p.1 p.2)
+theorem computableInPolyTime_modBits :
+    ComputableInPolyTime (fun p : List Bool × List Bool => modBits p.1 p.2)
       (encPair encBits encBits) encBits := by
+  refine .of_tidy ?_
   have hstep : ComputableTidilyInPolyTime
       (fun q : (List Bool × (List Bool × List Bool)) × Bool => modStep q.1.1 q.1.2 q.2)
       (encPair (encPair encBits (encPair encBits encBits)) encBool)
@@ -119,30 +122,34 @@ theorem computableTidilyInPolyTime_modBits :
   exact (snd encBits encBits).comp h
 
 /-- The binary digits of a unary natural. -/
-theorem computableTidilyInPolyTime_bits_unary :
-    ComputableTidilyInPolyTime Nat.bits encUnary encBits :=
-  natBits.comp unary_to_binary
+theorem computableInPolyTime_bits_unary :
+    ComputableInPolyTime Nat.bits encUnary encBits :=
+  .of_tidy (natBits.comp unary_to_binary)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The irreducibility test by trial division, on a unary code. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_isIrreducibleCode :
-    ComputableTidilyInPolyTime isIrreducibleCode encUnary encBool := by
+theorem computableInPolyTime_isIrreducibleCode :
+    ComputableInPolyTime isIrreducibleCode encUnary encBool := by
+  refine .of_tidy ?_
   unfold isIrreducibleCode
-  have := computableTidilyInPolyTime_bits_unary
+  have := computableInPolyTime_bits_unary.tidy
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The exhaustive search for the least irreducible code below a unary bound. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_leastIrreducibleCode :
-    ComputableTidilyInPolyTime (fun q : ℕ × ℕ => leastIrreducibleCode q.1 q.2)
+theorem computableInPolyTime_leastIrreducibleCode :
+    ComputableInPolyTime (fun q : ℕ × ℕ => leastIrreducibleCode q.1 q.2)
       (encPair encUnary encUnary) encUnary := by
+  refine .of_tidy ?_
   unfold leastIrreducibleCode
   fun_prop
 
 /-- The remainders of the powers of `X`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_powerTable :
-    ComputableTidilyInPolyTime powerTable encBits (encList encBits) := by
+theorem computableInPolyTime_powerTable :
+    ComputableInPolyTime powerTable encBits (encList encBits) := by
   unfold powerTable
   fun_prop
 
@@ -182,19 +189,21 @@ private theorem computableTidilyInPolyTime_prod_of_le {α : Type} {input : α �
 encoding is that of the list. Restricting to lists of lists keeps this rule away from raw bit
 strings, which have their own lookup rule. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_getD_list {α γ : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_getD_list {α γ : Type} {input : α ↪ List Bool}
     {enc : List γ ↪ List Bool} {L : α → List (List γ)} {i : α → ℕ}
-    (hL : ComputableTidilyInPolyTime L input (encList enc))
-    (hi : ComputableTidilyInPolyTime i input encUnary) (d : List γ) :
-    ComputableTidilyInPolyTime (fun a => (L a).getD (i a) d) input enc :=
-  (listGetD (encA := enc) (encL := encList enc) d).comp (hL.prod hi)
+    (hL : ComputableInPolyTime L input (encList enc))
+    (hi : ComputableInPolyTime i input encUnary) (d : List γ) :
+    ComputableInPolyTime (fun a => (L a).getD (i a) d) input enc := by
+  have hL := hL.tidy
+  have hi := hi.tidy
+  exact .of_tidy ((listGetD (encA := enc) (encL := encList enc) d).comp (hL.prod hi))
 
 /-! ### The parameters -/
 
 /-- The primes in `(a, b]`, from unary bounds. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_primesIoc :
-    ComputableTidilyInPolyTime (fun q : ℕ × ℕ => primesIoc q.1 q.2)
+theorem computableInPolyTime_primesIoc :
+    ComputableInPolyTime (fun q : ℕ × ℕ => primesIoc q.1 q.2)
       (encPair encUnary encUnary) (encList encUnary) := by
   simp_rw [primesIoc, List.range'_eq_map_range]
   fun_prop
@@ -215,9 +224,10 @@ private theorem foldl_selectStep (T : ℕ) (ps chosen : List ℕ) :
 
 /-- The greedy choice of primes below a unary budget. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_selectBelow :
-    ComputableTidilyInPolyTime (fun q : ℕ × List ℕ => selectBelow q.1 q.2)
+theorem computableInPolyTime_selectBelow :
+    ComputableInPolyTime (fun q : ℕ × List ℕ => selectBelow q.1 q.2)
       (encPair encUnary (encList encUnary)) (encList encUnary) := by
+  refine .of_tidy ?_
   have hstep : ComputableTidilyInPolyTime
       (fun q : (ℕ × List ℕ) × ℕ => selectStep q.1 q.2)
       (encPair (encPair encUnary (encList encUnary)) encUnary)
@@ -244,15 +254,15 @@ theorem computableTidilyInPolyTime_selectBelow :
 
 /-- The prime bound `L = ⌊⌊log₂ N⌋ / 3⌋` of unary `N`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_primeBound :
-    ComputableTidilyInPolyTime primeBound encUnary encUnary := by
+theorem computableInPolyTime_primeBound :
+    ComputableInPolyTime primeBound encUnary encUnary := by
   unfold primeBound
   fun_prop
 
 /-- The primes of the field degree on `N` bits, `N` in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_degreePrimes :
-    ComputableTidilyInPolyTime degreePrimes encUnary (encList encUnary) := by
+theorem computableInPolyTime_degreePrimes :
+    ComputableInPolyTime degreePrimes encUnary (encList encUnary) := by
   unfold degreePrimes
   fun_prop
 
@@ -271,24 +281,25 @@ private theorem prod_degreePrimes_le (N : ℕ) : (degreePrimes N).prod ≤ N + 1
 
 /-- The field degree on `N` bits, `N` in unary: a product of at most `N + 1`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_fieldDegree :
-    ComputableTidilyInPolyTime fieldDegree encUnary encUnary := by
-  have h := computableTidilyInPolyTime_prod_of_le computableTidilyInPolyTime_degreePrimes
+theorem computableInPolyTime_fieldDegree :
+    ComputableInPolyTime fieldDegree encUnary encUnary := by
+  refine .of_tidy ?_
+  have h := computableTidilyInPolyTime_prod_of_le computableInPolyTime_degreePrimes.tidy
     (fun N p hp => (prime_of_mem_degreePrimes hp).2.2.pos) (B := fun N => N + 1)
     (.of_forall_le 1 1 fun N => by simp) prod_degreePrimes_le
   simpa only [← fieldDegree_eq_prod] using h
 
 /-- The number of blocks on `N` bits, `N` in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_numBlocks :
-    ComputableTidilyInPolyTime numBlocks encUnary encUnary := by
+theorem computableInPolyTime_numBlocks :
+    ComputableInPolyTime numBlocks encUnary encUnary := by
   unfold numBlocks
   fun_prop
 
 /-- The degree of the elementary symmetric polynomial on `N` bits, `N` in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_symDegree :
-    ComputableTidilyInPolyTime symDegree encUnary encUnary := by
+theorem computableInPolyTime_symDegree :
+    ComputableInPolyTime symDegree encUnary encUnary := by
   unfold symDegree
   fun_prop
 
@@ -307,13 +318,14 @@ theorem codeBound_le (N : ℕ) : codeBound N ≤ 2 * (N + 1) * (N + 1) := by
 
 /-- The search range `2 ^ (4 L + 1)` on `N` bits, in unary, from `N` in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_codeBound :
-    ComputableTidilyInPolyTime codeBound encUnary encUnary := by
-  have hvalue : ComputableTidilyInPolyTime codeBound encUnary encNat := by
+theorem computableInPolyTime_codeBound :
+    ComputableInPolyTime codeBound encUnary encUnary := by
+  have hvalue : ComputableInPolyTime codeBound encUnary encNat := by
     unfold codeBound
-    have := binary_two_pow
+    have := ComputableInPolyTime.binary_two_pow
     fun_prop
-  exact binary_to_unary_bounded hvalue (bound := fun N => 2 * (N + 1) * (N + 1)) (by fun_prop)
+  exact ComputableInPolyTime.binary_to_unary_bounded hvalue
+    (bound := fun N => 2 * (N + 1) * (N + 1)) (by fun_prop)
     codeBound_le
 
 /-! ### The multiplication table -/
@@ -321,12 +333,14 @@ theorem computableTidilyInPolyTime_codeBound :
 /-- The tables of remainders of powers of `X` on `N` bits, `N` in unary: the search for each
 irreducible polynomial ranges over the `2 ^ (4 L + 1) ≤ 2 (N + 1) ^ 2` codes below `codeBound N`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_explicitPowerTables :
-    ComputableTidilyInPolyTime explicitPowerTables encUnary (encList (encList encBits)) := by
+theorem computableInPolyTime_explicitPowerTables :
+    ComputableInPolyTime explicitPowerTables encUnary (encList (encList encBits)) := by
   unfold explicitPowerTables
-  have := computableTidilyInPolyTime_bits_unary
+  have := computableInPolyTime_bits_unary
   fun_prop
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The mixed-radix digits in the radix of the field degree on `N` bits; every partial product of
 the radix is at most `N + 1`. -/
 private theorem computableTidilyInPolyTime_mixedDigit_degreePrimes :
@@ -334,7 +348,7 @@ private theorem computableTidilyInPolyTime_mixedDigit_degreePrimes :
       (encPair (encPair encUnary encUnary) encUnary) encUnary := by
   have htake : ComputableTidilyInPolyTime (fun q : (ℕ × ℕ) × ℕ => (degreePrimes q.1.1).take q.2)
       (encPair (encPair encUnary encUnary) encUnary) (encList encUnary) :=
-    (computableTidilyInPolyTime_take encUnary).comp ((computableTidilyInPolyTime_degreePrimes.comp
+    (computableTidilyInPolyTime_take encUnary).comp ((computableInPolyTime_degreePrimes.tidy.comp
       ((fst encUnary encUnary).comp (fst _ _))).prod (snd _ _))
   have hprod := computableTidilyInPolyTime_prod_of_le htake
     (fun q p hp => (prime_of_mem_degreePrimes (List.mem_of_mem_take hp)).2.2.pos)
@@ -349,15 +363,20 @@ private theorem computableTidilyInPolyTime_mixedDigit_degreePrimes :
 
 /-- Mixed-radix digits in the radix of the field degree, as a composition rule. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_mixedDigit_degreePrimes' {α : Type} {input : α ↪ List Bool}
-    {N u i : α → ℕ} (hN : ComputableTidilyInPolyTime N input encUnary)
-    (hu : ComputableTidilyInPolyTime u input encUnary)
-    (hi : ComputableTidilyInPolyTime i input encUnary) :
-    ComputableTidilyInPolyTime (fun a => mixedDigit (degreePrimes (N a)) (u a) (i a)) input
-      encUnary :=
-  computableTidilyInPolyTime_mixedDigit_degreePrimes.comp ((hN.prod hu).prod hi)
+theorem computableInPolyTime_mixedDigit_degreePrimes' {α : Type} {input : α ↪ List Bool}
+    {N u i : α → ℕ} (hN : ComputableInPolyTime N input encUnary)
+    (hu : ComputableInPolyTime u input encUnary)
+    (hi : ComputableInPolyTime i input encUnary) :
+    ComputableInPolyTime (fun a => mixedDigit (degreePrimes (N a)) (u a) (i a)) input
+      encUnary := by
+  have hN := hN.tidy
+  have hu := hu.tidy
+  have hi := hi.tidy
+  exact .of_tidy (computableTidilyInPolyTime_mixedDigit_degreePrimes.comp ((hN.prod hu).prod hi))
 
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Coordinates of the products of monomials of the explicit field on `N` bits, `N` in unary. -/
 private theorem computableTidilyInPolyTime_monomialBit_explicit : ComputableTidilyInPolyTime
     (fun q : ((ℕ × ℕ) × ℕ) × ℕ =>
@@ -368,8 +387,24 @@ private theorem computableTidilyInPolyTime_monomialBit_explicit : ComputableTidi
 
 /-- Coordinates of the products of monomials of the explicit field, as a composition rule. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_monomialBit_explicit' {α : Type} {input : α ↪ List Bool}
-    {N u w v : α → ℕ} (hN : ComputableTidilyInPolyTime N input encUnary)
+theorem computableInPolyTime_monomialBit_explicit' {α : Type} {input : α ↪ List Bool}
+    {N u w v : α → ℕ} (hN : ComputableInPolyTime N input encUnary)
+    (hu : ComputableInPolyTime u input encUnary)
+    (hw : ComputableInPolyTime w input encUnary)
+    (hv : ComputableInPolyTime v input encUnary) :
+    ComputableInPolyTime
+      (fun a => monomialBit (degreePrimes (N a)) (explicitPowerTables (N a)) (u a) (w a) (v a))
+      input encBool := by
+  have hN := hN.tidy
+  have hu := hu.tidy
+  have hw := hw.tidy
+  have hv := hv.tidy
+  exact .of_tidy
+    (computableTidilyInPolyTime_monomialBit_explicit.comp (((hN.prod hu).prod hw).prod hv))
+
+/-- `computableInPolyTime_monomialBit_explicit'` for tidy `fun_prop` inside proofs. -/
+private theorem computableTidilyInPolyTime_monomialBit_explicit' {α : Type}
+    {input : α ↪ List Bool} {N u w v : α → ℕ} (hN : ComputableTidilyInPolyTime N input encUnary)
     (hu : ComputableTidilyInPolyTime u input encUnary)
     (hw : ComputableTidilyInPolyTime w input encUnary)
     (hv : ComputableTidilyInPolyTime v input encUnary) :
@@ -378,11 +413,13 @@ theorem computableTidilyInPolyTime_monomialBit_explicit' {α : Type} {input : α
       input encBool :=
   computableTidilyInPolyTime_monomialBit_explicit.comp (((hN.prod hu).prod hw).prod hv)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy
+  computableTidilyInPolyTime_monomialBit_explicit' in
 /-- The multiplication table of the explicit field on `N` bits, `N` in unary: its `n ^ 3`
 entries, `n ≤ N + 1`, are products over the prime factors of `n`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_explicitTable :
-    ComputableTidilyInPolyTime explicitTable encUnary (encList (encList encBits)) := by
+theorem computableInPolyTime_explicitTable :
+    ComputableInPolyTime explicitTable encUnary (encList (encList encBits)) := by
   unfold explicitTable monomialTable
   simp_rw [← fieldDegree_eq_prod]
   fun_prop
@@ -395,17 +432,17 @@ abbrev encTable : List (List (List Bool)) ↪ List Bool :=
 
 /-- An entry of a computed multiplication table. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_tableEntry {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_tableEntry {α : Type} {input : α ↪ List Bool}
     {tab : α → List (List (List Bool))} {u w : α → ℕ}
-    (htab : ComputableTidilyInPolyTime tab input encTable)
-    (hu : ComputableTidilyInPolyTime u input encUnary)
-    (hw : ComputableTidilyInPolyTime w input encUnary) :
-    ComputableTidilyInPolyTime (fun a => tableEntry (tab a) (u a) (w a)) input encBits :=
-  computableTidilyInPolyTime_getD_list (computableTidilyInPolyTime_getD_list htab hu []) hw []
+    (htab : ComputableInPolyTime tab input encTable)
+    (hu : ComputableInPolyTime u input encUnary)
+    (hw : ComputableInPolyTime w input encUnary) :
+    ComputableInPolyTime (fun a => tableEntry (tab a) (u a) (w a)) input encBits :=
+  computableInPolyTime_getD_list (computableInPolyTime_getD_list htab hu []) hw []
 
 /-- **Multiplication in coordinates**, uniformly in the multiplication table: the sum of at most
 `n ^ 2` table entries, `n` the number of rows. -/
-theorem computableTidilyInPolyTime_fieldMul : ComputableTidilyInPolyTime
+theorem computableInPolyTime_fieldMul : ComputableInPolyTime
     (fun p : List (List (List Bool)) × List Bool × List Bool => fieldMul p.1 p.2.1 p.2.2)
     (encPair encTable (encPair encBits encBits)) encBits := by
   unfold fieldMul
@@ -413,18 +450,20 @@ theorem computableTidilyInPolyTime_fieldMul : ComputableTidilyInPolyTime
 
 /-- Multiplication in coordinates, as a composition rule. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_fieldMul' {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_fieldMul' {α : Type} {input : α ↪ List Bool}
     {tab : α → List (List (List Bool))} {a b : α → List Bool}
-    (htab : ComputableTidilyInPolyTime tab input encTable)
-    (ha : ComputableTidilyInPolyTime a input encBits)
-    (hb : ComputableTidilyInPolyTime b input encBits) :
-    ComputableTidilyInPolyTime (fun x => fieldMul (tab x) (a x) (b x)) input encBits :=
-  computableTidilyInPolyTime_fieldMul.comp (htab.prod (ha.prod hb))
+    (htab : ComputableInPolyTime tab input encTable)
+    (ha : ComputableInPolyTime a input encBits)
+    (hb : ComputableInPolyTime b input encBits) :
+    ComputableInPolyTime (fun x => fieldMul (tab x) (a x) (b x)) input encBits :=
+  computableInPolyTime_fieldMul.comp (htab.prod (ha.prod hb))
 
 theorem length_fieldMul (tab : List (List (List Bool))) (a b : List Bool) :
     (fieldMul tab a b).length = tab.length := by
   simp [fieldMul]
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The powers `y ^ (2 ^ (k + 1) - 1)`, by `k` multiplications and squarings; every
 intermediate power has `n` coordinates. -/
 private theorem computableTidilyInPolyTime_powerPred : ComputableTidilyInPolyTime
@@ -437,15 +476,21 @@ private theorem computableTidilyInPolyTime_powerPred : ComputableTidilyInPolyTim
 
 /-- Powers in coordinates, as a composition rule. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_powerPred' {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_powerPred' {α : Type} {input : α ↪ List Bool}
     {tab : α → List (List (List Bool))} {y : α → List Bool} {k : α → ℕ}
-    (htab : ComputableTidilyInPolyTime tab input encTable)
-    (hy : ComputableTidilyInPolyTime y input encBits)
-    (hk : ComputableTidilyInPolyTime k input encUnary) :
-    ComputableTidilyInPolyTime (fun x => powerPred (tab x) (y x) (k x)) input encBits := by
+    (htab : ComputableInPolyTime tab input encTable)
+    (hy : ComputableInPolyTime y input encBits)
+    (hk : ComputableInPolyTime k input encUnary) :
+    ComputableInPolyTime (fun x => powerPred (tab x) (y x) (k x)) input encBits := by
+  have htab := htab.tidy
+  have hy := hy.tidy
+  have hk := hk.tidy
+  refine .of_tidy ?_
   simpa only [Function.comp_def] using
     computableTidilyInPolyTime_powerPred.comp (htab.prod (hy.prod hk))
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- One step of the dynamic program for the elementary symmetric polynomials. -/
 private theorem computableTidilyInPolyTime_esymmStep : ComputableTidilyInPolyTime
     (fun p : (List (List (List Bool)) × List (List Bool)) × List Bool =>
@@ -490,19 +535,25 @@ private theorem computableTidilyInPolyTime_esymmCoords : ComputableTidilyInPolyT
         omega
       · simp)).1
   unfold esymmCoords
-  exact computableTidilyInPolyTime_getD_list h (by fun_prop) []
+  exact (computableInPolyTime_getD_list (.of_tidy h) (.of_tidy (by fun_prop)) []).tidy
 
 /-- The elementary symmetric polynomial in coordinates, as a composition rule. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_esymmCoords' {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_esymmCoords' {α : Type} {input : α ↪ List Bool}
     {tab : α → List (List (List Bool))} {t : α → ℕ} {zs : α → List (List Bool)}
-    (htab : ComputableTidilyInPolyTime tab input encTable)
-    (ht : ComputableTidilyInPolyTime t input encUnary)
-    (hzs : ComputableTidilyInPolyTime zs input (encList encBits)) :
-    ComputableTidilyInPolyTime (fun x => esymmCoords (tab x) (t x) (zs x)) input encBits := by
+    (htab : ComputableInPolyTime tab input encTable)
+    (ht : ComputableInPolyTime t input encUnary)
+    (hzs : ComputableInPolyTime zs input (encList encBits)) :
+    ComputableInPolyTime (fun x => esymmCoords (tab x) (t x) (zs x)) input encBits := by
+  have htab := htab.tidy
+  have ht := ht.tidy
+  have hzs := hzs.tidy
+  refine .of_tidy ?_
   simpa only [Function.comp_def] using
     computableTidilyInPolyTime_esymmCoords.comp ((htab.prod ht).prod hzs)
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The traces of the basis elements, from the diagonals of the multiplication table. -/
 private theorem computableTidilyInPolyTime_traceVector :
     ComputableTidilyInPolyTime traceVector encTable encBits := by
@@ -511,9 +562,11 @@ private theorem computableTidilyInPolyTime_traceVector :
 
 /-- The traces of the basis elements, as a composition rule. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_traceVector' {α : Type} {input : α ↪ List Bool}
-    {tab : α → List (List (List Bool))} (htab : ComputableTidilyInPolyTime tab input encTable) :
-    ComputableTidilyInPolyTime (fun x => traceVector (tab x)) input encBits := by
+theorem computableInPolyTime_traceVector' {α : Type} {input : α ↪ List Bool}
+    {tab : α → List (List (List Bool))} (htab : ComputableInPolyTime tab input encTable) :
+    ComputableInPolyTime (fun x => traceVector (tab x)) input encBits := by
+  have htab := htab.tidy
+  refine .of_tidy ?_
   simpa only [Function.comp_def] using computableTidilyInPolyTime_traceVector.comp htab
 
 /-- The trace as a bit. -/
@@ -524,18 +577,55 @@ private theorem computableTidilyInPolyTime_traceBit : ComputableTidilyInPolyTime
 
 /-- The trace as a bit, as a composition rule. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_traceBit' {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_traceBit' {α : Type} {input : α ↪ List Bool}
+    {τ a : α → List Bool} (hτ : ComputableInPolyTime τ input encBits)
+    (ha : ComputableInPolyTime a input encBits) :
+    ComputableInPolyTime (fun x => traceBit (τ x) (a x)) input encBool := by
+  have hτ := hτ.tidy
+  have ha := ha.tidy
+  refine .of_tidy ?_
+  simpa only [Function.comp_def] using computableTidilyInPolyTime_traceBit.comp (hτ.prod ha)
+
+/-- The tidy composition rules of the trace computation, for tidy `fun_prop` inside proofs. -/
+private theorem computableTidilyInPolyTime_powerPred' {α : Type} {input : α ↪ List Bool}
+    {tab : α → List (List (List Bool))} {y : α → List Bool} {k : α → ℕ}
+    (htab : ComputableTidilyInPolyTime tab input encTable)
+    (hy : ComputableTidilyInPolyTime y input encBits)
+    (hk : ComputableTidilyInPolyTime k input encUnary) :
+    ComputableTidilyInPolyTime (fun x => powerPred (tab x) (y x) (k x)) input encBits := by
+  simpa only [Function.comp_def] using
+    computableTidilyInPolyTime_powerPred.comp (htab.prod (hy.prod hk))
+
+private theorem computableTidilyInPolyTime_esymmCoords' {α : Type} {input : α ↪ List Bool}
+    {tab : α → List (List (List Bool))} {t : α → ℕ} {zs : α → List (List Bool)}
+    (htab : ComputableTidilyInPolyTime tab input encTable)
+    (ht : ComputableTidilyInPolyTime t input encUnary)
+    (hzs : ComputableTidilyInPolyTime zs input (encList encBits)) :
+    ComputableTidilyInPolyTime (fun x => esymmCoords (tab x) (t x) (zs x)) input encBits := by
+  simpa only [Function.comp_def] using
+    computableTidilyInPolyTime_esymmCoords.comp ((htab.prod ht).prod hzs)
+
+private theorem computableTidilyInPolyTime_traceVector' {α : Type} {input : α ↪ List Bool}
+    {tab : α → List (List (List Bool))} (htab : ComputableTidilyInPolyTime tab input encTable) :
+    ComputableTidilyInPolyTime (fun x => traceVector (tab x)) input encBits := by
+  simpa only [Function.comp_def] using computableTidilyInPolyTime_traceVector.comp htab
+
+private theorem computableTidilyInPolyTime_traceBit' {α : Type} {input : α ↪ List Bool}
     {τ a : α → List Bool} (hτ : ComputableTidilyInPolyTime τ input encBits)
     (ha : ComputableTidilyInPolyTime a input encBits) :
     ComputableTidilyInPolyTime (fun x => traceBit (τ x) (a x)) input encBool := by
   simpa only [Function.comp_def] using computableTidilyInPolyTime_traceBit.comp (hτ.prod ha)
 
+attribute [local fun_prop] computableTidilyInPolyTime_powerPred'
+  computableTidilyInPolyTime_esymmCoords' computableTidilyInPolyTime_traceVector'
+  computableTidilyInPolyTime_traceBit' in
 /-- **`traceSym 1 r t` in coordinates**, uniformly in the multiplication table, `r` and `t` in
 unary, and the input bits. -/
-theorem computableTidilyInPolyTime_traceSymCoords : ComputableTidilyInPolyTime
+theorem computableInPolyTime_traceSymCoords : ComputableInPolyTime
     (fun p : ((List (List (List Bool)) × ℕ) × ℕ) × List Bool =>
       traceSymCoords p.1.1.1 p.1.1.2 p.1.2 p.2)
     (encPair (encPair (encPair encTable encUnary) encUnary) encBits) encBool := by
+  refine .of_tidy ?_
   unfold traceSymCoords
   fun_prop
 
@@ -545,20 +635,21 @@ theorem computableTidilyInPolyTime_traceSymCoords : ComputableTidilyInPolyTime
 private theorem computableTidilyInPolyTime_explicitDisperserProgram :
     ComputableTidilyInPolyTime explicitDisperserProgram encBits encBool := by
   unfold explicitDisperserProgram
-  simpa only [Function.comp_def] using computableTidilyInPolyTime_traceSymCoords.comp
-    ((((computableTidilyInPolyTime_explicitTable.comp length_bits).prod
-      (computableTidilyInPolyTime_numBlocks.comp length_bits)).prod
-      (computableTidilyInPolyTime_symDegree.comp length_bits)).prod id')
+  simpa only [Function.comp_def] using computableInPolyTime_traceSymCoords.tidy.comp
+    ((((computableInPolyTime_explicitTable.tidy.comp length_bits).prod
+      (computableInPolyTime_numBlocks.tidy.comp length_bits)).prod
+      (computableInPolyTime_symDegree.tidy.comp length_bits)).prod id')
 
 /-- **The explicit affine disperser is computable in polynomial time**: on a bit list `x` of length
-`N`, the value `explicitDisperser N x` is computed by a tidy multi-tape machine in time polynomial
-in `N`. The certificate charges the whole computation: the parameters, the exhaustive searches for
+`N`, the value `explicitDisperser N x` is computed by a multi-tape machine in time polynomial in
+`N`. The certificate charges the whole computation: the parameters, the exhaustive searches for
 the irreducible polynomials by trial division, the remainders of the powers of `X`, the
 multiplication table, and every field operation of `traceSym 1 r t`. -/
-theorem computableTidilyInPolyTime_explicitDisperser :
-    ComputableTidilyInPolyTime
+theorem computableInPolyTime_explicitDisperser :
+    ComputableInPolyTime
       (fun x : List Bool => explicitDisperser x.length (BitString.ofList x.length x))
       encBits encBool := by
+  refine .of_tidy ?_
   rw [← funext explicitDisperserProgram_eq]
   exact computableTidilyInPolyTime_explicitDisperserProgram
 
@@ -567,6 +658,6 @@ theorem computableTidilyInPolyTime_explicitDisperser :
 theorem setOf_explicitDisperser_mem_P :
     {x : List Bool | explicitDisperser x.length (BitString.ofList x.length x) = true} ∈
       Cslib.Complexity.P encBits :=
-  ⟨_, .of_tidy computableTidilyInPolyTime_explicitDisperser, fun _ => Iff.rfl⟩
+  ⟨_, computableInPolyTime_explicitDisperser, fun _ => Iff.rfl⟩
 
 end Cslib.AffineDisperser

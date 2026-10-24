@@ -30,13 +30,13 @@ decoder or certify pattern matching on an arbitrary encoded feature.
 
 ## Main results
 
-* `Cslib.Complexity.CookLevin.computableTidilyInPolyTime_inPos`,
-  `.computableTidilyInPolyTime_head`, `.computableTidilyInPolyTime_cell`: varying positions.
-* `Cslib.Complexity.CookLevin.computableTidilyInPolyTime_holds`,
-  `.computableTidilyInPolyTime_cert`: tableau variable constructors.
-* `Cslib.Complexity.CookLevin.computableTidilyInPolyTime_index`: the existing variable numbering
+* `Cslib.Complexity.CookLevin.computableInPolyTime_inPos`,
+  `.computableInPolyTime_head`, `.computableInPolyTime_cell`: varying positions.
+* `Cslib.Complexity.CookLevin.computableInPolyTime_holds`,
+  `.computableInPolyTime_cert`: tableau variable constructors.
+* `Cslib.Complexity.CookLevin.computableInPolyTime_index`: the existing variable numbering
   with binary output.
-* `Cslib.Complexity.CookLevin.computableTidilyInPolyTime_relabel`: number all variables in a
+* `Cslib.Complexity.CookLevin.computableInPolyTime_relabel`: number all variables in a
   constructed tableau, producing the SAT encoding.
 
 ## References
@@ -62,45 +62,49 @@ noncomputable def encVar : Var k State ↪ List Bool :=
 
 /-- The unary feature index is already the encoded word. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_featureIndex :
-    ComputableTidilyInPolyTime (featureIndex (k := k) (State := State)) encFeature encUnary :=
-  of_eq fun _ => rfl
+theorem computableInPolyTime_featureIndex :
+    ComputableInPolyTime (featureIndex (k := k) (State := State)) encFeature encUnary :=
+  ComputableInPolyTime.of_eq fun _ => rfl
 
 /-- Construct the input-symbol feature from an optional Boolean symbol. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_inRead :
-    ComputableTidilyInPolyTime (Feature.inRead (k := k) (State := State))
-      (encOption encBool) encFeature := of_finite _
+theorem computableInPolyTime_inRead :
+    ComputableInPolyTime (Feature.inRead (k := k) (State := State))
+      (encOption encBool) encFeature := ComputableInPolyTime.of_finite _
 
 /-- Construct an input-head feature from a unary position. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_inPos :
-    ComputableTidilyInPolyTime (Feature.inPos (k := k) (State := State)) encUnary encFeature :=
-  (unary_pair.comp ((const 1).prod id')).of_enc_eq fun _ => rfl
+theorem computableInPolyTime_inPos :
+    ComputableInPolyTime (Feature.inPos (k := k) (State := State)) encUnary encFeature :=
+  .of_tidy ((unary_pair.comp ((const 1).prod id')).of_enc_eq fun _ => rfl)
 
 /-- Construct a work-head feature on a fixed tape from a signed unary position. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_head (i : Fin k) :
-    ComputableTidilyInPolyTime (Feature.head (State := State) i) encInt encFeature := by
+theorem computableInPolyTime_head (i : Fin k) :
+    ComputableInPolyTime (Feature.head (State := State) i) encInt encFeature := by
+  refine .of_tidy ?_
   have h : ComputableTidilyInPolyTime (fun z => Nat.pair 2 (Nat.pair i (Equiv.intEquivNat z)))
       encInt encUnary := by fun_prop
   exact h.of_enc_eq fun _ => rfl
 
 /-- Construct a cell feature for a fixed tape and symbol from a signed unary position. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_cell (i : Fin k) (s : Option Bool) :
-    ComputableTidilyInPolyTime (fun z => Feature.cell (State := State) i z s)
+theorem computableInPolyTime_cell (i : Fin k) (s : Option Bool) :
+    ComputableInPolyTime (fun z => Feature.cell (State := State) i z s)
       encInt encFeature := by
+  refine .of_tidy ?_
   have h : ComputableTidilyInPolyTime
       (fun z => Nat.pair 3 (Nat.pair i (Nat.pair (Equiv.intEquivNat z) (Encodable.encode s))))
       encInt encUnary := by fun_prop
   exact h.of_enc_eq fun _ => rfl
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Attach a unary time to an encoded feature. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_holds :
-    ComputableTidilyInPolyTime (fun p : ℕ × Feature k State => Var.holds p.1 p.2)
+theorem computableInPolyTime_holds :
+    ComputableInPolyTime (fun p : ℕ × Feature k State => Var.holds p.1 p.2)
       (encPair encUnary encFeature) encVar := by
+  refine .of_tidy ?_
   have h : ComputableTidilyInPolyTime
       (fun p : ℕ × Feature k State => Nat.pair 0 (Nat.pair p.1 (featureIndex p.2)))
       (encPair encUnary encFeature) encUnary := by fun_prop
@@ -108,21 +112,21 @@ theorem computableTidilyInPolyTime_holds :
 
 /-- Construct a certificate variable from its unary index. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_cert :
-    ComputableTidilyInPolyTime (Var.cert (k := k) (State := State)) encUnary encVar :=
-  (unary_pair.comp ((const 1).prod id')).of_enc_eq fun _ => rfl
+theorem computableInPolyTime_cert :
+    ComputableInPolyTime (Var.cert (k := k) (State := State)) encUnary encVar :=
+  .of_tidy ((unary_pair.comp ((const 1).prod id')).of_enc_eq fun _ => rfl)
 
 /-- Emit the existing variable index in binary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_index :
-    ComputableTidilyInPolyTime (Var.index (k := k) (State := State)) encVar encNat :=
-  unary_to_binary.comp (of_eq (encMid := encUnary) fun _ => rfl)
+theorem computableInPolyTime_index :
+    ComputableInPolyTime (Var.index (k := k) (State := State)) encVar encNat :=
+  .of_tidy (unary_to_binary.comp (of_eq (encMid := encUnary) fun _ => rfl))
 
 /-- Convert a constructed tableau to the SAT encoding using its existing variable numbering. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_relabel :
-    ComputableTidilyInPolyTime (Cslib.Logic.PL.CNF.relabel (Var.index (k := k) (State := State)))
+theorem computableInPolyTime_relabel :
+    ComputableInPolyTime (Cslib.Logic.PL.CNF.relabel (Var.index (k := k) (State := State)))
       (encList (encList (encPair encVar encBool))) encCNF :=
-  (Cslib.Logic.PL.CNF.computableInPolyTime_relabel (.of_tidy computableTidilyInPolyTime_index)).tidy
+  (Cslib.Logic.PL.CNF.computableInPolyTime_relabel computableInPolyTime_index)
 
 end Cslib.Complexity.CookLevin

@@ -58,11 +58,11 @@ example : PolyTimeReducible encCNF encKnapsack ThreeSAT Knapsack :=
 
 /-! ### Compositional `fun_prop` synthesis -/
 
-example : ComputableTidilyInPolyTime ThreeSAT.toSubsetSum encCNF
+example : ComputableInPolyTime ThreeSAT.toSubsetSum encCNF
     (encPair (encList encNat) encNat) := by
   fun_prop
 
-example : ComputableTidilyInPolyTime (fun x => SubsetSum.toPartition x)
+example : ComputableInPolyTime (fun x => SubsetSum.toPartition x)
     (encPair (encList encNat) encNat) (encList encNat) := by
   fun_prop
 

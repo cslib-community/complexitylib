@@ -16,6 +16,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Constructible resource bounds
@@ -68,10 +70,11 @@ def TimeConstructible (t : ℕ → ℕ) : Prop :=
   ∃ c : ℕ, ∃ s : ℕ → ℕ, ComputableInTimeAndSpaceOfLength (fun x : List Bool => t x.length) encBits
     encNat (fun n => c * t n + c) s
 
-/-- A time-constructible bound is computed tidily within time and space `O(t n)`. -/
-theorem TimeConstructible.computableTidilyInO {t : ℕ → ℕ} (ht : TimeConstructible t) :
-    ComputableTidilyInO (fun x : List Bool => t x.length) encBits encNat (fun x => t x.length)
+/-- A time-constructible bound is computed within time and space `O(t n)`. -/
+theorem TimeConstructible.computableInO {t : ℕ → ℕ} (ht : TimeConstructible t) :
+    ComputableInO (fun x : List Bool => t x.length) encBits encNat (fun x => t x.length)
       fun x => t x.length := by
+  refine .of_tidy ?_
   obtain ⟨c, s, h⟩ := ht
   obtain ⟨k, h⟩ := ComputableInTimeAndSpace.exists_space_linear h
   obtain ⟨d, h⟩ := h.exists_computableTidilyInTimeAndSpace
@@ -97,10 +100,11 @@ theorem TimeConstructible.computableTidilyInO {t : ℕ → ℕ} (ht : TimeConstr
     exact (hs _).trans (Nat.mul_le_mul_right _ (by omega))
   · exact (Nat.le_succ _).trans (Nat.le_mul_of_pos_left _ (by omega))
 
-/-- A tidy computation of `t n` in binary within time `O(t n)` makes `t` time-constructible. -/
-theorem TimeConstructible.of_computableTidilyInO {t : ℕ → ℕ} {T S : List Bool → ℕ} {s : ℕ → ℕ}
-    (c : ℕ) (h : ComputableTidilyInO (fun x : List Bool => t x.length) encBits encNat T S)
+/-- A computation of `t n` in binary within time `O(t n)` makes `t` time-constructible. -/
+theorem TimeConstructible.of_computableInO {t : ℕ → ℕ} {T S : List Bool → ℕ} {s : ℕ → ℕ}
+    (c : ℕ) (h : ComputableInO (fun x : List Bool => t x.length) encBits encNat T S)
     (hT : ∀ x, T x ≤ c * t x.length + c) (hS : ∀ x, S x ≤ s x.length) : TimeConstructible t := by
+  have h := h.tidy
   obtain ⟨k, hk, -⟩ := h
   refine ⟨k * (c + 1), fun n => k * (s n + 1), hk.computableInTimeAndSpace.mono (fun x => ?_)
     fun x => ?_⟩
@@ -113,9 +117,12 @@ theorem TimeConstructible.of_computableTidilyInO {t : ℕ → ℕ} {T S : List B
   · simp only [encBits_apply]
     exact Nat.mul_le_mul_left k (Nat.add_le_add_right (hS x) 1)
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `2 ^ n` is time-constructible: its binary digits are `n` zeros followed by a one. -/
 theorem timeConstructible_two_pow : TimeConstructible (2 ^ ·) :=
-  .of_computableTidilyInO 1 (ComputableTidilyInDegree.two_pow_length encBits).inO_one
+  TimeConstructible.of_computableInO 1
+    (.of_tidy (ComputableTidilyInDegree.two_pow_length encBits).inO_one)
     (s := fun n => n) (fun x => by
       simp only [encBits_apply]
       have := Nat.lt_two_pow_self (n := x.length)
@@ -133,17 +140,19 @@ private theorem cube_add_le (u v : ℕ) : (u + v) ^ 3 ≤ 8 * (u ^ 3 + v ^ 3) :=
 /-- If `f n` is computed in binary from words of length `n` within time `O((n + 1) * f n)` and
 `n ≤ f n`, then `(n + 1) * f n` is time-constructible: writing the length of the word in binary
 takes time `O(n ^ 2)`, and the product time polylogarithmic in the factors. -/
-theorem TimeConstructible.succ_mul_of_computableTidilyInO {f : ℕ → ℕ} {T : List Bool → ℕ}
+theorem TimeConstructible.succ_mul_of_computableInO {f : ℕ → ℕ} {T : List Bool → ℕ}
     {S : ℕ → ℕ} (c : ℕ)
-    (hf : ComputableTidilyInO (fun x : List Bool => f x.length) encBits encNat T
+    (hf : ComputableInO (fun x : List Bool => f x.length) encBits encNat T
       fun x => S x.length)
     (hT : ∀ x, T x ≤ c * ((x.length + 1) * f x.length) + c) (hn : ∀ n, n ≤ f n) :
     TimeConstructible fun n => (n + 1) * f n := by
+  have hf := hf.tidy
   have hlen := ComputableTidilyInO.natSucc.comp ComputableTidilyInO.lengthNat
   have h := computableTidilyInDegree_mul.inO.comp (hlen.prod hf)
   obtain ⟨C, hC⟩ := exists_pow_length_encNat_le 3
   obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
-  refine .of_computableTidilyInO (150 * C + C₂ + c + 10) h (fun x => ?_) (s := fun n =>
+  refine TimeConstructible.of_computableInO (150 * C + C₂ + c + 10) (.of_tidy h) (fun x => ?_)
+    (s := fun n =>
     n + 1 + ((encNat n).length + 1) + S n + (2 * (encNat (n + 1)).length + 1 +
       (encNat (f n)).length + 1) ^ 3) fun x => ?_
   · simp only [Function.comp_apply, length_encPair]
@@ -185,16 +194,18 @@ theorem TimeConstructible.succ_mul_of_computableTidilyInO {f : ℕ → ℕ} {T :
 /-- If `f` is time-constructible and `n ≤ f n`, then so is `(n + 1) * f n`. -/
 theorem TimeConstructible.succ_mul {f : ℕ → ℕ} (hf : TimeConstructible f) (hn : ∀ n, n ≤ f n) :
     TimeConstructible fun n => (n + 1) * f n :=
-  succ_mul_of_computableTidilyInO 1 hf.computableTidilyInO (fun x => by
+  TimeConstructible.succ_mul_of_computableInO 1 hf.computableInO (fun x => by
     have : f x.length ≤ (x.length + 1) * f x.length := Nat.le_mul_of_pos_left _ (by omega)
     omega) hn
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `(n + 1) ^ 2` is time-constructible. -/
 theorem timeConstructible_succ_sq : TimeConstructible fun n => (n + 1) ^ 2 := by
   have hlen := ComputableTidilyInO.natSucc.comp ComputableTidilyInO.lengthNat
   obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
-  have h := TimeConstructible.succ_mul_of_computableTidilyInO (f := fun n => n + 1)
-    (S := fun n => n + 1 + ((encNat n).length + 1)) (C₂ + 2) hlen (fun x => by
+  have h := TimeConstructible.succ_mul_of_computableInO (f := fun n => n + 1)
+    (S := fun n => n + 1 + ((encNat n).length + 1)) (C₂ + 2) (.of_tidy hlen) (fun x => by
       have := hC₂ x.length
       have e : (C₂ + 2) * ((x.length + 1) * (x.length + 1)) =
           C₂ * ((x.length + 1) * (x.length + 1)) + 2 * ((x.length + 1) * (x.length + 1)) := by
@@ -224,13 +235,13 @@ def SpaceConstructible (s : ℕ → ℕ) : Prop :=
   ∃ c : ℕ, ∃ t : ℕ → ℕ, ComputableInTimeAndSpaceOfLength (fun x : List Bool => s x.length) encBits
     encNat t fun n => c * s n + c
 
-/-- A space-constructible bound is computed tidily within space `O(s n)`, within some time. -/
-theorem SpaceConstructible.computableTidilyInO {s : ℕ → ℕ} (hs : SpaceConstructible s) :
-    ∃ T, ComputableTidilyInO (fun x : List Bool => s x.length) encBits encNat T
+/-- A space-constructible bound is computed within space `O(s n)`, within some time. -/
+theorem SpaceConstructible.computableInO {s : ℕ → ℕ} (hs : SpaceConstructible s) :
+    ∃ T, ComputableInO (fun x : List Bool => s x.length) encBits encNat T
       fun x => s x.length := by
   obtain ⟨c, t, h⟩ := hs
   obtain ⟨d, h⟩ := ComputableInTimeAndSpace.exists_computableTidilyInTimeAndSpace h
-  refine ⟨_, .of_bounds h (d * (c + 1) + 1) (T := fun x => 2 * t x.length +
+  refine ⟨_, .of_tidy <| .of_bounds h (d * (c + 1) + 1) (T := fun x => 2 * t x.length +
     3 * (c * s x.length + c) + d) (fun x => ?_) (fun x => ?_) fun x => ?_⟩
   · exact (Nat.le_succ _).trans (Nat.le_mul_of_pos_left _ (by omega))
   · dsimp only [encBits_apply]
@@ -246,11 +257,12 @@ theorem TimeConstructible.spaceConstructible {t : ℕ → ℕ} (ht : TimeConstru
   exact ⟨k * c + k, fun n => c * t n + c, ComputableInTimeAndSpace.mono h (fun _ => le_rfl)
     fun x => by dsimp only; nlinarith⟩
 
-/-- A tidy computation of `s n` in binary within space `O(s n)` makes `s` space-constructible:
+/-- A computation of `s n` in binary within space `O(s n)` makes `s` space-constructible:
 it halts within a time bound of `n`, its number of configurations. -/
-theorem SpaceConstructible.of_computableTidilyInO {s : ℕ → ℕ} {T S : List Bool → ℕ} (c : ℕ)
-    (h : ComputableTidilyInO (fun x : List Bool => s x.length) encBits encNat T S)
+theorem SpaceConstructible.of_computableInO {s : ℕ → ℕ} {T S : List Bool → ℕ} (c : ℕ)
+    (h : ComputableInO (fun x : List Bool => s x.length) encBits encNat T S)
     (hS : ∀ x, S x ≤ c * s x.length + c) : SpaceConstructible s := by
+  have h := h.tidy
   obtain ⟨k, hk, -⟩ := h
   obtain ⟨t, ht⟩ := ComputableInTimeAndSpace.exists_time_of_length
     (s := fun n => k * (c * s n + c + 1)) (hk.computableInTimeAndSpace.mono (fun _ => le_rfl)
@@ -258,13 +270,18 @@ theorem SpaceConstructible.of_computableTidilyInO {s : ℕ → ℕ} {T S : List 
   exact ⟨k * (c + 1), t, ComputableInTimeAndSpace.mono ht (fun _ => le_rfl) fun x => by
     dsimp only; nlinarith⟩
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `n` is space-constructible: count the length of the word in binary. -/
 theorem spaceConstructible_id : SpaceConstructible fun n => n :=
-  .of_computableTidilyInO 1 ComputableTidilyInO.lengthNat fun x => by omega
+  SpaceConstructible.of_computableInO 1 (.of_tidy ComputableTidilyInO.lengthNat) fun x => by omega
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `n + 1` is space-constructible. -/
 theorem spaceConstructible_succ : SpaceConstructible fun n => n + 1 :=
-  .of_computableTidilyInO 2 (ComputableTidilyInO.natSucc.comp ComputableTidilyInO.lengthNat)
+  SpaceConstructible.of_computableInO 2
+    (.of_tidy (ComputableTidilyInO.natSucc.comp ComputableTidilyInO.lengthNat))
     fun x => by have := Universal.length_encNat_le x.length; omega
 
 /-- Constant bounds are space-constructible, in zero space. -/

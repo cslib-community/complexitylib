@@ -24,7 +24,7 @@ counted in binary, as long as the states stay of polynomial size
 (`Turing.MultiTapeTM.ComputableTidilyInPolySpace.iterate`). It is also closed under composition,
 pairing and case distinction, and contains polynomial time; these closure properties are registered
 with `fun_prop`. A Boolean function computable within polynomial space decides a problem in `PSPACE`
-(`Cslib.Complexity.mem_PSPACE_iff_computableTidilyInPolySpace`).
+(`Cslib.Complexity.mem_PSPACE_iff_computableInPolySpace`).
 
 Exhaustive searches within polynomial space enumerate their candidates with the binary counter
 `Cslib.BitString.increment`, which is computable in linear time

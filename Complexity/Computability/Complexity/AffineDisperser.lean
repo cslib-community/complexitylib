@@ -118,7 +118,7 @@ theorem slice_explicitDisperserLanguage (N : ℕ) :
 /-- **The language of the explicit disperser is in `P`**, with words encoded as themselves. -/
 theorem explicitDisperserLanguage_mem_P :
     (explicitDisperserLanguage : Set (List Bool)) ∈ Complexity.P encBits :=
-  Complexity.ofSlices_mem_P computableTidilyInPolyTime_explicitDisperser
+  Complexity.ofSlices_mem_P computableInPolyTime_explicitDisperser
 
 /-- **An explicit function in `P` with `B₂` circuit complexity `3.5 N - O(N / log N)`**, after
 [MishraSanthanam2026]: some language over `Bool` in `P` (the language of the explicit disperser)

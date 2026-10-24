@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.PCP.Encoded.AddTrivial
 import Complexity.Computability.PCP.Encoded.CloudRotation
 import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Executable constraint graphs, boundary cases, interpretation and compositional certificates. -/
 
@@ -71,14 +72,20 @@ example : ((oneEdge.addLoops true).toGraph (fun c (_ _ : Bool) => c)).unsatVal =
   norm_num [oneEdge] at h ⊢
   exact h
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime (Graph.addLoops true)
     (Graph.encoding encBool) (Graph.encoding encBool) := by polytime
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime (fun g : Graph Bool =>
     Graph.mk g.vertices (g.edges ++ (List.range g.vertices).map (fun v => ⟨v, v, true⟩)))
     (Graph.encoding encBool) (Graph.encoding encBool) := by polytime
 
-example : ComputableTidilyInPolyTime (fun p : Bool × Graph Bool =>
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example : ComputableInPolyTime (fun p : Bool × Graph Bool =>
     let g := p.2.addLoops true
     g.checkEdge equalityOrTrue true false [p.1, false] 0)
     (encPair encBool (Graph.encoding encBool)) encBool := by
@@ -88,16 +95,20 @@ example : ComputableTidilyInPolyTime (fun p : Bool × Graph Bool =>
     .of_finite _
   fun_prop
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example {C α : Type} (enc : C ↪ List Bool) (alphabet : α ↪ List Bool)
     (eval : C → α → α → Bool) (fallback : C) (label : α)
-    (heval : ComputableTidilyInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : Graph C × List α × ℕ =>
         p.1.checkEdge eval fallback label p.2.1 (p.2.2 + 1))
       (encPair (Graph.encoding enc) (encPair (encList alphabet) encUnary)) encBool := by
   polytime
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun p : Graph Bool × List Bool × ℕ =>
       p.1.checkEdge equalityOrTrue true false p.2.1 p.2.2)
@@ -155,7 +166,9 @@ example : cloudGraph.cloudRotation false (fun p => (100, !p.2.2)) ((1, false), f
 example : (Graph.mk 0 ([] : List (Edge Bool))).cloudRotation false rotateReflection
     ((3, true), false) = ((3, true), true) := by decide
 
-example : ComputableTidilyInPolyTime
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example : ComputableInPolyTime
     (fun p : Graph Bool × ((ℕ × Bool) × Bool) =>
       p.1.cloudRotation false rotateReflection p.2)
     (encPair (Graph.encoding encBool) (encPair (encPair encUnary encBool) encBool))
@@ -163,6 +176,8 @@ example : ComputableTidilyInPolyTime
   have hrotate := isPolyTime_rotateReflection
   fun_prop
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example (rotate : ℕ × (ℕ × Bool) → ℕ × Bool)
     (hrotate : ComputableTidilyInPolyTime rotate
       (encPair encUnary (encPair encUnary encBool)) (encPair encUnary encBool)) :

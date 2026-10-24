@@ -43,7 +43,8 @@ theorem isVerifier_even : IsVerifier encUnary (2 * Polynomial.X + 1)
   isVerifier_witnessVerifier Decoder.unary isHalf_iff fun _ m h => ⟨m, h, by simp; omega⟩
 
 example : {n | ∃ m, m + m = n} ∈ NP encUnary :=
-  mem_NP_of_witness Decoder.unary (p := Polynomial.X) computableTidilyInPolyTime_isHalf isHalf_iff
+  mem_NP_of_witness Decoder.unary (p := Polynomial.X) (.of_tidy computableTidilyInPolyTime_isHalf)
+    isHalf_iff
     fun _ m h => ⟨m, h, by simp; omega⟩
 
 -- In: the framed witness `2` for `4`, padded to the certificate length `2 * 4 + 1`.
@@ -106,10 +107,10 @@ theorem isVerifier_distinctEntries : IsVerifier (encPair (encList encNat) encNat
   · simp [hasCount, List.toFinset_card_of_nodup hl]
 
 example : DistinctEntries ∈ NP (encPair (encList encNat) encNat) :=
-  mem_NP_of_subsetWitness (check := hasCount) (ComputableTidilyInPolyTime.fst _ _)
-    ((ComputableTidilyInPolyTime.unary_to_binary.comp
+  mem_NP_of_subsetWitness (check := hasCount) (.of_tidy (ComputableTidilyInPolyTime.fst _ _))
+    (.of_tidy ((ComputableTidilyInPolyTime.unary_to_binary.comp
       ((ComputableTidilyInPolyTime.length_list encNat).comp (ComputableTidilyInPolyTime.snd _ _))
-      ).decide_eq' (by fun_prop))
+      ).decide_eq' (by fun_prop)))
     fun x l hl _ => by simp [hasCount, List.toFinset_card_of_nodup hl]
 
 -- In: the mask selects `1` and `2`.

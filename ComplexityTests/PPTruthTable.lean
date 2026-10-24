@@ -86,13 +86,13 @@ theorem joint_mem_PP : query ⁻¹' headTrue ∈ PP (encPair encBits encUnary) :
   PolyTimeReducible.mem_PP ⟨query, .of_tidy polyTime_query, fun _ => Iff.rfl⟩ headTrue_mem_PP
 
 example : language ∈ PP encBits :=
-  truthTable_mem_PP joint_mem_PP polyTime_count polyTime_combine
+  truthTable_mem_PP joint_mem_PP (.of_tidy polyTime_count) (.of_tidy polyTime_combine)
 
 example : {w : List Bool | ∀ i < count w, (w, i) ∈ query ⁻¹' headTrue} ∈ PP encBits :=
-  forall_lt_mem_PP joint_mem_PP polyTime_count
+  forall_lt_mem_PP joint_mem_PP (.of_tidy polyTime_count)
 
 example : {w : List Bool | ∃ i < count w, (w, i) ∈ query ⁻¹' headTrue} ∈ PP encBits :=
-  exists_lt_mem_PP joint_mem_PP polyTime_count
+  exists_lt_mem_PP joint_mem_PP (.of_tidy polyTime_count)
 
 example : headTrue ∩ secondTrue ∈ PP encBits :=
   inter_mem_PP headTrue_mem_PP secondTrue_mem_PP

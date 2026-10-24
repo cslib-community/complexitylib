@@ -16,6 +16,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Ba
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # `TQBF` is in polynomial space
@@ -27,7 +29,7 @@ and space in the quantitative calculus of tidy computability
 the rounds and every copy.
 
 The states of the machine are encoded by framed tuples (`Cslib.Complexity.TQBF.encState`). A step
-is polynomial-time in the encoded state (`Cslib.Complexity.TQBF.computableTidilyInPolyTime_step`):
+is polynomial-time in the encoded state (`Cslib.Complexity.TQBF.computableInPolyTime_step`):
 it branches on whether a value is being returned, on the kind of the next token or of the top
 frame, and looks variables up in the stack. Along a run on a formula with encoding of length `L`,
 the stack holds at most `L` frames, each storing a token and a suffix of the tokens of the formula,
@@ -36,7 +38,7 @@ so every state has an encoding of length `O((L + 1) ^ 2)`
 `L + 1` digits, from `2 ^ L` written in linear time
 (`Turing.MultiTapeTM.ComputableTidilyInDegree.two_pow_length`), so the evaluator runs in space
 polynomial in `L` and in time `2 ^ L` times a polynomial in `L`
-(`Cslib.Complexity.TQBF.exists_computableTidilyInO_evaluate`). Hence `TQBF ∈ PSPACE`
+(`Cslib.Complexity.TQBF.exists_computableInO_evaluate`). Hence `TQBF ∈ PSPACE`
 [Sipser, Theorem 8.9][Sipser2013] [Arora and Barak, Theorem 4.13][AroraBarak09].
 
 ## Main definitions
@@ -45,9 +47,9 @@ polynomial in `L` and in time `2 ^ L` times a polynomial in `L`
 
 ## Main results
 
-* `Cslib.Complexity.TQBF.computableTidilyInPolyTime_step`: a step is polynomial-time.
+* `Cslib.Complexity.TQBF.computableInPolyTime_step`: a step is polynomial-time.
 * `Cslib.Complexity.TQBF.length_encState_le`: the states of a run are of quadratic size.
-* `Cslib.Complexity.TQBF.exists_computableTidilyInO_evaluate`: the time and space of the evaluator.
+* `Cslib.Complexity.TQBF.exists_computableInO_evaluate`: the time and space of the evaluator.
 * `Cslib.Complexity.TQBF_mem_PSPACE`: `TQBF` is in polynomial space.
 
 ## References
@@ -261,7 +263,8 @@ private lemma retStep_pt (k : QBF.Kind) (second : Bool) :
   cases k <;> cases second <;> unfold retStep <;> fun_prop
 
 /-- **A step of the evaluator is polynomial-time** in the encoded state. -/
-theorem computableTidilyInPolyTime_step : ComputableTidilyInPolyTime step encState encState := by
+theorem computableInPolyTime_step : ComputableInPolyTime step encState encState := by
+  refine .of_tidy ?_
   rw [show step = _ from funext step_eq]
   refine cond (optionIsSome value_pt) (cond (listIsEmpty' encFrame |>.comp stack_pt) id' ?_)
     (cond (listIsEmpty' encToken |>.comp input_pt) (by fun_prop) ?_)
@@ -328,72 +331,76 @@ private theorem pow_le_pow_of_le {x a b : ℕ} (hx : 1 ≤ x) (hab : a ≤ b) : 
   Nat.pow_le_pow_right hx hab
 
 /-- **The evaluator in polynomial space.** On a formula whose encoding has length `L`, the
-evaluator is tidily computable within time `O(2 ^ L * (L + 1) ^ e)` and space `O((L + 1) ^ e)`, for
+evaluator is computable within time `O(2 ^ L * (L + 1) ^ e)` and space `O((L + 1) ^ e)`, for
 some fixed `e`. The space charges the input, the stack of at most `L` frames, each storing a token
 and a suffix of the tokens, the value, the flag, the counter of the `2 ^ L` rounds in binary, and
 the polynomial space of a step; the time charges every round
 [Sipser, Theorem 8.9][Sipser2013] [Arora and Barak, Theorem 4.13][AroraBarak09]. -/
-theorem exists_computableTidilyInO_evaluate : ∃ e, ComputableTidilyInO evaluate encQBF encBool
+theorem exists_computableInO_evaluate : ∃ e, ComputableInO evaluate encQBF encBool
     (fun φ => 2 ^ (encQBF φ).length * ((encQBF φ).length + 1) ^ e)
     fun φ => ((encQBF φ).length + 1) ^ e := by
-  obtain ⟨d, e, hstep⟩ := computableTidilyInPolyTime_step.exists_degree
-  obtain ⟨d₀, e₀, hinit⟩ := init_pt.exists_degree
-  obtain ⟨d₁, e₁, hans⟩ := answer_pt.exists_degree
-  have hn := (ComputableTidilyInDegree.two_pow_length encQBF).inO_one
-  have hiter := ComputableTidilyInO.iterate hn hinit.inO hstep.inO
-    (R := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
-    (Q := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
-    (B := fun φ => 16 * ((encQBF φ).length + 1) ^ 2)
-    (fun φ k _ => Nat.pow_le_pow_left (Nat.add_le_add_right
-      (length_encState_le (good_iterate_step φ k)) 1) d)
-    (fun φ k _ => Nat.pow_le_pow_left (Nat.add_le_add_right
-      (length_encState_le (good_iterate_step φ k)) 1) d)
-    (fun φ k _ => length_encState_le (good_iterate_step φ k))
-  have h := hans.inO.comp hiter
-  refine ⟨2 * (d + d₀ + d₁) + 2, ?_⟩
-  refine (h.mono (17 ^ (d + d₁) * 64) (fun φ => ?_) fun φ => ?_).of_enc_eq fun φ => rfl
-  all_goals
-    simp only [encNat_two_pow, List.length_append, List.length_replicate,
-      List.length_singleton]
-    have hgood := length_encState_le (good_iterate_step φ (2 ^ (encQBF φ).length))
-    generalize step^[2 ^ (encQBF φ).length] (init φ) = s at hgood ⊢
-    generalize (encQBF φ).length = L at hgood ⊢
-    set E := 2 * (d + d₀ + d₁) + 2
-    have hP : 1 ≤ L + 1 := by omega
-    have hpow (a : ℕ) (ha : a ≤ E / 2) :
-        (16 * (L + 1) ^ 2 + 1) ^ a ≤ 17 ^ a * (L + 1) ^ E := by
-      calc (16 * (L + 1) ^ 2 + 1) ^ a ≤ (17 * (L + 1) ^ 2) ^ a :=
-            Nat.pow_le_pow_left (by nlinarith [Nat.one_le_pow 2 (L + 1) hP]) a
-        _ = 17 ^ a * (L + 1) ^ (2 * a) := by rw [Nat.mul_pow, ← pow_mul]
-        _ ≤ 17 ^ a * (L + 1) ^ E := Nat.mul_le_mul_left _ (pow_le_pow_of_le hP (by omega))
-    have hR := hpow d (by omega)
-    have hA : ((encState s).length + 1) ^ d₁ ≤ 17 ^ d₁ * (L + 1) ^ E :=
-      (Nat.pow_le_pow_left (by omega) d₁).trans (hpow d₁ (by omega))
-    have hM1 : L + 1 ≤ (L + 1) ^ E := by
-      simpa using pow_le_pow_of_le hP (show 1 ≤ E by omega)
-    have hM2 : (L + 1) ^ 2 ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
-    have hM0 : (L + 1) ^ d₀ ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
-    have hK : 17 ^ d ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
-    have hK₁ : 17 ^ d₁ ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
-    have hN : 1 ≤ 2 ^ L := Nat.one_le_two_pow
-    have hsq : (L + 1 + 1) ^ 2 ≤ 4 * (L + 1) ^ 2 := by nlinarith
-    generalize (16 * (L + 1) ^ 2 + 1) ^ d = X at *
-    generalize ((encState s).length + 1) ^ d₁ = A at *
-    generalize (L + 1) ^ E = M at *
-    generalize (L + 1) ^ 2 = Q at *
-    generalize (L + 1) ^ d₀ = D at *
-    generalize 17 ^ (d + d₁) = K at *
-    generalize 2 ^ L = N at *
-    have hX : X ≤ K * M := hR.trans (Nat.mul_le_mul_right _ hK)
-    have hA' : A ≤ K * M := hA.trans (Nat.mul_le_mul_right _ hK₁)
-    have hK1 : 1 ≤ K := le_trans (Nat.one_le_pow _ _ (by norm_num)) hK
-    have hKM : M ≤ K * M := Nat.le_mul_of_pos_left _ hK1
-  · have hround : X + 16 * Q + (L + 1 + 1) ^ 2 ≤ 21 * (K * M) := by omega
-    have hrounds := Nat.mul_le_mul_left (N + 1) hround
-    have hNM : K * M ≤ N * (K * M) := Nat.le_mul_of_pos_left _ hN
-    nlinarith
-  · have : K * 64 * (M + 1) = 64 * (K * M) + 64 * K := by ring
-    omega
+  have this : ∃ e, ComputableTidilyInO evaluate encQBF encBool
+      (fun φ => 2 ^ (encQBF φ).length * ((encQBF φ).length + 1) ^ e) fun φ =>
+      ((encQBF φ).length + 1) ^ e := by
+    obtain ⟨d, e, hstep⟩ := computableInPolyTime_step.tidy.exists_degree
+    obtain ⟨d₀, e₀, hinit⟩ := init_pt.exists_degree
+    obtain ⟨d₁, e₁, hans⟩ := answer_pt.exists_degree
+    have hn := (ComputableTidilyInDegree.two_pow_length encQBF).inO_one
+    have hiter := ComputableTidilyInO.iterate hn hinit.inO hstep.inO
+      (R := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
+      (Q := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
+      (B := fun φ => 16 * ((encQBF φ).length + 1) ^ 2)
+      (fun φ k _ => Nat.pow_le_pow_left (Nat.add_le_add_right
+        (length_encState_le (good_iterate_step φ k)) 1) d)
+      (fun φ k _ => Nat.pow_le_pow_left (Nat.add_le_add_right
+        (length_encState_le (good_iterate_step φ k)) 1) d)
+      (fun φ k _ => length_encState_le (good_iterate_step φ k))
+    have h := hans.inO.comp hiter
+    refine ⟨2 * (d + d₀ + d₁) + 2, ?_⟩
+    refine (h.mono (17 ^ (d + d₁) * 64) (fun φ => ?_) fun φ => ?_).of_enc_eq fun φ => rfl
+    all_goals
+      simp only [encNat_two_pow, List.length_append, List.length_replicate,
+        List.length_singleton]
+      have hgood := length_encState_le (good_iterate_step φ (2 ^ (encQBF φ).length))
+      generalize step^[2 ^ (encQBF φ).length] (init φ) = s at hgood ⊢
+      generalize (encQBF φ).length = L at hgood ⊢
+      set E := 2 * (d + d₀ + d₁) + 2
+      have hP : 1 ≤ L + 1 := by omega
+      have hpow (a : ℕ) (ha : a ≤ E / 2) :
+          (16 * (L + 1) ^ 2 + 1) ^ a ≤ 17 ^ a * (L + 1) ^ E := by
+        calc (16 * (L + 1) ^ 2 + 1) ^ a ≤ (17 * (L + 1) ^ 2) ^ a :=
+              Nat.pow_le_pow_left (by nlinarith [Nat.one_le_pow 2 (L + 1) hP]) a
+          _ = 17 ^ a * (L + 1) ^ (2 * a) := by rw [Nat.mul_pow, ← pow_mul]
+          _ ≤ 17 ^ a * (L + 1) ^ E := Nat.mul_le_mul_left _ (pow_le_pow_of_le hP (by omega))
+      have hR := hpow d (by omega)
+      have hA : ((encState s).length + 1) ^ d₁ ≤ 17 ^ d₁ * (L + 1) ^ E :=
+        (Nat.pow_le_pow_left (by omega) d₁).trans (hpow d₁ (by omega))
+      have hM1 : L + 1 ≤ (L + 1) ^ E := by
+        simpa using pow_le_pow_of_le hP (show 1 ≤ E by omega)
+      have hM2 : (L + 1) ^ 2 ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
+      have hM0 : (L + 1) ^ d₀ ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
+      have hK : 17 ^ d ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
+      have hK₁ : 17 ^ d₁ ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
+      have hN : 1 ≤ 2 ^ L := Nat.one_le_two_pow
+      have hsq : (L + 1 + 1) ^ 2 ≤ 4 * (L + 1) ^ 2 := by nlinarith
+      generalize (16 * (L + 1) ^ 2 + 1) ^ d = X at *
+      generalize ((encState s).length + 1) ^ d₁ = A at *
+      generalize (L + 1) ^ E = M at *
+      generalize (L + 1) ^ 2 = Q at *
+      generalize (L + 1) ^ d₀ = D at *
+      generalize 17 ^ (d + d₁) = K at *
+      generalize 2 ^ L = N at *
+      have hX : X ≤ K * M := hR.trans (Nat.mul_le_mul_right _ hK)
+      have hA' : A ≤ K * M := hA.trans (Nat.mul_le_mul_right _ hK₁)
+      have hK1 : 1 ≤ K := le_trans (Nat.one_le_pow _ _ (by norm_num)) hK
+      have hKM : M ≤ K * M := Nat.le_mul_of_pos_left _ hK1
+    · have hround : X + 16 * Q + (L + 1 + 1) ^ 2 ≤ 21 * (K * M) := by omega
+      have hrounds := Nat.mul_le_mul_left (N + 1) hround
+      have hNM : K * M ≤ N * (K * M) := Nat.le_mul_of_pos_left _ hN
+      nlinarith
+    · have : K * 64 * (M + 1) = 64 * (K * M) + 64 * K := by ring
+      omega
+  simpa only [computableInO_iff_computableTidilyInO] using this
 
 end Cslib.Complexity.TQBF
 
@@ -401,12 +408,14 @@ namespace Cslib.Complexity
 
 open Turing.MultiTapeTM
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **`TQBF` is in polynomial space** [Sipser, Theorem 8.9][Sipser2013]
 [Arora and Barak, Theorem 4.13][AroraBarak09]: the explicit-stack evaluator decides it within
 space polynomial in the length of the encoded formula. -/
 theorem TQBF_mem_PSPACE : TQBF ∈ PSPACE encQBF := by
-  obtain ⟨e, c, h, -⟩ := TQBF.exists_computableTidilyInO_evaluate
-  refine ⟨TQBF.evaluate, ⟨_, _, ?_, h.computableInTimeAndSpace⟩,
+  obtain ⟨e, c, h, -⟩ := TQBF.exists_computableInO_evaluate
+  refine ⟨TQBF.evaluate, ⟨_, _, ?_, h⟩,
     fun φ => TQBF.evaluate_eq_true_iff.symm⟩
   refine PolyBounded.of_forall_le (2 * c) e fun φ => ?_
   have := Nat.one_le_pow e ((encQBF φ).length + 1) (by omega)

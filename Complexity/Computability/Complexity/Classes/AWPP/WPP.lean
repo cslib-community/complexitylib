@@ -50,14 +50,14 @@ theorem WPP_subset_AWPP : WPP enc ⊆ AWPP enc := by
   let D a : ℤ := 2 ^ r a
   have hD : D ∈ GapP enc := by
     have := SharpP.natCast_mem_GapP
-      (mem_SharpP_of_polyTime (ComputableTidilyInPolyTime.binary_two_pow.comp hr))
+      (mem_SharpP_of_polyTime (.of_tidy (ComputableTidilyInPolyTime.binary_two_pow.comp hr)))
     simpa only [Function.comp_apply, Nat.cast_pow, Nat.cast_ofNat, D] using this
   let G := g * g
   have hG : G ∈ GapP enc := GapP.mul_mem hg hg
   have hnum := GapP.sub_mem' (GapP.add_mem (GapP.mul_mem hG hD) (GapP.mul_mem hG hD))
     (GapP.mul_mem hG hG)
   refine mem_AWPP_of_polyTime_exponent hnum
-    (ComputableTidilyInPolyTime.unary_add.comp (hr.prod hr)) (fun a => ?_)
+    (.of_tidy (ComputableTidilyInPolyTime.unary_add.comp (hr.prod hr))) (fun a => ?_)
   have hkcast : (k a : ℤ) = f a * f a := Int.toNat_of_nonneg (mul_self_nonneg _)
   have hkpos : 0 < k a := by
     have := mul_self_pos.mpr (hf0 a)

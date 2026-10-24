@@ -34,7 +34,7 @@ of `B` therefore reads longer blocks and cuts each to its first bits
 
 * `Cslib.Complexity.alternation_truncateBlocks`: cutting longer blocks does not change
   alternating quantifiers.
-* `Cslib.Complexity.computableTidilyInPolyTime_truncateBlocks`: cutting blocks is polynomial-time.
+* `Cslib.Complexity.computableInPolyTime_truncateBlocks`: cutting blocks is polynomial-time.
 * `Cslib.Complexity.exists_mem_PiP_of_mem_SigmaP_succ`: a problem in `Σₖ₊₁` is the projection of
   a problem in `Πₖ` on pairs.
 
@@ -107,20 +107,20 @@ theorem alternation_truncateBlocks {ps : List (Polynomial ℕ)} {n m : ℕ} (h :
 
 /-- Cutting blocks is polynomial-time, for a fixed list of polynomials and lengths `n`, `m` computed
 in unary. -/
-theorem computableTidilyInPolyTime_truncateBlocks {γ : Type} {encIn : γ ↪ List Bool}
+theorem computableInPolyTime_truncateBlocks {γ : Type} {encIn : γ ↪ List Bool}
     (ps : List (Polynomial ℕ)) {N M : γ → ℕ}
-    (hN : ComputableTidilyInPolyTime N encIn encUnary)
-    (hM : ComputableTidilyInPolyTime M encIn encUnary) {W : γ → List Bool}
-    (hW : ComputableTidilyInPolyTime W encIn encBits) :
-    ComputableTidilyInPolyTime (fun x => truncateBlocks ps (N x) (M x) (W x)) encIn encBits := by
+    (hN : ComputableInPolyTime N encIn encUnary)
+    (hM : ComputableInPolyTime M encIn encUnary) {W : γ → List Bool}
+    (hW : ComputableInPolyTime W encIn encBits) :
+    ComputableInPolyTime (fun x => truncateBlocks ps (N x) (M x) (W x)) encIn encBits := by
   induction ps generalizing W with
   | nil => exact .const []
   | cons p ps ih =>
-    exact ComputableTidilyInPolyTime.bitsAppend
-      (ComputableTidilyInPolyTime.bitsTakeWithInput hW
-        ((ComputableTidilyInPolyTime.unary_eval p).comp hN))
-      (ih (ComputableTidilyInPolyTime.bitsDropWithInput hW
-        ((ComputableTidilyInPolyTime.unary_eval p).comp hM)))
+    exact ComputableInPolyTime.bitsAppend
+      (ComputableInPolyTime.bitsTakeWithInput hW
+        ((ComputableInPolyTime.unary_eval p).comp hN))
+      (ih (ComputableInPolyTime.bitsDropWithInput hW
+        ((ComputableInPolyTime.unary_eval p).comp hM)))
 
 /-! ### Peeling off the first quantifier -/
 
@@ -147,10 +147,11 @@ theorem exists_mem_PiP_of_mem_SigmaP_succ {k : ℕ} {A : Set α} (hA : A ∈ Sig
   · have hfst := (ComputableTidilyInPolyTime.fst (encPair enc encBits) encBits)
     exact .of_tidy <| hV.tidy.comp (((ComputableTidilyInPolyTime.fst _ _).comp hfst).prod
       (ComputableTidilyInPolyTime.bitsAppend ((ComputableTidilyInPolyTime.snd _ _).comp hfst)
-        (computableTidilyInPolyTime_truncateBlocks ps
-          ((ComputableTidilyInPolyTime.encoding_length enc).comp
-            ((ComputableTidilyInPolyTime.fst _ _).comp hfst))
-          ((ComputableTidilyInPolyTime.encoding_length _).comp hfst) (.snd _ _))))
+        (computableInPolyTime_truncateBlocks ps
+          (.of_tidy ((ComputableTidilyInPolyTime.encoding_length enc).comp
+            ((ComputableTidilyInPolyTime.fst _ _).comp hfst)))
+          (.of_tidy ((ComputableTidilyInPolyTime.encoding_length _).comp hfst))
+            (.of_tidy (.snd _ _))).tidy))
   · exact (alternation_truncateBlocks (hle y) (P := fun w => V (y.1, y.2 ++ w) = true)).symm
 
 end Cslib.Complexity

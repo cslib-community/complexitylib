@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Ba
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Kernelization
@@ -53,7 +54,6 @@ Problems in `P` have kernels of constant size (`Cslib.Complexity.hasPolyKernel_o
 
 ## Main results
 
-* `Cslib.Complexity.isKernelization_iff_tidy`: kernelizations with a tidy polynomial-time map.
 * `Cslib.Complexity.IsKernelization.fptReducible`: every kernelization is an fpt-reduction from the
   problem to itself.
 * `Cslib.Complexity.HasKernel.mem_FPT`, `Cslib.Complexity.hasKernel_of_mem_FPT`,
@@ -105,15 +105,6 @@ polynomially bounded size bound. -/
 def HasPolyKernel (enc : α ↪ List Bool) (κ : α → ℕ) (A : Set α) : Prop :=
   ∃ (K : α → α) (g : ℕ → ℕ), PolynomiallyBounded g ∧ IsKernelization enc κ A K g
 
-/-- `Cslib.Complexity.IsKernelization` with a tidy polynomial-time kernelization, for proofs that
-compose machines. -/
-theorem isKernelization_iff_tidy {enc : α ↪ List Bool} {κ : α → ℕ} {A : Set α} {K : α → α}
-    {g : ℕ → ℕ} : IsKernelization enc κ A K g ↔ ComputableTidilyInPolyTime K enc enc ∧
-      (∀ a, K a ∈ A ↔ a ∈ A) ∧ (∀ a, (enc (K a)).length ≤ g (κ a)) ∧
-        ∀ a, κ (K a) ≤ g (κ a) :=
-  ⟨fun h => ⟨h.polyTime.tidy, h.mem_iff, h.length_le, h.parameter_le⟩,
-    fun ⟨h₁, h₂, h₃, h₄⟩ => ⟨.of_tidy h₁, h₂, h₃, h₄⟩⟩
-
 theorem HasPolyKernel.hasKernel {enc : α ↪ List Bool} {κ : α → ℕ} {A : Set α}
     (h : HasPolyKernel enc κ A) : HasKernel enc κ A :=
   let ⟨K, g, _, hK⟩ := h
@@ -126,7 +117,7 @@ variable {α : Type} {enc : α ↪ List Bool} {κ : α → ℕ} {A : Set α}
 /-- Every kernelization of `(A, κ)` is an fpt-reduction from `(A, κ)` to itself. -/
 theorem IsKernelization.fptReducible {K : α → α} {g : ℕ → ℕ} (hK : IsKernelization enc κ A K g) :
     FPTReducible enc enc κ κ A A :=
-  .of_computableTidilyInPolyTime hK.polyTime.tidy hK.parameter_le fun a => (hK.mem_iff a).symm
+  FPTReducible.of_computableInPolyTime hK.polyTime hK.parameter_le fun a => (hK.mem_iff a).symm
 
 /-! ### Kernels give fixed-parameter tractability -/
 
@@ -135,7 +126,8 @@ then a decider on its output. -/
 theorem IsKernelization.mem_FPT {K : α → α} {g : ℕ → ℕ} (hK : IsKernelization enc κ A K g)
     {t : ℕ → ℕ} (hA : A ∈ DTIME enc t) : A ∈ FPT enc κ := by
   obtain ⟨dec, tt, c, hdec, hdecA, htt⟩ :=
-    (mem_DTIME_iff_decidableInTimeO.mp hA).exists_computableTidilyInO
+    (mem_DTIME_iff_decidableInTimeO.mp hA).exists_computableInO
+  have hdec := hdec.tidy
   obtain ⟨d, _, hKd⟩ := hK.polyTime.tidy.exists_degree
   have htt' : ∀ a, tt (K a) ≤ c * (∑ j ∈ Finset.range (g (κ a) + 1), t j) + c := fun a => by
     have h₁ : tt (K a) ≤ c * t (enc (K a)).length + c := by exact_mod_cast htt (K a)
@@ -151,9 +143,10 @@ theorem IsKernelization.mem_FPT {K : α → α} {g : ℕ → ℕ} (hK : IsKernel
     have h₁ := (htt' a).trans (Nat.le_mul_of_pos_right _ hP)
     rw [Nat.add_mul, Nat.one_mul]
     omega
-  exact mem_FPT_iff_computableTidilyInFPTTime.mpr ⟨dec ∘ K,
-    ⟨fun k => 1 + (c * (∑ j ∈ Finset.range (g k + 1), t j) + c), d,
-      (hdec.comp hKd.inO).mono_le key key⟩,
+  exact mem_FPT_iff_computableInFPTTime.mpr ⟨dec ∘ K,
+    ComputableInO.computableInFPTTime
+      (F := fun k => 1 + (c * (∑ j ∈ Finset.range (g k + 1), t j) + c)) (c := d)
+      (.of_tidy ((hdec.comp hKd.inO).mono_le key key)),
     fun a => (hK.mem_iff a).symm.trans (hdecA (K a))⟩
 
 /-- **A decidable problem with a kernel is fixed-parameter tractable.** -/
@@ -225,7 +218,7 @@ theorem hasKernel_of_mem_FPT [Nonempty α] (hA : A ∈ FPT enc κ) : HasKernel e
         (ComputableTidilyInPolyTime.encode enc)).prod hN)
   have hr : ComputableTidilyInPolyTime r enc eOut := computableTidilyInPolyTime_universal.comp hin
   have hverdict : ComputableTidilyInPolyTime Diagonal.verdict eOut encBool :=
-    Diagonal.computableTidilyInO_verdict.computableTidilyInPolyTime
+    Diagonal.computableInO_verdict.tidy.computableTidilyInPolyTime
       (.of_forall_le 1 2 fun _ => by simp) (.of_forall_le 1 1 fun _ => by simp)
   have hK : ComputableTidilyInPolyTime K enc enc :=
     ComputableTidilyInPolyTime.ite' (hverdict.comp hr)

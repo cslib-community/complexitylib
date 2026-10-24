@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fo
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Counting the accepting coins in polynomial space
@@ -30,7 +31,7 @@ history, and in exponential time.
 * A replay keeping only whether it is still live
   (`Cslib.Complexity.Interaction.aliveStep`) decides whether the program of given coins accepts
   after a history (`Cslib.Complexity.Interaction.accepts_eq_true_iff`), in polynomial time
-  (`Cslib.Complexity.Interaction.computableTidilyInPolyTime_accepts`): it folds one instruction per
+  (`Cslib.Complexity.Interaction.computableInPolyTime_accepts`): it folds one instruction per
   coin over the configuration of the machine, whose storage grows by a bounded amount per
   instruction.
 * The coin values are enumerated by the binary counter of the shared streaming count
@@ -38,7 +39,7 @@ history, and in exponential time.
   (`Cslib.Complexity.Interaction.countAccepts`,
   `Cslib.Complexity.Interaction.countAccepts_eq_accepted`), within polynomial space
   (`Turing.MultiTapeTM.ComputableTidilyInPolySpace`,
-  `Cslib.Complexity.Interaction.computableTidilyInPolySpace_countAccepts`).
+  `Cslib.Complexity.Interaction.computableInPolySpace_countAccepts`).
 
 ## Main definitions
 
@@ -47,9 +48,9 @@ history, and in exponential time.
 
 ## Main results
 
-* `Cslib.Complexity.Interaction.computableTidilyInPolyTime_accepts`: acceptance in polynomial time.
+* `Cslib.Complexity.Interaction.computableInPolyTime_accepts`: acceptance in polynomial time.
 * `Cslib.Complexity.Interaction.countAccepts_eq_accepted`: the count of accepting coin values.
-* `Cslib.Complexity.Interaction.computableTidilyInPolySpace_countAccepts`: the count in polynomial
+* `Cslib.Complexity.Interaction.computableInPolySpace_countAccepts`: the count in polynomial
   space.
 
 ## References
@@ -373,10 +374,11 @@ private theorem computableTidilyInPolyTime_aliveRun :
 omit [Fintype Operation] in
 include hmatch hpair in
 /-- **Acceptance is polynomial-time** in the input, the coins and the history. -/
-theorem computableTidilyInPolyTime_accepts [Finite Operation] :
-    ComputableTidilyInPolyTime (fun p : List Bool × List Bool × List Entry =>
+theorem computableInPolyTime_accepts [Finite Operation] :
+    Turing.MultiTapeTM.ComputableInPolyTime (fun p : List Bool × List Bool × List Entry =>
       accepts matchOp entryPair M p.1 p.2.1 p.2.2)
       (encPair encBits (encPair encBits (encList encEntry))) encBool := by
+  refine .of_tidy ?_
   cases nonempty_fintype Operation
   have h := computableTidilyInPolyTime_aliveRun matchOp entryPair M
     (encEntry := encEntry) hmatch hpair
@@ -408,20 +410,23 @@ theorem countAccepts_eq_accepted (q : α × History) :
 
 /-- **The count of accepting coins within polynomial space**, in the input and the history, for a
 number of coins computed in polynomial time. -/
-theorem computableTidilyInPolySpace_countAccepts [Finite Control]
-    (hfuel : ComputableTidilyInPolyTime fuel enc encUnary) :
-    ComputableTidilyInPolySpace (countAccepts MUnit enc fuel) (encPair enc encHistory) encNat := by
+theorem computableInPolySpace_countAccepts [Finite Control]
+    (hfuel : Turing.MultiTapeTM.ComputableInPolyTime fuel enc encUnary) :
+    Turing.MultiTapeTM.ComputableInPolySpace (countAccepts MUnit enc fuel) (encPair enc encHistory)
+      encNat := by
+  have hfuel := hfuel.tidy
+  refine .of_tidy ?_
   have hfuel' : ComputableTidilyInPolyTime (fun q : α × History => fuel q.1)
       (encPair enc encHistory) encUnary := hfuel.comp (ComputableTidilyInPolyTime.fst _ _)
-  have hacc := computableTidilyInPolyTime_accepts (fun _ _ => true) id MUnit
+  have hacc := (computableInPolyTime_accepts (fun _ _ => true) id MUnit
     (encEntry := encPair encBits encBits)
     (fun _ => .of_tidy (ComputableTidilyInPolyTime.const true))
-    (.of_tidy ComputableTidilyInPolyTime.id')
+    (.of_tidy ComputableTidilyInPolyTime.id')).tidy
   have hverify : ComputableTidilyInPolyTime
       (fun p : (α × History) × List Bool =>
         accepts (fun _ _ => true) id MUnit (enc p.1.1) p.2 p.1.2)
       (encPair (encPair enc encHistory) encBits) encBool := by fun_prop
-  exact (computableTidilyInPolySpace_acceptCount hverify hfuel').congr fun q =>
+  exact (computableInPolySpace_acceptCount (.of_tidy hverify) (.of_tidy hfuel')).tidy.congr fun q =>
     (streamAcceptCount_eq_acceptCount _ q _).symm
 
 end Count

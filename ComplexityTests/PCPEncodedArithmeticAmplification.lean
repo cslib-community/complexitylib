@@ -24,13 +24,13 @@ variable {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph C
   (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool))))
   (hwellFormed : ∀ x, (graph x).WellFormed)
 
-example : ComputableTidilyInPolyTime (fun x => (graph x).arithmeticAmplify)
+example : ComputableInPolyTime (fun x => (graph x).arithmeticAmplify)
     input (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hgraph; fun_prop)
   fail_if_success (clear hwellFormed; fun_prop)
   fun_prop
 
-example : ComputableTidilyInPolyTime (fun x =>
+example : ComputableInPolyTime (fun x =>
     let initial := graph x
     initial.arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hgraph; polytime)

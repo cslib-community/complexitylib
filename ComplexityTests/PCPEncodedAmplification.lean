@@ -126,7 +126,7 @@ example (g : Graph Bool) :
   g.satisfiable_powerPreprocess_iff evalConstraint false reflection rotateReflection
     rotateReflection_eq 1 2 walks nodup_walks mem_walks
 
-example : ComputableTidilyInPolyTime powered (Graph.encoding encBool)
+example : ComputableInPolyTime powered (Graph.encoding encBool)
     (Graph.encoding (encPi (encPi encBool))) := by
   have hr := isPolyTime_rotateReflection
   have he : ComputableTidilyInPolyTime
@@ -138,8 +138,8 @@ example : ComputableTidilyInPolyTime powered (Graph.encoding encBool)
   fun_prop
 
 example {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph Bool}
-    (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding encBool)) :
-    ComputableTidilyInPolyTime
+    (hgraph : ComputableInPolyTime graph input (Graph.encoding encBool)) :
+    ComputableInPolyTime
       (fun x => (graph x).powerPreprocess evalConstraint false rotateReflection 1 2 walks)
       input (Graph.encoding (encPi (encPi encBool))) := by
   have hr := isPolyTime_rotateReflection
@@ -152,12 +152,12 @@ example {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph Bo
 
 -- Both ordinary let-bound spelling and missing-certificate rejection use the shared tactic.
 example {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph Bool}
-    (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding encBool))
+    (hgraph : ComputableInPolyTime graph input (Graph.encoding encBool))
     (rotate : ℕ × (ℕ × Unit) → ℕ × Unit)
-    (hr : ComputableTidilyInPolyTime rotate
+    (hr : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary (encFinEnum Unit)))
       (encPair encUnary (encFinEnum Unit))) :
-    ComputableTidilyInPolyTime (fun x =>
+    ComputableInPolyTime (fun x =>
       let g := graph x
       g.powerPreprocess evalConstraint false rotate 1 2 walks)
       input (Graph.encoding (encPi (encPi encBool))) := by
@@ -181,12 +181,12 @@ private def unitOpinions (D : Type) (T : ℕ) : Numbering (Graph.PowerAlphabet D
 -- The concrete opinion type has Unique.fintype, while the generic power proof used
 -- Pi.instFintype. Their enumeration must not be unified to infer the output encoding.
 example {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph Bool}
-    (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding encBool))
+    (hgraph : ComputableInPolyTime graph input (Graph.encoding encBool))
     (rotate : ℕ × (ℕ × Fin 16) → ℕ × Fin 16)
-    (hr : ComputableTidilyInPolyTime rotate
+    (hr : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary (encFinEnum (Fin 16))))
       (encPair encUnary (encFinEnum (Fin 16)))) :
-    ComputableTidilyInPolyTime (fun x =>
+    ComputableInPolyTime (fun x =>
       let powered := (graph x).powerPreprocess unitEval false rotate 4 2
         [(fun _ => .inr (), fun _ => 0)]
       powered.composeTabulated (numberSlots (unitOpinions (Fin 16) 4)).2 [default] queries)
@@ -201,14 +201,14 @@ example {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph Bo
 -- Clients may choose any fixed encoding of the finite constraint table, independently of its
 -- internal enumeration. The graph itself still ranges over arbitrarily large input data.
 example {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph Bool}
-    (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding encBool))
+    (hgraph : ComputableInPolyTime graph input (Graph.encoding encBool))
     (rotate : ℕ × (ℕ × Fin 16) → ℕ × Fin 16)
-    (hr : ComputableTidilyInPolyTime rotate
+    (hr : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary (encFinEnum (Fin 16))))
       (encPair encUnary (encFinEnum (Fin 16))))
     (output : (Graph.PowerAlphabet (Fin 16) Unit 4 → Graph.PowerAlphabet (Fin 16) Unit 4 → Bool) ↪
       List Bool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun x => (graph x).powerPreprocess unitEval false rotate 4 2
         [(fun _ => .inr (), fun _ => 0)])
       input (Graph.encoding output) := by
@@ -243,7 +243,7 @@ example : (selectedPartialRound exampleGraph).WellFormed :=
   exampleGraph.wellFormed_amplify unitEval false reflection rotateReflection rotateReflection_eq
     1 2 walks (numberSelectedSlots (unitOpinions Unit 1)).2 [(0, oneCoin)] selectedQueries
 
-example : ComputableTidilyInPolyTime selectedPartialRound (Graph.encoding encBool)
+example : ComputableInPolyTime selectedPartialRound (Graph.encoding encBool)
     (Graph.encoding (encPi (encPi encBool))) := by
   have hr := isPolyTime_rotateReflection
   have he : ComputableTidilyInPolyTime
@@ -296,7 +296,7 @@ private def completeRound (g : Graph Bool) :=
   g.amplify unitEval false RotationMap.arithmeticExpanderRotate 4 2 fullWalks
     (numberSelectedSlots (unitOpinions ArithmeticLabel 4)).2 fullSelectedCoins selectedQueries
 
-example : ComputableTidilyInPolyTime completeRound (Graph.encoding encBool)
+example : ComputableInPolyTime completeRound (Graph.encoding encBool)
     (Graph.encoding (encPi (encPi encBool))) := by
   have hr := RotationMap.polytime_arithmeticExpanderRotate (encFinite ArithmeticLabel)
   have he : ComputableTidilyInPolyTime
@@ -308,8 +308,8 @@ example : ComputableTidilyInPolyTime completeRound (Graph.encoding encBool)
   polytime
 
 example {Input : Type} (input : Input ↪ List Bool) (graph : Input → Graph Bool)
-    (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding encBool)) :
-    ComputableTidilyInPolyTime (fun x =>
+    (hgraph : ComputableInPolyTime graph input (Graph.encoding encBool)) :
+    ComputableInPolyTime (fun x =>
       let powered := (graph x).powerPreprocess unitEval false RotationMap.arithmeticExpanderRotate
         4 2 fullWalks
       powered.composeTabulated (numberSlots (unitOpinions ArithmeticLabel 4)).2 fullCoins queries)

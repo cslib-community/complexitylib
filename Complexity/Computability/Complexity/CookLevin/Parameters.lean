@@ -29,7 +29,7 @@ The clause and variable-numbering certificates in
 
 ## Main results
 
-* `Cslib.Complexity.CookLevin.computableTidilyInPolyTime_parameters`:
+* `Cslib.Complexity.CookLevin.computableInPolyTime_parameters`:
   computing the exact prefix and bounds used by the reduction.
 
 ## References
@@ -46,9 +46,9 @@ open Turing.MultiTapeTM
 /-- The input prefix, certificate length and verifier time bound used by the Cook–Levin
 reduction are jointly computable in polynomial time, with the bounds in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_parameters {α : Type} (p : Polynomial ℕ) (c d : ℕ)
+theorem computableInPolyTime_parameters {α : Type} (p : Polynomial ℕ) (c d : ℕ)
     (enc : α ↪ List Bool) :
-    ComputableTidilyInPolyTime (parameters p c d enc)
+    ComputableInPolyTime (parameters p c d enc)
       enc (encPair encBits (encPair encUnary encUnary)) := by
   unfold parameters
   fun_prop

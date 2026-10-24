@@ -299,11 +299,11 @@ info: 'Cslib.Complexity.QBFProtocol.run_verifyAt_of_agreesAt' depends on axioms:
 #print axioms Cslib.Complexity.QBFProtocol.run_verifyAt_of_agreesAt
 
 /--
-info: 'Cslib.Complexity.TQBF.computableTidilyInPolyTime_decide_closed' depends on axioms:
+info: 'Cslib.Complexity.TQBF.computableInPolyTime_decide_closed' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.TQBF.computableTidilyInPolyTime_decide_closed
+#print axioms Cslib.Complexity.TQBF.computableInPolyTime_decide_closed
 
 /--
 info: 'Cslib.Complexity.QBFProtocol.eval_sampleMod_le' depends on axioms:

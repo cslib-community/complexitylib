@@ -58,7 +58,7 @@ def addLoops (truth : C) (g : Graph C) : Graph C :=
 /-- Appending explicitly listed trivial edges is uniformly polynomial-time in both lists. -/
 @[fun_prop]
 theorem isPolyTime_addTrivial (enc : C ↪ List Bool) (truth : C) :
-    ComputableTidilyInPolyTime (fun p : Graph C × List (ℕ × ℕ) =>
+    ComputableInPolyTime (fun p : Graph C × List (ℕ × ℕ) =>
       p.1.addTrivial truth p.2)
       (encPair (encoding enc) (encList (encPair encUnary encUnary))) (encoding enc) := by
   unfold addTrivial
@@ -67,7 +67,7 @@ theorem isPolyTime_addTrivial (enc : C ↪ List Bool) (truth : C) :
 /-- Constructing all self-loops, including enumerating their endpoints, is polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_addLoops (enc : C ↪ List Bool) (truth : C) :
-    ComputableTidilyInPolyTime (addLoops truth) (encoding enc) (encoding enc) := by
+    ComputableInPolyTime (addLoops truth) (encoding enc) (encoding enc) := by
   unfold addLoops
   polytime
 

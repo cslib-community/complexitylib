@@ -36,7 +36,6 @@ are proved in `Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplific
 
 ## Main results
 
-* `Cslib.Complexity.mem_SBP_iff_tidy`: membership through a tidy threshold machine.
 * `Cslib.Complexity.NP_subset_SBP`, `Cslib.Complexity.BPP_subset_SBP`,
   `Cslib.Complexity.SBP_subset_PP`.
 * `Cslib.Complexity.union_mem_SBP`, `Cslib.Complexity.PolyTimeReducible.mem_SBP`: union and
@@ -70,32 +69,29 @@ theorem mem_SBP : A ∈ SBP enc ↔ ∃ f ∈ SharpP enc, ∃ k : α → ℕ, Co
     ∀ a, (a ∈ A → k a ≤ f a) ∧ (a ∉ A → 2 * f a < k a) :=
   Iff.rfl
 
-/-- `Cslib.Complexity.mem_SBP` with a tidy threshold machine, for proofs that compose machines. -/
-theorem mem_SBP_iff_tidy : A ∈ SBP enc ↔
-    ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableTidilyInPolyTime k enc encNat ∧
-      ∀ a, (a ∈ A → k a ≤ f a) ∧ (a ∉ A → 2 * f a < k a) := by
-  simp only [mem_SBP, computableInPolyTime_iff_computableTidilyInPolyTime]
-
 /-- Replacing `(f, k)` by `(2f + 1, 2k + 1)` makes the threshold positive. -/
 theorem mem_SBP_iff_exists_pos_threshold : A ∈ SBP enc ↔
-    ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableTidilyInPolyTime k enc encNat ∧
+    ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableInPolyTime k enc encNat ∧
       (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧ (a ∉ A → 2 * f a < k a) := by
-  rw [mem_SBP_iff_tidy]
-  constructor
-  · rintro ⟨f, hf, k, hk, hA⟩
-    refine ⟨f + f + 1, SharpP.add_mem (SharpP.add_mem hf hf) SharpP.one_mem,
-      fun a => k a + k a + 1, by fun_prop,
-      fun a => by positivity, fun a => ?_⟩
-    simp only [Pi.add_apply, Pi.one_apply]
+  have this : A ∈ SBP enc ↔ ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableTidilyInPolyTime k enc encNat ∧
+      (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧ (a ∉ A → 2 * f a < k a) := by
+    rw [mem_SBP]
     constructor
-    · intro ha
-      have := (hA a).1 ha
-      lia
-    · intro ha
-      have := (hA a).2 ha
-      lia
-  · rintro ⟨f, hf, k, hk, -, hA⟩
-    exact ⟨f, hf, k, hk, hA⟩
+    · rintro ⟨f, hf, k, hk, hA⟩
+      refine ⟨f + f + 1, SharpP.add_mem (SharpP.add_mem hf hf) SharpP.one_mem,
+        fun a => k a + k a + 1, by have hk := hk.tidy; fun_prop,
+        fun a => by positivity, fun a => ?_⟩
+      simp only [Pi.add_apply, Pi.one_apply]
+      constructor
+      · intro ha
+        have := (hA a).1 ha
+        lia
+      · intro ha
+        have := (hA a).2 ha
+        lia
+    · rintro ⟨f, hf, k, hk, -, hA⟩
+      exact ⟨f, hf, k, (.of_tidy hk), hA⟩
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 /-- Threshold one recognizes precisely the positive #P counts. -/
 theorem NP_subset_SBP : NP enc ⊆ SBP enc := by
@@ -110,7 +106,7 @@ theorem BPP_subset_SBP : BPP enc ⊆ SBP enc := by
   intro A hA
   obtain ⟨p, V, hV, hA⟩ := mem_BPP_iff_forall_decidesWithErrorExponent.mp hA 2
   have hf : (fun a => acceptCount V a (p.eval (enc a).length)) ∈ SharpP enc :=
-    ⟨p, V, .of_tidy hV, fun _ => rfl⟩
+    ⟨p, V, hV, fun _ => rfl⟩
   refine ⟨_, SharpP.mul_mem (SharpP.natCast_mem 3) hf,
     fun a => 2 * 2 ^ p.eval (enc a).length,
     by fun_prop, fun a => ?_⟩
@@ -132,7 +128,7 @@ theorem BPP_subset_SBP : BPP enc ⊆ SBP enc := by
 theorem SBP_subset_PP : SBP enc ⊆ PP enc := by
   rintro A ⟨f, hf, k, hk, hA⟩
   have hg := GapP.sub_mem' (SharpP.natCast_mem_GapP (SharpP.add_mem hf hf))
-    (SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime hk.tidy))
+    (SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime hk))
   refine mem_PP_iff_exists_GapP.mpr ⟨_, GapP.add_mem hg GapP.one_mem, fun a => ?_⟩
   change a ∈ A ↔ 0 < ((f a + f a : ℕ) : ℤ) - (k a : ℤ) + 1
   by_cases ha : a ∈ A
@@ -148,7 +144,7 @@ theorem PolyTimeReducible.mem_SBP {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ SBP encB) : A ∈ SBP enc := by
   obtain ⟨r, hr, hAB⟩ := h
   obtain ⟨f, hf, k, hk, hB⟩ := hB
-  exact ⟨f ∘ r, SharpP.comp_mem hf hr.tidy, k ∘ r, hk.comp hr, fun a => by
+  exact ⟨f ∘ r, SharpP.comp_mem hf hr, k ∘ r, hk.comp hr, fun a => by
     simpa only [Function.comp_apply, ← hAB a] using hB (r a)⟩
 
 /-- Normalize two positive thresholds by cross multiplication, then square and add the counts. -/
@@ -185,18 +181,22 @@ closure under input-dependent powers; see
 `Complexity/Computability/Complexity/Classes/SBP/Amplification.lean` for the uniform theorem.
 See [Watson, Section 1.1][Watson2012]. -/
 theorem exists_SBP_gap_pow (hA : A ∈ SBP enc) {m : ℕ} (hm : 0 < m) :
-    ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableTidilyInPolyTime k enc encNat ∧
+    ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableInPolyTime k enc encNat ∧
       (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧
         (a ∉ A → 2 ^ m * f a < k a) := by
-  obtain ⟨f, hf, k, hk, hkpos, h⟩ := mem_SBP_iff_exists_pos_threshold.mp hA
-  refine ⟨f ^ m, SharpP.pow_mem hf m, fun a => k a ^ m,
-    hk.binary_pow' (.const m), fun a => pow_pos (hkpos a) _, fun a => ⟨?_, ?_⟩⟩
-  · intro ha
-    exact Nat.pow_le_pow_left ((h a).1 ha) m
-  · intro ha
-    simpa only [Pi.pow_apply, mul_pow] using
-      Nat.pow_lt_pow_left ((h a).2 ha) (Nat.ne_of_gt hm)
+  have this : ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableTidilyInPolyTime k enc encNat ∧
+      (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧ (a ∉ A → 2 ^ m * f a < k a) := by
+    obtain ⟨f, hf, k, hk, hkpos, h⟩ := mem_SBP_iff_exists_pos_threshold.mp hA
+    refine ⟨f ^ m, SharpP.pow_mem hf m, fun a => k a ^ m,
+      hk.tidy.binary_pow' (.const m), fun a => pow_pos (hkpos a) _, fun a => ⟨?_, ?_⟩⟩
+    · intro ha
+      exact Nat.pow_le_pow_left ((h a).1 ha) m
+    · intro ha
+      simpa only [Pi.pow_apply, mul_pow] using
+        Nat.pow_lt_pow_left ((h a).2 ha) (Nat.ne_of_gt hm)
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Intersecting an SBP language with a BPP language preserves SBP.
 Square the SBP gap, amplify BPP beyond the exponential bound on that count,
 and multiply counts. This is an elementary consequence of counting closure and
@@ -207,7 +207,7 @@ theorem inter_mem_SBP_of_mem_BPP (hA : A ∈ SBP enc) (hB : B ∈ BPP enc) :
   obtain ⟨p, hp⟩ := SharpP.exists_le_two_pow hf
   obtain ⟨q, V, hV, hB⟩ := mem_BPP_iff_forall_decidesWithErrorExponent.mp hB (p + 2)
   let c a := acceptCount V a (q.eval (enc a).length)
-  have hc : c ∈ SharpP enc := ⟨q, V, .of_tidy hV, fun _ => rfl⟩
+  have hc : c ∈ SharpP enc := ⟨q, V, hV, fun _ => rfl⟩
   refine ⟨_, SharpP.mul_mem (SharpP.natCast_mem 4) (SharpP.mul_mem hf hc),
     fun a => 3 * (k a * 2 ^ q.eval (enc a).length),
     .of_tidy (by fun_prop), fun a => ?_⟩

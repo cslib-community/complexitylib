@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Mathlib.Algebra.Polynomial.Eval.Defs
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Foundations.Data.List.OfFn
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Deterministic computations on repeated random-tape blocks
@@ -33,9 +34,9 @@ the separate probabilistic-program interface for independently sampled runs.
 ## Main results
 
 * `Cslib.Complexity.repeatVotes_ofFn`: votes on a full tape agree with finite block evaluation.
-* `Cslib.Complexity.computableTidilyInPolyTime_repeatVotes`: producing votes takes polynomial time.
-* `Cslib.Complexity.computableTidilyInPolyTime_repeatAny`,
-  `Cslib.Complexity.computableTidilyInPolyTime_repeatMajority`: efficient aggregation.
+* `Cslib.Complexity.computableInPolyTime_repeatVotes`: producing votes takes polynomial time.
+* `Cslib.Complexity.computableInPolyTime_repeatAny`,
+  `Cslib.Complexity.computableInPolyTime_repeatMajority`: efficient aggregation.
 
 ## References
 
@@ -74,13 +75,17 @@ theorem repeatVotes_ofFn {trials width : ℕ} {V : α × List Bool → Bool} (a 
 /-- Producing votes takes polynomial time when the verifier and the unary dimensions do.
 The dimensions may depend on the complete input, and output uses the raw bit-list encoding. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_repeatVotes {enc : α ↪ List Bool}
+theorem computableInPolyTime_repeatVotes {enc : α ↪ List Bool}
     {V : α × List Bool → Bool} {trials width : α × List Bool → ℕ}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool)
-    (htrials : ComputableTidilyInPolyTime trials (encPair enc encBits) encUnary)
-    (hwidth : ComputableTidilyInPolyTime width (encPair enc encBits) encUnary) :
-    ComputableTidilyInPolyTime (fun input => repeatVotes (trials input) (width input) V input)
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool)
+    (htrials : ComputableInPolyTime trials (encPair enc encBits) encUnary)
+    (hwidth : ComputableInPolyTime width (encPair enc encBits) encUnary) :
+    ComputableInPolyTime (fun input => repeatVotes (trials input) (width input) V input)
       (encPair enc encBits) encBits := by
+  have hV := hV.tidy
+  have htrials := htrials.tidy
+  have hwidth := hwidth.tidy
+  refine .of_tidy ?_
   unfold repeatVotes
   fun_prop
 
@@ -95,11 +100,18 @@ def repeatMajority (enc : α ↪ List Bool) (r p : Polynomial ℕ) (V : α × Li
 
 variable {enc : α ↪ List Bool}
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Majority votes of a polynomial-time decider take polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_repeatMajority {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) (r p : Polynomial ℕ) :
-    ComputableTidilyInPolyTime (repeatMajority enc r p V) (encPair enc encBits) encBool := by
+theorem computableInPolyTime_repeatMajority {V : α × List Bool → Bool}
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (r p : Polynomial ℕ) :
+    ComputableInPolyTime (repeatMajority enc r p V) (encPair enc encBits) encBool := by
+  have hV' := hV.tidy
+  have hvotes : ComputableTidilyInPolyTime
+      (fun x => repeatVotes (2 * r.eval (enc x.1).length) (p.eval (enc x.1).length) V x)
+      (encPair enc encBits) encBits :=
+    (computableInPolyTime_repeatVotes hV (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))).tidy
+  refine .of_tidy ?_
   unfold repeatMajority
   fun_prop
 
@@ -122,11 +134,18 @@ def repeatAny (enc : α ↪ List Bool) (q p : Polynomial ℕ) (V : α × List Bo
 
 variable {enc : α ↪ List Bool}
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Repeating a polynomial-time decider takes polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_repeatAny {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) (q p : Polynomial ℕ) :
-    ComputableTidilyInPolyTime (repeatAny enc q p V) (encPair enc encBits) encBool := by
+theorem computableInPolyTime_repeatAny {V : α × List Bool → Bool}
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (q p : Polynomial ℕ) :
+    ComputableInPolyTime (repeatAny enc q p V) (encPair enc encBits) encBool := by
+  have hV' := hV.tidy
+  have hvotes : ComputableTidilyInPolyTime
+      (fun x => repeatVotes (q.eval (enc x.1).length) (p.eval (enc x.1).length) V x)
+      (encPair enc encBits) encBits :=
+    (computableInPolyTime_repeatVotes hV (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))).tidy
+  refine .of_tidy ?_
   unfold repeatAny
   fun_prop
 

@@ -62,7 +62,7 @@ theorem PCP_zero_zero : PCP (fun _ => 0) (fun _ => 0) enc = P enc := by
     simp only [mul_zero, nonpos_iff_eq_zero] at hcoins hqs
     refine ⟨fun a => V.verdict ((a, []), []), ?_, fun a => ?_⟩
     · exact .of_tidy <|
-        hv.comp (g := fun a : α => ((a, ([] : List Bool)), ([] : List Bool))) (by fun_prop)
+        hv.tidy.comp (g := fun a : α => ((a, ([] : List Bool)), ([] : List Bool))) (by fun_prop)
     · -- with no random bits there are no queries, so the verdict ignores the proof
       have key (π : List Bool) : V.accepts a π [] = V.verdict ((a, []), []) := by
         have h0 : V.queries (a, []) = [] :=
@@ -81,10 +81,10 @@ theorem PCP_zero_zero : PCP (fun _ => 0) (fun _ => 0) enc = P enc := by
         simp [key, hv'] at this
   · rintro ⟨f, hf, hA⟩
     refine ⟨⟨fun _ => 0, fun _ => [], fun x => f x.1.1⟩, 0, 0, ⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩
-    · exact ComputableTidilyInPolyTime.const _
-    · exact ComputableTidilyInPolyTime.const _
-    · exact hf.tidy.comp ((ComputableTidilyInPolyTime.fst enc encBits).comp
-        (ComputableTidilyInPolyTime.fst (encPair enc encBits) encBits))
+    · exact ComputableInPolyTime.const _
+    · exact ComputableInPolyTime.const _
+    · exact hf.comp ((ComputableInPolyTime.fst enc encBits).comp
+        (ComputableInPolyTime.fst (encPair enc encBits) encBits))
     · intro a
       simp
     · intro a ρ _
@@ -107,12 +107,13 @@ of the proof, where `n` is the length of the encoded instance and `p(n)` the len
 certificates, and runs the `NP` verifier on the bits read. -/
 theorem exists_mem_PCP_zero_of_mem_NP {A : Set α} (hA : A ∈ NP enc) :
     ∃ k : ℕ, A ∈ PCP (fun _ => 0) (fun n => (n + 1) ^ k) enc := by
-  obtain ⟨p, V, hV, hver⟩ := mem_NP_iff_tidy.mp hA
+  obtain ⟨p, V, hV, hver⟩ := mem_NP.mp hA
   obtain ⟨c, k, hle⟩ := polynomiallyBounded_iff_le.mp (PolynomiallyBounded.polynomial_eval p)
   refine ⟨k, ⟨fun _ => 0, fun x => List.range (p.eval (enc x.1).length),
     fun y => V (y.1.1, y.2)⟩, 0, c, ⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩
-  · exact ComputableTidilyInPolyTime.const _
+  · exact ComputableInPolyTime.const _
   · -- `x ↦ range (p (|enc x.1|))`, built in unary and converted elementwise to binary
+    apply ComputableInPolyTime.of_tidy
     have h1 : ComputableTidilyInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
         (encPair enc encBits) encUnary :=
       (ComputableTidilyInPolyTime.unary_eval p).comp
@@ -121,7 +122,8 @@ theorem exists_mem_PCP_zero_of_mem_NP {A : Set α} (hA : A ∈ NP enc) :
     simpa [Function.comp_def] using
       (ComputableTidilyInPolyTime.map ComputableTidilyInPolyTime.unary_to_binary).comp
         (ComputableTidilyInPolyTime.range.comp h1)
-  · exact hV.comp (((ComputableTidilyInPolyTime.fst enc encBits).comp
+  · apply ComputableInPolyTime.of_tidy
+    exact hV.tidy.comp (((ComputableTidilyInPolyTime.fst enc encBits).comp
       (ComputableTidilyInPolyTime.fst (encPair enc encBits) encBits)).pair
       (ComputableTidilyInPolyTime.snd (encPair enc encBits) encBits))
   · intro a

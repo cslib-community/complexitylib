@@ -45,7 +45,7 @@ example : {w : List Bool | w.headD false = true} ∆ {w | w.tail.headD false = t
 /-- A variable-length precomposition preserves the count `2 ^ |tail w|` without a padding factor. -/
 example : (fun w : List Bool => 2 ^ w.tail.length) ∈ SharpP encBits := by
   simpa [Function.comp_def] using SharpP.comp_mem (SharpP.two_pow_mem (enc := encBits) Polynomial.X)
-    (show ComputableTidilyInPolyTime List.tail encBits encBits by fun_prop)
+    (.of_tidy (show ComputableTidilyInPolyTime List.tail encBits encBits by fun_prop))
 
 /-- Requiring padding to be false gives exactly one extension, including zero padding. -/
 example (n : ℕ) : acceptCount
@@ -57,7 +57,7 @@ example (n : ℕ) : acceptCount
 example : (fun w : List Bool => (2 ^ w.tail.length : ℕ) - (1 : ℤ)) ∈ GapP encBits := by
   simpa [Function.comp_def] using GapP.comp_mem
     (GapP.natCast_sub_natCast_mem (SharpP.two_pow_mem (enc := encBits) Polynomial.X) SharpP.one_mem)
-    (show ComputableTidilyInPolyTime List.tail encBits encBits by fun_prop)
+    (.of_tidy (show ComputableTidilyInPolyTime List.tail encBits encBits by fun_prop))
 
 example : {w : List Bool | w.headD false = true} ∈ UP encBits := P_subset_UP head_mem_P
 

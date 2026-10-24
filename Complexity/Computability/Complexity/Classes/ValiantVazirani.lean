@@ -91,7 +91,7 @@ theorem mem_RPWithOracle {A : Set (List Bool)} {enc : α ↪ List Bool} {L : Set
 /-- Every problem in `RP` is in `RP` relative to every oracle. -/
 theorem RP_subset_RPWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     RP enc ⊆ RPWithOracle A enc := fun _ ⟨p, V, hV, h⟩ =>
-  ⟨p, V, hV.tidy.computableInPolyTimeWithOracle A, h⟩
+  ⟨p, V, hV.computableInPolyTimeWithOracle A, h⟩
 
 /-- `RP` relative to an oracle lies inside `NP` relative to the same oracle: an accepted random
 string is a certificate. -/
@@ -232,13 +232,15 @@ theorem NP_subset_RPWithPromiseOracle_PromiseUSAT (enc : α ↪ List Bool) :
     NP enc ⊆ RPWithPromiseOracle PromiseUSAT encCNF enc := by
   classical
   intro L hL
-  obtain ⟨g, hg, hgL⟩ := polyTimeReducible_iff_tidy.mp (CookLevin.SAT_npHard enc L hL)
+  obtain ⟨g, hg, hgL⟩ := (CookLevin.SAT_npHard enc L hL)
   obtain ⟨c, d, hlen⟩ := hg.polyBounded_length.exists_le
   let queries : α × List Bool → List (List Bool) := fun x =>
     (BitString.listRows (11 * (c * ((enc x.1).length + 1) ^ d + 3))
       ((c * ((enc x.1).length + 1) ^ d + 2) ^ 2) x.2).map
         fun b => encCNF (reduce (g x.1, b))
   have hqueries : ComputableTidilyInPolyTime queries (encPair enc encBits) (encList encBits) := by
+    have hreduce := computableInPolyTime_reduce.tidy
+    have hg := hg.tidy
     fun_prop
   refine ⟨Polynomial.C 11 * (Polynomial.C c * (Polynomial.X + 1) ^ d + 3) *
       (Polynomial.C c * (Polynomial.X + 1) ^ d + 2) ^ 2,

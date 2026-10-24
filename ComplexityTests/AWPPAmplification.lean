@@ -26,7 +26,7 @@ private def numerator (w : List Bool) : ℤ := if w.headD false then 3 else 1
 private theorem numerator_gap : numerator ∈ GapP encBits := by
   have h : ComputableTidilyInPolyTime
       (fun w : List Bool => if w.headD false then (3 : ℕ) else 1) encBits encNat := by fun_prop
-  convert SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime h) using 1
+  convert SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime (.of_tidy h)) using 1
   ext w
   simp only [numerator]
   split_ifs <;> rfl

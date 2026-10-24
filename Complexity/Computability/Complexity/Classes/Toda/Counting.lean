@@ -144,8 +144,7 @@ def subsetTest (acc : List Bool → Bool) (K Z k : ℕ) (zs : List Bool) : Bool 
     (List.range (k - 1)).all fun i =>
       BitString.wordLt (BitString.listRow Z i zs) (BitString.listRow Z (i + 1) zs)
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_subsetTest {γ : Type} {input : γ ↪ List Bool}
+private theorem computableTidilyInPolyTime_subsetTest {γ : Type} {input : γ ↪ List Bool}
     {acc : γ → List Bool → Bool}
     (hacc : ComputableTidilyInPolyTime (fun p : γ × List Bool => acc p.1 p.2)
       (encPair input encBits) encBool)
@@ -158,6 +157,20 @@ theorem computableTidilyInPolyTime_subsetTest {γ : Type} {input : γ ↪ List B
       encBool := by
   unfold subsetTest
   fun_prop
+
+@[fun_prop]
+theorem computableInPolyTime_subsetTest {γ : Type} {input : γ ↪ List Bool}
+    {acc : γ → List Bool → Bool}
+    (hacc : ComputableInPolyTime (fun p : γ × List Bool => acc p.1 p.2)
+      (encPair input encBits) encBool)
+    {K Z k : γ → ℕ} {zs : γ → List Bool}
+    (hK : ComputableInPolyTime K input encUnary)
+    (hZ : ComputableInPolyTime Z input encUnary)
+    (hk : ComputableInPolyTime k input encUnary)
+    (hzs : ComputableInPolyTime zs input encBits) :
+    ComputableInPolyTime (fun c => subsetTest (acc c) (K c) (Z c) (k c) (zs c)) input
+      encBool :=
+  .of_tidy (computableTidilyInPolyTime_subsetTest hacc.tidy hK.tidy hZ.tidy hk.tidy hzs.tidy)
 
 /-- **The `k`-subset test counts `k`-element sets of accepted words**, for `k ≤ K`. -/
 private theorem card_filter_subsetTest (acc : List Bool → Bool) {K k : ℕ} (Z : ℕ) (hk : k ≤ K) :
@@ -259,14 +272,21 @@ def unaryTest (K : ℕ) (kb : List Bool) : Bool :=
   decide (0 < kb.count true) &&
     kb == List.replicate (kb.count true) true ++ List.replicate (K - kb.count true) false
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_unaryTest {γ : Type} {input : γ ↪ List Bool}
+private theorem computableTidilyInPolyTime_unaryTest {γ : Type} {input : γ ↪ List Bool}
     {K : γ → ℕ} {kb : γ → List Bool}
     (hK : ComputableTidilyInPolyTime K input encUnary)
     (hkb : ComputableTidilyInPolyTime kb input encBits) :
     ComputableTidilyInPolyTime (fun c => unaryTest (K c) (kb c)) input encBool := by
   unfold unaryTest
   fun_prop
+
+@[fun_prop]
+theorem computableInPolyTime_unaryTest {γ : Type} {input : γ ↪ List Bool}
+    {K : γ → ℕ} {kb : γ → List Bool}
+    (hK : ComputableInPolyTime K input encUnary)
+    (hkb : ComputableInPolyTime kb input encBits) :
+    ComputableInPolyTime (fun c => unaryTest (K c) (kb c)) input encBool :=
+  .of_tidy (computableTidilyInPolyTime_unaryTest hK.tidy hkb.tidy)
 
 /-- Summing over the words passing the unary test of length `K` sums over the sizes
 `1, …, K`. -/
@@ -309,8 +329,7 @@ def coeffTest (K k : ℕ) (cb : List Bool) : Bool :=
   if k % 2 = 1 then !((cb.take (K + 1 - k)).any fun b => b)
   else (cb.take (K + 1 - k)).any fun b => b
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_coeffTest {γ : Type} {input : γ ↪ List Bool}
+private theorem computableTidilyInPolyTime_coeffTest {γ : Type} {input : γ ↪ List Bool}
     {K k : γ → ℕ} {cb : γ → List Bool}
     (hK : ComputableTidilyInPolyTime K input encUnary)
     (hk : ComputableTidilyInPolyTime k input encUnary)
@@ -318,6 +337,15 @@ theorem computableTidilyInPolyTime_coeffTest {γ : Type} {input : γ ↪ List Bo
     ComputableTidilyInPolyTime (fun c => coeffTest (K c) (k c) (cb c)) input encBool := by
   unfold coeffTest
   fun_prop
+
+@[fun_prop]
+theorem computableInPolyTime_coeffTest {γ : Type} {input : γ ↪ List Bool}
+    {K k : γ → ℕ} {cb : γ → List Bool}
+    (hK : ComputableInPolyTime K input encUnary)
+    (hk : ComputableInPolyTime k input encUnary)
+    (hcb : ComputableInPolyTime cb input encBits) :
+    ComputableInPolyTime (fun c => coeffTest (K c) (k c) (cb c)) input encBool :=
+  .of_tidy (computableTidilyInPolyTime_coeffTest hK.tidy hk.tidy hcb.tidy)
 
 /-- The coefficient test for size `k` accepts `parityCoeff K (k - 1)` words. -/
 private theorem card_filter_coeffTest {K k : ℕ} (hk : 1 ≤ k) (hkK : k ≤ K) :
@@ -521,8 +549,9 @@ theorem testBit_card_filter_sharpTest (accept : List Bool → List Bool → Bool
 
 variable {α : Type} {enc : α ↪ List Bool} {γ : Type} {input : γ ↪ List Bool}
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_countingTest {V : (α × List Bool) × List Bool → Bool}
+attribute [local fun_prop] computableTidilyInPolyTime_subsetTest
+  computableTidilyInPolyTime_unaryTest computableTidilyInPolyTime_coeffTest in
+private theorem computableTidilyInPolyTime_countingTest {V : (α × List Bool) × List Bool → Bool}
     (hV : ComputableTidilyInPolyTime V (encPair (encPair enc encBits) encBits) encBool)
     {a : γ → α} {K R Z : γ → ℕ} {w : γ → List Bool}
     (ha : ComputableTidilyInPolyTime a input enc)
@@ -535,6 +564,20 @@ theorem computableTidilyInPolyTime_countingTest {V : (α × List Bool) × List B
   unfold countingTest
   fun_prop
 
+@[fun_prop]
+theorem computableInPolyTime_countingTest {V : (α × List Bool) × List Bool → Bool}
+    (hV : ComputableInPolyTime V (encPair (encPair enc encBits) encBits) encBool)
+    {a : γ → α} {K R Z : γ → ℕ} {w : γ → List Bool}
+    (ha : ComputableInPolyTime a input enc)
+    (hK : ComputableInPolyTime K input encUnary)
+    (hR : ComputableInPolyTime R input encUnary)
+    (hZ : ComputableInPolyTime Z input encUnary)
+    (hw : ComputableInPolyTime w input encBits) :
+    ComputableInPolyTime (fun c => countingTest (fun r z => V ((a c, r), z)) (K c) (R c)
+      (Z c) (w c)) input encBool :=
+  .of_tidy (computableTidilyInPolyTime_countingTest hV.tidy ha.tidy hK.tidy hR.tidy hZ.tidy hw.tidy)
+
+attribute [local fun_prop] computableTidilyInPolyTime_countingTest in
 @[fun_prop]
 theorem computableTidilyInPolyTime_sharpTest {V : (α × List Bool) × List Bool → Bool}
     (hV : ComputableTidilyInPolyTime V (encPair (encPair enc encBits) encBits) encBool)

@@ -94,7 +94,7 @@ polynomial in the length of the encoded graph, for graphs with `|V|` declared ve
 edges. -/
 theorem ETH.not_decidableInSubexpTime_ThreeColoring (h : ETH) :
     ¬DecidableInSubexpTime ThreeColoring encGraph fun G => G.1.length + G.2.length :=
-  h.not_decidableInSubexpTime_of_reduction SAT.computableTidilyInPolyTime_toThreeColoring
+  h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toThreeColoring
     -- `(24 * 3 + 12) m + 9 ≤ 93 m + 93`
     (fun φ _ => SAT.toThreeColoring_mem_iff φ) (k := 93) fun φ hφ => by
       have := SAT.length_toThreeColoring_le hφ
@@ -107,7 +107,7 @@ edges. -/
 theorem ETH.not_decidableInSubexpTime_IndependentSet (h : ETH) :
     ¬DecidableInSubexpTime IndependentSet (encPair encGraph encNat)
       fun x => x.1.1.length + x.1.2.length :=
-  h.not_decidableInSubexpTime_of_reduction SAT.computableTidilyInPolyTime_toSparseIndependentSet
+  h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toSparseIndependentSet
     (fun φ _ => SAT.toSparseIndependentSet_mem_iff φ) (k := 24) fun φ hφ => by
       have := SAT.length_toSparseIndependentSet_le hφ
       omega
@@ -117,7 +117,7 @@ some `δ > 0`, `IndependentSet` is not decidable within time `2 ^ (δ |V|)` time
 the length of the encoded instance, for graphs with `|V|` declared vertices. -/
 theorem ETH.not_decidableInSubexpTime_IndependentSet_vertices (h : ETH) :
     ¬DecidableInSubexpTime IndependentSet (encPair encGraph encNat) fun x => x.1.1.length :=
-  h.not_decidableInSubexpTime_of_reduction SAT.computableTidilyInPolyTime_toSparseIndependentSet
+  h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toSparseIndependentSet
     (fun φ _ => SAT.toSparseIndependentSet_mem_iff φ) (k := 24) fun φ hφ => by
       have := SAT.length_toSparseIndependentSet_le hφ
       omega
@@ -130,8 +130,8 @@ theorem ETH.not_decidableInSubexpTime_VertexCover (h : ETH) :
     ¬DecidableInSubexpTime VertexCover (encPair encGraph encNat)
       fun x => x.1.1.length + x.1.2.length :=
   h.not_decidableInSubexpTime_of_reduction
-    (IndependentSet.computableTidilyInPolyTime_toVertexCover.comp
-      SAT.computableTidilyInPolyTime_toSparseIndependentSet)
+    (IndependentSet.computableInPolyTime_toVertexCover.comp
+      SAT.computableInPolyTime_toSparseIndependentSet)
     (fun φ _ => (IndependentSet.toVertexCover_mem_iff _).trans
       (SAT.toSparseIndependentSet_mem_iff φ)) (k := 24) fun φ hφ => by
       have := SAT.length_toSparseIndependentSet_le hφ
@@ -145,9 +145,9 @@ theorem ETH.not_decidableInSubexpTime_Clique (h : ETH) :
     ¬DecidableInSubexpTime Clique (encPair encGraph encNat) fun x => x.1.1.length :=
   h.not_decidableInSubexpTime_of_reduction (f := fun φ =>
       ((SAT.toSparseIndependentSet φ).1.compl, (SAT.toSparseIndependentSet φ).2))
-    ((show ComputableTidilyInPolyTime (fun x : Graph × ℕ => (x.1.compl, x.2))
+    (.of_tidy ((show ComputableTidilyInPolyTime (fun x : Graph × ℕ => (x.1.compl, x.2))
       (encPair encGraph encNat) (encPair encGraph encNat) by fun_prop).comp
-        SAT.computableTidilyInPolyTime_toSparseIndependentSet)
+        SAT.computableInPolyTime_toSparseIndependentSet.tidy))
     (fun φ _ => (Graph.compl_mem_Clique_iff _ _).trans (SAT.toSparseIndependentSet_mem_iff φ))
     (k := 24) fun φ hφ => by
       have := SAT.length_toSparseIndependentSet_le hφ
@@ -160,7 +160,7 @@ any polynomial in the length of the encoded graph, for graphs with `|V|` declare
 `|E|` edges. -/
 theorem ETH.not_decidableInSubexpTime_HamCycle (h : ETH) :
     ¬DecidableInSubexpTime HamCycle encGraph fun G => G.1.length + G.2.length :=
-  h.not_decidableInSubexpTime_of_reduction SAT.computableTidilyInPolyTime_toSparseHamCycle
+  h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toSparseHamCycle
     (fun φ _ => SAT.toSparseHamCycle_mem_iff φ) (k := 350) fun φ hφ => by
       have := SAT.length_toSparseHamCycle_le hφ
       omega
@@ -171,7 +171,7 @@ theorem ETH.not_decidableInSubexpTime_HamCycle (h : ETH) :
 `|V|` declared vertices and `|E|` arcs. -/
 theorem ETH.not_decidableInSubexpTime_DirHamCycle (h : ETH) :
     ¬DecidableInSubexpTime DirHamCycle encGraph fun G => G.1.length + G.2.length :=
-  h.not_decidableInSubexpTime_of_reduction SAT.computableTidilyInPolyTime_toSparseDirHamCycle
+  h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toSparseDirHamCycle
     (fun φ _ => SAT.toSparseDirHamCycle_mem_iff φ) (k := 70) fun φ hφ => by
       have := SAT.length_toSparseDirHamCycle_le hφ
       omega
@@ -183,7 +183,7 @@ theorem ETH.not_decidableInSubexpTime_DirHamCycle (h : ETH) :
 theorem ETH.not_decidableInSubexpTime_DirHamPath (h : ETH) :
     ¬DecidableInSubexpTime DirHamPath (encPair encGraph (encPair encNat encNat))
       fun x => x.1.1.length + x.1.2.length :=
-  h.not_decidableInSubexpTime_of_reduction SAT.computableTidilyInPolyTime_toSparseDirHamPath
+  h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toSparseDirHamPath
     (fun φ _ => SAT.toSparseDirHamPath_mem_iff φ) (k := 70) fun φ hφ => by
       have := SAT.length_sparseDiamondGraph_le hφ
       simp only [SAT.toSparseDirHamPath]
@@ -197,8 +197,8 @@ theorem ETH.not_decidableInSubexpTime_HamPath (h : ETH) :
     ¬DecidableInSubexpTime HamPath (encPair encGraph (encPair encNat encNat))
       fun x => x.1.1.length + x.1.2.length :=
   h.not_decidableInSubexpTime_of_reduction
-    (DirHamPath.computableTidilyInPolyTime_toHamPath.comp
-      SAT.computableTidilyInPolyTime_toSparseDirHamPath)
+    (DirHamPath.computableInPolyTime_toHamPath.comp
+      SAT.computableInPolyTime_toSparseDirHamPath)
     (fun φ _ => (DirHamPath.toHamPath_mem_iff _).trans (SAT.toSparseDirHamPath_mem_iff φ))
     (k := 350) fun φ hφ => by
       have := SAT.length_sparseDiamondGraph_le hφ

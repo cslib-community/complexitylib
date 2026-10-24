@@ -171,9 +171,9 @@ theorem unaryLengthLanguage_mem_NPWithOracle (B : Set (List Bool)) :
     unaryLengthLanguage B ∈ NPWithOracle B encBits := by
   refine ⟨Polynomial.X, fun xu : List Bool × List Bool => xu.1.all id && decide (xu.2 ∈ B),
     ((computableInPolyTimeWithOracle_mem B).preprocess
-      (ComputableTidilyInPolyTime.snd encBits encBits)).map_with
+      (.of_tidy (ComputableTidilyInPolyTime.snd encBits encBits))).map_with
       (g := fun (xu : List Bool × List Bool) b => xu.1.all id && b)
-      BakerGillSolovay.computableTidilyInPolyTime_all_and, fun x => ?_⟩
+      (.of_tidy BakerGillSolovay.computableTidilyInPolyTime_all_and), fun x => ?_⟩
   · simp only [unaryLengthLanguage, Set.mem_ofPred_eq, Polynomial.eval_X, encBits,
       Function.Embedding.refl_apply, Bool.and_eq_true, List.all_eq_true, id, decide_eq_true_eq]
     constructor

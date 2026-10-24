@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.PCP.Encoded.Verifier.Reduction
 import Complexity.Computability.Complexity.Classes.SharpP.Probability
 import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Exact verifier behavior, padding, short words, repetition, and nonvacuous PCP contracts. -/
 
@@ -108,43 +109,53 @@ example (proof : List Bool) :
   Graph.unsatVal_div_two_le_rejectProb 1 decode eval (loop false) proof
 
 -- Ordinary expressions preserve the raw and framed random-word encodings.
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun p : Graph Bool × List Bool => p.1.sampleEdge p.2)
     (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool)) := by
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun p : Graph Bool × List Bool => let graph := p.1; graph.sampleEdge p.2)
     (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool)) := by
   polytime
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun p : Graph Bool × List Bool => p.1.sampleEdge p.2)
     (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool)) := by
   polytime
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun p : Graph Bool × List Bool => let graph := p.1; graph.sampleEdge p.2)
     (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool)) := by
   fun_prop
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun p : Graph Bool × List Bool => p.1.sampleEdge p.2)
     (encPair (Graph.encoding encBool) (encList encBool))
       (encOption (Edge.encoding encBool)) := by
-  apply Graph.isPolyTime_sampleEdge (by fun_prop)
+  refine ComputableInPolyTime.tidy (Graph.isPolyTime_sampleEdge (.of_tidy (by fun_prop))
+    (.of_tidy ?_))
   exact ComputableTidilyInPolyTime.listToBits.comp (by fun_prop)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example {C α : Type} (enc : C ↪ List Bool) (alphabet : α ↪ List Bool)
     (decoder : (Fin 2 → Bool) → α) (evaluator : C → α → α → Bool)
-    (heval : ComputableTidilyInPolyTime (fun p : C × α × α => evaluator p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × α × α => evaluator p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : Edge C × List Bool => p.1.proofVerdict 2 decoder evaluator p.2)
       (encPair (Edge.encoding enc) encBits) encBool := by
   fail_if_success solve | clear heval; fun_prop
   fun_prop
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example {C : Type} (enc : C ↪ List Bool) (graph : ℕ → Graph C)
     (hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)) :
     ComputableTidilyInPolyTime
@@ -158,13 +169,13 @@ example {C α : Type} (enc : C ↪ List Bool) (alphabet : α ↪ List Bool)
     (heval : ComputableTidilyInPolyTime (fun p : C × α × α => evaluator p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
     (Graph.repeatedEdgeVerifier 2 3 decoder evaluator).PolyTime (Graph.encoding enc) :=
-  Graph.polyTime_repeatedEdgeVerifier 2 3 decoder heval
+  Graph.polyTime_repeatedEdgeVerifier 2 3 decoder (.of_tidy heval)
 
 -- Both members and nonmembers occur, and the nonmember graph has positive gap exactly one.
 example : ({true} : Set Bool) ∈ PCP (fun n => Nat.log 2 n + 1) (fun _ => 1) encBool := by
   apply Graph.mem_PCP_of_gapReduction (graph := loop) 1 encode decode (by intro x; rfl)
     (alphabet := encBool) (enc := encBool) (eval := eval)
-    (.of_finite _) (.of_finite _) loop_wellFormed
+    (.of_tidy (.of_finite _)) (.of_tidy (.of_finite _)) loop_wellFormed
     (gap := 1) ?_ (by norm_num) ?_
   · intro bit hbit
     have hbit : bit = true := hbit

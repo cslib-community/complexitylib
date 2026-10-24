@@ -13,9 +13,9 @@ open Cslib.Complexity Turing.MultiTapeTM
 example {Ψ : List Bool × ℕ → Bool}
     (hΨ : ComputableTidilyInPolyTime Ψ (encPair encBits encUnary) encBool) :
     {y : List Bool | Ψ (y, 2 ^ y.length) = true} ∈ E encBits :=
-  setOf_mem_E_of_computableTidilyInPolyTime_pad hΨ
+  setOf_mem_E_of_computableInPolyTime_pad (.of_tidy hΨ)
 
 -- The polynomial-time premise is inhabited, including at the empty input.
 example : {y : List Bool | (fun _ : List Bool × ℕ => true) (y, 2 ^ y.length) = true} ∈
     E encBits :=
-  setOf_mem_E_of_computableTidilyInPolyTime_pad (ComputableTidilyInPolyTime.const true)
+  setOf_mem_E_of_computableInPolyTime_pad (.of_tidy (ComputableTidilyInPolyTime.const true))

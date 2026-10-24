@@ -42,20 +42,20 @@ including arbitrary words occurring in a replay state. The requested error expon
 computed in unary and may be zero. -/
 theorem exists_AWPP_queryWeights {α : Type} {enc : α ↪ List Bool} {A : Set (List Bool)}
     (hA : A ∈ AWPP encBits) {T e : α → ℕ}
-    (hT : ComputableTidilyInPolyTime T enc encUnary)
-    (he : ComputableTidilyInPolyTime e enc encUnary) :
+    (hT : ComputableInPolyTime T enc encUnary)
+    (he : ComputableInPolyTime e enc encUnary) :
     ∃ H ∈ GapP (encPair enc encBits), ∃ R : α → ℕ,
-      ComputableTidilyInPolyTime R enc encUnary ∧ ∀ a w,
+      ComputableInPolyTime R enc encUnary ∧ ∀ a w,
         let D := (2 : ℤ) ^ R a
         (0 ≤ H (a, w) ∧ H (a, w) ≤ D) ∧
           (w.take (T a) ∈ A → (2 : ℤ) ^ e a * (D - H (a, w)) ≤ D) ∧
           (w.take (T a) ∉ A → (2 : ℤ) ^ e a * H (a, w) ≤ D) := by
   obtain ⟨g, hg, p, hA⟩ := hA
   let query : α × List Bool → List Bool := fun x => x.2.take (T x.1)
-  have hquery : ComputableTidilyInPolyTime query (encPair enc encBits) encBits := by
+  have hquery : ComputableInPolyTime query (encPair enc encBits) encBits := by
     dsimp [query]
     fun_prop
-  have he' : ComputableTidilyInPolyTime (fun x : α × List Bool => e x.1)
+  have he' : ComputableInPolyTime (fun x : α × List Bool => e x.1)
       (encPair enc encBits) encUnary := he.comp (.fst enc encBits)
   let H₀ : α × List Bool → ℤ := fun x => AWPPAmplification.majorityPolynomial
     (g (query x)) ((2 : ℤ) ^ p.eval (query x).length) (6 * e x.1)
@@ -66,10 +66,10 @@ theorem exists_AWPP_queryWeights {α : Type} {enc : α ↪ List Bool} {A : Set (
     · fun_prop
   let padding : α × List Bool → ℕ := fun x =>
     12 * e x.1 * (p.eval (T x.1) - p.eval (query x).length)
-  have hpadding : ComputableTidilyInPolyTime padding (encPair enc encBits) encUnary := by
+  have hpadding : ComputableInPolyTime padding (encPair enc encBits) encUnary := by
     dsimp [padding]
     fun_prop
-  have hpow : ComputableTidilyInPolyTime (fun x => 2 ^ padding x)
+  have hpow : ComputableInPolyTime (fun x => 2 ^ padding x)
       (encPair enc encBits) encNat := by fun_prop
   let H : α × List Bool → ℤ := fun x => H₀ x * (2 : ℤ) ^ padding x
   have hH : H ∈ GapP (encPair enc encBits) := by

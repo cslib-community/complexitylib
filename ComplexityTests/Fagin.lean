@@ -188,11 +188,11 @@ info: 'Cslib.Complexity.IsVerifier.strictVerifier' depends on axioms:
 #print axioms Cslib.Complexity.IsVerifier.strictVerifier
 
 /--
-info: 'Cslib.Complexity.computableTidilyInPolyTime_strictVerifier' depends on axioms:
+info: 'Cslib.Complexity.computableInPolyTime_strictVerifier' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.computableTidilyInPolyTime_strictVerifier
+#print axioms Cslib.Complexity.computableInPolyTime_strictVerifier
 
 /--
 info: 'Cslib.Complexity.CookLevin.exists_tableau_satisfiable_iff_of_strictVerifier' depends on axioms:

@@ -63,7 +63,7 @@ quantifier duality (`Cslib.Complexity.compl_mem_PiP_of_mem_SigmaP`) then give
 * `Cslib.Complexity.SipserLautemann.exists_shifts_majorityAccepts`,
   `Cslib.Complexity.SipserLautemann.exists_seed_not_majorityAccepts`: combinatorial completeness and
   soundness of shifted majority votes.
-* `Cslib.Complexity.SipserLautemann.verifier_polyTime`: the matrix verifier is computable tidily in
+* `Cslib.Complexity.SipserLautemann.verifier_polyTime`: the matrix verifier is computable in
   polynomial time.
 * `Cslib.Complexity.SipserLautemann.isAlternatingVerifier_verifier`: the matrix verifier is a valid
   `Σ₂` alternating verifier for any `BPP` problem.
@@ -343,12 +343,14 @@ def verifier (enc : α ↪ List Bool) (p : Polynomial ℕ) (V : α × List Bool 
   let m := p.eval (enc x.1).length
   (List.range (shifts m)).any fun i => shiftAccepts enc p V x.1 x.2 i
 
-/-- If `V` is computable tidily in polynomial time, then so is the Sipser–Lautemann matrix verifier
+/-- If `V` is computable in polynomial time, then so is the Sipser–Lautemann matrix verifier
 `verifier enc p V`. -/
 @[fun_prop]
 theorem verifier_polyTime {enc : α ↪ List Bool} {p : Polynomial ℕ} {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) :
-    ComputableTidilyInPolyTime (verifier enc p V) (encPair enc encBits) encBool := by
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
+    ComputableInPolyTime (verifier enc p V) (encPair enc encBits) encBool := by
+  have hV := hV.tidy
+  refine .of_tidy ?_
   unfold verifier shiftAccepts trialSeed shifts runs halfRuns
   fun_prop
 
@@ -452,7 +454,7 @@ theorem BPP_subset_SigmaP_two : BPP enc ⊆ SigmaP 2 enc := by
   rintro A ⟨p, V, hV, hA⟩
   exact ⟨[SipserLautemann.witnessPoly p, SipserLautemann.seedPoly p],
     SipserLautemann.verifier enc p V, rfl,
-    .of_tidy (SipserLautemann.verifier_polyTime hV.tidy),
+    (SipserLautemann.verifier_polyTime hV),
     SipserLautemann.isAlternatingVerifier_verifier hA⟩
 
 /-- **The Sipser–Gács–Lautemann theorem (`Π₂` form)**: every problem in `BPP` lies in `Π₂`,

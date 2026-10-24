@@ -44,25 +44,25 @@ example : NPHard (encPair encGraph encNat) Clique :=
 
 /-! ### Compositional `fun_prop` synthesis -/
 
-example : ComputableTidilyInPolyTime toThreeSAT encCNF encCNF := by fun_prop
+example : ComputableInPolyTime toThreeSAT encCNF encCNF := by fun_prop
 
-example : ComputableTidilyInPolyTime ThreeSAT.verifier (encPair encCNF encBits) encBool := by
+example : ComputableInPolyTime ThreeSAT.verifier (encPair encCNF encBits) encBool := by
   fun_prop
 
-example : ComputableTidilyInPolyTime SAT.toIndependentSet encCNF (encPair encGraph encNat) := by
+example : ComputableInPolyTime SAT.toIndependentSet encCNF (encPair encGraph encNat) := by
   fun_prop
 
 example : ComputableTidilyInPolyTime Graph.compl encGraph encGraph := by fun_prop
 
-example : ComputableTidilyInPolyTime IndependentSet.verifier
+example : ComputableInPolyTime IndependentSet.verifier
     (encPair (encPair encGraph encNat) encBits) encBool := by
   fun_prop
 
-example : ComputableTidilyInPolyTime Clique.verifier
+example : ComputableInPolyTime Clique.verifier
     (encPair (encPair encGraph encNat) encBits) encBool := by
   fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun φ : CNF ℕ => let x := SAT.toIndependentSet φ; (x.1.compl, x.2))
     encCNF (encPair encGraph encNat) := by
   fun_prop
@@ -166,11 +166,11 @@ info: 'Cslib.Complexity.coNPHard.trans' depends on axioms: [propext, Classical.c
 #print axioms Cslib.Complexity.coNPHard.trans
 
 /--
-info: 'Cslib.Complexity.computableTidilyInPolyTime_toThreeSAT' depends on axioms:
+info: 'Cslib.Complexity.computableInPolyTime_toThreeSAT' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.computableTidilyInPolyTime_toThreeSAT
+#print axioms Cslib.Complexity.computableInPolyTime_toThreeSAT
 
 /--
 info: 'Cslib.Complexity.ThreeSAT.isVerifier' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -179,11 +179,11 @@ info: 'Cslib.Complexity.ThreeSAT.isVerifier' depends on axioms: [propext, Classi
 #print axioms Cslib.Complexity.ThreeSAT.isVerifier
 
 /--
-info: 'Cslib.Complexity.ThreeSAT.computableTidilyInPolyTime_verifier' depends on axioms:
+info: 'Cslib.Complexity.ThreeSAT.computableInPolyTime_verifier' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.ThreeSAT.computableTidilyInPolyTime_verifier
+#print axioms Cslib.Complexity.ThreeSAT.computableInPolyTime_verifier
 
 /--
 info: 'Cslib.Complexity.ThreeSAT.mem_NP' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -212,11 +212,11 @@ info: 'Cslib.Complexity.ThreeSAT_npComplete' depends on axioms:
 #print axioms Cslib.Complexity.ThreeSAT_npComplete
 
 /--
-info: 'Cslib.Complexity.SAT.computableTidilyInPolyTime_toIndependentSet' depends on axioms:
+info: 'Cslib.Complexity.SAT.computableInPolyTime_toIndependentSet' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.SAT.computableTidilyInPolyTime_toIndependentSet
+#print axioms Cslib.Complexity.SAT.computableInPolyTime_toIndependentSet
 
 /--
 info: 'Cslib.Complexity.IndependentSet.isVerifier' depends on axioms:
@@ -226,11 +226,11 @@ info: 'Cslib.Complexity.IndependentSet.isVerifier' depends on axioms:
 #print axioms Cslib.Complexity.IndependentSet.isVerifier
 
 /--
-info: 'Cslib.Complexity.IndependentSet.computableTidilyInPolyTime_verifier' depends on axioms:
+info: 'Cslib.Complexity.IndependentSet.computableInPolyTime_verifier' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.IndependentSet.computableTidilyInPolyTime_verifier
+#print axioms Cslib.Complexity.IndependentSet.computableInPolyTime_verifier
 
 /--
 info: 'Cslib.Complexity.IndependentSet.mem_NP' depends on axioms:
@@ -261,11 +261,11 @@ info: 'Cslib.Complexity.IndependentSet_npComplete' depends on axioms:
 #print axioms Cslib.Complexity.IndependentSet_npComplete
 
 /--
-info: 'Cslib.Complexity.Graph.computableTidilyInPolyTime_compl' depends on axioms:
+info: 'Cslib.Complexity.Graph.computableInPolyTime_compl' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.Graph.computableTidilyInPolyTime_compl
+#print axioms Cslib.Complexity.Graph.computableInPolyTime_compl
 
 /--
 info: 'Cslib.Complexity.Clique.isVerifier' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -274,11 +274,11 @@ info: 'Cslib.Complexity.Clique.isVerifier' depends on axioms: [propext, Classica
 #print axioms Cslib.Complexity.Clique.isVerifier
 
 /--
-info: 'Cslib.Complexity.Clique.computableTidilyInPolyTime_verifier' depends on axioms:
+info: 'Cslib.Complexity.Clique.computableInPolyTime_verifier' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.Clique.computableTidilyInPolyTime_verifier
+#print axioms Cslib.Complexity.Clique.computableInPolyTime_verifier
 
 /--
 info: 'Cslib.Complexity.Clique.mem_NP' depends on axioms: [propext, Classical.choice, Quot.sound]

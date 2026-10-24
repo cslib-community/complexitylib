@@ -49,8 +49,8 @@ so they stay polynomially long in the length of the table.
 * `Cslib.MCSP.complexity_le_of_tableVerifier`, `Cslib.MCSP.exists_tableVerifier_append`: soundness
   and completeness of `tableVerifier` on truth-table lists of length `2 ^ m`.
 * `Cslib.MCSP.isVerifier`: the verifier is correct.
-* `Cslib.MCSP.computableTidilyInPolyTime_verifier`,
-  `Cslib.MCSP.computableTidilyInPolyTime_tableVerifier`: the verifiers are polynomial-time.
+* `Cslib.MCSP.computableInPolyTime_verifier`,
+  `Cslib.MCSP.computableInPolyTime_tableVerifier`: the verifiers are polynomial-time.
 * `Cslib.MCSP.mem_NP`: MCSP is in `NP`.
 
 ## References
@@ -246,8 +246,9 @@ theorem exists_tableVerifier_append {m s : ℕ} {T : List Bool} (hT : T.length =
   rfl
 
 /-- The verifier on raw data is polynomial-time. -/
-theorem computableTidilyInPolyTime_tableVerifier : ComputableTidilyInPolyTime tableVerifier
+theorem computableInPolyTime_tableVerifier : ComputableInPolyTime tableVerifier
     (encPair (encPair encBits encNat) encBits) encBool := by
+  refine .of_tidy ?_
   have hn : ComputableTidilyInPolyTime (fun r : (List Bool × ℕ) × List Bool =>
       Nat.log 2 r.1.1.length) (encPair (encPair encBits encNat) encBits) encUnary :=
     unary_log_two.comp (by fun_prop)
@@ -309,18 +310,18 @@ theorem computableTidilyInPolyTime_tableVerifier : ComputableTidilyInPolyTime ta
       (hn.prod ((length_list encGate).comp hc.fst')))))) (allWithInput henum htest)
 
 /-- The MCSP verifier is polynomial-time, on certificates of arbitrary length. -/
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair encInstance encBits) encBool := by
-  have hraw : ComputableTidilyInPolyTime
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair encInstance encBits) encBool := by
+  have hraw : ComputableInPolyTime
       (fun p : Instance × List Bool => ((List.ofFn p.1.table, p.1.threshold), p.2))
       (encPair encInstance encBits) (encPair (encPair encBits encNat) encBits) :=
     .of_eq fun _ => rfl
   rw [funext verifier_eq_tableVerifier]
-  exact computableTidilyInPolyTime_tableVerifier.comp hraw
+  exact computableInPolyTime_tableVerifier.comp hraw
 
 /-- **MCSP is in `NP`**, for instances encoded by their truth table and the threshold in
 binary. -/
 theorem mem_NP : MCSP ∈ NP encInstance :=
-  ⟨certPolynomial, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨certPolynomial, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end Cslib.MCSP

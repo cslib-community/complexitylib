@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.TM2.PolySpace
 public import Complexity.Computability.Complexity.Classes.Space.Closure
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Polynomial-space Mathlib stack machines decide problems in PSPACE
@@ -52,7 +53,7 @@ theorem mem_PSPACE_of_tm2 {α αΓ βΓ : Type} [Finite αΓ] [Finite βΓ]
   have hf := h.computableTidilyInPolySpace ha hb hspace hstacks
   have hbool := ComputableTidilyInPolyTime.of_finite (id : Bool → Bool)
     (encA := (⟨eb, hb⟩ : Bool ↪ List βΓ).trans (encList (encFinite βΓ))) (encB := encBool)
-  exact mem_PSPACE_of_computableTidilyInPolySpace
-    ((ComputableTidilyInPolySpace.of_polyTime hbool).comp hf) hA
+  exact mem_PSPACE_of_computableInPolySpace
+    (.of_tidy ((ComputableTidilyInPolySpace.of_polyTime hbool).comp hf)) hA
 
 end Cslib.Complexity

@@ -22,11 +22,11 @@ assignments satisfies it (`Cslib.Logic.PL.CNF.satisfiable_iff_exists_bitsAssignm
 distinct variables of a formula are listed by `Cslib.Logic.PL.CNF.distinctVars`, of length
 `Cslib.Logic.PL.CNF.numVars` (`Cslib.Logic.PL.CNF.length_distinctVars`). Evaluating a
 formula under a numbered assignment is polynomial-time
-(`Cslib.Complexity.computableTidilyInPolyTime_eval_bitsAssignment`).
+(`Cslib.Complexity.computableInPolyTime_eval_bitsAssignment`).
 
 ## Main results
 
-* `Cslib.Complexity.computableTidilyInPolyTime_eval_bitsAssignment`: evaluation under a numbered
+* `Cslib.Complexity.computableInPolyTime_eval_bitsAssignment`: evaluation under a numbered
   assignment is polynomial-time.
 
 ## References
@@ -43,10 +43,10 @@ open Cslib.Logic.PL Turing.MultiTapeTM
 /-- Evaluating a formula under the assignment numbered by `i` on a list of variables is
 polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_eval_bitsAssignment :
-    ComputableTidilyInPolyTime
+theorem computableInPolyTime_eval_bitsAssignment :
+    ComputableInPolyTime
       (fun p : (CNF ℕ × List ℕ) × ℕ => p.1.1.eval (bitsAssignment p.1.2 p.2))
       (encPair (encPair encCNF (encList encNat)) encNat) encBool :=
-  (CNF.computableInPolyTime_eval_bitsAssignment encNat).tidy
+  (CNF.computableInPolyTime_eval_bitsAssignment encNat)
 
 end Cslib.Complexity

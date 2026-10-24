@@ -48,7 +48,8 @@ theorem joint_mem_LWPP : bitLanguage ∈ LWPP (encPair encBits encUnary) := by
   have hg : ComputableTidilyInPolyTime g (encPair encBits encUnary) encIntBin := by
     dsimp only [g]
     fun_prop
-  refine ⟨g, mem_GapP_of_polyTime hg, target, .of_tidy target_polyTime, target_ne_zero, ?_, ?_⟩
+  refine ⟨g, mem_GapP_of_polyTime (.of_tidy hg), target, .of_tidy target_polyTime, target_ne_zero,
+    ?_, ?_⟩
   · intro x
     cases h : x.1.getD x.2 false <;> simp only [g, h] <;> simp
   · intro x
@@ -57,16 +58,16 @@ theorem joint_mem_LWPP : bitLanguage ∈ LWPP (encPair encBits encUnary) := by
       simp [Ne.symm (target_ne_zero _)]
 
 example : {w | ∀ i < bound w, (w, i) ∈ bitLanguage} ∈ LWPP encBits :=
-  forall_lt_mem_LWPP joint_mem_LWPP bound_polyTime
+  forall_lt_mem_LWPP joint_mem_LWPP (.of_tidy bound_polyTime)
 
 example : {w | ∃ i < bound w, (w, i) ∈ bitLanguage} ∈ LWPP encBits :=
-  exists_lt_mem_LWPP joint_mem_LWPP bound_polyTime
+  exists_lt_mem_LWPP joint_mem_LWPP (.of_tidy bound_polyTime)
 
 example : {w | ∀ i < bound w, (w, i) ∈ bitLanguage} ∈ WPP encBits :=
-  forall_lt_mem_WPP (LWPP_subset_WPP joint_mem_LWPP) bound_polyTime
+  forall_lt_mem_WPP (LWPP_subset_WPP joint_mem_LWPP) (.of_tidy bound_polyTime)
 
 example : {w | ∃ i < bound w, (w, i) ∈ bitLanguage} ∈ WPP encBits :=
-  exists_lt_mem_WPP (LWPP_subset_WPP joint_mem_LWPP) bound_polyTime
+  exists_lt_mem_WPP (LWPP_subset_WPP joint_mem_LWPP) (.of_tidy bound_polyTime)
 
 -- Equal-length inputs have different bounds. Prefix targets also vary in sign and magnitude.
 example : bound [true, false] = 2 ∧ bound [false, true] = 0 := by decide
@@ -98,9 +99,9 @@ example : ¬ ∃ i < bound [false, true], ([false, true], i) ∈ bitLanguage := 
 example : ∀ i < bound [], ([], i) ∈ bitLanguage := by simp [bound]
 example : ¬ ∃ i < bound [], ([], i) ∈ bitLanguage := by simp [bound]
 example : {w : List Bool | ∀ i < 0, (w, i) ∈ bitLanguage} ∈ LWPP encBits :=
-  forall_lt_mem_LWPP joint_mem_LWPP (.const 0)
+  forall_lt_mem_LWPP joint_mem_LWPP (.of_tidy (.const 0))
 example : {w : List Bool | ∃ i < 0, (w, i) ∈ bitLanguage} ∈ LWPP encBits :=
-  exists_lt_mem_LWPP joint_mem_LWPP (.const 0)
+  exists_lt_mem_LWPP joint_mem_LWPP (.of_tidy (.const 0))
 
 /-- info: 'Cslib.Complexity.forall_lt_mem_WPP' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

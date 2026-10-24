@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Nondete
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.PPT.Clock
 import Complexity.Computability.Probabilistic.Sampling
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Guess and verify
@@ -59,10 +60,11 @@ machine whose nondeterministic machine decides the problem within the explicit p
 `c * ((enc a).length + 1) ^ d`. That machine is never stuck, so its branches
 actually halt within the bound. -/
 theorem IsVerifier.exists_decidesInTime
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) (hA : IsVerifier enc p V A) :
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (hA : IsVerifier enc p V A) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapePTM k Bool State) (c d : ℕ),
       machine.toNTM.DecidesInTime enc A (fun a => c * ((enc a).length + 1) ^ d) ∧
       ∀ input (cfg : Cfg k Bool State input), ∃ cfg', machine.toNTM.Step cfg cfg' := by
+  have hV := hV.tidy
   -- guess a certificate of the required length, then verify it
   let program (a : α) : ProbComp Bool :=
     (fun w => V (a, w)) <$> BitString.sampleList (p.eval (enc a).length)
@@ -88,12 +90,14 @@ theorem IsVerifier.exists_decidesInTime
   · rintro ⟨b, ⟨w, hw, hV⟩, rfl⟩
     exact ⟨w, hw, hV⟩
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Problems in `NP` are decidable in polynomial time by nondeterministic machines with a binary
 alphabet and finitely many states. -/
 theorem decidableInPolyTime_of_mem_NP (h : A ∈ NP enc) :
     MultiTapeNTM.DecidableInPolyTime A enc := by
   obtain ⟨p, V, hV, hA⟩ := h
-  obtain ⟨k, State, hfinite, machine, c, d, hdecides, -⟩ := hA.exists_decidesInTime hV.tidy
+  obtain ⟨k, State, hfinite, machine, c, d, hdecides, -⟩ := hA.exists_decidesInTime hV
   exact ⟨_, .of_forall_le c d fun _ => le_rfl, k, State, hfinite, machine.toNTM, hdecides⟩
 
 end Cslib.Complexity

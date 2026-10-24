@@ -79,6 +79,35 @@ namespace Cslib.Crypto.GMW
 open Probability Complexity Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
 open scoped NNReal ENNReal
 
+/-! Tidy views of the plain `SAT` certificates, for tidy `fun_prop` below. -/
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_vars :
+    ComputableTidilyInPolyTime (CNF.vars (V := ℕ)) encCNF (encList encNat) :=
+  (ComputableInPolyTime.tidy (SAT.computableInPolyTime_vars))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_clause_length
+    {α : Type} {input : α ↪ List Bool}
+    {c : α → Clause ℕ}
+    (hc : ComputableTidilyInPolyTime c input (encList (encPair encNat encBool))) :
+    ComputableTidilyInPolyTime (fun a => (c a).length) input encUnary :=
+  (ComputableInPolyTime.tidy (SAT.computableInPolyTime_clause_length (.of_tidy hc)))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_length
+    {α : Type} {input : α ↪ List Bool} {φ : α → CNF ℕ}
+    (hφ : ComputableTidilyInPolyTime φ input encCNF) :
+    ComputableTidilyInPolyTime (fun a => (φ a).length) input encUnary :=
+  (ComputableInPolyTime.tidy (SAT.computableInPolyTime_length (.of_tidy hφ)))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_vars_length
+    {α : Type} {input : α ↪ List Bool}
+    {φ : α → CNF ℕ} (hφ : ComputableTidilyInPolyTime φ input encCNF) :
+    ComputableTidilyInPolyTime (fun a => (φ a).vars.length) input encUnary :=
+  (ComputableInPolyTime.tidy (SAT.computableInPolyTime_vars_length (.of_tidy hφ)))
+
 /-! ### Step 1: Replacing the verifier's challenge in `runTwoRound` by a random guess -/
 
 private theorem runTwoRound_query_inl {α β : Type} (reply1 reply2 : List Bool → List Bool)

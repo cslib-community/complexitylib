@@ -89,14 +89,16 @@ theorem isVerifier : IsVerifier encKnapsack Polynomial.X verifier Knapsack := by
 
 /-- The `Knapsack` verifier is polynomial-time: the sums and comparisons are in binary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair encKnapsack encBits) encBool := by
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair encKnapsack encBits) encBool := by
+  have hmask := (computableInPolyTime_maskSelect (encPair encNat encNat)).tidy
+  refine .of_tidy ?_
   unfold verifier
   fun_prop
 
 /-- `Knapsack` belongs to `NP`. -/
 theorem mem_NP : Knapsack ∈ NP encKnapsack :=
-  ⟨Polynomial.X, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end Knapsack
 
@@ -122,8 +124,8 @@ theorem toKnapsack_mem_iff (x : List ℕ × ℕ) : toKnapsack x ∈ Knapsack ↔
 
 /-- The reduction to `Knapsack` is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toKnapsack :
-    ComputableTidilyInPolyTime toKnapsack (encPair (encList encNat) encNat) encKnapsack := by
+theorem computableInPolyTime_toKnapsack :
+    ComputableInPolyTime toKnapsack (encPair (encList encNat) encNat) encKnapsack := by
   unfold toKnapsack
   fun_prop
 
@@ -132,7 +134,7 @@ end SubsetSum
 /-- `SubsetSum` reduces to `Knapsack` in polynomial time. -/
 theorem polyTimeReducible_SubsetSum_Knapsack :
     PolyTimeReducible (encPair (encList encNat) encNat) encKnapsack SubsetSum Knapsack :=
-  ⟨SubsetSum.toKnapsack, .of_tidy SubsetSum.computableTidilyInPolyTime_toKnapsack,
+  ⟨SubsetSum.toKnapsack, SubsetSum.computableInPolyTime_toKnapsack,
     fun x => (SubsetSum.toKnapsack_mem_iff x).symm⟩
 
 /-- `Knapsack` is `NP`-hard. -/

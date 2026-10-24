@@ -93,6 +93,48 @@ open Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal Cslib.Logic.PL
 
 namespace Ladner
 
+/-! Tidy views of the plain certificates of `Ladner.PolyTime`, for tidy `fun_prop` below. -/
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_capPow
+    {α : Type} {input : α ↪ List Bool}
+    {base exp cap : α → ℕ} (hbase : ComputableTidilyInPolyTime base input encUnary)
+    (hexp : ComputableTidilyInPolyTime exp input encUnary)
+    (hcap : ComputableTidilyInPolyTime cap input encUnary) :
+    ComputableTidilyInPolyTime (fun x => capPow (base x) (exp x) (cap x)) input encUnary :=
+  (ComputableInPolyTime.tidy (Ladner.computableInPolyTime_capPow (.of_tidy hbase) (.of_tidy hexp)
+      (.of_tidy hcap)))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_padCheck
+    {α : Type} {input : α ↪ List Bool}
+    {e : α → ℕ → ℕ} {y : α → List Bool}
+    (he : ComputableTidilyInPolyTime (fun p : α × ℕ => e p.1 p.2) (encPair input encUnary)
+      encUnary)
+    (hy : ComputableTidilyInPolyTime y input encBits) :
+    ComputableTidilyInPolyTime (fun x => padCheck (e x) (y x)) input (encOption encCNF) :=
+  (ComputableInPolyTime.tidy (Ladner.computableInPolyTime_padCheck (.of_tidy he) (.of_tidy hy)))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_H :
+    ComputableTidilyInPolyTime H encUnary encUnary :=
+  (ComputableInPolyTime.tidy (Ladner.computableInPolyTime_H))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_unpad :
+    ComputableTidilyInPolyTime unpad encBits (encPair encBits encUnary) :=
+  (ComputableInPolyTime.tidy (Ladner.computableInPolyTime_unpad))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_decodeCNF :
+    ComputableTidilyInPolyTime decodeCNF encBits encCNF :=
+  (ComputableInPolyTime.tidy (Ladner.computableInPolyTime_decodeCNF))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_word :
+    ComputableTidilyInPolyTime word encUnary encBits :=
+  (ComputableInPolyTime.tidy (Ladner.computableInPolyTime_word))
+
 /-- If `SAT` is in `P`, then `P = NP` for every encoding of instances. -/
 theorem P_eq_NP_of_SAT_mem_P (h : SAT ∈ P encCNF) {α : Type} (enc : α ↪ List Bool) :
     P enc = NP enc :=
@@ -147,7 +189,8 @@ private theorem eventually_clock_le (i : ℕ) :
 /-- **If `SATH` is in `P`, then `H` is bounded**: some index of a machine deciding `SATH` has a
 clock exceeding its polynomial time bound, and from some point on `H` is at most that index. -/
 theorem exists_H_le_of_mem_P (h : SATH ∈ P encBits) : ∃ C, ∀ n, H n ≤ C := by
-  obtain ⟨f, ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩, hf⟩ := mem_P_iff_tidy.mp h
+  obtain ⟨f, hfpoly, hf⟩ := mem_P.mp h
+  obtain ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩ := hfpoly.tidy
   have := Fintype.ofFinite State
   let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
   have hrun (x : List Bool) : (tm.runFrom (tm.initCfg x) (t x)).Halted ∧
@@ -327,7 +370,8 @@ then `SAT` is in `P`: the self-reduction leaves a formula of bounded length, dec
 table. -/
 theorem SAT_mem_P_of_reducible_of_tendsto (hR : PolyTimeReducible encCNF encBits SAT SATH)
     (hH : Filter.Tendsto H Filter.atTop Filter.atTop) : SAT ∈ P encCNF := by
-  obtain ⟨R, hRpoly, hR⟩ := polyTimeReducible_iff_tidy.mp hR
+  obtain ⟨R, hRpoly, hR⟩ := hR
+  have hRpoly := hRpoly.tidy
   obtain ⟨c, d, hRlen⟩ := hRpoly.polyBounded_length.exists_le
   simp only [encBits_apply] at hRlen
   obtain ⟨M, hM⟩ := Filter.eventually_atTop.mp (Filter.tendsto_atTop.mp hH (d + 1))
@@ -337,7 +381,7 @@ theorem SAT_mem_P_of_reducible_of_tendsto (hR : PolyTimeReducible encCNF encBits
   -- the polynomial-time certificate of a round
   have hshrink : ComputableTidilyInPolyTime (shrink R N) encCNF encCNF := by
     have hH' : ComputableTidilyInPolyTime (fun p : CNF ℕ × ℕ => H p.2) (encPair encCNF encUnary)
-        encUnary := computableTidilyInPolyTime_H.comp (ComputableTidilyInPolyTime.snd _ _)
+        encUnary := computableInPolyTime_H.tidy.comp (ComputableTidilyInPolyTime.snd _ _)
     unfold shrink
     fun_prop
   -- the rounds preserve satisfiability and shorten the formula to below `N`

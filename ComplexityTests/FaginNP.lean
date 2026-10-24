@@ -113,11 +113,11 @@ info: 'Cslib.Logic.ESO.Sentence.queryLanguage_mem_NP' depends on axioms:
 #print axioms Cslib.Logic.ESO.Sentence.queryLanguage_mem_NP
 
 /--
-info: 'Cslib.Logic.ESO.Sentence.Layout.computableTidilyInPolyTime_verifier' depends on axioms:
+info: 'Cslib.Logic.ESO.Sentence.Layout.computableInPolyTime_verifier' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Logic.ESO.Sentence.Layout.computableTidilyInPolyTime_verifier
+#print axioms Cslib.Logic.ESO.Sentence.Layout.computableInPolyTime_verifier
 
 /--
 info: 'Cslib.Logic.Vocabulary.mem_queryLanguage_encode' depends on axioms:

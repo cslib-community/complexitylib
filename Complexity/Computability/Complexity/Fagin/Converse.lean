@@ -254,7 +254,7 @@ theorem exists_powerSentence_of_mem_NP {K : Set EncodedStructure} (hNP : K ∈ N
         (a ∈ K ↔ letI := v.powerStructure a (a.1 ^ k); Ψ.Realize (Fin (a.1 ^ k))) := by
   rcases hNP with ⟨p, V, hVpoly, hV⟩
   obtain ⟨t, s, ht, -, m, State, hfin, tm, htm⟩ :=
-    computableTidilyInPolyTime_strictVerifier encStructure p hVpoly.tidy
+    (computableInPolyTime_strictVerifier encStructure p hVpoly).tidy
   obtain ⟨c, d, ht⟩ := ht.exists_le
   let _ := Fintype.ofFinite State
   classical

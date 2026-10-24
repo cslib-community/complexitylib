@@ -224,7 +224,7 @@ theorem exists_inverter_of_preimagePrefix_mem_BPP
     ∃ inverter : Inverter, IsPPT encBits inverter ∧
       ∀ n, 1 / 2 ≤ Game.succProbability (ProbComp.eval (inversionGame f inverter n)) := by
   obtain ⟨p, V, hV, herr⟩ := mem_BPP_iff_forall_decidesWithErrorExponent.1 h (Polynomial.X + 1)
-  exact ⟨randomizedPreimageSearch p V, isPPT_randomizedPreimageSearch hV,
+  exact ⟨randomizedPreimageSearch p V, isPPT_randomizedPreimageSearch hV.tidy,
     half_le_succProbability_inversionGame herr⟩
 
 /-- **One-way functions have preimage-prefix problems outside `BPP`.** -/

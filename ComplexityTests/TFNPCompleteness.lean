@@ -17,9 +17,10 @@ open Turing.MultiTapeTM ComputableTidilyInPolyTime
 
 -- One uniform constructor handles every identity cube, including the zero-dimensional cube.
 example : ∃ code : ℕ → CircuitCode,
-    ComputableTidilyInPolyTime code encUnary encCode ∧
+    ComputableInPolyTime code encUnary encCode ∧
       ∀ n u, u.length = n → evalCircuitOutputs (code n) u = u :=
-  exists_uniformCircuitCodes id' id' (snd encUnary encBits) (fun _ _ h => h)
+  exists_uniformCircuitCodes (.of_tidy id') (.of_tidy id') (.of_tidy (snd encUnary encBits))
+    (fun _ _ h => h)
 
 -- Each canonical search problem has the advertised class and reduction quantifiers.
 example : SearchComplete @PPP encPigeon Pigeon := Pigeon_searchComplete
@@ -41,12 +42,14 @@ private theorem cost_polytime :
 
 /-- A one-bit local-search family can have costs requiring five bits. -/
 theorem wideCostFamily_mem_PLS : localOptRel (fun _ : Bool => 1) neighbor cost ∈ PLS encBool :=
-  localOptRel_mem_PLS (const 1) neighbor_polytime cost_polytime (by simp [neighbor])
+  localOptRel_mem_PLS (.of_tidy (const 1)) (.of_tidy neighbor_polytime) (.of_tidy cost_polytime)
+    (by simp [neighbor])
 
 /-- The reduction preserves this family without restricting costs to the vertex width. -/
 theorem wideCostFamily_reduces :
     SearchReducible encBool encLocalOpt (localOptRel (fun _ : Bool => 1) neighbor cost) LocalOpt :=
-  localOptRel_searchReducible_LocalOpt (const 1) neighbor_polytime cost_polytime
+  localOptRel_searchReducible_LocalOpt (.of_tidy (const 1)) (.of_tidy neighbor_polytime)
+    (.of_tidy cost_polytime)
     (by simp [neighbor])
 
 example : localOptRel (fun _ : Bool => 1) neighbor cost false [false] := by

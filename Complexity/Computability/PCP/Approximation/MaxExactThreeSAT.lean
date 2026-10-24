@@ -130,14 +130,15 @@ private theorem unsatVal_toExactThreeSAT (φ : CNF ℕ) :
 
 /-- The reduction is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_reduce : ComputableTidilyInPolyTime reduce encCNF encCNF := by
+theorem computableInPolyTime_reduce : ComputableInPolyTime reduce encCNF encCNF := by
+  refine .of_tidy ?_
   unfold reduce
   have hany : ComputableTidilyInPolyTime (fun φ : CNF ℕ => φ.any List.isEmpty) encCNF encBool :=
     ComputableTidilyInPolyTime.anyWithInput (ComputableTidilyInPolyTime.id' (encIn := encCNF))
       ((ComputableTidilyInPolyTime.listIsEmpty' (encPair encNat encBool)).comp
         (ComputableTidilyInPolyTime.snd _ _))
   exact ComputableTidilyInPolyTime.cond hany (.const _)
-    computableTidilyInPolyTime_toExactThreeSAT
+    computableInPolyTime_toExactThreeSAT.tidy
 
 end GapExactThreeSAT
 
@@ -147,7 +148,7 @@ open GapExactThreeSAT
 soundness `1 / 2 ≤ s < 1`, by `GapExactThreeSAT.reduce`. -/
 theorem polyTimeReducible_GapThreeSAT_GapExactThreeSAT (hs : 1 / 2 ≤ s) (hs1 : s < 1) :
     PromiseProblem.PolyTimeReducible encCNF encCNF (GapThreeSAT s) (GapExactThreeSAT s) := by
-  refine ⟨reduce, .of_tidy computableTidilyInPolyTime_reduce, fun φ hφ => ?_, fun φ hφ => ?_⟩
+  refine ⟨reduce, computableInPolyTime_reduce, fun φ hφ => ?_, fun φ hφ => ?_⟩
   · rw [yes_GapThreeSAT] at hφ
     rw [yes_GapExactThreeSAT]
     have hne : φ.any List.isEmpty = false := by

@@ -88,15 +88,15 @@ def prefixSearch (R : α → List Bool → Prop) (x : α × List Bool) (v : List
 
 /-- The prefix problem of an `FNP` relation is in `FNP`. -/
 theorem prefixSearch_mem_FNP (hR : R ∈ FNP enc) : prefixSearch R ∈ FNP (encPair enc encBits) := by
-  obtain ⟨⟨p, hp⟩, V, hV, hRV⟩ := mem_FNP_iff_tidy.mp hR
-  refine mem_FNP_iff_tidy.mpr
+  obtain ⟨⟨p, hp⟩, V, hV, hRV⟩ := mem_FNP.mp hR
+  refine mem_FNP.mpr
     ⟨⟨p, fun x v h => ?_⟩, fun y => V (y.1.1, y.1.2 ++ y.2), ?_, fun x v => hRV _ _⟩
   · have h₁ := hp _ _ h
     have h₂ := Polynomial.eval_mono p (length_le_encPair_left enc encBits x)
     simp only [List.length_append] at h₁
     omega
-  · exact hV.comp ((fst (encPair enc encBits) encBits).fst'.prod
-      (bitsAppend (fst (encPair enc encBits) encBits).snd' (snd (encPair enc encBits) encBits)))
+  · exact .of_tidy (hV.tidy.comp ((fst (encPair enc encBits) encBits).fst'.prod
+      (bitsAppend (fst (encPair enc encBits) encBits).snd' (snd (encPair enc encBits) encBits))))
 
 /-! ### Search through prefixes -/
 
@@ -215,16 +215,17 @@ prefixes, and checks the result. -/
 theorem FNP_subset_FPSearch_of_NP_subset_P
     (h : NP (encPair enc encBits) ⊆ P (encPair enc encBits)) : FNP enc ⊆ FPSearch enc := by
   intro R hR
-  obtain ⟨⟨p, hp⟩, V, hV, hRV⟩ := mem_FNP_iff_tidy.mp hR
-  obtain ⟨D, hD, hDR⟩ := mem_P_iff_tidy.mp
-    (h (searchDomain_mem_NP (prefixSearch_mem_FNP (mem_FNP_iff_tidy.mpr ⟨⟨p, hp⟩, V, hV, hRV⟩))))
+  obtain ⟨⟨p, hp⟩, V, hV, hRV⟩ := mem_FNP.mp hR
+  obtain ⟨D, hD, hDR⟩ := mem_P.mp
+    (h (searchDomain_mem_NP (prefixSearch_mem_FNP (mem_FNP.mpr ⟨⟨p, hp⟩, V, hV, hRV⟩))))
   let n : α → ℕ := fun a => p.eval (enc a).length
   have hn : ComputableTidilyInPolyTime n enc encUnary := (unary_eval p).comp (encoding_length enc)
-  have hrun := computableTidilyInPolyTime_prefixSearchRun hV hD hn
-  refine mem_FPSearch_iff_tidy.mpr
-    ⟨mem_FNP_iff_tidy.mpr ⟨⟨p, hp⟩, V, hV, hRV⟩, fun a => if V (a, prefixSearchRun V D n a) then
+  have hrun := computableTidilyInPolyTime_prefixSearchRun hV.tidy hD.tidy hn
+  refine mem_FPSearch.mpr
+    ⟨mem_FNP.mpr ⟨⟨p, hp⟩, V, hV, hRV⟩, fun a => if V (a, prefixSearchRun V D n a) then
     some (prefixSearchRun V D n a) else none, ?_, fun a => ?_⟩
-  · exact cond (hV.comp (id'.prod hrun)) ((optionSome encBits).comp hrun) (const none)
+  · exact .of_tidy
+      (cond (hV.tidy.comp (id'.prod hrun)) ((optionSome encBits).comp hrun) (const none))
   · have hcorrect := rel_prefixSearchRun hRV (fun a u => (hDR (a, u)).symm) hp (a := a)
     constructor
     · intro w hw
@@ -260,7 +261,7 @@ def searchRel (φ : Logic.PL.CNF ℕ) (w : List Bool) : Prop :=
 
 /-- The search problem of `SAT` is in `FNP`. -/
 theorem searchRel_mem_FNP : searchRel ∈ FNP encCNF :=
-  mem_FNP_iff_exists_bounded.2 ⟨Polynomial.X, verifier, computableTidilyInPolyTime_verifier,
+  mem_FNP_iff_exists_bounded.2 ⟨Polynomial.X, verifier, computableInPolyTime_verifier,
     fun _ _ => by simp [searchRel]⟩
 
 /-- The formulas with a solution in `SAT.searchRel` are the satisfiable ones. -/
@@ -274,12 +275,14 @@ theorem searchDomain_searchRel : searchDomain searchRel = SAT := by
 when `SAT ∈ P`. -/
 theorem searchRel_mem_FPSearch_iff : searchRel ∈ FPSearch encCNF ↔ SAT ∈ P encCNF := by
   refine ⟨fun h => searchDomain_searchRel ▸ searchDomain_mem_P h, fun h => ?_⟩
-  obtain ⟨D, hD, hSAT⟩ := mem_P_iff_tidy.mp h
+  obtain ⟨D, hD, hSAT⟩ := mem_P.mp h
   have hsearch : ComputableTidilyInPolyTime (search D) encCNF encBits :=
-    computableTidilyInPolyTime_search (D := fun _ => D) (hD.comp (snd _ _)) id'
-  refine mem_FPSearch_iff_tidy.mpr
+    (computableInPolyTime_search (D := fun _ => D) (.of_tidy (hD.tidy.comp (snd _ _)))
+      (.of_tidy id')).tidy
+  refine mem_FPSearch.mpr
     ⟨searchRel_mem_FNP, fun φ => if D φ then some (search D φ) else none,
-      cond hD ((optionSome encBits).comp hsearch) (const none), fun φ => ⟨fun w hw => ?_, ?_⟩⟩
+      .of_tidy (cond hD.tidy ((optionSome encBits).comp hsearch) (const none)),
+      fun φ => ⟨fun w hw => ?_, ?_⟩⟩
   · beta_reduce at hw
     split_ifs at hw with hDφ
     cases Option.some_injective _ hw

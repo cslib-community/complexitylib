@@ -47,17 +47,19 @@ variable {α β : Type} {enc : α ↪ List Bool} {encB : β ↪ List Bool} {A : 
 `B` on the reduced instance and on the prefix of the random string that this decider expects. -/
 theorem PolyTimeReducible.mem_BPP (h : PolyTimeReducible enc encB A B) (hB : B ∈ BPP encB) :
     A ∈ BPP enc := by
-  rw [mem_BPP_iff_tidy] at hB ⊢
-  obtain ⟨g, hg, hAB⟩ := polyTimeReducible_iff_tidy.mp h
+  rw [Complexity.mem_BPP] at hB ⊢
+  obtain ⟨g, hg, hAB⟩ := h
   obtain ⟨q, W, hW, hWB⟩ := hB
+  have hg := hg.tidy
+  have hW := hW.tidy
   have hlen : ComputableTidilyInPolyTime (fun a => q.eval (encB (g a)).length) enc encUnary :=
     (ComputableTidilyInPolyTime.unary_eval q).comp
       ((ComputableTidilyInPolyTime.encoding_length encB).comp hg)
   obtain ⟨p, hle⟩ := hlen.polyBounded.exists_polynomial
   refine ⟨p,
     andVerifier (fun a => q.eval (encB (g a)).length) (fun x => W (g x.1, x.2)) fun _ => true,
-    computableTidilyInPolyTime_andVerifier hlen
-      (hW.comp ((hg.comp (.fst enc encBits)).prod (.snd enc encBits))) (.const true),
+    .of_tidy (computableTidilyInPolyTime_andVerifier hlen
+      (hW.comp ((hg.comp (.fst enc encBits)).prod (.snd enc encBits))) (.const true)),
     fun a => ?_⟩
   obtain ⟨j, hj⟩ := Nat.exists_eq_add_of_le (hle a)
   rw [hj]

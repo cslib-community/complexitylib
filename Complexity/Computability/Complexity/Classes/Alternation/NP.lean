@@ -44,7 +44,7 @@ variable {α : Type} {enc : α ↪ List Bool}
 existential, decides the problem within the same polynomial time bound. -/
 theorem NP_subset_AP : NP enc ⊆ AP enc := by
   rintro A ⟨p, V, hV, hA⟩
-  obtain ⟨k, State, hfinite, machine, c, d, hdecides, -⟩ := hA.exists_decidesInTime hV.tidy
+  obtain ⟨k, State, hfinite, machine, c, d, hdecides, -⟩ := hA.exists_decidesInTime hV
   refine ⟨_, .of_forall_le c d fun _ => le_rfl, k, State, hfinite, ⟨machine, fun _ => false⟩,
     fun a => ⟨(hdecides a).1, ?_⟩⟩
   rw [(hdecides a).2]

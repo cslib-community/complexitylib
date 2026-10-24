@@ -50,7 +50,7 @@ variable {α : Type}
 for the positive sign and `(N-f, N)` for the negative sign. Routing and buffering are charged. -/
 theorem exists_signed_verifier_machine (enc : α ↪ List Bool) (p : Polynomial ℕ)
     (verifier : α × List Bool → Bool)
-    (hverify : ComputableTidilyInPolyTime verifier (encPair enc encBits) encBool) (sign : Bool) :
+    (hverify : ComputableInPolyTime verifier (encPair enc encBits) encBool) (sign : Bool) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCTM k Bool State)
       (clock : Polynomial ℕ), machine.Nonblocking ∧ ∀ a,
         machine.HaltsWithin (clock.eval (enc a).length) (Cfg.init machine.initial (enc a)) ∧
@@ -61,6 +61,7 @@ theorem exists_signed_verifier_machine (enc : α ↪ List Bool) (p : Polynomial 
           (if sign then
             2 ^ p.eval (enc a).length - Complexity.acceptCount verifier a (p.eval (enc a).length)
             else 2 ^ p.eval (enc a).length) := by
+  have hverify := hverify.tidy
   obtain ⟨k, State, hfinite, source, sourceClock, hnon, hm⟩ :=
     exists_verifier_machine enc p verifier hverify
   let machine := (verdictMachine sign).comp source true
@@ -116,8 +117,8 @@ theorem exists_signed_verifier_machine (enc : α ↪ List Bool) (p : Polynomial 
 witness lengths. Its signed difference is exact; halted branches acquire no padding choices. -/
 theorem exists_verifier_difference_machine (enc : α ↪ List Bool) (p q : Polynomial ℕ)
     (positive negative : α × List Bool → Bool)
-    (hpositive : ComputableTidilyInPolyTime positive (encPair enc encBits) encBool)
-    (hnegative : ComputableTidilyInPolyTime negative (encPair enc encBits) encBool) :
+    (hpositive : ComputableInPolyTime positive (encPair enc encBits) encBool)
+    (hnegative : ComputableInPolyTime negative (encPair enc encBits) encBool) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCTM k Bool State)
       (clock : Polynomial ℕ), machine.Nonblocking ∧ ∀ a,
         machine.HaltsWithin (clock.eval (enc a).length) (Cfg.init machine.initial (enc a)) ∧
@@ -199,8 +200,8 @@ theorem mem_GapP_iff_exists_machine :
   constructor
   · rintro ⟨f₁, ⟨p, positive, hpositive, hf₁⟩, f₂, ⟨q, negative, hnegative, hf₂⟩, hg⟩
     obtain ⟨k, State, hfinite, machine, clock, hnon, hm⟩ :=
-      MultiTapeCTM.exists_verifier_difference_machine enc p q positive negative hpositive.tidy
-        hnegative.tidy
+      MultiTapeCTM.exists_verifier_difference_machine enc p q positive negative hpositive
+        hnegative
     refine ⟨k, State, hfinite, machine, clock, hnon, fun a => ⟨(hm a).1, ?_⟩⟩
     rw [(hm a).2, hg a, hf₁ a, hf₂ a]
   · rintro ⟨k, State, hfinite, machine, clock, _, hm⟩

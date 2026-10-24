@@ -43,7 +43,7 @@ $$\mathsf{MIP}_2 \subseteq \mathsf{MIP} \subseteq \mathsf{NEXP}.$$
    `aliveRun M x r th` specializes `Cslib.Complexity.Interaction.aliveRun` to execute `M` for `t`
    steps, consuming `th` from the front whenever `M` issues an oracle query `(op, m)` and checking
    that the entry matches `(op.val, m)`. By
-   `Cslib.Complexity.Interaction.computableTidilyInPolyTime_accepts`, `accepts` is computable tidily
+   `Cslib.Complexity.Interaction.computableInPolyTime_accepts`, `accepts` is computable tidily
    in polynomial time.
 2. **Correspondence with deterministic prover families (`acceptFrom_eq_one_of_accepts`,
    `acceptFrom_eq_ite_accepts_canonicalTrace`)**:
@@ -139,8 +139,8 @@ theorem projHistory_cons_of_ne {i j : ℕ} (hne : j ≠ i) (my : List Bool × Li
 
 /-- Projecting a tagged history onto channel `i` is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_projHistory :
-    ComputableTidilyInPolyTime (fun p : ℕ × TaggedHistory => projHistory p.1 p.2)
+theorem computableInPolyTime_projHistory :
+    Turing.MultiTapeTM.ComputableInPolyTime (fun p : ℕ × TaggedHistory => projHistory p.1 p.2)
       (encPair encUnary encTaggedHistory) encHistory := by
   unfold projHistory
   fun_prop
@@ -196,11 +196,12 @@ theorem consistentHistStep_suffix {h₂ : History} {s : History × Bool × Bool}
   · exact (List.tail_suffix s.1).trans hs
   · exact (List.tail_suffix s.1).trans hs
 
-/-- `consistentHist` is computable tidily in polynomial time. -/
+/-- `consistentHist` is computable in polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_consistentHist :
-    ComputableTidilyInPolyTime (fun p : History × History => consistentHist p.1 p.2)
+theorem computableInPolyTime_consistentHist :
+    Turing.MultiTapeTM.ComputableInPolyTime (fun p : History × History => consistentHist p.1 p.2)
       (encPair encHistory encHistory) encBool := by
+  refine .of_tidy ?_
   have hstep : ComputableTidilyInPolyTime
       (fun q : (History × Bool × Bool) × (List Bool × List Bool) => consistentHistStep q.1 q.2)
       (encPair (encPair encHistory (encPair encBool encBool)) (encPair encBits encBits))
@@ -255,12 +256,12 @@ abbrev accepts (x r : List Bool) (th : TaggedHistory) : Bool :=
 
 /-- Multi-channel replay acceptance is polynomial-time in the input, coins, and tagged history. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_accepts [Finite Control] :
-    ComputableTidilyInPolyTime (fun q : List Bool × List Bool × TaggedHistory =>
+theorem computableInPolyTime_accepts [Finite Control] :
+    Turing.MultiTapeTM.ComputableInPolyTime (fun q : List Bool × List Bool × TaggedHistory =>
       accepts M q.1 q.2.1 q.2.2)
       (encPair encBits (encPair encBits encTaggedHistory)) encBool :=
-  Interaction.computableTidilyInPolyTime_accepts matchTaggedOp Prod.snd M
-    (fun op => .of_tidy (by unfold matchTaggedOp; fun_prop)) (.of_tidy (snd _ _))
+  (Interaction.computableInPolyTime_accepts matchTaggedOp Prod.snd M
+    (fun op => .of_tidy (by unfold matchTaggedOp; fun_prop)) (.of_tidy (snd _ _)))
 
 /-! ### Correspondence between `accepts` and `coinProgram` against deterministic provers -/
 
@@ -599,11 +600,15 @@ def paddedMIP (c d : ℕ) : Set (List Bool) :=
 
 variable [Finite Control]
 
-/-- `checkCert` is computable tidily in polynomial time. -/
+/-- `checkCert` is computable in polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_checkCert (c d : ℕ) :
-    ComputableTidilyInPolyTime (fun q : List Bool × Cert => checkCert M c d q.1 q.2)
+theorem computableInPolyTime_checkCert (c d : ℕ) :
+    Turing.MultiTapeTM.ComputableInPolyTime (fun q : List Bool × Cert => checkCert M c d q.1 q.2)
       (encPair encBits encCert) encBool := by
+  have haccepts := (computableInPolyTime_accepts M).tidy
+  have hproj := computableInPolyTime_projHistory.tidy
+  have hconsistent := computableInPolyTime_consistentHist.tidy
+  refine .of_tidy ?_
   have ht : ComputableTidilyInPolyTime
       (fun q : List Bool × Cert => c * (q.1.length + 1) ^ d)
       (encPair encBits encCert) encUnary := by
@@ -649,10 +654,12 @@ theorem computableTidilyInPolyTime_checkCert (c d : ℕ) :
     exact binary_lt' hpow (binary_mul' (const 2) hlen)
   exact bool_and' (bool_and' (bool_and' h1 h2) h3) h4
 
-/-- `checkPaddedCert` is computable tidily in polynomial time. -/
+/-- `checkPaddedCert` is computable in polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_checkPaddedCert (c d : ℕ) :
-    ComputableTidilyInPolyTime (checkPaddedCert M c d) (encPair encBits encCert) encBool := by
+theorem computableInPolyTime_checkPaddedCert (c d : ℕ) :
+    Turing.MultiTapeTM.ComputableInPolyTime (checkPaddedCert M c d) (encPair encBits encCert)
+      encBool := by
+  refine .of_tidy ?_
   have hunframe : ComputableTidilyInPolyTime unframe encBits encBits :=
     .of_linear (.of_unframe fun _ => rfl)
   have hlen : ComputableTidilyInPolyTime
@@ -660,13 +667,13 @@ theorem computableTidilyInPolyTime_checkPaddedCert (c d : ℕ) :
       (encPair encBits encCert) encBool :=
     unary_le' ((encoding_length encCert).comp (snd encBits encCert))
       (length_bits.comp (fst encBits encCert))
-  exact bool_and' hlen ((computableTidilyInPolyTime_checkCert M c d).comp
+  exact bool_and' hlen ((computableInPolyTime_checkCert M c d).tidy.comp
     ((hunframe.comp (fst encBits encCert)).prod (snd encBits encCert)))
 
 /-- The padded multiprover language `paddedMIP M c d` belongs to `NP encBits`. -/
 theorem paddedMIP_mem_NP (c d : ℕ) : paddedMIP M c d ∈ NP encBits := by
   refine mem_NP_of_witness certDecoder (p := Polynomial.X)
-    (computableTidilyInPolyTime_checkPaddedCert M c d) (fun _ _ => Iff.rfl) ?_
+    (computableInPolyTime_checkPaddedCert M c d) (fun _ _ => Iff.rfl) ?_
   intro w cert h
   refine ⟨cert, h, ?_⟩
   simp only [checkPaddedCert, Bool.and_eq_true, decide_eq_true_eq] at h
@@ -1011,7 +1018,7 @@ theorem MIP_subset_NEXP : MIP enc ⊆ NEXP enc := by
         natCast_div_le_natCast_div_iff hpos (by norm_num)] at hineq
       lia
   rw [hpre]
-  exact preimage_pad_mem_NEXP hNP hf hn
+  exact preimage_pad_mem_NEXP hNP (.of_tidy hf) hn
 
 /-- **`MIP₂ ⊆ NEXP`**: every problem with a two-prover interactive proof is decidable in
 nondeterministic exponential time. -/

@@ -51,7 +51,7 @@ private def ψ : CNF ℕ := [[(0, true)], [(0, false)]]
 /-- Proofs of satisfiability: a formula followed by an assignment, in order of first occurrence,
 padded to the length of the encoded formula. A proof the verifier rejects proves `φ`. -/
 private noncomputable def satProofSystem : ProofSystem encCNF SAT :=
-  .ofVerifier cnfDecoder SAT.computableTidilyInPolyTime_verifier.computableInPolyTime SAT.isVerifier
+  .ofVerifier cnfDecoder SAT.computableInPolyTime_verifier SAT.isVerifier
     (a₀ := φ) ⟨fun _ => true, rfl⟩
 
 /-- The assignment `x₀ ↦ true`, `x₁ ↦ true`, padded, proves `φ`. -/

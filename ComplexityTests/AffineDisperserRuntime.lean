@@ -78,11 +78,11 @@ example (N : ℕ) :
 /-! ### Axioms -/
 
 /--
-info: 'Cslib.AffineDisperser.computableTidilyInPolyTime_explicitDisperser' depends on axioms:
+info: 'Cslib.AffineDisperser.computableInPolyTime_explicitDisperser' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms computableTidilyInPolyTime_explicitDisperser
+#print axioms computableInPolyTime_explicitDisperser
 
 /--
 info: 'Cslib.AffineDisperser.setOf_explicitDisperser_mem_P' depends on axioms:
@@ -141,10 +141,10 @@ info: 'Cslib.AffineDisperser.polyOfCode_leastIrreducibleCode' depends on axioms:
 #print axioms polyOfCode_leastIrreducibleCode
 
 /--
-info: 'Cslib.AffineDisperser.computableTidilyInPolyTime_traceSymCoords' depends on axioms:
+info: 'Cslib.AffineDisperser.computableInPolyTime_traceSymCoords' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms computableTidilyInPolyTime_traceSymCoords
+#print axioms computableInPolyTime_traceSymCoords
 
 end ComplexityTests.AffineDisperserRuntime

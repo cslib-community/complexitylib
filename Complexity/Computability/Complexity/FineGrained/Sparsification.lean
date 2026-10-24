@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Algorithmic sparsification
@@ -371,6 +372,7 @@ private theorem computableTidilyInPolyTime_root (k : ℕ) :
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 private theorem computableTidilyInPolyTime_rounds (M : ℕ) :
     ComputableTidilyInPolyTime (rounds M) encCNF encNat := by
+  have hvars := SAT.computableInPolyTime_distinctVars.tidy
   have h := unary_div_const M
   unfold rounds
   fun_prop
@@ -538,11 +540,12 @@ formulas with `m` clauses, the formulas accepted by the search are decidable wit
 `2 ^ ((1 / M + c δ) n)` times a polynomial, on formulas with `n` variables, for
 `c = occBound K α`. -/
 theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M)
-    {g : CNF ℕ → Bool} {t : CNF ℕ → ℕ} (hg : ComputableTidilyInO g encCNF encBool t t)
+    {g : CNF ℕ → Bool} {t : CNF ℕ → ℕ} (hg : ComputableInO g encCNF encBool t t)
     {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
     (ht : ∀ ψ : CNF ℕ, (t ψ : ℝ) ≤ c * (2 ^ (δ * ψ.length) * ((encCNF ψ).length + 1) ^ e) + c) :
     DecidableInExpTime {φ | search K α k M g φ = true} encCNF CNF.numVars
       (1 / M + occBound K α * δ) := by
+  have hg := hg.tidy
   obtain ⟨d, dn, di, h⟩ := exists_computableTidilyInO_search hK hα hkK hM hg hδ ht
   set Kx := K * base K α ^ (2 * K)
   set c₁ := (1 + Kx) * (6 * K + 1)
@@ -551,7 +554,7 @@ theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K 
   set E := dn + di + 3 * d + 2 * e + 3
   set C₂ : ℝ := c * 2 ^ δ * ((c₁ : ℝ) + 1) ^ e + c + 1
   set C₀ : ℝ := 2 + 5 * (C₁ + C₂)
-  refine .of_computableTidilyInO h (fun φ => Iff.rfl) ⌈C₀⌉₊ E fun φ => ?_
+  refine DecidableInExpTime.of_computableInO (.of_tidy h) (fun φ => Iff.rfl) ⌈C₀⌉₊ E fun φ => ?_
   set L := (encCNF φ).length
   set N := φ.numVars
   set P := (L + 1) ^ E
@@ -741,12 +744,13 @@ theorem exists_decidableInExpTime_numVars_of_length (k : ℕ) {ε : ℝ} (hε : 
     exact_mod_cast h₁.trans h₃
   refine ⟨Sparsify.occBound K α, fun δ hδ h => ?_⟩
   obtain ⟨e, h⟩ := h
-  obtain ⟨g, t, c, hg, hgA, ht⟩ := h.exists_computableTidilyInO
+  obtain ⟨g, t, c, hg, hgA, ht⟩ := h.exists_computableInO
+  have hg := hg.tidy
   have hgsat : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) → (g ψ = true ↔ ψ.Satisfiable) :=
     fun ψ hψ => by
       rw [← hgA]
       exact ⟨fun h => h.2, fun h => ⟨hψ, h⟩⟩
-  have hsearch := Sparsify.decidableInExpTime_search hK hα hkK hLB hg hδ ht
+  have hsearch := Sparsify.decidableInExpTime_search hK hα hkK hLB (.of_tidy hg) hδ ht
   have heq : KSAT k = {φ : CNF ℕ | (φ.all fun c => decide (c.length ≤ k)) = true} ∩
       {φ | Sparsify.search K α k M g φ = true} := by
     ext φ
@@ -757,7 +761,7 @@ theorem exists_decidableInExpTime_numVars_of_length (k : ℕ) {ε : ℝ} (hε : 
     · rintro ⟨hw, hs⟩
       exact ⟨hw, (Sparsify.search_eq_true_iff hK hα hkK hLB hgsat hw).mp hs⟩
   rw [heq]
-  exact (hsearch.inter (computableTidilyInPolyTime_all_length_le k) (by positivity)).mono
+  exact (hsearch.inter (computableInPolyTime_all_length_le k) (by positivity)).mono
     (by linarith)
 
 /-- **Subexponential time in the clauses gives subexponential time in the variables**

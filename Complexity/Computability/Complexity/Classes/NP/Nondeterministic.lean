@@ -40,7 +40,7 @@ the verifier needs no machine built by hand.
 
 ## Main results
 
-* `Turing.MultiTapeNTM.computableTidilyInPolyTime_checkChoices`: the verifier is polynomial-time.
+* `Turing.MultiTapeNTM.computableInPolyTime_checkChoices`: the verifier is polynomial-time.
 * `Turing.MultiTapeNTM.DecidesInTime.mem_iff_exists_checkChoices`: accepting computations
   have certificates of every length at least the action count times the time bound.
 * `Turing.MultiTapeNTM.DecidesInTime.isVerifier`: a machine deciding a problem within
@@ -72,8 +72,9 @@ noncomputable def checkChoices (ntm : MultiTapeNTM k Bool State) (enc : α ↪ L
 /-- Checking an encoded computation is polynomial-time: it replays a fixed finite fair-coin
 table. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_checkChoices (ntm : MultiTapeNTM k Bool State) :
-    ComputableTidilyInPolyTime (ntm.checkChoices enc) (encPair enc encBits) encBool := by
+theorem computableInPolyTime_checkChoices (ntm : MultiTapeNTM k Bool State) :
+    ComputableInPolyTime (ntm.checkChoices enc) (encPair enc encBits) encBool := by
+  refine .of_tidy ?_
   have hswap : ComputableTidilyInPolyTime (fun x : α × List Bool => (x.2, enc x.1))
       (encPair enc encBits) (encPair encBits encBits) :=
     (ComputableTidilyInPolyTime.snd enc encBits).prod
@@ -134,7 +135,7 @@ theorem mem_NP_of_decidableInPolyTime (h : MultiTapeNTM.DecidableInPolyTime A en
     A ∈ NP enc := by
   obtain ⟨t, ht, k, State, hfinite, ntm, hdecides⟩ := h
   obtain ⟨c, d, hle⟩ := ht.exists_le
-  exact ⟨_, ntm.checkChoices enc, .of_tidy ntm.computableTidilyInPolyTime_checkChoices,
+  exact ⟨_, ntm.checkChoices enc, (ntm.computableInPolyTime_checkChoices),
     (hdecides.mono hle).isVerifier⟩
 
 /-- **`NP` is nondeterministic polynomial time** [Arora and Barak, Theorem 2.6][AroraBarak09]:

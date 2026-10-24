@@ -57,7 +57,7 @@ first-order interpretations.
   `toVertexCover x ∈ VertexCover ↔ x ∈ IndependentSet`.
 * `Cslib.Complexity.Graph.vertexCoverNum_eq_card_sub_indepNum`: the vertex cover number is the
   number of distinct declared vertices minus the independence number.
-* `Cslib.Complexity.IndependentSet.computableTidilyInPolyTime_toVertexCover`: the reduction is
+* `Cslib.Complexity.IndependentSet.computableInPolyTime_toVertexCover`: the reduction is
   polynomial-time, with targets in binary.
 * `Cslib.Complexity.VertexCover.isCover_eq_true_iff`,
   `Cslib.Complexity.VertexCover.isVerifier`, `Cslib.Complexity.VertexCover.mem_NP`:
@@ -164,14 +164,15 @@ theorem toVertexCover_mem_iff (x : Graph × ℕ) :
 /-- The reduction `toVertexCover` is polynomial-time: the vertex count is computed in unary, and
 the binary target is compared with it by saturating decoding. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toVertexCover :
-    ComputableTidilyInPolyTime toVertexCover (encPair encGraph encNat)
+theorem computableInPolyTime_toVertexCover :
+    ComputableInPolyTime toVertexCover (encPair encGraph encNat)
       (encPair encGraph encNat) := by
+  refine .of_tidy ?_
   have hn : ComputableTidilyInPolyTime (fun x : Graph × ℕ => x.1.1.toFinset.card)
       (encPair encGraph encNat) encUnary := by
     simp_rw [← Graph.length_distinctVertices]
     exact (length_list encNat).comp
-      (Graph.computableTidilyInPolyTime_distinctVertices.comp (fst _ _))
+      (Graph.computableInPolyTime_distinctVertices.tidy.comp (fst _ _))
   -- `min n m`, decoded from the binary target under the unary cap `n`.
   have hmin : ComputableTidilyInPolyTime
       (fun x : Graph × ℕ => Cslib.BitString.boundedBinaryValue x.1.1.toFinset.card
@@ -251,9 +252,10 @@ attribute [local fun_prop] computableTidilyInPolyTime_isUncoveredEdge
 
 /-- Listing the uncovered edges is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_uncoveredEdges :
-    ComputableTidilyInPolyTime (fun p : Graph × List ℕ => uncoveredEdges p.1 p.2)
+theorem computableInPolyTime_uncoveredEdges :
+    ComputableInPolyTime (fun p : Graph × List ℕ => uncoveredEdges p.1 p.2)
       (encPair encGraph (encList encNat)) (encList (encPair encNat encNat)) := by
+  refine .of_tidy ?_
   have hE : ComputableTidilyInPolyTime (fun p : Graph × List ℕ => p.1.2)
       (encPair encGraph (encList encNat)) (encList (encPair encNat encNat)) := by
     unfold encGraph
@@ -262,10 +264,10 @@ theorem computableTidilyInPolyTime_uncoveredEdges :
 
 /-- Testing whether `C` is a cover of `G` is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_isCover :
-    ComputableTidilyInPolyTime (fun p : Graph × List ℕ => isCover p.1 p.2)
+theorem computableInPolyTime_isCover :
+    ComputableInPolyTime (fun p : Graph × List ℕ => isCover p.1 p.2)
       (encPair encGraph (encList encNat)) encBool :=
-  (listIsEmpty' (encPair encNat encNat)).comp computableTidilyInPolyTime_uncoveredEdges
+  .of_tidy ((listIsEmpty' (encPair encNat encNat)).comp computableInPolyTime_uncoveredEdges.tidy)
 
 /-- The verifier for `VertexCover`, a subset verifier (`Cslib.Complexity.subsetVerifier`): select
 distinct declared vertices by the certificate mask, check that their count equals `k`, and check
@@ -292,17 +294,19 @@ theorem isVerifier :
 
 /-- The `VertexCover` verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair (encPair encGraph encNat) encBits) encBool := by
-  refine computableTidilyInPolyTime_subsetVerifier (encγ := encNat) (by unfold encGraph; fun_prop)
-    (bool_and' ?_ (computableTidilyInPolyTime_isCover.comp
-      (((fst _ _).comp (fst _ _)).prod (snd _ _))))
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair (encPair encGraph encNat) encBits) encBool := by
+  refine .of_tidy ?_
+  refine (computableInPolyTime_subsetVerifier (encγ := encNat)
+    (.of_tidy (by unfold encGraph; fun_prop))
+    (.of_tidy (bool_and' ?_ (computableInPolyTime_isCover.tidy.comp
+      (((fst _ _).comp (fst _ _)).prod (snd _ _)))))).tidy
   exact (((ComputableInPolyTime.length_list_binary encNat).tidy.comp (snd _ _)).decide_eq'
     (by fun_prop))
 
 /-- `VertexCover` belongs to `NP`. -/
 theorem mem_NP : VertexCover ∈ NP (encPair encGraph encNat) :=
-  ⟨Polynomial.X, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end VertexCover
 
@@ -311,7 +315,7 @@ end VertexCover
 theorem polyTimeReducible_IndependentSet_VertexCover :
     PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) IndependentSet
       VertexCover :=
-  ⟨IndependentSet.toVertexCover, .of_tidy IndependentSet.computableTidilyInPolyTime_toVertexCover,
+  ⟨IndependentSet.toVertexCover, IndependentSet.computableInPolyTime_toVertexCover,
     fun x => (IndependentSet.toVertexCover_mem_iff x).symm⟩
 
 /-- `VertexCover` is `NP`-hard. -/

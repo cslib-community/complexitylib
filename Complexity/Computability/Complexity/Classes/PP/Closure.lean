@@ -78,7 +78,7 @@ what the verifier accepts on `w` when `b₁ = true`. With `acc` accepted and `re
 of length `m`, this accepts `2 ^ m + 1 + 2 * rej` of the `4 * 2 ^ m` strings, more than half
 exactly when `2 * acc ≤ 2 ^ m`. -/
 theorem compl_mem_PP (hA : A ∈ PP enc) : Aᶜ ∈ PP enc := by
-  rw [mem_PP_iff_tidy] at hA ⊢
+  rw [mem_PP] at hA ⊢
   obtain ⟨p, V, hV, hA⟩ := hA
   let V' (x : α × List Bool) : Bool :=
     if x.2.headD false then !V (x.1, x.2.tail.tail)
@@ -91,7 +91,7 @@ theorem compl_mem_PP (hA : A ∈ PP enc) : Aᶜ ∈ PP enc := by
     exact ComputableTidilyInPolyTime.cond
       ((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp (.snd _ _))
       (ComputableTidilyInPolyTime.bool_not.comp
-        (hV.comp ((ComputableTidilyInPolyTime.fst _ _).prod hw)))
+        (hV.comp (.of_tidy ((ComputableTidilyInPolyTime.fst _ _).prod hw))).tidy)
       (ComputableTidilyInPolyTime.bool_or.comp
         ((ComputableTidilyInPolyTime.bool_not.comp
           ((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp
@@ -99,7 +99,7 @@ theorem compl_mem_PP (hA : A ∈ PP enc) : Aᶜ ∈ PP enc := by
           (ComputableTidilyInPolyTime.bool_not.comp
             (ComputableTidilyInPolyTime.bitsAnyWithInput (test := fun _ b => b) hw
               (.snd _ _)))))
-  refine ⟨p + 2, V', hV', fun a => ?_⟩
+  refine ⟨p + 2, V', (.of_tidy hV'), fun a => ?_⟩
   -- exactly one word of length `m` is all zeros
   have hzero (m : ℕ) : (Finset.univ.filter fun w : Fin m → Bool =>
       ((List.ofFn w).any fun b => b) = false).card = 1 := by

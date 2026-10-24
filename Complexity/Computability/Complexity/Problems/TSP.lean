@@ -58,10 +58,10 @@ with fewer than three vertices have no Hamiltonian cycle and are mapped to a fix
 
 * `Cslib.Complexity.TSP.tourLength_eq_sum`: the tour length as a sum over the positions of the
   tour.
-* `Cslib.Complexity.TSP.computableTidilyInPolyTime_tourLength`: tour lengths are polynomial-time.
+* `Cslib.Complexity.TSP.computableInPolyTime_tourLength`: tour lengths are polynomial-time.
 * `Cslib.Complexity.TSP.isVerifier`, `Cslib.Complexity.TSP.mem_NP`: `TSP ∈ NP encTSP`.
 * `Cslib.Complexity.HamCycle.toTSP_mem_iff`: `toTSP G ∈ TSP ↔ G ∈ HamCycle`.
-* `Cslib.Complexity.HamCycle.computableTidilyInPolyTime_toTSP`: the reduction is polynomial-time.
+* `Cslib.Complexity.HamCycle.computableInPolyTime_toTSP`: the reduction is polynomial-time.
 * `Cslib.Complexity.polyTimeReducible_HamCycle_TSP`, `Cslib.Complexity.TSP_npHard`: `HamCycle`
   reduces to `TSP` in polynomial time, so `TSP` is `NP`-hard.
 * `Cslib.Complexity.TSP_npComplete`: `TSP` is `NP`-complete.
@@ -133,9 +133,10 @@ theorem tourLength_eq_sum (D : List (List ℕ)) (p : List ℕ) :
 entries: it is a binary sum over the positions of the tour, and a city beyond the matrix is looked
 up at an index capped by the number of rows. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_tourLength :
-    ComputableTidilyInPolyTime (fun x : List (List ℕ) × List ℕ => tourLength x.1 x.2)
+theorem computableInPolyTime_tourLength :
+    ComputableInPolyTime (fun x : List (List ℕ) × List ℕ => tourLength x.1 x.2)
       (encPair (encList (encList encNat)) (encList encNat)) encNat := by
+  refine .of_tidy ?_
   have heq : (fun x : List (List ℕ) × List ℕ => tourLength x.1 x.2) = fun x =>
       ((List.range x.2.length).map fun k =>
         dist x.1 ((x.2 ++ [x.2.headD 0]).getD k 0)
@@ -184,8 +185,9 @@ theorem isVerifier : IsVerifier encTSP (Polynomial.X ^ 2) verifier TSP := by
 
 /-- The `TSP` verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair encTSP encBits) encBool := by
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair encTSP encBits) encBool := by
+  refine .of_tidy ?_
   have hV : ComputableTidilyInPolyTime (fun x : List (List ℕ) × ℕ => List.range x.1.length) encTSP
       (encList encNat) := by
     unfold encTSP
@@ -199,12 +201,13 @@ theorem computableTidilyInPolyTime_verifier :
       (encPair encTSP (encList encNat)) encNat := by
     unfold encTSP
     exact (snd _ _).comp (fst _ _)
-  have hlen := computableTidilyInPolyTime_tourLength.comp (hD.prod (snd _ (encList encNat)))
-  exact Graph.computableTidilyInPolyTime_verifyOrdering hV (binary_le' hlen hb)
+  have hlen := computableInPolyTime_tourLength.tidy.comp (hD.prod (snd _ (encList encNat)))
+  exact (Graph.computableInPolyTime_verifyOrdering (.of_tidy hV)
+    (.of_tidy (binary_le' hlen hb))).tidy
 
 /-- `TSP` belongs to `NP`. -/
 theorem mem_NP : TSP ∈ NP encTSP :=
-  ⟨_, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨_, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end TSP
 
@@ -381,16 +384,17 @@ theorem toTSP_mem_iff (G : Graph) : toTSP G ∈ TSP ↔ G ∈ HamCycle := by
 /-- The reduction `toTSP` is polynomial-time: the cities are selected from the declared vertices,
 and the distances and the budget are written in binary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toTSP : ComputableTidilyInPolyTime toTSP encGraph encTSP := by
+theorem computableInPolyTime_toTSP : ComputableInPolyTime toTSP encGraph encTSP := by
+  refine .of_tidy ?_
   have hV : ComputableTidilyInPolyTime Graph.distinctVertices encGraph (encList encNat) :=
-    Graph.computableTidilyInPolyTime_distinctVertices
+    Graph.computableInPolyTime_distinctVertices.tidy
   have hn : ComputableTidilyInPolyTime (fun G : Graph => G.distinctVertices.length) encGraph
       encUnary := (length_list _).comp hV
   have hrow : ComputableTidilyInPolyTime
       (fun p : Graph × ℕ => p.1.distinctVertices.map fun v => if p.1.adjBool p.2 v then 1 else 2)
       (encPair encGraph encNat) (encList encNat) :=
     mapWithInput (hV.comp (fst _ _))
-      (cond Graph.computableTidilyInPolyTime_adjBool (const 1) (const 2))
+      (cond Graph.computableInPolyTime_adjBool.tidy (const 1) (const 2))
   unfold toTSP encTSP
   exact ite_decide (unary_lt' hn (const 3)) (const _)
     ((mapWithInput hV hrow).prod (unary_to_binary.comp hn))
@@ -399,7 +403,7 @@ end HamCycle
 
 /-- `HamCycle` reduces to `TSP` in polynomial time via `HamCycle.toTSP`. -/
 theorem polyTimeReducible_HamCycle_TSP : PolyTimeReducible encGraph encTSP HamCycle TSP :=
-  ⟨HamCycle.toTSP, .of_tidy HamCycle.computableTidilyInPolyTime_toTSP,
+  ⟨HamCycle.toTSP, HamCycle.computableInPolyTime_toTSP,
     fun G => (HamCycle.toTSP_mem_iff G).symm⟩
 
 /-- `TSP` is `NP`-hard. -/

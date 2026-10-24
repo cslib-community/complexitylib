@@ -63,11 +63,14 @@ positivity assumption on the numerators is needed. -/
 theorem GapP.weightedReplay_mem [Finite Control] [Finite Operation]
     (machine : MultiTapePTM k Bool Control Operation)
     {input : α → List Bool} {T R : α → ℕ} {H : α × List Bool → ℤ}
-    (hinput : ComputableTidilyInPolyTime input enc encBits)
-    (hT : ComputableTidilyInPolyTime T enc encUnary)
-    (hR : ComputableTidilyInPolyTime R enc encUnary)
+    (hinput : Turing.MultiTapeTM.ComputableInPolyTime input enc encBits)
+    (hT : Turing.MultiTapeTM.ComputableInPolyTime T enc encUnary)
+    (hR : Turing.MultiTapeTM.ComputableInPolyTime R enc encUnary)
     (hH : H ∈ GapP (encPair enc encBits)) :
     weightedReplay machine input T R H ∈ GapP enc := by
+  have hinput := hinput.tidy
+  have hT := hT.tidy
+  have hR := hR.tidy
   let _ := Fintype.ofFinite Operation
   let cfg : (α × List Bool) × ℕ → FiniteConfig k Bool Control Operation :=
     fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
@@ -90,16 +93,16 @@ theorem GapP.weightedReplay_mem [Finite Control] [Finite Operation]
   let p : (α × List Bool) × ℕ → ℤ := fun x =>
     if (machine.pendingQuery (cfg x)).isSome then H (x.1.1, machine.pendingRequest (cfg x)) else 0
   have hp : p ∈ GapP (encPair (encPair enc encBits) encUnary) :=
-    GapP.ite_mem hquery (GapP.comp_mem hH hrequest) GapP.zero_mem
+    GapP.ite_mem (.of_tidy hquery) (GapP.comp_mem hH (.of_tidy hrequest)) GapP.zero_mem
   have hdenom : (fun x : (α × List Bool) × ℕ => (2 : ℤ) ^ R x.1.1) ∈
       GapP (encPair (encPair enc encBits) encUnary) :=
-    mem_GapP_of_polyTime (by fun_prop)
+    mem_GapP_of_polyTime (.of_tidy (by fun_prop))
   have hbit : ComputableTidilyInPolyTime
       (fun x : (α × List Bool) × ℕ => x.1.2.getD x.2 false)
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
-  have hfactor := GapP.ite_mem hbit hp (GapP.sub_mem' hdenom hp)
+  have hfactor := GapP.ite_mem (.of_tidy hbit) hp (GapP.sub_mem' hdenom hp)
   have hprod := GapP.prod_range_mem hfactor
-    (r := fun x : α × List Bool => x.2.length) (by fun_prop)
+    (r := fun x : α × List Bool => x.2.length) (.of_tidy (by fun_prop))
   have hout : ComputableTidilyInPolyTime
       (fun x : α × List Bool => (machine.replayOutput (input x.1) x.2).headD false)
       (encPair enc encBits) encBool := by
@@ -110,8 +113,8 @@ theorem GapP.weightedReplay_mem [Finite Control] [Finite Operation]
       (machine.replayOutput_pt.comp hreindex)
   have hmask : (fun x : α × List Bool =>
       if (machine.replayOutput (input x.1) x.2).headD false then (1 : ℤ) else 0) ∈
-      GapP (encPair enc encBits) := GapP.ite_mem hout GapP.one_mem GapP.zero_mem
-  have hsum := GapP.sum_bits_mem (GapP.mul_mem hprod hmask) hT
+      GapP (encPair enc encBits) := GapP.ite_mem (.of_tidy hout) GapP.one_mem GapP.zero_mem
+  have hsum := GapP.sum_bits_mem (GapP.mul_mem hprod hmask) (.of_tidy hT)
   convert hsum using 1
   funext a
   rw [weightedReplay, acceptWeight_eq_sum]

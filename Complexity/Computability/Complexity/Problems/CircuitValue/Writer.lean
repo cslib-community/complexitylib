@@ -13,6 +13,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 
 /-!
 # Writing circuits chunk by chunk in logarithmic space
@@ -347,14 +348,23 @@ private theorem stateS_le (w : List Bool) {q : (ℕ × ℕ × ℕ) × ℕ}
 and trailer are computed within the budget of its states. -/
 theorem computableInLogSpace {β : Type} {encOut : β ↪ List Bool} {g : List Bool → β}
     (hg : ∀ w, encOut (g w) = S.output w)
-    (hN : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.numChunks p.1.2.1) encStepIn
+    (hN : ComputableInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.numChunks p.1.2.1) encStepIn
       encNat fun p => wBudget p.1)
-    (hC : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.chunk p.1.2.1 p.1.2.2)
+    (hC : ComputableInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.chunk p.1.2.1 p.1.2.2)
       encStepIn encBits fun p => wBudget p.1)
-    (hT : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.trailer p.1.2.1) encStepIn
+    (hT : ComputableInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.trailer p.1.2.1) encStepIn
       encBits fun p => wBudget p.1)
     (hpoly : PolynomiallyBounded S.numChunks) :
     ComputableInLogSpace g (encFramed encBits) encOut := by
+  have hN : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.numChunks p.1.2.1) encStepIn
+      encNat fun p => wBudget p.1 := by simpa only [computableInSpace_iff_computableTidilyInSpace]
+    using hN
+  have hC : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.chunk p.1.2.1 p.1.2.2)
+      encStepIn encBits fun p => wBudget p.1 := by simpa only
+    [computableInSpace_iff_computableTidilyInSpace] using hC
+  have hT : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.trailer p.1.2.1) encStepIn
+      encBits fun p => wBudget p.1 := by simpa only [computableInSpace_iff_computableTidilyInSpace]
+    using hT
   obtain ⟨T, hT'⟩ := tidy_machine hN hC hT
   have hc (w : List Bool) : S.machine.toStepMachine.Computes (encFramed encBits w)
       (encOut (g w)) := by

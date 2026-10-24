@@ -23,21 +23,25 @@ namespace ComplexityTests.CookLevinPolyTime
 open Turing.MultiTapeTM Cslib.Complexity Cslib.Complexity.CookLevin
 
 example {k : ℕ} {State : Type} [Fintype State] (tm : Turing.MultiTapeTM k Bool State) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun T => (initClauses tm T ++ sitClauses T ++ acceptClauses T).relabel Var.index)
-      encUnary encCNF := by
-  fun_prop
+      encUnary encCNF :=
+  computableInPolyTime_relabel.comp <| .of_tidy <| by
+    have hinit := (computableInPolyTime_initClauses tm).tidy
+    have hsit := (computableInPolyTime_sitClauses (k := k) (State := State)).tidy
+    have haccept := (computableInPolyTime_acceptClauses (k := k) (State := State)).tidy
+    fun_prop
 
 -- Fixed tape/symbol traversals combine with input-dependent windows and nested lists.
 example {k : ℕ} {State : Type} [Fintype State] :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : ℕ × ℕ => Feature.groups (k := k) (State := State) p.1 p.2)
       (encPair encUnary encUnary) (encList (encList encFeature)) := by
   fun_prop
 
 -- Exactly-one constraints compose with the existing binary variable numbering.
 example {k : ℕ} {State : Type} [Fintype State] [DecidableEq State] :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : ((List Bool × ℕ) × ℕ) × ℕ =>
         (oneHotClauses (k := k) (State := State) p.1.1.1 p.1.1.2 p.1.2 p.2).relabel Var.index)
       (encPair (encPair (encPair encBits encUnary) encUnary) encUnary) encCNF := by
@@ -47,7 +51,7 @@ example {k : ℕ} {State : Type} [Fintype State] [DecidableEq State] :
 example {k : ℕ} {State α : Type} [Fintype State]
     (tm : Turing.MultiTapeTM k Bool State) (enc : α ↪ List Bool)
     (p : Polynomial ℕ) (c d : ℕ) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun a => (initClauses tm (parameters p c d enc a).2.2).relabel Var.index)
       enc encCNF := by
   fun_prop
@@ -55,35 +59,34 @@ example {k : ℕ} {State α : Type} [Fintype State]
 private def finish : Turing.MultiTapeTM 0 Bool Unit :=
   ofTr () fun _ _ _ => ⟨0, Fin.elim0, some true, none⟩
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun T => (initClauses finish T).relabel Var.index) encUnary encCNF := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun n => (oneHotClauses (k := 0) (State := Unit) [] n n n).relabel Var.index)
     encUnary encCNF := by
   fun_prop [oneHotClauses]
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun j => (Var.cert (k := 0) (State := Empty) j).index) encUnary encNat := by
   fun_prop
 
 -- The complete reduction has a concrete machine witness, not a supplied efficiency hypothesis.
-example : ComputableTidilyInPolyTime (reduce finish (Polynomial.X + 1) 3 2 encBits)
+example : ComputableInPolyTime (reduce finish (Polynomial.X + 1) 3 2 encBits)
     encBits encCNF := by fun_prop
 
 -- A computed tableau and the same computation through a tuple both emit binary SAT instances.
-example : ComputableTidilyInPolyTime (fun word : List Bool =>
+example : ComputableInPolyTime (fun word : List Bool =>
     (tableau finish word (word.length + 1) (word.length ^ 2 + 2)).relabel Var.index)
     encBits encCNF := by polytime
 
 -- The same functional computation also accepts the generic list encoding of its input.
-example : ComputableTidilyInPolyTime (fun word : List Bool =>
+example : ComputableInPolyTime (fun word : List Bool =>
     (tableau finish word (word.length + 1) (word.length ^ 2 + 2)).relabel Var.index)
     (encList encBool) encCNF := by polytime
 
-example : ComputableTidilyInPolyTime (fun q : List Bool × ℕ × ℕ =>
+example : ComputableInPolyTime (fun q : List Bool × ℕ × ℕ =>
     (tableau finish q.1 q.2.1 q.2.2).relabel Var.index)
     (encPair encBits (encPair encUnary encUnary)) encCNF := by fun_prop
 

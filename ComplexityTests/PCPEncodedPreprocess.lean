@@ -9,6 +9,7 @@ import Complexity.Computability.PCP.Encoded.Constraints
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.Family
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Executable degree reduction and preprocessing, exact interpretations, arithmetic expansion,
 and fixed-alphabet normalization that closes the descriptor type across repeated rounds. -/
@@ -77,7 +78,8 @@ example : reduced.WellFormed :=
 
 example : ComputableTidilyInPolyTime (Graph.degreeReduce false rotateReflection [()])
     (Graph.encoding encBool) (Graph.encoding (encOption (encPair encBool encBool))) :=
-  Graph.isPolyTime_degreeReduce false [()] rotateReflection isPolyTime_rotateReflection
+  (Graph.isPolyTime_degreeReduce false [()] rotateReflection
+    (.of_tidy isPolyTime_rotateReflection)).tidy
 
 example : (reduced.toGraph (Graph.degreeReduceEval constraintEval)).unsatVal =
     ((exampleGraph.toGraph constraintEval).degreeReduce
@@ -119,18 +121,22 @@ example : preprocessed.WellFormed :=
 
 example : ComputableTidilyInPolyTime (Graph.preprocess false true rotateReflection [()])
     (Graph.encoding encBool) (Graph.encoding (encOption (encPair encBool encBool))) :=
-  Graph.isPolyTime_preprocess false true rotateReflection [()] isPolyTime_rotateReflection
+  (Graph.isPolyTime_preprocess false true rotateReflection [()]
+    (.of_tidy isPolyTime_rotateReflection)).tidy
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The same ordinary functional spelling uses the shared compositional API.
-example : ComputableTidilyInPolyTime (fun g : Graph Bool =>
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example : ComputableInPolyTime (fun g : Graph Bool =>
       let reduced := g.degreeReduce false rotateReflection [()]
       (reduced.addTrivial (some (false, true))
         (Graph.rotationEdges rotateReflection [()] reduced.vertices)).addLoops
           (some (false, true)))
     (Graph.encoding encBool) (Graph.encoding (encOption (encPair encBool encBool))) := by
   have hrotate := isPolyTime_rotateReflection
-  have hdegree := Graph.isPolyTime_degreeReduce (enc := encBool) false [()]
-    rotateReflection hrotate
+  have hdegree := (Graph.isPolyTime_degreeReduce (enc := encBool) false [()]
+    rotateReflection (.of_tidy hrotate)).tidy
   fun_prop
 
 -- The exact-numbering contract is inhabited; reflection has no positive expansion claim.
@@ -219,8 +225,8 @@ private theorem mem_arithmeticLabels (d : AffinePlaneFamilyLabel (ZMod 257) 257)
 example : ComputableTidilyInPolyTime
     (Graph.preprocess false true arithmeticExpanderRotate arithmeticLabels)
     (Graph.encoding encBool) (Graph.encoding (encOption (encPair encBool encBool))) :=
-  Graph.isPolyTime_preprocess false true arithmeticExpanderRotate arithmeticLabels
-    (polytime_arithmeticExpanderRotate (encFinite _))
+  (Graph.isPolyTime_preprocess false true arithmeticExpanderRotate arithmeticLabels
+    (.of_tidy (polytime_arithmeticExpanderRotate (encFinite _)))).tidy
 
 noncomputable example (g : Graph Bool) (eval : Bool → Bool → Bool → Bool) :
     (g.toGraph eval).PreprocessExpanders (AffinePlaneFamilyLabel (ZMod 257) 257)
@@ -261,12 +267,13 @@ private def tablePreprocess (g : Graph (Bool → Bool → Bool)) : Graph (Bool �
 
 private theorem isPolyTime_tablePreprocess : ComputableTidilyInPolyTime tablePreprocess
     (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool))) := by
-  have heval := Graph.isPolyTime_constraintTableEval encBool
-  have hdegreeEval := Graph.isPolyTime_degreeReduceEval
-    (eval := fun table : Bool → Bool → Bool => table) heval
-  have hpre := Graph.isPolyTime_preprocess (enc := encPi (encPi encBool))
-    (fun (_ _ : Bool) => false) (fun _ _ => true) rotateReflection [()] isPolyTime_rotateReflection
-  exact (Graph.isPolyTime_tabulateConstraints hdegreeEval).comp hpre
+  have heval := (Graph.isPolyTime_constraintTableEval encBool).tidy
+  have hdegreeEval := (Graph.isPolyTime_degreeReduceEval
+    (eval := fun table : Bool → Bool → Bool => table) (.of_tidy heval)).tidy
+  have hpre := (Graph.isPolyTime_preprocess (enc := encPi (encPi encBool))
+    (fun (_ _ : Bool) => false) (fun _ _ => true) rotateReflection [()]
+      (.of_tidy isPolyTime_rotateReflection)).tidy
+  exact (Graph.isPolyTime_tabulateConstraints (.of_tidy hdegreeEval)).tidy.comp hpre
 
 example : ComputableTidilyInPolyTime (fun g => tablePreprocess (tablePreprocess g))
     (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool))) := by

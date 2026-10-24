@@ -147,8 +147,9 @@ theorem exists_mem_PP_mem_PWithOracle_image (hL : L ∈ PWithPPOracle enc) :
 theorem setOf_le_mem_PP {f : α → ℕ} (hf : f ∈ SharpP enc) :
     {x : α × ℕ | x.2 ≤ f x.1} ∈ PP (encPair enc encNat) := by
   refine mem_PP_iff_exists_GapP.2 ⟨fun x => ((f x.1 + 1 : ℕ) : ℤ) - (x.2 : ℕ),
-    ⟨_, SharpP.add_one_mem (SharpP.comp_mem hf (ComputableTidilyInPolyTime.fst enc encNat)), _,
-      mem_SharpP_of_polyTime (ComputableTidilyInPolyTime.snd enc encNat), fun _ => rfl⟩,
+    ⟨_, SharpP.add_one_mem
+      (SharpP.comp_mem hf (.of_tidy (ComputableTidilyInPolyTime.fst enc encNat))), _,
+      mem_SharpP_of_polyTime (.of_tidy (ComputableTidilyInPolyTime.snd enc encNat)), fun _ => rfl⟩,
     fun x => ?_⟩
   simp only [Set.mem_ofPred_eq, sub_pos, Nat.cast_lt]
   omega
@@ -247,10 +248,12 @@ theorem interpret_id_search {F N : ℕ} {A : Set (List Bool)} {u : List Bool}
 one request and reading one reply bit, on states of a binary number below `2 ^ N` and a unary
 counter. -/
 theorem isOraclePPTOn_search {input : α ↪ List Bool} {u : α → List Bool} {N : α → ℕ}
-    (hu : ComputableTidilyInPolyTime u input encBits)
-    (hN : ComputableTidilyInPolyTime N input encUnary) :
+    (hu : ComputableInPolyTime u input encBits)
+    (hN : ComputableInPolyTime N input encUnary) :
     IsOraclePPTOn input encNat
       (fun a => OracleComp.interpret ProbOracleComp.query (search (u a) (N a))) := by
+  have hu := hu.tidy
+  have hN := hN.tidy
   simp only [search, OracleComp.interpret_map, OracleComp.interpret_iterate]
   have hinit : ComputableTidilyInPolyTime (fun a => ((0 : ℕ), N a)) input
       (encPair encNat encUnary) :=
@@ -375,7 +378,7 @@ theorem PWithSharpPOracle_subset_PWithPPOracle : PWithSharpPOracle enc ⊆ PWith
         OracleComp.interpret ProbOracleComp.query (bitQuery r ((), w))) := by
       simp only [bitQuery, OracleComp.interpret_map]
       exact (isOraclePPTOn_search (u := unframe) (N := fun w => r.eval w.length + 1)
-        (by fun_prop) (by fun_prop)).map_with hlast
+        (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))).map_with hlast
     have hhandler : IsOraclePPTOn
         (encPair enc (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit)))
         (encPair encBits (encFinEnum Unit))

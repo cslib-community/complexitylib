@@ -62,15 +62,15 @@ def amplify (eval : C → α → α → Bool) (fallback : C)
 theorem isPolyTime_amplify {Input : Type} {input : Input ↪ List Bool}
     {enc : C ↪ List Bool} {alphabet : α ↪ List Bool} {labelEncoding : D ↪ List Bool}
     {graph : Input → Graph C} {eval : C → α → α → Bool} {rotate : ℕ × (ℕ × D) → ℕ × D}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc))
-    (hrotate : ComputableTidilyInPolyTime rotate
+    (hgraph : ComputableInPolyTime graph input (encoding enc))
+    (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding))
-    (heval : ComputableTidilyInPolyTime (fun p : C × (α × α) => eval p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × (α × α) => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool)
     (fallback : C) (T q : ℕ) [NeZero q] (walks : List (PowerLabel D T q))
     (number : SelectedComposeSlot (PowerAlphabet D α T) ≃ Fin width)
     (coins : List (Fin 5 × Rand (PowerAlphabet D α T))) (queries : List (Fin 6)) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun x => (graph x).amplify eval fallback rotate T q walks number coins queries)
       input (encoding (encPi (encPi encBool))) := by
   unfold amplify

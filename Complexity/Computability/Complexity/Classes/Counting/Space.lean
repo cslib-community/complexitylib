@@ -14,6 +14,7 @@ public import Complexity.Computability.Complexity.Classes.Space.Closure
 public import Complexity.Computability.Complexity.Classes.Oracle.Space
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Counting classes within polynomial space
@@ -60,8 +61,8 @@ theorem PP_subset_PSPACE : PP enc ⊆ PSPACE enc := by
     ComputableTidilyInPolyTime.binary_lt).comp
       ((ComputableTidilyInPolySpace.of_polyTime hpow).prod
         ((ComputableTidilyInPolySpace.of_polyTime hdouble).comp
-          (SharpP.computableTidilyInPolySpace hf)))
-  exact mem_PSPACE_of_computableTidilyInPolySpace htest fun a => by simpa using hA a
+          (SharpP.computableInPolySpace hf).tidy))
+  exact mem_PSPACE_of_computableInPolySpace (.of_tidy htest) fun a => by simpa using hA a
 
 /-- Testing whether a fixed modulus divides a #P count is in polynomial space. A quotient has
 at most one more bit than the verifier's certificate length, even for moduli zero and one. -/
@@ -71,7 +72,8 @@ theorem coModP_subset_PSPACE (k : ℕ) : coModP k enc ⊆ PSPACE enc := by
   obtain ⟨p, hp⟩ := SharpP.exists_le_two_pow hf
   have hleft : ComputableTidilyInPolySpace (fun x : α × List Bool => f x.1)
       (encPair enc encBits) encNat :=
-    (SharpP.computableTidilyInPolySpace hf).comp (.of_polyTime (ComputableTidilyInPolyTime.fst _ _))
+    (SharpP.computableInPolySpace hf).tidy.comp
+      (.of_polyTime (ComputableTidilyInPolyTime.fst _ _))
   have hright : ComputableTidilyInPolyTime (fun x : α × List Bool => k * ofBits x.2)
       (encPair enc encBits) encNat := by
     have hread := ComputableTidilyInPolyTime.bitsToNat
@@ -85,12 +87,12 @@ theorem coModP_subset_PSPACE (k : ℕ) : coModP k enc ⊆ PSPACE enc := by
         (hle.comp ((ComputableTidilyInPolySpace.of_polyTime hright).prod hleft)))
   have hB : {x : α × List Bool | f x.1 = k * ofBits x.2} ∈
       PSPACE (encPair enc encBits) :=
-    mem_PSPACE_of_computableTidilyInPolySpace htest fun x => by
+    mem_PSPACE_of_computableInPolySpace (.of_tidy htest) fun x => by
       simp only [Set.mem_ofPred_eq, Bool.and_eq_true, decide_eq_true_eq]
       exact le_antisymm_iff
   have hbound : ComputableTidilyInPolyTime (fun a => p.eval (enc a).length + 1)
       enc encUnary := by fun_prop
-  have h := setOf_exists_mem_PSPACE hB hbound
+  have h := setOf_exists_mem_PSPACE hB (.of_tidy hbound)
   convert h using 1
   ext a
   rw [hA a]

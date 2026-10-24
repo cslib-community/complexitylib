@@ -27,7 +27,7 @@ besides those of its formula of level `0`; it is computed in polynomial time in
 `Cslib.Computability.Complexity.Classes.Space.TQBF.PolyTime`.
 
 Its formula of level `0` must express one step or none between the words held by two blocks. The
-step test of codes is polynomial-time (`Cslib.Complexity.TQBF.computableTidilyInPolyTime_edgeTest`),
+step test of codes is polynomial-time (`Cslib.Complexity.TQBF.computableInPolyTime_edgeTest`),
 so some tidy machine computes, on `encPair enc encBits (a, x ++ y)`, the Boolean
 `Cslib.Reachability.reach e w 0 x y` for the edge test `e` of the codes, within a polynomial time
 bound `T`. Its Cook–Levin tableau (`Cslib.Complexity.CookLevin.tableau`) on the inputs

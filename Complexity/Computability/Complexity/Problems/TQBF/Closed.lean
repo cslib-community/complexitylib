@@ -23,7 +23,7 @@ connective joins the two lists on top of the stack, and a quantifier removes its
 list on top. On the tokens of a formula the scan ends with the list of its free variables
 (`Cslib.Logic.PL.QBF.foldl_freeVarStep_tokens`), so a formula is closed exactly when that list is
 empty (`Cslib.Logic.PL.QBF.isClosed_tokens`), and closedness is decided in polynomial time
-(`Cslib.Complexity.TQBF.computableTidilyInPolyTime_decide_closed`).
+(`Cslib.Complexity.TQBF.computableInPolyTime_decide_closed`).
 
 ## Main definitions
 
@@ -34,7 +34,7 @@ empty (`Cslib.Logic.PL.QBF.isClosed_tokens`), and closedness is decided in polyn
 
 * `Cslib.Logic.PL.QBF.mem_freeVarList`: the list has the free variables as elements.
 * `Cslib.Logic.PL.QBF.isClosed_tokens`: the scan decides closedness.
-* `Cslib.Complexity.TQBF.computableTidilyInPolyTime_decide_closed`: in polynomial time.
+* `Cslib.Complexity.TQBF.computableInPolyTime_decide_closed`: in polynomial time.
 -/
 
 @[expose] public section
@@ -201,8 +201,10 @@ private theorem length_freeVarStep_le (stack : List (List ℕ)) (t : QBF.Kind ×
       omega
 
 /-- **Closedness is decided in polynomial time.** -/
-theorem computableTidilyInPolyTime_decide_closed :
-    ComputableTidilyInPolyTime (fun φ : QBF ℕ => decide φ.Closed) encQBF encBool := by
+theorem computableInPolyTime_decide_closed :
+    Turing.MultiTapeTM.ComputableInPolyTime (fun φ : QBF ℕ => decide φ.Closed) encQBF encBool := by
+  have htokens := computableInPolyTime_tokens.tidy
+  refine .of_tidy ?_
   simp only [← QBF.isClosed_tokens]
   unfold QBF.isClosed
   have hfold : ComputableTidilyInPolyTime (fun φ : QBF ℕ =>

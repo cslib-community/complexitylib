@@ -53,8 +53,8 @@ vertex that no arc enters. The top of the first diamond is such a vertex
 * `Cslib.Complexity.SAT.toDirHamPath_eq`: the graph as a diamond graph.
 * `Cslib.Complexity.SAT.toDirHamPath_mem_iff`: `toDirHamPath φ ∈ DirHamPath ↔ φ ∈ SAT`.
 * `Cslib.Complexity.SAT.toDirHamCycle_mem_iff`: `toDirHamCycle φ ∈ DirHamCycle ↔ φ ∈ SAT`.
-* `Cslib.Complexity.SAT.computableTidilyInPolyTime_toDirHamPath`,
-  `Cslib.Complexity.SAT.computableTidilyInPolyTime_toDirHamCycle`: the reductions are
+* `Cslib.Complexity.SAT.computableInPolyTime_toDirHamPath`,
+  `Cslib.Complexity.SAT.computableInPolyTime_toDirHamCycle`: the reductions are
   polynomial-time.
 * `Cslib.Complexity.polyTimeReducible_SAT_DirHamPath`,
   `Cslib.Complexity.polyTimeReducible_ThreeSAT_DirHamPath`, `Cslib.Complexity.DirHamPath_npHard`,
@@ -184,24 +184,25 @@ namespace SAT
 /-- The detours of the diamond graph are computable in polynomial time. -/
 private theorem computableTidilyInPolyTime_diamondDetours :
     ComputableTidilyInPolyTime diamondDetours encCNF (encList Diamond.encDetour) := by
-  have hvars := computableTidilyInPolyTime_vars
+  have hvars := computableInPolyTime_vars.tidy
   unfold diamondDetours
   fun_prop
 
 /-- The diamond graph is computable in polynomial time: node labels are computed in unary from
 diamond, row, clause and first-occurrence indices, then converted to binary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_diamondGraph :
-    ComputableTidilyInPolyTime diamondGraph encCNF encGraph :=
-  Diamond.computableTidilyInPolyTime_graph
-    ((length_list encNat).comp computableTidilyInPolyTime_vars)
-    ((length_list _).comp (fst _ _)) (length_list _) computableTidilyInPolyTime_diamondDetours
+theorem computableInPolyTime_diamondGraph :
+    ComputableInPolyTime diamondGraph encCNF encGraph :=
+  (Diamond.computableInPolyTime_graph
+    (.of_tidy ((length_list encNat).comp computableInPolyTime_vars.tidy))
+    (.of_tidy ((length_list _).comp (fst _ _))) (.of_tidy (length_list _))
+      (.of_tidy computableTidilyInPolyTime_diamondDetours))
 
 /-- The reduction `toDirHamPath` is computable in polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toDirHamPath :
-    ComputableTidilyInPolyTime toDirHamPath encCNF (encPair encGraph (encPair encNat encNat)) := by
-  have hvars := computableTidilyInPolyTime_vars
+theorem computableInPolyTime_toDirHamPath :
+    ComputableInPolyTime toDirHamPath encCNF (encPair encGraph (encPair encNat encNat)) := by
+  have hvars := computableInPolyTime_vars
   unfold toDirHamPath
   fun_prop
 
@@ -213,18 +214,19 @@ theorem toDirHamCycle_mem_iff (φ : CNF ℕ) : toDirHamCycle φ ∈ DirHamCycle 
 
 /-- The closed diamond graph is computable in polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toDirHamCycle :
-    ComputableTidilyInPolyTime toDirHamCycle encCNF encGraph :=
-  Diamond.computableTidilyInPolyTime_cycleGraph
-    ((length_list encNat).comp computableTidilyInPolyTime_vars)
-    ((length_list _).comp (fst _ _)) (length_list _) computableTidilyInPolyTime_diamondDetours
+theorem computableInPolyTime_toDirHamCycle :
+    ComputableInPolyTime toDirHamCycle encCNF encGraph :=
+  (Diamond.computableInPolyTime_cycleGraph
+    (.of_tidy ((length_list encNat).comp computableInPolyTime_vars.tidy))
+    (.of_tidy ((length_list _).comp (fst _ _))) (.of_tidy (length_list _))
+      (.of_tidy computableTidilyInPolyTime_diamondDetours))
 
 end SAT
 
 /-- `SAT` reduces to `DirHamPath` in polynomial time via `SAT.toDirHamPath`. -/
 theorem polyTimeReducible_SAT_DirHamPath :
     PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT DirHamPath :=
-  ⟨SAT.toDirHamPath, .of_tidy SAT.computableTidilyInPolyTime_toDirHamPath,
+  ⟨SAT.toDirHamPath, SAT.computableInPolyTime_toDirHamPath,
     fun φ => (SAT.toDirHamPath_mem_iff φ).symm⟩
 
 /-- `ThreeSAT` reduces to `DirHamPath` in polynomial time: a formula with a clause of more than
@@ -250,7 +252,7 @@ theorem DirHamPath_npHard : NPHard (encPair encGraph (encPair encNat encNat)) Di
 
 /-- `SAT` reduces to `DirHamCycle` in polynomial time via `SAT.toDirHamCycle`. -/
 theorem polyTimeReducible_SAT_DirHamCycle : PolyTimeReducible encCNF encGraph SAT DirHamCycle :=
-  ⟨SAT.toDirHamCycle, .of_tidy SAT.computableTidilyInPolyTime_toDirHamCycle,
+  ⟨SAT.toDirHamCycle, SAT.computableInPolyTime_toDirHamCycle,
     fun φ => (SAT.toDirHamCycle_mem_iff φ).symm⟩
 
 /-- `DirHamCycle` is `NP`-hard. -/

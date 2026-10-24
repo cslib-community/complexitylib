@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Complexity.Classes.Inclusions
 import Complexity.Computability.Complexity.Classes.Ladner
 import Complexity.Computability.Complexity.Classes.ZPP
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-! The parametric time classes and their polynomial unions, exponential time, `ZPP`, and the
 inclusions between the standard classes, with concrete members witnessing that the classes are
@@ -61,7 +62,7 @@ example : {x | diagonal x = true} ∈ NEXP encBits ∧ {x | diagonal x = true} �
 /-- The diagonal problem is decided within time `O(2 ^ (4 n))`, by its tidy machine. -/
 theorem setOf_diagonal_mem_DTIME :
     {x | diagonal x = true} ∈ DTIME encBits fun n => 2 ^ (4 * n) :=
-  setOf_mem_DTIME_of_computableTidilyInO computableTidilyInO_diagonal fun _ => le_rfl
+  setOf_mem_DTIME_of_computableInO computableInO_diagonal fun _ => le_rfl
 
 /-- A deterministic machine is a nondeterministic one: the diagonal problem, outside `P`, is in
 `NTIME (2 ^ (4 n))`. -/
@@ -138,7 +139,7 @@ example {α : Type} (enc : α ↪ List Bool) : coNP enc ⊆ PSPACE enc := fun A 
 length in a `PSPACE` problem. -/
 example {B : Set (List Bool × List Bool)} (hB : B ∈ PSPACE (encPair encBits encBits)) :
     {x | ∃ w : List Bool, w.length = x.length ∧ (x, w) ∈ B} ∈ PSPACE encBits :=
-  setOf_exists_mem_PSPACE hB (ComputableTidilyInPolyTime.encoding_length encBits)
+  setOf_exists_mem_PSPACE hB (.of_tidy (ComputableTidilyInPolyTime.encoding_length encBits))
 
 /-! ### Axioms -/
 

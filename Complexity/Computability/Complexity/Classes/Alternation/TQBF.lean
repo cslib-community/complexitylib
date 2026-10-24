@@ -60,7 +60,7 @@ in particular every problem in `AP` (`Cslib.Complexity.AP_subset_PSPACE`): the i
 * `Cslib.Complexity.TQBF.eval_gameFormula`, `Cslib.Complexity.TQBF.closed_gameFormula`: the
   formula of a game.
 * `Cslib.Complexity.TQBF.gameReduce_mem_TQBF_iff`,
-  `Cslib.Complexity.TQBF.computableTidilyInPolyTime_gameReduce`: the reduction is correct and
+  `Cslib.Complexity.TQBF.computableInPolyTime_gameReduce`: the reduction is correct and
   polynomial-time.
 * `Cslib.Complexity.IsGameVerifier.mem_PSPACE`: games of polynomially many moves with a
   polynomial-time winning condition are decided in polynomial space.
@@ -351,34 +351,46 @@ variable {γ : Type} {encIn : γ ↪ List Bool}
 
 /-- The tokens of a round, from the width and the round in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_roundTokens {w i : γ → ℕ}
-    (hw : ComputableTidilyInPolyTime w encIn encUnary)
-    (hi : ComputableTidilyInPolyTime i encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => roundTokens (w x) (i x)) encIn (encList encToken) := by
+theorem computableInPolyTime_roundTokens {w i : γ → ℕ}
+    (hw : Turing.MultiTapeTM.ComputableInPolyTime w encIn encUnary)
+    (hi : Turing.MultiTapeTM.ComputableInPolyTime i encIn encUnary) :
+    Turing.MultiTapeTM.ComputableInPolyTime (fun x => roundTokens (w x) (i x)) encIn
+      (encList encToken) := by
   unfold roundTokens
   fun_prop
 
 /-- **The formula of a game is polynomial-time** in the tableau and the number of rounds in
 unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_gameFormula {k : ℕ} {State : Type} [Fintype State]
+theorem computableInPolyTime_gameFormula {k : ℕ} {State : Type} [Fintype State]
+    {tab : γ → CNF (CookLevin.Var k State)} {w : γ → ℕ}
+    (htab : Turing.MultiTapeTM.ComputableInPolyTime tab encIn
+      (encList (encList (encPair CookLevin.encVar encBool))))
+    (hw : Turing.MultiTapeTM.ComputableInPolyTime w encIn encUnary) :
+    Turing.MultiTapeTM.ComputableInPolyTime (fun x => gameFormula (tab x) (w x)) encIn encQBF :=
+  computableInPolyTime_of_tokens
+    (l := fun x => (List.range (w x)).flatMap (roundTokens (w x)) ++
+      (baseFormula (tab x) (w x)).tokens) (by fun_prop) fun _ => tokens_gameFormula ..
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_gameFormula
+    {k : ℕ} {State : Type} [Fintype State]
     {tab : γ → CNF (CookLevin.Var k State)} {w : γ → ℕ}
     (htab : ComputableTidilyInPolyTime tab encIn
       (encList (encList (encPair CookLevin.encVar encBool))))
     (hw : ComputableTidilyInPolyTime w encIn encUnary) :
     ComputableTidilyInPolyTime (fun x => gameFormula (tab x) (w x)) encIn encQBF :=
-  computableTidilyInPolyTime_of_tokens
-    (l := fun x => (List.range (w x)).flatMap (roundTokens (w x)) ++
-      (baseFormula (tab x) (w x)).tokens) (by fun_prop) fun _ => tokens_gameFormula ..
+  (ComputableInPolyTime.tidy (computableInPolyTime_gameFormula (.of_tidy htab) (.of_tidy hw)))
 
 /-- **The reduction of a game is polynomial-time.** -/
-theorem computableTidilyInPolyTime_gameReduce {kV : ℕ} {StateV : Type} [Fintype StateV]
+theorem computableInPolyTime_gameReduce {kV : ℕ} {StateV : Type} [Fintype StateV]
     [DecidableEq StateV] (tmV : MultiTapeTM kV Bool StateV) (cV dV : ℕ) :
-    ComputableTidilyInPolyTime (gameReduce enc p tmV cV dV) enc encQBF := by
-  have htab := CookLevin.computableTidilyInPolyTime_tableau tmV
-  have hframe := bitsFrame enc
-  have hp : ComputableTidilyInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
-    (unary_eval p).comp (encoding_length enc)
+    Turing.MultiTapeTM.ComputableInPolyTime (gameReduce enc p tmV cV dV) enc encQBF := by
+  have htab := CookLevin.computableInPolyTime_tableau tmV
+  have hframe := Turing.MultiTapeTM.ComputableInPolyTime.bitsFrame enc
+  have hp : Turing.MultiTapeTM.ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
+    (Turing.MultiTapeTM.ComputableInPolyTime.unary_eval p).comp
+      (Turing.MultiTapeTM.ComputableInPolyTime.encoding_length enc)
   unfold gameReduce
   fun_prop
 
@@ -404,15 +416,16 @@ private theorem IsGameVerifier.polyTimeReducible
   have := Fintype.ofFinite StateV
   classical
   exact ⟨TQBF.gameReduce enc p tmV cV dV,
-    .of_tidy (TQBF.computableTidilyInPolyTime_gameReduce tmV cV dV),
+    (TQBF.computableInPolyTime_gameReduce tmV cV dV),
     fun a => (h a).trans (TQBF.gameReduce_mem_TQBF_iff (htmV.mono htV fun _ => le_rfl) a).symm⟩
 
 /-- **Games of polynomially many moves are decided in polynomial space**: a problem with a
 polynomial-time game verifier is in `PSPACE`. -/
 theorem IsGameVerifier.mem_PSPACE
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool)
-    (h : IsGameVerifier enc p V A) : A ∈ PSPACE enc :=
-  (h.polyTimeReducible hV).mem_PSPACE TQBF_mem_PSPACE
+    (hV : Turing.MultiTapeTM.ComputableInPolyTime V (encPair enc encBits) encBool)
+    (h : IsGameVerifier enc p V A) : A ∈ PSPACE enc := by
+  have hV := hV.tidy
+  exact (h.polyTimeReducible hV).mem_PSPACE TQBF_mem_PSPACE
 
 /-- **`AP ⊆ PSPACE`** [Chandra, Kozen and Stockmeyer][ChandraKozenStockmeyer1981]
 [Sipser, Section 10.3][Sipser2013]: a problem decided by an alternating machine within polynomial

@@ -40,7 +40,6 @@ The probability is written as a count over the random strings, which are functio
 
 ## Main results
 
-* `Cslib.Complexity.mem_BPP_iff_tidy`: membership through a tidy verifier.
 * `Cslib.Complexity.DecidesWithBoundedError.compl`: negating the verifier decides the complement
   with bounded error.
 * `Cslib.Complexity.compl_mem_BPP`, `Cslib.Complexity.BPP_eq_preimage_compl_BPP`: `BPP` is closed
@@ -86,13 +85,6 @@ theorem mem_BPP {enc : α ↪ List Bool} {A : Set α} :
       ComputableInPolyTime V (encPair enc encBits) encBool ∧
         DecidesWithBoundedError enc p V A :=
   Iff.rfl
-
-/-- `Cslib.Complexity.mem_BPP` with a tidy verifier, for proofs that compose machines. -/
-theorem mem_BPP_iff_tidy {enc : α ↪ List Bool} {A : Set α} :
-    A ∈ BPP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-        DecidesWithBoundedError enc p V A := by
-  simp only [mem_BPP, computableInPolyTime_iff_computableTidilyInPolyTime]
 
 namespace DecidesWithBoundedError
 

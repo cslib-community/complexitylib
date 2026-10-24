@@ -60,7 +60,7 @@ by both of its literal numbers. Formulas with a clause of more than three litera
 * `Cslib.Complexity.ThreeSAT.toSubsetSum_mem_iff`: correctness of Sipser's reduction.
 * `Cslib.Complexity.ThreeSAT.lt_of_mem_digitNumbers`, `Cslib.Complexity.ThreeSAT.digitTarget_lt`:
   the numbers have `O(n + m)` digits.
-* `Cslib.Complexity.ThreeSAT.computableTidilyInPolyTime_toSubsetSum`: the reduction is
+* `Cslib.Complexity.ThreeSAT.computableInPolyTime_toSubsetSum`: the reduction is
   polynomial-time.
 * `Cslib.Complexity.polyTimeReducible_ThreeSAT_SubsetSum`, `Cslib.Complexity.SubsetSum_npHard`,
   `Cslib.Complexity.SubsetSum_npComplete`: `SubsetSum` is `NP`-complete.
@@ -137,15 +137,15 @@ theorem isVerifier :
 /-- The `SubsetSum` verifier is polynomial-time: it selects the masked numbers, adds them in
 binary and compares the sum with the target. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier
       (encPair (encPair (encList encNat) encNat) encBits) encBool := by
   unfold verifier
   fun_prop
 
 /-- `SubsetSum` belongs to `NP`. -/
 theorem mem_NP : SubsetSum ∈ NP (encPair (encList encNat) encNat) :=
-  ⟨Polynomial.X, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end SubsetSum
 
@@ -572,10 +572,11 @@ attribute [local fun_prop] eight_pow ComputableInPolyTime.tidy
 
 /-- Testing whether a clause contains a literal is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_covers :
-    ComputableTidilyInPolyTime
+theorem computableInPolyTime_covers :
+    ComputableInPolyTime
       (fun p : ((CNF ℕ × ℕ) × Bool) × ℕ => covers p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair encCNF encUnary) encBool) encUnary) encBool := by
+  refine .of_tidy ?_
   unfold covers encCNF
   apply anyWithInput (encA := encPair encNat encBool)
   · exact (listGetD (encA := encList (encPair encNat encBool)) []).comp
@@ -585,34 +586,36 @@ theorem computableTidilyInPolyTime_covers :
 
 /-- Listing the digit positions of a literal number is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_literalDigits :
-    ComputableTidilyInPolyTime (fun p : (CNF ℕ × ℕ) × Bool => literalDigits p.1.1 p.1.2 p.2)
+theorem computableInPolyTime_literalDigits :
+    ComputableInPolyTime (fun p : (CNF ℕ × ℕ) × Bool => literalDigits p.1.1 p.1.2 p.2)
       (encPair (encPair encCNF encUnary) encBool) (encList encUnary) := by
   unfold literalDigits
   fun_prop
 
 /-- Composition rule for `literalDigits`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_literalDigits' {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_literalDigits' {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {i : α → ℕ} {b : α → Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hi : ComputableTidilyInPolyTime i input encUnary)
-    (hb : ComputableTidilyInPolyTime b input encBool) :
-    ComputableTidilyInPolyTime (fun a => literalDigits (φ a) (i a) (b a)) input
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hi : ComputableInPolyTime i input encUnary)
+    (hb : ComputableInPolyTime b input encBool) :
+    ComputableInPolyTime (fun a => literalDigits (φ a) (i a) (b a)) input
       (encList encUnary) :=
-  computableTidilyInPolyTime_literalDigits.comp ((hφ.prod hi).prod hb)
+  computableInPolyTime_literalDigits.comp ((hφ.prod hi).prod hb)
 
 /-- A number with digits zero and one is computed in binary from its unary digit positions. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_octal :
-    ComputableTidilyInPolyTime octal (encList encUnary) encNat := by
+theorem computableInPolyTime_octal :
+    ComputableInPolyTime octal (encList encUnary) encNat := by
   unfold octal
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The numbers of the digit construction are computed in polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_digitNumbers :
-    ComputableTidilyInPolyTime digitNumbers encCNF (encList encNat) := by
+theorem computableInPolyTime_digitNumbers :
+    ComputableInPolyTime digitNumbers encCNF (encList encNat) := by
+  refine .of_tidy ?_
   unfold digitNumbers
   apply listAppend'
   · apply flatMapWithInput (by fun_prop)
@@ -622,15 +625,15 @@ theorem computableTidilyInPolyTime_digitNumbers :
 
 /-- The target of the digit construction is computed in polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_digitTarget :
-    ComputableTidilyInPolyTime digitTarget encCNF encNat := by
+theorem computableInPolyTime_digitTarget :
+    ComputableInPolyTime digitTarget encCNF encNat := by
   unfold digitTarget
   fun_prop
 
 /-- Sipser's reduction is computable in polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toSubsetSum :
-    ComputableTidilyInPolyTime toSubsetSum encCNF (encPair (encList encNat) encNat) := by
+theorem computableInPolyTime_toSubsetSum :
+    ComputableInPolyTime toSubsetSum encCNF (encPair (encList encNat) encNat) := by
   unfold toSubsetSum encCNF
   fun_prop
 
@@ -639,7 +642,7 @@ end ThreeSAT
 /-- `ThreeSAT` reduces to `SubsetSum` in polynomial time by Sipser's digit construction. -/
 theorem polyTimeReducible_ThreeSAT_SubsetSum :
     PolyTimeReducible encCNF (encPair (encList encNat) encNat) ThreeSAT SubsetSum :=
-  ⟨ThreeSAT.toSubsetSum, .of_tidy ThreeSAT.computableTidilyInPolyTime_toSubsetSum,
+  ⟨ThreeSAT.toSubsetSum, ThreeSAT.computableInPolyTime_toSubsetSum,
     fun φ => (ThreeSAT.toSubsetSum_mem_iff φ).symm⟩
 
 /-- `SubsetSum` is `NP`-hard. -/

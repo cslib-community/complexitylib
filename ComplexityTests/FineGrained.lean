@@ -108,11 +108,13 @@ example : satExponent 3 ≤ satExponent 4 := satExponent_mono (by norm_num)
 
 /-- A trivial problem is decidable within linear time, in either form. -/
 example : DecidableInTimeO (∅ : Set (CNF ℕ)) encCNF fun φ => (encCNF φ).length :=
-  .of_computableTidilyInO (ComputableTidilyInO.const false) (by simp) fun _ => le_rfl
+  DecidableInTimeO.of_computableInO (.of_tidy (ComputableTidilyInO.const false)) (by simp) fun _ =>
+    le_rfl
 
 example : (∅ : Set (CNF ℕ)) ∈ DTIME encCNF id :=
   mem_DTIME_iff_decidableInTimeO.mpr
-    (.of_computableTidilyInO (ComputableTidilyInO.const false) (by simp) fun _ => le_rfl)
+    (DecidableInTimeO.of_computableInO (.of_tidy (ComputableTidilyInO.const false)) (by simp)
+      fun _ => le_rfl)
 
 /-- The hypotheses in terms of the exponents. -/
 example : ETH ↔ 0 < satExponent 3 := ETH_iff_satExponent_pos
@@ -141,11 +143,11 @@ info: 'Cslib.Complexity.BruteForce.search_eq_true_iff' depends on axioms:
 #print axioms Cslib.Complexity.BruteForce.search_eq_true_iff
 
 /--
-info: 'Cslib.Complexity.BruteForce.exists_computableTidilyInO_search' depends on axioms:
+info: 'Cslib.Complexity.BruteForce.exists_computableInO_search' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.BruteForce.exists_computableTidilyInO_search
+#print axioms Cslib.Complexity.BruteForce.exists_computableInO_search
 
 /--
 info: 'Cslib.Complexity.KSAT_decidableInExpTime_one' depends on axioms:
@@ -187,11 +189,11 @@ info: 'Cslib.Complexity.toOV_mem_OV_iff' depends on axioms: [propext, Classical.
 #print axioms Cslib.Complexity.toOV_mem_OV_iff
 
 /--
-info: 'Cslib.Complexity.exists_computableTidilyInO_toOV' depends on axioms:
+info: 'Cslib.Complexity.exists_computableInO_toOV' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.exists_computableTidilyInO_toOV
+#print axioms Cslib.Complexity.exists_computableInO_toOV
 
 /--
 info: 'Cslib.Complexity.DecidableInTimeO.decidableInExpTime_SAT' depends on axioms:

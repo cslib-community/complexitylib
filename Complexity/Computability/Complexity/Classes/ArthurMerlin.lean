@@ -57,8 +57,6 @@ the second level of the polynomial hierarchy in
 
 ## Main results
 
-* `Cslib.Complexity.mem_MA_iff_tidy`, `Cslib.Complexity.mem_AM_iff_tidy`: membership through a
-  tidy verifier.
 * `Cslib.Complexity.NP_subset_MA`, `Cslib.Complexity.BPP_subset_MA`.
 * `Cslib.Complexity.PolyTimeReducible.mem_MA`, `Cslib.Complexity.PolyTimeReducible.mem_AM`:
   closure under polynomial-time many-one reductions.
@@ -105,12 +103,6 @@ theorem mem_MA : A ∈ MA enc ↔ ∃ (q p : Polynomial ℕ) (V : α × List Boo
       IsMerlinArthurVerifier enc q p V A :=
   Iff.rfl
 
-/-- `Cslib.Complexity.mem_MA` with a tidy verifier, for proofs that compose machines. -/
-theorem mem_MA_iff_tidy : A ∈ MA enc ↔ ∃ (q p : Polynomial ℕ) (V : α × List Bool → Bool),
-    ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-      IsMerlinArthurVerifier enc q p V A := by
-  simp only [mem_MA, computableInPolyTime_iff_computableTidilyInPolyTime]
-
 /-! ### Arthur–Merlin -/
 
 /-- `V` is an Arthur–Merlin verifier for `A`, with random strings of length `p` and replies of
@@ -137,12 +129,6 @@ theorem mem_AM : A ∈ AM enc ↔ ∃ (p q : Polynomial ℕ) (V : α × List Boo
     ComputableInPolyTime V (encPair enc encBits) encBool ∧
       IsArthurMerlinVerifier enc p q V A :=
   Iff.rfl
-
-/-- `Cslib.Complexity.mem_AM` with a tidy verifier, for proofs that compose machines. -/
-theorem mem_AM_iff_tidy : A ∈ AM enc ↔ ∃ (p q : Polynomial ℕ) (V : α × List Bool → Bool),
-    ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-      IsArthurMerlinVerifier enc p q V A := by
-  simp only [mem_AM, computableInPolyTime_iff_computableTidilyInPolyTime]
 
 /-! ### `NP` and `BPP` -/
 

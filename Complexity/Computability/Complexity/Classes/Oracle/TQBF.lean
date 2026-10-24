@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fo
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # The words of `TQBF`
@@ -275,7 +276,8 @@ theorem isCode_iff (w : List Bool) : isCode w = true ↔ ∃ φ, encQBF φ = w :
     exact ⟨⟨φ, rfl⟩, rfl⟩
 
 /-- Whether a word encodes a formula is decidable in polynomial time. -/
-theorem isCode_pt : ComputableTidilyInPolyTime isCode encBits encBool := by
+theorem isCode_pt : Turing.MultiTapeTM.ComputableInPolyTime isCode encBits encBool := by
+  refine .of_tidy ?_
   obtain ⟨d, e, hD⟩ := tokensDecoder.computable
   have hD := hD.computableTidilyInPolyTime
   have hre : ComputableTidilyInPolyTime (fun w => encList encToken (tokensDecoder.decode w))
@@ -299,9 +301,9 @@ private theorem encQBF_decodeQBF (w : List Bool) :
   · rfl
 
 /-- `decodeQBF` is polynomial-time. -/
-theorem decodeQBF_pt : ComputableTidilyInPolyTime decodeQBF encBits encQBF :=
-  (ComputableTidilyInPolyTime.ite' isCode_pt ComputableTidilyInPolyTime.id'
-    (ComputableTidilyInPolyTime.const (encQBF .bot))).of_enc_eq fun w => encQBF_decodeQBF w
+theorem decodeQBF_pt : Turing.MultiTapeTM.ComputableInPolyTime decodeQBF encBits encQBF :=
+  .of_tidy ((ComputableTidilyInPolyTime.ite' isCode_pt.tidy ComputableTidilyInPolyTime.id'
+    (ComputableTidilyInPolyTime.const (encQBF .bot))).of_enc_eq fun w => encQBF_decodeQBF w)
 
 private theorem decodeQBF_encQBF (φ : QBF ℕ) : decodeQBF (encQBF φ) = φ :=
   encQBF.injective (by simp [encQBF_decodeQBF, (isCode_iff _).mpr ⟨φ, rfl⟩])
@@ -327,11 +329,11 @@ theorem mem_image_TQBF_iff (w : List Bool) :
 /-- **The words encoding true closed formulas are decided within polynomial space**: a word is
 tested for encoding a formula in polynomial time, and then evaluated. -/
 theorem image_TQBF_mem_PSPACE : encQBF '' TQBF ∈ PSPACE encBits := by
-  obtain ⟨e, he⟩ := exists_computableTidilyInO_evaluate
-  obtain ⟨dc, _, hc⟩ := isCode_pt.exists_degree
-  obtain ⟨dd, _, hd⟩ := decodeQBF_pt.exists_degree
-  have h := hc.inO.ite (he.comp hd.inO) (ComputableTidilyInO.const false)
-  refine mem_PSPACE_of_computableTidilyInO (h.mono_le (T' := _) (S' := fun w =>
+  obtain ⟨e, he⟩ := exists_computableInO_evaluate
+  obtain ⟨dc, _, hc⟩ := isCode_pt.tidy.exists_degree
+  obtain ⟨dd, _, hd⟩ := decodeQBF_pt.tidy.exists_degree
+  have h := hc.inO.ite (he.tidy.comp hd.inO) (ComputableTidilyInO.const false)
+  refine mem_PSPACE_of_computableInO (.of_tidy <| h.mono_le (T' := _) (S' := fun w =>
       (w.length + 1) ^ dc + ((w.length + 1) ^ dd +
         (w.length + (encQBF .bot).length + 1) ^ e + w.length)) (fun _ => le_rfl) fun w => ?_) ?_
     fun w => ?_

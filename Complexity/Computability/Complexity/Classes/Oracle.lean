@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.NP
 public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Probabilistic.Oracle
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Polynomial time relative to an oracle language
@@ -61,7 +62,7 @@ oracle constructions rest.
 ## Main results
 
 * `Cslib.OracleComp.interpret_id_congr`: answers to requests that are not made do not matter.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTimeWithOracle`: polynomial time
+* `Turing.MultiTapeTM.ComputableInPolyTime.computableInPolyTimeWithOracle`: polynomial time
   is polynomial time relative to every oracle.
 * `Cslib.Complexity.PolyTimeOracleProgram.of_polyTime`,
   `Cslib.Complexity.PolyTimeOracleProgram.exists_computableInPolyTimeWithOracle`,
@@ -184,11 +185,12 @@ def ComputableInPolyTimeWithOracle (A : Set (List Bool)) (f : α → β) (input 
 /-- A polynomial-time computation makes no request, so it is polynomial time relative to every
 oracle. -/
 @[fun_prop]
-theorem _root_.Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTimeWithOracle
+theorem _root_.Turing.MultiTapeTM.ComputableInPolyTime.computableInPolyTimeWithOracle
     {f : α → β} {input : α ↪ List Bool} {output : β ↪ List Bool}
-    (h : ComputableTidilyInPolyTime f input output) (A : Set (List Bool)) :
-    ComputableInPolyTimeWithOracle A f input output :=
-  ⟨fun a => pure (f a), h.isOraclePPTOn, fun _ => rfl⟩
+    (h : ComputableInPolyTime f input output) (A : Set (List Bool)) :
+    ComputableInPolyTimeWithOracle A f input output := by
+  have h := h.tidy
+  exact ⟨fun a => pure (f a), h.isOraclePPTOn, fun _ => rfl⟩
 
 /-- One deterministic polynomial-time oracle program whose function against every oracle language
 satisfying `Admissible` satisfies `Spec`. The program is fixed before the oracle language, so
@@ -264,15 +266,19 @@ theorem mem_NPWithOracle {A : Set (List Bool)} {enc : α ↪ List Bool} {L : Set
       ComputableInPolyTimeWithOracle A V (encPair enc encBits) encBool ∧ IsVerifier enc p V L :=
   Iff.rfl
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Every problem in `P` is in `P` relative to every oracle. -/
 theorem P_subset_PWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     P enc ⊆ PWithOracle A enc := fun _ ⟨f, hf, h⟩ =>
-  ⟨f, hf.tidy.computableInPolyTimeWithOracle A, h⟩
+  ⟨f, hf.computableInPolyTimeWithOracle A, h⟩
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Every problem in `NP` is in `NP` relative to every oracle. -/
 theorem NP_subset_NPWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     NP enc ⊆ NPWithOracle A enc := fun _ ⟨p, V, hV, h⟩ =>
-  ⟨p, V, hV.tidy.computableInPolyTimeWithOracle A, h⟩
+  ⟨p, V, hV.computableInPolyTimeWithOracle A, h⟩
 
 end Complexity
 

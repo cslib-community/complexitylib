@@ -66,13 +66,13 @@ def PPWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) : Set (Set α) :
 /-- An ordinary PP verifier can ignore every oracle. -/
 theorem PP_subset_PPWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     PP enc ⊆ PPWithOracle A enc := fun _ ⟨p, V, hV, hL⟩ =>
-  ⟨p, V, hV.tidy.computableInPolyTimeWithOracle A, hL⟩
+  ⟨p, V, hV.computableInPolyTimeWithOracle A, hL⟩
 
 /-- A polynomial-time oracle adds no PP languages. -/
 theorem PPWithOracle_eq_PP (hA : A ∈ P encBits) (enc : α ↪ List Bool) :
     PPWithOracle A enc = PP enc :=
   Set.Subset.antisymm (fun _ ⟨p, V, hV, hL⟩ =>
-    ⟨p, V, .of_tidy (hV.computableTidilyInPolyTime hA), hL⟩) (PP_subset_PPWithOracle A enc)
+    ⟨p, V, hV.computableInPolyTime hA, hL⟩) (PP_subset_PPWithOracle A enc)
 
 /-- Relativized PP is exactly positivity of a relativized gap function. For the reverse direction,
 two counts are padded to a common certificate length and selected with one extra bit. -/
@@ -84,7 +84,7 @@ theorem mem_PPWithOracle_iff_exists_GapPWithOracle {L : Set α} :
     let f₂ a := acceptCount (fun x => !V x) a (p.eval (enc a).length)
     refine ⟨fun a => (f₁ a : ℤ) - f₂ a,
       ⟨f₁, ⟨p, V, hV, fun _ => rfl⟩,
-        f₂, ⟨p, _, hV.map ComputableTidilyInPolyTime.bool_not, fun _ => rfl⟩,
+        f₂, ⟨p, _, hV.map (.of_tidy ComputableTidilyInPolyTime.bool_not), fun _ => rfl⟩,
         fun _ => rfl⟩, fun a => ?_⟩
     have htotal := acceptCount_add_acceptCount_not V a (p.eval (enc a).length)
     rw [hL a]
@@ -95,14 +95,14 @@ theorem mem_PPWithOracle_iff_exists_GapPWithOracle {L : Set α} :
     let W₂ := andVerifier (fun a => q.eval (enc a).length) V₂ allFalseVerifier
     have hfalse : ComputableInPolyTimeWithOracle A (allFalseVerifier (α := α))
         (encPair enc encBits) encBool :=
-      computableTidilyInPolyTime_allFalseVerifier.computableInPolyTimeWithOracle A
+      computableInPolyTime_allFalseVerifier.computableInPolyTimeWithOracle A
     have hW₁ : ComputableInPolyTimeWithOracle A W₁ (encPair enc encBits) encBool :=
-      computableInPolyTimeWithOracle_andVerifier (by fun_prop) h₁ hfalse
+      computableInPolyTimeWithOracle_andVerifier (.of_tidy (by fun_prop)) h₁ hfalse
     have hW₂ : ComputableInPolyTimeWithOracle A W₂ (encPair enc encBits) encBool :=
-      computableInPolyTimeWithOracle_andVerifier (by fun_prop) h₂ hfalse
+      computableInPolyTimeWithOracle_andVerifier (.of_tidy (by fun_prop)) h₂ hfalse
     refine ⟨p + q + 1, selectVerifier W₁ (fun x => !W₂ x),
       computableInPolyTimeWithOracle_selectVerifier hW₁
-        (hW₂.map ComputableTidilyInPolyTime.bool_not), fun a => ?_⟩
+        (hW₂.map (.of_tidy ComputableTidilyInPolyTime.bool_not)), fun a => ?_⟩
     have hc₁ : acceptCount W₁ a ((p + q).eval (enc a).length) = f₁ a := by
       simpa only [W₁, Polynomial.eval_add, hf₁ a] using
         acceptCount_andVerifier_allFalseVerifier (fun a => p.eval (enc a).length)

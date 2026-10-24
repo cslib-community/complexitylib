@@ -255,29 +255,34 @@ private theorem natGetD {γ : Type} {input : γ ↪ List Bool} {list : γ → Li
   (listGetD (encA := encUnary) 0).comp (hlist.prod hindex)
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_rankOf {γ : Type} {input : γ ↪ List Bool} {n i : γ → ℕ}
-    {keys : γ → List ℕ} (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hkeys : ComputableTidilyInPolyTime keys input (encList encUnary))
-    (hi : ComputableTidilyInPolyTime i input encUnary) :
-    ComputableTidilyInPolyTime (fun x => rankOf (n x) (keys x) (i x)) input encUnary := by
+theorem computableInPolyTime_rankOf {γ : Type} {input : γ ↪ List Bool} {n i : γ → ℕ}
+    {keys : γ → List ℕ} (hn : ComputableInPolyTime n input encUnary)
+    (hkeys : ComputableInPolyTime keys input (encList encUnary))
+    (hi : ComputableInPolyTime i input encUnary) :
+    ComputableInPolyTime (fun x => rankOf (n x) (keys x) (i x)) input encUnary := by
+  have hn := hn.tidy
+  have hkeys := hkeys.tidy
+  have hi := hi.tidy
+  refine .of_tidy ?_
   unfold rankOf
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_orderOf {γ : Type} {input : γ ↪ List Bool} {n : γ → ℕ}
-    {keys : γ → List ℕ} (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hkeys : ComputableTidilyInPolyTime keys input (encList encUnary)) :
-    ComputableTidilyInPolyTime (fun x => orderOf (n x) (keys x)) input (encList encUnary) := by
+theorem computableInPolyTime_orderOf {γ : Type} {input : γ ↪ List Bool} {n : γ → ℕ}
+    {keys : γ → List ℕ} (hn : ComputableInPolyTime n input encUnary)
+    (hkeys : ComputableInPolyTime keys input (encList encUnary)) :
+    ComputableInPolyTime (fun x => orderOf (n x) (keys x)) input (encList encUnary) := by
   unfold orderOf
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_relabel {γ : Type} {input : γ ↪ List Bool} {G : γ → Graph}
-    {keys : γ → List ℕ} (hG : ComputableTidilyInPolyTime G input encGraph)
-    (hkeys : ComputableTidilyInPolyTime keys input (encList encUnary)) :
-    ComputableTidilyInPolyTime (fun x => relabel (G x) (keys x)) input encBits := by
-  have hn : ComputableTidilyInPolyTime (fun x => (G x).distinctVertices.length) input encUnary :=
-    (length_list encNat).comp (Graph.computableTidilyInPolyTime_distinctVertices.comp hG)
+theorem computableInPolyTime_relabel {γ : Type} {input : γ ↪ List Bool} {G : γ → Graph}
+    {keys : γ → List ℕ} (hG : ComputableInPolyTime G input encGraph)
+    (hkeys : ComputableInPolyTime keys input (encList encUnary)) :
+    ComputableInPolyTime (fun x => relabel (G x) (keys x)) input encBits := by
+  have hn : ComputableInPolyTime (fun x => (G x).distinctVertices.length) input encUnary :=
+    (ComputableInPolyTime.length_list encNat).comp
+      (Graph.computableInPolyTime_distinctVertices.comp hG)
   unfold relabel
   simp only [List.flatMap_def]
   fun_prop
@@ -552,7 +557,7 @@ private theorem isPPTOn_relabelMessage {γ : Type} {input : γ ↪ List Bool} {G
     (hG : ComputableTidilyInPolyTime G input encGraph) :
     IsPPTOn input encBits (fun x => relabelMessage (G x)) := by
   have hn : ComputableTidilyInPolyTime (fun x => (G x).distinctVertices.length) input encUnary :=
-    (length_list encNat).comp (Graph.computableTidilyInPolyTime_distinctVertices.comp hG)
+    (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.tidy.comp hG)
   have hsize : ComputableTidilyInPolyTime (fun x => 16 * (G x).distinctVertices.length *
       (G x).distinctVertices.length) input encUnary := by fun_prop
   have hw : ComputableTidilyInPolyTime (fun x => keyWidth (G x).distinctVertices.length) input
@@ -570,7 +575,7 @@ private theorem isPPTOn_relabelMessage {γ : Type} {input : γ ↪ List Bool} {G
         (fst (encPair input encBits) encBits))) (snd (encPair input encBits) encBits))
   exact IsPPTOn.map_with (f := fun x bits => relabel (G x) (keysOf (G x).distinctVertices.length
     (keyWidth (G x).distinctVertices.length) bits)) hcount.sampleList
-    (.of_tidy (computableTidilyInPolyTime_relabel (hG.comp (fst input encBits)) hkeys))
+    (computableInPolyTime_relabel (.of_tidy (hG.comp (fst input encBits))) (.of_tidy hkeys))
 
 /-- The verifier is strict oracle PPT. -/
 theorem isOraclePPTOn_verifier :

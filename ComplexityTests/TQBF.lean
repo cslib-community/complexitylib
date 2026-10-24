@@ -215,11 +215,11 @@ info: 'Cslib.Complexity.TQBF.evaluate_eq_true_iff' depends on axioms:
 #print axioms Cslib.Complexity.TQBF.evaluate_eq_true_iff
 
 /--
-info: 'Cslib.Complexity.TQBF.exists_computableTidilyInO_evaluate' depends on axioms:
+info: 'Cslib.Complexity.TQBF.exists_computableInO_evaluate' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.TQBF.exists_computableTidilyInO_evaluate
+#print axioms Cslib.Complexity.TQBF.exists_computableInO_evaluate
 
 /--
 info: 'Cslib.Complexity.TQBF_mem_PSPACE' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -256,18 +256,18 @@ info: 'Cslib.Complexity.TQBF.reduce_mem_TQBF_iff' depends on axioms:
 #print axioms Cslib.Complexity.TQBF.reduce_mem_TQBF_iff
 
 /--
-info: 'Cslib.Complexity.TQBF.computableTidilyInPolyTime_reduce' depends on axioms:
+info: 'Cslib.Complexity.TQBF.computableInPolyTime_reduce' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.TQBF.computableTidilyInPolyTime_reduce
+#print axioms Cslib.Complexity.TQBF.computableInPolyTime_reduce
 
 /--
-info: 'Cslib.Complexity.TQBF.computableTidilyInPolyTime_edgeTest' depends on axioms:
+info: 'Cslib.Complexity.TQBF.computableInPolyTime_edgeTest' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.TQBF.computableTidilyInPolyTime_edgeTest
+#print axioms Cslib.Complexity.TQBF.computableInPolyTime_edgeTest
 
 /--
 info: 'Cslib.Complexity.TQBF_pspaceHard' depends on axioms: [propext, Classical.choice, Quot.sound]

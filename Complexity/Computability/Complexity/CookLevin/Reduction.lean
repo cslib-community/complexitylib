@@ -28,7 +28,7 @@ allowed number of steps with output `[V (a, w)]`, so it applies to any machine c
 that time, tidily (`reduce_mem_SAT_iff_of_computesTidily`) or not.
 
 The input prefix and unary bounds are jointly computable in polynomial time
-(`computableTidilyInPolyTime_parameters` in
+(`computableInPolyTime_parameters` in
 `Complexity/Computability/Complexity/CookLevin/Parameters.lean`).
 Variable construction and numbering are certified in
 `Complexity/Computability/Complexity/CookLevin/Encoding.lean`, and all clause

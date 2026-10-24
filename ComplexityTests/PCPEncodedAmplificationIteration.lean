@@ -29,7 +29,7 @@ variable {D Input : Type} [Fintype D] [DecidableEq D] {width : ℕ}
   (number : Graph.SelectedComposeSlot (Graph.PowerAlphabet D Alphabet T) ≃ Fin width)
   (coins : List (Fin 5 × Rand (Graph.PowerAlphabet D Alphabet T))) (queries : List (Fin 6))
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun x => Graph.amplifyIter fallback rotate T q walks number coins queries
       (Nat.clog 2 (graph x).edges.length) (graph x))
     input (Graph.encoding (encPi (encPi encBool))) := by
@@ -37,7 +37,7 @@ example : ComputableTidilyInPolyTime
   fail_if_success (clear hgraph; fun_prop)
   fun_prop
 
-example : ComputableTidilyInPolyTime (fun x =>
+example : ComputableInPolyTime (fun x =>
     let g := graph x
     Graph.amplifyIter fallback rotate T q walks number coins queries (Nat.clog 2 g.edges.length) g)
     input (Graph.encoding (encPi (encPi encBool))) := by

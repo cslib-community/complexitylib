@@ -152,8 +152,8 @@ private theorem congr_poly (h : OnSliceAlt enc b k q R) {q' : Polynomial ℕ}
 `α`. -/
 private theorem mem_SigmaP (h : OnSliceAlt enc true k 0 R) : {a | R a []} ∈ SigmaP k enc := by
   obtain ⟨ps, V, hk, hV, hR⟩ := h
-  refine mem_SigmaP_iff_tidy.mpr ⟨ps, fun x => V ((x.1, []), x.2), hk, ?_, fun a => ?_⟩
-  · exact hV.tidy.comp (((fst enc encBits).prod (.const [])).prod (snd enc encBits))
+  refine Complexity.mem_SigmaP.mpr ⟨ps, fun x => V ((x.1, []), x.2), hk, ?_, fun a => ?_⟩
+  · exact .of_tidy (hV.tidy.comp (((fst enc encBits).prod (.const [])).prod (snd enc encBits)))
   · exact hR a [] (by simp)
 
 /-- Negating the verifier swaps quantifier polarities. -/
@@ -795,7 +795,7 @@ theorem PiP_three_subset_SigmaP_three_of_coBH_subset_BH {k : ℕ}
     {y | ∃ u₃ : List Bool, u₃.length = p₃.eval (enc y.1).length ∧ (!V (y.1, y.2 ++ u₃)) = true}
   have hE : E ∈ NP (encPair enc encBits) :=
     mem_NP_setOf_exists_append (V := fun x => !V x)
-      (ComputableTidilyInPolyTime.bool_not.comp hV.tidy) p₃
+      (.of_tidy (ComputableTidilyInPolyTime.bool_not.comp hV.tidy)) p₃
   let m := p₁ + p₂
   have hLk_compl : (kadinChain enc m E k)ᶜ ∈ BH (encPair enc encBits) k :=
     h (compl_mem_coBH_iff.mpr (kadinChain_mem_BH hE k))

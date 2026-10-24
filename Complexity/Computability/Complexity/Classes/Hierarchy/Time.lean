@@ -15,6 +15,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Run
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # The time hierarchy theorem
@@ -221,64 +222,68 @@ open Diagonal in
 and space `O((n + 1) ^ 5 * (J n + 1) ^ 3)` on inputs of length `n`, for a time-constructible clock
 `J`, charging the shortness test, decoding, the symbols, the clock, the universal run and the
 test. -/
-theorem computableTidilyInO_timeDiagonal {J : ℕ → ℕ} (hJ : TimeConstructible J) :
-    ComputableTidilyInO (timeDiagonal J) encBits encBool
+theorem computableInO_timeDiagonal {J : ℕ → ℕ} (hJ : TimeConstructible J) :
+    ComputableInO (timeDiagonal J) encBits encBool
       (fun x => (x.length + 1) ^ 5 * (J x.length + 1) ^ 3)
       fun x => (x.length + 1) ^ 5 * (J x.length + 1) ^ 3 := by
-  obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
-  have hu : ComputableTidilyInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
-    ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)
-  have hdesc := hdec.inO.comp hu
-  have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
-  have hclock := hJ.computableTidilyInO
-  have hU := computableTidilyInO_universal.comp (hdesc.prod (hsym.prod hclock))
-  have h := computableTidilyInO_shortDesc.ite (computableTidilyInO_verdict.comp hU)
-    (ComputableTidilyInO.const (encMid := encBool) false)
-  obtain ⟨cD, hcD⟩ := hdesc.length_le
-  obtain ⟨cO, hcO⟩ := hU.length_le
-  obtain ⟨cA, hcA⟩ := PolynomiallyBounded.exists_le_mul_two_pow (p := fun u => (u + 1) ^ dd)
-    (by fun_prop)
-  obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
-  obtain ⟨K, hK⟩ := clockedBounds_aux cA cD cO C₂
-  have hbounds (x : List Bool) (hs : shortDesc x = true) := by
-    have hA : ((unframe x).length + 1) ^ dd ≤ cA * (x.length + 1) :=
-      (hcA _).trans (Nat.mul_le_mul_left _ ((of_decide_eq_true hs).trans (Nat.le_succ _)))
-    have hN : (encList encUnary (x.map eBit)).length ≤ 3 * x.length :=
-      (length_encList_le encUnary _ (b := 1) fun s hs => by
-        obtain ⟨b, -, rfl⟩ := List.mem_map.mp hs
-        cases b
-        · exact Nat.zero_le _
-        · exact le_rfl).trans (by rw [List.length_map]; omega)
-    have hD := hcD x
-    have hE := hcO x
-    dsimp only [Function.comp_apply, encBits_apply] at hD hE
-    exact hK (D := descLen (decodeDesc (unframe x))) hA hD hN (hC₂ _)
-      (by rw [length_encPair, length_encPair]) hE
-  have hW (x : List Bool) : x.length + 1 ≤ (x.length + 1) ^ 5 * (J x.length + 1) ^ 3 :=
-    (Nat.le_self_pow (by norm_num) _).trans (Nat.le_mul_of_pos_right _ (Nat.pow_pos (by omega)))
-  have hW2 (x : List Bool) : (x.length + 1) ^ 2 ≤ (x.length + 1) ^ 5 * (J x.length + 1) ^ 3 :=
-    (Nat.pow_le_pow_right (by omega) (by omega)).trans
-      (Nat.le_mul_of_pos_right _ (Nat.pow_pos (by omega)))
-  refine h.mono (K + 2) (fun x => ?_) fun x => ?_
-  · have e : (K + 2) * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3 + 1) =
-        K * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3) +
-          2 * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3) + K + 2 := by ring
-    have := hW x
-    have := hW2 x
-    dsimp only [Function.comp_apply, encBits_apply]
-    split_ifs with hs
-    · have := (hbounds x hs).1
-      omega
-    · omega
-  · have e : (K + 2) * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3 + 1) =
-        K * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3) +
-          2 * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3) + K + 2 := by ring
-    have := hW x
-    dsimp only [Function.comp_apply, encBits_apply]
-    split_ifs with hs
-    · have := (hbounds x hs).2
-      omega
-    · omega
+  have this : ComputableTidilyInO (timeDiagonal J) encBits encBool
+      (fun x => (x.length + 1) ^ 5 * (J x.length + 1) ^ 3) fun x => (x.length + 1) ^ 5 *
+      (J x.length + 1) ^ 3 := by
+    obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
+    have hu : ComputableTidilyInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
+      ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)
+    have hdesc := hdec.inO.comp hu
+    have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
+    have hclock := hJ.computableInO.tidy
+    have hU := computableTidilyInO_universal.comp (hdesc.prod (hsym.prod hclock))
+    have h := computableInO_shortDesc.tidy.ite (computableInO_verdict.tidy.comp hU)
+      (ComputableTidilyInO.const (encMid := encBool) false)
+    obtain ⟨cD, hcD⟩ := hdesc.length_le
+    obtain ⟨cO, hcO⟩ := hU.length_le
+    obtain ⟨cA, hcA⟩ := PolynomiallyBounded.exists_le_mul_two_pow (p := fun u => (u + 1) ^ dd)
+      (by fun_prop)
+    obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
+    obtain ⟨K, hK⟩ := clockedBounds_aux cA cD cO C₂
+    have hbounds (x : List Bool) (hs : shortDesc x = true) := by
+      have hA : ((unframe x).length + 1) ^ dd ≤ cA * (x.length + 1) :=
+        (hcA _).trans (Nat.mul_le_mul_left _ ((of_decide_eq_true hs).trans (Nat.le_succ _)))
+      have hN : (encList encUnary (x.map eBit)).length ≤ 3 * x.length :=
+        (length_encList_le encUnary _ (b := 1) fun s hs => by
+          obtain ⟨b, -, rfl⟩ := List.mem_map.mp hs
+          cases b
+          · exact Nat.zero_le _
+          · exact le_rfl).trans (by rw [List.length_map]; omega)
+      have hD := hcD x
+      have hE := hcO x
+      dsimp only [Function.comp_apply, encBits_apply] at hD hE
+      exact hK (D := descLen (decodeDesc (unframe x))) hA hD hN (hC₂ _)
+        (by rw [length_encPair, length_encPair]) hE
+    have hW (x : List Bool) : x.length + 1 ≤ (x.length + 1) ^ 5 * (J x.length + 1) ^ 3 :=
+      (Nat.le_self_pow (by norm_num) _).trans (Nat.le_mul_of_pos_right _ (Nat.pow_pos (by omega)))
+    have hW2 (x : List Bool) : (x.length + 1) ^ 2 ≤ (x.length + 1) ^ 5 * (J x.length + 1) ^ 3 :=
+      (Nat.pow_le_pow_right (by omega) (by omega)).trans
+        (Nat.le_mul_of_pos_right _ (Nat.pow_pos (by omega)))
+    refine h.mono (K + 2) (fun x => ?_) fun x => ?_
+    · have e : (K + 2) * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3 + 1) =
+          K * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3) +
+            2 * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3) + K + 2 := by ring
+      have := hW x
+      have := hW2 x
+      dsimp only [Function.comp_apply, encBits_apply]
+      split_ifs with hs
+      · have := (hbounds x hs).1
+        omega
+      · omega
+    · have e : (K + 2) * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3 + 1) =
+          K * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3) +
+            2 * ((x.length + 1) ^ 5 * (J x.length + 1) ^ 3) + K + 2 := by ring
+      have := hW x
+      dsimp only [Function.comp_apply, encBits_apply]
+      split_ifs with hs
+      · have := (hbounds x hs).2
+        omega
+      · omega
+  simpa only [computableInO_iff_computableTidilyInO] using this
 
 /-- **The diagonal argument for time.** The problem of the clocked diagonal is not decidable within
 time `O(f)` when every `c * f n + c` is eventually below the clock: on its own description, padded
@@ -322,7 +327,7 @@ theorem setOf_timeDiagonal_notMem_DTIME {f J : ℕ → ℕ}
 `O((n + 1) ^ 5 * (J n + 1) ^ 3)`. -/
 theorem setOf_timeDiagonal_mem_DTIME {J : ℕ → ℕ} (hJ : TimeConstructible J) :
     {x | timeDiagonal J x = true} ∈ DTIME encBits fun n => (n + 1) ^ 5 * (J n + 1) ^ 3 :=
-  setOf_mem_DTIME_of_computableTidilyInO (computableTidilyInO_timeDiagonal hJ)
+  setOf_mem_DTIME_of_computableInO (computableInO_timeDiagonal hJ)
     (t := fun n => (n + 1) ^ 5 * (J n + 1) ^ 3) fun _ => le_rfl
 
 /-! ### The time hierarchy theorem -/

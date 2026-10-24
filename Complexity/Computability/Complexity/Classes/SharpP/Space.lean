@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Mathlib.Data.Nat.Size
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Exact counting in polynomial space
@@ -36,11 +37,11 @@ its accepting coins with the same counter (`Cslib.Complexity.Interaction.countAc
 ## Main results
 
 * `Cslib.Complexity.streamAcceptCount_eq_acceptCount`: the streaming count is `acceptCount`.
-* `Cslib.Complexity.computableTidilyInPolySpace_acceptCount`: count accepted certificates of a
+* `Cslib.Complexity.computableInPolySpace_acceptCount`: count accepted certificates of a
   polynomial-time unary length, with binary output.
-* `Cslib.Complexity.SharpP.computableTidilyInPolySpace`: every #P function is computable within
+* `Cslib.Complexity.SharpP.computableInPolySpace`: every #P function is computable within
   polynomial space, with binary output.
-* `Cslib.Complexity.GapP.computableTidilyInPolySpace`: evaluate integer gaps in binary.
+* `Cslib.Complexity.GapP.computableInPolySpace`: evaluate integer gaps in binary.
 
 ## References
 
@@ -126,10 +127,13 @@ theorem streamAcceptCount_eq_acceptCount (V : α × List Bool → Bool) (a : α)
 
 /-- Count the accepted certificates of a polynomial-time unary length in polynomial space.
 The result uses binary natural-number output, including when the certificate length is zero. -/
-theorem computableTidilyInPolySpace_acceptCount {V : α × List Bool → Bool} {r : α → ℕ}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool)
-    (hr : ComputableTidilyInPolyTime r enc encUnary) :
-    ComputableTidilyInPolySpace (fun a => acceptCount V a (r a)) enc encNat := by
+theorem computableInPolySpace_acceptCount {V : α × List Bool → Bool} {r : α → ℕ}
+    (hV : Turing.MultiTapeTM.ComputableInPolyTime V (encPair enc encBits) encBool)
+    (hr : Turing.MultiTapeTM.ComputableInPolyTime r enc encUnary) :
+    Turing.MultiTapeTM.ComputableInPolySpace (fun a => acceptCount V a (r a)) enc encNat := by
+  have hV := hV.tidy
+  have hr := hr.tidy
+  refine .of_tidy ?_
   classical
   rcases isEmpty_or_nonempty α with hα | hα
   · exact (ComputableTidilyInPolySpace.of_polyTime
@@ -170,18 +174,21 @@ theorem computableTidilyInPolySpace_acceptCount {V : α × List Bool → Bool} {
     lia
 
 /-- Every #P function is computable in polynomial space when its output is written in binary. -/
-theorem SharpP.computableTidilyInPolySpace {f : α → ℕ} (hf : f ∈ SharpP enc) :
-    ComputableTidilyInPolySpace f enc encNat := by
-  obtain ⟨p, V, hV, hf⟩ := mem_SharpP_iff_tidy.mp hf
-  exact (computableTidilyInPolySpace_acceptCount hV (by fun_prop)).congr fun a => (hf a).symm
+theorem SharpP.computableInPolySpace {f : α → ℕ} (hf : f ∈ SharpP enc) :
+    Turing.MultiTapeTM.ComputableInPolySpace f enc encNat := by
+  refine .of_tidy ?_
+  obtain ⟨p, V, hV, hf⟩ := mem_SharpP.mp hf
+  exact (computableInPolySpace_acceptCount hV (.of_tidy (by fun_prop))).tidy.congr fun a =>
+    (hf a).symm
 
 /-- Every GapP function is computable in polynomial space with binary sign-magnitude output. -/
-theorem GapP.computableTidilyInPolySpace {g : α → ℤ} (hg : g ∈ GapP enc) :
-    ComputableTidilyInPolySpace g enc encIntBin := by
+theorem GapP.computableInPolySpace {g : α → ℤ} (hg : g ∈ GapP enc) :
+    Turing.MultiTapeTM.ComputableInPolySpace g enc encIntBin := by
+  refine .of_tidy ?_
   obtain ⟨f₁, h₁, f₂, h₂, hg⟩ := hg
   have hcast := ComputableTidilyInPolySpace.of_polyTime ComputableTidilyInPolyTime.intBin_natCast
   exact ((ComputableTidilyInPolySpace.of_polyTime ComputableTidilyInPolyTime.intBin_sub).comp
-    ((hcast.comp (SharpP.computableTidilyInPolySpace h₁)).prod
-      (hcast.comp (SharpP.computableTidilyInPolySpace h₂)))).congr fun a => (hg a).symm
+    ((hcast.comp (SharpP.computableInPolySpace h₁).tidy).prod
+      (hcast.comp (SharpP.computableInPolySpace h₂).tidy))).congr fun a => (hg a).symm
 
 end Cslib.Complexity

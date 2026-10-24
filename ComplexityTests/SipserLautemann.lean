@@ -5,6 +5,7 @@ Authors: Bolton Bailey, Samuel Schlesinger
 -/
 
 import Complexity.Computability.Complexity.Classes.PH.SipserLautemann
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Tests for the Sipser–Lautemann theorem
@@ -118,8 +119,11 @@ theorem noisyHead_mem_PiP_two : {x : List Bool | x.headD false = true} ∈ PiP 2
 theorem noisyHead_mem_PH : {x : List Bool | x.headD false = true} ∈ PH encBits :=
   BPP_subset_PH noisyHead_mem_BPP
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Direct `fun_prop` synthesis on the Sipser-Lautemann matrix verifier for `noisyHeadVerifier`.
-example : ComputableTidilyInPolyTime
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example : ComputableInPolyTime
     (verifier encBits (Polynomial.C 2) noisyHeadVerifier)
     (encPair encBits encBits) encBool := by
   fun_prop
@@ -209,5 +213,11 @@ info: 'Cslib.Complexity.BPP_subset_PH' depends on axioms: [propext, Classical.ch
 -/
 #guard_msgs in
 #print axioms Cslib.Complexity.BPP_subset_PH
+
+/-- Plain `fun_prop` uses the plain matrix-verifier certificate from a plain hypothesis. -/
+example {α : Type} {enc : α ↪ List Bool} {p : Polynomial ℕ} {V : α × List Bool → Bool}
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
+    ComputableInPolyTime (fun x => !verifier enc p V x) (encPair enc encBits) encBool := by
+  fun_prop
 
 end Cslib.Complexity.Tests.SipserLautemann

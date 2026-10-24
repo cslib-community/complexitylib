@@ -50,8 +50,8 @@ example : ∃ H ∈ GapP (encPair encBits encBits), ∃ R : List Bool → ℕ,
       (0 ≤ H (a, w) ∧ H (a, w) ≤ D) ∧ D - H (a, w) ≤ D := by
   obtain ⟨H, hH, R, hR, hb⟩ := exists_AWPP_queryWeights univ_mem
     (T := fun _ : List Bool => 0) (e := fun _ : List Bool => 0)
-    (ComputableTidilyInPolyTime.const 0) (ComputableTidilyInPolyTime.const 0)
-  refine ⟨H, hH, R, hR, fun a w => ⟨(hb a w).1, ?_⟩⟩
+    (.of_tidy (ComputableTidilyInPolyTime.const 0)) (.of_tidy (ComputableTidilyInPolyTime.const 0))
+  refine ⟨H, hH, R, hR.tidy, fun a w => ⟨(hb a w).1, ?_⟩⟩
   simpa only [pow_zero, one_mul] using (hb a w).2.1 (Set.mem_univ _)
 
 /-- info: 'Cslib.Complexity.exists_AWPP_queryWeights' depends on axioms:

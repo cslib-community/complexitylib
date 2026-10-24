@@ -48,10 +48,14 @@ def powerVerifier (r k : α → ℕ) (V : α × List Bool → Bool) (x : α × L
 /-- A row count and width computed in unary give a polynomial-time repeated verifier. -/
 @[fun_prop]
 theorem polyTime_powerVerifier {r k : α → ℕ} {V : α × List Bool → Bool}
-    (hr : ComputableTidilyInPolyTime r enc encUnary)
-    (hk : ComputableTidilyInPolyTime k enc encUnary)
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) :
-    ComputableTidilyInPolyTime (powerVerifier r k V) (encPair enc encBits) encBool := by
+    (hr : ComputableInPolyTime r enc encUnary)
+    (hk : ComputableInPolyTime k enc encUnary)
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
+    ComputableInPolyTime (powerVerifier r k V) (encPair enc encBits) encBool := by
+  have hr := hr.tidy
+  have hk := hk.tidy
+  have hV := hV.tidy
+  refine .of_tidy ?_
   unfold powerVerifier
   fun_prop
 
@@ -67,13 +71,14 @@ theorem acceptCount_powerVerifier (r k : α → ℕ) (V : α × List Bool → Bo
 
 /-- A #P function raised to an input-dependent polynomial-time unary exponent remains in #P. -/
 theorem pow_mem_polyTime {f : α → ℕ} {r : α → ℕ} (hf : f ∈ SharpP enc)
-    (hr : ComputableTidilyInPolyTime r enc encUnary) :
+    (hr : ComputableInPolyTime r enc encUnary) :
     (fun a => f a ^ r a) ∈ SharpP enc := by
-  obtain ⟨p, V, hV, hf⟩ := mem_SharpP_iff_tidy.mp hf
+  have hr := hr.tidy
+  obtain ⟨p, V, hV, hf⟩ := mem_SharpP.mp hf
   let k : α → ℕ := fun a => p.eval (enc a).length
   have hk : ComputableTidilyInPolyTime k enc encUnary := by dsimp [k]; fun_prop
-  convert mem_SharpP_of_polyTime_length (polyTime_powerVerifier hr hk hV)
-    (ComputableTidilyInPolyTime.unary_mul.comp (hr.prod hk)) using 1
+  convert mem_SharpP_of_polyTime_length (polyTime_powerVerifier (.of_tidy hr) (.of_tidy hk) hV)
+    (.of_tidy (ComputableTidilyInPolyTime.unary_mul.comp (hr.prod hk))) using 1
   ext a
   change f a ^ r a = acceptCount (powerVerifier r k V) a (r a * k a)
   rw [acceptCount_powerVerifier, hf]

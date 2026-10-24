@@ -22,8 +22,7 @@ The query generator is total even outside the used range; unused outputs do not 
 ## Main definitions
 
 * `truthTableAnswers`: the semantic answer word for an indexed family.
-* `PolyTimeTruthTableReducible`: polynomial-time nonadaptive reduction of encoded languages, with
-  `polyTimeTruthTableReducible_iff_tidy` for tidily computable query generators and combiners.
+* `PolyTimeTruthTableReducible`: polynomial-time nonadaptive reduction of encoded languages.
 
 ## Main results
 
@@ -92,17 +91,6 @@ def PolyTimeTruthTableReducible {β : Type} (encA : α ↪ List Bool) (encB : β
 
 variable {β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {L : Set α} {B : Set β}
 
-/-- Polynomial-time truth-table reducibility with functions computable tidily in polynomial time,
-the form in which proofs build reductions. -/
-theorem polyTimeTruthTableReducible_iff_tidy :
-    PolyTimeTruthTableReducible encA encB L B ↔
-      ∃ (r : α → ℕ) (q : α × ℕ → β) (d : α × List Bool → Bool),
-        ComputableTidilyInPolyTime r encA encUnary ∧
-        ComputableTidilyInPolyTime q (encPair encA encUnary) encB ∧
-        ComputableTidilyInPolyTime d (encPair encA encBits) encBool ∧
-        ∀ a, a ∈ L ↔ d (a, truthTableAnswers (q ⁻¹' B) r a) = true := by
-  simp only [PolyTimeTruthTableReducible, computableInPolyTime_iff_computableTidilyInPolyTime]
-
 /-- Every polynomial-time many-one reduction is a polynomial-time truth-table reduction making a
 single query. -/
 theorem PolyTimeReducible.polyTimeTruthTableReducible
@@ -131,13 +119,13 @@ theorem PolyTimeTruthTableReducible.compl_left
 theorem PolyTimeTruthTableReducible.compl_right
     (h : PolyTimeTruthTableReducible encA encB L B) :
     PolyTimeTruthTableReducible encA encB L Bᶜ := by
-  obtain ⟨r, q, d, hr, hq, hd, hL⟩ := polyTimeTruthTableReducible_iff_tidy.mp h
+  obtain ⟨r, q, d, hr, hq, hd, hL⟩ := h
   have hmap : ComputableTidilyInPolyTime (fun x : α × List Bool => x.2.map (!·))
       (encPair encA encBits) encBits :=
     ComputableTidilyInPolyTime.bitsMapWithInput (f := fun _ b => !b) (.snd encA encBits)
       (by fun_prop)
-  refine polyTimeTruthTableReducible_iff_tidy.mpr ⟨r, q, fun x => d (x.1, x.2.map (!·)), hr, hq,
-    hd.comp ((ComputableTidilyInPolyTime.fst encA encBits).prod hmap), fun a => ?_⟩
+  refine ⟨r, q, fun x => d (x.1, x.2.map (!·)), hr, hq,
+    hd.comp (.of_tidy ((ComputableTidilyInPolyTime.fst encA encBits).prod hmap)), fun a => ?_⟩
   rw [hL a, show q ⁻¹' Bᶜ = (q ⁻¹' B)ᶜ from rfl, truthTableAnswers_compl]
   simp [List.map_map, Function.comp_def]
 
@@ -151,16 +139,18 @@ theorem PolyTimeTruthTableReducible.compl
 a computed unary batch of queries. -/
 theorem truthTable_mem_P {A : Set (α × ℕ)} {r : α → ℕ} {d : α × List Bool → Bool}
     (hA : A ∈ P (encPair encA encUnary))
-    (hr : ComputableTidilyInPolyTime r encA encUnary)
-    (hd : ComputableTidilyInPolyTime d (encPair encA encBits) encBool) :
+    (hr : ComputableInPolyTime r encA encUnary)
+    (hd : ComputableInPolyTime d (encPair encA encBits) encBool) :
     {a | d (a, truthTableAnswers A r a) = true} ∈ P encA := by
+  have hr := hr.tidy
+  have hd := hd.tidy
   classical
-  obtain ⟨f, hf, hAf⟩ := mem_P_iff_tidy.mp hA
+  obtain ⟨f, hf, hAf⟩ := mem_P.mp hA
   have hans : ComputableTidilyInPolyTime
       (fun a => (List.range (r a)).map fun i => f (a, i)) encA encBits :=
-    ComputableTidilyInPolyTime.mapToBitsWithInput (ComputableTidilyInPolyTime.range.comp hr) hf
-  refine mem_P_iff_tidy.mpr ⟨fun a => d (a, (List.range (r a)).map fun i => f (a, i)),
-    hd.comp (ComputableTidilyInPolyTime.id'.prod hans), fun a => ?_⟩
+    ComputableTidilyInPolyTime.mapToBitsWithInput (ComputableTidilyInPolyTime.range.comp hr) hf.tidy
+  refine mem_P.mpr ⟨fun a => d (a, (List.range (r a)).map fun i => f (a, i)),
+    .of_tidy (hd.comp (ComputableTidilyInPolyTime.id'.prod hans)), fun a => ?_⟩
   simp [truthTableAnswers_eq_map_range, hAf]
 
 /-- **`P` is closed under polynomial-time truth-table reductions.** -/
@@ -169,7 +159,7 @@ theorem PolyTimeTruthTableReducible.mem_P
   obtain ⟨r, q, d, hr, hq, hd, hL⟩ := h
   have hqB : q ⁻¹' B ∈ P (encPair encA encUnary) :=
     PolyTimeReducible.mem_P ⟨q, hq, fun _ => Iff.rfl⟩ hB
-  convert truthTable_mem_P hqB hr.tidy hd.tidy using 1
+  convert truthTable_mem_P hqB hr hd using 1
   ext a
   exact hL a
 

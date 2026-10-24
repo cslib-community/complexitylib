@@ -74,6 +74,6 @@ theorem PolyTimeReducible.mem_US {β : Type} {encB : β ↪ List Bool} {B : Set 
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ US encB) : A ∈ US enc := by
   obtain ⟨g, hg, hAB⟩ := h
   obtain ⟨f, hf, hB⟩ := hB
-  exact ⟨f ∘ g, SharpP.comp_mem hf hg.tidy, fun a => (hAB a).trans (hB (g a))⟩
+  exact ⟨f ∘ g, SharpP.comp_mem hf hg, fun a => (hAB a).trans (hB (g a))⟩
 
 end Cslib.Complexity

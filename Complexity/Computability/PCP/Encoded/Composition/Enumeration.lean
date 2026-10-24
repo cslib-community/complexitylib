@@ -69,8 +69,8 @@ and every output table. The input need not use the implementation's finite enume
 theorem isPolyTime_composeEnumerated {Input : Type} {input : Input ↪ List Bool}
     {constraintEncoding : (α → α → Bool) ↪ List Bool}
     {graph : Input → Graph (α → α → Bool)}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding constraintEncoding)) :
-    ComputableTidilyInPolyTime (fun x => (graph x).composeEnumerated)
+    (hgraph : ComputableInPolyTime graph input (encoding constraintEncoding)) :
+    ComputableInPolyTime (fun x => (graph x).composeEnumerated)
       input (encoding (encPi (encPi encBool))) :=
   Encoded.HadamardTester.implementation.isPolyTime_composeEnumerated hgraph
 

@@ -59,10 +59,14 @@ def indexedProductVerifier (r k : α → ℕ) (V : (α × ℕ) × List Bool → 
 /-- Uniform row counts, widths and indexed tests give a polynomial-time product verifier. -/
 @[fun_prop]
 theorem polyTime_indexedProductVerifier {r k : α → ℕ} {V : (α × ℕ) × List Bool → Bool}
-    (hr : ComputableTidilyInPolyTime r enc encUnary)
-    (hk : ComputableTidilyInPolyTime k enc encUnary)
-    (hV : ComputableTidilyInPolyTime V (encPair (encPair enc encUnary) encBits) encBool) :
-    ComputableTidilyInPolyTime (indexedProductVerifier r k V) (encPair enc encBits) encBool := by
+    (hr : ComputableInPolyTime r enc encUnary)
+    (hk : ComputableInPolyTime k enc encUnary)
+    (hV : ComputableInPolyTime V (encPair (encPair enc encUnary) encBits) encBool) :
+    ComputableInPolyTime (indexedProductVerifier r k V) (encPair enc encBits) encBool := by
+  have hr := hr.tidy
+  have hk := hk.tidy
+  have hV := hV.tidy
+  refine .of_tidy ?_
   unfold indexedProductVerifier
   fun_prop
 
@@ -86,22 +90,25 @@ theorem acceptCount_indexedProductVerifier (r k : α → ℕ)
     simpa only [BitString.listRow_eq_ofFn (k a) ⟨i, hi⟩, BitString.ofList_ofFn,
       BitString.blocksEquiv_apply] using h ⟨i, hi⟩
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- A jointly uniform #P family on an instance and unary index may be multiplied over a
 polynomial-time unary range. If the original certificate polynomial is `p`, a common row width
 is `p(2|a|+1+r(a))`, and the unpadded total length is `r(a)` times that width. -/
 theorem prod_range_mem {f : α × ℕ → ℕ} {r : α → ℕ}
     (hf : f ∈ SharpP (encPair enc encUnary))
-    (hr : ComputableTidilyInPolyTime r enc encUnary) :
+    (hr : ComputableInPolyTime r enc encUnary) :
     (fun a => ∏ i ∈ range (r a), f (a, i)) ∈ SharpP enc := by
-  obtain ⟨p, V, hV, hf⟩ := mem_SharpP_iff_tidy.mp hf
+  have hr := hr.tidy
+  obtain ⟨p, V, hV, hf⟩ := mem_SharpP.mp hf
   let width : α × ℕ → ℕ := fun x => p.eval ((encPair enc encUnary) x).length
   let k : α → ℕ := fun a => p.eval (2 * (enc a).length + 1 + r a)
   let W := andVerifier width V allFalseVerifier
   have hk : ComputableTidilyInPolyTime k enc encUnary := by dsimp [k]; fun_prop
   have hW : ComputableTidilyInPolyTime W
       (encPair (encPair enc encUnary) encBits) encBool := by dsimp [W, width]; fun_prop
-  convert mem_SharpP_of_polyTime_length (polyTime_indexedProductVerifier hr hk hW)
-    (ComputableTidilyInPolyTime.unary_mul.comp (hr.prod hk)) using 1
+  convert mem_SharpP_of_polyTime_length
+    (polyTime_indexedProductVerifier (.of_tidy hr) (.of_tidy hk) (.of_tidy hW))
+    (.of_tidy (ComputableTidilyInPolyTime.unary_mul.comp (hr.prod hk))) using 1
   ext a
   change _ = acceptCount (indexedProductVerifier r k W) a (r a * k a)
   rw [acceptCount_indexedProductVerifier]
@@ -147,18 +154,18 @@ polynomial-time unary range. Boolean expansion uses certified #P products and a 
 parity sign, so no general GapP product closure is assumed. -/
 theorem GapP.prod_range_mem {g : α × ℕ → ℤ} {r : α → ℕ}
     (hg : g ∈ GapP (encPair enc encUnary))
-    (hr : ComputableTidilyInPolyTime r enc encUnary) :
+    (hr : ComputableInPolyTime r enc encUnary) :
     (fun a => ∏ i ∈ range (r a), g (a, i)) ∈ GapP enc := by
   obtain ⟨f₁, h₁, f₂, h₂, hg⟩ := hg
   let select : (α × List Bool) × ℕ → ℕ := fun x =>
     if x.1.2.getD x.2 false then f₂ (x.1.1, x.2) else f₁ (x.1.1, x.2)
-  have hreindex : ComputableTidilyInPolyTime
+  have hreindex : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => (x.1.1, x.2))
       (encPair (encPair enc encBits) encUnary) (encPair enc encUnary) := by fun_prop
   have hselect : select ∈ SharpP (encPair (encPair enc encBits) encUnary) :=
     SharpP.ite_mem (by fun_prop) (SharpP.comp_mem h₂ hreindex) (SharpP.comp_mem h₁ hreindex)
   have hprod := SharpP.prod_range_mem hselect (hr.comp (.fst enc encBits))
-  have hsign : ComputableTidilyInPolyTime
+  have hsign : ComputableInPolyTime
       (fun x : α × List Bool => (-1 : ℤ) ^ x.2.countP id)
       (encPair enc encBits) encIntBin := by fun_prop
   have hsum := GapP.sum_bits_mem

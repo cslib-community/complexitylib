@@ -27,7 +27,7 @@ theorem univ_mem_SPP : (Set.univ : Set (List Bool)) ∈ SPP encBits :=
 
 /-- A non-SPP-style `LWPP` witness for the universal language with target `-2`. -/
 theorem univ_mem_LWPP : (Set.univ : Set (List Bool)) ∈ LWPP encBits :=
-  ⟨fun _ => -2, mem_GapP_of_polyTime (.const (-2)), fun _ => -2, .const (-2),
+  ⟨fun _ => -2, mem_GapP_of_polyTime (.of_tidy (.const (-2))), fun _ => -2, .const (-2),
     fun _ => by lia, fun _ => Or.inr rfl, fun _ => by simp⟩
 
 /-- The empty language in `LWPP` with target `-2`. -/

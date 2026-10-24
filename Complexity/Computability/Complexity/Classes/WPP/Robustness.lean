@@ -104,13 +104,13 @@ theorem GapP.prod_sub_mem {α : Type} {enc : α ↪ List Bool}
     (hf : ComputableInPolyTime f enc (encList encIntBin)) (hg : g ∈ GapP enc) :
     (fun a => ((f a).map (fun z => z - g a)).prod) ∈ GapP enc := by
   have hf := hf.tidy
-  have hc := mem_GapP_of_polyTime (polyTime_selectedProduct hf)
+  have hc := mem_GapP_of_polyTime (.of_tidy (polyTime_selectedProduct hf))
   have hp := GapP.pow_mem_polyTime
-    (GapP.comp_mem (GapP.neg_mem hg) (ComputableTidilyInPolyTime.fst enc encBits))
-    (show ComputableTidilyInPolyTime (fun x : α × List Bool => x.2.countP id)
-      (encPair enc encBits) encUnary by fun_prop)
+    (GapP.comp_mem (GapP.neg_mem hg) (.of_tidy (ComputableTidilyInPolyTime.fst enc encBits)))
+    (.of_tidy (show ComputableTidilyInPolyTime (fun x : α × List Bool => x.2.countP id)
+      (encPair enc encBits) encUnary by fun_prop))
   have hs := GapP.sum_bits_mem (GapP.mul_mem hc hp)
-    (show ComputableTidilyInPolyTime (fun a => (f a).length) enc encUnary by fun_prop)
+    (.of_tidy (show ComputableTidilyInPolyTime (fun a => (f a).length) enc encUnary by fun_prop))
   convert hs using 1
   ext a
   rw [expansion_list]
@@ -133,7 +133,7 @@ private theorem targetWitness {α : Type} {enc : α ↪ List Bool} {A : Set α}
     exact List.mem_map.mpr ⟨g a, hy a ha, sub_self _⟩
   have hnon (a : α) (ha : a ∉ A) : P a = F a := by
     simp [P, F, hno a ha]
-  refine ⟨F - P, GapP.sub_mem' (mem_GapP_of_polyTime hF) hP,
+  refine ⟨F - P, GapP.sub_mem' (mem_GapP_of_polyTime (.of_tidy hF)) hP,
     fun a => ?_, fun a => ?_⟩
   · change (F - P) a = 0 ∨ (F - P) a = F a
     by_cases ha : a ∈ A
@@ -235,7 +235,7 @@ theorem mem_WPP_iff_exists_polyTime_targets {α : Type} {enc : α ↪ List Bool}
       (∀ a, (0 : ℤ) ∉ f a) ∧ (∀ a, a ∈ A → g a ∈ f a) ∧
       ∀ a, a ∉ A → g a = 0 := by
   constructor
-  · rw [mem_WPP_iff_tidy]
+  · rw [mem_WPP]
     rintro ⟨g, hg, f, hf, hn, hr, hA⟩
     refine ⟨g, hg, fun a => [f a], by fun_prop, ?_, ?_, ?_⟩
     · intro a
@@ -256,7 +256,7 @@ theorem mem_LWPP_iff_exists_polyTime_targets {α : Type} {enc : α ↪ List Bool
       (∀ n, (0 : ℤ) ∉ f n) ∧ (∀ a, a ∈ A → g a ∈ f (enc a).length) ∧
       ∀ a, a ∉ A → g a = 0 := by
   constructor
-  · rw [mem_LWPP_iff_tidy]
+  · rw [mem_LWPP]
     rintro ⟨g, hg, f, hf, hn, hr, hA⟩
     refine ⟨g, hg, fun n => [f n], by fun_prop, ?_, ?_, ?_⟩
     · intro n

@@ -12,6 +12,7 @@ public import Complexity.Computability.Complexity.Classes.Time
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Exponential time
@@ -34,7 +35,7 @@ is within `2 ^ n ^ 2` from `n = 4` on, and is not in `P` by the diagonal argumen
 hierarchy theorem [Arora and Barak, Theorem 3.1][AroraBarak09], [Sipser, Theorem 9.10][Sipser2013].
 
 Polynomial-time computation on a bit word `y` paired with unary padding `2 ^ |y|` gives a problem
-in `E` (`Cslib.Complexity.setOf_mem_E_of_computableTidilyInPolyTime_pad`), by writing the padding
+in `E` (`Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad`), by writing the padding
 in exponential time and applying the timed-reduction API.
 
 ## Main definitions
@@ -51,7 +52,7 @@ in exponential time and applying the timed-reduction API.
 * `Cslib.Complexity.E_subset_NE`, `Cslib.Complexity.EXP_subset_NEXP`: determinism is a special
   case.
 * `Cslib.Complexity.P_ssubset_EXP`: polynomial time is strictly within exponential time.
-* `Cslib.Complexity.setOf_mem_E_of_computableTidilyInPolyTime_pad`: polynomial time on inputs
+* `Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad`: polynomial time on inputs
   padded to length `2 ^ n` gives `E`.
 
 ## References
@@ -151,7 +152,7 @@ theorem setOf_diagonal_mem_EXP : {x | diagonal x = true} ∈ EXP encBits :=
   mem_EXP_iff.mpr ⟨2, DTIME_mono_of_eventually_le
     (t₁ := fun n => 2 ^ (4 * n)) (eventually_atTop.mpr ⟨4, fun n hn =>
       Nat.pow_le_pow_right (by norm_num) (by nlinarith)⟩)
-    (setOf_mem_DTIME_of_computableTidilyInO computableTidilyInO_diagonal fun _ => le_rfl)⟩
+    (setOf_mem_DTIME_of_computableInO computableInO_diagonal fun _ => le_rfl)⟩
 
 /-- **Polynomial time is strictly within exponential time**, for problems on bit words: the
 diagonal problem is in `EXP` and not in `P` [Arora and Barak, Theorem 3.1][AroraBarak09]. -/
@@ -165,16 +166,17 @@ theorem P_ssubset_EXP : P encBits ⊂ EXP encBits :=
 unary number, then the words `y` with `Ψ (y, 2 ^ |y|)` form a problem in `E`: the padding
 `y ↦ (y, 2 ^ |y|)` is written within time `O(4 ^ |y|)`, and the problem decided by `Ψ` is in
 `DTIME (n ↦ c (n + 1) ^ d)` (`preimage_mem_DTIME`). -/
-theorem setOf_mem_E_of_computableTidilyInPolyTime_pad {Ψ : List Bool × ℕ → Bool}
-    (hΨ : ComputableTidilyInPolyTime Ψ (encPair encBits encUnary) encBool) :
+theorem setOf_mem_E_of_computableInPolyTime_pad {Ψ : List Bool × ℕ → Bool}
+    (hΨ : ComputableInPolyTime Ψ (encPair encBits encUnary) encBool) :
     {y : List Bool | Ψ (y, 2 ^ y.length) = true} ∈ E encBits := by
+  have hΨ := hΨ.tidy
   obtain ⟨t, s, ht, hs, h⟩ := hΨ
   obtain ⟨c, d, hcd⟩ := (ht.add hs).exists_le
   -- the problem decided by `Ψ`, within polynomial time
   have hB : {x | Ψ x = true} ∈ DTIME (encPair encBits encUnary) fun n => c * (n + 1) ^ d :=
-    setOf_mem_DTIME_of_computableTidilyInO (T := fun x => t x + s x) (S := fun x => t x + s x)
-      (.of_bounds h 1 (fun _ => by omega) (fun _ => by omega)
-        fun x => (h.length_le x).trans (by omega)) hcd
+    setOf_mem_DTIME_of_computableInO (T := fun x => t x + s x) (S := fun x => t x + s x)
+      (.of_tidy (.of_bounds h 1 (fun _ => by omega) (fun _ => by omega)
+        fun x => (h.length_le x).trans (by omega))) hcd
   -- the padding `y ↦ (y, 2 ^ |y|)`
   have hgO : ComputableTidilyInO (fun y : List Bool => (y, 2 ^ y.length)) encBits
       (encPair encBits encUnary) (fun y => 3 * 4 ^ y.length) fun y => 3 * 4 ^ y.length := by
@@ -194,7 +196,7 @@ theorem setOf_mem_E_of_computableTidilyInPolyTime_pad {Ψ : List Bool × ℕ →
       have := hbound y
       simp only [encBits_apply]
       nlinarith
-  refine mem_E_iff.2 ⟨d + 2, preimage_mem_DTIME (C := c * 4 ^ d + 3) hB hgO fun y => ?_⟩
+  refine mem_E_iff.2 ⟨d + 2, preimage_mem_DTIME (C := c * 4 ^ d + 3) hB (.of_tidy hgO) fun y => ?_⟩
   -- the time bound is `2 ^ O(n)`
   set n := (encBits y).length
   have hn : n = y.length := by simp [n, encBits_apply]

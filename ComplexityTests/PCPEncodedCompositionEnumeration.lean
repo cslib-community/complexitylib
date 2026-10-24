@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.PCP.Encoded.Composition.Enumeration
 import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Complete constructive enumeration, exact graph semantics, and encoding inference clients. -/
 
@@ -59,6 +60,8 @@ example : (falseLoop.toGraph id).unsatVal / 476 ≤
 -- The compact-CNF alphabet has an ordinary Pi Fintype as well as a constructive enumeration.
 local instance : FinEnum Bool := FinEnum.ofList [false, true] (by decide)
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun g : Graph ((Fin 3 → Bool) → (Fin 3 → Bool) → Bool) => g.composeEnumerated)
     (Graph.encoding (encPi (encPi encBool)))
@@ -70,11 +73,15 @@ variable {α Input : Type} [FinEnum α] {input : Input ↪ List Bool}
   {constraints : (α → α → Bool) ↪ List Bool} (graph : Input → Graph (α → α → Bool))
   (hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints))
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime (fun x => (graph x).composeEnumerated)
     input (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hg; fun_prop)
   fun_prop
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun x => let g := graph x; g.composeEnumerated)
     input (Graph.encoding (encPi (encPi encBool))) := by polytime

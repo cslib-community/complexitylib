@@ -143,9 +143,11 @@ theorem isVerifier_witnessVerifier (D : Decoder encW) {check : α × β → Bool
 
 /-- The verifier of a witness relation is polynomial-time when its check is. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_witnessVerifier (D : Decoder encW) {check : α × β → Bool}
-    (hcheck : ComputableTidilyInPolyTime check (encPair enc encW) encBool) :
-    ComputableTidilyInPolyTime (witnessVerifier D check) (encPair enc encBits) encBool := by
+theorem computableInPolyTime_witnessVerifier (D : Decoder encW) {check : α × β → Bool}
+    (hcheck : ComputableInPolyTime check (encPair enc encW) encBool) :
+    ComputableInPolyTime (witnessVerifier D check) (encPair enc encBits) encBool := by
+  have hcheck := hcheck.tidy
+  refine .of_tidy ?_
   obtain ⟨_, _, hD⟩ := D.computable
   have hdecode : ComputableTidilyInPolyTime (fun x : α × List Bool => D.decode (unframe x.2))
       (encPair enc encBits) encW :=
@@ -159,12 +161,14 @@ If `check` decides the relation `R` in polynomial time, the witness encoding has
 every member has a witness whose encoding has length at most `p (enc a).length`, then
 `{a | ∃ b, R a b}` is in `NP`. -/
 theorem mem_NP_of_witness (D : Decoder encW) {check : α × β → Bool} {R : α → β → Prop}
-    (hcheck : ComputableTidilyInPolyTime check (encPair enc encW) encBool)
+    (hcheck : ComputableInPolyTime check (encPair enc encW) encBool)
     (hR : ∀ a b, check (a, b) = true ↔ R a b)
     (hp : ∀ a b, R a b → ∃ b', R a b' ∧ (encW b').length ≤ p.eval (enc a).length) :
-    {a | ∃ b, R a b} ∈ NP enc :=
-  mem_NP_iff_tidy.mpr
-    ⟨_, _, computableTidilyInPolyTime_witnessVerifier D hcheck, isVerifier_witnessVerifier D hR hp⟩
+    {a | ∃ b, R a b} ∈ NP enc := by
+  have hcheck := hcheck.tidy
+  exact mem_NP.mpr
+    ⟨_, _, computableInPolyTime_witnessVerifier D (.of_tidy hcheck),
+      isVerifier_witnessVerifier D hR hp⟩
 
 end Witness
 
@@ -191,8 +195,8 @@ private theorem toFinset_selectDistinct_map_append {l : List γ} {S : Finset γ}
 
 /-- Selecting the entries of a list from a mask is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_selectDistinct (encγ : γ ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun x : List γ × List Bool => selectDistinct x.1 x.2)
+theorem computableInPolyTime_selectDistinct (encγ : γ ↪ List Bool) :
+    ComputableInPolyTime (fun x : List γ × List Bool => selectDistinct x.1 x.2)
       (encPair (encList encγ) encBits) (encList encγ) := by
   unfold selectDistinct
   fun_prop
@@ -223,25 +227,29 @@ theorem isVerifier_subsetVerifier {vs : α → List γ}
 
 /-- The verifier of a subset problem is polynomial-time when the candidates and the check are. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_subsetVerifier {encγ : γ ↪ List Bool} {vs : α → List γ}
-    (hvs : ComputableTidilyInPolyTime vs enc (encList encγ)) {check : α × List γ → Bool}
-    (hcheck : ComputableTidilyInPolyTime check (encPair enc (encList encγ)) encBool) :
-    ComputableTidilyInPolyTime (subsetVerifier vs check) (encPair enc encBits) encBool :=
-  hcheck.comp ((fst enc encBits).prod ((computableTidilyInPolyTime_selectDistinct encγ).comp
-    ((hvs.comp (fst enc encBits)).prod (snd enc encBits))))
+theorem computableInPolyTime_subsetVerifier {encγ : γ ↪ List Bool} {vs : α → List γ}
+    (hvs : ComputableInPolyTime vs enc (encList encγ)) {check : α × List γ → Bool}
+    (hcheck : ComputableInPolyTime check (encPair enc (encList encγ)) encBool) :
+    ComputableInPolyTime (subsetVerifier vs check) (encPair enc encBits) encBool :=
+  hcheck.comp
+    ((ComputableInPolyTime.fst enc encBits).prod ((computableInPolyTime_selectDistinct encγ).comp
+    ((hvs.comp (ComputableInPolyTime.fst enc encBits)).prod
+      (ComputableInPolyTime.snd enc encBits))))
 
 /-- **NP membership of subset problems.** If the candidates `vs a` and the check of the selected
 candidates are polynomial-time, and `check` decides `P a` on duplicate-free lists of candidates,
 then having a set `S` of candidates with `P a S` is in `NP`. -/
 theorem mem_NP_of_subsetWitness {encγ : γ ↪ List Bool} {vs : α → List γ}
-    (hvs : ComputableTidilyInPolyTime vs enc (encList encγ)) {check : α × List γ → Bool}
-    (hcheck : ComputableTidilyInPolyTime check (encPair enc (encList encγ)) encBool)
+    (hvs : ComputableInPolyTime vs enc (encList encγ)) {check : α × List γ → Bool}
+    (hcheck : ComputableInPolyTime check (encPair enc (encList encγ)) encBool)
     {P : α → Finset γ → Prop}
     (hP : ∀ a l, l.Nodup → (∀ v ∈ l, v ∈ vs a) → (check (a, l) = true ↔ P a l.toFinset)) :
     {a | ∃ S : Finset γ, (∀ v ∈ S, v ∈ vs a) ∧ P a S} ∈ NP enc := by
+  have hvs := hvs.tidy
+  have hcheck := hcheck.tidy
   obtain ⟨p, hle⟩ := hvs.polyBounded_length.exists_polynomial
-  refine mem_NP_iff_tidy.mpr ⟨p, _,
-    computableTidilyInPolyTime_subsetVerifier hvs hcheck,
+  refine mem_NP.mpr ⟨p, _,
+    computableInPolyTime_subsetVerifier (.of_tidy hvs) (.of_tidy hcheck),
     isVerifier_subsetVerifier (fun a => ?_) hP⟩
   exact (length_le_length_encList encγ (vs a)).trans (hle a)
 
@@ -254,15 +262,16 @@ end Subset
 expects. For the oracle classes, see `Cslib.Complexity.PolyTimeReducible.mem_NPWithOracle`. -/
 theorem PolyTimeReducible.mem_NP {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ NP encB) : A ∈ NP enc := by
-  obtain ⟨f, hf, hAB⟩ := polyTimeReducible_iff_tidy.mp h
-  obtain ⟨q, W, hW, hWB⟩ := mem_NP_iff_tidy.mp hB
+  obtain ⟨f, hf, hAB⟩ := h
+  obtain ⟨q, W, hW, hWB⟩ := Complexity.mem_NP.mp hB
+  have hf := hf.tidy
   have hlen : ComputableTidilyInPolyTime (fun a => q.eval (encB (f a)).length) enc encUnary :=
     (unary_eval q).comp ((encoding_length encB).comp hf)
   obtain ⟨p, hle⟩ := hlen.polyBounded.exists_polynomial
-  refine mem_NP_iff_tidy.mpr ⟨p,
+  refine Complexity.mem_NP.mpr ⟨p,
     fun x => W (f x.1, x.2.take (q.eval (encB (f x.1)).length)), ?_,
     IsVerifier.of_padding (fun a w hw h => ?_) fun a ha => ?_⟩
-  · exact hW.comp ((hf.comp (fst enc encBits)).prod
+  · exact .of_tidy <| hW.tidy.comp ((hf.comp (fst enc encBits)).prod
       (bitsTakeWithInput (snd enc encBits) (hlen.comp (fst enc encBits))))
   · refine (hAB a).2 ((hWB (f a)).2 ⟨_, List.length_take_of_le ?_, h⟩)
     rw [hw]
@@ -282,13 +291,15 @@ theorem PolyTimeReducible.mem_coNP {encB : β ↪ List Bool} {B : Set β}
 `(a, u)` for which `V` accepts `(a, u ++ v)` for some `v` of length `q (enc a).length` form a
 problem in `NP`, for the encoding of pairs. -/
 theorem mem_NP_setOf_exists_append {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) (q : Polynomial ℕ) :
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (q : Polynomial ℕ) :
     {y : α × List Bool | ∃ v : List Bool, v.length = q.eval (enc y.1).length ∧
       V (y.1, y.2 ++ v) = true} ∈ NP (encPair enc encBits) := by
-  refine mem_NP_iff_tidy.mpr
+  have hV := hV.tidy
+  refine mem_NP.mpr
     ⟨q, fun z => V (z.1.1, z.1.2 ++ z.2.take (q.eval (enc z.1.1).length)), ?_, fun y => ?_⟩
-  · exact hV.comp ((fst _ _).fst'.prod (bitsAppend (fst _ _).snd' (bitsTakeWithInput (snd _ _)
-      ((unary_eval q).comp ((encoding_length enc).comp (fst _ _).fst')))))
+  · exact .of_tidy <| hV.comp ((fst _ _).fst'.prod (bitsAppend (fst _ _).snd'
+      (bitsTakeWithInput (snd _ _) ((unary_eval q).comp ((encoding_length enc).comp
+        (fst _ _).fst')))))
   · have hle : q.eval (enc y.1).length ≤ q.eval (encPair enc encBits y).length :=
       q.eval_mono (length_le_encPair_left _ _ _)
     constructor

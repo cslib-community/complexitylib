@@ -13,6 +13,7 @@ public import Complexity.Foundations.Data.BitString.List.Binary
 public import Mathlib.Data.Fin.Tuple.Sort
 import Complexity.Computability.Complexity.FineGrained.Assignment
 import Complexity.Computability.Complexity.FineGrained.BruteForce
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -364,7 +365,7 @@ for some $\delta > 0$, `ThreeColoring` is not decidable within time $2^{\delta |
 polynomial in the length of the encoded graph, for graphs with $|V|$ declared vertices. -/
 theorem ETH.not_decidableInSubexpTime_ThreeColoring_vertices (h : ETH) :
     ¬DecidableInSubexpTime ThreeColoring encGraph fun G => G.1.length :=
-  h.not_decidableInSubexpTime_of_reduction SAT.computableTidilyInPolyTime_toThreeColoring
+  h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toThreeColoring
     (fun φ _ => SAT.toThreeColoring_mem_iff φ) (k := 93) fun φ hφ => by
       have := SAT.length_toThreeColoring_le hφ
       nlinarith
@@ -859,7 +860,7 @@ private theorem computableTidilyInPolyTime_adjBoolWithInput
     (hu : ComputableTidilyInPolyTime u encIn encNat)
     (hv : ComputableTidilyInPolyTime v encIn encNat) :
     ComputableTidilyInPolyTime (fun x => (G x).adjBool (u x) (v x)) encIn encBool :=
-  Graph.computableTidilyInPolyTime_adjBool.comp ((hG.prod hu).prod hv)
+  Graph.computableInPolyTime_adjBool.tidy.comp ((hG.prod hu).prod hv)
 
 @[fun_prop]
 private theorem computableTidilyInPolyTime_unary_div'
@@ -1264,7 +1265,8 @@ theorem decidableInExpTime_ThreeColoring_of_bpis {M : ℕ} (hM : 0 < M) {δ : �
       (fun G => G.1 * Nat.log 2 G.1) δ) :
     DecidableInExpTime ThreeColoring encGraph (fun H => H.1.length) (1 / M + 10 * δ) := by
   obtain ⟨e, h⟩ := h
-  obtain ⟨g, t, c, hg, hgB, ht⟩ := h.exists_computableTidilyInO
+  obtain ⟨g, t, c, hg, hgB, ht⟩ := h.exists_computableInO
+  have hg := hg.tidy
   obtain ⟨d, hstep⟩ := exists_computableTidilyInO_step hg
   obtain ⟨dn, _, hn⟩ := computableTidilyInPolyTime_rounds.exists_degree
   obtain ⟨di, _, hi⟩ := computableTidilyInPolyTime_init.exists_degree
@@ -1308,7 +1310,7 @@ theorem decidableInExpTime_ThreeColoring_of_bpis {M : ℕ} (hM : 0 < M) {δ : �
   set E := dn + di + 2 * d + 2 * da + d_nd * e + 4
   set C₂ : ℝ := c * 2 ^ (5 * δ) * ((c_nd : ℝ) + 1) ^ e + c + 1
   set C₀ : ℝ := 3 + C₃ + (2 ^ K_M + 1 : ℝ) * (C₁ + C₂)
-  refine .of_computableTidilyInO hsearch
+  refine DecidableInExpTime.of_computableInO (.of_tidy hsearch)
     (fun H => (search_eq_true_iff (fun G => (hgB G).symm) H).symm) ⌈C₀⌉₊ E fun H => ?_
   set L := (encGraph H).length
   set N := H.1.length
@@ -1505,7 +1507,7 @@ theorem ETH.not_decidableInSubexpTime_BipartitePermutationIndependentSet_binary 
       fun G => G.1 * Nat.log 2 G.1 := by
   intro hsub
   refine h.not_decidableInSubexpTime_BipartitePermutationIndependentSet ?_
-  exact hsub.of_reduction BipartitePermutationIndependentSet.computableTidilyInPolyTime_toBinary
+  exact hsub.of_reduction BipartitePermutationIndependentSet.computableInPolyTime_toBinary
     (fun _ => Iff.rfl) (c := 1) fun G => by dsimp only [id]; omega
 
 /-- **Ceiling-logarithm variant of the Lokshtanov–Marx–Saurabh ETH lower bound**

@@ -222,7 +222,7 @@ private theorem dualChunk_inSpace {n j : α → ℕ}
     (hn : ComputableTidilyInSpace n encIn encNat Bs)
     (hj : ComputableTidilyInSpace j encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => dualChunk tm C d (n x) (j x)) encIn encBits Bs := by
-  have hg := (Tableau.gateCode_inSpace tm (.of_tidy hn) (.of_tidy (timeBound_inSpace C d hin hn))
+  have hg := (Tableau.gateCode_inSpace tm (.of_tidy hn) (timeBound_inSpace C d hin (.of_tidy hn))
     hin
     (.of_tidy hj)).tidy
   have hframe : ComputableTidilyInSpace (fun g => frame (encGate g)) encGate encBits
@@ -237,7 +237,7 @@ private theorem dualChunk_inSpace {n j : α → ℕ}
 private theorem dualTrailer_inSpace {n : α → ℕ}
     (hn : ComputableTidilyInSpace n encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => (dualSpec tm C d).trailer (n x)) encIn encBits Bs := by
-  have hT := timeBound_inSpace C d hin hn
+  have hT := (timeBound_inSpace C d hin (.of_tidy hn)).tidy
   have ho : ComputableTidilyInSpace (fun x => Tableau.outWire k State (n x)
       (timeBound C d (n x))) encIn encNat Bs :=
     budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
@@ -278,8 +278,9 @@ theorem computableInLogSpace_dualTableauInstance :
   have hi := snd' (snd' hs)
   refine (dualSpec tm C d).computableInLogSpace
     (encMonotoneCircuitValue_dualTableauInstance tm C d)
-    (numGates_inSpace (k := k) (State := State) hin (timeBound_inSpace C d hin hn))
-    (dualChunk_inSpace tm C d hin hn hi) (dualTrailer_inSpace tm C d hin hn) ?_
+    (numGates_inSpace (k := k) (State := State) hin (timeBound_inSpace C d hin (.of_tidy hn)))
+    (.of_tidy (dualChunk_inSpace tm C d hin hn hi)) (.of_tidy (dualTrailer_inSpace tm C d hin hn))
+      ?_
   change PolynomiallyBounded fun n => Tableau.numGates k State (timeBound C d n)
   simp only [Tableau.numGates, Tableau.blockSize, Tableau.colStart, Tableau.gfStart,
     Tableau.globStart, Tableau.numCols, timeBound]
@@ -291,7 +292,8 @@ end Instance
 positive and negative rails of its decider's tableau. -/
 theorem logSpaceReducible_of_mem_P {α : Type} {enc : α ↪ List Bool} {A : Set α}
     (hA : A ∈ P enc) : LogSpaceReducible enc encMonotoneCircuitValue A MonotoneCircuitValue := by
-  obtain ⟨f, ⟨t, s, ht, -, k, State, hfin, tm, htm⟩, hAf⟩ := mem_P_iff_tidy.mp hA
+  obtain ⟨f, hfpoly, hAf⟩ := hA
+  obtain ⟨t, s, ht, -, k, State, hfin, tm, htm⟩ := hfpoly.tidy
   have := Fintype.ofFinite State
   classical
   obtain ⟨C, d, htle⟩ := ht.exists_le

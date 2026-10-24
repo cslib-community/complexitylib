@@ -115,9 +115,11 @@ def merlinArthurRepeat (enc : α ↪ List Bool) (q r p : Polynomial ℕ) (V : α
 
 /-- Majority votes of a polynomial-time Merlin–Arthur verifier take polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_merlinArthurRepeat {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) (q r p : Polynomial ℕ) :
-    ComputableTidilyInPolyTime (merlinArthurRepeat enc q r p V) (encPair enc encBits) encBool := by
+theorem computableInPolyTime_merlinArthurRepeat {V : α × List Bool → Bool}
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (q r p : Polynomial ℕ) :
+    ComputableInPolyTime (merlinArthurRepeat enc q r p V) (encPair enc encBits) encBool := by
+  have hV := hV.tidy
+  refine .of_tidy ?_
   unfold merlinArthurRepeat repeatMajority repeatVotes
   fun_prop
 
@@ -189,14 +191,18 @@ verifier with proofs of length `q` and error at most `2 ^ (-e(n))`. The proof le
 before the error, so the error can be made smaller than `2 ^ (-q(n))`. -/
 theorem mem_MA_iff_exists_forall_errorExponent :
     A ∈ MA enc ↔ ∃ q : Polynomial ℕ, ∀ e : Polynomial ℕ, ∃ (p : Polynomial ℕ)
-      (V : α × List Bool → Bool), ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
+      (V : α × List Bool → Bool), ComputableInPolyTime V (encPair enc encBits) encBool ∧
         IsMerlinArthurVerifierWithErrorExponent enc e q p V A := by
-  rw [mem_MA_iff_tidy]
-  refine ⟨fun ⟨q, p, V, hV, h⟩ => ⟨q, fun e => ⟨12 * e * p, _,
-    computableTidilyInPolyTime_merlinArthurRepeat hV _ _ _, h.repeatMajority e⟩⟩,
-    fun ⟨q, h⟩ => ?_⟩
-  obtain ⟨p, V, hV, h⟩ := h 2
-  exact ⟨q, p, V, hV, h.isMerlinArthurVerifier fun _ => by simp⟩
+  have this : A ∈ MA enc ↔ ∃ q : Polynomial ℕ, ∀ e : Polynomial ℕ, ∃ (p : Polynomial ℕ)
+      (V : α × List Bool → Bool), ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
+      IsMerlinArthurVerifierWithErrorExponent enc e q p V A := by
+    rw [mem_MA]
+    refine ⟨fun ⟨q, p, V, hV, h⟩ => ⟨q, fun e => ⟨12 * e * p, _,
+      (computableInPolyTime_merlinArthurRepeat hV _ _ _).tidy, h.repeatMajority e⟩⟩,
+      fun ⟨q, h⟩ => ?_⟩
+    obtain ⟨p, V, hV, h⟩ := h 2
+    exact ⟨q, p, V, (.of_tidy hV), h.isMerlinArthurVerifier fun _ => by simp⟩
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 /-! ### Error reduction for `AM` -/
 
@@ -228,9 +234,11 @@ def arthurMerlinRepeat (enc : α ↪ List Bool) (r p q : Polynomial ℕ) (V : α
 
 /-- Parallel majority votes of a polynomial-time Arthur–Merlin verifier take polynomial time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_arthurMerlinRepeat {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) (r p q : Polynomial ℕ) :
-    ComputableTidilyInPolyTime (arthurMerlinRepeat enc r p q V) (encPair enc encBits) encBool := by
+theorem computableInPolyTime_arthurMerlinRepeat {V : α × List Bool → Bool}
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (r p q : Polynomial ℕ) :
+    ComputableInPolyTime (arthurMerlinRepeat enc r p q V) (encPair enc encBits) encBool := by
+  have hV := hV.tidy
+  refine .of_tidy ?_
   unfold arthurMerlinRepeat
   fun_prop
 
@@ -344,13 +352,17 @@ polynomial `e`, it has a polynomial-time Arthur–Merlin verifier with error at 
 `2 ^ (-e(n))`. -/
 theorem mem_AM_iff_forall_errorExponent :
     A ∈ AM enc ↔ ∀ e : Polynomial ℕ, ∃ (p q : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
+      ComputableInPolyTime V (encPair enc encBits) encBool ∧
         IsArthurMerlinVerifierWithErrorExponent enc e p q V A := by
-  rw [mem_AM_iff_tidy]
-  refine ⟨fun ⟨p, q, V, hV, h⟩ e => ⟨12 * e * p, 12 * e * q, _,
-    computableTidilyInPolyTime_arthurMerlinRepeat hV _ _ _, h.repeatMajority e⟩, fun h => ?_⟩
-  obtain ⟨p, q, V, hV, h⟩ := h 2
-  exact ⟨p, q, V, hV, h.isArthurMerlinVerifier fun _ => by simp⟩
+  have this : A ∈ AM enc ↔ ∀ e : Polynomial ℕ, ∃ (p q : Polynomial ℕ) (V : α × List Bool → Bool),
+      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
+      IsArthurMerlinVerifierWithErrorExponent enc e p q V A := by
+    rw [mem_AM]
+    refine ⟨fun ⟨p, q, V, hV, h⟩ e => ⟨12 * e * p, 12 * e * q, _,
+      (computableInPolyTime_arthurMerlinRepeat hV _ _ _).tidy, h.repeatMajority e⟩, fun h => ?_⟩
+    obtain ⟨p, q, V, hV, h⟩ := h 2
+    exact ⟨p, q, V, (.of_tidy hV), h.isArthurMerlinVerifier fun _ => by simp⟩
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 /-! ### `MA ⊆ AM` -/
 
@@ -368,7 +380,7 @@ theorem MA_subset_AM : MA enc ⊆ AM enc := by
     (ComputableTidilyInPolyTime.unary_eval P).comp (ComputableTidilyInPolyTime.encoding_length enc)
   refine ⟨P, q, fun x => W (x.1, x.2.drop (P.eval (enc x.1).length) ++
     x.2.take (P.eval (enc x.1).length)), ?_, fun a => ?_⟩
-  · exact .of_tidy <| (computableTidilyInPolyTime_merlinArthurRepeat hV.tidy _ _ _).comp
+  · exact .of_tidy <| (computableInPolyTime_merlinArthurRepeat hV _ _ _).tidy.comp
       ((ComputableTidilyInPolyTime.fst enc encBits).prod
         (.bitsAppend (.bitsDropWithInput (.snd enc encBits) (hPu.comp (.fst enc encBits)))
           (.bitsTakeWithInput (.snd enc encBits) (hPu.comp (.fst enc encBits)))))
@@ -444,7 +456,7 @@ theorem MA_subset_SBP : MA enc ⊆ SBP enc := by
   set W := merlinArthurRepeat enc q (6 * (q + 2)) p V with hW
   set P : Polynomial ℕ := 12 * (q + 2) * p with hP
   have hf : (fun a => acceptCount W a ((q + P).eval (enc a).length)) ∈ SharpP enc :=
-    ⟨q + P, W, .of_tidy (computableTidilyInPolyTime_merlinArthurRepeat hV.tidy _ _ _), fun _ => rfl⟩
+    ⟨q + P, W, (computableInPolyTime_merlinArthurRepeat hV _ _ _), fun _ => rfl⟩
   have hd : ComputableTidilyInPolyTime (fun a => 2 ^ P.eval (enc a).length) enc encNat :=
     ComputableTidilyInPolyTime.binary_two_pow.comp
       ((ComputableTidilyInPolyTime.unary_eval P).comp (.encoding_length enc))
@@ -530,7 +542,7 @@ theorem mem_AM_of_exists {B : Set (α × List Bool)} (hB : B ∈ AM (encPair enc
       x.2.take ((pB.comp L).eval (enc x.1).length) ++
         x.2.drop ((pB.comp L).eval (enc x.1).length + p.eval (enc x.1).length)), ?_,
     fun a => ?_⟩
-  · exact .of_tidy <| hVB.comp (((ComputableTidilyInPolyTime.fst _ _).prod
+  · exact .of_tidy <| hVB.tidy.comp (((ComputableTidilyInPolyTime.fst _ _).prod
       (ComputableTidilyInPolyTime.bitsTakeWithInput
         (ComputableTidilyInPolyTime.bitsDropWithInput (.snd _ _) hP) hp)).prod
       (ComputableTidilyInPolyTime.bitsAppend

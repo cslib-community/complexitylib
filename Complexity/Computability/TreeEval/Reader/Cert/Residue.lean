@@ -9,11 +9,12 @@ module
 
 public import Complexity.Computability.TreeEval.Reader.Defs
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 
 /-!
 # Residues within linear work space
 
-The residue operations of `Cslib.TreeEval.Reader` are tidily computable within work space linear
+The residue operations of `Cslib.TreeEval.Reader` are computable within work space linear
 in the lengths of their encoded arguments.
 
 ## Main results
@@ -43,41 +44,54 @@ private theorem proj3 :
 
 /-- The sum modulo `p`, from `(p, a, b)`. -/
 theorem addMod_inSpace :
-    ComputableTidilyInSpace (fun q : ℕ × ℕ × ℕ => addMod q.1 q.2.1 q.2.2) encNat3 encNat
+    ComputableInSpace (fun q : ℕ × ℕ × ℕ => addMod q.1 q.2.1 q.2.2) encNat3 encNat
       fun q => (encNat3 q).length := by
-  obtain ⟨hp, ha, hb⟩ := proj3
-  exact budget_comp_lin natMod (linear_mul _)
-    (budget_prod (budget_comp_lin natAdd linear_succ (budget_prod ha hb)) hp)
+  have this : ComputableTidilyInSpace (fun q : ℕ × ℕ × ℕ => addMod q.1 q.2.1 q.2.2) encNat3 encNat
+      fun q => (encNat3 q).length := by
+    obtain ⟨hp, ha, hb⟩ := proj3
+    exact budget_comp_lin natMod (linear_mul _)
+      (budget_prod (budget_comp_lin natAdd linear_succ (budget_prod ha hb)) hp)
+  simpa only [computableInSpace_iff_computableTidilyInSpace] using this
 
 /-- The product modulo `p`, from `(p, a, b)`. -/
 theorem mulMod_inSpace :
-    ComputableTidilyInSpace (fun q : ℕ × ℕ × ℕ => mulMod q.1 q.2.1 q.2.2) encNat3 encNat
+    ComputableInSpace (fun q : ℕ × ℕ × ℕ => mulMod q.1 q.2.1 q.2.2) encNat3 encNat
       fun q => (encNat3 q).length := by
-  obtain ⟨hp, ha, hb⟩ := proj3
-  exact budget_comp_lin natMod (linear_mul _)
-    (budget_prod (budget_comp_lin natMul (linear_mul _) (budget_prod ha hb)) hp)
+  have this : ComputableTidilyInSpace (fun q : ℕ × ℕ × ℕ => mulMod q.1 q.2.1 q.2.2) encNat3 encNat
+      fun q => (encNat3 q).length := by
+    obtain ⟨hp, ha, hb⟩ := proj3
+    exact budget_comp_lin natMod (linear_mul _)
+      (budget_prod (budget_comp_lin natMul (linear_mul _) (budget_prod ha hb)) hp)
+  simpa only [computableInSpace_iff_computableTidilyInSpace] using this
 
 /-- The negation modulo `p`, from `(p, a)`. -/
 theorem negMod_inSpace :
-    ComputableTidilyInSpace (fun q : ℕ × ℕ => negMod q.1 q.2) (encPair encNat encNat) encNat
+    ComputableInSpace (fun q : ℕ × ℕ => negMod q.1 q.2) (encPair encNat encNat) encNat
       fun q => (encPair encNat encNat q).length := by
-  have hp := fst encNat encNat
-  have hm := budget_comp_lin natMod (linear_mul _) (budget_prod (snd encNat encNat) hp)
-  exact budget_comp_lin natMod (linear_mul _)
-    (budget_prod (budget_comp_lin natSub linear_succ (budget_prod hm hp)) hp)
+  have this : ComputableTidilyInSpace (fun q : ℕ × ℕ => negMod q.1 q.2) (encPair encNat encNat)
+      encNat fun q => (encPair encNat encNat q).length := by
+    have hp := fst encNat encNat
+    have hm := budget_comp_lin natMod (linear_mul _) (budget_prod (snd encNat encNat) hp)
+    exact budget_comp_lin natMod (linear_mul _)
+      (budget_prod (budget_comp_lin natSub linear_succ (budget_prod hm hp)) hp)
+  simpa only [computableInSpace_iff_computableTidilyInSpace] using this
 
 /-- The residue of `x` or of `1 - x` modulo `p`, from `((p, x), b)`. -/
 theorem chi_inSpace :
-    ComputableTidilyInSpace (fun q : (ℕ × ℕ) × Bool => chi q.1.1 q.2 q.1.2)
+    ComputableInSpace (fun q : (ℕ × ℕ) × Bool => chi q.1.1 q.2 q.1.2)
       (encPair (encPair encNat encNat) encBool) encNat
       fun q => (encPair (encPair encNat encNat) encBool q).length := by
-  have hpx := fst (encPair encNat encNat) encBool
-  have hp := fst' hpx
-  have hmod := budget_comp_lin natMod (linear_mul _) (budget_prod (snd' hpx) hp)
-  have hneg := budget_comp_linear negMod_inSpace hpx
-  have hadd := budget_comp_linear addMod_inSpace
-    (budget_prod hp (budget_prod (budget_const 1 (.refl _)) hneg))
-  exact (budget_ite (snd _ _) hmod hadd).of_enc_eq fun q => by simp only [chi]
+  have this : ComputableTidilyInSpace (fun q : (ℕ × ℕ) × Bool => chi q.1.1 q.2 q.1.2)
+      (encPair (encPair encNat encNat) encBool) encNat fun q =>
+      (encPair (encPair encNat encNat) encBool q).length := by
+    have hpx := fst (encPair encNat encNat) encBool
+    have hp := fst' hpx
+    have hmod := budget_comp_lin natMod (linear_mul _) (budget_prod (snd' hpx) hp)
+    have hneg := budget_comp_linear negMod_inSpace.tidy hpx
+    have hadd := budget_comp_linear addMod_inSpace.tidy
+      (budget_prod hp (budget_prod (budget_const 1 (.refl _)) hneg))
+    exact (budget_ite (snd _ _) hmod hadd).of_enc_eq fun q => by simp only [chi]
+  simpa only [computableInSpace_iff_computableTidilyInSpace] using this
 
 /-- One factor of a power modulo `p`, on `(p, a, acc)`. -/
 private def powStep (q : ℕ × ℕ × ℕ) : ℕ × ℕ × ℕ := (q.1, q.2.1, mulMod q.1 q.2.2 q.2.1)
@@ -97,26 +111,29 @@ theorem powMod_le {p a : ℕ} {k : ℕ} (hk : k ≤ p - 2) : powMod p a k ≤ p 
 
 /-- **The inverse of the unit of round `j`**, `unitInv p j` from `(p, j)`. -/
 theorem unitInv_inSpace :
-    ComputableTidilyInSpace (fun q : ℕ × ℕ => unitInv q.1 q.2) (encPair encNat encNat) encNat
+    ComputableInSpace (fun q : ℕ × ℕ => unitInv q.1 q.2) (encPair encNat encNat) encNat
       fun q => (encPair encNat encNat q).length := by
-  have hp := fst encNat encNat
-  have hstep : ComputableTidilyInSpace powStep encNat3 encNat3 fun q => (encNat3 q).length := by
-    obtain ⟨hp, ha, hacc⟩ := proj3
-    exact budget_prod hp (budget_prod ha
-      (budget_comp_linear mulMod_inSpace (budget_prod hp (budget_prod hacc ha))))
-  have hinit := budget_prod hp (budget_prod (budget_comp_lin natSucc linear_succ (snd _ _))
-    (budget_comp_lin natMod (linear_mul _) (budget_prod (budget_const 1 (.refl _)) hp)))
-  have hn := budget_comp_lin natPred linear_succ (budget_comp_lin natPred linear_succ hp)
-  refine (snd' (snd' (budget_iterate hn hinit hstep (fun q k hk => ?_)
-    (.of_le_linear 4 8 fun q => le_rfl)))).of_enc_eq fun q => by rw [iterate_powStep]; rfl
-  rw [iterate_powStep]
-  have h₁ := ComputableTidilyInO.length_encNat_mono (powMod_le (p := q.1) (a := q.2 + 1)
-    (k := k) (by omega))
-  have h₂ := length_encNat_add_le_add q.1 1
-  have h₃ := length_encNat_add_le_add q.2 1
-  have h₄ : (encNat 1).length = 1 := rfl
-  simp only [length_encPair] at h₁ h₂ h₃ ⊢
-  omega
+  have this : ComputableTidilyInSpace (fun q : ℕ × ℕ => unitInv q.1 q.2) (encPair encNat encNat)
+      encNat fun q => (encPair encNat encNat q).length := by
+    have hp := fst encNat encNat
+    have hstep : ComputableTidilyInSpace powStep encNat3 encNat3 fun q => (encNat3 q).length := by
+      obtain ⟨hp, ha, hacc⟩ := proj3
+      exact budget_prod hp (budget_prod ha
+        (budget_comp_linear mulMod_inSpace.tidy (budget_prod hp (budget_prod hacc ha))))
+    have hinit := budget_prod hp (budget_prod (budget_comp_lin natSucc linear_succ (snd _ _))
+      (budget_comp_lin natMod (linear_mul _) (budget_prod (budget_const 1 (.refl _)) hp)))
+    have hn := budget_comp_lin natPred linear_succ (budget_comp_lin natPred linear_succ hp)
+    refine (snd' (snd' (budget_iterate hn hinit hstep (fun q k hk => ?_)
+      (.of_le_linear 4 8 fun q => le_rfl)))).of_enc_eq fun q => by rw [iterate_powStep]; rfl
+    rw [iterate_powStep]
+    have h₁ := ComputableTidilyInO.length_encNat_mono (powMod_le (p := q.1) (a := q.2 + 1)
+      (k := k) (by omega))
+    have h₂ := length_encNat_add_le_add q.1 1
+    have h₃ := length_encNat_add_le_add q.2 1
+    have h₄ : (encNat 1).length = 1 := rfl
+    simp only [length_encPair] at h₁ h₂ h₃ ⊢
+    omega
+  simpa only [computableInSpace_iff_computableTidilyInSpace] using this
 
 end Reader
 

@@ -104,9 +104,9 @@ theorem satisfiable_mapConstraints_iff (g : Graph C) (f : C → C')
 /-- Changing every descriptor charges the transformation, copying endpoints, and the output list. -/
 @[fun_prop]
 theorem isPolyTime_mapConstraints {graph : Input → Graph C} {f : C → C'}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc))
-    (hf : ComputableTidilyInPolyTime f enc enc') :
-    ComputableTidilyInPolyTime (fun x => (graph x).mapConstraints f)
+    (hgraph : ComputableInPolyTime graph input (encoding enc))
+    (hf : ComputableInPolyTime f enc enc') :
+    ComputableInPolyTime (fun x => (graph x).mapConstraints f)
       input (encoding enc') := by
   unfold mapConstraints
   polytime
@@ -115,9 +115,11 @@ theorem isPolyTime_mapConstraints {graph : Input → Graph C} {f : C → C'}
 @[fun_prop]
 theorem isPolyTime_constraintTable [Fintype α] {alphabet : α ↪ List Bool}
     {eval : C → α → α → Bool}
-    (heval : ComputableTidilyInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    ComputableTidilyInPolyTime eval enc (encPi (encPi encBool)) := by
+    ComputableInPolyTime eval enc (encPi (encPi encBool)) := by
+  have heval := heval.tidy
+  refine .of_tidy ?_
   apply ComputableTidilyInPolyTime.pi
   intro a
   apply ComputableTidilyInPolyTime.pi
@@ -129,16 +131,16 @@ The source descriptor may have unbounded encoded size. -/
 @[fun_prop]
 theorem isPolyTime_tabulateConstraints [Fintype α] {alphabet : α ↪ List Bool}
     {eval : C → α → α → Bool}
-    (heval : ComputableTidilyInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    ComputableTidilyInPolyTime (mapConstraints eval) (encoding enc)
+    ComputableInPolyTime (mapConstraints eval) (encoding enc)
       (encoding (encPi (encPi encBool))) :=
   isPolyTime_mapConstraints (.id' (encIn := encoding enc)) (isPolyTime_constraintTable heval)
 
 /-- Evaluate a stored constraint table at both runtime alphabet symbols. -/
 @[fun_prop]
 theorem isPolyTime_constraintTableEval [Fintype α] (alphabet : α ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun p : (α → α → Bool) × α × α => p.1 p.2.1 p.2.2)
+    ComputableInPolyTime (fun p : (α → α → Bool) × α × α => p.1 p.2.1 p.2.2)
       (encPair (encPi (encPi encBool)) (encPair alphabet alphabet)) encBool := by
   polytime
 

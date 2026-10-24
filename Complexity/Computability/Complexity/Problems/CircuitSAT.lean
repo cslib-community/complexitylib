@@ -103,8 +103,9 @@ private theorem verifier_eq_evalOutput (p : (Σ n, Circuit signature n 1) × Lis
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The `CircuitSAT` verifier is polynomial-time, on certificates of arbitrary length. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair (encCircuit 1) encBits) encBool := by
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair (encCircuit 1) encBits) encBool := by
+  refine .of_tidy ?_
   have hraw : ComputableTidilyInPolyTime
       (fun p : (Σ n, Circuit signature n 1) × List Bool => ((p.1.1, p.1.2.code), p.2))
       (encPair (encCircuit 1) encBits) (encPair (encPair encUnary encCode) encBits) :=
@@ -120,7 +121,7 @@ theorem computableTidilyInPolyTime_verifier :
 
 /-- **Circuit satisfiability is in `NP`**, with certificates as long as the encoded circuit. -/
 theorem mem_NP : CircuitSAT ∈ NP (encCircuit 1) :=
-  ⟨Polynomial.X, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end CircuitSAT
 
@@ -389,7 +390,7 @@ private theorem computableTidilyInPolyTime_circuitBlock :
 private theorem computableTidilyInPolyTime_circuitGates :
     ComputableTidilyInPolyTime circuitGates encCNF (encList encGate) := by
   have hsteps := computableTidilyInPolyTime_circuitSteps
-  have hvars := SAT.computableTidilyInPolyTime_vars
+  have hvars := SAT.computableInPolyTime_vars.tidy
   have hargs : ComputableTidilyInPolyTime (fun p : CNF ℕ × ((Literal ℕ × Bool) × ℕ) =>
       (((p.1.vars.length + 3 * p.2.2, p.1.vars.idxOf p.2.1.1.1), p.2.1.1.2), p.2.1.2))
       (encPair encCNF (encPair (encPair (encPair encNat encBool) encBool) encUnary))
@@ -401,11 +402,12 @@ private theorem computableTidilyInPolyTime_circuitGates :
 
 /-- Building the circuit of a formula is polynomial-time, from the encoding `encCNF` of formulas
 to the binary encoding `encCircuit 1` of circuits. -/
-private theorem computableTidilyInPolyTime_toCircuit :
-    ComputableTidilyInPolyTime toCircuit encCNF (encCircuit 1) := by
+private theorem computableInPolyTime_toCircuit :
+    ComputableInPolyTime toCircuit encCNF (encCircuit 1) := by
+  refine .of_tidy ?_
   have hg := computableTidilyInPolyTime_circuitGates
   have hs := computableTidilyInPolyTime_circuitSteps
-  have hvars := SAT.computableTidilyInPolyTime_vars
+  have hvars := SAT.computableInPolyTime_vars.tidy
   have hn : ComputableTidilyInPolyTime (fun φ : CNF ℕ => φ.vars.length) encCNF encUnary := by
     fun_prop
   have hout : ComputableTidilyInPolyTime
@@ -418,7 +420,7 @@ private theorem computableTidilyInPolyTime_toCircuit :
 
 /-- **`SAT` reduces to `CircuitSAT`** in polynomial time. -/
 theorem polyTimeReducible_CircuitSAT : PolyTimeReducible encCNF (encCircuit 1) SAT CircuitSAT :=
-  ⟨toCircuit, .of_tidy computableTidilyInPolyTime_toCircuit,
+  ⟨toCircuit, computableInPolyTime_toCircuit,
     fun φ => (toCircuit_mem_CircuitSAT_iff φ).symm⟩
 
 end SAT

@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Complexity.Classes.PCP.NP
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Sparse proof tables, duplicate addresses, malformed witnesses, and exact NP containment. -/
 
@@ -54,13 +55,13 @@ example :
 
 example : ComputableTidilyInPolyTime requireBit.tableVerifier
     (encPair (encPair encBool encNat) encBits) encBool :=
-  PCPVerifier.isPolyTime_tableVerifier requireBit_polyTime requireBit_coins
+  (PCPVerifier.isPolyTime_tableVerifier requireBit_polyTime requireBit_coins).tidy
 
 example : ComputableTidilyInPolyTime (fun p : (Bool × ℕ) × List Bool =>
       let input := p.1
       requireBit.tableVerifier (input, p.2))
     (encPair (encPair encBool encNat) encBits) encBool := by
-  have h := PCPVerifier.isPolyTime_tableVerifier requireBit_polyTime requireBit_coins
+  have h := (PCPVerifier.isPolyTime_tableVerifier requireBit_polyTime requireBit_coins).tidy
   polytime
 
 -- The table is the restriction of an actual finite PCP proof even for enormous addresses.
@@ -109,7 +110,9 @@ example : noQueries.queryTable () = [] := by decide
 
 example : noQueries.tableVerifier ((), []) = true := by decide
 
-example (enc : Unit ↪ List Bool) : ComputableTidilyInPolyTime noQueries.tableVerifier
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example (enc : Unit ↪ List Bool) : ComputableInPolyTime noQueries.tableVerifier
     (encPair enc encBits) encBool := by
   apply PCPVerifier.isPolyTime_tableVerifier (c := 0)
   · refine ⟨?_, ?_, ?_⟩ <;> unfold noQueries <;> fun_prop

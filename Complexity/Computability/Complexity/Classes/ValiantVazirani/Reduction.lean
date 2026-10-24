@@ -45,7 +45,7 @@ injective `Cslib.Complexity.splitVarToNat`.
 
 ## Main results
 
-* `Cslib.Complexity.ValiantVazirani.computableTidilyInPolyTime_reduce`: polynomial time.
+* `Cslib.Complexity.ValiantVazirani.computableInPolyTime_reduce`: polynomial time.
 * `Cslib.Complexity.ValiantVazirani.reduce_mem_UNSAT`: soundness.
 * `Cslib.Complexity.ValiantVazirani.three_mul_two_pow_le_card_reduce_mem_USAT`,
   `Cslib.Complexity.ValiantVazirani.three_div_le_dens_reduce_mem_USAT`: success probability
@@ -112,9 +112,7 @@ def reduce (x : CNF ℕ × List Bool) : CNF ℕ :=
 
 /-! ### Polynomial time -/
 
-/-- Building the clauses of one step is polynomial-time. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_stepClauses :
+private theorem computableTidilyInPolyTime_stepClauses :
     ComputableTidilyInPolyTime (fun p : Bool × Var × Var × Var =>
       stepClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encBool (encPair encVar (encPair encVar encVar)))
@@ -122,9 +120,18 @@ theorem computableTidilyInPolyTime_stepClauses :
   unfold stepClauses encVar
   fun_prop
 
-/-- Building the clauses of one equation is polynomial-time. -/
+attribute [local fun_prop] computableTidilyInPolyTime_stepClauses
+
+/-- Building the clauses of one step is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_rowClauses :
+theorem computableInPolyTime_stepClauses :
+    ComputableInPolyTime (fun p : Bool × Var × Var × Var =>
+      stepClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (encPair encBool (encPair encVar (encPair encVar encVar)))
+      (encList (encList (encPair encVar encBool))) :=
+  .of_tidy (computableTidilyInPolyTime_stepClauses)
+
+private theorem computableTidilyInPolyTime_rowClauses :
     ComputableTidilyInPolyTime (fun p : List ℕ × ℕ × List Bool × Bool =>
       rowClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair (encList encNat) (encPair encUnary (encPair encBits encBool)))
@@ -132,14 +139,33 @@ theorem computableTidilyInPolyTime_rowClauses :
   unfold rowClauses encVar
   fun_prop
 
-/-- Building all equations is polynomial-time, with the number of equations in unary. -/
+attribute [local fun_prop] computableTidilyInPolyTime_rowClauses
+
+/-- Building the clauses of one equation is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_hashCNF :
+theorem computableInPolyTime_rowClauses :
+    ComputableInPolyTime (fun p : List ℕ × ℕ × List Bool × Bool =>
+      rowClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (encPair (encList encNat) (encPair encUnary (encPair encBits encBool)))
+      (encList (encList (encPair encVar encBool))) :=
+  .of_tidy (computableTidilyInPolyTime_rowClauses)
+
+private theorem computableTidilyInPolyTime_hashCNF :
     ComputableTidilyInPolyTime (fun p : List ℕ × ℕ × List Bool => hashCNF p.1 p.2.1 p.2.2)
       (encPair (encList encNat) (encPair encUnary encBits))
       (encList (encList (encPair encVar encBool))) := by
   unfold hashCNF
   fun_prop
+
+attribute [local fun_prop] computableTidilyInPolyTime_hashCNF
+
+/-- Building all equations is polynomial-time, with the number of equations in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_hashCNF :
+    ComputableInPolyTime (fun p : List ℕ × ℕ × List Bool => hashCNF p.1 p.2.1 p.2.2)
+      (encPair (encList encNat) (encPair encUnary encBits))
+      (encList (encList (encPair encVar encBool))) :=
+  .of_tidy (computableTidilyInPolyTime_hashCNF)
 
 /-- The selector ranges over the dyadic range of `φ.vars.length + 2`: the least power of two
 above it. -/
@@ -168,8 +194,9 @@ private theorem binaryValue_take_hashBits (φ : CNF ℕ) (r : List Bool) :
 /-- **The Valiant–Vazirani reduction is polynomial-time**, on the framed encoding of the formula
 followed by the raw random bits. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_reduce :
-    ComputableTidilyInPolyTime reduce (encPair encCNF encBits) encCNF := by
+theorem computableInPolyTime_reduce :
+    ComputableInPolyTime reduce (encPair encCNF encBits) encCNF := by
+  refine .of_tidy ?_
   have h : reduce = fun x : CNF ℕ × List Bool =>
       reduceWith x.1 (BitString.boundedBinaryValue (2 * x.1.vars.length + 5)
         (x.2.take (Nat.log 2 (x.1.vars.length + 2) + 1)))
@@ -188,7 +215,7 @@ theorem computableTidilyInPolyTime_reduce :
   have hsplit : ComputableTidilyInPolyTime (CNF.relabel splitVarToNat)
       (encList (encList (encPair (encSum encNat (encPair encUnary encUnary)) encBool)))
       (encList (encList (encPair encNat encBool))) :=
-    (CNF.computableInPolyTime_relabel (.of_tidy computableTidilyInPolyTime_splitVarToNat)).tidy
+    (CNF.computableInPolyTime_relabel computableInPolyTime_splitVarToNat).tidy
   rw [h]
   unfold reduceWith encCNF
   fun_prop

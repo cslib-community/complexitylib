@@ -165,7 +165,8 @@ theorem PPWithOracle_eq_PP_of_mem_AWPP (hA : A ∈ AWPP encBits) (enc : α ↪ L
   have hT : ComputableTidilyInPolyTime T enc encUnary := by dsimp [T]; fun_prop
   let e : α → ℕ := fun a => r a + T a + 4
   have he : ComputableTidilyInPolyTime e enc encUnary := by dsimp [e]; fun_prop
-  obtain ⟨H, hH, R, hR, hweights⟩ := exists_AWPP_queryWeights hA hT he
+  obtain ⟨H, hH, R, hR, hweights⟩ := exists_AWPP_queryWeights hA (.of_tidy hT) (.of_tidy he)
+  have hR := hR.tidy
   let input : α × List Bool → List Bool := encPair enc encBits
   let T' : α × List Bool → ℕ := fun x => T x.1
   let R' : α × List Bool → ℕ := fun x => R x.1
@@ -176,16 +177,16 @@ theorem PPWithOracle_eq_PP_of_mem_AWPP (hA : A ∈ AWPP encBits) (enc : α ↪ L
     · dsimp [input]; fun_prop
     · dsimp [T']; fun_prop
     · dsimp [R']; fun_prop
-    · exact GapP.comp_mem hH (by fun_prop)
+    · exact GapP.comp_mem hH (.of_tidy (by fun_prop))
   let S : α → ℤ := fun a => ∑ w : Fin (r a) → Bool, F (a, List.ofFn w)
-  have hS : S ∈ GapP enc := GapP.sum_bits_mem hF hr
+  have hS : S ∈ GapP enc := GapP.sum_bits_mem hF (.of_tidy hr)
   let E : α → ℤ := fun a => 2 ^ (R a * T a)
-  have hE : E ∈ GapP enc := mem_GapP_of_polyTime (by dsimp [E]; fun_prop)
+  have hE : E ∈ GapP enc := mem_GapP_of_polyTime (.of_tidy (by dsimp [E]; fun_prop))
   have hcoef : (fun a => 2 * (2 : ℤ) ^ r a + 1) ∈ GapP enc :=
-    mem_GapP_of_polyTime (by fun_prop)
+    mem_GapP_of_polyTime (.of_tidy (by fun_prop))
   apply mem_PP_iff_exists_GapP.mpr
   refine ⟨fun a => 4 * S a - (2 * (2 : ℤ) ^ r a + 1) * E a,
-    GapP.sub_mem' (GapP.mul_mem (mem_GapP_of_polyTime (by fun_prop)) hS)
+    GapP.sub_mem' (GapP.mul_mem (mem_GapP_of_polyTime (.of_tidy (by fun_prop))) hS)
       (GapP.mul_mem hcoef hE), fun a => ?_⟩
   have herror (w : Fin (r a) → Bool) : (2 : ℤ) ^ (r a + T a + 4) *
       |F (a, List.ofFn w) - E a * (if V (a, List.ofFn w) then 1 else 0)| ≤

@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Mathlib.Data.Multiset.AddSub
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Selecting list entries by a mask
@@ -30,7 +31,7 @@ sub-multiset of the input numbers, such as subset sum, partition and knapsack.
 * `Cslib.Complexity.exists_le_iff_exists_maskSelect`: a property of sub-multisets holds for one of
   them exactly when it holds for the selection of some mask of any length at least the length of
   the list.
-* `Cslib.Complexity.computableTidilyInPolyTime_maskSelect`: selection is polynomial-time.
+* `Cslib.Complexity.computableInPolyTime_maskSelect`: selection is polynomial-time.
 -/
 
 @[expose] public section
@@ -120,9 +121,10 @@ theorem exists_le_iff_exists_maskSelect {l : List α} {n : ℕ} (hn : l.length �
 
 /-- Selecting the entries of a list by a mask is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_maskSelect (enc : α ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun p : List α × List Bool => maskSelect p.1 p.2)
+theorem computableInPolyTime_maskSelect (enc : α ↪ List Bool) :
+    ComputableInPolyTime (fun p : List α × List Bool => maskSelect p.1 p.2)
       (encPair (encList enc) encBits) (encList enc) := by
+  refine .of_tidy ?_
   unfold maskSelect
   fun_prop
 

@@ -71,23 +71,28 @@ example : (3 : ℝ)⁻¹ ≤ ((Graph.ofCompactCNF ([[]] : CNF ℕ)).toGraph id).
   simpa using Graph.inv_edges_le_unsatVal_ofCompactCNF ([[]] : CNF ℕ)
     (by simp) (by simp [CNF.Satisfiable])
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime (Graph.ofCompactCNF (V := ℕ))
     (encList (encList (encPair encNat encBool)))
     (Graph.encoding (encPi (encPi encBool))) := by polytime
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime (Graph.ofCompactCNF (V := List Bool))
     (encList (encList (encPair encBits encBool)))
     (Graph.encoding (encPi (encPi encBool))) := by polytime
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime (Graph.ofCompactCNF (V := List Bool))
     (encList (encList (encPair (encList encBool) encBool)))
     (Graph.encoding (encPi (encPi encBool))) := by fun_prop
 
-example : ComputableTidilyInPolyTime (fun names : List ℕ =>
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example : ComputableInPolyTime (fun names : List ℕ =>
     let formula := names.map fun n => [(n, true)]
     Graph.ofCompactCNF formula) (encList encNat)
     (Graph.encoding (encPi (encPi encBool))) := by polytime
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example (algorithm : List Bool → CNF ℕ)
     (h : ComputableTidilyInPolyTime algorithm encBits
       (encList (encList (encPair encNat encBool)))) :

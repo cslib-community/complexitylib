@@ -32,7 +32,7 @@ private theorem variableCount_mem : variableCount ∈ SharpP (encPair encBits en
 
 example : (fun w : List Bool => ∏ i ∈ range w.length, variableCount (w, i)) ∈ SharpP encBits :=
   SharpP.prod_range_mem variableCount_mem
-    (by simpa using ComputableTidilyInPolyTime.encoding_length encBits)
+    (.of_tidy (by simpa using ComputableTidilyInPolyTime.encoding_length encBits))
 
 /-- The two factors use genuinely different certificate lengths: 10 and 17. -/
 example : variableCount ([true], 0) = 2 ^ 10 ∧ variableCount ([true], 1) = 2 ^ 17 := by
@@ -40,7 +40,7 @@ example : variableCount ([true], 0) = 2 ^ 10 ∧ variableCount ([true], 1) = 2 ^
 
 /-- Empty indexed products equal one even when every possible factor is zero. -/
 example : (fun _ : List Bool => ∏ _i ∈ range 0, (0 : ℕ)) ∈ SharpP encBits :=
-  SharpP.prod_range_mem (SharpP.natCast_mem 0) (ComputableTidilyInPolyTime.const 0)
+  SharpP.prod_range_mem (SharpP.natCast_mem 0) (.of_tidy (ComputableTidilyInPolyTime.const 0))
 
 example : (∏ _i ∈ range 0, (0 : ℕ)) = 1 := by simp
 
@@ -55,11 +55,11 @@ example : acceptCount (SharpP.indexedProductVerifier (fun _ : Unit => 2) (fun _ 
 def signedFactor (x : List Bool × ℕ) : ℤ := if x.2 = 0 then -2 else 3
 
 private theorem signedFactor_mem : signedFactor ∈ GapP (encPair encBits encUnary) :=
-  mem_GapP_of_polyTime (f := signedFactor) (by unfold signedFactor; fun_prop)
+  mem_GapP_of_polyTime (f := signedFactor) (.of_tidy (by unfold signedFactor; fun_prop))
 
 example : (fun w : List Bool => ∏ i ∈ range w.length, signedFactor (w, i)) ∈ GapP encBits :=
   GapP.prod_range_mem signedFactor_mem
-    (by simpa using ComputableTidilyInPolyTime.encoding_length encBits)
+    (.of_tidy (by simpa using ComputableTidilyInPolyTime.encoding_length encBits))
 
 example : (∏ i ∈ range 2, signedFactor ([], i)) = -6 := by decide
 
@@ -68,16 +68,16 @@ def cancelFactor (x : List Bool × ℕ) : ℤ := if x.2 = 0 then -1 else 0
 
 private theorem cancelFactor_mem : cancelFactor ∈ GapP (encPair encBits encUnary) := by
   have h₁ : (fun x : List Bool × ℕ => if x.2 = 0 then (2 : ℕ) else 1) ∈
-      SharpP (encPair encBits encUnary) := mem_SharpP_of_polyTime (by fun_prop)
+      SharpP (encPair encBits encUnary) := mem_SharpP_of_polyTime (.of_tidy (by fun_prop))
   have h₂ : (fun x : List Bool × ℕ => if x.2 = 0 then (3 : ℕ) else 1) ∈
-      SharpP (encPair encBits encUnary) := mem_SharpP_of_polyTime (by fun_prop)
+      SharpP (encPair encBits encUnary) := mem_SharpP_of_polyTime (.of_tidy (by fun_prop))
   refine ⟨_, h₁, _, h₂, fun x => ?_⟩
   simp only [cancelFactor]
   split_ifs <;> norm_num
 
 example : (fun w : List Bool => ∏ i ∈ range w.length, cancelFactor (w, i)) ∈ GapP encBits :=
   GapP.prod_range_mem cancelFactor_mem
-    (by simpa using ComputableTidilyInPolyTime.encoding_length encBits)
+    (.of_tidy (by simpa using ComputableTidilyInPolyTime.encoding_length encBits))
 
 example : (∏ i ∈ range 0, cancelFactor ([], i)) = 1 ∧
     (∏ i ∈ range 1, cancelFactor ([], i)) = -1 ∧

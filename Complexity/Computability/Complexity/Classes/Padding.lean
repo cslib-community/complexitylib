@@ -20,6 +20,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Ba
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Padding
@@ -37,7 +38,7 @@ The general timed-reduction API lives in
 `Cslib.Complexity.preimage_mem_DTIME` computes a reduction and then tidily decides its output;
 the padding arguments below apply this API to their padded instances. The unconditional
 deterministic exponential-padding lemma
-`Cslib.Complexity.setOf_mem_E_of_computableTidilyInPolyTime_pad` lives in
+`Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad` lives in
 `Complexity.Computability.Complexity.Classes.EXP`.
 
 ## The padded problem
@@ -115,11 +116,12 @@ noncomputable def checkPadded (ntm : MultiTapeNTM k Bool State) (x : List Bool �
 
 /-- Checking a padded instance is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_checkPadded (ntm : MultiTapeNTM k Bool State) :
-    ComputableTidilyInPolyTime ntm.checkPadded (encPair encBits encBits) encBool := by
+theorem computableInPolyTime_checkPadded (ntm : MultiTapeNTM k Bool State) :
+    ComputableInPolyTime ntm.checkPadded (encPair encBits encBits) encBool := by
+  refine .of_tidy ?_
   have hunframe : ComputableTidilyInPolyTime unframe encBits encBits :=
     .of_linear (.of_unframe fun _ => rfl)
-  exact ntm.computableTidilyInPolyTime_checkChoices.comp
+  exact (ntm.computableInPolyTime_checkChoices).tidy.comp
     ((hunframe.comp (.fst encBits encBits)).prod (.snd encBits encBits))
 
 /-- **The padded problem** of `ntm`: the bit words `x` such that some `c * |x|` coins encode an
@@ -131,7 +133,7 @@ def padded (ntm : MultiTapeNTM k Bool State) (c : ℕ) : Set (List Bool) :=
 theorem padded_mem_NP (ntm : MultiTapeNTM k Bool State) (c : ℕ) :
     ntm.padded c ∈ Cslib.Complexity.NP encBits :=
   ⟨Polynomial.C c * Polynomial.X, ntm.checkPadded,
-    .of_tidy ntm.computableTidilyInPolyTime_checkPadded,
+    (ntm.computableInPolyTime_checkPadded),
     fun x => by simp [padded]⟩
 
 /-- **Padded instances.** If `ntm` decides `A` within `t`, then the padded word
@@ -162,9 +164,10 @@ nondeterministic machine within time `O(t n)` is decidable deterministically wit
 `P`, and the padding is written within time `O(n + T n)`. -/
 theorem NTIME_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) {t T : ℕ → ℕ}
     {S : List Bool → ℕ}
-    (hpad : ComputableTidilyInO (fun x : List Bool => t x.length) encBits encUnary
+    (hpad : Turing.MultiTapeTM.ComputableInO (fun x : List Bool => t x.length) encBits encUnary
       (fun x => T x.length) S) :
     NTIME enc t ⊆ ⋃ d, DTIME enc fun n => (n + T n + 1) ^ d := by
+  have hpad := hpad.tidy
   rintro A ⟨c₁, c₂, k, State, hfinite, ntm, hA⟩
   set c := Nat.card (Turing.Action k Bool State) * (c₁ + c₂)
   obtain ⟨d, hd⟩ := mem_P_iff_exists_mem_DTIME.mp (hNP (ntm.padded_mem_NP c))
@@ -187,7 +190,8 @@ theorem NTIME_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P encBits
       by nlinarith
     rw [Nat.mul_assoc]
     exact Nat.mul_le_mul_left _ this
-  refine Set.mem_iUnion.mpr ⟨d + 1, hpre ▸ preimage_mem_DTIME (C := (c' + 2) ^ d + 1) hd hg
+  refine Set.mem_iUnion.mpr ⟨d + 1, hpre ▸ preimage_mem_DTIME (C := (c' + 2) ^ d + 1) hd
+    (.of_tidy hg)
     fun a => ?_⟩
   rw [encBits_apply, hlen]
   set n := (enc a).length
@@ -213,8 +217,10 @@ unary in polynomial time with `n ≤ f n`, then every problem decidable by a non
 within time `O(2 ^ f n)` is decidable deterministically within time `O(2 ^ (d * f n))` for some
 `d`. -/
 theorem NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P encBits)
-    {f : ℕ → ℕ} (hf : ComputableTidilyInPolyTime f encUnary encUnary) (hn : ∀ n, n ≤ f n) :
+    {f : ℕ → ℕ} (hf : Turing.MultiTapeTM.ComputableInPolyTime f encUnary encUnary)
+      (hn : ∀ n, n ≤ f n) :
     NTIME enc (fun n => 2 ^ f n) ⊆ ⋃ d, DTIME enc fun n => 2 ^ (d * f n) := by
+  have hf := hf.tidy
   intro A hA
   obtain ⟨d, e, hd⟩ := hf.exists_degree
   have hpad := ComputableTidilyInO.unary_two_pow.comp (hd.inO.comp ComputableTidilyInO.lengthUnary)
@@ -223,7 +229,7 @@ theorem NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P
       fun x => x.length + (x.length + 1) ^ d + 2 ^ f x.length :=
     hpad.mono_le (fun x => by simp [encUnary_apply]) fun x => by simp [encUnary_apply]
   obtain ⟨D, hD⟩ := Set.mem_iUnion.mp (NTIME_subset_iUnion_DTIME_of_NP_subset_P hNP
-    (T := fun n => n + (n + 1) ^ d + (f n + 1) * 2 ^ f n) hpad' hA)
+    (T := fun n => n + (n + 1) ^ d + (f n + 1) * 2 ^ f n) (.of_tidy hpad') hA)
   obtain ⟨C₀, hC₀⟩ := (PolynomiallyBounded.of_forall_le 1 d fun n => by
     simp only [one_mul]; exact le_rfl).exists_le_mul_two_pow (p := fun n => (n + 1) ^ d)
   refine Set.mem_iUnion.mpr ⟨2 * D, DTIME_mono_of_le_mul_add (C := (C₀ + 3) ^ D)
@@ -254,7 +260,8 @@ theorem NE_subset_E_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : NE enc ⊆
     NTIME_mono (fun n => Nat.pow_le_pow_right (by norm_num)
       (Nat.mul_le_mul_right n (Nat.le_succ k))) hk
   obtain ⟨d, hd⟩ := Set.mem_iUnion.mp (NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P hNP
-    (f := fun n => (k + 1) * n) (by fun_prop) (fun n => Nat.le_mul_of_pos_left n (Nat.succ_pos k))
+    (f := fun n => (k + 1) * n) (.of_tidy (by fun_prop))
+      (fun n => Nat.le_mul_of_pos_left n (Nat.succ_pos k))
     hk')
   exact mem_E_iff.mpr ⟨d * (k + 1), by simpa only [Nat.mul_assoc] using hd⟩
 
@@ -266,7 +273,8 @@ theorem NEXP_subset_EXP_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : NEXP e
     NTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr ⟨1, fun n hn =>
       Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_right hn (Nat.le_succ k))⟩) hk
   obtain ⟨d, hd⟩ := Set.mem_iUnion.mp (NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P hNP
-    (ComputableTidilyInPolyTime.unary_pow (k + 1)) (fun n => Nat.le_self_pow (by omega) n) hk')
+    (.of_tidy (ComputableTidilyInPolyTime.unary_pow (k + 1)))
+      (fun n => Nat.le_self_pow (by omega) n) hk')
   refine mem_EXP_iff.mpr ⟨k + 2, DTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr
     ⟨d, fun n hn => Nat.pow_le_pow_right (by norm_num) ?_⟩) hd⟩
   rw [pow_succ' n (k + 1)]
@@ -293,14 +301,15 @@ open _root_.Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
 variable {α : Type} {enc : α ↪ List Bool}
 
-/-- Pulling back a problem `B ∈ NP encBits` along a function `g : α → List Bool` computable tidily
-within time `O(T₀ (enc a).length)` places `g ⁻¹' B` in `NTIME enc (fun n => (T₀ n + 1) ^ d)` for
+/-- Pulling back a problem `B ∈ NP encBits` along a function `g : α → List Bool` computable within
+time `O(T₀ (enc a).length)` places `g ⁻¹' B` in `NTIME enc (fun n => (T₀ n + 1) ^ d)` for
 some `d`: a deterministic machine writes `g a` to a buffer tape and hands off to the halting
 fair-coin certificate verifier for `B`. -/
 theorem preimage_mem_NTIME_of_mem_NP {B : Set (List Bool)} {g : α → List Bool} {T₀ : ℕ → ℕ}
     {S : α → ℕ} (hB : B ∈ NP encBits)
-    (hg : ComputableTidilyInO g enc encBits (fun a => T₀ (enc a).length) S) :
+    (hg : Turing.MultiTapeTM.ComputableInO g enc encBits (fun a => T₀ (enc a).length) S) :
     ∃ d, g ⁻¹' B ∈ NTIME enc fun n => (T₀ n + 1) ^ d := by
+  have hg := hg.tidy
   obtain ⟨c₀, ⟨k₀, State₀, hfinite₀, tm, htm⟩, -⟩ := hg
   set t₁ : α → ℕ := fun a => c₀ * (T₀ (enc a).length + 1)
   have htm_run (a : α) :
@@ -397,9 +406,10 @@ theorem preimage_mem_NTIME_of_mem_NP {B : Set (List Bool)} {g : α → List Bool
 `a ↦ frame (enc a) ++ List.replicate (2 ^ f (enc a).length) true`, where `f` is polynomial-time in
 unary with `n ≤ f n`, gives a problem in `NEXP enc`. -/
 theorem preimage_pad_mem_NEXP {B : Set (List Bool)} (hB : B ∈ NP encBits) {f : ℕ → ℕ}
-    (hf : ComputableTidilyInPolyTime f encUnary encUnary) (hn : ∀ n, n ≤ f n) :
+    (hf : Turing.MultiTapeTM.ComputableInPolyTime f encUnary encUnary) (hn : ∀ n, n ≤ f n) :
     (fun a : α => frame (enc a) ++ List.replicate (2 ^ f (enc a).length) true) ⁻¹' B ∈
       NEXP enc := by
+  have hf := hf.tidy
   obtain ⟨d₀, e₀, hd₀⟩ := hf.exists_degree
   have hpad := ComputableTidilyInO.unary_two_pow.comp (hd₀.inO.comp ComputableTidilyInO.lengthUnary)
   have hpad' : ComputableTidilyInO (fun x : List Bool => 2 ^ f x.length) encBits encUnary
@@ -413,7 +423,7 @@ theorem preimage_pad_mem_NEXP {B : Set (List Bool)} (hB : B ∈ NP encBits) {f :
         2 ^ f (enc a).length)) :=
     (ComputableTidilyInO.of_linear (.of_frame (f := id) (encOut := encFramed enc)
       fun _ => rfl)).append (hpad'.comp_enc enc) fun _ => rfl
-  obtain ⟨D, hD⟩ := preimage_mem_NTIME_of_mem_NP hB hg
+  obtain ⟨D, hD⟩ := preimage_mem_NTIME_of_mem_NP hB (.of_tidy hg)
   obtain ⟨C₀, hC₀⟩ := (PolynomiallyBounded.of_forall_le 1 d₀ fun n => by
     simp only [one_mul]; exact le_rfl).exists_le_mul_two_pow (p := fun n => (n + 1) ^ d₀)
   obtain ⟨c_f, d_f, hf_le⟩ := hf.polyBounded_length.exists_le

@@ -68,9 +68,9 @@ def preprocess (fallback truth : C) (rotate : ℕ × (ℕ × D) → ℕ × D)
 /-- Enumerating all edges charges the runtime vertex count and every rotation call. -/
 @[fun_prop]
 theorem isPolyTime_rotationEdges (rotate : ℕ × (ℕ × D) → ℕ × D) (labels : List D)
-    (hrotate : ComputableTidilyInPolyTime rotate
+    (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)) :
-    ComputableTidilyInPolyTime (rotationEdges rotate labels) encUnary
+    ComputableInPolyTime (rotationEdges rotate labels) encUnary
       (encList (encPair encUnary encUnary)) := by
   unfold rotationEdges
   polytime
@@ -80,9 +80,9 @@ all edge checks used by cloud search, and materializing every intermediate graph
 @[fun_prop]
 theorem isPolyTime_preprocess (fallback truth : C) (rotate : ℕ × (ℕ × D) → ℕ × D)
     (labels : List D)
-    (hrotate : ComputableTidilyInPolyTime rotate
+    (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)) :
-    ComputableTidilyInPolyTime (preprocess fallback truth rotate labels)
+    ComputableInPolyTime (preprocess fallback truth rotate labels)
       (encoding enc) (encoding (encOption (encPair encBool enc))) := by
   have hdegree := isPolyTime_degreeReduce (enc := enc) fallback labels rotate hrotate
   unfold preprocess

@@ -42,7 +42,6 @@ signed routing and the corresponding bidirectional `GapP` characterization.
 
 ## Main results
 
-* `Cslib.Complexity.mem_SharpP_iff_tidy`: membership through a tidy verifier.
 * `Cslib.Complexity.mem_NP_iff_exists_SharpP`: `NP` consists of the supports of functions in `#P`.
 * `Cslib.Complexity.acceptCount_add`: counting accepted strings by their prefixes.
 * `Cslib.Complexity.acceptCount_zero`, `Cslib.Complexity.acceptCount_add_acceptCount_not`,
@@ -158,13 +157,6 @@ theorem mem_SharpP {f : α → ℕ} : f ∈ SharpP enc ↔ ∃ (p : Polynomial �
     ComputableInPolyTime V (encPair enc encBits) encBool ∧
       ∀ a, f a = acceptCount V a (p.eval (enc a).length) :=
   Iff.rfl
-
-/-- `Cslib.Complexity.mem_SharpP` with a tidy verifier, for proofs that compose machines. -/
-theorem mem_SharpP_iff_tidy {f : α → ℕ} :
-    f ∈ SharpP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-        ∀ a, f a = acceptCount V a (p.eval (enc a).length) := by
-  simp only [mem_SharpP, computableInPolyTime_iff_computableTidilyInPolyTime]
 
 theorem mem_GapP {g : α → ℤ} :
     g ∈ GapP enc ↔ ∃ f₁ ∈ SharpP enc, ∃ f₂ ∈ SharpP enc, ∀ a, g a = f₁ a - f₂ a :=

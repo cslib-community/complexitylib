@@ -73,7 +73,7 @@ Furthermore, `P/poly` preimages are closed under polynomial-time many-one reduct
 
 * `Cslib.Circuits.Boolean.evalAdvice_familyAdvice`: evaluation from the advice string of a family
   is evaluation of its circuits.
-* `Cslib.Circuits.Boolean.computableTidilyInPolyTime_evalAdvice`: evaluation from advice strings is
+* `Cslib.Circuits.Boolean.computableInPolyTime_evalAdvice`: evaluation from advice strings is
   polynomial-time.
 * `Cslib.Complexity.PiP_two_subset_SigmaP_two_of_SAT`: if `SAT` has circuits of polynomial size,
   then `Π₂ ⊆ Σ₂`.
@@ -180,13 +180,18 @@ open ComputableTidilyInPolyTime
 /-- **Evaluation from advice strings is polynomial-time**, for the number of gates and the block
 width in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_evalAdvice {γ : Type} {encIn : γ ↪ List Bool}
-    {s width : γ → ℕ} {w x : γ → List Bool} (hs : ComputableTidilyInPolyTime s encIn encUnary)
-    (hwidth : ComputableTidilyInPolyTime width encIn encUnary)
-    (hw : ComputableTidilyInPolyTime w encIn encBits)
-    (hx : ComputableTidilyInPolyTime x encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => evalAdvice (s a) (width a) (w a) (x a)) encIn
+theorem computableInPolyTime_evalAdvice {γ : Type} {encIn : γ ↪ List Bool}
+    {s width : γ → ℕ} {w x : γ → List Bool} (hs : ComputableInPolyTime s encIn encUnary)
+    (hwidth : ComputableInPolyTime width encIn encUnary)
+    (hw : ComputableInPolyTime w encIn encBits)
+    (hx : ComputableInPolyTime x encIn encBits) :
+    ComputableInPolyTime (fun a => evalAdvice (s a) (width a) (w a) (x a)) encIn
       encBool := by
+  have hs := hs.tidy
+  have hwidth := hwidth.tidy
+  have hw := hw.tidy
+  have hx := hx.tidy
+  refine .of_tidy ?_
   have hm : ComputableTidilyInPolyTime (fun a => (x a).length) encIn encUnary := length_bits.comp hx
   have hc := (computableInPolyTime_readCertificate (.of_tidy hm) (.of_tidy hs)
     (.of_tidy (bitsDropWithInput hw (unary_mul.comp (hm.prod hwidth))))).tidy
@@ -236,11 +241,12 @@ private theorem computableTidilyInPolyTime_verifier {f : α × List Bool → CNF
         (p.1.2.take (P.eval (enc p.1.1).length)) (encCNF p.2))
       (encPair (encPair enc encBits) encCNF) encBool := by
     have hn' := hn.comp (fst (encPair enc encBits) encCNF)
-    exact computableTidilyInPolyTime_evalAdvice ((unary_eval S).comp hn')
-      ((unary_eval W).comp hn') (bitsTakeWithInput (fst _ _).snd' ((unary_eval P).comp hn'))
-      ((encode encCNF).comp (snd _ _))
-  exact SAT.computableTidilyInPolyTime_verifier.comp
-    (hφ.prod (SAT.computableTidilyInPolyTime_search hD hφ))
+    exact (computableInPolyTime_evalAdvice (.of_tidy ((unary_eval S).comp hn'))
+      (.of_tidy ((unary_eval W).comp hn'))
+        (.of_tidy (bitsTakeWithInput (fst _ _).snd' ((unary_eval P).comp hn')))
+      (.of_tidy ((encode encCNF).comp (snd _ _)))).tidy
+  exact SAT.computableInPolyTime_verifier.tidy.comp
+    (hφ.prod (SAT.computableInPolyTime_search (.of_tidy hD) (.of_tidy hφ)).tidy)
 
 end KarpLipton
 
@@ -252,7 +258,7 @@ theorem PiP_two_subset_SigmaP_two_of_SAT (hSAT : ∃ L ∈ PPoly, ∀ φ, φ ∈
     (enc : α ↪ List Bool) : PiP 2 enc ⊆ SigmaP 2 enc := by
   rintro A ⟨ps, V, hlen, hV, hA⟩
   obtain ⟨p, q, rfl⟩ := List.length_eq_two.1 hlen
-  obtain ⟨f, hf, hfB⟩ := CookLevin.SAT_npHard _ _ (mem_NP_setOf_exists_append hV.tidy q)
+  obtain ⟨f, hf, hfB⟩ := CookLevin.SAT_npHard _ _ (mem_NP_setOf_exists_append hV q)
   obtain ⟨L, hL, hSAT⟩ := hSAT
   obtain ⟨C, s, hs, hC⟩ := mem_PPoly_iff_exists_circuits.1 hL
   obtain ⟨c, d, hcd⟩ := polynomiallyBounded_iff_le.1 hs
@@ -375,8 +381,9 @@ theorem PolyTimeReducible.exists_mem_PPoly {β : Type} {encB : β ↪ List Bool}
     have hn : ComputableTidilyInPolyTime (fun x : List Bool × α => (enc x.2).length)
         (encPair encBits enc) encUnary :=
       (encoding_length enc).comp (snd _ _)
-    exact computableTidilyInPolyTime_evalAdvice ((unary_eval S).comp hn)
-      ((unary_eval W).comp hn) (fst _ _) ((encode encB).comp (hf.tidy.comp (snd _ _)))
+    exact (computableInPolyTime_evalAdvice (.of_tidy ((unary_eval S).comp hn))
+      (.of_tidy ((unary_eval W).comp hn)) (.of_tidy (fst _ _))
+        (.of_tidy ((encode encB).comp (hf.tidy.comp (snd _ _))))).tidy
   obtain ⟨M, hM, hgM⟩ := PPoly.exists_of_polyTime (.of_tidy hg)
   let α_adv : ℕ → List Bool := fun n => familyAdvice (N.eval n) (S.eval n) C
   have hα : PolynomiallyBounded fun n => (α_adv n).length := by
@@ -443,8 +450,9 @@ theorem mem_PPoly_of_exists_frame_append
         (fun z : List Bool × List Bool => z.2.take (p.eval (dropFrame z.1).length))
         (encPair encBits encBits) encBits :=
       bitsTakeWithInput (snd _ _) ((unary_eval p).comp hn)
-    exact computableTidilyInPolyTime_evalAdvice ((unary_eval S).comp hn)
-      ((unary_eval W).comp hn) hu (bitsAppend ((bitsFrame encBits).comp hx) hw)
+    exact (computableInPolyTime_evalAdvice (.of_tidy ((unary_eval S).comp hn))
+      (.of_tidy ((unary_eval W).comp hn)) (.of_tidy hu)
+        (.of_tidy (bitsAppend ((bitsFrame encBits).comp hx) hw))).tidy
   let D : Language Bool := {z : List Bool | ∃ w : List Bool, w.length = p.eval z.length ∧
     V (z, w) = true}
   have hD : D ∈ PPoly := hNP D ⟨p, V, .of_tidy hV, fun _ => Iff.rfl⟩

@@ -148,18 +148,13 @@ example {κA : α → ℕ} {κB : β → ℕ} : FPTReducible encA encB κA κB A
   Iff.rfl
 
 example {κA : α → ℕ} {κB : β → ℕ} : FPTReducible encA encB κA κB A B ↔
-    ∃ f : α → β, (ComputableTidilyInFPTTime f encA encB κA ∧
-      ∃ h : ℕ → ℕ, ∀ a, κB (f a) ≤ h (κA a)) ∧ ∀ a, a ∈ A ↔ f a ∈ B :=
-  fptReducible_iff_tidy
-
-example {κA : α → ℕ} {κB : β → ℕ} : FPTReducible encA encB κA κB A B ↔
     ManyOneReducibleBy (ComputableInFPTWithParam encA encB κA κB) A B :=
   fptReducible_iff_manyOneReducibleBy
 
-/-- The identity, with its tidy fpt-time certificate, bounds the parameter by itself. -/
+/-- The identity, computable in polynomial time, bounds the parameter by itself. -/
 example {κA : α → ℕ} : ComputableInFPTWithParam encA encA κA κA id :=
-  computableInFPTWithParam_iff_tidy.mpr
-    ⟨ComputableTidilyInPolyTime.id'.computableTidilyInFPTTime κA, id, fun _ => le_rfl⟩
+  ⟨(ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.id').computableInFPTTime κA, id,
+    fun _ => le_rfl⟩
 
 /-! ### Non-`Set` hardness and completeness instances -/
 

@@ -60,8 +60,8 @@ def composeSelectedEnumerated (g : Graph (α → α → Bool)) :
 theorem isPolyTime_composeSelectedEnumerated {Input : Type} {input : Input ↪ List Bool}
     {constraintEncoding : (α → α → Bool) ↪ List Bool}
     {graph : Input → Graph (α → α → Bool)}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding constraintEncoding)) :
-    ComputableTidilyInPolyTime (fun x => (graph x).composeSelectedEnumerated)
+    (hgraph : ComputableInPolyTime graph input (encoding constraintEncoding)) :
+    ComputableInPolyTime (fun x => (graph x).composeSelectedEnumerated)
       input (encoding (encPi (encPi encBool))) :=
   SelectedHadamardTester.implementation.isPolyTime_composeEnumerated hgraph
 

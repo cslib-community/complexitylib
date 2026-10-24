@@ -55,11 +55,11 @@ theorem isPolyTime_composeEnumerated [Finite α] [Fintype Γ]
     {Input : Type} {input : Input ↪ List Bool}
     {constraintEncoding : (α → α → Bool) ↪ List Bool}
     {graph : Input → Graph (α → α → Bool)}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding constraintEncoding)) :
-    ComputableTidilyInPolyTime (fun x => impl.composeEnumerated (graph x))
+    (hgraph : ComputableInPolyTime graph input (encoding constraintEncoding)) :
+    ComputableInPolyTime (fun x => impl.composeEnumerated (graph x))
       input (encoding (encPi (encPi encBool))) := by
   let := Fintype.ofFinite α
-  have hconvert : ComputableTidilyInPolyTime (id : (α → α → Bool) → _)
+  have hconvert : ComputableInPolyTime (id : (α → α → Bool) → _)
       constraintEncoding (encPi (encPi encBool)) := .of_finite _
   simpa only [composeEnumerated, mapConstraints_id] using
     impl.isPolyTime_composeTabulated (isPolyTime_mapConstraints hgraph hconvert)

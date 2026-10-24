@@ -97,15 +97,11 @@ theorem pcp_eq {α : Type} (r q : ℕ → ℕ) (enc : α ↪ List Bool) :
   constructor
   · rintro ⟨coins, queries, verdict, c, d, hc, hq, hv, hbound, hquery, hyes, hno⟩
     exact ⟨⟨coins, queries, verdict⟩, c, d,
-      ⟨CookLevinBridge.computableInPolyTime_iff_tidy.mp hc,
-        CookLevinBridge.computableInPolyTime_iff_tidy.mp hq,
-        CookLevinBridge.computableInPolyTime_iff_tidy.mp hv⟩,
+      ⟨hc, hq, hv⟩,
       hbound, hquery, hyes, hno⟩
   · rintro ⟨⟨coins, queries, verdict⟩, c, d, ⟨hc, hq, hv⟩, hbound, hquery, hyes, hno⟩
     exact ⟨coins, queries, verdict, c, d,
-      CookLevinBridge.computableInPolyTime_iff_tidy.mpr hc,
-      CookLevinBridge.computableInPolyTime_iff_tidy.mpr hq,
-      CookLevinBridge.computableInPolyTime_iff_tidy.mpr hv, hbound, hquery, hyes, hno⟩
+      hc, hq, hv, hbound, hquery, hyes, hno⟩
 
 theorem pcp_theorem {α : Type} (enc : α ↪ List Bool) :
     NP enc = PCP (fun n => Nat.log 2 n + 1) (fun _ => 1) enc := by

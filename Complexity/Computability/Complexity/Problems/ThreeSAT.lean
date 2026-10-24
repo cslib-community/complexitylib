@@ -37,7 +37,7 @@ relabelling and the Cook–Levin theorem proves that `ThreeSAT` is `NP`-complete
 ## Main results
 
 * `Cslib.Complexity.mem_ThreeSAT_toThreeSAT_iff`: `φ ∈ SAT ↔ toThreeSAT φ ∈ ThreeSAT`.
-* `Cslib.Complexity.computableTidilyInPolyTime_toThreeSAT`: `toThreeSAT` is polynomial-time.
+* `Cslib.Complexity.computableInPolyTime_toThreeSAT`: `toThreeSAT` is polynomial-time.
 * `Cslib.Complexity.ThreeSAT.isVerifier`, `Cslib.Complexity.ThreeSAT.mem_NP`: `ThreeSAT ∈ NP`.
 * `Cslib.Complexity.polyTimeReducible_SAT_ThreeSAT`, `Cslib.Complexity.ThreeSAT_npHard`,
   `Cslib.Complexity.ThreeSAT_npComplete`: `ThreeSAT` is `NP`-complete.
@@ -141,9 +141,10 @@ private theorem sumElim {α β γ : Type} {left : α ↪ List Bool} {right : β 
 /-- Variable numbering after clause splitting is polynomial-time: original binary variables shift
 by one bit, and unary fresh-variable pairs are paired and converted to odd binary numbers. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_splitVarToNat :
-    ComputableTidilyInPolyTime splitVarToNat
+theorem computableInPolyTime_splitVarToNat :
+    ComputableInPolyTime splitVarToNat
       (encSum encNat (encPair encUnary encUnary)) encNat := by
+  refine .of_tidy ?_
   have hdouble : ComputableTidilyInPolyTime (2 * ·) encNat encNat :=
     (show ComputableTidilyInPolyTime
         (fun n : ℕ => if (encNat n).isEmpty then ([] : List Bool) else false :: encNat n)
@@ -155,10 +156,10 @@ theorem computableTidilyInPolyTime_splitVarToNat :
 
 /-- The reduction `toThreeSAT` is computable in polynomial time under `encCNF`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toThreeSAT :
-    ComputableTidilyInPolyTime toThreeSAT encCNF encCNF :=
-  (CNF.computableInPolyTime_relabel (.of_tidy computableTidilyInPolyTime_splitVarToNat)).tidy.comp
-    (CNF.isPolyTime_to3CNF encNat).tidy
+theorem computableInPolyTime_toThreeSAT :
+    ComputableInPolyTime toThreeSAT encCNF encCNF :=
+  .of_tidy ((CNF.computableInPolyTime_relabel computableInPolyTime_splitVarToNat).tidy.comp
+    (CNF.isPolyTime_to3CNF encNat).tidy)
 
 namespace ThreeSAT
 
@@ -178,20 +179,20 @@ theorem isVerifier : IsVerifier encCNF Polynomial.X verifier ThreeSAT := by
 
 /-- Checking the clause-width bound and evaluating the formula is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair encCNF encBits) encBool := by
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
   unfold verifier
   fun_prop
 
 /-- `ThreeSAT` belongs to `NP`. -/
 theorem mem_NP : ThreeSAT ∈ NP encCNF :=
-  ⟨Polynomial.X, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end ThreeSAT
 
 /-- `SAT` reduces to `ThreeSAT` in polynomial time via `toThreeSAT`. -/
 theorem polyTimeReducible_SAT_ThreeSAT : PolyTimeReducible encCNF encCNF SAT ThreeSAT :=
-  ⟨toThreeSAT, .of_tidy computableTidilyInPolyTime_toThreeSAT,
+  ⟨toThreeSAT, computableInPolyTime_toThreeSAT,
     fun φ => (mem_ThreeSAT_toThreeSAT_iff φ).symm⟩
 
 /-- `ThreeSAT` is `NP`-hard. -/

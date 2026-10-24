@@ -32,20 +32,25 @@ example : IsVerifier encGraph (Polynomial.X ^ 2) HamCycle.verifier HamCycle := H
 
 /-! ### Compositional `fun_prop` synthesis -/
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime DirHamPath.verifier
     (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool := by
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime DirHamCycle.verifier (encPair encGraph encBits) encBool := by
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime HamPath.verifier
     (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool := by
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime HamCycle.verifier (encPair encGraph encBits) encBool := by
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime (fun x : List ℕ × List Bool => Graph.decodeVertexList x.1 x.2)
     (encPair (encList encNat) encBits) (encList encNat) := by
   fun_prop

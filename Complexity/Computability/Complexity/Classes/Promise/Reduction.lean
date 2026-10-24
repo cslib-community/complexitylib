@@ -355,7 +355,7 @@ theorem PromiseP_subset_PromiseBPP : PromiseP enc ⊆ PromiseBPP enc :=
 
 theorem PromiseRP_subset_PromiseNP : PromiseRP enc ⊆ PromiseNP enc := by
   rintro Q ⟨p, V, hV, h⟩
-  exact mem_PromiseNP_iff.2 ⟨p, V, hV.tidy, h.exists_certificate⟩
+  exact mem_PromiseNP_iff.2 ⟨p, V, hV, h.exists_certificate⟩
 
 /-- A counted verifier's uniform rejection probability is its rejected fraction of all words. -/
 private theorem uniformList_rejectCount_toReal (V : α × List Bool → Bool) (a : α) (n : ℕ) :
@@ -552,13 +552,6 @@ def PolyTimeReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (X : P
   ∃ f : α → β, ComputableInPolyTime f encA encB ∧ Set.MapsTo f X.yes Y.yes ∧
     Set.MapsTo f X.no Y.no
 
-/-- Reductions of promise problems with a reduction computable tidily in polynomial time, the form
-in which proofs build reductions. -/
-private theorem polyTimeReducible_iff_tidy : PolyTimeReducible encA encB X Y ↔
-    ∃ f : α → β, ComputableTidilyInPolyTime f encA encB ∧ Set.MapsTo f X.yes Y.yes ∧
-      Set.MapsTo f X.no Y.no := by
-  simp only [PolyTimeReducible, computableInPolyTime_iff_computableTidilyInPolyTime]
-
 /-- On decision problems, reductions of promise problems are polynomial-time reductions. -/
 theorem polyTimeReducible_ofSet_iff {A : Set α} {B : Set β} :
     PolyTimeReducible encA encB (ofSet A) (ofSet B) ↔ Complexity.PolyTimeReducible encA encB A B :=
@@ -589,7 +582,7 @@ theorem PolyTimeReducible.of_subset (hyes : Y.yes ⊆ Y'.yes) (hno : Y.no ⊆ Y'
 /-- **`PromiseP` is closed under reductions.** -/
 theorem PolyTimeReducible.mem_PromiseP (h : PolyTimeReducible encA encB X Y)
     (hY : Y ∈ PromiseP encB) : X ∈ PromiseP encA := by
-  obtain ⟨f, hf, hyes, hno⟩ := polyTimeReducible_iff_tidy.mp h
+  obtain ⟨f, hf, hyes, hno⟩ := h
   obtain ⟨g, hg, hgyes, hgno⟩ := mem_PromiseP_iff.1 hY
   exact mem_PromiseP_iff.2 ⟨g ∘ f, hg.comp hf, fun a ha => hgyes _ (hyes ha),
     fun a ha => hgno _ (hno ha)⟩
@@ -619,28 +612,28 @@ theorem PolyTimeReducible.mem_PromiseNP (h : PolyTimeReducible encA encB X Y)
 /-- **`PromiseBPP` is closed under polynomial-time reductions.** -/
 theorem PolyTimeReducible.mem_PromiseBPP (h : PolyTimeReducible encA encB X Y)
     (hY : Y ∈ PromiseBPP encB) : X ∈ PromiseBPP encA := by
-  obtain ⟨f, hf, hfyes, hfno⟩ := polyTimeReducible_iff_tidy.mp h
+  obtain ⟨f, hf, hfyes, hfno⟩ := h
   obtain ⟨M, hM, hyes, hno⟩ := mem_PromiseBPP_iff_exists_isPPTOn.mp hY
   exact mem_PromiseBPP_iff_exists_isPPTOn.mpr
-    ⟨fun a => M (f a), hM.preprocess hf, fun a ha => hyes (f a) (hfyes ha),
+    ⟨fun a => M (f a), hM.preprocess hf.tidy, fun a ha => hyes (f a) (hfyes ha),
       fun a ha => hno (f a) (hfno ha)⟩
 
 /-- **`PromiseRP` is closed under polynomial-time reductions.** -/
 theorem PolyTimeReducible.mem_PromiseRP (h : PolyTimeReducible encA encB X Y)
     (hY : Y ∈ PromiseRP encB) : X ∈ PromiseRP encA := by
-  obtain ⟨f, hf, hfyes, hfno⟩ := polyTimeReducible_iff_tidy.mp h
+  obtain ⟨f, hf, hfyes, hfno⟩ := h
   obtain ⟨M, hM, hyes, hno⟩ := mem_PromiseRP_iff_exists_isPPTOn.mp hY
   exact mem_PromiseRP_iff_exists_isPPTOn.mpr
-    ⟨fun a => M (f a), hM.preprocess hf, fun a ha => hyes (f a) (hfyes ha),
+    ⟨fun a => M (f a), hM.preprocess hf.tidy, fun a ha => hyes (f a) (hfyes ha),
       fun a ha => hno (f a) (hfno ha)⟩
 
 /-- **`PromiseCoRP` is closed under polynomial-time reductions.** -/
 theorem PolyTimeReducible.mem_PromiseCoRP (h : PolyTimeReducible encA encB X Y)
     (hY : Y ∈ PromiseCoRP encB) : X ∈ PromiseCoRP encA := by
-  obtain ⟨f, hf, hfyes, hfno⟩ := polyTimeReducible_iff_tidy.mp h
+  obtain ⟨f, hf, hfyes, hfno⟩ := h
   obtain ⟨M, hM, hyes, hno⟩ := mem_PromiseCoRP_iff_exists_isPPTOn.mp hY
   exact mem_PromiseCoRP_iff_exists_isPPTOn.mpr
-    ⟨fun a => M (f a), hM.preprocess hf, fun a ha => hyes (f a) (hfyes ha),
+    ⟨fun a => M (f a), hM.preprocess hf.tidy, fun a ha => hyes (f a) (hfyes ha),
       fun a ha => hno (f a) (hfno ha)⟩
 
 /-! ### Randomized reductions with one-sided error -/
@@ -826,8 +819,8 @@ theorem rpReducible_iff_exists_seeded :
 reduction with soundness `1` (zero error). -/
 theorem PolyTimeReducible.rpReducibleWithError (h : PolyTimeReducible encA encB X Y) :
     RPReducibleWithError encA encB (fun _ => 1) X Y := by
-  obtain ⟨f, hf, hyes, hno⟩ := polyTimeReducible_iff_tidy.mp h
-  refine ⟨fun a => pure (f a), hf.isPPTOn, fun a ha b hb => ?_, fun a ha => ?_⟩
+  obtain ⟨f, hf, hyes, hno⟩ := h
+  refine ⟨fun a => pure (f a), hf.tidy.isPPTOn, fun a ha b hb => ?_, fun a ha => ?_⟩
   · simp only [ProbComp.eval_pure, PMF.support_pure, Set.mem_singleton_iff] at hb
     exact hb ▸ hyes ha
   · have hmem : f a ∈ Y.no := hno ha
@@ -934,8 +927,8 @@ theorem RPReducibleWithError.trans_polyTimeReducible {s : α → ℝ}
     (hXY : RPReducibleWithError encA encB s X Y) (hYZ : PolyTimeReducible encB encC Y Z) :
     RPReducibleWithError encA encC s X Z := by
   obtain ⟨R, hR, hyes, hno⟩ := hXY
-  obtain ⟨g, hg, gyes, gno⟩ := polyTimeReducible_iff_tidy.mp hYZ
-  refine ⟨fun a => g <$> R a, hR.map hg, fun a ha c hc => ?_, fun a ha => ?_⟩
+  obtain ⟨g, hg, gyes, gno⟩ := hYZ
+  refine ⟨fun a => g <$> R a, hR.map hg.tidy, fun a ha c hc => ?_, fun a ha => ?_⟩
   · simp only [ProbComp.eval_map, PMF.mem_support_map_iff] at hc
     obtain ⟨b, hb, rfl⟩ := hc
     exact gyes (hyes a ha b hb)

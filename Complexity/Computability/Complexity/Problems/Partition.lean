@@ -89,14 +89,14 @@ theorem isVerifier : IsVerifier (encList encNat) Polynomial.X verifier Partition
 
 /-- The `Partition` verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair (encList encNat) encBits) encBool := by
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair (encList encNat) encBits) encBool := by
   unfold verifier
   fun_prop
 
 /-- `Partition` belongs to `NP`. -/
 theorem mem_NP : Partition ∈ NP (encList encNat) :=
-  ⟨Polynomial.X, verifier, .of_tidy computableTidilyInPolyTime_verifier, isVerifier⟩
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end Partition
 
@@ -135,8 +135,8 @@ theorem toPartition_mem_iff (x : List ℕ × ℕ) : toPartition x ∈ Partition 
 
 /-- The reduction to `Partition` is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toPartition :
-    ComputableTidilyInPolyTime toPartition (encPair (encList encNat) encNat) (encList encNat) := by
+theorem computableInPolyTime_toPartition :
+    ComputableInPolyTime toPartition (encPair (encList encNat) encNat) (encList encNat) := by
   unfold toPartition
   fun_prop
 
@@ -145,7 +145,7 @@ end SubsetSum
 /-- `SubsetSum` reduces to `Partition` in polynomial time. -/
 theorem polyTimeReducible_SubsetSum_Partition :
     PolyTimeReducible (encPair (encList encNat) encNat) (encList encNat) SubsetSum Partition :=
-  ⟨SubsetSum.toPartition, .of_tidy SubsetSum.computableTidilyInPolyTime_toPartition,
+  ⟨SubsetSum.toPartition, SubsetSum.computableInPolyTime_toPartition,
     fun x => (SubsetSum.toPartition_mem_iff x).symm⟩
 
 /-- `Partition` is `NP`-hard. -/

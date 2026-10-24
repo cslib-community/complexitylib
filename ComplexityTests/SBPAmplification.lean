@@ -25,7 +25,7 @@ def language : Set (List Bool) := {w | w.headD false = true}
 private def count (w : List Bool) : ℕ := if w.headD false then 3 else 1
 
 private theorem count_mem : count ∈ SharpP encBits :=
-  mem_SharpP_of_polyTime (f := count) (by unfold count; fun_prop)
+  mem_SharpP_of_polyTime (f := count) (.of_tidy (by unfold count; fun_prop))
 
 private theorem language_mem : language ∈ SBP encBits := by
   refine ⟨count, count_mem, fun _ => 3, .const 3, fun w => ?_⟩
@@ -40,7 +40,7 @@ example : count [true] = 3 ∧ count [false] = 1 := by decide
 /-- The #P count may be exponential even though its unary exponent is polynomial-time. -/
 example : (fun w : List Bool => 3 ^ w.length) ∈ SharpP encBits :=
   SharpP.pow_mem_polyTime (SharpP.natCast_mem 3)
-    (by simpa using ComputableTidilyInPolyTime.encoding_length encBits)
+    (.of_tidy (by simpa using ComputableTidilyInPolyTime.encoding_length encBits))
 
 /-- Zero rows accept the empty tuple, even for an always-rejecting zero-width verifier. -/
 example : acceptCount (SharpP.powerVerifier (fun _ : Unit => 0) (fun _ => 0)
@@ -57,20 +57,20 @@ example (r : ℕ) : acceptCount (SharpP.powerVerifier (fun _ : Unit => r + 1) (f
 
 /-- One pair of witnesses achieves a gap growing with the input length. -/
 example : ∃ f ∈ SharpP encBits, ∃ k : List Bool → ℕ,
-    ComputableTidilyInPolyTime k encBits encNat ∧ (∀ w, 0 < k w) ∧ ∀ w,
+    ComputableInPolyTime k encBits encNat ∧ (∀ w, 0 < k w) ∧ ∀ w,
       (w ∈ language → k w ≤ f w) ∧ (w ∉ language → 2 ^ (w.length + 1) * f w < k w) :=
   exists_SBP_gap_pow_polyBounded language_mem (fun w => w.length + 1)
     (PolyBounded.self.add (.const 1))
 
 /-- A zero requested exponent still has a strict nonmember inequality and positive threshold. -/
 example : ∃ f ∈ SharpP encBits, ∃ k : List Bool → ℕ,
-    ComputableTidilyInPolyTime k encBits encNat ∧ (∀ w, 0 < k w) ∧ ∀ w,
+    ComputableInPolyTime k encBits encNat ∧ (∀ w, 0 < k w) ∧ ∀ w,
       (w ∈ language → k w ≤ f w) ∧ (w ∉ language → 2 ^ (0 : ℕ) * f w < k w) :=
   exists_SBP_gap_pow_polyBounded language_mem (fun _ => 0) (.const 0)
 
 /-- A noncomputable requested rate can be handled by fixed dominating polynomial repetition. -/
 example (S : Set (List Bool)) : ∃ f ∈ SharpP encBits, ∃ k : List Bool → ℕ,
-    ComputableTidilyInPolyTime k encBits encNat ∧ (∀ w, 0 < k w) ∧ ∀ w,
+    ComputableInPolyTime k encBits encNat ∧ (∀ w, 0 < k w) ∧ ∀ w,
       let r := @ite ℕ (w ∈ S) (Classical.propDecidable _) w.length 0
       (w ∈ language → k w ≤ f w) ∧ (w ∉ language → 2 ^ r * f w < k w) := by
   classical

@@ -9,6 +9,7 @@ import Complexity.Computability.PCP.SelectedComposition
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Semantic regressions and client certificates for the selected assignment tester. -/
 
@@ -66,6 +67,8 @@ example (constraint : Bool → Bool → Bool) (σ : Fin 2 → Bool)
   simpa only [LocalTest.Passes, Encoded.SelectedHadamardTester.query_eq] using
     passes_selected_honestProof (C := fun a b => constraint a b = true) hσ ω
 
+attribute [local fun_prop] ComputableInPolySpace.tidy in
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun p : (Bool → Bool → Bool) × (Fin 5 × Rand Bool) × Fin 6 =>
       Encoded.SelectedHadamardTester.query p.1 p.2.1 p.2.2)

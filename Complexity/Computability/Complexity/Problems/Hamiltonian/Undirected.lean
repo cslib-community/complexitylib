@@ -45,8 +45,8 @@ becomes a triangle.
   `Cslib.Complexity.DirHamPath.toHamPath_mem_iff`:
   `(G.split, G.splitVertex s 0, G.splitVertex t 2) ∈ HamPath ↔ (G, s, t) ∈ DirHamPath`.
 * `Cslib.Complexity.Graph.split_mem_HamCycle_iff`: `G.split ∈ HamCycle ↔ G ∈ DirHamCycle`.
-* `Cslib.Complexity.Graph.computableTidilyInPolyTime_split`,
-  `Cslib.Complexity.DirHamPath.computableTidilyInPolyTime_toHamPath`: both reductions are
+* `Cslib.Complexity.Graph.computableInPolyTime_split`,
+  `Cslib.Complexity.DirHamPath.computableInPolyTime_toHamPath`: both reductions are
   polynomial-time.
 * `Cslib.Complexity.polyTimeReducible_DirHamPath_HamPath`,
   `Cslib.Complexity.polyTimeReducible_DirHamCycle_HamCycle`.
@@ -541,7 +541,8 @@ private theorem computableTidilyInPolyTime_splitVertex :
 
 /-- Splitting the vertices of a graph is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_split : ComputableTidilyInPolyTime split encGraph encGraph := by
+theorem computableInPolyTime_split : ComputableInPolyTime split encGraph encGraph := by
+  refine .of_tidy ?_
   have hsv := computableTidilyInPolyTime_splitVertex
   unfold split
   unfold encGraph at hsv ⊢
@@ -560,11 +561,13 @@ def toHamPath (x : Graph × ℕ × ℕ) : Graph × ℕ × ℕ :=
 theorem toHamPath_mem_iff (x : Graph × ℕ × ℕ) : toHamPath x ∈ HamPath ↔ x ∈ DirHamPath :=
   Graph.split_mem_HamPath_iff x.1 x.2.1 x.2.2
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The reduction `DirHamPath.toHamPath` is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toHamPath :
-    ComputableTidilyInPolyTime toHamPath (encPair encGraph (encPair encNat encNat))
+theorem computableInPolyTime_toHamPath :
+    ComputableInPolyTime toHamPath (encPair encGraph (encPair encNat encNat))
       (encPair encGraph (encPair encNat encNat)) := by
+  refine .of_tidy ?_
   have hsv := Graph.computableTidilyInPolyTime_splitVertex
   unfold toHamPath
   fun_prop
@@ -575,13 +578,13 @@ end DirHamPath
 theorem polyTimeReducible_DirHamPath_HamPath :
     PolyTimeReducible (encPair encGraph (encPair encNat encNat))
       (encPair encGraph (encPair encNat encNat)) DirHamPath HamPath :=
-  ⟨DirHamPath.toHamPath, .of_tidy DirHamPath.computableTidilyInPolyTime_toHamPath,
+  ⟨DirHamPath.toHamPath, DirHamPath.computableInPolyTime_toHamPath,
     fun x => (DirHamPath.toHamPath_mem_iff x).symm⟩
 
 /-- `DirHamCycle` reduces to `HamCycle` in polynomial time via `Graph.split`. -/
 theorem polyTimeReducible_DirHamCycle_HamCycle :
     PolyTimeReducible encGraph encGraph DirHamCycle HamCycle :=
-  ⟨Graph.split, .of_tidy Graph.computableTidilyInPolyTime_split,
+  ⟨Graph.split, Graph.computableInPolyTime_split,
     fun G => (Graph.split_mem_HamCycle_iff G).symm⟩
 
 /-- `HamPath` is `NP`-hard. -/

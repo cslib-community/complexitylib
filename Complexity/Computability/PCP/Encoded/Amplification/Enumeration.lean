@@ -59,13 +59,13 @@ def amplifyEnumerated (eval : C → α → α → Bool) (fallback : C)
 theorem isPolyTime_amplifyEnumerated {Input : Type} {input : Input ↪ List Bool}
     {enc : C ↪ List Bool} {alphabet : α ↪ List Bool} {labelEncoding : D ↪ List Bool}
     {graph : Input → Graph C} {eval : C → α → α → Bool} {rotate : ℕ × (ℕ × D) → ℕ × D}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc))
-    (hrotate : ComputableTidilyInPolyTime rotate
+    (hgraph : ComputableInPolyTime graph input (encoding enc))
+    (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding))
-    (heval : ComputableTidilyInPolyTime (fun p : C × (α × α) => eval p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × (α × α) => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool)
     (fallback : C) (T q : ℕ) [NeZero q] :
-    ComputableTidilyInPolyTime (fun x => (graph x).amplifyEnumerated eval fallback rotate T q)
+    ComputableInPolyTime (fun x => (graph x).amplifyEnumerated eval fallback rotate T q)
       input (encoding (encPi (encPi encBool))) := by
   unfold amplifyEnumerated
   fun_prop

@@ -54,7 +54,7 @@ def halfEdgeNumber (p : ℕ × Bool) : ℕ :=
 /-- Numbering half-edges uses only unary arithmetic. -/
 @[fun_prop]
 theorem isPolyTime_halfEdgeNumber :
-    ComputableTidilyInPolyTime halfEdgeNumber (encPair encUnary encBool) encUnary := by
+    ComputableInPolyTime halfEdgeNumber (encPair encUnary encBool) encUnary := by
   unfold halfEdgeNumber
   polytime
 
@@ -97,25 +97,30 @@ def degreeReduceEval [DecidableEq α] (eval : C → α → α → Bool)
 /-- Enumerating all darts of degree reduction charges the full output list. -/
 @[fun_prop]
 theorem isPolyTime_degreeReduceDarts {graph : Input → Graph C}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc)) (labels : List D) :
-    ComputableTidilyInPolyTime (fun x => (graph x).degreeReduceDarts labels)
+    (hgraph : ComputableInPolyTime graph input (encoding enc)) (labels : List D) :
+    ComputableInPolyTime (fun x => (graph x).degreeReduceDarts labels)
       input (encList (encPair (encPair encUnary encBool) (encOption labelEncoding))) := by
   unfold degreeReduceDarts List.product
   polytime
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Every output edge is computed uniformly in the input graph and dart. -/
 @[fun_prop]
 theorem isPolyTime_degreeReduceEdge {graph : Input → Graph C}
     {dart : Input → (ℕ × Bool) × Option D} {rotate : ℕ × (ℕ × D) → ℕ × D}
-    (hgraph : ComputableTidilyInPolyTime graph input (encoding enc))
-    (hdart : ComputableTidilyInPolyTime dart input
+    (hgraph : ComputableInPolyTime graph input (encoding enc))
+    (hdart : ComputableInPolyTime dart input
       (encPair (encPair encUnary encBool) (encOption labelEncoding)))
-    (hrotate : ComputableTidilyInPolyTime rotate
+    (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding))
     (fallback : C) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun x => (graph x).degreeReduceEdge fallback rotate (dart x))
       input (Edge.encoding (encOption (encPair encBool enc))) := by
+  have hgraph := hgraph.tidy
+  have hdart := hdart.tidy
+  have hrotate := hrotate.tidy
+  refine .of_tidy ?_
   unfold degreeReduceEdge
   polytime
 
@@ -124,12 +129,12 @@ scans, searches, rotation calls, copying, and storage of the resulting graph. -/
 @[fun_prop]
 theorem isPolyTime_degreeReduce (fallback : C) (labels : List D)
     (rotate : ℕ × (ℕ × D) → ℕ × D)
-    (hrotate : ComputableTidilyInPolyTime rotate
+    (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)) :
-    ComputableTidilyInPolyTime (degreeReduce fallback rotate labels)
+    ComputableInPolyTime (degreeReduce fallback rotate labels)
       (encoding enc) (encoding (encOption (encPair encBool enc))) := by
   have hdarts := isPolyTime_degreeReduceDarts (enc := enc)
-    (labelEncoding := labelEncoding) (ComputableTidilyInPolyTime.id' (encIn := encoding enc)) labels
+    (labelEncoding := labelEncoding) (ComputableInPolyTime.id' (encIn := encoding enc)) labels
   unfold degreeReduce
   fun_prop
 
@@ -138,9 +143,9 @@ of encoded labels. -/
 @[fun_prop]
 theorem isPolyTime_degreeReduceEval [DecidableEq α] {alphabet : α ↪ List Bool}
     {eval : C → α → α → Bool}
-    (heval : ComputableTidilyInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : Option (Bool × C) × α × α => degreeReduceEval eval p.1 p.2.1 p.2.2)
       (encPair (encOption (encPair encBool enc)) (encPair alphabet alphabet)) encBool := by
   unfold degreeReduceEval

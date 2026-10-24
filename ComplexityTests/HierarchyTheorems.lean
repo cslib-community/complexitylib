@@ -142,11 +142,11 @@ info: 'Cslib.Complexity.setOf_timeDiagonal_notMem_DTIME' depends on axioms:
 #print axioms Cslib.Complexity.setOf_timeDiagonal_notMem_DTIME
 
 /--
-info: 'Cslib.Complexity.computableTidilyInO_timeDiagonal' depends on axioms:
+info: 'Cslib.Complexity.computableInO_timeDiagonal' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.computableTidilyInO_timeDiagonal
+#print axioms Cslib.Complexity.computableInO_timeDiagonal
 
 /--
 info: 'Cslib.Complexity.timeConstructible_succ_pow' depends on axioms:

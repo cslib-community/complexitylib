@@ -130,8 +130,8 @@ example : ∃ (f : List Bool → Bool) (h : TM2Computable (encList (encFinite Bo
           h.StacksBounded space) ∧
       (∀ xs, xs ∈ {xs : List Bool | xs.isEmpty = true} ↔ f xs = true) :=
   Cslib.Complexity.mem_PSPACE_iff_tm2.mp
-    (Cslib.Complexity.mem_PSPACE_of_computableTidilyInPolySpace
-      (.of_polyTime (.listIsEmpty' (encFinite Bool))) (fun _ => Iff.rfl))
+    (Cslib.Complexity.mem_PSPACE_of_computableInPolySpace
+      (.of_tidy (.of_polyTime (.listIsEmpty' (encFinite Bool)))) (fun _ => Iff.rfl))
 
 /--
 info: 'Turing.MultiTapeTM.ToTM2.outputsInTime' depends on axioms:

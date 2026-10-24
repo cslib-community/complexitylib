@@ -104,7 +104,7 @@ example : (Set.univ : Set (List Bool)) ∈ PSPACE encBits :=
 
 /-- A problem in `AP` has a game verifier. -/
 example : ∃ (p : Polynomial ℕ) (V : List Bool × List Bool → Bool),
-    MultiTapeTM.ComputableTidilyInPolyTime V (MultiTapeTM.encPair encBits encBits)
+    MultiTapeTM.ComputableInPolyTime V (MultiTapeTM.encPair encBits encBits)
       MultiTapeTM.encBool ∧ IsGameVerifier encBits p V (∅ : Set (List Bool)) :=
   exists_isGameVerifier_of_mem_AP
     ⟨_, PolyBounded.const 1, 0, Unit, inferInstance, emitMove true, decidesInTime_empty⟩
@@ -175,27 +175,27 @@ private theorem isGameVerifier_secondMove :
 
 /-- `Set.univ ∈ AP` through the guess-then-verify machine. -/
 example : (Set.univ : Set (List Bool)) ∈ AP encBits :=
-  isGameVerifier_firstMove.mem_AP computableTidilyInPolyTime_firstMove
+  isGameVerifier_firstMove.mem_AP (.of_tidy computableTidilyInPolyTime_firstMove)
 
 /-- `∅ ∈ AP` through the guess-then-verify machine. -/
 example : (∅ : Set (List Bool)) ∈ AP encBits :=
-  isGameVerifier_secondMove.mem_AP computableTidilyInPolyTime_secondMove
+  isGameVerifier_secondMove.mem_AP (.of_tidy computableTidilyInPolyTime_secondMove)
 
 /-- A game verifier gives a problem in `PSPACE`, and conversely. -/
 example : (∅ : Set (List Bool)) ∈ PSPACE encBits :=
   mem_PSPACE_iff_exists_isGameVerifier.mpr
-    ⟨1, secondMove, computableTidilyInPolyTime_secondMove, isGameVerifier_secondMove⟩
+    ⟨1, secondMove, (.of_tidy computableTidilyInPolyTime_secondMove), isGameVerifier_secondMove⟩
 
 /-- `AP = PSPACE`, used to move a problem from one class to the other. -/
 example : (Set.univ : Set (List Bool)) ∈ PSPACE encBits :=
-  AP_eq_PSPACE ▸ isGameVerifier_firstMove.mem_AP computableTidilyInPolyTime_firstMove
+  AP_eq_PSPACE ▸ isGameVerifier_firstMove.mem_AP (.of_tidy computableTidilyInPolyTime_firstMove)
 
 /-- A problem in `PSPACE` has a polynomial-time game verifier. -/
 example : ∃ (p : Polynomial ℕ) (V : List Bool × List Bool → Bool),
-    MultiTapeTM.ComputableTidilyInPolyTime V (MultiTapeTM.encPair encBits encBits)
+    MultiTapeTM.ComputableInPolyTime V (MultiTapeTM.encPair encBits encBits)
       MultiTapeTM.encBool ∧ IsGameVerifier encBits p V (Set.univ : Set (List Bool)) :=
   exists_isGameVerifier_of_mem_PSPACE
-    (AP_eq_PSPACE ▸ isGameVerifier_firstMove.mem_AP computableTidilyInPolyTime_firstMove)
+    (AP_eq_PSPACE ▸ isGameVerifier_firstMove.mem_AP (.of_tidy computableTidilyInPolyTime_firstMove))
 
 /-! ### Single-bit moves -/
 

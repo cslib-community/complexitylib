@@ -44,7 +44,6 @@ Two runs reject a member with probability at most `1 / 4`, so `RP ⊆ BPP`.
 
 ## Main results
 
-* `Cslib.Complexity.mem_RP_iff_tidy`: membership through a tidy verifier.
 * `Cslib.Complexity.RP_subset_NP`, `Cslib.Complexity.coRP_subset_coNP`.
 * `Cslib.Complexity.DecidesWithOneSidedError.repeatAny`: repetition reduces the error to
   `2 ^ (-q(n))`.
@@ -91,12 +90,6 @@ theorem mem_RP {A : Set α} : A ∈ RP enc ↔ ∃ (p : Polynomial ℕ) (V : α 
     ComputableInPolyTime V (encPair enc encBits) encBool ∧
       DecidesWithOneSidedError enc p V A :=
   Iff.rfl
-
-/-- `Cslib.Complexity.mem_RP` with a tidy verifier, for proofs that compose machines. -/
-theorem mem_RP_iff_tidy {A : Set α} : A ∈ RP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-    ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-      DecidesWithOneSidedError enc p V A := by
-  simp only [mem_RP, computableInPolyTime_iff_computableTidilyInPolyTime]
 
 theorem mem_coRP {A : Set α} : A ∈ coRP enc ↔ Aᶜ ∈ RP enc := Iff.rfl
 
@@ -211,18 +204,22 @@ exactly when, for every polynomial `q`, it is decided in polynomial time with on
 most `2 ^ (-q(n))`. -/
 theorem mem_RP_iff_forall_decidesWithOneSidedErrorExponent {A : Set α} :
     A ∈ RP enc ↔ ∀ q : Polynomial ℕ, ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
+      ComputableInPolyTime V (encPair enc encBits) encBool ∧
         DecidesWithOneSidedErrorExponent enc q p V A := by
-  refine ⟨fun ⟨p, V, hV, h⟩ q => ⟨q * p, _,
-    computableTidilyInPolyTime_repeatAny hV.tidy _ _, h.repeatAny q⟩, fun h => ?_⟩
-  obtain ⟨p, V, hV, h⟩ := h 1
-  exact ⟨p, V, .of_tidy hV, h.decidesWithOneSidedError fun _ => by simp⟩
+  have this : A ∈ RP enc ↔ ∀ q : Polynomial ℕ, ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
+      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧ DecidesWithOneSidedErrorExponent
+      enc q p V A := by
+    refine ⟨fun ⟨p, V, hV, h⟩ q => ⟨q * p, _,
+      (computableInPolyTime_repeatAny hV _ _).tidy, h.repeatAny q⟩, fun h => ?_⟩
+    obtain ⟨p, V, hV, h⟩ := h 1
+    exact ⟨p, V, .of_tidy hV, h.decidesWithOneSidedError fun _ => by simp⟩
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 /-- **`RP ⊆ BPP`** [Arora and Barak, Chapter 7][AroraBarak09]: two runs of a one-sided-error
 decider reject a member with probability at most `1 / 4`. -/
 theorem RP_subset_BPP : RP enc ⊆ BPP enc := fun _ hA => by
   obtain ⟨p, V, hV, h⟩ := mem_RP_iff_forall_decidesWithOneSidedErrorExponent.1 hA 2
-  exact ⟨p, V, .of_tidy hV, h.decidesWithErrorExponent.decidesWithBoundedError fun _ => by simp⟩
+  exact ⟨p, V, hV, h.decidesWithErrorExponent.decidesWithBoundedError fun _ => by simp⟩
 
 /-- **`coRP ⊆ BPP`**: `BPP` is closed under complement. -/
 theorem coRP_subset_BPP : coRP enc ⊆ BPP enc := fun A hA => by

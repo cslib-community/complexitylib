@@ -46,7 +46,7 @@ linear in `m` for fixed `k`.
 
 * `Cslib.Complexity.SAT.toSparseIndependentSet_mem_iff`:
   `toSparseIndependentSet φ ∈ IndependentSet ↔ φ ∈ SAT`.
-* `Cslib.Complexity.SAT.computableTidilyInPolyTime_toSparseIndependentSet`: the reduction is
+* `Cslib.Complexity.SAT.computableInPolyTime_toSparseIndependentSet`: the reduction is
   polynomial-time.
 * `Cslib.Complexity.SAT.length_toSparseIndependentSet_le`: the graph has linearly many vertices
   and edges for clauses of bounded width.
@@ -448,8 +448,9 @@ open SparseIndependentSet in
 /-- The reduction `toSparseIndependentSet` is computable in polynomial time: vertex labels are
 computed in unary from clause, position and variable indices, then converted to binary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toSparseIndependentSet :
-    ComputableTidilyInPolyTime toSparseIndependentSet encCNF (encPair encGraph encNat) := by
+theorem computableInPolyTime_toSparseIndependentSet :
+    ComputableInPolyTime toSparseIndependentSet encCNF (encPair encGraph encNat) := by
+  refine .of_tidy ?_
   have hdv : ComputableTidilyInPolyTime CNF.distinctVars
       (encList (encList (encPair encNat encBool))) (encList encNat) :=
     (CNF.computableInPolyTime_distinctVars encNat).tidy

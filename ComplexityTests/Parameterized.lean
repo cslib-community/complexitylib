@@ -47,7 +47,7 @@ example : ∃ f : ℕ → ℕ, Monotone f ∧ ∃ c : ℕ, DecidableInTimeO SAT 
 private def Narrow : Set (CNF ℕ) := {φ | ∀ c ∈ φ, c.length ≤ 3}
 
 private theorem narrow_mem_P : Narrow ∈ P encCNF :=
-  ⟨_, .of_tidy (computableTidilyInPolyTime_all_length_le 3), fun φ => by simp [Narrow]⟩
+  ⟨_, (computableInPolyTime_all_length_le 3), fun φ => by simp [Narrow]⟩
 
 example : Narrow ∈ FPT encCNF CNF.numVars := P_subset_FPT narrow_mem_P
 
@@ -84,7 +84,7 @@ private def toSAT (φ : CNF ℕ) : CNF ℕ :=
   if φ.all (fun c => decide (c.length ≤ 3)) then φ else [[]]
 
 private theorem toSAT_polyTime : ComputableTidilyInPolyTime toSAT encCNF encCNF :=
-  ComputableTidilyInPolyTime.ite' (computableTidilyInPolyTime_all_length_le 3)
+  ComputableTidilyInPolyTime.ite' (computableInPolyTime_all_length_le 3).tidy
     ComputableTidilyInPolyTime.id' (ComputableTidilyInPolyTime.const _)
 
 private theorem numVars_toSAT_le (φ : CNF ℕ) : (toSAT φ).numVars ≤ φ.numVars := by
@@ -106,7 +106,8 @@ private theorem mem_SAT_toSAT (φ : CNF ℕ) : φ ∈ ThreeSAT ↔ toSAT φ ∈ 
 
 private theorem threeSAT_fptReducible_SAT :
     FPTReducible encCNF encCNF CNF.numVars CNF.numVars ThreeSAT SAT :=
-  .of_computableTidilyInPolyTime toSAT_polyTime (h := id) numVars_toSAT_le mem_SAT_toSAT
+  FPTReducible.of_computableInPolyTime (.of_tidy toSAT_polyTime) (h := id) numVars_toSAT_le
+    mem_SAT_toSAT
 
 /-- The reduction does not map the formula `x₀ ∧ (x₀ ∨ x₁ ∨ x₂ ∨ x₃)` to itself. -/
 example : toSAT [[(0, true)], [(0, true), (1, true), (2, true), (3, true)]] = [[]] := by decide
@@ -145,7 +146,7 @@ private def narrowKernel (φ : CNF ℕ) : CNF ℕ :=
 private theorem isKernelization_narrowKernel :
     IsKernelization encCNF CNF.numVars Narrow narrowKernel
       fun _ => (encCNF ([] : CNF ℕ)).length + (encCNF narrowNo).length + 1 := by
-  refine ⟨.of_tidy (ComputableTidilyInPolyTime.ite' (computableTidilyInPolyTime_all_length_le 3)
+  refine ⟨.of_tidy (ComputableTidilyInPolyTime.ite' (computableInPolyTime_all_length_le 3).tidy
     (ComputableTidilyInPolyTime.const []) (ComputableTidilyInPolyTime.const narrowNo)),
     fun φ => ?_, fun φ => ?_, fun φ => ?_⟩
   · unfold narrowKernel

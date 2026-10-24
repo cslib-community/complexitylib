@@ -44,10 +44,9 @@ Each class is defined via *uniform polynomial-time families* on the instance typ
 bit-length `n : α → ℕ` is computable in polynomial time in unary (`encUnary`), and the
 neighbor, successor, predecessor or cost maps are computable in polynomial time on pairs
 `encPair enc encBits` (with costs in binary `encNat`), in the sense of
-`Turing.MultiTapeTM.ComputableInPolyTime`. `Cslib.Complexity.mem_PLS_iff_tidy` and its analogues
-state membership with tidy certificates (`Turing.MultiTapeTM.ComputableTidilyInPolyTime`), the
-form in which proofs build families. By pulling a family back along the instance map of a search
-reduction, each class is closed under `SearchReducible` across arbitrary encoded instance types
+`Turing.MultiTapeTM.ComputableInPolyTime`. By pulling a family back along the instance map of a
+search reduction, each class is closed under `SearchReducible` across arbitrary encoded instance
+  types
 (`SearchReducible.mem_PLS`, `.mem_PPP`, `.mem_PPAD`, `.mem_PPA`).
 
 The canonical circuit-presented problems `LocalOpt`, `Pigeon`, `EndOfLine` and `Leaf`, whose
@@ -63,9 +62,7 @@ local search, the numerical cost values through fixed-width binary words with le
 
 ## Main definitions
 
-* `Cslib.Complexity.PLS`, `Cslib.Complexity.PPP`, `Cslib.Complexity.PPAD`, `Cslib.Complexity.PPA`,
-  with `Cslib.Complexity.mem_PLS_iff_tidy`, `Cslib.Complexity.mem_PPP_iff_tidy`,
-  `Cslib.Complexity.mem_PPAD_iff_tidy` and `Cslib.Complexity.mem_PPA_iff_tidy`.
+* `Cslib.Complexity.PLS`, `Cslib.Complexity.PPP`, `Cslib.Complexity.PPAD`, `Cslib.Complexity.PPA`.
 * `Cslib.Complexity.padBits`, `Cslib.Complexity.evalCircuitOutputs`,
   `Cslib.Complexity.evalCircuitCode`: circuit-code evaluation normalized to `n`-bit strings.
 * `Cslib.Complexity.CircuitCode`, `Cslib.Complexity.encPigeon`, `Cslib.Complexity.encLocalOpt`,
@@ -122,11 +119,18 @@ private theorem computableTidilyInPolyTime_zeroVertex :
     (bitsCons (const false) (fst encBits encBool)) (growth := 1) (fun _ _ => by simp)
   simpa only [heq] using h
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_zeroVertex_comp {encIn : α ↪ List Bool} {n : α → ℕ}
+private theorem computableTidilyInPolyTime_zeroVertex_comp {encIn : α ↪ List Bool} {n : α → ℕ}
     (hn : ComputableTidilyInPolyTime n encIn encUnary) :
     ComputableTidilyInPolyTime (fun a => zeroVertex (n a)) encIn encBits :=
   computableTidilyInPolyTime_zeroVertex.comp hn
+
+attribute [local fun_prop] computableTidilyInPolyTime_zeroVertex_comp
+
+@[fun_prop]
+theorem computableInPolyTime_zeroVertex_comp {encIn : α ↪ List Bool} {n : α → ℕ}
+    (hn : ComputableInPolyTime n encIn encUnary) :
+    ComputableInPolyTime (fun a => zeroVertex (n a)) encIn encBits :=
+  .of_tidy (computableTidilyInPolyTime_zeroVertex_comp hn.tidy)
 
 /-- One step of converting a most-significant-first bit string to `Nat.bits` (`encNat`): strip
 leading `false` bits and prepend significant bits. -/
@@ -170,38 +174,39 @@ private theorem computableTidilyInPolyTime_binaryValue :
   exact hfold.of_enc_eq fun w => (foldl_binaryBitsStep w).symm
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_binaryValue_comp {encIn : α ↪ List Bool} {w : α → List Bool}
-    (hw : ComputableTidilyInPolyTime w encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => binaryValue (w a)) encIn encNat :=
-  computableTidilyInPolyTime_binaryValue.comp hw
+theorem computableInPolyTime_binaryValue_comp {encIn : α ↪ List Bool} {w : α → List Bool}
+    (hw : ComputableInPolyTime w encIn encBits) :
+    ComputableInPolyTime (fun a => binaryValue (w a)) encIn encNat := by
+  have hw := hw.tidy
+  exact .of_tidy (computableTidilyInPolyTime_binaryValue.comp hw)
 
 /-- Comparing the binary values of two bit strings is polynomial-time. -/
-theorem computableTidilyInPolyTime_binaryValue_le :
-    ComputableTidilyInPolyTime
+theorem computableInPolyTime_binaryValue_le :
+    ComputableInPolyTime
       (fun p : List Bool × List Bool => decide (binaryValue p.1 ≤ binaryValue p.2))
       (encPair encBits encBits) encBool :=
-  binary_le.comp
+  .of_tidy (binary_le.comp
     ((computableTidilyInPolyTime_binaryValue.comp (fst encBits encBits)).prod
-      (computableTidilyInPolyTime_binaryValue.comp (snd encBits encBits)))
+      (computableTidilyInPolyTime_binaryValue.comp (snd encBits encBits))))
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Comparing two binary natural numbers (`encNat`) is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_nat_le :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
+theorem computableInPolyTime_nat_le :
+    ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
       (encPair encNat encNat) encBool :=
-  binary_le
+  .of_tidy (binary_le)
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_nat_le' {encIn : α ↪ List Bool} {left right : α → ℕ}
-    (hleft : ComputableTidilyInPolyTime left encIn encNat)
-    (hright : ComputableTidilyInPolyTime right encIn encNat) :
-    ComputableTidilyInPolyTime (fun a => decide (left a ≤ right a)) encIn encBool :=
-  computableTidilyInPolyTime_nat_le.comp (hleft.prod hright)
+theorem computableInPolyTime_nat_le' {encIn : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left encIn encNat)
+    (hright : ComputableInPolyTime right encIn encNat) :
+    ComputableInPolyTime (fun a => decide (left a ≤ right a)) encIn encBool :=
+  computableInPolyTime_nat_le.comp (hleft.prod hright)
 
 /-! ### `FNP` and `TFNP` membership of the family relations -/
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_hasOut {enc : α ↪ List Bool} {n : α → ℕ}
+private theorem computableTidilyInPolyTime_hasOut {enc : α ↪ List Bool} {n : α → ℕ}
     {P S : α × List Bool → List Bool} (hn : ComputableTidilyInPolyTime n enc encUnary)
     (hP : ComputableTidilyInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableTidilyInPolyTime S (encPair enc encBits) encBits) :
@@ -210,8 +215,18 @@ theorem computableTidilyInPolyTime_hasOut {enc : α ↪ List Bool} {n : α → �
   unfold hasOut
   fun_prop
 
+attribute [local fun_prop] computableTidilyInPolyTime_hasOut
+
 @[fun_prop]
-theorem computableTidilyInPolyTime_hasIn {enc : α ↪ List Bool} {n : α → ℕ}
+theorem computableInPolyTime_hasOut {enc : α ↪ List Bool} {n : α → ℕ}
+    {P S : α × List Bool → List Bool} (hn : ComputableInPolyTime n enc encUnary)
+    (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
+    (hS : ComputableInPolyTime S (encPair enc encBits) encBits) :
+    ComputableInPolyTime (fun x : α × List Bool => hasOut n P S x.1 x.2)
+      (encPair enc encBits) encBool :=
+  .of_tidy (computableTidilyInPolyTime_hasOut hn.tidy hP.tidy hS.tidy)
+
+private theorem computableTidilyInPolyTime_hasIn {enc : α ↪ List Bool} {n : α → ℕ}
     {P S : α × List Bool → List Bool} (hn : ComputableTidilyInPolyTime n enc encUnary)
     (hP : ComputableTidilyInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableTidilyInPolyTime S (encPair enc encBits) encBits) :
@@ -220,8 +235,19 @@ theorem computableTidilyInPolyTime_hasIn {enc : α ↪ List Bool} {n : α → �
   unfold hasIn
   fun_prop
 
+attribute [local fun_prop] computableTidilyInPolyTime_hasIn
+
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_undirectedEdge {enc : α ↪ List Bool}
+theorem computableInPolyTime_hasIn {enc : α ↪ List Bool} {n : α → ℕ}
+    {P S : α × List Bool → List Bool} (hn : ComputableInPolyTime n enc encUnary)
+    (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
+    (hS : ComputableInPolyTime S (encPair enc encBits) encBits) :
+    ComputableInPolyTime (fun x : α × List Bool => hasIn n P S x.1 x.2)
+      (encPair enc encBits) encBool :=
+  .of_tidy (computableTidilyInPolyTime_hasIn hn.tidy hP.tidy hS.tidy)
+
+private theorem computableTidilyInPolyTime_undirectedEdge {enc : α ↪ List Bool}
     {N₁ N₂ : α × List Bool → List Bool}
     (hN₁ : ComputableTidilyInPolyTime N₁ (encPair enc encBits) encBits)
     (hN₂ : ComputableTidilyInPolyTime N₂ (encPair enc encBits) encBits)
@@ -233,6 +259,21 @@ theorem computableTidilyInPolyTime_undirectedEdge {enc : α ↪ List Bool}
   unfold undirectedEdge
   fun_prop
 
+attribute [local fun_prop] computableTidilyInPolyTime_undirectedEdge
+
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+@[fun_prop]
+theorem computableInPolyTime_undirectedEdge {enc : α ↪ List Bool}
+    {N₁ N₂ : α × List Bool → List Bool}
+    (hN₁ : ComputableInPolyTime N₁ (encPair enc encBits) encBits)
+    (hN₂ : ComputableInPolyTime N₂ (encPair enc encBits) encBits)
+    {u v : α × List Bool → List Bool}
+    (hu : ComputableInPolyTime u (encPair enc encBits) encBits)
+    (hv : ComputableInPolyTime v (encPair enc encBits) encBits) :
+    ComputableInPolyTime (fun x : α × List Bool => undirectedEdge N₁ N₂ x.1 (u x) (v x))
+      (encPair enc encBits) encBool :=
+  .of_tidy (computableTidilyInPolyTime_undirectedEdge hN₁.tidy hN₂.tidy hu.tidy hv.tidy)
+
 @[fun_prop]
 private theorem computableTidilyInPolyTime_bool_bne {encIn : α ↪ List Bool} {f g : α → Bool}
     (hf : ComputableTidilyInPolyTime f encIn encBool)
@@ -240,8 +281,7 @@ private theorem computableTidilyInPolyTime_bool_bne {encIn : α ↪ List Bool} {
     ComputableTidilyInPolyTime (fun a => f a != g a) encIn encBool :=
   (of_finite (fun p : Bool × Bool => p.1 != p.2)).comp (hf.prod hg)
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_hasOddDegree {enc : α ↪ List Bool}
+private theorem computableTidilyInPolyTime_hasOddDegree {enc : α ↪ List Bool}
     {N₁ N₂ : α × List Bool → List Bool}
     (hN₁ : ComputableTidilyInPolyTime N₁ (encPair enc encBits) encBits)
     (hN₂ : ComputableTidilyInPolyTime N₂ (encPair enc encBits) encBits) :
@@ -250,13 +290,28 @@ theorem computableTidilyInPolyTime_hasOddDegree {enc : α ↪ List Bool}
   unfold hasOddDegree
   fun_prop
 
+attribute [local fun_prop] computableTidilyInPolyTime_hasOddDegree
+
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+@[fun_prop]
+theorem computableInPolyTime_hasOddDegree {enc : α ↪ List Bool}
+    {N₁ N₂ : α × List Bool → List Bool}
+    (hN₁ : ComputableInPolyTime N₁ (encPair enc encBits) encBits)
+    (hN₂ : ComputableInPolyTime N₂ (encPair enc encBits) encBits) :
+    ComputableInPolyTime (fun x : α × List Bool => hasOddDegree N₁ N₂ x.1 x.2)
+      (encPair enc encBits) encBool :=
+  .of_tidy (computableTidilyInPolyTime_hasOddDegree hN₁.tidy hN₂.tidy)
+
 /-- A polynomial-time local-search family defines an `FNP` relation. -/
 theorem localOptRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ}
     {N : α × List Bool → List Bool} {C : α × List Bool → ℕ}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hN : ComputableTidilyInPolyTime N (encPair enc encBits) encBits)
-    (hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat) :
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hN : ComputableInPolyTime N (encPair enc encBits) encBits)
+    (hC : ComputableInPolyTime C (encPair enc encBits) encNat) :
     localOptRel n N C ∈ FNP enc := by
+  have hn := hn.tidy
+  have hN := hN.tidy
+  have hC := hC.tidy
   obtain ⟨p, hp⟩ := hn.polyBounded.exists_polynomial
   refine ⟨⟨p, fun a u h => h.1 ▸ hp a⟩,
     fun x => decide (x.2.length = n x.1) && decide (C x ≤ C (x.1, N x)), ?_, fun a u => ?_⟩
@@ -266,20 +321,23 @@ theorem localOptRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ}
 /-- A polynomial-time length-preserving local-search family defines a `TFNP` relation. -/
 theorem localOptRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ}
     {N : α × List Bool → List Bool} {C : α × List Bool → ℕ}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hN : ComputableTidilyInPolyTime N (encPair enc encBits) encBits)
-    (hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hN : ComputableInPolyTime N (encPair enc encBits) encBits)
+    (hC : ComputableInPolyTime C (encPair enc encBits) encNat)
     (hlen : ∀ a u, u.length = n a → (N (a, u)).length = n a) :
     localOptRel n N C ∈ TFNP enc :=
   ⟨localOptRel_mem_FNP hn hN hC, isTotalSearch_localOptRel hlen⟩
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- A polynomial-time pigeonhole family defines an `FNP` relation. -/
 theorem pigeonRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ} {F : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits) :
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hF : ComputableInPolyTime F (encPair enc encBits) encBits) :
     pigeonRel n F ∈ FNP enc := by
+  have hn := hn.tidy
+  have hF := hF.tidy
   obtain ⟨p, hp⟩ := hn.polyBounded.exists_polynomial
-  refine mem_FNP_iff_tidy.mpr ⟨⟨2 * p, fun a w h => by
+  refine mem_FNP.mpr ⟨⟨2 * p, fun a w h => by
       simp only [Polynomial.eval_mul, Polynomial.eval_ofNat]
       have := hp a; have := h.1; omega⟩,
     fun x => decide (x.2.length = 2 * n x.1) &&
@@ -290,25 +348,29 @@ theorem pigeonRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ} {F : α × L
   · have h2 : ComputableTidilyInPolyTime (fun x : α × List Bool => 2 * n x.1)
         (encPair enc encBits) encUnary :=
       unary_mul.comp ((const 2).prod (hn.comp (fst enc encBits)))
-    refine bool_and' (decide_eq' (length_bits.comp (snd enc encBits)) h2) ?_
+    refine .of_tidy (bool_and' (decide_eq' (length_bits.comp (snd enc encBits)) h2) ?_)
     fun_prop
   · simp [pigeonRel]
 
 /-- A polynomial-time length-preserving pigeonhole family defines a `TFNP` relation. -/
 theorem pigeonRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ} {F : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hF : ComputableInPolyTime F (encPair enc encBits) encBits)
     (hlen : ∀ a u, u.length = n a → (F (a, u)).length = n a) :
     pigeonRel n F ∈ TFNP enc :=
   ⟨pigeonRel_mem_FNP hn hF, isTotalSearch_pigeonRel hlen⟩
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- A polynomial-time directed end-of-line family defines an `FNP` relation. -/
 theorem endOfLineRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ}
     {P S : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hP : ComputableTidilyInPolyTime P (encPair enc encBits) encBits)
-    (hS : ComputableTidilyInPolyTime S (encPair enc encBits) encBits) :
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
+    (hS : ComputableInPolyTime S (encPair enc encBits) encBits) :
     endOfLineRel n P S ∈ FNP enc := by
+  have hn := hn.tidy
+  have hP := hP.tidy
+  have hS := hS.tidy
   obtain ⟨p, hp⟩ := hn.polyBounded.exists_polynomial
   refine ⟨⟨p, fun a u h => h.1 ▸ hp a⟩,
     fun x => decide (x.2.length = n x.1) &&
@@ -320,20 +382,24 @@ theorem endOfLineRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ}
 /-- A polynomial-time length-preserving directed end-of-line family defines a `TFNP` relation. -/
 theorem endOfLineRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ}
     {P S : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hP : ComputableTidilyInPolyTime P (encPair enc encBits) encBits)
-    (hS : ComputableTidilyInPolyTime S (encPair enc encBits) encBits)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
+    (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
     (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
     endOfLineRel n P S ∈ TFNP enc :=
   ⟨endOfLineRel_mem_FNP hn hP hS, isTotalSearch_endOfLineRel hS_len⟩
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- A polynomial-time undirected parity family defines an `FNP` relation. -/
 theorem leafRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ}
     {N₁ N₂ : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hN₁ : ComputableTidilyInPolyTime N₁ (encPair enc encBits) encBits)
-    (hN₂ : ComputableTidilyInPolyTime N₂ (encPair enc encBits) encBits) :
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hN₁ : ComputableInPolyTime N₁ (encPair enc encBits) encBits)
+    (hN₂ : ComputableInPolyTime N₂ (encPair enc encBits) encBits) :
     leafRel n N₁ N₂ ∈ FNP enc := by
+  have hn := hn.tidy
+  have hN₁ := hN₁.tidy
+  have hN₂ := hN₂.tidy
   obtain ⟨p, hp⟩ := hn.polyBounded.exists_polynomial
   refine ⟨⟨p, fun a u h => h.1 ▸ hp a⟩,
     fun x => decide (x.2.length = n x.1) &&
@@ -345,9 +411,9 @@ theorem leafRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ}
 /-- A polynomial-time length-preserving undirected parity family defines a `TFNP` relation. -/
 theorem leafRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ}
     {N₁ N₂ : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hN₁ : ComputableTidilyInPolyTime N₁ (encPair enc encBits) encBits)
-    (hN₂ : ComputableTidilyInPolyTime N₂ (encPair enc encBits) encBits)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hN₁ : ComputableInPolyTime N₁ (encPair enc encBits) encBits)
+    (hN₂ : ComputableInPolyTime N₂ (encPair enc encBits) encBits)
     (hN₁_len : ∀ a u, u.length = n a → (N₁ (a, u)).length = n a)
     (hN₂_len : ∀ a u, u.length = n a → (N₂ (a, u)).length = n a) :
     leafRel n N₁ N₂ ∈ TFNP enc :=
@@ -412,16 +478,6 @@ theorem mem_PLS : R ∈ PLS enc ↔ R ∈ FNP enc ∧
       SearchReducible enc enc R (localOptRel n N C) :=
   Iff.rfl
 
-/-- `PLS` with tidy local-search families, the form in which proofs build them. -/
-theorem mem_PLS_iff_tidy : R ∈ PLS enc ↔ R ∈ FNP enc ∧
-    ∃ (n : α → ℕ) (N : α × List Bool → List Bool) (C : α × List Bool → ℕ),
-      ComputableTidilyInPolyTime n enc encUnary ∧
-      ComputableTidilyInPolyTime N (encPair enc encBits) encBits ∧
-      ComputableTidilyInPolyTime C (encPair enc encBits) encNat ∧
-      (∀ a u, u.length = n a → (N (a, u)).length = n a) ∧
-      SearchReducible enc enc R (localOptRel n N C) := by
-  simp only [mem_PLS, computableInPolyTime_iff_computableTidilyInPolyTime]
-
 theorem mem_PPP : R ∈ PPP enc ↔ R ∈ FNP enc ∧
     ∃ (n : α → ℕ) (F : α × List Bool → List Bool),
       ComputableInPolyTime n enc encUnary ∧
@@ -429,15 +485,6 @@ theorem mem_PPP : R ∈ PPP enc ↔ R ∈ FNP enc ∧
       (∀ a u, u.length = n a → (F (a, u)).length = n a) ∧
       SearchReducible enc enc R (pigeonRel n F) :=
   Iff.rfl
-
-/-- `PPP` with tidy pigeonhole families, the form in which proofs build them. -/
-theorem mem_PPP_iff_tidy : R ∈ PPP enc ↔ R ∈ FNP enc ∧
-    ∃ (n : α → ℕ) (F : α × List Bool → List Bool),
-      ComputableTidilyInPolyTime n enc encUnary ∧
-      ComputableTidilyInPolyTime F (encPair enc encBits) encBits ∧
-      (∀ a u, u.length = n a → (F (a, u)).length = n a) ∧
-      SearchReducible enc enc R (pigeonRel n F) := by
-  simp only [mem_PPP, computableInPolyTime_iff_computableTidilyInPolyTime]
 
 theorem mem_PPAD : R ∈ PPAD enc ↔ R ∈ FNP enc ∧
     ∃ (n : α → ℕ) (P S : α × List Bool → List Bool),
@@ -449,17 +496,6 @@ theorem mem_PPAD : R ∈ PPAD enc ↔ R ∈ FNP enc ∧
       SearchReducible enc enc R (endOfLineRel n P S) :=
   Iff.rfl
 
-/-- `PPAD` with tidy end-of-line families, the form in which proofs build them. -/
-theorem mem_PPAD_iff_tidy : R ∈ PPAD enc ↔ R ∈ FNP enc ∧
-    ∃ (n : α → ℕ) (P S : α × List Bool → List Bool),
-      ComputableTidilyInPolyTime n enc encUnary ∧
-      ComputableTidilyInPolyTime P (encPair enc encBits) encBits ∧
-      ComputableTidilyInPolyTime S (encPair enc encBits) encBits ∧
-      (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
-      SearchReducible enc enc R (endOfLineRel n P S) := by
-  simp only [mem_PPAD, computableInPolyTime_iff_computableTidilyInPolyTime]
-
 theorem mem_PPA : R ∈ PPA enc ↔ R ∈ FNP enc ∧
     ∃ (n : α → ℕ) (N₁ N₂ : α × List Bool → List Bool),
       ComputableInPolyTime n enc encUnary ∧
@@ -470,54 +506,43 @@ theorem mem_PPA : R ∈ PPA enc ↔ R ∈ FNP enc ∧
       SearchReducible enc enc R (leafRel n N₁ N₂) :=
   Iff.rfl
 
-/-- `PPA` with tidy parity families, the form in which proofs build them. -/
-theorem mem_PPA_iff_tidy : R ∈ PPA enc ↔ R ∈ FNP enc ∧
-    ∃ (n : α → ℕ) (N₁ N₂ : α × List Bool → List Bool),
-      ComputableTidilyInPolyTime n enc encUnary ∧
-      ComputableTidilyInPolyTime N₁ (encPair enc encBits) encBits ∧
-      ComputableTidilyInPolyTime N₂ (encPair enc encBits) encBits ∧
-      (∀ a u, u.length = n a → (N₁ (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (N₂ (a, u)).length = n a) ∧
-      SearchReducible enc enc R (leafRel n N₁ N₂) := by
-  simp only [mem_PPA, computableInPolyTime_iff_computableTidilyInPolyTime]
-
 /-- Every uniform polynomial-time local-search family is in `PLS`. -/
 theorem localOptRel_mem_PLS {n : α → ℕ} {N : α × List Bool → List Bool} {C : α × List Bool → ℕ}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hN : ComputableTidilyInPolyTime N (encPair enc encBits) encBits)
-    (hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hN : ComputableInPolyTime N (encPair enc encBits) encBits)
+    (hC : ComputableInPolyTime C (encPair enc encBits) encNat)
     (hlen : ∀ a u, u.length = n a → (N (a, u)).length = n a) :
-    localOptRel n N C ∈ PLS enc :=
-  mem_PLS_iff_tidy.mpr ⟨localOptRel_mem_FNP hn hN hC, n, N, C, hn, hN, hC, hlen, .refl _ _⟩
+    localOptRel n N C ∈ PLS enc := by
+  exact mem_PLS.mpr ⟨localOptRel_mem_FNP hn hN hC, n, N, C, hn, hN, hC, hlen, .refl _ _⟩
 
 /-- Every uniform polynomial-time pigeonhole family is in `PPP`. -/
 theorem pigeonRel_mem_PPP {n : α → ℕ} {F : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hF : ComputableInPolyTime F (encPair enc encBits) encBits)
     (hlen : ∀ a u, u.length = n a → (F (a, u)).length = n a) :
-    pigeonRel n F ∈ PPP enc :=
-  mem_PPP_iff_tidy.mpr ⟨pigeonRel_mem_FNP hn hF, n, F, hn, hF, hlen, .refl _ _⟩
+    pigeonRel n F ∈ PPP enc := by
+  exact mem_PPP.mpr ⟨pigeonRel_mem_FNP hn hF, n, F, hn, hF, hlen, .refl _ _⟩
 
 /-- Every uniform polynomial-time directed end-of-line family is in `PPAD`. -/
 theorem endOfLineRel_mem_PPAD {n : α → ℕ} {P S : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hP : ComputableTidilyInPolyTime P (encPair enc encBits) encBits)
-    (hS : ComputableTidilyInPolyTime S (encPair enc encBits) encBits)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
+    (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
     (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
     (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    endOfLineRel n P S ∈ PPAD enc :=
-  mem_PPAD_iff_tidy.mpr
+    endOfLineRel n P S ∈ PPAD enc := by
+  exact mem_PPAD.mpr
     ⟨endOfLineRel_mem_FNP hn hP hS, n, P, S, hn, hP, hS, hP_len, hS_len, .refl _ _⟩
 
 /-- Every uniform polynomial-time undirected parity family is in `PPA`. -/
 theorem leafRel_mem_PPA {n : α → ℕ} {N₁ N₂ : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hN₁ : ComputableTidilyInPolyTime N₁ (encPair enc encBits) encBits)
-    (hN₂ : ComputableTidilyInPolyTime N₂ (encPair enc encBits) encBits)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hN₁ : ComputableInPolyTime N₁ (encPair enc encBits) encBits)
+    (hN₂ : ComputableInPolyTime N₂ (encPair enc encBits) encBits)
     (hN₁_len : ∀ a u, u.length = n a → (N₁ (a, u)).length = n a)
     (hN₂_len : ∀ a u, u.length = n a → (N₂ (a, u)).length = n a) :
-    leafRel n N₁ N₂ ∈ PPA enc :=
-  mem_PPA_iff_tidy.mpr
+    leafRel n N₁ N₂ ∈ PPA enc := by
+  exact mem_PPA.mpr
     ⟨leafRel_mem_FNP hn hN₁ hN₂, n, N₁, N₂, hn, hN₁, hN₂, hN₁_len, hN₂_len, .refl _ _⟩
 
 /-! ### Closure under search reductions -/
@@ -525,50 +550,50 @@ theorem leafRel_mem_PPA {n : α → ℕ} {N₁ N₂ : α × List Bool → List B
 /-- `PLS` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_PLS (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PLS encB) : R ∈ PLS enc := by
-  obtain ⟨-, n, N, C, hn, hN, hC, hlen, hT_red⟩ := mem_PLS_iff_tidy.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := searchReducible_iff_tidy.mp (h.trans hT_red)
-  refine mem_PLS_iff_tidy.mpr ⟨hR, n ∘ f, fun p => N (f p.1, p.2), fun p => C (f p.1, p.2),
-    hn.comp hf, hN.comp ((hf.comp (fst enc encBits)).prod (snd enc encBits)),
-    hC.comp ((hf.comp (fst enc encBits)).prod (snd enc encBits)),
+  obtain ⟨-, n, N, C, hn, hN, hC, hlen, hT_red⟩ := Complexity.mem_PLS.mp hT
+  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
+  refine Complexity.mem_PLS.mpr ⟨hR, n ∘ f, fun p => N (f p.1, p.2), fun p => C (f p.1, p.2),
+    hn.comp hf, hN.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
+    hC.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
     fun a u hu => hlen (f a) u hu,
     .of_isTotalSearch (isTotalSearch_localOptRel fun a u hu => hlen (f a) u hu)
-      id' hg fun a w hw => hsol a w hw⟩
+      (.of_tidy id') hg fun a w hw => hsol a w hw⟩
 
 /-- `PPP` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_PPP (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPP encB) : R ∈ PPP enc := by
-  obtain ⟨-, n, F, hn, hF, hlen, hT_red⟩ := mem_PPP_iff_tidy.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := searchReducible_iff_tidy.mp (h.trans hT_red)
-  refine mem_PPP_iff_tidy.mpr ⟨hR, n ∘ f, fun p => F (f p.1, p.2),
-    hn.comp hf, hF.comp ((hf.comp (fst enc encBits)).prod (snd enc encBits)),
+  obtain ⟨-, n, F, hn, hF, hlen, hT_red⟩ := Complexity.mem_PPP.mp hT
+  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
+  refine Complexity.mem_PPP.mpr ⟨hR, n ∘ f, fun p => F (f p.1, p.2),
+    hn.comp hf, hF.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
     fun a u hu => hlen (f a) u hu,
     .of_isTotalSearch (isTotalSearch_pigeonRel fun a u hu => hlen (f a) u hu)
-      id' hg fun a w hw => hsol a w hw⟩
+      (.of_tidy id') hg fun a w hw => hsol a w hw⟩
 
 /-- `PPAD` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_PPAD (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPAD encB) : R ∈ PPAD enc := by
-  obtain ⟨-, n, P, S, hn, hP, hS, hP_len, hS_len, hT_red⟩ := mem_PPAD_iff_tidy.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := searchReducible_iff_tidy.mp (h.trans hT_red)
-  refine mem_PPAD_iff_tidy.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
-    hn.comp hf, hP.comp ((hf.comp (fst enc encBits)).prod (snd enc encBits)),
-    hS.comp ((hf.comp (fst enc encBits)).prod (snd enc encBits)),
+  obtain ⟨-, n, P, S, hn, hP, hS, hP_len, hS_len, hT_red⟩ := Complexity.mem_PPAD.mp hT
+  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
+  refine Complexity.mem_PPAD.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
+    hn.comp hf, hP.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
+    hS.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
     fun a u hu => hP_len (f a) u hu, fun a u hu => hS_len (f a) u hu,
     .of_isTotalSearch (isTotalSearch_endOfLineRel fun a u hu => hS_len (f a) u hu)
-      id' hg fun a w hw => hsol a w hw⟩
+      (.of_tidy id') hg fun a w hw => hsol a w hw⟩
 
 /-- `PPA` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_PPA (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPA encB) : R ∈ PPA enc := by
-  obtain ⟨-, n, N₁, N₂, hn, hN₁, hN₂, hN₁_len, hN₂_len, hT_red⟩ := mem_PPA_iff_tidy.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := searchReducible_iff_tidy.mp (h.trans hT_red)
-  refine mem_PPA_iff_tidy.mpr ⟨hR, n ∘ f, fun p => N₁ (f p.1, p.2), fun p => N₂ (f p.1, p.2),
-    hn.comp hf, hN₁.comp ((hf.comp (fst enc encBits)).prod (snd enc encBits)),
-    hN₂.comp ((hf.comp (fst enc encBits)).prod (snd enc encBits)),
+  obtain ⟨-, n, N₁, N₂, hn, hN₁, hN₂, hN₁_len, hN₂_len, hT_red⟩ := Complexity.mem_PPA.mp hT
+  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
+  refine Complexity.mem_PPA.mpr ⟨hR, n ∘ f, fun p => N₁ (f p.1, p.2), fun p => N₂ (f p.1, p.2),
+    hn.comp hf, hN₁.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
+    hN₂.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
     fun a u hu => hN₁_len (f a) u hu, fun a u hu => hN₂_len (f a) u hu,
     .of_isTotalSearch
       (isTotalSearch_leafRel (fun a u hu => hN₁_len (f a) u hu) (fun a u hu => hN₂_len (f a) u hu))
-      id' hg fun a w hw => hsol a w hw⟩
+      (.of_tidy id') hg fun a w hw => hsol a w hw⟩
 
 /-! ### Inclusions in `TFNP` and between subclasses -/
 
@@ -600,21 +625,22 @@ private theorem endOfLineRel_searchReducible_pigeonRel {n : α → ℕ} {P S : �
     (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
     SearchReducible enc enc (endOfLineRel n P S) (pigeonRel n (ppadToPppMap n P S)) := by
   refine .of_isTotalSearch (isTotalSearch_pigeonRel fun a u hu => length_ppadToPppMap (hS_len a) hu)
-    id' (g := fun p => if !hasOut n P S p.1 (p.2.take (n p.1)) then p.2.take (n p.1)
+    (.of_tidy id') (g := fun p => if !hasOut n P S p.1 (p.2.take (n p.1)) then p.2.take (n p.1)
       else p.2.drop (n p.1)) ?_ fun a w hw => endOfLineRel_of_pigeonRel hw
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **`PPAD ⊆ PPP`** [Papadimitriou][Papadimitriou1994PPAD], [Beame et al.][BeameEtAl1998]: every
 problem in `PPAD` is in `PPP`. -/
 theorem PPAD_subset_PPP : PPAD enc ⊆ PPP enc := by
   intro R hR'
-  obtain ⟨hR, n, P, S, hn, hP, hS, -, hS_len, hred⟩ := mem_PPAD_iff_tidy.mp hR'
+  obtain ⟨hR, n, P, S, hn, hP, hS, -, hS_len, hred⟩ := mem_PPAD.mp hR'
   have hF : ComputableTidilyInPolyTime (ppadToPppMap n P S) (encPair enc encBits) encBits := by
     unfold ppadToPppMap
     fun_prop
-  exact mem_PPP_iff_tidy.mpr ⟨hR, n, ppadToPppMap n P S, hn, hF,
+  exact mem_PPP.mpr ⟨hR, n, ppadToPppMap n P S, hn, (.of_tidy hF),
     fun a u hu => length_ppadToPppMap (hS_len a) hu,
-    hred.trans (endOfLineRel_searchReducible_pigeonRel hn hP hS hS_len)⟩
+    hred.trans (endOfLineRel_searchReducible_pigeonRel hn.tidy hP.tidy hS.tidy hS_len)⟩
 
 /-- Every directed end-of-line family search-reduces to its associated bipartite undirected parity
 family. -/
@@ -627,13 +653,14 @@ private theorem endOfLineRel_searchReducible_leafRel {n : α → ℕ} {P S : α 
     (isTotalSearch_leafRel
       (fun a _ hw => length_ppadToPpaN₁ (hP_len a) (hS_len a) hw)
       (fun _ _ hw => length_ppadToPpaN₂ hw))
-    id' (g := fun p => p.2.tail) (bitsTail.comp (snd enc encBits))
+    (.of_tidy id') (g := fun p => p.2.tail) (.of_tidy (bitsTail.comp (snd enc encBits)))
     fun _ _ hw => endOfLineRel_tail_of_leafRel hw
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **`PPAD ⊆ PPA`** [Papadimitriou][Papadimitriou1994PPAD]: every problem in `PPAD` is in `PPA`. -/
 theorem PPAD_subset_PPA : PPAD enc ⊆ PPA enc := by
   intro R hR'
-  obtain ⟨hR, n, P, S, hn, hP, hS, hP_len, hS_len, hred⟩ := mem_PPAD_iff_tidy.mp hR'
+  obtain ⟨hR, n, P, S, hn, hP, hS, hP_len, hS_len, hred⟩ := mem_PPAD.mp hR'
   have hn' : ComputableTidilyInPolyTime (fun a => n a + 1) enc encUnary := by fun_prop
   have hN₁ : ComputableTidilyInPolyTime (ppadToPpaN₁ n P S) (encPair enc encBits) encBits := by
     unfold ppadToPpaN₁
@@ -641,8 +668,9 @@ theorem PPAD_subset_PPA : PPAD enc ⊆ PPA enc := by
   have hN₂ : ComputableTidilyInPolyTime (ppadToPpaN₂ n P S) (encPair enc encBits) encBits := by
     unfold ppadToPpaN₂ isActiveNonZero
     fun_prop
-  exact mem_PPA_iff_tidy.mpr
-    ⟨hR, fun a => n a + 1, ppadToPpaN₁ n P S, ppadToPpaN₂ n P S, hn', hN₁, hN₂,
+  exact mem_PPA.mpr
+    ⟨hR, fun a => n a + 1, ppadToPpaN₁ n P S, ppadToPpaN₂ n P S, (.of_tidy hn'), (.of_tidy hN₁),
+      (.of_tidy hN₂),
       fun a _ hw => length_ppadToPpaN₁ (hP_len a) (hS_len a) hw,
       fun _ _ hw => length_ppadToPpaN₂ hw,
       hred.trans (endOfLineRel_searchReducible_leafRel hP_len hS_len)⟩
@@ -663,10 +691,10 @@ theorem padBits_of_length_eq {n : ℕ} {w : List Bool} (h : w.length = n) : padB
   simp [padBits, h, zeroVertex]
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_padBits {encIn : α ↪ List Bool} {n : α → ℕ}
-    {w : α → List Bool} (hn : ComputableTidilyInPolyTime n encIn encUnary)
-    (hw : ComputableTidilyInPolyTime w encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => padBits (n a) (w a)) encIn encBits := by
+theorem computableInPolyTime_padBits {encIn : α ↪ List Bool} {n : α → ℕ}
+    {w : α → List Bool} (hn : ComputableInPolyTime n encIn encUnary)
+    (hw : ComputableInPolyTime w encIn encBits) :
+    ComputableInPolyTime (fun a => padBits (n a) (w a)) encIn encBits := by
   unfold padBits
   fun_prop
 
@@ -692,11 +720,14 @@ theorem evalCircuitOutputs_code {n m : ℕ} (c : Circuit signature n m) (x : Fin
   exact (c.eval_eq_getD interpretation false x ⟨j, by simpa using hj₂⟩).symm
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_evalCircuitOutputs {encIn : α ↪ List Bool}
+theorem computableInPolyTime_evalCircuitOutputs {encIn : α ↪ List Bool}
     {code : α → CircuitCode} {u : α → List Bool}
-    (hcode : ComputableTidilyInPolyTime code encIn encCode)
-    (hu : ComputableTidilyInPolyTime u encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => evalCircuitOutputs (code a) (u a)) encIn encBits := by
+    (hcode : ComputableInPolyTime code encIn encCode)
+    (hu : ComputableInPolyTime u encIn encBits) :
+    ComputableInPolyTime (fun a => evalCircuitOutputs (code a) (u a)) encIn encBits := by
+  have hcode := hcode.tidy
+  have hu := hu.tidy
+  refine .of_tidy ?_
   have hvals : ComputableTidilyInPolyTime
       (fun a => evalCode interpretation false (u a) (code a).1) encIn encBits :=
     (computableInPolyTime_evalCode (.of_tidy hu) (.of_tidy hcode.fst')).tidy
@@ -719,12 +750,12 @@ theorem evalCircuitCode_code {n : ℕ} (c : Circuit signature n n) (x : Fin n �
   rw [evalCircuitCode, evalCircuitOutputs_code, padBits_of_length_eq (List.length_ofFn)]
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_evalCircuitCode {encIn : α ↪ List Bool}
+theorem computableInPolyTime_evalCircuitCode {encIn : α ↪ List Bool}
     {n : α → ℕ} {code : α → CircuitCode} {u : α → List Bool}
-    (hn : ComputableTidilyInPolyTime n encIn encUnary)
-    (hcode : ComputableTidilyInPolyTime code encIn encCode)
-    (hu : ComputableTidilyInPolyTime u encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => evalCircuitCode (n a) (code a) (u a)) encIn encBits := by
+    (hn : ComputableInPolyTime n encIn encUnary)
+    (hcode : ComputableInPolyTime code encIn encCode)
+    (hu : ComputableInPolyTime u encIn encBits) :
+    ComputableInPolyTime (fun a => evalCircuitCode (n a) (code a) (u a)) encIn encBits := by
   unfold evalCircuitCode
   fun_prop
 
@@ -796,14 +827,16 @@ theorem Pigeon_mem_PPP : Pigeon ∈ PPP encPigeon :=
   pigeonRel_mem_PPP (by fun_prop) (by fun_prop)
     fun _ _ _ => length_evalCircuitCode _ _ _
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `EndOfLine` is in `PPAD`. -/
 theorem EndOfLine_mem_PPAD : EndOfLine ∈ PPAD encEndOfLine :=
-  endOfLineRel_mem_PPAD (by fun_prop) (by fun_prop) (by fun_prop)
+  endOfLineRel_mem_PPAD (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
     (fun _ _ _ => length_evalCircuitCode _ _ _) (fun _ _ _ => length_evalCircuitCode _ _ _)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `Leaf` is in `PPA`. -/
 theorem Leaf_mem_PPA : Leaf ∈ PPA encLeaf :=
-  leafRel_mem_PPA (by fun_prop) (by fun_prop) (by fun_prop)
+  leafRel_mem_PPA (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
     (fun _ _ _ => length_evalCircuitCode _ _ _) (fun _ _ _ => length_evalCircuitCode _ _ _)
 
 /-- `LocalOpt` is in `TFNP`. -/

@@ -65,10 +65,10 @@ theorem NP_subset_PCP_log {Input : Type} (input : Input ↪ List Bool) :
   have heval : ComputableTidilyInPolyTime
       (fun p : (GapAlphabet → GapAlphabet → Bool) × GapAlphabet × GapAlphabet => p.1 p.2.1 p.2.2)
       (encPair (encPi (encPi encBool))
-        (encPair (encPair encBool (encPi encBool)) (encPair encBool (encPi encBool)))) encBool := by
-    fun_prop
+        (encPair (encPair encBool (encPi encBool)) (encPair encBool (encPi encBool)))) encBool :=
+    (Graph.isPolyTime_constraintTableEval (encPair encBool (encPi encBool))).tidy
   exact Graph.mem_PCP_of_gapReduction (FinEnum.card (Fin 6) + 1)
-    encodeLabel decodeLabel decode_encodeLabel (isPolyTime_gapGraph hreduce.tidy) heval
+    encodeLabel decodeLabel decode_encodeLabel (isPolyTime_gapGraph hreduce) (.of_tidy heval)
     (fun x => wellFormed_gapGraph (reduce x))
     (fun x hx => (satisfiable_gapGraph_iff _).mpr ((hmem x).mp hx))
     (gap := gap) gap_pos

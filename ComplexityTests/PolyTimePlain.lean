@@ -198,9 +198,9 @@ example : firstBit ∈ P encBits :=
   ⟨fun w => w.headD false, (by polytime : ComputableInPolyTime _ encBits encBool),
     fun _ => Iff.rfl⟩
 
-/-- Membership in `P` from a tidy certificate, through `mem_P_iff_tidy`. -/
+/-- Membership in `P` from a certificate built by `polytime`, through `mem_P`. -/
 example : firstBit ∈ P encBits :=
-  mem_P_iff_tidy.mpr ⟨fun w => w.headD false, by polytime, fun _ => Iff.rfl⟩
+  mem_P.mpr ⟨fun w => w.headD false, by polytime, fun _ => Iff.rfl⟩
 
 /-- A reduction stated plainly is the library's polynomial-time reduction, by definition. -/
 example {β : Type} {encB : β ↪ List Bool} {A : Set α} {B : Set β} :
@@ -213,10 +213,10 @@ example {f : α → Bool} (hf : ComputableInPolyTime f enc encBool) {B : Set Boo
     (hB : B ∈ P encBool) : {a | f a ∈ B} ∈ P enc :=
   PolyTimeReducible.mem_P ⟨f, by fun_prop, fun _ => Iff.rfl⟩ hB
 
-/-- A tidy reduction, through `polyTimeReducible_iff_tidy`. -/
+/-- A reduction by the identity, with the plain identity certificate. -/
 example : PolyTimeReducible encBits encBits {w : List Bool | w.headD false = true}
     {w | w.headD false = true} :=
-  polyTimeReducible_iff_tidy.mpr ⟨id, .id', fun _ => Iff.rfl⟩
+  ⟨id, .id', fun _ => Iff.rfl⟩
 
 /-- Without a hypothesis or a certificate for `f`, `fun_prop` does not claim polynomial time. -/
 example {f : α → Bool} (hf : ComputableInPolyTime f enc encBool) :

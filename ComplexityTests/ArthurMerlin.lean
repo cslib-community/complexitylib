@@ -71,13 +71,13 @@ example : {w : List Bool | w.tail.headD false = true} ∈ AM encBits :=
 /-- The error-exponent conditions are satisfiable, for every error exponent. -/
 example : ∃ q : Polynomial ℕ, ∀ e : Polynomial ℕ, ∃ (p : Polynomial ℕ)
     (V : List Bool × List Bool → Bool),
-    ComputableTidilyInPolyTime V (encPair encBits encBits) encBool ∧
+    ComputableInPolyTime V (encPair encBits encBits) encBool ∧
       IsMerlinArthurVerifierWithErrorExponent encBits e q p V
         {w : List Bool | w.headD false = true} :=
   mem_MA_iff_exists_forall_errorExponent.mp head_mem_MA_direct
 
 example (e : Polynomial ℕ) : ∃ (p q : Polynomial ℕ) (V : _ × List Bool → Bool),
-    ComputableTidilyInPolyTime V (encPair encCNF encBits) encBool ∧
+    ComputableInPolyTime V (encPair encCNF encBits) encBool ∧
       IsArthurMerlinVerifierWithErrorExponent encCNF e p q V SAT :=
   mem_AM_iff_forall_errorExponent.mp (NP_subset_AM SAT.mem_NP) e
 

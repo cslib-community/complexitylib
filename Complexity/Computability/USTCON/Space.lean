@@ -31,7 +31,8 @@ instances; recognising which bit strings are encodings is not formalised.
 
 ## Main results
 
-* `Cslib.USTCON.computableTidilyInBigO_decide`: the decision in space `O(log n)`.
+* `Cslib.USTCON.computableInBigO_decide`: the decision in space `O(log n)`, with the output not
+  charged to the space bound (`Turing.MultiTapeTM.ComputableInBigO`).
 * `Cslib.USTCON.computableInLogSpace_decide`: the decision is computable in logarithmic space.
 
 ## References
@@ -48,9 +49,9 @@ open Turing MultiTapeTM Reader Cslib.Complexity
 
 open scoped Classical in
 /-- **Undirected connectivity in space `O(log n)`**: the decision of undirected `s`–`t`
-connectivity is tidily computable from the encoded instance in space linear in the logarithm of
-its length. -/
-theorem computableTidilyInBigO_decide : ∃ t, ComputableTidilyInBigO
+connectivity is computable from the encoded instance in space linear in the logarithm of its
+length. -/
+theorem computableInBigO_decide : ∃ t, ComputableInBigO
     (fun I : USTCONInstance ↦ decide (I ∈ USTCON)) encUSTCON encBool t
     fun I ↦ Nat.log2 (encUSTCON I).length + 1 := by
   obtain ⟨T, hT⟩ := tidy_machine
@@ -63,7 +64,8 @@ theorem computableTidilyInBigO_decide : ∃ t, ComputableTidilyInBigO
   let tS := ReadMachine.stateT encState T stateBudget
   let tMax (I : USTCONInstance) : ℕ := ∑ i ∈ Finset.range (rounds I + 1),
     tS (machine.toStepMachine.run (encUSTCON I) i).state
-  refine ⟨_, (hT.computableTidilyInTimeAndSpace (fun I : USTCONInstance ↦ decide (I ∈ USTCON))
+  refine ⟨_, ComputableTidilyInBigO.computableInBigO <|
+    (hT.computableTidilyInTimeAndSpace (fun I : USTCONInstance ↦ decide (I ∈ USTCON))
     rounds hr (fun I ↦ by rw [encBool_apply, ho]) (tMax := tMax)
     (sMax := fun I ↦ 6 * stateConst * (Nat.log2 (encUSTCON I).length + 2) +
       2 * (Nat.log2 (encUSTCON I).length + 2) + 12) fun I i hi ↦ ⟨?_, ?_⟩).weaken
@@ -94,7 +96,7 @@ open scoped Classical in
 space, on encodings of instances by their adjacency matrices. -/
 theorem computableInLogSpace_decide :
     ComputableInLogSpace (fun I : USTCONInstance ↦ decide (I ∈ USTCON)) encUSTCON encBool := by
-  obtain ⟨t, c, hc⟩ := computableTidilyInBigO_decide
-  exact ⟨_, 2 * c, hc.computableInTimeAndSpace.mono (fun _ ↦ le_rfl) fun I ↦ by nlinarith⟩
+  obtain ⟨t, c, hc⟩ := computableInBigO_decide
+  exact ⟨_, 2 * c, hc.mono (fun _ ↦ le_rfl) fun I ↦ by nlinarith⟩
 
 end Cslib.USTCON

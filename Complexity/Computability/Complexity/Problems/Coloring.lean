@@ -57,7 +57,7 @@ remaining three, so `KColoring k` is `NP`-complete for every `k ≥ 3`.
 * `Cslib.Complexity.KColoring.isVerifier`, `Cslib.Complexity.KColoring.mem_NP`:
   `KColoring k ∈ NP encGraph` for every `k`.
 * `Cslib.Complexity.SAT.toThreeColoring_mem_iff`: `toThreeColoring φ ∈ ThreeColoring ↔ φ ∈ SAT`.
-* `Cslib.Complexity.SAT.computableTidilyInPolyTime_toThreeColoring`: the reduction is
+* `Cslib.Complexity.SAT.computableInPolyTime_toThreeColoring`: the reduction is
   polynomial-time.
 * `Cslib.Complexity.polyTimeReducible_SAT_ThreeColoring`,
   `Cslib.Complexity.polyTimeReducible_ThreeSAT_ThreeColoring`,
@@ -155,9 +155,10 @@ theorem isVerifier (k : ℕ) :
 
 /-- Reading a color from a certificate is polynomial-time, with the color in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_colorOf (k : ℕ) :
-    ComputableTidilyInPolyTime (fun p : (List ℕ × List Bool) × ℕ => colorOf k p.1.1 p.1.2 p.2)
+theorem computableInPolyTime_colorOf (k : ℕ) :
+    ComputableInPolyTime (fun p : (List ℕ × List Bool) × ℕ => colorOf k p.1.1 p.1.2 p.2)
       (encPair (encPair (encList encNat) encBits) encNat) encUnary := by
+  refine .of_tidy ?_
   have hrange : ComputableTidilyInPolyTime (fun _ : (List ℕ × List Bool) × ℕ => List.range k)
       (encPair (encPair (encList encNat) encBits) encNat) (encList encUnary) := const _
   have hk : ComputableTidilyInPolyTime (fun _ : ((List ℕ × List Bool) × ℕ) × ℕ => k)
@@ -166,8 +167,9 @@ theorem computableTidilyInPolyTime_colorOf (k : ℕ) :
 
 /-- The `KColoring k` verifier is polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifier (k : ℕ) :
-    ComputableTidilyInPolyTime (verifier k) (encPair encGraph encBits) encBool := by
+theorem computableInPolyTime_verifier (k : ℕ) :
+    ComputableInPolyTime (verifier k) (encPair encGraph encBits) encBool := by
+  refine .of_tidy ?_
   have hV : ComputableTidilyInPolyTime (fun x : Graph × List Bool => x.1.1)
       (encPair encGraph encBits) (encList encNat) := by
     unfold encGraph
@@ -175,7 +177,7 @@ theorem computableTidilyInPolyTime_verifier (k : ℕ) :
   have hcol : ComputableTidilyInPolyTime
       (fun p : (Graph × List Bool) × ℕ => colorOf k p.1.1.1 p.1.2 p.2)
       (encPair (encPair encGraph encBits) encNat) encUnary :=
-    (computableTidilyInPolyTime_colorOf k).comp
+    (computableInPolyTime_colorOf k).tidy.comp
       (g := fun p : (Graph × List Bool) × ℕ => ((p.1.1.1, p.1.2), p.2))
       (by unfold encGraph; fun_prop)
   have hproj : ComputableTidilyInPolyTime
@@ -188,12 +190,12 @@ theorem computableTidilyInPolyTime_verifier (k : ℕ) :
       (encPair (encPair encGraph encBits) encNat) := by fun_prop
   exact allWithInput hV (bool_and' (unary_lt' hcol (const k))
     (allWithInput (hV.comp (fst _ _)) (bool_not.comp
-      (bool_and' (Graph.computableTidilyInPolyTime_adjBool.comp hproj)
+      (bool_and' (Graph.computableInPolyTime_adjBool.tidy.comp hproj)
         ((hcol.comp (fst _ _)).decide_eq' (hcol.comp hproj'))))))
 
 /-- `KColoring k` belongs to `NP`. -/
 theorem mem_NP (k : ℕ) : KColoring k ∈ NP encGraph :=
-  ⟨_, verifier k, .of_tidy (computableTidilyInPolyTime_verifier k), isVerifier k⟩
+  ⟨_, verifier k, (computableInPolyTime_verifier k), isVerifier k⟩
 
 end KColoring
 
@@ -503,11 +505,13 @@ theorem toThreeColoring_mem_iff (φ : CNF ℕ) : toThreeColoring φ ∈ ThreeCol
 
 /-! ### Polynomial-time reduction -/
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The reduction `toThreeColoring` is computable in polynomial time: vertex labels are computed in
 unary from clause, position and first-occurrence indices, then converted to binary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toThreeColoring :
-    ComputableTidilyInPolyTime toThreeColoring encCNF encGraph := by
+theorem computableInPolyTime_toThreeColoring :
+    ComputableInPolyTime toThreeColoring encCNF encGraph := by
+  refine .of_tidy ?_
   have hlit : ComputableTidilyInPolyTime (fun p : CNF ℕ × Literal ℕ => literalVertex p.1 p.2)
       (encPair encCNF (encPair encNat encBool)) encNat := by
     unfold literalVertex
@@ -717,9 +721,10 @@ theorem toKColoring_mem_iff (m : ℕ) (φ : CNF ℕ) :
 
 /-- The reduction `toKColoring m` is computable in polynomial time for every fixed `m`. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_toKColoring (m : ℕ) :
-    ComputableTidilyInPolyTime (toKColoring m) encCNF encGraph := by
-  have hG := computableTidilyInPolyTime_toThreeColoring
+theorem computableInPolyTime_toKColoring (m : ℕ) :
+    ComputableInPolyTime (toKColoring m) encCNF encGraph := by
+  refine .of_tidy ?_
+  have hG := computableInPolyTime_toThreeColoring.tidy
   have hU : ComputableTidilyInPolyTime (fun r => universalVertex r) encUnary encNat :=
     unary_to_binary.comp (show ComputableTidilyInPolyTime (fun r => Nat.pair 3 r) _ _ by
       fun_prop)
@@ -735,7 +740,7 @@ end SAT
 /-- `SAT` reduces to `ThreeColoring` in polynomial time via `SAT.toThreeColoring`. -/
 theorem polyTimeReducible_SAT_ThreeColoring :
     PolyTimeReducible encCNF encGraph SAT ThreeColoring :=
-  ⟨SAT.toThreeColoring, .of_tidy SAT.computableTidilyInPolyTime_toThreeColoring,
+  ⟨SAT.toThreeColoring, SAT.computableInPolyTime_toThreeColoring,
     fun φ => (SAT.toThreeColoring_mem_iff φ).symm⟩
 
 /-- `ThreeSAT` reduces to `ThreeColoring` in polynomial time: a formula with a clause of more than
@@ -767,7 +772,7 @@ theorem ThreeColoring_npComplete : NPComplete encGraph ThreeColoring :=
 theorem polyTimeReducible_SAT_KColoring {k : ℕ} (hk : 3 ≤ k) :
     PolyTimeReducible encCNF encGraph SAT (KColoring k) := by
   obtain ⟨m, rfl⟩ : ∃ m, k = m + 3 := ⟨k - 3, by omega⟩
-  exact ⟨SAT.toKColoring m, .of_tidy (SAT.computableTidilyInPolyTime_toKColoring m),
+  exact ⟨SAT.toKColoring m, (SAT.computableInPolyTime_toKColoring m),
     fun φ => (SAT.toKColoring_mem_iff m φ).symm⟩
 
 /-- For `k ≥ 3`, `KColoring k` is `NP`-hard. -/

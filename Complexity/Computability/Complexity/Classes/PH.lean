@@ -218,25 +218,11 @@ theorem mem_SigmaP : A ∈ SigmaP k enc ↔
         IsAlternatingVerifier enc true ps V A :=
   Iff.rfl
 
-/-- `Cslib.Complexity.mem_SigmaP` with a tidy verifier, for proofs that compose machines. -/
-theorem mem_SigmaP_iff_tidy : A ∈ SigmaP k enc ↔
-    ∃ (ps : List (Polynomial ℕ)) (V : α × List Bool → Bool), ps.length = k ∧
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-        IsAlternatingVerifier enc true ps V A := by
-  simp only [mem_SigmaP, computableInPolyTime_iff_computableTidilyInPolyTime]
-
 theorem mem_PiP : A ∈ PiP k enc ↔
     ∃ (ps : List (Polynomial ℕ)) (V : α × List Bool → Bool), ps.length = k ∧
       ComputableInPolyTime V (encPair enc encBits) encBool ∧
         IsAlternatingVerifier enc false ps V A :=
   Iff.rfl
-
-/-- `Cslib.Complexity.mem_PiP` with a tidy verifier, for proofs that compose machines. -/
-theorem mem_PiP_iff_tidy : A ∈ PiP k enc ↔
-    ∃ (ps : List (Polynomial ℕ)) (V : α × List Bool → Bool), ps.length = k ∧
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-        IsAlternatingVerifier enc false ps V A := by
-  simp only [mem_PiP, computableInPolyTime_iff_computableTidilyInPolyTime]
 
 /-- A problem is in the polynomial hierarchy exactly when it is in some level `Σₖ`. -/
 theorem mem_PH : A ∈ PH enc ↔ ∃ k, A ∈ SigmaP k enc := Set.mem_iUnion

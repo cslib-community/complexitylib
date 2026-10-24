@@ -59,7 +59,7 @@ whose state grows by at most one vertex per block, polynomial-time in the graph 
   Generalized Geography.
 * `Cslib.Complexity.GeneralizedGeography.length_encPlay_step_le`: a block adds at most one vertex
   to a play.
-* `Cslib.Complexity.GeneralizedGeography.computableTidilyInPolyTime_verifier`: the replay is
+* `Cslib.Complexity.GeneralizedGeography.computableInPolyTime_verifier`: the replay is
   polynomial-time.
 * `Cslib.Complexity.GeneralizedGeography_mem_PSPACE`: Generalized Geography is in `PSPACE`.
 
@@ -435,11 +435,11 @@ variable {γ : Type} {encIn : γ ↪ List Bool}
 
 /-- The bits of a move are polynomial-time. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_moverBits {B : γ → ℕ} {first : γ → Bool}
-    {z : γ → List Bool} (hB : ComputableTidilyInPolyTime B encIn encUnary)
-    (hfirst : ComputableTidilyInPolyTime first encIn encBool)
-    (hz : ComputableTidilyInPolyTime z encIn encBits) :
-    ComputableTidilyInPolyTime (fun x => moverBits (B x) (first x) (z x)) encIn
+theorem computableInPolyTime_moverBits {B : γ → ℕ} {first : γ → Bool}
+    {z : γ → List Bool} (hB : ComputableInPolyTime B encIn encUnary)
+    (hfirst : ComputableInPolyTime first encIn encBool)
+    (hz : ComputableInPolyTime z encIn encBits) :
+    ComputableInPolyTime (fun x => moverBits (B x) (first x) (z x)) encIn
       (encList encBool) := by
   unfold moverBits
   fun_prop
@@ -532,8 +532,9 @@ private abbrev encStep : (((Graph × ℕ) × List Bool) × Play) × List Bool �
 
 /-- **The replay is polynomial-time**: a fold over the blocks whose state grows by at most one
 vertex per block. -/
-theorem computableTidilyInPolyTime_verifier :
-    ComputableTidilyInPolyTime verifier (encPair (encPair encGraph encNat) encBits) encBool := by
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair (encPair encGraph encNat) encBits) encBool := by
+  refine .of_tidy ?_
   have hG : ComputableTidilyInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1) encInput
       encGraph := by fun_prop
   have hB : ComputableTidilyInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1.2.length) encInput
@@ -564,7 +565,8 @@ theorem computableTidilyInPolyTime_verifier :
         (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
           moverBits p.1.1.1.1.2.length p.1.2.2.1 p.2)
         encStep (encList encBool) :=
-      computableTidilyInPolyTime_moverBits (hB.comp hX) (by fun_prop) (snd _ _)
+      (computableInPolyTime_moverBits (.of_tidy (hB.comp hX)) (.of_tidy (by fun_prop))
+        (.of_tidy (snd _ _))).tidy
     have hpair : ComputableTidilyInPolyTime
         (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
           ((p.1.1.1.1, p.1.2), moverBits p.1.1.1.1.2.length p.1.2.2.1 p.2))
@@ -606,6 +608,6 @@ open GeneralizedGeography Turing.MultiTapeTM
 /-- **Generalized Geography is in `PSPACE`** [Sipser, Theorem 8.14][Sipser2013]: it is a game of
 polynomially many moves whose winning condition is polynomial-time. -/
 theorem GeneralizedGeography_mem_PSPACE : GeneralizedGeography ∈ PSPACE (encPair encGraph encNat) :=
-  isGameVerifier_verifier.mem_PSPACE computableTidilyInPolyTime_verifier
+  isGameVerifier_verifier.mem_PSPACE computableInPolyTime_verifier
 
 end Cslib.Complexity

@@ -179,12 +179,12 @@ private theorem computableTidilyInPolyTime_two_pow_add {α : Type} (enc : α ↪
 
 /-- The number given with a formula, as a function in `#P`. -/
 private theorem snd_mem_SharpP : (Prod.snd : CNF ℕ × ℕ → ℕ) ∈ SharpP (encPair encCNF encNat) :=
-  mem_SharpP_of_polyTime (.snd encCNF encNat)
+  mem_SharpP_of_polyTime (.of_tidy (.snd encCNF encNat))
 
 /-- The number of satisfying assignments of the formula of a pair, as a function in `#P`. -/
 private theorem sharpSAT_fst_mem_SharpP :
     (fun x : CNF ℕ × ℕ => SharpSAT x.1) ∈ SharpP (encPair encCNF encNat) :=
-  SharpP.comp_mem SharpSAT.mem_SharpP (.fst encCNF encNat)
+  SharpP.comp_mem SharpSAT.mem_SharpP (.of_tidy (.fst encCNF encNat))
 
 /-- **Counting threshold is `PP`-complete**: whether a formula has at least `m` satisfying
 assignments, for `m` given in binary. -/
@@ -232,8 +232,8 @@ theorem compl_SharpSATExact_coCeqPComplete :
 /-- The number of assignments to the occurring variables of a formula, as a function in `#P`. -/
 private theorem two_pow_card_vars_mem_SharpP :
     (fun φ : CNF ℕ => 2 ^ φ.vars.toFinset.card) ∈ SharpP encCNF :=
-  mem_SharpP_of_polyTime (ComputableTidilyInPolyTime.binary_two_pow.comp
-    SharpSAT.computableTidilyInPolyTime_card_vars)
+  mem_SharpP_of_polyTime (.of_tidy (ComputableTidilyInPolyTime.binary_two_pow.comp
+    SharpSAT.computableInPolyTime_card_vars.tidy))
 
 /-- **`MAJSAT` belongs to `PP`.** -/
 theorem MAJSAT_mem_PP : MAJSAT ∈ PP encCNF := by
@@ -279,9 +279,10 @@ private theorem computableTidilyInPolyTime_dummyClauses :
 
 /-- Padding a formula to a majority instance is computable in polynomial time, with `Q` in unary. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_padMajority :
-    ComputableTidilyInPolyTime (fun p : CNF ℕ × ℕ => padMajority p.1 p.2)
+theorem computableInPolyTime_padMajority :
+    ComputableInPolyTime (fun p : CNF ℕ × ℕ => padMajority p.1 p.2)
       (encPair encCNF encUnary) encCNF := by
+  refine .of_tidy ?_
   have hshift : ComputableTidilyInPolyTime (fun p : CNF ℕ × ℕ => shiftOdd p.1)
       (encPair encCNF encUnary) (encList (encList (encPair encNat encBool))) :=
     computableTidilyInPolyTime_shiftOdd.comp (.fst encCNF encUnary)
@@ -529,7 +530,7 @@ theorem MAJSAT_ppHard : PolyTimeHard PP encCNF MAJSAT := by
     (ComputableTidilyInPolyTime.unary_eval q).comp
       (ComputableTidilyInPolyTime.encoding_length enc)
   refine ⟨fun a => padMajority (r a) (q.eval (enc a).length),
-    .of_tidy (computableTidilyInPolyTime_padMajority.comp (hr.tidy.prod hq)), fun a => ?_⟩
+    .of_tidy (computableInPolyTime_padMajority.tidy.comp (hr.tidy.prod hq)), fun a => ?_⟩
   have h := hfr a
   simp only [Pi.add_apply] at h
   rw [hA a, padMajority_mem_MAJSAT_iff, ← h]
