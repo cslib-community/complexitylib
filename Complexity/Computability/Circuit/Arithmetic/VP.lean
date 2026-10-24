@@ -211,10 +211,12 @@ variable {σ τ υ : Type*}
 noncomputable def projection (ρ : τ → σ ⊕ K) : MvPolynomial τ K →ₐ[K] MvPolynomial σ K :=
   aeval fun i => Sum.elim X (fun a => C a) (ρ i)
 
+/-- A projection substitutes `X k` or `C a` for the variable `X i` according to `ρ i`. -/
 @[simp] theorem projection_X (ρ : τ → σ ⊕ K) (i : τ) :
     projection ρ (X i) = Sum.elim X (fun a => C a) (ρ i) :=
   aeval_X _ i
 
+/-- A projection fixes every constant polynomial. -/
 theorem projection_C (ρ : τ → σ ⊕ K) (a : K) :
     projection ρ (C a : MvPolynomial τ K) = C a :=
   aeval_C _ a
@@ -304,6 +306,8 @@ def projectionCircuit (ρ : Fin m → Fin n ⊕ K) : Circuit (arithSignature K) 
     (fun a => Circuit.oneGate (σ := arithSignature K) (.const a) Fin.elim0) (ρ i)
 
 omit [CommSemiring K] in
+/-- Output `i` of `projectionCircuit ρ` evaluates to `x k` when `ρ i = Sum.inl k` and to
+`constant a` when `ρ i = Sum.inr a`. -/
 @[simp] theorem eval_projectionCircuit {R : Type*} [Add R] [Mul R] (constant : K → R)
     (ρ : Fin m → Fin n ⊕ K) (x : Fin n → R) (i : Fin m) :
     (projectionCircuit ρ).eval (arithInterpretationWith K constant) x i =
@@ -340,6 +344,7 @@ def VP (K : Type u) [CommSemiring K] : Set (PolynomialFamily K) :=
   {f | f.IsPFamily ∧ ∃ c : ∀ n, Circuit (arithSignature K) (f.vars n) 1,
     PolynomiallyBounded (fun n => (c n).size) ∧ ∀ n, (c n).polynomial 0 = f.poly n}
 
+/-- Every family in `VP` is a p-family. -/
 theorem VP.isPFamily {f : PolynomialFamily K} (hf : f ∈ VP K) : f.IsPFamily :=
   hf.1
 

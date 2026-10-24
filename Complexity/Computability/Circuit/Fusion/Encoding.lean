@@ -20,8 +20,11 @@ count of the sets having a small cover, for any fixed supplied input family.
 
 ## Main definitions
 
-* `Cslib.Circuits.Fusion.CoverCode`: the finite inclusion-pattern description.
-* `Cslib.Circuits.Fusion.CoverCode.decode`: recover the output set from a description.
+* `Cslib.Circuits.Fusion.CoverCode`, `Cslib.Circuits.Fusion.CoverCode.read`,
+  `Cslib.Circuits.Fusion.CoverCode.stages`, `Cslib.Circuits.Fusion.CoverCode.decode`: the
+  finite inclusion-pattern description and its staged decoder.
+* `Cslib.Circuits.Fusion.PairClosureCompiler.coordinate`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.encode`: encode a pair list into a `CoverCode`.
 
 ## Main results
 

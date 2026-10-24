@@ -72,8 +72,12 @@ uniformity.
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.robustMatrix k`: a fixed submatrix-robust `k × k` matrix over `𝔽₂`.
-* `Cslib.Circuits.Frontier.hardForm n`: a nonconstructively chosen family of bilinear forms
+* `Cslib.Circuits.Frontier.leftHalf`, `Cslib.Circuits.Frontier.rightHalf`: embeddings of the first
+  and second `⌊n/2⌋` coordinates into `Fin n`.
+* `Cslib.Circuits.Frontier.robustMatrix`: a fixed submatrix-robust `k × k` matrix over `𝔽₂`.
+* `Cslib.Circuits.Frontier.hardMatrix`: the `n × n` matrix placing `robustMatrix ⌊n/2⌋` between the
+  left and right halves.
+* `Cslib.Circuits.Frontier.hardForm`: a nonconstructively chosen family of bilinear forms
   `xᵀ R y`.
 
 ## Main results
@@ -172,9 +176,11 @@ half is the next `⌊n/2⌋` coordinates. For odd `n` the last coordinate is in 
 def rightHalf (n : ℕ) (b : Fin (n / 2)) : Fin n :=
   ⟨n / 2 + b, by omega⟩
 
+/-- The embedding `leftHalf n` of the first `⌊n/2⌋` coordinates into `Fin n` is injective. -/
 theorem leftHalf_injective (n : ℕ) : Function.Injective (leftHalf n) :=
   fun a b h => Fin.ext (by simpa [leftHalf] using congrArg Fin.val h)
 
+/-- The embedding `rightHalf n` of the second `⌊n/2⌋` coordinates into `Fin n` is injective. -/
 theorem rightHalf_injective (n : ℕ) : Function.Injective (rightHalf n) :=
   fun a b h => Fin.ext (by simpa [rightHalf] using congrArg Fin.val h)
 
@@ -192,6 +198,7 @@ and for all by `Classical.choose` from `Matrix.exists_submatrixRobust`. -/
 noncomputable def robustMatrix (k : ℕ) : Matrix (Fin k) (Fin k) (ZMod 2) :=
   Classical.choose (Matrix.exists_submatrixRobust k)
 
+/-- The chosen matrix `robustMatrix k` is submatrix-robust with deficiency `2 * Nat.sqrt k + 1`. -/
 theorem robustMatrix_submatrixRobust (k : ℕ) :
     (robustMatrix k).SubmatrixRobust (2 * Nat.sqrt k + 1) :=
   Classical.choose_spec (Matrix.exists_submatrixRobust k)

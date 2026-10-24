@@ -73,10 +73,12 @@ end Program
 
 namespace Circuit
 
+/-- Output `o` in the left block of `c.append d` is the corresponding output wire of `c`. -/
 @[simp] theorem outputs_append_castAdd (c : Circuit σ n m) (d : Circuit σ n p) (o : Fin m) :
     (c.append d).outputs (Fin.castAdd p o) = (c.outputs o).castAdd d.size :=
   Fin.append_left _ _ o
 
+/-- Output `o` in the right block of `c.append d` is the appended output wire of `d`. -/
 @[simp] theorem outputs_append_natAdd (c : Circuit σ n m) (d : Circuit σ n p) (o : Fin p) :
     (c.append d).outputs (Fin.natAdd m o) = Program.appendedWire Wire.input (d.outputs o) :=
   Fin.append_right _ _ o

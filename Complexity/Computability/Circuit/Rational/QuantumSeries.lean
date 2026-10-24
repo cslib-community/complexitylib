@@ -186,15 +186,18 @@ def geometricPowers (x : R⟦Γ⟧) : SummableFamily Γ R ℕ where
     · simp only [h, ↓reduceIte]
       exact power_finite_co_support (orderTop_zero (R := R) (Γ := Γ) ▸ WithTop.top_pos) g
 
+/-- When `0 < x.orderTop`, the `n`-th term of `geometricPowers x` is `x ^ n`. -/
 theorem geometricPowers_of_orderTop_pos {x : R⟦Γ⟧} (hx : 0 < x.orderTop) (n : ℕ) :
     geometricPowers x n = x ^ n := by
   simp [hx]
 
+/-- When `¬ 0 < x.orderTop`, `geometricPowers x` is `.single 0 1`. -/
 theorem geometricPowers_of_not_orderTop_pos {x : R⟦Γ⟧} (hx : ¬ 0 < x.orderTop) :
     geometricPowers x = .single 0 1 := by
   ext a
   obtain rfl | ha := eq_or_ne a 0 <;> simp [geometricPowers, *]
 
+/-- `geometricPowers 0` is `.single 0 1`. -/
 @[simp]
 theorem geometricPowers_zero : geometricPowers (0 : R⟦Γ⟧) = .single 0 1 := by
   ext n
@@ -204,6 +207,7 @@ theorem geometricPowers_zero : geometricPowers (0 : R⟦Γ⟧) = .single 0 1 := 
 variable {x : R⟦Γ⟧} (hx : 0 < x.orderTop)
 
 include hx in
+/-- When `0 < x.orderTop`, `geometricPowers x` coerces to the power function `x ^ ·`. -/
 @[simp]
 theorem coe_geometricPowers : ⇑(geometricPowers x) = HPow.hPow x := by
   ext1 n
@@ -222,6 +226,7 @@ private theorem embDomain_succ_smul_geometricPowers :
       -smul_eq_mul]
 
 include hx in
+/-- When `0 < x.orderTop`, `(1 - x) * (geometricPowers x).hsum = 1`. -/
 theorem one_sub_self_mul_hsum_geometricPowers : (1 - x) * (geometricPowers x).hsum = 1 := by
   rw [← hsum_smul, sub_smul 1 x (geometricPowers x), one_smul, hsum_sub, ←
     hsum_embDomain (x • geometricPowers x) ⟨Nat.succ, Nat.succ_injective⟩,
@@ -259,6 +264,8 @@ lemma normalized_pos (x : HahnSeries Γ R) (u : Rˣ)
     rw [heq, orderTop_neg]
     exact zero_lt_orderTop_of_order hy'
 
+/-- A Hahn series `x` with unit leading coefficient `u` has a right inverse given by a
+geometric series. -/
 lemma normalized_right_inverse (x : HahnSeries Γ R) (u : Rˣ)
     (hu : x.leadingCoeff = (u : R)) :
     x * ((geometricPowers (1 - HahnSeries.single (-x.order) (↑u⁻¹ : R) * x)).hsum *
@@ -312,6 +319,8 @@ private lemma line_inv_unit {g : Γ} (u : Rˣ) (hu : ↑u ∈ line (K := K) B g)
   exact Submodule.smul_mem _ _ (Submodule.subset_span (Set.mem_singleton _))
 
 omit [Nontrivial R] in
+/-- A single-term Hahn series with coefficient in `line B g` belongs to
+`coefficientRing B h0 hB`. -/
 lemma single_mem {g : Γ} {r : R} (hr : r ∈ line (K := K) B g) :
     HahnSeries.single g r ∈ coefficientRing B h0 hB := by
   intro a
@@ -320,6 +329,8 @@ lemma single_mem {g : Γ} {r : R} (hr : r ∈ line (K := K) B g) :
   · simp [Ne.symm h]
 
 omit [Nontrivial R] in
+/-- The sum of a summable family in `coefficientRing B h0 hB` belongs to
+`coefficientRing B h0 hB`. -/
 lemma hsum_mem {α : Type*} (x : SummableFamily Γ R α)
     (hx : ∀ i, x i ∈ coefficientRing B h0 hB) :
     x.hsum ∈ coefficientRing B h0 hB := by
@@ -329,6 +340,8 @@ lemma hsum_mem {α : Type*} (x : SummableFamily Γ R α)
   intro i hi
   exact hx i g
 
+/-- The geometric-series right inverse of a series in `coefficientRing B h0 hB` with unit
+leading coefficient belongs to `coefficientRing B h0 hB`. -/
 lemma inverse_candidate_mem (x : HahnSeries Γ R)
     (hx : x ∈ coefficientRing B h0 hB) (u : Rˣ) (hu : x.leadingCoeff = (u : R)) :
     (geometricPowers (1 - HahnSeries.single (-x.order) (↑u⁻¹ : R) * x)).hsum *
@@ -366,6 +379,7 @@ private lemma inverse_exists (x : coefficientRing B h0 hB) (hx : x ≠ 0) :
   refine ⟨⟨y, hy⟩, ?_⟩
   exact Subtype.ext heq
 
+/-- Every element of `coefficientRing B h0 hB` is either a unit or zero. -/
 lemma coefficientRing_isUnit_or_eq_zero (x : coefficientRing B h0 hB) :
     IsUnit x ∨ x = 0 := by
   by_cases hx : x = 0

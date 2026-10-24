@@ -24,7 +24,9 @@ This construction does not assert a finite iteration bound.
 
 ## Main definitions
 
+* `Cslib.Circuits.Program.feedbackWire`: replace state inputs by their selected feedback gates.
 * `Cslib.Circuits.Program.feedback`: connect state inputs to selected internal gates.
+* `Cslib.Circuits.Circuit.feedbackGate`: extract a circuit's internal output gate index.
 * `Cslib.Circuits.Circuit.feedback`: close a native circuit whose outputs are internal gates.
 
 ## Main results

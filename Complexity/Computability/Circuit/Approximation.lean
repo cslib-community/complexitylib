@@ -83,9 +83,11 @@ def programExceptions : ∀ {g : ℕ}, Program σ n g → Finset Sample
   | _, .gate p line =>
     programExceptions p ∪ S.exceptions line.op (p.trace approx approxInput ∘ line.wires)
 
+/-- The empty program has no gate exceptions. -/
 @[simp] theorem programExceptions_empty :
     S.programExceptions (Program.empty : Program σ n 0) = ∅ := rfl
 
+/-- Appending a gate adds its exceptions on its approximate wire values to those of the prefix. -/
 @[simp] theorem programExceptions_gate {g : ℕ} (p : Program σ n g) (line : Line σ n g) :
     S.programExceptions (p.gate line) =
       S.programExceptions p ∪ S.exceptions line.op (p.trace approx approxInput ∘ line.wires) :=
@@ -140,6 +142,8 @@ variable {exact : Interpretation σ U} {approx : Interpretation σ A} {decode : 
 def failures (samples : Finset Sample) (a : A) (target : Sample → U) : Finset Sample :=
   samples.filter fun s => ¬S.relation (target s) (decode a s)
 
+/-- A sample is a failure when it belongs to `samples` and the decoded approximate value is not
+related to the target value. -/
 @[simp] theorem mem_failures {samples : Finset Sample} {a : A} {target : Sample → U}
     {s : Sample} : s ∈ S.failures samples a target ↔ s ∈ samples ∧
       ¬S.relation (target s) (decode a s) := by

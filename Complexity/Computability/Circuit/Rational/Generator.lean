@@ -22,8 +22,17 @@ The parameters are polynomial in the number of variables and the node-count boun
 
 ## Main definitions
 
-* `Cslib.Circuits.Rational.Generator.output`: the list emitted for given parameters.
-* `Cslib.Circuits.Rational.Parameters.truncation`, `Cslib.Circuits.Rational.Parameters.exponent`,
+* `Cslib.Circuits.Rational.Generator.matrixDimension`,
+  `Cslib.Circuits.Rational.Generator.regular`, `Cslib.Circuits.Rational.Generator.grid`,
+  `Cslib.Circuits.Rational.Generator.specializedLift`,
+  `Cslib.Circuits.Rational.Generator.rationalLift`,
+  `Cslib.Circuits.Rational.Generator.tupleAt`, `Cslib.Circuits.Rational.Generator.atPoint`,
+  `Cslib.Circuits.Rational.Generator.output`: the regular representation, specialization grid,
+  normalized tuple at a grid point, and list emitted for given parameters.
+* `Cslib.Circuits.Rational.Parameters.w`, `Cslib.Circuits.Rational.Parameters.rankBound`,
+  `Cslib.Circuits.Rational.Parameters.delta`, `Cslib.Circuits.Rational.Parameters.exponent`,
+  `Cslib.Circuits.Rational.Parameters.ambientDimension`,
+  `Cslib.Circuits.Rational.Parameters.truncation`,
   `Cslib.Circuits.Rational.Parameters.gridSize`: the parameters chosen for `n` variables and `s`
   nodes.
 * `Cslib.Circuits.Rational.Generator.list`: the list with these parameters.
@@ -71,6 +80,7 @@ def grid (H : ℕ) : List (Fin 3 → Fin H) :=
   (List.finRange H).flatMap fun t => (List.finRange H).flatMap fun p =>
     (List.finRange H).map fun r => ![t, p, r]
 
+/-- Every point `x : Fin 3 → Fin H` belongs to `grid H`. -/
 lemma mem_grid (H : ℕ) (x : Fin 3 → Fin H) : x ∈ grid H := by
   simp only [grid, List.mem_flatMap, List.mem_map]
   refine ⟨x 0, by simp, x 1, by simp, x 2, by simp, ?_⟩
@@ -331,6 +341,7 @@ def truncation (n s : ℕ) := ambientDimension n s-delta n s
 /-- Side length of the integer grid used for specialization. -/
 def gridSize (n s : ℕ) := 1 + 3 * (s + 2) * rankBound s * (ambientDimension n s) ^ 3
 
+/-- The rank-expansion threshold `rankBound s * delta n s` is positive. -/
 theorem threshold_pos (n s : ℕ) : 0 < rankBound s * delta n s := by
   simp only [rankBound, delta, w]
   positivity
@@ -345,11 +356,14 @@ private theorem M_le (n s : ℕ) : ambientDimension n s ≤ 2 * (rankBound s * d
   unfold exponent
   omega
 
+/-- `ambientDimension n s` is at most any power of two strictly above
+`rankBound s * delta n s`. -/
 theorem M_minimal (n s k : ℕ) (hk : rankBound s * delta n s < 2 ^ k) :
     ambientDimension n s ≤ 2 ^ k := by
   apply Nat.pow_le_pow_right (by omega)
   exact Nat.succ_le_of_lt (Nat.log_lt_of_lt_pow (threshold_pos n s).ne' hk)
 
+/-- The truncation parameter `truncation n s` is at least `1`. -/
 theorem N_pos (n s : ℕ) : 1 ≤ truncation n s := by
   have hh := threshold_lt n s
   have hb : 1 ≤ rankBound s := by unfold rankBound; omega
@@ -385,6 +399,7 @@ private theorem delta_bound (n s : ℕ) : delta n s ≤ 4 * (n + s + 1) ^ 4 := b
          · exact B_bound n s
        _ = _ := by ring
 
+/-- `ambientDimension n s` is at most `16 * (n + s + 1) ^ 5`. -/
 theorem polynomial_M (n s : ℕ) : ambientDimension n s ≤ 16 * (n + s + 1) ^ 5 := by
   calc ambientDimension n s ≤ 2 * (rankBound s * delta n s) := M_le n s
        _ ≤ 2 * ((2 * (n + s + 1)) * (4 * (n + s + 1) ^ 4)) := by
@@ -418,6 +433,7 @@ noncomputable section
 def list (n s : ℕ) : Output n :=
   output n (Parameters.truncation n s) (Parameters.exponent n s) (Parameters.gridSize n s)
 
+/-- When `1 ≤ s`, `list n s` hits all admissible nonzero formulas of node count at most `s`. -/
 theorem list_hits (n s : ℕ) (hs : 1 ≤ s) : Hits s (list n s) := by
   apply output_hits hs
   · exact Parameters.N_pos n s
@@ -425,6 +441,7 @@ theorem list_hits (n s : ℕ) (hs : 1 ≤ s) : Hits s (list n s) := by
   · exact Parameters.threshold_lt n s
   · exact Parameters.grid_large n s
 
+/-- The matrix dimension of `list n s` is at most `256 * (n + s + 1) ^ 10`. -/
 theorem list_dimension_bound (n s : ℕ) : (list n s).dimension ≤ 256 * (n + s + 1) ^ 10 := by
   have hd : CyclotomicRing.degree (Parameters.exponent n s) ≤ Parameters.ambientDimension n s := by
     unfold CyclotomicRing.degree Parameters.ambientDimension
@@ -434,6 +451,7 @@ theorem list_dimension_bound (n s : ℕ) : (list n s).dimension ≤ 256 * (n + s
              Nat.mul_le_mul (Parameters.polynomial_M n s) (hd.trans (Parameters.polynomial_M n s))
        _ = _ := by ring
 
+/-- The number of tuples in `list n s` is at most `49153 ^ 3 * (n + s + 1) ^ 51`. -/
 theorem list_length_bound (n s : ℕ) :
     (list n s).tuples.length ≤ 49153 ^ 3 * (n + s + 1) ^ 51 := by
   calc _ ≤ (Parameters.gridSize n s) ^ 3 := length_output_le ..

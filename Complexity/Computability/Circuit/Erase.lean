@@ -30,6 +30,8 @@ program of bounded fan-in, once the values of those gates are given.
 
 * `Cslib.Circuits.Signature.withConstants`, `Cslib.Circuits.Interpretation.withConstants`: a
   signature and an interpretation with constants added.
+* `Cslib.Circuits.Line.const`, `Cslib.Circuits.Line.liftConstants`: constant lines and lifted lines
+  over `σ.withConstants P`.
 * `Cslib.Circuits.Program.replaceGates`: replacing some gates by constants.
 * `Cslib.Circuits.Program.eraseGates`: replacing the special gates by constants named after them.
 
@@ -63,10 +65,12 @@ def Interpretation.withConstants (I : Interpretation σ U) (γ : P → U) :
   | .inl o, x => I o x
   | .inr k, _ => γ k
 
+/-- `I.withConstants γ` interprets an original operation `.inl o` using `I`. -/
 @[simp] theorem Interpretation.withConstants_inl (I : Interpretation σ U) (γ : P → U) (o : σ.Op)
     (x : Fin (σ.Arity o) → U) : I.withConstants γ (.inl o) x = I o x :=
   rfl
 
+/-- `I.withConstants γ` interprets a constant `.inr k` as `γ k`. -/
 @[simp] theorem Interpretation.withConstants_inr (I : Interpretation σ U) (γ : P → U) (k : P)
     (x : Fin 0 → U) : I.withConstants γ (.inr k) x = γ k :=
   rfl
@@ -79,6 +83,7 @@ def Line.const (k : P) : Line (σ.withConstants P) n s :=
 def Line.liftConstants (line : Line σ n s) : Line (σ.withConstants P) n s :=
   ⟨.inl line.op, line.wires⟩
 
+/-- Reindexing the wires of a constant line leaves it unchanged. -/
 @[simp] theorem Line.const_mapWires {n' s' : ℕ} (k : P) (f : Wire n s → Wire n' s') :
     (Line.const (σ := σ) k).mapWires f = Line.const k := by
   simp only [Line.const, Line.mapWires]
@@ -86,6 +91,7 @@ def Line.liftConstants (line : Line σ n s) : Line (σ.withConstants P) n s :=
   funext a
   exact a.elim0
 
+/-- Lifting a line to `σ.withConstants P` commutes with wire reindexing. -/
 @[simp] theorem Line.liftConstants_mapWires {n' s' : ℕ} (line : Line σ n s)
     (f : Wire n s → Wire n' s') :
     (line.liftConstants (P := P)).mapWires f = (line.mapWires f).liftConstants :=

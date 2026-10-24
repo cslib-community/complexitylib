@@ -22,6 +22,12 @@ a conjunction of two approximators has at most `sunflowerBound p w ^ 2` pairs of
 
 ## Main definitions
 
+* `Cslib.Circuits.Monotone.Positive.superCliques`,
+  `Cslib.Circuits.Monotone.Positive.andExceptions`,
+  `Cslib.Circuits.Monotone.Positive.errorCap`,
+  `Cslib.Circuits.Monotone.Positive.errorCost`,
+  `Cslib.Circuits.Monotone.Positive.exceptions`: the `k`-sets containing a set, the positive
+  exceptions at a gate, and their per-gate error cap.
 * `Cslib.Circuits.Monotone.Positive.scheme`: the approximation scheme on complete graphs.
 
 ## Main results
@@ -45,6 +51,7 @@ variable {n k p w : ℕ}
 def superCliques (n k : ℕ) (s : Finset (Fin n)) : Finset (CliqueSet n k) :=
   univ.filter fun c => s ⊆ c.1
 
+/-- A `k`-set `c` belongs to `superCliques n k s` if and only if `s ⊆ c.1`. -/
 @[simp] theorem mem_superCliques {s : Finset (Fin n)} {c : CliqueSet n k} :
     c ∈ superCliques n k s ↔ s ⊆ c.1 := by
   simp [superCliques]
@@ -101,6 +108,8 @@ def exceptions (n k : ℕ) :
   | .and, A => andExceptions n k w (A 0).terms (A 1).terms
   | _, _ => ∅
 
+/-- When `w + 1 ≤ k`, the number of positive exceptions at an `op` gate is at most
+`errorCost n k p w op`. -/
 theorem card_exceptions_le (hk : w + 1 ≤ k) (op : Op)
     (A : Fin (signature.Arity op) → Approximator n p w) :
     (exceptions n k op A).card ≤ errorCost n k p w op := by

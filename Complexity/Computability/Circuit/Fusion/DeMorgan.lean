@@ -106,6 +106,8 @@ def literalsRailCircuit (n : ℕ) : Circuit signature (n + n) (2 * n + 1) :=
   (Circuit.wiring _ railSelect).comp
     ((Circuit.wiring _ id).append (const true : Formula _ (n + n)).toCircuit)
 
+/-- Evaluating `literalsRailCircuit n` on the literals of `x` yields the dual-rail inputs
+`railBitString x`. -/
 theorem eval_literalsRailCircuit (x : BitString n) :
     (literalsRailCircuit n).eval interpretation (Boolean.AltFormula.literals x) =
       railBitString x := by
@@ -118,6 +120,7 @@ theorem eval_literalsRailCircuit (x : BitString n) :
     Circuit.eval_wiring, railBitString_eq_append_literals]
   rfl
 
+/-- `literalsRailCircuit n` uses `0` conjunction gates. -/
 @[simp] theorem cost_literalsRailCircuit :
     (literalsRailCircuit n).program.cost andCost = 0 := by
   rw [literalsRailCircuit, Circuit.cost_program_comp, Circuit.cost_program_wiring,

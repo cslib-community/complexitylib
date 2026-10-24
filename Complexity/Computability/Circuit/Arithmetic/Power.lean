@@ -30,6 +30,7 @@ for circuit generation or evaluation.
 
 ## Main definitions
 
+* `Cslib.Circuits.Circuit.binaryPowerStep`: one binary-powering step on a single-output circuit.
 * `Cslib.Circuits.binaryPowerCircuit`: the shared binary-power circuit.
 * `Cslib.Circuits.binaryMultiplicationCount`: its exact multiplication count.
 
@@ -94,10 +95,12 @@ one further multiplication per nonleading one bit. -/
 def binaryMultiplicationCount (e : ℕ) : ℕ :=
   Nat.binaryRecFromOne 0 0 (fun bit _ _ count => count + 1 + bit.toNat) e
 
+/-- For exponent `0`, `binaryPowerCircuit` is a single constant gate outputting `one`. -/
 @[simp] theorem binaryPowerCircuit_zero (one : C) : binaryPowerCircuit one 0 =
     Circuit.oneGate (σ := arithSignature C) (.const one) Fin.elim0 := by
   simp [binaryPowerCircuit]
 
+/-- For exponent `1`, `binaryPowerCircuit` is the single-input identity circuit. -/
 @[simp] theorem binaryPowerCircuit_one (one : C) :
     binaryPowerCircuit one 1 = Circuit.id (arithSignature C) 1 := by
   simp [binaryPowerCircuit]
@@ -108,9 +111,11 @@ private theorem binaryPowerCircuit_bit (one : C) (bit : Bool) (e : ℕ) (he : e 
   unfold binaryPowerCircuit
   rw [Nat.binaryRecFromOne_eq bit e he]
 
+/-- Binary powering for exponent `0` uses `0` multiplications. -/
 @[simp] theorem binaryMultiplicationCount_zero : binaryMultiplicationCount 0 = 0 := by
   simp [binaryMultiplicationCount]
 
+/-- Binary powering for exponent `1` uses `0` multiplications. -/
 @[simp] theorem binaryMultiplicationCount_one : binaryMultiplicationCount 1 = 0 := by
   simp [binaryMultiplicationCount]
 

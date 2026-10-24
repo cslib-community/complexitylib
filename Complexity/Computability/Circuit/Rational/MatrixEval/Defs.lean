@@ -64,12 +64,15 @@ variable {n d : ℕ}
 def evalMatrix? (f : Formula n) (X : Tuple n d) : Option (Mat d) :=
   f.eval (matrixInterpretation d) fun i => some (X i)
 
+/-- Executable matrix evaluation of a variable returns the assigned matrix. -/
 @[simp] theorem evalMatrix?_var (i : Fin n) (X : Tuple n d) :
     (var i).evalMatrix? X = some (X i) := rfl
 
+/-- Executable matrix evaluation of a scalar constant embeds it via `algebraMap`. -/
 @[simp] theorem evalMatrix?_const (q : ℚ) (X : Tuple n d) :
     (const q : Formula n).evalMatrix? X = some (algebraMap ℚ (Mat d) q) := rfl
 
+/-- Executable matrix evaluation of a sum adds the two operand matrices when both are defined. -/
 @[simp] theorem evalMatrix?_add (f g : Formula n) (X : Tuple n d) :
     (add f g).evalMatrix? X =
       (do
@@ -78,6 +81,7 @@ def evalMatrix? (f : Formula n) (X : Tuple n d) : Option (Mat d) :=
         return a + b) :=
   rfl
 
+/-- Executable matrix evaluation of a product multiplies the operand matrices when defined. -/
 @[simp] theorem evalMatrix?_mul (f g : Formula n) (X : Tuple n d) :
     (mul f g).evalMatrix? X =
       (do
@@ -86,6 +90,7 @@ def evalMatrix? (f : Formula n) (X : Tuple n d) : Option (Mat d) :=
         return a * b) :=
   rfl
 
+/-- Executable matrix evaluation of an inverse returns `det⁻¹ • adjugate` when nonsingular. -/
 @[simp] theorem evalMatrix?_inv (f : Formula n) (X : Tuple n d) :
     (inv f).evalMatrix? X =
       (do

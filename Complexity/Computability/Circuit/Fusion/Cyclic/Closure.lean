@@ -26,7 +26,9 @@ Restriction to an arbitrary admissible class of semifilters does not supply the 
 
 ## Main definitions
 
-* `Cslib.Circuits.Fusion.PairDerivation`: the four closure rules at a reference point.
+* `Cslib.Circuits.Fusion.PairDerivation`,
+  `Cslib.Circuits.Fusion.PairDerivation.semifilter`: the four closure rules at a reference
+  point and the semifilter they form when the empty set is not derivable.
 * `Cslib.Circuits.Fusion.pairClosure`: the generated state as an order homomorphism.
 
 ## Main results

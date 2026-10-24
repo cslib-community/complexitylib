@@ -33,7 +33,9 @@ on the two kinds of test inputs, counted in
 ## Main definitions
 
 * `Cslib.Circuits.Monotone.Accepts`: a family of vertex sets accepts an input.
-* `Cslib.Circuits.Monotone.Approximator`, `Cslib.Circuits.Monotone.Approximator.interpretation`.
+* `Cslib.Circuits.Monotone.gateTerms`: the vertex sets produced at a gate before plucking.
+* `Cslib.Circuits.Monotone.Approximator`, `Cslib.Circuits.Monotone.Approximator.input`,
+  `Cslib.Circuits.Monotone.Approximator.interpretation`.
 
 ## References
 
@@ -55,6 +57,7 @@ sets. -/
 def Accepts (F : Finset (Finset (Fin n))) (x : Fin (edgeCount n) → Bool) : Prop :=
   ∃ s ∈ F, Contains x s
 
+/-- Whether a family of vertex sets accepts an input is decidable. -/
 noncomputable instance (F : Finset (Finset (Fin n))) (x : Fin (edgeCount n) → Bool) :
     Decidable (Accepts F x) :=
   inferInstanceAs (Decidable (∃ s ∈ F, Contains x s))
@@ -119,6 +122,7 @@ def gateTerms (w : ℕ) :
   | .or, F => (F 0 ∪ F 1).filter (·.card ≤ w)
   | .and, F => ((F 0 ×ˢ F 1).image fun st => join st.1 st.2).filter (·.card ≤ w)
 
+/-- Every set in `gateTerms w op F` has at most `w` vertices. -/
 theorem card_le_of_mem_gateTerms {op : Op} {F : Fin (signature.Arity op) → Finset (Finset (Fin n))}
     {s : Finset (Fin n)} (hs : s ∈ gateTerms w op F) : s.card ≤ w := by
   cases op with
@@ -139,6 +143,7 @@ inside. -/
 noncomputable def decode (A : Approximator n p w) (x : Fin (edgeCount n) → Bool) : Bool :=
   decide (Accepts A.terms x)
 
+/-- An approximator `A` decodes to `true` on `x` if and only if `Accepts A.terms x`. -/
 @[simp] theorem decode_eq_true {A : Approximator n p w} {x : Fin (edgeCount n) → Bool} :
     A.decode x = true ↔ Accepts A.terms x :=
   decide_eq_true_iff
@@ -152,6 +157,7 @@ noncomputable def input (i : Fin (edgeCount n)) : Approximator n p w where
   card_le := (card_filter_le _ _).trans ((card_singleton _).trans_le
     (sunflowerBound_pos Fact.out w))
 
+/-- When `2 ≤ w`, the input approximator `input i` decodes to `x i`. -/
 theorem decode_input (hw : 2 ≤ w) (i : Fin (edgeCount n)) (x : Fin (edgeCount n) → Bool) :
     (input i : Approximator n p w).decode x = x i := by
   have hcard : (((edgeEquiv n).symm i).1.toFinset).card ≤ w := by
@@ -168,6 +174,7 @@ noncomputable def interpretation : Interpretation signature (Approximator n p w)
     card_le_of_mem := forall_card_le_pluckNormalForm fun _ => card_le_of_mem_gateTerms
     card_le := card_pluckNormalForm_le Fact.out fun _ => card_le_of_mem_gateTerms }
 
+/-- The vertex sets of `interpretation op A` are the plucked sets of `gateTerms w op`. -/
 theorem terms_interpretation (op : Op) (A : Fin (signature.Arity op) → Approximator n p w) :
     (interpretation op A).terms = pluckNormalForm p (gateTerms w op fun i => (A i).terms) :=
   rfl

@@ -22,6 +22,10 @@ noncomputable specification.
 
 ## Main definitions
 
+* `Rational.ExecutableGenerator.inputTables`: dense integer lift tables at a grid point.
+* `Rational.ExecutableGenerator.normalizedEntry`, `Rational.ExecutableGenerator.RationalTable`,
+  `Rational.ExecutableGenerator.tuple`, `Rational.ExecutableGenerator.normalized`: Cramer-rule
+  rational entries and normalized matrix tuples.
 * `Rational.ExecutableGenerator.atPoint`: the normalized tuple at one grid point, if any.
 * `Rational.ExecutableGenerator.output`: the computable list for fixed parameters.
 * `Rational.ExecutableGenerator.list`: the computable list for `n` variables and `s` nodes.
@@ -54,6 +58,7 @@ def inputTables (n N e : ℕ) (x : Fin 3 → ℕ) :
     Vector (Table (Generator.matrixDimension e)) (n + 1) :=
   Vector.ofFn fun a => tabulate (Generator.integralLift n N e x a)
 
+/-- Reading the `a`-th table of `inputTables` gives `Generator.integralLift`. -/
 @[simp] lemma inputTables_denote (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
     denote ((inputTables n N e x).get a) = Generator.integralLift n N e x a := by
   simp [inputTables]
@@ -80,6 +85,7 @@ def normalized {n d : ℕ} (A : Vector (Table d) (n + 1)) (den : ℤ) : Rational
   Vector.ofFn fun a => Vector.ofFn fun i => Vector.ofFn fun j =>
     normalizedEntry (A.get 0) (A.get a.succ) den i j
 
+/-- Reading `tuple (normalized A den)` at `(a, i, j)` gives `normalizedEntry`. -/
 @[simp] lemma tuple_normalized {n d : ℕ} (A : Vector (Table d) (n + 1)) (den : ℤ)
     (a : Fin n) (i j : Fin d) :
     tuple (normalized A den) a i j = normalizedEntry (A.get 0) (A.get a.succ) den i j := by
@@ -139,11 +145,13 @@ private theorem output_spec (n N e H : ℕ) : output n N e H = Generator.output 
 def list (n s : ℕ) : Output n :=
   output n (Parameters.truncation n s) (Parameters.exponent n s) (Parameters.gridSize n s)
 
+/-- The executable hitting list equals the specification `Generator.list`. -/
 theorem list_spec (n s : ℕ) : list n s = Generator.list n s := output_spec ..
 
 /-- The complete binary encoding of the executable hitting list. -/
 def encoded (n s : ℕ) : List Bool := encodeOutput (list n s)
 
+/-- The encoded executable hitting list equals the encoding of `Generator.list`. -/
 theorem encoded_spec (n s : ℕ) : encoded n s = encodeOutput (Generator.list n s) := by
   rw [encoded, list_spec]
 

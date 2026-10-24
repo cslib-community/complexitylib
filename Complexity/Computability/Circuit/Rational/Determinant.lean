@@ -27,7 +27,9 @@ operations is proved here; the result is proved equal to `Matrix.det`.
 * `Rational.DeterminantAlgorithm.Table`: a dense square integer matrix.
 * `Rational.DeterminantAlgorithm.denote`, `Rational.DeterminantAlgorithm.tabulate`: conversion
   between tables and matrices.
-* `Rational.DeterminantAlgorithm.determinant`: the staged determinant.
+* `Rational.DeterminantAlgorithm.step`, `Rational.DeterminantAlgorithm.stages`,
+  `Rational.DeterminantAlgorithm.determinant`: one step, iterated stages, and the final value of
+  the staged Bird determinant.
 
 ## Main results
 
@@ -64,6 +66,7 @@ def denote {n : ℕ} (A : Table n) : Matrix (Fin n) (Fin n) ℤ :=
 def tabulate {n : ℕ} (A : Matrix (Fin n) (Fin n) ℤ) : Table n :=
   Vector.ofFn fun i => Vector.ofFn fun j => A i j
 
+/-- Tabulating an integer matrix and reading the table back recovers the matrix. -/
 @[simp] lemma denote_tabulate {n : ℕ} (A : Matrix (Fin n) (Fin n) ℤ) :
     denote (tabulate A) = A := by
   ext i j
@@ -94,23 +97,28 @@ def determinant : {n : ℕ} → Table n → ℤ
 The public integer-specialized interfaces are retained. Their proofs use the shared
 commutative-ring bridges in `Complexity/Computability/Circuit/Bird.lean`. -/
 
+/-- Integer specialization of `Bird.sumFrom_eq_sum_Ico`. -/
 lemma sumFrom_eq_sum_Ico {n lo : ℕ} (f : ℕ → ℤ) :
     BirdDet.sumFrom n lo f = ∑ k ∈ Finset.Ico lo n, f k :=
   Bird.sumFrom_eq_sum_Ico f
 
+/-- Integer specialization of `Bird.sumFrom_fin_tail`. -/
 lemma sumFrom_fin_tail {n : ℕ} (i : Fin n) (f : ℕ → ℤ) :
     BirdDet.sumFrom n (i.val + 1) f = ∑ k ∈ Finset.Ioi i, f k.val :=
   Bird.sumFrom_fin_tail i f
 
+/-- Integer specialization of `Bird.iterate_array_spec`. -/
 lemma iterate_array_spec {n : ℕ} (A : Array ℤ) (hA : A.size = n * n) (t : ℕ) (i j : Fin n) :
     ((BirdDet.stepEntry n A)^[t] (BirdDet.get n A)) i.val j.val =
       (BirdDet.Spec.stepEntry (.ofArray A hA))^[t] (.ofArray A hA) i j :=
   Bird.iterate_array_spec A hA t i j
 
+/-- Integer specialization of `Bird.array_spec`. -/
 lemma array_spec {n : ℕ} (A : Array ℤ) (hA : A.size = n * n) :
     BirdDet.birdDet n A = BirdDet.Spec.birdDet (.ofArray A hA) :=
   Bird.array_spec A hA
 
+/-- Integer specialization of `Bird.spec_eq_det`. -/
 lemma spec_eq_det {n : ℕ} (A : Matrix (Fin n) (Fin n) ℤ) :
     BirdDet.Spec.birdDet A = A.det :=
   Bird.spec_eq_det A

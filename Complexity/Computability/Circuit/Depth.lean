@@ -26,6 +26,7 @@ with negations at the inputs.
 
 ## Main definitions
 
+* `Cslib.Circuits.depthInterpretation`: interpretation computing weighted gate depth.
 * `Cslib.Circuits.Line.depthWith`, `Cslib.Circuits.Program.depthsWith`,
   `Cslib.Circuits.Program.wireDepthsWith`, `Cslib.Circuits.Circuit.depthWith`: depths with costs.
 
@@ -178,22 +179,28 @@ def Program.depthsWith (cost : σ.Op → ℕ) (p : Program σ n g) : Fin g → �
 def Program.wireDepthsWith (cost : σ.Op → ℕ) (p : Program σ n g) : Wire n g → ℕ :=
   Wire.elim (fun _ => 0) (p.depthsWith cost)
 
+/-- Every input wire has depth `0` under `wireDepthsWith`. -/
 @[simp] theorem Program.wireDepthsWith_input (cost : σ.Op → ℕ) (p : Program σ n g) (i : Fin n) :
     p.wireDepthsWith cost (.input i) = 0 := rfl
 
+/-- The depth of a gate wire under `wireDepthsWith` is the weighted depth of that gate. -/
 @[simp] theorem Program.wireDepthsWith_gateWire (cost : σ.Op → ℕ) (p : Program σ n g) (k : Fin g) :
     p.wireDepthsWith cost (.gate k) = p.depthsWith cost k := rfl
 
+/-- The weighted depth of the last gate in `p.gate line` is `line.depthWith` over `p`'s wire
+depths. -/
 @[simp] theorem Program.depthsWith_gate_last (cost : σ.Op → ℕ) (p : Program σ n g)
     (line : Line σ n g) :
     (p.gate line).depthsWith cost (Fin.last g) = line.depthWith cost (p.wireDepthsWith cost) := by
   exact p.eval_gate_last line (depthInterpretation cost) (fun _ => 0)
 
+/-- Appending a gate line leaves the weighted depths of earlier gates unchanged. -/
 @[simp] theorem Program.depthsWith_gate_castSucc (cost : σ.Op → ℕ) (p : Program σ n g)
     (line : Line σ n g) (j : Fin g) :
     (p.gate line).depthsWith cost j.castSucc = p.depthsWith cost j := by
   exact p.eval_gate_castSucc line (depthInterpretation cost) (fun _ => 0) j
 
+/-- Appending a gate line leaves the weighted depths of earlier wires unchanged. -/
 @[simp] theorem Program.wireDepthsWith_gate_castSucc (cost : σ.Op → ℕ) (p : Program σ n g)
     (line : Line σ n g) (w : Wire n g) :
     (p.gate line).wireDepthsWith cost w.castSucc = p.wireDepthsWith cost w := by
@@ -273,10 +280,12 @@ theorem Circuit.depthWith_mono {cost cost' : σ.Op → ℕ} (hcost : ∀ op, cos
   (c.depthWith_le_iff cost).2 fun j =>
     (c.program.wireDepthsWith_mono hcost _).trans (c.wireDepthsWith_outputs_le_depthWith cost' j)
 
+/-- A pure input-wiring circuit has weighted depth `0`. -/
 @[simp] theorem Circuit.depthWith_wiring (cost : σ.Op → ℕ) {m : ℕ} (select : Fin m → Fin n) :
     (Circuit.wiring σ select).depthWith cost = 0 :=
   Nat.eq_zero_of_le_zero <| (Circuit.depthWith_le_iff cost _).2 fun _ => le_rfl
 
+/-- A circuit with `0` outputs has weighted depth `0`. -/
 @[simp] theorem Circuit.depthWith_zero_outputs (cost : σ.Op → ℕ) (c : Circuit σ n 0) :
     c.depthWith cost = 0 :=
   rfl

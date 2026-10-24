@@ -54,10 +54,19 @@ a protocol of `c` bits (`RazWigderson.solves_reduction`,
 
 ## Main definitions
 
+* `Cslib.Circuits.BipartiteMatching.RazWigderson.swapIf`,
+  `Cslib.Circuits.BipartiteMatching.RazWigderson.aliceMatching`: the gadget swap and perfect
+  matching of Alice's graph.
 * `Cslib.Circuits.BipartiteMatching.RazWigderson.aliceGraph`,
-  `Cslib.Circuits.BipartiteMatching.RazWigderson.bobGraph`: the graphs of the reduction.
-* `Cslib.Circuits.BipartiteMatching.RazWigderson.reduction`: the public-coin protocol for
-  disjointness.
+  `Cslib.Circuits.BipartiteMatching.RazWigderson.bobGraph`,
+  `Cslib.Circuits.BipartiteMatching.RazWigderson.hallSet`,
+  `Cslib.Circuits.BipartiteMatching.RazWigderson.coverSet`: the graphs of the reduction and the
+  Hall witness for Bob's graph.
+* `Cslib.Circuits.BipartiteMatching.RazWigderson.Relabeling`,
+  `Cslib.Circuits.BipartiteMatching.RazWigderson.relabel`: vertex relabellings of bipartite graphs.
+* `Cslib.Circuits.BipartiteMatching.RazWigderson.repeatedRun`,
+  `Cslib.Circuits.BipartiteMatching.RazWigderson.reduction`: repeated runs and the public-coin
+  protocol for disjointness.
 
 ## Main results
 

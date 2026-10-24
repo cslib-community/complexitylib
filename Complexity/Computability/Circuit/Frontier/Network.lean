@@ -61,8 +61,13 @@ travels along a layout next to the values on the frontier.
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.Network U ι V E`: a constraint network.
-* `Cslib.Circuits.Frontier.Network.accepted`: its accepted inputs.
+* `Cslib.Circuits.Frontier.Network`: a constraint network.
+* `Cslib.Circuits.Frontier.Network.Satisfies`, `Cslib.Circuits.Frontier.Network.accepted`:
+  satisfying edge assignments and accepted inputs.
+* `Cslib.Circuits.Frontier.Network.readAt`, `Cslib.Circuits.Frontier.Network.readIn`,
+  `Cslib.Circuits.Frontier.Network.read`: inputs read at a vertex, in a vertex set, and in total.
+* `Cslib.Circuits.Frontier.Network.frontierValues`, `Cslib.Circuits.Frontier.Network.revealedBy`:
+  edge values on the frontier and inputs revealed by time `t` along a layout.
 * `Cslib.Circuits.Frontier.Network.branchingProgram`: the read-once branching program of a
   layout.
 * `Cslib.Circuits.Frontier.Network.frontierSweep`: frontier values and extra messages along a
@@ -130,6 +135,7 @@ def readIn (L : Set V) : Set ι :=
 def read : Set ι :=
   N.readIn univ
 
+/-- No inputs are read in the empty set of vertices. -/
 @[simp] theorem readIn_empty : N.readIn ∅ = ∅ := by
   ext i; simp [readIn]
 
@@ -192,6 +198,7 @@ open Classical in
 noncomputable def frontierValues (t : ℕ) (α : E → U) : E → Option U := fun e =>
   if e ∈ N.frontier π t then some (α e) else none
 
+/-- On an edge `e` in the frontier at time `t`, `frontierValues` records `some (α e)`. -/
 theorem frontierValues_of_mem {t : ℕ} {α : E → U} {e : E} (he : e ∈ N.frontier π t) :
     N.frontierValues π t α e = some (α e) := by
   simp [frontierValues, he]
@@ -200,6 +207,8 @@ private theorem frontierValues_of_notMem {t : ℕ} {α : E → U} {e : E} (he : 
     N.frontierValues π t α e = none := by
   simp [frontierValues, he]
 
+/-- Two assignments have the same `frontierValues` at time `t` if and only if they agree on
+`N.frontier π t`. -/
 theorem frontierValues_eq_iff {t : ℕ} {α β : E → U} :
     N.frontierValues π t α = N.frontierValues π t β ↔ EqOn α β (N.frontier π t) := by
   refine ⟨fun h e he => ?_, fun h => funext fun e => ?_⟩
@@ -213,6 +222,7 @@ vertex, all inputs, including those the network does not read. -/
 noncomputable def revealedBy (t : ℕ) : Set ι :=
   if t ≤ Nat.card V then N.readIn (π.initial t) else univ
 
+/-- The set `N.revealedBy π t` of revealed inputs is monotone in `t`. -/
 theorem revealedBy_mono : Monotone (N.revealedBy π) := by
   intro s t hst
   unfold revealedBy
@@ -296,6 +306,7 @@ noncomputable def branchingProgram : ReadOnceNBP ι U (E → Option U) where
     (N.revealedBy π (t + 1) \ N.revealedBy π t).domRestrict x = a ∧
     ∀ ht : t < Nat.card V, N.Constraint (π.symm ⟨t, ht⟩) x α
 
+/-- Characterization of an edge at step `t` in `N.branchingProgram π`. -/
 theorem branchingProgram_edge_iff {t : ℕ} {m m' : E → Option U}
     {a : ↥(N.revealedBy π (t + 1) \ N.revealedBy π t) → U} :
     (N.branchingProgram π).Edge t m a m' ↔ ∃ (α : E → U) (x : ι → U),

@@ -51,6 +51,7 @@ theorem cost_program_wiringOn (input : ι ≃ Fin n) (output : κ ≃ Fin m)
     (select : κ → ι) (cost : σ.Op → ℕ) :
     (wiringOn σ input output select).program.cost cost = 0 := rfl
 
+/-- Structural wiring on numbered coordinates has zero gates. -/
 @[simp] theorem size_wiringOn (input : ι ≃ Fin n) (output : κ ≃ Fin m)
     (select : κ → ι) : (wiringOn σ input output select).size = 0 := rfl
 

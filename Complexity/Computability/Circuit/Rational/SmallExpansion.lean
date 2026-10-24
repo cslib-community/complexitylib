@@ -24,8 +24,9 @@ inequality of `LaurentReduction` with the Wronskian order bound of `Expansion`.
 
 * `SmallExpansion.polynomialMap`: coefficient vectors as polynomials of degree `< M`.
 * `SmallExpansion.polynomialSpace`: the polynomial subspace of a coefficient subspace.
-* `SmallExpansion.taylorCoordinates`, `SmallExpansion.reverseTaylorCoordinates`: Taylor
-  coordinates at a point, in increasing and in reversed order.
+* `SmallExpansion.taylorCoordinates`, `SmallExpansion.reverseCoordinates`,
+  `SmallExpansion.reverseTaylorCoordinates`: Taylor coordinates at a point, coordinate
+  reversal, and reversed Taylor coordinates.
 * `SmallExpansion.testMap`: the reverse-Taylor test at a point, weighting the `j`-th Taylor
   coordinate by `X ^ j`.
 
@@ -58,17 +59,21 @@ variable {K : Type*} [Field K]
 def polynomialMap (M : ℕ) : (Fin M → K) →ₗ[K] K[X] :=
   (Polynomial.degreeLT K M).subtype.comp (Polynomial.degreeLTEquiv K M).symm.toLinearMap
 
+/-- `polynomialMap M` is injective. -/
 lemma polynomialMap_injective (M : ℕ) : Function.Injective (polynomialMap (K := K) M) :=
   Subtype.val_injective.comp (Polynomial.degreeLTEquiv K M).symm.injective
 
+/-- For `j : Fin M`, the `j`-th coefficient of `polynomialMap M x` is `x j`. -/
 @[simp] lemma polynomialMap_coeff (M : ℕ) (x : Fin M → K) (j : Fin M) :
     (polynomialMap M x).coeff j = x j := by
   exact congrFun ((Polynomial.degreeLTEquiv K M).apply_symm_apply x) j
 
+/-- `polynomialMap M x` has degree strictly less than `M`. -/
 lemma polynomialMap_mem (M : ℕ) (x : Fin M → K) :
     polynomialMap M x ∈ Polynomial.degreeLT K M :=
   ((Polynomial.degreeLTEquiv K M).symm x).property
 
+/-- Every coefficient of `polynomialMap M x` of index `j ≥ M` is zero. -/
 lemma polynomialMap_coeff_high (M : ℕ) (x : Fin M → K) (j : ℕ) (hj : M ≤ j) :
     (polynomialMap M x).coeff j = 0 := by
   apply coeff_eq_zero_of_degree_lt
@@ -92,6 +97,8 @@ def taylorCoordinates (M : ℕ) (a : K) : (Fin M → K) ≃ₗ[K] (Fin M → K) 
   (Polynomial.degreeLTEquiv K M).symm.trans
     ((Polynomial.taylorLinearEquiv a M).trans (Polynomial.degreeLTEquiv K M))
 
+/-- The `j`-th Taylor coordinate of `x` at `a` is the `j`-th coefficient of
+`taylor a (polynomialMap M x)`. -/
 lemma taylorCoordinates_apply (M : ℕ) (a : K) (x : Fin M → K) (j : Fin M) :
     taylorCoordinates M a x j = (taylor a (polynomialMap M x)).coeff j := rfl
 
@@ -108,6 +115,7 @@ Taylor coefficient by t^a and places it in output degree M-1-a. -/
 def testMap (M : ℕ) (a : K) : (Fin M → F K) →ₗ[F K] (Fin M → F K) :=
   conjugatedWeight (taylorCoordinates M a) (reverseTaylorCoordinates M a) Fin.val
 
+/-- The reverse-Taylor test map `testMap M a` is injective. -/
 lemma testMap_injective (M : ℕ) (a : K) : Function.Injective (testMap M a) :=
   conjugatedWeight_injective _ _ _
 

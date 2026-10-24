@@ -115,6 +115,8 @@ def full (M : ℕ) (a t : ℤ) : Matrix (Fin M) (Fin M) ℤ := fun i j =>
 def padded (M N : ℕ) (a t : ℤ) : Matrix (Fin M) (Fin M) ℤ :=
   fun i j => if j.val < N then full M a t i j else 0
 
+/-- For `|a| ≤ w` with `1 ≤ w` and `k ≤ M`, every coefficient of `(X + C a) ^ k` has absolute
+value at most `(2 * w) ^ M`. -/
 lemma coeff_bound (a : ℤ) (w M k j : ℕ) (hw : 1 ≤ w) (ha : |a| ≤ w) (hk : k ≤ M) :
     |(((X + C a) ^ k : ℤ[X]).coeff j)| ≤ (2 * w : ℤ) ^ M := by
   rw [coeff_X_add_C_pow, abs_mul, abs_pow, Int.abs_natCast]
@@ -178,6 +180,7 @@ open Polynomial MvPolynomial Matrix
 open scoped BigOperators
 variable {K : Type*} [Field K] {d : ℕ} [NeZero d]
 
+/-- Evaluating `uni p` on a three-variable tuple `x` evaluates `p` at `x 0`. -/
 lemma eval_uni (x : Fin 3 → K) (p : K[X]) :
     MvPolynomial.eval x (uni p) = Polynomial.eval (x 0) p := by
   have he : (MvPolynomial.eval x).comp uni = Polynomial.evalRingHom (x 0) := by
@@ -186,6 +189,8 @@ lemma eval_uni (x : Fin 3 → K) (p : K[X]) :
     · simp [uni]
   exact DFunLike.congr_fun he p
 
+/-- Evaluating `lift χ R i j` at `x` expands to the Weyl-matrix character sum at `x 0`, `x 1`,
+`x 2`. -/
 lemma eval_lift (χ : AddChar (ZMod d) K) (R : Matrix (ZMod d) (ZMod d) K[X])
     (x : Fin 3 → K) (i j : ZMod d) :
     MvPolynomial.eval x (lift χ R i j) =
@@ -262,6 +267,8 @@ private lemma rho_div_nat (e : ℕ) (z : R e) (i j : Fin (degree e)) :
   have hd : (dimension e : ℚ) ≠ 0 := by exact_mod_cast (dimension_pos e).ne'
   rw [hc, rho_rat_mul, ← mul_assoc, mul_inv_cancel₀ hd, one_mul]
 
+/-- The integer formula `entry e T p r u v i j` equals `dimension e` times the `(i, j)` regular
+representation entry of `ThreeLift.lift (character e) P u v` at `(t, p, r)`. -/
 lemma entry_spec (e : ℕ)
     (P : Matrix (ZMod (dimension e)) (ZMod (dimension e)) (R e)[X])
     (T : Matrix (ZMod (dimension e)) (ZMod (dimension e)) ℤ) (t p r : ℤ)
@@ -311,6 +318,8 @@ def coordinate (e : ℕ) :
   (Equiv.prodCongr (ZMod.finEquiv (CyclotomicRing.dimension e)).symm.toEquiv
     (Equiv.refl (Fin (CyclotomicRing.degree e)))).trans finProdFinEquiv
 
+/-- The `(i, j)` entry of `regular e A` is the corresponding entry of `CyclotomicRing.rho e` under
+`coordinate e`. -/
 lemma regular_apply (e : ℕ)
     (A : Matrix (ZMod (CyclotomicRing.dimension e)) (ZMod (CyclotomicRing.dimension e))
       (CyclotomicRing.R e))
@@ -333,6 +342,8 @@ def integralLift (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
     (x 1 : ℤ) (x 2 : ℤ) ((coordinate e).symm i).1 ((coordinate e).symm j).1
       ((coordinate e).symm i).2 ((coordinate e).symm j).2
 
+/-- Casting `integralLift n N e x a` to `ℚ` equals `CyclotomicRing.dimension e` times
+`rationalLift n N e x a`. -/
 lemma U_cast (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
     (integralLift n N e x a).map (Int.castRingHom ℚ) = (CyclotomicRing.dimension e : ℚ) •
       rationalLift n N e x a := by
@@ -359,6 +370,8 @@ lemma U_cast (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
     Matrix.map_apply, MvPolynomial.coe_eval₂Hom, MvPolynomial.eval₂_id, Int.cast_natCast,
     hx] using hh
 
+/-- For grid points bounded by `H ≥ 1`, every entry of `integralLift n N e x a` has absolute value
+at most `M ^ 4 * (2 * (n + 1)) ^ (2 * M) * H ^ (3 * M)`, where `M = CyclotomicRing.dimension e`. -/
 lemma U_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx : ∀ l, x l ≤ H)
     (a : Fin (n + 1)) (i j : Fin (matrixDimension e)) :
     |integralLift n N e x a i j| ≤ (CyclotomicRing.dimension e : ℤ) ^ 4 *
@@ -391,6 +404,8 @@ private lemma scaled_normalization {d : ℕ} (A B : Mat d) (hA : A.det ≠ 0) (c
   rw [hi, Matrix.smul_mul, Matrix.mul_smul, smul_smul]
   simp [hc]
 
+/-- When `(rationalLift n N e x 0).det ≠ 0`, the normalized matrix `tupleAt n N e x a` is the
+ratio `(integralLift n N e x 0)⁻¹ * integralLift n N e x a.succ` over `ℚ`. -/
 lemma tupleAt_integer (n N e : ℕ) (x : Fin 3 → ℕ) (hz : (rationalLift n N e x 0).det ≠ 0)
     (a : Fin n) :
     tupleAt n N e x a = ((integralLift n N e x 0).map (Int.castRingHom ℚ))⁻¹ *
@@ -399,6 +414,7 @@ lemma tupleAt_integer (n N e : ℕ) (x : Fin 3 → ℕ) (hz : (rationalLift n N 
     scaled_normalization _ _ hz _ (by exact_mod_cast (CyclotomicRing.dimension_pos e).ne')]
   rfl
 
+/-- If `(rationalLift n N e x 0).det ≠ 0`, then `(integralLift n N e x 0).det ≠ 0`. -/
 lemma U_det_ne_zero (n N e : ℕ) (x : Fin 3 → ℕ) (hz : (rationalLift n N e x 0).det ≠ 0) :
     (integralLift n N e x 0).det ≠ 0 := by
   have hu : ((integralLift n N e x 0).map (Int.castRingHom ℚ)).det ≠ 0 := by

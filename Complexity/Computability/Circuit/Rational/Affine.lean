@@ -24,10 +24,16 @@ augmented root are invertible (`Formula.certificates_iff`); no rational cancella
 
 ## Main definitions
 
-* `Cslib.Circuits.Rational.Affine.Form`, `Cslib.Circuits.Rational.Affine.eval`: affine forms and
-  their evaluation.
+* `Cslib.Circuits.Rational.Affine.Form`, `Cslib.Circuits.Rational.Affine.constant`,
+  `Cslib.Circuits.Rational.Affine.varForm`, `Cslib.Circuits.Rational.Affine.eval`,
+  `Cslib.Circuits.Rational.Affine.constMatrix`, `Cslib.Circuits.Rational.Affine.coeff`,
+  `Cslib.Circuits.Rational.Affine.homogeneous`: affine forms, constant matrices, homogeneous
+  coefficients and evaluation.
 * `Cslib.Circuits.Rational.Formula.Index`, `Cslib.Circuits.Rational.Formula.pencil`,
-  `Cslib.Circuits.Rational.Formula.row`, `Cslib.Circuits.Rational.Formula.col`: the realization.
+  `Cslib.Circuits.Rational.Formula.row`, `Cslib.Circuits.Rational.Formula.col`,
+  `Cslib.Circuits.Rational.Formula.realized`, `Cslib.Circuits.Rational.Formula.rowR`,
+  `Cslib.Circuits.Rational.Formula.colR`, `Cslib.Circuits.Rational.Formula.scalar`: the
+  realization and its evaluated matrices.
 * `Cslib.Circuits.Rational.Formula.inverseNodes`, `Cslib.Circuits.Rational.Formula.certificates`:
   the inverse occurrences of a formula, and these together with the augmented root.
 
@@ -79,10 +85,12 @@ def eval (c : ℚ →+* R) (X : Fin n → R) : Form n →+ R where
       Finset.sum_add_distrib]
     abel
 
+/-- The constant affine form `constant a` evaluates to `c a`. -/
 @[simp] theorem eval_constant (c : ℚ →+* R) (X : Fin n → R) (a : ℚ) :
     eval c X (constant a) = c a := by
   simp [eval, constant]
 
+/-- The coordinate affine form `varForm i` evaluates to `X i`. -/
 @[simp] theorem eval_variable (c : ℚ →+* R) (X : Fin n → R) (i : Fin n) :
     eval c X (varForm i) = X i := by
   simp [eval, varForm, Pi.single_apply, apply_ite]
@@ -90,6 +98,7 @@ def eval (c : ℚ →+* R) (X : Fin n → R) : Form n →+ R where
 /-- Regard a rational matrix as a matrix of constant affine forms. -/
 def constMatrix {ι κ : Type*} (A : Matrix ι κ ℚ) : Matrix ι κ (Form n) := A.map constant
 
+/-- Evaluating `constMatrix A` maps `c` over the entries of `A`. -/
 @[simp] theorem eval_constMatrix {ι κ : Type*} (c : ℚ →+* R) (X : Fin n → R)
     (A : Matrix ι κ ℚ) : (constMatrix A).map (eval c X) = A.map c := by
   ext i j
@@ -373,16 +382,21 @@ def inverseNodes : Formula n → List (Formula n)
   | .gate .add a | .gate .mul a => inverseNodes (a 0) ++ inverseNodes (a 1)
   | .gate .inv a => .gate .inv a :: inverseNodes (a 0)
 
+/-- A variable leaf has no inverse nodes. -/
 @[simp] theorem inverseNodes_var (i : Fin n) : inverseNodes (var i) = [] := rfl
 
+/-- A constant leaf has no inverse nodes. -/
 @[simp] theorem inverseNodes_const (q : ℚ) : inverseNodes (const q : Formula n) = [] := rfl
 
+/-- The inverse nodes of `add f g` are those of `f` followed by those of `g`. -/
 @[simp] theorem inverseNodes_add (f g : Formula n) :
     inverseNodes (add f g) = inverseNodes f ++ inverseNodes g := rfl
 
+/-- The inverse nodes of `mul f g` are those of `f` followed by those of `g`. -/
 @[simp] theorem inverseNodes_mul (f g : Formula n) :
     inverseNodes (mul f g) = inverseNodes f ++ inverseNodes g := rfl
 
+/-- The inverse nodes of `inv f` are `inv f` followed by those of `f`. -/
 @[simp] theorem inverseNodes_inv (f : Formula n) :
     inverseNodes (inv f) = inv f :: inverseNodes f := rfl
 
@@ -425,6 +439,8 @@ private theorem Eval.inverseNodes_units {f : Formula n} {a : R} (ha : f.Eval c X
     · exact ha.pencil_isUnit
     · exact ih hb h hh
 
+/-- If the realized pencil of every inverse node of `f` is a unit, then `f` evaluates to some
+value at `X`. -/
 theorem eval_of_inverseNodes_units (f : Formula n)
     (hu : ∀ h ∈ inverseNodes f, IsUnit (realized c X h)) :
     ∃ a, f.Eval c X a := by
@@ -468,6 +484,7 @@ private theorem inverseNodes_length (f : Formula n) : (inverseNodes f).length �
   | mul f g ihf ihg => simp only [inverseNodes_mul, List.length_append, nodeCount_mul]; omega
   | inv f ih => simp only [inverseNodes_inv, List.length_cons, nodeCount_inv]; omega
 
+/-- Every inverse node of `f` has at most `f.nodeCount` nodes. -/
 theorem nodeCount_le_of_mem_inverseNodes {f h : Formula n} (hh : h ∈ inverseNodes f) :
     h.nodeCount ≤ f.nodeCount := by
   induction f using inductionOn with
@@ -526,6 +543,7 @@ def coeff (a : Form n) : Fin (n + 1) → ℚ := Fin.cases a.1 a.2
 def homogeneous (c : ℚ →+* R) (Z : Fin (n + 1) → R) (a : Form n) : R :=
   ∑ i, c (coeff a i) * Z i
 
+/-- Setting the homogenizing coordinate to `1` recovers ordinary affine evaluation. -/
 theorem homogeneous_one (c : ℚ →+* R) (X : Fin n → R) (a : Form n) :
     homogeneous c (Fin.cases 1 X) a = eval c X a := by
   simp [homogeneous, coeff, Fin.sum_univ_succ, eval]
@@ -556,6 +574,8 @@ private theorem normalized_pencil {ι : Type*} [Fintype ι] [DecidableEq ι] [Al
   rw [Matrix.diagonal_mul]
   exact normalized Z u hu (L i j)
 
+/-- If `Z 0` is a unit `z` and the homogenized pencil is a unit, then the normalized affine pencil
+at `i ↦ z⁻¹ * Z i.succ` is a unit. -/
 theorem normalized_pencil_unit {ι : Type*} [Fintype ι] [DecidableEq ι] [Algebra ℚ R]
     (L : Matrix ι ι (Form n)) (Z : Fin (n + 1) → R) (z : Rˣ) (hz : (z : R) = Z 0)
     (hL : IsUnit (L.map (homogeneous (algebraMap ℚ R) Z))) :

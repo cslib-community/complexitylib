@@ -48,11 +48,11 @@ and those outside `S` differ in number by at most a `2 b` fraction (`signedCount
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.rectangle X A B`: the rectangle with sides `A` on `X` and `B` on `Xᶜ`.
-* `Cslib.Circuits.Frontier.RectangleFree S K`: every rectangle inside `S` has a side with fewer
+* `Cslib.Circuits.Frontier.rectangle`: the rectangle with sides `A` on `X` and `B` on `Xᶜ`.
+* `Cslib.Circuits.Frontier.RectangleFree`: every rectangle inside `S` has a side with fewer
   than `K` elements.
-* `Cslib.Circuits.Frontier.signedCount S R`: the inputs of `R` in `S` minus those outside `S`.
-* `Cslib.Circuits.Frontier.RectangleBias S K b`: on every rectangle with both sides of size at
+* `Cslib.Circuits.Frontier.signedCount`: the inputs of `R` in `S` minus those outside `S`.
+* `Cslib.Circuits.Frontier.RectangleBias`: on every rectangle with both sides of size at
   least `K`, the density of `S` is within `b` of `1/2`.
 
 ## Main results
@@ -84,6 +84,8 @@ in `A` and whose part on the complement `Xᶜ` lies in `B`. -/
 def rectangle (X : Set ι) (A : Set (X → U)) (B : Set (↥Xᶜ → U)) : Set (ι → U) :=
   {x | X.domRestrict x ∈ A ∧ Xᶜ.domRestrict x ∈ B}
 
+/-- An input `x` belongs to `rectangle X A B` iff its restriction to `X` belongs to `A` and its
+restriction to `Xᶜ` belongs to `B`. -/
 @[simp]
 theorem mem_rectangle {X : Set ι} {A : Set (X → U)} {B : Set (↥Xᶜ → U)} {x : ι → U} :
     x ∈ rectangle X A B ↔ X.domRestrict x ∈ A ∧ Xᶜ.domRestrict x ∈ B :=

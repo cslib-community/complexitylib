@@ -31,6 +31,8 @@ the construction is asserted.
 ## Main definitions
 
 * `Cslib.Circuits.Waring.Term.toCircuit`: linear form, binary power and final scaling.
+* `Cslib.Circuits.Waring.termMultiplicationCount`: the multiplication count of a compiled term.
+* `Cslib.Circuits.Waring.operationCircuit`: arithmetic gadget for a single source operation.
 * `Cslib.Circuits.Waring.compile`: compile a sum-of-terms circuit with shared variable inputs.
 * `Cslib.Circuits.Waring.compilationCost`: the exact charge of each source operation.
 

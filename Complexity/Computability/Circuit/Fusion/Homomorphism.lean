@@ -52,13 +52,17 @@ variable {σ : Signature.{u}} {U : Type v} {V : Type w} {W : Type z} {T : Type t
 def Atom.map (a : Atom σ U) (f : U → V) : Atom σ V :=
   ⟨a.op, f ∘ a.arguments⟩
 
+/-- Mapping an atom preserves its operation. -/
 @[simp] theorem Atom.op_map (a : Atom σ U) (f : U → V) : (a.map f).op = a.op := rfl
 
+/-- Mapping an atom composes its arguments with `f`. -/
 @[simp] theorem Atom.arguments_map (a : Atom σ U) (f : U → V) :
     (a.map f).arguments = f ∘ a.arguments := rfl
 
+/-- Mapping an atom by `id` is the identity. -/
 @[simp] theorem Atom.map_id (a : Atom σ U) : a.map id = a := rfl
 
+/-- Mapping an atom twice composes the carrier maps. -/
 @[simp] theorem Atom.map_map (a : Atom σ U) (f : U → V) (g : V → T) :
     (a.map f).map g = a.map (g ∘ f) := rfl
 
@@ -84,9 +88,11 @@ def Cover.map (h : Homomorphism I J) (c : Cover I (fun t => P t ∘ h.map)) : Co
   atoms i := (c.atoms i).map h.map
   isCover t hpres := c.isCover t fun i => ((c.atoms i).preserves_map_iff h (P t)).mp (hpres i)
 
+/-- Mapping a cover preserves its size. -/
 @[simp] theorem Cover.size_map (h : Homomorphism I J)
     (c : Cover I (fun t => P t ∘ h.map)) : (c.map h).size = c.size := rfl
 
+/-- The `i`-th atom of a mapped cover is the mapped `i`-th atom. -/
 @[simp] theorem Cover.atoms_map (h : Homomorphism I J)
     (c : Cover I (fun t => P t ∘ h.map)) (i : Fin c.size) :
     (c.map h).atoms i = (c.atoms i).map h.map := rfl

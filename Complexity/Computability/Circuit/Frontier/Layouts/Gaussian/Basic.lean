@@ -334,6 +334,7 @@ degree `d`: the neighbour correlation of Gaussian waves on the `d`-regular tree.
 noncomputable def vertexCorrelation (d : ℕ) : ℝ :=
   2 * √(d - 1) / d
 
+/-- The limiting adjacent correlation `vertexCorrelation d` is positive for `d ≥ 2`. -/
 theorem vertexCorrelation_pos {d : ℕ} (hd : 2 ≤ d) : 0 < vertexCorrelation d := by
   have hd' : (2 : ℝ) ≤ d := by exact_mod_cast hd
   have : 0 < (d : ℝ) - 1 := by linarith

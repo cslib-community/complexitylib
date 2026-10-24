@@ -224,6 +224,7 @@ coordinates at most `H`. At the generator's parameters it is
 def liftBits (n M H : ℕ) : ℕ :=
   4 * M + 4 * M * (n + 1) + 3 * M * H + 2
 
+/-- At the generator's parameters, `liftBits` equals `PolynomialBounds.logarithmic n s + 2`. -/
 lemma liftBits_parameters (n s : ℕ) :
     liftBits n (Parameters.ambientDimension n s) (Parameters.gridSize n s) =
       PolynomialBounds.logarithmic n s + 2 :=
@@ -441,6 +442,8 @@ private theorem intBin_of_unary {n : α → ℕ}
     ComputableTidilyInPolyTime (fun x => (n x : ℤ)) encIn encIntBin :=
   intBin_natCast.comp (unary_to_binary.comp hn)
 
+/-- Equality testing of two unary-encoded natural-number functions is computable in polynomial
+time. -/
 @[fun_prop]
 theorem unary_decide_eq {a b : α → ℕ}
     (ha : ComputableInPolyTime a encIn encUnary)

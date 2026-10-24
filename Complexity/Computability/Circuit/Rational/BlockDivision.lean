@@ -22,9 +22,11 @@ representation `D →+* Matrix κ κ E`, is either invertible or loses at least 
 
 ## Main definitions
 
-* `Rational.PolynomialHahn.embed`: bivariate polynomials as Hahn series over `ℤ ×ₗ ℤ`.
-* `Rational.BlockDivision.blockEmbedding`: the entrywise extension of a matrix representation
-  of `D` to square block matrices over `D`.
+* `Rational.PolynomialHahn.exponent`, `Rational.PolynomialHahn.variableSeries`,
+  `Rational.PolynomialHahn.embed`: bivariate polynomials as Hahn series over `ℤ ×ₗ ℤ`.
+* `Rational.BlockDivision.blockEmbedding`, `Rational.BlockDivision.kernelRows`: the entrywise
+  extension of a matrix representation of `D` to square block matrices over `D` and the
+  induced kernel-row map.
 
 ## Main results
 
@@ -66,6 +68,7 @@ variable {K : Type*} [Field K]
 /-- Embed a two-variable natural exponent vector into the ordered exponent group. -/
 def exponent (m : Fin 2 →₀ ℕ) : Exponents := toLex ((m 0 : ℤ), (m 1 : ℤ))
 
+/-- The exponent map `exponent` is injective. -/
 lemma exponent_injective : Function.Injective exponent := by
   intro m n h
   have h' : ((m 0 : ℤ), (m 1 : ℤ)) = ((n 0 : ℤ), (n 1 : ℤ)) := congrArg ofLex h
@@ -82,6 +85,7 @@ def variableSeries (i : Fin 2) : HahnSeries Exponents K :=
 def embed : MvPolynomial (Fin 2) K →+* HahnSeries Exponents K :=
   eval₂Hom (algebraMap K _) variableSeries
 
+/-- `embed` maps `monomial m a` to `HahnSeries.single (exponent m) a`. -/
 lemma embed_monomial (m : Fin 2 →₀ ℕ) (a : K) :
     embed (monomial m a) = HahnSeries.single (exponent m) a := by
   rw [embed, eval₂Hom_monomial, Finsupp.prod_fintype _ _ (by simp)]
@@ -104,6 +108,7 @@ private lemma embed_coeff (p : MvPolynomial (Fin 2) K) (m : Fin 2 →₀ ℕ) :
   · rfl
   · exact (not_not.mp (mt mem_support_iff.mpr h)).symm
 
+/-- The Hahn-series embedding `embed` is injective. -/
 lemma embed_injective : Function.Injective (embed (K := K)) := by
   intro p q hpq
   ext m
@@ -140,6 +145,7 @@ def blockEmbedding (φ : D →+* Matrix κ κ E) :
     simp only [map_sum, map_mul, Matrix.sum_apply, Matrix.mul_apply,
       Fintype.sum_prod_type]
 
+/-- A square matrix over a division ring whose row-multiplication map is injective is a unit. -/
 lemma unit_of_vecMul_injective (A : Matrix m m D)
     (hA : Function.Injective A.vecMulLinear) : IsUnit A := by
   let e := LinearEquiv.ofBijective A.vecMulLinear
@@ -170,6 +176,7 @@ def kernelRows (φ : D →+* Matrix κ κ E) (v : m → D) :
   map_smul' c x := by ext j; simp [Matrix.smul_vecMul]
 
 omit [Fintype m] [DecidableEq m] in
+/-- For a nonzero row vector `v`, `kernelRows φ v` is injective. -/
 lemma kernelRows_injective (φ : D →+* Matrix κ κ E) (v : m → D) (hv : v ≠ 0) :
     Function.Injective (kernelRows φ v) := by
   obtain ⟨j, hj⟩ : ∃ j, v j ≠ 0 := by
@@ -181,6 +188,7 @@ lemma kernelRows_injective (φ : D →+* Matrix κ κ E) (v : m → D) (hv : v �
   funext α
   exact congrFun h (j, α)
 
+/-- If `v ᵥ* A = 0`, then `kernelRows φ v x` lies in the left kernel of `blockEmbedding φ A`. -/
 lemma kernelRows_mem (φ : D →+* Matrix κ κ E)
     (A : Matrix m m D) (v : m → D)
     (hv : v ᵥ* A = 0) (x : κ → E) :

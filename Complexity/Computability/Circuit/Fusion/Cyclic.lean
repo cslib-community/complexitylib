@@ -25,9 +25,14 @@ The bounds support any admissible class of semifilters and transfer to minimum c
 from arbitrary supplied source functions. This is a semantic construction over sets, with no
 execution or convergence-time claim. A converse construction from covers is not asserted here.
 
+## Main definitions
+
+* `Cslib.Circuits.Fusion.cyclicAtoms`: the semantic atoms of a cyclic circuit's equations at a
+  state.
+* `Cslib.Circuits.Fusion.PairCover.ofCyclicCircuit`: a cover from a least-fixed-point construction.
+
 ## Main results
 
-* `Cslib.Circuits.Fusion.PairCover.ofCyclicCircuit`: a cover from a least-fixed-point construction.
 * `Cslib.Circuits.Fusion.PairCover.length_ofCyclicCircuit`: exact preservation of AND cost.
 * `Cslib.Circuits.Fusion.pairCoverComplexity_le_cyclic_ecomplexityFrom`: the minimum-cost bound.
 

@@ -504,6 +504,8 @@ theorem wronskian_order_bound {K : Type*} [Field K] [CharZero K]
   have hh := hV (b j) (b j).property (fun hz => b.ne_zero j (Subtype.ext hz))
   omega
 
+/-- Every polynomial subspace `V` of degree below `d` has a basis whose members have pairwise
+distinct vanishing orders (`rootMultiplicity a`) at `a`. -/
 lemma exists_echelon_basis_at {K : Type*} [Field K]
     (d : ℕ) (V : Submodule K K[X]) {h : ℕ} (b : Basis (Fin h) K V)
     (hV : ∀ f ∈ V, f ≠ 0 → f.natDegree < d) (a : K) :
@@ -580,6 +582,8 @@ def vanishingFiltration {K : Type*} [Field K] (V : Submodule K K[X])
     intro m hm
     simp [hf0 m hm]
 
+/-- A polynomial `f` belongs to `vanishingFiltration V a r` if and only if `f ∈ V` and
+`(X - C a) ^ r ∣ f`. -/
 lemma mem_vanishingFiltration_iff_dvd {K : Type*} [Field K]
     (V : Submodule K K[X]) (a : K) (r : ℕ) (f : K[X]) :
     f ∈ vanishingFiltration V a r ↔ f ∈ V ∧ (X - C a)^r ∣ f := by

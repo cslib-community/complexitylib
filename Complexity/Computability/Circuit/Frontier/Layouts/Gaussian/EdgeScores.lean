@@ -102,6 +102,7 @@ noncomputable def edgeScore (q : ℝ) (R : ℕ) (ω : V → ℝ) (e : E) : ℝ :
 
 variable {G}
 
+/-- The Gaussian score `edgeScore G q R · e` is a measurable function of the sample. -/
 theorem measurable_edgeScore (q : ℝ) (R : ℕ) (e : E) :
     Measurable fun ω => edgeScore G q R ω e := by
   unfold edgeScore

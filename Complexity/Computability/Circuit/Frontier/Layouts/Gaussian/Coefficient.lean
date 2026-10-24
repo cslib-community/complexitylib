@@ -68,6 +68,7 @@ theorem gaussianCoefficient_ge : 1 / 20 ≤ gaussianCoefficient := by
   rw [div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
   nlinarith [pi_pos]
 
+/-- The Gaussian layout coefficient `gaussianCoefficient` is positive. -/
 theorem gaussianCoefficient_pos : 0 < gaussianCoefficient :=
   lt_of_lt_of_le (by norm_num) gaussianCoefficient_ge
 

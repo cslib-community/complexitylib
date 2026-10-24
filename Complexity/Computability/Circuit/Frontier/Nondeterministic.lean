@@ -94,6 +94,7 @@ the output `o` the values in `Acc o`, with the last `k` inputs hidden. -/
 noncomputable def hiddenNetwork : Network U (Fin n) (Vertex c) (Edge c) :=
   ((network c I Acc).reindex finSumFinEquiv.symm).hide
 
+/-- The underlying multigraph of `hiddenNetwork c I Acc` is `graph c`. -/
 @[simp] theorem hiddenNetwork_toMultigraph : (hiddenNetwork c I Acc).toMultigraph = graph c :=
   rfl
 

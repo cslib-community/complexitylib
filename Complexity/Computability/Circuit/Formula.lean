@@ -130,10 +130,13 @@ def eval (F : Formula σ n) (I : Interpretation σ U) (x : Fin n → U) : U :=
   | input i => x i
   | gate op args => I op fun j => (args j).eval I x
 
+/-- An input leaf `input i` evaluates to `x i`. -/
 @[simp] theorem eval_input (I : Interpretation σ U) (i : Fin n) (x : Fin n → U) :
     (input i : Formula σ n).eval I x = x i :=
   rfl
 
+/-- An operation node `gate op args` evaluates by applying `I op` to the values of its
+arguments. -/
 @[simp] theorem eval_gate (I : Interpretation σ U) (op : σ.Op)
     (args : Fin (σ.Arity op) → Formula σ n) (x : Fin n → U) :
     (gate op args).eval I x = I op fun j => (args j).eval I x :=
@@ -181,23 +184,29 @@ def depth : Formula σ n → ℕ
   | input _ => 0
   | gate _ args => (Finset.univ.sup fun j => (args j).depth) + 1
 
+/-- An input leaf has leaf size `1`. -/
 @[simp] theorem leafSize_input (i : Fin n) : (input i : Formula σ n).leafSize = 1 :=
   rfl
 
+/-- The leaf size of an operation node is the sum of the leaf sizes of its arguments. -/
 @[simp] theorem leafSize_gate (op : σ.Op) (args : Fin (σ.Arity op) → Formula σ n) :
     (gate op args).leafSize = ∑ j, (args j).leafSize :=
   rfl
 
+/-- An input leaf has `0` operation nodes. -/
 @[simp] theorem size_input (i : Fin n) : (input i : Formula σ n).size = 0 :=
   rfl
 
+/-- The size of an operation node is the sum of the sizes of its arguments plus `1`. -/
 @[simp] theorem size_gate (op : σ.Op) (args : Fin (σ.Arity op) → Formula σ n) :
     (gate op args).size = (∑ j, (args j).size) + 1 :=
   rfl
 
+/-- An input leaf has cost `0`. -/
 @[simp] theorem cost_input (weight : σ.Op → ℕ) (i : Fin n) :
     (input i : Formula σ n).cost weight = 0 := rfl
 
+/-- The cost of an operation node is the sum of the costs of its arguments plus `weight op`. -/
 @[simp] theorem cost_gate (weight : σ.Op → ℕ) (op : σ.Op)
     (args : Fin (σ.Arity op) → Formula σ n) :
     (gate op args).cost weight = (∑ j, (args j).cost weight) + weight op := rfl
@@ -208,9 +217,11 @@ def depth : Formula σ n → ℕ
   | input => rfl
   | gate op args ih => simp [cost, ih]
 
+/-- An input leaf has depth `0`. -/
 @[simp] theorem depth_input (i : Fin n) : (input i : Formula σ n).depth = 0 :=
   rfl
 
+/-- The depth of an operation node is one more than the maximum depth of its arguments. -/
 @[simp] theorem depth_gate (op : σ.Op) (args : Fin (σ.Arity op) → Formula σ n) :
     (gate op args).depth = (Finset.univ.sup fun j => (args j).depth) + 1 :=
   rfl
@@ -286,10 +297,12 @@ def leafSizeIn (Y : Finset (Fin n)) : Formula σ n → ℕ
   | input i => if i ∈ Y then 1 else 0
   | gate _ args => ∑ j, (args j).leafSizeIn Y
 
+/-- An input leaf `input i` has `1` leaf in `Y` when `i ∈ Y` and `0` otherwise. -/
 @[simp] theorem leafSizeIn_input (Y : Finset (Fin n)) (i : Fin n) :
     (input i : Formula σ n).leafSizeIn Y = if i ∈ Y then 1 else 0 :=
   rfl
 
+/-- The number of leaves of `gate op args` in `Y` is the sum over its arguments. -/
 @[simp] theorem leafSizeIn_gate (Y : Finset (Fin n)) (op : σ.Op)
     (args : Fin (σ.Arity op) → Formula σ n) :
     (gate op args).leafSizeIn Y = ∑ j, (args j).leafSizeIn Y :=
@@ -311,11 +324,13 @@ theorem sum_leafSizeIn_le_leafSize {ι : Type*} {s : Finset ι} {Y : ι → Fins
     rw [Finset.sum_comm]
     exact Finset.sum_le_sum fun j _ => ih j
 
+/-- Counting leaves in the set of all inputs gives the leaf size. -/
 @[simp] theorem leafSizeIn_univ (F : Formula σ n) : F.leafSizeIn Finset.univ = F.leafSize := by
   induction F with
   | input i => simp
   | gate op args ih => simp [ih]
 
+/-- No leaves lie in the empty set of inputs. -/
 @[simp] theorem leafSizeIn_empty (F : Formula σ n) : F.leafSizeIn ∅ = 0 := by
   induction F with
   | input i => simp
@@ -380,15 +395,19 @@ def depthWith (cost : σ.Op → ℕ) : Formula σ n → ℕ
   | input _ => 0
   | gate op args => (Finset.univ.sup fun j => (args j).depthWith cost) + cost op
 
+/-- An input leaf has weighted depth `0`. -/
 @[simp] theorem depthWith_input (cost : σ.Op → ℕ) (i : Fin n) :
     (input i : Formula σ n).depthWith cost = 0 :=
   rfl
 
+/-- The weighted depth of `gate op args` is the maximum weighted depth of its arguments plus
+`cost op`. -/
 @[simp] theorem depthWith_gate (cost : σ.Op → ℕ) (op : σ.Op)
     (args : Fin (σ.Arity op) → Formula σ n) :
     (gate op args).depthWith cost = (Finset.univ.sup fun j => (args j).depthWith cost) + cost op :=
   rfl
 
+/-- With unit operation costs, `depthWith` is `depth`. -/
 @[simp] theorem depthWith_one (F : Formula σ n) : F.depthWith 1 = F.depth := by
   induction F with
   | input i => rfl
@@ -423,6 +442,7 @@ private theorem apply_vecCons_two {M N : Type*} (g : M → N) (a b : M) (i : Fin
   | 0 => rfl
   | 1 => rfl
 
+/-- Evaluating `gate₂ op hop F G` applies `I op` to the values of `F` and `G`. -/
 @[simp] theorem eval_gate₂ (I : Interpretation σ U) (F G : Formula σ n) (x : Fin n → U) :
     (gate₂ op hop F G).eval I x = I op fun j => ![F.eval I x, G.eval I x] (j.cast hop) := by
   rw [gate₂, eval_gate]
@@ -438,21 +458,26 @@ private theorem sup_cast_two {k : ℕ} (h : k = 2) (a b : ℕ) :
   subst h
   simp [Fin.univ_succ]
 
+/-- The size of `gate₂ op hop F G` is `F.size + G.size + 1`. -/
 @[simp] theorem size_gate₂ (F G : Formula σ n) :
     (gate₂ op hop F G).size = F.size + G.size + 1 := by
   rw [gate₂, size_gate, ← sum_cast_two hop F.size G.size]
   simp only [apply_vecCons_two size]
 
+/-- The cost of `gate₂ op hop F G` is `F.cost weight + G.cost weight + weight op`. -/
 @[simp] theorem cost_gate₂ (weight : σ.Op → ℕ) (F G : Formula σ n) :
     (gate₂ op hop F G).cost weight = F.cost weight + G.cost weight + weight op := by
   rw [gate₂, cost_gate, ← sum_cast_two hop (F.cost weight) (G.cost weight)]
   simp only [apply_vecCons_two (cost weight)]
 
+/-- The leaf size of `gate₂ op hop F G` is `F.leafSize + G.leafSize`. -/
 @[simp] theorem leafSize_gate₂ (F G : Formula σ n) :
     (gate₂ op hop F G).leafSize = F.leafSize + G.leafSize := by
   rw [gate₂, leafSize_gate, ← sum_cast_two hop]
   simp only [apply_vecCons_two leafSize]
 
+/-- The weighted depth of `gate₂ op hop F G` is the maximum of the weighted depths of `F` and `G`
+plus `cost op`. -/
 @[simp] theorem depthWith_gate₂ (cost : σ.Op → ℕ) (F G : Formula σ n) :
     (gate₂ op hop F G).depthWith cost = max (F.depthWith cost) (G.depthWith cost) + cost op := by
   rw [gate₂, depthWith_gate, ← sup_cast_two hop]
@@ -465,9 +490,11 @@ def balanced (op : σ.Op) (hop : σ.Arity op = 2) (unit : Formula σ n) (l : Lis
     Formula σ n :=
   l.balancedFold (gate₂ op hop) unit id
 
+/-- The balanced tree over the empty list is `unit`. -/
 @[simp] theorem balanced_nil (unit : Formula σ n) : balanced op hop unit [] = unit :=
   List.balancedFold_nil
 
+/-- The balanced tree over a singleton list `[F]` is `F`. -/
 @[simp] theorem balanced_singleton (unit F : Formula σ n) : balanced op hop unit [F] = F :=
   List.balancedFold_singleton F
 
@@ -563,24 +590,29 @@ def bind {m : ℕ} : Formula σ n → (Fin n → Formula σ m) → Formula σ m
 
 variable {m : ℕ}
 
+/-- Substituting `s` into an input leaf `input i` yields `s i`. -/
 @[simp] theorem input_bind (i : Fin n) (s : Fin n → Formula σ m) : (input i).bind s = s i :=
   rfl
 
+/-- Substituting `s` into an operation node substitutes `s` into each argument. -/
 @[simp] theorem gate_bind (op : σ.Op) (args : Fin (σ.Arity op) → Formula σ n)
     (s : Fin n → Formula σ m) : (gate op args).bind s = gate op fun j => (args j).bind s :=
   rfl
 
+/-- Evaluating `F.bind s` on `x` evaluates `F` on the values of the substituted formulas `s i`. -/
 @[simp] theorem eval_bind (I : Interpretation σ U) (F : Formula σ n) (s : Fin n → Formula σ m)
     (x : Fin m → U) : (F.bind s).eval I x = F.eval I fun i => (s i).eval I x := by
   induction F with
   | input i => rfl
   | gate op args ih => simp only [gate_bind, eval_gate, ih]
 
+/-- Substituting each input leaf for itself leaves a formula unchanged. -/
 @[simp] theorem bind_input (F : Formula σ n) : F.bind input = F := by
   induction F with
   | input i => rfl
   | gate op args ih => simp only [gate_bind, ih]
 
+/-- Substitution of formulas is associative. -/
 @[simp] theorem bind_assoc {k : ℕ} (F : Formula σ n) (s : Fin n → Formula σ m)
     (t : Fin m → Formula σ k) : (F.bind s).bind t = F.bind fun i => (s i).bind t := by
   induction F with
@@ -625,6 +657,7 @@ theorem size_bind_le {s : Fin n → Formula σ m} {c : ℕ} (hs : ∀ i, (s i).s
 def rename (f : Fin n → Fin m) (F : Formula σ n) : Formula σ m :=
   F.bind fun i => input (f i)
 
+/-- Renaming the inputs of `F` by `f` evaluates `F` on `x ∘ f`. -/
 @[simp] theorem eval_rename (I : Interpretation σ U) (f : Fin n → Fin m) (F : Formula σ n)
     (x : Fin m → U) : (F.rename f).eval I x = F.eval I (x ∘ f) := by
   simp [rename, Function.comp_def]
@@ -636,6 +669,7 @@ def rename (f : Fin n → Fin m) (F : Formula σ n) : Formula σ m :=
   | input i => rfl
   | gate op args ih => simp only [rename, gate_bind, leafSize_gate] at ih ⊢; simp only [ih]
 
+/-- Renaming the inputs by `f` and then by `g` renames them by `g ∘ f`. -/
 @[simp] theorem rename_rename {k : ℕ} (f : Fin n → Fin m) (g : Fin m → Fin k) (F : Formula σ n) :
     (F.rename f).rename g = F.rename (g ∘ f) := by
   simp [rename]
@@ -648,13 +682,16 @@ def lift (F : Formula σ n) : Formula σ (n + 1) :=
 def substLast (C : Formula σ (n + 1)) (K : Formula σ n) : Formula σ n :=
   C.bind (Fin.snoc (α := fun _ => Formula σ n) input K)
 
+/-- `F.lift` evaluates on `y` by restricting `y` to the first `n` inputs. -/
 @[simp] theorem eval_lift (I : Interpretation σ U) (F : Formula σ n) (y : Fin (n + 1) → U) :
     F.lift.eval I y = F.eval I fun i => y i.castSucc :=
   eval_rename I _ F y
 
+/-- Lifting a formula to `n + 1` inputs preserves its leaf size. -/
 @[simp] theorem leafSize_lift (F : Formula σ n) : F.lift.leafSize = F.leafSize :=
   leafSize_rename _ F
 
+/-- `C.substLast K` evaluates on `x` by extending `x` with `K.eval I x` at the last input. -/
 @[simp] theorem eval_substLast (I : Interpretation σ U) (C : Formula σ (n + 1)) (K : Formula σ n)
     (x : Fin n → U) : (C.substLast K).eval I x = C.eval I (Fin.snoc x (K.eval I x)) := by
   rw [substLast, eval_bind]
@@ -664,12 +701,15 @@ def substLast (C : Formula σ (n + 1)) (K : Formula σ n) : Formula σ n :=
   | last => simp
   | cast i => simp
 
+/-- Substituting for the last input of `F.lift` recovers `F`. -/
 @[simp] theorem lift_substLast (F : Formula σ n) (K : Formula σ n) : F.lift.substLast K = F := by
   simp [lift, rename, substLast]
 
+/-- Substituting `K` for the last input in `input (Fin.last n)` yields `K`. -/
 @[simp] theorem input_last_substLast (K : Formula σ n) : (input (Fin.last n)).substLast K = K := by
   simp [substLast]
 
+/-- Substituting for the last input leaves an earlier input leaf `input i.castSucc` as `input i`. -/
 @[simp] theorem input_castSucc_substLast (i : Fin n) (K : Formula σ n) :
     (input i.castSucc).substLast K = input i := by
   simp [substLast]
@@ -687,6 +727,7 @@ def toCircuit : Formula σ n → Circuit σ n 1
   | input i => Circuit.wiring σ fun _ => i
   | gate op args => (Circuit.oneGate op id).comp (Circuit.pi fun a => (args a).toCircuit)
 
+/-- The single output of `F.toCircuit` evaluates to `F.eval I x`. -/
 @[simp] theorem eval_toCircuit (I : Interpretation σ U) (F : Formula σ n) (x : Fin n → U)
     (j : Fin 1) : F.toCircuit.eval I x j = F.eval I x := by
   induction F generalizing j with

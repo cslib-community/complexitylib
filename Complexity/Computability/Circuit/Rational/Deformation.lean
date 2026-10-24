@@ -27,10 +27,13 @@ generator must avoid.
 * `Rational.QuantumLift.polynomialLift`: the two-parameter polynomial Fourier lift.
 * `Rational.QuantumLift.blockPolynomial`, `Rational.QuantumLift.blockOriginal`: the flattened
   lifted and original block matrices.
-* `Rational.ThreeLift.lift`: the three-parameter lift of a matrix of univariate polynomials.
+* `Rational.ThreeLift.coeffP`, `Rational.ThreeLift.uni`, `Rational.ThreeLift.lift`: the
+  three-parameter lift of a matrix of univariate polynomials and its Fourier coefficients.
 * `Rational.ThreeLift.specialize`: specialization of the first parameter into a field.
 * `Rational.ThreeLift.linear`: the three-parameter lift as a `K`-linear map.
-* `Rational.PencilDeformation.polynomial`: the three-variable pencil matrix.
+* `Rational.PencilDeformation.test`, `Rational.PencilDeformation.polyBlocks`,
+  `Rational.PencilDeformation.polynomial`: the polynomial test blocks and three-variable
+  pencil matrix.
 
 ## Main results
 
@@ -68,6 +71,8 @@ def polynomialLift (R : Matrix (ZMod d) (ZMod d) K) :
       (fourierCoeff χ R a b * weyl χ a b i j)
 
 omit [CharZero K] in
+/-- Embedding `polynomialLift χ R` entrywise into Hahn series yields
+`representation χ (liftD χ R)`. -/
 lemma polynomialLift_embed (R : Matrix (ZMod d) (ZMod d) K) :
     PolynomialHahn.embed.mapMatrix (polynomialLift χ R) = representation χ (liftD χ R) := by
   ext i j g
@@ -84,6 +89,7 @@ lemma polynomialLift_embed (R : Matrix (ZMod d) (ZMod d) K) :
   simp only [HahnSeries.coeff_single]
   split_ifs <;> rfl
 
+/-- Evaluating `polynomialLift χ R` at `(1, 1)` recovers `R` when `χ` is primitive. -/
 lemma polynomialLift_specialize (hχ : χ.IsPrimitive) (R : Matrix (ZMod d) (ZMod d) K) :
     (MvPolynomial.aeval (fun _ : Fin 2 => (1 : K))).toRingHom.mapMatrix
       (polynomialLift χ R) = R := by
@@ -181,6 +187,8 @@ private lemma specialize_uni (φ : K →+* E) (t : E) (p : K[X]) :
     · simp [specialize, uni]
   exact congrArg (fun h : K[X] →+* MvPolynomial (Fin 2) E => h p) he
 
+/-- Evaluating `coeffP χ R a b` at `t` along `φ` gives the `(a, b)` Fourier coefficient of `R`
+evaluated at `t`. -/
 lemma coeffP_eval (φ : K →+* E) (t : E)
     (R : Matrix (ZMod d) (ZMod d) K[X]) (a b : ZMod d) :
     (coeffP χ R a b).eval₂ φ t =
@@ -348,6 +356,7 @@ private lemma polyBlocks_degree (A : Fin w → Matrix (Fin q) (Fin q) K) (points
   exact padded_natDegree_le M N (points r) _ _
 
 omit [CharZero K] in
+/-- Every entry of `polynomial χ A points` has total degree at most `3 * M`. -/
 lemma entry_degree (χ : AddChar (ZMod M) K)
     (A : Fin w → Matrix (Fin q) (Fin q) K) (points : Fin w → K)
     (a b : Fin q × ZMod M) :
@@ -380,15 +389,18 @@ private lemma coeffP_smul (c : K) (R : Matrix (ZMod d) (ZMod d) K[X]) (a b : ZMo
   intro j _
   ring
 
+/-- The three-parameter lift of the zero matrix is zero. -/
 lemma lift_zero : lift χ 0 = 0 := by
   funext i j
   simp [lift, coeffP_zero]
 
+/-- The three-parameter lift is additive. -/
 lemma lift_add (R S : Matrix (ZMod d) (ZMod d) K[X]) :
     lift χ (R + S) = lift χ R + lift χ S := by
   funext i j
   simp [lift, coeffP_add, map_add, add_mul, Finset.sum_add_distrib]
 
+/-- The three-parameter lift commutes with scalar multiplication by constants in `K`. -/
 lemma lift_smul (c : K) (R : Matrix (ZMod d) (ZMod d) K[X]) :
     lift χ (c • R) = c • lift χ R := by
   funext i j
@@ -407,6 +419,7 @@ def linear : Matrix (ZMod d) (ZMod d) K[X] →ₗ[K]
   map_add' := lift_add χ
   map_smul' c R := by simpa using lift_smul χ c R
 
+/-- The three-parameter lift commutes with finite sums. -/
 lemma lift_sum {ι : Type*} (S : Finset ι) (R : ι → Matrix (ZMod d) (ZMod d) K[X]) :
     lift χ (∑ i ∈ S, R i) = ∑ i ∈ S, lift χ (R i) := map_sum (linear χ) R S
 

@@ -26,9 +26,13 @@ none.
 
 ## Main definitions
 
-* `Cslib.Circuits.Clique.Edge`, `Cslib.Circuits.Clique.edgeCount`: the possible edges.
+* `Cslib.Circuits.Clique.Edge`, `Cslib.Circuits.Clique.edgeCount`,
+  `Cslib.Circuits.Clique.edgeEquiv`, `Cslib.Circuits.Clique.edge`: the possible edges, their count,
+  their numbering, and the edge between two distinct vertices.
 * `Cslib.Circuits.Clique.graph`: the graph of an input.
 * `Cslib.Circuits.Clique.Contains`: the input contains all edges inside a set of vertices.
+* `Cslib.Circuits.Clique.CliqueSet`, `Cslib.Circuits.Clique.Coloring`: sets of `k` vertices and
+  vertex colourings.
 * `Cslib.Circuits.clique`: the `k`-clique function.
 * `Cslib.Circuits.Clique.ofFinset`, `Cslib.Circuits.Clique.ofColoring`: test inputs.
 
@@ -53,6 +57,7 @@ abbrev Edge (n : ℕ) : Type := {e : Sym2 (Fin n) // ¬e.IsDiag}
 /-- The number of possible edges of a graph on `n` vertices. -/
 abbrev edgeCount (n : ℕ) : ℕ := Fintype.card (Edge n)
 
+/-- A graph on `n` vertices has `n.choose 2` possible edges. -/
 theorem edgeCount_eq_choose (n : ℕ) : edgeCount n = n.choose 2 := by
   rw [edgeCount, Sym2.card_subtype_not_diag, Fintype.card_fin]
 
@@ -67,6 +72,7 @@ def graph (x : Fin (edgeCount n) → Bool) : SimpleGraph (Fin n) :=
 def Contains (x : Fin (edgeCount n) → Bool) (s : Finset (Fin n)) : Prop :=
   ∀ e : Edge n, e.1.toFinset ⊆ s → x (edgeEquiv n e) = true
 
+/-- Decidability of `Contains x s`. -/
 noncomputable instance (x : Fin (edgeCount n) → Bool) (s : Finset (Fin n)) :
     Decidable (Contains x s) :=
   inferInstanceAs (Decidable (∀ _, _))
@@ -74,9 +80,11 @@ noncomputable instance (x : Fin (edgeCount n) → Bool) (s : Finset (Fin n)) :
 /-- The edge between two distinct vertices. -/
 def edge {u v : Fin n} (h : u ≠ v) : Edge n := ⟨s(u, v), by simpa using h⟩
 
+/-- The endpoints of `edge h` are `{u, v}`. -/
 @[simp] theorem toFinset_edge {u v : Fin n} (h : u ≠ v) : (edge h).1.toFinset = {u, v} :=
   Sym2.toFinset_mk_eq
 
+/-- Containing all edges inside a vertex set is antitone in the vertex set. -/
 theorem Contains.mono {x : Fin (edgeCount n) → Bool} {s t : Finset (Fin n)} (hst : s ⊆ t)
     (h : Contains x t) : Contains x s :=
   fun e he => h e (he.trans hst)
@@ -102,10 +110,12 @@ theorem contains_iff_isClique {x : Fin (edgeCount n) → Bool} {s : Finset (Fin 
 noncomputable def ofFinset (s : Finset (Fin n)) : Fin (edgeCount n) → Bool :=
   fun i => decide (((edgeEquiv n).symm i).1.toFinset ⊆ s)
 
+/-- `ofFinset s` sets an edge to `true` exactly when both of its endpoints lie in `s`. -/
 @[simp] theorem ofFinset_edgeEquiv (s : Finset (Fin n)) (e : Edge n) :
     ofFinset s (edgeEquiv n e) = decide (e.1.toFinset ⊆ s) := by
   simp [ofFinset]
 
+/-- The complete graph on `s` contains all edges between vertices of `s`. -/
 theorem contains_ofFinset (s : Finset (Fin n)) : Contains (ofFinset s) s :=
   fun e he => by simpa using he
 
@@ -164,6 +174,7 @@ noncomputable def clique (n k : ℕ) : BooleanFunction (edgeCount n) :=
 
 variable {n k r : ℕ}
 
+/-- `clique n k x` is `true` if and only if `graph x` has a `k`-clique. -/
 theorem clique_eq_true_iff {x : Fin (edgeCount n) → Bool} :
     clique n k x = true ↔ ∃ s : Finset (Fin n), (graph x).IsNClique k s := by
   simp only [clique, decide_eq_true_iff, contains_iff_isClique, SimpleGraph.isNClique_iff]

@@ -31,15 +31,20 @@ the leaf count `Formula.leafSize`).
 
 ## Main definitions
 
-* `Cslib.Circuits.Rational.ratSignature`, `Cslib.Circuits.Rational.Formula`: the signature and
-  the formulas, with constructors `Formula.var`, `Formula.const`, `Formula.add`, `Formula.mul`,
-  `Formula.inv` and the induction principle `Formula.inductionOn`.
+* `Cslib.Circuits.Rational.RatOp`, `Cslib.Circuits.Rational.ratSignature`,
+  `Cslib.Circuits.Rational.Formula`: the operation symbols, signature, and formulas, with
+  constructors `Formula.var`, `Formula.const`, `Formula.add`, `Formula.mul`, `Formula.inv` and the
+  induction principle `Formula.inductionOn`.
 * `Cslib.Circuits.Rational.Formula.nodeCount`: the number of syntax-tree nodes.
 * `Cslib.Circuits.Rational.Formula.Eval`: partial evaluation as a relation.
+* `Cslib.Circuits.Rational.Mat`, `Cslib.Circuits.Rational.Tuple`: square rational matrices and
+  matrix substitutions.
 * `Cslib.Circuits.Rational.Evaluates`, `Cslib.Circuits.Rational.Admissible`,
   `Cslib.Circuits.Rational.Nonzero`: evaluation on rational matrices, and its domain and support.
-* `Cslib.Circuits.Rational.Output`, `Cslib.Circuits.Rational.encodeOutput`: lists of matrix
-  substitutions of a common positive dimension and their binary encoding.
+* `Cslib.Circuits.Rational.Output`, `Cslib.Circuits.Rational.encodeNat`,
+  `Cslib.Circuits.Rational.encodeRat`, `Cslib.Circuits.Rational.encodeTuple`,
+  `Cslib.Circuits.Rational.encodeOutput`: lists of matrix substitutions of a common positive
+  dimension and their binary encoding.
 * `Cslib.Circuits.Rational.Hits`: the hitting property.
 
 ## Main results
@@ -132,23 +137,28 @@ theorem inductionOn {motive : Formula n → Prop} (f : Formula n)
 operation nodes `Formula.size` together with the input leaves `Formula.leafSize`. -/
 def nodeCount (f : Formula n) : ℕ := f.size + f.leafSize
 
+/-- A variable leaf has node count `1`. -/
 @[simp] theorem nodeCount_var (i : Fin n) : (var i).nodeCount = 1 := rfl
 
+/-- A rational constant node has node count `1`. -/
 @[simp] theorem nodeCount_const (q : ℚ) : (const q : Formula n).nodeCount = 1 := by
   simp [nodeCount]
 
+/-- The node count of `add f g` is `f.nodeCount + g.nodeCount + 1`. -/
 @[simp] theorem nodeCount_add (f g : Formula n) :
     (add f g).nodeCount = f.nodeCount + g.nodeCount + 1 := by
   simp only [nodeCount, Circuits.Formula.size_gate, Circuits.Formula.leafSize_gate,
     Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one]
   omega
 
+/-- The node count of `mul f g` is `f.nodeCount + g.nodeCount + 1`. -/
 @[simp] theorem nodeCount_mul (f g : Formula n) :
     (mul f g).nodeCount = f.nodeCount + g.nodeCount + 1 := by
   simp only [nodeCount, Circuits.Formula.size_gate, Circuits.Formula.leafSize_gate,
     Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one]
   omega
 
+/-- The node count of `inv f` is `f.nodeCount + 1`. -/
 @[simp] theorem nodeCount_inv (f : Formula n) : (inv f).nodeCount = f.nodeCount + 1 := by
   simp only [nodeCount, Circuits.Formula.size_gate, Circuits.Formula.leafSize_gate,
     Fin.sum_univ_one, Matrix.cons_val_zero]
@@ -172,16 +182,23 @@ section Eval
 
 variable {R : Type u} [Ring R] {c : ℚ →+* R} {X : Fin n → R} {f g : Formula n} {v : R}
 
+/-- `(var i).Eval c X v` holds if and only if `v = X i`. -/
 @[simp] theorem eval_var_iff {i : Fin n} : (var i).Eval c X v ↔ v = X i := Iff.rfl
 
+/-- `(const q).Eval c X v` holds if and only if `v = c q`. -/
 @[simp] theorem eval_const_iff {q : ℚ} : (const q : Formula n).Eval c X v ↔ v = c q := Iff.rfl
 
+/-- `(add f g).Eval c X v` holds if and only if `f` and `g` evaluate to `a` and `b` with
+`v = a + b`. -/
 @[simp] theorem eval_add_iff :
     (add f g).Eval c X v ↔ ∃ a b, f.Eval c X a ∧ g.Eval c X b ∧ v = a + b := Iff.rfl
 
+/-- `(mul f g).Eval c X v` holds if and only if `f` and `g` evaluate to `a` and `b` with
+`v = a * b`. -/
 @[simp] theorem eval_mul_iff :
     (mul f g).Eval c X v ↔ ∃ a b, f.Eval c X a ∧ g.Eval c X b ∧ v = a * b := Iff.rfl
 
+/-- `(inv f).Eval c X v` holds if and only if `f` evaluates to a two-sided inverse `a` of `v`. -/
 @[simp] theorem eval_inv_iff :
     (inv f).Eval c X v ↔ ∃ a, f.Eval c X a ∧ a * v = 1 ∧ v * a = 1 := Iff.rfl
 

@@ -63,6 +63,7 @@ variable {σ : Signature} {U : Type*} {n m : ℕ}
 def Interpretation.pointwise (X : Type*) (I : Interpretation σ U) : Interpretation σ (X → U) :=
   fun op args x => I op fun i => args i x
 
+/-- Evaluating `I.pointwise X op args` at `x` applies `I op` to the values of `args` at `x`. -/
 @[simp] theorem Interpretation.pointwise_apply (X : Type*) (I : Interpretation σ U) (op : σ.Op)
     (args : Fin (σ.Arity op) → X → U) (x : X) :
     I.pointwise X op args x = I op fun i => args i x :=
@@ -74,6 +75,7 @@ def Interpretation.evalAt (I : Interpretation σ U) {X : Type*} (x : X) :
   map f := f x
   homomorphic _ _ := rfl
 
+/-- The underlying map of `I.evalAt x` evaluates a function at `x`. -/
 @[simp] theorem Interpretation.evalAt_map (I : Interpretation σ U) {X : Type*} (x : X)
     (f : X → U) : (I.evalAt x).map f = f x :=
   rfl

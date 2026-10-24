@@ -100,6 +100,7 @@ variable [DecidablePred special]
 def run (m : M) (x : Fin n → U) : Wire n s → U :=
   (p.eraseGates special).trace (I.withConstants (L.readout m)) x
 
+/-- On an input wire `.input i`, `L.run m x` evaluates to `x i`. -/
 @[simp] theorem run_input (m : M) (x : Fin n → U) (i : Fin n) : L.run m x (.input i) = x i :=
   rfl
 

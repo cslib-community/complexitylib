@@ -72,6 +72,8 @@ noncomputable def unitKernelRow [Fintype V] (q : ℝ) (R : ℕ) (v : V) : Euclid
 
 variable {G}
 
+/-- Coordinate `z` of the kernel row of `v` is `q ^ G.dist v z` when `G.edist v z ≤ R`, and `0`
+otherwise. -/
 theorem kernelRow_apply (q : ℝ) (R : ℕ) (v z : V) :
     kernelRow G q R v z = if G.edist v z ≤ R then q ^ G.dist v z else 0 :=
   rfl
@@ -174,6 +176,8 @@ private theorem one_le_norm_kernelRow (q : ℝ) (R : ℕ) (v : V) : 1 ≤ ‖ker
           (mem_univ v)
   nlinarith [norm_nonneg (kernelRow G q R v)]
 
+/-- Coordinate `z` of the unit kernel row of `v` is `kernelRow G q R v z` divided by
+`‖kernelRow G q R v‖`. -/
 theorem unitKernelRow_apply (q : ℝ) (R : ℕ) (v z : V) :
     unitKernelRow G q R v z = ‖kernelRow G q R v‖⁻¹ * kernelRow G q R v z :=
   rfl

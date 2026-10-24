@@ -31,8 +31,16 @@ the forward lower bound also allows restricted witness classes.
 
 ## Main definitions
 
-* `Cslib.Circuits.Fusion.PairClosureCompiler.readState`: reconstruct a closure coordinate from
+* `Cslib.Circuits.Fusion.PairClosureCompiler.readState`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.pairValues`: reconstruct a closure coordinate from
   finitely many input and pair values.
+* `Cslib.Circuits.Fusion.PairClosureCompiler.joinFormula`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.readFormula`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.updateFormula`: monotone formulas for union trees,
+  coordinate reads, and pair updates.
+* `Cslib.Circuits.Fusion.PairClosureCompiler.updateCircuit`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.circuit`: the straight-line update circuit and its
+  feedback closure.
 * `Cslib.Circuits.Fusion.PairCover.toCyclic`: a finite binary circuit realizing a pair cover.
 
 ## Main results

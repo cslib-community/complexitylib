@@ -25,7 +25,8 @@ sharing and output wiring. Costs count every gadget gate, including gates unused
 ## Main definitions
 
 * `Cslib.Circuits.Signature.withContext`: prepend ambient inputs to every operation's arguments.
-* `Cslib.Circuits.Circuit.withContext`: pass the same ambient inputs to every gate.
+* `Cslib.Circuits.Line.withContext`, `Cslib.Circuits.Circuit.withContext`: pass the same ambient
+  inputs to a gate line or to every gate in a circuit.
 * `Cslib.Circuits.Circuit.simulateWithContext`: replace each operation by a contextual gadget.
 
 ## Main results

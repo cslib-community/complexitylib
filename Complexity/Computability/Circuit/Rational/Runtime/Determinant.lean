@@ -34,12 +34,15 @@ encoding, and, following the original development, for the stages of the dense t
 ## Main definitions
 
 * `Rational.rowEntry`: entry `(i, j)` of a list of rows, `0` when missing.
-* `Rational.rowsOf`: the list of rows of a square matrix.
+* `Rational.tabulateRows`, `Rational.rowsOf`, `Rational.ofRows`, `Rational.squareRows`:
+  conversion and tabulation between square matrices and lists of rows.
+* `Rational.traceTerms`, `Rational.productTerms`, `Rational.stepEntryRows`: the diagonal terms,
+  product terms, and entry formula for one Bird stage on lists of rows.
 * `Rational.stepRows`, `Rational.stagesRows`: one Bird stage, and the iterated stages.
 * `Rational.detRows`: the staged determinant of a list of rows.
 * `Rational.intBits`: the bit length of a sign-magnitude binary integer.
-* `Rational.stageTableBound`: upper bound on the encoded length of any stage table in the first `k`
-  Bird stages.
+* `Rational.stageEntryBound`, `Rational.stageRowBound`, `Rational.stageTableBound`: upper bounds
+  on the encoded lengths of entries, rows, and tables in the first `k` Bird stages.
 
 ## Main results
 
@@ -199,14 +202,18 @@ theorem intBits_eq_length_encIntBin (z : ℤ) :
 
 /-! ### Basic lemmas -/
 
+/-- Looking up entry `(i, j)` of `tabulateRows d g` returns `g i j` when `i < d` and `j < d`, and
+`0` otherwise. -/
 lemma rowEntry_tabulateRows (d : ℕ) (g : ℕ → ℕ → ℤ) (i j : ℕ) :
     rowEntry (tabulateRows d g) i j = if i < d ∧ j < d then g i j else 0 := by
   by_cases hi : i < d <;> by_cases hj : j < d <;>
     simp [rowEntry, tabulateRows, List.getD_eq_getElem?_getD, hi, hj]
 
+/-- The list of rows `rowsOf A` of a `d × d` matrix `A` has length `d`. -/
 @[simp] lemma length_rowsOf {d : ℕ} (A : Matrix (Fin d) (Fin d) ℤ) : (rowsOf A).length = d := by
   simp [rowsOf]
 
+/-- Looking up entry `(i, j)` in `rowsOf A` recovers `A i j`. -/
 lemma rowEntry_rowsOf {d : ℕ} (A : Matrix (Fin d) (Fin d) ℤ) (i j : Fin d) :
     rowEntry (rowsOf A) i j = A i j := by
   simp [rowEntry, rowsOf, List.getD_eq_getElem?_getD]
@@ -462,9 +469,12 @@ theorem natAbs_lt_of_mem_stagesRows {A : List (List ℤ)} {b : ℕ}
 
 /-! ### Bounds in bit length -/
 
+/-- An integer `z` has sign-magnitude bit length `intBits z ≤ e + 1` if and only if
+`z.natAbs < 2 ^ e`. -/
 lemma intBits_le_iff (z : ℤ) (e : ℕ) : intBits z ≤ e + 1 ↔ z.natAbs < 2 ^ e := by
   rw [intBits, Nat.add_le_add_iff_right, Nat.size_le]
 
+/-- Every integer has sign-magnitude bit length at least `1`. -/
 lemma one_le_intBits (z : ℤ) : 1 ≤ intBits z :=
   Nat.le_add_left 1 _
 
@@ -503,18 +513,22 @@ theorem intBits_step_le {A F : List (List ℤ)} {b e : ℕ}
 
 open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
 
+/-- Tabulating a `d × d` list of rows produces `d` rows. -/
 @[simp] lemma length_tabulateRows (d : ℕ) (g : ℕ → ℕ → ℤ) :
     (tabulateRows d g).length = d := by
   simp [tabulateRows]
 
+/-- Every row in `tabulateRows d g` has length `d`. -/
 lemma length_of_mem_tabulateRows {d : ℕ} {g : ℕ → ℕ → ℤ} {row : List ℤ}
     (hrow : row ∈ tabulateRows d g) : row.length = d := by
   obtain ⟨_, -, rfl⟩ := List.mem_map.mp hrow; simp
 
+/-- Every stage table `stagesRows A k` has `A.length` rows. -/
 @[simp] lemma length_stagesRows (A : List (List ℤ)) (k : ℕ) :
     (stagesRows A k).length = A.length := by
   cases k <;> simp [stagesRows_zero, stagesRows_succ, squareRows, stepRows, length_tabulateRows]
 
+/-- Every row in `stagesRows A k` has length `A.length`. -/
 lemma length_of_mem_stagesRows {A : List (List ℤ)} {k : ℕ} {row : List ℤ}
     (hrow : row ∈ stagesRows A k) : row.length = A.length := by
   cases k with

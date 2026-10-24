@@ -24,8 +24,8 @@ invertible block witness.
 
 * `Rectangular.blockEval`: the block evaluation map on `Fin e → Fin q → F`.
 * `Rectangular.blockMatrix`: the corresponding sum of Kronecker products.
-* `Rectangular.componentSpace`, `Rectangular.coefficientMatrix`: the span of a family and the
-  coordinates of its members in a basis of that span.
+* `Rectangular.componentSpace`, `Rectangular.component`, `Rectangular.coefficientMatrix`: the span
+  of a family, its members in that span, and their coordinates in a basis of that span.
 * `Rectangular.imageCombination`, `Rectangular.concatMatrix`: the combined images under several
   maps, and the concatenated coefficient matrix.
 
@@ -75,6 +75,8 @@ def blockEval {w q e : ℕ} (A : Fin w → Matrix (Fin q) (Fin q) F)
     intro δ _
     rw [mul_comm]
 
+/-- If `blockEval A X` is injective with `0 < e` and every `A i` maps `V` into `W`, then
+`finrank F V ≤ finrank F W`. -/
 lemma no_shrunk_subspace {w q e : ℕ} (he : 0 < e)
     (A : Fin w → Matrix (Fin q) (Fin q) F)
     (X : Fin w → Matrix (Fin e) (Fin e) F)
@@ -286,6 +288,7 @@ private lemma blockMatrix_mulVec {w q e : ℕ} (A : Fin w → Matrix (Fin q) (Fi
   intro γ _
   ring
 
+/-- If `blockMatrix A X` is a unit, then `blockEval A X` is injective. -/
 lemma blockEval_injective_of_isUnit {w q e : ℕ}
     (A : Fin w → Matrix (Fin q) (Fin q) F)
     (X : Fin w → Matrix (Fin e) (Fin e) F) (h : IsUnit (blockMatrix A X)) :

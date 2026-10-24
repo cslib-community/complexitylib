@@ -27,7 +27,13 @@ through a union tree.
 
 ## Main definitions
 
-* `Cslib.Circuits.Fusion.PairClosureCompiler.stages`: synchronous pair propagation.
+* `Cslib.Circuits.Fusion.PairClosureCompiler.step`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.stages`: one synchronous pair-propagation step and
+  iterated synchronous pair propagation.
+* `Cslib.Circuits.Fusion.PairClosureCompiler.roundCircuit`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.initialCircuit`,
+  `Cslib.Circuits.Fusion.PairClosureCompiler.stageCircuit`: the single-round update circuit,
+  initial state circuit, and unrolled stage circuit.
 * `Cslib.Circuits.Fusion.PairCover.toCircuit`: an acyclic circuit realizing an unrestricted cover.
 
 ## Main results

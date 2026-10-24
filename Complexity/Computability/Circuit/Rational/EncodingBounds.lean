@@ -134,6 +134,9 @@ private lemma determinant_pow_bound {d b : ℕ} (A : Matrix (Fin d) (Fin d) ℤ)
   have : (0 : ℤ) < 2 ^ (d * d + d * b) := by positivity
   omega
 
+/-- For `d × d` integer matrices `A` (with `A.det ≠ 0`) and `B` whose entries have absolute value
+at most `2 ^ b`, the binary encoding of each entry of `A⁻¹ * B` has length at most
+`4 * (d * d + d * b + 1) + 3`. -/
 lemma normalization_bit_bound {d b : ℕ} (A B : Matrix (Fin d) (Fin d) ℤ) (hA : A.det ≠ 0)
     (hAb : ∀ i j, |A i j| ≤ (2 : ℤ) ^ b) (hBb : ∀ i j, |B i j| ≤ (2 : ℤ) ^ b) (i j : Fin d) :
     (encodeRat (((A.map (Int.castRingHom ℚ))⁻¹ * B.map (Int.castRingHom ℚ)) i j)).length ≤
@@ -174,6 +177,10 @@ private lemma encodeNat_linear (a : ℕ) : (encodeNat a).length ≤ 2 * (a + 1) 
   rw [pow_succ]
   omega
 
+/-- If every entry of every matrix tuple in `H` has encoded length at most `B`, then the encoded
+output `encodeOutput H` has length at most
+`2 * (H.dimension + 1) + 1 + 2 * (H.tuples.length + 1) + 1` plus
+`H.tuples.length * n * H.dimension ^ 2 * B`. -/
 lemma output_length_le {n B : ℕ} (H : Output n)
     (hb : ∀ X ∈ H.tuples, ∀ a i j, (encodeRat (X a i j)).length ≤ B) :
     (encodeOutput H).length ≤ 2 * (H.dimension + 1) + 1 + 2 * (H.tuples.length + 1) + 1 +
@@ -207,6 +214,7 @@ def logarithmic (n s : ℕ) : ℕ :=
 /-- Fixed coefficient bounding the binary logarithm of integral entry magnitudes. -/
 def logConstant : ℕ := 64 + 64 + 3 * 16 * 49153
 
+/-- The entry-magnitude exponent `logarithmic n s` is at most `logConstant * (n + s + 1) ^ 22`. -/
 theorem logarithmic_bound (n s : ℕ) :
     logarithmic n s ≤ logConstant * (n + s + 1) ^ 22 := by
   let m := n + s + 1
@@ -323,6 +331,8 @@ private lemma output_entry_bit_bound (n N e H : ℕ) (hH : 1 ≤ H)
     rw [← he]
     exact tupleAt_bit_bound n N e H _ hH (fun l => by omega) hz a i j
 
+/-- The binary encoding of the hitting list `list n s` has length at most
+`PolynomialBounds.outputConstant * (n + s + 1) ^ 104`. -/
 lemma list_output_bound (n s : ℕ) :
     (encodeOutput (list n s)).length ≤ PolynomialBounds.outputConstant * (n + s + 1) ^ 104 := by
   have hH : 1 ≤ Parameters.gridSize n s := by unfold Parameters.gridSize; omega

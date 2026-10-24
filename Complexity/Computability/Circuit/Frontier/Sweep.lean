@@ -49,10 +49,13 @@ messages are the extra messages and the values on the edges of the frontier
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.Sweep S M`: a sweep of `S` with messages in `M`.
-* `Cslib.Circuits.Frontier.Sweep.transition`: the transition taken by an input at a step.
-* `Cslib.Circuits.Frontier.Sweep.transitionCount`: the number of transitions taken by inputs of
-  `S`, summed over the steps.
+* `Cslib.Circuits.Frontier.Sweep`: a sweep of a set of inputs.
+* `Cslib.Circuits.Frontier.Sweep.newly`, `Cslib.Circuits.Frontier.Sweep.transition`,
+  `Cslib.Circuits.Frontier.Sweep.transitionCount`: the newly revealed coordinates, the
+  transition taken by an input at a step, and the number of transitions summed over the steps.
+* `Cslib.Circuits.Frontier.Sweep.peers`, `Cslib.Circuits.Frontier.Sweep.pastSide`,
+  `Cslib.Circuits.Frontier.Sweep.futureSide`: message classes and their revealed and unrevealed
+  projections.
 
 ## Main results
 

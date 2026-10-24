@@ -26,8 +26,12 @@ This module does not certify a runtime bound.
 
 ## Main definitions
 
-* `Cslib.Circuits.Program.evalVector`: evaluate a program into a vector of gate values.
-* `Cslib.Circuits.Circuit.evalVector`: evaluate all circuit outputs using one gate-value vector.
+* `Cslib.Circuits.Program.evalVector`, `Cslib.Circuits.Program.evalImpl`,
+  `Cslib.Circuits.Program.traceImpl`: evaluate a program into a vector of gate values and
+  provide compiler implementations for `Program.eval` and `Program.trace`.
+* `Cslib.Circuits.Circuit.evalVector`, `Cslib.Circuits.Circuit.evalImpl`: evaluate all
+  circuit outputs using one gate-value vector and provide a compiler implementation for
+  `Circuit.eval`.
 
 ## Main results
 
@@ -72,6 +76,7 @@ def evalImpl {σ : Signature.{v}} {inputCount : Nat} {U : Type u} {gateCount : N
     Fin gateCount → U :=
   (p.evalVector i x).get
 
+/-- Proved compiler replacement of `Program.eval` by `Program.evalImpl`. -/
 @[csimp] theorem eval_eq_evalImpl : @Program.eval = @Program.evalImpl := by
   funext σ n U g p i x
   exact (get_evalVector p i x).symm
@@ -83,6 +88,7 @@ def traceImpl {σ : Signature.{v}} {inputCount gateCount : Nat} {U : Type u}
   | .input j => x j
   | .gate j => p.evalImpl i x j
 
+/-- Proved compiler replacement of `Program.trace` by `Program.traceImpl`. -/
 @[csimp] theorem trace_eq_traceImpl : @Program.trace = @Program.traceImpl := by
   funext σ n g U p i x w
   cases w with
@@ -114,6 +120,7 @@ def evalImpl {σ : Signature.{v}} {inputCount outputCount : Nat} {U : Type u}
     Fin outputCount → U :=
   c.program.traceImpl i x ∘ c.outputs
 
+/-- Proved compiler replacement of `Circuit.eval` by `Circuit.evalImpl`. -/
 @[csimp] theorem eval_eq_evalImpl : @Circuit.eval = @Circuit.evalImpl := by
   funext σ n m U c i x
   unfold Circuit.eval evalImpl

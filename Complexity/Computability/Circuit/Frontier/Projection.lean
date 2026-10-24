@@ -61,9 +61,12 @@ def reindex : Network U ι' V E where
   constraint_congr v x x' α α' hx hα :=
     N.constraint_congr v _ _ α α' (fun i hi => hx (e i) (by simpa using hi)) hα
 
+/-- Reindexing the inputs preserves the underlying multigraph. -/
 @[simp] theorem reindex_toMultigraph : (N.reindex e).toMultigraph = N.toMultigraph :=
   rfl
 
+/-- An assignment satisfies the reindexed network on `x` if and only if it satisfies `N` on
+`x ∘ e`. -/
 theorem satisfies_reindex_iff {x : ι' → U} {α : E → U} :
     (N.reindex e).Satisfies x α ↔ N.Satisfies (x ∘ e) α :=
   Iff.rfl
@@ -80,10 +83,12 @@ private theorem read_reindex : (N.reindex e).read = e '' N.read := by
   rw [e.image_eq_preimage_symm]
   rfl
 
+/-- Reindexing the inputs preserves the number of inputs read at each vertex. -/
 @[simp] theorem ncard_readAt_reindex (v : V) :
     ((N.reindex e).readAt v).ncard = (N.readAt v).ncard := by
   rw [readAt_reindex, ncard_image_of_injective _ e.injective]
 
+/-- Reindexing the inputs preserves the total number of inputs read. -/
 @[simp] theorem ncard_read_reindex : (N.reindex e).read.ncard = N.read.ncard := by
   rw [read_reindex, ncard_image_of_injective _ e.injective]
 
@@ -109,6 +114,7 @@ def hide : Network U ι V E where
     · exact hx i hi
     · rfl
 
+/-- Hiding inputs preserves the underlying multigraph. -/
 @[simp] theorem hide_toMultigraph : N.hide.toMultigraph = N.toMultigraph :=
   rfl
 
@@ -133,9 +139,11 @@ theorem accepted_hide [Nonempty U] :
   simp only [accepted, mem_ofPred_eq, satisfies_hide_iff]
   exact exists_comm
 
+/-- The visible inputs read at a vertex `v` in `N.hide` are the `.inl` inputs read at `v` in `N`. -/
 theorem readAt_hide (v : V) : N.hide.readAt v = Sum.inl ⁻¹' N.readAt v :=
   rfl
 
+/-- The visible inputs read in `N.hide` are the `.inl` inputs read in `N`. -/
 theorem read_hide : N.hide.read = Sum.inl ⁻¹' N.read :=
   rfl
 

@@ -20,7 +20,15 @@ if it also preserves every listed pair it contradicts a cover above a target poi
 
 ## Main definitions
 
-* `Cslib.Circuits.Fusion.PairCertificate.sets`: the three sets per pair and fixed empty set.
+* `Cslib.Circuits.Fusion.PairCertificate.size`,
+  `Cslib.Circuits.Fusion.PairCertificate.left`,
+  `Cslib.Circuits.Fusion.PairCertificate.right`,
+  `Cslib.Circuits.Fusion.PairCertificate.inter`: the certificate bit count and the indices for each
+  pair's first set, second set, and intersection.
+* `Cslib.Circuits.Fusion.PairCertificate.sets`,
+  `Cslib.Circuits.Fusion.PairCertificate.label`,
+  `Cslib.Circuits.Fusion.PairCertificate.pointLabels`: the three sets per pair and fixed empty set,
+  extended certificate labels, and point-membership labels.
 * `Cslib.Circuits.Fusion.PairCertificate.Invalid`: the grouped consistency violations.
 * `Cslib.Circuits.Fusion.PairCertificate.BreaksPair`: failure of pair preservation.
 
@@ -64,12 +72,15 @@ def label (y : Fin (size pairs) → Bool) : Option (Fin (size pairs)) → Bool
   | none => false
   | some i => y i
 
+/-- The set at `left pairs i` is the first component of the `i`-th pair. -/
 @[simp] theorem sets_left (i : Fin pairs.length) :
     sets pairs (some (left pairs i)) = (pairs.get i).1 := Fin.append_left ..
 
+/-- The set at `right pairs i` is the second component of the `i`-th pair. -/
 @[simp] theorem sets_right (i : Fin pairs.length) :
     sets pairs (some (right pairs i)) = (pairs.get i).2 := by simp [sets, right]
 
+/-- The set at `inter pairs i` is the intersection of the two components of the `i`-th pair. -/
 @[simp] theorem sets_inter (i : Fin pairs.length) :
     sets pairs (some (inter pairs i)) = (pairs.get i).1 ∩ (pairs.get i).2 := by
   simp only [sets, inter, Fin.append_right]
@@ -113,6 +124,7 @@ theorem exists_filter_of_not_invalid {n : ℕ} (sources : Fin n → Set U) (x : 
 noncomputable def pointLabels (u : U) (i : Fin (size pairs)) : Bool :=
   @decide (u ∈ sets pairs (some i)) (Classical.propDecidable _)
 
+/-- The extended point certificate labels `i` by `true` if and only if `u ∈ sets pairs i`. -/
 @[simp] theorem label_pointLabels (u : U) (i : Option (Fin (size pairs))) :
     label pairs (pointLabels pairs u) i = true ↔ u ∈ sets pairs i := by
   cases i with

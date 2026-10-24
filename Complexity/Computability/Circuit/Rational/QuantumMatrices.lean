@@ -28,6 +28,8 @@ entrywise gives a matrix representation of this division ring over a commutative
   isomorphism onto matrices of Hahn series.
 * `QuantumMatrices.weyl`, `QuantumMatrices.weylUnit`: the Weyl matrix `D^a S^b` and its unit.
 * `QuantumMatrices.fourierCoeff`: the Fourier coefficient of a matrix at `(a, b)`.
+* `QuantumLift.Exponents`, `QuantumLift.Ambient`, `QuantumLift.monomialUnit`: the lexicographic
+  exponent group `ℤ ×ₗ ℤ`, the ambient matrix Hahn-series ring, and its Weyl monomial units.
 * `QuantumLift.divisionSubring`: the Weyl-monomial Hahn series, a division ring.
 * `QuantumLift.lift`, `QuantumLift.liftD`: the Fourier lift of a matrix.
 * `QuantumLift.representation`: the matrix representation of the division subring.
@@ -80,6 +82,7 @@ def entry (x : HahnSeries Γ (Matrix ι ι R)) (i j : ι) : HahnSeries Γ R :=
   x.map (⟨fun A => A i j, rfl⟩ : ZeroHom (Matrix ι ι R) R)
 
 omit [AddCommGroup Γ] [IsOrderedAddMonoid Γ] [Fintype ι] [DecidableEq ι] in
+/-- The `a`-th Hahn-series coefficient of `entry x i j` is the `(i, j)` entry of `x.coeff a`. -/
 @[simp] lemma entry_coeff (x : HahnSeries Γ (Matrix ι ι R)) (i j : ι) (a : Γ) :
     (entry x i j).coeff a = x.coeff a i j := rfl
 
@@ -110,6 +113,7 @@ def split : HahnSeries Γ (Matrix ι ι R) →+* Matrix ι ι (HahnSeries Γ R) 
     rw [Finset.sum_comm]
     rfl
 
+/-- Splitting a matrix-valued Hahn series into its scalar entries is injective. -/
 lemma split_injective : Function.Injective (split (Γ := Γ) (R := R) (ι := ι)) := by
   intro x y h
   ext a i j
@@ -130,10 +134,12 @@ def weyl (a b : ZMod d) : Matrix (ZMod d) (ZMod d) K :=
   fun i j => if i = j + b then χ (a * i) else 0
 
 omit [NeZero d] in
+/-- The `(0, 0)` Weyl matrix is the identity matrix. -/
 @[simp] lemma weyl_zero : weyl χ 0 0 = 1 := by
   ext i j
   simp [weyl, Matrix.one_apply]
 
+/-- Two Weyl matrices multiply to a scalar multiple of the Weyl matrix at the sum of exponents. -/
 lemma weyl_mul (a b c e : ZMod d) :
     weyl χ a b * weyl χ c e = χ (-c * b) • weyl χ (a + c) (b + e) := by
   classical
@@ -153,6 +159,7 @@ lemma weyl_mul (a b c e : ZMod d) :
     simp [weyl, h]
   · simp
 
+/-- Right inverse identity for the Weyl matrix `weyl χ a b`. -/
 lemma weyl_inverse_right (a b : ZMod d) :
     weyl χ a b * (χ (-a * b) • weyl χ (-a) (-b)) = 1 := by
   rw [Matrix.mul_smul, weyl_mul, add_neg_cancel, add_neg_cancel, weyl_zero, smul_smul,
@@ -160,6 +167,7 @@ lemma weyl_inverse_right (a b : ZMod d) :
   have h : -a * b + -(-a) * b = 0 := by ring
   rw [h, AddChar.map_zero_eq_one, one_smul]
 
+/-- Left inverse identity for the Weyl matrix `weyl χ a b`. -/
 lemma weyl_inverse_left (a b : ZMod d) :
     (χ (-a * b) • weyl χ (-a) (-b)) * weyl χ a b = 1 := by
   rw [Matrix.smul_mul, weyl_mul, neg_add_cancel, neg_add_cancel, weyl_zero, smul_smul,
@@ -172,8 +180,10 @@ def weylUnit (a b : ZMod d) : (Matrix (ZMod d) (ZMod d) K)ˣ :=
   ⟨weyl χ a b, χ (-a * b) • weyl χ (-a) (-b),
     weyl_inverse_right χ a b, weyl_inverse_left χ a b⟩
 
+/-- The underlying matrix of `weylUnit χ a b` is `weyl χ a b`. -/
 @[simp] lemma weylUnit_val (a b : ZMod d) : (weylUnit χ a b : Matrix _ _ K) = weyl χ a b := rfl
 
+/-- The `(0, 0)` Weyl unit is `1`. -/
 @[simp] lemma weylUnit_zero : weylUnit χ 0 0 = 1 := by
   apply Units.ext
   exact weyl_zero χ
@@ -252,10 +262,12 @@ def monomialUnit (g : Exponents) : (Matrix (ZMod d) (ZMod d) K)ˣ :=
   weylUnit χ (ofLex g).1 (ofLex g).2
 
 omit [CharZero K] in
+/-- The Weyl monomial unit at exponent `0` is `1`. -/
 lemma monomialUnit_zero : monomialUnit χ 0 = 1 := by
   simp [monomialUnit]
 
 omit [CharZero K] in
+/-- The product of two Weyl monomial units is a scalar multiple of the unit at their sum. -/
 lemma monomialUnit_mul (g h : Exponents) :
     ∃ c : K, (monomialUnit χ g : Matrix (ZMod d) (ZMod d) K) *
         (monomialUnit χ h : Matrix (ZMod d) (ZMod d) K) =
@@ -277,6 +289,7 @@ def lift (R : Matrix (ZMod d) (ZMod d) K) : Ambient (K := K) (d := d) :=
     HahnSeries.single (toLex ((a.val : ℤ), (b.val : ℤ))) (fourierCoeff χ R a b • weyl χ a b)
 
 omit [CharZero K] in
+/-- The Fourier lift of any matrix belongs to `divisionSubring χ`. -/
 lemma lift_mem (R : Matrix (ZMod d) (ZMod d) K) : lift χ R ∈ divisionSubring χ := by
   apply Subring.sum_mem
   intro a ha

@@ -71,6 +71,8 @@ theorem edgeCut_union_subset (S T : Set V) : G.edgeCut (S ∪ T) ⊆ G.edgeCut S
   simp only [mem_edgeCut, mem_union]
   tauto
 
+/-- The cardinality of the edge cut of a union is at most the sum of the cardinalities of the edge
+cuts. -/
 theorem ncard_edgeCut_union_le [Finite E] (S T : Set V) :
     (G.edgeCut (S ∪ T)).ncard ≤ (G.edgeCut S).ncard + (G.edgeCut T).ncard :=
   (ncard_le_ncard (G.edgeCut_union_subset S T)).trans (ncard_union_le _ _)

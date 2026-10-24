@@ -50,6 +50,8 @@ noncomputable def Atom.failures (a : Atom σ U) (I : Interpretation σ U)
     (P : W → U → Prop) (samples : Finset W) : Finset W :=
   @Finset.filter W (fun t => ¬ a.Preserves I (P t)) (Classical.decPred _) samples
 
+/-- A witness `t` belongs to `a.failures I P samples` if and only if `t ∈ samples` and `a` does
+not preserve `P t` under `I`. -/
 @[simp] theorem Atom.mem_failures {a : Atom σ U} {samples : Finset W} {t : W} :
     t ∈ a.failures I P samples ↔ t ∈ samples ∧ ¬ a.Preserves I (P t) := by
   simp only [failures, Finset.mem_filter]

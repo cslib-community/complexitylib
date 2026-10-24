@@ -46,9 +46,11 @@ its component (`Frontier.Ledger.exists_ncard_le`).
 
 * `Cslib.Circuits.Frontier.Live`: the live wires of a program with erased special gates.
 * `Cslib.Circuits.Frontier.liveCircuit`: the erased program with every live wire as an output.
-* `Cslib.Circuits.Frontier.liveNetwork`: its graph and sites, as a network without constraints.
+* `Cslib.Circuits.Frontier.liveNetwork`, `Cslib.Circuits.Frontier.wiresIn`: its graph and
+  sites, as a network without constraints, and the wires whose vertices lie in a set.
 * `Cslib.Circuits.Frontier.Ledger.network`: its constraint network on a guess.
-* `Cslib.Circuits.Frontier.Ledger.sweep`: the sweep of a program with a ledger.
+* `Cslib.Circuits.Frontier.Ledger.extra`, `Cslib.Circuits.Frontier.Ledger.sweep`: the extra
+  message and sweep of a program with a ledger.
 
 ## Main results
 

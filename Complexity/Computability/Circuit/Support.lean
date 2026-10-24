@@ -23,7 +23,10 @@ essentially (`EssentialAt`) therefore reaches an output of every circuit computi
 ## Main definitions
 
 * `Cslib.Circuits.EssentialAt`: coordinates whose change can change a function.
-* `Cslib.Circuits.Program.wireSupport`, `Cslib.Circuits.Circuit.inputSupport`.
+* `Cslib.Circuits.supportInterpretation`, `Cslib.Circuits.Line.inputSupport`,
+  `Cslib.Circuits.Program.gateSupport`, `Cslib.Circuits.Program.wireSupport`,
+  `Cslib.Circuits.Circuit.outputSupport`, `Cslib.Circuits.Circuit.inputSupport`: the support
+  interpretation and the structural input supports of lines, gates, wires, outputs, and circuits.
 
 ## Main results
 

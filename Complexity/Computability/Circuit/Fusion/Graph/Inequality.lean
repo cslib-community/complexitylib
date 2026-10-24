@@ -21,7 +21,8 @@ length `k` injectively labels the vertices by `k` bits. For `n`-bit vertices thi
 ## Main definitions
 
 * `Cslib.Circuits.Fusion.Graph.inequality`: the bipartite graph of unequal vertex labels.
-* `Cslib.Circuits.Fusion.Graph.diagonal`: a diagonal point of its complement.
+* `Cslib.Circuits.Fusion.Graph.diagonal`, `Cslib.Circuits.Fusion.Graph.inequalityEdge`: a diagonal
+  point of the complement and a canonical edge of the inequality graph.
 
 ## Main results
 

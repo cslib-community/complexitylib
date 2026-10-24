@@ -65,11 +65,22 @@ inequalities are proved in `Complexity/Computability/Circuit/Frontier/Compiler.l
 
 * `Cslib.Circuits.Frontier.Compiler.Reach`, `Cslib.Circuits.Frontier.Compiler.Signal`,
   `Cslib.Circuits.Frontier.Compiler.Slot`, `Cslib.Circuits.Frontier.Compiler.Consumer`,
-  `Cslib.Circuits.Frontier.Compiler.Junction`: reachable wires, argument slots, consumers, and
-  fan-out junctions.
+  `Cslib.Circuits.Frontier.Compiler.consumed`, `Cslib.Circuits.Frontier.Compiler.fanout`,
+  `Cslib.Circuits.Frontier.Compiler.Junction`,
+  `Cslib.Circuits.Frontier.Compiler.junctionEquiv`: reachable wires, argument slots,
+  consumers, and fan-out junctions.
 * `Cslib.Circuits.Frontier.Compiler.Vertex`, `Cslib.Circuits.Frontier.Compiler.Edge`,
-  `Cslib.Circuits.Frontier.Compiler.graph`: the multigraph of a circuit.
-* `Cslib.Circuits.Frontier.Compiler.network`: the constraint network of a circuit.
+  `Cslib.Circuits.Frontier.Compiler.Vertex.equiv`,
+  `Cslib.Circuits.Frontier.Compiler.Edge.equiv`, `Cslib.Circuits.Frontier.Compiler.owner`,
+  `Cslib.Circuits.Frontier.Compiler.feeder`, `Cslib.Circuits.Frontier.Compiler.src`,
+  `Cslib.Circuits.Frontier.Compiler.tgt`, `Cslib.Circuits.Frontier.Compiler.Edge.signal`,
+  `Cslib.Circuits.Frontier.Compiler.graph`,
+  `Cslib.Circuits.Frontier.Compiler.deliverEdge`, `Cslib.Circuits.Frontier.Compiler.argEdge`,
+  `Cslib.Circuits.Frontier.Compiler.outEdge`, `Cslib.Circuits.Frontier.Compiler.head`: the
+  multigraph of a circuit and its edge routing maps.
+* `Cslib.Circuits.Frontier.Compiler.emit`, `Cslib.Circuits.Frontier.Compiler.Constraint`,
+  `Cslib.Circuits.Frontier.Compiler.site`, `Cslib.Circuits.Frontier.Compiler.network`: the
+  constraint network of a circuit.
 
 ## Main results
 
@@ -203,9 +214,11 @@ def Edge.equiv : Edge c ≃ Junction c ⊕ Junction c where
   left_inv e := by cases e <;> rfl
   right_inv e := by rcases e with j | j <;> rfl
 
+/-- A circuit has finitely many vertices. -/
 instance : Finite (Vertex c) :=
   .of_equiv _ Vertex.equiv.symm
 
+/-- A circuit has finitely many edges. -/
 instance : Finite (Edge c) :=
   .of_equiv _ Edge.equiv.symm
 
@@ -248,9 +261,11 @@ noncomputable def graph : Multigraph (Vertex c) (Edge c) where
   src := src
   tgt := tgt
 
+/-- The source map of `graph c` is `src`. -/
 @[simp] theorem graph_src : (graph c).src = src :=
   rfl
 
+/-- The target map of `graph c` is `tgt`. -/
 @[simp] theorem graph_tgt : (graph c).tgt = tgt :=
   rfl
 
@@ -272,15 +287,19 @@ noncomputable abbrev outEdge (o : Fin m) : Edge c :=
 def head (w : Signal c) : Edge c :=
   .feed ⟨w, ⟨0, fanout_pos w⟩⟩
 
+/-- The delivery edge of a consumer `t` carries the signal `consumed t`. -/
 @[simp] theorem signal_deliverEdge (t : Consumer c) : (deliverEdge t).signal = consumed t :=
   fst_junctionEquiv_symm t
 
+/-- The target of the delivery edge of a consumer `t` is `owner t`. -/
 @[simp] theorem tgt_deliverEdge (t : Consumer c) : tgt (deliverEdge t) = owner t := by
   simp [deliverEdge, tgt]
 
+/-- The source of the first edge of a signal `w` is `.signal w`. -/
 @[simp] theorem src_head (w : Signal c) : src (head w) = .signal w :=
   rfl
 
+/-- The first edge of a signal `w` carries `w`. -/
 @[simp] theorem signal_head (w : Signal c) : (head w).signal = w :=
   rfl
 
@@ -386,9 +405,11 @@ noncomputable def network : Network U (Fin n) (Vertex c) (Edge c) where
       rw [← hα (outEdge c o) (Or.inr (tgt_deliverEdge (.inr o)))]
       exact h
 
+/-- The underlying multigraph of `network c I Acc` is `graph c`. -/
 @[simp] theorem network_toMultigraph : (network c I Acc).toMultigraph = graph c :=
   rfl
 
+/-- The input-site map of `network c I Acc` is `site c`. -/
 @[simp] theorem network_site : (network c I Acc).site = site c :=
   rfl
 

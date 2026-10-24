@@ -21,6 +21,11 @@ again needs a large circuit (`Negative.scheme`). Either way the circuit is large
 (`choose_le_or_pow_le_mul_size`), with explicit bounds (`lt_size_of_computes_clique`)
 [Razborov][Razborov1985], [Arora and Barak, Theorem 14.7][AroraBarak09].
 
+## Main definitions
+
+* `Cslib.Circuits.Monotone.negativeGateCap`: the bound on negative errors charged to any gate.
+* `Cslib.Circuits.Monotone.outputApproximator`: the approximator at the output of a circuit.
+
 ## Main results
 
 * `Cslib.Circuits.Monotone.choose_le_or_pow_le_mul_size`: the dichotomy.

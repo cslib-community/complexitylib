@@ -26,6 +26,7 @@ it makes no unproved assumption about graph encodability or incompressibility.
 
 ## Main definitions
 
+* `Cslib.Circuits.Fusion.Graph.rowPairs`: the row-and-neighborhood pair for each left vertex.
 * `Cslib.Circuits.Fusion.Graph.rowCover`: a worst-case cover with one pair per row.
 * `Cslib.Circuits.Fusion.Graph.smallCoverProbability`: uniform probability of a small cover.
 

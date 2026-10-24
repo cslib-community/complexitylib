@@ -19,7 +19,9 @@ Separate addition costs and arbitrary uniform weights are also provided.
 
 ## Main definitions
 
-* `Cslib.Circuits.SumOfTerms.signature`: additions and nullary dictionary terms.
+* `Cslib.Circuits.SumOfTerms.Op`, `Cslib.Circuits.SumOfTerms.Op.arity`,
+  `Cslib.Circuits.SumOfTerms.signature`: operations, arities, and signature for additions and
+  nullary dictionary terms.
 * `Cslib.Circuits.SumOfTerms.interpretation`: interpret the dictionary in an additive carrier.
 * `Cslib.Circuits.SumOfTerms.dictionaryCost`, `Cslib.Circuits.SumOfTerms.termCost`: term weights.
 * `Cslib.Circuits.SumOfTerms.addCost`, `Cslib.Circuits.SumOfTerms.weightedCost`: addition counts
@@ -62,9 +64,11 @@ def interpretation {T V : Type*} [Add V] (value : T → V) : Interpretation (sig
   | .add, args => args 0 + args 1
   | .term t, _ => value t
 
+/-- Interpreting `.add` adds its two arguments in `V`. -/
 @[simp] theorem interpretation_add {T V : Type*} [Add V] (value : T → V)
     (args : Fin 2 → V) : interpretation value .add args = args 0 + args 1 := rfl
 
+/-- Interpreting `.term t` evaluates the dictionary term `t` via `value`. -/
 @[simp] theorem interpretation_term {T V : Type*} [Add V] (value : T → V) (t : T)
     (args : Fin 0 → V) : interpretation value (.term t) args = value t := rfl
 
@@ -73,9 +77,11 @@ def dictionaryCost {T : Type*} (weight : T → ℕ) : Op T → ℕ
   | .add => 0
   | .term t => weight t
 
+/-- Addition has `dictionaryCost` zero. -/
 @[simp] theorem dictionaryCost_add {T : Type*} (weight : T → ℕ) :
     dictionaryCost weight .add = 0 := rfl
 
+/-- The `dictionaryCost` of `.term t` is `weight t`. -/
 @[simp] theorem dictionaryCost_term {T : Type*} (weight : T → ℕ) (t : T) :
     dictionaryCost weight (.term t) = weight t := rfl
 

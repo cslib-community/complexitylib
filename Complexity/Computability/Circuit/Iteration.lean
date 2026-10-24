@@ -109,6 +109,7 @@ variable {I : Interpretation σ U} {n : ℕ}
 def stages (q : ℕ → Set ((Fin n → U) → U)) (t : ℕ) : Set ((Fin n → U) → U) :=
   ⋃ j ∈ Finset.range (t + 1), q j
 
+/-- At stage `0`, `stages q 0` is `q 0`. -/
 @[simp] theorem stages_zero (q : ℕ → Set ((Fin n → U) → U)) : stages q 0 = q 0 := by
   simp [stages]
 
@@ -116,6 +117,7 @@ private theorem stages_succ (q : ℕ → Set ((Fin n → U) → U)) (t : ℕ) :
     stages q (t + 1) = stages q t ∪ q (t + 1) := by
   simp [stages, Finset.range_add_one, Set.union_comm]
 
+/-- For every `j ≤ t`, stage `q j` is contained in `stages q t`. -/
 theorem subset_stages (q : ℕ → Set ((Fin n → U) → U)) {j t : ℕ} (hj : j ≤ t) :
     q j ⊆ stages q t := fun _ hf =>
   Set.mem_iUnion.mpr ⟨j, Set.mem_iUnion.mpr ⟨Finset.mem_range.mpr (by omega), hf⟩⟩

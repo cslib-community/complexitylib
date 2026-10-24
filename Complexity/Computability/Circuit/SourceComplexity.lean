@@ -108,6 +108,8 @@ theorem Circuit.ComputesFrom.append {c : Circuit σ n m} {d : Circuit σ n p}
     (c.append d).ComputesFrom I (fun x => Fin.append (f x) (g x)) sources := fun x => by
   rw [Circuit.eval_append, hc x, hd x]
 
+/-- Computing from the inclusion `Subtype.val` of a subset `S` is equivalent to
+`c.ComputesOn I S f`. -/
 @[simp] theorem Circuit.computesFrom_subtype_iff (c : Circuit σ n m)
     (S : Set (Fin n → U)) (f : (Fin n → U) → Fin m → U) :
     c.ComputesFrom I (fun x : S => f x) Subtype.val ↔ c.ComputesOn I S f := by
@@ -125,16 +127,21 @@ noncomputable def ecomplexityFrom (I : Interpretation σ U) (cost : σ.Op → �
     (target : X → Fin m → U) (sources : X → Fin n → U) : ℕ∞ :=
   ⨅ c : {c : Circuit σ n m // c.ComputesFrom I target sources}, (c.1.program.cost cost : ℕ∞)
 
+/-- Every circuit computing `target` from `sources` bounds `ecomplexityFrom` by its weighted
+cost. -/
 theorem ecomplexityFrom_le_of_computesFrom (c : Circuit σ n m)
     (hc : c.ComputesFrom I target sources) :
     ecomplexityFrom I cost target sources ≤ c.program.cost cost :=
   iInf_le (fun c : {c // c.ComputesFrom I target sources} => (c.1.program.cost cost : ℕ∞)) ⟨c, hc⟩
 
+/-- `ecomplexityFrom` is finite (`≠ ⊤`) if and only if some circuit computes `target` from
+`sources`. -/
 theorem ecomplexityFrom_ne_top_iff :
     ecomplexityFrom I cost target sources ≠ ⊤ ↔
       ∃ c : Circuit σ n m, c.ComputesFrom I target sources := by
   rw [ecomplexityFrom, ENat.iInf_natCast_ne_top, nonempty_subtype]
 
+/-- `ecomplexityFrom` is `⊤` if and only if no circuit computes `target` from `sources`. -/
 @[simp] theorem ecomplexityFrom_eq_top_iff :
     ecomplexityFrom I cost target sources = ⊤ ↔
       ¬ ∃ c : Circuit σ n m, c.ComputesFrom I target sources := by
@@ -186,6 +193,7 @@ theorem ecomplexityFrom_map_eq (h : Homomorphism I J) (hinj : Function.Injective
       ecomplexityFrom I weight target sources := by
   simp only [ecomplexityFrom, iInf_subtype, Circuit.computesFrom_map_iff _ h hinj]
 
+/-- `ecomplexityFrom` is monotone in the operation cost weights. -/
 theorem ecomplexityFrom_mono_cost (h : ∀ op, cost op ≤ cost' op) :
     ecomplexityFrom I cost target sources ≤ ecomplexityFrom I cost' target sources :=
   le_ecomplexityFrom_iff.mpr fun c hc =>
@@ -197,6 +205,7 @@ theorem ecomplexityFrom_mono_cost (h : ∀ op, cost op ≤ cost' op) :
   apply nonpos_iff_eq_zero.mp
   exact ecomplexityFrom_le_of_computesFrom (Circuit.wiring σ select) (fun _ => rfl)
 
+/-- Computing `sources` from `sources` itself has weighted complexity `0`. -/
 @[simp] theorem ecomplexityFrom_self (sources : X → Fin n → U) :
     ecomplexityFrom I cost sources sources = 0 :=
   ecomplexityFrom_wiring sources id

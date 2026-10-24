@@ -44,6 +44,9 @@ the quotient by at most `d log₂ |V|` edges (`Compression.exists_width_le`).
 * `Cslib.Circuits.Frontier.Multigraph.Compression`: a partition into ordered blocks, with the
   invariants of merging.
 * `Cslib.Circuits.Frontier.Multigraph.Compression.Saturated`: no merge applies.
+* `Cslib.Circuits.Frontier.Multigraph.Compression.blockOf`,
+  `Cslib.Circuits.Frontier.Multigraph.Compression.external`: the block of a vertex and the external
+  edges between distinct blocks.
 * `Cslib.Circuits.Frontier.Multigraph.Compression.quotient`: the multigraph on the blocks.
 
 ## Main results
@@ -266,9 +269,11 @@ theorem exists_saturated [Finite V] [Finite E] (hG : G.MaxDegreeLE d) :
 noncomputable def blockOf (v : V) : c.blocks :=
   ⟨(c.exists_mem v).choose, (c.exists_mem v).choose_spec.1⟩
 
+/-- Every vertex belongs to its assigned block. -/
 theorem mem_blockOf (v : V) : v ∈ (c.blockOf v).1 :=
   (c.exists_mem v).choose_spec.2
 
+/-- A vertex belongs to a block `B` if and only if `c.blockOf v = B`. -/
 theorem mem_iff_blockOf_eq {v : V} {B : c.blocks} : v ∈ B.1 ↔ c.blockOf v = B :=
   ⟨fun h => Subtype.ext (c.eq_of_mem _ (c.blockOf v).2 _ B.2 v (c.mem_blockOf v) h),
     fun h => h ▸ c.mem_blockOf v⟩
@@ -284,6 +289,7 @@ theorem disjoint_of_ne {B B' : c.blocks} (h : B ≠ B') :
   disjoint_left.mpr fun _ hv hv' =>
     h ((c.mem_iff_blockOf_eq.mp hv).symm.trans (c.mem_iff_blockOf_eq.mp hv'))
 
+/-- An edge lies in the cut of a block `B` exactly when only one of its endpoints lies in `B`. -/
 theorem mem_edgeCut_block {B : c.blocks} {e : E} :
     e ∈ G.edgeCut {v | v ∈ B.1} ↔ ¬(c.blockOf (G.src e) = B ↔ c.blockOf (G.tgt e) = B) := by
   simp only [mem_edgeCut, mem_ofPred_eq, c.mem_iff_blockOf_eq]
@@ -332,12 +338,15 @@ noncomputable def quotient : Multigraph c.blocks c.external where
   src e := c.blockOf (G.src e.1)
   tgt e := c.blockOf (G.tgt e.1)
 
+/-- The source of an external edge in the quotient is the block of its source in `G`. -/
 @[simp] theorem quotient_src (e : c.external) : c.quotient.src e = c.blockOf (G.src e.1) :=
   rfl
 
+/-- The target of an external edge in the quotient is the block of its target in `G`. -/
 @[simp] theorem quotient_tgt (e : c.external) : c.quotient.tgt e = c.blockOf (G.tgt e.1) :=
   rfl
 
+/-- The quotient multigraph is loopless. -/
 theorem quotient_loopless : c.quotient.Loopless :=
   fun e => e.2
 
@@ -363,6 +372,7 @@ theorem ncard_incidenceSet_quotient (B : c.blocks) :
   rw [← edgeCut_singleton _ c.quotient_loopless, ← c.ncard_edgeCut_preimage,
     c.preimage_blockOf_singleton]
 
+/-- Every block in the quotient multigraph has degree at most `d`. -/
 theorem quotient_maxDegreeLE [Finite E] : c.quotient.MaxDegreeLE d := fun B =>
   (c.ncard_incidenceSet_quotient B).trans_le (c.ncard_edgeCut_le _ B.2)
 

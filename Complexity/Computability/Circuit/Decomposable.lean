@@ -53,9 +53,13 @@ exponentially large.
 
 ## Main definitions
 
-* `Cslib.Circuits.DecomposableDAG`: a smooth decomposable DAG.
-* `Cslib.Circuits.DecomposableDAG.accepted`: the set it represents.
-* `Cslib.Circuits.DecomposableDAG.Occurs`: the nodes on accepting certificates.
+* `Cslib.Circuits.DecomposableDAG.Gate`, `Cslib.Circuits.DecomposableDAG`: a smooth
+  decomposable DAG and its node gates.
+* `Cslib.Circuits.DecomposableDAG.accepts`, `Cslib.Circuits.DecomposableDAG.accepted`: the
+  inputs accepted by a node and the set represented by the DAG.
+* `Cslib.Circuits.DecomposableDAG.Occurs`, `Cslib.Circuits.DecomposableDAG.contexts`,
+  `Cslib.Circuits.DecomposableDAG.stops`: nodes on accepting certificates, node contexts,
+  and threshold stopping nodes.
 * `Cslib.Circuits.DecomposableDAG.unionEdges`, `DecomposableDAG.products`,
   `DecomposableDAG.size`: the size of a DAG.
 
@@ -143,6 +147,7 @@ def accepts (v : N) : Set (ι → U) :=
 def accepted : Set (ι → U) :=
   P.accepts P.root
 
+/-- Acceptance at a node `v` depends only on the coordinates in `P.scope v`. -/
 theorem accepts_congr {v : N} {x y : ι → U} (h : EqOn x y (P.scope v)) :
     x ∈ P.accepts v ↔ y ∈ P.accepts v := by
   change _ ∈ P.values v ↔ _ ∈ P.values v

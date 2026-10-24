@@ -82,6 +82,7 @@ private lemma val_finEquiv {m : ℕ} [NeZero m] (i : Fin m) : (ZMod.finEquiv m i
   | zero => exact (NeZero.ne 0 rfl).elim
   | succ m => rfl
 
+/-- `(ZMod.finEquiv m).symm` preserves the underlying natural-number value. -/
 lemma val_finEquiv_symm {m : ℕ} [NeZero m] (z : ZMod m) :
     ((ZMod.finEquiv m).symm z).val = z.val := by
   rw [← val_finEquiv, RingEquiv.apply_symm_apply]
@@ -159,10 +160,12 @@ def coeffRow (c : ℤ) (k : ℕ) : List ℤ :=
 def coeffRows (c : ℤ) (M : ℕ) : List (List ℤ) :=
   (List.range M).map (coeffRow c)
 
+/-- `shiftAddRow c l` has length `l.length + 1`. -/
 @[simp] lemma length_shiftAddRow (c : ℤ) (l : List ℤ) :
     (shiftAddRow c l).length = l.length + 1 := by
   simp [shiftAddRow]
 
+/-- The `i`-th entry of `shiftAddRow c l` is `(0 :: l).getD i 0 + c * l.getD i 0`. -/
 lemma getD_shiftAddRow (c : ℤ) (l : List ℤ) (i : ℕ) :
     (shiftAddRow c l).getD i 0 = (0 :: l).getD i 0 + c * l.getD i 0 := by
   rcases Nat.lt_or_ge i (l.length + 1) with h | h
@@ -172,11 +175,14 @@ lemma getD_shiftAddRow (c : ℤ) (l : List ℤ) (i : ℕ) :
       List.getD_eq_default _ _ (by omega)]
     simp
 
+/-- The zeroth coefficient row is `[1]`. -/
 @[simp] lemma coeffRow_zero (c : ℤ) : coeffRow c 0 = [1] := rfl
 
+/-- The `(k + 1)`-th coefficient row is `shiftAddRow c` applied to the `k`-th row. -/
 lemma coeffRow_succ (c : ℤ) (k : ℕ) : coeffRow c (k + 1) = shiftAddRow c (coeffRow c k) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- `coeffRow c k` has length `k + 1`. -/
 @[simp] lemma length_coeffRow (c : ℤ) (k : ℕ) : (coeffRow c k).length = k + 1 := by
   induction k with
   | zero => rfl
@@ -198,6 +204,8 @@ theorem getD_coeffRow_eq (c : ℤ) (k i : ℕ) :
     (coeffRow c k).getD i 0 = c ^ (k - i) * (k.choose i : ℤ) := by
   rw [getD_coeffRow, coeff_X_add_C_pow]
 
+/-- Reading row `k` and column `i` of `coeffRows c M` gives `(coeffRow c k).getD i 0` for
+`k < M`. -/
 lemma rowEntry_coeffRows (c : ℤ) (M k i : ℕ) :
     rowEntry (coeffRows c M) k i = if k < M then (coeffRow c k).getD i 0 else 0 := by
   unfold rowEntry coeffRows
@@ -227,6 +235,7 @@ def testEntry (M N : ℕ) (minus plus : List (List ℤ)) (t : ℤ) (u v : ℕ) :
 def testRows (M N : ℕ) (a t : ℤ) : List (List ℤ) :=
   tabulateRows M (testEntry M N (coeffRows (-a) M) (coeffRows a M) t)
 
+/-- `testEntry` on `coeffRows (-a) M` and `coeffRows a M` equals `IntegralTest.padded`. -/
 theorem testEntry_eq (M N : ℕ) (a t : ℤ) (u v : Fin M) :
     testEntry M N (coeffRows (-a) M) (coeffRows a M) t u v = IntegralTest.padded M N a t u v := by
   unfold testEntry IntegralTest.padded IntegralTest.full
@@ -256,6 +265,7 @@ private theorem rowEntry_testRows_integerTest (N e : ℕ) (a t : ℤ)
   rw [← val_finEquiv_symm u, ← val_finEquiv_symm v, rowEntry_testRows]
   rfl
 
+/-- `testRows M N a t` has `M` rows. -/
 @[simp] lemma length_testRows (M N : ℕ) (a t : ℤ) : (testRows M N a t).length = M :=
   length_tabulateRows _ _
 
@@ -347,6 +357,7 @@ theorem liftTable_eq (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
       rowsOf (Generator.integralLift n N e x a) :=
   tabulateRows_eq_rowsOf _ _ (liftEntry_coordinate n N e x a)
 
+/-- Reading entry `(i, j)` of `liftTable` gives `Generator.integralLift`. -/
 theorem rowEntry_liftTable (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1))
     (i j : Fin (Generator.matrixDimension e)) :
     rowEntry (liftTable (CyclotomicRing.dimension e) (CyclotomicRing.degree e)
@@ -370,10 +381,12 @@ theorem liftRows_eq_inputTables (n N e : ℕ) (x : Fin 3 → ℕ) :
     List.ofFn_eq_map]
   exact List.map_congr_left fun a _ => by simp
 
+/-- `liftTable M Dg T p r` has `M * Dg` rows. -/
 @[simp] lemma length_liftTable (M Dg : ℕ) (T : List (List ℤ)) (p r : ℤ) :
     (liftTable M Dg T p r).length = M * Dg :=
   length_tabulateRows _ _
 
+/-- `liftRows n N M Dg t p r` has `n + 1` tables. -/
 @[simp] lemma length_liftRows (n N M Dg t p r : ℕ) :
     (liftRows n N M Dg t p r).length = n + 1 := by
   simp [liftRows]
