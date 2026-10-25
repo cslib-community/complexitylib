@@ -27,7 +27,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002] |
 | A Verso guide with a chapter per area | [#585] |
 | Planar SAT and geometric hardness: orthogonal planar 3SAT-3 with explicit grid bounds, parsimonious compilers | [#1079] |
-| Randomized Word RAM: a `rand` instruction, expected running time, randomized algorithms | [#1124] |
+| Randomized Word RAM: broader expected-time rules, simulation bridges and selection | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
 
 ### Landmark theorems, in priority order
@@ -394,10 +394,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations; size-based width
-  selection with an input-fit guarantee and explicit overhead; expected-time reasoning,
-  random-tape equivalence, and BPP/RP/ZPP simulation bridges for the randomized word RAM
-  ([#1124]), with randomized quicksort and selection as first clients; transfer of cell-probe
-  lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
+  selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
+  almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
+  bridges for the randomized word RAM ([#1124]); randomized selection; transfer of cell-probe lower
+  bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
