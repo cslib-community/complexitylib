@@ -145,17 +145,27 @@ def siftUpBody : Code .exact 27 := ram_exact[
 /-- **Sift-up** from position `k`. -/
 def siftUp : Code .exact 27 := ram_exact[ while one < k do [ ⟪siftUpBody⟫ ] ]
 
-/-- One step of the sift-down: swap position `k` with its child of least key if that key is
-smaller, and otherwise stop by setting `l` to `szp`. -/
-def siftDownBody : Code .exact 27 := ram_exact[
+/-- The first half of a sift-down step: put the child of least key of position `k`, among the
+left child `l` and the right child `l + 1` if it is in the heap, in `p`, its vertex in `vp` and
+its key in `dp`. -/
+def siftDownChoose : Code .exact 27 := ram_exact[
   p ← l;
   t ← hb + l; vp ← *t; t ← db + vp; dp ← *t;
   t ← l + one;
   if t < szp then [
     t ← hb + t; vk ← *t; t ← db + vk; dk ← *t;
-    if dk < dp then [ p ← l + one; vp ← vk; dp ← dk ] else [ p ← p ] ] else [ p ← p ];
+    if dk < dp then [ p ← l + one; vp ← vk; dp ← dk ] else [ p ← p ] ] else [ p ← p ] ]
+
+/-- The second half of a sift-down step: swap position `k` with the position `p` chosen by
+`siftDownChoose` and move to it if its key `dp` is smaller, and otherwise stop by setting `l` to
+`szp`. -/
+def siftDownSink : Code .exact 27 := ram_exact[
   t ← hb + k; vk ← *t; t ← db + vk; dk ← *t;
   if dp < dk then [ ⟪swapCode⟫; k ← p; l ← k + k ] else [ l ← szp ] ]
+
+/-- One step of the sift-down: swap position `k` with its child of least key if that key is
+smaller, and otherwise stop by setting `l` to `szp`. -/
+def siftDownBody : Code .exact 27 := ram_exact[ ⟪siftDownChoose⟫; ⟪siftDownSink⟫ ]
 
 /-- **Sift-down** from position `k`. -/
 def siftDown : Code .exact 27 := ram_exact[

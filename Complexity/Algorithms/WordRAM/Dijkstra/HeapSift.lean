@@ -417,31 +417,13 @@ private theorem minChild_spec {f : ℕ → ℕ} {a : ℕ} (ha : 2 * a ≤ S) :
     · exact le_rfl
     · exact not_lt.1 fun hlt => h ⟨hiS, hlt⟩
 
-/-- The first half of `siftDownBody`: it picks the child of least key. -/
-private def chooseCode : Code .exact 27 := ram_exact[
-  p ← l;
-  t ← hb + l; vp ← *t; t ← db + vp; dp ← *t;
-  t ← l + one;
-  if t < szp then [
-    t ← hb + t; vk ← *t; t ← db + vk; dk ← *t;
-    if dk < dp then [ p ← l + one; vp ← vk; dp ← dk ] else [ p ← p ] ] else [ p ← p ] ]
-
-/-- The second half of `siftDownBody`: it swaps with the chosen child if that has the smaller
-key, and stops otherwise. -/
-private def sinkCode : Code .exact 27 := ram_exact[
-  t ← hb + k; vk ← *t; t ← db + vk; dk ← *t;
-  if dp < dk then [ ⟪swapCode⟫; k ← p; l ← k + k ] else [ l ← szp ] ]
-
-/-- `siftDownBody` is `chooseCode` followed by `sinkCode`. -/
-private theorem siftDownBody_eq : siftDownBody = appendCode chooseCode sinkCode := rfl
-
-/-- `chooseCode` leaves the child of least key of position `K` in `p`, its vertex in `vp` and
+/-- `siftDownChoose` leaves the child of least key of position `K` in `p`, its vertex in `vp` and
 its key in `dp`. -/
-private theorem chooseCode_spec {w K : ℕ} {y : Data 27} (hone : y.regs one = 1)
+private theorem siftDownChoose_spec {w K : ℕ} {y : Data 27} (hone : y.regs one = 1)
     (hdb : y.regs db = Db) (hhb : y.regs hb = Db + N) (hl : y.regs l = 2 * K)
     (hszp : y.regs szp = S + 1) (hK : 1 ≤ K) (hKS : 2 * K ≤ S) (hfit : Fits w (Db + 3 * N + 1))
     (hshape : HeapShape N Db S y.mem) :
-    ∃ z, ExecWithin w chooseCode y z 15 ∧
+    ∃ z, ExecWithin w siftDownChoose y z 15 ∧
       (∀ i ∉ [p, t, vp, dp, vk, dk], z.regs i = y.regs i) ∧ z.mem = y.mem ∧
       z.regs p = minChild (heapKey N Db y.mem) S K ∧
       z.regs vp = y.mem (Db + N + minChild (heapKey N Db y.mem) S K) ∧
@@ -452,12 +434,12 @@ private theorem chooseCode_spec {w K : ℕ} {y : Data 27} (hone : y.regs one = 1
   have f₁ : Fits w (Db + N + 2 * K) := hfit.of_le (by omega)
   have f₂ : Fits w (Db + VL) := hfit.of_le (by omega)
   have f₃ : Fits w (2 * K + 1) := hfit.of_le (by omega)
-  have hframe : ∀ z T, ExecWithin w chooseCode y z T →
+  have hframe : ∀ z T, ExecWithin w siftDownChoose y z T →
       ∀ i ∉ [p, t, vp, dp, vk, dk], z.regs i = y.regs i := by
     intro z T he i hi
     apply he.regs_eq
     simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hi
-    simp [chooseCode, Code.Preserves, Op.dest, Op.exactBin, eq_comm, hi.1, hi.2.1,
+    simp [siftDownChoose, Code.Preserves, Op.dest, Op.exactBin, eq_comm, hi.1, hi.2.1,
       hi.2.2.1, hi.2.2.2.1, hi.2.2.2.2.1, hi.2.2.2.2.2]
   have hkey : ∀ a, heapKey N Db y.mem a = y.mem (Db + y.mem (Db + N + a)) := fun _ => rfl
   by_cases h₁ : 2 * K + 1 < S + 1
@@ -470,46 +452,46 @@ private theorem chooseCode_spec {w K : ℕ} {y : Data 27} (hone : y.regs one = 1
         unfold minChild
         exact ite_eq_left ⟨by omega, by rw [hkey, hkey, hvl, hvr]; exact h₂⟩
       rw [hC, hkey, hvr]
-      obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w chooseCode y z 15 ∧ z.mem = y.mem ∧
+      obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w siftDownChoose y z 15 ∧ z.mem = y.mem ∧
           z.regs p = 2 * K + 1 ∧ z.regs vp = VR ∧ z.regs dp = y.mem (Db + VR) := by
         refine ⟨?z₁, ?e₁, ?_, ?_, ?_, ?_⟩
         case e₁ =>
-          ram_exact_eval [chooseCode, hone, hdb, hhb, hl, hszp, hvl, hvr, f₁, f₂, f₃, f₄, f₅, h₁,
-            h₂]
+          ram_exact_eval [siftDownChoose, hone, hdb, hhb, hl, hszp, hvl, hvr, f₁, f₂, f₃, f₄, f₅,
+            h₁, h₂]
         all_goals simp +decide
       exact ⟨z, he, hframe z _ he, hz⟩
     · have hC : minChild (heapKey N Db y.mem) S K = 2 * K := by
         unfold minChild
         exact ite_eq_right fun h => h₂ (by rw [hkey, hkey, hvl, hvr] at h; exact h.2)
       rw [hC, hkey, hvl]
-      obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w chooseCode y z 15 ∧ z.mem = y.mem ∧
+      obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w siftDownChoose y z 15 ∧ z.mem = y.mem ∧
           z.regs p = 2 * K ∧ z.regs vp = VL ∧ z.regs dp = y.mem (Db + VL) := by
         refine ⟨?z₂, ?e₂, ?_, ?_, ?_, ?_⟩
         case e₂ =>
-          ram_exact_eval [chooseCode, hone, hdb, hhb, hl, hszp, hvl, hvr, f₁, f₂, f₃, f₄, f₅, h₁,
-            h₂]
+          ram_exact_eval [siftDownChoose, hone, hdb, hhb, hl, hszp, hvl, hvr, f₁, f₂, f₃, f₄, f₅,
+            h₁, h₂]
         all_goals simp +decide
       exact ⟨z, he, hframe z _ he, hz⟩
   · have hC : minChild (heapKey N Db y.mem) S K = 2 * K := by
       unfold minChild
       exact ite_eq_right fun h => h₁ (by omega)
     rw [hC, hkey, hvl]
-    obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w chooseCode y z 15 ∧ z.mem = y.mem ∧
+    obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w siftDownChoose y z 15 ∧ z.mem = y.mem ∧
         z.regs p = 2 * K ∧ z.regs vp = VL ∧ z.regs dp = y.mem (Db + VL) := by
       refine ⟨?z₃, ?e₃, ?_, ?_, ?_, ?_⟩
       case e₃ =>
-        ram_exact_eval [chooseCode, hone, hdb, hhb, hl, hszp, hvl, f₁, f₂, f₃, h₁]
+        ram_exact_eval [siftDownChoose, hone, hdb, hhb, hl, hszp, hvl, f₁, f₂, f₃, h₁]
       all_goals simp +decide
     exact ⟨z, he, hframe z _ he, hz⟩
 
-/-- `sinkCode` swaps position `K` with the position `C` in `p` if the key in `dp` is smaller
+/-- `siftDownSink` swaps position `K` with the position `C` in `p` if the key in `dp` is smaller
 than the key at `K`, and moves to `C`; otherwise it stops the sift-down. -/
-private theorem sinkCode_spec {w K C : ℕ} {y : Data 27} (hdb : y.regs db = Db)
+private theorem siftDownSink_spec {w K C : ℕ} {y : Data 27} (hdb : y.regs db = Db)
     (hhb : y.regs hb = Db + N) (hpb : y.regs pb = Db + 2 * N + 1) (hk : y.regs k = K)
     (hp : y.regs p = C) (hvp : y.regs vp = y.mem (Db + N + C)) (hszp : y.regs szp = S + 1)
     (hK : 1 ≤ K) (hKS : K ≤ S) (hC : 1 ≤ C) (hCS : C ≤ S) (hfit : Fits w (Db + 3 * N + 1))
     (hshape : HeapShape N Db S y.mem) :
-    ∃ z, ExecWithin w sinkCode y z 15 ∧ (∀ i ∉ [t, vk, dk, k, l], z.regs i = y.regs i) ∧
+    ∃ z, ExecWithin w siftDownSink y z 15 ∧ (∀ i ∉ [t, vk, dk, k, l], z.regs i = y.regs i) ∧
       (y.regs dp < heapKey N Db y.mem K ∧ z.regs k = C ∧ z.regs l = 2 * C ∧
         z.mem = swapMem N Db y.mem K C (y.mem (Db + N + K)) (y.mem (Db + N + C)) ∨
       ¬y.regs dp < heapKey N Db y.mem K ∧ z.regs k = K ∧ z.regs l = S + 1 ∧
@@ -526,32 +508,32 @@ private theorem sinkCode_spec {w K C : ℕ} {y : Data 27} (hdb : y.regs db = Db)
   have f₄ : Fits w (Db + 2 * N + 1 + VK) := hfit.of_le (by omega)
   have f₅ : Fits w (Db + 2 * N + 1 + VC) := hfit.of_le (by omega)
   have f₆ : Fits w (C + C) := hfit.of_le (by omega)
-  have hframe : ∀ z T, ExecWithin w sinkCode y z T →
+  have hframe : ∀ z T, ExecWithin w siftDownSink y z T →
       ∀ i ∉ [t, vk, dk, k, l], z.regs i = y.regs i := by
     intro z T he i hi
     apply he.regs_eq
     simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hi
-    simp [sinkCode, swapCode, Code.Preserves, Op.dest, Op.exactBin, eq_comm, hi.1, hi.2.1,
+    simp [siftDownSink, swapCode, Code.Preserves, Op.dest, Op.exactBin, eq_comm, hi.1, hi.2.1,
       hi.2.2.1, hi.2.2.2.1, hi.2.2.2.2]
   have hkey : heapKey N Db y.mem K = y.mem (Db + VK) := by simp only [heapKey, hvk]
   rw [hkey, hvk, hvc]
   by_cases hlt : y.regs dp < y.mem (Db + VK)
-  · obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w sinkCode y z 15 ∧ z.regs k = C ∧
+  · obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w siftDownSink y z 15 ∧ z.regs k = C ∧
         z.regs l = 2 * C ∧ z.mem = swapMem N Db y.mem K C VK VC := by
       refine ⟨?z₁, ?e₁, ?_, ?_, ?_⟩
       case e₁ =>
-        ram_exact_eval [sinkCode, swapCode, hdb, hhb, hpb, hk, hp, hvp, hszp, hvk, f₁, f₂, f₃, f₄,
-          f₅, f₆, hlt]
+        ram_exact_eval [siftDownSink, swapCode, hdb, hhb, hpb, hk, hp, hvp, hszp, hvk, f₁, f₂, f₃,
+          f₄, f₅, f₆, hlt]
       · simp +decide
       · simp only [Data.set_regs, Data.write_regs, Function.update_idem, Function.update_self]
         omega
       · simp [swapMem]
     exact ⟨z, he, hframe z _ he, Or.inl ⟨hlt, hz⟩⟩
-  · obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w sinkCode y z 15 ∧ z.regs k = K ∧
+  · obtain ⟨z, he, hz⟩ : ∃ z, ExecWithin w siftDownSink y z 15 ∧ z.regs k = K ∧
         z.regs l = S + 1 ∧ z.mem = y.mem := by
       refine ⟨?z₂, ?e₂, ?_, ?_, ?_⟩
       case e₂ =>
-        ram_exact_eval [sinkCode, swapCode, hdb, hhb, hpb, hk, hp, hvp, hszp, hvk, f₁, f₂, hlt]
+        ram_exact_eval [siftDownSink, swapCode, hdb, hhb, hpb, hk, hp, hvp, hszp, hvk, f₁, f₂, hlt]
       · simp +decide [hk]
       · simp +decide
       · simp
@@ -572,19 +554,18 @@ private theorem siftDownBody_spec {w K C : ℕ} {y : Data 27} (hone : y.regs one
       ¬heapKey N Db y.mem C < heapKey N Db y.mem K ∧ z.regs k = K ∧ z.regs l = S + 1 ∧
         z.mem = y.mem) := by
   obtain ⟨z₁, he₁, hfr₁, hm₁, hp₁, hvp₁, hdp₁⟩ :=
-    chooseCode_spec hone hdb hhb hl hszp hK hKS hfit hshape
+    siftDownChoose_spec hone hdb hhb hl hszp hK hKS hfit hshape
   rw [← hC] at hp₁ hvp₁ hdp₁
   obtain ⟨hCc, hCS, -⟩ := minChild_spec (f := heapKey N Db y.mem) hKS
   rw [← hC] at hCc hCS
   have hr : ∀ i ∉ [p, t, vp, dp, vk, dk], z₁.regs i = y.regs i := hfr₁
-  obtain ⟨z, he₂, hfr₂, hz⟩ := sinkCode_spec (y := z₁) (K := K) (C := C)
+  obtain ⟨z, he₂, hfr₂, hz⟩ := siftDownSink_spec (y := z₁) (K := K) (C := C)
     ((hr db (by decide)).trans hdb) ((hr hb (by decide)).trans hhb)
     ((hr pb (by decide)).trans hpb) ((hr k (by decide)).trans hk) hp₁ (hm₁ ▸ hvp₁)
     ((hr szp (by decide)).trans hszp) hK (by omega) (by omega) hCS hfit (hm₁ ▸ hshape)
   rw [hdp₁, hm₁] at hz
   refine ⟨z, ?_, fun i hi => ?_, hz⟩
-  · rw [siftDownBody_eq]
-    exact (execWithin_append he₁ he₂).mono (by norm_num)
+  · exact (he₁.seq he₂).mono (by norm_num)
   · refine (hfr₂ i fun h => hi ?_).trans (hr i fun h => hi ?_) <;>
     · simp only [List.mem_cons, List.not_mem_nil, or_false] at h ⊢
       tauto
