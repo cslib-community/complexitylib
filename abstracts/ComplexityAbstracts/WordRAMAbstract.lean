@@ -243,12 +243,14 @@ def Same (p : Program r) (q : Cslib.WordRAM.Program .exact r) : Prop :=
     OutcomeAgrees (step w p ⟨pc, reg, mem⟩) (Cslib.WordRAM.step w q ⟨pc, ⟨reg, mem⟩⟩) ∧
     ∀ v n, Halts w p ⟨pc, reg, mem⟩ v n ↔ Cslib.WordRAM.Executes w q ⟨pc, ⟨reg, mem⟩⟩ v n
 
-/-- **Same machine.** Each program of this file runs alike with some program of `Cslib.WordRAM`
-over `Basis.exact` with the same registers, and conversely. (In the proof, the program of the
-other machine is a translation instruction by instruction.) -/
+/-- **Same machine.** Each program of this file runs alike with some `rand`-free program of
+`Cslib.WordRAM` over `Basis.exact` with the same registers, and conversely every `rand`-free
+program of `Cslib.WordRAM` over `Basis.exact` runs alike with some program of this file.
+(`Cslib.WordRAM.Instr` also includes `rand` for randomized algorithms, on which deterministic
+`Cslib.WordRAM.step` faults.) -/
 theorem runsAgree (r : ℕ) :
-    (∀ p : Program r, ∃ q : Cslib.WordRAM.Program .exact r, Same p q) ∧
-      ∀ q : Cslib.WordRAM.Program .exact r, ∃ p : Program r, Same p q :=
+    (∀ p : Program r, ∃ q : Cslib.WordRAM.Program .exact r, q.IsRandFree ∧ Same p q) ∧
+      ∀ q : Cslib.WordRAM.Program .exact r, q.IsRandFree → ∃ p : Program r, Same p q :=
   WordRAMBridge.runsAgree
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump, .branchEq, .branchLt, .halt,
@@ -275,7 +277,7 @@ theorem decidableInTime_iff {α : Type u} (A : Set α) (encode : α → List ℕ
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.WordRAMAbstract`: 234 root
-declarations, 340 dependencies checked
+declarations, 346 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.WordRAMAbstract allowing [
