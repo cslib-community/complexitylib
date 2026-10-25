@@ -120,8 +120,6 @@ private theorem dist_le_addWeight {a b : I.Vertex} (p : Quiver.Path a b) :
     I.dist a b ≤ p.addWeight I.arrowWeight :=
   iInf_le _ p
 
--- Path rewriting must unfold `Vertex` to identify its endpoints with `Fin I.n`.
-set_option backward.isDefEq.respectTransparency false in
 /-- Extending a path by an edge bounds the distance to the new endpoint. -/
 theorem dist_le_edge {a b : Fin I.n} {c : ℕ} (he : I.weight a b = some c) :
     I.dist I.source b ≤ I.dist I.source a + c := by
@@ -131,8 +129,8 @@ theorem dist_le_edge {a b : Fin I.n} {c : ℕ} (he : I.weight a b = some c) :
   apply le_iInf
   intro p
   let e : Quiver.Hom (V := I.Vertex) a b := ⟨c, he⟩
-  simpa only [Quiver.Path.addWeight_cons, arrowWeight] using
-    I.dist_le_addWeight (p.cons e)
+  exact (I.dist_le_addWeight (p.cons e)).trans_eq
+    (Quiver.Path.addWeight_cons (V := I.Vertex) I.arrowWeight p e)
 
 /-- Relaxation never increases a tentative distance. -/
 private theorem relax_le (D : Fin I.n → ℕ∞) (u v : Fin I.n) :
@@ -141,8 +139,6 @@ private theorem relax_le (D : Fin I.n → ℕ∞) (u v : Fin I.n) :
   | none => simp [relax, he]
   | some c => simpa only [relax, he] using min_le_left (D v) (D u + c)
 
--- Path rewriting must unfold `Vertex` to identify its endpoints with `Fin I.n`.
-set_option backward.isDefEq.respectTransparency false in
 /-- Every path to an unvisited vertex bounds an unvisited tentative distance from above. -/
 private theorem Inv.cut {S : Finset (Fin I.n)} {D : Fin I.n → ℕ∞} (h : I.Inv S D)
     {v : I.Vertex} (p : Quiver.Path (V := I.Vertex) I.source v) (hv : v ∉ S) :
@@ -150,10 +146,9 @@ private theorem Inv.cut {S : Finset (Fin I.n)} {D : Fin I.n → ℕ∞} (h : I.I
   induction p with
   | nil =>
     refine ⟨I.source, hv, ?_⟩
-    simp only [Quiver.Path.addWeight_nil]
-    exact h.source.le
+    exact h.source.le.trans_eq (Quiver.Path.addWeight_nil (V := I.Vertex) I.arrowWeight _).symm
   | @cons b v p e ih =>
-    simp only [Quiver.Path.addWeight_cons]
+    rw [Quiver.Path.addWeight_cons (V := I.Vertex) I.arrowWeight p e]
     by_cases hb : b ∈ S
     · refine ⟨v, hv, ?_⟩
       calc

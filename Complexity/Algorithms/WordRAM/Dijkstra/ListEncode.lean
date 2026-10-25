@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.Invariant
+import Mathlib.Algebra.BigOperators.Fin
 
 /-!
 # Dijkstra's algorithm with a binary heap: the input words
@@ -55,12 +56,6 @@ variable (G : ListInstance) {r : ℕ}
 /-- The first address past the input words: the base of the distance words. -/
 def dbase : ℕ := G.n + 2 * G.m + 4
 
-/-- A sum over `Fin n` is the sum of the list over `List.finRange n`. -/
-private theorem sum_finRange_map {n : ℕ} (f : Fin n → ℕ) :
-    ((List.finRange n).map f).sum = ∑ i, f i := by
-  rw [Finset.sum, Fin.univ_def]
-  simp
-
 /-- The edges of all lists, in order. -/
 private def edges : List (Fin G.n × ℕ) := (List.finRange G.n).flatMap G.adj
 
@@ -71,7 +66,7 @@ private theorem offset_eq_length (u : ℕ) :
 
 /-- The edge list has `m` edges. -/
 private theorem length_edges : G.edges.length = G.m := by
-  simp [edges, m, List.length_flatMap, sum_finRange_map]
+  simp [edges, m, List.length_flatMap, ← Fin.sum_univ_def]
 
 /-- Edge `offset u + i` of the edge list is edge `i` out of `u`. -/
 private theorem edges_getElem (u : Fin G.n) {i : ℕ} (hi : i < (G.adj u).length) :
@@ -137,7 +132,7 @@ theorem offset_succ {u : ℕ} (hu : u < G.n) :
 
 /-- The offset of `n` is the number of edges. -/
 theorem offset_n : G.offset G.n = G.m := by
-  rw [offset, List.take_of_length_le (by simp), sum_finRange_map]
+  rw [offset, List.take_of_length_le (by simp), ← Fin.sum_univ_def]
   rfl
 
 /-- The offsets grow. -/

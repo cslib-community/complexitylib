@@ -46,7 +46,7 @@ def appendCode {B : Basis} {r : ℕ} : Code B r → Code B r → Code B r
   | c, d => .seq c d
 
 /-- Running `c` and then `d`. -/
-theorem execWithin_append {w T₁ T₂ : ℕ} {c d : Code .exact 27} {x y z : Data 27}
+theorem execWithin_append {B : Basis} {r w T₁ T₂ : ℕ} {c d : Code B r} {x y z : Data r}
     (h₁ : ExecWithin w c x y T₁) (h₂ : ExecWithin w d y z T₂) :
     ExecWithin w (appendCode c d) x z (T₁ + T₂) := by
   induction c generalizing x T₁ with
