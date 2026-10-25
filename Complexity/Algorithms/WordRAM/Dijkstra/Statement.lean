@@ -7,9 +7,10 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Time
+public import Complexity.Init
 public import Mathlib.Combinatorics.Quiver.Path.Weight
 public import Mathlib.Data.ENat.Lattice
+public import Mathlib.Data.Fintype.Prod
 
 /-!
 # Dijkstra's algorithm on the word RAM: statements

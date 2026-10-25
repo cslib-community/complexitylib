@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.Dijkstra.Statement
+public import Complexity.Computability.WordRAM.Time
 
 /-!
 # Dijkstra's algorithm on the word RAM with adjacency lists: statements
