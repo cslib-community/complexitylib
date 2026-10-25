@@ -19,12 +19,12 @@ below states this bound for a program on the word RAM, with the graph given by a
 The graph, its distances, the input and output layouts, the word-size condition and the machine are
 all defined here from scratch. The machine, defined in the appendix, is the word RAM over the exact
 basis of operations: each operation computes its exact value, and an instruction faults instead of
-producing `x - y` for `y > x`, `x / 0`, `x % 0`, or a value that is not a word. It uses the same
-definitions as `WordRAMAbstract`. To check that the theorem says what is claimed, a reader only
-needs to inspect the definitions and the theorem statement in this file. Lean checks the proof
-through `DijkstraBridge`, which proves that the distance here is the library's and that the machine
-here runs as the library's word RAM `Cslib.WordRAM` over its exact basis, and applies the library
-theorem `Cslib.Algorithms.WordRAM.Dijkstra.logLinearStatement`. `#check_abstract` checks
+producing `x - y` for `y > x`, `x / 0`, `x % 0`, or a value that is not a word. Apart from `Runs`,
+its definitions are those of `WordRAMAbstract`. To check that the theorem says what is claimed, a
+reader only needs to inspect the definitions and the theorem statement in this file. Lean checks the
+proof through `DijkstraBridge`, which proves that the distance here is the library's and that the
+machine here runs as the library's word RAM `Cslib.WordRAM` over its exact basis, and applies the
+library theorem `Cslib.Algorithms.WordRAM.Dijkstra.logLinearStatement`. `#check_abstract` checks
 mechanically that every definition and theorem statement here depends only on this file, Lean,
 Mathlib and upstream CSLib.
 
