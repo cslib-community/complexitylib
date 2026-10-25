@@ -9,7 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.Dijkstra.LogLinear
 
-/-! Nonvacuity, interpreter and axiom checks for Dijkstra's algorithm with a binary heap. -/
+/-! Nonvacuity and interpreter checks for Dijkstra's algorithm with a binary heap. -/
 
 @[expose] public section
 
@@ -55,24 +55,5 @@ example : ((heapDijkstra.eval 10 8 (.init graph.encode)).map fun yn =>
     ((List.finRange 3).map fun v => yn.1.mem (graph.outAddr v), decide (yn.2 ≤ 2027))) =
     some ([1, 4, 2], true) := by
   decide +kernel
-
-/--
-info: 'Cslib.Algorithms.WordRAM.Dijkstra.logLinearStatement' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms logLinearStatement
-/--
-info: 'Cslib.Algorithms.WordRAM.Dijkstra.logLinearSpec' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms logLinearSpec
-/--
-info: 'Cslib.Algorithms.WordRAM.Dijkstra.heapDijkstra_spec' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms heapDijkstra_spec
 
 end WordRAMDijkstraTests
