@@ -27,11 +27,22 @@ heap, and it inserts at most `deg u` entries.
 
 ## Main definitions
 
+* `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.distOf`,
+  `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.visitedOf`: the tentative distances and the
+  visited vertices that a machine state holds.
+* `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.remaining`: the number of edges out of the
+  unvisited vertices.
 * `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.OuterInv`: the invariant of the rounds.
 * `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.potential`: the potential that pays for them.
 
 ## Main results
 
+* `Cslib.Algorithms.WordRAM.Dijkstra.heapSetup_spec`: the setup establishes the invariant of the
+  rounds within `25` instructions, with potential at most `100 (⌊log₂ n⌋ + 1) (2 m + 1)`.
+* `Cslib.Algorithms.WordRAM.Dijkstra.heapRound_spec`: one round keeps the invariant of the
+  rounds, and the drop of the potential pays for its running time.
+* `Cslib.Algorithms.WordRAM.Dijkstra.heapExit_spec`: when the rounds stop, with an empty heap,
+  the output cells hold the encoded distances.
 * `Cslib.Algorithms.WordRAM.Dijkstra.heapDijkstra_spec`: the structured program leaves the
   encoded distances in the output cells within `200 (m + 1) (⌊log₂ n⌋ + 1) + 27` instructions.
 * `Cslib.Algorithms.WordRAM.Dijkstra.logLinearSpec`: its compiled program meets

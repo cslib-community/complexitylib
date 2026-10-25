@@ -33,8 +33,12 @@ the invariant with that vertex visited.
 
 ## Main results
 
+* `Cslib.Algorithms.WordRAM.Dijkstra.decodeDist_encodeDist`: decoding inverts the encoding of
+  distances.
 * `Cslib.Algorithms.WordRAM.Dijkstra.decodeDist_le`: decoding preserves order between nonzero
   words.
+* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.le_maxWeight`: every edge weight is at most the
+  largest one.
 * `Cslib.Algorithms.WordRAM.Dijkstra.Instance.dist_le_edge`: the distance to the head of an edge
   is at most the distance to its tail plus its weight.
 * `Cslib.Algorithms.WordRAM.Dijkstra.Instance.Inv.init`: the invariant holds initially.
@@ -63,6 +67,7 @@ theorem encodeDist_decodeDist (x : ℕ) : encodeDist (decodeDist x) = x := by
   | zero => simp [decodeDist, encodeDist]
   | succ x => simp [decodeDist, encodeDist]
 
+/-- Decoding inverts the encoding of distances: a distance word decodes to its distance. -/
 @[simp]
 theorem decodeDist_encodeDist (d : ℕ∞) : decodeDist (encodeDist d) = d := by
   induction d using ENat.recTopCoe with

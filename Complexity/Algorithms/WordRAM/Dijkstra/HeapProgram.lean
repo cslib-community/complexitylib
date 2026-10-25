@@ -45,6 +45,8 @@ only by the constant `2`, and subtracts only `1` from the heap size, which is po
 * `Cslib.Algorithms.WordRAM.Dijkstra.siftUp`, `Cslib.Algorithms.WordRAM.Dijkstra.siftDown`: the
   two heap repairs.
 * `Cslib.Algorithms.WordRAM.Dijkstra.extractMin`: removal of the root of the heap.
+* `Cslib.Algorithms.WordRAM.Dijkstra.pushNew`: insertion of a newly discovered vertex into the
+  heap.
 * `Cslib.Algorithms.WordRAM.Dijkstra.relaxEdges`: the scan of the edges out of a vertex.
 * `Cslib.Algorithms.WordRAM.Dijkstra.heapDijkstra`: Dijkstra's algorithm with a binary heap.
 

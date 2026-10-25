@@ -32,6 +32,8 @@ parallel edges to a vertex has the effect of the lightest one.
 
 ## Main results
 
+* `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.encode_length`: the input has `n + 2 m + 3`
+  words.
 * `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.init_offset`,
   `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.init_target`,
   `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.init_weight`: the input words in the initial
