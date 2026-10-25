@@ -376,8 +376,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations; size-based width
-  selection with an input-fit guarantee and explicit overhead; transfer of cell-probe lower
-  bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
+  selection with an input-fit guarantee and explicit overhead; expected-time reasoning,
+  random-tape equivalence, and BPP/RP/ZPP simulation bridges for the randomized word RAM; transfer
+  of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
