@@ -56,4 +56,18 @@ example : ((heapDijkstra.eval 10 8 (.init graph.encode)).map fun yn =>
     some ([1, 4, 2], true) := by
   decide +kernel
 
+/-- Two vertices and no edge, from source `0`: vertex `1` is unreachable. -/
+def edgeless : ListInstance where
+  n := 2
+  adj := ![[], []]
+  source := 0
+
+/-- With no edge the bound `200 (m + 1) (⌊log₂ n⌋ + 1) + 27` of `heapDijkstra_spec` is `427`. The
+interpreter finds `1` (distance `0`) in the source's output cell and `0` (unreachable) in the other
+one, within that bound. -/
+example : ((heapDijkstra.eval 10 8 (.init edgeless.encode)).map fun yn =>
+    ((List.finRange 2).map fun v => yn.1.mem (edgeless.outAddr v), decide (yn.2 ≤ 427))) =
+    some ([1, 0], true) := by
+  decide +kernel
+
 end WordRAMDijkstraTests
