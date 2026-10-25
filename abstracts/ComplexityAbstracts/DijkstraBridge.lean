@@ -39,14 +39,11 @@ The library's Dijkstra program is written in the word-RAM program syntax of
 `Complexity/Computability/WordRAM/Notation.lean` and its exact-basis variant
 `Complexity/Algorithms/WordRAM/Dijkstra/ExactNotation.lean`, so the import of the library theorem
 brings both files in (`LogLinear` → `HeapRelax` → `HeapSift` → `BinaryHeap` → `HeapProgram` →
-`ExactNotation` → `Notation`). `Notation` declares the scoped term syntax `ram[`, `ram_block%` and
-`ram_stmt%` (active only after `open Cslib.WordRAM`), and globally the syntax category `wramStmt`
-with its statement forms, `wramBlock`, the `macro_rules` for those terms, and the `ram_eval`
-tactic with its `macro_rules`. `ExactNotation` declares the scoped term syntax `ram_exact[`,
-`ram_exact_block%` and `ram_exact_stmt%` and the scoped tactic `ram_exact_eval`, with their
-`macro_rules`, active only after `open Cslib.Algorithms.WordRAM.Dijkstra`. This is an exception
-to the rule that bridge imports declare no syntax: `DijkstraAbstract.lean` opens no namespace
-and uses none of these tokens, so they do not change how it elaborates.
+`ExactNotation` → `Notation`). All their syntax rules, `macro_rules` and tactics are scoped, to
+`Cslib.WordRAM` and to `Cslib.Algorithms.WordRAM.Dijkstra`. Only the syntax category `wramStmt` and
+the syntax abbreviation `wramBlock` are global, since Lean cannot scope them, and outside those
+namespaces `wramStmt` has no rules. `DijkstraAbstract.lean` opens neither namespace, so none of
+this syntax is active there.
 -/
 
 namespace ComplexityAbstracts.DijkstraBridge

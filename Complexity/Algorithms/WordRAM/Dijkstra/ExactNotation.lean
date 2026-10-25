@@ -18,7 +18,9 @@ public import Complexity.Computability.WordRAM.Notation
 is undefined (subtraction below zero, division and remainder by zero), and `d ← width%` is
 `Cslib.WordRAM.Op.exactWidth`. The tactic `ram_exact_eval` is `ram_eval` for such programs.
 
-The notation is scoped to `Cslib.Algorithms.WordRAM.Dijkstra`.
+The notation, with its expansions and the tactic, is scoped to
+`Cslib.Algorithms.WordRAM.Dijkstra`. Its statements are those of the scoped `wramStmt` syntax of
+`Cslib.WordRAM`, so they parse only where both namespaces are open.
 
 ## Main definitions
 
@@ -36,6 +38,8 @@ public section
 
 namespace Cslib.Algorithms.WordRAM.Dijkstra
 
+open scoped Cslib.WordRAM
+
 /-- A structured word-RAM program over the exact basis, written as a block of statements. -/
 scoped syntax "ram_exact[" sepBy1(wramStmt, "; ") "]" : term
 
@@ -45,13 +49,13 @@ scoped syntax "ram_exact_block%" Cslib.WordRAM.wramBlock : term
 /-- Internal: a single statement, as a structured program over the exact basis. -/
 scoped syntax "ram_exact_stmt%" wramStmt : term
 
-macro_rules
+scoped macro_rules
   | `(ram_exact[ $s:wramStmt ]) => `(ram_exact_stmt% $s)
   | `(ram_exact[ $s:wramStmt; $ss;* ]) =>
     `(Cslib.WordRAM.Code.seq (ram_exact_stmt% $s) (ram_exact[ $ss;* ]))
   | `(ram_exact_block% [ $ss;* ]) => `(ram_exact[ $ss;* ])
 
-macro_rules
+scoped macro_rules
   | `(ram_exact_stmt% $d:ident ← #$v) => `(Cslib.WordRAM.Code.op (.const $d $v))
   | `(ram_exact_stmt% $d:ident ← $s:ident) => `(Cslib.WordRAM.Code.op (.copy $d $s))
   | `(ram_exact_stmt% $d:ident ← $i:ident + $j:ident) =>
@@ -94,7 +98,7 @@ zero, and which divisors are nonzero. -/
 scoped syntax (name := ramExactEval)
   "ram_exact_eval" (ppSpace num)? (" [" Lean.Parser.Tactic.simpArg,* "]")? : tactic
 
-macro_rules
+scoped macro_rules
   | `(tactic| ram_exact_eval) => `(tactic| ram_exact_eval 0 [])
   | `(tactic| ram_exact_eval [$args,*]) => `(tactic| ram_exact_eval 0 [$args,*])
   | `(tactic| ram_exact_eval $n:num) => `(tactic| ram_exact_eval $n [])
