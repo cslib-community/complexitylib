@@ -21,6 +21,12 @@ keeps the heap invariant, with the heap holding the discovered vertices that are
 ## Main results
 
 * `Cslib.Algorithms.WordRAM.Dijkstra.relaxEdges_spec`: the scan of the edges out of a vertex.
+
+## References
+
+* [E. W. Dijkstra, *A note on two problems in connexion with graphs*][Dijkstra1959]
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
+  Algorithms*][CLRS2009]
 -/
 
 @[expose] public section

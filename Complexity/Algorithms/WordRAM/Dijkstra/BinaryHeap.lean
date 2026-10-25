@@ -41,6 +41,11 @@ Insertion and decrease-key leave the first kind of defect, and removal of the ro
   `Cslib.Algorithms.WordRAM.Dijkstra.HeapInv.extract`: insertion, decrease-key and removal of the
   root leave a heap with one defect.
 * `Cslib.Algorithms.WordRAM.Dijkstra.HeapInv.root_le`: the root has the least key.
+
+## References
+
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
+  Algorithms*][CLRS2009]
 -/
 
 @[expose] public section

@@ -41,6 +41,12 @@ parallel edges to a vertex has the effect of the lightest one.
   memory.
 * `Cslib.Algorithms.WordRAM.Dijkstra.decode_edgesWord`: the scan of the edges out of a vertex
   relaxes the tentative distances.
+
+## References
+
+* [E. W. Dijkstra, *A note on two problems in connexion with graphs*][Dijkstra1959]
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
+  Algorithms*][CLRS2009]
 -/
 
 @[expose] public section

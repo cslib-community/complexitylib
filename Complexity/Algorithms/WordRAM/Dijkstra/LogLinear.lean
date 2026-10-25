@@ -48,6 +48,12 @@ heap, and it inserts at most `deg u` entries.
 * `Cslib.Algorithms.WordRAM.Dijkstra.logLinearSpec`: its compiled program meets
   `Cslib.Algorithms.WordRAM.Dijkstra.LogLinearSpec` with `K = 230`.
 * `Cslib.Algorithms.WordRAM.Dijkstra.logLinearStatement`: the log-linear main theorem.
+
+## References
+
+* [E. W. Dijkstra, *A note on two problems in connexion with graphs*][Dijkstra1959]
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
+  Algorithms*][CLRS2009]
 -/
 
 @[expose] public section

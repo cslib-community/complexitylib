@@ -27,6 +27,11 @@ takes `O(⌊log₂ sz⌋ + 1)` instructions.
 * `Cslib.Algorithms.WordRAM.Dijkstra.siftUp_spec`,
   `Cslib.Algorithms.WordRAM.Dijkstra.siftDown_spec`: the two repairs.
 * `Cslib.Algorithms.WordRAM.Dijkstra.extractMin_spec`: removal of the root.
+
+## References
+
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
+  Algorithms*][CLRS2009]
 -/
 
 @[expose] public section

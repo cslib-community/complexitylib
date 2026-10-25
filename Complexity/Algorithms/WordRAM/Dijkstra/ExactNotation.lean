@@ -32,6 +32,11 @@ The notation, with its expansions and the tactic, is scoped to
 * `ram_exact_eval`, `ram_exact_eval n`: as `ram_eval`. A subtraction runs when the simp lemmas
   show that its right operand is at most its left one, and a division or remainder when they
   show that its divisor is nonzero.
+
+## References
+
+The statements are those of the `ram[` notation (`WordRAM.Notation`), whose forms follow the
+word-RAM notation of [Algolean][Algolean2026].
 -/
 
 public section
