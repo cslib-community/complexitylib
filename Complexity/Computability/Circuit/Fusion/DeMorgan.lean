@@ -26,10 +26,11 @@ gate, constants included, is charged.
 
 Let `ρ(f)` be the pair-cover complexity of the true set of `f` from the true sets of its `2 n`
 literals. For the lower bound, the dual-rail translation `Monotone.dualRail` turns a De Morgan
-circuit of size `s` into a monotone circuit of size `2 s` on the dual-rail inputs, and these are
-obtained from the literals by wiring and one free constant. Its AND gates give `ρ(f) ≤ 2 s`,
-for any admissible class of semifilters. For the upper bound, the quadratic compiler turns an
-unrestricted `t`-pair cover into a monotone circuit with at most `4 (t + 1)² (2 n + t + 1)` gates;
+circuit with `b` binary gates into a monotone circuit with exactly `b` AND gates on the dual-rail
+inputs, and these are obtained from the literals by wiring and one free constant. Its AND gates
+give `ρ(f) ≤ b ≤ s`, where `s` is the original circuit size, for any admissible class of
+semifilters. For the upper bound, the quadratic compiler turns an unrestricted `t`-pair cover into
+a monotone circuit with at most `4 (t + 1)² (2 n + t + 1)` gates;
 adding `n` negations for the literals gives a De Morgan circuit. In the same terms, monotone AND
 complexity from literals lies between `ρ(f)` and `ρ(f)²`.
 
@@ -48,13 +49,14 @@ property of the construction, not a proven lower bound. The formalized size boun
 * `Cslib.Circuits.Fusion.ecomplexityFrom_literals_le_pairCoverComplexity_sq`,
   `Cslib.Circuits.Fusion.ecomplexityFrom_literals_bounds`: `ρ(f) ≤ C_∧(f) ≤ ρ(f)²` for monotone
   AND complexity from literals.
-* `Cslib.Circuits.Fusion.pairCoverComplexity_le_two_mul_size`,
-  `Cslib.Circuits.Fusion.pairCoverComplexity_le_two_mul_complexity`: every De Morgan circuit
-  computing `f` has at least `ρ(f) / 2` gates.
+* `Cslib.Circuits.Fusion.pairCoverComplexity_le_binaryCost`,
+  `Cslib.Circuits.Fusion.pairCoverComplexity_le_size`,
+  `Cslib.Circuits.Fusion.pairCoverComplexity_le_complexity`: every De Morgan circuit computing
+  `f` has at least `ρ(f)` binary gates, and hence at least `ρ(f)` gates in total.
 * `Cslib.Circuits.Fusion.PairCover.exists_computes_size_le`: a `t`-pair cover gives a De Morgan
   circuit of size at most `4 (t + 1)² (2 n + t + 1) + n`.
 * `Cslib.Circuits.Fusion.pairCoverComplexity_complexity_bounds`: `ρ(f)` is finite, at most
-  twice De Morgan circuit complexity, which is in turn polynomial in `ρ(f)` and `n`.
+  De Morgan circuit complexity, which is in turn polynomial in `ρ(f)` and `n`.
 
 ## References
 
@@ -177,13 +179,13 @@ theorem ecomplexityFrom_literals_bounds (f : BooleanFunction n) :
 
 open Boolean in
 /-- **Fusion lower bound for De Morgan circuits.** Every circuit over the De Morgan basis
-computing `f`, with negations anywhere, has at least half as many gates as the cover complexity
-of `f` from its literals, for any admissible class of semifilters. -/
-theorem pairCoverComplexity_le_two_mul_size {f : BooleanFunction n}
+computing `f`, with negations anywhere, has at least as many binary AND or OR gates as the cover
+complexity of `f` from its literals, for any admissible class of semifilters. -/
+theorem pairCoverComplexity_le_binaryCost {f : BooleanFunction n}
     (c : Circuit Boolean.signature n 1) (hc : c.Computes Boolean.interpretation (single f))
     (admissible : Semifilter ↥({x | f x = true}ᶜ) → Prop := fun _ => True) :
     pairCoverComplexity {x | f x = true} (fun i => {x | AltFormula.literals x i = true})
-      admissible ≤ (2 * c.size : ℕ) := by
+      admissible ≤ (c.program.cost Boolean.binaryCost : ℕ) := by
   let d := (Monotone.dualRail c).comp (Monotone.literalsRailCircuit n)
   have hd : d.ComputesFrom Monotone.interpretation (fun x (_ : Fin 1) => f x)
       AltFormula.literals := fun x => by
@@ -193,23 +195,30 @@ theorem pairCoverComplexity_le_two_mul_size {f : BooleanFunction n}
   refine (pairCoverComplexity_le_ecomplexityFrom_bool AltFormula.literals
     (fun x (_ : Fin 1) => f x) 0 admissible).trans
     ((ecomplexityFrom_le_of_computesFrom d hd).trans ?_)
-  have hcost := (Monotone.dualRail c).program.cost_le_mul (cost := Monotone.andCost) (b := 1)
-    (fun op => by cases op <;> simp [Monotone.andCost])
-  have hsize : 1 * (Monotone.dualRail c).size = 2 * c.size := by
-    rw [one_mul, Monotone.size_dualRail]
-  simp only [d, Circuit.cost_program_comp, Monotone.cost_literalsRailCircuit, zero_add]
-  exact_mod_cast hcost.trans_eq hsize
+  simp only [d, Circuit.cost_program_comp, Monotone.cost_literalsRailCircuit, zero_add,
+    Monotone.cost_dualRail, le_refl]
 
 open Boolean in
-/-- Cover complexity from literals is at most twice De Morgan circuit complexity. -/
-theorem pairCoverComplexity_le_two_mul_complexity (f : BooleanFunction n)
+/-- Every De Morgan circuit computing `f` has at least as many gates as the cover complexity
+of `f` from its literals. -/
+theorem pairCoverComplexity_le_size {f : BooleanFunction n}
+    (c : Circuit Boolean.signature n 1) (hc : c.Computes Boolean.interpretation (single f))
     (admissible : Semifilter ↥({x | f x = true}ᶜ) → Prop := fun _ => True) :
     pairCoverComplexity {x | f x = true} (fun i => {x | AltFormula.literals x i = true})
-      admissible ≤ (2 * complexity Boolean.interpretation (single f) : ℕ) := by
+      admissible ≤ (c.size : ℕ) :=
+  (pairCoverComplexity_le_binaryCost c hc admissible).trans
+    (by exact_mod_cast c.program.cost_binaryCost_le)
+
+open Boolean in
+/-- Cover complexity from literals is at most De Morgan circuit complexity. -/
+theorem pairCoverComplexity_le_complexity (f : BooleanFunction n)
+    (admissible : Semifilter ↥({x | f x = true}ᶜ) → Prop := fun _ => True) :
+    pairCoverComplexity {x | f x = true} (fun i => {x | AltFormula.literals x i = true})
+      admissible ≤ (complexity Boolean.interpretation (single f) : ℕ) := by
   obtain ⟨c, hc, hsize⟩ :=
     exists_computes_size_eq_complexity (I := Boolean.interpretation) (f := single f)
   rw [← hsize]
-  exact pairCoverComplexity_le_two_mul_size c hc admissible
+  exact pairCoverComplexity_le_size c hc admissible
 
 open Boolean in
 /-- **Fusion upper bound for De Morgan circuits.** A `t`-pair cover yields a De Morgan circuit of
@@ -231,14 +240,14 @@ theorem PairCover.exists_computes_size_le {f : BooleanFunction n}
 open Boolean in
 /-- **Cover complexity and De Morgan circuit size are polynomially related, up to the input
 length.** The cover complexity `t = ρ(f)` of `f` from its literals over unrestricted semifilters
-is finite, at most twice the circuit complexity `C(f)` over the De Morgan basis, and
+is finite, at most the circuit complexity `C(f)` over the De Morgan basis, and
 `C(f) ≤ 4 (t + 1)² (2 n + t + 1) + n`. -/
 theorem pairCoverComplexity_complexity_bounds (f : BooleanFunction n) :
     ∃ t : ℕ, pairCoverComplexity {x | f x = true}
         (fun i => {x | AltFormula.literals x i = true}) = t ∧
-      t ≤ 2 * complexity Boolean.interpretation (single f) ∧
+      t ≤ complexity Boolean.interpretation (single f) ∧
       complexity Boolean.interpretation (single f) ≤ 4 * (t + 1) ^ 2 * (2 * n + t + 1) + n := by
-  have hlow := pairCoverComplexity_le_two_mul_complexity f
+  have hlow := pairCoverComplexity_le_complexity f
   have htop : pairCoverComplexity {x | f x = true}
       (fun i => {x | AltFormula.literals x i = true}) ≠ ⊤ :=
     ne_top_of_le_ne_top (ENat.natCast_ne_top _) hlow

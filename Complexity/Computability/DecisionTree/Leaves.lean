@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.DecisionTree.Basic
+public import Complexity.Foundations.Data.BitString.Weight
 public import Mathlib.Data.Nat.Choose.Sum
 
 /-!
@@ -19,6 +20,12 @@ internal node count by one. A tree of depth `d` has at most `2 ^ d` leaves; refi
 Ehrenfeucht–Haussler rank `r` or by right-branch energy `e`, it has at most
 `∑ j ∈ Finset.range (r + 1), d.choose j` or `∑ j ∈ Finset.range (e + 1), d.choose j` leaves.
 Decision lists have rank at most `1`, hence at most `d + 1` leaves and `d` internal nodes.
+
+The energy bound is attained by ordered threshold comparisons: every positive number of leaves
+up to `BitString.ballSize q e` is realized at depth at most `q` and energy at most `e`. The
+construction returns each consecutive input index at its own leaf, so none of the counted leaves
+is unreachable. This is the ordered-tree step of the scalar capacity theorem, not a construction
+of native weighted-threshold circuits.
 
 ## Main definitions
 
@@ -40,11 +47,13 @@ Decision lists have rank at most `1`, hence at most `d + 1` leaves and `d` inter
 * `Cslib.DecisionTree.IsDecisionList.rank_le_one`: every decision list has rank at most `1`.
 * `Cslib.DecisionTree.leafCount_le_sum_choose_energy`: a tree of depth `d` and energy `e` has at
   most `∑ j ≤ e, d.choose j` leaves.
+* `Cslib.DecisionTree.exists_orderedComparisonTree_iff`: the exact leaf capacity of ordered
+  comparison trees, with an evaluation specification for every consecutive input index.
 
 ## References
 
-* [*Threshold Circuits as Decision Trees and Finite-State Programs*, Section 2.2]
-  [ThresholdCircuitRepresentations2026]
+* [*Threshold Circuits as Decision Trees and Finite-State Programs*, Section 2.2 and the
+  ordered-tree construction in the proof of Theorem 4.1][ThresholdCircuitRepresentations2026]
 -/
 
 @[expose] public section
@@ -142,11 +151,7 @@ theorem nodeCount_mapQueries {κ : Type*} (f : ι → κ) (t : DecisionTree ι �
 private theorem sum_choose_succ_add (r d : ℕ) :
     (∑ j ∈ Finset.range (r + 1 + 1), d.choose j) + (∑ j ∈ Finset.range (r + 1), d.choose j) =
       ∑ j ∈ Finset.range (r + 1 + 1), (d + 1).choose j := by
-  rw [Finset.sum_range_succ' (fun j => (d + 1).choose j) (r + 1),
-    Finset.sum_range_succ' (fun j => d.choose j) (r + 1)]
-  simp only [Nat.choose_succ_succ, Nat.succ_eq_add_one, Nat.choose_zero_right,
-    Finset.sum_add_distrib]
-  omega
+  simpa only [BitString.ballSize] using (BitString.ballSize_succ_succ d r).symm
 
 /-- The Ehrenfeucht–Haussler rank of a binary decision tree: leaves have rank zero, a node
 with unequal child ranks has their maximum, and equal child ranks `r` give rank `r + 1`. -/
@@ -342,5 +347,82 @@ theorem leafCount_le_sum_choose_of_energy_le (t : DecisionTree ι β) {e d : ℕ
 theorem leafCount_le_sum_choose_energy (t : DecisionTree ι β) :
     t.leafCount ≤ ∑ j ∈ Finset.range (t.energy + 1), t.depth.choose j :=
   t.leafCount_le_sum_choose_of_energy_le le_rfl le_rfl
+
+/-- **Exact ordered query-activity capacity.** A tree making scalar threshold comparisons has
+exactly `L` leaves, depth at most `q`, and true-branch energy at most `e`, with distinct outputs
+on `L` consecutive scalar inputs, if and only if `0 < L ≤ BitString.ballSize q e`.
+
+Query `k` asks whether `k ≤ a + j`; on input `a + j`, for `j < L`, the output is `a + j`.
+The arbitrary offset `a` lets the construction recurse on adjacent intervals. The theorem includes
+zero depth, zero energy, and energy budgets exceeding depth. It formalizes the ordered-tree
+construction in the proof of Theorem 4.1 of [ThresholdCircuitRepresentations2026], not the
+subsequent compilation into a native weighted-threshold circuit. -/
+theorem exists_orderedComparisonTree_iff (q e L a : ℕ) :
+    (∃ t : DecisionTree ℕ ℕ, t.leafCount = L ∧ t.depth ≤ q ∧ t.energy ≤ e ∧
+      ∀ j < L, t.eval (fun k => decide (k ≤ a + j)) = a + j) ↔
+      0 < L ∧ L ≤ BitString.ballSize q e := by
+  constructor
+  · rintro ⟨t, hcount, hdepth, henergy, _⟩
+    constructor
+    · simpa only [hcount] using t.leafCount_pos
+    · simpa only [hcount, BitString.ballSize] using
+        t.leafCount_le_sum_choose_of_energy_le henergy hdepth
+  · rintro ⟨hL0, hL⟩
+    induction q generalizing e L a with
+    | zero =>
+      have hL1 : L = 1 := by
+        simp only [BitString.ballSize_zero_left] at hL
+        omega
+      subst L
+      refine ⟨.leaf a, rfl, by simp, by simp, ?_⟩
+      intro j hj
+      have hj0 : j = 0 := by omega
+      simp [hj0]
+    | succ q ih =>
+      by_cases hL1 : L = 1
+      · subst L
+        refine ⟨.leaf a, rfl, by simp, by simp, ?_⟩
+        intro j hj
+        have hj0 : j = 0 := by omega
+        simp [hj0]
+      · cases e with
+        | zero =>
+          simp only [BitString.ballSize_zero_right] at hL
+          omega
+        | succ e =>
+          have hcap : L ≤ BitString.ballSize q (e + 1) + BitString.ballSize q e := by
+            simpa only [BitString.ballSize_succ_succ] using hL
+          have hpos := BitString.ballSize_pos q (e + 1)
+          have hrightCapacityPos := BitString.ballSize_pos q e
+          let leftLeaves := min (BitString.ballSize q (e + 1)) (L - 1)
+          have hleftPos : 0 < leftLeaves := by
+            dsimp only [leftLeaves]
+            omega
+          have hleftLt : leftLeaves < L := by
+            dsimp only [leftLeaves]
+            omega
+          have hleftCap : leftLeaves ≤ BitString.ballSize q (e + 1) := min_le_left _ _
+          have hrightPos : 0 < L - leftLeaves := by omega
+          have hrightCap : L - leftLeaves ≤ BitString.ballSize q e := by
+            dsimp only [leftLeaves]
+            omega
+          obtain ⟨tl, hll, hld, hle, hlv⟩ := ih (e + 1) leftLeaves a hleftPos hleftCap
+          obtain ⟨tr, hrl, hrd, hre, hrv⟩ :=
+            ih e (L - leftLeaves) (a + leftLeaves) hrightPos hrightCap
+          refine ⟨.node (a + leftLeaves) tl tr, ?_, ?_, ?_, ?_⟩
+          · change tl.leafCount + tr.leafCount = L
+            omega
+          · change max tl.depth tr.depth + 1 ≤ q + 1
+            omega
+          · change max tl.energy (tr.energy + 1) ≤ e + 1
+            omega
+          · intro j hj
+            by_cases hjl : j < leftLeaves
+            · have hquery : ¬a + leftLeaves ≤ a + j := by omega
+              simpa [hquery] using hlv j hjl
+            · have hquery : a + leftLeaves ≤ a + j := by omega
+              have hjr : j - leftLeaves < L - leftLeaves := by omega
+              have hsum : a + leftLeaves + (j - leftLeaves) = a + j := by omega
+              simpa [hquery, hsum] using hrv (j - leftLeaves) hjr
 
 end Cslib.DecisionTree

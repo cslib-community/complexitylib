@@ -61,8 +61,9 @@ about `evalWith`.
 
 ## Main results
 
-* `Cslib.OracleComp.evalWith_bind`, `.mem_supportWith_bind_iff`, `.runWith_bind`, and the `pure`,
-  `map` and `query` rules: the structural rules of each semantics.
+* `Cslib.OracleComp.evalWith_bind`, `.mem_supportWith_bind_iff`, `.runWith_bind`,
+  `.bind_congr_on_support`, and the `pure`, `map` and `query` rules: the structural rules of each
+  semantics.
 * `Cslib.OracleComp.isMonadHom_evalWith`: `evalWith h` is a monad morphism.
 * `Cslib.OracleComp.evalWith_interpret`, `.supportWith_interpret`: replacing calls by programs
   composes with the semantics.
@@ -71,8 +72,9 @@ about `evalWith`.
 * `Cslib.OracleComp.runWith_lift`: memoryless oracles leave the state unchanged.
 * `Cslib.OracleComp.support_liftLeft`, `.support_liftRight`: embedding into a sum keeps the
   possible results.
-* `Cslib.ProbComp.eval_eq_evalWith`, `Cslib.ProbComp.support_eval`: closed
-  probabilistic programs are the instance with uniform answers.
+* `Cslib.ProbComp.eval_eq_evalWith`, `Cslib.ProbComp.support_eval`,
+  `Cslib.ProbComp.support_nonempty`, `Cslib.ProbComp.mem_support_unifFin`: closed probabilistic
+  programs are the instance with uniform answers.
 * `Cslib.ProbComp.isMonadHom_eval`, `Cslib.ProbComp.eval_interpret`: the instances of
   `isMonadHom_evalWith` and `evalWith_interpret`.
 
@@ -242,6 +244,19 @@ theorem eq_of_mem_supportWith_pure {possible : (q : ι) → Set (spec q)} {a b :
 of calls. It is `supportWith` with every reply possible, and the rules of `supportWith` apply. -/
 abbrev support (program : OracleComp spec α) : Set α :=
   supportWith (fun _ => Set.univ) program
+
+/-- Two continuations that agree on every possible output of `program` have identical `>>=` in
+`OracleComp`. -/
+theorem bind_congr_on_support {program : OracleComp spec α}
+    {f g : α → OracleComp spec β} (h : ∀ a ∈ program.support, f a = g a) :
+    program >>= f = program >>= g := by
+  induction program using OracleComp.induction with
+  | pure a =>
+    simpa only [pure_bind] using h a rfl
+  | query_bind q cont ih =>
+    simp only [bind_assoc]
+    exact congrArg (query q >>= ·) (funext fun r => ih r fun a ha =>
+      h a (mem_supportWith_bind_iff.mpr ⟨r, by simp, ha⟩))
 
 /-! ### Evaluation and support -/
 
@@ -421,6 +436,16 @@ theorem support_eval (program : ProbComp α) :
   congr 1
   funext n
   exact Set.eq_univ_of_forall fun a => by simp [unifOracle, PMF.mem_support_iff]
+
+/-- Every closed probabilistic program has at least one possible result. -/
+theorem support_nonempty (program : ProbComp α) : program.support.Nonempty := by
+  rw [← support_eval]
+  exact (eval program).support_nonempty
+
+/-- Every value in `Fin (n + 1)` is a possible output of `unifFin n`. -/
+@[simp]
+theorem mem_support_unifFin (n : ℕ) (k : Fin (n + 1)) : k ∈ (unifFin n).support := by
+  simp [unifFin, OracleComp.support]
 
 /-- Evaluating a closed probabilistic program is a monad morphism into `PMF`. -/
 theorem isMonadHom_eval : IsMonadHom ProbComp PMF (@eval) :=

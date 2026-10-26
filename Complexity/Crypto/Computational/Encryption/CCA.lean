@@ -620,9 +620,9 @@ theorem eval_cca2Game_ofCPA {Out : Type} (encOut : Out ↪ List Bool)
     (adversary : Adversary) (bit : Bool) (n : ℕ) :
     ProbComp.eval (cca2Game encOut keyGen encrypt decrypt (CCA2Adversary.ofCPA adversary) bit n) =
       ProbComp.eval (game keyGen encrypt adversary bit n) := by
-  simp only [cca2Game, cca2GameOn, ↓reduceIte, game, CCA2Adversary.ofCPA, ProbComp.eval_bind,
-    ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_sample,
-    PMF.bind_map, PMF.bind_pure, Function.comp_def]
+  simp only [cca2Game, cca2GameOn, ↓reduceIte, game, gameOn, CCA2Adversary.ofCPA,
+    ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret,
+    ProbOracleComp.run_interpret_sample, PMF.bind_map, PMF.bind_pure, Function.comp_def]
 
 /-- **1CCA security implies IND-CPA security**: any bit encryption scheme satisfying `INDCCA2Of`
 also satisfies `INDCPA`. -/

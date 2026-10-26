@@ -129,7 +129,7 @@ private theorem forgetful_secure : Encryption.INDCPA forgetful.keyGen forgetful.
   have heq (n : ℕ) :
       ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt adversary false n) =
       ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt adversary true n) := by
-    simp [Encryption.game, forgetful]
+    simp [Encryption.game, Encryption.gameOn, forgetful]
   simpa only [heq, Game.advantage_self] using negligible_zero
 
 private theorem forgetful_circular : Encryption.CircularSecure
