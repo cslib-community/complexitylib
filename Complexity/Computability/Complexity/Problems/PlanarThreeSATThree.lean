@@ -11,12 +11,13 @@ public import Complexity.Computability.Complexity.Problems.ThreeSATThree
 public import Complexity.Computability.Complexity.Problems.ThreeSATThree.Syntax
 public import Complexity.Computability.Complexity.Problems.ThreeSATThree.Size
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawing.Encoding
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.PolyTime
-import Complexity.Computability.Complexity.Problems.SAT.Planar.Completeness
-import Complexity.Computability.Complexity.Problems.SAT.Planar.Occurrence
-import Complexity.Computability.Complexity.Problems.SAT.Planar.Geometry
-import Complexity.Computability.Complexity.Problems.SAT.Planar.Size
-import Complexity.Computability.Complexity.Problems.SAT.Planar.Bounds
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedPolyTime
+public import Complexity.Computability.Complexity.Problems.ThreeSATThree.Counting
+import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCounting
+import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedOccurrence
+import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedGeometry
+import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedSize
+import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedBounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -37,6 +38,9 @@ with all contacts interpreted on full real segments. Parallel literal incidences
 requires its existence. The total compiler rejects inputs outside the syntactic restrictions
 by returning one empty clause and a one-vertex drawing.
 
+The compiler is parsimonious: its paired implications force equality along each wire, and the
+local rings and crossover have unique extensions. Counts refer only to occurring variables.
+
 ## Main definitions
 
 * `PlanarThreeSATThree`, `DrawnPlanarThreeSATThree`: formula and supplied-drawing problems.
@@ -49,13 +53,19 @@ by returning one empty clause and a one-vertex drawing.
 * `computableInPolyTime_toDrawnPlanarThreeSATThree`,
   `computableInPolyTime_toPlanarThreeSATThree`: native polynomial-time computation.
 * `satisfiable_toPlanarThreeSAT_iff`: total correctness after occurrence splitting.
+* `modelCount_toPlanarThreeSATThree`, `modelCount_toPlanarThreeSAT`: exact count preservation
+  on valid source syntax.
 * `toDrawnPlanarThreeSAT_fits`, `toDrawnPlanarThreeSAT_costs`: explicit linear grid sides
   and quadratic formula, incidence-route, segment and Manhattan wire costs, measured against
   the original formula's clause and literal counts.
 
 ## References
 
-The finite tiling construction is original; the fixed crossover is credited in `Crossover`.
+* Parsimonious planarization: Theorem 3.2 and Claim 3.3 of
+  [Hunt, Marathe, Radhakrishnan and Stearns][HuntMaratheRadhakrishnanStearns1998].
+
+The paired-port tiling, degree-three templates and explicit grid bounds are original.
+The fixed crossover's source credit is documented in `Crossover`.
 -/
 
 @[expose] public section
@@ -77,7 +87,8 @@ def DrawnPlanarThreeSATThree : Set (CNF ℕ × Graph.OrthogonalDrawing) :=
 unsatisfiable empty clause with its isolated clause vertex. -/
 def toDrawnPlanarThreeSATThree (φ : CNF ℕ) : CNF ℕ × Graph.OrthogonalDrawing :=
   if ThreeSATThree.syntaxCheck φ then
-    (SAT.PlanarCompile.formula φ, SAT.PlanarCompile.positions φ, SAT.PlanarCompile.routes φ)
+    (SAT.ParsimoniousPlanar.formula φ,
+      SAT.ParsimoniousPlanar.positions φ, SAT.ParsimoniousPlanar.routes φ)
   else ([[]], [(0, 0)], [])
 
 /-- Forget the drawing emitted by the total compiler. -/
@@ -113,7 +124,7 @@ theorem width_toPlanarThreeSATThree (φ : CNF ℕ) :
     ∀ c ∈ toPlanarThreeSATThree φ, c.length ≤ 3 := by
   by_cases hg : ThreeSATThree.syntaxCheck φ = true
   · simpa only [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg, ↓reduceIte] using
-      SAT.PlanarCompile.width_formula ((ThreeSATThree.syntaxCheck_iff φ).1 hg).1
+      SAT.ParsimoniousPlanar.width_formula ((ThreeSATThree.syntaxCheck_iff φ).1 hg).1
   · simp [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg]
 
 /-- The actual total output has at most three literal positions for every variable. -/
@@ -122,8 +133,30 @@ theorem count_vars_toPlanarThreeSATThree (φ : CNF ℕ) :
   by_cases hg : ThreeSATThree.syntaxCheck φ = true
   · have hs := (ThreeSATThree.syntaxCheck_iff φ).1 hg
     simpa only [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg, ↓reduceIte] using
-      SAT.PlanarCompile.count_vars_formula_le_three hs.1 hs.2
+      SAT.ParsimoniousPlanar.count_vars_formula_le_three hs.1 hs.2
   · simp [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg, CNF.vars]
+
+/-- Valid width-three, occurrence-three inputs preserve their exact number of models. -/
+theorem modelCount_toPlanarThreeSATThree (φ : CNF ℕ)
+    (hw : ∀ c ∈ φ, c.length ≤ 3) (hv : ∀ v, φ.vars.count v ≤ 3) :
+    (toPlanarThreeSATThree φ).modelCount = φ.modelCount := by
+  have hg := (ThreeSATThree.syntaxCheck_iff φ).2 ⟨hw, hv⟩
+  simpa only [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg, ↓reduceIte] using
+    SAT.ParsimoniousPlanar.modelCount_formula φ hw hv
+
+/-- The total planar compiler preserves syntax-guarded counts, including rejected inputs. -/
+theorem sharpThreeSATThree_toPlanarThreeSATThree (φ : CNF ℕ) :
+    SharpThreeSATThree (toPlanarThreeSATThree φ) = SharpThreeSATThree φ := by
+  have hout := (ThreeSATThree.syntaxCheck_iff (toPlanarThreeSATThree φ)).2
+    ⟨width_toPlanarThreeSATThree φ, count_vars_toPlanarThreeSATThree φ⟩
+  simp only [SharpThreeSATThree, hout, ↓reduceIte]
+  by_cases hg : ThreeSATThree.syntaxCheck φ = true
+  · have hs := (ThreeSATThree.syntaxCheck_iff φ).1 hg
+    rw [modelCount_toPlanarThreeSATThree φ hs.1 hs.2]
+    simp only [hg, ↓reduceIte]
+  · simp only [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg,
+      Bool.false_eq_true, ite_false]
+    decide
 
 /-- The total output is satisfiable exactly on the source 3SAT-3 language. -/
 theorem satisfiable_toPlanarThreeSATThree_iff (φ : CNF ℕ) :
@@ -132,7 +165,7 @@ theorem satisfiable_toPlanarThreeSATThree_iff (φ : CNF ℕ) :
   · have hs := (ThreeSATThree.syntaxCheck_iff φ).1 hg
     have he : (toPlanarThreeSATThree φ).Satisfiable ↔ φ.Satisfiable := by
       simpa only [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg, ↓reduceIte] using
-        SAT.PlanarCompile.satisfiable_formula_iff hs.1 hs.2
+        SAT.ParsimoniousPlanar.satisfiable_formula_iff φ hs.1 hs.2
     exact he.trans ⟨fun h => ⟨hs.1, hs.2, h⟩, fun h => h.2.2⟩
   · have hn : φ ∉ ThreeSATThree := by
       intro h
@@ -147,7 +180,7 @@ theorem isPlanarOrthogonalDrawing_toDrawnPlanarThreeSATThree (φ : CNF ℕ) :
   by_cases hg : ThreeSATThree.syntaxCheck φ = true
   · have hs := (ThreeSATThree.syntaxCheck_iff φ).1 hg
     simpa only [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg, ↓reduceIte] using
-      SAT.PlanarCompile.isPlanarOrthogonalDrawing hs.1 hs.2
+      SAT.ParsimoniousPlanar.isPlanarOrthogonalDrawing hs.1 hs.2
   · simpa [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg] using
       rejection_drawing
 
@@ -203,8 +236,8 @@ theorem toDrawnPlanarThreeSATThree_fits (φ : CNF ℕ) :
       (1920 * (φ.numVars + φ.length + φ.vars.length + 1)) := by
   by_cases hg : ThreeSATThree.syntaxCheck φ = true
   · simpa only [toDrawnPlanarThreeSATThree, hg, ↓reduceIte] using
-      Graph.drawingFits_mono (SAT.PlanarCompile.drawing_fits φ)
-        (SAT.PlanarCompile.gridWidth_le φ) (SAT.PlanarCompile.gridHeight_le φ)
+      Graph.drawingFits_mono (SAT.ParsimoniousPlanar.drawing_fits φ)
+        (SAT.ParsimoniousPlanar.gridWidth_le φ) (SAT.ParsimoniousPlanar.gridHeight_le φ)
   · have hn : (0 : ℤ) ≤ φ.numVars + φ.length + φ.vars.length + 1 := by positivity
     simpa [toDrawnPlanarThreeSATThree, hg, Graph.drawingFits] using hn
 
@@ -212,15 +245,16 @@ theorem toDrawnPlanarThreeSATThree_fits (φ : CNF ℕ) :
 theorem toDrawnPlanarThreeSATThree_costs (φ : CNF ℕ) :
     let out := toDrawnPlanarThreeSATThree φ
     let s := φ.numVars + φ.length + φ.vars.length + 1
-    out.1.length ≤ 600 * s ^ 2 ∧ out.1.vars.length ≤ 1210 * s ^ 2 ∧
-      out.2.2.length ≤ 1210 * s ^ 2 ∧ Graph.drawingSegmentCount out.2 ≤ 23000 * s ^ 2 ∧
-        Graph.drawingWireLength out.2 ≤ 300000 * s ^ 2 := by
+    out.1.length ≤ 5000 * s ^ 2 ∧ out.1.vars.length ≤ 10000 * s ^ 2 ∧
+      out.2.2.length ≤ 10000 * s ^ 2 ∧ Graph.drawingSegmentCount out.2 ≤ 12000 * s ^ 2 ∧
+        Graph.drawingWireLength out.2 ≤ 400000 * s ^ 2 := by
   dsimp only
   by_cases hg : ThreeSATThree.syntaxCheck φ = true
   · simp only [toDrawnPlanarThreeSATThree, hg, ↓reduceIte]
-    exact ⟨SAT.PlanarCompile.length_formula_le φ, SAT.PlanarCompile.length_vars_formula_le φ,
-      SAT.PlanarCompile.routes_length_le φ, SAT.PlanarCompile.drawingSegmentCount_le φ,
-      SAT.PlanarCompile.drawingWireLength_le φ⟩
+    exact ⟨SAT.ParsimoniousPlanar.length_formula_le φ,
+      SAT.ParsimoniousPlanar.length_vars_formula_le φ,
+      SAT.ParsimoniousPlanar.routes_length_le φ, SAT.ParsimoniousPlanar.drawingSegmentCount_le φ,
+      SAT.ParsimoniousPlanar.drawingWireLength_le φ⟩
   · have hsize : 1 ≤ φ.numVars + φ.length + φ.vars.length + 1 := by omega
     have hvars : CNF.vars ([[]] : CNF ℕ) = [] := rfl
     simp only [toDrawnPlanarThreeSATThree, hg]
@@ -247,6 +281,12 @@ theorem computableInPolyTime_toPlanarThreeSAT :
     ComputableInPolyTime toPlanarThreeSAT encCNF encCNF :=
   (ComputableInPolyTime.fst encCNF Graph.encOrthogonalDrawing).comp
     computableInPolyTime_toDrawnPlanarThreeSAT
+
+/-- Occurrence splitting and planarization preserve all models of width-three inputs. -/
+theorem modelCount_toPlanarThreeSAT (φ : CNF ℕ) (hw : ∀ c ∈ φ, c.length ≤ 3) :
+    (toPlanarThreeSAT φ).modelCount = φ.modelCount :=
+  (modelCount_toPlanarThreeSATThree (toThreeSATThree φ) (width_toThreeSATThree φ)
+    (count_vars_toThreeSATThree_le φ)).trans (modelCount_toThreeSATThree φ hw)
 
 /-- The total output is satisfiable exactly when the original input belongs to 3SAT. -/
 theorem satisfiable_toPlanarThreeSAT_iff (φ : CNF ℕ) :
@@ -285,9 +325,9 @@ theorem toDrawnPlanarThreeSAT_fits (φ : CNF ℕ) :
 theorem toDrawnPlanarThreeSAT_costs (φ : CNF ℕ) :
     let out := toDrawnPlanarThreeSAT φ
     let s := φ.length + φ.vars.length + 1
-    out.1.length ≤ 29400 * s ^ 2 ∧ out.1.vars.length ≤ 59290 * s ^ 2 ∧
-      out.2.2.length ≤ 59290 * s ^ 2 ∧ Graph.drawingSegmentCount out.2 ≤ 1127000 * s ^ 2 ∧
-        Graph.drawingWireLength out.2 ≤ 14700000 * s ^ 2 := by
+    out.1.length ≤ 245000 * s ^ 2 ∧ out.1.vars.length ≤ 490000 * s ^ 2 ∧
+      out.2.2.length ≤ 490000 * s ^ 2 ∧ Graph.drawingSegmentCount out.2 ≤ 588000 * s ^ 2 ∧
+        Graph.drawingWireLength out.2 ≤ 19600000 * s ^ 2 := by
   have hb := size_toThreeSATThree_le φ
   have hs : ((toThreeSATThree φ).numVars + (toThreeSATThree φ).length +
       (toThreeSATThree φ).vars.length + 1) ^ 2 ≤

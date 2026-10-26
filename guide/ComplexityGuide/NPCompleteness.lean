@@ -242,13 +242,17 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   count separately. {name}`Cslib.Logic.PL.CNF.toThreeOccurrence` gives each occurrence a fresh
   copy and connects copies by binary implication cycles. For `m` clauses and `ℓ` literal
   occurrences it produces exactly `m + ℓ` clauses, `3ℓ` literal occurrences, and `ℓ` distinct
-  variables. No planarity condition is imposed.
+  variables. The implication cycles force each copy's value, so the reduction also preserves
+  the exact number of satisfying assignments ({name}`modelCount_toThreeSATThree`). No planarity
+  condition is imposed.
 * Orthogonal planar 3SAT-3 is NP-hard, both when a drawing must exist
   ({name}`PlanarThreeSATThree_npHard`) and when it is supplied
   ({name}`DrawnPlanarThreeSATThree_npHard`). Clauses have width at most three, binary clauses
   are allowed, and each variable has at most three literal occurrences. Routes are simple
   integer orthogonal paths whose full real supports meet only at common graph endpoints.
   The native polynomial-time compiler {name}`toDrawnPlanarThreeSAT` starts from ordinary 3SAT.
+  Its paired implications and local templates have unique extensions, preserving the exact
+  model count ({name}`modelCount_toPlanarThreeSAT`); only occurring variables are counted.
   For original size `S = clauses + literal occurrences + 1`, its grid sides are at most
   `13440*S`; formula size, route count, segment count and Manhattan wire length are quadratic
   in `S` ({name}`toDrawnPlanarThreeSAT_fits`, {name}`toDrawnPlanarThreeSAT_costs`).

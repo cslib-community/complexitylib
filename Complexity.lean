@@ -812,15 +812,9 @@ public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence.Compact
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence.Degree
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.Bounds
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.Compile
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.Completeness
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.Correctness
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverLayout
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverLayoutChecks
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverLayoutData
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.Geometry
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.Occurrence
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.OrdinaryRing
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedBounds
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCompile
@@ -841,9 +835,6 @@ public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathGeomet
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathPolyTime
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths.Occupancy
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.PolyTime
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.Semantics
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.Size
 public import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 public import Complexity.Computability.Complexity.Problems.SATUNSAT
 public import Complexity.Computability.Complexity.Problems.STCON
