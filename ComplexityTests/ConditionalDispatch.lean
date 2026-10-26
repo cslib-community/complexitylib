@@ -196,4 +196,43 @@ example (guard : List Bool → Bool) (yes no : List Bool → List Bool)
       (fun word => if guard word then yes word else no word) encBits encBits := by
   polytime
 
+-- Register only after the other controls: this deliberately indexes the conditional head
+-- itself. Every direct guard/branch certificate is available, so the fast attempt could close
+-- the goal if it incorrectly ran ahead of the indexed certificate.
+private theorem indexedConditional {α β : Type} {input : α ↪ List Bool}
+    {output : β ↪ List Bool} {guard : ℕ → α → Bool} {yes no : α → β} (n : ℕ)
+    (_hbound : n ≤ n) (hc : ComputableInPolyTime (guard n) input encBool)
+    (hy : ComputableInPolyTime yes input output) (hn : ComputableInPolyTime no input output) :
+    ComputableInPolyTime (fun a => if guard n a then yes a else no a) input output := by
+  clear _hbound
+  exact ComputableInPolyTime.ite hc hy hn
+
+-- Eager premises make the indexed application close at its parent, so a later generic
+-- unsafe application cannot hide an inert index while its children await expansion.
+attribute [local program_certificate _hbound hc hy hn] indexedConditional
+
+set_option maxHeartbeats 200000 in
+-- Keep the original default budget for this indexed conditional precedence control.
+private theorem indexedConditionalDriver {α β : Type} {input : α ↪ List Bool}
+    {output : β ↪ List Bool} {guard : ℕ → α → Bool} {yes no : α → β} (n : ℕ)
+    (hc : ComputableInPolyTime (guard n) input encBool)
+    (hy : ComputableInPolyTime yes input output) (hn : ComputableInPolyTime no input output) :
+    ComputableInPolyTime (fun a => if guard n a then yes a else no a) input output := by
+  polytime
+
+run_meta do
+  let certificate := ``indexedConditional
+  let type := (← Lean.getConstInfo certificate).type
+  let key ← Lean.Meta.forallTelescope type fun _ conclusion =>
+    Cslib.Tactic.efficiencyKey conclusion
+  let entries := (Cslib.Tactic.certificateExt.getState (← Lean.getEnv)).getD key #[]
+  unless key.2.1 == ``ite && entries.any (fun entry => entry.1 == certificate) do
+    throwError "conditional certificate is not indexed by its actual conditional head"
+  let info ← Lean.getConstInfo ``indexedConditionalDriver
+  let some value := info.value? (allowOpaque := true) | throwError "missing indexed driver proof"
+  let head ← Lean.Meta.lambdaTelescope value fun _ body =>
+    pure body.consumeMData.getAppFn.constName?
+  unless head == some certificate do
+    throwError "conditional driver bypassed its indexed certificate: {head}"
+
 end ConditionalDispatchTests
