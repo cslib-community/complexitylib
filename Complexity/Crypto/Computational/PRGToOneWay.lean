@@ -78,7 +78,7 @@ def test (generator : List Bool → List Bool) (adversary : Inverter) :
 /-- The test is PPT when the generator is polynomial time and the inverter is PPT. -/
 @[program_certificate]
 theorem isPPT_test {generator : List Bool → List Bool} {adversary : Inverter}
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits)
+    (hgenerator : ComputableInPolyTime generator encBits encBits)
     (hadversary : IsPPT encBits adversary) :
     IsPPT encBool (test generator adversary) := by
   unfold test
@@ -150,7 +150,7 @@ theorem PseudorandomGenerator.oneWay_of_card_le {generator : List Bool → List 
     (hcard : ∀ n, (#(P n) : ℝ≥0) ≤ ε n * 2 ^ ℓ n) : OneWay generator := by
   refine OneWay.of_inversion_negligible hgenerator.polyTime fun adversary hadversary => ?_
   have hind := hgenerator.indistinguishable (test generator adversary)
-    (isPPT_test hgenerator.polyTime.tidy hadversary)
+    (isPPT_test hgenerator.polyTime hadversary)
   refine negligible_of_le (hind.add_fun hε) fun n => ?_
   rw [inversionGame_eq_prgRealGame, eval_prgRealGame]
   exact ((NNReal.le_add_nndist _ _).trans_eq (add_comm _ _)).trans <| by

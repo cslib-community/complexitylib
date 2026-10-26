@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Computational.Homomorphic.GSW.Serialized.Evaluation
 public import Complexity.Computability.Circuit.Boolean.Modular.InnerProduct
 public import Complexity.Computability.Circuit.Boolean.Modular.Subtract
+import Complexity.Foundations.Data.List.Lookup
 import Complexity.Foundations.Data.Nat.Bits
 import Mathlib.Data.List.GetD
 
@@ -80,7 +81,7 @@ private theorem inputCiphertext_apply (x : BitString (inputWidth n w))
   have hp : (i.val * w + k.val) * ((n + 1) * w) + j.val * w + l.val = p.val := by
     simp only [p, finProdFinEquiv, Equiv.coe_fn_mk, Fin.val_mk]
     ring
-  rw [hp, List.getD_eq_getElem _ _ (by simp), List.getElem_ofFn, sndBits_apply]
+  rw [hp, List.getD_ofFn, sndBits_apply]
 
 /-- The selected row is the last binary digit of the leading expanded-secret coordinate. -/
 private def selectedRow (n w : ℕ) (hw : 0 < w) : Fin (n + 1) × Fin w :=

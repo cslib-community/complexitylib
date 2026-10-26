@@ -53,8 +53,8 @@ randomized version, for a decision procedure in `BPP`, is in
   preimage-prefix problem of a polynomial-time function is in `NP`.
 * `Cslib.Crypto.apply_preimageSearch`, `Cslib.Crypto.preimageSearch_congr`: with correct answers
   the search finds a preimage, and only the answers to its own `n` queries matter.
-* `Cslib.Crypto.computableTidilyInPolyTime_preimageSearch`,
-  `Cslib.Crypto.computableTidilyInPolyTime_preimageSearch_of_input`: the search is polynomial-time
+* `Cslib.Crypto.computableInPolyTime_preimageSearch`,
+  `Cslib.Crypto.computableInPolyTime_preimageSearch_of_input`: the search is polynomial-time
   when the decision procedure is.
 * `Cslib.Crypto.exists_inverse_of_preimagePrefix_mem_P`: if it is in `P`, a deterministic
   polynomial-time algorithm finds a preimage of every image.
@@ -127,18 +127,19 @@ theorem isVerifier_preimagePrefixVerifier (f : List Bool → List Bool) :
 
 /-- The verifier is polynomial-time when `f` is. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_preimagePrefixVerifier
-    (hf : ComputableTidilyInPolyTime f encBits encBits) :
-    ComputableTidilyInPolyTime (preimagePrefixVerifier f) (encPair encPreimagePrefix encBits)
+theorem computableInPolyTime_preimagePrefixVerifier
+    (hf : ComputableInPolyTime f encBits encBits) :
+    ComputableInPolyTime (preimagePrefixVerifier f) (encPair encPreimagePrefix encBits)
       encBool := by
   unfold preimagePrefixVerifier
   fun_prop
 
 /-- **The preimage-prefix problem is in `NP`** for every function computable in polynomial
 time. -/
-theorem preimagePrefix_mem_NP (hf : ComputableTidilyInPolyTime f encBits encBits) :
-    preimagePrefix f ∈ NP encPreimagePrefix :=
-  ⟨_, _, .of_tidy (computableTidilyInPolyTime_preimagePrefixVerifier hf),
+theorem preimagePrefix_mem_NP (hf : ComputableInPolyTime f encBits encBits) :
+    preimagePrefix f ∈ NP encPreimagePrefix := by
+  have hf := hf.tidy
+  exact ⟨_, _, (computableInPolyTime_preimagePrefixVerifier (.of_tidy hf)),
     isVerifier_preimagePrefixVerifier f⟩
 
 /-! ### Search to decision -/
@@ -224,12 +225,15 @@ theorem preimageSearch_congr {D D' : ℕ × List Bool × List Bool → Bool} {q 
 
 /-- **The search is polynomial-time** when the decision procedure is, also for a decision
 procedure `D x` and a target `q x` that depend on the input `x`. -/
-theorem computableTidilyInPolyTime_preimageSearch_of_input {γ : Type} {encIn : γ ↪ List Bool}
+theorem computableInPolyTime_preimageSearch_of_input {γ : Type} {encIn : γ ↪ List Bool}
     {D : γ → ℕ × List Bool × List Bool → Bool} {q : γ → ℕ × List Bool}
-    (hD : ComputableTidilyInPolyTime (fun p : γ × (ℕ × List Bool × List Bool) => D p.1 p.2)
+    (hD : ComputableInPolyTime (fun p : γ × (ℕ × List Bool × List Bool) => D p.1 p.2)
       (encPair encIn encPreimagePrefix) encBool)
-    (hq : ComputableTidilyInPolyTime q encIn (encPair encUnary encBits)) :
-    ComputableTidilyInPolyTime (fun x => preimageSearch (D x) (q x)) encIn encBits := by
+    (hq : ComputableInPolyTime q encIn (encPair encUnary encBits)) :
+    ComputableInPolyTime (fun x => preimageSearch (D x) (q x)) encIn encBits := by
+  have hD := hD.tidy
+  have hq := hq.tidy
+  refine .of_tidy ?_
   unfold preimageSearch
   refine iterateWithInput_of_bounded_growth hq.fst' (const []) ?_ ⟨.const 1, fun x u => ?_⟩
   · have hinst : ComputableTidilyInPolyTime (fun p : γ × List Bool =>
@@ -243,20 +247,22 @@ theorem computableTidilyInPolyTime_preimageSearch_of_input {γ : Type} {encIn : 
 
 /-- **The search is polynomial-time** when the decision procedure is. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_preimageSearch {D : ℕ × List Bool × List Bool → Bool}
-    (hD : ComputableTidilyInPolyTime D encPreimagePrefix encBool) :
-    ComputableTidilyInPolyTime (preimageSearch D) (encPair encUnary encBits) encBits :=
-  computableTidilyInPolyTime_preimageSearch_of_input (D := fun _ => D) (hD.comp (snd _ _)) id'
+theorem computableInPolyTime_preimageSearch {D : ℕ × List Bool × List Bool → Bool}
+    (hD : ComputableInPolyTime D encPreimagePrefix encBool) :
+    ComputableInPolyTime (preimageSearch D) (encPair encUnary encBits) encBits :=
+  computableInPolyTime_preimageSearch_of_input (D := fun _ => D) (hD.comp
+    (ComputableInPolyTime.snd _ _)) ComputableInPolyTime.id'
 
 /-- **Inversion from the preimage-prefix problem.** If the preimage-prefix problem of `f` is in
 `P`, a deterministic polynomial-time algorithm, told the length of the input, finds a preimage of
 every image. -/
 theorem exists_inverse_of_preimagePrefix_mem_P (h : preimagePrefix f ∈ P encPreimagePrefix) :
     ∃ inverse : ℕ × List Bool → List Bool,
-      ComputableTidilyInPolyTime inverse (encPair encUnary encBits) encBits ∧
+      ComputableInPolyTime inverse (encPair encUnary encBits) encBits ∧
         ∀ x, f (inverse (x.length, f x)) = f x := by
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
   obtain ⟨D, hD, hDf⟩ := h
-  exact ⟨preimageSearch D, computableTidilyInPolyTime_preimageSearch hD.tidy,
+  exact ⟨preimageSearch D, (computableInPolyTime_preimageSearch hD).tidy,
     apply_preimageSearch hDf⟩
 
 /-! ### One-way functions -/
@@ -265,9 +271,10 @@ theorem exists_inverse_of_preimagePrefix_mem_P (h : preimagePrefix f ∈ P encPr
 told the length of the input, finds a preimage of every image, inverts with probability one. This
 is `Cslib.Crypto.not_oneWay_of_inverse` for an inverter certified on the pair encoding. -/
 theorem not_oneWay_of_lengthInverse (inverse : ℕ × List Bool → List Bool)
-    (hinverse : ComputableTidilyInPolyTime inverse (encPair encUnary encBits) encBits)
-    (h : ∀ x, f (inverse (x.length, f x)) = f x) : ¬ OneWay f :=
-  not_oneWay_of_inverse f (fun n y => inverse (n, y)) hinverse.isPPTOn.isPPT h
+    (hinverse : ComputableInPolyTime inverse (encPair encUnary encBits) encBits)
+    (h : ∀ x, f (inverse (x.length, f x)) = f x) : ¬ OneWay f := by
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hinverse
+  exact not_oneWay_of_inverse f (fun n y => inverse (n, y)) hinverse.isPPTOn.isPPT h
 
 /-- **One-way functions have hard preimage-prefix problems**: the preimage-prefix problem of a
 one-way function is not in `P`. -/
@@ -278,14 +285,14 @@ theorem OneWay.preimagePrefix_notMem_P (hf : OneWay f) :
 
 /-- **One-way functions imply `P ≠ NP`**, for instances of the preimage-prefix problem. -/
 theorem OneWay.P_ne_NP (hf : OneWay f) : P encPreimagePrefix ≠ NP encPreimagePrefix := fun h =>
-  hf.preimagePrefix_notMem_P (h ▸ preimagePrefix_mem_NP hf.polyTime.tidy)
+  hf.preimagePrefix_notMem_P (h ▸ preimagePrefix_mem_NP hf.polyTime)
 
 /-- **One-way functions imply `SAT ∉ P`**: by the Cook–Levin theorem, the preimage-prefix problem
 reduces to `SAT`. -/
 theorem OneWay.SAT_notMem_P (hf : OneWay f) : SAT ∉ P encCNF := fun h =>
   hf.preimagePrefix_notMem_P
     ((CookLevin.SAT_npComplete.2 encPreimagePrefix _
-      (preimagePrefix_mem_NP hf.polyTime.tidy)).mem_P h)
+      (preimagePrefix_mem_NP hf.polyTime)).mem_P h)
 
 /-- If `SAT` is in `P`, no function is one-way. -/
 theorem not_oneWay_of_SAT_mem_P (h : SAT ∈ P encCNF) : ¬ OneWay f := fun hf =>

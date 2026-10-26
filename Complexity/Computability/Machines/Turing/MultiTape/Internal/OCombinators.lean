@@ -10,7 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearPairPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Bounds
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Append
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelAppend
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 import Mathlib.Tactic.Ring
 import Mathlib.Tactic.Linarith

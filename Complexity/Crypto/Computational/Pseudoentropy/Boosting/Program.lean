@@ -165,59 +165,70 @@ private theorem isPolyTime_fields
 @[program_certificate]
 theorem isPolyTime_mk {stopped : α → Bool} {threshold : α → ℕ}
     {predictors : α → List (List Bool)}
-    (hstopped : ComputableTidilyInPolyTime stopped input encBool)
-    (hthreshold : ComputableTidilyInPolyTime threshold input encUnary)
-    (hpredictors : ComputableTidilyInPolyTime predictors input (encList encBits)) :
-    ComputableTidilyInPolyTime (fun a => ⟨stopped a, threshold a, predictors a⟩) input encoding :=
-  (hstopped.prod (hthreshold.prod hpredictors)).of_enc_eq (fun _ => rfl)
+    (hstopped : ComputableInPolyTime stopped input encBool)
+    (hthreshold : ComputableInPolyTime threshold input encUnary)
+    (hpredictors : ComputableInPolyTime predictors input (encList encBits)) :
+    ComputableInPolyTime (fun a => ⟨stopped a, threshold a, predictors a⟩) input encoding := by
+  have hstopped := hstopped.tidy
+  have hthreshold := hthreshold.tidy
+  have hpredictors := hpredictors.tidy
+  exact .of_tidy ((hstopped.prod (hthreshold.prod hpredictors)).of_enc_eq (fun _ => rfl))
 
 /-- Project the stopping flag through the shared pair implementation. -/
 @[fun_prop]
-theorem isPolyTime_stopped (hstate : ComputableTidilyInPolyTime state input encoding) :
-    ComputableTidilyInPolyTime (fun a => (state a).stopped) input encBool :=
-  (isPolyTime_fields hstate).fst'
+theorem isPolyTime_stopped (hstate : ComputableInPolyTime state input encoding) :
+    ComputableInPolyTime (fun a => (state a).stopped) input encBool := by
+  have hstate := hstate.tidy
+  exact .of_tidy ((isPolyTime_fields hstate).fst')
 
 /-- Project the threshold through the shared pair implementation. -/
 @[fun_prop]
-theorem isPolyTime_threshold (hstate : ComputableTidilyInPolyTime state input encoding) :
-    ComputableTidilyInPolyTime (fun a => (state a).threshold) input encUnary :=
-  (isPolyTime_fields hstate).snd'.fst'
+theorem isPolyTime_threshold (hstate : ComputableInPolyTime state input encoding) :
+    ComputableInPolyTime (fun a => (state a).threshold) input encUnary := by
+  have hstate := hstate.tidy
+  exact .of_tidy ((isPolyTime_fields hstate).snd'.fst')
 
 /-- Project the predictor collection through the shared pair implementation. -/
 @[fun_prop]
-theorem isPolyTime_predictors (hstate : ComputableTidilyInPolyTime state input encoding) :
-    ComputableTidilyInPolyTime (fun a => (state a).predictors) input (encList encBits) :=
-  (isPolyTime_fields hstate).snd'.snd'
+theorem isPolyTime_predictors (hstate : ComputableInPolyTime state input encoding) :
+    ComputableInPolyTime (fun a => (state a).predictors) input (encList encBits) := by
+  have hstate := hstate.tidy
+  exact .of_tidy ((isPolyTime_fields hstate).snd'.snd')
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Evaluating a list of descriptions is an ordinary captured map. -/
 @[program_certificate]
 theorem isPolyTime_votes {evaluate : List Bool → List Bool → Bool}
     {observation : α → List Bool}
-    (hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+    (hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
       (encPair encBits encBits) encBool)
-    (hstate : ComputableTidilyInPolyTime state input encoding)
-    (hobservation : ComputableTidilyInPolyTime observation input encBits) :
-    ComputableTidilyInPolyTime (fun a => (state a).votes evaluate (observation a))
+    (hstate : ComputableInPolyTime state input encoding)
+    (hobservation : ComputableInPolyTime observation input encBits) :
+    ComputableInPolyTime (fun a => (state a).votes evaluate (observation a))
       input encBits := by
+  have hevaluate := hevaluate.tidy
+  have hstate := hstate.tidy
+  have hobservation := hobservation.tidy
+  refine .of_tidy ?_
   unfold votes
   fun_prop
 
 /-- Updating the threshold uses its field certificate and the efficient Boolean decision. -/
 @[program_certificate]
 theorem isPolyTime_shift {yes : α → Bool}
-    (hstate : ComputableTidilyInPolyTime state input encoding)
-    (hyes : ComputableTidilyInPolyTime yes input encBool) :
-    ComputableTidilyInPolyTime (fun a => (state a).shift (yes a)) input encoding := by
+    (hstate : ComputableInPolyTime state input encoding)
+    (hyes : ComputableInPolyTime yes input encBool) :
+    ComputableInPolyTime (fun a => (state a).shift (yes a)) input encoding := by
   unfold shift
   polytime
 
 /-- Truncation and list insertion charge for the complete stored predictor description. -/
 @[program_certificate]
 theorem isPolyTime_add {bound : α → ℕ} {code : α → List Bool}
-    (hstate : ComputableTidilyInPolyTime state input encoding)
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hcode : ComputableTidilyInPolyTime code input encBits) :
-    ComputableTidilyInPolyTime (fun a => (state a).add (bound a) (code a)) input encoding := by
+    (hstate : ComputableInPolyTime state input encoding)
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hcode : ComputableInPolyTime code input encBits) :
+    ComputableInPolyTime (fun a => (state a).add (bound a) (code a)) input encoding := by
   unfold add
   fun_prop
 
@@ -269,46 +280,56 @@ private theorem isPolyTime_fields
 /-- Computing the five fields suffices to construct the encoded parameter record. -/
 @[program_certificate]
 theorem isPolyTime_mk {confidence densityNumerator densityBound rateBound codeBound : α → ℕ}
-    (hconfidence : ComputableTidilyInPolyTime confidence input encUnary)
-    (hdensityNumerator : ComputableTidilyInPolyTime densityNumerator input encUnary)
-    (hdensityBound : ComputableTidilyInPolyTime densityBound input encUnary)
-    (hrateBound : ComputableTidilyInPolyTime rateBound input encUnary)
-    (hcodeBound : ComputableTidilyInPolyTime codeBound input encUnary) :
-    ComputableTidilyInPolyTime (fun a =>
+    (hconfidence : ComputableInPolyTime confidence input encUnary)
+    (hdensityNumerator : ComputableInPolyTime densityNumerator input encUnary)
+    (hdensityBound : ComputableInPolyTime densityBound input encUnary)
+    (hrateBound : ComputableInPolyTime rateBound input encUnary)
+    (hcodeBound : ComputableInPolyTime codeBound input encUnary) :
+    ComputableInPolyTime (fun a =>
       ⟨confidence a, densityNumerator a, densityBound a, rateBound a, codeBound a⟩)
-      input encoding :=
-  (hconfidence.prod (hdensityNumerator.prod
-    (hdensityBound.prod (hrateBound.prod hcodeBound)))).of_enc_eq (fun _ => rfl)
+      input encoding := by
+  have hconfidence := hconfidence.tidy
+  have hdensityNumerator := hdensityNumerator.tidy
+  have hdensityBound := hdensityBound.tidy
+  have hrateBound := hrateBound.tidy
+  have hcodeBound := hcodeBound.tidy
+  exact .of_tidy ((hconfidence.prod (hdensityNumerator.prod
+    (hdensityBound.prod (hrateBound.prod hcodeBound)))).of_enc_eq (fun _ => rfl))
 
 /-- Project the confidence through the shared product implementation. -/
 @[fun_prop]
-theorem isPolyTime_confidence (hparams : ComputableTidilyInPolyTime params input encoding) :
-    ComputableTidilyInPolyTime (fun a => (params a).confidence) input encUnary :=
-  (isPolyTime_fields hparams).fst'
+theorem isPolyTime_confidence (hparams : ComputableInPolyTime params input encoding) :
+    ComputableInPolyTime (fun a => (params a).confidence) input encUnary := by
+  have hparams := hparams.tidy
+  exact .of_tidy ((isPolyTime_fields hparams).fst')
 
 /-- Project the density numerator through the shared product implementation. -/
 @[fun_prop]
-theorem isPolyTime_densityNumerator (hparams : ComputableTidilyInPolyTime params input encoding) :
-    ComputableTidilyInPolyTime (fun a => (params a).densityNumerator) input encUnary :=
-  (isPolyTime_fields hparams).snd'.fst'
+theorem isPolyTime_densityNumerator (hparams : ComputableInPolyTime params input encoding) :
+    ComputableInPolyTime (fun a => (params a).densityNumerator) input encUnary := by
+  have hparams := hparams.tidy
+  exact .of_tidy ((isPolyTime_fields hparams).snd'.fst')
 
 /-- Project the density parameter through the shared product implementation. -/
 @[fun_prop]
-theorem isPolyTime_densityBound (hparams : ComputableTidilyInPolyTime params input encoding) :
-    ComputableTidilyInPolyTime (fun a => (params a).densityBound) input encUnary :=
-  (isPolyTime_fields hparams).snd'.snd'.fst'
+theorem isPolyTime_densityBound (hparams : ComputableInPolyTime params input encoding) :
+    ComputableInPolyTime (fun a => (params a).densityBound) input encUnary := by
+  have hparams := hparams.tidy
+  exact .of_tidy ((isPolyTime_fields hparams).snd'.snd'.fst')
 
 /-- Project the rate parameter through the shared product implementation. -/
 @[fun_prop]
-theorem isPolyTime_rateBound (hparams : ComputableTidilyInPolyTime params input encoding) :
-    ComputableTidilyInPolyTime (fun a => (params a).rateBound) input encUnary :=
-  (isPolyTime_fields hparams).snd'.snd'.snd'.fst'
+theorem isPolyTime_rateBound (hparams : ComputableInPolyTime params input encoding) :
+    ComputableInPolyTime (fun a => (params a).rateBound) input encUnary := by
+  have hparams := hparams.tidy
+  exact .of_tidy ((isPolyTime_fields hparams).snd'.snd'.snd'.fst')
 
 /-- Project the description bound through the shared product implementation. -/
 @[fun_prop]
-theorem isPolyTime_codeBound (hparams : ComputableTidilyInPolyTime params input encoding) :
-    ComputableTidilyInPolyTime (fun a => (params a).codeBound) input encUnary :=
-  (isPolyTime_fields hparams).snd'.snd'.snd'.snd'
+theorem isPolyTime_codeBound (hparams : ComputableInPolyTime params input encoding) :
+    ComputableInPolyTime (fun a => (params a).codeBound) input encUnary := by
+  have hparams := hparams.tidy
+  exact .of_tidy ((isPolyTime_fields hparams).snd'.snd'.snd'.snd')
 
 end Efficiency
 
@@ -334,16 +355,19 @@ def withVotes (evaluate : List Bool → List Bool → Bool) (source : ProbComp (
     (state : State) : ProbComp (List Bool × Bool) :=
   (fun sample => (state.votes evaluate sample.1, sample.2)) <$> source
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Training samples compose with the certified evaluator without exposing a machine. -/
 theorem isPPTOn_withVotes {α : Type} {input : α ↪ List Bool}
     {evaluate : List Bool → List Bool → Bool}
     {source : α → ProbComp (List Bool × Bool)} {state : α → State}
-    (hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+    (hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
       (encPair encBits encBits) encBool)
     (hsource : IsPPTOn input (encPair encBits encBool) source)
-    (hstate : ComputableTidilyInPolyTime state input State.encoding) :
+    (hstate : ComputableInPolyTime state input State.encoding) :
     IsPPTOn input (encPair encBits encBool)
       (fun a => withVotes evaluate (source a) (state a)) := by
+  have hevaluate := hevaluate.tidy
+  have hstate := hstate.tidy
   unfold withVotes
   ppt
 
@@ -406,46 +430,52 @@ theorem run_bounded (evaluate : List Bool → List Bool → Bool) (source : Prob
     (fun rounds => State.Bounded rounds params.codeBound) (State.bounded_initial _)
     (fun _ _ _ hstate => round_bounded evaluate source learn params hstate)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The complete sampled round composes the evaluator, source, learner, and unary parameters.
 No machine implementation is part of the client's proof. -/
 @[program_certificate]
 theorem isPPTOn_round {α : Type} {input : α ↪ List Bool} {evaluate : List Bool → List Bool → Bool}
     {source : α → ProbComp (List Bool × Bool)} {learn : α → State → ProbComp (List Bool)}
     {params : α → Parameters}
-    (hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+    (hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
       (encPair encBits encBits) encBool)
     (hsource : IsPPTOn input (encPair encBits encBool) source)
     (hlearn : IsPPTOn (encPair input State.encoding) encBits
       (fun pair => learn pair.1 pair.2))
-    (hparams : ComputableTidilyInPolyTime params input Parameters.encoding) :
+    (hparams : ComputableInPolyTime params input Parameters.encoding) :
     IsPPTOn (encPair input State.encoding) State.encoding
       (fun pair => round evaluate (source pair.1) (learn pair.1) (params pair.1) pair.2) := by
+  have hevaluate := hevaluate.tidy
+  have hparams := hparams.tidy
   unfold round Parameters.majorityPrecision Parameters.shiftPrecision
     Parameters.denominator Parameters.inverseRate
   dsimp only
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Polynomially bounded parameters and a certified learner give a strict PPT boosting loop.
 The single resource invariant also proves `run_bounded`, independently of correctness. -/
 @[program_certificate]
 theorem isPPTOn_run {α : Type} {input : α ↪ List Bool} {evaluate : List Bool → List Bool → Bool}
     {source : α → ProbComp (List Bool × Bool)} {learn : α → State → ProbComp (List Bool)}
     {params : α → Parameters}
-    (hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+    (hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
       (encPair encBits encBits) encBool)
     (hsource : IsPPTOn input (encPair encBits encBool) source)
     (hlearn : IsPPTOn (encPair input State.encoding) encBits
       (fun pair => learn pair.1 pair.2))
-    (hparams : ComputableTidilyInPolyTime params input Parameters.encoding) :
+    (hparams : ComputableInPolyTime params input Parameters.encoding) :
     IsPPTOn input State.encoding (fun a => run evaluate (source a) (learn a) (params a)) := by
+  have hevaluate := hevaluate.tidy
+  have hparams := hparams.tidy
   have hclock : ComputableTidilyInPolyTime (fun a => (params a).clock) input encUnary := by
     unfold Parameters.clock Parameters.inverseRate Parameters.denominator
     polytime
-  have hcode := Parameters.isPolyTime_codeBound hparams
+  have hcode := (Parameters.isPolyTime_codeBound (.of_tidy hparams)).tidy
   refine (IsPPTOn.iterateWith_spec (stateEncoding := State.encoding)
     (initial := fun _ => State.initial)
     (step := fun a => round evaluate (source a) (learn a) (params a))
-    hclock (by fun_prop) (isPPTOn_round hevaluate hsource hlearn hparams)
+    hclock (by fun_prop) (isPPTOn_round (.of_tidy hevaluate) hsource hlearn (.of_tidy hparams))
     (fun a rounds => State.Bounded rounds (params a).codeBound)
     (fun _ => State.bounded_initial _)
     (fun a _ _ _ hstate => round_bounded evaluate (source a) (learn a) (params a) hstate)

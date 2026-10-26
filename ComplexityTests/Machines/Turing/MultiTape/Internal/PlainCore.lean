@@ -107,3 +107,36 @@ example {α : Type} {_input : α ↪ List Bool} (_unknown : α → List Bool) : 
   fail_if_success
     have : ComputableInPolyTime (fun a => unframe (_unknown a)) _input encBits := by fun_prop
   trivial
+
+-- XOR retains the whole caller encoding and requires both computed Boolean callbacks.
+example {α : Type} {enc : α ↪ List Bool} {left right : α → Bool}
+    (hl : ComputableInPolyTime left enc encBool)
+    (hr : ComputableInPolyTime right enc encBool) :
+    ComputableInPolyTime (fun a => left a ^^ right a) enc encBool := by fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} (left _right : α → Bool)
+    (_hl : ComputableInPolyTime left enc encBool) : True := by
+  fail_if_success
+    have : ComputableInPolyTime (fun a => left a ^^ _right a) enc encBool := by fun_prop
+  trivial
+
+example {α : Type} {enc : α ↪ List Bool} {left right : α → Prop}
+    [∀ a, Decidable (left a)] [∀ a, Decidable (right a)]
+    (hl : ComputableInPolyTime (fun a => decide (left a)) enc encBool)
+    (hr : ComputableInPolyTime (fun a => decide (right a)) enc encBool) :
+    ComputableInPolyTime (fun a => decide (left a ∧ right a)) enc encBool := by fun_prop
+
+example {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+    {condition : α → Prop} [∀ a, Decidable (condition a)] {yes no : α → β}
+    (hc : ComputableInPolyTime (fun a => decide (condition a)) encA encBool)
+    (hy : ComputableInPolyTime yes encA encB) (hn : ComputableInPolyTime no encA encB) :
+    ComputableInPolyTime (fun a => if condition a then yes a else no a) encA encB := by fun_prop
+
+example {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+    (condition : α → Prop) [∀ a, Decidable (condition a)] (yes _no : α → β)
+    (_hy : ComputableInPolyTime yes encA encB)
+    (_hn : ComputableInPolyTime _no encA encB) : True := by
+  fail_if_success
+    have : ComputableInPolyTime (fun a => if condition a then yes a else _no a)
+        encA encB := by fun_prop
+  trivial

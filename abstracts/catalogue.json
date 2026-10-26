@@ -170,7 +170,7 @@
         "ComplexityTests.Abstracts.GSWFHEAbstract.fullyHomomorphic"
       ],
       "summary": "Bootstrapping the GSW scheme gives leveled fully homomorphic encryption from decision LWE, and fully homomorphic encryption under an additional circular-security assumption.",
-      "scope": "Explicit GSW key generation, encryption and decryption at a centered-binomial LWE family with quasi-polynomial modulus. The leveled scheme's fresh-ciphertext key pair has the GSW key-generation law, and the fully homomorphic scheme's key generation is Gentry's self-loop key; the evaluator, the rest of the leveled keys and the decryption circuits are existential. Perfect correctness on fresh encryptions, fixed widths, polynomial-size decryption circuits, native strict PPT algorithms and asymptotic IND-CPA. Circular security is a separate hypothesis; no lattice hardness, circuit privacy, multi-hop evaluation or concrete loss.",
+      "scope": "Explicit GSW key generation, encryption and decryption at a centered-binomial LWE family with quasi-polynomial modulus. The leveled scheme family E has joint native strict PPT runtime in (security, d) via NativeInDepth, its fresh-ciphertext key pair has the GSW key-generation law, and the fully homomorphic scheme's key generation is Gentry's self-loop key; the evaluator, the rest of the leveled keys and the decryption circuits are existential. Perfect correctness on fresh encryptions, fixed widths, polynomial-size decryption circuits, native strict PPT algorithms and asymptotic IND-CPA. Circular security is a separate hypothesis; no lattice hardness, circuit privacy, multi-hop evaluation or concrete loss.",
       "namespace": "ComplexityTests.Abstracts.GSWFHEAbstract",
       "foundations": [
         "ComplexityAbstracts.Encoding",
@@ -229,6 +229,46 @@
       ],
       "summary": "Two independent weak random sources whose min-entropies add up to more than the string length give a nearly fair bit through the inner product modulo two.",
       "scope": "Arbitrary sources with real min-entropy bounds, the exact bias bound 2^((n - k1 - k2)/2)/2 and its strong form, and sharpness at k1 + k2 = n; information-theoretic, with no running time asserted."
+    },
+    {
+      "id": "partial-mcsp",
+      "title": "Ilango: Partial MCSP is hard under the Exponential Time Hypothesis",
+      "module": "ComplexityAbstracts.PartialMCSPAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.PartialMCSPAbstract.not_decidableInSubexpTime_partialMCSP",
+        "ComplexityAbstracts.PartialMCSPAbstract.not_decidableInSubexpTime_partialMCSP_tableSize"
+      ],
+      "supporting_theorems": [
+        "ComplexityAbstracts.PartialMCSPAbstract.not_decidableInSubexpTime_partialMCSP_encBinary",
+        "ComplexityAbstracts.PartialMCSPAbstract.not_decidableInSubexpTime_partialMCSPBinaryGate",
+        "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP",
+        "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP_encBinary"
+      ],
+      "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions requires at least quasi-polynomial time in the truth-table size.",
+      "scope": "Explicit 3SAT and PartialMCSP encodings (both unary and binary size thresholds), De Morgan all-gates and binary-gate cost measures, and deterministic multi-tape subexponential-time lower bounds 2^o(m log m) = N^o(log log N).",
+      "foundations": [
+        "ComplexityAbstracts.Encoding",
+        "ComplexityAbstracts.Computation"
+      ]
+    },
+    {
+      "id": "magnification",
+      "title": "McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P from NP",
+      "module": "ComplexityAbstracts.MagnificationAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.MagnificationAbstract.np_not_subset_ppoly_of_mcsp_hard",
+        "ComplexityAbstracts.MagnificationAbstract.p_ne_np_of_mcsp_hard"
+      ],
+      "supporting_theorems": [
+        "ComplexityAbstracts.MagnificationAbstract.mcsp_circuit_of_np_subset_ppoly",
+        "ComplexityAbstracts.MagnificationAbstract.mcsp_pow_circuit_of_np_subset_ppoly"
+      ],
+      "summary": "If NP has polynomial-size circuits, then MCSP on 2^n-bit truth tables has circuits of size 2^n poly(n + s(n)); hence barely superlinear MCSP lower bounds imply NP is not in P/poly and P ≠ NP.",
+      "scope": "Plain De Morgan circuits counting all operation gates, decision MCSP[n^k] on N = 2^n-bit truth tables in standard binary order, and native multi-tape P and NP; conditional magnification from a size lower bound at some arity per exponent.",
+      "foundations": [
+        "ComplexityAbstracts.Encoding",
+        "ComplexityAbstracts.Computation"
+      ]
     }
   ]
 }

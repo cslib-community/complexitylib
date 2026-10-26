@@ -55,6 +55,6 @@ theorem OneWay.exists_pseudorandomGenerator {f : List Bool → List Bool} (hf : 
     ∃ generator : List Bool → List Bool, PseudorandomGenerator generator (fun n => n + 1) := by
   obtain ⟨pair, hpair⟩ := hf.exists_pseudoentropyPair
   exact hpair.exists_pseudorandomGenerator (densityBound := fun n => 16 * (n + 7))
-    (by polytime) (Filter.Eventually.of_forall EntropyGrid.four_steps_le_owf_gap)
+    (.of_tidy (by polytime)) (Filter.Eventually.of_forall EntropyGrid.four_steps_le_owf_gap)
 
 end Cslib.Crypto

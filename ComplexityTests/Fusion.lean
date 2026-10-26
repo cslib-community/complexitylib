@@ -13,7 +13,10 @@ import Mathlib.Data.Finset.Sort
 
 The clients distinguish actual-gate bounds from global ones, preserve repeated gates and
 outputs, and use finite targets in an infinite support type. They also check zero costs,
-empty witnesses, empty outputs and the source-complexity bridge.
+empty witnesses, empty outputs and the source-complexity bridge. A four-witness example obtains
+an attained lower bound of three dictionary gates from nonuniform masses; union gates have zero
+cost. With one capacity valid for every dictionary term, unweighted counting on any subset of
+the same witnesses gives a lower bound of at most two.
 -/
 
 namespace ComplexityTests.Fusion
@@ -173,6 +176,49 @@ private def twoSingles : Circuit (signature Bool) 0 1 :=
 example : ecomplexityFrom (supportInterpretation singles) termCost
     (fun _ : Unit => fun _ : Fin 1 => Finset.univ) (fun _ : Unit => Fin.elim0) ≤ 2 :=
   ecomplexityFrom_le_of_computesFrom twoSingles (fun _ => by decide)
+
+private def weightedSupports : Fin 4 → Finset (Fin 4) := ![{0, 1}, {2}, {0, 3}, {1, 3}]
+
+private def witnessMass (t : Fin 4) : ℕ := if t = 2 then 2 else 1
+
+-- Total mass is five, but every available dictionary term has mass at most two.
+example : ∑ t : Fin 4, witnessMass t = 5 := by decide
+
+private theorem weighted_support_bound (t : Fin 4) :
+    ∑ x ∈ Finset.univ ∩ weightedSupports t, witnessMass x ≤ 2 := by
+  revert t
+  decide
+
+-- The lower bound applies to every circuit producing the full target from no free inputs.
+example (c : Circuit (signature (Fin 4)) 0 1)
+    (hc : Finset.univ ⊆ c.eval (supportInterpretation weightedSupports) Fin.elim0 0) :
+    3 ≤ c.program.cost termCost := by
+  have h := ceilDiv_sum_le_termCost c weightedSupports Fin.elim0 Finset.univ witnessMass
+    (fun i => i.elim0) 0 hc two_pos weighted_support_bound
+  change 3 ≤ _ at h
+  exact h
+
+-- No unweighted subset gives a global dictionary-capacity bound above two: some dictionary
+-- term covers at least half of it. This checks all sixteen subsets, including the empty one.
+example : ∀ samples : Finset (Fin 4), ∃ t : Fin 4,
+    samples.card ≤ 2 * (samples ∩ weightedSupports t).card := by decide
+
+private def threeTerms : Circuit (signature (Fin 4)) 0 1 :=
+  ⟨(((((Program.empty : Program (signature (Fin 4)) 0 0).gate ⟨.term 0, Fin.elim0⟩).gate
+      ⟨.term 1, Fin.elim0⟩).gate ⟨.term 2, Fin.elim0⟩).gate
+      ⟨.add, ![.gate 0, .gate 1]⟩).gate ⟨.add, ![.gate 3, .gate 2]⟩,
+    fun _ => .gate 4⟩
+
+-- The lower bound is nonvacuous and sharp: three dictionary gates suffice.
+example : threeTerms.eval (supportInterpretation weightedSupports) Fin.elim0 0 = Finset.univ ∧
+    threeTerms.program.cost termCost = 3 := by decide
+
+-- Zero mass allows zero capacity even for a nonempty, covered target.
+example : (∑ _t ∈ (Finset.univ : Finset (Fin 4)), (0 : ℕ)) ≤
+    0 * threeTerms.program.cost termCost := by
+  exact sum_le_mul_dictionaryCost threeTerms.program weightedSupports Fin.elim0 Finset.univ
+    (fun _ => 0) (fun i => i.elim0) (threeTerms.outputs 0) (by decide) (fun _ => 1) 0
+    (by simp)
 
 -- Empty witness types admit an empty cover and hence zero complexity.
 example : Fusion.coverComplexity (supportInterpretation pairs)

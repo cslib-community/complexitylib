@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Circuit.Boolean.Formula.Poly
 public import Complexity.Computability.Circuit.Boolean.Formula.Restriction
 public import Complexity.Computability.Languages.Slice
 public import Complexity.Computability.MCSP.Partial
@@ -25,12 +26,25 @@ import Mathlib.Data.Nat.Choose.Sum
 /-!
 # Formula Magnification for Succinct, Partial, and Approximate MCSP
 
-This module formalizes the De Morgan formula hardness magnification lemma of Oliveira and Santhanam
-[OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14] connecting `Cslib.SuccinctMCSP` and
-`Cslib.PartialMCSP` to approximate MCSP (`Cslib.ApproxMCSP`, corresponding to `(1, 1 - δ)-MCSP[s]`
-in [OliveiraSanthanam2018, Appendix A, Definition 41, p. 34]) and `Cslib.GapMCSP`.
+This module formalizes the De Morgan formula hardness magnification results of Oliveira and
+Santhanam [OliveiraSanthanam2018]:
+* **Lemma 16** ([OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14]): the two-stage magnification
+  lemma connecting `Cslib.SuccinctMCSP` and `Cslib.PartialMCSP` to approximate MCSP
+  (`Cslib.ApproxMCSP`, corresponding to `(1, 1 - δ)-MCSP[s]` in
+  [OliveiraSanthanam2018, Appendix A, Definition 41, p. 34]) and `Cslib.GapMCSP`.
+* **Contrapositive of Lemma 16 and Theorem 1(i) / Theorem 17(i)**
+  ([OliveiraSanthanam2018, Section 1.2, Theorem 1 (i), p. 5; Section 3.1, Lemma 16 and
+  Theorem 17 (i), pp. 14–15]): packaging Lemma 16 with `SuccinctMCSP ∈ NP`
+  (`Cslib.SuccinctMCSP.mem_NP`) into `SuccinctMCSP ∉ FormulaPolyOn SuccinctMCSP.enc` and
+  `NP SuccinctMCSP.enc ⊄ FormulaPolyOn SuccinctMCSP.enc` (`NP ⊄ Formula[poly]`), both in the
+  general-parameter form underlying Theorem 17(i)/(iii) and specialized to polynomially bounded
+  parameters `s₂, k` for Theorem 1(i) / Theorem 17(i).
+* **Lemma 26 and one-sided Theorem 27** ([OliveiraSanthanam2018, Section 3.3, Lemma 26 and
+  Theorem 27, p. 21]; compare [OliveiraSanthanam2018, Section 1.2, Theorem 5, p. 8]): deterministic
+  counting form of Lemma 26 and one-sided zero-error average-case De Morgan formula magnification
+  from `MCSP[s]` to `SuccinctMCSP` and `NP ⊄ FormulaPolyOn`.
 
-## Source Statement (ECCC TR18-139)
+## Source Statements (ECCC TR18-139)
 
 Verbatim from [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14]:
 
@@ -44,15 +58,63 @@ Verbatim from [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14]:
 > cannot be computed by formulas of size ≤ ℓ(n), where
 > m(n) = Θ((n · s(n) · log s(n))/δ(n)).
 
+Verbatim from [OliveiraSanthanam2018, Section 3.1, Theorem 17, p. 15] (also stated as
+[OliveiraSanthanam2018, Section 1.2, Theorem 1, pp. 5–6], with proof *"Immediate from Lemma 16."*):
+
+> **Theorem 17** (Magnification of Weak Formula Lower Bounds). For convenience, let
+> Π[s, δ] = (1, 1 − δ)-MCSP[s]. The following implications hold.
+> (i) Let s(n) = n^k and δ(n) = n^{−k}, where k ∈ ℕ. If Π[s, δ] ∉ Formula[N · (log N)^{O(1)}]
+>     then there is L ∈ NP over m-bit inputs such that L ∉ Formula[poly(m)].
+> (ii) For the same choice of parameters, if Π[s, δ] ∉ Formula[N^{1+ε}] for some ε > 0, then
+>     there is L ∈ NP over m-bit inputs and δ > 0 such that L ∉ Formula[2^{m^δ}].
+> (iii) Let s(n) = 2^{o(n)} and δ(n) = 2^{−o(n)}. If Π[s, δ] ∉ Formula[N^{1+ε}] for some ε > 0,
+>     then there is L ∈ NP over m-bit inputs such that L ∉ Formula[poly(m)].
+
+Verbatim from [OliveiraSanthanam2018, Section 1.2, Theorem 5, p. 8],
+[OliveiraSanthanam2018, Section 3.3, Lemma 26 and Theorem 27, p. 21], and
+[OliveiraSanthanam2018, Appendix A, Definition 43, p. 34]:
+
+> **Theorem 5.** If MCSP[2^{√n}] on N-bit inputs cannot be solved on average with zero error by
+> formulas of size o(N), then NP does not have polynomial size formulas.
+
+> **Lemma 26.** Let n ≤ s(n) ≤ 2^{o(n)} and t(n) = 4s(n) log s(n). Let I be a random collection
+> of t(n) pairs of the form (x_i, b_i), where each b_i ∼ {0, 1}, and all x_i are fixed but
+> distinct elements of {0, 1}^n. Then, for every n sufficiently large,
+> Pr_I[ There is a circuit of size ≤ s(n) consistent with I ] < 2^{−n}.
+
+> **Theorem 27** (Magnification from sub-linear average-case lower bounds for MCSP). Let C be a
+> typical circuit class, and consider MCSP[s] for a size parameter n ≤ s(n) ≤ 2^{o(n)}. Assume
+> that there exists δ > 0 such that solving MCSP[s] on average on N-bit inputs requires C-circuits
+> of size Ω(N^δ). Then there is a language L in NP such that L on inputs of length
+> m = Θ(n · s(n) · log s(n)) requires C-circuits of size ℓ(m) = 2^{Ω(n)}.
+
+> **Definition 43** (Average-case MCSP [HS17]). We say that MCSP-C[s] is computed on average by a
+> device D (an algorithm or a family of circuits) if for every large enough n, the following holds:
+> • D is never incorrect. For each y ∈ {0, 1}^{2^n}, D(y) ∈ {MCSP-C[s](y), “?”}.
+> • D rarely outputs “?”. Pr_{z∼{0,1}^{2^n}}[D(z) ∈ {0, 1}] ≥ 1 − 1/n.
+> We say that MCSP-C[s] is average-case hard for a class of devices A if no D ∈ A computes
+> MCSP-C[s] on average.
+
 Here [OliveiraSanthanam2018, Appendix A, Definition 41, p. 34] defines `(α, β)-MCSP[s]` for
 `α, β ∈ (1/2, 1]` using "`γ`-approximates" to mean `Pr_x[ψ(x) = f(x)] ≥ γ`, so `(1, 1 - δ)-MCSP[s]`
-is the `α = 1`, `β = 1 - δ` specialization.
+is the `α = 1`, `β = 1 - δ` specialization. For average-case MCSP, Section 1.2 (p. 8) discusses
+zero-error average-case algorithms informally (never wrong, `Pr[A(x) = ?] ≤ 1/2`), Definition 43
+(Appendix A, p. 34) formalizes three-valued devices `D(y) ∈ {MCSP-C[s](y), "?"}` with
+`Pr_z[D(z) ∈ {0, 1}] ≥ 1 - 1/n`, and the proof of Theorem 27 (Section 3.3, p. 21) constructs such a
+device `C_n` from a `{0, 1}`-valued circuit `D_m` for `Succinct-MCSP[s, t]` by outputting `0` when
+`D_m` outputs `0` and `"?"` otherwise. Our Lean hypotheses
+(`exists_formula_zero_error_average_case_of_sample`,
+`not_NP_subset_FormulaPolyOn_of_zero_error_average_case_hard`) are stated directly in terms of these
+one-sided `{0, 1}`-valued formulas `F` (accepting all yes-instances in `GapMCSP.yesSet s` and
+accepting at most `2 ^ (2 ^ n - r)` truth tables overall): any three-valued Definition 43 device `D`
+induces the one-sided predicate `F(T) = decide (D(T) ≠ 0)` with `r = 1` once `1/n` plus the
+yes-instance fraction is at most `1/2`, modulo the formula encoding of three-valued outputs.
 
-## Comparison Between ECCC TR18-139 Lemma 16 and This Module
+## Comparison Between ECCC TR18-139 and This Module
 
-1. **Circuit-Size Thresholds (`s` vs. `s₁ ≤ s₂`)**: ECCC Lemma 16 uses a single circuit-size
-   threshold `s(n)` for both `Π^yes_N` and `Π^no_N`. Here we allow distinct yes/no thresholds
-   `s₁ n ≤ s₂ n` (`s₁ = s₂ = s` recovers the source setting).
+1. **Circuit-Size Thresholds (`s` vs. `s₁ ≤ s₂`)**: ECCC Lemma 16 and Theorem 17 use a single
+   circuit-size threshold `s(n)` for both `Π^yes_N` and `Π^no_N`. Here we allow distinct yes/no
+   thresholds `s₁ n ≤ s₂ n` (`s₁ = s₂ = s` recovers the source setting).
 2. **Error Parameter (`δ(n) ∈ [0, 1/2)` vs. `1 / k n` with `1 ≤ k n`)**: ECCC Lemma 16 takes a
    real-valued function `δ : ℕ → [0, 1/2)`. In the end-to-end theorems we parameterize the error
    by an integer function `k : ℕ → ℕ` with `1 ≤ k n` corresponding to `δ(n) = 1 / k n` (and also
@@ -72,30 +134,28 @@ is the `α = 1`, `β = 1 - δ` specialization.
    `SuccinctMCSP.ofFunctionEncLength n m (s₂ n) = 4 * n + 3 + m * (8 * n + 10) + s₂ n`. Because
    deduplicating `q = k n * (M + 2)` independent samples `ω : Fin q → BitString n` into
    `Finset.univ.image ω` can have any cardinality `m ≤ k n * (M + 2)`, our end-to-end theorems
-   quantify over `m ≤ k n * (M + 2)`. We also provide
-   `exists_formula_separating_gapMCSP_of_partialMCSP` bridging to
+   quantify over `m ≤ k n * (M + 2)` (with maximum encoded length `approxMCSPQueryEncLength`). We
+   also provide `exists_formula_separating_gapMCSP_of_partialMCSP` bridging to
    `Cslib.PartialMCSP.Instance.restrictTable`.
 5. **Circuit Model and Counting Bound (`s^{O(s)}` vs. `computableFunctionsLogBound`)**: ECCC Lemma
-   16 counts fan-in-two Boolean circuits of size at most `s(n)`. Here small functions are
-   `computableFunctions n (s₂ n)` (defined via `Cslib.Circuits.complexity interpretation`), and
+   16 and Lemma 26 count fan-in-two Boolean circuits of size at most `s(n)`. Here small functions
+   are `computableFunctions n s` (defined via `Cslib.Circuits.complexity interpretation`), and
    `card_computableFunctions_le_two_pow` bounds `(computableFunctions n s).card ≤ 2 ^ M` with
    `M = computableFunctionsLogBound n s = (s + 1) * (2 * Nat.clog 2 (n + s + 1) + 3)` from
-   `Cslib.Circuits.Boolean.card_computableFunctions_mul_factorial_le`. Combining Stage 1
-   (`card_le_two_mul_filter_notMem_succinctMCSP`, proving the union bound at error `1 / 2` over
-   `q = k * (M + 2)` samples) with Stage 2 (`Cslib.exists_forall_exists_apply_mem`, giving
-   `2 ^ n + 1` copies) and the deterministic multi-query conjunction
-   (`exists_formula_all_ofFunction_SuccinctMCSP`) yields the `(2 ^ n + 1) * L` leaf-size bound
-   matching `N ⋅ ℓ(n)`.
-6. **Conclusion (`NP` Family vs. `SuccinctMCSP` Slice Bounds, and Remaining Endpoints)**: Instead of
-   packaging a uniform sequence `{f_{m(n)}}_{n≥1}` in `NP`, the theorems in this module bound the
-   De Morgan formula size `formulaSize` of the `ofFunctionEncLength n m (s₂ n)`-bit slices of
-   `SuccinctMCSP.enc '' SuccinctMCSP` (`SuccinctMCSP ∈ NP` is proved separately in
-   `SuccinctMCSP.mem_NP`). With `M = computableFunctionsLogBound n (s₂ n)`, every queried slice
-   length satisfies `ofFunctionEncLength n m (s₂ n) = O(k n ⋅ n ⋅ s₂ n ⋅ log(n + s₂ n))`, matching
-   the source's `m(n) = Θ((n ⋅ s(n) ⋅ log s(n)) / δ(n))` for `δ(n) = 1 / k n`. In ECCC TR18-139,
-   Theorem 1 (p. 5) and Theorem 17 (pp. 14–15, whose proof is "Immediate from Lemma 16") package
-   Lemma 16 into `NP ⊄ Formula[poly(m)]`; zero-error average-case formula magnification is studied
-   separately in Theorem 5 / Theorem 27.
+   `Cslib.Circuits.Boolean.card_computableFunctions_mul_factorial_le`.
+6. **Conclusion (`FormulaPolyOn` and `NP ⊄ FormulaPolyOn` in Theorem 1/17 and Theorem 5/27)**:
+   Generalizing the word-level formula projection
+   (`exists_formula_ofFunction_SuccinctMCSP_of_agrees`) to any language `L : Language Bool`
+   agreeing with `SuccinctMCSP` along `SuccinctMCSP.enc` connects Lemma 16 and Theorem 27 directly
+   to `FormulaSIZEOn SuccinctMCSP.enc` and `FormulaPolyOn SuccinctMCSP.enc`
+   (`Complexity.Computability.Circuit.Boolean.Formula.Poly`). Combining with `SuccinctMCSP.mem_NP`
+   yields both the general-parameter magnification to
+   `NP SuccinctMCSP.enc ⊄ FormulaPolyOn SuccinctMCSP.enc`
+   (`not_NP_subset_FormulaPolyOn_of_approxMCSP_hard`) and the polynomially-bounded-parameter
+   `N · (log N)^{O(1)}` magnification (`not_NP_subset_FormulaPolyOn_of_approxMCSP_poly_hard`,
+   matching Theorem 1(i) / Theorem 17(i)), as well as the zero-error average-case magnification
+   (`not_NP_subset_FormulaPolyOn_of_zero_error_average_case_hard`, matching Lemma 26 and Theorem 5 /
+   Theorem 27).
 
 ## Main definitions
 
@@ -105,14 +165,19 @@ is the `α = 1`, `β = 1 - δ` specialization.
   problem [OliveiraSanthanam2018, Appendix A, Definition 41, p. 34].
 * `Cslib.Circuits.Boolean.computableFunctionsLogBound`: explicit `s log(n + s)` exponent bound
   `(s + 1) * (2 * Nat.clog 2 (n + s + 1) + 3)` for `(computableFunctions n s).card`.
+* `Cslib.Circuits.Boolean.approxMCSPQueryEncLength`,
+  `Cslib.Circuits.Boolean.avgCaseMCSPQueryEncLength`: encoded query lengths for the worst-case
+  (Lemma 16 / Theorem 17) and zero-error average-case (Lemma 26 / Theorem 27) reductions.
 
 ## Main results
 
 * `Cslib.Circuits.Boolean.evalWord_succinctWord`,
   `Cslib.Circuits.Boolean.leafSize_le_one_of_mem_succinctWord`,
+  `Cslib.Circuits.Boolean.exists_formula_ofFunction_SuccinctMCSP_of_agrees`,
   `Cslib.Circuits.Boolean.exists_formula_ofFunction_SuccinctMCSP`: leaf-size-preserving substitution
   into a slice formula of `SuccinctMCSP`.
-* `Cslib.Circuits.Boolean.exists_formula_all_ofFunction_SuccinctMCSP`,
+* `Cslib.Circuits.Boolean.exists_formula_all_ofFunction_SuccinctMCSP_of_agrees`,
+  `Cslib.Circuits.Boolean.exists_formula_all_ofFunction_SuccinctMCSP`,
   `Cslib.Circuits.Boolean.exists_formula_separating_gapMCSP_of_queryList`,
   `Cslib.Circuits.Boolean.exists_mem_lt_formulaSize_succinctMCSP_of_queryList`: deterministic
   multi-query formula projection (building block for
@@ -135,6 +200,29 @@ is the `α = 1`, `β = 1 - δ` specialization.
   `Cslib.Circuits.Boolean.exists_lt_formulaSize_succinctMCSP_of_approxMCSP_inst`: Stage 1 random
   sampling and end-to-end approximate `(1, 1 - 1 / k)-MCSP` formula magnification
   [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14].
+* `Cslib.Circuits.Boolean.exists_formula_separating_approxMCSP_of_mem_FormulaSIZEOn`,
+  `Cslib.Circuits.Boolean.not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_hard`,
+  `Cslib.Circuits.Boolean.not_NP_subset_FormulaPolyOn_of_approxMCSP_hard`,
+  `Cslib.Circuits.Boolean.exists_poly_formula_separating_approxMCSP_of_mem_FormulaPolyOn`,
+  `Cslib.Circuits.Boolean.not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_poly_hard`,
+  `Cslib.Circuits.Boolean.not_NP_subset_FormulaPolyOn_of_approxMCSP_poly_hard`: packaging Lemma 16
+  with `SuccinctMCSP.mem_NP` into `SuccinctMCSP ∉ FormulaPolyOn SuccinctMCSP.enc` and
+  `NP ⊄ FormulaPolyOn` (general-parameter contrapositive of Lemma 16 underlying Theorem 17(i)/(iii),
+  and Theorem 1(i) / Theorem 17(i) for polynomially bounded parameters)
+  [OliveiraSanthanam2018, Section 1.2, Theorem 1 (i), p. 5; Section 3.1, Lemma 16 and
+  Theorem 17 (i), pp. 14–15].
+* `Cslib.Circuits.Boolean.card_filter_agreesOn_eq_two_pow`,
+  `Cslib.Circuits.Boolean.card_filter_ofFunction_mem_succinctMCSP_le`,
+  `Cslib.Circuits.Boolean.card_filter_ofFunction_mem_succinctMCSP_le_two_pow`,
+  `Cslib.Circuits.Boolean.exists_formula_zero_error_average_case_of_sample`,
+  `Cslib.Circuits.Boolean.exists_formula_zero_error_average_case_of_agrees`,
+  `Cslib.Circuits.Boolean.exists_formula_zero_error_average_case_of_succinctMCSP`,
+  `Cslib.Circuits.Boolean.lt_formulaSize_succinctMCSP_of_zero_error_average_case`,
+  `Cslib.Circuits.Boolean.not_succinctMCSP_mem_FormulaPolyOn_of_zero_error_average_case_hard`,
+  `Cslib.Circuits.Boolean.not_NP_subset_FormulaPolyOn_of_zero_error_average_case_hard`:
+  one-sided zero-error average-case formula magnification from `MCSP[s]` to `SuccinctMCSP` and
+  `NP ⊄ FormulaPolyOn` [OliveiraSanthanam2018, Section 3.3, Lemma 26 and Theorem 27, p. 21;
+  compare Section 1.2, Theorem 5, p. 8].
 
 ## References
 
@@ -323,6 +411,30 @@ theorem exists_formula_of_evalWord {N : ℕ} (fs : List (Formula signature N))
   · exact (G.leafSize_bind_le fun i => hfs (sub i) (List.getElem_mem i.2)).trans hGleaf.le
 
 open Classical in
+/-- **Single-query `SuccinctMCSP` formula projection for any agreeing language.** If
+`L : Language Bool` agrees with `SuccinctMCSP` along `SuccinctMCSP.enc`
+(`∀ x, x ∈ SuccinctMCSP ↔ SuccinctMCSP.enc x ∈ L`), then for any `n`, `S : Finset (BitString n)`,
+and `s`, there is a De Morgan formula `F` on `2 ^ n` variables that decides whether
+`SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP` and has leaf
+size at most `formulaSize (L.slice (SuccinctMCSP.ofFunctionEncLength n S.card s))`. -/
+theorem exists_formula_ofFunction_SuccinctMCSP_of_agrees {L : Language Bool}
+    (hag : ∀ x, x ∈ SuccinctMCSP ↔ SuccinctMCSP.enc x ∈ L)
+    (n : ℕ) (S : Finset (BitString n)) (s : ℕ) :
+    ∃ F : Formula signature (2 ^ n),
+      (∀ T : BitString (2 ^ n),
+        F.eval interpretation T =
+          decide (SuccinctMCSP.Instance.ofFunction
+            ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP)) ∧
+      F.leafSize ≤
+        formulaSize (L.slice (SuccinctMCSP.ofFunctionEncLength n S.card s)) := by
+  obtain ⟨F, hFeval, hFleaf⟩ := exists_formula_of_evalWord (succinctWord n S s)
+    (fun _ h => leafSize_le_one_of_mem_succinctWord h) L
+  refine ⟨F, fun T => ?_, ?_⟩
+  · rw [hFeval T, evalWord_succinctWord]
+    exact decide_eq_decide.mpr (hag _).symm
+  · rwa [length_succinctWord] at hFleaf
+
+open Classical in
 /-- **Single-query `SuccinctMCSP` formula projection.** For any `n`, `S : Finset (BitString n)`, and
 `s`, there is a De Morgan formula `F` on `2 ^ n` variables that decides whether
 `SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP` and has leaf
@@ -336,15 +448,42 @@ theorem exists_formula_ofFunction_SuccinctMCSP (n : ℕ) (S : Finset (BitString 
             ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP)) ∧
       F.leafSize ≤
         formulaSize (Language.slice (SuccinctMCSP.enc '' SuccinctMCSP)
-          (SuccinctMCSP.ofFunctionEncLength n S.card s)) := by
-  obtain ⟨F, hFeval, hFleaf⟩ := exists_formula_of_evalWord (succinctWord n S s)
-    (fun _ h => leafSize_le_one_of_mem_succinctWord h)
-    (SuccinctMCSP.enc '' SuccinctMCSP)
-  refine ⟨F, fun T => ?_, ?_⟩
-  · rw [hFeval T, evalWord_succinctWord, SuccinctMCSP.enc.injective.mem_set_image]
-  · rwa [length_succinctWord] at hFleaf
+          (SuccinctMCSP.ofFunctionEncLength n S.card s)) :=
+  exists_formula_ofFunction_SuccinctMCSP_of_agrees
+    (fun _ => SuccinctMCSP.enc.injective.mem_set_image.symm) n S s
 
 /-! ### Deterministic multi-query formula projection (building block for Stage 2) -/
+
+open Classical in
+/-- **Multi-query `SuccinctMCSP` conjunction formula for any agreeing language.** If
+`L : Language Bool` agrees with `SuccinctMCSP` along `SuccinctMCSP.enc`, then for any list
+`qs : List (Finset (BitString n) × ℕ)` of sample sets and thresholds, there is a De Morgan formula
+on `2 ^ n` variables that decides whether all queries `(S, s) ∈ qs` are in `SuccinctMCSP` and has
+leaf size at most the sum of the corresponding slice formula sizes of `L`. -/
+theorem exists_formula_all_ofFunction_SuccinctMCSP_of_agrees {L : Language Bool}
+    (hag : ∀ x, x ∈ SuccinctMCSP ↔ SuccinctMCSP.enc x ∈ L) (n : ℕ)
+    (qs : List (Finset (BitString n) × ℕ)) :
+    ∃ F : Formula signature (2 ^ n),
+      (∀ T : BitString (2 ^ n),
+        F.eval interpretation T =
+          decide (∀ p ∈ qs, SuccinctMCSP.Instance.ofFunction
+            ((MCSP.truthTable n).symm T) p.1 p.2 ∈ SuccinctMCSP)) ∧
+      F.leafSize ≤
+        (qs.map fun p =>
+          formulaSize (L.slice (SuccinctMCSP.ofFunctionEncLength n p.1.card p.2))).sum := by
+  induction qs with
+  | nil =>
+    refine ⟨Formula.const true, fun T => ?_, by simp⟩
+    simp
+  | cons q qs ih =>
+    obtain ⟨F₁, hF₁eval, hF₁leaf⟩ :=
+      exists_formula_ofFunction_SuccinctMCSP_of_agrees hag n q.1 q.2
+    obtain ⟨F₂, hF₂eval, hF₂leaf⟩ := ih
+    refine ⟨F₁.and F₂, fun T => ?_, ?_⟩
+    · rw [Formula.eval_and, hF₁eval T, hF₂eval T]
+      simp
+    · simp only [Formula.leafSize_and, List.map_cons, List.sum_cons]
+      exact Nat.add_le_add hF₁leaf hF₂leaf
 
 open Classical in
 /-- **Multi-query `SuccinctMCSP` conjunction formula.** Given any list
@@ -361,19 +500,9 @@ theorem exists_formula_all_ofFunction_SuccinctMCSP (n : ℕ)
       F.leafSize ≤
         (qs.map fun p =>
           formulaSize (Language.slice (SuccinctMCSP.enc '' SuccinctMCSP)
-            (SuccinctMCSP.ofFunctionEncLength n p.1.card p.2))).sum := by
-  induction qs with
-  | nil =>
-    refine ⟨Formula.const true, fun T => ?_, by simp⟩
-    simp
-  | cons q qs ih =>
-    obtain ⟨F₁, hF₁eval, hF₁leaf⟩ := exists_formula_ofFunction_SuccinctMCSP n q.1 q.2
-    obtain ⟨F₂, hF₂eval, hF₂leaf⟩ := ih
-    refine ⟨F₁.and F₂, fun T => ?_, ?_⟩
-    · rw [Formula.eval_and, hF₁eval T, hF₂eval T]
-      simp
-    · simp only [Formula.leafSize_and, List.map_cons, List.sum_cons]
-      exact Nat.add_le_add hF₁leaf hF₂leaf
+            (SuccinctMCSP.ofFunctionEncLength n p.1.card p.2))).sum :=
+  exists_formula_all_ofFunction_SuccinctMCSP_of_agrees
+    (fun _ => SuccinctMCSP.enc.injective.mem_set_image.symm) n qs
 
 /-- **Deterministic multi-query formula projection for `GapMCSP`** (building block for
 [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14]). If a deterministic list `qs` of `(S, s)`
@@ -1054,6 +1183,529 @@ theorem exists_lt_formulaSize_succinctMCSP_of_approxMCSP_inst
         (SuccinctMCSP.ofFunctionEncLength n m (s₂ n))) :=
   exists_lt_formulaSize_succinctMCSP_of_approxMCSP (hk n) (hs n)
     (card_computableFunctions_le_two_pow n (s₂ n)) hged
+
+/-! ### Packaging Lemma 16 with `SuccinctMCSP ∈ NP` (Theorem 1 and Theorem 17) -/
+
+/-- The maximum encoded bit length of a `SuccinctMCSP.Instance.ofFunction` query produced by the
+Stage 1 random-sampling projection at input length `n`, circuit-size threshold `s`, and error
+parameter `k`:
+`SuccinctMCSP.ofFunctionEncLength n (k * (computableFunctionsLogBound n s + 2)) s`. -/
+def approxMCSPQueryEncLength (n s k : ℕ) : ℕ :=
+  SuccinctMCSP.ofFunctionEncLength n (k * (computableFunctionsLogBound n s + 2)) s
+
+/-- Any query with `m ≤ k * (computableFunctionsLogBound n s + 2)` samples has encoded bit length at
+most `approxMCSPQueryEncLength n s k`. -/
+theorem ofFunctionEncLength_le_approxMCSPQueryEncLength {n m s k : ℕ}
+    (hm : m ≤ k * (computableFunctionsLogBound n s + 2)) :
+    SuccinctMCSP.ofFunctionEncLength n m s ≤ approxMCSPQueryEncLength n s k :=
+  SuccinctMCSP.ofFunctionEncLength_mono n s hm
+
+/-- **End-to-end Oliveira–Santhanam formula construction for any language agreeing with
+`SuccinctMCSP` [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14].**
+If `L : Language Bool` agrees with `SuccinctMCSP` along `SuccinctMCSP.enc` and every
+`(ofFunctionEncLength n m (s₂ n))`-bit slice of `L` with `m ≤ k n * (M + 2)` has De Morgan formula
+size at most `B`, then there exists a De Morgan formula `F` on `2 ^ n` variables of leaf size at
+most `(2 ^ n + 1) * B` separating `GapMCSP.yesSet s₁` from `ApproxMCSP.noSet s₂ k` on `2 ^ n`-bit
+truth tables. -/
+theorem exists_formula_separating_approxMCSP_of_agrees
+    {L : Language Bool} (hag : ∀ x, x ∈ SuccinctMCSP ↔ SuccinctMCSP.enc x ∈ L)
+    {s₁ s₂ k : ℕ → ℕ} {n M B : ℕ} (hk : 1 ≤ k n) (hs : s₁ n ≤ s₂ n)
+    (hcard : (computableFunctions n (s₂ n)).card ≤ 2 ^ M)
+    (hB : ∀ m ≤ k n * (M + 2),
+      formulaSize (L.slice (SuccinctMCSP.ofFunctionEncLength n m (s₂ n))) ≤ B) :
+    ∃ F : Formula signature (2 ^ n),
+      F.leafSize ≤ (2 ^ n + 1) * B ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ →
+        F.eval interpretation T = true) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+        F.eval interpretation T = false) := by
+  classical
+  set q := k n * (M + 2)
+  let noFinset : Finset (BitString (2 ^ n)) :=
+    Finset.univ.filter fun T => List.ofFn T ∈ ApproxMCSP.noSet s₂ k
+  have hno_card : Fintype.card noFinset ≤ 2 ^ (2 ^ n) := by
+    rw [Fintype.card_coe]
+    exact (Finset.card_le_univ noFinset).trans (by simp [BitString])
+  obtain ⟨ωs, hωs⟩ := exists_forall_exists_apply_mem (Ω := Fin q → BitString n) hno_card
+    (fun T : noFinset => Finset.univ.filter fun ω : Fin q → BitString n =>
+      SuccinctMCSP.Instance.ofFunction
+        ((MCSP.truthTable n).symm T.1) (Finset.univ.image ω) (s₂ n) ∉ SuccinctMCSP)
+    (fun ⟨T, hT⟩ => card_le_two_mul_filter_notMem_succinctMCSP hk hcard
+      (ApproxMCSP.ofFn_mem_noSet_iff.mp (Finset.mem_filter.mp hT).2))
+  let qs : List (Finset (BitString n) × ℕ) :=
+    List.ofFn fun j => (Finset.univ.image (ωs j), s₂ n)
+  obtain ⟨F, hFeval, hFleaf⟩ := exists_formula_all_ofFunction_SuccinctMCSP_of_agrees hag n qs
+  have hsum : (qs.map fun p =>
+      formulaSize (L.slice (SuccinctMCSP.ofFunctionEncLength n p.1.card p.2))).sum ≤
+        (2 ^ n + 1) * B := by
+    have hmap := List.sum_le_length_nsmul
+      (qs.map fun p => formulaSize (L.slice (SuccinctMCSP.ofFunctionEncLength n p.1.card p.2))) B
+      (by
+        intro x hx
+        obtain ⟨p, hp, rfl⟩ := List.mem_map.mp hx
+        obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hp
+        refine hB (Finset.univ.image (ωs j)).card ?_
+        calc (Finset.univ.image (ωs j)).card
+            ≤ (Finset.univ : Finset (Fin q)).card := Finset.card_image_le
+          _ = q := by simp)
+    simpa only [qs, List.length_map, List.length_ofFn, smul_eq_mul] using hmap
+  refine ⟨F, hFleaf.trans hsum, fun T hyes => ?_, fun T hnoT => ?_⟩
+  · rw [hFeval T, decide_eq_true_eq]
+    intro p hp
+    obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hp
+    have hcomp : complexity interpretation (single ((MCSP.truthTable n).symm T)) ≤ s₂ n :=
+      (GapMCSP.ofFn_mem_yesSet_iff.mp hyes).trans hs
+    exact SuccinctMCSP.ofFunction_mem_of_complexity_le hcomp _
+  · rw [hFeval T, decide_eq_false_iff_not, not_forall]
+    have hmem : T ∈ noFinset := Finset.mem_filter.mpr ⟨Finset.mem_univ T, hnoT⟩
+    obtain ⟨j, hj⟩ := hωs ⟨T, hmem⟩
+    have hj' : SuccinctMCSP.Instance.ofFunction
+        ((MCSP.truthTable n).symm T) (Finset.univ.image (ωs j)) (s₂ n) ∉ SuccinctMCSP :=
+      (Finset.mem_filter.mp hj).2
+    exact ⟨(Finset.univ.image (ωs j), s₂ n), fun h => hj' (h (List.mem_ofFn.mpr ⟨j, rfl⟩))⟩
+
+/-- **If `SuccinctMCSP ∈ FormulaSIZEOn SuccinctMCSP.enc r` for a monotone bound `r`, then
+`ApproxMCSP` has De Morgan formulas of leaf size `(2 ^ n + 1) * r(m(n))`**
+([OliveiraSanthanam2018, Section 3.1, Lemma 16 and Theorem 17, pp. 14–15]). -/
+theorem exists_formula_separating_approxMCSP_of_mem_FormulaSIZEOn
+    {s₁ s₂ k r : ℕ → ℕ} (hs : ∀ m, s₁ m ≤ s₂ m) (hk : ∀ m, 1 ≤ k m)
+    (hr : Monotone r) (hmem : SuccinctMCSP ∈ FormulaSIZEOn SuccinctMCSP.enc r) (n : ℕ) :
+    ∃ F : Formula signature (2 ^ n),
+      F.leafSize ≤ (2 ^ n + 1) * r (approxMCSPQueryEncLength n (s₂ n) (k n)) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ →
+        F.eval interpretation T = true) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+        F.eval interpretation T = false) := by
+  obtain ⟨L, hL, hag⟩ := hmem
+  refine exists_formula_separating_approxMCSP_of_agrees hag (hk n) (hs n)
+    (card_computableFunctions_le_two_pow n (s₂ n)) fun m hm => ?_
+  exact (hL _).trans (hr (ofFunctionEncLength_le_approxMCSPQueryEncLength hm))
+
+/-- **Contrapositive of Oliveira–Santhanam Lemma 16 (general parameters, for `SuccinctMCSP`)**
+[OliveiraSanthanam2018, Section 3.1, Lemma 16 and Theorem 17 (i)/(iii), pp. 14–15].
+If `s₁ n ≤ s₂ n` and `1 ≤ k n` for all `n`, and for every polynomial degree `c : ℕ` there exists an
+input length `n` at which every De Morgan formula separating `GapMCSP.yesSet s₁` and
+`ApproxMCSP.noSet s₂ k` on `2 ^ n`-bit truth tables has leaf size strictly greater than
+`(2 ^ n + 1) * (c * (approxMCSPQueryEncLength n (s₂ n) (k n) + 1) ^ c)`, then
+`SuccinctMCSP ∉ FormulaPolyOn SuccinctMCSP.enc`. -/
+theorem not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_hard
+    {s₁ s₂ k : ℕ → ℕ} (hs : ∀ m, s₁ m ≤ s₂ m) (hk : ∀ m, 1 ≤ k m)
+    (hhard : ∀ c : ℕ, ∃ n : ℕ, ∀ F : Formula signature (2 ^ n),
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ →
+        F.eval interpretation T = true) →
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+        F.eval interpretation T = false) →
+      (2 ^ n + 1) * (c * (approxMCSPQueryEncLength n (s₂ n) (k n) + 1) ^ c) < F.leafSize) :
+    SuccinctMCSP ∉ FormulaPolyOn SuccinctMCSP.enc := by
+  rw [mem_FormulaPolyOn_iff_exists_mem_FormulaSIZEOn]
+  rintro ⟨c, hc⟩
+  obtain ⟨n, hn⟩ := hhard c
+  have hmono : Monotone (fun m => c * (m + 1) ^ c) := fun m₁ m₂ hm =>
+    Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hm 1) c)
+  obtain ⟨F, hFleaf, hyes, hno⟩ :=
+    exists_formula_separating_approxMCSP_of_mem_FormulaSIZEOn hs hk hmono hc n
+  exact (hn F hyes hno).not_ge hFleaf
+
+/-- **Contrapositive of Oliveira–Santhanam Lemma 16 (`NP ⊄ Formula[poly]`, general parameters
+underlying Theorem 17(i)/(iii))**
+[OliveiraSanthanam2018, Section 3.1, Lemma 16 and Theorem 17 (i)/(iii), pp. 14–15].
+Under the hypothesis of `not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_hard`, combining Lemma 16
+with `SuccinctMCSP.mem_NP` yields
+`¬ (Complexity.NP SuccinctMCSP.enc ⊆ FormulaPolyOn SuccinctMCSP.enc)`. -/
+theorem not_NP_subset_FormulaPolyOn_of_approxMCSP_hard
+    {s₁ s₂ k : ℕ → ℕ} (hs : ∀ m, s₁ m ≤ s₂ m) (hk : ∀ m, 1 ≤ k m)
+    (hhard : ∀ c : ℕ, ∃ n : ℕ, ∀ F : Formula signature (2 ^ n),
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ →
+        F.eval interpretation T = true) →
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+        F.eval interpretation T = false) →
+      (2 ^ n + 1) * (c * (approxMCSPQueryEncLength n (s₂ n) (k n) + 1) ^ c) < F.leafSize) :
+    ¬ (Complexity.NP SuccinctMCSP.enc ⊆ FormulaPolyOn SuccinctMCSP.enc) :=
+  fun hsub =>
+    not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_hard hs hk hhard
+      (hsub SuccinctMCSP.mem_NP)
+
+/-- Elementary polynomial upper bound on `computableFunctionsLogBound n s`: since
+`Nat.clog 2 (n + s + 1) ≤ n + s + 1`, we have
+`computableFunctionsLogBound n s ≤ (s + 1) * (2 * (n + s + 1) + 3)`. -/
+theorem computableFunctionsLogBound_le_poly (n s : ℕ) :
+    computableFunctionsLogBound n s ≤ (s + 1) * (2 * (n + s + 1) + 3) := by
+  have hclog : Nat.clog 2 (n + s + 1) ≤ n + s + 1 :=
+    (Nat.clog_le_iff_le_pow (by decide)).mpr (Nat.lt_two_pow_self).le
+  dsimp only [computableFunctionsLogBound]
+  exact Nat.mul_le_mul_left (s + 1)
+    (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hclog) 3)
+
+/-- When `s` is polynomially bounded, `fun n => computableFunctionsLogBound n (s n)` is polynomially
+bounded. -/
+theorem polynomiallyBounded_computableFunctionsLogBound {s : ℕ → ℕ}
+    (hs : PolynomiallyBounded s) :
+    PolynomiallyBounded (fun n => computableFunctionsLogBound n (s n)) := by
+  have hpoly : PolynomiallyBounded (fun n => (s n + 1) * (2 * (n + s n + 1) + 3)) :=
+    (hs.add (.const 1)).mul
+      (((PolynomiallyBounded.const 2).mul
+        ((PolynomiallyBounded.id.add hs).add (.const 1))).add (.const 3))
+  exact hpoly.mono_of_le fun n => computableFunctionsLogBound_le_poly n (s n)
+
+/-- When the circuit-size threshold `s` and inverse-error parameter `k` are polynomially bounded in
+`n`, the maximum encoded query length `fun n => approxMCSPQueryEncLength n (s n) (k n)` is
+polynomially bounded in `n`. -/
+theorem polynomiallyBounded_approxMCSPQueryEncLength {s k : ℕ → ℕ}
+    (hs : PolynomiallyBounded s) (hk : PolynomiallyBounded k) :
+    PolynomiallyBounded (fun n => approxMCSPQueryEncLength n (s n) (k n)) := by
+  have hq : PolynomiallyBounded (fun n => k n * (computableFunctionsLogBound n (s n) + 2)) :=
+    hk.mul ((polynomiallyBounded_computableFunctionsLogBound hs).add (.const 2))
+  have h8n : PolynomiallyBounded (fun n => 8 * n + 10) :=
+    ((PolynomiallyBounded.const 8).mul PolynomiallyBounded.id).add (.const 10)
+  have h4n : PolynomiallyBounded (fun n => 4 * n + 3) :=
+    ((PolynomiallyBounded.const 4).mul PolynomiallyBounded.id).add (.const 3)
+  exact (h4n.add (hq.mul h8n)).add hs
+
+/-- **Polynomial-parameter forward upper bound for Theorem 1(i) / Theorem 17(i)**
+[OliveiraSanthanam2018, Section 1.2, Theorem 1 (i), p. 5; Section 3.1, Theorem 17 (i), p. 15].
+If `s₂` and `k` are polynomially bounded in `n` (for example `s₂(n) = n ^ d` and
+`k(n) = (n + 1) ^ d`) and `SuccinctMCSP ∈ FormulaPolyOn SuccinctMCSP.enc`, then there is a
+polynomial degree `c : ℕ` such that for every `n`, `ApproxMCSP s₁ s₂ k` on `2 ^ n`-bit inputs is
+separated by a De Morgan formula of leaf size at most `(2 ^ n + 1) * (c * (n + 1) ^ c)`
+(`N · (log N)^{O(1)}` where `N = 2 ^ n`). -/
+theorem exists_poly_formula_separating_approxMCSP_of_mem_FormulaPolyOn
+    {s₁ s₂ k : ℕ → ℕ} (hs : ∀ m, s₁ m ≤ s₂ m) (hk : ∀ m, 1 ≤ k m)
+    (hs₂_poly : PolynomiallyBounded s₂) (hk_poly : PolynomiallyBounded k)
+    (hmem : SuccinctMCSP ∈ FormulaPolyOn SuccinctMCSP.enc) :
+    ∃ c : ℕ, ∀ n : ℕ, ∃ F : Formula signature (2 ^ n),
+      F.leafSize ≤ (2 ^ n + 1) * (c * (n + 1) ^ c) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ →
+        F.eval interpretation T = true) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+        F.eval interpretation T = false) := by
+  obtain ⟨L, hL, hag⟩ := hmem
+  have hcomp_mem : (L : Language Bool) ∈ FormulaPoly := hL
+  obtain ⟨c₀, hc₀⟩ := mem_FormulaPoly_iff_exists_mem_FormulaSIZE.mp hcomp_mem
+  have hr_poly : PolynomiallyBounded
+      (fun n => c₀ * (approxMCSPQueryEncLength n (s₂ n) (k n) + 1) ^ c₀) := by
+    have hbase : PolynomiallyBounded (fun m => c₀ * (m + 1) ^ c₀) :=
+      (PolynomiallyBounded.const c₀).mul
+        ((PolynomiallyBounded.id.add (.const 1)).pow c₀)
+    exact hbase.comp (polynomiallyBounded_approxMCSPQueryEncLength hs₂_poly hk_poly)
+  obtain ⟨c₁, d₁, hcd⟩ := polynomiallyBounded_iff_le.mp hr_poly
+  let c := max c₁ d₁
+  refine ⟨c, fun n => ?_⟩
+  have hmono : Monotone (fun m => c₀ * (m + 1) ^ c₀) := fun m₁ m₂ hm =>
+    Nat.mul_le_mul_left c₀ (Nat.pow_le_pow_left (Nat.add_le_add_right hm 1) c₀)
+  obtain ⟨F, hFleaf, hyes, hno⟩ :=
+    exists_formula_separating_approxMCSP_of_mem_FormulaSIZEOn hs hk hmono ⟨L, hc₀, hag⟩ n
+  refine ⟨F, hFleaf.trans (Nat.mul_le_mul_left (2 ^ n + 1) ?_), hyes, hno⟩
+  exact (hcd n).trans (Nat.mul_le_mul (le_max_left c₁ d₁)
+    (Nat.pow_le_pow_right (Nat.succ_pos n) (le_max_right c₁ d₁)))
+
+/-- **Oliveira–Santhanam Theorem 1(i) / Theorem 17(i) (for `SuccinctMCSP`)**
+[OliveiraSanthanam2018, Section 1.2, Theorem 1 (i), p. 5; Section 3.1, Theorem 17 (i), p. 15].
+If `s₂` and `k` are polynomially bounded in `n` (such as `s(n) = n ^ d` and `δ(n) = n ^ (-d)`), and
+`ApproxMCSP[s₁, s₂, k]` on `N = 2 ^ n`-bit truth tables is not separated by De Morgan formulas of
+leaf size `(2 ^ n + 1) * (c * (n + 1) ^ c)` (`Formula[N · (log N)^{O(1)}]`), then
+`SuccinctMCSP ∉ FormulaPolyOn SuccinctMCSP.enc`. -/
+theorem not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_poly_hard
+    {s₁ s₂ k : ℕ → ℕ} (hs : ∀ m, s₁ m ≤ s₂ m) (hk : ∀ m, 1 ≤ k m)
+    (hs₂_poly : PolynomiallyBounded s₂) (hk_poly : PolynomiallyBounded k)
+    (hhard : ∀ c : ℕ, ∃ n : ℕ, ∀ F : Formula signature (2 ^ n),
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ →
+        F.eval interpretation T = true) →
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+        F.eval interpretation T = false) →
+      (2 ^ n + 1) * (c * (n + 1) ^ c) < F.leafSize) :
+    SuccinctMCSP ∉ FormulaPolyOn SuccinctMCSP.enc := by
+  intro hmem
+  obtain ⟨c, hc⟩ :=
+    exists_poly_formula_separating_approxMCSP_of_mem_FormulaPolyOn hs hk hs₂_poly hk_poly hmem
+  obtain ⟨n, hn⟩ := hhard c
+  obtain ⟨F, hFleaf, hyes, hno⟩ := hc n
+  exact (hn F hyes hno).not_ge hFleaf
+
+/-- **Oliveira–Santhanam Theorem 1(i) / Theorem 17(i)
+(`Π[s, δ] ∉ Formula[N · (log N)^{O(1)}] ⟹ NP ⊄ Formula[poly]`)**
+[OliveiraSanthanam2018, Section 1.2, Theorem 1 (i), p. 5; Section 3.1, Theorem 17 (i), p. 15].
+If `s₂` and `k` are polynomially bounded in `n` and `ApproxMCSP[s₁, s₂, k]` on `N = 2 ^ n`-bit truth
+tables is not separated by De Morgan formulas of leaf size `(2 ^ n + 1) * (c * (n + 1) ^ c)`, then
+`¬ (Complexity.NP SuccinctMCSP.enc ⊆ FormulaPolyOn SuccinctMCSP.enc)`. -/
+theorem not_NP_subset_FormulaPolyOn_of_approxMCSP_poly_hard
+    {s₁ s₂ k : ℕ → ℕ} (hs : ∀ m, s₁ m ≤ s₂ m) (hk : ∀ m, 1 ≤ k m)
+    (hs₂_poly : PolynomiallyBounded s₂) (hk_poly : PolynomiallyBounded k)
+    (hhard : ∀ c : ℕ, ∃ n : ℕ, ∀ F : Formula signature (2 ^ n),
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ →
+        F.eval interpretation T = true) →
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+        F.eval interpretation T = false) →
+      (2 ^ n + 1) * (c * (n + 1) ^ c) < F.leafSize) :
+    ¬ (Complexity.NP SuccinctMCSP.enc ⊆ FormulaPolyOn SuccinctMCSP.enc) :=
+  fun hsub =>
+    not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_poly_hard hs hk hs₂_poly hk_poly hhard
+      (hsub SuccinctMCSP.mem_NP)
+
+/-! ### Zero-Error Average-Case Formula Magnification (Lemma 26, Theorem 5, and Theorem 27) -/
+
+open Classical in
+/-- For any fixed `g : BooleanFunction n` and sample set `S : Finset (BitString n)`, the number of
+truth tables `T : BitString (2 ^ n)` whose function `(MCSP.truthTable n).symm T` agrees with `g` on
+every input in `S` is `2 ^ (2 ^ n - S.card)` (since the `S.card` values on `S` are fixed to `g` and
+the remaining `2 ^ n - S.card` values are unconstrained). -/
+theorem card_filter_agreesOn_eq_two_pow (n : ℕ) (S : Finset (BitString n))
+    (g : BooleanFunction n) :
+    (Finset.univ.filter fun T : BitString (2 ^ n) =>
+      ∀ y ∈ S, (MCSP.truthTable n).symm T y = g y).card = 2 ^ (2 ^ n - S.card) := by
+  have hbij : (Finset.univ.filter fun T : BitString (2 ^ n) =>
+        ∀ y ∈ S, (MCSP.truthTable n).symm T y = g y).card =
+      (Finset.univ.filter fun f : BooleanFunction n => ∀ y ∈ S, f y = g y).card := by
+    refine Finset.card_bij (fun T _ => (MCSP.truthTable n).symm T)
+      (fun T hT => ?_) (fun T₁ _ T₂ _ h => (MCSP.truthTable n).symm.injective h)
+      (fun f hf => ⟨MCSP.truthTable n f, ?_, by simp⟩)
+    · exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (Finset.mem_filter.mp hT).2⟩
+    · refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
+      simpa using (Finset.mem_filter.mp hf).2
+  have hpi : (Finset.univ.filter fun f : BooleanFunction n => ∀ y ∈ S, f y = g y) =
+      Fintype.piFinset (fun y : BitString n =>
+        if y ∈ S then ({g y} : Finset Bool) else Finset.univ) := by
+    ext f
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Fintype.mem_piFinset]
+    refine ⟨fun hf y => ?_, fun hf y hy => ?_⟩
+    · split_ifs with hy
+      · exact Finset.mem_singleton.mpr (hf y hy)
+      · exact Finset.mem_univ (f y)
+    · have hfy := hf y
+      simp only [hy, ↓reduceIte, Finset.mem_singleton] at hfy
+      exact hfy
+  rw [hbij, hpi, Fintype.card_piFinset]
+  simp only [apply_ite Finset.card, Finset.prod_ite, Finset.prod_const,
+    Finset.card_singleton, one_pow, one_mul, Finset.filter_not, Finset.filter_mem_eq_inter,
+    Finset.univ_inter, Finset.card_sdiff_of_subset (Finset.subset_univ S), Finset.card_univ,
+    Fintype.card_bool]
+  simp [BitString]
+
+open Classical in
+/-- **Oliveira–Santhanam Lemma 26 (finite-counting form)**
+[OliveiraSanthanam2018, Section 3.3, Lemma 26, p. 21]: for any fixed subset
+`S : Finset (BitString n)` of distinct `n`-bit inputs and any circuit-size threshold `s`, the number
+of truth tables `T : BitString (2 ^ n)` whose restriction to `S` is consistent with a circuit of
+size at most `s`
+(`SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP`) is at most
+`(computableFunctions n s).card * 2 ^ (2 ^ n - S.card)`. -/
+theorem card_filter_ofFunction_mem_succinctMCSP_le (n : ℕ) (S : Finset (BitString n)) (s : ℕ) :
+    (Finset.univ.filter fun T : BitString (2 ^ n) =>
+      SuccinctMCSP.Instance.ofFunction
+        ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP).card ≤
+    (computableFunctions n s).card * 2 ^ (2 ^ n - S.card) := by
+  let AgreeOn (g : BooleanFunction n) : Finset (BitString (2 ^ n)) :=
+    Finset.univ.filter fun T : BitString (2 ^ n) =>
+      ∀ y ∈ S, (MCSP.truthTable n).symm T y = g y
+  have hsub : (Finset.univ.filter fun T : BitString (2 ^ n) =>
+      SuccinctMCSP.Instance.ofFunction
+        ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP) ⊆
+      (computableFunctions n s).biUnion AgreeOn := by
+    intro T hT
+    obtain ⟨g, hg, hag⟩ :=
+      SuccinctMCSP.ofFunction_mem_iff_exists_mem_computableFunctions.mp
+        (Finset.mem_filter.mp hT).2
+    exact Finset.mem_biUnion.mpr ⟨g, hg,
+      Finset.mem_filter.mpr ⟨Finset.mem_univ T, fun y hy => (hag y hy).symm⟩⟩
+  calc (Finset.univ.filter fun T : BitString (2 ^ n) =>
+        SuccinctMCSP.Instance.ofFunction
+          ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP).card
+      ≤ ((computableFunctions n s).biUnion AgreeOn).card := Finset.card_le_card hsub
+    _ ≤ ∑ g ∈ computableFunctions n s, (AgreeOn g).card := Finset.card_biUnion_le
+    _ = ∑ _g ∈ computableFunctions n s, 2 ^ (2 ^ n - S.card) :=
+        Finset.sum_congr rfl fun g _ => card_filter_agreesOn_eq_two_pow n S g
+    _ = (computableFunctions n s).card * 2 ^ (2 ^ n - S.card) := by
+        rw [Finset.sum_const, smul_eq_mul]
+
+open Classical in
+/-- **Oliveira–Santhanam Lemma 26 (exponential-tail form)**
+[OliveiraSanthanam2018, Section 3.3, Lemma 26, p. 21]: if `(computableFunctions n s).card ≤ 2 ^ M`
+(in particular for `M = computableFunctionsLogBound n s`) and `M + r ≤ S.card`, then at most
+`2 ^ (2 ^ n - r)` truth tables `T : BitString (2 ^ n)` satisfy
+`SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP`
+(so for `r = n`, at most a `2 ^ (-n)`-fraction of all `2 ^ (2 ^ n)` truth tables are consistent
+with a circuit of size at most `s` on `S`). -/
+theorem card_filter_ofFunction_mem_succinctMCSP_le_two_pow
+    {n s M r : ℕ} {S : Finset (BitString n)}
+    (hcard : (computableFunctions n s).card ≤ 2 ^ M) (hS : M + r ≤ S.card) :
+    (Finset.univ.filter fun T : BitString (2 ^ n) =>
+      SuccinctMCSP.Instance.ofFunction
+        ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP).card ≤
+    2 ^ (2 ^ n - r) := by
+  have hScard : S.card ≤ 2 ^ n :=
+    (Finset.card_le_univ S).trans (by simp [BitString])
+  have hexp : M + (2 ^ n - S.card) ≤ 2 ^ n - r := by omega
+  calc (Finset.univ.filter fun T : BitString (2 ^ n) =>
+        SuccinctMCSP.Instance.ofFunction
+          ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP).card
+      ≤ (computableFunctions n s).card * 2 ^ (2 ^ n - S.card) :=
+        card_filter_ofFunction_mem_succinctMCSP_le n S s
+    _ ≤ 2 ^ M * 2 ^ (2 ^ n - S.card) := Nat.mul_le_mul_right _ hcard
+    _ = 2 ^ (M + (2 ^ n - S.card)) := (pow_add 2 M (2 ^ n - S.card)).symm
+    _ ≤ 2 ^ (2 ^ n - r) := Nat.pow_le_pow_right (by decide) hexp
+
+/-- The encoded bit length of a `SuccinctMCSP.Instance.ofFunction` query on
+`computableFunctionsLogBound n s + r` distinct `n`-bit inputs at circuit-size threshold `s`, used in
+the zero-error average-case formula magnification of
+[OliveiraSanthanam2018, Section 3.3, Theorem 27, p. 21]. -/
+def avgCaseMCSPQueryEncLength (n s r : ℕ) : ℕ :=
+  SuccinctMCSP.ofFunctionEncLength n (computableFunctionsLogBound n s + r) s
+
+open Classical in
+/-- **Zero-error average-case formula projection for a given sample set `S`**
+([OliveiraSanthanam2018, Section 3.3, Lemma 26 and Theorem 27, p. 21]).
+If `L : Language Bool` agrees with `SuccinctMCSP` along `SuccinctMCSP.enc` and
+`S : Finset (BitString n)` satisfies `computableFunctionsLogBound n (s n) + r ≤ S.card`, then the
+single-query projection formula `F` on `2 ^ n` variables has:
+1. `F.leafSize ≤ formulaSize (L.slice (SuccinctMCSP.ofFunctionEncLength n S.card (s n)))`
+   (no `2 ^ n` blowup in formula size),
+2. zero error on Yes-instances:
+   `∀ T, List.ofFn T ∈ GapMCSP.yesSet s → F.eval interpretation T = true`
+   (so `F.eval interpretation T = false` certifies `List.ofFn T ∉ GapMCSP.yesSet s`), and
+3. bounded acceptance on random truth tables: at most `2 ^ (2 ^ n - r)` truth tables
+   `T : BitString (2 ^ n)` satisfy `F.eval interpretation T = true`. -/
+theorem exists_formula_zero_error_average_case_of_sample
+    {L : Language Bool} (hag : ∀ x, x ∈ SuccinctMCSP ↔ SuccinctMCSP.enc x ∈ L)
+    {s : ℕ → ℕ} {n r : ℕ} (S : Finset (BitString n))
+    (hS : computableFunctionsLogBound n (s n) + r ≤ S.card) :
+    ∃ F : Formula signature (2 ^ n),
+      F.leafSize ≤ formulaSize (L.slice (SuccinctMCSP.ofFunctionEncLength n S.card (s n))) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s →
+        F.eval interpretation T = true) ∧
+      (Finset.univ.filter fun T : BitString (2 ^ n) =>
+        F.eval interpretation T = true).card ≤ 2 ^ (2 ^ n - r) := by
+  obtain ⟨F, hFeval, hFleaf⟩ :=
+    exists_formula_ofFunction_SuccinctMCSP_of_agrees hag n S (s n)
+  refine ⟨F, hFleaf, fun T hyes => ?_, ?_⟩
+  · rw [hFeval T, decide_eq_true_eq]
+    exact SuccinctMCSP.ofFunction_mem_of_complexity_le
+      (GapMCSP.ofFn_mem_yesSet_iff.mp hyes) S
+  · have hfilter : (Finset.univ.filter fun T : BitString (2 ^ n) =>
+        F.eval interpretation T = true) =
+      (Finset.univ.filter fun T : BitString (2 ^ n) =>
+        SuccinctMCSP.Instance.ofFunction
+          ((MCSP.truthTable n).symm T) S (s n) ∈ SuccinctMCSP) := by
+      ext T
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, hFeval T, decide_eq_true_eq]
+    rw [hfilter]
+    exact card_filter_ofFunction_mem_succinctMCSP_le_two_pow
+      (card_computableFunctions_le_two_pow n (s n)) hS
+
+open Classical in
+/-- **Zero-error average-case formula projection at exact query length `avgCaseMCSPQueryEncLength`**
+[OliveiraSanthanam2018, Section 3.3, Theorem 27, p. 21].
+Whenever `computableFunctionsLogBound n (s n) + r ≤ 2 ^ n`, choosing a subset
+`S : Finset (BitString n)` of cardinality `computableFunctionsLogBound n (s n) + r` yields a De
+Morgan formula `F` on `2 ^ n` variables of leaf size at most
+`formulaSize (L.slice (avgCaseMCSPQueryEncLength n (s n) r))` that accepts every
+`T ∈ GapMCSP.yesSet s` and accepts at most `2 ^ (2 ^ n - r)` truth tables overall. -/
+theorem exists_formula_zero_error_average_case_of_agrees
+    {L : Language Bool} (hag : ∀ x, x ∈ SuccinctMCSP ↔ SuccinctMCSP.enc x ∈ L)
+    {s : ℕ → ℕ} {n r : ℕ}
+    (ht : computableFunctionsLogBound n (s n) + r ≤ 2 ^ n) :
+    ∃ F : Formula signature (2 ^ n),
+      F.leafSize ≤ formulaSize (L.slice (avgCaseMCSPQueryEncLength n (s n) r)) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s →
+        F.eval interpretation T = true) ∧
+      (Finset.univ.filter fun T : BitString (2 ^ n) =>
+        F.eval interpretation T = true).card ≤ 2 ^ (2 ^ n - r) := by
+  have huniv : computableFunctionsLogBound n (s n) + r ≤
+      (Finset.univ : Finset (BitString n)).card := by
+    simpa [BitString] using ht
+  obtain ⟨S, -, hScard⟩ := Finset.exists_subset_card_eq huniv
+  obtain ⟨F, hFleaf, hyes, hcard⟩ :=
+    exists_formula_zero_error_average_case_of_sample hag S hScard.ge
+  rw [hScard] at hFleaf
+  exact ⟨F, hFleaf, hyes, hcard⟩
+
+open Classical in
+/-- **Zero-error average-case formula projection for `SuccinctMCSP.enc '' SuccinctMCSP`**
+[OliveiraSanthanam2018, Section 3.3, Theorem 27, p. 21]. -/
+theorem exists_formula_zero_error_average_case_of_succinctMCSP
+    {s : ℕ → ℕ} {n r : ℕ}
+    (ht : computableFunctionsLogBound n (s n) + r ≤ 2 ^ n) :
+    ∃ F : Formula signature (2 ^ n),
+      F.leafSize ≤
+        formulaSize (Language.slice (SuccinctMCSP.enc '' SuccinctMCSP)
+          (avgCaseMCSPQueryEncLength n (s n) r)) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s →
+        F.eval interpretation T = true) ∧
+      (Finset.univ.filter fun T : BitString (2 ^ n) =>
+        F.eval interpretation T = true).card ≤ 2 ^ (2 ^ n - r) :=
+  exists_formula_zero_error_average_case_of_agrees
+    (fun _ => SuccinctMCSP.enc.injective.mem_set_image.symm) ht
+
+open Classical in
+/-- **Contrapositive zero-error average-case formula magnification (Oliveira–Santhanam Theorem 27 at
+a single input length `n`)** [OliveiraSanthanam2018, Section 3.3, Theorem 27, p. 21].
+If `computableFunctionsLogBound n (s n) + r ≤ 2 ^ n` and every De Morgan formula `F` on `2 ^ n`
+variables that accepts all `GapMCSP.yesSet s` truth tables and accepts at most `2 ^ (2 ^ n - r)`
+truth tables overall has leaf size strictly greater than `B`, then the
+`(avgCaseMCSPQueryEncLength n (s n) r)`-bit slice of `SuccinctMCSP.enc '' SuccinctMCSP` has De
+Morgan formula size strictly greater than `B`. -/
+theorem lt_formulaSize_succinctMCSP_of_zero_error_average_case
+    {s : ℕ → ℕ} {n r B : ℕ}
+    (ht : computableFunctionsLogBound n (s n) + r ≤ 2 ^ n)
+    (hhard : ∀ F : Formula signature (2 ^ n),
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s →
+        F.eval interpretation T = true) →
+      (Finset.univ.filter fun T : BitString (2 ^ n) =>
+        F.eval interpretation T = true).card ≤ 2 ^ (2 ^ n - r) →
+      B < F.leafSize) :
+    B < formulaSize (Language.slice (SuccinctMCSP.enc '' SuccinctMCSP)
+      (avgCaseMCSPQueryEncLength n (s n) r)) := by
+  obtain ⟨F, hFleaf, hyes, hcard⟩ :=
+    exists_formula_zero_error_average_case_of_succinctMCSP ht
+  exact (hhard F hyes hcard).trans_le hFleaf
+
+open Classical in
+/-- **One-sided zero-error average-case formula magnification (Oliveira–Santhanam Theorem 27, for
+`SuccinctMCSP`)**
+[OliveiraSanthanam2018, Section 3.3, Theorem 27, p. 21; compare Section 1.2, Theorem 5, p. 8].
+If for every polynomial degree `c : ℕ` there exists `n : ℕ` with
+`computableFunctionsLogBound n (s n) + r n ≤ 2 ^ n` such that every one-sided De
+Morgan formula for `GapMCSP.yesSet s` on `2 ^ n` variables (accepting all `GapMCSP.yesSet s`
+instances and at most `2 ^ (2 ^ n - r n)` truth tables overall) has leaf size strictly greater than
+`c * (avgCaseMCSPQueryEncLength n (s n) (r n) + 1) ^ c`, then
+`SuccinctMCSP ∉ FormulaPolyOn SuccinctMCSP.enc`. -/
+theorem not_succinctMCSP_mem_FormulaPolyOn_of_zero_error_average_case_hard
+    {s r : ℕ → ℕ}
+    (hhard : ∀ c : ℕ, ∃ n : ℕ,
+      computableFunctionsLogBound n (s n) + r n ≤ 2 ^ n ∧
+      ∀ F : Formula signature (2 ^ n),
+        (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s →
+          F.eval interpretation T = true) →
+        (Finset.univ.filter fun T : BitString (2 ^ n) =>
+          F.eval interpretation T = true).card ≤ 2 ^ (2 ^ n - r n) →
+        c * (avgCaseMCSPQueryEncLength n (s n) (r n) + 1) ^ c < F.leafSize) :
+    SuccinctMCSP ∉ FormulaPolyOn SuccinctMCSP.enc := by
+  rw [mem_FormulaPolyOn_iff_exists_mem_FormulaSIZEOn]
+  rintro ⟨c, L, hL, hag⟩
+  obtain ⟨n, ht, hn⟩ := hhard c
+  obtain ⟨F, hFleaf, hyes, hcard⟩ :=
+    exists_formula_zero_error_average_case_of_agrees hag ht
+  exact (hn F hyes hcard).not_ge (hFleaf.trans (hL _))
+
+open Classical in
+/-- **One-sided zero-error average-case formula magnification (Oliveira–Santhanam Theorem 27,
+`NP ⊄ Formula[poly]`)**
+[OliveiraSanthanam2018, Section 3.3, Theorem 27, p. 21; compare Section 1.2, Theorem 5, p. 8].
+Under the hypothesis of `not_succinctMCSP_mem_FormulaPolyOn_of_zero_error_average_case_hard`,
+combining Theorem 27 with `SuccinctMCSP.mem_NP` yields
+`¬ (Complexity.NP SuccinctMCSP.enc ⊆ FormulaPolyOn SuccinctMCSP.enc)`. -/
+theorem not_NP_subset_FormulaPolyOn_of_zero_error_average_case_hard
+    {s r : ℕ → ℕ}
+    (hhard : ∀ c : ℕ, ∃ n : ℕ,
+      computableFunctionsLogBound n (s n) + r n ≤ 2 ^ n ∧
+      ∀ F : Formula signature (2 ^ n),
+        (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s →
+          F.eval interpretation T = true) →
+        (Finset.univ.filter fun T : BitString (2 ^ n) =>
+          F.eval interpretation T = true).card ≤ 2 ^ (2 ^ n - r n) →
+        c * (avgCaseMCSPQueryEncLength n (s n) (r n) + 1) ^ c < F.leafSize) :
+    ¬ (Complexity.NP SuccinctMCSP.enc ⊆ FormulaPolyOn SuccinctMCSP.enc) :=
+  fun hsub =>
+    not_succinctMCSP_mem_FormulaPolyOn_of_zero_error_average_case_hard hhard
+      (hsub SuccinctMCSP.mem_NP)
 
 end Circuits.Boolean
 

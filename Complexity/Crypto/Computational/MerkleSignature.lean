@@ -223,11 +223,11 @@ include hH hlen hcap in
 theorem isPPTOn_keyGen :
     IsPPTOn encUnary (encPair encBits encBits) (keyGen S H depth) := by
   have hk : IsPPTOn encUnary encBits (fun n => BitString.sampleList n) :=
-    ComputableTidilyInPolyTime.id'.sampleList
+    ComputableInPolyTime.id'.sampleList
   have hkeys : IsPPTOn (encPair encUnary encBits) (encList (encPair encBits encBits))
       (fun p : ℕ × List Bool => OracleComp.replicate (2 ^ depth p.1) (S.keyGen p.1)) :=
-    (S.isPPTOn_keyGen_comp (ComputableTidilyInPolyTime.fst encUnary encBits)).replicate
-      (hcap.tidy.comp (ComputableTidilyInPolyTime.fst encUnary encBits))
+    (S.isPPTOn_keyGen_comp (ComputableInPolyTime.fst encUnary encBits)).replicate
+      (hcap.comp (ComputableInPolyTime.fst encUnary encBits))
   have hpost : ComputableTidilyInPolyTime
       (fun q : (ℕ × List Bool) × List (List Bool × List Bool) =>
         (publicKey H q.1.2 q.2, secretKey q.1.2 q.2))
@@ -252,7 +252,7 @@ theorem isPPTOn_sign :
   let E := encPair encBits (encPair encUnary encBits)
   have hdec : ComputableTidilyInPolyTime (fun p : List Bool × ℕ × List Bool =>
       secretKeyDecoder.decode p.1) E (encPair encBits (encList (encPair encBits encBits))) :=
-    secretKeyDecoder.computableTidilyInPolyTime.comp (ComputableTidilyInPolyTime.fst _ _)
+    secretKeyDecoder.computableInPolyTime.tidy.comp (ComputableTidilyInPolyTime.fst _ _)
   have hk := (ComputableTidilyInPolyTime.fst _ _).comp hdec
   have hkeys := (ComputableTidilyInPolyTime.snd _ _).comp hdec
   have hu : ComputableTidilyInPolyTime (fun p : List Bool × ℕ × List Bool => p.2.1) E encUnary :=
@@ -266,8 +266,8 @@ theorem isPPTOn_sign :
   have hsign : IsPPTOn E encBits (fun p : List Bool × ℕ × List Bool =>
       S.sign ((secretKeyDecoder.decode p.1).2.getD p.2.1 ([], [])).2
         (H (secretKeyDecoder.decode p.1).1 p.2.2)) :=
-    S.isPPTOn_sign_comp ((ComputableTidilyInPolyTime.snd _ _).comp hkey)
-      (hH.tidy.comp (hk.prod hmsg))
+    S.isPPTOn_sign_comp (.of_tidy ((ComputableTidilyInPolyTime.snd _ _).comp hkey))
+      (hH.comp (.of_tidy (hk.prod hmsg)))
   have hpath : ComputableTidilyInPolyTime (fun p : List Bool × ℕ × List Bool =>
       merklePath H (secretKeyDecoder.decode p.1).1
         ((secretKeyDecoder.decode p.1).2.map Prod.fst) p.2.1) E (encList encBits) :=
@@ -313,15 +313,15 @@ theorem computableInPolyTime_verify :
       (fun p : List Bool × ℕ × List Bool × List Bool => depth (unframe p.1).length) E encUnary :=
     (computableInPolyTime_depth hcap).tidy.comp
       ((ComputableTidilyInPolyTime.length encBool).comp hk)
-  have hdec := signatureDecoder.computableTidilyInPolyTime.comp hsig
+  have hdec := signatureDecoder.computableInPolyTime.tidy.comp hsig
   have hvk := (ComputableTidilyInPolyTime.fst _ _).comp hdec
   have hrest := (ComputableTidilyInPolyTime.snd _ _).comp hdec
   have hots := (ComputableTidilyInPolyTime.fst _ _).comp hrest
   have hpath := (ComputableTidilyInPolyTime.snd _ _).comp hrest
   have hopen := (computableInPolyTime_merkleVerify hH hlen).tidy.comp
     ((hk.prod hd).prod ((hroot.prod hu).prod (hvk.prod hpath)))
-  have hots_verify := S.computableTidilyInPolyTime_verify_comp hvk (hH.tidy.comp (hk.prod hmsg))
-    hots
+  have hots_verify := (S.computableInPolyTime_verify_comp (.of_tidy hvk)
+    (hH.comp (.of_tidy (hk.prod hmsg))) (.of_tidy hots)).tidy
   exact ComputableTidilyInPolyTime.bool_and.comp (hopen.prod hots_verify)
 
 end Efficiency

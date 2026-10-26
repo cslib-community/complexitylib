@@ -269,7 +269,8 @@ private theorem isOraclePPTOn_bppVerifier {p : Polynomial ℕ} {V : α × List B
     IsOraclePPTOn enc encBool (bppVerifier enc p V) := by
   have hcount : ComputableTidilyInPolyTime (fun a => p.eval (enc a).length) enc encUnary := by
     fun_prop
-  exact (IsPPTOn.map_with (f := fun a r => V (a, r)) hcount.sampleList (.of_tidy hV)).isOraclePPTOn
+  exact (IsPPTOn.map_with (f := fun a r => V (a, r))
+    (ComputableInPolyTime.of_tidy hcount).sampleList (.of_tidy hV)).isOraclePPTOn
 
 /-- The verifier without messages accepts every prover with the fraction of accepted random
 strings. -/

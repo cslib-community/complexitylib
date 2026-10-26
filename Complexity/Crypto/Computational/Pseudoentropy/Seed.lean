@@ -67,9 +67,10 @@ open Probability Turing.MultiTapeTM
 /-- A sampler's PPT certificate supplies an efficiently computed bound on every possible
 public observation. Impossible values in its finite observation type need no size bound. -/
 theorem exists_observationBound (pair : SamplablePair) :
-    ∃ bound : ℕ → ℕ, ComputableTidilyInPolyTime bound encUnary encUnary ∧
+    ∃ bound : ℕ → ℕ, ComputableInPolyTime bound encUnary encUnary ∧
       ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
         (pair.encode n observation).length ≤ bound n := by
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
   have hsample : IsPPTOn encUnary encBits (fun n => Prod.fst <$> pair.sample n) := by
     have hefficient := pair.efficient
     ppt
@@ -98,19 +99,6 @@ structure SeedRealization (pair : SamplablePair) where
   /-- Uniform seeds realize exactly the original finite joint law. -/
   distribution : ∀ n, (BitString.uniformList (length n)).map (evaluate n) =
     (pair.joint n).map (fun output => (pair.encode n output.1, output.2))
-
-/-- The equivalent tidy contract used internally by compositional proofs. -/
-theorem SeedRealization.length_isPolyTime_tidy {pair : SamplablePair}
-    (h : SeedRealization pair) :
-    ComputableTidilyInPolyTime h.length encUnary encUnary := by
-  simpa only [← computableInPolyTime_iff_computableTidilyInPolyTime] using h.length_isPolyTime
-
-/-- The equivalent tidy contract used internally by compositional proofs. -/
-theorem SeedRealization.efficient_tidy {pair : SamplablePair}
-    (h : SeedRealization pair) :
-    ComputableTidilyInPolyTime (fun input : ℕ × List Bool => h.evaluate input.1 input.2)
-    (encPair encUnary encBits) (encPair encBits encBool) := by
-  simpa only [← computableInPolyTime_iff_computableTidilyInPolyTime] using h.efficient
 
 /-- A strict PPT sampler supplies an efficient uniform-seed realization with no additional
 computability or sampling assumption. -/
@@ -216,8 +204,8 @@ noncomputable def sampleWithSeed (n : ℕ) : ProbComp ((List Bool × Bool) × Li
 @[program_certificate]
 theorem isPPTOn_sampleWithSeed : IsPPTOn encUnary
     (encPair (encPair encBits encBool) encBits) seed.sampleWithSeed := by
-  have hlength := seed.length_isPolyTime.tidy
-  have hevaluate := seed.efficient.tidy
+  have hlength := seed.length_isPolyTime
+  have hevaluate := seed.efficient
   unfold sampleWithSeed
   ppt
 

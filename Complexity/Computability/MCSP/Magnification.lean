@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Foundations.Data.BitString.List
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.Fintype.Order
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
@@ -562,10 +563,7 @@ private theorem subcubeState_eq_true_iff (n s : ℕ) (f : BooleanFunction n) (p 
 private theorem getD_zero_ofFn_subcubeState_eq_true_iff (n s : ℕ) (f : BooleanFunction n)
     (p : List Bool) :
     (List.ofFn (subcubeState n s f p)).getD 0 false = true ↔ ∃ w, IsSubcubeCert n s f p w := by
-  have h0 : 0 < (List.ofFn (subcubeState n s f p)).length := by
-    rw [List.length_ofFn, stateWidth]
-    omega
-  rw [List.getD_eq_getElem _ _ h0, List.getElem_ofFn, subcubeState_eq_true_iff]
+  rw [List.getD_ofFn_of_lt _ (by rw [stateWidth]; omega), subcubeState_eq_true_iff]
   simp [exists_isMinSubcubeCert_iff]
 
 private theorem drop_one_ofFn_subcubeState_eq {n s : ℕ} {f : BooleanFunction n}

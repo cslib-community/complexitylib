@@ -209,28 +209,30 @@ variable {α : Type} {input : α ↪ List Bool} {trial : α → ProbComp Bool}
 
 /-- Efficient trials and unary parameters give a strict PPT shift decision. -/
 theorem isPPTOn_testShift (htrial : IsPPTOn input encBool trial)
-    (hconfidence : ComputableTidilyInPolyTime confidence input encUnary)
-    (htolerance : ComputableTidilyInPolyTime inverseTolerance input encUnary)
-    (hdensityNum : ComputableTidilyInPolyTime densityNumerator input encUnary)
-    (hdensityDen : ComputableTidilyInPolyTime densityDenominator input encUnary)
-    (hrateNum : ComputableTidilyInPolyTime rateNumerator input encUnary)
-    (hrateDen : ComputableTidilyInPolyTime rateDenominator input encUnary) :
+    (hconfidence : ComputableInPolyTime confidence input encUnary)
+    (htolerance : ComputableInPolyTime inverseTolerance input encUnary)
+    (hdensityNum : ComputableInPolyTime densityNumerator input encUnary)
+    (hdensityDen : ComputableInPolyTime densityDenominator input encUnary)
+    (hrateNum : ComputableInPolyTime rateNumerator input encUnary)
+    (hrateDen : ComputableInPolyTime rateDenominator input encUnary) :
     IsPPTOn input encBool (fun a => testShift (confidence a) (inverseTolerance a)
       (densityNumerator a) (densityDenominator a)
       (rateNumerator a) (rateDenominator a) (trial a)) := by
   unfold testShift
-  ppt
+  apply htrial.testProbabilityLT
+  all_goals polytime
 
 /-- Efficient trials and unary parameters give a strict PPT majority decision. -/
 theorem isPPTOn_testMajority (htrial : IsPPTOn input encBool trial)
-    (hconfidence : ComputableTidilyInPolyTime confidence input encUnary)
-    (htolerance : ComputableTidilyInPolyTime inverseTolerance input encUnary)
-    (hdensityNum : ComputableTidilyInPolyTime densityNumerator input encUnary)
-    (hdensityDen : ComputableTidilyInPolyTime densityDenominator input encUnary) :
+    (hconfidence : ComputableInPolyTime confidence input encUnary)
+    (htolerance : ComputableInPolyTime inverseTolerance input encUnary)
+    (hdensityNum : ComputableInPolyTime densityNumerator input encUnary)
+    (hdensityDen : ComputableInPolyTime densityDenominator input encUnary) :
     IsPPTOn input encBool (fun a => testMajority (confidence a) (inverseTolerance a)
       (densityNumerator a) (densityDenominator a) (trial a)) := by
   unfold testMajority
-  ppt
+  apply htrial.testProbabilityLT
+  all_goals polytime
 
 attribute [program_certificate] isPPTOn_testShift isPPTOn_testMajority
 

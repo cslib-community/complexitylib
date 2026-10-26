@@ -432,7 +432,8 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
     have hcount : ComputableTidilyInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
       (ComputableTidilyInPolyTime.unary_eval p).comp
         (ComputableTidilyInPolyTime.encoding_length enc)
-    have hprogram : IsPPTOn enc encBool program := hcount.sampleList.map_with hV
+    have hprogram : IsPPTOn enc encBool program :=
+      (ComputableInPolyTime.of_tidy hcount).sampleList.map_with hV
     obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ := hprogram.exists_halting_machine
     refine ⟨d, c * 2 ^ d, c, k, State, hfinite, machine,
       MultiTapePTM.DecidesWithBoundedErrorInTime.mono (t := fun a => c * ((enc a).length + 1) ^ d)

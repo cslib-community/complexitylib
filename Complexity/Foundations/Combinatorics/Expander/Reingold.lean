@@ -226,6 +226,47 @@ section Main
 
 variable [Fintype B] [Fintype E] [Nonempty B]
 
+open Classical in
+/-- When `λ(H) ≤ 1 / 5`, at least half of the edges at every vertex of `G` are self-loops, and
+`2 |V|² |B|² 5 ^ ℓ ≤ 5 · 6 ^ ℓ`, the `ℓ`-step Reingold transform of the connected component of `v₀`
+has spectral expansion at most `4 / 5`. -/
+private theorem spectralExpansion_reingold_componentGraph_le {V : Type u} [Fintype V]
+    [DecidableEq V] (hH : H.spectralExpansion ≤ 1 / 5) (G : RotationMap V B)
+    (hG : ∀ v, Fintype.card B ≤ 2 * G.edgeCount v v) {ℓ : ℕ}
+    (hℓ : 2 * Fintype.card V ^ 2 * Fintype.card B ^ 2 * 5 ^ ℓ ≤ 5 * 6 ^ ℓ) (v₀ : V) :
+    (reingold H e (G.componentGraph v₀) ℓ).spectralExpansion ≤ 4 / 5 := by
+  have : Nonempty V := ⟨v₀⟩
+  set C := {v | G.toSimpleGraph.Reachable v₀ v}
+  have hv₀C : v₀ ∈ C := SimpleGraph.Reachable.refl _
+  have hR : ∀ v, Fintype.card B ≤ 2 * (G.componentGraph v₀).edgeCount v v := fun v ↦ by
+    simpa using hG v
+  have hCV : Fintype.card C ≤ Fintype.card V := Fintype.card_subtype_le _
+  have hC : 0 < Fintype.card C := Fintype.card_pos_iff.2 ⟨⟨v₀, hv₀C⟩⟩
+  have hB : 0 < Fintype.card B := Fintype.card_pos
+  -- the spectral gap of the component
+  set γ : ℝ := 1 / (2 * Fintype.card V ^ 2 * Fintype.card B ^ 2) with hγdef
+  have hγ₀ : 0 ≤ γ := by positivity
+  have hγ : γ ≤ 1 - (G.componentGraph v₀).spectralExpansion := by
+    refine le_trans ?_ (sub_le_sub_left
+      ((G.componentGraph v₀).spectralExpansion_le_of_preconnected hR
+        (G.preconnected_componentGraph v₀)) 1)
+    rw [sub_sub_cancel, hγdef]
+    have : (Fintype.card C : ℝ) ≤ Fintype.card V := by exact_mod_cast hCV
+    gcongr
+  -- after `ℓ` steps it is at least `1 / 5`
+  have hgap := min_pow_le_one_sub_spectralExpansion_reingold H e hH _ hγ₀ hγ ℓ
+  have hℓ' : (1 / 5 : ℝ) ≤ (6 / 5) ^ ℓ * γ := by
+    have hcast : (2 * Fintype.card V ^ 2 * Fintype.card B ^ 2 * 5 ^ ℓ : ℝ) ≤ 5 * 6 ^ ℓ := by
+      exact_mod_cast hℓ
+    have e₁ : (6 / 5 : ℝ) ^ ℓ * γ =
+        6 ^ ℓ / (5 ^ ℓ * (2 * Fintype.card V ^ 2 * Fintype.card B ^ 2)) := by
+      rw [hγdef, div_pow]
+      field_simp
+    rw [e₁, le_div_iff₀ (by positivity)]
+    linarith
+  rw [min_eq_right hℓ'] at hgap
+  linarith
+
 /-- **Short walks in `G_ℓ` reach the whole component** [Reingold, Lemmas 3.2 and 3.3 and
 Proposition 2.2][Reingold2008]: if
 `λ(H) ≤ 1 / 5`, at least half of the edges at every vertex of `G` are self-loops,
@@ -244,35 +285,11 @@ theorem exists_neighbor_pow_reingold_eq {V : Type u} [Fintype V] [DecidableEq V]
   have : Nonempty V := ⟨x.root⟩
   set C := {v | G.toSimpleGraph.Reachable x.root v}
   have hxC : x.root ∈ C := SimpleGraph.Reachable.refl _
-  -- the spectral gap of the component
-  have hR : ∀ v, Fintype.card B ≤ 2 * (G.componentGraph x.root).edgeCount v v := fun v ↦ by
-    simpa using hG v
   have hCV : Fintype.card C ≤ Fintype.card V := Fintype.card_subtype_le _
   have hC : 0 < Fintype.card C := Fintype.card_pos_iff.2 ⟨⟨x.root, hxC⟩⟩
   have hB : 0 < Fintype.card B := Fintype.card_pos
-  set γ : ℝ := 1 / (2 * Fintype.card V ^ 2 * Fintype.card B ^ 2) with hγdef
-  have hγ₀ : 0 ≤ γ := by positivity
-  have hγ : γ ≤ 1 - (G.componentGraph x.root).spectralExpansion := by
-    refine le_trans ?_ (sub_le_sub_left
-      ((G.componentGraph x.root).spectralExpansion_le_of_preconnected hR
-        (G.preconnected_componentGraph x.root)) 1)
-    rw [sub_sub_cancel, hγdef]
-    have : (Fintype.card C : ℝ) ≤ Fintype.card V := by exact_mod_cast hCV
-    gcongr
-  -- after `ℓ` steps it is at least `1 / 5`
-  have hgap := min_pow_le_one_sub_spectralExpansion_reingold H e hH _ hγ₀ hγ ℓ
-  have hℓ' : (1 / 5 : ℝ) ≤ (6 / 5) ^ ℓ * γ := by
-    have hcast : (2 * Fintype.card V ^ 2 * Fintype.card B ^ 2 * 5 ^ ℓ : ℝ) ≤ 5 * 6 ^ ℓ := by
-      exact_mod_cast hℓ
-    have e₁ : (6 / 5 : ℝ) ^ ℓ * γ =
-        6 ^ ℓ / (5 ^ ℓ * (2 * Fintype.card V ^ 2 * Fintype.card B ^ 2)) := by
-      rw [hγdef, div_pow]
-      field_simp
-    rw [e₁, le_div_iff₀ (by positivity)]
-    linarith
-  rw [min_eq_right hℓ'] at hgap
-  have hlam : (reingold H e (G.componentGraph x.root) ℓ).spectralExpansion ≤ 4 / 5 := by linarith
-  -- so walks of length `T` reach every vertex of the transform of the component
+  have hlam := spectralExpansion_reingold_componentGraph_le H e hH G hG hℓ x.root
+  -- walks of length `T` reach every vertex of the transform of the component
   have hwalk : (reingold H e (G.componentGraph x.root) ℓ).spectralExpansion ^ T *
       (Fintype.card (IteratedProd C B ℓ) - 1) < 1 := by
     rw [IteratedProd.card]

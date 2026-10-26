@@ -158,7 +158,8 @@ theorem isPPTOn_run_indexedSigningOracle (S : IndexedSignatureScheme) {adversary
             (S.indexedSigningOracle caller.1 caller.2.2)) (adversary caller.1 caller.2.1)).run
           []) := by
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
-  have hcap := S.capacity_polyTime.tidy
+  have hcap := S.capacity_polyTime
+  have hdecode := requestDecoder.computableInPolyTime
   have hhandler : IsPPTOn
       (encPair (encPair encUnary (encPair encBits encBits))
         (encPair (encPair (encFinite Unit) encBits) (encList (encPair encUnary encBits))))
@@ -167,7 +168,16 @@ theorem isPPTOn_run_indexedSigningOracle (S : IndexedSignatureScheme) {adversary
           ((Unit × List Bool) × List (ℕ × List Bool)) =>
         S.indexedSigningOracle pair.1.1 pair.1.2.2 pair.2.1 pair.2.2) := by
     unfold indexedSigningOracle
-    ppt
+    apply IsPPTOn.ite
+    · polytime
+    · refine (S.sign_ppt.preprocess (prepare := fun pair :
+          (ℕ × (List Bool × List Bool)) × ((Unit × List Bool) × List (ℕ × List Bool)) =>
+          (pair.1.2.2, (requestDecoder.decode pair.2.1.2).1,
+            (requestDecoder.decode pair.2.1.2).2)) ?_).bind_with ?_
+      · polytime
+      · apply ComputableInPolyTime.isPPTOn
+        polytime
+    · ppt
   apply hadversary.run_interpret_preprocess
     (prepare := fun caller : ℕ × (List Bool × List Bool) => (caller.1, caller.2.1))
     (initial := fun _ => ([] : List (ℕ × List Bool)))

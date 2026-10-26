@@ -11,6 +11,7 @@ import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Menus
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.PendingBias
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Potential
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 import Mathlib.Data.Fintype.Powerset
 import Mathlib.Tactic.FinCases
 
@@ -104,6 +105,36 @@ example (U : Finset (Fin 1)) :
 example : 1 ≤ 2 * ((inputGates negateCircuit.program).card + 1) :=
   circuit_le_two_mul_add negateCircuit ⟨(1 : Fin 2), rfl⟩ negateCircuit_eval
     (oneBit_rectangleFree _) (k := 1) le_rfl
+
+-- The support bound applies to a concrete circuit with one input-reading gate and one
+-- input-free gate. The zero incidence cutoff is allowed: it fixes the read input.
+example : (1 : ℝ) ≤ (2 * (1 - (1 / 2 : ℝ) ^ 1) + 1) *
+    (inputGates negateCircuit.program).card + 2 + Real.sqrt 2 := by
+  have h := circuit_le_of_inputSupport_card_le negateCircuit ⟨(1 : Fin 2), rfl⟩
+    negateCircuit_eval (oneBit_rectangleFree _)
+    (d := 1) (fun gate => (Finset.card_le_univ _).trans (by decide)) 0 (k := 1) le_rfl
+  simpa using h
+
+-- The sharper incidence bound permits cutoff zero as well, including the empty residual
+-- input type and a gate whose original input support is empty.
+example : (2 : ℝ) < 9 * (inputGates negateCircuit.program).card +
+    3 * (Nat.log 2 (1 + (inputGates negateCircuit.program).card) : ℝ) + 7 := by
+  have h := circuit_two_mul_lt_of_inputSupport_card_le_three
+    negateCircuit ⟨(1 : Fin 2), rfl⟩ negateCircuit_eval (oneBit_rectangleFree _)
+    (fun gate => (Finset.card_le_univ _).trans (by decide)) 0 (k := 1) le_rfl
+  norm_num at h ⊢
+  linarith
+
+-- Fixing every input makes the residual-coordinate type empty; the original circuit
+-- and its rectangle-free output are still valid inputs to the incidence theorem.
+example : (1 : ℝ) ≤ 2 * (1 - (1 / 2 : ℝ) ^ 1) *
+    (inputGates negateCircuit.program).card + 3 + Real.sqrt 2 := by
+  have h := le_inputGates_of_bounded_incidence negateCircuit.program (fun z => z (1 : Fin 2))
+    negatePrior_eval (oneBit_rectangleFree _)
+    (d := 1) (fun gate => (Finset.card_le_univ _).trans (by decide)) Finset.univ 0
+    (by simp) (k := 1) le_rfl
+  norm_num at h ⊢
+  linarith
 
 -- C5: Fan-in-two component bound on `negateCircuit`.
 private theorem negateCircuit_support_le_two (j : Fin negateCircuit.size) :

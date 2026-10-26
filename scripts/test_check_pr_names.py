@@ -45,6 +45,8 @@ inductive Color where
 
 theorem foo_iff : True ↔ True := Iff.rfl
 
+theorem hasCollision_of_le (hfA : True) (h_le : True) : True := hfA
+
 noncomputable def nonceGame (n : ℕ) : ℕ := go n
 where
   go (k : ℕ) : ℕ := k
@@ -95,7 +97,8 @@ class CheckPrNamesTests(unittest.TestCase):
 
     def test_candidates_skip_non_names(self) -> None:
         skipped = ["h k m + padFn 𝒩", "Complexity/Demo/Basic.lean", "CarterWegman.lean",
-                   "0", "c69067ba", "simp", "ε", "trace", "hx", "h_le", "hFoo", "hfA", "pull_request", "GITHUB_EVENT_PATH",
+                   "0", "c69067ba", "simp", "ε", "trace", "hx", "_leaf_le", "pull_request",
+                   "GITHUB_EVENT_PATH",
                    "PRF", "lake build", "mk_all --check", "lint-style", "native_decide", "theorem",
                    "-1", "@[simp]", "x.1", "Y", ".symm", "maxHeartbeats", "linter.style.longLine"]
         for token in skipped:
@@ -117,7 +120,8 @@ class CheckPrNamesTests(unittest.TestCase):
         self.assertEqual(self.check(" ".join(f"`{n}`" for n in names)), {})
 
     def test_members_and_generated_names_resolve(self) -> None:
-        names = ["Pair.first", "Pair.width", "Pair.second", "Pair.second'", "Pair.toInhabited", "Pair.mk'",
+        names = ["Pair.first", "Pair.width", "Pair.second", "Pair.second'", "Pair.toInhabited",
+                 "Pair.mk'",
                  "Color.red", "Color.green", "Color.rec", "Pair.ext_iff", "pair_first_eq.eq_1",
                  "nonceGame.go", "foo_iff.mp", "pair_first_eq_apply"]
         self.assertEqual(self.check(" ".join(f"`{n}`" for n in names)), {})
@@ -139,6 +143,26 @@ class CheckPrNamesTests(unittest.TestCase):
         self.assertIn("did you mean `Cslib.Demo.secureGame`",
                       found["Cslib.Wrong.secureGame"].note(None))
 
+    def test_parent_projections_resolve_from_the_structure_file(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = pathlib.Path(tmp.name)
+        self.write("Complexity/Parent.lean", "class Base (α : Type) where\n  base : α\n")
+        self.write("Complexity/Child.lean",
+                   "structure Pair (α : Type) extends Base α where\n  first : α\n")
+        self.assertEqual(self.check("`Pair.toBase`"), {})
+        self.assertEqual(list(self.check("`Pair.toNotAThing`")), ["Pair.toNotAThing"])
+
+    def test_hypothesis_shaped_names(self) -> None:
+        found = self.check("`hasCollision_of_le`, `hfA`, `h_le`, `hasNothing`, `hFoo`")
+        self.assertEqual(list(found), ["hasNothing", "hFoo"])
+
+    def test_generated_names_read_the_head_only_when_needed(self) -> None:
+        self.assertEqual(cpn.search_words("Nat.succ_le_of_lt"), {"succ_le_of_lt"})
+        self.assertEqual(cpn.head_words("Nat.succ_le_of_lt"), set())
+        self.assertEqual(cpn.head_words("Pair.mk"), {"Pair"})
+        self.assertEqual(cpn.head_words("foo_iff.mp"), {"foo_iff"})
+
     def test_python_script_names_resolve(self) -> None:
         self.write("scripts/check_demo.py", "def changed_files():\n    pass\n")
         found = self.check("`check_demo.changed_files`, `changed_files`, `check_demo.missing_fn`")
@@ -154,7 +178,8 @@ class CheckPrNamesTests(unittest.TestCase):
     def test_comments_are_not_declarations(self) -> None:
         self.write("Complexity/Demo/Commented.lean",
                    "/- theorem inBlock : True := trivial -/\n-- theorem inLine : True := trivial\n"
-                   "/-- doc\ntheorem inDoc : True := trivial -/\ntheorem real_decl : True := trivial\n")
+                   "/-- doc\ntheorem inDoc : True := trivial -/\n"
+                   "theorem real_decl : True := trivial\n")
         self.assertEqual(list(self.check("`inBlock` `inLine` `inDoc` `real_decl`")),
                          ["inBlock", "inLine", "inDoc"])
 
@@ -164,14 +189,17 @@ class CheckPrNamesTests(unittest.TestCase):
         return subprocess.run(["git", *args], cwd=self.root, check=True, capture_output=True,
                               text=True).stdout.strip()
 
+    def commit(self, *args: str) -> None:
+        self.git("-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false",
+                 "commit", "-q", *args)
+
     def test_names_removed_by_the_change_are_recognized(self) -> None:
         self.git("init", "-q")
-        self.git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty",
-                 "-m", "root")
+        self.commit("--allow-empty", "-m", "root")
         self.write("Complexity/Demo/Old.lean",
                    "namespace Cslib.Old\ntheorem old_lemma : True := trivial\nend Cslib.Old\n")
         self.git("add", ".")
-        self.git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "base")
+        self.commit("-m", "base")
         base = self.git("rev-parse", "HEAD")
         (self.root / "Complexity/Demo/Old.lean").unlink()
         found = self.check("Removes `Cslib.Old.old_lemma`; adds `brandNew`.", base=base)

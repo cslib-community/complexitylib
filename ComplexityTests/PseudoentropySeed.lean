@@ -67,9 +67,9 @@ example : Nonempty fairPair.SeedRealization := fairPair.exists_seedRealization
 -- The shared padding contract has a concrete saved sampler and a realizable common schedule.
 example : ∃ common, EntropyGrid.PaddingBounds paddedSeed (fun _ => 0) (fun _ => 2) common := by
   obtain ⟨common, hcommon, _, _, hsize⟩ := EntropyGrid.exists_common_seedLength
-    paddedSeed.length_isPolyTime.tidy
-    (show ComputableTidilyInPolyTime (fun _ => 0) encUnary encUnary from by fun_prop)
-    (show ComputableTidilyInPolyTime (fun _ => 2) encUnary encUnary from by fun_prop)
+    paddedSeed.length_isPolyTime
+    (show ComputableInPolyTime (fun _ => 0) encUnary encUnary from by fun_prop)
+    (show ComputableInPolyTime (fun _ => 2) encUnary encUnary from by fun_prop)
   exact ⟨common, ⟨by fun_prop, by fun_prop, hcommon, fun _ _ _ => Nat.le_refl 0, hsize⟩⟩
 
 -- The evaluator is total on malformed seeds too; here an empty seed returns the default bit.
@@ -186,21 +186,21 @@ example :
   exact slack_budget n 1
 
 -- The full amplified grid has a concrete seed realization, including unused seed bits.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : (ℕ × ℕ) × List Bool => EntropyGrid.amplifiedGenerate p.1.1 (p.1.1 + 1)
       0 2 (p.1.1 + 4) p.1.2 (fun bits => ([], bits.headD false)) p.2)
     (encPair (encPair encUnary encUnary) encBits) encBits :=
-  EntropyGrid.isPolyTime_amplifiedGenerate paddedSeed
+  (EntropyGrid.isPolyTime_amplifiedGenerate paddedSeed
     (observationBound := fun _ => 0) (densityBound := fun _ => 2) (common := fun n => n + 4)
-    (by fun_prop) (by fun_prop) (by fun_prop)
+    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)))
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × List Bool => EntropyGrid.combinedGenerate p.1 (p.1 + 1)
       0 2 (p.1 + 4) (fun bits => ([], bits.headD false)) p.2)
     (encPair encUnary encBits) encBits :=
-  EntropyGrid.isPolyTime_combinedGenerate paddedSeed
+  (EntropyGrid.isPolyTime_combinedGenerate paddedSeed
     (observationBound := fun _ => 0) (densityBound := fun _ => 2) (common := fun n => n + 4)
-    (by fun_prop) (by fun_prop) (by fun_prop)
+    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)))
 
 -- Output width is fixed even for malformed seeds; security uses the declared uniform seed law.
 example (n : ℕ) (seed : List Bool) :

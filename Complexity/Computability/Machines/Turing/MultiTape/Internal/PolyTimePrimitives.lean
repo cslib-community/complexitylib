@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearPrimitives
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Foldl
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.FoldCompiler
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial
@@ -23,7 +23,7 @@ or bridge participates in their statements or derivations.
 
 ## Main results
 
-* `ComputableInPolyTime.comp`, `.pair`, `.ite`, `.foldl`: direct closure rules.
+* `ComputableInPolyTime.comp`, `.trans`, `.pair`, `.ite`, `.foldl`: direct closure rules.
 * `ComputableInPolyTime.fst`, `.snd`: ordinary encoded-pair projections.
 * `ComputableInPolyTime.frame`, `.unframe`, `.dropFrame`: total word framing and parsers.
 -/
@@ -47,6 +47,15 @@ private theorem of_computesTidily {f : α → β} {k : ℕ} {State : Type} [Fini
     ComputableInPolyTime f encIn encMid :=
   ⟨T, T, hT, hT, k, State, inferInstance, tm,
     fun a => ((h a).mono (ht a) (hs a)).computesInTimeAndSpace⟩
+
+/-- Package a plain machine whose resources share a polynomial bound. -/
+private theorem of_computesPlain {f : α → β} {k : ℕ} {State : Type} [Finite State]
+    {tm : MultiTapeTM k Bool State} {t s : α → ℕ} {T : ℕ → ℕ} (hT : PolynomiallyBounded T)
+    (h : ∀ a, tm.ComputesInTimeAndSpace (encIn a) (encMid (f a)) (t a) (s a))
+    (ht : ∀ a, t a ≤ T (encIn a).length) (hs : ∀ a, s a ≤ T (encIn a).length) :
+    ComputableInPolyTime f encIn encMid :=
+  ⟨T, T, hT, hT, k, State, inferInstance, tm,
+    fun a => ⟨(h a).1, (h a).2.1.mono (ht a), (h a).2.2.mono (hs a)⟩⟩
 
 /-- Frame a raw word with the existing streaming encoder. -/
 @[fun_prop]
@@ -120,9 +129,10 @@ theorem pair {α β₁ β₂ : Type u} {encIn : α ↪ List Bool} {enc₁ : β�
     (s₁ := fun a => c₁ * ((encIn a).length + 1) ^ d₁)
     (t₂ := fun a => c₂ * ((encIn a).length + 1) ^ d₂)
     (s₂ := fun a => c₂ * ((encIn a).length + 1) ^ d₂)
-    ⟨k₁, S₁, inferInstance, tm₁, h₁⟩ ⟨k₂, S₂, inferInstance, tm₂, h₂⟩
+    ⟨k₁, S₁, inferInstance, tm₁, fun a => (h₁ a).computesInTimeAndSpace⟩
+    ⟨k₂, S₂, inferInstance, tm₂, fun a => (h₂ a).computesInTimeAndSpace⟩
   -- the encoded pair, kept in the space bound, is no longer than the time bound
-  refine of_computesTidily (T := fun n =>
+  refine of_computesPlain (T := fun n =>
       c * (c₁ * (n + 1) ^ d₁ + c₂ * (n + 1) ^ d₂ + 1) +
       c * (c₁ * (n + 1) ^ d₁ + c₂ * (n + 1) ^ d₂ +
         c * (c₁ * (n + 1) ^ d₁ + c₂ * (n + 1) ^ d₂ + 1) + 1))
@@ -142,7 +152,7 @@ theorem ite {encC : Bool ↪ List Bool} {c : α → Bool} {f g : α → β}
   obtain ⟨c₀, d₀, k₀, S₀, _, tm₀, h₀⟩ := Internal.NormalForm.polyTime hc
   obtain ⟨c₁, d₁, k₁, S₁, _, tm₁, h₁⟩ := Internal.NormalForm.polyTime hf
   obtain ⟨c₂, d₂, k₂, S₂, _, tm₂, h₂⟩ := Internal.NormalForm.polyTime hg
-  obtain ⟨k, K, S, _, tm, h⟩ := ComputableTidilyInTimeAndSpace.ite (encOut := encMid)
+  obtain ⟨k, K, S, _, tm, h⟩ := Internal.conditional (encOut := encMid)
     (f := f) (g := g)
     (tc := fun a => c₀ * ((encIn a).length + 1) ^ d₀)
     (sc := fun a => c₀ * ((encIn a).length + 1) ^ d₀)
@@ -150,8 +160,7 @@ theorem ite {encC : Bool ↪ List Bool} {c : α → Bool} {f g : α → β}
     (sf := fun a => c₁ * ((encIn a).length + 1) ^ d₁)
     (tg := fun a => c₂ * ((encIn a).length + 1) ^ d₂)
     (sg := fun a => c₂ * ((encIn a).length + 1) ^ d₂)
-    ⟨k₀, S₀, inferInstance, tm₀, h₀⟩ ⟨k₁, S₁, inferInstance, tm₁, fun x => h₁ x.1⟩
-    ⟨k₂, S₂, inferInstance, tm₂, fun x => h₂ x.1⟩
+    h₀ (fun x => h₁ x.1) (fun x => h₂ x.1)
   refine of_computesTidily (T := fun n =>
       c₀ * (n + 1) ^ d₀ + (c₁ * (n + 1) ^ d₁ + c₂ * (n + 1) ^ d₂) + k)
     (by fun_prop) h (fun a => ?_) (fun a => ?_) <;>
@@ -184,7 +193,7 @@ theorem foldl {γ α β : Type u} {encIn : γ ↪ List Bool}
       c₃ * ((encBA (((list x).take i).foldl step (init x), (list x)[i])).length + 1) ^ d₃ ≤
         c₃ * (L (encIn x).length + 1) ^ d₃ :=
     Nat.mul_le_mul_left c₃ (Nat.pow_le_pow_left (Nat.add_le_add_right (harg x i hi) 1) d₃)
-  obtain ⟨c, k, S, _, tm, h⟩ := ComputableTidilyInTimeAndSpace.foldl (encA := encA)
+  obtain ⟨c, k, S, _, tm, h⟩ := Internal.FoldCompiler.foldl (encA := encA)
     (encL := encL) (encBA := encBA) (encS := encS) (encO := encO) (step := step)
     (t := fun x => c₁ * ((encIn x).length + 1) ^ d₁ + c₂ * ((encIn x).length + 1) ^ d₂)
     (s := fun x => c₁ * ((encIn x).length + 1) ^ d₁ + c₂ * ((encIn x).length + 1) ^ d₂)
@@ -193,11 +202,9 @@ theorem foldl {γ α β : Type u} {encIn : γ ↪ List Bool}
     (tMax := fun x => c₃ * (L (encIn x).length + 1) ^ d₃)
     (sMax := fun x => c₃ * (L (encIn x).length + 1) ^ d₃)
     (lMax := fun x => L (encIn x).length)
-    ⟨k₁, S₁, inferInstance, tm₁,
-      fun x => (h₁ x).mono (Nat.le_add_right _ _) (Nat.le_add_right _ _)⟩
-    ⟨k₂, S₂, inferInstance, tm₂,
-      fun x => (h₂ x).mono (Nat.le_add_left _ _) (Nat.le_add_left _ _)⟩
-    ⟨k₃, S₃, inferInstance, tm₃, h₃⟩ hmax hmax hstate
+    (fun x => (h₁ x).mono (Nat.le_add_right _ _) (Nat.le_add_right _ _))
+    (fun x => (h₂ x).mono (Nat.le_add_left _ _) (Nat.le_add_left _ _))
+    h₃ hmax hmax hstate
   refine of_computesTidily (T := fun n =>
       c * (c₁ * (n + 1) ^ d₁ + c₂ * (n + 1) ^ d₂ +
         (L n + 1) * (c₃ * (L n + 1) ^ d₃ + L n + 1)) +
@@ -214,7 +221,7 @@ theorem _root_.Turing.MultiTapeTM.PairEncoding.computableInPolyTime_fst
     {enc : β₁ × β₂ ↪ List Bool} [h : PairEncoding enc₁ enc₂ enc] :
     ComputableInPolyTime (fun p : β₁ × β₂ => p.1) enc enc₁ :=
   let ⟨c, _, _, _, _, htm⟩ := h.fst
-  of_computesTidily (T := fun n => c * (n + 1)) (by fun_prop) htm (fun _ => le_rfl)
+  of_computesPlain (T := fun n => c * (n + 1)) (by fun_prop) htm (fun _ => le_rfl)
     (fun _ => le_rfl)
 
 /-- The second projection of an encoding of pairs, from its linear-time machine. -/
@@ -223,7 +230,7 @@ theorem _root_.Turing.MultiTapeTM.PairEncoding.computableInPolyTime_snd
     {enc : β₁ × β₂ ↪ List Bool} [h : PairEncoding enc₁ enc₂ enc] :
     ComputableInPolyTime (fun p : β₁ × β₂ => p.2) enc enc₂ :=
   let ⟨c, _, _, _, _, htm⟩ := h.snd
-  of_computesTidily (T := fun n => c * (n + 1)) (by fun_prop) htm (fun _ => le_rfl)
+  of_computesPlain (T := fun n => c * (n + 1)) (by fun_prop) htm (fun _ => le_rfl)
     (fun _ => le_rfl)
 
 
@@ -277,5 +284,36 @@ theorem bool_and : ComputableInPolyTime (fun p : Bool × Bool => p.1 && p.2)
 /-- Boolean negation on its fixed finite input domain. -/
 @[fun_prop]
 theorem bool_not : ComputableInPolyTime Bool.not encBool encBool := of_finite _
+
+/-- Boolean disjunction is polynomial-time in the standard Boolean encoding. -/
+@[fun_prop]
+theorem bool_or :
+    ComputableInPolyTime (fun (p : Bool × Bool) => p.1 || p.2)
+  (encPair encBool encBool)
+  encBool := of_finite _
+
+/-- Boolean exclusive disjunction on its fixed finite input domain. -/
+@[fun_prop]
+theorem bool_xor : ComputableInPolyTime (fun p : Bool × Bool => p.1 ^^ p.2)
+    (encPair encBool encBool) encBool := of_finite _
+
+/-- Conjunction preserves the full input encoding of both decision procedures. -/
+@[fun_prop]
+theorem decide_and {α : Type} {encA : α ↪ List Bool}
+    {left right : α → Prop} [∀ a, Decidable (left a)] [∀ a, Decidable (right a)]
+    (hleft : ComputableInPolyTime (fun a => decide (left a)) encA encBool)
+    (hright : ComputableInPolyTime (fun a => decide (right a)) encA encBool) :
+    ComputableInPolyTime (fun a => decide (left a ∧ right a)) encA encBool := by
+  simpa only [Bool.decide_and, Function.comp_def] using bool_and.comp (hleft.prod hright)
+
+/-- A proposition-valued conditional computes its decision in the standard Boolean encoding. -/
+@[fun_prop]
+theorem ite_decide {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+    {condition : α → Prop} [∀ a, Decidable (condition a)] {yes no : α → β}
+    (hcondition : ComputableInPolyTime (fun a => decide (condition a)) encA encBool)
+    (hyes : ComputableInPolyTime yes encA encB)
+    (hno : ComputableInPolyTime no encA encB) :
+    ComputableInPolyTime (fun a => if condition a then yes a else no a) encA encB := by
+  simpa only [decide_eq_true_eq] using ite hcondition hyes hno
 
 end Turing.MultiTapeTM.ComputableInPolyTime

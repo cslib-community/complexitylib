@@ -10,7 +10,9 @@ module
 public import Complexity.Crypto.Computational.GoldreichLevin.Parameters
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import Complexity.Probability.BitString.List
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Polynomial-time word algorithms for Goldreich–Levin decoding
@@ -55,17 +57,17 @@ open Probability BitString Turing.MultiTapeTM
 /-- A fixed precision degree is computable from a unary security parameter. -/
 @[fun_prop]
 theorem polyTime_precision {α : Type} {input : α ↪ List Bool} {parameter : α → ℕ}
-    (hparameter : ComputableTidilyInPolyTime parameter input encUnary) (degree : ℕ) :
-    ComputableTidilyInPolyTime (fun a => precision degree (parameter a)) input encUnary := by
+    (hparameter : ComputableInPolyTime parameter input encUnary) (degree : ℕ) :
+    ComputableInPolyTime (fun a => precision degree (parameter a)) input encUnary := by
   unfold precision
   fun_prop
 
 /-- Computing the logarithmic mask count includes the unary precision arithmetic. -/
 @[fun_prop]
 theorem polyTime_maskCount {α : Type} {input : α ↪ List Bool} {dimension precision : α → ℕ}
-    (hdimension : ComputableTidilyInPolyTime dimension input encUnary)
-    (hprecision : ComputableTidilyInPolyTime precision input encUnary) :
-    ComputableTidilyInPolyTime (fun a => maskCount (dimension a) (precision a)) input encUnary := by
+    (hdimension : ComputableInPolyTime dimension input encUnary)
+    (hprecision : ComputableInPolyTime precision input encUnary) :
+    ComputableInPolyTime (fun a => maskCount (dimension a) (precision a)) input encUnary := by
   unfold maskCount
   fun_prop
 
@@ -115,13 +117,16 @@ theorem enumList_size_polynomial (degree : ℕ) :
   have := maskCount_polynomial degree
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Enumerating at a fixed precision degree includes the cost of computing the mask count. -/
 @[fun_prop]
 theorem polyTime_enumList_maskCount {α : Type} {input : α ↪ List Bool} {parameter : α → ℕ}
-    (hparameter : ComputableTidilyInPolyTime parameter input encUnary) (degree : ℕ) :
-    ComputableTidilyInPolyTime
+    (hparameter : ComputableInPolyTime parameter input encUnary) (degree : ℕ) :
+    ComputableInPolyTime
       (fun a => enumList (maskCount (parameter a) (precision degree (parameter a))))
       input (encList encBits) := by
+  have hparameter := hparameter.tidy
+  refine .of_tidy ?_
   have h : ComputableTidilyInPolyTime (fun n => enumList (maskCount n (precision degree n)))
       encUnary (encList encBits) := by
     refine ComputableTidilyInPolyTime.bitsEnumList (by fun_prop)
@@ -143,14 +148,20 @@ def wordCandidate (predictor : List Bool → Bool) (dimension : ℕ) (rows selec
 theorem polyTime_wordCandidate {α : Type} {input : α ↪ List Bool}
     {predictor : α → List Bool → Bool} {dimension : α → ℕ}
     {rows selectors : α → List (List Bool)} {guess : α → List Bool}
-    (hpredictor : ComputableTidilyInPolyTime (fun p : α × List Bool => predictor p.1 p.2)
+    (hpredictor : ComputableInPolyTime (fun p : α × List Bool => predictor p.1 p.2)
       (encPair input encBits) encBool)
-    (hdimension : ComputableTidilyInPolyTime dimension input encUnary)
-    (hrows : ComputableTidilyInPolyTime rows input (encList encBits))
-    (hselectors : ComputableTidilyInPolyTime selectors input (encList encBits))
-    (hguess : ComputableTidilyInPolyTime guess input encBits) :
-    ComputableTidilyInPolyTime (fun a => wordCandidate (predictor a) (dimension a)
+    (hdimension : ComputableInPolyTime dimension input encUnary)
+    (hrows : ComputableInPolyTime rows input (encList encBits))
+    (hselectors : ComputableInPolyTime selectors input (encList encBits))
+    (hguess : ComputableInPolyTime guess input encBits) :
+    ComputableInPolyTime (fun a => wordCandidate (predictor a) (dimension a)
       (rows a) (selectors a) (guess a)) input encBits := by
+  have hpredictor := hpredictor.tidy
+  have hdimension := hdimension.tidy
+  have hrows := hrows.tidy
+  have hselectors := hselectors.tidy
+  have hguess := hguess.tidy
+  refine .of_tidy ?_
   unfold wordCandidate
   fun_prop
 
@@ -179,19 +190,27 @@ def wordCandidates (predictor : List Bool → Bool) (dimension : ℕ)
     (rows guesses : List (List Bool)) : List (List Bool) :=
   guesses.map (wordCandidate predictor dimension rows (guesses.filter (fun word => word.any id)))
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The guess-list certificate accounts for the number and size of candidate words. -/
 @[fun_prop]
 theorem polyTime_wordCandidates {α : Type} {input : α ↪ List Bool}
     {predictor : α → List Bool → Bool} {dimension : α → ℕ} {rows guesses : α → List (List Bool)}
-    (hpredictor : ComputableTidilyInPolyTime (fun p : α × List Bool => predictor p.1 p.2)
+    (hpredictor : ComputableInPolyTime (fun p : α × List Bool => predictor p.1 p.2)
       (encPair input encBits) encBool)
-    (hdimension : ComputableTidilyInPolyTime dimension input encUnary)
-    (hrows : ComputableTidilyInPolyTime rows input (encList encBits))
-    (hguesses : ComputableTidilyInPolyTime guesses input (encList encBits)) :
-    ComputableTidilyInPolyTime (fun a => wordCandidates (predictor a) (dimension a)
+    (hdimension : ComputableInPolyTime dimension input encUnary)
+    (hrows : ComputableInPolyTime rows input (encList encBits))
+    (hguesses : ComputableInPolyTime guesses input (encList encBits)) :
+    ComputableInPolyTime (fun a => wordCandidates (predictor a) (dimension a)
       (rows a) (guesses a)) input (encList encBits) := by
+  have hpredictor := hpredictor.tidy
+  have hdimension := hdimension.tidy
+  have hrows := hrows.tidy
+  have hguesses := hguesses.tidy
+  refine .of_tidy ?_
   unfold wordCandidates
-  fun_prop
+  apply ComputableTidilyInPolyTime.mapWithInput hguesses
+  apply ComputableInPolyTime.tidy
+  apply polyTime_wordCandidate <;> exact .of_tidy (by fun_prop)
 
 /-- Candidate generation preserves the finite decoder's order and duplicates. -/
 theorem wordCandidates_eq_map {n k : ℕ} (predictor : List Bool → Bool)
@@ -212,12 +231,17 @@ def wordCheckCandidates (f : List Bool → List Bool) (dimension : ℕ) (image :
 theorem polyTime_wordCheckCandidates {α : Type} {input : α ↪ List Bool}
     {f : List Bool → List Bool} {dimension : α → ℕ} {image : α → List Bool}
     {candidates : α → List (List Bool)}
-    (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hdimension : ComputableTidilyInPolyTime dimension input encUnary)
-    (himage : ComputableTidilyInPolyTime image input encBits)
-    (hcandidates : ComputableTidilyInPolyTime candidates input (encList encBits)) :
-    ComputableTidilyInPolyTime
+    (hf : ComputableInPolyTime f encBits encBits)
+    (hdimension : ComputableInPolyTime dimension input encUnary)
+    (himage : ComputableInPolyTime image input encBits)
+    (hcandidates : ComputableInPolyTime candidates input (encList encBits)) :
+    ComputableInPolyTime
       (fun a => wordCheckCandidates f (dimension a) (image a) (candidates a)) input encBits := by
+  have hf := hf.tidy
+  have hdimension := hdimension.tidy
+  have himage := himage.tidy
+  have hcandidates := hcandidates.tidy
+  refine .of_tidy ?_
   unfold wordCheckCandidates
   fun_prop
 
@@ -244,13 +268,13 @@ def wordDecode (f : List Bool → List Bool) (predictor : List Bool → Bool) (d
 @[fun_prop]
 theorem polyTime_wordDecode {α : Type} {input : α ↪ List Bool} {f : List Bool → List Bool}
     {predictor : α → List Bool → Bool} {dimension : α → ℕ} {image masks : α → List Bool}
-    (degree : ℕ) (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hpredictor : ComputableTidilyInPolyTime (fun p : α × List Bool => predictor p.1 p.2)
+    (degree : ℕ) (hf : ComputableInPolyTime f encBits encBits)
+    (hpredictor : ComputableInPolyTime (fun p : α × List Bool => predictor p.1 p.2)
       (encPair input encBits) encBool)
-    (hdimension : ComputableTidilyInPolyTime dimension input encUnary)
-    (himage : ComputableTidilyInPolyTime image input encBits)
-    (hmasks : ComputableTidilyInPolyTime masks input encBits) :
-    ComputableTidilyInPolyTime (fun a => wordDecode f (predictor a) degree (dimension a)
+    (hdimension : ComputableInPolyTime dimension input encUnary)
+    (himage : ComputableInPolyTime image input encBits)
+    (hmasks : ComputableInPolyTime masks input encBits) :
+    ComputableInPolyTime (fun a => wordDecode f (predictor a) degree (dimension a)
       (image a) (masks a)) input encBits := by
   unfold wordDecode
   fun_prop

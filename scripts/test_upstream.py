@@ -117,6 +117,79 @@ class UpstreamExportTests(unittest.TestCase):
         self.assertIn(str(dest), out + err)
         self.assertEqual(dest.read_bytes(), original_bytes)
 
+    def test_header_rewrites_modifiers_comments_and_multiline_imports(self) -> None:
+        text = (
+            "module\n-- upstream: candidate\n"
+            "public import Complexity.Init -- keep this comment\n"
+            "public /- explanation -/ meta import Complexity.Foundations.SubmittedDep\n"
+            "import all\n  Complexity.Foundations.SubmittedDep\n"
+            "meta import Complexity.Init import Complexity.Foundations.SubmittedDep\n"
+        )
+        self.write_local("Complexity/Computability/Header.lean", text)
+        code, out, err = self.run_upstream("--no-mk-all", "Complexity.Computability.Header")
+        self.assertEqual(code, 0, out + err)
+        exported = (self.cslib / "Cslib/Computability/Header.lean").read_text()
+        self.assertEqual(exported, text.replace("-- upstream: candidate\n", "")
+                         .replace("Complexity.", "Cslib."))
+
+    def test_import_layout_cannot_bypass_dependency_check(self) -> None:
+        for i, header in enumerate((
+            "import Complexity.Foundations.CandidateDep -- explanation\n",
+            "meta import Complexity.Foundations.CandidateDep\n",
+            "public /- explanation -/ import\n  Complexity.Foundations.CandidateDep\n",
+            "import Complexity.Init import Complexity.Foundations.CandidateDep\n",
+        )):
+            with self.subTest(header=header):
+                self.write_local(f"Complexity/Computability/Blocked{i}.lean", "module\n" + header)
+                code, out, err = self.run_upstream("--no-mk-all", f"Complexity.Computability.Blocked{i}")
+                self.assertNotEqual(code, 0, out + err)
+                self.assertIn("Complexity.Foundations.CandidateDep", err)
+                self.assertFalse((self.cslib / f"Cslib/Computability/Blocked{i}.lean").exists())
+
+    def test_comments_and_literals_do_not_create_imports_or_change_runtime_strings(self) -> None:
+        text = (
+            "module\npublic import Complexity.Init\n"
+            "/- An example, with /- a nested comment -/:\n"
+            "import Complexity.Foundations.CandidateDep\n-/\n"
+            "/-!\n# Comments and literals\n"
+            "See `Complexity.Foundations.SubmittedDep`.\n-/\n"
+            'def exampleText := r#"\n'
+            "import Complexity.Foundations.CandidateDep\n"
+            "-- upstream: submitted #123\n"
+            '`Complexity.Foundations.SubmittedDep`\n"#\n'
+            'def ordinary := "`Complexity.Foundations.SubmittedDep`"\n'
+        )
+        self.write_local("Complexity/Computability/Examples.lean", text)
+        code, out, err = self.run_upstream("--no-mk-all", "Complexity.Computability.Examples")
+        self.assertEqual(code, 0, out + err)
+        exported = (self.cslib / "Cslib/Computability/Examples.lean").read_text()
+        self.assertEqual(exported, text.replace("public import Complexity.Init", "public import Cslib.Init")
+                         .replace("See `Complexity.", "See `Cslib."))
+
+    def test_dependency_marker_must_be_a_real_line_comment(self) -> None:
+        self.write_local(
+            "Complexity/Foundations/CandidateDep.lean",
+            "module\n/- Example marker:\n-- upstream: submitted #123\n-/\n"
+            "-- upstream: candidate\n",
+        )
+        self.write_local(
+            "Complexity/Computability/Blocked.lean",
+            "module\nimport Complexity.Foundations.CandidateDep\n",
+        )
+        code, out, err = self.run_upstream("--no-mk-all", "Complexity.Computability.Blocked")
+        self.assertNotEqual(code, 0, out + err)
+        self.assertIn("'candidate'", err)
+        self.assertFalse((self.cslib / "Cslib/Computability/Blocked.lean").exists())
+
+    def test_invalid_module_names_are_rejected_without_writing(self) -> None:
+        self.write_local("Complexity.lean", "module\n")
+        for name in ("Complexity", "Complexity..Init", "Complexity./Init", "Complexity.Init/../Init"):
+            with self.subTest(name=name):
+                code, out, err = self.run_upstream("--no-mk-all", name)
+                self.assertNotEqual(code, 0, out + err)
+                self.assertIn("invalid module", err)
+                self.assertEqual(list((self.cslib / "Cslib").rglob("*.lean")), [])
+
     def test_refuses_existing_valid_and_broken_symlinks(self) -> None:
         self.write_local(
             "Complexity/Computability/Symlinked.lean",
@@ -224,6 +297,8 @@ class UpstreamExportTests(unittest.TestCase):
         script_copy = self.repo / "scripts/upstream.py"
         script_copy.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(Path(upstream.__file__), script_copy)
+        shutil.copyfile(Path(upstream.__file__).with_name("proof_lengths.py"),
+                        script_copy.with_name("proof_lengths.py"))
 
         bin_dir = self.base / "bin"
         bin_dir.mkdir()

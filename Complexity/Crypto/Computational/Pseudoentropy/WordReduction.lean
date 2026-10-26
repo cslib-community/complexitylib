@@ -61,11 +61,11 @@ def coinBudget (c d n imageLength : ℕ) : ℕ :=
 
 /-- The shared tape budget is efficient in the parameter and image length. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_coinBudget {α : Type} {encode : α ↪ List Bool}
+theorem computableInPolyTime_coinBudget {α : Type} {encode : α ↪ List Bool}
     {parameter length : α → ℕ} (c d : ℕ)
-    (hparameter : ComputableTidilyInPolyTime parameter encode encUnary)
-    (hlength : ComputableTidilyInPolyTime length encode encUnary) :
-    ComputableTidilyInPolyTime (fun a => coinBudget c d (parameter a) (length a))
+    (hparameter : ComputableInPolyTime parameter encode encUnary)
+    (hlength : ComputableInPolyTime length encode encUnary) :
+    ComputableInPolyTime (fun a => coinBudget c d (parameter a) (length a))
       encode encUnary := by
   unfold coinBudget
   fun_prop
@@ -78,20 +78,20 @@ def predictWithCoins (evaluate : (ℕ × List Bool) → List Bool → Bool) (n :
 /-- Captured public fields and coins use their ordinary efficiency certificates. The typed
 callback has a uniformly polynomial bound on every supplied input, not only sampled words. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_predictWithCoins {α : Type} {encode : α ↪ List Bool}
+theorem computableInPolyTime_predictWithCoins {α : Type} {encode : α ↪ List Bool}
     {evaluate : (ℕ × List Bool) → List Bool → Bool} {parameter index : α → ℕ}
     {image matrix digest coins query : α → List Bool}
-    (hevaluate : ComputableTidilyInPolyTime
+    (hevaluate : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × List Bool => evaluate p.1 p.2)
       (encPair (encPair encUnary encBits) encBits) encBool)
-    (hparameter : ComputableTidilyInPolyTime parameter encode encUnary)
-    (himage : ComputableTidilyInPolyTime image encode encBits)
-    (hindex : ComputableTidilyInPolyTime index encode encUnary)
-    (hmatrix : ComputableTidilyInPolyTime matrix encode encBits)
-    (hdigest : ComputableTidilyInPolyTime digest encode encBits)
-    (hcoins : ComputableTidilyInPolyTime coins encode encBits)
-    (hquery : ComputableTidilyInPolyTime query encode encBits) :
-    ComputableTidilyInPolyTime (fun a => predictWithCoins evaluate (parameter a) (image a)
+    (hparameter : ComputableInPolyTime parameter encode encUnary)
+    (himage : ComputableInPolyTime image encode encBits)
+    (hindex : ComputableInPolyTime index encode encUnary)
+    (hmatrix : ComputableInPolyTime matrix encode encBits)
+    (hdigest : ComputableInPolyTime digest encode encBits)
+    (hcoins : ComputableInPolyTime coins encode encBits)
+    (hquery : ComputableInPolyTime query encode encBits) :
+    ComputableInPolyTime (fun a => predictWithCoins evaluate (parameter a) (image a)
       (index a) (matrix a) (digest a) (coins a) (query a)) encode encBool := by
   unfold predictWithCoins
   fun_prop
@@ -107,16 +107,37 @@ noncomputable def wordInverter (f : List Bool → List Bool)
   return wordDecode f (predictWithCoins evaluate n image index matrix digest coins)
     degree n image masks
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The complete inverter is one strict PPT program for every parameter and image. -/
 @[program_certificate]
 theorem isPPT_wordInverter {f : List Bool → List Bool}
     {evaluate : (ℕ × List Bool) → List Bool → Bool}
-    (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hevaluate : ComputableTidilyInPolyTime
+    (hf : ComputableInPolyTime f encBits encBits)
+    (hevaluate : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × List Bool => evaluate p.1 p.2)
       (encPair (encPair encUnary encBits) encBits) encBool)
     (c d degree : ℕ) : IsPPT encBits (wordInverter f evaluate c d degree) := by
-  unfold wordInverter
+  have hf := hf.tidy
+  have hevaluate := hevaluate.tidy
+  have hhash : ComputableTidilyInPolyTime hashCount encUnary encUnary :=
+    (computableInPolyTime_hashCount (.of_tidy (by fun_prop))).tidy
+  have hbudget : ComputableTidilyInPolyTime
+      (fun a : ℕ × List Bool => coinBudget c d a.1 a.2.length)
+      (encPair encUnary encBits) encUnary :=
+    (computableInPolyTime_coinBudget c d (.of_tidy (by fun_prop))
+      (.of_tidy (by fun_prop))).tidy
+  have hdecode {β : Type} {encode : β ↪ List Bool}
+      {predictor : β → List Bool → Bool} {dimension : β → ℕ} {image masks : β → List Bool}
+      (hpredictor : ComputableTidilyInPolyTime (fun p : β × List Bool => predictor p.1 p.2)
+        (encPair encode encBits) encBool)
+      (hdimension : ComputableTidilyInPolyTime dimension encode encUnary)
+      (himage : ComputableTidilyInPolyTime image encode encBits)
+      (hmasks : ComputableTidilyInPolyTime masks encode encBits) :
+      ComputableTidilyInPolyTime (fun a => wordDecode f (predictor a) degree (dimension a)
+        (image a) (masks a)) encode encBits :=
+    (polyTime_wordDecode degree (.of_tidy hf) (.of_tidy hpredictor)
+      (.of_tidy hdimension) (.of_tidy himage) (.of_tidy hmasks)).tidy
+  unfold wordInverter predictWithCoins
   fun_prop
 
 /-- The tape budget covers every well-formed public observation at this dimension. -/

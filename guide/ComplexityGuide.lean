@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 import VersoManual
 import ComplexityGuide.FirstSteps
 import ComplexityGuide.NPCompleteness
+import ComplexityGuide.Streaming
 
 open Verso.Genre Manual
 
@@ -31,9 +32,9 @@ docstring and source. Other entry points:
 * [ROADMAP.md][roadmap] records outstanding work, and [CONTRIBUTING.md][contributing] explains how
   to propose and review changes.
 
-The guide is new: after first steps, it has a chapter on NP-completeness. Further areas follow
-one at a time, and each chapter's friction points are fixed in the library rather than documented
-around.
+The guide is new: after first steps, it has chapters on NP-completeness and streaming. Further
+areas follow one at a time, and each chapter's friction points are fixed in the library rather
+than documented around.
 
 [cslib]: https://github.com/leanprover/cslib
 [api]: https://www.cslib.io/complexitylib/
@@ -46,3 +47,5 @@ around.
 {include 1 ComplexityGuide.FirstSteps}
 
 {include 1 ComplexityGuide.NPCompleteness}
+
+{include 1 ComplexityGuide.Streaming}

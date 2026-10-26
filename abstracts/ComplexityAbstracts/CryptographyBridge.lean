@@ -131,7 +131,7 @@ theorem generator_iff {g : List Bool → List Bool} {length : ℕ → ℕ} :
     PseudorandomGenerator g length ↔ Crypto.PseudorandomGenerator g length := by
   constructor
   · rintro ⟨hg, hlength, hstretch, hsecure⟩
-    exact Crypto.PseudorandomGenerator.of_indistinguishable (polyTime_iff.mp hg) hlength
+    exact Crypto.PseudorandomGenerator.of_indistinguishable (.of_tidy (polyTime_iff.mp hg)) hlength
       hstretch (indistinguishable_iff.mp hsecure)
   · intro hg
     exact ⟨polyTime_iff.mpr hg.polyTime.tidy, hg.length_eq, hg.stretch,
@@ -153,7 +153,7 @@ theorem stretch {g : List Bool → List Bool}
     (htarget : PolyTime target unaryEncoding unaryEncoding) (hgreater : ∀ n, n < target n) :
     ∃ g' : List Bool → List Bool, PseudorandomGenerator g' target :=
   ⟨_, generator_iff.mpr ((generator_iff.mp hg).amplify target
-    (polyTime_iff.mp htarget) hgreater)⟩
+    (.of_tidy (polyTime_iff.mp htarget)) hgreater)⟩
 
 abbrev OracleResponse : Sum ℕ (Unit × List Bool) → Type :=
   Cslib.probOracleSpec (fun _ : Unit × List Bool => List Bool)

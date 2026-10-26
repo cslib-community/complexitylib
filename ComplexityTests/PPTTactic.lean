@@ -167,7 +167,7 @@ example : IsPPTOn encBits encBool (fun word =>
 -- GGM keeps the original path available after a certified seed sampler.
 example (sample : List Bool → ProbComp (List Bool)) (generator : List Bool → List Bool)
     (hsample : IsPPTOn encBits encBits sample)
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits) :
+    (hgenerator : ComputableInPolyTime generator encBits encBits) :
     IsPPTOn encBits encBits (fun path => do
       let seed ← sample path
       pure (Crypto.GGM.eval generator seed path)) := by

@@ -171,11 +171,12 @@ theorem map_tableQueries (oracle : List Bool → List Bool) (n m : ℕ) :
 circuit with at most `c (3 n + 2) ^ c + 2` gates: a circuit for the first output bit on inputs of
 length `3 n + 1`, with the key and the leading `false` bits substituted. -/
 theorem exists_complexity_restriction_le {family : List Bool → List Bool → List Bool}
-    (hfamily : ComputableTidilyInPolyTime (fun pair : List Bool × List Bool =>
+    (hfamily : ComputableInPolyTime (fun pair : List Bool × List Bool =>
       family pair.1 pair.2) (encPair encBits encBits) encBits) :
     ∃ c : ℕ, ∀ (key : List Bool) (m : ℕ), m ≤ key.length →
       complexity interpretation (single (restriction (family key) key.length m)) ≤
         c * (3 * key.length + 2) ^ c + 2 := by
+  have hfamily := hfamily.tidy
   obtain ⟨L, hL, hg⟩ := PPoly.exists_of_polyTime
     (.of_tidy ((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp hfamily))
   obtain ⟨c, hc⟩ := mem_PPoly_iff_exists_mem_SIZE.1 hL

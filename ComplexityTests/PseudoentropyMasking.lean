@@ -101,24 +101,24 @@ example : (1 / 2 : ℝ) ≤ 4 / 8 := by
     (by norm_num) (fun _ => 1) (by norm_num) (by norm_num)
   convert h using 1 <;> norm_num
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun votes : List Bool => listNonpositiveMargin votes (listStrictMajority votes))
     encBits encBool := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun votes : List Bool => listNonpositiveMargin votes (listStrictMajority votes))
     (encList encBool) encBool := by polytime
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun votes : List Bool => weightNumerator (votes.length + 1) 1 0 votes true)
     encBits encUnary := by polytime
 
 -- The same expression with a framed list encoding.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun votes : List Bool => weightNumerator (votes.length + 1) 1 0 votes true)
     (encList encBool) encUnary := by polytime
 
-example : ComputableTidilyInPolyTime (fun input : ℕ × List Bool =>
+example : ComputableInPolyTime (fun input : ℕ × List Bool =>
     let votes := input.2
     weightNumerator (input.1 + 1) 1 0 votes (listStrictMajority votes))
     (encPair encUnary encBits) encUnary := by polytime

@@ -31,17 +31,17 @@ open BoundedNat
 /-- The complete scalar bundle has a concrete native implementation. -/
 theorem nativePrimitives_nonempty : Nonempty (model.NativePrimitives encoding) := ⟨nativePrimitives⟩
 example (c : ℕ) : (nativePrimitives.constant c).IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial (constant_polyTime c)
+  nativePrimitives_isPolynomial.constant c
 example (op : model.operations.Op) : (nativePrimitives.operation op).IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial (operation_polyTime op)
+  nativePrimitives_isPolynomial.operation op
 example (t : model.tests.Op) : (nativePrimitives.test t).IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial (test_polyTime t)
+  nativePrimitives_isPolynomial.test t
 example : nativePrimitives.address.IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial address_polyTime
+  nativePrimitives_isPolynomial.address
 example : nativePrimitives.validMove.IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial validMove_polyTime
+  nativePrimitives_isPolynomial.validMove
 example : nativePrimitives.validPC.IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial validPC_polyTime
+  nativePrimitives_isPolynomial.validPC
 
 -- Pure native computability suffices for arbitrary-bound certification.
 example {α β : Type} (f : α → β) (ei : α ↪ List Bool) (eo : β ↪ List Bool)
@@ -56,7 +56,7 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (tm : Turing.MultiTape
 -- Composition exposes the intermediate-dependent bounds and remains polynomial.
 private noncomputable def present : NativeCertificate
     (fun x : Option ℕ => x.isSome) (encOption encNat) encBool :=
-  .ofPolyTime (optionIsSome (of_eq fun _ => rfl))
+  .ofPolyTime (ComputableInPolyTime.optionIsSome (ComputableInPolyTime.of_eq fun _ => rfl))
 
 private noncomputable def addressAccepted := present.comp nativePrimitives.address
 
@@ -64,8 +64,9 @@ example (p : ℕ × ℕ) : addressAccepted.time p =
     nativePrimitives.address.time p + present.time (model.address p.1 p.2) := rfl
 example : addressAccepted.IsPolynomial :=
   present.comp_isPolynomial nativePrimitives.address
-    (NativeCertificate.ofPolyTime_isPolynomial (optionIsSome (of_eq fun _ => rfl)))
-    (NativeCertificate.ofPolyTime_isPolynomial address_polyTime)
+    (NativeCertificate.ofPolyTime_isPolynomial
+      (ComputableInPolyTime.optionIsSome (ComputableInPolyTime.of_eq fun _ => rfl)))
+    (nativePrimitives_isPolynomial.address)
 example : IsComputable (fun p => (model.address p.1 p.2).isSome)
     (encPair encNat encNat) encBool := addressAccepted.isComputable
 
@@ -94,7 +95,7 @@ example (B : Cslib.WordRAM.Basis) (c : ℕ) : ComputableInPolyTime
     (B.genericModel.checkedConstant c) encUnary (encOption encNat) := by polytime
 example (B : Cslib.WordRAM.Basis) (c : ℕ) : ComputableInPolyTime
     (B.genericModel.checkedConstant c) encUnary (encOption encNat) := by fun_prop
-example (B : Cslib.WordRAM.Basis) (t : Bool) : ComputableInPolyTime
+example (B : Cslib.WordRAM.Basis) (t : Option Bool) : ComputableInPolyTime
     (fun p => B.genericModel.evalTest p.1 t p.2)
     (encPair encUnary (encPi encNat)) (encOption encBool) := by polytime
 example (B : Cslib.WordRAM.Basis) : ComputableInPolyTime
@@ -209,7 +210,7 @@ example : exactWord.checkedOp (.bin .mod) (2, ![3, 2]) = some 1 := by decide
 
 -- Complete native primitive bundles for standard, additive, arithmetic, and exact bases.
 example : Cslib.WordRAM.checkedAddCertificate.IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial Cslib.WordRAM.checkedAdd_polyTime.tidy
+  NativeCertificate.ofPolyTime_isPolynomial Cslib.WordRAM.checkedAdd_polyTime
 example : Cslib.WordRAM.Basis.standard.nativePrimitives.IsPolynomial :=
   Cslib.WordRAM.Basis.standard.nativePrimitives_isPolynomial
 example : Cslib.WordRAM.Basis.additive.nativePrimitives.IsPolynomial :=

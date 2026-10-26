@@ -192,11 +192,13 @@ private theorem observe_ppt : IsPPTOn
 
 -- A nonconstant depth family is one uniform native adversary, not separately chosen advice.
 example : (fixture.linkAdversary (fun n => n + 2) (fun _ => 3) observe).IsPPT :=
-  fixture.isPPT_linkAdversary keyGen_ppt encrypt_ppt observe_ppt (by fun_prop) (by fun_prop)
+  fixture.isPPT_linkAdversary keyGen_ppt encrypt_ppt observe_ppt (.of_tidy (by
+    fun_prop)) (by fun_prop)
 
 -- Total decoding and guessing are charged on arbitrary complete saved words and ciphertexts.
 example : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBool
     (fun p => fixture.guessLink observe p.1 p.2.1 p.2.2) :=
-  Scheme.isPPTOn_guessLink encrypt_ppt observe_ppt (by fun_prop) (by fun_prop) (by fun_prop)
+  Scheme.isPPTOn_guessLink encrypt_ppt observe_ppt (.of_tidy (by fun_prop)) (.of_tidy (by
+    fun_prop)) (.of_tidy (by fun_prop))
 
 end ComplexityTests.Crypto.KeyChainSecurity

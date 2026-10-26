@@ -110,21 +110,27 @@ theorem expansionOracle_bounds (generator : List Bool → List Bool) (sample : P
     subst result
     exact ⟨hcache, by simp, by dsimp; lia⟩
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Expansion handlers compose a certified sampler with ordinary cache and tree code. Every
 argument may depend on the caller's captured input, including the entire initial cache. -/
 @[fun_prop]
 theorem isPPTOn_expansionOracle {α : Type} {input : α ↪ List Bool}
     {generator : List Bool → List Bool} {sample : α → ProbComp (List Bool)}
     {width depth : α → ℕ} {query : α → List Bool} {cache : α → Cache}
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits)
+    (hgenerator : ComputableInPolyTime generator encBits encBits)
     (hsample : IsPPTOn input encBits sample)
-    (hwidth : ComputableTidilyInPolyTime width input encUnary)
-    (hdepth : ComputableTidilyInPolyTime depth input encUnary)
-    (hquery : ComputableTidilyInPolyTime query input encBits)
-    (hcache : ComputableTidilyInPolyTime cache input cacheEncoding) :
+    (hwidth : ComputableInPolyTime width input encUnary)
+    (hdepth : ComputableInPolyTime depth input encUnary)
+    (hquery : ComputableInPolyTime query input encBits)
+    (hcache : ComputableInPolyTime cache input cacheEncoding) :
     IsPPTOn input (encPair encBits cacheEncoding) (fun a =>
       expansionOracle generator (sample a) (width a) (depth a) (query a) (cache a)) := by
-  have heval := computableTidilyInPolyTime_eval hgenerator
+  have hgenerator := hgenerator.tidy
+  have hwidth := hwidth.tidy
+  have hdepth := hdepth.tidy
+  have hquery := hquery.tidy
+  have hcache := hcache.tidy
+  have heval := (computableInPolyTime_eval (.of_tidy hgenerator)).tidy
   unfold expansionOracle cacheEncoding
   fun_prop
 
@@ -133,13 +139,16 @@ sampler. The public local contracts account for the clock, replies and full cach
 theorem isPPTOn_expansionGame {Caller : Type} {input : Caller ↪ List Bool}
     {generator : List Bool → List Bool} {sample : Caller → ProbComp (List Bool)}
     {width depth : Caller → ℕ}
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits)
+    (hgenerator : ComputableInPolyTime generator encBits encBits)
     (hsample : IsPPTOn input encBits sample)
-    (hwidth : ComputableTidilyInPolyTime width input encUnary)
-    (hdepth : ComputableTidilyInPolyTime depth input encUnary)
+    (hwidth : ComputableInPolyTime width input encUnary)
+    (hdepth : ComputableInPolyTime depth input encUnary)
     {adversary : OracleDistinguisher} (hadversary : IsOraclePPT encBool adversary) :
     IsPPTOn input encBool
       (fun a => expansionGame generator (sample a) adversary (width a) (depth a)) := by
+  have hgenerator := hgenerator.tidy
+  have hwidth := hwidth.tidy
+  have hdepth := hdepth.tidy
   have hrun : IsPPTOn input (encPair encBool cacheEncoding) (fun a =>
       (OracleComp.interpret
         (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
@@ -155,7 +164,7 @@ theorem isPPTOn_expansionGame {Caller : Type} {input : Caller ↪ List Bool}
       expansionOracle_bounds generator (sample a) (width a) (depth a) request.2 cache hcache
         result hresult
     exact ⟨hcache', by lia, by lia⟩
-  exact hrun.map (ComputableTidilyInPolyTime.fst _ _)
+  exact hrun.map (ComputableInPolyTime.fst _ _)
 
 private def expandCache (generator : List Bool → List Bool) (n : ℕ) (cache : Cache) : Cache :=
   cache.map (fun entry => (entry.1, (generator entry.2).take (2 * n)))

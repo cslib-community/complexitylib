@@ -231,6 +231,30 @@ theorem unary_mul :
   encUnary :=
   .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul
 
+/-- Add two computed unary naturals with the same full input context. -/
+@[fun_prop]
+theorem unary_add' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encUnary)
+    (hright : ComputableInPolyTime right input encUnary) :
+    ComputableInPolyTime (fun a => left a + right a) input encUnary :=
+  unary_add.comp (hleft.prod hright)
+
+/-- Subtract two computed unary naturals with the same full input context. -/
+@[fun_prop]
+theorem unary_sub' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encUnary)
+    (hright : ComputableInPolyTime right input encUnary) :
+    ComputableInPolyTime (fun a => left a - right a) input encUnary :=
+  unary_sub.comp (hleft.prod hright)
+
+/-- Multiply two computed unary naturals with the same full input context. -/
+@[fun_prop]
+theorem unary_mul' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encUnary)
+    (hright : ComputableInPolyTime right input encUnary) :
+    ComputableInPolyTime (fun a => left a * right a) input encUnary :=
+  unary_mul.comp (hleft.prod hright)
+
 /-- A fixed power of a unary natural. -/
 @[fun_prop]
 theorem unary_pow (d : ℕ) :

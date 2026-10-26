@@ -66,11 +66,12 @@ private meta def pptFunProp : TacticM Unit :=
       throwError "expected an encoded-input PPT goal"
     if target.getAppArgs[2]!.hasExprMVar then
       throwError "input encoding is not yet determined"
-    evalTactic (← `(tactic| solve | fun_prop (config := { maxSteps := 128 })))
+    Cslib.Tactic.PolyTime.Internal.funPropWithPlainBoundary 128
 
 attribute [program_certificate]
-  Turing.MultiTapeTM.ComputableTidilyInPolyTime.isPPTOn
-  Turing.MultiTapeTM.ComputableTidilyInPolyTime.sampleList
+  Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn
+  isPPTOn_sampleList
+  Turing.MultiTapeTM.ComputableInPolyTime.sampleList
   isPPTOn_uniform_bool
   IsPPTOn.memoize
 
@@ -87,15 +88,62 @@ private meta def pptCaptured : TacticM Unit :=
       throwError "expected probabilistic sequencing"
     liftMetaTactic fun goal => goal.applyConst rule
 
-attribute [aesop unsafe 80% apply (rule_sets := [PPT])] IsPPTOn.cond IsPPTOn.ite
+/-- Only a syntactic conditional can use branch selection. Trying these theorems on arbitrary
+named programs can unfold their implementations during unification before certificate children
+are explored. Named calls retain their existing alternative search. -/
+private meta def pptConditional (rule : Name) : TacticM Unit :=
+  withMainContext <| Term.withoutErrToSorry <| withoutRecover do
+    let target := (← instantiateMVars (← getMainTarget)).consumeMData
+    unless target.isAppOf ``IsPPTOn do throwError "expected an encoded-input PPT goal"
+    let program ← Core.betaReduce (← etaExpand target.getAppArgs.back!)
+    let conditional ← lambdaTelescope program fun _ body => do
+      if body.isAppOf ``ite then return true
+      return (← whnfR body).isAppOf ``ite
+    unless conditional do throwError "expected a conditional program"
+    liftMetaTactic fun goal => goal.applyConst rule
 
-attribute [aesop unsafe 80% apply (rule_sets := [PPT])]
-  IsPPTOn.iterate_of_length_le IsPPTOn.iterate_of_bounded_growth
-  IsPPTOn.iterateWith_of_bounded_growth
+/-- Retain Boolean branch selection at its original priority. -/
+@[aesop unsafe 80% tactic (rule_sets := [PPT])]
+private meta def pptCond : TacticM Unit :=
+  pptConditional ``IsPPTOn.cond
+
+/-- Retain proposition branch selection as an independent search alternative. -/
+@[aesop unsafe 80% tactic (rule_sets := [PPT])]
+private meta def pptIte : TacticM Unit :=
+  pptConditional ``IsPPTOn.ite
+
+/-- Loop rules inspect only an actual iteration, including reducible wrappers. Arbitrary named
+programs must not unfold during loop-rule unification before their certificate children run. -/
+private meta def pptIterate (rule : Name) : TacticM Unit :=
+  withMainContext <| Term.withoutErrToSorry <| withoutRecover do
+    let target := (← instantiateMVars (← getMainTarget)).consumeMData
+    unless target.isAppOf ``IsPPTOn do throwError "expected an encoded-input PPT goal"
+    let program ← Core.betaReduce (← etaExpand target.getAppArgs.back!)
+    let iteration ← lambdaTelescope program fun _ body => do
+      if body.isAppOf ``OracleComp.iterate then return true
+      return (← whnfR body).isAppOf ``OracleComp.iterate
+    unless iteration do throwError "expected a probabilistic iteration"
+    liftMetaTactic fun goal => goal.applyConst rule
+
+/-- Retain the nonincreasing-state iteration alternative at its original priority. -/
+@[aesop unsafe 80% tactic (rule_sets := [PPT])]
+private meta def pptIterateLength : TacticM Unit :=
+  pptIterate ``IsPPTOn.iterate_of_length_le
+
+/-- Retain the fixed additive growth alternative without changing its bound obligation. -/
+@[aesop unsafe 80% tactic (rule_sets := [PPT])]
+private meta def pptIterateGrowth : TacticM Unit :=
+  pptIterate ``IsPPTOn.iterate_of_bounded_growth
+
+/-- Retain captured iteration with its polynomial input-dependent growth obligation. -/
+@[aesop unsafe 80% tactic (rule_sets := [PPT])]
+private meta def pptIterateCaptured : TacticM Unit :=
+  pptIterate ``IsPPTOn.iterateWith_of_bounded_growth
 
 /-- Certify a probabilistic program using proved sampling, composition and deterministic rules. -/
-macro "ppt" : tactic => `(tactic| solve |
-  aesop (config := { terminal := true, assumptionTransparency := .reducible })
-    (rule_sets := [PPT, PolyTime]))
+elab "ppt" : tactic => Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
+  evalTactic (← `(tactic| solve |
+    aesop (config := { terminal := true, assumptionTransparency := .reducible })
+      (rule_sets := [PPT, PolyTime])))
 
 end Cslib.Tactic.PPT

@@ -189,21 +189,23 @@ example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => (FixedKey.scheme decryptionCircuits).encrypt p.1 p.2.1 p.2.2) :=
   FixedKey.isPPTOn_scheme_encrypt encrypt_ppt decryptionCircuits
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × List Bool × List Bool =>
       (FixedKey.scheme decryptionCircuits).decrypt p.1 p.2.1 p.2.2)
     (encPair encUnary (encPair encBits encBits)) encBool :=
-  FixedKey.computableTidilyInPolyTime_scheme_decrypt decryptionCircuits circuits_poly
+  FixedKey.computableInPolyTime_scheme_decrypt decryptionCircuits (.of_tidy circuits_poly)
 
 example : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits)))) encBits
     (fun p => (FixedKey.scheme decryptionCircuits).evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) :=
-  FixedKey.isPPTOn_scheme_evaluate encrypt_ppt decryptionCircuits circuits_poly evaluate_ppt
+  FixedKey.isPPTOn_scheme_evaluate encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+    evaluate_ppt
 
 -- The same evaluator certificate also applies to an empty, malformed public artifact.
 example : IsPPTOn (encPair encUnary (encPair (Boolean.encCircuit 1) (encList encBits))) encBits
     (fun p => FixedKey.evaluate decryptionCircuits p.1 [] p.2.1 p.2.2) := by
-  apply FixedKey.isPPTOn_evaluate encrypt_ppt decryptionCircuits circuits_poly evaluate_ppt
+  apply FixedKey.isPPTOn_evaluate encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+    evaluate_ppt
   all_goals fun_prop
 
 -- Raw evaluation charges arbitrary code and binary references, not just well-typed circuits.
@@ -212,13 +214,14 @@ example : IsPPTOn
       (encPair (encList encBits) (encPair encUnary Boolean.encCode))))) (encList encBits)
     (fun p => FixedKey.evaluateCircuit decryptionCircuits p.1 p.2.1 p.2.2.1
       p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2) := by
-  apply FixedKey.isPPTOn_evaluateCircuit encrypt_ppt decryptionCircuits circuits_poly evaluate_ppt
+  apply FixedKey.isPPTOn_evaluateCircuit encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+    evaluate_ppt
   all_goals fun_prop
 
 example : PolynomiallyBounded (fun _ : ℕ => 1) ∧ PolynomiallyBounded (fun _ : ℕ => 2) :=
-  FixedKey.polynomiallyBounded_widths decryptionCircuits circuits_poly
+  FixedKey.polynomiallyBounded_widths decryptionCircuits (.of_tidy circuits_poly)
 example : PolynomiallyBounded (fun n => (decryptionCircuits.circuit n).size) :=
-  FixedKey.polynomiallyBounded_decryptionSize decryptionCircuits circuits_poly
+  FixedKey.polynomiallyBounded_decryptionSize decryptionCircuits (.of_tidy circuits_poly)
 example : ComputableTidilyInPolyTime
     (fun n => (⟨_, (FixedKey.decryptionCircuits decryptionCircuits).circuit n⟩ :
       Σ m, Circuit Boolean.signature m 1)) encUnary (Boolean.encCircuit 1) := circuits_poly

@@ -83,11 +83,11 @@ theorem isPPTOn_extractMatrixLabels {α Observation Label : Type} {input : α �
     {observation : Observation ↪ List Bool} {label : Label ↪ List Bool}
     {inputBits outputBits : α → ℕ} {prepare : α → List Label → List Bool}
     {samples : α → List (Observation × Label)}
-    (hinput : ComputableTidilyInPolyTime inputBits input encUnary)
-    (houtput : ComputableTidilyInPolyTime outputBits input encUnary)
-    (hprepare : ComputableTidilyInPolyTime (fun pair => prepare pair.1 pair.2)
+    (hinput : ComputableInPolyTime inputBits input encUnary)
+    (houtput : ComputableInPolyTime outputBits input encUnary)
+    (hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2)
       (encPair input (encList label)) encBits)
-    (hsamples : ComputableTidilyInPolyTime samples input
+    (hsamples : ComputableInPolyTime samples input
       (encList (encPair observation label))) :
     IsPPTOn input
       (encPair (encList observation) (encPair encBits encBits))

@@ -74,19 +74,19 @@ example (params : Parameters) :
       State.Bounded params.clock params.codeBound state :=
   run_bounded _ _ _ _
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun word : List Bool => (⟨false, word.length, [word]⟩ : State)) encBits State.encoding := by
   polytime
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun word : List Bool => ({ State.initial with predictors := [word] }).threshold)
     (encList encBool) encUnary := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun word : List Bool => (⟨word.length, 1, word.length, 0, word.length + 1⟩ : Parameters))
     encBits Parameters.encoding := by polytime
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : Parameters × State => p.1.confidence + p.2.threshold)
     (encPair Parameters.encoding State.encoding) encUnary := by fun_prop
 
@@ -104,8 +104,8 @@ example : IsPPTOn (encList encBool) State.encoding (fun word => do
 
 -- Unknown parameter computation must remain an explicit obligation.
 example (params : List Bool → Parameters)
-    (hparams : ComputableTidilyInPolyTime params encBits Parameters.encoding) :
-    ComputableTidilyInPolyTime (fun word => (params word).codeBound) encBits encUnary := by
+    (hparams : ComputableInPolyTime params encBits Parameters.encoding) :
+    ComputableInPolyTime (fun word => (params word).codeBound) encBits encUnary := by
   fail_if_success (clear hparams; fun_prop)
   fun_prop
 

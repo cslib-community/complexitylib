@@ -50,6 +50,46 @@ theorem le_one_of_antitone (hp0 : p 0 = 1) (hmono : ∀ m, p (m + 1) ≤ p m) : 
   | 0 => hp0.le
   | m + 1 => (hmono m).trans (le_one_of_antitone hp0 hmono m)
 
+/-- For `m > 0`, `1 ≤ L`, `0 ≤ v < 1`, `((1 + v) / 2) ^ (m + 1) ≤ p m`, and
+`12 * C ^ 2 * (m + 1) * L ≤ (1 - v) ^ 2 * (n - (m + 1))`, the square-root error term in
+Holenstein's step is at most `(1 - v) / 2`: `ln (1 / p_m) ≤ (m + 1) ln 2 ≤ m + 1`, so the numerator
+is at most `3 m L`. -/
+private theorem mul_sqrt_le_one_sub_div_two (hv : 0 ≤ v) (hv1 : v < 1) (hL : 1 ≤ L)
+    {m : ℕ} (hm : 0 < m) (hmn : (m : ℝ) + 1 ≤ n)
+    (H : 12 * C ^ 2 * ((m : ℝ) + 1) * L ≤ (1 - v) ^ 2 * ((n : ℝ) - ((m : ℝ) + 1)))
+    (hsmall : ((1 + v) / 2) ^ (m + 1) ≤ p m) :
+    C * Real.sqrt ((m * L + Real.log (1 / p m)) / (n - m)) ≤ (1 - v) / 2 := by
+  have hb0 : 0 < (1 + v) / 2 := by linarith
+  have hmpos : (1 : ℝ) ≤ m := by exact_mod_cast hm
+  have hpm : 0 < p m := lt_of_lt_of_le (pow_pos hb0 _) hsmall
+  -- `ln (1 / p_m) ≤ (m + 1) ln 2 ≤ m + 1`.
+  have hlog : Real.log (1 / p m) ≤ m + 1 := by
+    have h1 : Real.log (1 / p m) ≤ Real.log (1 / ((1 + v) / 2) ^ (m + 1)) :=
+      Real.log_le_log (by positivity) (one_div_le_one_div_of_le (pow_pos hb0 _) hsmall)
+    have h2 : Real.log (1 / ((1 + v) / 2) ^ (m + 1)) ≤ Real.log (2 ^ (m + 1)) := by
+      refine Real.log_le_log (by positivity) ?_
+      rw [one_div, ← inv_pow]
+      gcongr
+      rw [inv_le_comm₀ hb0 two_pos]
+      linarith
+    have h3 : Real.log ((2 : ℝ) ^ (m + 1)) ≤ m + 1 := by
+      rw [Real.log_pow]
+      push_cast
+      nlinarith [Real.log_le_sub_one_of_pos (two_pos : (0 : ℝ) < 2)]
+    linarith
+  have harg : (m * L + Real.log (1 / p m)) / (n - m) ≤ 3 * m * L / (n - m) :=
+    div_le_div_of_nonneg_right (by nlinarith) (by linarith)
+  calc C * Real.sqrt ((m * L + Real.log (1 / p m)) / (n - m))
+      ≤ |C| * Real.sqrt (3 * m * L / (n - m)) :=
+        mul_le_mul (le_abs_self C) (Real.sqrt_le_sqrt harg) (Real.sqrt_nonneg _) (abs_nonneg C)
+    _ = Real.sqrt (C ^ 2 * (3 * m * L / (n - m))) := by
+        rw [Real.sqrt_mul (sq_nonneg C), Real.sqrt_sq_eq_abs]
+    _ ≤ Real.sqrt (((1 - v) / 2) ^ 2) := by
+        gcongr
+        rw [mul_div_assoc', div_le_iff₀ (by linarith)]
+        nlinarith
+    _ = (1 - v) / 2 := Real.sqrt_sq (by linarith)
+
 /-- **The induction of Holenstein's Section 7** [Holenstein, Section 7][Holenstein2009]: if
 `p_0 = 1`, `p` is nonnegative and nonincreasing, and every step satisfies
 `p_{m+1} ≤ p_m (v + C √((m L + ln (1 / p_m)) / (n - m)))`, then
@@ -63,7 +103,6 @@ theorem le_pow_of_step (hv : 0 ≤ v) (hv1 : v ≤ 1) (hL : 1 ≤ L) (hp0 : p 0 
   | m + 1, H => by
     have hle1 := le_one_of_antitone hp0 hmono
     have hb0 : 0 < (1 + v) / 2 := by linarith
-    have hb1 : (1 + v) / 2 ≤ 1 := by linarith
     -- If `v = 1` the bound is `1`.
     rcases hv1.lt_or_eq with hv1' | hv1'
     swap
@@ -73,19 +112,13 @@ theorem le_pow_of_step (hv : 0 ≤ v) (hv1 : v ≤ 1) (hL : 1 ≤ L) (hp0 : p 0 
     have hvpos : 0 < 1 - v := by linarith
     push_cast at H
     have hmn : (m : ℝ) + 1 ≤ n := by
-      have h0 : 0 ≤ 12 * C ^ 2 * (m + 1) * L := by positivity
-      have h1 : 0 ≤ (1 - v) ^ 2 * (n - (m + 1)) := h0.trans H
-      by_contra hlt
-      push Not at hlt
-      have : (1 - v) ^ 2 * (n - (m + 1)) < 0 :=
+      by_contra! hlt
+      have : (1 - v) ^ 2 * ((n : ℝ) - (m + 1)) < 0 :=
         mul_neg_of_pos_of_neg (by positivity) (by linarith)
-      linarith
+      linarith [(by positivity : (0 : ℝ) ≤ 12 * C ^ 2 * (m + 1) * L)]
     have hmn' : m < n := by exact_mod_cast (show (m : ℝ) < n by linarith)
     have Hm : 12 * C ^ 2 * m * L ≤ (1 - v) ^ 2 * (n - m) := by
-      have : 12 * C ^ 2 * m * L ≤ 12 * C ^ 2 * (m + 1) * L := by
-        have := sq_nonneg C
-        nlinarith
-      nlinarith [sq_nonneg (1 - v)]
+      nlinarith [sq_nonneg C, sq_nonneg (1 - v)]
     have IH := le_pow_of_step hv hv1 hL hp0 hnn hmono hstep m Hm
     by_cases hsmall : p m < ((1 + v) / 2) ^ (m + 1)
     · exact (hmono m).trans hsmall.le
@@ -97,43 +130,11 @@ theorem le_pow_of_step (hv : 0 ≤ v) (hv1 : v ≤ 1) (hL : 1 ≤ L) (hp0 : p 0 
         Real.sqrt_zero, mul_zero, one_mul] at hstepm
       simp only [zero_add, pow_one]
       linarith
-    · have hmpos : (1 : ℝ) ≤ m := by exact_mod_cast hm
-      have hpm : 0 < p m := lt_of_lt_of_le (pow_pos hb0 _) hsmall
-      -- `ln (1 / p_m) ≤ (m + 1) ln 2 ≤ m + 1`.
-      have hlog : Real.log (1 / p m) ≤ m + 1 := by
-        have h1 : Real.log (1 / p m) ≤ Real.log (1 / ((1 + v) / 2) ^ (m + 1)) :=
-          Real.log_le_log (by positivity) (one_div_le_one_div_of_le (pow_pos hb0 _) hsmall)
-        have h2 : Real.log (1 / ((1 + v) / 2) ^ (m + 1)) ≤ Real.log (2 ^ (m + 1)) := by
-          refine Real.log_le_log (by positivity) ?_
-          rw [one_div, ← inv_pow]
-          gcongr
-          rw [inv_le_comm₀ hb0 two_pos]
-          linarith
-        have h3 : Real.log ((2 : ℝ) ^ (m + 1)) ≤ m + 1 := by
-          rw [Real.log_pow]
-          push_cast
-          have := Real.log_le_sub_one_of_pos (two_pos : (0 : ℝ) < 2)
-          nlinarith
-        linarith
-      have harg : (m * L + Real.log (1 / p m)) / (n - m) ≤ 3 * m * L / (n - m) := by
-        refine div_le_div_of_nonneg_right ?_ (by linarith)
-        nlinarith
-      have hsq : C * Real.sqrt ((m * L + Real.log (1 / p m)) / (n - m)) ≤ (1 - v) / 2 := by
-        have hnm : 0 < (n : ℝ) - m := by linarith
-        calc C * Real.sqrt ((m * L + Real.log (1 / p m)) / (n - m))
-            ≤ |C| * Real.sqrt (3 * m * L / (n - m)) := by
-              refine mul_le_mul (le_abs_self C) (Real.sqrt_le_sqrt harg) (Real.sqrt_nonneg _)
-                (abs_nonneg C)
-          _ = Real.sqrt (C ^ 2 * (3 * m * L / (n - m))) := by
-              rw [Real.sqrt_mul (sq_nonneg C), Real.sqrt_sq_eq_abs]
-          _ ≤ Real.sqrt (((1 - v) / 2) ^ 2) := by
-              gcongr
-              rw [mul_div_assoc', div_le_iff₀ hnm]
-              nlinarith
-          _ = (1 - v) / 2 := Real.sqrt_sq (by linarith)
+    · have hsq := mul_sqrt_le_one_sub_div_two hv hv1' hL hm hmn H hsmall
       calc p (m + 1) ≤ p m * (v + C * Real.sqrt ((m * L + Real.log (1 / p m)) / (n - m))) :=
             hstepm
         _ ≤ p m * ((1 + v) / 2) := by
+            have := hnn m
             gcongr
             linarith
         _ ≤ ((1 + v) / 2) ^ m * ((1 + v) / 2) := by gcongr
@@ -184,15 +185,11 @@ theorem le_two_mul_rpow_of_step (hv : 0 ≤ v) (hv1 : v ≤ 1) (hC : 1 ≤ C) (h
   have hbhalf : 1 / 2 ≤ b := by simp only [b]; linarith
   set a := (1 - v) ^ 2 / (13 * C ^ 2)
   set x := (1 - v) ^ 2 * n / (13 * C ^ 2 * L)
-  have hC2 : 1 ≤ C ^ 2 := by nlinarith
   have ha0 : 0 ≤ a := by positivity
-  have ha1 : a ≤ 1 := by
-    rw [div_le_one (by positivity)]
-    nlinarith
+  have ha1 : a ≤ 1 := (div_le_one (by positivity)).2 (by nlinarith)
   have hx : x = a * (n / L) := by
     simp only [x, a]
     field_simp
-  have hx0 : 0 ≤ x := by positivity
   have hfloor := le_pow_floor_of_step hv hv1 hC hL hp0 hnn hmono hstep
   -- Round the number of steps down at the cost of a factor `2`.
   have hround : b ^ ⌊x⌋₊ ≤ 2 * b ^ x := by

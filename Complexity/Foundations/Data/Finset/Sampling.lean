@@ -115,7 +115,8 @@ section RepeatedTrials
 
 variable [DecidableEq ι]
 
-private theorem dens_piFinset_const (t : Finset α) :
+/-- Independent uniform coordinates all belong to `t` with probability `dens t ^ card ι`. -/
+theorem dens_piFinset_const (t : Finset α) :
     dens (piFinset fun _ : ι => t) = dens t ^ card ι := by
   rw [dens_eq_card_div_card, card_piFinset, prod_const, card_univ, card_fun,
     dens_eq_card_div_card]

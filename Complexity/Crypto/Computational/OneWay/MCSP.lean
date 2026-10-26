@@ -140,10 +140,10 @@ noncomputable def mcspRun (p : Polynomial ℕ) (V : MCSP.Instance × List Bool �
 variable {p : Polynomial ℕ} {V : MCSP.Instance × List Bool → Bool}
 
 theorem isPPTOn_mcspRun
-    (hV : ComputableTidilyInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
+    (hV : ComputableInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
     IsPPTOn MCSP.encInstance encBool (mcspRun p V) :=
-  IsPPTOn.map_with (ComputableTidilyInPolyTime.sampleList
-    ((unary_eval p).comp (encoding_length MCSP.encInstance))) (.of_tidy hV)
+  IsPPTOn.map_with (ComputableInPolyTime.sampleList
+    (.of_tidy ((unary_eval p).comp (encoding_length MCSP.encInstance)))) hV
 
 /-- The acceptance probability of `mcspRun` is the fraction of accepting coin strings. -/
 theorem toReal_eval_mcspRun (p : Polynomial ℕ) (V : MCSP.Instance × List Bool → Bool)
@@ -226,27 +226,30 @@ theorem interpret_mcspDistinguisher (d : ℕ) (oracle : List Bool → List Bool)
 
 /-- The arity is computed in unary from the unary parameter. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_tableArity (d : ℕ) :
-    ComputableTidilyInPolyTime (tableArity d) encUnary encUnary := by
+theorem computableInPolyTime_tableArity (d : ℕ) :
+    ComputableInPolyTime (tableArity d) encUnary encUnary := by
+  refine .of_tidy ?_
   unfold tableArity
   have := unary_clog_const 2
   fun_prop
 
 /-- The table size `2 ^ m` is computed in unary from the unary parameter. -/
-theorem computableTidilyInPolyTime_two_pow_tableArity (d : ℕ) :
-    ComputableTidilyInPolyTime (fun n => 2 ^ tableArity d n) encUnary encUnary := by
+theorem computableInPolyTime_two_pow_tableArity (d : ℕ) :
+    ComputableInPolyTime (fun n => 2 ^ tableArity d n) encUnary encUnary := by
+  refine .of_tidy ?_
   have := unary_pow_clog_const (input := encUnary) (size := fun n => n) id' (2 ^ d) 2
   simpa only [tableArity, ← pow_mul] using this
 
 /-- The queries are computed in polynomial time from the unary parameter. -/
-theorem computableTidilyInPolyTime_tableQueries (d : ℕ) :
-    ComputableTidilyInPolyTime (fun input : ℕ × List Bool =>
+theorem computableInPolyTime_tableQueries (d : ℕ) :
+    ComputableInPolyTime (fun input : ℕ × List Bool =>
       tableQueries input.1 (tableArity d input.1)) (encPair encUnary encBits)
       (encList encBits) := by
+  refine .of_tidy ?_
   unfold tableQueries
   have harity : ComputableTidilyInPolyTime (fun input : ℕ × List Bool => tableArity d input.1)
       (encPair encUnary encBits) encUnary :=
-    (computableTidilyInPolyTime_tableArity d).comp (fst _ _)
+    (computableInPolyTime_tableArity d).tidy.comp (fst _ _)
   refine mapWithInput (bitsEnumList harity
     (size := fun L => (2 * (L + 1)) ^ d * (2 * (d * (2 * (L + 1))) + 1)) (by fun_prop)
     fun input => ?_) ?_
@@ -270,16 +273,17 @@ theorem computableTidilyInPolyTime_tableQueries (d : ℕ) :
     exact bitsAppend ((bitsReplicate false).comp hsub) (snd _ _)
 
 /-- The instance read from the answers is computed in polynomial time. -/
-theorem computableTidilyInPolyTime_tableInstance (d : ℕ) :
-    ComputableTidilyInPolyTime (fun pair : (ℕ × List Bool) × List Bool =>
+theorem computableInPolyTime_tableInstance (d : ℕ) :
+    ComputableInPolyTime (fun pair : (ℕ × List Bool) × List Bool =>
       tableInstance (tableArity d pair.1.1) pair.2) (encPair (encPair encUnary encBits) encBits)
       MCSP.encInstance := by
+  refine .of_tidy ?_
   have harity : ComputableTidilyInPolyTime (fun pair : (ℕ × List Bool) × List Bool =>
       tableArity d pair.1.1) (encPair (encPair encUnary encBits) encBits) encUnary :=
-    (computableTidilyInPolyTime_tableArity d).comp (fst _ _).fst'
+    (computableInPolyTime_tableArity d).tidy.comp (fst _ _).fst'
   have hsize : ComputableTidilyInPolyTime (fun pair : (ℕ × List Bool) × List Bool =>
       2 ^ tableArity d pair.1.1) (encPair (encPair encUnary encBits) encBits) encUnary :=
-    (computableTidilyInPolyTime_two_pow_tableArity d).comp (fst _ _).fst'
+    (computableInPolyTime_two_pow_tableArity d).tidy.comp (fst _ _).fst'
   have hraw : ComputableTidilyInPolyTime (fun pair : (ℕ × List Bool) × List Bool =>
       ((pair.2 ++ List.replicate (2 ^ tableArity d pair.1.1) false).take
         (2 ^ tableArity d pair.1.1), 2 ^ tableArity d pair.1.1 / (5 * tableArity d pair.1.1)))
@@ -295,13 +299,14 @@ theorem computableTidilyInPolyTime_tableInstance (d : ℕ) :
 decider `V`: it makes `2 ^ m ≤ (2 (n + 1)) ^ d` queries of length `n` and runs `V` on a truth table
 of `2 ^ m` bits. -/
 theorem isOraclePPT_mcspDistinguisher (d : ℕ)
-    (hV : ComputableTidilyInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
+    (hV : ComputableInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
     IsOraclePPT encBool (mcspDistinguisher p V d) := by
+  have hV := hV.tidy
   apply IsOraclePPTOn.isOraclePPT
   exact IsOraclePPTOn.bind_with
-    (isOraclePPTOn_queryTable.preprocess (computableTidilyInPolyTime_tableQueries d))
-    ((isPPTOn_mcspRun hV).preprocess
-      (ComputableInPolyTime.of_tidy (computableTidilyInPolyTime_tableInstance d))).isOraclePPTOn
+    (isOraclePPTOn_queryTable.preprocess (computableInPolyTime_tableQueries d).tidy)
+    ((isPPTOn_mcspRun (.of_tidy hV)).preprocess
+      (computableInPolyTime_tableInstance d)).isOraclePPTOn
 
 /-! ### The advantage of the distinguisher -/
 
@@ -385,8 +390,8 @@ theorem not_pseudorandomFunction_of_MCSP_mem_BPP (h : MCSP ∈ BPP MCSP.encInsta
   classical
   intro hprf
   obtain ⟨p, V, hV, hdec⟩ := h
-  obtain ⟨c, hc⟩ := KabanetsCai.exists_complexity_restriction_le hprf.polyTime.tidy
-  have hnegl := hprf.secure _ (isOraclePPT_mcspDistinguisher (p := p) (c + 2) hV.tidy)
+  obtain ⟨c, hc⟩ := KabanetsCai.exists_complexity_restriction_le hprf.polyTime
+  have hnegl := hprf.secure _ (isOraclePPT_mcspDistinguisher (p := p) (c + 2) hV)
   refine not_negligible_const (c := 1 / 4) (by norm_num) (negligible_of_eventually_le hnegl ?_)
   filter_upwards [eventually_tableArity c] with n ⟨hn, hm16, hmn, hsize⟩
   set m := tableArity (c + 2) n

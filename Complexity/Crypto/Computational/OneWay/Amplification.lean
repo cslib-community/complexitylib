@@ -608,7 +608,7 @@ theorem familyInversionGame_parallelCore_negligible {f : List Bool → List Bool
     have hsnd2 := ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encBits
     have hrun := computableTidily_runTrials hk hw ht hseedLen hweak.polyTime.tidy hevalA
       (hn.comp hfst2) (hsnd.comp hfst2) hsnd2
-    exact IsPPTOn.map_with hsample_len.sampleList (.of_tidy hrun)
+    exact IsPPTOn.map_with (ComputableInPolyTime.of_tidy hsample_len).sampleList (.of_tidy hrun)
   have hweak_w : ∀ᶠ n in atTop,
       (Game.succProbability (ProbComp.eval (inversionGame f B_inv (w n))) : ℝ) <
         1 - 1 / ((q.eval (w n) : ℕ) : ℝ) :=

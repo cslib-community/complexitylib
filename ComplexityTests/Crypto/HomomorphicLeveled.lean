@@ -8,6 +8,7 @@ import Complexity.Crypto.Computational.Homomorphic.Leveled.Basic
 import Complexity.Crypto.Computational.Homomorphic.Leveled.Correctness
 import Complexity.Crypto.Computational.Homomorphic.Leveled.PolyTime
 import ComplexityTests.Crypto.HomomorphicExample
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 End-to-end clients of the depth-budgeted scheme. The insecure tagged fixture rejects its own
@@ -277,16 +278,18 @@ example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => Leveled.encrypt tagged p.1 p.2.1 p.2.2) := by
   apply Leveled.isPPTOn_encrypt encrypt_ppt <;> fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × List Bool × List Bool => Leveled.decrypt decryptionCircuits p.1 p.2.1 p.2.2)
     (encPair encUnary (encPair encBits encBits)) encBool := by
-  apply Leveled.computableTidilyInPolyTime_decrypt decryptionCircuits circuits_poly <;> fun_prop
+  apply Leveled.computableInPolyTime_decrypt decryptionCircuits (.of_tidy circuits_poly) <;>
+    fun_prop
 
 example : IsPPTOn
     (encPair encUnary (encPair encUnary
       (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))) encBits
     (fun p => Leveled.evaluate decryptionCircuits p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2) := by
-  apply Leveled.isPPTOn_evaluate encrypt_ppt decryptionCircuits circuits_poly evaluate_ppt
+  apply Leveled.isPPTOn_evaluate encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+    evaluate_ppt
   all_goals fun_prop
 
 example : IsPPTOn
@@ -302,17 +305,18 @@ example : IsPPTOn
 example : IsPPTOn encUnary (encPair encBits encBits)
     (Leveled.scheme decryptionCircuits (fun n => n + 1)).keyGen := by
   exact Leveled.isPPTOn_scheme_keyGen keyGen_ppt encrypt_ppt decryptionCircuits
-    (fun n => n + 1) (by fun_prop)
+    (fun n => n + 1) (.of_tidy (by fun_prop))
 
 example : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits)))) encBits
     (fun p => (Leveled.scheme decryptionCircuits (fun n => n + 1)).evaluate
       p.1 p.2.1 p.2.2.1 p.2.2.2) := by
-  exact Leveled.isPPTOn_scheme_evaluate encrypt_ppt decryptionCircuits circuits_poly evaluate_ppt
+  exact Leveled.isPPTOn_scheme_evaluate encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+    evaluate_ppt
     (fun n => n + 1) (by fun_prop)
 
 -- The same generated decryption circuits supply the compact widths' polynomial bounds.
 example : PolynomiallyBounded (fun _ : ℕ => 4) ∧ PolynomiallyBounded (fun _ : ℕ => 3) :=
-  Leveled.polynomiallyBounded_widths decryptionCircuits circuits_poly
+  Leveled.polynomiallyBounded_widths decryptionCircuits (.of_tidy circuits_poly)
 
 end ComplexityTests.HomomorphicLeveled

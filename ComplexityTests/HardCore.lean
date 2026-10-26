@@ -29,7 +29,8 @@ example : (PRG.wordFamily id id).Secure IsPPTBitStringTest := by
 example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hg : ComputableTidilyInPolyTime generator encBits encBits)
     (hlen : ∀ word, (generator word).length = length word.length) :
-    ComputableTidilyInPolyTime length encUnary encUnary := PRG.polyTime_length hg hlen
+    ComputableTidilyInPolyTime length encUnary encUnary := (PRG.polyTime_length (.of_tidy hg)
+      hlen).tidy
 
 example (adversary : Distinguisher) (ha : IsPPT encBool adversary) :
     IsPPT encBool (fun n _ => prgIdealGame (fun k => k * k + 1) adversary n) := by ppt
