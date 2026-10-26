@@ -104,4 +104,3 @@ example {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
     have : ComputableInPolyTime (fun a => left a * right a) input encUnary := by
       fun_prop (maxSteps := 256)
   trivial
-
