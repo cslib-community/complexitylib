@@ -51,7 +51,8 @@ public structure Key where
   input : Option ℕ
   /-- The symbols under the work-tape heads. -/
   work : List (Option ℕ)
-deriving DecidableEq, Inhabited
+-- vendored: imported transition lookups must reduce through the derived equality implementation.
+deriving @[expose] DecidableEq, Inhabited
 
 /-- An action, as `Turing.Action` with the work tapes in a list. -/
 public structure Act where
