@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Crypto.Computational.CramerShoup.Reductions
+import Complexity.Crypto.Computational.CramerShoup
 import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 import Mathlib.Tactic.NormNum.Prime
 
@@ -307,5 +307,61 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
    schnorrGroups.isPPTOn_cramerShoupEncryptProb hH hd,
    schnorrGroups.computableInPolyTime_cramerShoupDecryptOpt hH hisElem hd⟩
 
+/-- Concrete instantiation of Theorem 12.9 / Exercise 12.27
+(`advantage_cramerShoupGroupCCA2Game_le`) on `schnorrGroups` at `d23` (`q = 11`). -/
+example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
+      isSchnorrElem (d, x) = true ↔ x ∈ Set.range (schnorrGroups.encode d))
+    (adversary : Encryption.WordCCA2Adversary) (Q₁ Q₂ : ℕ → ℕ)
+    (hQ : adversary.IsQueryBounded Q₁ Q₂) (n : ℕ) :
+    Game.advantage
+      (schnorrGroups.cramerShoupGroupCCA2Game (fun _ => PMF.pure d23) testHash isSchnorrElem
+        adversary false n)
+      (schnorrGroups.cramerShoupGroupCCA2Game (fun _ => PMF.pure d23) testHash isSchnorrElem
+        adversary true n) ≤
+      Game.advantage
+        (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23)
+          (schnorrGroups.cramerShoupToDDHDistinguisher testHash isSchnorrElem adversary false) n)
+        (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23)
+          (schnorrGroups.cramerShoupToDDHDistinguisher testHash isSchnorrElem adversary false) n) +
+      Game.advantage
+        (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23)
+          (schnorrGroups.cramerShoupToDDHDistinguisher testHash isSchnorrElem adversary true) n)
+        (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23)
+          (schnorrGroups.cramerShoupToDDHDistinguisher testHash isSchnorrElem adversary true) n) +
+      Game.succProbability
+        (collisionGameFor (fun _ => PMF.pure d23) (schnorrGroups.cramerShoupHashMod testHash)
+          (fun _ _ _ => true)
+          (schnorrGroups.cramerShoupToCollisionFinder testHash isSchnorrElem adversary false) n) +
+      Game.succProbability
+        (collisionGameFor (fun _ => PMF.pure d23) (schnorrGroups.cramerShoupHashMod testHash)
+          (fun _ _ _ => true)
+          (schnorrGroups.cramerShoupToCollisionFinder testHash isSchnorrElem adversary true) n) +
+      ((2 * Q₁ n + 2 * Q₂ n + 2 : ℕ) : ℝ≥0) / (11 : ℕ) +
+      42 / 2 ^ n := by
+  have hm : ∀ d ∈ (PMF.pure d23).support, 11 ≤ schnorrGroups.order d := by
+    intro d hd
+    simp only [PMF.support_pure, Set.mem_singleton_iff] at hd
+    subst hd
+    decide
+  exact schnorrGroups.advantage_cramerShoupGroupCCA2Game_le (fun _ => PMF.pure d23)
+    testHash isSchnorrElem hmem adversary Q₁ Q₂ hQ n 11 (by decide) hm
+
+/-- End-to-end `Encryption.INDCCA2On` instantiation for `schnorrGroups`. -/
+example {H : schnorrGroups.Desc × List Bool → List Bool}
+    {isElem : schnorrGroups.Desc × List Bool → Bool}
+    {d : ℕ → schnorrGroups.Desc}
+    (hH : ComputableInPolyTime H (encPair schnorrGroups.encDesc encBits) encBits)
+    (hisElem : ComputableInPolyTime isElem (encPair schnorrGroups.encDesc encBits) encBool)
+    (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
+    (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (schnorrGroups.encode d))
+    (hDDH : schnorrGroups.DDH (fun n => PMF.pure (d n)))
+    (hCR : CollisionResistantFor schnorrGroups.encDesc (fun n => PMF.pure (d n))
+      (schnorrGroups.cramerShoupHashMod H))
+    {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n) (hm : ∀ n, m n ≤ schnorrGroups.order (d n))
+    (hinv : Negligible fun n => (1 / m n : ℝ≥0)) :
+    INDCCA2On (schnorrGroups.cramerShoupValid isElem d) encBits encBits
+      (schnorrGroups.cramerShoupKeyGenProb d) (schnorrGroups.cramerShoupEncryptProb H d)
+      (schnorrGroups.cramerShoupDecryptOpt H isElem d) :=
+  hDDH.indcca2On_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv
 
 end ComplexityTests.Crypto.CramerShoup
