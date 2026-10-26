@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathBounds
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Compile
 import Mathlib.Algebra.BigOperators.Ring.List
 import Mathlib.Data.List.GetD
@@ -39,19 +40,6 @@ The accounting is for the original finite construction in `Compile`.
 namespace Cslib.Complexity.SAT.PlanarCompile
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
-
-/-- Number of external implication clauses actually emitted by the compiler. -/
-def linkCount (φ : CNF ℕ) : ℕ :=
-  ((Cslib.Logic.PL.occurrences φ).map fun o => (occurrencePath φ o).length - 2).sum
-
-/-- Selected crossing sites form a sublist of the quadratic canonical cover after deduplication.
-The bound counts all source literal incidences, including repetitions. -/
-theorem crossingSites_length_le (φ : CNF ℕ) :
-    (crossingSites φ).length ≤ 2 * φ.vars.length ^ 2 := by
-  unfold crossingSites
-  rw [length_selectDistinct_replicate]
-  exact (List.toFinset_card_le _).trans ((List.length_filter_le _ _).trans (by
-    simp [Graph.crossingCandidates_length, SAT.length_edges_incidenceGraph]))
 
 /-- Original clauses keep their count. -/
 theorem length_originalClauses (φ : CNF ℕ) (sites : List Point) :
@@ -125,40 +113,6 @@ theorem width_formula {φ : CNF ℕ} (h : ∀ c ∈ φ, c.length ≤ 3) :
   obtain ⟨d, hd, he⟩ := List.mem_map.mp hm
   rw [← he]
   exact width_rawFormula h d hd
-
-/-- There is one unit path per original literal incidence. -/
-theorem paths_length (φ : CNF ℕ) : (paths φ).length = φ.vars.length := by
-  simp [paths, SAT.length_edges_incidenceGraph]
-
-/-- The bounded enumerator emits at most five segment budgets plus the final endpoint.
-This unconditional bound also applies to inputs that fail the degree-three restriction. -/
-theorem path_length_le {φ : CNF ℕ} {r : Route} (hr : r ∈ paths φ) :
-    r.length ≤ 5 * budget φ + 1 := by
-  change r ∈ ((SAT.incidenceGraph φ).orthogonalRoutes
-    (SAT.incidenceGraph φ).canonicalPorts).map (subdivideWithin (budget φ)) at hr
-  obtain ⟨base, hbase, rfl⟩ := List.mem_map.mp hr
-  have hs : base.consecutivePairs.length = 5 := by
-    obtain ⟨⟨e, i⟩, _, rfl⟩ := List.mem_map.mp hbase
-    rfl
-  simpa only [hs, Nat.mul_comm] using subdivideWithin_length_le (budget φ) base
-
-/-- Indexed access to a path obeys the same bound, including the empty fallback. -/
-theorem occurrencePath_length_le (φ : CNF ℕ) (o : Occurrence ℕ) :
-    (occurrencePath φ o).length ≤ 5 * budget φ + 1 := by
-  unfold occurrencePath
-  by_cases h : (Cslib.Logic.PL.occurrences φ).idxOf o < (paths φ).length
-  · rw [List.getD_eq_getElem _ _ h]
-    exact path_length_le (List.getElem_mem h)
-  · rw [List.getD_eq_default _ _ (Nat.le_of_not_gt h)]
-    exact Nat.zero_le _
-
-/-- There are quadratically many links, even before checking the source restrictions. -/
-theorem linkCount_le (φ : CNF ℕ) :
-    linkCount φ ≤ φ.vars.length * (5 * budget φ + 1) := by
-  calc
-    _ ≤ ((Cslib.Logic.PL.occurrences φ).map fun _ => 5 * budget φ + 1).sum :=
-      List.sum_le_sum fun o _ => (Nat.sub_le _ _).trans (occurrencePath_length_le φ o)
-    _ = _ := by simp [Cslib.Logic.PL.length_occurrences, Nat.mul_comm]
 
 /-- An explicit quadratic clause bound in the source incidence graph's combinatorial size. -/
 theorem length_formula_le (φ : CNF ℕ) :

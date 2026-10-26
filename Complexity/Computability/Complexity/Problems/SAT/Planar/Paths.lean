@@ -7,9 +7,10 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.Compile
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathData
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalPath
 public import Complexity.Logics.Propositional.CNF.Occurrence
+import Complexity.Foundations.Data.List.Range
 import Mathlib.Data.List.GetD
 
 /-!
@@ -80,12 +81,6 @@ theorem occurrencePath_ne_nil {φ : CNF ℕ} {o : Occurrence ℕ}
   exact Graph.unitPath_ne_nil _ (fun _ => SAT.incidenceGraph_endpoints)
     (fun _ => SAT.incidenceGraph_loopless) (occurrence_index_lt ho)
 
-private theorem idxOf_range_eq {i n : ℕ} (hi : i < n) : (List.range n).idxOf i = i := by
-  have h := (List.nodup_range : (List.range n).Nodup).idxOf_getElem i
-    (by simpa only [List.length_range] using hi)
-  rw [List.getElem_range] at h
-  exact h
-
 /-- Actual occurrence paths start at the variable's source-grid center and end at their clause. -/
 theorem occurrencePath_endpoints {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
@@ -106,7 +101,7 @@ theorem occurrencePath_endpoints {φ : CNF ℕ} {o : Occurrence ℕ}
       some (Layout.center ((List.range _).idxOf (φ.distinctVars.idxOf o.2.2.1))) ∧
     (occurrencePath φ o).getLast? =
       some (Layout.center ((List.range _).idxOf (φ.distinctVars.length + o.1))) at h
-  rw [idxOf_range_eq (by omega), idxOf_range_eq hb.2.2] at h
+  rw [List.idxOf_range_of_lt (by omega), List.idxOf_range_of_lt hb.2.2] at h
   exact h
 
 /-- Actual literal paths contain at least one unit step, so final-literal lookups are in range. -/

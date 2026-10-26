@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Computability.Complexity.Problems.SAT.Planar.Geometry
+import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedGeometry
 import Mathlib.Tactic.NormNum
 
 /-! Actual continuous cell geometry and complete compiled drawing regressions. -/
@@ -12,19 +12,19 @@ import Mathlib.Tactic.NormNum
 namespace ComplexityTests.PlanarGeometry
 
 open Cslib.Logic.PL Cslib.Orthogonal Cslib.Complexity
-open SAT.PlanarCompile
+open SAT.ParsimoniousPlanar
+open SAT.PlanarCompile (occurrencePath_nodup pathPorts_nodup pathMidpoints_nodup shared_cellPort)
 
-example : IsOrthogonal (access [] (-1, -2) (0, -2)) := access_orthogonal _ _ _
-example : IsSimple (access [(-1, -2)] (-1, -2) (-1, -3)) := access_simple _ _ _
+example : IsOrthogonal (access [] (-1, -2) (0, -2) 0) := access_orthogonal _ _ _ _
+example : IsSimple (access [(-1, -2)] (-1, -2) (-1, -3) 1) := access_simple _ _ _ _
 
-example : IsSimple (center (-1, -3) :: access [(-1, -2)] (-1, -2) (-1, -3)) :=
-  finalRoute_simple _ (by decide)
+example : IsSimple (lastLiteral [(-1, -2)] [(-1, -2), (-1, -3)] true).2 :=
+  (lastLiteral_route_regular _ _ _ (by decide)).2
 
-example : wireLength (access [(-1, -2)] (-1, -2) (-1, -3)) = 20 := by
-  simpa using access_wireLength [(-1, -2)] (-1, -2) (-1, -3)
+example : wireLength (access [(-1, -2)] (-1, -2) (-1, -3) 0) = 20 :=
+  (access_cost _ _ _ _).1
 
-example : wireLength (center (-1, -3) :: access [] (-1, -2) (-1, -3)) ≤ 240 :=
-  finalRoute_wireLength_le _ (by decide)
+example : wireLength (lastLiteral [] [(-1, -2), (-1, -3)] true).2 = 150 := by decide
 
 example : ∀ r ∈ routes [[(7, true)]], IsOrthogonal r ∧ IsSimple r := routes_regular _
 
@@ -133,39 +133,16 @@ example :
 example : cellPort 120 (-1, -2) (side (-1, -2) (0, -2)) =
     cellPort 120 (0, -2) (side (0, -2) (-1, -2)) := shared_cellPort (by decide)
 
-example : Disjoint (support (access [(0, 0)] (0, 0) (-1, 0)))
-    (support (access [(0, 0)] (0, 0) (0, 1))) :=
-  crossing_access_disjoint (by decide) _ _ (by decide)
+example : Disjoint (support (access [(0, 0)] (0, 0) (-1, 0) 0))
+    (support (access [(0, 0)] (0, 0) (0, 1) 0)) :=
+  access_disjoint_same_cell _ _ _ _ _ _ (by decide)
 
-example : ((180.5 : ℝ), (120 : ℝ)) ∈ support (access [] (0, 0) (1, 0)) := by
-  rw [access_eq_pair, support_cons_cons]
+-- Continuous support includes nonintegral points of the actual paired access.
+example : ((230.5 : ℝ), (110 : ℝ)) ∈ support (access [] (0, 0) (1, 0) 0) := by
+  rw [access, support_cons_cons]
   apply Or.inl
-  norm_num [cellPort, cellOrigin, side, variablePosition, signal, Cslib.Orthogonal.segment,
-    realPoint, mem_horizontal, Set.mem_uIcc]
-
-private def repeatedNames : CNF Variable :=
-  [[(((0, 0), none), true), (((0, 0), none), false), (((1, 0), none), true)]]
-
--- Compact names are first literal positions, whereas graph indices count distinct variables.
-example : repeatedNames.compact.distinctVars = [0, 2] := by decide
-example : repeatedNames.compact.distinctVars.idxOf (repeatedNames.vars.idxOf ((1, 0), none)) =
-    repeatedNames.distinctVars.idxOf ((1, 0), none) :=
-  CNF.idxOf_distinctVars_compact _ (by decide)
-
-example : repeatedNames.compact.vars.count (repeatedNames.vars.idxOf ((0, 0), none)) =
-    repeatedNames.vars.count ((0, 0), none) := CNF.count_vars_compact _ (by decide)
-
-example {k : ℕ} (h : ∀ v, repeatedNames.vars.count v ≤ k) :
-    ∀ i, repeatedNames.compact.vars.count i ≤ k := CNF.count_vars_compact_le _ h
-
-example : SAT.incidenceGraph repeatedNames.compact = SAT.incidenceGraph repeatedNames :=
-  SAT.incidenceGraph_compact _
-
-example : (positions [[(7, true)]]).getD
-    ((formula [[(7, true)]]).distinctVars.idxOf
-      ((rawFormula [[(7, true)]]).vars.idxOf ((4, 4), none))) (0, 0) =
-    variablePosition ((4, 4), none) := by
-  apply positions_getD_variable
-  decide +kernel
+  norm_num [boundary, cellOrigin, side, SAT.PlanarCompile.side, variablePosition, signal, port,
+    PairedPorts.variablePosition, PairedPorts.boundaryPort, PairedPorts.offset,
+    Cslib.Orthogonal.segment, realPoint, mem_horizontal, Set.mem_uIcc]
 
 end ComplexityTests.PlanarGeometry

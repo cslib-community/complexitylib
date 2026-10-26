@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathBounds
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Compile
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 import Complexity.Computability.Complexity.Problems.SAT.Planar.Geometry
@@ -49,12 +50,6 @@ These bounds concern the original finite compiler in `Compile` and its 240-squar
 
 namespace Cslib.Complexity.SAT.PlanarCompile
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
-
-/-- Horizontal side of the actual tiled drawing, including its last square. -/
-def gridWidth (φ : CNF ℕ) : ℕ := 240 * (8 * (SAT.incidenceGraph φ).1.length + 1)
-/-- Vertical side of the actual tiled drawing, including its last square. -/
-def gridHeight (φ : CNF ℕ) : ℕ :=
-  240 * (8 * (SAT.incidenceGraph φ).1.length + 2 * (SAT.incidenceGraph φ).2.length + 1)
 
 private def CellBound (φ : CNF ℕ) (p : Point) : Prop :=
   0 ≤ p.1 ∧ p.1 ≤ 8 * ((SAT.incidenceGraph φ).1.length : ℤ) ∧
@@ -278,20 +273,6 @@ theorem drawing_fits (φ : CNF ℕ) :
   · intro r hr p hp
     obtain ⟨pc, hpc, hr⟩ := List.mem_flatMap.mp hr
     exact (placedClauses_bounds φ pc hpc).2.2 r hr p hp
-
-/-- The horizontal grid side is at most 1920 times the source incidence size plus one. -/
-theorem gridWidth_le (φ : CNF ℕ) :
-    gridWidth φ ≤ 1920 * (φ.numVars + φ.length + φ.vars.length + 1) := by
-  unfold gridWidth
-  rw [SAT.length_vertices_incidenceGraph]
-  nlinarith
-
-/-- The vertical grid side is at most 1920 times the source incidence size plus one. -/
-theorem gridHeight_le (φ : CNF ℕ) :
-    gridHeight φ ≤ 1920 * (φ.numVars + φ.length + φ.vars.length + 1) := by
-  unfold gridHeight
-  rw [SAT.length_vertices_incidenceGraph, SAT.length_edges_incidenceGraph]
-  nlinarith
 
 private theorem access_cost (sites : List Point) (p q : Point) :
     wireLength (access sites p q) ≤ 240 ∧

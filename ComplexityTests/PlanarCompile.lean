@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Computability.Complexity.Problems.SAT.Planar.Compile
+import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCompile
 import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 import Complexity.Computability.Complexity.Problems.SAT.Incidence.Degree
 import Complexity.Logics.Propositional.CNF.ImplicationChain
@@ -12,7 +12,7 @@ import Complexity.Logics.Propositional.CNF.ImplicationChain
 namespace ComplexityTests.PlanarCompile
 
 open Cslib.Logic.PL Cslib.Orthogonal Cslib.Complexity
-open SAT.PlanarCompile
+open SAT.ParsimoniousPlanar
 
 -- The compiler preserves the two degenerate SAT instances, including the empty clause.
 example : formula [] = [] := by decide +kernel
@@ -20,20 +20,20 @@ example : formula [[]] = [[]] := by decide +kernel
 
 -- A unit clause produces a nonempty wire, without inserting any crossing gadgets.
 example : crossingSites [[(7, true)]] = [] := by decide +kernel
-example : (rawFormula [[(7, true)]]).length = 32 := by decide +kernel
-example : (rawFormula [[(7, true)]]).vars.length = 63 := by decide +kernel
+example : (rawFormula [[(7, true)]]).length = 319 := by decide +kernel
+example : (rawFormula [[(7, true)]]).vars.length = 637 := by decide +kernel
 example : (rawFormula [[(7, true)]]).eval (fun _ => true) = true := by decide +kernel
 
--- Crossing ports use the same left/right/bottom/top order as the macrocell API.
-example : signal [(0, 0)] (0, 0) (-1, 0) =
-    ((0, 0), some CNF.Crossover.SplitVariable.aLeft) := by decide
-example : access [] (0, 0) (1, 0) = [(240, 120), (120, 120)] := by decide
+-- Crossing ports retain the side order and keep both lanes separate.
+example : signal [(0, 0)] (0, 0) (-1, 0) 0 =
+    ((0, 0), Sum.inr (CNF.PairedCrossover.terminal 0 0)) := by decide
+example : access [] (0, 0) (1, 0) 0 = [(240, 110), (220, 110)] := by decide
 
--- Directed links need one binary clause, with the polarity-dependent orientation.
-example : (link [] true (0, 0) (1, 0)).1 =
-    [(((1, 0), none), false), (((0, 0), none), true)] := by decide
-example : (link [] false (0, 0) (1, 0)).1 =
-    [(((0, 0), none), false), (((1, 0), none), true)] := by decide
+-- Separate forward and backward lanes close the slack between adjacent cells.
+example : (link [] (0, 0) (1, 0) 0).1 =
+    [(((0, 0), Sum.inl (1, 0)), false), (((1, 0), Sum.inl (0, 0)), true)] := by decide
+example : (link [] (0, 0) (1, 0) 1).1 =
+    [(((1, 0), Sum.inl (0, 1)), false), (((0, 0), Sum.inl (1, 1)), true)] := by decide
 
 -- Repeated literal incidences contribute separately to the actual graph degree.
 example : (SAT.incidenceGraph [[(5, true), (5, false)]]).incidenceVertices.count 0 = 2 :=

@@ -805,7 +805,7 @@ theorem mem_ThreeColoring_iff_exists_bpisOfColoring (H : Graph) :
 
 /-! ### Polynomial-time computability of the reduction -/
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_listGetDWithInput
     {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
     {list : γ → List α} {index : γ → ℕ} (d : α)
@@ -814,7 +814,7 @@ private theorem computableTidilyInPolyTime_listGetDWithInput
     ComputableTidilyInPolyTime (fun x => (list x).getD (index x) d) encIn encA :=
   (listGetD d).comp (hlist.prod hindex)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_unary_div'
     {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
     (ha : ComputableTidilyInPolyTime a encIn encUnary)
@@ -822,7 +822,7 @@ private theorem computableTidilyInPolyTime_unary_div'
     ComputableTidilyInPolyTime (fun x => a x / b x) encIn encUnary :=
   unary_div.comp (ha.prod hb)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_unary_mod'
     {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
     (ha : ComputableTidilyInPolyTime a encIn encUnary)
@@ -830,13 +830,13 @@ private theorem computableTidilyInPolyTime_unary_mod'
     ComputableTidilyInPolyTime (fun x => a x % b x) encIn encUnary :=
   unary_mod.comp (ha.prod hb)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_blockSize :
     ComputableTidilyInPolyTime blockSize encUnary encUnary := by
   unfold blockSize
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_numAssignments :
     ComputableTidilyInPolyTime numAssignments encUnary encUnary := by
   obtain ⟨hefficient, hspec⟩ := iterate_spec (count := fun n => 2 * blockSize n)
@@ -852,25 +852,25 @@ private theorem computableTidilyInPolyTime_numAssignments :
   funext n
   exact (hspec n).symm
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_numBlocks :
     ComputableTidilyInPolyTime numBlocks encUnary encUnary := by
   unfold numBlocks
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_wordLen :
     ComputableTidilyInPolyTime wordLen encUnary encUnary := by
   unfold wordLen
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_searchBits :
     ComputableTidilyInPolyTime searchBits encUnary encUnary := by
   unfold searchBits
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_extractColor
     {γ : Type} {encIn : γ ↪ List Bool} {c u : γ → ℕ}
     (hc : ComputableTidilyInPolyTime c encIn encUnary)
@@ -880,7 +880,7 @@ private theorem computableTidilyInPolyTime_extractColor
   unfold extractColor
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_validAssignment
     {γ : Type} {encIn : γ ↪ List Bool} {b c : γ → ℕ}
     (_hb : ComputableTidilyInPolyTime b encIn encUnary)
@@ -889,7 +889,7 @@ private theorem computableTidilyInPolyTime_validAssignment
   unfold validAssignment
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_thresholdOf
     {γ : Type} {encIn : γ ↪ List Bool} {n L r v : γ → ℕ}
     (_hn : ComputableTidilyInPolyTime n encIn encUnary)
@@ -900,7 +900,7 @@ private theorem computableTidilyInPolyTime_thresholdOf
   unfold thresholdOf
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_bucketOf
     {γ : Type} {encIn : γ ↪ List Bool} {B n L r j : γ → ℕ}
     (_hB : ComputableTidilyInPolyTime B encIn encUnary)
@@ -913,7 +913,7 @@ private theorem computableTidilyInPolyTime_bucketOf
   unfold bucketOf
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_colorAt
     {γ : Type} {encIn : γ ↪ List Bool} {N r j u : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -924,14 +924,14 @@ private theorem computableTidilyInPolyTime_colorAt
   unfold colorAt
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_consistencyEdges :
     ComputableTidilyInPolyTime consistencyEdges encUnary
       (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
   unfold consistencyEdges
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_invalidBucketEdges :
     ComputableTidilyInPolyTime (fun p : ℕ × ℕ => invalidBucketEdges p.1 p.2)
       (encPair encUnary encNat)
@@ -946,7 +946,7 @@ private theorem computableTidilyInPolyTime_bool_or'
     ComputableTidilyInPolyTime (fun a => left a || right a) encA encBool :=
   bool_or.comp (hleft.prod hright)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_innerConflictTest
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ j₂ : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -961,7 +961,7 @@ private theorem computableTidilyInPolyTime_innerConflictTest
   unfold innerConflictTest
   exact bool_and' (computableTidilyInPolyTime_bool_or' (by fun_prop) (by fun_prop)) (by fun_prop)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_innerConflictBuckets
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -975,7 +975,7 @@ private theorem computableTidilyInPolyTime_innerConflictBuckets
   unfold innerConflictBuckets
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_innerConflictEdges
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -989,7 +989,7 @@ private theorem computableTidilyInPolyTime_innerConflictEdges
   unfold innerConflictEdges
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_pairConflictEdges
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -1003,7 +1003,7 @@ private theorem computableTidilyInPolyTime_pairConflictEdges
   fun_prop
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_vertexConflictEdges
     {γ : Type} {encIn : γ ↪ List Bool} {H : γ → Graph} {r p : γ → ℕ}
     (hH : ComputableTidilyInPolyTime H encIn encGraph)
@@ -1019,7 +1019,7 @@ private theorem computableTidilyInPolyTime_vertexConflictEdges
   unfold vertexConflictEdges
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_conflictEdges :
     ComputableTidilyInPolyTime (fun p : Graph × ℕ => conflictEdges p.1 p.2)
       (encPair encGraph encNat)
@@ -1034,7 +1034,7 @@ private theorem computableTidilyInPolyTime_conflictEdges :
   unfold conflictEdges
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_bpisOfColoring :
     ComputableTidilyInPolyTime bpisOfColoring (encPair encGraph encNat)
       encBipartitePermutationGraph := by

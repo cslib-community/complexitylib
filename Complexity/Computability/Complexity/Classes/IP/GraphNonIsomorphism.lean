@@ -248,22 +248,11 @@ private theorem relabel_eq (G : Graph) (keys : List ℕ) :
   simp [Function.comp_def, List.map_ofFn, adjFin]
 
 @[fun_prop]
-private theorem natGetD {γ : Type} {input : γ ↪ List Bool} {list : γ → List ℕ} {index : γ → ℕ}
-    (hlist : ComputableTidilyInPolyTime list input (encList encUnary))
-    (hindex : ComputableTidilyInPolyTime index input encUnary) :
-    ComputableTidilyInPolyTime (fun x => (list x).getD (index x) 0) input encUnary :=
-  (listGetD (encA := encUnary) 0).comp (hlist.prod hindex)
-
-@[fun_prop]
 theorem computableInPolyTime_rankOf {γ : Type} {input : γ ↪ List Bool} {n i : γ → ℕ}
     {keys : γ → List ℕ} (hn : ComputableInPolyTime n input encUnary)
     (hkeys : ComputableInPolyTime keys input (encList encUnary))
     (hi : ComputableInPolyTime i input encUnary) :
     ComputableInPolyTime (fun x => rankOf (n x) (keys x) (i x)) input encUnary := by
-  have hn := hn.tidy
-  have hkeys := hkeys.tidy
-  have hi := hi.tidy
-  refine .of_tidy ?_
   unfold rankOf
   fun_prop
 

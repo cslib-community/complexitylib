@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathPolyTime
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Compile
 public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.Geometry.Orthogonal.Subdivision
@@ -166,27 +167,6 @@ private theorem computable_orthogonalRoutes :
 
 attribute [local fun_prop] computable_orthogonalRoutes
 
-/-- The budget is a linear expression in syntactic list lengths, computed as a unary counter. -/
-@[fun_prop]
-theorem computableInPolyTime_budget : ComputableInPolyTime budget encCNF encUnary := by
-  refine .of_tidy ?_
-  unfold budget encCNF
-  fun_prop
-
-/-- Canonical incidence routes have a native polynomial-time bounded unit expansion.
-The input labels and output coordinates are binary; only the step budget is unary. -/
-@[fun_prop]
-theorem computableInPolyTime_paths :
-    ComputableInPolyTime paths encCNF (encList encRoute) := by
-  change ComputableInPolyTime (fun φ =>
-    ((SAT.incidenceGraph φ).orthogonalRoutes (SAT.incidenceGraph φ).canonicalPorts).map
-      (subdivideWithin (budget φ))) encCNF (encList encRoute)
-  have hraw := computable_orthogonalRoutes.comp (SAT.computableInPolyTime_incidenceGraph encNat)
-  have hargs : ComputableInPolyTime (fun p : CNF ℕ × Route => (budget p.1, p.2))
-      (encPair encCNF encRoute) (encPair encUnary encRoute) := by fun_prop
-  have hsub := computableInPolyTime_subdivideWithin.comp hargs
-  simpa only [Function.comp_def, encCNF] using ComputableInPolyTime.mapWithInput hraw hsub
-
 private def endpointColumns (p : Graph × ℕ) : Point :=
   (Layout.column (p.1.1.idxOf (p.1.edgeEndpoint p.2 false))
       (Graph.portAt p.1.canonicalPorts p.2 false),
@@ -298,38 +278,6 @@ private theorem computable_crossingPredicate :
   refine .of_tidy ?_
   unfold encRoute at *
   simp only [List.contains_eq_mem]
-  fun_prop
-
-/-- Occupied nonvertex crossing sites can be selected in native polynomial time. -/
-@[fun_prop]
-theorem computableInPolyTime_crossingSites :
-    ComputableInPolyTime crossingSites encCNF encRoute := by
-  have hc := computable_crossingCandidates.comp (SAT.computableInPolyTime_incidenceGraph encNat)
-  have hf := ComputableInPolyTime.filterWithInput
-    (test := fun φ p => !((SAT.incidenceGraph φ).orthogonalPositions.contains p) &&
-      decide (2 ≤ ((paths φ).filter fun r => r.contains p).length))
-    hc computable_crossingPredicate
-  have h := computable_distinctPoints.comp hf
-  change ComputableInPolyTime (fun φ =>
-    selectDistinct
-      (((SAT.incidenceGraph φ).crossingCandidates (SAT.incidenceGraph φ).canonicalPorts).filter
-        fun p => !((SAT.incidenceGraph φ).orthogonalPositions.contains p) &&
-          decide (2 ≤ ((paths φ).filter fun r => r.contains p).length))
-      (List.replicate
-        ((((SAT.incidenceGraph φ).crossingCandidates (SAT.incidenceGraph φ).canonicalPorts).filter
-          fun p => !((SAT.incidenceGraph φ).orthogonalPositions.contains p) &&
-            decide (2 ≤ ((paths φ).filter fun r => r.contains p).length)).length) true)) _ _
-  simpa only [Function.comp_def, encCNF] using h
-
-/-- Looking up the path for a syntactic literal occurrence is native polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_occurrencePath :
-    ComputableInPolyTime (fun p : CNF ℕ × Occurrence ℕ => occurrencePath p.1 p.2)
-      (encPair encCNF (Cslib.Logic.PL.encOccurrence encNat)) encRoute := by
-  have hp := computableInPolyTime_paths.tidy
-  have ho := (Cslib.Logic.PL.computableInPolyTime_occurrences encNat).tidy
-  refine .of_tidy ?_
-  unfold occurrencePath encCNF Cslib.Logic.PL.encOccurrence at *
   fun_prop
 
 private theorem computable_side :

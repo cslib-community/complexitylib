@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalPath
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence.Degree
+import Complexity.Foundations.Data.List.Filter
 import Mathlib.Data.List.GetD
 
 /-!
@@ -34,37 +35,6 @@ namespace Cslib.Complexity.SAT.PlanarCompile
 
 open Cslib.Logic.PL Orthogonal
 
-private theorem canonical_paths (φ : CNF ℕ) :
-    paths φ = (SAT.incidenceGraph φ).unitPaths := rfl
-
-private theorem two_paths_of_filter_length (rs : List Route) (p : Point)
-    (hlen : 2 ≤ (rs.filter fun r => r.contains p).length) :
-    ∃ (i j : ℕ) (hi : i < rs.length) (hj : j < rs.length),
-      i ≠ j ∧ p ∈ rs[i] ∧ p ∈ rs[j] := by
-  induction rs with
-  | nil => simp at hlen
-  | cons r rs ih =>
-    by_cases hp : p ∈ r
-    · have hne : (rs.filter fun r => r.contains p) ≠ [] := by
-        intro h
-        have hf : ((r :: rs).filter fun r => r.contains p) = [r] := by
-          have hpred : r.contains p = true := by simpa using hp
-          simp only [List.filter_cons, hpred, ↓reduceIte, h]
-        rw [hf] at hlen
-        simp at hlen
-      cases hf : rs.filter (fun r => r.contains p) with
-      | nil => exact False.elim (hne hf)
-      | cons t ts =>
-        have ht : t ∈ rs.filter (fun r => r.contains p) := by rw [hf]; simp
-        obtain ⟨htmem, htp⟩ := List.mem_filter.mp ht
-        obtain ⟨j, hj, rfl⟩ := List.mem_iff_getElem.mp htmem
-        exact ⟨0, j + 1, by simp, by simpa using hj, by omega, hp, by simpa using htp⟩
-    · have hf : ((r :: rs).filter fun r => r.contains p) = rs.filter (fun r => r.contains p) := by
-        simp [hp]
-      rw [hf] at hlen
-      obtain ⟨i, j, hi, hj, hij, hpi, hpj⟩ := ih hlen
-      exact ⟨i + 1, j + 1, by simpa using hi, by simpa using hj, by omega, hpi, hpj⟩
-
 /-- Away from source centers, an unselected ordinary cell belongs to at most one path. -/
 theorem paths_filter_length_le_one {φ : CNF ℕ}
     (hw : ∀ c ∈ φ, c.length ≤ 3) (hv : ∀ v, φ.vars.count v ≤ 3) {p : Point}
@@ -72,11 +42,12 @@ theorem paths_filter_length_le_one {φ : CNF ℕ}
     ((paths φ).filter fun r => r.contains p).length ≤ 1 := by
   by_contra h
   have ht : 2 ≤ ((paths φ).filter fun r => r.contains p).length := by omega
-  obtain ⟨i, j, hi, hj, hij, hpi, hpj⟩ := two_paths_of_filter_length (paths φ) p ht
+  obtain ⟨i, j, hi, hj, hij, hpi, hpj⟩ :=
+    List.exists_pair_indices_of_two_le_filter_contains (paths φ) p ht
   have hi' : i < (SAT.incidenceGraph φ).2.length := by
-    simpa only [canonical_paths, Graph.unitPaths_length] using hi
+    simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hi
   have hj' : j < (SAT.incidenceGraph φ).2.length := by
-    simpa only [canonical_paths, Graph.unitPaths_length] using hj
+    simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hj
   have hpi' : p ∈ (SAT.incidenceGraph φ).unitPath i := by
     change p ∈ (paths φ).getD i []
     rwa [List.getD_eq_getElem _ _ hi]
