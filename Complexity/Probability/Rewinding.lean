@@ -15,19 +15,26 @@ import Complexity.Probability.PMF
 /-!
 # The rewinding lemma
 
-A two-stage experiment runs a first stage with outcome `s`, draws a challenge `t` uniformly from
-a nonempty finite type `T`, and lets a second stage answer `t` from `s`; it succeeds when a test
-`ok s t a` of the answer `a` passes. *Rewinding* keeps `s` and reruns the second stage on a fresh
-independent challenge. Boneh and Shoup's rewinding lemma ([BonehShoup2023], Lemma 19.2) says
-that if one run succeeds with probability `ε` and `N` is the number of challenges, then both runs
-succeed with distinct challenges with probability at least `ε² − ε / N`
-(`sq_sub_le_twice`). Consequently `ε ≤ 1 / N + √δ` for that probability `δ`
-(`le_inv_add_sqrt_twice`), the form that turns a bound on `δ` into one on `ε`.
+A two-stage experiment runs a first stage with outcome `s`, draws a challenge `t` from
+`challenge s`, and lets a second stage answer `t` from `s`; it succeeds when a test `ok s t a`
+of the answer `a` passes. *Rewinding* keeps `s` and reruns the second stage on a fresh challenge,
+independent conditional on `s`. If every atom of `challenge s` has mass at most `κ` for every
+possible first-stage outcome, one-run success `ε` and two-run success with distinct challenges
+`δ` satisfy `ε² − κ * ε ≤ δ` (`sq_sub_mul_le_twice`) and `ε ≤ κ + √δ`
+(`le_add_sqrt_twice`). The atom bound is conditional on the saved state; a bound on the
+unconditional challenge distribution does not suffice.
+
+This is an original extension of Boneh and Shoup's uniform-challenge rewinding lemma
+([BonehShoup2023], Lemma 19.2). For a uniform challenge among `N` possibilities, `κ = 1 / N`
+recovers `ε² − ε / N ≤ δ` (`sq_sub_le_twice`) and `ε ≤ 1 / N + √δ`
+(`le_inv_add_sqrt_twice`).
 
 The second stage may use fresh randomness in each run. This generalizes the book's
 deterministic `f(X, Y)`: averaging over the second stage's coins turns the indicator into a
 success probability `p(s, t) ∈ [0, 1]`, and the proof needs only `p ^ 2 ≤ p`. The first stage
-may have infinitely many outcomes. The statements are exact; no efficiency is involved.
+and the answer may have infinitely many outcomes; the bounds assume a finite challenge type.
+These are exact statements about experiment laws, with no efficiency or sampler-realization
+claim.
 
 The experiments are written in `do` notation for `PMF`, whose monad lives in a single universe;
 since they return a `PMF Bool`, the outcome, challenge and answer types are in `Type`.
@@ -36,10 +43,12 @@ since they return a `PMF Bool`, the outcome, challenge and answer types are in `
 
 * `Cslib.Probability.Rewinding.once`: one run of the two-stage experiment.
 * `Cslib.Probability.Rewinding.twice`: two runs sharing the first stage, with independent
-  challenges and second-stage randomness.
+  challenges conditional on that state, and independent second-stage randomness.
 
 ## Main results
 
+* `Cslib.Probability.Rewinding.sq_sub_mul_le_twice`: `ε² − κ * ε ≤ δ` for bounded challenge atoms.
+* `Cslib.Probability.Rewinding.le_add_sqrt_twice`: `ε ≤ κ + √δ` for bounded challenge atoms.
 * `Cslib.Probability.Rewinding.sq_sub_le_twice`: `ε² − ε / N ≤ δ` ([BonehShoup2023], Lemma 19.2).
 * `Cslib.Probability.Rewinding.le_inv_add_sqrt_twice`: `ε ≤ 1 / N + √δ`.
 
@@ -53,25 +62,25 @@ since they return a `PMF Bool`, the outcome, challenge and answer types are in `
 
 namespace Cslib.Probability.Rewinding
 
-variable {S T A : Type} [Fintype T] [Nonempty T]
+variable {S T A : Type}
 
-/-- One run of a two-stage experiment: the first stage, a uniform challenge `t`, the second
-stage's answer `a` to `t`, and the test `ok s t a`. -/
-noncomputable def once (first : PMF S) (answer : S → T → PMF A) (ok : S → T → A → Bool) :
-    PMF Bool := do
+/-- The law of one run of a two-stage experiment: the first stage, a challenge from the law
+chosen by that state, the second stage's answer, and its acceptance test. -/
+noncomputable def once (first : PMF S) (challenge : S → PMF T) (answer : S → T → PMF A)
+    (ok : S → T → A → Bool) : PMF Bool := do
   let s ← first
-  let t ← PMF.uniformOfFintype T
+  let t ← challenge s
   let a ← answer s t
   return ok s t a
 
-/-- Rewinding: one first stage, then the second stage on two independent uniform challenges with
-independent randomness. It succeeds when both answers pass their tests and the challenges are
-distinct. -/
-noncomputable def twice [DecidableEq T] (first : PMF S) (answer : S → T → PMF A)
-    (ok : S → T → A → Bool) : PMF Bool := do
+/-- The law of rewinding: one first stage, then two challenges sampled independently from the
+same conditional law, and two answers with independent randomness. It succeeds when both answers
+pass their tests and the challenges are distinct. -/
+noncomputable def twice [DecidableEq T] (first : PMF S) (challenge : S → PMF T)
+    (answer : S → T → PMF A) (ok : S → T → A → Bool) : PMF Bool := do
   let s ← first
-  let t ← PMF.uniformOfFintype T
-  let t' ← PMF.uniformOfFintype T
+  let t ← challenge s
+  let t' ← challenge s
   let a ← answer s t
   let a' ← answer s t'
   return (ok s t a && ok s t' a' && t != t')
@@ -124,105 +133,112 @@ private noncomputable def pass (answer : S → T → PMF A) (ok : S → T → A 
     ℝ :=
   ((answer s t).map (ok s t) true).toReal
 
-omit [Fintype T] [Nonempty T] in
 private theorem pass_nonneg (answer : S → T → PMF A) (ok : S → T → A → Bool) (s : S) (t : T) :
     0 ≤ pass answer ok s t := ENNReal.toReal_nonneg
 
-omit [Fintype T] [Nonempty T] in
 private theorem pass_le_one (answer : S → T → PMF A) (ok : S → T → A → Bool) (s : S) (t : T) :
     pass answer ok s t ≤ 1 :=
   ENNReal.toReal_le_of_le_ofReal zero_le_one
     (by rw [ENNReal.ofReal_one]; exact PMF.coe_le_one _ true)
 
-/-- The real probability of a uniform challenge's outcome. -/
-private theorem toReal_uniformOfFintype (t : T) :
-    (PMF.uniformOfFintype T t).toReal = (Fintype.card T : ℝ)⁻¹ := by
-  simp only [Probability.PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast]
+variable [Fintype T]
 
 /-- An average of values in `[0, 1]` lies in `[0, 1]`. -/
-private theorem average_mem_Icc (f : T → ℝ) (h0 : ∀ t, 0 ≤ f t) (h1 : ∀ t, f t ≤ 1) :
-    0 ≤ ∑ t, (Fintype.card T : ℝ)⁻¹ * f t ∧ ∑ t, (Fintype.card T : ℝ)⁻¹ * f t ≤ 1 := by
-  have hN : (0 : ℝ) < Fintype.card T := by exact_mod_cast Fintype.card_pos
-  refine ⟨Finset.sum_nonneg fun t _ => mul_nonneg (inv_nonneg.mpr hN.le) (h0 t), ?_⟩
-  calc ∑ t, (Fintype.card T : ℝ)⁻¹ * f t ≤ ∑ _t : T, (Fintype.card T : ℝ)⁻¹ * 1 :=
-        Finset.sum_le_sum fun t _ => mul_le_mul_of_nonneg_left (h1 t) (inv_nonneg.mpr hN.le)
-    _ = 1 := by simp [Finset.card_univ]
+private theorem average_mem_Icc (μ : PMF T) (f : T → ℝ) (h0 : ∀ t, 0 ≤ f t)
+    (h1 : ∀ t, f t ≤ 1) :
+    0 ≤ ∑ t, (μ t).toReal * f t ∧ ∑ t, (μ t).toReal * f t ≤ 1 := by
+  refine ⟨Finset.sum_nonneg fun t _ => mul_nonneg ENNReal.toReal_nonneg (h0 t), ?_⟩
+  calc ∑ t, (μ t).toReal * f t ≤ ∑ t, (μ t).toReal :=
+        Finset.sum_le_sum fun t _ => mul_le_of_le_one_right ENNReal.toReal_nonneg (h1 t)
+    _ = 1 := Probability.PMF.sum_toReal μ
 
-/-- The rewinding lemma for a single first-stage outcome: averaging the challenges,
-`g ^ 2 - g / N ≤ h`, where `g` and `h` are one-run and two-run success probabilities. -/
-private theorem sq_sub_le_pairs [DecidableEq T] (p : T → ℝ) (h0 : ∀ t, 0 ≤ p t)
-    (h1 : ∀ t, p t ≤ 1) :
-    (∑ t, (Fintype.card T : ℝ)⁻¹ * p t) ^ 2 - (∑ t, (Fintype.card T : ℝ)⁻¹ * p t) /
-        Fintype.card T ≤
-      ∑ t, (Fintype.card T : ℝ)⁻¹ * ∑ t', (Fintype.card T : ℝ)⁻¹ *
+/-- At one saved state, removing equal-challenge pairs loses at most `κ` times the one-run
+success probability when every challenge atom has mass at most `κ`. -/
+private theorem sq_sub_le_pairs [DecidableEq T] (μ : PMF T) (p : T → ℝ)
+    (h0 : ∀ t, 0 ≤ p t) (h1 : ∀ t, p t ≤ 1) {κ : ℝ}
+    (hκ : ∀ t, (μ t).toReal ≤ κ) :
+    (∑ t, (μ t).toReal * p t) ^ 2 - κ * (∑ t, (μ t).toReal * p t) ≤
+      ∑ t, (μ t).toReal * ∑ t', (μ t').toReal *
         (if t = t' then 0 else p t * p t') := by
-  set N : ℝ := (Fintype.card T : ℝ)
-  have hN : 0 < N := Nat.cast_pos.mpr Fintype.card_pos
-  have hoff (t : T) : ∑ t', (if t = t' then 0 else p t * p t') =
-      p t * ∑ t', p t' - p t * p t := by
-    have hite : (fun t' => if t = t' then 0 else p t * p t') =
-        fun t' => p t * p t' - if t = t' then p t * p t' else 0 := by
+  set q : T → ℝ := fun t => (μ t).toReal * p t
+  have hq0 (t : T) : 0 ≤ q t := mul_nonneg ENNReal.toReal_nonneg (h0 t)
+  have hqκ (t : T) : q t ≤ κ :=
+    (mul_le_of_le_one_right ENNReal.toReal_nonneg (h1 t)).trans (hκ t)
+  have hdiag : ∑ t, q t * q t ≤ κ * ∑ t, q t := by
+    rw [Finset.mul_sum]
+    exact Finset.sum_le_sum fun t _ => mul_le_mul_of_nonneg_right (hqκ t) (hq0 t)
+  have hoff (t : T) : ∑ t', (if t = t' then 0 else q t * q t') =
+      q t * ∑ t', q t' - q t * q t := by
+    have hite : (fun t' => if t = t' then 0 else q t * q t') = fun t' =>
+        q t * q t' - if t = t' then q t * q t' else 0 := by
       funext t'
       split_ifs <;> ring
     rw [hite, Finset.sum_sub_distrib, ← Finset.mul_sum, Finset.sum_ite_eq,
       ite_eq_left (Finset.mem_univ t)]
-  have hsq : ∑ t, p t * p t ≤ ∑ t, p t :=
-    Finset.sum_le_sum fun t _ => mul_le_of_le_one_left (h0 t) (h1 t)
-  simp only [← Finset.mul_sum, hoff, Finset.sum_sub_distrib, ← Finset.sum_mul]
-  have hinv : 0 ≤ N⁻¹ := inv_nonneg.mpr hN.le
-  calc (N⁻¹ * ∑ t, p t) ^ 2 - (N⁻¹ * ∑ t, p t) / N
-      = N⁻¹ * (N⁻¹ * ((∑ t, p t) * ∑ t, p t - ∑ t, p t)) := by
-        rw [div_eq_mul_inv]
-        ring
-    _ ≤ N⁻¹ * (N⁻¹ * ((∑ t, p t) * ∑ t, p t - ∑ t, p t * p t)) := by
-        gcongr
+  have hpair (t t' : T) :
+      (μ t).toReal * ((μ t').toReal * (if t = t' then 0 else p t * p t')) =
+        if t = t' then 0 else q t * q t' := by
+    dsimp only [q]
+    split_ifs <;> ring
+  calc (∑ t, q t) ^ 2 - κ * (∑ t, q t)
+      ≤ (∑ t, q t) ^ 2 - ∑ t, q t * q t := sub_le_sub_left hdiag _
+    _ = ∑ t, ∑ t', (if t = t' then 0 else q t * q t') := by
+      simp only [hoff, Finset.sum_sub_distrib, ← Finset.sum_mul]
+      ring
+    _ = _ := by simp only [Finset.mul_sum, hpair]
 
-/-- One run succeeds with the average over the first stage of the averaged second-stage success
-probability. -/
-private theorem toReal_once (first : PMF S) (answer : S → T → PMF A) (ok : S → T → A → Bool) :
-    (once first answer ok true).toReal =
-      ∑' s, (first s).toReal * ∑ t, (Fintype.card T : ℝ)⁻¹ * pass answer ok s t := by
+/-- One-run success averages the conditional second-stage success probabilities. -/
+private theorem toReal_once (first : PMF S) (challenge : S → PMF T)
+    (answer : S → T → PMF A) (ok : S → T → A → Bool) :
+    (once first challenge answer ok true).toReal =
+      ∑' s, (first s).toReal * ∑ t, (challenge s t).toReal * pass answer ok s t := by
   simp only [once, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure]
   rw [Probability.PMF.bind_apply_toReal_tsum]
   refine tsum_congr fun s => congrArg _ ?_
   rw [Probability.PMF.bind_apply_toReal]
-  simp only [toReal_uniformOfFintype]
   rfl
 
-/-- Two runs succeed with the average over the first stage of the averaged product of two
-second-stage success probabilities at distinct challenges. -/
-private theorem toReal_twice [DecidableEq T] (first : PMF S) (answer : S → T → PMF A)
-    (ok : S → T → A → Bool) :
-    (twice first answer ok true).toReal =
-      ∑' s, (first s).toReal * ∑ t, (Fintype.card T : ℝ)⁻¹ * ∑ t', (Fintype.card T : ℝ)⁻¹ *
-        (if t = t' then 0 else pass answer ok s t * pass answer ok s t') := by
+/-- Two-run success averages the product probabilities at distinct challenges. -/
+private theorem toReal_twice [DecidableEq T] (first : PMF S) (challenge : S → PMF T)
+    (answer : S → T → PMF A) (ok : S → T → A → Bool) :
+    (twice first challenge answer ok true).toReal =
+      ∑' s, (first s).toReal * ∑ t, (challenge s t).toReal *
+        ∑ t', (challenge s t').toReal *
+          (if t = t' then 0 else pass answer ok s t * pass answer ok s t') := by
   simp only [twice, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure]
   rw [Probability.PMF.bind_apply_toReal_tsum]
   refine tsum_congr fun s => congrArg _ ?_
   rw [Probability.PMF.bind_apply_toReal]
   refine Finset.sum_congr rfl fun t _ => ?_
-  rw [Probability.PMF.bind_apply_toReal, toReal_uniformOfFintype]
+  rw [Probability.PMF.bind_apply_toReal]
   refine congrArg _ (Finset.sum_congr rfl fun t' _ => ?_)
-  rw [toReal_uniformOfFintype, bind_bind_and_apply]
+  rw [bind_bind_and_apply]
   by_cases h : t = t' <;> simp [h, pass, ENNReal.toReal_mul]
 
-/-! ### The rewinding lemma -/
+/-! ### Challenges with bounded atoms -/
 
-variable [DecidableEq T] (first : PMF S) (answer : S → T → PMF A) (ok : S → T → A → Bool)
+variable [DecidableEq T] (first : PMF S) (challenge : S → PMF T)
+  (answer : S → T → PMF A) (ok : S → T → A → Bool)
 
-/-- **Rewinding lemma** ([BonehShoup2023], Lemma 19.2): if one run succeeds with probability `ε`,
-then two runs sharing the first stage succeed with distinct challenges with probability at least
-`ε ^ 2 - ε / N`, where `N` is the number of challenges. -/
-theorem sq_sub_le_twice :
-    (once first answer ok true).toReal ^ 2 -
-        (once first answer ok true).toReal / Fintype.card T ≤
-      (twice first answer ok true).toReal := by
-  set N : ℝ := (Fintype.card T : ℝ)
+omit [Fintype T] in
+/-- **Rewinding with bounded challenge atoms.** If each conditional challenge law has atoms of
+mass at most `κ`, one-run success `ε` and two-run success at distinct challenges `δ` satisfy
+`ε² − κ * ε ≤ δ`. The bound is needed only on possible first-stage outcomes.
+
+This is an original extension of [BonehShoup2023], Lemma 19.2, to biased challenges depending on
+the saved state. It concerns experiment laws, with no efficiency claim. -/
+theorem sq_sub_mul_le_twice [Finite T] {κ : ℝ}
+    (hκ : ∀ s ∈ first.support, ∀ t, (challenge s t).toReal ≤ κ) :
+    (once first challenge answer ok true).toReal ^ 2 -
+        κ * (once first challenge answer ok true).toReal ≤
+      (twice first challenge answer ok true).toReal := by
+  let := Fintype.ofFinite T
   set p := pass answer ok
-  set g : S → ℝ := fun s => ∑ t, N⁻¹ * p s t
-  set h : S → ℝ := fun s => ∑ t, N⁻¹ * ∑ t', N⁻¹ * (if t = t' then 0 else p s t * p s t')
+  set g : S → ℝ := fun s => ∑ t, (challenge s t).toReal * p s t
+  set h : S → ℝ := fun s => ∑ t, (challenge s t).toReal *
+    ∑ t', (challenge s t').toReal * (if t = t' then 0 else p s t * p s t')
   have hg (s : S) : 0 ≤ g s ∧ g s ≤ 1 :=
-    average_mem_Icc _ (pass_nonneg answer ok s) (pass_le_one answer ok s)
+    average_mem_Icc (challenge s) _ (pass_nonneg answer ok s) (pass_le_one answer ok s)
   have hpair (s : S) (t t' : T) :
       0 ≤ (if t = t' then 0 else p s t * p s t') ∧ (if t = t' then 0 else p s t * p s t') ≤ 1 := by
     split_ifs
@@ -231,9 +247,11 @@ theorem sq_sub_le_twice :
         (mul_le_mul (pass_le_one _ _ _ _) (pass_le_one _ _ _ _) (pass_nonneg _ _ _ _)
           zero_le_one).trans_eq (one_mul 1)⟩
   have hh (s : S) : 0 ≤ h s ∧ h s ≤ 1 := by
-    refine average_mem_Icc _ (fun t => (average_mem_Icc _ (fun t' => (hpair s t t').1)
-      fun t' => (hpair s t t').2).1) fun t => (average_mem_Icc _ (fun t' => (hpair s t t').1)
-      fun t' => (hpair s t t').2).2
+    refine average_mem_Icc (challenge s) _
+      (fun t => (average_mem_Icc (challenge s) _ (fun t' => (hpair s t t').1)
+        fun t' => (hpair s t t').2).1)
+      fun t => (average_mem_Icc (challenge s) _ (fun t' => (hpair s t t').1)
+        fun t' => (hpair s t t').2).2
   have hm : Summable fun s => (first s).toReal := Probability.PMF.summable_toReal first
   have hsum {f : S → ℝ} (f0 : ∀ s, 0 ≤ f s) (f1 : ∀ s, f s ≤ 1) :
       Summable fun s => (first s).toReal * f s :=
@@ -243,39 +261,71 @@ theorem sq_sub_le_twice :
   have hsumg2 := hsum (fun s => sq_nonneg (g s)) fun s => pow_le_one₀ (hg s).1 (hg s).2
   have hsumh := hsum (fun s => (hh s).1) fun s => (hh s).2
   have hpoint (s : S) :
-      (first s).toReal * g s ^ 2 - (first s).toReal * g s / N ≤ (first s).toReal * h s := by
-    rw [mul_div_assoc, ← mul_sub]
-    exact mul_le_mul_of_nonneg_left
-      (sq_sub_le_pairs (p s) (pass_nonneg answer ok s) (pass_le_one answer ok s))
-      ENNReal.toReal_nonneg
+      (first s).toReal * g s ^ 2 - κ * ((first s).toReal * g s) ≤ (first s).toReal * h s := by
+    by_cases hs : s ∈ first.support
+    · calc _ = (first s).toReal * (g s ^ 2 - κ * g s) := by ring
+           _ ≤ _ := mul_le_mul_of_nonneg_left
+             (sq_sub_le_pairs (challenge s) (p s) (pass_nonneg answer ok s)
+               (pass_le_one answer ok s) (hκ s hs)) ENNReal.toReal_nonneg
+    · simp [(PMF.apply_eq_zero_iff first s).mpr hs]
   rw [toReal_once, toReal_twice]
-  calc (∑' s, (first s).toReal * g s) ^ 2 - (∑' s, (first s).toReal * g s) / N
-      ≤ ∑' s, (first s).toReal * g s ^ 2 - (∑' s, (first s).toReal * g s) / N := by
+  calc (∑' s, (first s).toReal * g s) ^ 2 - κ * (∑' s, (first s).toReal * g s)
+      ≤ ∑' s, (first s).toReal * g s ^ 2 - κ * (∑' s, (first s).toReal * g s) := by
         gcongr
         exact sq_tsum_le_tsum_sq first (fun s => (hg s).1) fun s => (hg s).2
-    _ = ∑' s, ((first s).toReal * g s ^ 2 - (first s).toReal * g s / N) := by
-        rw [hsumg2.tsum_sub (hsumg.div_const N), tsum_div_const]
+    _ = ∑' s, ((first s).toReal * g s ^ 2 - κ * ((first s).toReal * g s)) := by
+        rw [hsumg2.tsum_sub (hsumg.mul_left κ), tsum_mul_left]
     _ ≤ ∑' s, (first s).toReal * h s :=
-        (hsumg2.sub (hsumg.div_const N)).tsum_le_tsum hpoint hsumh
+        (hsumg2.sub (hsumg.mul_left κ)).tsum_le_tsum hpoint hsumh
 
-/-- The rewinding lemma solved for the one-run probability ([BonehShoup2023], from the proof of
-Theorem 19.1): `ε ≤ 1 / N + √δ`. -/
-theorem le_inv_add_sqrt_twice :
-    (once first answer ok true).toReal ≤
-      1 / Fintype.card T + √(twice first answer ok true).toReal := by
-  set ε := (once first answer ok true).toReal
-  set N : ℝ := (Fintype.card T : ℝ)
-  have hN : 0 < N := Nat.cast_pos.mpr Fintype.card_pos
-  have hδ := sq_sub_le_twice first answer ok
-  by_cases hε : ε ≤ 1 / N
+omit [Fintype T] in
+/-- The bounded-atom rewinding inequality solved for one-run success: `ε ≤ κ + √δ`.
+The conditional atom hypothesis implies `κ ≥ 0`; no separate sign assumption is needed. -/
+theorem le_add_sqrt_twice [Finite T] {κ : ℝ}
+    (hκ : ∀ s ∈ first.support, ∀ t, (challenge s t).toReal ≤ κ) :
+    (once first challenge answer ok true).toReal ≤
+      κ + √(twice first challenge answer ok true).toReal := by
+  obtain ⟨s, hs⟩ := first.support_nonempty
+  obtain ⟨t, -⟩ := (challenge s).support_nonempty
+  have hκ0 : 0 ≤ κ := ENNReal.toReal_nonneg.trans (hκ s hs t)
+  set ε := (once first challenge answer ok true).toReal
+  have hδ := sq_sub_mul_le_twice first challenge answer ok hκ
+  by_cases hε : ε ≤ κ
   · exact hε.trans (le_add_of_nonneg_right (Real.sqrt_nonneg _))
-  · have hsq : (ε - 1 / N) ^ 2 ≤ (twice first answer ok true).toReal := by
-      refine le_trans ?_ hδ
-      have : (ε - 1 / N) ^ 2 = ε ^ 2 - ε / N - (ε - 1 / N) / N := by
-        field_simp
-      rw [this]
-      exact sub_le_self _ (div_nonneg (by linarith) hN.le)
+  · have hsq : (ε - κ) ^ 2 ≤ (twice first challenge answer ok true).toReal := by
+      nlinarith [mul_nonneg hκ0 (sub_nonneg.mpr (le_of_not_ge hε))]
     have := Real.abs_le_sqrt hsq
-    linarith [le_abs_self (ε - 1 / N)]
+    linarith [le_abs_self (ε - κ)]
+
+/-! ### Uniform challenges -/
+
+variable [Nonempty T]
+
+omit [DecidableEq T] in
+/-- The real probability of a uniform challenge's outcome. -/
+private theorem toReal_uniformOfFintype (t : T) :
+    (PMF.uniformOfFintype T t).toReal = (Fintype.card T : ℝ)⁻¹ := by
+  simp only [Probability.PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast]
+
+/-- **Rewinding lemma** ([BonehShoup2023], Lemma 19.2): if one run succeeds with probability `ε`,
+then two runs sharing the first stage succeed with distinct challenges with probability at least
+`ε ^ 2 - ε / N`, where `N` is the number of uniform challenges. -/
+theorem sq_sub_le_twice :
+    (once first (fun _ => PMF.uniformOfFintype T) answer ok true).toReal ^ 2 -
+        (once first (fun _ => PMF.uniformOfFintype T) answer ok true).toReal / Fintype.card T ≤
+      (twice first (fun _ => PMF.uniformOfFintype T) answer ok true).toReal := by
+  simpa only [div_eq_mul_inv, mul_comm] using
+    sq_sub_mul_le_twice first (fun _ => PMF.uniformOfFintype T) answer ok
+      (κ := (Fintype.card T : ℝ)⁻¹) (fun _ _ t => (toReal_uniformOfFintype t).le)
+
+/-- The uniform rewinding lemma solved for the one-run probability ([BonehShoup2023], from the
+proof of Theorem 19.1): `ε ≤ 1 / N + √δ`. -/
+theorem le_inv_add_sqrt_twice :
+    (once first (fun _ => PMF.uniformOfFintype T) answer ok true).toReal ≤
+      1 / Fintype.card T +
+        √(twice first (fun _ => PMF.uniformOfFintype T) answer ok true).toReal := by
+  simpa only [one_div] using
+    le_add_sqrt_twice first (fun _ => PMF.uniformOfFintype T) answer ok
+      (κ := (Fintype.card T : ℝ)⁻¹) (fun _ _ t => (toReal_uniformOfFintype t).le)
 
 end Cslib.Probability.Rewinding

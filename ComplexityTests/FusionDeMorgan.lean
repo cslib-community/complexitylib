@@ -9,10 +9,11 @@ import Complexity.Computability.Circuit.Fusion.DeMorgan
 /-!
 # Fusion bounds for De Morgan circuits
 
-A two-gate De Morgan circuit computes NAND by negating an internal AND gate, so the lower bound
-gives cover complexity at most four. A projection has an empty cover, so the upper bound gives a
-De Morgan circuit within the stated budget. The headline bounds are instantiated for an arbitrary
-function, and the dual-rail input circuit's evaluation theorem is instantiated at `n = 2`.
+Two-gate De Morgan circuits compute NAND and NOR by negating an internal AND or OR gate. Only one
+gate is binary, so the lower bound gives cover complexity at most one in both cases. A projection
+has an empty cover, so the upper bound gives a De Morgan circuit within the stated budget. The
+headline bounds are instantiated for an arbitrary function, and the dual-rail input circuit's
+evaluation theorem is instantiated at `n = 2`.
 -/
 
 namespace ComplexityTests.FusionDeMorgan
@@ -32,15 +33,45 @@ private theorem nandCircuit_computes :
 
 example : nandCircuit.size = 2 := rfl
 
+/-- Translating an internal negation does not increase the AND cost. -/
+example : (Monotone.dualRail nandCircuit).program.cost Monotone.andCost = 1 := by
+  rw [Monotone.cost_dualRail]
+  rfl
+
 /-- A negation of an internal gate is allowed by the De Morgan lower bound. -/
 example : pairCoverComplexity {x | nand x = true}
-    (fun i => {x | AltFormula.literals x i = true}) ≤ 4 :=
-  pairCoverComplexity_le_two_mul_size nandCircuit nandCircuit_computes
+    (fun i => {x | AltFormula.literals x i = true}) ≤ 1 :=
+  pairCoverComplexity_le_binaryCost nandCircuit nandCircuit_computes
 
 /-- The lower bound also holds for semi-ultrafilters. -/
 example : pairCoverComplexity {x | nand x = true}
-    (fun i => {x | AltFormula.literals x i = true}) Semifilter.IsUltra ≤ 4 :=
-  pairCoverComplexity_le_two_mul_size nandCircuit nandCircuit_computes _
+    (fun i => {x | AltFormula.literals x i = true}) Semifilter.IsUltra ≤ 1 :=
+  pairCoverComplexity_le_binaryCost nandCircuit nandCircuit_computes _
+
+/-- The ordinary gate-count bound no longer loses a factor of two. -/
+example : pairCoverComplexity {x | nand x = true}
+    (fun i => {x | AltFormula.literals x i = true}) ≤ 2 :=
+  pairCoverComplexity_le_size nandCircuit nandCircuit_computes
+
+private def nor : BooleanFunction 2 := fun x => !(x 0 || x 1)
+
+private def norCircuit : Circuit Boolean.signature 2 1 :=
+  ⟨(((Program.empty : Program Boolean.signature 2 0).gate ⟨.or, ![.input 0, .input 1]⟩).gate
+    ⟨.not, ![.gate 0]⟩), fun _ => .gate 1⟩
+
+private theorem norCircuit_computes :
+    norCircuit.Computes Boolean.interpretation (single nor) := by
+  unfold Circuit.Computes
+  decide
+
+/-- The negative rail of an OR contributes the one AND gate needed by NOR. -/
+example : (Monotone.dualRail norCircuit).program.cost Monotone.andCost = 1 := by
+  rw [Monotone.cost_dualRail]
+  rfl
+
+example : pairCoverComplexity {x | nor x = true}
+    (fun i => {x | AltFormula.literals x i = true}) ≤ 1 :=
+  pairCoverComplexity_le_binaryCost norCircuit norCircuit_computes
 
 private def proj : BooleanFunction 1 := fun x => x 0
 
@@ -65,19 +96,19 @@ example : ∃ d : Circuit Boolean.signature 1 1, d.Computes Boolean.interpretati
 example (n : ℕ) (f : BooleanFunction n) :
     ∃ t : ℕ, pairCoverComplexity {x | f x = true}
         (fun i => {x | AltFormula.literals x i = true}) = t ∧
-      t ≤ 2 * complexity Boolean.interpretation (single f) ∧
+      t ≤ complexity Boolean.interpretation (single f) ∧
       complexity Boolean.interpretation (single f) ≤ 4 * (t + 1) ^ 2 * (2 * n + t + 1) + n :=
   pairCoverComplexity_complexity_bounds f
 
 /-- Monotone AND complexity from literals is at most the square of the cover bound. -/
 example : ecomplexityFrom Monotone.interpretation Monotone.andCost
-    (fun x (_ : Fin 1) => nand x) AltFormula.literals ≤ 16 := by
+    (fun x (_ : Fin 1) => nand x) AltFormula.literals ≤ 1 := by
   have h : pairCoverComplexity {x | nand x = true}
-      (fun i => {x | AltFormula.literals x i = true}) ≤ 4 :=
-    pairCoverComplexity_le_two_mul_size nandCircuit nandCircuit_computes
+      (fun i => {x | AltFormula.literals x i = true}) ≤ 1 :=
+    pairCoverComplexity_le_binaryCost nandCircuit nandCircuit_computes
   calc _ ≤ _ := (ecomplexityFrom_literals_bounds nand).2
-    _ ≤ 4 ^ 2 := pow_le_pow_left₀ zero_le h 2
-    _ = 16 := by norm_num
+    _ ≤ 1 ^ 2 := pow_le_pow_left₀ zero_le h 2
+    _ = 1 := by norm_num
 
 /-- The evaluation theorem of the dual-rail input circuit, instantiated at `n = 2`. -/
 example : ∀ x : BitString 2, (Monotone.literalsRailCircuit 2).eval Monotone.interpretation

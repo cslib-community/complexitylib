@@ -45,6 +45,8 @@ instructions (`Cslib.WordRAM.Exec.runs`). A complete program ends with a `halt`
   gives `Cslib.WordRAM.DecidableInTime.of_code`.
 * `Cslib.WordRAM.Code.not_readsWidth_program`: a compiled program reads the word size only if the
   structured program does.
+* `Cslib.WordRAM.Code.isRandFree_assemble`, `Cslib.WordRAM.Code.isRandFree_program`: assembly and
+  program compilation preserve `IsRandFree`.
 
 ## References
 
@@ -69,6 +71,7 @@ def Code.assemble : Code B r → ℕ → Program B r
       .jump (pc + neg.size + pos.size + 2) :: pos.assemble (pc + neg.size + 2)
   | .loop c body, pc =>
     .branch c (pc + 2) :: .jump (pc + body.size + 3) :: body.assemble (pc + 2) ++ [.jump pc]
+  | .rand dst src, _ => [.rand dst src]
 
 /-- Assembling a structured program `c` at any base index produces `c.size` instructions. -/
 @[simp]
@@ -261,6 +264,10 @@ private theorem Code.readsWidth_of_assemble {c : Code B r} {pc : ℕ}
     · exact (hr : False).elim
     · exact ih hi
     · exact (hr : False).elim
+  | rand _ _ =>
+    simp only [Code.assemble, List.mem_singleton] at hi
+    subst hi
+    exact hr
 
 /-- A compiled program reads the word size only if the structured program does. -/
 theorem Code.not_readsWidth_program {c : Code B r} (hc : ¬c.ReadsWidth) (out : Fin r) :
@@ -271,6 +278,48 @@ theorem Code.not_readsWidth_program {c : Code B r} (hc : ¬c.ReadsWidth) (out : 
   · rw [List.mem_singleton] at hi
     subst hi
     exact (hr : False).elim
+
+/-! ## `rand`-freeness -/
+
+@[simp]
+private theorem isRandFree_nil : Program.IsRandFree ([] : Program B r) := by
+  intro _ h
+  cases h
+
+@[simp]
+private theorem isRandFree_cons {i : Instr B r} {p : Program B r} :
+    Program.IsRandFree (i :: p) ↔ i.IsRandFree ∧ p.IsRandFree := by
+  simp only [Program.IsRandFree, List.mem_cons, forall_eq_or_imp]
+
+@[simp]
+private theorem isRandFree_append {p₁ p₂ : Program B r} :
+    Program.IsRandFree (p₁ ++ p₂) ↔ p₁.IsRandFree ∧ p₂.IsRandFree := by
+  simp only [Program.IsRandFree, List.mem_append, or_imp, forall_and]
+
+/-- Assembling a structured program produces a `rand`-free flat program if and only if the
+structured program is `rand`-free. -/
+@[simp]
+theorem Code.isRandFree_assemble {c : Code B r} {pc : ℕ} :
+    (c.assemble pc).IsRandFree ↔ c.IsRandFree := by
+  induction c generalizing pc with
+  | op o => simp [Code.assemble, Instr.IsRandFree, Code.IsRandFree]
+  | seq c₁ c₂ ih₁ ih₂ =>
+    simp [Code.assemble, ih₁, ih₂, Code.IsRandFree]
+  | branch c pos neg ihp ihn =>
+    simp only [Code.assemble, isRandFree_cons, isRandFree_append, Instr.IsRandFree, true_and,
+      ihn, ihp, Code.IsRandFree]
+    exact and_comm
+  | loop c body ih =>
+    simp [Code.assemble, Instr.IsRandFree, Code.IsRandFree, ih]
+  | rand dst src =>
+    simp [Code.assemble, Instr.IsRandFree, Code.IsRandFree]
+
+/-- A compiled complete program is `rand`-free if and only if the structured program is
+`rand`-free. -/
+@[simp]
+theorem Code.isRandFree_program {c : Code B r} {out : Fin r} :
+    (c.program out).IsRandFree ↔ c.IsRandFree := by
+  simp [Code.program, Instr.IsRandFree]
 
 end Cslib.WordRAM
 

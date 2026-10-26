@@ -14,10 +14,12 @@ import Mathlib.Data.Nat.Bitwise
 import Mathlib.Data.List.GetD
 
 /-!
-# Direct polynomial-time binary addition and comparison
+# Direct polynomial-time binary arithmetic
 
 The existing carry folds and bit-position scan are certified using plain machine closure.
 Reachable word states are bounded by the encoded input length, not the numeric operands.
+Captured multiplication uses the original shift-and-add fold over the first operand's bits,
+with the unchanged full-prefix state bound; its pair certificate remains private.
 -/
 
 @[expose] public section
@@ -144,6 +146,63 @@ theorem binary_lt : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 < p.
   rw [and_assoc]
   refine and_congr_right fun _ => and_congr_right fun _ => forall₂_congr fun j _ => ?_
   rw [← Nat.not_le, imp_iff_not_or, not_not]
+
+private theorem binaryMulPair :
+    ComputableInPolyTime (fun p : ℕ × ℕ => p.1 * p.2) (encPair encNat encNat) encNat := by
+  let encS := encPair encNat encNat
+  have hs := fst encS encBool
+  have hleft := (fst encNat encNat).comp hs
+  have hright := (snd encNat encNat).comp hs
+  have hstep : ComputableInPolyTime (fun p : (ℕ × ℕ) × Bool => NatMul.mulStep p.1 p.2)
+      (encPair encS encBool) encS := by
+    simpa only [NatMul.mulStep, Function.comp_apply] using
+      ((snd encS encBool).ite (binary_add.comp hs) hleft).prod
+        (binary_add.comp (hright.prod hright))
+  have hbits : ComputableInPolyTime Nat.bits encNat encBits := of_eq fun _ => rfl
+  have hfold := foldl' (encA := encBool) (encL := encBits) (encB := encS)
+    (list := fun p : ℕ × ℕ => p.1.bits) (init := fun p => (0, p.2))
+    (hbits.comp (fst encNat encNat)) ((const 0).prod (snd encNat encNat)) hstep
+    (B := fun p => 3 * (encPair encNat encNat p).length + 1)
+    (PolyBounded.of_forall_le 4 1 fun _ => by simp only [pow_one]; omega) (by
+      intro p i _
+      obtain ⟨h₁, h₂⟩ := NatMul.foldl_mulStep_le (p.1.bits.take i) 0 p.2
+      have hi' : (p.1.bits.take i).length ≤ p.1.size := by simp [← Nat.size_eq_bits_len]
+      have hacc := NatMul.size_le_of_le _ (by omega :
+        (List.foldl NatMul.mulStep (0, p.2) (p.1.bits.take i)).1 ≤
+          2 ^ (p.1.bits.take i).length * p.2)
+      have hsh := NatMul.size_le_of_le _ h₂.le
+      simp only [encS, length_encPair, encNat_apply, Nat.size_eq_bits_len] at hacc hsh hi' ⊢
+      omega)
+  have h := (fst encNat encNat).comp hfold
+  convert h using 1
+  funext p
+  simp only [Function.comp_apply, NatMul.foldl_mulStep, zero_add]
+
+/-- Multiply computed binary values, fixing their intermediate encodings for proof search. -/
+theorem binary_mul' {α : Type}
+    {input : α ↪ List Bool}
+    {left : α → ℕ}
+    {right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encNat)
+    (hright : ComputableInPolyTime right input encNat) :
+    ComputableInPolyTime (fun (a : α) => left a * right a) input
+  encNat :=
+  binaryMulPair.comp (hleft.prod hright)
+
+/-- Non-strict binary comparison, composed from the existing strict comparison certificate.
+Automatic composition uses the computed-operand rule `binary_le'`. -/
+theorem binary_le : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
+    (encPair encNat encNat) encBool := by
+  simpa only [Function.comp_def, ← decide_not, Nat.not_lt] using
+    bool_not.comp (binary_lt.comp ((snd encNat encNat).prod (fst encNat encNat)))
+
+/-- Compare two binary naturals computed uniformly from the same encoded input. -/
+@[fun_prop]
+theorem binary_le' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encNat)
+    (hright : ComputableInPolyTime right input encNat) :
+    ComputableInPolyTime (fun a => decide (left a ≤ right a)) input encBool :=
+  binary_le.comp (hleft.prod hright)
 
 end ComputableInPolyTime
 end Turing.MultiTapeTM

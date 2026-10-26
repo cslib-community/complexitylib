@@ -159,7 +159,8 @@ private theorem acceptAt_eq_once (first : PMF S) (A : S → (Fin q → H) → Op
       let s ← first
       let h ← PMF.uniformOfFintype (Fin q → H)
       return decide ((A s h).1 = some j) : PMF Bool) =
-      Rewinding.once (firstAt first) (fun _ _ => PMF.uniformOfFintype (Fin q → H))
+      Rewinding.once (firstAt first) (fun _ => PMF.uniformOfFintype H)
+        (fun _ _ => PMF.uniformOfFintype (Fin q → H))
         (fun x t r => decide ((A x.1 (glue j x.2 t r)).1 = some j)) := by
   simp only [Rewinding.once, firstAt, Probability.PMF.monad_bind_eq_bind,
     Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
@@ -178,7 +179,8 @@ private theorem forkAt_eq_twice (first : PMF S) (A : S → (Fin q → H) → Opt
       let h' ← PMF.uniformOfFintype (Fin q → H)
       return decide ((A s h).1 = some j ∧ (A s (splice j h h')).1 = some j ∧ h j ≠ h' j) :
       PMF Bool) =
-      Rewinding.twice (firstAt first) (fun _ _ => PMF.uniformOfFintype (Fin q → H))
+      Rewinding.twice (firstAt first) (fun _ => PMF.uniformOfFintype H)
+        (fun _ _ => PMF.uniformOfFintype (Fin q → H))
         (fun x t r => decide ((A x.1 (glue j x.2 t r)).1 = some j)) := by
   simp only [Rewinding.twice, firstAt, Probability.PMF.monad_bind_eq_bind,
     Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]

@@ -11,6 +11,7 @@ public import Complexity.Probability.CorrelatedSampling.Embedding
 public import Complexity.Probability.Conditioning
 public import Complexity.Probability.Product
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Map
 import Complexity.Probability.StatisticalDistance
 
 /-!
@@ -89,21 +90,14 @@ private theorem localSample_eq (P₀ : PMF (X × Y)) (KX : X → PMF S) (KY : Y 
       P₀.bind fun xy => (shared (embedFamily KX KY K)).map fun l =>
         (xy, (sample (embedFamily KX KY K) (.inl xy.1) l,
           sample (embedFamily KX KY K) (.inr (.inl xy.2)) l)) := by
-  congr 1
-  funext xy
-  rw [localSample, PMF.map_comp]
-  rfl
+  simp only [localSample, PMF.map_comp, Function.comp_def]
 
 omit [Fintype X] [Fintype Y] [Fintype S] in
 private theorem diag_eq (J : PMF ((X × Y) × S)) :
     J.map (fun z => (z.1, (z.2, z.2))) =
       (J.map Prod.fst).bind fun xy => ((conditionalSnd J xy).map fun s => (s, s)).map (xy, ·) := by
   conv_lhs => rw [← bind_conditionalSnd J]
-  rw [PMF.map_bind]
-  congr 1
-  funext xy
-  rw [PMF.map_comp, PMF.map_comp]
-  rfl
+  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
 
 /-- **The local embedding protocol** on inputs from any `P₀`: its output is within
 `2 d(P₀ ⊗ KX, P₀ ⊗ K) + 2 d(P₀ ⊗ KY, P₀ ⊗ K)` of `P₀ ⊗ (K, K)`. -/
@@ -144,38 +138,23 @@ theorem isEmbeddable_diag_of_dist_le (J : PMF ((X × Y) × S)) (P₀ : PMF (X ×
   have hJ : withKernel P K = J := bind_conditionalSnd J
   -- The input laws are within `ε₁`.
   have hP : dist P P₀ ≤ ε₁ := by
-    have hP₀ : (withKernel P₀ fun xy => condX J xy.1).map Prod.fst = P₀ := by
-      have : ∀ xy : X × Y, ((condX J xy.1).map (xy, ·)).map Prod.fst = PMF.pure xy := fun xy => by
-        rw [PMF.map_comp]
-        exact PMF.map_const _ _
-      simp only [withKernel, PMF.map_bind, this, PMF.bind_pure]
-    calc dist P P₀ = dist (J.map Prod.fst) ((withKernel P₀ fun xy => condX J xy.1).map Prod.fst) :=
-          by rw [hP₀]
-      _ ≤ dist J (withKernel P₀ fun xy => condX J xy.1) := dist_map_le _ _ _
-      _ ≤ ε₁ := h₁
+    simpa only [withKernel, Cslib.Probability.PMF.map_fst_bind_pair] using
+      (dist_map_le J (withKernel P₀ fun xy => condX J xy.1) Prod.fst).trans h₁
   have hK : dist J (withKernel P₀ K) ≤ ε₁ := by
     rw [← hJ]
     exact (dist_bind_le P P₀ _).trans hP
   set A := withKernel P₀ fun xy => condX J xy.1
   set B := withKernel P₀ fun xy => condY J xy.2
   set C := withKernel P₀ K
-  have hX : dist A C ≤ 2 * ε₁ := by
-    have := dist_triangle A J C
-    rw [dist_comm A J] at this
-    linarith
-  have hY : dist B C ≤ ε₂ + ε₁ := by
-    have := dist_triangle B J C
-    rw [dist_comm B J] at this
-    linarith
+  have hX := dist_triangle_left A C J
+  have hY := dist_triangle_left B C J
   set E := P₀.bind fun xy => ((K xy).map fun s => (s, s)).map (xy, ·)
   set Out := P₀.bind fun xy => ρ.map fun r => (xy, (fA xy.1 r, fB xy.2 r))
   set Tgt := J.map fun z => (z.1, (z.2, z.2))
   have hdiag : dist E Tgt ≤ ε₁ := by
-    have h := dist_bind_le P P₀ fun xy => ((K xy).map fun s => (s, s)).map (xy, ·)
-    rw [dist_comm] at h
-    have hT : Tgt = P.bind fun xy => ((K xy).map fun s => (s, s)).map (xy, ·) := diag_eq J
-    rw [hT]
-    exact h.trans hP
+    change dist E (J.map fun z => (z.1, (z.2, z.2))) ≤ ε₁
+    rw [diag_eq, dist_comm]
+    exact (dist_bind_le P P₀ _).trans hP
   have := dist_triangle Out E Tgt
   have hemb' : dist Out E ≤ 2 * dist A C + 2 * dist B C := hemb
   linarith
@@ -193,15 +172,10 @@ theorem isEmbeddable_bind_prod (P₀ : PMF (X × Y)) (KS : X → PMF S) (KT : Y 
   rw [dist_eq_zero]
   congr 1
   funext xy
-  rw [PMF.map_bind]
-  have hT : ∀ a : X → S, ((Cslib.Probability.PMF.pi KT).map fun b => (a, b)).map
-      (fun r : (X → S) × (Y → T) => (xy, (r.1 xy.1, r.2 xy.2))) =
-        (KT xy.2).map fun t => (xy, (a xy.1, t)) := fun a => by
-    rw [PMF.map_comp, ← Cslib.Probability.PMF.pi_map_eval KT xy.2, PMF.map_comp]
-    rfl
-  simp only [hT]
-  rw [← Cslib.Probability.PMF.pi_map_eval KS xy.1, PMF.bind_map]
-  rfl
+  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
+  rw [← Cslib.Probability.PMF.pi_map_eval KS xy.1, PMF.bind_map,
+    ← Cslib.Probability.PMF.pi_map_eval KT xy.2]
+  simp only [PMF.map_comp, Function.comp_def]
 
 /-- **Holenstein's Fact 11** [Holenstein, Fact 11][Holenstein2009]: conditioning two distributions
 on an event of probability `1 / 2` under both at most doubles their statistical distance. -/
@@ -210,19 +184,15 @@ theorem dist_filter_le_two_mul {Z : Type*} [Fintype Z] (p q : PMF Z) (E : Set Z)
     (hpE : ∃ a ∈ E, a ∈ p.support) (hqE : ∃ a ∈ E, a ∈ q.support) :
     dist (p.filter E hpE) (q.filter E hqE) ≤ 2 * dist p q := by
   classical
-  rw [Cslib.Probability.PMF.dist_eq, Cslib.Probability.PMF.dist_eq]
-  have hterm : ∀ a, |((p.filter E hpE) a).toReal - ((q.filter E hqE) a).toReal| ≤
-      2 * |(p a).toReal - (q a).toReal| := by
-    intro a
-    rw [Cslib.Probability.PMF.filter_apply_toReal, Cslib.Probability.PMF.filter_apply_toReal,
-      hp, hq]
-    split_ifs
-    · rw [← sub_div, abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 1 / 2)]
-      linarith [abs_nonneg ((p a).toReal - (q a).toReal)]
-    · simp only [sub_self, abs_zero]
-      positivity
-  have := Finset.sum_le_sum fun a (_ : a ∈ Finset.univ) => hterm a
-  rw [← Finset.mul_sum] at this
-  linarith
+  rw [Cslib.Probability.PMF.dist_eq, Cslib.Probability.PMF.dist_eq,
+    ← mul_div_assoc, Finset.mul_sum]
+  gcongr with a
+  rw [Cslib.Probability.PMF.filter_apply_toReal, Cslib.Probability.PMF.filter_apply_toReal,
+    hp, hq]
+  split_ifs
+  · rw [← sub_div, abs_div]
+    norm_num [div_eq_mul_inv, mul_comm]
+  · simp only [sub_self, abs_zero]
+    positivity
 
 end Cslib.Probability.CorrelatedSampling

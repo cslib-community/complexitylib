@@ -95,7 +95,7 @@ example (B : Cslib.WordRAM.Basis) (c : ℕ) : ComputableInPolyTime
     (B.genericModel.checkedConstant c) encUnary (encOption encNat) := by polytime
 example (B : Cslib.WordRAM.Basis) (c : ℕ) : ComputableInPolyTime
     (B.genericModel.checkedConstant c) encUnary (encOption encNat) := by fun_prop
-example (B : Cslib.WordRAM.Basis) (t : Bool) : ComputableInPolyTime
+example (B : Cslib.WordRAM.Basis) (t : Option Bool) : ComputableInPolyTime
     (fun p => B.genericModel.evalTest p.1 t p.2)
     (encPair encUnary (encPi encNat)) (encOption encBool) := by polytime
 example (B : Cslib.WordRAM.Basis) : ComputableInPolyTime

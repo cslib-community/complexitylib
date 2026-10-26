@@ -20,7 +20,7 @@ its negation [Goldschlager1977]. The monotone circuit (`Cslib.Circuits.Monotone.
 carried positively by input `2 i + 1` and negatively by input `2 i + 2` (`railBits`). Each gate is
 replaced by two gates, carrying it positively and negatively: an AND gate by the AND of the
 positive rails and the OR of the negative rails, an OR gate dually, a negation by copies of the
-crossed rails (conjunctions with the constant `true` wire), and a constant by the constant and its
+crossed rails (idempotent disjunctions), and a constant by the constant and its
 negation (`dualGates`). Every wire `w` of the De Morgan circuit is then carried by the wires
 `2 w + 1` and `2 w + 2` (`railWire`), uniformly for inputs and gates, so the translation of a gate
 depends on the gate alone, not on its position.
@@ -28,7 +28,9 @@ depends on the gate alone, not on its position.
 The translation works on gate lists (`dualCode`): it keeps well-formedness
 (`isCodeFrom_dualCode`), and evaluating the translated list on the dual-rail inputs gives the
 dual-rail values (`evalCode_dualCode`). The translated circuit computes the same function on the
-dual-rail inputs (`eval_dualRail`) and has twice the size (`size_dualRail`).
+dual-rail inputs (`eval_dualRail`) and has twice the size (`size_dualRail`). Each original AND or
+OR gate contributes exactly one AND gate, while negations and constants contribute none, so the
+translated AND cost is exactly the original binary-gate cost (`cost_dualRail`).
 
 ## Main definitions
 
@@ -44,6 +46,8 @@ dual-rail inputs (`eval_dualRail`) and has twice the size (`size_dualRail`).
   values.
 * `Cslib.Circuits.Monotone.eval_dualRail`: the translated circuit computes the same function.
 * `Cslib.Circuits.Monotone.size_dualRail`: the translated circuit has twice the size.
+* `Cslib.Circuits.Monotone.cost_dualRail`: the translated AND cost is the original binary-gate
+  cost.
 
 ## References
 
@@ -114,12 +118,13 @@ theorem getD_railBits_false (x : List Bool) {w : ℕ} (hw : w < x.length) :
 
 /-- **The two monotone gates computing a De Morgan gate positively and negatively**, from its
 operation and its wires `g.2`: an AND gate by the AND of the positive rails and the OR of the
-negative rails, an OR gate dually, a negation by the crossed rails (each in a conjunction with the
-constant `true` wire `0`), a constant by the constant and its negation. -/
+negative rails, an OR gate dually, a negation by the crossed rails (each in an idempotent
+disjunction), a constant by the constant and its negation. -/
 def dualGates (g : Boolean.Op × List ℕ) : List (Op × List ℕ) :=
   match g.1 with
   | .const b => [(.const b, []), (.const (!b), [])]
-  | .not => [(.and, [railWire false (g.2.getD 0 0), 0]), (.and, [railWire true (g.2.getD 0 0), 0])]
+  | .not => [(.or, [railWire false (g.2.getD 0 0), railWire false (g.2.getD 0 0)]),
+      (.or, [railWire true (g.2.getD 0 0), railWire true (g.2.getD 0 0)])]
   | .and => [(.and, [railWire true (g.2.getD 0 0), railWire true (g.2.getD 1 0)]),
       (.or, [railWire false (g.2.getD 0 0), railWire false (g.2.getD 1 0)])]
   | .or => [(.or, [railWire true (g.2.getD 0 0), railWire true (g.2.getD 1 0)]),
@@ -143,6 +148,15 @@ def dualCode (gates : List (Boolean.Op × List ℕ)) : List (Op × List ℕ) := 
 theorem dualCode_append (gates gates' : List (Boolean.Op × List ℕ)) :
     dualCode (gates ++ gates') = dualCode gates ++ dualCode gates' :=
   List.flatMap_append
+
+private theorem sum_andCost_dualCode (gates : List (Boolean.Op × List ℕ)) :
+    ((dualCode gates).map fun g => andCost g.1).sum =
+      (gates.map fun g => Boolean.binaryCost g.1).sum := by
+  induction gates with
+  | nil => rfl
+  | cons g gates ih =>
+    rcases g with ⟨_ | _ | _ | _, _⟩ <;>
+      simpa [dualCode, dualGates, andCost, Boolean.binaryCost] using ih
 
 private theorem getD_lt_of_isCode {l : List ℕ} {B j : ℕ} (hj : j < l.length) (h : ∀ i ∈ l, i < B) :
     l.getD j 0 < B := by
@@ -336,6 +350,15 @@ theorem code_dualRail (c : Circuit Boolean.signature n m) :
 /-- The dual-rail translation has twice the size. -/
 theorem size_dualRail (c : Circuit Boolean.signature n m) : (dualRail c).size = 2 * c.size := by
   rw [← Circuit.length_code_fst, code_dualRail, length_dualCode, Circuit.length_code_fst]
+
+/-- The dual-rail translation has exactly one AND gate per original binary AND or OR gate.
+Negations become idempotent OR gates and therefore have no AND cost. -/
+theorem cost_dualRail (c : Circuit Boolean.signature n m) :
+    (dualRail c).program.cost andCost = c.program.cost Boolean.binaryCost := by
+  have h := congrArg (fun code => (code.1.map fun g => andCost g.1).sum) (code_dualRail c)
+  rw [sum_andCost_dualCode] at h
+  simpa only [Circuit.code, Program.code_eq_ofFn_lines, List.map_ofFn, Function.comp_apply,
+    Line.code_fst, List.sum_ofFn, ← Program.cost_eq_sum] using h
 
 private theorem toNat_outputs_dualRail (c : Circuit Boolean.signature n m) (j : Fin m) :
     ((dualRail c).outputs j).toNat = railWire true (c.outputs j).toNat := by

@@ -183,8 +183,9 @@ theorem eval_aluOpOf {S : Presentation} (h : Laws S) (g : BinOp) (x y : ℕ) :
     h.eval_and, h.eval_or, h.eval_xor, h.eval_shl, h.eval_shr, Nat.shiftLeft_eq,
     Nat.shiftRight_eq_div_pow]
 
-/-- An instruction of `Cslib.WordRAM` over the exact basis as an abstract instruction. -/
-def instrOf : Cslib.WordRAM.Instr .exact r → S.Instr r
+/-- An instruction of `Cslib.WordRAM` over the exact basis as an abstract instruction, mapping
+`Instr.rand` (which faults deterministically) to an out-of-bounds jump `outOfBounds`. -/
+def instrOf (outOfBounds : ℕ) : Cslib.WordRAM.Instr .exact r → S.Instr r
   | .op (.const d x) => S.const d x
   | .op (.copy d i) => S.copy d i
   | .op (.alu (.bin f) d args) => S.alu (S.aluOpOf f) d (args (0 : Fin 2)) (args (1 : Fin 2))
@@ -195,21 +196,41 @@ def instrOf : Cslib.WordRAM.Instr .exact r → S.Instr r
   | .branch (.eq i j) t => S.branchEq i j t
   | .branch (.lt i j) t => S.branchLt i j t
   | .halt i => S.halt i
+  | .rand _ _ => S.jump outOfBounds
 
-theorem instrOf_surjective (i : S.Instr r) : ∃ j, S.instrOf j = i := by
-  refine S.instr_induction (P := fun i => ∃ j, S.instrOf j = i)
-    (fun d x => ⟨.op (.const d x), rfl⟩) (fun d i => ⟨.op (.copy d i), rfl⟩) ?_
-    (fun d => ⟨.op (.exactWidth d), rfl⟩) (fun d a => ⟨.op (.load d a), rfl⟩)
-    (fun a i => ⟨.op (.store a i), rfl⟩) (fun t => ⟨.jump t, rfl⟩)
-    (fun i j t => ⟨.branch (.eq i j) t, rfl⟩) (fun i j t => ⟨.branch (.lt i j) t, rfl⟩)
-    (fun i => ⟨.halt i, rfl⟩) i
+/-- Translate a library program to an abstract program of the same length. -/
+def programOf (q : Program .exact r) : List (S.Instr r) :=
+  q.map (S.instrOf q.length)
+
+theorem instrOf_surjective (outOfBounds : ℕ) (i : S.Instr r) :
+    ∃ j : Cslib.WordRAM.Instr .exact r, j.IsRandFree ∧ S.instrOf outOfBounds j = i := by
+  refine S.instr_induction (P := fun i => ∃ j, j.IsRandFree ∧ S.instrOf outOfBounds j = i)
+    (fun d x => ⟨.op (.const d x), trivial, rfl⟩)
+    (fun d i => ⟨.op (.copy d i), trivial, rfl⟩) ?_
+    (fun d => ⟨.op (.exactWidth d), trivial, rfl⟩)
+    (fun d a => ⟨.op (.load d a), trivial, rfl⟩)
+    (fun a i => ⟨.op (.store a i), trivial, rfl⟩)
+    (fun t => ⟨.jump t, trivial, rfl⟩)
+    (fun i j t => ⟨.branch (.eq i j) t, trivial, rfl⟩)
+    (fun i j t => ⟨.branch (.lt i j) t, trivial, rfl⟩)
+    (fun i => ⟨.halt i, trivial, rfl⟩) i
   intro f d i j
   obtain ⟨g, rfl⟩ := S.aluOpOf_surjective f
-  exact ⟨.op (.exactBin g d i j), rfl⟩
+  exact ⟨.op (.exactBin g d i j), trivial, rfl⟩
 
-/-- Every abstract program is the translation of a library program. -/
-theorem program_surjective (p : List (S.Instr r)) : ∃ q : Program .exact r, q.map S.instrOf = p :=
-  List.map_surjective_iff.2 S.instrOf_surjective p
+/-- Every abstract program is the translation of a `rand`-free library program. -/
+theorem program_surjective (p : List (S.Instr r)) :
+    ∃ q : Program .exact r, q.IsRandFree ∧ S.programOf q = p := by
+  choose f hf_rf hf_eq using S.instrOf_surjective p.length
+  refine ⟨p.map f, ?_, ?_⟩
+  · intro j hj
+    obtain ⟨i, _, rfl⟩ := List.mem_map.1 hj
+    exact hf_rf i
+  · simp only [programOf, List.length_map, List.map_map]
+    conv_rhs => rw [← List.map_id p]
+    congr 1
+    funext i
+    exact hf_eq i
 
 /-! ## One step -/
 
@@ -219,10 +240,10 @@ def Matches (o : S.Outcome r) (o' : Cslib.WordRAM.Outcome r) : Prop :=
   (∃ pc reg mem, o = S.next (S.state pc reg mem) ∧ o' = .next ⟨pc, ⟨reg, mem⟩⟩) ∨
     (∃ v, o = S.halted v ∧ o' = .halt v) ∨ (o = S.fault ∧ o' = .fault)
 
-/-- **One step agrees.** A step of a library program matches a step of its translation. -/
-theorem step_matches {S : Presentation} (h : Laws S) (w : ℕ) (q : Program .exact r) (pc : ℕ)
-    (reg : Fin r → ℕ) (mem : ℕ → ℕ) :
-    S.Matches (S.step w (q.map S.instrOf) (S.state pc reg mem))
+/-- **One step agrees** at every non-`rand` instruction. -/
+theorem step_matches_at {S : Presentation} (h : Laws S) (w : ℕ) (q : Program .exact r) (pc : ℕ)
+    (reg : Fin r → ℕ) (mem : ℕ → ℕ) (hnr : ∀ j, q[pc]? = some j → j.IsRandFree) :
+    S.Matches (S.step w (S.programOf q) (S.state pc reg mem))
       (Cslib.WordRAM.step w q ⟨pc, ⟨reg, mem⟩⟩) := by
   have next {o : S.Outcome r} {o' : Cslib.WordRAM.Outcome r} (pc' : ℕ) (reg' : Fin r → ℕ)
       (mem' : ℕ → ℕ) (h₁ : o = S.next (S.state pc' reg' mem'))
@@ -230,23 +251,25 @@ theorem step_matches {S : Presentation} (h : Laws S) (w : ℕ) (q : Program .exa
   have fault {o : S.Outcome r} {o' : Cslib.WordRAM.Outcome r} (h₁ : o = S.fault)
       (h₂ : o' = .fault) : S.Matches o o' :=
     Or.inr (Or.inr ⟨h₁, h₂⟩)
-  have hget := List.getElem?_map (f := S.instrOf) (l := q) (i := pc)
+  have hget := List.getElem?_map (f := S.instrOf q.length) (l := q) (i := pc)
+  change (S.programOf q)[pc]? = _ at hget
   rcases hq : q[pc]? with _ | j
   · rw [hq, Option.map_none] at hget
     exact fault (h.step_none hget) (by simp [Cslib.WordRAM.step, hq])
   rw [hq, Option.map_some] at hget
+  have hj := hnr j hq
   -- constants and operations fault on the same values, operations also where they are
   -- undefined; the word size is a word
-  match j, hget with
-  | .op (.const d x), hget =>
+  match j, hget, hj with
+  | .op (.const d x), hget, _ =>
     by_cases hx : x < 2 ^ w
     · exact next (pc + 1) (Function.update reg d x) mem (by simp [h.step_const hget, hx])
         (by simp [Cslib.WordRAM.step, hq, Data.put, Fits, hx, Data.set])
     · exact fault (by simp [h.step_const hget, hx])
         (by simp [Cslib.WordRAM.step, hq, Data.put, Fits, hx])
-  | .op (.copy d i), hget =>
+  | .op (.copy d i), hget, _ =>
     exact next _ _ _ (h.step_copy hget) (by simp [Cslib.WordRAM.step, hq, Data.set])
-  | .op (.alu (.bin g) d args), hget =>
+  | .op (.alu (.bin g) d args), hget, _ =>
     have he := eval_aluOpOf h g (reg (args (0 : Fin 2))) (reg (args (1 : Fin 2)))
     have hlib : StandardOp.evalExact w (.bin g) (reg ∘ args) =
         g.evalExact (reg (args (0 : Fin 2))) (reg (args (1 : Fin 2))) := rfl
@@ -265,20 +288,29 @@ theorem step_matches {S : Presentation} (h : Laws S) (w : ℕ) (q : Program .exa
       · exact fault (by simp [h.step_alu_some hget he, hx])
           (by simp only [Cslib.WordRAM.step, hq, Op.eval, Basis.exact, hlib, hg]
               simp [Data.put, Fits, hx])
-  | .op (.alu .width d args), hget =>
+  | .op (.alu .width d args), hget, _ =>
     exact next _ _ _ (h.step_width hget)
       (by simp [Cslib.WordRAM.step, hq, StandardOp.evalExact, Data.put, Fits, Data.set,
         Nat.lt_two_pow_self])
-  | .op (.load d a), hget =>
+  | .op (.load d a), hget, _ =>
     exact next _ _ _ (h.step_load hget) (by simp [Cslib.WordRAM.step, hq, Data.set])
-  | .op (.store a i), hget =>
+  | .op (.store a i), hget, _ =>
     exact next _ _ _ (h.step_store hget) (by simp [Cslib.WordRAM.step, hq, Data.write])
-  | .jump t, hget => exact next _ _ _ (h.step_jump hget) (by simp [Cslib.WordRAM.step, hq])
-  | .branch (.eq i j) t, hget =>
+  | .jump t, hget, _ => exact next _ _ _ (h.step_jump hget) (by simp [Cslib.WordRAM.step, hq])
+  | .branch (.eq i j) t, hget, _ =>
     exact next _ _ _ (h.step_branchEq hget) (by simp [Cslib.WordRAM.step, hq])
-  | .branch (.lt i j) t, hget =>
+  | .branch (.lt i j) t, hget, _ =>
     exact next _ _ _ (h.step_branchLt hget) (by simp [Cslib.WordRAM.step, hq])
-  | .halt i, hget => exact Or.inr (Or.inl ⟨_, h.step_halt hget, by simp [Cslib.WordRAM.step, hq]⟩)
+  | .halt i, hget, _ =>
+    exact Or.inr (Or.inl ⟨_, h.step_halt hget, by simp [Cslib.WordRAM.step, hq]⟩)
+  | .rand _ _, _, hj => exact hj.elim
+
+/-- **One step agrees** for every `rand`-free library program. -/
+theorem step_matches {S : Presentation} (h : Laws S) (w : ℕ) {q : Program .exact r}
+    (hq : q.IsRandFree) (pc : ℕ) (reg : Fin r → ℕ) (mem : ℕ → ℕ) :
+    S.Matches (S.step w (S.programOf q) (S.state pc reg mem))
+      (Cslib.WordRAM.step w q ⟨pc, ⟨reg, mem⟩⟩) :=
+  S.step_matches_at h w q pc reg mem fun j hj => hq j (List.mem_of_getElem? hj)
 
 /-! ## Runs -/
 
@@ -308,26 +340,50 @@ theorem executes_succ_iff {B : Basis} {w : ℕ} {q : Program B r} {s : Cslib.Wor
   · simp
 
 /-- **Halting runs agree.** The translation of a library program halts with output `v` after `n`
-instructions exactly when the library program does. -/
+instructions exactly when the library program does (even if `q` contains `Instr.rand`, which
+deterministically faults in `q` and jumps out of bounds in `programOf q`). -/
 theorem halts_iff_executes {S : Presentation} (h : Laws S) {w : ℕ} {q : Program .exact r}
     {v n : ℕ} {pc : ℕ} {reg : Fin r → ℕ} {mem : ℕ → ℕ} :
-    S.Halts w (q.map S.instrOf) (S.state pc reg mem) v n ↔ Executes w q ⟨pc, ⟨reg, mem⟩⟩ v n := by
+    S.Halts w (S.programOf q) (S.state pc reg mem) v n ↔ Executes w q ⟨pc, ⟨reg, mem⟩⟩ v n := by
   induction n generalizing pc reg mem with
   | zero => exact ⟨fun hh => (h.halts_zero hh).elim, fun he => absurd he.pos (Nat.lt_irrefl 0)⟩
   | succ n ih =>
     rw [executes_succ_iff]
-    rcases S.step_matches h w q pc reg mem with ⟨_, _, _, h₁, h₂⟩ | ⟨x, h₁, h₂⟩ | ⟨h₁, h₂⟩
-    · rw [h.halts_next h₁, h₂]
-      exact ih
-    · rw [h.halts_halted h₁, h₂]
-    · rw [h₂]
-      exact iff_false_intro (h.halts_fault h₁)
+    by_cases hnr : ∀ j, q[pc]? = some j → j.IsRandFree
+    · rcases S.step_matches_at h w q pc reg mem hnr with
+        ⟨_, _, _, h₁, h₂⟩ | ⟨x, h₁, h₂⟩ | ⟨h₁, h₂⟩
+      · rw [h.halts_next h₁, h₂]
+        exact ih
+      · rw [h.halts_halted h₁, h₂]
+      · rw [h₂]
+        exact iff_false_intro (h.halts_fault h₁)
+    · rcases hq : q[pc]? with _ | j
+      · exact absurd (fun _ hj => by simp [hq] at hj) hnr
+      have hj : ¬j.IsRandFree := fun hj =>
+        hnr fun _ hj' => Option.some.inj (hq.symm.trans hj') ▸ hj
+      cases j with
+      | op _ | jump _ | branch _ _ | halt _ => exact (hj trivial).elim
+      | rand dst src =>
+        have hget : (S.programOf q)[pc]? = some (S.jump q.length) := by
+          simp [programOf, hq, instrOf]
+        have hstep1 := h.step_jump (w := w) (reg := reg) (mem := mem) hget
+        have hfault2 : Cslib.WordRAM.step w q ⟨pc, ⟨reg, mem⟩⟩ = .fault := by
+          simp [Cslib.WordRAM.step, hq]
+        rw [hfault2]
+        refine iff_false_intro fun hh => ?_
+        rw [h.halts_next hstep1] at hh
+        cases n with
+        | zero => exact h.halts_zero hh
+        | succ k =>
+          have hnone : (S.programOf q)[q.length]? = none :=
+            List.getElem?_eq_none (by simp [programOf])
+          exact h.halts_fault (h.step_none hnone) hh
 
-/-- A library program and its translation run alike. -/
-theorem same_map {S : Presentation} (h : Laws S) (q : Program .exact r) :
-    S.Same (q.map S.instrOf) q := by
+/-- A `rand`-free library program and its translation run alike. -/
+theorem same_map {S : Presentation} (h : Laws S) {q : Program .exact r} (hq : q.IsRandFree) :
+    S.Same (S.programOf q) q := by
   refine fun w pc reg mem => ⟨?_, fun _ _ => halts_iff_executes h⟩
-  rcases S.step_matches h w q pc reg mem with ⟨_, _, _, h₁, h₂⟩ | ⟨_, h₁, h₂⟩ | ⟨h₁, h₂⟩ <;>
+  rcases S.step_matches h w hq pc reg mem with ⟨_, _, _, h₁, h₂⟩ | ⟨_, h₁, h₂⟩ | ⟨h₁, h₂⟩ <;>
     rw [h₁, h₂]
   exacts [h.agrees_next, h.agrees_halted, h.agrees_fault]
 
@@ -365,14 +421,15 @@ end Presentation
 
 open Presentation
 
-/-- **Same machine.** Each abstract program runs alike with some program of `Cslib.WordRAM`
-over `Basis.exact` with the same registers, and conversely. -/
+/-- **Same machine.** Each abstract program runs alike with some `rand`-free program of
+`Cslib.WordRAM` over `Basis.exact` with the same registers, and conversely every `rand`-free
+library program runs alike with some abstract program. -/
 theorem runsAgree (S : Presentation) (h : Laws S) (r : ℕ) :
-    (∀ p : List (S.Instr r), ∃ q : Program .exact r, S.Same p q) ∧
-      ∀ q : Program .exact r, ∃ p : List (S.Instr r), S.Same p q := by
-  refine ⟨fun p => ?_, fun q => ⟨_, same_map h q⟩⟩
-  obtain ⟨q, rfl⟩ := S.program_surjective p
-  exact ⟨q, same_map h q⟩
+    (∀ p : List (S.Instr r), ∃ q : Program .exact r, q.IsRandFree ∧ S.Same p q) ∧
+      ∀ q : Program .exact r, q.IsRandFree → ∃ p : List (S.Instr r), S.Same p q := by
+  refine ⟨fun p => ?_, fun q hq => ⟨_, same_map h hq⟩⟩
+  obtain ⟨q, hq, rfl⟩ := S.program_surjective p
+  exact ⟨q, hq, same_map h hq⟩
 
 /-- **Same time classes.** A problem is decidable in time `T` on the abstract machine exactly
 when one program of `Cslib.WordRAM` over `Basis.exact` decides it with the same encoding and
@@ -382,11 +439,19 @@ theorem decidableInTime_iff (S : Presentation) (h : Laws S) {α : Type*} (A : Se
     S.DecidableInTime A encode T bits ↔
       UniformDecidableInTime .exact A (fun _ => encode) (fun a _ => T a)
         (fun a w => bits a ≤ w) := by
+  have hans (a : α) (v : ℕ) :
+      ((a ∈ A → v = 1) ∧ (a ∉ A → v = 0)) ↔ (v ≤ 1 ∧ (v = 1 ↔ a ∈ A)) := by
+    by_cases ha : a ∈ A <;> simp only [ha, not_true, not_false_eq_true, forall_const,
+      false_implies, iff_true, iff_false, true_and, and_true] <;> omega
   constructor
   · rintro ⟨r, p, hp⟩
-    obtain ⟨q, rfl⟩ := S.program_surjective p
-    exact ⟨r, q, (decides_iff (same_map h q)).1 hp⟩
+    obtain ⟨q, hq, rfl⟩ := S.program_surjective p
+    exact ⟨r, q, (decides_iff (same_map h hq)).1 hp⟩
   · rintro ⟨r, q, hq⟩
-    exact ⟨r, q.map S.instrOf, (decides_iff (same_map h q)).2 hq⟩
+    refine ⟨r, S.programOf q, fun a w hbw hfit => ?_⟩
+    have hfit' : Cslib.WordRAM.InputFits w (encode a) := hfit
+    obtain ⟨v, n, hex, hn, hv⟩ := hq a w hbw hfit'
+    rw [← init_eq] at hex
+    exact ⟨v, n, (halts_iff_executes h).2 hex, hn, (hans a v).2 hv⟩
 
 end ComplexityTests.Abstracts.WordRAMBridge
