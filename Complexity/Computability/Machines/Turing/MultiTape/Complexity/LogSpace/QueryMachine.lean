@@ -53,6 +53,7 @@ directly from the multi-pass fold.
   linear space, computes a function in space `O(S)`.
 * `Turing.QueryMachine.computableInLogSpace`: a query machine with logarithmic states and parts
   computable in linear space computes a function in logarithmic space.
+* `Turing.QueryMachine.output_add_of_halted`: increasing the clock after halting preserves output.
 
 ## References
 
@@ -93,11 +94,22 @@ def step (s : σ) : σ := if M.halted s then s else M.next (s, M.read w s)
 /-- The state after `t` steps on the input `w`. -/
 def run (t : ℕ) : σ := (M.step w)^[t] M.init
 
-/-- The output of a run that halts after `t` steps: the words emitted by the steps, then the final
-word. -/
+/-- The output of a run halted by step `t`: emissions stop at the first halted state, then the
+final word is appended. Once the run has halted, increasing `t` leaves the output unchanged. -/
 def output (t : ℕ) : List Bool :=
-  ((List.range t).map fun i => M.emit (M.run w i, M.read w (M.run w i))).flatten ++
+  ((List.range t).map fun i =>
+    if M.halted (M.run w i) then [] else M.emit (M.run w i, M.read w (M.run w i))).flatten ++
     M.finish (M.run w t)
+
+/-- Before the first halt, every scheduled step contributes its emission. -/
+theorem output_eq_of_not_halted {t : ℕ}
+    (h : ∀ i < t, M.halted (M.run w i) = false) :
+    M.output w t =
+      ((List.range t).map fun i => M.emit (M.run w i, M.read w (M.run w i))).flatten ++
+        M.finish (M.run w t) := by
+  unfold output
+  congr 2
+  exact List.map_congr_left fun i hi => by simp [h i (List.mem_range.mp hi)]
 
 @[simp]
 theorem run_zero : M.run w 0 = M.init := rfl
@@ -130,6 +142,19 @@ theorem halted_run_iff {T : ℕ} (hT : M.halted (M.run w T) = true)
 theorem run_eq_of_le {T : ℕ} (hT : M.halted (M.run w T) = true) {t : ℕ} (h : T ≤ t) :
     M.run w t = M.run w T := by
   rw [show t = T + (t - T) by omega, M.run_add_of_halted w hT]
+
+/-- A halted state emits no further step output. -/
+theorem output_succ_of_halted {t : ℕ} (h : M.halted (M.run w t) = true) :
+    M.output w (t + 1) = M.output w t := by
+  simp [output, List.range_succ, List.map_append, List.flatten_append, run_succ, step, h]
+
+/-- Extra clock steps after halting neither repeat emissions nor append another final word. -/
+theorem output_add_of_halted {t : ℕ} (h : M.halted (M.run w t) = true) (k : ℕ) :
+    M.output w (t + k) = M.output w t := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [← Nat.add_assoc, M.output_succ_of_halted w (by rw [M.run_add_of_halted w h]; exact h), ih]
 
 /-! ### The passes of the simulation -/
 
@@ -430,7 +455,7 @@ theorem computableInSpace {α β : Type} {enc : α ↪ List Bool} {encOut : β �
           (passNext M) (passEnd M) (enc a) i) (passNext M) (enc a) (enc a).length))).flatten ++
       encBits ((passFinish M) (passState ((M.init, 0, none) : PassState σ) (passNext M) (passEnd M)
         (enc a) (time a - 1 + 1))) := by
-    rw [hf, output]
+    rw [hf, M.output_eq_of_not_halted _ (hpre a)]
     simp only [encBits_apply, streamEmit_const_nil, List.nil_append, hP,
       (streamState_passNext_length M), passEmit, passFinish]
     rcases Nat.eq_zero_or_pos (time a) with h0 | hpos

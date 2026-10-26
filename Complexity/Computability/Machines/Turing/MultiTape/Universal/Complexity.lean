@@ -125,45 +125,54 @@ lemma tapeFields_deg : ComputableTidilyInDegree (fun t : Tape => (t.head, t.left
     eTapeFields 1 1 :=
   of_eq fun _ => rfl
 
-@[fun_prop] lemma tapeMk_deg : ComputableTidilyInDegree
+@[local fun_prop]
+lemma tapeMk_deg : ComputableTidilyInDegree
     (fun p : ℤ × List (Option ℕ) × List (Option ℕ) => Tape.mk p.1 p.2.1 p.2.2) eTapeFields eTape
     1 1 :=
   of_eq fun _ => rfl
 
-@[fun_prop] lemma tapeHead_deg : ComputableTidilyInDegree Tape.head eTape encInt 1 1 :=
+@[local fun_prop]
+lemma tapeHead_deg : ComputableTidilyInDegree Tape.head eTape encInt 1 1 :=
   tapeFields_deg.fst'
 
-@[fun_prop] lemma tapeLeft_deg : ComputableTidilyInDegree Tape.left eTape (encList eSym) 1 1 :=
+@[local fun_prop]
+lemma tapeLeft_deg : ComputableTidilyInDegree Tape.left eTape (encList eSym) 1 1 :=
   tapeFields_deg.snd'.fst'
 
-@[fun_prop] lemma tapeRight_deg : ComputableTidilyInDegree Tape.right eTape (encList eSym) 1 1 :=
+@[local fun_prop]
+lemma tapeRight_deg : ComputableTidilyInDegree Tape.right eTape (encList eSym) 1 1 :=
   tapeFields_deg.snd'.snd'
 
 /-- The symbol under the head. -/
-@[fun_prop] lemma read_deg : ComputableTidilyInDegree Tape.read eTape eSym 1 1 := by
+@[local fun_prop]
+lemma read_deg : ComputableTidilyInDegree Tape.read eTape eSym 1 1 := by
   unfold Tape.read
   fun_prop (disch := lia)
 
 /-- Writing under the head. -/
-@[fun_prop] lemma write_deg : ComputableTidilyInDegree (fun p : Tape × Option ℕ => p.1.write p.2)
+@[local fun_prop]
+lemma write_deg : ComputableTidilyInDegree (fun p : Tape × Option ℕ => p.1.write p.2)
     (encPair eTape eSym) eTape 1 1 := by
   unfold Tape.write
   fun_prop (disch := lia)
 
 /-- A right move. -/
-@[fun_prop] lemma movePos_deg :
+@[local fun_prop]
+lemma movePos_deg :
     ComputableTidilyInDegree (fun t : Tape => t.move .pos) eTape eTape 1 1 := by
   simp only [Tape.move]
   fun_prop (disch := lia)
 
 /-- A left move. -/
-@[fun_prop] lemma moveNeg_deg :
+@[local fun_prop]
+lemma moveNeg_deg :
     ComputableTidilyInDegree (fun t : Tape => t.move .neg) eTape eTape 1 1 := by
   simp only [Tape.move]
   fun_prop (disch := lia)
 
 /-- Moving the head. -/
-@[fun_prop] lemma move_deg : ComputableTidilyInDegree (fun p : Tape × SignType => p.1.move p.2)
+@[local fun_prop]
+lemma move_deg : ComputableTidilyInDegree (fun p : Tape × SignType => p.1.move p.2)
     (encPair eTape encSign) eTape 1 1 := by
   have ht := fst eTape encSign
   have hm := snd eTape encSign
@@ -176,7 +185,8 @@ lemma tapeFields_deg : ComputableTidilyInDegree (fun t : Tape => (t.head, t.left
   rcases m with _ | _ | _ <;> rfl
 
 /-- Applying an action to a work tape: write, then move. -/
-@[fun_prop] lemma apply_deg : ComputableTidilyInDegree (fun p : Tape × TapeAct =>
+@[local fun_prop]
+lemma apply_deg : ComputableTidilyInDegree (fun p : Tape × TapeAct =>
     p.1.apply p.2) (encPair eTape eTA) eTape 1 1 := by
   convert (show ComputableTidilyInDegree (fun p : Tape × TapeAct =>
     (if p.2.1.isSome then p.1.write (p.2.1.getD none) else p.1).move p.2.2)

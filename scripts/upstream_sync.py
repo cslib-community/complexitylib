@@ -23,6 +23,8 @@ For every such module the script reports one of:
 Markers can also introduce copied blocks in otherwise candidate modules; each is checked.
 It also compares the cslib pin in `lakefile.toml` with upstream `main`. It needs `gh` and
 `git` with network access; `--offline` only lists the markers.
+The pin comparison reports CURRENT, DIFFERS or UNTRACKED; unequal hashes alone do not
+establish whether the pin is behind upstream.
 """
 
 from __future__ import annotations
@@ -33,11 +35,13 @@ import pathlib
 import re
 import subprocess
 import sys
+import tomllib
 from collections import defaultdict
+
+from upstream import upstream_markers
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPO = "leanprover/cslib"
-MARKER_RE = re.compile(r"^--\s*upstream:\s*(?P<status>.*?)\s*$")
 SUBMITTED_RE = re.compile(r"submitted\s+#(?P<pr>\d+)(?:\s+@(?P<sha>[0-9a-f]{7,40}))?")
 VENDORED_RE = re.compile(
     r"(?:vendored|subset of)\s+(?:(?P<owner>[\w.-]+):)?(?P<branch>[\w.-]+(?:/[\w.-]+)*)"
@@ -51,10 +55,8 @@ def run(*args: str) -> str:
 def markers() -> list[tuple[pathlib.Path, str]]:
     found = []
     for path in sorted((ROOT / "Complexity").rglob("*.lean")):
-        for line in path.read_text(encoding="utf-8").splitlines():
-            m = MARKER_RE.match(line)
-            if m:
-                found.append((path.relative_to(ROOT), m.group("status")))
+        for status in upstream_markers(path.read_text(encoding="utf-8")):
+            found.append((path.relative_to(ROOT), status))
     return found
 
 
@@ -70,9 +72,9 @@ def main() -> None:
     prs: dict[int, list[tuple[pathlib.Path, str | None]]] = defaultdict(list)
     branches: dict[tuple[str, str], list[tuple[pathlib.Path, str | None]]] = defaultdict(list)
     for path, status in markers():
-        if m := SUBMITTED_RE.search(status):
+        if m := SUBMITTED_RE.match(status):
             prs[int(m.group("pr"))].append((path, m.group("sha")))
-        elif m := VENDORED_RE.search(status):
+        elif m := VENDORED_RE.match(status):
             branch = m.group("branch")
             owner = m.group("owner") or branch.split("/")[0]
             branches[(owner, branch)].append((path, m.group("sha")))
@@ -84,12 +86,12 @@ def main() -> None:
             print(f"{owner}:{branch}: {len(files)} file(s)")
         return
 
-    pin = re.search(r'name = "cslib".*?rev = "(?P<rev>[0-9a-f]+)"',
-                    (ROOT / "lakefile.toml").read_text(), re.S)
+    config = tomllib.loads((ROOT / "lakefile.toml").read_text(encoding="utf-8"))
+    pinned = next((dep.get("rev") for dep in config.get("require", [])
+                   if dep.get("name") == "cslib"), None)
     main_head = run("git", "ls-remote", f"https://github.com/{REPO}", "refs/heads/main").split()[0]
-    pinned = pin.group("rev") if pin else "?"
-    state = "CURRENT" if main_head.startswith(pinned) or pinned.startswith(main_head) else "BEHIND"
-    print(f"cslib pin {pinned[:8]}, upstream main {main_head[:8]}: {state}")
+    state = "UNTRACKED" if not pinned else "CURRENT" if same(pinned, main_head) else "DIFFERS"
+    print(f"cslib pin {(pinned or '?')[:8]}, upstream main {main_head[:8]}: {state}")
 
     for pr, files in sorted(prs.items()):
         info = json.loads(run("gh", "pr", "view", str(pr), "--repo", REPO,

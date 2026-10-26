@@ -247,7 +247,7 @@ private theorem relabel_eq (G : Graph) (keys : List ℕ) :
   congr 1
   simp [Function.comp_def, List.map_ofFn, adjFin]
 
-@[fun_prop]
+@[local fun_prop]
 private theorem natGetD {γ : Type} {input : γ ↪ List Bool} {list : γ → List ℕ} {index : γ → ℕ}
     (hlist : ComputableTidilyInPolyTime list input (encList encUnary))
     (hindex : ComputableTidilyInPolyTime index input encUnary) :
