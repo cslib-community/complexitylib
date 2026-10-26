@@ -158,29 +158,6 @@ private meta def plainConditionalRules? (target : Expr) : MetaM (Option (Array N
         else #[``ComputableInPolyTime.ite_decide, ``ComputableInPolyTime.ite]
   finally saved.restore
 
-open Lean Meta in
-/-- Keep conditional guards and branches in joint search. Local/named certificates have higher
-priority; each recipe has its own state, so a later premise failure retains the other recipe. -/
-@[aesop unsafe 98% tactic (rule_sets := [PolyTime])]
-private meta def polytimeConditional : Aesop.RuleTac := fun input => input.goal.withContext do
-  let some rules ← plainConditionalRules? (← input.goal.getType)
-    | throwError "expected a plain conditional program"
-  let initial ← saveState
-  let mut applications := #[]
-  for i in [:rules.size] do
-    try
-      let goals ← input.goal.applyConst rules[i]!
-      let goals ← goals.toArray.mapM (Aesop.mvarIdToSubgoal input.goal)
-      applications := applications.push {
-        goals
-        postState := ← saveState
-        scriptSteps? := none
-        successProbability? := some ⟨if i == 0 then 0.98 else 0.97⟩ }
-    catch _ => pure ()
-    finally initial.restore
-  if applications.isEmpty then throwError "no conditional recipe applies"
-  return ⟨applications⟩
-
 /-- Expose local routine certificates and their argument obligations as search alternatives. -/
 -- Equal priority lets argument goals run before expensive alternatives at the parent goal.
 @[aesop unsafe 100% tactic (rule_sets := [PolyTime])]
@@ -546,6 +523,92 @@ private meta def knownLocalCertificate (target : Expr) : MetaM (Option Expr) := 
       if proof?.isSome then return proof?
       saved.restore
   return none
+
+open Lean Meta in
+/-- Keep conditional guards and branches in joint search. Complete supplied guard evidence may
+fix an encoding without an unsafe child-step penalty. The unprepared application is retained,
+so that evidence and encoding alternatives remain available if later premises fail. -/
+@[aesop unsafe 98% tactic (rule_sets := [PolyTime])]
+private meta def polytimeConditional : Aesop.RuleTac := fun input => input.goal.withContext do
+  let some rules ← plainConditionalRules? (← input.goal.getType)
+    | throwError "expected a plain conditional program"
+  let capture (goals : List MVarId) (probability : Float) : Aesop.BaseM Aesop.RuleApplication := do
+    let goals ← goals.toArray.mapM (Aesop.mvarIdToSubgoal input.goal)
+    return {
+      goals
+      postState := ← saveState
+      scriptSteps? := none
+      successProbability? := some ⟨probability⟩ }
+  let initial ← saveState
+  let mut applications := #[]
+  for i in [:rules.size] do
+    try
+      let goals ← input.goal.applyConst rules[i]!
+      let applied ← saveState
+      let probability := if i == 0 then 0.98 else 0.97
+      try
+        let name := if rules[i]! == ``ComputableInPolyTime.ite then `hc else `hcondition
+        if let some guard ← goals.findM? fun goal => return name.isSuffixOf (← goal.getTag) then
+          let proof? ← guard.withContext do knownLocalCertificate (← guard.getType)
+          if let some proof := proof? then
+            guard.assign proof
+            let remaining ← goals.filterM fun goal => return !(← goal.isAssignedOrDelayedAssigned)
+            applications := applications.push (← capture remaining probability)
+      catch _ => pure ()
+      finally applied.restore
+      applications := applications.push (← capture goals probability)
+    catch _ => pure ()
+    finally initial.restore
+  if applications.isEmpty then throwError "no conditional recipe applies"
+  return ⟨applications⟩
+
+open Lean Meta Elab Tactic in
+/-- Finish a supplied-guard conditional before a generic unsafe rule can close its parent.
+Only supplied local evidence and conditional recipes run in this optional attempt; complete
+proofs alone commit. Unresolved targets and competing local/named calls retain the
+ordinary joint alternatives, including every unprepared application. -/
+@[aesop safe -21 tactic (rule_sets := [PolyTime])]
+private meta def polytimeConditionalFast : TacticM Unit := withMainContext do
+  let goal ← getMainGoal
+  let target ← instantiateMVars (← goal.getType)
+  if target.hasExprMVar then throwError "conditional target is not yet determined"
+  unless (← plainConditionalRules? target).isSome do
+    throwError "expected a plain conditional program"
+  if ← hasLocalCall goal then throwError "a local certificate precedes conditional decomposition"
+  let key ← Cslib.Tactic.efficiencyKey target
+  unless ((Cslib.Tactic.certificateExt.getState (← getEnv)).getD key #[]).isEmpty do
+    throwError "a named certificate precedes conditional decomposition"
+  let output ← (polytimeConditional { (default : Aesop.RuleTacInput) with goal }).run' {}
+  for application in output.applications do
+    let before ← saveState
+    try
+      application.postState.restore
+      let goals := application.goals.toList.map (·.mvarId)
+      if ← goals.anyM fun goal => do
+          let tag ← goal.getTag
+          return (`hc).isSuffixOf tag || (`hcondition).isSuffixOf tag then
+        throwError "conditional guard needs joint search"
+      setGoals goals
+      unless goals.isEmpty do
+        let known := mkIdent ``Internal.applyLocalCertificates
+        -- Reuse the registered descriptor: resolving its private declaration by syntax
+        -- would depend on whether the caller is elaborating an exported theorem.
+        let env ← getEnv
+        let (ext, _, _, _, _) ← Aesop.Frontend.getGlobalRuleSetData `PolyTime
+        let index := (ext.getState env).unsafeRules.fold (init := {}) fun index rule =>
+          if rule.name.name == ``polytimeConditional then index.add rule rule.indexingMode
+          else index
+        let env := searchRuleState ext env fun _ =>
+          { Aesop.BaseRuleSet.empty with unsafeRules := index }
+        withEnv env do
+          evalTactic (← `(tactic| solve | all_goals
+            aesop (config := { terminal := true, assumptionTransparency := .reducible })
+              (rule_sets := [-builtin, -default, PolyTime])
+              (add unsafe 100% tactic $known:ident)))
+      if ← Aesop.hasSorry (mkMVar goal) then throwError "conditional premise was admitted"
+      return
+    catch _ => before.restore
+  throwError "no supplied-guard conditional proof closed all premises"
 
 open Lean Meta Elab Tactic Mathlib.Meta.FunProp in
 /-- Shared compositional backend with a fresh alias-aware raw-premise boundary. The standard
