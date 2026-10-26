@@ -823,7 +823,6 @@ public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedOccu
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedPolyTime
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedSemantics
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedSize
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedSemantics
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathAssignments
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathBounds
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathData
