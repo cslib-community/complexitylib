@@ -23,7 +23,7 @@ namespace ComplexityTests.UniversalExecution
 
 open Turing.MultiTapeTM.Universal
 
-/-- Emit zero, take a silent step, then emit one on the transition that halts. -/
+/-- On empty input, emit zero, take a silent step, then emit one while halting. -/
 def emitsAcrossSilence : Desc where
   tapes := 0
   q₀ := 0
