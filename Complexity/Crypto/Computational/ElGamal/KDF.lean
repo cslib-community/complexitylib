@@ -47,10 +47,10 @@ via the Leftover Hash Lemma, without any computational assumptions on the hash f
 To formalize this over an arbitrary `PrimeOrderGroupFamily`:
 1. `PrimeOrderGroupFamily.withSeed` augments the public group description `d : F.Desc` with a public
    bit-string seed `s : List Bool`, giving `F.withSeed.Desc = F.Desc × List Bool`. Under
-   `PrimeOrderGroupFamily.seededSetup`, `s` is sampled uniformly from `{0, 1}^{seedLen n d}`
-   independently of the group description `d ← setup n`. When `seedLen` is polynomial-time
-   computable in unary, `DDH.withSeed` transfers the `DDH` assumption from `(F, setup)` to
-   `(F.withSeed, F.seededSetup setup seedLen)`.
+   `PrimeOrderGroupFamily.seededSetup`, given the sampled group description `d ← setup n`, `s` is
+   sampled uniformly from `{0, 1}^{seedLen n d}` conditional on `d` (and independently of the group
+   exponents). When `seedLen` is polynomial-time computable in unary, `DDH.withSeed` transfers the
+   `DDH` assumption from `(F, setup)` to `(F.withSeed, F.seededSetup setup seedLen)`.
 2. `PrimeOrderGroupFamily.linearHashKDF` pads the encoded group element `w : List Bool` to the fixed
    self-delimiting width `2 * bound d + 1` via `Cslib.BitString.padWord (bound d) w` and hashes it
    with the public Boolean matrix seed `s` via `Cslib.BitString.LinearHash.wordHash (keyLen d) s`.
@@ -72,8 +72,8 @@ To formalize this over an arbitrary `PrimeOrderGroupFamily`:
 
 * `Cslib.Crypto.PrimeOrderGroupFamily.withSeed`: prime-order group family with a public hash seed in
   the description.
-* `Cslib.Crypto.PrimeOrderGroupFamily.seededSetup`: setup distribution augmenting `setup n` with an
-  independent uniform bit-string seed.
+* `Cslib.Crypto.PrimeOrderGroupFamily.seededSetup`: setup distribution augmenting `setup n` with a
+  bit-string seed sampled uniformly conditional on the sampled group description.
 * `Cslib.Crypto.PrimeOrderGroupFamily.seededDDHDistinguisher`: DDH reduction that samples the public
   seed internally.
 * `Cslib.Crypto.PrimeOrderGroupFamily.linearHashKDF`: polynomial-time key-derivation function built
@@ -152,8 +152,8 @@ abbrev withSeed : PrimeOrderGroupFamily where
           (encPair (encPair F.encDesc encBits) (encPair encNat encBits)) F.encDesc).prod
         (by fun_prop))
 
-/-- Setup distribution for `F.withSeed`: draw `d ← setup n` and an independent uniform seed
-`s ← Cslib.BitString.uniformList (seedLen n d)`, and return `(d, s)`. -/
+/-- Setup distribution for `F.withSeed`: draw `d ← setup n`, then sample a uniform seed
+`s ← Cslib.BitString.uniformList (seedLen n d)` conditional on `d`, and return `(d, s)`. -/
 noncomputable def seededSetup (setup : ℕ → PMF F.Desc) (seedLen : ℕ → F.Desc → ℕ)
     (n : ℕ) : PMF F.withSeed.Desc := do
   let d ← setup n

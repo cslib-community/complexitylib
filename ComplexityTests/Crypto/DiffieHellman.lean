@@ -11,7 +11,6 @@ import Complexity.Crypto.Computational.ElGamal
 import Complexity.Crypto.Computational.ElGamal.KDF
 import Complexity.Crypto.Computational.ElGamal.ProbComp
 import Complexity.Crypto.Negligible.Basic
-import Complexity.Tactic.PolyTime
 import Complexity.Tactic.PPT
 import Mathlib.Tactic.NormNum.Prime
 
@@ -464,21 +463,58 @@ example :
     (schnorrGroups.linearHashKDF (fun _ => 4) (fun _ => 6)
       ((d23, List.replicate 52 true), Nat.bits 16)).length = 4 := by decide
 
-/-- Positive-side non-degenerate `SecureKDF` instantiation (`k = 4 > 0`): for any setup law whose
-supported descriptions have group order at least `2 ^ n` and encoded group elements of length at
-most `6`, `linearHashKDF (fun _ => 4) (fun _ => 6)` is a `SecureKDF` for `schnorrGroups.withSeed`
-with output key length `4 > 0`. -/
+/-- Every element of `schnorrGroups.Carrier d23` (order `11`, modulus `23`) has binary encoding
+length at most `6`. -/
+theorem schnorrGroups_encode_d23_length_le (x : schnorrGroups.Carrier d23) :
+    (schnorrGroups.encode d23 x).length ≤ 6 := by
+  have : NeZero d23.1.1 := ⟨by decide⟩
+  have hfin : ∀ i : Fin 23, i.val.bits.length ≤ 6 := by decide
+  exact hfin ⟨((Additive.toMul x).1 : ZMod d23.1.1).val, ZMod.val_lt _⟩
+
+/-- Unconditional concrete finite quantitative bound on `d23` (`order d23 = 11`, `B = 6`, `k = 4`):
+for any KDF distinguisher, the advantage of distinguishing `linearHashKDF (fun _ => 4) (fun _ => 6)`
+from a truly uniform 4-bit key on `d23` is bounded by `NNReal.sqrt (2 ^ 4 / 11) / 2`. -/
+example (distinguisher : ℕ → schnorrGroups.withSeed.Desc × List Bool × List Bool × List Bool →
+      ProbComp Bool) (n : ℕ) :
+    Game.advantage
+      (schnorrGroups.withSeed.kdfRealGame
+        (schnorrGroups.seededSetup (fun _ => PMF.pure d23)
+          (schnorrGroups.linearHashSeedLen (fun _ => 4) (fun _ => 6)))
+        (schnorrGroups.linearHashKDF (fun _ => 4) (fun _ => 6))
+        distinguisher n)
+      (schnorrGroups.withSeed.kdfIdealGame
+        (schnorrGroups.seededSetup (fun _ => PMF.pure d23)
+          (schnorrGroups.linearHashSeedLen (fun _ => 4) (fun _ => 6)))
+        (fun _ => 4) distinguisher n) ≤
+      NNReal.sqrt (2 ^ 4 / (11 : ℝ≥0)) / 2 :=
+  schnorrGroups.advantage_kdfGame_linearHashKDF_le
+    (fun _ => PMF.pure d23) (fun _ => 4) (fun _ => 6) (fun _ => 4) distinguisher n 11
+    (by decide) (fun _ _ => rfl)
+    (fun d hd x => by
+      rw [PMF.support_pure, Set.mem_singleton_iff] at hd
+      subst hd
+      exact schnorrGroups_encode_d23_length_le x)
+    (fun d hd => by
+      rw [PMF.support_pure, Set.mem_singleton_iff] at hd
+      subst hd
+      decide)
+
+/-- Positive-side non-degenerate asymptotic `SecureKDF` instantiation (`k = 4 > 0`): for any setup
+law whose supported descriptions have group order at least `2 ^ n`, `schnorrGroups.withSeed` admits
+a `SecureKDF` with output key length `4 > 0` (constructed via `linearHashKDF` using the canonical
+polynomial encoding-length bound of `schnorrGroups`). -/
 example (setup : ℕ → PMF schnorrGroups.Desc)
-    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d)
-    (hbound : ∀ n, ∀ d ∈ (setup n).support, ∀ x : schnorrGroups.Carrier d,
-      (schnorrGroups.encode d x).length ≤ 6) :
-    schnorrGroups.withSeed.SecureKDF
-      (schnorrGroups.seededSetup setup
-        (schnorrGroups.linearHashSeedLen (fun _ => 4) (fun _ => 6)))
-      (schnorrGroups.linearHashKDF (fun _ => 4) (fun _ => 6))
-      (fun _ => 4) :=
-  schnorrGroups.secureKDF_linearHashKDF_const setup (fun _ => 6) 4
-    Nat.two_pow_pos hbound hsize negligible_inv_two_pow
+    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
+    ∃ (seedLen : ℕ → schnorrGroups.Desc → ℕ)
+      (H : schnorrGroups.withSeed.Desc × List Bool → List Bool),
+      ComputableInPolyTime (fun p => seedLen p.1 p.2)
+        (encPair encUnary schnorrGroups.encDesc) encUnary ∧
+      ComputableInPolyTime H
+        (encPair schnorrGroups.withSeed.encDesc encBits) encBits ∧
+      (∀ ds : schnorrGroups.withSeed.Desc, ∀ w : List Bool, (H (ds, w)).length = 4) ∧
+      schnorrGroups.withSeed.SecureKDF
+        (schnorrGroups.seededSetup setup seedLen) H (fun _ => 4) :=
+  schnorrGroups.exists_secureKDF_withSeed setup 4 Nat.two_pow_pos hsize negligible_inv_two_pow
 
 /-- Negative-side KDF counterexample: a constant 1-bit KDF `constZeroKDF := fun _ => [false]`
 always outputs `[false]` instead of a uniform 1-bit key. -/
@@ -497,9 +533,9 @@ theorem isPPTOn_firstBitKDFDistinguisher :
       (encPair encUnary
         (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
       encBool (fun input => firstBitKDFDistinguisher input.1 input.2) := by
-  have hhead : ComputableTidilyInPolyTime (fun s : List Bool => s.headD false) encBits encBool := by
+  have hhead : ComputableInPolyTime (fun s : List Bool => s.headD false) encBits encBool := by
     fun_prop
-  have hproj : ComputableTidilyInPolyTime
+  have hproj : ComputableInPolyTime
       (fun input : ℕ × schnorrGroups.Desc × List Bool × List Bool × List Bool => input.2.2.2.2)
       (encPair encUnary
         (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
@@ -544,7 +580,7 @@ theorem not_secureKDF_constZeroKDF :
 /-- The constant group description family `fun _ : ℕ => d23` is computable in polynomial time. -/
 theorem computableInPolyTime_const_d23 :
     ComputableInPolyTime (fun _ : ℕ => d23) encUnary schnorrGroups.encDesc :=
-  ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.const d23)
+  ComputableInPolyTime.const d23
 
 /-- Support-level round-trip correctness of `elGamalKeyGenProb`, `hashedElGamalEncapsProb`, and
 `hashedElGamalDecaps` on `d23`. -/

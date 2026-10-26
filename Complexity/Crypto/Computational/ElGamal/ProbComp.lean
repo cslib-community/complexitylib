@@ -21,7 +21,6 @@ import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.StatisticalDistance
-import Complexity.Tactic.PolyTime
 import Complexity.Tactic.PPT
 
 /-!
@@ -127,20 +126,20 @@ noncomputable def sampleElGamalExp (n : ℕ) (d : F.Desc) : ProbComp ℕ :=
 
 private theorem isPPTOn_sampleElGamalExp {γ : Type} {encIn : γ ↪ List Bool}
     {n : γ → ℕ} {d : γ → F.Desc}
-    (hn : ComputableTidilyInPolyTime n encIn encUnary)
-    (hd : ComputableTidilyInPolyTime d encIn F.encDesc) :
+    (hn : ComputableInPolyTime n encIn encUnary)
+    (hd : ComputableInPolyTime d encIn F.encDesc) :
     IsPPTOn encIn encNat (fun a => F.sampleElGamalExp (n a) (d a)) := by
-  have hord : ComputableTidilyInPolyTime (fun a => F.order (d a)) encIn encNat :=
-    F.computableInPolyTime_order.tidy.comp hd
-  have hlen : ComputableTidilyInPolyTime
+  have hord : ComputableInPolyTime (fun a => F.order (d a)) encIn encNat :=
+    F.computableInPolyTime_order.comp hd
+  have hlen : ComputableInPolyTime
       (fun a => (encNat (F.order (d a))).length) encIn encUnary :=
-    (ComputableTidilyInPolyTime.encoding_length encNat).comp hord
-  have hadd : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
+    (ComputableInPolyTime.encoding_length encNat).comp hord
+  have hadd : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
       (encPair encUnary encUnary) encUnary := by fun_prop
-  have hwidth : ComputableTidilyInPolyTime
+  have hwidth : ComputableInPolyTime
       (fun a => n a + (encNat (F.order (d a))).length) encIn encUnary :=
     hadd.comp (hn.prod hlen)
-  exact isPPTOn_sampleModNat (.of_tidy hwidth) (.of_tidy hord)
+  exact isPPTOn_sampleModNat hwidth hord
 
 /-- Replacing one `sampleElGamalExp n d` draw by an exact uniform draw on `ZMod (F.order d)`
 changes `Game.advantage` by at most `1 / 2 ^ n`. -/
@@ -185,14 +184,23 @@ noncomputable def elGamalKeyGenProb (d : ℕ → F.Desc) (n : ℕ) :
 theorem isPPTOn_elGamalKeyGenProb {d : ℕ → F.Desc}
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     IsPPTOn encUnary (encPair encBits encBits) (F.elGamalKeyGenProb d) := by
-  have := hd.tidy
-  have := F.computableInPolyTime_encodeElGamalPublicKey.tidy
-  have htail : ComputableTidilyInPolyTime
-      (fun p : ℕ × ℕ =>
-        (encPair F.encDesc encBits (d p.1, F.encodeElGamalPublicKey (d p.1, p.2)), encNat p.2))
-      (encPair encUnary encNat) (encPair encBits encBits) := by fun_prop
+  let E := encPair encUnary encNat
+  have hd1 : ComputableInPolyTime (fun p : ℕ × ℕ => d p.1) E F.encDesc :=
+    hd.comp (ComputableInPolyTime.fst _ _)
+  have ha : ComputableInPolyTime (fun p : ℕ × ℕ => p.2) E encNat :=
+    ComputableInPolyTime.snd _ _
+  have hu : ComputableInPolyTime
+      (fun p : ℕ × ℕ => F.encodeElGamalPublicKey (d p.1, p.2)) E encBits :=
+    F.computableInPolyTime_encodeElGamalPublicKey.comp (hd1.prod ha)
+  have hpk : ComputableInPolyTime
+      (fun p : ℕ × ℕ => encPair F.encDesc encBits (d p.1, F.encodeElGamalPublicKey (d p.1, p.2)))
+      E encBits :=
+    (ComputableInPolyTime.of_eq fun _ => rfl).comp (hd1.prod hu)
+  have hsk : ComputableInPolyTime (fun p : ℕ × ℕ => encNat p.2) E encBits :=
+    (ComputableInPolyTime.of_eq fun _ => rfl).comp ha
   unfold elGamalKeyGenProb
-  exact (F.isPPTOn_sampleElGamalExp (by fun_prop) hd.tidy).bind_with htail.isPPTOn
+  exact (F.isPPTOn_sampleElGamalExp ComputableInPolyTime.id' hd).bind_with
+    (hpk.prod hsk).isPPTOn
 
 /-- Probabilistic polynomial-time Hashed ElGamal KEM encapsulation for a group description family
 `d : ℕ → F.Desc` ([BonehShoup2023], Section 11.5, p. 445, Remark 11.1, p. 446, and Exercise 11.9,
@@ -213,26 +221,30 @@ theorem isPPTOn_hashedElGamalEncapsProb {H : F.Desc × List Bool → List Bool} 
     IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => F.hashedElGamalEncapsProb H d p.1 p.2) := by
   let E := encPair (encPair encUnary encBits) encNat
-  have hd1 : ComputableTidilyInPolyTime (fun p : (ℕ × List Bool) × ℕ => d p.1.1) E F.encDesc :=
-    hd.tidy.comp (by fun_prop)
-  have hgen : ComputableTidilyInPolyTime
+  have hd1 : ComputableInPolyTime (fun p : (ℕ × List Bool) × ℕ => d p.1.1) E F.encDesc :=
+    hd.comp ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _))
+  have hb : ComputableInPolyTime (fun p : (ℕ × List Bool) × ℕ => p.2) E encNat :=
+    ComputableInPolyTime.snd _ _
+  have hu : ComputableInPolyTime (fun p : (ℕ × List Bool) × ℕ => dropFrame p.1.2) E encBits :=
+    ComputableInPolyTime.dropFrame.comp
+      ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.fst _ _))
+  have hgen : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ℕ => F.encode (d p.1.1) (F.generator (d p.1.1))) E encBits :=
-    F.computableInPolyTime_generator.tidy.comp hd1
-  have hw : ComputableTidilyInPolyTime
+    F.computableInPolyTime_generator.comp hd1
+  have hw : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ℕ => F.smul (d p.1.1, p.2, dropFrame p.1.2)) E encBits :=
-    F.computableInPolyTime_smul.tidy.comp (hd1.prod (by fun_prop))
-  have hk : ComputableTidilyInPolyTime
+    F.computableInPolyTime_smul.comp (hd1.prod (hb.prod hu))
+  have hk : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ℕ => H (d p.1.1, F.smul (d p.1.1, p.2, dropFrame p.1.2)))
       E encBits :=
-    hH.tidy.comp (hd1.prod hw)
-  have hv : ComputableTidilyInPolyTime
+    hH.comp (hd1.prod hw)
+  have hv : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ℕ =>
         F.smul (d p.1.1, p.2, F.encode (d p.1.1) (F.generator (d p.1.1)))) E encBits :=
-    F.computableInPolyTime_smul.tidy.comp (hd1.prod ((by fun_prop :
-      ComputableTidilyInPolyTime (fun p : (ℕ × List Bool) × ℕ => p.2) E encNat).prod hgen))
+    F.computableInPolyTime_smul.comp (hd1.prod (hb.prod hgen))
   unfold hashedElGamalEncapsProb
-  exact (F.isPPTOn_sampleElGamalExp (by fun_prop) (hd.tidy.comp (by fun_prop))).bind_with
-    (hk.prod hv).isPPTOn
+  exact (F.isPPTOn_sampleElGamalExp (ComputableInPolyTime.fst _ _)
+    (hd.comp (ComputableInPolyTime.fst _ _))).bind_with (hk.prod hv).isPPTOn
 
 /-- Deterministic polynomial-time Hashed ElGamal KEM decapsulation ([BonehShoup2023], Section 11.5,
 p. 445, Remark 11.1, p. 446): given secret key `sk = encNat a` and KEM ciphertext
@@ -249,11 +261,21 @@ theorem computableInPolyTime_hashedElGamalDecaps {H : F.Desc × List Bool → Li
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => F.hashedElGamalDecaps H d p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) encBits := by
-  have := hd.tidy
-  have := hH.tidy
-  have := F.computableInPolyTime_smul.tidy
+  let E := encPair encUnary (encPair encBits encBits)
+  have hd1 : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => d p.1) E F.encDesc :=
+    hd.comp (ComputableInPolyTime.fst _ _)
+  have ha : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => ofBits p.2.1) E encNat :=
+    ComputableInPolyTime.bitsToNat.comp
+      ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))
+  have hct : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => p.2.2) E encBits :=
+    (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _)
+  have hw : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => F.smul (d p.1, ofBits p.2.1, p.2.2)) E encBits :=
+    F.computableInPolyTime_smul.comp (hd1.prod (ha.prod hct))
   unfold hashedElGamalDecaps
-  exact .of_tidy (by fun_prop)
+  exact hH.comp (hd1.prod hw)
 
 /-- **Hashed ElGamal KEM decapsulation correctness**: for any `n : ℕ`, any `(pk, sk)` in the
 support of `elGamalKeyGenProb d n`, and any `(k, ctKem)` in the support of
@@ -552,9 +574,22 @@ theorem DDH.wordINDCPA_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
     (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
       (fun p => encryptSym p.1 p.2.1 p.2.2)) :
     WordINDCPA (F.elGamalKeyGenProb d)
-      (hybridEncrypt (F.hashedElGamalEncapsProb H d) encryptSym) :=
-  hDDH.indcpaOn_hybrid_hashedElGamal hKDF hdem
-    (ComputableInPolyTime.of_tidy (by polytime)) (fun _ _ _ _ => rfl) hH hd hencryptSym
+      (hybridEncrypt (F.hashedElGamalEncapsProb H d) encryptSym) := by
+  let E := encPair encUnary (encPair encBits (encPair encBits encBits))
+  have hl0 : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool × List Bool => p.2.2.1.length) E encUnary :=
+    (ComputableInPolyTime.encoding_length encBits).comp
+      ((ComputableInPolyTime.fst _ _).comp
+        ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _)))
+  have hl1 : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool × List Bool => p.2.2.2.length) E encUnary :=
+    (ComputableInPolyTime.encoding_length encBits).comp
+      ((ComputableInPolyTime.snd _ _).comp
+        ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _)))
+  have hbeq : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 == p.2)
+      (encPair encUnary encUnary) encBool := by fun_prop
+  exact hDDH.indcpaOn_hybrid_hashedElGamal hKDF hdem
+    (hbeq.comp (hl0.prod hl1)) (fun _ _ _ _ => rfl) hH hd hencryptSym
 
 /-- Probabilistic polynomial-time multiplicative ElGamal encryption for a group description family
 `d : ℕ → F.Desc` and message encoder `encodeMsg : F.Desc → Msg → List Bool`
@@ -576,17 +611,39 @@ theorem isPPTOn_elGamalEncryptProb {Msg : Type} {encMsg : Msg ↪ List Bool}
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
       (fun p => F.elGamalEncryptProb encodeMsg d p.1 p.2.1 p.2.2) := by
-  have := hd.tidy
-  have := hencMsg.tidy
-  have := F.computableInPolyTime_encodeElGamalEncrypt.tidy
-  have henc : ComputableTidilyInPolyTime
+  let E := encPair (encPair encUnary (encPair encBits encMsg)) encNat
+  have hp1 : ComputableInPolyTime (fun p : (ℕ × List Bool × Msg) × ℕ => p.1)
+      E (encPair encUnary (encPair encBits encMsg)) :=
+    ComputableInPolyTime.fst _ _
+  have hd1 : ComputableInPolyTime (fun p : (ℕ × List Bool × Msg) × ℕ => d p.1.1) E F.encDesc :=
+    hd.comp ((ComputableInPolyTime.fst _ _).comp hp1)
+  have hp12 : ComputableInPolyTime (fun p : (ℕ × List Bool × Msg) × ℕ => p.1.2)
+      E (encPair encBits encMsg) :=
+    (ComputableInPolyTime.snd _ _).comp hp1
+  have hu : ComputableInPolyTime
+      (fun p : (ℕ × List Bool × Msg) × ℕ => dropFrame p.1.2.1) E encBits :=
+    ComputableInPolyTime.dropFrame.comp ((ComputableInPolyTime.fst _ _).comp hp12)
+  have hm : ComputableInPolyTime (fun p : (ℕ × List Bool × Msg) × ℕ => p.1.2.2) E encMsg :=
+    (ComputableInPolyTime.snd _ _).comp hp12
+  have hem : ComputableInPolyTime
+      (fun p : (ℕ × List Bool × Msg) × ℕ => encodeMsg (d p.1.1) p.1.2.2) E encBits :=
+    hencMsg.comp (hd1.prod hm)
+  have hb : ComputableInPolyTime (fun p : (ℕ × List Bool × Msg) × ℕ => p.2) E encNat :=
+    ComputableInPolyTime.snd _ _
+  have hraw : ComputableInPolyTime
+      (fun p : (ℕ × List Bool × Msg) × ℕ =>
+        F.encodeElGamalEncrypt (d p.1.1, dropFrame p.1.2.1, encodeMsg (d p.1.1) p.1.2.2, p.2))
+      E (encPair encBits encBits) :=
+    F.computableInPolyTime_encodeElGamalEncrypt.comp (hd1.prod (hu.prod (hem.prod hb)))
+  have henc : ComputableInPolyTime
       (fun p : (ℕ × List Bool × Msg) × ℕ =>
         encPair encBits encBits
           (F.encodeElGamalEncrypt (d p.1.1, dropFrame p.1.2.1, encodeMsg (d p.1.1) p.1.2.2, p.2)))
-      (encPair (encPair encUnary (encPair encBits encMsg)) encNat) encBits := by fun_prop
+      E encBits :=
+    (ComputableInPolyTime.of_eq fun _ => rfl).comp hraw
   unfold elGamalEncryptProb
-  exact (F.isPPTOn_sampleElGamalExp (by fun_prop) (hd.tidy.comp (by fun_prop))).bind_with
-    henc.isPPTOn
+  exact (F.isPPTOn_sampleElGamalExp (ComputableInPolyTime.fst _ _)
+    (hd.comp (ComputableInPolyTime.fst _ _))).bind_with henc.isPPTOn
 
 /-- Deterministic polynomial-time multiplicative ElGamal decryption on words: given secret key
 `sk = encNat a` and ciphertext `ct = encPair encBits encBits (v, e)`, compute
@@ -600,10 +657,20 @@ theorem computableInPolyTime_elGamalDecryptDet {d : ℕ → F.Desc}
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => F.elGamalDecryptDet d p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) encBits := by
-  have := hd.tidy
-  have := F.computableInPolyTime_decodeElGamal.tidy
+  let E := encPair encUnary (encPair encBits encBits)
+  have hd1 : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => d p.1) E F.encDesc :=
+    hd.comp (ComputableInPolyTime.fst _ _)
+  have ha : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => ofBits p.2.1) E encNat :=
+    ComputableInPolyTime.bitsToNat.comp
+      ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))
+  have hct : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2) E encBits :=
+    (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _)
+  have hv : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => unframe p.2.2) E encBits :=
+    ComputableInPolyTime.unframe.comp hct
+  have he : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => dropFrame p.2.2) E encBits :=
+    ComputableInPolyTime.dropFrame.comp hct
   unfold elGamalDecryptDet
-  exact .of_tidy (by fun_prop)
+  exact F.computableInPolyTime_decodeElGamal.comp (hd1.prod (ha.prod (hv.prod he)))
 
 /-- **Multiplicative ElGamal decryption correctness on `ProbComp` outputs**: for any `(pk, sk)` in
 the support of `elGamalKeyGenProb d n`, any `m : F.Carrier (d n)`, and any `ct` in the support of
@@ -741,7 +808,7 @@ theorem DDH.indcpa_elGamalBitEncryptProb {F : PrimeOrderGroupFamily} {d : ℕ �
     (hDDH : F.DDH (fun n => PMF.pure (d n))) :
     INDCPA (F.elGamalKeyGenProb d) (F.elGamalEncryptProb F.encodeBit d) :=
   hDDH.indcpaOn_elGamalEncryptProb
-    (ComputableTidilyInPolyTime.const true).computableInPolyTime
+    (ComputableInPolyTime.const true)
     F.admitsGroupElements_encodeBit F.computableInPolyTime_encodeBit
 
 end Cslib.Crypto.PrimeOrderGroupFamily
