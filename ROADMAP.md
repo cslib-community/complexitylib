@@ -120,6 +120,10 @@ families and full-input native runtime.
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers; eavesdropping security in the strict-PPT model, with the
   statistical-distance term from sampling `ZMod q`.
+- **Diffie–Hellman and ElGamal:** arbitrary-key-length standalone symmetric-cipher bridge for
+  general-cipher Hashed ElGamal (Boneh–Shoup Theorem 11.5; the general-cipher construction,
+  Game 0/1/2 hybrids, Equation `(11.14)` reductions, and normalized `n`-bit-key `DEMOneTimeINDCPAOn`
+  / `linearHashKDF` endpoints have landed) ([#1047]).
 - **Chosen-ciphertext security** ([#1000]): authenticated encryption by encrypt-then-MAC and
   Cramer–Shoup from DDH, with KEM–DEM hybrid encryption ([#881]) as the chosen-plaintext
   starting point (Boneh–Shoup Exercise 11.9).

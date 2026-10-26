@@ -124,7 +124,9 @@ fair coins via `ProbComp.sampleModNat`, within statistical distance `1 / 2 ^ n` 
 noncomputable def sampleElGamalExp (n : ℕ) (d : F.Desc) : ProbComp ℕ :=
   ProbComp.sampleModNat (n + (encNat (F.order d)).length) (F.order d)
 
-private theorem isPPTOn_sampleElGamalExp {γ : Type} {encIn : γ ↪ List Bool}
+/-- `sampleElGamalExp` is uniform strict PPT whenever `n` and `d` are computable in polynomial
+time. -/
+theorem isPPTOn_sampleElGamalExp {γ : Type} {encIn : γ ↪ List Bool}
     {n : γ → ℕ} {d : γ → F.Desc}
     (hn : ComputableInPolyTime n encIn encUnary)
     (hd : ComputableInPolyTime d encIn F.encDesc) :

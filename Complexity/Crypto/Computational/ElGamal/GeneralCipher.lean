@@ -10,10 +10,8 @@ module
 public import Complexity.Crypto.Computational.ElGamal.KDF
 public import Complexity.Crypto.Computational.ElGamal.ProbComp
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Probabilistic.Sampling
-import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Crypto.Game.Statistical
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF
@@ -80,9 +78,10 @@ $\mathcal{E}_s$.
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_hashedElGamalCipherCPAGameOn_le_two_mul`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_hashedElGamalCipherUniformKeyGameOn_le_demGameOn`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_hashedElGamalCipherCPAGameOn_le_demGameOn`:
-  two-distinguisher, single hidden-bit distinguisher, and standalone symmetric-cipher
-  (`Encryption.demGameOn`) quantitative bounds for Theorem 11.5, matching Equation `(11.14)` of
-  [BonehShoup2023], p. 449.
+  two-distinguisher and single hidden-bit distinguisher quantitative bounds for Theorem 11.5
+  (matching Equation `(11.14)` of [BonehShoup2023], p. 449), together with the native
+  approximate-sampling (`sampleElGamalExp`, adding `4 / 2 ^ n`) bridge to standalone
+  symmetric-cipher security (`Encryption.demGameOn`).
 * `Cslib.Crypto.PrimeOrderGroupFamily.DDH.negligible_hashedElGamalCipherCPAGameOn` and its
   `DEMOneTimeINDCPAOn` / `linearHashKDF` specializations
   (`negligible_hashedElGamalCipherCPAGameOn_of_demOneTimeINDCPAOn`,
@@ -970,33 +969,6 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn {F : PrimeOrderGroupFamily}
 
 /-! ### Reduction from Game 2 (`hashedElGamalCipherUniformKeyGameOn`) to `DEMOneTimeINDCPAOn` -/
 
-private theorem isPPTOn_sampleElGamalExp_aux {γ : Type} {encIn : γ ↪ List Bool}
-    {n : γ → ℕ} {d : γ → F.Desc}
-    (hn : ComputableInPolyTime n encIn encUnary)
-    (hd : ComputableInPolyTime d encIn F.encDesc) :
-    IsPPTOn encIn encNat (fun a => F.sampleElGamalExp (n a) (d a)) := by
-  have hord : ComputableInPolyTime (fun a => F.order (d a)) encIn encNat :=
-    F.computableInPolyTime_order.comp hd
-  have hlen : ComputableInPolyTime
-      (fun a => (encNat (F.order (d a))).length) encIn encUnary :=
-    (ComputableInPolyTime.encoding_length encNat).comp hord
-  have hadd : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
-      (encPair encUnary encUnary) encUnary := by fun_prop
-  have hwidth : ComputableInPolyTime
-      (fun a => n a + (encNat (F.order (d a))).length) encIn encUnary :=
-    hadd.comp (hn.prod hlen)
-  exact isPPTOn_sampleModNat hwidth hord
-
-private theorem negligible_const_div_two_pow_aux (c : ℕ) :
-    Negligible (fun n => (c : ℝ≥0) / 2 ^ n) := by
-  have h : (fun n => (c : ℝ≥0) / 2 ^ n) =
-      fun n => (c : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n := by
-    funext n
-    rw [div_eq_mul_inv, one_div, inv_pow]
-  rw [h]
-  exact (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).polynomiallyBounded_mul
-    (by fun_prop)
-
 /-- One-time symmetric-cipher reduction adversary $\mathcal{B}_s$ for general-cipher Hashed ElGamal
 ([BonehShoup2023], Section 11.5.2, proof of Theorem 11.5, p. 451): given an efficiently samplable
 group-description generator `setupProb : ℕ → ProbComp F.Desc` and a PKE adversary `adversary`,
@@ -1110,8 +1082,8 @@ theorem isPPT_hashedElGamalCipherToDEMAdversary {Msg : Type} {encMsg : Msg ↪ L
   refine ⟨?_, hA.guess.preprocess hargG⟩
   unfold Probability.IsPPT hashedElGamalCipherToDEMAdversary
   exact (hsetup.preprocess hn0).bind_with
-    ((F.isPPTOn_sampleElGamalExp_aux hn1 hd1).bind_with
-      ((F.isPPTOn_sampleElGamalExp_aux hn2 hd2).bind_with
+    ((F.isPPTOn_sampleElGamalExp hn1 hd1).bind_with
+      ((F.isPPTOn_sampleElGamalExp hn2 hd2).bind_with
         (hchoose3.bind_with hret4.isPPTOn)))
 
 /-- For each bit `bit : Bool`, the Game 2 distribution `hashedElGamalCipherUniformKeyGameOn` over
@@ -1268,9 +1240,12 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_le_demGameOn {Msg : Type}
         2 / 2 ^ n) := hcomb
     _ = _ := by ring
 
-/-- **Complete quantitative reduction for Theorem 11.5 to DDH, `SecureKDF`, and standalone
-symmetric-cipher security (`Encryption.demGameOn`)** ([BonehShoup2023], Section 11.5.2,
-Theorem 11.5, Equation `(11.14)`, p. 449):
+/-- **Native approximate-sampling version of Equation `(11.14)` for Theorem 11.5 via DDH,
+`SecureKDF`, and standalone symmetric-cipher security (`Encryption.demGameOn`)** ([BonehShoup2023],
+Section 11.5.2, Theorem 11.5, Equation `(11.14)`, p. 449): combining the exact PMF-level Equation
+`(11.14)` bound `advantage_hashedElGamalCipherCPAGameOn_le_two_mul` with the `sampleElGamalExp`
+Game 2 bridge `advantage_hashedElGamalCipherUniformKeyGameOn_le_demGameOn` adds `4 / 2 ^ n` for the
+two approximate exponent draws per branch:
 $$\mathsf{SSadv}[\mathcal{A}, \mathcal{E}_{\mathrm{EG}}] \le
   2 \cdot \mathsf{DDHadv}[\mathcal{B}_{\mathrm{ddh}}, \mathbb{G}] +
   2 \cdot \mathsf{KDFadv}[\mathcal{B}_{\mathrm{kdf}}, H] +
@@ -1345,7 +1320,10 @@ theorem negligible_hashedElGamalCipherUniformKeyGameOn_of_demOneTimeINDCPAOn {Ms
   have hA' := hA.restrict hvalid
   have hdem := hDEM (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))
     (F.isPPT_hashedElGamalCipherToDEMAdversary hsetup hA')
-  have herr : Negligible (fun n : ℕ => (4 : ℝ≥0) / 2 ^ n) := negligible_const_div_two_pow_aux 4
+  have herr : Negligible (fun n : ℕ => (4 : ℝ≥0) / 2 ^ n) := by
+    simpa only [div_eq_mul_inv, inv_pow, Nat.cast_ofNat] using
+      (negligible_geometric (ratio := 2⁻¹) (by norm_num)).polynomiallyBounded_mul
+        (p := fun _ => 4) (by fun_prop)
   exact negligible_of_le (hdem.add herr) fun n =>
     F.advantage_hashedElGamalCipherUniformKeyGameOn_le_demGameOn
       valid validSym setupProb keyLen encryptSym adversary n (hkeyLen n) (hvalid_imp n)
