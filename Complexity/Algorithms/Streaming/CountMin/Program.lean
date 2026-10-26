@@ -127,7 +127,7 @@ theorem sampleQuery_error_le_inv_two_pow [DecidableEq X] [Fintype Seed] [Nonempt
   classical
   rw [eval_sampleQuery sampleSeed hs, PMF.toOuterMeasure_map_apply,
     PMF.toOuterMeasure_uniformOfFintype_toReal]
-  simpa only [Finset.nnratCast_dens, Set.mem_preimage, Set.mem_setOf_eq] using
+  simpa only [Finset.nnratCast_dens, Set.mem_preimage, Set.mem_ofPred_eq] using
     dens_estimate_error_le_inv_two_pow (d := d) hash hh s x hε hw
 
 end Cslib.CountMin
