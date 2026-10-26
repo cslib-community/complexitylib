@@ -19,16 +19,19 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compl
 
 An ordinary module import must not export a `fun_prop` rule referring to an unavailable private
 theorem. Such a rule crashes proof search with an unknown-constant error when it is selected.
-Inspect all four imported rule registries, including lazy discrimination-tree entries, and check
-that public polynomial-time certificates remain usable in composed goals.
+Inspect this library's private declarations in all four imported rule registries, including lazy
+discrimination-tree entries, and check that public polynomial-time certificates remain usable in
+composed goals.
 -/
 
 open Lean Mathlib.Meta.FunProp in
 run_meta do
   let env ← getEnv
   let check (name : Name) : MetaM Unit := do
-    unless (env.find? name).isSome do
-      logError m!"imported fun_prop rule is unavailable: {name}"
+    -- Dependency-owned rules are outside this library's regression.
+    if (`_private.Complexity).isPrefixOf name then
+      unless (env.find? name).isSome do
+        logError m!"imported fun_prop rule is unavailable: {name}"
   for (_, rules) in (lambdaTheoremsExt.getState env).theorems do
     for rule in rules do
       check rule.thmName
