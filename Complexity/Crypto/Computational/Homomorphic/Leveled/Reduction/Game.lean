@@ -131,8 +131,8 @@ private theorem eval_tagLeveledChoice_false_true (E : Scheme) (depth capacity : 
       (leveledAdversary E depth capacity adversary).guess n choice.2 ciphertext) =
     ProbComp.eval (Encryption.game E.keyGen E.encrypt
       (E.linkAdversary depth capacity (publicKeyGame E adversary true)) (!bit) n) := by
-  cases bit <;> simp [Encryption.game, Encryption.gameOn, leveledAdversary, tagLeveledChoice, swapLeveledChoice,
-    ProbComp.eval_bind, Function.comp_def]
+  cases bit <;> simp [Encryption.game, Encryption.gameOn, leveledAdversary, tagLeveledChoice,
+    swapLeveledChoice, ProbComp.eval_bind, Function.comp_def]
 
 private theorem eval_tagLeveledChoice_true_false (E : Scheme) (depth capacity : ℕ → ℕ)
     (adversary : Encryption.Adversary) (bit : Bool) (n : ℕ) :
