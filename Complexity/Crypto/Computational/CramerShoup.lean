@@ -8,6 +8,7 @@ module
 
 public import Complexity.Crypto.Computational.CramerShoup.Scheme
 public import Complexity.Crypto.Computational.CramerShoup.Reductions
+public import Complexity.Crypto.Computational.DiffieHellman.EncodingBounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -28,10 +29,26 @@ Definition 12.2, printed p. 468) security proof for the **Multiplicative Cramer�
 encryption scheme** ($\mathcal{E}_{\mathrm{MCS}}$, [Boneh and Shoup, Exercise 12.27, printed
 pp. 521–522][BonehShoup2023], specialized to associated data $\mathcal{D} = \mathrm{Unit}$) defined
 in `Complexity.Crypto.Computational.CramerShoup.Scheme` over a `PrimeOrderGroupFamily`, in the
-standard model under the Decisional Diffie–Hellman (`DDH`) assumption and collision resistance
-(`CollisionResistantFor`) of the $\mathbb{Z}_q$-valued hash family $H'$, following the Games 0–6
-proof template of [Boneh and Shoup, Section 12.5.3, Theorem 12.9 and Remark 12.3, printed
-pp. 488–493][BonehShoup2023].
+standard model under:
+1. the Decisional Diffie–Hellman (`DDH`) assumption,
+2. collision resistance (`CollisionResistantFor`) of the $\mathbb{Z}_q$-valued hash family $H'$
+   (`cramerShoupHashMod`), and
+3. a positive group-order lower bound $m(n) > 0$ with $m(n) \le q$ and negligible inverse order
+   $1 / m(n)$,
+
+following the Games 0–6 proof template of [Boneh and Shoup, Section 12.5.3, Theorem 12.9 and
+Remark 12.3, printed pp. 488–493][BonehShoup2023].
+
+We first prove the concrete and asymptotic 1CCA bounds for the **ideal exact-uniform PMF** games
+(`cramerShoupMsgCCA2Game`, `cramerShoupGroupCCA2Game`, `cramerShoupGroupINDCCA2`,
+`cramerShoupCCA2Game`, `cramerShoupINDCCA2`), in which key and challenge exponents are drawn from
+`PMF.uniformOfFintype (ZMod (F.order d))` and the `42 / 2 ^ n` dyadic loss arises solely from the
+`sampleModNat` exponent draws inside the strict-PPT DDH and CRHF reductions. We then bridge these
+ideal games to the library's **native strict-PPT PKE 1CCA notion** (`Encryption.cca2GameOn` and
+`Encryption.INDCCA2On` in `Complexity/Crypto/Computational/Encryption/CCA.lean`) via
+`advantage_cca2GameOn_cramerShoupGroupCCA2Game_le` (which accounts for the additional `8 / 2 ^ n`
+per-bit `sampleModNat` approximation loss of `cramerShoupKeyGenProb` and `cramerShoupEncryptProb`),
+yielding `DDH.indcca2On_cramerShoup`.
 
 ## Source Statements ([BonehShoup2023], Section 12.5.3 & Exercise 12.27)
 
@@ -55,58 +72,79 @@ Verbatim from [BonehShoup2023], Section 12.5.3 (printed pp. 489–492):
 > \text{CRadv}[\mathcal{B}_{\mathrm{cr}}, H'] + \frac{Q_d + 1}{q}\right) +
 > \text{1CCAadv}[\mathcal{B}_s, \mathcal{E}_s]. \quad (12.19)$$
 > …
-> **Game 2.** We next modify the Challenger in Game 1, replacing line (1) with
-> $$(1) \qquad \alpha, \beta, \gamma \xleftarrow{R} \mathbb{Z}_q,\;
->   u \leftarrow g^\alpha,\; v \leftarrow g^\beta,\; w \leftarrow g^\gamma$$
-> It is clear that any 1CCA adversary that can distinguish between Games 1 and 2 can be converted
-> into a DDH adversary. More precisely, we can easily construct an elementary wrapper
-> $\mathcal{B}_{\mathrm{ddh}}$ around $\mathcal{A}$, such that
-> $$|\Pr[W_1] - \Pr[W_2]| \le \text{DDHadv}[\mathcal{B}_{\mathrm{ddh}}, \mathbb{G}]. \quad (12.22)$$
+> **Game 1.** We replace the lines marked (2) and (3) in Fig. 12.3 as follows:
+> $$(2) \qquad z \leftarrow f(v, w)$$
+> $$(3) \qquad z' \leftarrow f'(v, w, \rho)$$
+> Here, instead of using the auxiliary information that allows us to compute $f$ on $L_u$ and $f'$
+> on $L_u \times \mathbb{Z}_q$, we compute them directly, using the secret key $\mathit{sk}$. This
+> does not change the result of the computation in any way. Therefore,
+> $$\Pr[W_1] = \Pr[W_0]. \quad (12.21)$$
+> …
+> **Game 2.** We replace the line marked (1) in Fig. 12.3 with
+> $$(1) \qquad \gamma \xleftarrow{R} \mathbb{Z}_q$$
+> …
+> It is easy to see that
+> $$|\Pr[W_1] - \Pr[W_2]| \le \text{DDHadv}[\mathcal{B}_{\mathrm{ddh}}, \mathbb{G}] \quad (12.22)$$
+> for an efficient DDH adversary $\mathcal{B}_{\mathrm{ddh}}$ …
 >
-> **Game 3.** We next modify the Challenger in Game 2, replacing line (1) with
-> $$(1) \qquad \alpha, \beta \xleftarrow{R} \mathbb{Z}_q,\;
->   \gamma \xleftarrow{R} \mathbb{Z}_q \setminus \{\alpha\beta\},\;
->   u \leftarrow g^\alpha,\; v \leftarrow g^\beta,\; w \leftarrow g^\gamma$$
-> That is, instead of choosing $\gamma \in \mathbb{Z}_q$ at random, we choose
-> $\gamma \in \mathbb{Z}_q$ at random, subject to the constraint that $\gamma \ne \alpha\beta$. It
-> is clear that the distributions ofGames 2 and 3 are identical, unless in Game 2 the challenger
-> happens to choose $\gamma = \alpha\beta$, which happens with probability $1/q$. By the Difference
-> Lemma (Theorem 4.7), we immediately get
-> $$|\Pr[W_2] - \Pr[W_3]| \le 1/q. \quad (12.23)$$
+> **Game 3.** We replace the line marked (1) in Fig. 12.3 with
+> $$(1) \qquad \gamma \xleftarrow{R} \mathbb{Z}_q \setminus \{\alpha\beta\}$$
+> Since the statistical distance between the uniform distribution on all triples and the uniform
+> distribution on all non-DH-triples is $1/q$ (see Exercise 10.7), it follows that:
+> $$|\Pr[W_2] - \Pr[W_3]| \le \frac{1}{q}. \quad (12.23)$$
 >
-> **Game 4.** Now we widen the rejection rule in the decryption oracle (line (5)), replacing it
-> with:
-> $$(5) \qquad \text{if } (\hat{v}, \hat{w}, \hat{z}', \hat{c}) = (v, w, z', c) \text{ or }
->   \mathit{Coll}_{u,v}(\hat{u}, \hat{v}) \text{ or } z' \ne f'(\hat{v}, \hat{w}, \hat{\rho})$$
-> where $\mathit{Coll}_{u,v}(\hat{u}, \hat{v})$ is the condition:
-> $$(\hat{v}, \hat{w}, \hat{c}) \ne (v, w, c) \quad \text{and} \quad \hat{\rho} = \rho$$
-> Let $Z_4$ be the event that in Game 4, the adversary submits a decryption query that would not
-> have been rejected in Game 3, and yet triggers the condition
-> $\mathit{Coll}_{u,v}(\hat{u}, \hat{v})$ in Game 4. Actually, we may as well define $Z_4$ to be the
-> event that $\mathit{Coll}_{u,v}(\hat{u}, \hat{v})$ holds in Game 4 (which could only happen after
-> line (2) is executed), since if this happens at all, then it happens before the two games
-> diverge. Clearly, Games 3 and 4 proceed identically unless $Z_4$ occurs, and so by the Difference
-> Lemma, we have
+> **Game 4.** We now play our “CR card”. Let us define $\mathit{Coll}_{u,v}(\hat{v}, \hat{w})$ to
+> be true if $(\hat{v}, \hat{w}) \ne (v, w)$ and $H'(\hat{v}, \hat{w}) = H'(v, w)$, and to be
+> false, otherwise. In this game, we “widen” the rejection rule at line (5), replacing it with
+> $$(5) \qquad \text{if } \mathit{Coll}_{u,v}(\hat{u}, \hat{v}) \text{ or }
+>   z' \ne f'(\hat{v}, \hat{w}, \hat{\rho})$$
+> Let $Z_4$ be the event that in Game 4, some decryption query, which would not have triggered the
+> rejection rule of Game 3, does trigger the wider rejection rule in Game 4. Clearly, Games 3 and 4
+> proceed identically unless event $Z_4$ occurs. By the Difference Lemma, we have
 > $$|\Pr[W_3] - \Pr[W_4]| \le \Pr[Z_4]. \quad (12.24)$$
-> Moreover, if event $Z_4$ does occur, this immediately gives us a collision for $H'$. Therefore, we
-> can construct an elementary wrapper $\mathcal{B}_{\mathrm{cr}}$ around $\mathcal{A}$ that outputs
-> the colliding inputs when $Z_4$ occurs, and so
+> It should be clear that
 > $$\Pr[Z_4] \le \text{CRadv}[\mathcal{B}_{\mathrm{cr}}, H']. \quad (12.25)$$
+> for an efficient collision-finding adversary $\mathcal{B}_{\mathrm{cr}}$. Indeed, adversary
+> $\mathcal{B}_{\mathrm{cr}}$ just plays Game 4 and waits for the event $Z_4$ to happen.
 
 Verbatim from [BonehShoup2023], Exercise 12.27 (printed pp. 521–522):
-> Show that $\mathcal{E}_{\mathrm{MCS}}$ is CCA secure, provided $H'$ is collision resistant and the
-> DDH assumption holds for $\mathbb{G}$.
+> … Show that $\mathcal{E}_{\mathrm{MCS}}$ is CCA secure, provided $H'$ is collision resistant and
+> the DDH assumption holds for $\mathbb{G}$.
 
 ## Scope and Quantitative Adaptation
 
 * **Associated data specialized to $\mathcal{D} = \mathrm{Unit}$** and **single-challenge 1CCA
   (`Definition 12.2`)**.
-* **Quantitative bound (`advantage_cramerShoupGroupCCA2Game_le`)**: an original quantitative
-  adaptation of `(12.19)` to $\mathcal{E}_{\mathrm{MCS}}$ in the uniform strict-PPT model, where the
-  two fixed-bit DDH distinguishers (`cramerShoupToDDHDistinguisher`) and two fixed-bit collision
-  finders (`cramerShoupToCollisionFinder`) contribute `42 / 2 ^ n` from their `sampleModNat`
-  exponent draws, and `(2 * Q₁ n + 2 * Q₂ n + 2) / m` combines the non-DH triple exclusion (`1 / m`)
-  and the adaptive Lemma 12.8 bound (`(Q₁ n + Q₂ n) / m`) across `bit = false` and `bit = true`.
+* **Adaptation of Game 4 from $\mathcal{E}_{\mathrm{CS}}$ to $\mathcal{E}_{\mathrm{MCS}}$**: in
+  Theorem 12.9 ($\mathcal{E}_{\mathrm{CS}}$), $H'$ hashes the pair $(v, w)$ and
+  $\mathit{Coll}_{u,v}(\hat{v}, \hat{w})$ tests $(\hat{v}, \hat{w}) \ne (v, w) \land
+  H'(\hat{v}, \hat{w}) = H'(v, w)$. In Multiplicative Cramer–Shoup $\mathcal{E}_{\mathrm{MCS}}$
+  (Exercise 12.27, printed pp. 521–522, with $\mathcal{D} = \mathrm{Unit}$), $H'$ hashes the triple
+  $(v, w, e) \in \mathbb{G}^3$ (`encBits3`), so the Game 4 collision predicate is originally adapted
+  to $(\hat{v}, \hat{w}, \hat{e}) \ne (v, w, e) \land H'(\hat{v}, \hat{w}, \hat{e}) = H'(v, w, e)$
+  (while Phase 2 decryption already rejects the full challenge ciphertext
+  $(\hat{v}, \hat{w}, \hat{e}, \hat{z}') = (v, w, e, z')$).
+* **Ideal exact-uniform PMF games vs. native `Encryption.INDCCA2On`**:
+  `cramerShoupMsgCCA2Game`, `cramerShoupGroupCCA2Game`, `cramerShoupGroupINDCCA2`,
+  `cramerShoupCCA2Game`, and `cramerShoupINDCCA2` are **ideal exact-uniform PMF** 1CCA experiments
+  and security definitions, in which the challenger samples exponents from
+  `PMF.uniformOfFintype (ZMod (F.order d))`. In `advantage_cramerShoupGroupCCA2Game_le` (an original
+  quantitative adaptation of `(12.19)` to $\mathcal{E}_{\mathrm{MCS}}$ in the uniform strict-PPT
+  model), the two fixed-bit DDH distinguishers (`cramerShoupToDDHDistinguisher`) and two fixed-bit
+  collision finders (`cramerShoupToCollisionFinder`) contribute `42 / 2 ^ n` from their internal
+  `sampleModNat` exponent draws, and `(2 * Q₁ n + 2 * Q₂ n + 2) / m` combines the non-DH triple
+  exclusion (`1 / m`) and the adaptive Lemma 12.8 bound (`(Q₁ n + Q₂ n) / m`) across `bit = false`
+  and `bit = true`. The **native strict-PPT** security theorem `DDH.indcca2On_cramerShoup`
+  instantiates `Encryption.INDCCA2On` (`Complexity/Crypto/Computational/Encryption/CCA.lean`),
+  bridging from `cramerShoupKeyGenProb` and `cramerShoupEncryptProb` to the ideal game via
+  `advantage_cca2GameOn_cramerShoupGroupCCA2Game_le` with an additional `8 / 2 ^ n` statistical loss
+  per challenge bit (`16 / 2 ^ n` across both bits).
+* **Group-order growth premise**: the asymptotic theorems (`DDH.cramerShoupMsgINDCCA2`,
+  `DDH.cramerShoupGroupINDCCA2`, `DDH.cramerShoupINDCCA2`, and `DDH.indcca2On_cramerShoup`) assume a
+  positive lower bound `m : ℕ → ℕ` on the group order `F.order` with
+  `Negligible (fun n => (1 / m n : ℝ≥0))` so that the information-theoretic projective-hash and
+  non-DH-triple terms `(2 * Q₁ n + 2 * Q₂ n + 2) / m n` are negligible for polynomial query bounds
+  `Q₁, Q₂`.
 -/
 
 @[expose] public section
@@ -119,11 +157,12 @@ open scoped ENNReal NNReal
 variable (F : PrimeOrderGroupFamily)
 
 
-/-- The single-challenge 1CCA experiment for Multiplicative Cramer–Shoup parameterized by a
-message-to-group-word encoding `encodeMsg : F.Desc × Msg → List Bool` ([BonehShoup2023],
-Section 12.1, Attack Game 12.1 and Definition 12.2, printed pp. 467–468, and Exercise 12.27,
-printed pp. 521–522, specialized to associated data $\mathcal{D} = \mathrm{Unit}$; Game 0 of
-Section 12.5.3, printed pp. 490–491). -/
+/-- The **ideal exact-uniform PMF** single-challenge 1CCA experiment for Multiplicative Cramer–Shoup
+parameterized by a message-to-group-word encoding `encodeMsg : F.Desc × Msg → List Bool`
+([BonehShoup2023], Section 12.1, Attack Game 12.1 and Definition 12.2, printed pp. 467–468, and
+Exercise 12.27, printed pp. 521–522, specialized to associated data $\mathcal{D} = \mathrm{Unit}$;
+Game 0 of Section 12.5.3, printed pp. 490–491). Key and challenge exponents are sampled from the
+exact uniform distribution `PMF.uniformOfFintype (ZMod (F.order d))`. -/
 noncomputable def cramerShoupMsgCCA2Game
     {Msg : Type} (encodeMsg : F.Desc × Msg → List Bool) (setup : ℕ → PMF F.Desc)
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
@@ -160,17 +199,17 @@ noncomputable def cramerShoupMsgCCA2Game
   else
     return false
 
-/-- The single-challenge 1CCA experiment for Multiplicative Cramer–Shoup over encoded group-element
-messages (`Msg = List Bool`, `encodeMsg = Prod.snd`), enforcing the group-membership challenge
-admissibility check `isElem (d, m₀) && isElem (d, m₁)`. -/
+/-- The **ideal exact-uniform PMF** single-challenge 1CCA experiment for Multiplicative Cramer–Shoup
+over encoded group-element messages (`Msg = List Bool`, `encodeMsg = Prod.snd`), enforcing the
+group-membership challenge admissibility check `isElem (d, m₀) && isElem (d, m₁)`. -/
 noncomputable abbrev cramerShoupGroupCCA2Game
     (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool) (adversary : WordCCA2Adversary)
     (bit : Bool) (n : ℕ) : Game :=
   F.cramerShoupMsgCCA2Game Prod.snd setup H isElem adversary bit n
 
-/-- Single-challenge 1CCA security of Multiplicative Cramer–Shoup over encoded group-element
-messages (`WordCCA2Adversary`). -/
+/-- Ideal exact-uniform PMF single-challenge 1CCA security of Multiplicative Cramer–Shoup over
+encoded group-element messages (`WordCCA2Adversary`). -/
 def cramerShoupGroupINDCCA2
     (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool) : Prop :=
@@ -179,15 +218,15 @@ def cramerShoupGroupINDCCA2
     (fun adversary n => F.cramerShoupGroupCCA2Game setup H isElem adversary true n)
     WordCCA2Adversary.IsPPT
 
-/-- The single-challenge 1CCA experiment for Multiplicative Cramer–Shoup over single-bit messages
-(`Msg = Bool`, embedded into `F.Carrier d` via `F.encodeBit`). -/
+/-- The **ideal exact-uniform PMF** single-challenge 1CCA experiment for Multiplicative Cramer–Shoup
+over single-bit messages (`Msg = Bool`, embedded into `F.Carrier d` via `F.encodeBit`). -/
 noncomputable abbrev cramerShoupCCA2Game
     (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool) (adversary : CCA2Adversary) (bit : Bool) (n : ℕ) : Game :=
   F.cramerShoupMsgCCA2Game (fun p => F.encodeBit p.1 p.2) setup H isElem adversary bit n
 
-/-- Single-challenge 1CCA security of Multiplicative Cramer–Shoup over single-bit messages
-(`CCA2Adversary`). -/
+/-- Ideal exact-uniform PMF single-challenge 1CCA security of Multiplicative Cramer–Shoup over
+single-bit messages (`CCA2Adversary`). -/
 def cramerShoupINDCCA2
     (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool) : Prop :=
@@ -662,8 +701,9 @@ theorem advantage_cramerShoupMsgCCA2Game_game5_le
   push_cast
   ring
 
-/-- **Concrete 1CCA security bound under honest query bounds**: combining the Game 0 $\to$ Game 5
-bounds for `bit = false` and `bit = true` via `cramerShoupGame5_false_eq_true`. -/
+/-- **Concrete ideal-game 1CCA security bound under honest query bounds**: combining the Game 0
+$\to$ Game 5 bounds for `bit = false` and `bit = true` via `cramerShoupGame5_false_eq_true` (where
+`42 / 2 ^ n` is the reduction loss from the `sampleModNat` exponent draws inside the reductions). -/
 theorem advantage_cramerShoupMsgCCA2Game_le_of_honest_bounds
     {Msg : Type} (encodeMsg : F.Desc × Msg → List Bool) (setup : ℕ → PMF F.Desc)
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
@@ -707,9 +747,9 @@ theorem advantage_cramerShoupMsgCCA2Game_le_of_honest_bounds
   push_cast
   ring
 
-/-- **Concrete 1CCA security bound for `cramerShoupMsgCCA2Game`**: for any adversary with
-decryption-query bounds `(Q₁ n, Q₂ n)`, the 1CCA advantage at parameter `n` is bounded by the DDH
-advantages of `cramerShoupMsgToDDHDistinguisher` (`false` and `true`), the collision-finding
+/-- **Concrete ideal-game 1CCA security bound for `cramerShoupMsgCCA2Game`**: for any adversary with
+decryption-query bounds `(Q₁ n, Q₂ n)`, the ideal 1CCA advantage at parameter `n` is bounded by the
+DDH advantages of `cramerShoupMsgToDDHDistinguisher` (`false` and `true`), the collision-finding
 success probabilities of `cramerShoupMsgToCollisionFinder` (`false` and `true`), plus
 `(2 * Q₁ n + 2 * Q₂ n + 2) / m + 42 / 2 ^ n`. -/
 theorem advantage_cramerShoupMsgCCA2Game_le
@@ -747,11 +787,12 @@ theorem advantage_cramerShoupMsgCCA2Game_le
     (fun _ _ _ _ _ _ => hQ.1 n _)
     (fun _ _ _ _ _ _ _ _ _ _ _ _ _ => hQ.2 n _ _)
 
-/-- **Theorem 12.9 & Exercise 12.27 concrete bound (group-element messages)**
+/-- **Theorem 12.9 & Exercise 12.27 concrete ideal-game bound (group-element messages)**
 ([BonehShoup2023], Section 12.5.3, Theorem 12.9 and Remark 12.3, printed pp. 488–493, and
-Exercise 12.27, printed pp. 521–522): original adaptation of the concrete bound (12.19) to
-Multiplicative Cramer–Shoup $\mathcal{E}_{\mathrm{MCS}}$ in the two-run single-bit reduction style
-(with `42 / 2 ^ n` from the approximate `sampleModNat` exponent draws in the reductions). -/
+Exercise 12.27, printed pp. 521–522): original adaptation of the concrete bound (12.19) to the
+ideal exact-uniform PMF 1CCA game `cramerShoupGroupCCA2Game` for Multiplicative Cramer–Shoup
+$\mathcal{E}_{\mathrm{MCS}}$ in the two-run single-bit reduction style (with `42 / 2 ^ n` from the
+approximate `sampleModNat` exponent draws in the reductions). -/
 theorem advantage_cramerShoupGroupCCA2Game_le
     (setup : ℕ → PMF F.Desc)
     (H : F.Desc × List Bool → List Bool)
@@ -783,7 +824,7 @@ theorem advantage_cramerShoupGroupCCA2Game_le
       42 / 2 ^ n :=
   F.advantage_cramerShoupMsgCCA2Game_le Prod.snd setup H isElem hmem adversary Q₁ Q₂ hQ n m hm0 hm
 
-/-- **Concrete 1CCA security bound for single-bit messages (`cramerShoupCCA2Game`)**. -/
+/-- **Concrete ideal-game 1CCA security bound for single-bit messages (`cramerShoupCCA2Game`)**. -/
 theorem advantage_cramerShoupCCA2Game_le
     (setup : ℕ → PMF F.Desc)
     (H : F.Desc × List Bool → List Bool)
@@ -824,48 +865,6 @@ theorem advantage_cramerShoupCCA2Game_le
 
 /-! ### Polynomial length bounds and asymptotic 1CCA security -/
 
-private theorem length_encNat_mono {m n : ℕ} (h : m ≤ n) :
-    (encNat m).length ≤ (encNat n).length := by
-  simpa only [encNat_apply, ← Nat.size_eq_bits_len] using Nat.size_le_size h
-
-/-- Every encoded group element `F.encode d x` has bit-length polynomially bounded in
-`(F.encDesc d).length`. -/
-theorem exists_length_encode_le :
-    ∃ c k : ℕ, ∀ d : F.Desc, ∀ x : F.Carrier d,
-      (F.encode d x).length ≤ c * ((F.encDesc d).length + 1) ^ k := by
-  obtain ⟨co, ko, hord⟩ := F.computableInPolyTime_order.tidy.polyBounded_length.exists_le
-  obtain ⟨cg, kg, hgen⟩ := F.computableInPolyTime_generator.tidy.polyBounded_length.exists_le
-  obtain ⟨cs, ks, hsmul⟩ := F.computableInPolyTime_smul.tidy.polyBounded_length.exists_le
-  have hpoly : PolynomiallyBounded
-      (fun L => cs * (2 * L + 4 * (co * (L + 1) ^ ko) + 4 * (cg * (L + 1) ^ kg) + 7) ^ ks) := by
-    fun_prop
-  obtain ⟨c, k, hck⟩ := polynomiallyBounded_iff_le.mp hpoly
-  refine ⟨c, k, fun d x => ?_⟩
-  obtain ⟨α, rfl⟩ := F.smul_generator_surjective d x
-  have hsmul_eq : F.encode d (α • F.generator d) =
-      F.smul (d, α.val, F.encode d (F.generator d)) := by
-    rw [F.smul_encode, ZMod.natCast_zmod_val]
-  rw [hsmul_eq]
-  have h1 := hsmul (d, α.val, F.encode d (F.generator d))
-  simp only [encBits_apply] at h1 hgen
-  have hα : (encNat α.val).length ≤ co * ((F.encDesc d).length + 1) ^ ko :=
-    (length_encNat_mono (Nat.le_of_lt (ZMod.val_lt α))).trans (hord d)
-  have hg := hgen d
-  have hlen :
-      (encPair F.encDesc (encPair encNat encBits)
-        (d, α.val, F.encode d (F.generator d))).length + 1 ≤
-      2 * (F.encDesc d).length + 4 * (co * ((F.encDesc d).length + 1) ^ ko) +
-        4 * (cg * ((F.encDesc d).length + 1) ^ kg) + 7 := by
-    simp only [length_encPair, encBits_apply]
-    lia
-  calc (F.smul (d, α.val, F.encode d (F.generator d))).length
-      ≤ cs * ((encPair F.encDesc (encPair encNat encBits)
-          (d, α.val, F.encode d (F.generator d))).length + 1) ^ ks := h1
-    _ ≤ cs * (2 * (F.encDesc d).length + 4 * (co * ((F.encDesc d).length + 1) ^ ko) +
-          4 * (cg * ((F.encDesc d).length + 1) ^ kg) + 7) ^ ks := by
-        gcongr
-    _ ≤ c * ((F.encDesc d).length + 1) ^ k := hck (F.encDesc d).length
-
 private theorem length_encBits4_encode_le {d : F.Desc} {B : ℕ}
     (hB : ∀ x : F.Carrier d, (F.encode d x).length ≤ B)
     (x₁ x₂ x₃ x₄ : F.Carrier d) :
@@ -900,13 +899,13 @@ private theorem negligible_const_div_two_pow (c : ℕ) :
   exact (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).polynomiallyBounded_mul
     (by fun_prop)
 
-/-- **Asymptotic 1CCA security of Multiplicative Cramer–Shoup for a general message encoding**
-([BonehShoup2023], Theorem 12.9 & Exercise 12.27, printed pp. 488–493, 521–522): if DDH holds for
-`setup`, `cramerShoupHashMod H` is collision-resistant for `setup`, every supported group at
-parameter `n` has order at least `m n > 0` with `1 / m n` negligible, and supported group
-descriptions have polynomially bounded bit-length, then `cramerShoupMsgCCA2Game` is
-indistinguishable between `bit = false` and `bit = true` against all strict oracle PPT
-adversaries. -/
+/-- **Asymptotic ideal-game 1CCA security of Multiplicative Cramer–Shoup for a general message
+encoding** ([BonehShoup2023], Theorem 12.9 & Exercise 12.27, printed pp. 488–493, 521–522): if DDH
+holds for `setup`, `cramerShoupHashMod H` is collision-resistant for `setup`, every supported group
+at parameter `n` has order at least `m n > 0` with `1 / m n` negligible, and supported group
+descriptions have polynomially bounded bit-length, then the ideal exact-uniform PMF game
+`cramerShoupMsgCCA2Game` is indistinguishable between `bit = false` and `bit = true` against all
+strict oracle PPT adversaries. -/
 theorem DDH.cramerShoupMsgINDCCA2
     {F : PrimeOrderGroupFamily}
     {Msg : Type} {encMsg : Msg ↪ List Bool}
@@ -1013,9 +1012,11 @@ theorem DDH.cramerShoupMsgINDCCA2
       F.length_encBits4_encode_le hB_le _ _ _ _
     exact (hQ₂_raw n choiceOut.1.2 _).mono (by dsimp only [Q₂]; gcongr)
 
-/-- **Theorem 12.9 & Exercise 12.27 (asymptotic 1CCA security for group-element messages)**:
-Multiplicative Cramer–Shoup is 1CCA-secure (`cramerShoupGroupINDCCA2`) under DDH and collision
-resistance of `cramerShoupHashMod H`. -/
+/-- **Theorem 12.9 & Exercise 12.27 (asymptotic ideal-game 1CCA security for group-element
+messages)**: Multiplicative Cramer–Shoup satisfies the ideal exact-uniform PMF 1CCA notion
+`cramerShoupGroupINDCCA2` under DDH, collision resistance of `cramerShoupHashMod H`, a positive
+group-order lower bound `m n > 0` with `1 / m n` negligible, and polynomially bounded group
+description bit-length. -/
 theorem DDH.cramerShoupGroupINDCCA2
     {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc}
@@ -1034,9 +1035,11 @@ theorem DDH.cramerShoupGroupINDCCA2
     F.cramerShoupGroupINDCCA2 setup H isElem :=
   hDDH.cramerShoupMsgINDCCA2 (by fun_prop) hH hisElem hmem hCR hm0 hm hinv hdesc
 
-/-- **Asymptotic 1CCA security for single-bit messages (`cramerShoupINDCCA2`)**: Multiplicative
-Cramer–Shoup with bit embedding `encodeBit` is 1CCA-secure under DDH and collision resistance of
-`cramerShoupHashMod H`. -/
+/-- **Asymptotic ideal-game 1CCA security for single-bit messages (`cramerShoupINDCCA2`)**:
+Multiplicative Cramer–Shoup with bit embedding `encodeBit` satisfies the ideal exact-uniform PMF
+1CCA notion `cramerShoupINDCCA2` under DDH, collision resistance of `cramerShoupHashMod H`, a
+positive group-order lower bound `m n > 0` with `1 / m n` negligible, and polynomially bounded group
+description bit-length. -/
 theorem DDH.cramerShoupINDCCA2
     {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc}
@@ -1112,10 +1115,10 @@ private noncomputable def cramerShoupCCA2InnerSK
     else
       PMF.pure false
 
-/-- The `Encryption.cca2GameOn` experiment for `(cramerShoupValid, cramerShoupKeyGenProb,
-cramerShoupEncryptProb, cramerShoupDecryptOpt)` is within statistical distance `8 / 2 ^ n` of
-`cramerShoupGroupCCA2Game (fun n => PMF.pure (d n))` (accounting for the eight `sampleModNat`
-exponent draws in `cramerShoupKeyGenProb` and `cramerShoupEncryptProb`). -/
+/-- The native `Encryption.cca2GameOn` experiment for `(cramerShoupValid, cramerShoupKeyGenProb,
+cramerShoupEncryptProb, cramerShoupDecryptOpt)` is within statistical distance `8 / 2 ^ n` of the
+ideal exact-uniform PMF game `cramerShoupGroupCCA2Game (fun n => PMF.pure (d n))` (accounting for
+the eight `sampleModNat` exponent draws in `cramerShoupKeyGenProb` and `cramerShoupEncryptProb`). -/
 theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
     (H : F.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool)
@@ -1223,8 +1226,10 @@ theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
 /-- **Theorem 12.9 & Exercise 12.27 via `Encryption.INDCCA2On`**: for any polynomial-time group
 description family `d : ℕ → F.Desc`, the probabilistic polynomial-time Cramer–Shoup encryption
 scheme `(cramerShoupKeyGenProb d, cramerShoupEncryptProb H d, cramerShoupDecryptOpt H isElem d)`
-satisfies `Encryption.INDCCA2On` with respect to the group-membership admissibility predicate
-`cramerShoupValid isElem d` under DDH and collision resistance of `cramerShoupHashMod H`. -/
+satisfies the native `Encryption.INDCCA2On` notion with respect to the group-membership
+admissibility predicate `cramerShoupValid isElem d` under DDH, collision resistance of
+`cramerShoupHashMod H`, and a positive group-order lower bound `m n > 0` with `1 / m n`
+negligible. -/
 theorem DDH.indcca2On_cramerShoup
     {F : PrimeOrderGroupFamily}
     {H : F.Desc × List Bool → List Bool}
