@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 module
 -- upstream: candidate
@@ -13,6 +13,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Degree
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.WordEquality
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Bounds
 import Mathlib.Tactic.Linarith
 
 /-! # Direct word equality at the original resource bounds
@@ -105,3 +107,34 @@ public theorem eq {α : Type} [DecidableEq α] (enc : α ↪ List Bool) :
 
 end ComputableInO
 end Turing.MultiTapeTM
+
+namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+/-- Compare computed values for equality, inferring their common encoding from the arguments. -/
+@[fun_prop]
+theorem decide_eq' {α : Type}
+    {β : Type}
+    {encA : α ↪ List Bool}
+    {encB : β ↪ List Bool}
+    [_inst4 : DecidableEq β]
+    {left : α → β}
+    {right : α → β}
+    (hleft : ComputableInPolyTime left encA encB)
+    (hright : ComputableInPolyTime right encA encB) :
+    ComputableInPolyTime
+  (fun (x : α) => Decidable.decide (left x = right x)) encA encBool := by
+  have heq := (ComputableInO.eq encB).computableInPolyTime
+    (.of_forall_le 1 2 fun p => by simp only [length_encPair]; nlinarith) .self
+  exact heq.comp (hleft.prod hright)
+
+/-- Lawful Boolean equality compares computed values through their common encoding. -/
+@[fun_prop]
+theorem beq {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+    [BEq β] [LawfulBEq β] {left right : α → β}
+    (hleft : ComputableInPolyTime left encA encB)
+    (hright : ComputableInPolyTime right encA encB) :
+    ComputableInPolyTime (fun x => left x == right x) encA encBool := by
+  classical
+  simpa only [beq_eq_decide] using hleft.decide_eq' hright
+
+end Turing.MultiTapeTM.ComputableInPolyTime

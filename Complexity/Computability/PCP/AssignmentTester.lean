@@ -169,28 +169,32 @@ private theorem hadamardCode_tensor_equationCoeff_inr (C : α → α → Prop) (
   refine sum_congr rfl fun a _ ↦ ?_
   rw [← hadamardCode_apply, hadamardCode_tensor_single, Bool.and_self]
 
+open Classical in
+/-- The quadratic equations of `C` on the tensor square of `x` split into the equations of the
+pairs of variables and those of the ends. -/
+private theorem forall_hadamardCode_tensor_equationCoeff_iff_and {C : α → α → Prop}
+    {x : Fin 2 × α → Bool} :
+    (∀ e, hadamardCode (tensor x x) (equationCoeff C e) = equationRhs e) ↔
+      (∀ p p', ¬ Compatible C p p' → (x p && x p') = false) ∧
+        ∀ b, ∑ a, x (b, a) = true := by
+  rw [Sum.forall]
+  refine and_congr ⟨fun h p p' hpp' ↦ ?_, fun h ⟨p, p'⟩ ↦ ?_⟩ (forall_congr' fun b ↦ ?_)
+  · have h := h (p, p')
+    rwa [hadamardCode_tensor_equationCoeff_inl, ite_eq_right hpp', equationRhs, Sum.elim_inl] at h
+  · rw [hadamardCode_tensor_equationCoeff_inl, equationRhs, Sum.elim_inl]
+    split_ifs with hpp'
+    · rfl
+    · exact h p p' hpp'
+  · rw [hadamardCode_tensor_equationCoeff_inr, equationRhs, Sum.elim_inr]
+    rfl
+
 /-- **The quadratic equations of a constraint**: their solutions are exactly the one-hot encodings
 of the labels satisfying the constraint. -/
 theorem forall_hadamardCode_tensor_equationCoeff_iff {C : α → α → Prop}
     {x : Fin 2 × α → Bool} :
     (∀ e, hadamardCode (tensor x x) (equationCoeff C e) = equationRhs e) ↔
       ∃ σ : Fin 2 → α, C (σ 0) (σ 1) ∧ x = oneHot σ := by
-  classical
-  -- The equations of the pairs of variables and those of the ends.
-  have hiff : (∀ e, hadamardCode (tensor x x) (equationCoeff C e) = equationRhs e) ↔
-      (∀ p p', ¬ Compatible C p p' → (x p && x p') = false) ∧
-        ∀ b, ∑ a, x (b, a) = true := by
-    rw [Sum.forall]
-    refine and_congr ⟨fun h p p' hpp' ↦ ?_, fun h ⟨p, p'⟩ ↦ ?_⟩ (forall_congr' fun b ↦ ?_)
-    · have h := h (p, p')
-      rwa [hadamardCode_tensor_equationCoeff_inl, ite_eq_right hpp', equationRhs, Sum.elim_inl] at h
-    · rw [hadamardCode_tensor_equationCoeff_inl, equationRhs, Sum.elim_inl]
-      split_ifs with hpp'
-      · rfl
-      · exact h p p' hpp'
-    · rw [hadamardCode_tensor_equationCoeff_inr, equationRhs, Sum.elim_inr]
-      rfl
-  rw [hiff]
+  rw [forall_hadamardCode_tensor_equationCoeff_iff_and]
   constructor
   · rintro ⟨hpair, hsum⟩
     -- Every end has a set variable.

@@ -305,20 +305,27 @@ private theorem step_inSpace
         (budget_prod hs (hw []))))).of_enc_eq fun p => ?_
   simp only [step, decide_eq_true_eq]
 
-private theorem tidy_machine
+private theorem machine_resourceCertificate
     (hN : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.numChunks p.1.2.1) encStepIn
       encNat fun p => wBudget p.1)
     (hC : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.chunk p.1.2.1 p.1.2.2)
       encStepIn encBits fun p => wBudget p.1)
     (hT : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.trailer p.1.2.1) encStepIn
       encBits fun p => wBudget p.1) :
-    ∃ T, S.machine.toStepMachine.Tidy (encPair encNat3 encNat)
+    ∃ T, S.machine.toStepMachine.ResourceCertificate (encPair encNat3 encNat)
       (ReadMachine.stateT encNat3 T wBudget) (ReadMachine.stateS encNat3 wBudget) := by
-  obtain ⟨T₁, h₁⟩ := S.halt_inSpace
-  obtain ⟨T₂, h₂⟩ := writerAddr_inSpace
-  obtain ⟨T₃, h₃⟩ := step_inSpace hN hC hT
+  obtain ⟨T₁, c₁, ⟨k₁, Q₁, hf₁, tm₁, hm₁⟩, hl₁⟩ := S.halt_inSpace
+  obtain ⟨T₂, c₂, ⟨k₂, Q₂, hf₂, tm₂, hm₂⟩, hl₂⟩ := writerAddr_inSpace
+  obtain ⟨T₃, c₃, ⟨k₃, Q₃, hf₃, tm₃, hm₃⟩, hl₃⟩ := step_inSpace hN hC hT
+  have h₁ : ComputableInO S.machine.halt encNat3 encBool T₁ wBudget :=
+    ⟨c₁, ⟨k₁, Q₁, hf₁, tm₁, fun s => (hm₁ s).computesInTimeAndSpace⟩, hl₁⟩
+  have h₂ : ComputableInO S.machine.addr encNat3 (encOption encNat) T₂ wBudget :=
+    ⟨c₂, ⟨k₂, Q₂, hf₂, tm₂, fun s => (hm₂ s).computesInTimeAndSpace⟩, hl₂⟩
+  have h₃ : ComputableInO (fun p : (ℕ × ℕ × ℕ) × Bool => S.machine.step p.1 p.2)
+      (encPair encNat3 encBool) (encPair encNat3 encBits) T₃ (fun p => wBudget p.1) :=
+    ⟨c₃, ⟨k₃, Q₃, hf₃, tm₃, fun p => (hm₃ p).computesInTimeAndSpace⟩, hl₃⟩
   let T : ℕ × ℕ × ℕ → ℕ := fun s => T₁ s + T₂ s + T₃ (s, false) + T₃ (s, true)
-  exact ⟨T, ReadMachine.tidy_toStepMachine
+  exact ⟨T, ReadMachine.toStepMachine_resourceCertificate
     (h₁.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
     (h₂.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
     (h₃.mono_le (fun p => by rcases p with ⟨s, _ | _⟩ <;> simp only [T] <;> omega)
@@ -362,7 +369,7 @@ theorem computableInLogSpace {β : Type} {encOut : β ↪ List Bool} {g : List B
   have hT : ComputableTidilyInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.trailer p.1.2.1) encStepIn
       encBits fun p => wBudget p.1 := by simpa only [computableInSpace_iff_computableTidilyInSpace]
     using hT
-  obtain ⟨T, hT'⟩ := tidy_machine hN hC hT
+  obtain ⟨T, hT'⟩ := machine_resourceCertificate hN hC hT
   have hc (w : List Bool) : S.machine.toStepMachine.Computes (encFramed encBits w)
       (encOut (g w)) := by
     have hrun := S.run_machine w
@@ -375,7 +382,7 @@ theorem computableInLogSpace {β : Type} {encOut : β ↪ List Bool} {g : List B
   let tS := ReadMachine.stateT encNat3 T wBudget
   let tMax (w : List Bool) : ℕ := ∑ i ∈ Finset.range (rounds w + 1),
     tS (S.machine.toStepMachine.run (encFramed encBits w) i).state
-  have hbig := hT'.computableTidilyInTimeAndSpace g rounds hr (fun w => (ho w).symm)
+  have hbig := hT'.computableInBigO g rounds hr (fun w => (ho w).symm)
     (tMax := tMax)
     (sMax := fun w => 30 * ((encNat (S.numChunks w.length + 3 * w.length + 5)).length + 1))
     fun w i hi => ⟨Finset.single_le_sum (f := fun i => tS (S.machine.toStepMachine.run
@@ -386,7 +393,7 @@ theorem computableInLogSpace {β : Type} {encOut : β ↪ List Bool} {g : List B
         rw [hq]
         exact S.stateS_le w (S.wInv_run w j) (by simpa using hpos)⟩
   obtain ⟨c, hc⟩ := hbig
-  refine ⟨_, c * (31 * (Nat.size A + 2 * D + 2)), hc.computableInTimeAndSpace.mono
+  refine ⟨_, c * (31 * (Nat.size A + 2 * D + 2)), hc.mono
     (fun _ => le_rfl) fun w => ?_⟩
   have hM : S.numChunks w.length + 3 * w.length + 5 ≤
       A * ((encFramed encBits w).length + 1) ^ D :=

@@ -59,7 +59,8 @@ noncomputable def emptyZeroKnowledgeProof : ZeroKnowledgeProof encBits (∅ : Se
       (input := encPair encUnary (encPair encBits (encPair encBits encBits)))
       (prepare := fun p : ℕ × List Bool × List Bool × List Bool => (p.1, p.2.1, p.2.2.2))
       (reply1 := fun _ => []) (reply2 := fun _ => []) (bound := fun _ => 0)
-      (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+      (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+        fun_prop))
       (fun _ _ => le_rfl) (fun _ _ => le_rfl)
     exact hrun.map (by fun_prop)
   complete _ _ _ hw := Bool.noConfusion hw
@@ -93,7 +94,8 @@ noncomputable def univZeroKnowledgeProof :
       (input := encPair encUnary (encPair encBits (encPair encBits encBits)))
       (prepare := fun p : ℕ × List Bool × List Bool × List Bool => (p.1, p.2.1, p.2.2.2))
       (reply1 := fun _ => []) (reply2 := fun _ => []) (bound := fun _ => 0)
-      (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+      (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+        fun_prop))
       (fun _ _ => le_rfl) (fun _ _ => le_rfl)
     exact hrun.map (by fun_prop)
   complete _ _ _ _ := by simp [acceptProb, Prover.run]
@@ -106,7 +108,8 @@ noncomputable def univZeroKnowledgeProof :
         (input := encPair encUnary (encPair encBits encBits))
         (prepare := fun p : ℕ × List Bool × List Bool => p)
         (reply1 := fun _ => []) (reply2 := fun _ => []) (bound := fun _ => 0)
-        (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+        (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+          fun_prop))
         (fun _ _ => le_rfl) (fun _ _ => le_rfl)
       exact hrun.map (by fun_prop)
     · convert ComputationallyIndistinguishable.refl _ using 2 with n
@@ -126,7 +129,8 @@ theorem univZeroKnowledgeProof_auxiliaryInputZeroKnowledge :
       (input := encPair encUnary (encPair encBits encBits))
       (prepare := fun p : ℕ × List Bool × List Bool => p)
       (reply1 := fun _ => []) (reply2 := fun _ => []) (bound := fun _ => 0)
-      (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+      (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+        fun_prop))
       (fun _ _ => le_rfl) (fun _ _ => le_rfl)
     exact hrun.map (by fun_prop)
   · convert negligible_zero using 2 with n

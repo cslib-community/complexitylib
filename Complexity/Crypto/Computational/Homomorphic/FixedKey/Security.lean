@@ -59,7 +59,8 @@ theorem eval_game_keyGen (E : Scheme) (adversary : Encryption.Adversary) (bit : 
     ProbComp.eval (Encryption.game (keyGen E) (encrypt E) adversary bit n) =
       ProbComp.eval (Encryption.circularPublicKey E.keyGen E.encrypt true n >>=
         publicKeyGame E adversary bit n) := by
-  simp only [Encryption.game, keyGen, encrypt, publicKeyGame, Encryption.circularPublicKey,
+  simp only [Encryption.game, Encryption.gameOn, keyGen, encrypt, publicKeyGame,
+    Encryption.circularPublicKey,
     Scheme.encryptBits, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.bind_bind, PMF.pure_bind, publicKeyDecoder_decode_enc]
 
@@ -89,7 +90,7 @@ theorem negligible_publicKeyGame {E : Scheme}
       publicKeyGame E adversary bit n (publicKeyDecoder.decode word)) :=
     hgame.preprocess (ComputableInPolyTime.of_tidy
       ((ComputableTidilyInPolyTime.fst encUnary encBits).prod
-      (publicKeyDecoder.computableTidilyInPolyTime.comp
+      (publicKeyDecoder.computableInPolyTime.tidy.comp
         (ComputableTidilyInPolyTime.snd encUnary encBits))))
   have h := hcircular _ htest
   simpa only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,

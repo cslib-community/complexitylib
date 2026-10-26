@@ -18,7 +18,8 @@ example : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (encList encBits) (encPair encBits encBits))))
     encBits (fun p =>
       Scheme.refreshNand decryptionCircuits p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2) := by
-  apply Scheme.isPPTOn_refreshNand encrypt_ppt evaluate_ppt decryptionCircuits circuits_poly
+  apply Scheme.isPPTOn_refreshNand encrypt_ppt
+    evaluate_ppt decryptionCircuits (.of_tidy circuits_poly)
   all_goals fun_prop
 
 -- These bundled hypotheses have an actual instance.

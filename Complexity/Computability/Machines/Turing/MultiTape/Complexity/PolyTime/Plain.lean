@@ -40,7 +40,7 @@ The plain notion, `Turing.MultiTapeTM.ComputableInPolyTime`, is the one for defi
 statements; the tidy notion is a proof device. Proofs switch between them with
 `Turing.MultiTapeTM.ComputableInPolyTime.tidy` and
 `Turing.MultiTapeTM.ComputableInPolyTime.of_tidy`.
-The closure rules of the plain notion are proved through the tidy calculus and registered with
+The core closure rules of the plain notion use direct machine constructions and are registered with
 `fun_prop`, together with the transition from tidy to plain computability. `fun_prop` decomposes a
 plain goal with the plain closure rules and proves the remaining atoms from plain hypotheses or,
 through the transition, from tidy certificates. Ordinary plain rules for captured scans and list
@@ -208,11 +208,10 @@ end Turing.MultiTapeTM
 
 /-! ### Closure of `ComputableInPolyTime`
 
-The rules that need a machine construction, proved through the tidy calculus. `fun_prop`
-decomposes a plain goal with them and proves the remaining atoms from plain hypotheses or, through
-`Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime`, from tidy certificates. As in
-the tidy rule set, `trans`, `fst'` and `snd'` let it infer intermediate encodings from the inner
-function. -/
+The direct core supplies both composition directions (`comp` and `trans`) and ordinary pair
+projections. This facade retains legacy-client projection registrations and additional captured
+closure rules during migration. Proof-local tidy bridges remain available explicitly; their
+presence here does not make the direct core depend on a higher tidy calculus. -/
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

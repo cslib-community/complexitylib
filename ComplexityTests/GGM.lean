@@ -21,18 +21,18 @@ example (query : List Bool) : GGM.eval (fun _ => [true]) [] query = [] := by
   exact List.length_eq_zero_iff.mp (Nat.eq_zero_of_le_zero (GGM.length_eval_le _ [] query))
 
 -- Duplicating the seed is a concrete efficient generator, though it is not pseudorandom.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : List Bool × List Bool => GGM.eval (fun seed => seed ++ seed) p.1 p.2)
     (encPair encBits encBits) encBits := by fun_prop
 
 -- A shrinking expansion is allowed: efficiency does not require a PRG or a length hypothesis.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : List Bool × List Bool => GGM.eval List.tail p.1 p.2)
     (encPair encBits encBits) encBits := by fun_prop
 
 example (generator : List Bool → List Bool)
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits) :
-    ComputableTidilyInPolyTime
+    (hgenerator : ComputableInPolyTime generator encBits encBits) :
+    ComputableInPolyTime
       (fun p : List Bool × List Bool => GGM.eval generator p.1 (p.2 ++ p.2))
       (encPair encBits encBits) encBits := by fun_prop
 
@@ -55,7 +55,7 @@ example : IsPPTOn (encPair encUnary encBits) (encPair encBits GGM.cacheEncoding)
 example : IsPPTOn (encPair encUnary encUnary) encBool
     (fun pair => GGM.hybridGame (fun seed => seed ++ seed)
       (fun n input => pure (decide (input.length ≤ n))) pair.1 pair.2) :=
-  GGM.isPPTOn_hybridGame (by fun_prop) (by fun_prop)
+  GGM.isPPTOn_hybridGame (.of_tidy (by fun_prop)) (by fun_prop)
 
 -- An empty seed and query still create exactly one empty root entry.
 example (generator : List Bool → List Bool) :
@@ -125,22 +125,23 @@ example : ProbComp.eval (GGM.expansionGame List.tail (BitString.sampleList 2) si
 
 -- Every certified sampler and adaptive adversary compose through the complete-game contract.
 example {generator : List Bool → List Bool} {sample : ℕ → ProbComp (List Bool)}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
+    (hg : ComputableInPolyTime generator encBits encBits)
     (hs : IsPPTOn encUnary encBits sample) {adversary : OracleDistinguisher}
     (ha : IsOraclePPT encBool adversary) : IsPPTOn encUnary encBool
       (fun n => GGM.expansionGame generator (sample n) adversary n (n + 1)) :=
-  GGM.isPPTOn_expansionGame hg hs (by fun_prop) (by fun_prop) ha
+  GGM.isPPTOn_expansionGame hg hs (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) ha
 
 -- Saved challenges may be short, oversized or absent, and the requested depth may exceed width.
 example {adversary : OracleDistinguisher} (ha : IsOraclePPT encBool adversary) :
     IsPPTOn (encPair encUnary (encList encBits)) encBool (fun pair =>
       GGM.sampleGame List.tail adversary pair.1 (pair.1 + 1) pair.2) :=
-  GGM.isPPTOn_sampleGame (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) ha
+  GGM.isPPTOn_sampleGame (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+    fun_prop)) (.of_tidy (by fun_prop)) ha
 
 -- The complete reduction has a concrete certificate without any cryptographic premise.
 example : IsPPT encBool (GGM.reduction (fun seed => seed ++ seed)
     (fun n word => pure (decide (word.length ≤ n))) (fun n => n ^ 2 + 3)) :=
-  GGM.isPPT_reduction (by fun_prop) (by fun_prop) (by fun_prop)
+  GGM.isPPT_reduction (.of_tidy (by fun_prop)) (by fun_prop) (.of_tidy (by fun_prop))
 
 -- The semantic sibling client has a bound on its external calls, including its private coin.
 private theorem siblings_queryBounds (n : ℕ) : (siblings n []).IsQueryBounded 2 :=

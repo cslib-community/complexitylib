@@ -20,6 +20,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Foundations.Data.BitString.Binary
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
 /-!
@@ -259,8 +260,7 @@ theorem getD_boundedBinaryValue_reverse_ofFn {α : Type*} {n : ℕ} (T : Fin (2 
       default = T (BitString.equivFin n y) := by
   have hlt := (BitString.equivFin n y).isLt
   rw [BitString.boundedBinaryValue_eq, BitString.binaryValue_reverse_ofFn,
-    List.length_ofFn, Nat.min_eq_right hlt.le, List.getD_eq_getElem _ _ (by simp),
-    List.getElem_ofFn]
+    List.length_ofFn, Nat.min_eq_right hlt.le, List.getD_ofFn_of_lt _ hlt]
 
 /-- The verifier reads the function of an instance from its truth table. -/
 theorem tableValue_ofFn (x : Instance) (y : BitString x.arity) :

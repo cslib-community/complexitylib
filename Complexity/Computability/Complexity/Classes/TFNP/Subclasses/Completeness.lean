@@ -174,8 +174,16 @@ private theorem exists_costCodes {n : α → ℕ} {C : α × List Bool → ℕ}
     polytime
   have hword : ComputableTidilyInPolyTime
       (fun p : α × List Bool => binaryWord (m p.1) (C p)) (encPair enc encBits) encBits := by
-    unfold binaryWord
-    polytime
+    have hbits := (ComputableInPolyTime.of_eq (f := Nat.bits)
+      (encIn := encNat) (encOut := encBits) fun _ => rfl).comp (.of_tidy hC)
+    have hwidth := (ComputableInPolyTime.of_tidy hm).comp
+      (ComputableInPolyTime.fst enc encBits)
+    have hpadding := ComputableInPolyTime.unary_sub.comp
+      (hwidth.prod (ComputableInPolyTime.length_bits.comp hbits))
+    have hplain := ComputableInPolyTime.bitsAppend
+      ((ComputableInPolyTime.bitsReplicate false).comp hpadding)
+      (ComputableInPolyTime.bitsReverse.comp hbits)
+    simpa only [binaryWord, Function.comp_def] using hplain.tidy
   have hword_len (a : α) (u : List Bool) (hu : u.length = n a) :
       (binaryWord (m a) (C (a, u))).length = m a := by
     have hb := hbound (a, u)

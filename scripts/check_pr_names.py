@@ -18,8 +18,9 @@ The check reads source text, not the compiled environment, and errs towards acce
 
 * it skips fenced code blocks, HTML comments and tokens that are not names: expressions with
   spaces or operators, numbers and hashes, file names, all-caps words, Lean keywords and tactic
-  names, single letters and lowercase words without an underscore (`simp`, `trace`, `ε`), which
-  are usually variables or prose; hypothesis names such as `hx` or `h_le` are skipped as well;
+  names, single letters, `_`-led fragments and lowercase words without an underscore (`simp`,
+  `trace`, `ε`), which are usually variables or prose; a name shaped like a hypothesis (`hfA`,
+  `h_le`) is dropped from the report when it is not declared but occurs in the sources;
 * a declaration's full name combines its `namespace` blocks with its declared name, and a token
   is declared when it equals a full name or is a dot-separated suffix of one (`Nodup` and
   `List.Nodup` both match `List.Nodup`); a namespace name matches its `namespace` block or any
@@ -89,7 +90,8 @@ TACTICS = {
     "split_ifs", "nlinarith", "decide_eq_true", "ring_nf", "set_option", "maxHeartbeats",
     "maxRecDepth", "autoImplicit", "relaxedAutoImplicit", "check_abstract", "print_axioms",
     "lake", "mk_all", "lint_style", "checkInitImports", "runLinter", "pull_request",
-    "merge_group", "workflow_dispatch",
+    "merge_group", "workflow_dispatch", "to_additive", "to_dual", "simps", "irreducible_def",
+    "fun_prop", "reducible_and_instances",
 }
 
 
@@ -113,6 +115,8 @@ def is_candidate(token: str) -> bool:
     if not NAME.match(token):
         return False
     bare = token.lstrip(".").removeprefix("_root_.")
+    if bare.startswith("_"):
+        return False  # a fragment such as `_leaf_le`
     parts = bare.split(".")
     if len(parts) > 1 and parts[-1].lower() in FILE_SUFFIXES:
         return False
@@ -124,7 +128,7 @@ def is_candidate(token: str) -> bool:
     if letters and all(c.isupper() for c in letters) and len(letters) > 1:
         return False  # environment variables and acronyms: `GITHUB_EVENT_PATH`, `PRF`
     if len(parts) == 1:
-        if len(bare) < 2 or HYPOTHESIS.match(bare):
+        if len(bare) < 2:
             return False
         if "_" not in bare and not any(c.isupper() for c in bare):
             return False  # lowercase prose, variables and tactics: `simp`, `trace`, `ε`
@@ -133,7 +137,8 @@ def is_candidate(token: str) -> bool:
 
 # --- Reading declarations from Lean sources -------------------------------------------------------
 
-MODIFIERS = r"(?:(?:private|protected|public|noncomputable|partial|unsafe|nonrec|scoped|local|meta)\s+)*"
+MODIFIERS = (r"(?:(?:private|protected|public|noncomputable|partial|unsafe|nonrec|scoped|local|"
+             r"meta)\s+)*")
 ATTRS = r"(?:@\[[^\]]*\]\s*)*"
 IDENT = r"[^\s:({\[⦃⟨,|@]+"
 DECL = re.compile(
@@ -203,7 +208,8 @@ class Declarations:
     def declared(self, token: str) -> bool:
         """Whether `token` names a declaration, as a full name or a dotted suffix of one."""
         last = token.rsplit(".", 1)[-1]
-        return any(full == token or full.endswith("." + token) for full in self.by_last.get(last, ()))
+        return any(full == token or full.endswith("." + token)
+                   for full in self.by_last.get(last, ()))
 
     def namespace(self, token: str) -> bool:
         return any(ns == token or ns.endswith("." + token) for ns in self.namespaces
@@ -314,7 +320,7 @@ def parse_source(text: str, decls: Declarations) -> None:
             awaiting_where = not re.search(r"(^|\s)where\s*$", rest)
 
 
-# --- Finding the sources ----------------------------------------------------------------------------
+# --- Finding the sources --------------------------------------------------------------------------
 
 def source_roots(root: Path, core: bool = True) -> list[Path]:
     """Directories whose `.lean` files are searched for declarations."""
@@ -324,8 +330,8 @@ def source_roots(root: Path, core: bool = True) -> list[Path]:
         roots += sorted(p for p in packages.iterdir() if p.is_dir())
     if core and shutil.which("lean"):
         try:
-            prefix = subprocess.run(["lean", "--print-prefix"], capture_output=True, text=True,
-                                    timeout=60).stdout.strip()
+            prefix = subprocess.run(["lean", "--print-prefix"], cwd=root, capture_output=True,
+                                    text=True, timeout=60).stdout.strip()
         except (OSError, subprocess.SubprocessError):
             prefix = ""
         src = Path(prefix) / "src" / "lean" if prefix else None
@@ -367,7 +373,7 @@ def files_mentioning(roots: list[Path], words: set[str]) -> list[Path]:
     return found
 
 
-# --- Resolving tokens -------------------------------------------------------------------------------
+# --- Resolving tokens -----------------------------------------------------------------------------
 
 def additive_variants(token: str) -> set[str]:
     """Multiplicative names from which Mathlib's `to_additive` could have generated `token`."""
@@ -383,19 +389,31 @@ def additive_variants(token: str) -> set[str]:
 
 
 def search_words(token: str) -> set[str]:
-    """Words whose files must be read to resolve `token`."""
+    """Words whose files must be read to resolve `token` as a declaration in its own right."""
     bare = token.lstrip(".").removeprefix("_root_.")
-    parts = bare.split(".")
-    words = {parts[-1].rstrip("'!?")}
-    if len(parts) > 1:
-        words.add(parts[-2].rstrip("'!?"))
-        if m := SIMPS_SUFFIX.match(parts[-1]):
-            words.add(m.group(1))
-    elif m := SIMPS_SUFFIX.match(bare):
+    last = bare.rsplit(".", 1)[-1]
+    words = {last.rstrip("'!?")}
+    if m := SIMPS_SUFFIX.match(last):
         words.add(m.group(1))
+    if re.fullmatch(r"to[A-Z]\w*", last):  # `extends Inhabited` declares `toInhabited`
+        words.add(last[2:].rstrip("'!?"))
     for variant in additive_variants(bare):
         words.add(variant.rsplit(".", 1)[-1].rstrip("'!?"))
     return {w for w in words if w}
+
+
+def head_words(token: str) -> set[str]:
+    """Words whose files are also needed when `token` is a generated name (`Pair.mk`) or field
+    notation on a theorem (`foo_iff.mp`): the last component of its head.
+
+    Only these tokens look at the head, so that a qualified name in a large namespace (`Nat.foo`)
+    does not read every file mentioning `Nat`."""
+    parts = token.lstrip(".").removeprefix("_root_.").split(".")
+    if len(parts) < 2:
+        return set()
+    head, last = parts[-2], parts[-1]
+    generated = last in GENERATED or re.fullmatch(r"eq_\d+|proof_\d+|match_\d+", last)
+    return {head.rstrip("'!?")} if generated or head[:1].islower() else set()
 
 
 def module_suffixes(roots: list[Path]) -> set[str]:
@@ -503,10 +521,21 @@ def base_declarations(root: Path, base: str, words: set[str]) -> Declarations:
         return decls
     listed = git(root, "grep", "-l", "-w", "-F", *[a for w in sorted(words) for a in ("-e", w)],
                  base, "--", *[f"{d}/*.lean" for d in LOCAL_DIRS])
-    for line in listed.stdout.splitlines():
-        shown = git(root, "show", line)  # `line` is `base:path`
-        if shown.returncode == 0:
-            parse_source(shown.stdout, decls)
+    objects = listed.stdout.splitlines()  # `base:path`, which `git cat-file` reads as an object
+    if not objects:
+        return decls
+    batch = subprocess.run(["git", "cat-file", "--batch"], cwd=root, capture_output=True,
+                           input="".join(f"{o}\n" for o in objects).encode())
+    data, pos = batch.stdout, 0
+    while pos < len(data):
+        end = data.index(b"\n", pos)
+        header = data[pos:end].split()
+        pos = end + 1
+        if len(header) != 3 or header[1] != b"blob":  # `<object> missing`; a path may hold spaces
+            continue
+        size = int(header[2])
+        parse_source(data[pos:pos + size].decode("utf-8", errors="replace"), decls)
+        pos += size + 1
     return decls
 
 
@@ -529,39 +558,51 @@ def check(text: str, root: Path = ROOT, core: bool = True, base: str | None = No
     if not tokens:
         return Report([], [], base)
     roots = source_roots(root, core)
-    words = set().union(*(search_words(t) for t in tokens))
     decls, local = Declarations(), Declarations()
     local_roots = tuple(str(root / d) + os.sep for d in LOCAL_DIRS)
     texts: dict[Path, str] = {}
-    for path in files_mentioning(roots, words):
-        try:
-            texts[path] = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        parse_source(texts[path], decls)
-        if str(path).startswith(local_roots):
-            parse_source(texts[path], local)
-    unresolved = [t for t in tokens if not resolves(t, decls, set())]
-    if unresolved:
-        modules = module_suffixes(roots)
-        python = python_names(root)
-        unresolved = [t for t in unresolved if t.removeprefix("_root_.") not in modules
-                      and not all(part in python for part in t.split("."))]
+
+    def read(words: set[str]) -> None:
+        for path in files_mentioning(roots, words):
+            if path in texts:
+                continue
+            try:
+                texts[path] = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            parse_source(texts[path], decls)
+            if str(path).startswith(local_roots):
+                parse_source(texts[path], local)
+
+    # Module names (`Init`, `Crypto.PRF`), script names and generated names in field notation
+    # (`.ext_iff`) need no source files; checking them first avoids reading every file that
+    # mentions a word as common as `Lean`.
+    modules, python = module_suffixes(roots), python_names(root)
+    unresolved = [t for t in tokens if t.removeprefix("_root_.") not in modules
+                  and not all(part in python for part in t.split("."))
+                  and not (t.startswith(".") and t[1:] in GENERATED)]
+    read(set().union(set(), *(search_words(t) for t in unresolved)))
+    unresolved = [t for t in unresolved if not resolves(t, decls, set())]
+    if more := set().union(set(), *(head_words(t) for t in unresolved)):
+        read(more)
+        unresolved = [t for t in unresolved if not resolves(t, decls, set())]
     findings = []
     for token in unresolved:
         last = token.lstrip(".").rsplit(".", 1)[-1]
         pattern = re.compile(WORD_BOUNDARY + re.escape(last) + r"(?![\w'!?])")
         mentions = sum(1 for t in texts.values() if last in t and pattern.search(t))
+        if mentions and "." not in token and HYPOTHESIS.match(token):
+            continue  # a hypothesis or other binder such as `hfA` or `h_le`
         findings.append(Finding(token, mentions, sorted(local.by_last.get(last, ()))[:3]))
     if findings and base:
-        before = base_declarations(root, base, {search for f in findings
-                                                for search in search_words(f.token)})
+        before = base_declarations(root, base, {w for f in findings for w in
+                                                search_words(f.token) | head_words(f.token)})
         for finding in findings:
             finding.removed = resolves(finding.token, before, set())
     return Report(tokens, findings, base)
 
 
-# --- Output -------------------------------------------------------------------------------------------
+# --- Output ---------------------------------------------------------------------------------------
 
 def revision(root: Path) -> str:
     result = git(root, "rev-parse", "--short=12", "HEAD")
@@ -610,7 +651,8 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--pr", type=int, help="check the body of this pull request (uses `gh`)")
     source.add_argument("--file", help="check this Markdown file (`-` for standard input)")
-    source.add_argument("--event", help="check the body in this GitHub `pull_request` event payload")
+    source.add_argument("--event",
+                        help="check the body in this GitHub `pull_request` event payload")
     parser.add_argument("--strict", action="store_true",
                         help="exit 1 when a name is reported that the change did not remove")
     parser.add_argument("--github", action="store_true",

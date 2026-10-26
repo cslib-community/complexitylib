@@ -54,15 +54,16 @@ def amplifiedGenerate (n sourceBits observationBound densityBound commonBits ind
 /-- The entire amplified family is uniformly efficient, including on malformed seed inputs. -/
 theorem isPolyTime_amplifiedGenerate {pair : SamplablePair} (saved : pair.SeedRealization)
     {observationBound densityBound common : ℕ → ℕ}
-    (hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary)
-    (hcommon : ComputableTidilyInPolyTime common encUnary encUnary) :
-    ComputableTidilyInPolyTime
+    (hobservation : ComputableInPolyTime observationBound encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
+    (hcommon : ComputableInPolyTime common encUnary encUnary) :
+    ComputableInPolyTime
       (fun input => amplifiedGenerate input.1.1 (saved.length input.1.1)
         (observationBound input.1.1) (densityBound input.1.1) (common input.1.1) input.1.2
           (saved.evaluate input.1.1) input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits := by
-  have hlength := saved.length_isPolyTime.tidy
+  have hlength := saved.length_isPolyTime
+  have hsize := isPolyTime_size hlength hdensity
   have hgenerate := isPolyTime_paddedGenerate saved hobservation hdensity hcommon
   unfold amplifiedGenerate
   apply PRGStretch.polyTime_iterate
@@ -112,8 +113,12 @@ theorem exists_secure_amplified_choice {pair : SamplablePair} {gap : ℕ → ℝ
             (fun word => ProbComp.eval (test n (choose n) word)))) := by
   obtain ⟨choose, hchoose, hsecure⟩ :=
     exists_secure_padded_choice hpair saved bounds hgap
-  obtain ⟨hobservation, hdensity, hcommon, _, _⟩ := bounds
+  obtain ⟨hobservationPlain, hdensityPlain, hcommonPlain, _, _⟩ := bounds
+  have hobservation := hobservationPlain.tidy
+  have hdensity := hdensityPlain.tidy
+  have hcommon := hcommonPlain.tidy
   have hlength := saved.length_isPolyTime.tidy
+  have hsize := (isPolyTime_size saved.length_isPolyTime hdensityPlain).tidy
   have hcount : ComputableTidilyInPolyTime (fun n =>
       size (saved.length n) (densityBound n) * common n + 1 - common n) encUnary encUnary := by
     polytime
@@ -122,8 +127,9 @@ theorem exists_secure_amplified_choice {pair : SamplablePair} {gap : ℕ → ℝ
       (densityBound n) (common n) index (saved.evaluate n))
     (count := fun n => size (saved.length n) (densityBound n) * common n + 1 - common n)
     (choose := choose)
-    (isPolyTime_paddedGenerate saved hobservation hdensity hcommon)
-    hcommon hcount hsecure
+    (isPolyTime_paddedGenerate saved (.of_tidy hobservation) (.of_tidy hdensity) (.of_tidy
+      hcommon))
+    (.of_tidy hcommon) (.of_tidy hcount) hsecure
   refine ⟨choose, hchoose, fun test htest => ?_⟩
   unfold amplifiedGenerate
   simpa only [length_add_count] using h test htest

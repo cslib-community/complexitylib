@@ -30,15 +30,15 @@ example (word : List Bool) : BitString.padWord 0 word = frame word := by
   simp [BitString.padWord]
 
 -- Computed bounds work with either input encoding, including bounds too small for the word.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun word : List Bool => BitString.padWord (word.length - 3) word) encBits encBits := by
   fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun word : List Bool => BitString.padWord (word.length - 3) word)
     (encList encBool) encBits := by polytime
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun word : List Bool => frame word ++
       List.replicate (2 * ((word.length - 3) - word.length)) false) encBits encBits := by
   fun_prop
@@ -46,7 +46,7 @@ example : ComputableTidilyInPolyTime
 -- A function with genuinely variable output length acquires an output width depending only on n.
 private def keepTrue (word : List Bool) : List Bool := word.filter id
 
-example : ComputableTidilyInPolyTime (OneWayNormalization.normalize keepTrue id)
+example : ComputableInPolyTime (OneWayNormalization.normalize keepTrue id)
     encBits encBits := by
   fun_prop [keepTrue]
 
@@ -71,6 +71,6 @@ example : Game.succProbability (ProbComp.eval (inversionGame
 example {f : List Bool → List Bool} (hf : OneWay f) :
     ∃ (g : List Bool → List Bool) (length : ℕ → ℕ), OneWay g ∧
       (∀ input, (g input).length = length input.length) ∧
-      ComputableTidilyInPolyTime length encUnary encUnary := hf.exists_fixedOutputLength
+      ComputableInPolyTime length encUnary encUnary := hf.exists_fixedOutputLength
 
 end ComplexityTests.OneWayNormalization

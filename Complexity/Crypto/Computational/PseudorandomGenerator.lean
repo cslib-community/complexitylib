@@ -158,7 +158,7 @@ noncomputable def prgIdealGame (length : ℕ → ℕ) (adversary : Distinguisher
 /-- The real experiment is an efficient program when its generator and distinguisher are. -/
 @[program_certificate]
 theorem isPPTOn_prgRealGame {generator : List Bool → List Bool} {adversary : Distinguisher}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits) (ha : IsPPT encBool adversary) :
+    (hg : ComputableInPolyTime generator encBits encBits) (ha : IsPPT encBool adversary) :
     IsPPTOn encUnary encBool (prgRealGame generator adversary) := by
   unfold prgRealGame
   ppt
@@ -166,7 +166,7 @@ theorem isPPTOn_prgRealGame {generator : List Bool → List Bool} {adversary : D
 /-- The ideal experiment is efficient when its length routine and distinguisher are. -/
 @[program_certificate]
 theorem isPPTOn_prgIdealGame {length : ℕ → ℕ} {adversary : Distinguisher}
-    (hl : ComputableTidilyInPolyTime length encUnary encUnary) (ha : IsPPT encBool adversary) :
+    (hl : ComputableInPolyTime length encUnary encUnary) (ha : IsPPT encBool adversary) :
     IsPPTOn encUnary encBool (prgIdealGame length adversary) := by
   unfold prgIdealGame
   ppt
@@ -182,25 +182,16 @@ structure PseudorandomGenerator (generator : List Bool → List Bool) (length : 
   /-- The finite family is secure against uniformly realizable PPT tests. -/
   secure : (PRG.wordFamily generator length).Secure IsPPTBitStringTest
 
-/-- Recover the tidy presentation for proofs without changing the security contract. -/
-theorem pseudorandomGenerator_iff_tidy {generator : List Bool → List Bool} {length : ℕ → ℕ} :
-    PseudorandomGenerator generator length ↔
-    (ComputableTidilyInPolyTime generator encBits encBits) ∧
-    (∀ word, (generator word).length = length word.length) ∧
-    (∀ n, n < length n) ∧
-    ((PRG.wordFamily generator length).Secure IsPPTBitStringTest) :=
-  ⟨fun h => ⟨h.polyTime.tidy, h.length_eq, h.stretch, h.secure⟩,
-    fun ⟨h0, h1, h2, h3⟩ => ⟨.of_tidy h0, h1, h2, h3⟩⟩
-
 /-- Establish a uniform PRG with an ordinary word-ensemble security argument. -/
 theorem PseudorandomGenerator.of_indistinguishable
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
+    (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ word, (generator word).length = length word.length)
     (hstretch : ∀ n, n < length n)
     (hsecure : ComputationallyIndistinguishable (generatorEnsemble generator)
-      (fun n => BitString.uniformList (length n))) : PseudorandomGenerator generator length :=
-  ⟨.of_tidy hg, hlen, hstretch, (PRG.wordFamily_secure_iff hlen).mpr hsecure⟩
+      (fun n => BitString.uniformList (length n))) : PseudorandomGenerator generator length := by
+  have hg := hg.tidy
+  exact ⟨.of_tidy hg, hlen, hstretch, (PRG.wordFamily_secure_iff hlen).mpr hsecure⟩
 
 /-- The generated words are computationally indistinguishable from uniform words. -/
 theorem PseudorandomGenerator.indistinguishable
@@ -214,10 +205,10 @@ theorem PseudorandomGenerator.indistinguishable
 efficiency or security assumption on the length function is needed. -/
 theorem PRG.polyTime_length
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
+    (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ word, (generator word).length = length word.length) :
-    ComputableTidilyInPolyTime length encUnary encUnary := by
-  have hc : ComputableTidilyInPolyTime
+    ComputableInPolyTime length encUnary encUnary := by
+  have hc : ComputableInPolyTime
       (fun n => (generator (List.replicate n false)).length) encUnary encUnary := by fun_prop
   simpa only [hlen, List.length_replicate] using hc
 
@@ -226,8 +217,8 @@ theorem PRG.polyTime_length
 theorem PseudorandomGenerator.polyTime_length
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (h : PseudorandomGenerator generator length) :
-    ComputableTidilyInPolyTime length encUnary encUnary :=
-  PRG.polyTime_length h.polyTime.tidy h.length_eq
+    ComputableInPolyTime length encUnary encUnary :=
+  (PRG.polyTime_length h.polyTime h.length_eq)
 
 /-- The declared expansion is bounded by a polynomial in the seed length. -/
 theorem PseudorandomGenerator.length_le {generator : List Bool → List Bool} {length : ℕ → ℕ}

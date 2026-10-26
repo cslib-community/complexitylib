@@ -65,22 +65,47 @@ theorem isPolyTime_hashSamples {α : Type} {input : α ↪ List Bool}
     {count seedBits bound observationBits labelBits remainingBits : α → ℕ}
     {samples : α → List ((List Bool × Bool) × List Bool)}
     {firstKey middleKey lastKey : α → List Bool}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hseed : ComputableTidilyInPolyTime seedBits input encUnary)
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hobservation : ComputableTidilyInPolyTime observationBits input encUnary)
-    (hlabel : ComputableTidilyInPolyTime labelBits input encUnary)
-    (hremaining : ComputableTidilyInPolyTime remainingBits input encUnary)
-    (hsamples : ComputableTidilyInPolyTime samples input
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hseed : ComputableInPolyTime seedBits input encUnary)
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hobservation : ComputableInPolyTime observationBits input encUnary)
+    (hlabel : ComputableInPolyTime labelBits input encUnary)
+    (hremaining : ComputableInPolyTime remainingBits input encUnary)
+    (hsamples : ComputableInPolyTime samples input
       (encList (encPair (encPair encBits encBool) encBits)))
-    (hfirst : ComputableTidilyInPolyTime firstKey input encBits)
-    (hmiddle : ComputableTidilyInPolyTime middleKey input encBits)
-    (hlast : ComputableTidilyInPolyTime lastKey input encBits) :
-    ComputableTidilyInPolyTime (fun a => hashSamples (count a) (seedBits a) (bound a)
+    (hfirst : ComputableInPolyTime firstKey input encBits)
+    (hmiddle : ComputableInPolyTime middleKey input encBits)
+    (hlast : ComputableInPolyTime lastKey input encBits) :
+    ComputableInPolyTime (fun a => hashSamples (count a) (seedBits a) (bound a)
       (observationBits a) (labelBits a) (remainingBits a) (samples a)
       (firstKey a) (middleKey a) (lastKey a)) input encBits := by
-  unfold hashSamples
-  polytime
+  let sampleEncoding := encPair (encPair encBits encBool) encBits
+  have houter := ComputableInPolyTime.fst input sampleEncoding
+  have hsample := ComputableInPolyTime.snd input sampleEncoding
+  have hpad := ComputableInPolyTime.bitsPadWord (hbound.comp houter) hsample.fst'.fst'
+  have hobservationWords := ComputableInPolyTime.mapWithInput
+    (encB := encBits)
+    (f := fun a (sample : (List Bool × Bool) × List Bool) => padWord (bound a) sample.1.1)
+    hsamples (by simpa only [Function.comp_def] using hpad)
+  have hobservations := ComputableInPolyTime.bitsFlatten hobservationWords
+  have hlabelWord := ComputableInPolyTime.mapToBitsWithInput
+    (f := fun (_ : α) (sample : (List Bool × Bool) × List Bool) => sample.1.2)
+    hsamples hsample.fst'.snd'
+  have hlabels := ComputableInPolyTime.bitsRowWithInput hcount
+    (ComputableInPolyTime.const 0) hlabelWord
+  have hseedWords := (ComputableInPolyTime.map
+    (ComputableInPolyTime.snd (encPair encBits encBool) encBits)).comp hsamples
+  have hseeds := ComputableInPolyTime.bitsRowWithInput
+    (ComputableInPolyTime.unary_mul.comp (hcount.prod hseed))
+    (ComputableInPolyTime.const 0) (ComputableInPolyTime.bitsFlatten hseedWords)
+  have hfirstHash := LinearHash.computableInPolyTime_wordHash hobservation hfirst hobservations
+  have hmiddleHash := LinearHash.computableInPolyTime_wordHash hlabel hmiddle hlabels
+  have hlastHash := LinearHash.computableInPolyTime_wordHash hremaining hlast hseeds
+  have h := ComputableInPolyTime.bitsAppend
+    (ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsAppend hfirst hfirstHash)
+      (ComputableInPolyTime.bitsAppend hmiddle hmiddleHash))
+    (ComputableInPolyTime.bitsAppend hlast hlastHash)
+  simpa only [hashSamples, List.map_map, Function.comp_def] using h
 
 attribute [program_certificate] isPolyTime_hashSamples
 
@@ -103,16 +128,16 @@ polynomial-time combinators. The callback may capture the original input. -/
 theorem isPolyTime_generate {α : Type} {input : α ↪ List Bool}
     {count seedBits bound observationBits labelBits remainingBits : α → ℕ}
     {evaluate : α → List Bool → List Bool × Bool} {tape : α → (List Bool)}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hseed : ComputableTidilyInPolyTime seedBits input encUnary)
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hobservation : ComputableTidilyInPolyTime observationBits input encUnary)
-    (hlabel : ComputableTidilyInPolyTime labelBits input encUnary)
-    (hremaining : ComputableTidilyInPolyTime remainingBits input encUnary)
-    (hevaluate : ComputableTidilyInPolyTime (fun a => evaluate a.1 a.2)
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hseed : ComputableInPolyTime seedBits input encUnary)
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hobservation : ComputableInPolyTime observationBits input encUnary)
+    (hlabel : ComputableInPolyTime labelBits input encUnary)
+    (hremaining : ComputableInPolyTime remainingBits input encUnary)
+    (hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2)
       (encPair input encBits) (encPair encBits encBool))
-    (htape : ComputableTidilyInPolyTime tape input encBits) :
-    ComputableTidilyInPolyTime (fun a => generate (count a) (seedBits a) (bound a)
+    (htape : ComputableInPolyTime tape input encBits) :
+    ComputableInPolyTime (fun a => generate (count a) (seedBits a) (bound a)
       (observationBits a) (labelBits a) (remainingBits a) (evaluate a) (tape a)) input encBits := by
   unfold generate
   polytime

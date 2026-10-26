@@ -110,6 +110,18 @@ theorem walk_balancedReplacement [Nonempty E] :
 
 variable [Fintype V] [Fintype D]
 
+/-- Each 3-step word in operators on `V × D → ℝ` that do not increase the second moment has
+bilinear form bounded by `√(𝔼 p, h p ^ 2) * √(𝔼 p, f p ^ 2)`. -/
+private theorem expect_mul_three_word_le (h f : V × D → ℝ)
+    {T₁ T₂ T₃ : Module.End ℝ (V × D → ℝ)}
+    (h₁ : ∀ g, 𝔼 p, T₁ g p ^ 2 ≤ 𝔼 p, g p ^ 2)
+    (h₂ : ∀ g, 𝔼 p, T₂ g p ^ 2 ≤ 𝔼 p, g p ^ 2)
+    (h₃ : ∀ g, 𝔼 p, T₃ g p ^ 2 ≤ 𝔼 p, g p ^ 2) :
+    𝔼 p, h p * (T₁ * T₂ * T₃) f p ≤ √(𝔼 p, h p ^ 2) * √(𝔼 p, f p ^ 2) :=
+  (expect_mul_le_sqrt_mul_sqrt univ _ _).trans <|
+    mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt ((h₁ _).trans ((h₂ _).trans (h₃ f))))
+      (Real.sqrt_nonneg _)
+
 /-- The cube of the walk operator of the balanced replacement product, in bilinear form. -/
 private theorem expect_mul_walk_balancedReplacement_pow_three_le [Nonempty E] (h : V × D → ℝ)
     {f : V × D → ℝ} (hf : 𝔼 p, f p = 0) :
@@ -120,14 +132,6 @@ private theorem expect_mul_walk_balancedReplacement_pow_three_le [Nonempty E] (h
     ((loops V Unit).tensor H).expect_walk_sq_le g
   have hA (g : V × D → ℝ) : 𝔼 p, LinearMap.funLeft ℝ ℝ G.rot g p ^ 2 ≤ 𝔼 p, g p ^ 2 :=
     (expect_comp_rot G fun p ↦ g p ^ 2).le
-  have hmul (S T : Module.End ℝ (V × D → ℝ)) (hS : ∀ g, 𝔼 p, S g p ^ 2 ≤ 𝔼 p, g p ^ 2)
-      (hT : ∀ g, 𝔼 p, T g p ^ 2 ≤ 𝔼 p, g p ^ 2) (g : V × D → ℝ) :
-      𝔼 p, (S * T) g p ^ 2 ≤ 𝔼 p, g p ^ 2 :=
-    (hS (T g)).trans (hT g)
-  have hword (T : Module.End ℝ (V × D → ℝ)) (hT : ∀ g, 𝔼 p, T g p ^ 2 ≤ 𝔼 p, g p ^ 2) :
-      𝔼 p, h p * T f p ≤ √(𝔼 p, h p ^ 2) * √(𝔼 p, f p ^ 2) :=
-    (expect_mul_le_sqrt_mul_sqrt univ _ _).trans
-      (mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt (hT f)) (Real.sqrt_nonneg _))
   -- the cube contains the zig-zag walk `B̃ Ã B̃` once
   have hZ : 𝔼 p, h p * (G.zigzag H).walk f p ≤
       (G.zigzag H).spectralExpansion * (√(𝔼 p, h p ^ 2) * √(𝔼 p, f p ^ 2)) := by
@@ -151,13 +155,13 @@ private theorem expect_mul_walk_balancedReplacement_pow_three_le [Nonempty E] (h
         smul_eq_mul, ← expect_add_distrib, mul_expect]
       exact expect_congr rfl fun p _ ↦ by ring
     _ ≤ _ := by
-      have h₁ := hword (B * B * B) (hmul _ _ (hmul _ _ hB hB) hB)
-      have h₂ := hword (B * B * A) (hmul _ _ (hmul _ _ hB hB) hA)
-      have h₄ := hword (B * A * A) (hmul _ _ (hmul _ _ hB hA) hA)
-      have h₅ := hword (A * B * B) (hmul _ _ (hmul _ _ hA hB) hB)
-      have h₆ := hword (A * B * A) (hmul _ _ (hmul _ _ hA hB) hA)
-      have h₇ := hword (A * A * B) (hmul _ _ (hmul _ _ hA hA) hB)
-      have h₈ := hword (A * A * A) (hmul _ _ (hmul _ _ hA hA) hA)
+      have h₁ := expect_mul_three_word_le h f hB hB hB
+      have h₂ := expect_mul_three_word_le h f hB hB hA
+      have h₄ := expect_mul_three_word_le h f hB hA hA
+      have h₅ := expect_mul_three_word_le h f hA hB hB
+      have h₆ := expect_mul_three_word_le h f hA hB hA
+      have h₇ := expect_mul_three_word_le h f hA hA hB
+      have h₈ := expect_mul_three_word_le h f hA hA hA
       have h₃ : 𝔼 p, h p * (B * A * B) f p ≤
           (G.zigzag H).spectralExpansion * (√(𝔼 p, h p ^ 2) * √(𝔼 p, f p ^ 2)) := hZ
       rw [show (2⁻¹ : ℝ) ^ 3 = 8⁻¹ by norm_num]

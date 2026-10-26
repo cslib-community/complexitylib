@@ -186,14 +186,16 @@ public theorem pair {α β₁ β₂ : Type} {encIn : α ↪ List Bool}
       fun x => S₁ x + S₂ x + (enc (f x, g x)).length := by
   obtain ⟨c₁, h₁, -⟩ := hf
   obtain ⟨c₂, h₂, -⟩ := hg
-  obtain ⟨c, h⟩ := hP.pair_mono h₁ h₂
-  refine of_bounds h ((c + 1) * (c + 1) * (c₁ + c₂ + 1)) (fun x => ?_) (fun x => ?_) (fun x => ?_)
-  · ring_nf
-    omega
-  · ring_nf
-    omega
-  · ring_nf
-    omega
+  obtain ⟨c, h⟩ := hP.pair_mono h₁.computableInTimeAndSpace h₂.computableInTimeAndSpace
+  have hp : ComputableInBigO (fun x => (f x, g x)) encIn enc
+      (fun x => T₁ x + T₂ x) (fun x => S₁ x + S₂ x + (enc (f x, g x)).length) := by
+    refine ⟨c * (c₁ + c₂ + 1), h.mono (fun x => ?_) (fun x => ?_)⟩ <;>
+      ring_nf <;> omega
+  obtain ⟨C, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.bigO hp
+  refine ⟨C + 1, ⟨k, Q, hfin, tm, fun x => (htm x).mono
+    (Nat.mul_le_mul_right _ (Nat.le_succ C))
+    (Nat.mul_le_mul_right _ (Nat.le_succ C))⟩, fun x => ?_⟩
+  nlinarith
 
 /-- Pairing with the framed encoding of pairs. -/
 public theorem prod {α β₁ β₂ : Type} {encIn : α ↪ List Bool}

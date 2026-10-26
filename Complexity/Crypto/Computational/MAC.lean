@@ -584,7 +584,7 @@ theorem EUFCMA.oneTimeEUFCMA {M : MACScheme} (h : M.EUFCMA) : M.OneTimeEUFCMA :=
   apply OneTimeEUFCMA.of_negligible
   intro adversary hadversary
   have hred := h.negligible (SignatureScheme.limitToOneQuery bound adversary)
-    (SignatureScheme.isOraclePPT_limitToOneQuery hbound_poly hadversary)
+    (SignatureScheme.isOraclePPT_limitToOneQuery (.of_tidy hbound_poly) hadversary)
   refine hred.congr fun n => ?_
   congr 1
   simp only [eufOneTimeGame, eufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
@@ -691,34 +691,65 @@ theorem isPPTOn_sufCmaGame (M : MACScheme) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsPPTOn encUnary encBool (M.sufCmaGame adversary) := by
   have hrun := M.isPPTOn_run_signingPairOracle hadversary
-  have hcontains : ComputableTidilyInPolyTime
+  have hcontains : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
         pair.2.2.contains pair.2.1)
       (encPair (encPair encUnary encBits)
         (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))) encBool := by
-    have hlist : ComputableTidilyInPolyTime
+    have hlist : ComputableInPolyTime
         (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
           pair.2.2)
         (encPair (encPair encUnary encBits)
           (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
         (encList (encPair encBits encBits)) := by polytime
-    have helem : ComputableTidilyInPolyTime
+    have helem : ComputableInPolyTime
         (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
           pair.2.1)
         (encPair (encPair encUnary encBits)
           (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
         (encPair encBits encBits) := by polytime
     classical
-    convert ComputableTidilyInPolyTime.decide_mem hlist helem using 1
+    convert ComputableInPolyTime.decide_mem hlist helem using 1
     funext a
     rw [Bool.eq_iff_iff, List.contains_iff_mem, decide_eq_true_eq]
-  have hpost : ComputableTidilyInPolyTime
+  have hverify : ComputableInPolyTime
+      (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
+        M.verify pair.1.2 pair.2.1.1 pair.2.1.2)
+      (encPair (encPair encUnary encBits)
+        (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))) encBool :=
+    M.verify_polyTime.comp (show ComputableInPolyTime
+      (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
+        (pair.1.2, pair.2.1.1, pair.2.1.2))
+      (encPair (encPair encUnary encBits)
+        (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
+      (encPair encBits (encPair encBits encBits)) by fun_prop)
+  have hsize : ComputableInPolyTime
+      (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
+        pair.2.1.1.length == M.msgLen pair.1.1)
+      (encPair (encPair encUnary encBits)
+        (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))) encBool :=
+    ComputableInPolyTime.beq (encB := encUnary)
+      (ComputableInPolyTime.length_bits.comp (show ComputableInPolyTime
+        (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
+          pair.2.1.1)
+        (encPair (encPair encUnary encBits)
+          (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
+        encBits by fun_prop))
+      (M.msgLen_polyTime.comp (show ComputableInPolyTime
+        (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
+          pair.1.1)
+        (encPair (encPair encUnary encBits)
+          (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
+        encUnary by fun_prop))
+  have hpost : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
         (pair.2.1.1.length == M.msgLen pair.1.1) && !pair.2.2.contains pair.2.1 &&
           M.verify pair.1.2 pair.2.1.1 pair.2.1.2)
       (encPair (encPair encUnary encBits)
         (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))) encBool := by
-    polytime
+    exact ComputableInPolyTime.bool_and.comp
+      ((ComputableInPolyTime.bool_and.comp
+        (hsize.prod (ComputableInPolyTime.bool_not.comp hcontains))).prod hverify)
   exact M.keyGen_ppt.bind_with (hrun.bind_with hpost.isPPTOn)
 
 /-- The MAC SUF-CMA experiment is uniformly strict PPT, independently of unused auxiliary input. -/
@@ -964,14 +995,15 @@ theorem isOraclePPT_reindexForger {ℓ : ℕ → ℕ}
     (hℓ : ComputableInPolyTime ℓ encUnary encUnary) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsOraclePPT (encPair encBits encBits) (reindexForger ℓ adversary) := by
-  have hℓTidy := hℓ.tidy
   have hcond : ComputableTidilyInPolyTime
       (fun p : ℕ × List Bool => ℓ (GeneratorReindex.parameter ℓ p.1) == p.1)
       (encPair encUnary encBits) encBool := by
+    apply ComputableInPolyTime.tidy
     polytime
   have hprep : ComputableTidilyInPolyTime
       (fun p : ℕ × List Bool => (GeneratorReindex.parameter ℓ p.1, p.2))
       (encPair encUnary encBits) (encPair encUnary encBits) := by
+    apply ComputableInPolyTime.tidy
     polytime
   have hyes : IsOraclePPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p : ℕ × List Bool => adversary (GeneratorReindex.parameter ℓ p.1) p.2) :=

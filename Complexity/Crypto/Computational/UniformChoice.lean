@@ -73,14 +73,16 @@ noncomputable def test (bound : ℕ) (real ideal : ProbComp (List Bool))
 theorem isPPTOn_test {α : Type} {input : α ↪ List Bool}
     {bound : α → ℕ} {real ideal : α → ProbComp (List Bool)}
     {adversary : α → ℕ → List Bool → ProbComp Bool} {challenge : α → List Bool}
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
+    (hbound : ComputableInPolyTime bound input encUnary)
     (hreal : IsPPTOn input encBits real)
     (hideal : IsPPTOn input encBits ideal)
     (hadversary : IsPPTOn (encPair (encPair input encUnary) encBits) encBool
       (fun a => adversary a.1.1 a.1.2 a.2))
-    (hchallenge : ComputableTidilyInPolyTime challenge input encBits) :
+    (hchallenge : ComputableInPolyTime challenge input encBits) :
     IsPPTOn input encBool
       (fun a => test (bound a) (real a) (ideal a) (adversary a) (challenge a)) := by
+  have hbound := hbound.tidy
+  have hchallenge := hchallenge.tidy
   unfold test
   apply IsPPTOn.bind_with (left := encUnary)
   · fun_prop
@@ -144,13 +146,14 @@ theorem ComputationallyIndistinguishable.uniform_bound
       (fun n => ProbComp.eval (real n)) (fun n => ProbComp.eval (ideal n)))
     (hreal : IsPPTOn encUnary encBits real)
     (hideal : IsPPTOn encUnary encBits ideal)
-    (hbound : ComputableTidilyInPolyTime bound encUnary encUnary)
+    (hbound : ComputableInPolyTime bound encUnary encUnary)
     (adversary : ℕ → ℕ → List Bool → ProbComp Bool)
     (hadversary : IsPPTOn (encPair (encPair encUnary encUnary) encBits)
       encBool (fun a => adversary a.1.1 a.1.2 a.2)) :
     ∃ ε : ℕ → ℝ≥0, Negligible ε ∧ ∀ n index, index ≤ bound n →
       Game.advantage (ProbComp.eval (real n >>= adversary n index))
         (ProbComp.eval (ideal n >>= adversary n index)) ≤ ε n := by
+  have hbound := hbound.tidy
   let reduction := fun n => UniformChoice.test (bound n) (real n) (ideal n) (adversary n)
   have hreduce : IsPPT encBool reduction := by
     unfold reduction

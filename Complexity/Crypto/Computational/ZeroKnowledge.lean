@@ -472,18 +472,18 @@ noncomputable def PseudorandomGenerator.zeroKnowledgeProofOfReduction
     · simp only [ThreeSAT.verifier, SAT.verifier, Bool.and_eq_true, List.all_eq_true,
         decide_eq_true_eq] at hw
       exact ⟨hw.1, SAT.assignment (f a) w, hw.2⟩
-  isOraclePPT_verifier := GMW.isOraclePPTOn_gmwVerifier hG.polyTime.tidy hG.length_eq hf.tidy
+  isOraclePPT_verifier := GMW.isOraclePPTOn_gmwVerifier hG.polyTime hG.length_eq hf
   interact n a w prog := GMW.gmwInteract generator (n + 7) (length (n + 7)) (f a) w prog
   eval_interact n a w prog := GMW.eval_gmwInteract generator (n + 7) (length (n + 7)) (f a) w prog
-  isPPT_interact _ hV := GMW.isPPTOn_gmwInteract hG.polyTime.tidy hG.length_eq hf.tidy hV
+  isPPT_interact _ hV := GMW.isPPTOn_gmwInteract hG.polyTime hG.length_eq hf hV
   complete n a _ hw := GMW.acceptProb_gmwVerifier_gmwProver hG.length_eq f n a hw
   sound n a ha P :=
     GMW.acceptProb_gmwVerifier_le hG.length_eq hstretch f n a (mt (hred a).mpr ha) P
   zero_knowledge Vstar hV :=
     ⟨GMW.gmwSimulator generator length f Vstar,
-      GMW.isPPTOn_gmwSimulator hG.polyTime.tidy hG.length_eq hf.tidy hV,
+      GMW.isPPTOn_gmwSimulator hG.polyTime hG.length_eq hf hV,
       fun _ _ _ ha hw_comp hz hw_sat =>
-        GMW.gmwView_indistinguishable_gmwSimulator hG hf.tidy hV ha.tidy hw_comp.tidy hz.tidy
+        GMW.gmwView_indistinguishable_gmwSimulator hG hf hV ha hw_comp hz
           hw_sat⟩
 
 /-- Under the explicit advice-PRG premise `GMW.AdvicePRG enc generator length`, the GMW proof
@@ -501,7 +501,7 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfRe
     (hG.zeroKnowledgeProofOfReduction hstretch hf hred).AuxiliaryInputZeroKnowledge := by
   intro Vstar hV
   exact ⟨GMW.gmwSimulator generator length f Vstar,
-    GMW.isPPTOn_gmwSimulator hG.polyTime.tidy hG.length_eq hf.tidy hV,
+    GMW.isPPTOn_gmwSimulator hG.polyTime hG.length_eq hf hV,
     fun _ _ _ ha hw hz hw_sat _ hadv =>
       hAdv.gmwView_negligible hf hV hadv ha hw hz hw_sat⟩
 

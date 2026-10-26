@@ -637,7 +637,7 @@ theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K 
           (0 : ℝ) ≤ L)])
         have e₁ : ((c₁ : ℝ) + 1) * ((L : ℝ) + 1) ^ 2 = c₁ * ((L : ℝ) + 1) ^ 2 +
           ((L : ℝ) + 1) ^ 2 := by ring
-        linarith
+        linarith only [h₁, h₂, e₁]
       calc ((nodeBound K α φ : ℝ) + 1) ^ e ≤ (((c₁ : ℝ) + 1) * ((L : ℝ) + 1) ^ 2) ^ e :=
             pow_le_pow_left₀ (by positivity) this e
         _ = ((c₁ : ℝ) + 1) ^ e * ((L : ℝ) + 1) ^ (2 * e) := by rw [mul_pow, ← pow_mul]
@@ -651,13 +651,14 @@ theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K 
     have h₄ : (c : ℝ) * (2 ^ δ * Y * ((nodeBound K α φ : ℝ) + 1) ^ e) ≤
         c * 2 ^ δ * ((c₁ : ℝ) + 1) ^ e * Y * P := by
       have := mul_le_mul_of_nonneg_left h₂ (by positivity : (0 : ℝ) ≤ c * 2 ^ δ * Y)
-      nlinarith
+      linarith only [this]
     have h₅ : (c : ℝ) + 1 ≤ ((c : ℝ) + 1) * Y * P := by
-      have : (1 : ℝ) ≤ Y * P := one_le_mul_of_one_le_of_one_le hY hP1
-      nlinarith
+      rw [mul_assoc]
+      exact le_mul_of_one_le_right (by positivity)
+        (one_le_mul_of_one_le_of_one_le hY hP1)
     calc (⌈(c : ℝ) * (2 ^ δ * Y * ((nodeBound K α φ : ℝ) + 1) ^ e) + c⌉₊ : ℝ)
         ≤ (c : ℝ) * (2 ^ δ * Y * ((nodeBound K α φ : ℝ) + 1) ^ e) + c + 1 := h₃.le
-      _ ≤ C₂ * Y * P := by simp only [C₂]; nlinarith
+      _ ≤ C₂ * Y * P := by simp only [C₂]; linarith only [h₄, h₅]
   -- together
   set X : ℝ := 2 ^ ((1 / M : ℝ) * N)
   have hX : ((2 ^ (N / M) : ℕ) : ℝ) ≤ X := by
@@ -678,29 +679,28 @@ theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K 
       have : ((rounds M φ + 1 : ℕ) : ℝ) ≤ ((5 * 2 ^ (N / M) : ℕ) : ℝ) := by exact_mod_cast hr
       rw [Nat.cast_mul] at this
       push_cast at this hX ⊢
-      linarith
+      linarith only [this, hX]
     have h₃ : (((stateBound K α φ + 1) ^ d + stateBound K α φ +
         ((encNat (rounds M φ)).length + 1) ^ 2 : ℕ) : ℝ) ≤ C₁ * P := by exact_mod_cast hrnd
     have h₄ : (((stateBound K α φ + 1) ^ d + leafTime K α δ c e φ + stateBound K α φ +
         ((encNat (rounds M φ)).length + 1) ^ 2 : ℕ) : ℝ) ≤ C₁ * P + C₂ * Y * P := by
       push_cast at h₃ ⊢
-      linarith
+      linarith only [h₃, hleaf]
     have h₅ := mul_le_mul h₂ h₄ (by positivity) (by positivity)
     push_cast at h₁ h₅ ⊢
-    linarith
+    linarith only [h₁, h₅]
   calc _ ≤ 2 * P + 5 * X * (C₁ * P + C₂ * Y * P) := by exact_mod_cast hT
     _ ≤ C₀ * (X * Y * P) := by
         have hXY1 : 1 ≤ X * Y := one_le_mul_of_one_le_of_one_le hX1 hY
-        have hC₂ : 0 ≤ C₂ := by positivity
         have hC₁ : (0 : ℝ) ≤ C₁ := by positivity
         have hP0 : (0 : ℝ) ≤ P := by positivity
         have a₁ : (P : ℝ) ≤ X * Y * P := le_mul_of_one_le_left hP0 hXY1
         have a₂ : X * P ≤ X * Y * P := by
           have := mul_le_mul_of_nonneg_left hY (by positivity : (0 : ℝ) ≤ X * P)
-          linarith [show X * P * Y = X * Y * P by ring]
+          linarith only [this, show X * P * Y = X * Y * P by ring]
         have a₃ := mul_le_mul_of_nonneg_left a₂ hC₁
         simp only [C₀]
-        nlinarith
+        linarith only [a₁, a₃]
     _ ≤ ⌈C₀⌉₊ * (2 ^ ((1 / M + occBound K α * δ) * N) * ((L : ℝ) + 1) ^ E) := by
         rw [← hXY]
         push_cast [P]

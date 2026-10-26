@@ -150,10 +150,14 @@ example : (∃ c, ComputableTidilyInTimeAndSpace (fun l : List Bool =>
       l.foldl (fun acc b => acc ++ [b]) []) encBits encBits
       (fun l => c * (l.length + 1) ^ 2) (fun l => c * (l.length + 1))) ∧
       ∀ l : List Bool, (l.foldl (fun acc b => acc ++ [b]) []).length = l.length := by
+  have hfst : ComputableTidilyInLinearTimeAndSpace Prod.fst
+      (encPair encBits encBool) encBits := Internal.NormalForm.linear (PairEncoding.fst encBool)
+  have hsnd : ComputableTidilyInLinearTimeAndSpace Prod.snd
+      (encPair encBits encBool) encBool := Internal.NormalForm.linear (PairEncoding.snd encBits)
   have hstep : ComputableTidilyInLinearTimeAndSpace
       (fun p : List Bool × Bool => p.1 ++ [p.2]) (encPair encBits encBool) encBits :=
-    (PairEncoding.fst (enc₁ := encBits) encBool).append
-      (PairEncoding.snd (enc₂ := encBool) encBits) (fun _ => rfl)
+    hfst.append
+      hsnd (fun _ => rfl)
   obtain ⟨k, hk⟩ := hstep
   obtain ⟨⟨c, h⟩, hpost⟩ := hk.foldl_bits_stream_sum_spec (step := fun acc b => acc ++ [b]) []
     (fun _ i state => state.length = i) (by simp)
@@ -201,13 +205,17 @@ example : ∃ c, ComputableTidilyInTimeAndSpace (fun l => l.foldl resetStep []) 
       have hg := hgrowth state b
       simpa only [List.foldl_cons, List.length_cons] using (show
         (l.foldl resetStep (resetStep state b)).length ≤ state.length + (l.length + 1) by lia)
+  have hfst : ComputableTidilyInLinearTimeAndSpace Prod.fst
+      (encPair encBits encBool) encBits := Internal.NormalForm.linear (PairEncoding.fst encBool)
+  have hsnd : ComputableTidilyInLinearTimeAndSpace Prod.snd
+      (encPair encBits encBool) encBool := Internal.NormalForm.linear (PairEncoding.snd encBits)
   have happend : ComputableTidilyInLinearTimeAndSpace
       (fun p : List Bool × Bool => p.1 ++ [false]) (encPair encBits encBool) encBits :=
-    (PairEncoding.fst (enc₁ := encBits) encBool).append
+    hfst.append
       (ComputableTidilyInLinearTimeAndSpace.const (encMid := encBool) false) (fun _ => rfl)
   have hstep : ComputableTidilyInLinearTimeAndSpace
       (fun p : List Bool × Bool => resetStep p.1 p.2) (encPair encBits encBool) encBits :=
-    (PairEncoding.snd (enc₂ := encBool) encBits).ite
+    hsnd.ite
       (ComputableTidilyInLinearTimeAndSpace.const []) (happend.restrict _)
   obtain ⟨k, hk⟩ := hstep
   obtain ⟨c, h⟩ := hk.foldl_bits_stream_sum (step := resetStep) []

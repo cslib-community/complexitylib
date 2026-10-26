@@ -100,7 +100,11 @@ example (adversary : List Bool → ProbComp Bool) :
 example : ∃ common : ℕ → ℕ, ComputableTidilyInPolyTime common encUnary encUnary ∧
     StrictMono common ∧ (∀ n, n + 1 ≤ common n) ∧
     ∀ n index, index < EntropyGrid.size (n + 1) (16 * (n + 7)) →
-      EntropyGrid.seedLength n (n + 1) 2 (16 * (n + 7)) index ≤ common n :=
-  EntropyGrid.exists_common_seedLength (by polytime) (by polytime) (by polytime)
+      EntropyGrid.seedLength n (n + 1) 2 (16 * (n + 7)) index ≤ common n := by
+  obtain ⟨common, hcommon, hmono, hself, hbound⟩ :=
+    EntropyGrid.exists_common_seedLength
+      (sourceBits := fun n => n + 1) (observationBound := fun _ => 2)
+      (densityBound := fun n => 16 * (n + 7)) (by polytime) (by polytime) (by polytime)
+  exact ⟨common, hcommon.tidy, hmono, hself, hbound⟩
 
 end ComplexityTests.GeneratorPadding

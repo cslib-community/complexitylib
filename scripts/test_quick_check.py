@@ -176,6 +176,52 @@ class QuickCheckTests(unittest.TestCase):
         with self.assertRaises(quick.FullCheck):
             self.plan()
 
+    def add_executable(self, imports, name="demoTool"):
+        with (self.root / "lakefile.toml").open("a") as config:
+            config.write(f'[[lean_exe]]\nname = "{name}"\nroot = "Tool"\nsrcDir = "tools"\n')
+        self.write("tools/Tool.lean", imports + "\ndef main : IO Unit := pure ()\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    def test_executable_importing_changed_library_is_built_explicitly(self):
+        self.add_executable("import Demo.Base")
+        self.write("Demo/Base.lean", "def value : Bool := true\n")
+        self.assertIn("@/demoTool", self.plan().targets)
+
+    def test_executable_local_helper_cannot_hide_an_importing_client(self):
+        self.write("tools/Helper.lean", "import Demo.Base\ndef result : Nat := value\n")
+        self.add_executable("import Helper")
+        self.write("Demo/Base.lean", "def value : Bool := true\n")
+        self.assertIn("@/demoTool", self.plan().targets)
+
+    def test_hyphenated_executable_name_is_built_explicitly(self):
+        self.add_executable("import Demo.Base", "demo-tool")
+        self.write("Demo/Base.lean", "def value : Bool := true\n")
+        self.assertIn("@/demo-tool", self.plan().targets)
+
+    def test_shared_executable_root_uses_normalized_source_identity(self):
+        (self.root / "tools").mkdir()
+        with (self.root / "lakefile.toml").open("a") as config:
+            config.write('[[lean_exe]]\nname = "demoTool"\nroot = "Demo.Base"\n'
+                         'srcDir = "tools/.."\n')
+        self.write("Demo/Base.lean", "import Init\ndef value : Nat := 1\n"
+                   "def main : IO Unit := pure ()\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("Demo/Base.lean", "import Init\ndef value : Nat := 2\n"
+                   "def main : IO Unit := pure ()\n")
+        self.assertIn("@/demoTool", self.plan().targets)
+
+    def test_dependency_only_executables_preserve_quick_plan(self):
+        self.add_executable("import Lean\nimport Mathlib.Lean.CoreM")
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        self.assertEqual(self.plan().targets,
+                         ["Demo.Base", "Demo.Middle", "DemoTests.AllClient", "DemoTests.Client"])
+
+    def test_clean_checkout_with_local_executable_still_has_empty_plan(self):
+        self.add_executable("import Demo.Base")
+        self.assertEqual(self.plan().targets, [])
+
     def test_ignored_source_falls_back(self):
         self.write(".gitignore", ".lake/\nDemo/Hidden.lean\n")
         self.commit()
@@ -276,6 +322,7 @@ class NativeLeanTests(unittest.TestCase):
     write = QuickCheckTests.write
     git = QuickCheckTests.git
     commit = QuickCheckTests.commit
+    add_executable = QuickCheckTests.add_executable
 
     def setUp(self):
         # CI runs Python tests before installing Lean; always run planner/dispatch tests above.
@@ -316,6 +363,22 @@ class NativeLeanTests(unittest.TestCase):
                                 cwd=self.root, capture_output=True, text=True)
         self.assertNotEqual(broken.returncode, 0)
         self.assertIn("DemoTests/Client.lean", broken.stdout + broken.stderr)
+
+    def test_nondefault_executable_client_is_not_omitted(self):
+        self.add_executable("import Demo.Base")
+        self.write("tools/Tool.lean", "import Demo.Base\ndef main : IO Unit := IO.println (value : Nat)\n")
+        baseline = subprocess.run(["lake", "build", "@/demoTool"], cwd=self.root,
+                                  capture_output=True, text=True)
+        self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("Demo/Base.lean", "def value : Bool := true\n")
+        plan = quick.make_plan(self.root)
+        self.assertIn("@/demoTool", plan.targets)
+        broken = subprocess.run(["lake", "build", "--wfail", "--iofail", *plan.targets],
+                                cwd=self.root, capture_output=True, text=True)
+        self.assertNotEqual(broken.returncode, 0)
+        self.assertIn("tools/Tool.lean", broken.stdout + broken.stderr)
 
 
 if __name__ == "__main__":

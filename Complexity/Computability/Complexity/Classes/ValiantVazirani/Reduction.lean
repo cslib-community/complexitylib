@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
 import Complexity.Foundations.Data.Finset.Sampling
+import Complexity.Foundations.Data.List.Lookup
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Probability.PairwiseIndependentHash.Shift
 import Mathlib.Data.Fin.Tuple.Take
@@ -277,7 +278,7 @@ private theorem eval_hashCNF (σ : Var → Bool) (vars : List ℕ) (k : ℕ) (w 
   have hrow (i : Fin k) {j : ℕ} (hj : j < vars.length) :
       (List.ofFn (BitString.block (BitString.ofList (k * vars.length) w) i)).getD j false =
         matrix k vars.length w i ⟨j, hj⟩ := by
-    rw [List.getD_eq_getElem _ _ (by simpa using hj), List.getElem_ofFn]
+    rw [List.getD_ofFn_of_lt _ hj]
     rfl
   have hoff (i : Fin k) : (w.drop (k * vars.length)).getD i false = offset k vars.length w i := rfl
   simp only [hashCNF, CNF.eval_flatMap_eq_true_iff, Prod.forall, mem_zipIdx_listRows,

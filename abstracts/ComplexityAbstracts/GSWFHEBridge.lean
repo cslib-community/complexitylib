@@ -224,6 +224,27 @@ def Native (S : Homomorphic.Scheme) : Prop :=
           (Encoding.encList Encoding.encBits))))
       Encoding.encBits (fun p => ProbComp.eval (S.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
 
+def NativeInDepth (E : ℕ → Homomorphic.Scheme) : Prop :=
+  Randomized.StrictPPT (Encoding.encPair Encoding.encUnary Encoding.encUnary)
+      (Encoding.encPair Encoding.encBits Encoding.encBits)
+      (fun p : ℕ × ℕ => ProbComp.eval ((E p.2).keyGen p.1)) ∧
+    Randomized.StrictPPT
+      (Encoding.encPair Encoding.encUnary (Encoding.encPair Encoding.encUnary
+        (Encoding.encPair Encoding.encBits Encoding.encBool)))
+      Encoding.encBits (fun p => ProbComp.eval ((E p.2.1).encrypt p.1 p.2.2.1 p.2.2.2)) ∧
+    Computation.PolyTime
+      (fun p : ℕ × ℕ × List Bool × List Bool => (E p.2.1).decrypt p.1 p.2.2.1 p.2.2.2)
+      (Encoding.encPair Encoding.encUnary (Encoding.encPair Encoding.encUnary
+        (Encoding.encPair Encoding.encBits Encoding.encBits)))
+      Encoding.encBool ∧
+    Randomized.StrictPPT
+      (Encoding.encPair Encoding.encUnary (Encoding.encPair Encoding.encUnary
+        (Encoding.encPair Encoding.encBits
+          (Encoding.encPair (Circuits.Boolean.encCircuit 1)
+            (Encoding.encList Encoding.encBits)))))
+      Encoding.encBits
+      (fun p => ProbComp.eval ((E p.2.1).evaluate p.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2))
+
 noncomputable def chosenMessageGame (S : Homomorphic.Scheme)
     (choose : ℕ → List Bool → PMF ((Bool × Bool) × List Bool))
     (guess : ℕ → List Bool → List Bool → PMF Bool) (bit : Bool) (security : ℕ) :
@@ -578,6 +599,25 @@ theorem native_of {S : Homomorphic.Scheme}
     CryptographyBridge.strictPPT_iff.mpr ⟨_, hencrypt, fun _ => rfl⟩, hdecrypt,
     CryptographyBridge.strictPPT_iff.mpr ⟨_, hevaluate, fun _ => rfl⟩⟩
 
+theorem nativeInDepth_of {E : ℕ → Homomorphic.Scheme}
+    (hkeyGen : IsPPTOn (encPair encUnary encUnary) (encPair encBits encBits)
+      (fun p : ℕ × ℕ => (E p.2).keyGen p.1))
+    (hencrypt : IsPPTOn
+      (encPair encUnary (encPair encUnary (encPair encBits encBool))) encBits
+      (fun p => (E p.2.1).encrypt p.1 p.2.2.1 p.2.2.2))
+    (hdecrypt : ComputableInPolyTime
+      (fun p : ℕ × ℕ × List Bool × List Bool => (E p.2.1).decrypt p.1 p.2.2.1 p.2.2.2)
+      (encPair encUnary (encPair encUnary (encPair encBits encBits))) encBool)
+    (hevaluate : IsPPTOn
+      (encPair encUnary (encPair encUnary
+        (encPair encBits (encPair (Circuits.Boolean.encCircuit 1)
+          (encList encBits)))))
+      encBits (fun p => (E p.2.1).evaluate p.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2)) :
+    NativeInDepth E :=
+  ⟨CryptographyBridge.strictPPT_iff.mpr ⟨_, hkeyGen, fun _ => rfl⟩,
+    CryptographyBridge.strictPPT_iff.mpr ⟨_, hencrypt, fun _ => rfl⟩, hdecrypt,
+    CryptographyBridge.strictPPT_iff.mpr ⟨_, hevaluate, fun _ => rfl⟩⟩
+
 theorem chosenMessageSecure_of_indCPA {S : Homomorphic.Scheme}
     (hS : Encryption.INDCPA S.keyGen S.encrypt) : ChosenMessageSecure S := by
   intro choose guess hchoose hguess
@@ -589,24 +629,61 @@ theorem chosenMessageSecure_of_indCPA {S : Homomorphic.Scheme}
     ⟨fun security pk => chooseProgram (security, pk),
       fun security state ciphertext => guessProgram (security, state, ciphertext)⟩
   have h := hS adversary ⟨hchooseProgram, hguessProgram⟩
-  simpa only [Encryption.game, adversary, ProbComp.eval_bind, hchooseLaw, hguessLaw,
+  simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte,
+    adversary, ProbComp.eval_bind, hchooseLaw, hguessLaw,
     chosenMessageGame, PMF.monad_bind_eq_bind, Randomized.Negligible, Crypto.Negligible,
     Asymptotics.SuperpolynomialDecay, Crypto.Game.advantage, Crypto.Game.succProbability,
     Randomized.probability] using h
 
 /-! ### Provenance: the library's schemes are the witnesses -/
 
-/-- **The library's leveled scheme witnesses `leveled`.** For every budget computable in unary
-polynomial time, `Leveled.scheme GSW.DepthParameters.decryptionCircuits budget` has every
-property that the abstract's `leveled` asserts, with one decryption circuit family chosen
-before the budget. -/
+/-- **The library's leveled scheme witnesses `leveled`.** The depth-indexed family
+`fun d => Leveled.scheme GSW.DepthParameters.decryptionCircuits (fun _ => d)` satisfies
+`NativeInDepth` (one joint polynomial in `(security, d)`), and for every budget computable in
+unary polynomial time, `Leveled.scheme GSW.DepthParameters.decryptionCircuits budget` substitutes
+`d = budget security` into that family and has every property that the abstract's `leveled`
+asserts, with one decryption circuit family chosen before the depth and budget. -/
 theorem leveled_witness (hLWE : DecisionLWE) :
     ∃ circuit : ∀ security, Circuits.Circuit Circuits.Boolean.signature
         ((3 * secretWidth security + 1) + (ciphertextWidth security + 1)) 1,
       PolynomiallyBounded (fun security => (circuit security).size) ∧
       PolynomiallyBounded (fun security => 3 * secretWidth security + 1) ∧
       PolynomiallyBounded (fun security => ciphertextWidth security + 1) ∧
+      NativeInDepth
+        (fun d => Leveled.scheme GSW.DepthParameters.decryptionCircuits (fun _ => d)) ∧
+      (∀ d : ℕ,
+        (∀ security, (ProbComp.eval
+          ((Leveled.scheme GSW.DepthParameters.decryptionCircuits (fun _ => d)).keyGen
+            security)).map
+            (fun keys => (Turing.MultiTapeTM.unframe (Turing.MultiTapeTM.unframe keys.1),
+              Turing.MultiTapeTM.unframe keys.2)) = keyGeneration security) ∧
+        EncryptsAndDecrypts
+          (Leveled.scheme GSW.DepthParameters.decryptionCircuits (fun _ => d))
+          (leveledEncryption Turing.MultiTapeTM.unframe)
+          (leveledDecryption Turing.MultiTapeTM.unframe Turing.MultiTapeTM.dropFrame) ∧
+        DecryptsWith
+          (Leveled.scheme GSW.DepthParameters.decryptionCircuits (fun _ => d))
+          (fun security => 3 * secretWidth security + 1)
+          (fun security => ciphertextWidth security + 1) circuit ∧
+        Homomorphic
+          (Leveled.scheme GSW.DepthParameters.decryptionCircuits (fun _ => d))
+          (fun _ C => C.2.depth ≤ d) ∧
+        FixedWidths
+          (Leveled.scheme GSW.DepthParameters.decryptionCircuits (fun _ => d))
+          (fun _ C => C.2.depth ≤ d)
+          (fun security => 3 * secretWidth security + 1)
+          (fun security => ciphertextWidth security + 1) ∧
+        Native (Leveled.scheme GSW.DepthParameters.decryptionCircuits (fun _ => d)) ∧
+        ChosenMessageSecure
+          (Leveled.scheme GSW.DepthParameters.decryptionCircuits (fun _ => d))) ∧
       ∀ budget : ℕ → ℕ, Computation.PolyTime budget Encoding.encUnary Encoding.encUnary →
+        (∀ security,
+          (Leveled.scheme GSW.DepthParameters.decryptionCircuits budget).keyGen security =
+            (Leveled.scheme GSW.DepthParameters.decryptionCircuits
+              (fun _ => budget security)).keyGen security ∧
+          (Leveled.scheme GSW.DepthParameters.decryptionCircuits budget).evaluate security =
+            (Leveled.scheme GSW.DepthParameters.decryptionCircuits
+              (fun _ => budget security)).evaluate security) ∧
         (∀ security, (ProbComp.eval
           ((Leveled.scheme GSW.DepthParameters.decryptionCircuits budget).keyGen security)).map
             (fun keys => (Turing.MultiTapeTM.unframe (Turing.MultiTapeTM.unframe keys.1),
@@ -626,28 +703,52 @@ theorem leveled_witness (hLWE : DecisionLWE) :
         Native (Leveled.scheme GSW.DepthParameters.decryptionCircuits budget) ∧
         ChosenMessageSecure (Leveled.scheme GSW.DepthParameters.decryptionCircuits budget) := by
   let D := GSW.DepthParameters.decryptionCircuits
-  have hD := GSW.DepthParameters.computableInPolyTime_decryptionCircuits.tidy
+  have hD := GSW.DepthParameters.computableInPolyTime_decryptionCircuits
   have hkeyGen := GSW.DepthParameters.isPPTOn_keyGen
   have hencrypt := GSW.DepthParameters.isPPTOn_encrypt
   have hevaluate := GSW.DepthParameters.isPPTOn_evaluate
   obtain ⟨circuits, hsize, hcircuits⟩ := Leveled.exists_decrypt_circuits D hD
-  obtain ⟨hsecret, hciphertext⟩ := Leveled.polynomiallyBounded_widths D hD
-  refine ⟨circuits, hsize, hsecret, hciphertext, fun budget hbudget => ?_⟩
-  have hb : ComputableTidilyInPolyTime budget encUnary encUnary :=
-    CryptographyBridge.polyTime_iff.mp hbudget
-  obtain ⟨hcorrect, hwidth, -, -, hsecure⟩ :=
-    Leveled.correct_fixedWidth_indCPA D GSW.DepthParameters.correct
-      GSW.DepthParameters.fixedWidth GSW.DepthParameters.bootstrappable
-      (GSW.DepthParameters.indCPA_scheme (decisionLWE_iff.mp hLWE)) hkeyGen hencrypt hD hb
-  exact ⟨leveled_keyGen budget, leveled_encryptsAndDecrypts budget,
-    fun security => hcircuits budget security,
-    homomorphic_of_correct hcorrect fun _ _ h => h,
-    fixedWidths_of_fixedWidth hwidth fun _ _ h => h,
-    native_of (Leveled.isPPTOn_scheme_keyGen hkeyGen hencrypt D budget hb)
-      (Leveled.isPPTOn_scheme_encrypt hencrypt D budget)
-      (Leveled.computableTidilyInPolyTime_scheme_decrypt D hD budget).computableInPolyTime
-      (Leveled.isPPTOn_scheme_evaluate hencrypt D hD hevaluate budget hb),
-    chosenMessageSecure_of_indCPA hsecure⟩
+  obtain ⟨hsecret, hciphertext, hkgJoint, hencJoint, hdecJoint, hevalJoint⟩ :=
+    Leveled.schemeFamily_spec D hkeyGen hencrypt hevaluate
+      GSW.DepthParameters.computableInPolyTime_decryptionCircuits
+  have hforBudget (budget : ℕ → ℕ) (hb : ComputableInPolyTime budget encUnary encUnary) :
+      (∀ security, (ProbComp.eval
+        ((Leveled.scheme D budget).keyGen security)).map
+          (fun keys => (Turing.MultiTapeTM.unframe (Turing.MultiTapeTM.unframe keys.1),
+            Turing.MultiTapeTM.unframe keys.2)) = keyGeneration security) ∧
+      EncryptsAndDecrypts (Leveled.scheme D budget)
+        (leveledEncryption Turing.MultiTapeTM.unframe)
+        (leveledDecryption Turing.MultiTapeTM.unframe Turing.MultiTapeTM.dropFrame) ∧
+      DecryptsWith (Leveled.scheme D budget)
+        (fun security => 3 * secretWidth security + 1)
+        (fun security => ciphertextWidth security + 1) circuits ∧
+      Homomorphic (Leveled.scheme D budget)
+        (fun security C => C.2.depth ≤ budget security) ∧
+      FixedWidths (Leveled.scheme D budget)
+        (fun security C => C.2.depth ≤ budget security)
+        (fun security => 3 * secretWidth security + 1)
+        (fun security => ciphertextWidth security + 1) ∧
+      Native (Leveled.scheme D budget) ∧
+      ChosenMessageSecure (Leveled.scheme D budget) := by
+    obtain ⟨hcorrect, hwidth, -, -, hsecure⟩ :=
+      Leveled.correct_fixedWidth_indCPA D GSW.DepthParameters.correct
+        GSW.DepthParameters.fixedWidth GSW.DepthParameters.bootstrappable
+        (GSW.DepthParameters.indCPA_scheme (decisionLWE_iff.mp hLWE)) hkeyGen hencrypt hD hb
+    exact ⟨leveled_keyGen budget, leveled_encryptsAndDecrypts budget,
+      fun security => hcircuits budget security,
+      homomorphic_of_correct hcorrect fun _ _ h => h,
+      fixedWidths_of_fixedWidth hwidth fun _ _ h => h,
+      native_of (Leveled.isPPTOn_scheme_keyGen hkeyGen hencrypt D budget hb)
+        (Leveled.isPPTOn_scheme_encrypt hencrypt D budget)
+        (Leveled.computableInPolyTime_scheme_decrypt D hD budget)
+        (Leveled.isPPTOn_scheme_evaluate hencrypt D hD hevaluate budget hb),
+      chosenMessageSecure_of_indCPA hsecure⟩
+  refine ⟨circuits, hsize, hsecret, hciphertext,
+    nativeInDepth_of hkgJoint hencJoint hdecJoint hevalJoint,
+    fun d => hforBudget (fun _ => d) (by fun_prop),
+    fun budget hbudget =>
+      ⟨fun _ => ⟨rfl, rfl⟩,
+        hforBudget budget (.of_tidy (CryptographyBridge.polyTime_iff.mp hbudget))⟩⟩
 
 /-- **The library's fixed-key scheme witnesses `fullyHomomorphic`**, with GSW's own decryption
 circuits `GSW.DepthParameters.decryptionCircuits.circuit`. -/
@@ -685,13 +786,29 @@ theorem leveled {unframe dropFrame : List Bool → List Bool}
     (hunframe : ∀ word, unframe word = Turing.MultiTapeTM.unframe word)
     (hdropFrame : ∀ word, dropFrame word = Turing.MultiTapeTM.dropFrame word)
     (hLWE : DecisionLWE) :
-    ∃ circuit : ∀ security, Circuits.Circuit Circuits.Boolean.signature
-        ((3 * secretWidth security + 1) + (ciphertextWidth security + 1)) 1,
+    ∃ (circuit : ∀ security, Circuits.Circuit Circuits.Boolean.signature
+        ((3 * secretWidth security + 1) + (ciphertextWidth security + 1)) 1)
+      (E : ℕ → Homomorphic.Scheme),
       PolynomiallyBounded (fun security => (circuit security).size) ∧
       PolynomiallyBounded (fun security => 3 * secretWidth security + 1) ∧
       PolynomiallyBounded (fun security => ciphertextWidth security + 1) ∧
+      NativeInDepth E ∧
+      (∀ d : ℕ,
+        (∀ security, (ProbComp.eval ((E d).keyGen security)).map
+          (fun keys => (unframe (unframe keys.1), unframe keys.2)) = keyGeneration security) ∧
+        EncryptsAndDecrypts (E d) (leveledEncryption unframe)
+          (leveledDecryption unframe dropFrame) ∧
+        DecryptsWith (E d) (fun security => 3 * secretWidth security + 1)
+          (fun security => ciphertextWidth security + 1) circuit ∧
+        Homomorphic (E d) (fun _ C => C.2.depth ≤ d) ∧
+        FixedWidths (E d) (fun _ C => C.2.depth ≤ d)
+          (fun security => 3 * secretWidth security + 1)
+          (fun security => ciphertextWidth security + 1) ∧
+        Native (E d) ∧ ChosenMessageSecure (E d)) ∧
       ∀ budget : ℕ → ℕ, Computation.PolyTime budget Encoding.encUnary Encoding.encUnary →
         ∃ S : Homomorphic.Scheme,
+          (∀ security, S.keyGen security = (E (budget security)).keyGen security ∧
+            S.evaluate security = (E (budget security)).evaluate security) ∧
           (∀ security, (ProbComp.eval (S.keyGen security)).map
             (fun keys => (unframe (unframe keys.1), unframe keys.2)) = keyGeneration security) ∧
           EncryptsAndDecrypts S (leveledEncryption unframe)
@@ -705,9 +822,9 @@ theorem leveled {unframe dropFrame : List Bool → List Bool}
           Native S ∧ ChosenMessageSecure S := by
   obtain rfl : unframe = Turing.MultiTapeTM.unframe := funext hunframe
   obtain rfl : dropFrame = Turing.MultiTapeTM.dropFrame := funext hdropFrame
-  obtain ⟨circuit, hsize, hsecret, hciphertext, h⟩ := leveled_witness hLWE
-  exact ⟨circuit, hsize, hsecret, hciphertext, fun budget hbudget =>
-    ⟨_, h budget hbudget⟩⟩
+  obtain ⟨circuit, hsize, hsecret, hciphertext, hjoint, hd, hbudget⟩ := leveled_witness hLWE
+  exact ⟨circuit, _, hsize, hsecret, hciphertext, hjoint, hd, fun budget hb =>
+    ⟨_, hbudget budget hb⟩⟩
 
 theorem fullyHomomorphic {unframe : List Bool → List Bool}
     (hunframe : ∀ word, unframe word = Turing.MultiTapeTM.unframe word)

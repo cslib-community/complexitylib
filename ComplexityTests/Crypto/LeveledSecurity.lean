@@ -119,8 +119,8 @@ private theorem encrypt_ppt : IsPPTOn (encPair encUnary (encPair encBits encBool
   ppt
 
 @[fun_prop]
-private theorem stateBit_poly : ComputableTidilyInPolyTime stateBit encBits encBool := by
-  have hcontext := publicKeyDecoder.computableTidilyInPolyTime
+private theorem stateBit_poly : ComputableInPolyTime stateBit encBits encBool := by
+  have hcontext := publicKeyDecoder.computableInPolyTime.tidy
   dsimp only [encPublicKey] at hcontext
   have hpk := (ComputableTidilyInPolyTime.listGetD
     (encA := encBits) (encL := encList encBits) []).comp
@@ -137,17 +137,18 @@ private theorem stateBit_poly : ComputableTidilyInPolyTime stateBit encBits encB
     (hct.prod (ComputableTidilyInPolyTime.const 2))
   unfold stateBit
   simpa only [Function.comp_def] using
-    ComputableTidilyInPolyTime.bool_xor.comp (hfirst.prod hnonce)
+    ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.bool_xor.comp (hfirst.prod hnonce))
 
 private theorem adversary_ppt : adversary.IsPPT := by
+  have hstate := stateBit_poly.tidy
   constructor <;> dsimp only [adversary] <;> ppt
 
 -- Both stages charge the full artifact and saved word. A nonconstant family is still uniform.
 example : (zeroLinkAdversary fixture (fun _ => 0) adversary).IsPPT :=
-  isPPT_zeroLinkAdversary encrypt_ppt adversary_ppt keyGen_ppt (by fun_prop)
+  isPPT_zeroLinkAdversary encrypt_ppt adversary_ppt keyGen_ppt (.of_tidy (by fun_prop))
 
 example : (zeroLinkAdversary fixture (fun n => n + 2) adversary).IsPPT :=
-  isPPT_zeroLinkAdversary encrypt_ppt adversary_ppt keyGen_ppt (by fun_prop)
+  isPPT_zeroLinkAdversary encrypt_ppt adversary_ppt keyGen_ppt (.of_tidy (by fun_prop))
 
 example : (leveledAdversary fixture (fun n => 2 * (n + 1)) (fun _ => 2) adversary).IsPPT :=
   isPPT_leveledAdversary encrypt_ppt adversary_ppt keyGen_ppt (by fun_prop) (by fun_prop)
@@ -195,7 +196,7 @@ example {E : Scheme} (hsecure : Encryption.INDCPA E.keyGen E.encrypt)
     {width budget secretWidth ciphertextWidth : ℕ → ℕ}
     (hwidth : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
       keys.2.length = width n)
-    (hbudget : ComputableTidilyInPolyTime budget encUnary encUnary)
+    (hbudget : ComputableInPolyTime budget encUnary encUnary)
     (D : DecryptionCircuits E secretWidth ciphertextWidth) :
     Encryption.INDCPA (scheme D budget).keyGen (scheme D budget).encrypt :=
   indCPA_scheme hsecure hkeyGen hencrypt hwidth hbudget D
@@ -211,7 +212,7 @@ private theorem forgetful_secure : Encryption.INDCPA forgetful.keyGen forgetful.
   have heq (n : ℕ) :
       ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt opponent false n) =
       ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt opponent true n) := by
-    simp [Encryption.game, forgetful]
+    simp [Encryption.game, Encryption.gameOn, forgetful]
   simpa only [heq, Game.advantage_self] using negligible_zero
 
 private theorem forgetful_encrypt_ppt :

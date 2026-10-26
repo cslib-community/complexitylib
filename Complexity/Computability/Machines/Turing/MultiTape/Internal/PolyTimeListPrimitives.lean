@@ -200,14 +200,14 @@ theorem bitsReverse : ComputableInPolyTime List.reverse encBits encBits := by
 theorem bitsTail : ComputableInPolyTime List.tail encBits encBits := by
   obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.tail (enc₁ := encBool) (enc := encBits)
   exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfinite, tm, fun word => (htm word).computesInTimeAndSpace⟩
+    k, Q, hfinite, tm, fun word => htm word⟩
 
 /-- Test whether the complete raw word is empty, with the Boolean result encoding fixed. -/
 @[fun_prop]
 theorem bitsIsEmpty : ComputableInPolyTime List.isEmpty encBits encBool := by
   obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.isEmpty (enc₁ := encBool) (enc := encBits)
   exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfinite, tm, fun word => (htm word).computesInTimeAndSpace⟩
+    k, Q, hfinite, tm, fun word => htm word⟩
 
 private theorem rangeStepCertificate :
     ComputableInPolyTime (fun p : RangeState × Bool => rangeStep p.1 p.2)

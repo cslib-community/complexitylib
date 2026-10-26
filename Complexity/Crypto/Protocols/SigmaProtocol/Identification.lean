@@ -149,6 +149,7 @@ private noncomputable def directFirst (keyGen : PMF (X × Y)) (A : Impersonator 
 private theorem directAttack_eq_once (P : SigmaProtocol X Y T C Z) (keyGen : PMF (X × Y))
     (A : Impersonator Y T C Z) :
     P.directAttack keyGen A = Rewinding.once (directFirst keyGen A)
+      (fun _ => PMF.uniformOfFintype C)
       (fun s c => A.respond s.2.2 c) fun s c z => P.verify s.1 s.2.1 c z := by
   simp only [directAttack, Rewinding.once, directFirst, Probability.PMF.monad_bind_eq_bind,
     Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
@@ -173,7 +174,8 @@ theorem SpecialSoundness.specialSoundOn (hP : P.SpecialSoundness R extract)
 /-- Two accepting runs with distinct challenges lead the rewinding extractor to a witness. -/
 private theorem twice_le_oneWayGame [DecidableEq C] {keyGen : PMF (X × Y)}
     (hP : P.SpecialSoundOn keyGen R extract) (A : Impersonator Y T C Z) :
-    Rewinding.twice (directFirst keyGen A) (fun s c => A.respond s.2.2 c)
+    Rewinding.twice (directFirst keyGen A) (fun _ => PMF.uniformOfFintype C)
+        (fun s c => A.respond s.2.2 c)
         (fun s c z => P.verify s.1 s.2.1 c z) true ≤
       oneWayGame keyGen R (A.rewind extract) true := by
   simp only [Rewinding.twice, oneWayGame, Impersonator.rewind, directFirst,

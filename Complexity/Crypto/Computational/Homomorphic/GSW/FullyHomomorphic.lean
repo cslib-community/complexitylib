@@ -229,10 +229,10 @@ theorem exists_leveled_of_decisionLWE
               (Leveled.scheme decryptionCircuits budget).evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) ∧
           Encryption.INDCPA (Leveled.scheme decryptionCircuits budget).keyGen
             (Leveled.scheme decryptionCircuits budget).encrypt := by
-  have hD := computableInPolyTime_decryptionCircuits.tidy
+  have hD := computableInPolyTime_decryptionCircuits
   obtain ⟨circuits, hsize, hcircuits⟩ := Leveled.exists_decrypt_circuits decryptionCircuits hD
-  have hdecrypt := (Leveled.computableTidilyInPolyTime_scheme_decrypt decryptionCircuits hD
-    (fun _ => 0)).computableInPolyTime
+  have hdecrypt := (Leveled.computableInPolyTime_scheme_decrypt decryptionCircuits hD
+    (fun _ => 0))
   obtain ⟨hsecret, hciphertext⟩ := Leveled.polynomiallyBounded_widths decryptionCircuits hD
   refine ⟨circuits, hsize, fun k sk c hsk hc => hcircuits (fun _ => 0) k sk c hsk hc, hdecrypt,
     hsecret, hciphertext, fun depth hdepth => ?_⟩
@@ -241,7 +241,7 @@ theorem exists_leveled_of_decisionLWE
     Leveled.exists_scheme_of_polynomiallyBounded decryptionCircuits correct fixedWidth
       bootstrappable (indCPA_scheme hLWE) isPPTOn_keyGen isPPTOn_encrypt isPPTOn_evaluate hD
       hdepth
-  exact ⟨budget, hbudget.computableInPolyTime, hle, rfl, hcorrect, hpermitted, hwidth, hkeyGen,
+  exact ⟨budget, hbudget, hle, rfl, hcorrect, hpermitted, hwidth, hkeyGen,
     hencrypt, hevaluate, hsecure⟩
 
 /-- Fully homomorphic encryption from GSW: under decision LWE for this family, with
@@ -276,8 +276,8 @@ theorem fullyHomomorphic_of_decisionLWE_of_circularSecure
       hdecrypt, hevaluate, hsecure⟩ :=
     FixedKey.fullyHomomorphic decryptionCircuits correct fixedWidth bootstrappable
       (indCPA_scheme hLWE) hcircular isPPTOn_keyGen isPPTOn_encrypt isPPTOn_evaluate
-      computableInPolyTime_decryptionCircuits.tidy
+      computableInPolyTime_decryptionCircuits
   exact ⟨hcorrect, hpermitted, hwidth, hsecret, hciphertext, hsize, hkeyGen, hencrypt,
-    hdecrypt.computableInPolyTime, hevaluate, hsecure⟩
+    hdecrypt, hevaluate, hsecure⟩
 
 end Cslib.Crypto.Homomorphic.GSW.DepthParameters

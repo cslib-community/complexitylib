@@ -68,14 +68,20 @@ def generate (count seedBits outputBits : ℕ) (generator : ℕ → List Bool �
 theorem isPolyTime_generate {α : Type} {input : α ↪ List Bool}
     {count seedBits outputBits : α → ℕ} {generator : α → ℕ → List Bool → List Bool}
     {seed : α → List Bool}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hseedBits : ComputableTidilyInPolyTime seedBits input encUnary)
-    (houtputBits : ComputableTidilyInPolyTime outputBits input encUnary)
-    (hgenerator : ComputableTidilyInPolyTime (fun pair => generator pair.1.1 pair.1.2 pair.2)
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hseedBits : ComputableInPolyTime seedBits input encUnary)
+    (houtputBits : ComputableInPolyTime outputBits input encUnary)
+    (hgenerator : ComputableInPolyTime (fun pair => generator pair.1.1 pair.1.2 pair.2)
       (encPair (encPair input encUnary) encBits) encBits)
-    (hseed : ComputableTidilyInPolyTime seed input encBits) :
-    ComputableTidilyInPolyTime (fun a =>
+    (hseed : ComputableInPolyTime seed input encBits) :
+    ComputableInPolyTime (fun a =>
       generate (count a) (seedBits a) (outputBits a) (generator a) (seed a)) input encBits := by
+  have hcount := hcount.tidy
+  have hseedBits := hseedBits.tidy
+  have houtputBits := houtputBits.tidy
+  have hgenerator := hgenerator.tidy
+  have hseed := hseed.tidy
+  refine .of_tidy ?_
   unfold generate
   apply ComputableTidilyInPolyTime.bitsXorWithInput houtputBits
   apply ComputableTidilyInPolyTime.mapWithInput (encA := encUnary) (by fun_prop)
@@ -188,18 +194,24 @@ noncomputable def test (count seedBits outputBits : ℕ) (generator : ℕ → Li
 theorem isPPTOn_test {α : Type} {input : α ↪ List Bool}
     {count seedBits outputBits index : α → ℕ} {generator : α → ℕ → List Bool → List Bool}
     {adversary : α → List Bool → ProbComp Bool} {challenge : α → List Bool}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hseedBits : ComputableTidilyInPolyTime seedBits input encUnary)
-    (houtputBits : ComputableTidilyInPolyTime outputBits input encUnary)
-    (hindex : ComputableTidilyInPolyTime index input encUnary)
-    (hgenerator : ComputableTidilyInPolyTime (fun pair => generator pair.1.1 pair.1.2 pair.2)
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hseedBits : ComputableInPolyTime seedBits input encUnary)
+    (houtputBits : ComputableInPolyTime outputBits input encUnary)
+    (hindex : ComputableInPolyTime index input encUnary)
+    (hgenerator : ComputableInPolyTime (fun pair => generator pair.1.1 pair.1.2 pair.2)
       (encPair (encPair input encUnary) encBits) encBits)
     (hadversary : IsPPTOn (encPair input encBits) encBool
       (fun pair => adversary pair.1 pair.2))
-    (hchallenge : ComputableTidilyInPolyTime challenge input encBits) :
+    (hchallenge : ComputableInPolyTime challenge input encBits) :
     IsPPTOn input encBool (fun a =>
       test (count a) (seedBits a) (outputBits a) (generator a) (index a)
         (adversary a) (challenge a)) := by
+  have hcount := hcount.tidy
+  have hseedBits := hseedBits.tidy
+  have houtputBits := houtputBits.tidy
+  have hindex := hindex.tidy
+  have hgenerator := hgenerator.tidy
+  have hchallenge := hchallenge.tidy
   unfold test
   apply IsPPTOn.bind_with (left := encBits) (by fun_prop)
   apply hadversary.preprocess (prepare := fun p : α × List Bool =>
@@ -207,7 +219,8 @@ theorem isPPTOn_test {α : Type} {input : α ↪ List Bool}
       (fun j coins => if j = index p.1 then challenge p.1 else generator p.1 j coins) p.2))
   apply ComputableInPolyTime.of_tidy
   apply ComputableTidilyInPolyTime.prod (by fun_prop)
-  apply isPolyTime_generate (by fun_prop) (by fun_prop) (by fun_prop) ?_ (by fun_prop)
+  apply (isPolyTime_generate (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+    fun_prop)) (.of_tidy ?_) (.of_tidy (by fun_prop))).tidy
   have hgen := hgenerator.comp
     (encIn := encPair (encPair (encPair input encBits) encUnary) encBits)
     (g := fun p : ((α × List Bool) × ℕ) × List Bool => ((p.1.1.1, p.1.2), p.2))
@@ -236,10 +249,10 @@ theorem advantage_eq (count seedBits outputBits : ℕ) (generator : ℕ → List
 The combiner evaluates the whole family; only the reduction receives the proof's chosen index. -/
 theorem indistinguishable {generator : ℕ → ℕ → List Bool → List Bool}
     {count seedBits outputBits choose : ℕ → ℕ}
-    (hcount : ComputableTidilyInPolyTime count encUnary encUnary)
-    (hseedBits : ComputableTidilyInPolyTime seedBits encUnary encUnary)
-    (houtputBits : ComputableTidilyInPolyTime outputBits encUnary encUnary)
-    (hgenerator : ComputableTidilyInPolyTime (fun input => generator input.1.1 input.1.2 input.2)
+    (hcount : ComputableInPolyTime count encUnary encUnary)
+    (hseedBits : ComputableInPolyTime seedBits encUnary encUnary)
+    (houtputBits : ComputableInPolyTime outputBits encUnary encUnary)
+    (hgenerator : ComputableInPolyTime (fun input => generator input.1.1 input.1.2 input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits)
     (hchoose : ∀ᶠ n in Filter.atTop, choose n < count n)
     (hsecure : ∀ adversary : ℕ → ℕ → List Bool → ProbComp Bool,

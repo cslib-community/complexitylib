@@ -1404,7 +1404,7 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
   have hsample : IsOraclePPTOn (encPair encUnary encBits) encUnary
       (fun caller : ℕ × List Bool =>
         ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q caller.1))) :=
-    (isPPTOn_sampleDyadicIndex (hQ.tidy.comp (by fun_prop))).isOraclePPTOn (Operation := Unit)
+    (isPPTOn_sampleDyadicIndex (hQ.comp (by fun_prop))).isOraclePPTOn (Operation := Unit)
   have hpost : ComputableTidilyInPolyTime
       (fun out : Bool × (ℕ × (Bool × List Bool)) => out.2.2.2)
       (encPair encBool EState) encBits := by
@@ -1420,8 +1420,8 @@ theorem isOraclePPT_ccaToCIHiddenBitAdversary {ctBound Q : ℕ → ℕ}
     IsOraclePPT encBits (ccaToCIHiddenBitAdversary ctBound Q adversary) := by
   have hsample : IsOraclePPTOn (encPair encUnary encBits) encBits
       (fun _ : ℕ × List Bool => ProbOracleComp.sample (BitString.sampleList 1)) :=
-    (ComputableTidilyInPolyTime.sampleList
-      (ComputableTidilyInPolyTime.const 1)).isOraclePPTOn (Operation := Unit)
+    (ComputableInPolyTime.sampleList
+      (ComputableInPolyTime.const 1)).isOraclePPTOn (Operation := Unit)
   have hcond : ComputableTidilyInPolyTime
       (fun pair : (ℕ × List Bool) × List Bool => pair.2 == [true])
       (encPair (encPair encUnary encBits) encBits) encBool :=

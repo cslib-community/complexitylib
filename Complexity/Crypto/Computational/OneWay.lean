@@ -72,7 +72,7 @@ noncomputable def inversionGame (f : List Bool → List Bool) (adversary : Inver
 /-- Run the complete inversion experiment on its unary parameter. -/
 @[program_certificate]
 theorem isPPTOn_inversionGame {f : List Bool → List Bool} {adversary : Inverter}
-    (hf : ComputableTidilyInPolyTime f encBits encBits) (ha : IsPPT encBits adversary) :
+    (hf : ComputableInPolyTime f encBits encBits) (ha : IsPPT encBits adversary) :
     IsPPTOn encUnary encBool (inversionGame f adversary) := by
   unfold inversionGame
   ppt
@@ -80,7 +80,7 @@ theorem isPPTOn_inversionGame {f : List Bool → List Bool} {adversary : Inverte
 /-- The inversion experiment is uniformly PPT, independently of the unused auxiliary input. -/
 @[program_certificate]
 theorem isPPT_inversionGame {f : List Bool → List Bool} {adversary : Inverter}
-    (hf : ComputableTidilyInPolyTime f encBits encBits) (ha : IsPPT encBits adversary) :
+    (hf : ComputableInPolyTime f encBits encBits) (ha : IsPPT encBits adversary) :
     IsPPT encBool (fun n _ => inversionGame f adversary n) := by ppt
 
 /-- One plain polynomial-time algorithm evaluates the function. Every uniform strict PPT inverter
@@ -91,15 +91,6 @@ structure OneWay (f : List Bool → List Bool) : Prop where
   /-- Inversion is indistinguishable from certain failure in the common game calculus. -/
   secure : Game.Indistinguishable (fun adversary n => ProbComp.eval (inversionGame f adversary n))
     (fun _ _ => PMF.pure false) (IsPPT encBits)
-
-/-- Recover the tidy presentation for proofs without changing the security contract. -/
-theorem oneWay_iff_tidy {f : List Bool → List Bool} :
-    OneWay f ↔
-    (ComputableTidilyInPolyTime f encBits encBits) ∧
-    (Game.Indistinguishable (fun adversary n => ProbComp.eval (inversionGame f adversary n))
-    (fun _ _ => PMF.pure false) (IsPPT encBits)) :=
-  ⟨fun h => ⟨h.polyTime.tidy, h.secure⟩,
-    fun ⟨h0, h1⟩ => ⟨.of_tidy h0, h1⟩⟩
 
 /-- The shared game definition gives the usual negligible inversion probability. -/
 theorem OneWay.inversion_negligible {f : List Bool → List Bool} (h : OneWay f)

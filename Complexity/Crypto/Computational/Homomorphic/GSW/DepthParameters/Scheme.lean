@@ -126,27 +126,27 @@ theorem bootstrappable : Scheme.Bootstrappable decryptionCircuits where
     rwa [Layered.length_compile] at h
 
 private theorem native_dimension : ComputableInPolyTime dimension encUnary encUnary :=
-  Parameters.computableTidilyInPolyTime_dimension.computableInPolyTime
+  Parameters.computableInPolyTime_dimension
 
 private theorem native_width : ComputableInPolyTime width encUnary encUnary :=
-  computableTidilyInPolyTime_width.computableInPolyTime
+  computableInPolyTime_width
 
 /-- Key generation is strict PPT in the unary security parameter. -/
 theorem isPPTOn_keyGen : IsPPTOn encUnary (encPair encBits encBits) scheme.keyGen :=
-  isPPTOn_keyGenSerialized Parameters.computableTidilyInPolyTime_dimension
-    computableTidilyInPolyTime_samples computableTidilyInPolyTime_width
-    Parameters.computableTidilyInPolyTime_noise
+  isPPTOn_keyGenSerialized Parameters.computableInPolyTime_dimension
+    computableInPolyTime_samples computableInPolyTime_width
+    Parameters.computableInPolyTime_noise
 
 /-- Encryption is strict PPT on every public word and message. -/
 theorem isPPTOn_encrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => scheme.encrypt p.1 p.2.1 p.2.2) := by
-  have hk := ComputableTidilyInPolyTime.fst encUnary (encPair encBits encBool)
+  have hk := ComputableInPolyTime.fst encUnary (encPair encBits encBool)
   change IsPPTOn _ _ (fun p : ℕ × List Bool × Bool =>
     encryptSerialized (dimension p.1) (samples p.1) (width p.1) p.2.1 p.2.2)
   apply isPPTOn_encryptSerialized
-  · exact Parameters.computableTidilyInPolyTime_dimension.comp hk
-  · exact computableTidilyInPolyTime_samples.comp hk
-  · exact computableTidilyInPolyTime_width.comp hk
+  · exact Parameters.computableInPolyTime_dimension.comp hk
+  · exact computableInPolyTime_samples.comp hk
+  · exact computableInPolyTime_width.comp hk
   · fun_prop
   · fun_prop
 

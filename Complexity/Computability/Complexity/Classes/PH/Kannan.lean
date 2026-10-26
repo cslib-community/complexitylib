@@ -91,9 +91,12 @@ theorem mem_NP_image {β : Type} {encB : β ↪ List Bool} (D : Decoder encB) {B
     (hB : B ∈ NP encB) : encB '' B ∈ NP encBits := by
   obtain ⟨p, V, hV, hBV⟩ := mem_NP.mp hB
   obtain ⟨d, e, hD⟩ := D.computable
+  have hdecoder : ComputableTidilyInPolyTime D.decode encBits encB := by
+    obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hD.computableInPolyTime
+    exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
+      .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
   have hdec : ComputableTidilyInPolyTime (fun x : List Bool × List Bool => D.decode x.1)
-      (encPair encBits encBits) encB :=
-    hD.computableTidilyInPolyTime.comp (fst _ _)
+      (encPair encBits encBits) encB := hdecoder.comp (fst _ _)
   refine mem_NP.mpr
     ⟨p, fun x => decide (encB (D.decode x.1) = x.1) && V (D.decode x.1, x.2),
       .of_tidy (bool_and' (decide_eq' ((encode encB).comp hdec) (fst _ _))

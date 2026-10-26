@@ -287,6 +287,25 @@ private theorem exists_forall_card_filter_le_card_filter [Nonempty α] [Decidabl
 
 variable {μ : ℝ}
 
+omit [Fintype D] in
+open Classical in
+/-- The disagreeing half-edges are counted cloud by cloud over `univ.image G.endpoint`. -/
+private theorem card_filter_ne_endpoint_eq_sum [DecidableEq α] (A : E × Bool → α) (σ : V → α) :
+    (#{p | A p ≠ σ (G.endpoint p)} : ℝ) =
+      ∑ v ∈ univ.image G.endpoint, (#{x : G.Cloud v | A x.1 ≠ σ v} : ℝ) := by
+  rw [card_eq_sum_card_fiberwise (f := G.endpoint) (t := univ.image G.endpoint)
+    fun p _ ↦ mem_image_of_mem _ (mem_univ p)]
+  push_cast
+  refine sum_congr rfl fun v _ ↦ ?_
+  norm_cast
+  refine (card_bij (fun x _ ↦ x.1) (fun x hx ↦ ?_) (fun x _ y _ h ↦ Subtype.ext h)
+    fun p hp ↦ ?_).symm
+  · simp only [mem_filter, mem_univ, true_and] at hx ⊢
+    rw [x.2]
+    exact ⟨hx, rfl⟩
+  · simp only [mem_filter, mem_univ, true_and] at hp
+    exact ⟨⟨p, hp.2⟩, by simpa [hp.2] using hp.1, rfl⟩
+
 /-- **The cloud charge**: if the multigraphs on the clouds have spectral expansion at most `μ` and
 `σ v` is a most frequent label of the cloud of every vertex `v`, then the cloud-links violated by
 `A` number at least `(1 - μ) |D|` times the half-edges whose label differs from that of their
@@ -310,20 +329,6 @@ private theorem mul_card_filter_ne_le_card_filter_isRight [DecidableEq α]
     refine le_trans ?_ ((H v).mul_card_filter_ne_le_card_filter_ne_neighbor (fun x ↦ A x.1) (hσ v))
     gcongr
     linarith [hH v]
-  /- The disagreeing half-edges are counted cloud by cloud. -/
-  have hdev : (#{p | A p ≠ σ (G.endpoint p)} : ℝ) =
-      ∑ v ∈ T, (#{x : G.Cloud v | A x.1 ≠ σ v} : ℝ) := by
-    rw [card_eq_sum_card_fiberwise (f := G.endpoint) (t := T)
-      fun p _ ↦ mem_image_of_mem _ (mem_univ p)]
-    push_cast
-    refine sum_congr rfl fun v _ ↦ ?_
-    norm_cast
-    refine (card_bij (fun x _ ↦ x.1) (fun x hx ↦ ?_) (fun x _ y _ h ↦ Subtype.ext h)
-      fun p hp ↦ ?_).symm
-    · simp only [mem_filter, mem_univ, true_and] at hx ⊢
-      exact ⟨by rw [x.2]; exact hx, x.2⟩
-    · simp only [mem_filter, mem_univ, true_and] at hp
-      exact ⟨⟨p, hp.2⟩, by simpa [hp.2] using hp.1, rfl⟩
   /- The disagreeing darts of different clouds give different violated cloud-links. -/
   have hdisj : (T : Set V).PairwiseDisjoint fun v ↦ (Dis v).image (f v) := by
     intro v _ w _ hvw
@@ -341,7 +346,7 @@ private theorem mul_card_filter_ne_le_card_filter_isRight [DecidableEq α]
     exact ⟨by simpa [Dis] using hr, rfl⟩
   calc (1 - μ) * Fintype.card D * #{p | A p ≠ σ (G.endpoint p)}
       = ∑ v ∈ T, (1 - μ) * Fintype.card D * #{x : G.Cloud v | A x.1 ≠ σ v} := by
-        rw [hdev, mul_sum]
+        rw [G.card_filter_ne_endpoint_eq_sum A σ, mul_sum]
     _ ≤ ∑ v ∈ T, (#((Dis v).image (f v)) : ℝ) := by
         refine sum_le_sum fun v _ ↦ ?_
         rw [card_image_of_injective _ (hf v)]
@@ -377,20 +382,18 @@ theorem le_unsatFrac_degreeReduce [Nonempty α] (hH : ∀ v, (H v).spectralExpan
     exact mul_le_mul_of_nonneg_left (G.unsatVal_le σ) (Nat.cast_nonneg _)
   /- Trading the two charges off. -/
   have hU : min 1 c * #(G.unsatEdges σ) ≤ #U := by
-    have hU' : (#U : ℝ) = #{q ∈ U | q.2.isLeft} + #{q ∈ U | q.2.isRight} := by
-      exact_mod_cast hsplit.symm
     have hedge' : (#(G.unsatEdges σ) : ℝ) ≤ #{q ∈ U | q.2.isLeft} +
         #{p | A p ≠ σ (G.endpoint p)} := by exact_mod_cast hedge
-    have h₁ : (0 : ℝ) ≤ #{q ∈ U | q.2.isLeft} := Nat.cast_nonneg _
-    have h₂ : (0 : ℝ) ≤ #{p | A p ≠ σ (G.endpoint p)} := Nat.cast_nonneg _
-    rw [hU']
+    rw [show (#U : ℝ) = #{q ∈ U | q.2.isLeft} + #{q ∈ U | q.2.isRight} by
+      exact_mod_cast hsplit.symm]
     rcases le_total 1 c with hc | hc
-    · rw [min_eq_left hc, one_mul]
-      nlinarith
+    · rw [min_eq_left hc]
+      nlinarith [Nat.cast_nonneg (α := ℝ) #{q ∈ U | q.2.isLeft}]
     rw [min_eq_right hc]
     rcases le_total c 0 with hc₀ | hc₀
     · exact (mul_nonpos_of_nonpos_of_nonneg hc₀ (Nat.cast_nonneg _)).trans (by positivity)
-    · nlinarith
+    · nlinarith [Nat.cast_nonneg (α := ℝ) #{q ∈ U | q.2.isLeft},
+        Nat.cast_nonneg (α := ℝ) #{p | A p ≠ σ (G.endpoint p)}]
   have hA := (G.degreeReduce H).card_mul_card_mul_unsatFrac A
   rw [Fintype.card_prod, Fintype.card_bool, Fintype.card_sum, Fintype.card_unit] at hA
   push_cast at hA
@@ -400,8 +403,8 @@ theorem le_unsatFrac_degreeReduce [Nonempty α] (hH : ∀ v, (H v).spectralExpan
   have hE' : (0 : ℝ) < Fintype.card E := Nat.cast_pos.2 Fintype.card_pos
   rw [div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
   rcases le_total (min 1 c) 0 with hm | hm
-  · have := mul_nonpos_of_nonpos_of_nonneg hm (G.unsatVal_nonneg)
-    nlinarith [unsatFrac_nonneg (G.degreeReduce H).toConstraintGraph A]
+  · nlinarith [mul_nonpos_of_nonpos_of_nonneg hm G.unsatVal_nonneg,
+      unsatFrac_nonneg (G.degreeReduce H).toConstraintGraph A]
   · nlinarith [mul_le_mul_of_nonneg_left hval hm]
 
 /-- **Soundness of degree reduction** [Dinur, Section 3.1][Dinur2005]: if the multigraphs on the

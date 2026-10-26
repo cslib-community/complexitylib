@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Crypto.Computational.Pseudoentropy.Basic
 public import Complexity.Languages.Probabilistic.LinearHash
 public import Complexity.Languages.Probabilistic.UniformNat
@@ -76,9 +77,9 @@ theorem hashCount_le (n : ℕ) : hashCount n ≤ 2 * (n + 7) := dyadicSize_le (n
 
 /-- Compute the sampling range from an efficiently available unary parameter. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_hashCount {α : Type} {encode : α ↪ List Bool}
-    {parameter : α → ℕ} (hparameter : ComputableTidilyInPolyTime parameter encode encUnary) :
-    ComputableTidilyInPolyTime (fun a => hashCount (parameter a)) encode encUnary := by
+theorem computableInPolyTime_hashCount {α : Type} {encode : α ↪ List Bool}
+    {parameter : α → ℕ} (hparameter : ComputableInPolyTime parameter encode encUnary) :
+    ComputableInPolyTime (fun a => hashCount (parameter a)) encode encUnary := by
   unfold hashCount
   fun_prop
 
@@ -137,14 +138,14 @@ def wordObservation (image : List Bool) (index : ℕ) (matrix digest query : Lis
 
 /-- Assemble the public fields using the ordinary tuple encoding. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_wordObservation {α : Type} {encode : α ↪ List Bool}
+theorem computableInPolyTime_wordObservation {α : Type} {encode : α ↪ List Bool}
     {image matrix digest query : α → List Bool} {index : α → ℕ}
-    (himage : ComputableTidilyInPolyTime image encode encBits)
-    (hindex : ComputableTidilyInPolyTime index encode encUnary)
-    (hmatrix : ComputableTidilyInPolyTime matrix encode encBits)
-    (hdigest : ComputableTidilyInPolyTime digest encode encBits)
-    (hquery : ComputableTidilyInPolyTime query encode encBits) :
-    ComputableTidilyInPolyTime (fun a => wordObservation (image a) (index a)
+    (himage : ComputableInPolyTime image encode encBits)
+    (hindex : ComputableInPolyTime index encode encUnary)
+    (hmatrix : ComputableInPolyTime matrix encode encBits)
+    (hdigest : ComputableInPolyTime digest encode encBits)
+    (hquery : ComputableInPolyTime query encode encBits) :
+    ComputableInPolyTime (fun a => wordObservation (image a) (index a)
       (matrix a) (digest a) (query a)) encode encBits := by
   unfold wordObservation
   simp only [encPair_apply, encBits_apply]
@@ -181,11 +182,13 @@ noncomputable def sample (f : List Bool → List Bool) (n : ℕ) : ProbComp (Lis
     (LinearHash.wordHash (index + 1) matrix input) query,
     (input.zipWith Bool.and query).foldl Bool.xor false)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The construction is strict PPT whenever the given function is polynomial time. -/
 @[program_certificate]
 theorem isPPTOn_sample (f : List Bool → List Bool)
-    (hf : ComputableTidilyInPolyTime f encBits encBits) :
+    (hf : ComputableInPolyTime f encBits encBits) :
     IsPPTOn encUnary (encPair encBits encBool) (sample f) := by
+  have hf := hf.tidy
   unfold sample
   fun_prop
 
@@ -216,7 +219,7 @@ theorem eval_sample {n : ℕ} {Image : Type*} (f : List Bool → List Bool)
 /-- Package the efficient sampler with its finite observation type and exact joint law.
 The image representation is needed for entropy bookkeeping, not as an extra algorithmic oracle. -/
 noncomputable def pair {Image : ℕ → Type} [∀ n, Finite (Image n)]
-    (f : List Bool → List Bool) (hf : ComputableTidilyInPolyTime f encBits encBits)
+    (f : List Bool → List Bool) (hf : ComputableInPolyTime f encBits encBits)
     (finiteFunction : ∀ n, BitString n → Image n) (encodeImage : ∀ n, Image n ↪ List Bool)
     (hencode : ∀ n x, f (List.ofFn x) = encodeImage n (finiteFunction n x)) : SamplablePair where
   Observation n := Observation n (hashCount n) (Image n)

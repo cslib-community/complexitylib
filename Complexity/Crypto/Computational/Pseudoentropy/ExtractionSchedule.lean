@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Negligible.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Tactic.PolyTime
 
 /-!
@@ -59,20 +60,20 @@ def slack (n sourceBits inverseSlack : ℕ) : ℕ :=
 
 /-- The repetition count is available in unary with polynomial cost. -/
 theorem isPolyTime_count {α : Type} {input : α ↪ List Bool} {n sourceBits inverseSlack : α → ℕ}
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hsource : ComputableTidilyInPolyTime sourceBits input encUnary)
-    (hslack : ComputableTidilyInPolyTime inverseSlack input encUnary) :
-    ComputableTidilyInPolyTime (fun a => count (n a) (sourceBits a) (inverseSlack a))
+    (hn : ComputableInPolyTime n input encUnary)
+    (hsource : ComputableInPolyTime sourceBits input encUnary)
+    (hslack : ComputableInPolyTime inverseSlack input encUnary) :
+    ComputableInPolyTime (fun a => count (n a) (sourceBits a) (inverseSlack a))
       input encUnary := by
   unfold count
   polytime
 
 /-- The integer slack is available in unary with polynomial cost. -/
 theorem isPolyTime_slack {α : Type} {input : α ↪ List Bool} {n sourceBits inverseSlack : α → ℕ}
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hsource : ComputableTidilyInPolyTime sourceBits input encUnary)
-    (hslack : ComputableTidilyInPolyTime inverseSlack input encUnary) :
-    ComputableTidilyInPolyTime (fun a => slack (n a) (sourceBits a) (inverseSlack a))
+    (hn : ComputableInPolyTime n input encUnary)
+    (hsource : ComputableInPolyTime sourceBits input encUnary)
+    (hslack : ComputableInPolyTime inverseSlack input encUnary) :
+    ComputableInPolyTime (fun a => slack (n a) (sourceBits a) (inverseSlack a))
       input encUnary := by
   unfold slack
   polytime

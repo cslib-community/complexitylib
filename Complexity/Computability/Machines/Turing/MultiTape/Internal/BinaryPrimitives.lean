@@ -29,7 +29,7 @@ private theorem linear_tail {α β : Type*} {encIn : α ↪ List Bool} {encOut :
     ComputableInLinearTimeAndSpace f encIn encOut := by
   obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.tail (enc₁ := encBool) (enc := encBits)
   refine ⟨c, k, Q, hfin, tm, fun a => ?_⟩
-  simpa only [h a, encBits_apply] using (htm (encIn a)).computesInTimeAndSpace
+  simpa only [h a, encBits_apply] using htm (encIn a)
 
 namespace ComputableInO
 
@@ -78,7 +78,7 @@ private theorem normStep_inO :
   have hsome : ComputableInLinearTimeAndSpace some encBool (encOption encBool) := by
     obtain ⟨c, k, Q, hfin, tm, htm⟩ := OptionEncoding.some
       (enc₁ := encBool) (enc := encOption encBool)
-    exact ⟨c, k, Q, hfin, tm, fun b => (htm b).computesInTimeAndSpace⟩
+    exact ⟨c, k, Q, hfin, tm, fun b => htm b⟩
   exact (((of_linear hsome).comp_linear hb).prod
     (hacc.snd'.append hpend (encOut := encBits) fun _ => rfl)).mono 3
       (fun _ => by omega) (fun _ => by omega)
@@ -185,7 +185,7 @@ theorem natIsZero :
   have hlinear : ComputableInLinearTimeAndSpace List.isEmpty encBits encBool := by
     obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.isEmpty
       (enc₁ := encBool) (enc := encBits)
-    exact ⟨c, k, Q, hfin, tm, fun l => (htm l).computesInTimeAndSpace⟩
+    exact ⟨c, k, Q, hfin, tm, fun l => htm l⟩
   refine ((of_linear hlinear).of_encIn_eq (encD := encNat) Nat.bits
     (fun _ => rfl)).of_enc_eq fun n => ?_
   rcases Nat.eq_zero_or_pos n with rfl | hn

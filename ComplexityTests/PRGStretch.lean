@@ -130,19 +130,25 @@ example : (PRGStretch.forwardIterate shiftIn 3 [false, false, true]).reverse =
   PRGStretch.reverse_forwardIterate_eq_iterate_of_forall length_shiftIn _ 3
 
 private theorem expand_degree :
-    ComputableTidilyInDegree expand encBits encBits 1 1 := by
-  unfold expand
-  fun_prop (disch := first | apply le_refl | lia)
+    ComputableInDegree expand encBits encBits 1 1 := by
+  have hraw : ComputableTidilyInDegree expand encBits encBits 1 1 := by
+    unfold expand
+    fun_prop (disch := first | apply le_refl | lia)
+  obtain ⟨⟨t, space, ht, hs, h⟩, hl⟩ := hraw
+  exact ⟨⟨t, space, ht, hs, h.computableInTimeAndSpace⟩, hl⟩
 
 private theorem shiftIn_degree :
-    ComputableTidilyInDegree shiftIn encBits encBits 1 1 := by
-  unfold shiftIn
-  fun_prop (disch := first | apply le_refl | lia)
+    ComputableInDegree shiftIn encBits encBits 1 1 := by
+  have hraw : ComputableTidilyInDegree shiftIn encBits encBits 1 1 := by
+    unfold shiftIn
+    fun_prop (disch := first | apply le_refl | lia)
+  obtain ⟨⟨t, space, ht, hs, h⟩, hl⟩ := hraw
+  exact ⟨⟨t, space, ht, hs, h.computableInTimeAndSpace⟩, hl⟩
 
 -- Quantitative cumulative-time and round-independent workspace for `forwardIterate` on a concrete
 -- length-expanding generator.
 example : ∃ (tGen : List Bool → ℕ) (csG c : ℕ),
-    ComputableTidilyInTimeAndSpace
+    ComputableInTimeAndSpace
       (fun p : List Bool × ℕ => PRGStretch.forwardIterate expand p.2 p.1)
       (encPair encBits encUnary) encBits
       (fun p => c * (p.1.length + p.2 +
@@ -150,7 +156,7 @@ example : ∃ (tGen : List Bool → ℕ) (csG c : ℕ),
       (fun p => c * (csG * (p.1.length + 1) + p.1.length + 1)) := by
   obtain ⟨⟨tGen, sGen, _, ⟨csG, hcsG⟩, hgen⟩, -⟩ := expand_degree
   refine ⟨tGen, csG, ?_⟩
-  exact PRGStretch.computableTidilyInTimeAndSpace_forwardIterate length_expand hgen
+  exact PRGStretch.computableInTimeAndSpace_forwardIterate length_expand hgen
     (fun p i _ => by
       simpa [PRGStretch.length_seedAt_of_forall length_expand] using
         hcsG (PRGStretch.seedAt expand p.1 i))
@@ -158,7 +164,7 @@ example : ∃ (tGen : List Bool → ℕ) (csG c : ℕ),
 -- Quantitative cumulative-time and workspace (charging the `(n + k)`-bit reversal buffer) for
 -- `PRGStretch.iterate` on `(seed, count)`.
 example : ∃ (tGen : List Bool → ℕ) (csG c : ℕ),
-    ComputableTidilyInTimeAndSpace
+    ComputableInTimeAndSpace
       (fun p : List Bool × ℕ => PRGStretch.iterate expand p.1.length p.2 p.1)
       (encPair encBits encUnary) encBits
       (fun p => c * (p.1.length + p.2 +
@@ -166,7 +172,7 @@ example : ∃ (tGen : List Bool → ℕ) (csG c : ℕ),
       (fun p => c * (csG * (p.1.length + 1) + p.1.length + p.2 + 1)) := by
   obtain ⟨⟨tGen, sGen, _, ⟨csG, hcsG⟩, hgen⟩, -⟩ := expand_degree
   refine ⟨tGen, csG, ?_⟩
-  exact PRGStretch.computableTidilyInTimeAndSpace_iterate_pair length_expand hgen
+  exact PRGStretch.computableInTimeAndSpace_iterate_pair length_expand hgen
     (fun p i _ => by
       simpa [PRGStretch.length_seedAt_of_forall length_expand] using
         hcsG (PRGStretch.seedAt expand p.1 i))
@@ -174,7 +180,7 @@ example : ∃ (tGen : List Bool → ℕ) (csG c : ℕ),
 -- Quantitative cumulative-time and workspace for `PRGStretch.stretch` with a linear round count, on
 -- the generator whose emitted bits vary.
 example : ∃ (tGen : List Bool → ℕ) (tCount sCount : ℕ → ℕ) (csG c : ℕ),
-    ComputableTidilyInTimeAndSpace (PRGStretch.stretch shiftIn (fun n => n + n + 1)) encBits encBits
+    ComputableInTimeAndSpace (PRGStretch.stretch shiftIn (fun n => n + n + 1)) encBits encBits
       (fun seed => c * (tCount seed.length + seed.length + (seed.length + seed.length + 1) +
         (∑ i ∈ Finset.range (seed.length + seed.length + 1),
           (tGen (PRGStretch.seedAt shiftIn seed i) + seed.length + 1)) + 1))
@@ -185,7 +191,8 @@ example : ∃ (tGen : List Bool → ℕ) (tCount sCount : ℕ → ℕ) (csG c : 
     fun_prop (disch := first | apply le_refl | lia)
   obtain ⟨⟨tCount, sCount, _, _, hcount⟩, -⟩ := hcount_deg
   refine ⟨tGen, tCount, sCount, csG, ?_⟩
-  exact PRGStretch.computableTidilyInTimeAndSpace_stretch length_shiftIn hgen hcount
+  exact PRGStretch.computableInTimeAndSpace_stretch length_shiftIn hgen
+    hcount.computableInTimeAndSpace
     (fun seed i _ => by
       simpa [PRGStretch.length_seedAt_of_forall length_shiftIn] using
         hcsG (PRGStretch.seedAt shiftIn seed i))
@@ -194,49 +201,53 @@ example : ∃ (tGen : List Bool → ℕ) (tCount sCount : ℕ → ℕ) (csG c : 
 -- workspace is needed, so `stretch` costs `O(tCount n + n + 1)` time and `O(sCount n + n + 1)`
 -- space.
 example : ∃ (tCount sCount : ℕ → ℕ) (c : ℕ),
-    ComputableTidilyInTimeAndSpace (PRGStretch.stretch shiftIn (fun _ => 0)) encBits encBits
+    ComputableInTimeAndSpace (PRGStretch.stretch shiftIn (fun _ => 0)) encBits encBits
       (fun seed => c * (tCount seed.length + seed.length + 1))
       (fun seed => c * (sCount seed.length + seed.length + 1)) := by
   obtain ⟨⟨tGen, sGen, _, _, hgen⟩, -⟩ := shiftIn_degree
   obtain ⟨⟨tCount, sCount, _, _, hcount⟩, -⟩ :=
     ComputableTidilyInDegree.const (encIn := encUnary) (encMid := encUnary) 0
-  obtain ⟨c, h⟩ := PRGStretch.computableTidilyInTimeAndSpace_stretch length_shiftIn hgen hcount
+  obtain ⟨c, h⟩ := PRGStretch.computableInTimeAndSpace_stretch length_shiftIn hgen
+    hcount.computableInTimeAndSpace
     (Q := fun _ => 0) (fun _ i hi => absurd hi (Nat.not_lt_zero i))
   exact ⟨tCount, sCount, c, h.mono (fun seed => by simp) (fun seed => by simp)⟩
 
 -- Degree-level quantitative certificate: a linear-time generator `(dGen = 1, eGen = 1)` stretched
 -- for `n + n + 1` rounds `(dCount = 1, eCount = 1)` has time/space degree
 -- `max 1 (1 + max 1 1) = 2` and output degree `max 1 1 = 1`.
-example : ComputableTidilyInDegree
+example : ComputableInDegree
     (PRGStretch.stretch expand (fun n => n + n + 1)) encBits encBits 2 1 := by
-  have hcount : ComputableTidilyInDegree (fun n : ℕ => n + n + 1) encUnary encUnary 1 1 := by
-    fun_prop (disch := first | apply le_refl | lia)
-  have h := PRGStretch.computableTidilyInDegree_stretch length_expand expand_degree hcount
+  have hcount : ComputableInDegree (fun n : ℕ => n + n + 1) encUnary encUnary 1 1 := by
+    have hraw : ComputableTidilyInDegree (fun n : ℕ => n + n + 1) encUnary encUnary 1 1 := by
+      fun_prop (disch := first | apply le_refl | lia)
+    obtain ⟨⟨t, space, ht, hs, h⟩, hl⟩ := hraw
+    exact ⟨⟨t, space, ht, hs, h.computableInTimeAndSpace⟩, hl⟩
+  have h := PRGStretch.computableInDegree_stretch length_expand expand_degree hcount
   fail_if_success
-    have : ComputableTidilyInDegree
+    have : ComputableInDegree
         (PRGStretch.stretch expand (fun n => n + n + 1)) encBits encBits 1 1 := h.mono
   exact h.mono
 
 -- A linear-time generator stretched for a quadratic round count `(dCount = 2, eCount = 2)` has
 -- time/space degree `max 2 (2 + max 1 1) = 3` and output degree `max 1 2 = 2`.
-example (count : ℕ → ℕ) (hcount : ComputableTidilyInDegree count encUnary encUnary 2 2) :
-    ComputableTidilyInDegree (PRGStretch.stretch expand count) encBits encBits 3 2 := by
-  have h := PRGStretch.computableTidilyInDegree_stretch length_expand expand_degree hcount
+example (count : ℕ → ℕ) (hcount : ComputableInDegree count encUnary encUnary 2 2) :
+    ComputableInDegree (PRGStretch.stretch expand count) encBits encBits 3 2 := by
+  have h := PRGStretch.computableInDegree_stretch length_expand expand_degree hcount
   fail_if_success
-    have : ComputableTidilyInDegree (PRGStretch.stretch expand count) encBits encBits 2 2 := h.mono
+    have : ComputableInDegree (PRGStretch.stretch expand count) encBits encBits 2 2 := h.mono
   fail_if_success
-    have : ComputableTidilyInDegree (PRGStretch.stretch expand count) encBits encBits 3 1 := h.mono
+    have : ComputableInDegree (PRGStretch.stretch expand count) encBits encBits 3 1 := h.mono
   exact h.mono
 
 -- Recover `ComputableTidilyInPolyTime` directly from the quantitative stretch theorem.
 example : ComputableTidilyInPolyTime
     (PRGStretch.stretch expand (fun n => n * n + 1)) encBits encBits :=
-  PRGStretch.polyTime_stretch_of_length_eq length_expand
-    (by unfold expand; fun_prop) (by fun_prop)
+  (PRGStretch.polyTime_stretch_of_length_eq length_expand
+    (.of_tidy (by unfold expand; fun_prop)) (.of_tidy (by fun_prop))).tidy
 
 -- Quantitative captured-parameter certificate for `PRGStretch.iterate`.
 example : ∃ (tGen : Bool × List Bool → ℕ) (csG c : ℕ),
-    ComputableTidilyInTimeAndSpace
+    ComputableInTimeAndSpace
       (fun x : (Bool × List Bool) × ℕ =>
         PRGStretch.iterate (fun s => s ++ [x.1.1]) x.1.2.length x.2 x.1.2)
       (encPair (encPair encBool encBits) encUnary) encBits
@@ -255,8 +266,9 @@ example : ∃ (tGen : Bool × List Bool → ℕ) (csG c : ℕ),
     exact (ComputableTidilyInDegree.snd encBool encBits).append hsingleton (fun _ => rfl) |>.mono
   obtain ⟨⟨tGen, sGen, _, ⟨csG, hcsG⟩, hgen⟩, -⟩ := hgen_deg
   refine ⟨tGen, csG, ?_⟩
-  refine PRGStretch.computableTidilyInTimeAndSpace_iterate_captured
-    (generator := fun b s => s ++ [b]) (fun _ _ => by simp) hgen (fun x i _ => ?_)
+  refine PRGStretch.computableInTimeAndSpace_iterate_captured
+    (generator := fun b s => s ++ [b]) (fun _ _ => by simp)
+    hgen.computableInTimeAndSpace (fun x i _ => ?_)
   have hlen_seed : (PRGStretch.seedAt (fun s => s ++ [x.1.1]) x.1.2 i).length = x.1.2.length :=
     PRGStretch.length_seedAt_of_forall (fun _ => by simp) x.1.2 i
   have h := hcsG (x.1.1, PRGStretch.seedAt (fun s => s ++ [x.1.1]) x.1.2 i)

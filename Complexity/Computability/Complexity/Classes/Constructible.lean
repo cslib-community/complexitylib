@@ -43,11 +43,14 @@ length is supplied by the quantitative API (`Turing.MultiTapeTM.ComputableTidily
 
 * `Cslib.Complexity.TimeConstructible.spaceConstructible`: time constructibility implies
   space constructibility.
-* `Cslib.Complexity.timeConstructible_two_pow`, `Cslib.Complexity.timeConstructible_succ_pow`,
+* `Cslib.Complexity.timeConstructible_two_pow`,
+  `Cslib.Complexity.timeConstructible_two_pow_two_pow`,
+  `Cslib.Complexity.timeConstructible_succ_pow`,
   `Cslib.Complexity.TimeConstructible.succ_mul`: time-constructible bounds.
 * `Cslib.Complexity.spaceConstructible_const`, `Cslib.Complexity.spaceConstructible_id`,
   `Cslib.Complexity.spaceConstructible_succ`, `Cslib.Complexity.spaceConstructible_succ_pow`,
-  `Cslib.Complexity.spaceConstructible_two_pow`: space-constructible bounds.
+  `Cslib.Complexity.spaceConstructible_two_pow`,
+  `Cslib.Complexity.spaceConstructible_two_pow_two_pow`: space-constructible bounds.
 
 ## References
 
@@ -127,6 +130,41 @@ theorem timeConstructible_two_pow : TimeConstructible (2 ^ ·) :=
       simp only [encBits_apply]
       have := Nat.lt_two_pow_self (n := x.length)
       omega) fun _ => le_rfl
+
+private theorem succ_mul_two_pow_le_two_pow_two_pow : ∀ n : ℕ, (n + 1) * 2 ^ n ≤ 2 ^ (2 ^ n)
+  | 0 => by decide
+  | 1 => by decide
+  | n + 2 => by
+    have ih := succ_mul_two_pow_le_two_pow_two_pow (n + 1)
+    have h₁ : 4 ≤ 2 ^ (2 ^ (n + 1)) := by
+      calc 4 = 2 ^ (2 ^ 1) := by decide
+        _ ≤ 2 ^ (2 ^ (n + 1)) :=
+          Nat.pow_le_pow_right (by decide) (Nat.pow_le_pow_right (by decide) (by omega))
+    have h₂ : 2 ^ (2 ^ (n + 2)) = 2 ^ (2 ^ (n + 1)) * 2 ^ (2 ^ (n + 1)) := by
+      rw [← Nat.pow_add, ← two_mul, pow_succ']
+    rw [h₂]
+    calc (n + 2 + 1) * 2 ^ (n + 2)
+        ≤ 2 * (n + 1 + 1) * (2 * 2 ^ (n + 1)) :=
+          Nat.mul_le_mul (by omega) (by rw [pow_succ'])
+      _ = 4 * ((n + 1 + 1) * 2 ^ (n + 1)) := by ring
+      _ ≤ 4 * 2 ^ (2 ^ (n + 1)) := Nat.mul_le_mul_left 4 ih
+      _ ≤ 2 ^ (2 ^ (n + 1)) * 2 ^ (2 ^ (n + 1)) := Nat.mul_le_mul_right _ h₁
+
+/-- `2 ^ (2 ^ n)` is time-constructible: count `2 ^ n` in unary and then write `2 ^ (2 ^ n)` in
+binary as `2 ^ n` zeros followed by a one. -/
+theorem timeConstructible_two_pow_two_pow : TimeConstructible fun n => 2 ^ (2 ^ n) := by
+  have h₁ := ComputableTidilyInO.unary_two_pow.comp ComputableTidilyInO.lengthUnary
+  have h₂ := ((ComputableTidilyInDegree.two_pow_length encUnary).inO_one.comp h₁).of_enc_eq
+    (encOut := encNat) (g := fun x : List Bool => 2 ^ (2 ^ x.length)) fun x => by
+      simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
+  refine TimeConstructible.of_computableInO 3 (.of_tidy h₂)
+    (s := fun n => n + 2 ^ n + 2 ^ n) (fun x => ?_) fun x => ?_
+  · simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
+    have hle := succ_mul_two_pow_le_two_pow_two_pow x.length
+    have hpow : 1 ≤ 2 ^ x.length := Nat.one_le_two_pow
+    nlinarith
+  · simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
+    exact le_rfl
 
 private theorem cube_add_le (u v : ℕ) : (u + v) ^ 3 ≤ 8 * (u ^ 3 + v ^ 3) := by
   rcases le_total u v with h | h
@@ -300,5 +338,9 @@ theorem spaceConstructible_succ_pow (k : ℕ) : SpaceConstructible fun n => (n +
 /-- `2 ^ n` is space-constructible. -/
 theorem spaceConstructible_two_pow : SpaceConstructible (2 ^ ·) :=
   timeConstructible_two_pow.spaceConstructible
+
+/-- `2 ^ (2 ^ n)` is space-constructible. -/
+theorem spaceConstructible_two_pow_two_pow : SpaceConstructible fun n => 2 ^ (2 ^ n) :=
+  timeConstructible_two_pow_two_pow.spaceConstructible
 
 end Cslib.Complexity

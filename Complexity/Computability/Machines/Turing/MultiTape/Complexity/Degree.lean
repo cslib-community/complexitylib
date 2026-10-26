@@ -185,14 +185,15 @@ public theorem pair {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
     (hf : ComputableTidilyInDegree f encIn enc₁ d₁ e₁)
     (hg : ComputableTidilyInDegree g encIn enc₂ d₂ e₂) :
     ComputableTidilyInDegree (fun x => (f x, g x)) encIn enc (max d₁ d₂) (max d₁ d₂) := by
-  obtain ⟨⟨t₁, s₁, ht₁, hs₁, h₁⟩, -⟩ := hf
-  obtain ⟨⟨t₂, s₂, ht₂, hs₂, h₂⟩, -⟩ := hg
-  obtain ⟨c, h⟩ := hP.pair_mono h₁ h₂
-  have ht := ((ht₁.add_max ht₂).add_const 1).smul c
-  refine of_bounds ht ((((hs₁.add_max hs₂).add ht).add_const 1).smul c)
-    (h.mono (fun _ => le_rfl) (fun x => Nat.mul_le_mul_left c ?_))
-  have := h.length_le x
-  omega
+  obtain ⟨⟨t₁, s₁, ht₁, hs₁, h₁⟩, hl₁⟩ := hf
+  obtain ⟨⟨t₂, s₂, ht₂, hs₂, h₂⟩, hl₂⟩ := hg
+  have hp := ComputableInDegree.pair (enc := enc)
+    (show ComputableInDegree f encIn enc₁ d₁ e₁ from
+      ⟨⟨t₁, s₁, ht₁, hs₁, h₁.computableInTimeAndSpace⟩, hl₁⟩)
+    (show ComputableInDegree g encIn enc₂ d₂ e₂ from
+      ⟨⟨t₂, s₂, ht₂, hs₂, h₂.computableInTimeAndSpace⟩, hl₂⟩)
+  obtain ⟨t, s, ht, hs, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.degree hp
+  exact ⟨⟨t, s, ht, hs, k, Q, hfin, tm, htm⟩, hp.2⟩
 
 /-- Pairing with the framed encoding of pairs. -/
 public theorem prod {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
@@ -242,27 +243,27 @@ variable {enc₁ : β ↪ List Bool}
 /-- `Option.some`. -/
 public theorem optionSome {enc : Option β ↪ List Bool} [OptionEncoding enc₁ enc] :
     ComputableTidilyInDegree some enc₁ enc 1 1 :=
-  of_linear OptionEncoding.some
+  of_linear (Internal.NormalForm.linear OptionEncoding.some)
 
 /-- `Option.getD`. -/
 public theorem getD {enc : Option β ↪ List Bool} [OptionEncoding enc₁ enc] (d : β) :
     ComputableTidilyInDegree (fun o => o.getD d) enc enc₁ 1 1 :=
-  of_linear (OptionEncoding.getD d)
+  of_linear (Internal.NormalForm.linear (OptionEncoding.getD d))
 
 /-- `List.headD`. -/
 public theorem headD {enc : List β ↪ List Bool} [ListEncoding enc₁ enc] (d : β) :
     ComputableTidilyInDegree (fun l => l.headD d) enc enc₁ 1 1 :=
-  of_linear (ListEncoding.headD d)
+  of_linear (Internal.NormalForm.linear (ListEncoding.headD d))
 
 /-- `List.tail`. -/
 public theorem tail {enc : List β ↪ List Bool} [ListEncoding enc₁ enc] :
     ComputableTidilyInDegree List.tail enc enc 1 1 :=
-  of_linear (ListEncoding.tail (enc₁ := enc₁))
+  of_linear (Internal.NormalForm.linear (ListEncoding.tail (enc₁ := enc₁)))
 
 /-- `List.isEmpty`. -/
 public theorem isEmpty {enc : List β ↪ List Bool} [ListEncoding enc₁ enc] :
     ComputableTidilyInDegree List.isEmpty enc encBool 1 1 :=
-  of_linear (ListEncoding.isEmpty (enc₁ := enc₁))
+  of_linear (Internal.NormalForm.linear (ListEncoding.isEmpty (enc₁ := enc₁)))
 
 end ComputableTidilyInDegree
 

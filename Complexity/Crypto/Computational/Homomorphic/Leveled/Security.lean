@@ -108,7 +108,7 @@ variable {E : Scheme}
     (fun p => E.encrypt p.1 p.2.1 p.2.2))
   {width budget : ℕ → ℕ}
   (hwidth : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support → keys.2.length = width n)
-  (hbudget : ComputableTidilyInPolyTime budget encUnary encUnary)
+  (hbudget : ComputableInPolyTime budget encUnary encUnary)
 
 include hsecure hkeyGen hencrypt hwidth hbudget
 
@@ -124,8 +124,9 @@ theorem publicKey_indistinguishable_zero :
       (fun p => adversary p.1 (encPublicKey p.2)) :=
     hadversary.preprocess (by fun_prop) hpublic
   have hdepth : ComputableTidilyInPolyTime (fun n => 2 * budget n) encUnary encUnary := by
+    have hbudget := hbudget.tidy
     fun_prop
-  have h := Scheme.negligible_publicKeyChainHybrid hsecure hkeyGen hencrypt hwidth hdepth
+  have h := Scheme.negligible_publicKeyChainHybrid hsecure hkeyGen hencrypt hwidth (.of_tidy hdepth)
     (test := fun n artifact => adversary n (encPublicKey artifact)) htest
   simpa only [eval_keyGen_public, distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map,
     Function.comp_def,
@@ -138,6 +139,7 @@ theorem indCPA_keyGen :
   let depth := fun n => 2 * budget n
   have hdepth : ComputableTidilyInPolyTime depth encUnary encUnary := by
     dsimp only [depth]
+    have hbudget := hbudget.tidy
     fun_prop
   let zero (bit : Bool) (adversary : Encryption.Adversary) (n : ℕ) : Game :=
     ProbComp.eval (do
@@ -149,14 +151,14 @@ theorem indCPA_keyGen :
       (zero bit) Encryption.Adversary.IsPPT := by
     intro adversary hadversary
     simpa only [eval_game_keyGen] using
-      Scheme.negligible_publicKeyChainHybrid hsecure hkeyGen hencrypt hwidth hdepth
+      Scheme.negligible_publicKeyChainHybrid hsecure hkeyGen hencrypt hwidth (.of_tidy hdepth)
         (isPPTOn_publicKeyGame hencrypt hadversary bit)
   have hzero : Game.Indistinguishable (zero false) (zero true) Encryption.Adversary.IsPPT := by
     intro adversary hadversary
     have heq (bit : Bool) (n : ℕ) :=
       eval_zeroLinkAdversary E depth adversary bit n (width n) (hwidth n)
     simpa only [heq] using hsecure (zeroLinkAdversary E depth adversary)
-      (isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen hdepth)
+      (isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen (.of_tidy hdepth))
   exact (hhop false).trans (hzero.trans (hhop true).symm)
 
 /-- The actual depth-budgeted scheme is IND-CPA secure. The decryption circuit family identifies

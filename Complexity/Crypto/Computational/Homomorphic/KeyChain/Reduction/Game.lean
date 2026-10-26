@@ -89,7 +89,8 @@ theorem eval_linkAdversaryAt (beforeCount afterCount bitIndex : ℕ → ℕ)
         ProbComp.eval (E.publicKeyLinkHybrid n (beforeCount n) (afterCount n)
           (bitIndex n + if bit then 1 else 0) >>= test n)
       else PMF.pure false := by
-  simp only [Encryption.game, linkAdversaryAt, chooseLinkAt, bind_assoc, ProbComp.eval_bind]
+  simp only [Encryption.game, Encryption.gameOn, ↓reduceIte,
+    linkAdversaryAt, chooseLinkAt, bind_assoc, ProbComp.eval_bind]
   by_cases hi : bitIndex n < width
   · rw [ite_eq_left hi]
     simp only [publicKeyLinkHybrid, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -130,8 +131,9 @@ theorem eval_linkAdversary (depth capacity : ℕ → ℕ)
     ProbComp.eval (Encryption.game E.keyGen E.encrypt
       (E.linkAdversary depth capacity test) bit n) =
         E.keyChainHybridGame n (depth n) width (capacity n) (test n) bit := by
-  simp only [Encryption.game, linkAdversary, bind_assoc, ProbComp.eval_bind,
-    eval_sampleDyadicIndex, PMF.bind_map, Function.comp_def, keyChainHybridGame]
+  simp only [Encryption.game, Encryption.gameOn, ↓reduceIte, linkAdversary, bind_assoc,
+    ProbComp.eval_bind, eval_sampleDyadicIndex, PMF.bind_map, Function.comp_def,
+    keyChainHybridGame]
   rw [PMF.bind_comm]
   congr 1
   funext i
@@ -140,7 +142,8 @@ theorem eval_linkAdversary (depth capacity : ℕ → ℕ)
   · simp only [hi, ↓reduceIte]
     congr 1
     funext j
-    simpa only [Encryption.game, linkAdversaryAt, ProbComp.eval_bind, PMF.monad_pure_eq_pure] using
+    simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte,
+      linkAdversaryAt, ProbComp.eval_bind, PMF.monad_pure_eq_pure] using
       E.eval_linkAdversaryAt (fun _ => depth n - i.val - 1) (fun _ => i.val)
         (fun _ => j.val) test n width bit hwidth
   · simp [hi, rejectLinkChoice]

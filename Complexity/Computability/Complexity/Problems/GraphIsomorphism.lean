@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Problems.Graph
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
@@ -183,8 +184,7 @@ theorem isVerifier :
         exact (φ (G.vertexEquiv i)).2
       · intro hv
         exact List.mem_ofFn.2 ⟨G.vertexEquiv.symm (φ.symm ⟨v, hv⟩), by simp [f]⟩
-      · rw [List.getD_eq_getElem _ _ (by simpa using hi),
-          List.getD_eq_getElem _ _ (by simpa using hj), List.getElem_ofFn, List.getElem_ofFn]
+      · rw [List.getD_ofFn_of_lt _ hi, List.getD_ofFn_of_lt _ hj]
         rw [Bool.eq_iff_iff, H.adjBool_eq_true_iff,
           ← Graph.induced_adj_vertexEquiv G ⟨i, hi⟩ ⟨j, hj⟩]
         exact φ.map_adj_iff

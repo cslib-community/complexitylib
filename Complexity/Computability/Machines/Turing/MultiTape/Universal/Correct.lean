@@ -12,6 +12,7 @@ public import Mathlib.Data.Fintype.Option
 public import Mathlib.Data.Fintype.Prod
 public import Complexity.Computability.Machines.Turing.MultiTape.Map
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
+import Complexity.Foundations.Data.List.Lookup
 
 /-!
 # The simulation is correct
@@ -145,9 +146,6 @@ lemma applyTapes_ofFn (ts : Fin k → Tape) (as : Fin k → Option (Option ℕ) 
   | zero => rfl
   | succ k ih => simp [List.ofFn_succ, applyTapes, ih]
 
-lemma getD_ofFn (ts : Fin k → Tape) (i : Fin k) : (List.ofFn ts).getD i .blank = ts i := by
-  simp [List.getD_eq_getElem?_getD]
-
 lemma inputSymbol_val (c : Cfg k ℕ ℕ x) : inputSymbol x c.inputPos.val = c.inputSymbol := by
   unfold inputSymbol Cfg.inputSymbol
   have := c.inputPos.isLt
@@ -187,7 +185,7 @@ public theorem toCfg_step {tm : MultiTapeTM k ℕ ℕ} {d : Desc} {s : SCfg} {ou
     · have := (moveInputPos c.inputPos a.inputTape).isLt
       simp only [SCfg.toCfg, Act.apply, Act.ofAction, Action.apply_inputPos, ← hip, moveInput_val]
       omega
-    · simp only [SCfg.toCfg, Act.apply, Act.ofAction, applyTapes_ofFn, getD_ofFn, Tape.apply,
+    · simp only [SCfg.toCfg, Act.apply, Act.ofAction, applyTapes_ofFn, List.getD_ofFn, Tape.apply,
         Tape.cellAt_move, Action.apply_workTapes]
       cases (a.workTapes i).1 <;>
         simp [Tape.cellAt_write, Function.update_apply, c, SCfg.toCfg]

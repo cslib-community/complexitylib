@@ -388,6 +388,33 @@ theorem spectralExpansion_le_iff {c : ℝ} (hc : 0 ≤ c) :
   have := G.spectralExpansion_nonneg
   gcongr
 
+/-- Polarization identity for the walk quadratic form on `t • f ± G.walk f`: the difference of the
+two quadratic forms is `4 * t * 𝔼 v, G.walk f v ^ 2`. -/
+private theorem expect_add_mul_walk_sub_expect_sub_mul_walk (f : V → ℝ) (t : ℝ) :
+    𝔼 v, (t • f + G.walk f) v * G.walk (t • f + G.walk f) v -
+        𝔼 v, (t • f - G.walk f) v * G.walk (t • f - G.walk f) v =
+      4 * t * 𝔼 v, G.walk f v ^ 2 := by
+  set g : V → ℝ := G.walk f
+  have hfg : 𝔼 v, f v * G.walk g v = 𝔼 v, g v ^ 2 := by
+    rw [G.expect_mul_walk_comm]
+    exact expect_congr rfl fun v _ ↦ (sq (g v)).symm
+  have hwalk_add (v : V) : G.walk (t • f + g) v = t * g v + G.walk g v := by
+    simp [map_add, map_smul, g]
+  have hwalk_sub (v : V) : G.walk (t • f - g) v = t * g v - G.walk g v := by
+    simp [map_sub, map_smul, g]
+  rw [← expect_sub_distrib]
+  calc
+    _ = 𝔼 v, 2 * t * (f v * G.walk g v + g v ^ 2) :=
+      expect_congr rfl fun v _ ↦ by
+        simp only [Pi.add_apply, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, hwalk_add,
+          hwalk_sub]
+        ring
+    _ = 2 * t * (𝔼 v, f v * G.walk g v + 𝔼 v, g v ^ 2) := by
+      rw [← mul_expect, expect_add_distrib]
+    _ = 4 * t * 𝔼 v, g v ^ 2 := by
+      rw [hfg]
+      ring
+
 /-- If `|𝔼 v, f v * G.walk f v| ≤ c * 𝔼 v, f v ^ 2` for every function `f` of expectation zero,
 where `c ≥ 0`, then `λ(G) ≤ c`. -/
 theorem spectralExpansion_le_of_abs_expect_mul_walk_le {c : ℝ} (hc : 0 ≤ c)
@@ -396,9 +423,6 @@ theorem spectralExpansion_le_of_abs_expect_mul_walk_le {c : ℝ} (hc : 0 ≤ c)
   refine spectralExpansion_le hc fun f hf ↦ ?_
   set g : V → ℝ := G.walk f
   have hg : 𝔼 v, g v = 0 := G.expect_walk_eq_zero hf
-  have hfg : 𝔼 v, f v * G.walk g v = 𝔼 v, g v ^ 2 := by
-    rw [G.expect_mul_walk_comm]
-    exact expect_congr rfl fun v _ ↦ (sq (g v)).symm
   have hpol (t : ℝ) :
       4 * t * 𝔼 v, g v ^ 2 ≤ 2 * c * (t ^ 2 * 𝔼 v, f v ^ 2 + 𝔼 v, g v ^ 2) := by
     have h₁ := (le_abs_self _).trans (h (t • f + g) (by
@@ -407,26 +431,7 @@ theorem spectralExpansion_le_of_abs_expect_mul_walk_le {c : ℝ} (hc : 0 ≤ c)
     have h₂ := (neg_le_abs _).trans (h (t • f - g) (by
       simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul, expect_sub_distrib, ← mul_expect, hf,
         hg, mul_zero, sub_zero]))
-    have hwalk_add (v : V) : G.walk (t • f + g) v = t * g v + G.walk g v := by
-      simp [map_add, map_smul, g]
-    have hwalk_sub (v : V) : G.walk (t • f - g) v = t * g v - G.walk g v := by
-      simp [map_sub, map_smul, g]
-    have hdiff :
-        𝔼 v, (t • f + g) v * G.walk (t • f + g) v -
-            𝔼 v, (t • f - g) v * G.walk (t • f - g) v =
-          4 * t * 𝔼 v, g v ^ 2 := by
-      rw [← expect_sub_distrib]
-      calc
-        _ = 𝔼 v, 2 * t * (f v * G.walk g v + g v ^ 2) :=
-          expect_congr rfl fun v _ ↦ by
-            simp only [Pi.add_apply, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, hwalk_add,
-              hwalk_sub]
-            ring
-        _ = 2 * t * (𝔼 v, f v * G.walk g v + 𝔼 v, g v ^ 2) := by
-          rw [← mul_expect, expect_add_distrib]
-        _ = 4 * t * 𝔼 v, g v ^ 2 := by
-          rw [hfg]
-          ring
+    have hdiff := G.expect_add_mul_walk_sub_expect_sub_mul_walk f t
     have hsum :
         c * 𝔼 v, (t • f + g) v ^ 2 + c * 𝔼 v, (t • f - g) v ^ 2 =
           2 * c * (t ^ 2 * 𝔼 v, f v ^ 2 + 𝔼 v, g v ^ 2) := by

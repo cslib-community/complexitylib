@@ -97,23 +97,25 @@ private theorem adaptiveAdversary_isPPT : adaptiveAdversary.IsPPT := by
 -- The reduction covers all input words, including malformed or oversized matrix encodings.
 example : IsPPT encBool
     (lweDistinguisher Parameters.dimension Parameters.samples Parameters.width adaptiveAdversary) :=
-  isPPT_lweDistinguisher Parameters.computableTidilyInPolyTime_dimension
-    Parameters.computableTidilyInPolyTime_samples Parameters.computableTidilyInPolyTime_width
+  isPPT_lweDistinguisher Parameters.computableInPolyTime_dimension
+    Parameters.computableInPolyTime_samples Parameters.computableInPolyTime_width
     adaptiveAdversary_isPPT
 
 -- Both honest algorithms are strict PPT for the same growing, positive-noise parameter family.
 example : IsPPTOn encUnary (encPair encBits encBits)
     (fun security => keyGenSerialized (Parameters.dimension security) (Parameters.samples security)
       (Parameters.width security) (Parameters.noise security)) :=
-  isPPTOn_keyGenSerialized Parameters.computableTidilyInPolyTime_dimension
-    Parameters.computableTidilyInPolyTime_samples Parameters.computableTidilyInPolyTime_width
-    Parameters.computableTidilyInPolyTime_noise
+  isPPTOn_keyGenSerialized Parameters.computableInPolyTime_dimension
+    Parameters.computableInPolyTime_samples Parameters.computableInPolyTime_width
+    Parameters.computableInPolyTime_noise
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => encryptSerialized (Parameters.dimension p.1) (Parameters.samples p.1)
       (Parameters.width p.1) p.2.1 p.2.2) :=
-  isPPTOn_encryptSerialized (by fun_prop) (by fun_prop) (by fun_prop)
-    (by fun_prop) (by fun_prop)
+  isPPTOn_encryptSerialized (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+    fun_prop))
+    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
 
 -- No separate encryption-efficiency, security-of-encryption, or zero-noise premise is supplied.
 example

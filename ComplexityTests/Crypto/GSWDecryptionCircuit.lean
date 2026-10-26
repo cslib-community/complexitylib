@@ -91,8 +91,8 @@ example : ComputableInPolyTime (fun security =>
     DecryptionCircuit.code (Parameters.dimension security) (DepthParameters.width security))
     encUnary encCode :=
   (DecryptionCircuit.computableInPolyTime_code.tidy.comp
-    (Parameters.computableTidilyInPolyTime_dimension.prod
-      DepthParameters.computableTidilyInPolyTime_width)).computableInPolyTime
+    (Parameters.computableInPolyTime_dimension.tidy.prod
+      DepthParameters.computableInPolyTime_width.tidy)).computableInPolyTime
 
 example : DecryptionCircuit.code 1 2 = (DecryptionCircuit.circuit 1 2).code :=
   DecryptionCircuit.code_eq_code 1 2
