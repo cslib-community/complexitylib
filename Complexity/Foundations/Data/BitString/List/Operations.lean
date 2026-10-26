@@ -199,6 +199,18 @@ theorem listXor_pair_comm (m : ℕ) (u v : List Bool) :
     listXor m [u, v] = listXor m [v, u] := by
   rw [listXor_pair, listXor_pair, add_comm]
 
+/-- XORing with the same mask twice on the left recovers the fixed-width view of the right word. -/
+@[simp] theorem listXor_pair_self_left (m : ℕ) (k u : List Bool) :
+    listXor m [k, listXor m [k, u]] = List.ofFn (ofList m u) := by
+  have hself : ofList m k + ofList m k = 0 := funext fun i => Bool.xor_self _
+  rw [listXor_pair, ofList_listXor_pair, ← add_assoc, hself, zero_add]
+
+/-- XORing with the same mask twice on the left recovers a word of the declared width `m`. -/
+theorem listXor_pair_self_left_of_length {m : ℕ} (k : List Bool) {u : List Bool}
+    (hu : u.length = m) :
+    listXor m [k, listXor m [k, u]] = u := by
+  rw [listXor_pair_self_left, ofFn_ofList hu]
+
 /-- Below the width `m`, each bit of a two-word `listXor` is the XOR of the corresponding bits of
 the words, with missing bits read as `false`. -/
 theorem getD_listXor_pair (m : ℕ) (u v : List Bool) (i : ℕ) (hi : i < m) :

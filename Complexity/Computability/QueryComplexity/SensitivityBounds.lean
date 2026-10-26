@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.QueryComplexity.NisanSzegedy
+public import Complexity.Computability.QueryComplexity.Midrijanis
 
 /-!
 # Polynomial bounds in terms of sensitivity
@@ -15,16 +15,15 @@ public import Complexity.Computability.QueryComplexity.NisanSzegedy
 Huang's theorem `deg(f) ≤ s(f)²` [Huang2019] and the Nisan–Szegedy bound `bs(f) ≤ 2 deg(f)²`
 [NisanSzegedy1994] give `bs(f) ≤ 2 s(f)⁴`
 (`QueryComplexity.blockSensitivity_le_two_mul_sensitivity_pow_four`). Combined with Nisan's
-`C(f) ≤ s(f) bs(f)` [Nisan1991] and `D(f) ≤ C(f) bs(f)` [BealsBuhrmanCleveMoscaDeWolf2001], which
-give `D(f) ≤ s(f) bs(f)²` (`DecisionTree.complexity_le_sensitivity_mul_blockSensitivity_sq`), this
-bounds certificate and decision tree complexity polynomially in sensitivity:
-`C(f) ≤ 2 s(f)⁵` and `D(f) ≤ 4 s(f)⁹`.
+`C(f) ≤ s(f) bs(f)` [Nisan1991], this gives `C(f) ≤ 2 s(f)⁵`. Midrijanis's cubic degree bound
+`D(f) ≤ 2 deg(f)³` [Midrijanis2004] and Huang's theorem give the sharper decision tree bound
+`D(f) ≤ 2 s(f)⁶`.
 
 ## Main results
 
 * `Cslib.QueryComplexity.certificateComplexity_le_two_mul_sensitivity_pow_five`:
   `C(f) ≤ 2 s(f)⁵`.
-* `Cslib.DecisionTree.complexity_le_four_mul_sensitivity_pow_nine`: `D(f) ≤ 4 s(f)⁹`.
+* `Cslib.DecisionTree.complexity_le_two_mul_sensitivity_pow_six`: `D(f) ≤ 2 s(f)⁶`.
 
 ## References
 
@@ -32,8 +31,7 @@ bounds certificate and decision tree complexity polynomially in sensitivity:
   Conjecture*][Huang2019]
 * [N. Nisan, M. Szegedy, *On the degree of Boolean functions as real polynomials*][NisanSzegedy1994]
 * [N. Nisan, *CREW PRAMs and decision trees*][Nisan1991]
-* [R. Beals, H. Buhrman, R. Cleve, M. Mosca, R. de Wolf, *Quantum lower bounds by
-  polynomials*][BealsBuhrmanCleveMoscaDeWolf2001]
+* [G. Midrijanis, *Exact quantum query complexity for total Boolean functions*][Midrijanis2004]
 -/
 
 @[expose] public section
@@ -59,14 +57,13 @@ namespace DecisionTree
 
 open QueryComplexity
 
-/-- **Decision tree complexity is polynomial in sensitivity**: `D(f) ≤ 4 s(f)⁹`, from
-`D(f) ≤ s(f) bs(f)²` and `bs(f) ≤ 2 s(f)⁴`. -/
-theorem complexity_le_four_mul_sensitivity_pow_nine (f : BooleanFunction n) :
-    complexity f ≤ 4 * sensitivity f ^ 9 :=
-  (complexity_le_sensitivity_mul_blockSensitivity_sq f).trans
-    ((Nat.mul_le_mul_left _
-      (Nat.pow_le_pow_left (blockSensitivity_le_two_mul_sensitivity_pow_four f) 2)).trans_eq
-      (by ring))
+/-- **Decision tree complexity is polynomial in sensitivity**: `D(f) ≤ 2 s(f)⁶`, from
+Midrijanis's `D(f) ≤ 2 deg(f)³` and Huang's `deg(f) ≤ s(f)²`. -/
+theorem complexity_le_two_mul_sensitivity_pow_six (f : BooleanFunction n) :
+    complexity f ≤ 2 * sensitivity f ^ 6 :=
+  (complexity_le_two_mul_degree_pow_three f).trans
+    ((Nat.mul_le_mul_left 2 (Nat.pow_le_pow_left (degree_le_sensitivity_sq f) 3)).trans_eq
+      (by rw [← pow_mul]))
 
 end DecisionTree
 

@@ -313,7 +313,8 @@ theorem indCPA (hLWE : DecisionLWE) : ChosenMessageSecure := by
       fun security state ciphertext => guessProgram (security, state, ciphertext)⟩
   have h := Crypto.Homomorphic.GSW.Parameters.indCPA (decisionLWE_iff.mp hLWE)
     adversary ⟨hchooseProgram, hguessProgram⟩
-  simpa only [Crypto.Encryption.game, adversary, ProbComp.eval_bind, keyGeneration_eq,
+  simpa only [Crypto.Encryption.game, Crypto.Encryption.gameOn, ↓reduceIte,
+    adversary, ProbComp.eval_bind, keyGeneration_eq,
     encryption_eq, hchooseLaw, hguessLaw, chosenMessageGame, PMF.monad_bind_eq_bind,
     Negligible, Crypto.Negligible, Asymptotics.SuperpolynomialDecay,
     Crypto.Game.advantage, Crypto.Game.succProbability, probability,
