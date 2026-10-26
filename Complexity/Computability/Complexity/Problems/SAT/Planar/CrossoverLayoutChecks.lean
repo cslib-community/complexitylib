@@ -94,9 +94,6 @@ def commonEndpoints (e f : ℕ × SplitVariable × Route) : List Point :=
 def consecutiveContact (a b : Point × Point) : List Point :=
   if a.2 = b.1 then [a.2] else if b.2 = a.1 then [a.1] else []
 
-private instance (r : Route) : Decidable (IsOrthogonal r) :=
-  inferInstanceAs (Decidable (∀ e ∈ r.consecutivePairs, AxisAligned e.1 e.2))
-
 private def LocalSpec (e : ℕ × SplitVariable × Route) : Prop :=
   (e.1 < 74 ∧ e.2.2.head? = some (clausePosition e.1) ∧
     e.2.2.getLast? = some (variablePosition e.2.1)) ∧

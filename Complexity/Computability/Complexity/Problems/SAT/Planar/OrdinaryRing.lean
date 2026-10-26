@@ -114,9 +114,6 @@ theorem formula_sizes : formula.length = 8 ∧ ∀ c ∈ formula, c.length = 2 :
 /-- Every variable is actually used, including variables with no external access in a client. -/
 theorem variables_used : ∀ v : Variable, v ∈ formula.vars := by decide +kernel
 
-private instance (r : Route) : Decidable (IsOrthogonal r) :=
-  inferInstanceAs (Decidable (∀ e ∈ r.consecutivePairs, AxisAligned e.1 e.2))
-
 /-- All literal incidences occur exactly once, in formula order. -/
 theorem incidenceRoutes_cover :
     incidenceRoutes.map (fun e => (e.1, e.2.1)) =
