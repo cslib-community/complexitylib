@@ -7,11 +7,14 @@ Authors: Erik Demaine, Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListBinaryLookup
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.DecoderPrimitives
 
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
@@ -125,7 +128,7 @@ theorem tail {encL : List α ↪ List Bool} [ListEncoding encA encL] :
 @[fun_prop]
 theorem listIsEmpty {encL : List α ↪ List Bool} [ListEncoding encA encL] :
     ComputableTidilyInPolyTime (List.isEmpty (α := α)) encL encBool :=
-  of_linear (ListEncoding.isEmpty (enc₁ := encA) (enc := encL))
+  of_linear (Internal.NormalForm.linear (ListEncoding.isEmpty (enc₁ := encA) (enc := encL)))
 
 /-- Test a framed list's emptiness, determining its element encoding for automation. -/
 @[fun_prop]
@@ -596,18 +599,7 @@ theorem anyConst {ι : Type*} (l : List ι) {test : γ → ι → Bool}
   simpa only [Function.comp_def, List.any_eq_not_all_not] using
     bool_not.comp (allConst l fun i hi => bool_not.comp (htest i hi))
 
-private def idxStep [DecidableEq α] (v : α) (s : Bool × ℕ) (a : α) : Bool × ℕ :=
-  if s.1 || decide (a = v) then (true, s.2) else (false, s.2 + 1)
-
-private theorem foldl_idxStep [DecidableEq α] (v : α) (l : List α) (s : Bool × ℕ) :
-    (l.foldl (idxStep v) s).2 = s.2 + if s.1 then 0 else l.idxOf v := by
-  induction l generalizing s with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.foldl_cons, ih]
-    rcases s with ⟨b, n⟩
-    cases b <;> by_cases ha : a = v <;>
-      simp [idxStep, ha, Nat.add_comm, Nat.add_left_comm]
+open Internal.ListIndex
 
 /-- The index of the first occurrence, or the list length if absent, computed in unary.
 The element itself can use any encoding. -/
@@ -654,7 +646,8 @@ theorem dropUnary {encL : List α ↪ List Bool} [ListEncoding encA encL]
     (list := fun p : List α × ℕ => List.replicate p.2 true) (step := fun acc _ => acc.tail)
     ((of_eq (encIn := encUnary) (encMid := encBits) fun _ => rfl).comp (snd encL encUnary))
     (fst encL encUnary)
-    ((of_linear (ListEncoding.tail (enc₁ := encA))).comp (fst encL encBool))
+    ((of_linear (Internal.NormalForm.linear
+      (ListEncoding.tail (enc₁ := encA)))).comp (fst encL encBool))
     (B := fun p => (encPair encL encUnary p).length) .self (fun p i _ => by
       rw [List.take_replicate, heq]
       have := SizedListEncoding.length_drop_le (encA := encA) (encL := encL) p.1 (min i p.2)
@@ -731,7 +724,8 @@ theorem listGetD {encL : List α ↪ List Bool} [ListEncoding encA encL]
       (encPair encL encUnary) encA := by
   simpa only [Function.comp_def, List.headD_eq_head?_getD, List.head?_drop,
     List.getD_eq_getElem?_getD] using
-    (of_linear (ListEncoding.headD (enc₁ := encA) (enc := encL) d)).comp
+    (of_linear (Internal.NormalForm.linear
+      (ListEncoding.headD (enc₁ := encA) (enc := encL) d))).comp
       (dropUnary (encA := encA))
 
 /-- Read a bit at a unary index with a fixed fallback. Fixing the raw encoding avoids
@@ -870,13 +864,6 @@ theorem bitsAppend {γ : Type}
   .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend γ encIn left right
       hleft.tidy hright.tidy)
 
-/-- Reverse a raw bit string using an accumulator that grows by one bit per step. -/
-@[fun_prop]
-theorem bitsReverse :
-    ComputableInPolyTime List.reverse encBits
-  encBits :=
-  .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReverse
-
 /-- Take a computed unary number of bits from a computed bit string. -/
 @[fun_prop]
 theorem bitsTakeWithInput {γ : Type}
@@ -933,16 +920,6 @@ theorem flatMapWithInput {α : Type}
   .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.flatMapWithInput α β γ encA encB encIn
       f list hlist.tidy hf.tidy)
 
-/-- Read an optional head in any list encoding, without an inhabitant of the element type. -/
-@[fun_prop]
-theorem head? {α : Type}
-    (enc : α ↪ List Bool)
-    {encL : List α ↪ List Bool}
-    [_inst3 : ListEncoding enc encL] :
-    ComputableInPolyTime List.head? encL
-  (encOption enc) :=
-  .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.head? α enc encL _inst3)
-
 /-- Read the head of any list encoding with a fixed fallback. -/
 @[fun_prop]
 theorem headD {α : Type}
@@ -965,27 +942,37 @@ theorem length_list {α : Type} (enc : α ↪ List Bool) :
 theorem length_bits :
     ComputableInPolyTime (fun (l : List Bool) => l.length)
   encBits encUnary :=
-  .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits
+  Internal.DecoderWords.unary_degree.computableInPolyTime
 
-/-- Map a function that also uses the original input. A single joint certificate in the input
-and list element makes the cost uniform across all elements. The list certificate is supplied
-first so that `fun_prop` can infer its element encoding before checking the body. -/
+/-- Count matches of a predicate that captures the original input. The count is in unary. -/
 @[fun_prop]
-theorem mapWithInput {α : Type}
-    {β : Type}
-    {γ : Type}
-    {encA : α ↪ List Bool}
-    {encB : β ↪ List Bool}
-    {encIn : γ ↪ List Bool}
-    {f : γ → α → β}
-    {list : γ → List α}
+theorem countPWithInput {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {test : γ → α → Bool} {list : γ → List α}
     (hlist : ComputableInPolyTime list encIn (encList encA))
-    (hf : ComputableInPolyTime (fun (p : γ × α) => f p.1 p.2)
-  (encPair encIn encA) encB) :
-    ComputableInPolyTime (fun (x : γ) => List.map (f x) (list x)) encIn
-  (encList encB) :=
-  .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapWithInput α β γ encA encB encIn f
-      list hlist.tidy hf.tidy)
+    (htest : ComputableInPolyTime (fun p : γ × α => test p.1 p.2)
+      (encPair encIn encA) encBool) :
+    ComputableInPolyTime (fun x => (list x).countP (test x)) encIn encUnary :=
+  .of_tidy (ComputableTidilyInPolyTime.countPWithInput hlist.tidy htest.tidy)
+
+/-- Read a computed framed list at a computed unary index with a fixed fallback, inferring the
+element encoding from the list. -/
+@[fun_prop]
+theorem listGetDWithInput {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {list : γ → List α} {index : γ → ℕ}
+    (hlist : ComputableInPolyTime list encIn (encList encA))
+    (hindex : ComputableInPolyTime index encIn encUnary) (fallback : α) :
+    ComputableInPolyTime (fun x => (list x).getD (index x) fallback) encIn encA :=
+  (listGetD fallback).comp (hlist.prod hindex)
+
+/-- Read a computed bit string at a computed unary index. Registered after `listGetDWithInput` so
+`fun_prop` tries raw bit-string lookup before framed-list lookup on `Bool`. -/
+@[fun_prop]
+theorem bitsGetDWithInput {γ : Type} {encIn : γ ↪ List Bool}
+    {list : γ → List Bool} {index : γ → ℕ}
+    (hlist : ComputableInPolyTime list encIn encBits)
+    (hindex : ComputableInPolyTime index encIn encUnary) (fallback : Bool) :
+    ComputableInPolyTime (fun x => (list x).getD (index x) fallback) encIn encBool :=
+  (listGetD fallback).comp (hlist.prod hindex)
 
 /-- Drop a computed unary number of bits from a computed raw word. Counts beyond the word
 length return the empty word, with no promise on the count or input. -/
@@ -1003,16 +990,6 @@ theorem length_bits_comp {α : Type} {input : α ↪ List Bool} {word : α → L
     (hword : ComputableInPolyTime word input encBits) :
     ComputableInPolyTime (fun a => (word a).length) input encUnary :=
   length_bits.comp hword
-
-/-- Enumerate `0, …, n - 1`, with the bound and the elements in unary. -/
-theorem range : ComputableInPolyTime List.range encUnary (encList encUnary) :=
-  .of_tidy ComputableTidilyInPolyTime.range
-
-/-- Enumerate `0, …, n a - 1` for a computed unary bound, fixing the intermediate encoding. -/
-theorem unary_range' {α : Type} {input : α ↪ List Bool} {n : α → ℕ}
-    (hn : ComputableInPolyTime n input encUnary) :
-    ComputableInPolyTime (fun a => List.range (n a)) input (encList encUnary) :=
-  range.comp hn
 
 end Turing.MultiTapeTM.ComputableInPolyTime
 

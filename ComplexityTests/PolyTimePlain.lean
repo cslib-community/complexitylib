@@ -284,4 +284,13 @@ info: 'Turing.MultiTapeTM.ComputableInTimeAndSpace.computableInPolyTime' depends
 #guard_msgs (whitespace := lax) in
 #print axioms ComputableInTimeAndSpace.computableInPolyTime
 
+-- A callback family need not choose an encoding convention; the outer certificate may fix it.
+example {α β γ : Type} {input : α ↪ List Bool} {middle : β ↪ List Bool}
+    {output : γ ↪ List Bool} (f : β → γ) (g : α → β)
+    (hf : ComputableInPolyTime f middle output)
+    (hg : ∀ encoding : β ↪ List Bool, ComputableInPolyTime g input encoding) :
+    ComputableInPolyTime (fun a => f (g a)) input output := by
+  fail_if_success (clear hf; fun_prop)
+  fun_prop
+
 end ComplexityTests.PolyTimePlain

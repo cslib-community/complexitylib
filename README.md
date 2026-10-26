@@ -22,6 +22,7 @@ mathematics. See [Contributing](CONTRIBUTING.md) to propose, implement, or revie
 | State P/NP membership or prove a problem NP-complete | [Checked plain examples](ComplexityTests/NPCompleteness.lean), then [Clique](Complexity/Computability/Complexity/Problems/Clique.lean) |
 | Construct circuits for polynomial-time function families | [Uniform circuit examples](ComplexityTests/UniformCircuits.lean) |
 | Write probabilistic programs or oracle reductions | [PPT examples](ComplexityTests/PPTTactic.lean), [oracle examples](ComplexityTests/OraclePPT.lean) |
+| Estimate frequencies in a stream | [Count-Min examples](ComplexityTests/CountMin.lean), then [fixed-query accuracy](Complexity/Algorithms/Streaming/CountMin/Probability.lean) |
 | Find a computational model or mathematical tool | [Search the API documentation](https://www.cslib.io/complexitylib/search.html), rebuilt nightly from `main`; [Complexity.lean](Complexity.lean) lists every module, and each documents its definitions, results, and references |
 | Contribute a result or improve an API | [Contributing](CONTRIBUTING.md) |
 
@@ -59,6 +60,8 @@ the selection is not an exhaustive API reference.
 * [Haken: pigeonhole formulas require long resolution proofs](abstracts/ComplexityAbstracts/ResolutionAbstract.lean): The pigeonhole principle has short CNF statements but requires exponentially many resolution lines.
 * [Communication: disjointness and inner product resist randomness](abstracts/ComplexityAbstracts/CommunicationAbstract.lean): Both problems require linearly many communicated bits even with shared randomness and bounded error.
 * [Sipser–Gács–Lautemann: BPP lies in the second polynomial level](abstracts/ComplexityAbstracts/SipserLautemannAbstract.lean): Bounded-error polynomial time admits both existential–universal and universal–existential polynomial descriptions.
+* [Ilango: Partial MCSP is hard under the Exponential Time Hypothesis](abstracts/ComplexityAbstracts/PartialMCSPAbstract.lean): Under ETH, deciding circuit size for partial Boolean functions cannot be done in time 2^o(m log m) = N^o(log log N).
+* [McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P from NP](abstracts/ComplexityAbstracts/MagnificationAbstract.lean): If NP has polynomial-size circuits, then MCSP on 2^n-bit truth tables has circuits of size 2^n poly(n + s(n)); hence barely superlinear MCSP lower bounds separate NP from P/poly and P from NP.
 
 ## Build and use
 

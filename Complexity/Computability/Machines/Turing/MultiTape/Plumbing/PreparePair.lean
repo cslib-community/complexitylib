@@ -66,8 +66,10 @@ theorem exists_prepare {α β : Type u} (enc₁ : α ↪ List Bool) (enc₂ : β
         (fun _ _ ws' emitted =>
           ws' = Fin.append (fun _ : Fin r => []) ![enc₁ p.1, enc₂ p.2] ∧ emitted = [])
         (c * ((enc p).length + 1)) (c * ((enc p).length + 1)) := by
-  obtain ⟨c₀, k, Q₀, _, m₀, h₀⟩ := PairEncoding.fst (enc₁ := enc₁) (enc₂ := enc₂) (enc := enc)
-  obtain ⟨c₁, l, Q₁, _, m₁, h₁⟩ := PairEncoding.snd (enc₁ := enc₁) (enc₂ := enc₂) (enc := enc)
+  obtain ⟨c₀, k, Q₀, _, m₀, h₀⟩ :=
+    Internal.NormalForm.linear (PairEncoding.fst (enc₁ := enc₁) (enc₂ := enc₂) (enc := enc))
+  obtain ⟨c₁, l, Q₁, _, m₁, h₁⟩ :=
+    Internal.NormalForm.linear (PairEncoding.snd (enc₁ := enc₁) (enc₂ := enc₂) (enc := enc))
   refine ⟨k + l, (Q₀ ⊕ RewindWorkState) ⊕ (Q₁ ⊕ RewindWorkState), inferInstance,
     (m₀.outputToWord.extendTapes (firstTapes k l)).seq
       (m₁.outputToWord.extendTapes (secondTapes k l)),
@@ -92,11 +94,9 @@ theorem exists_prepare {α β : Type u} (enc₁ : α ↪ List Bool) (enc₂ : β
       | 0 | 1 => simp [firstTapes, secondTapes, Fin.Embedding.snoc_last, Function.update_apply]
   · have hlen₀ := (h₀ p).length_output_le
     have hlen₁ := (h₁ p).length_output_le
-    dsimp only at hlen₀ hlen₁ ⊢
     nlinarith
   · have hlen₀ := (h₀ p).length_output_le
     have hlen₁ := (h₁ p).length_output_le
-    dsimp only at hlen₀ hlen₁ ⊢
     nlinarith [Nat.sub_le (k + l + 2) (k + 1), Nat.sub_le (k + l + 2) (l + 1)]
 
 end Turing.MultiTapeTM.PairEncoding

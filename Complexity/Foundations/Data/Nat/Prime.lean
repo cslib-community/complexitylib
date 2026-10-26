@@ -150,17 +150,12 @@ theorem four_pow_le_mul_prod_primesIoc (L : ℕ) :
   have hs : √(L : ℝ) ≤ Nat.sqrt L + 1 := by
     rw [Real.sqrt_le_left (by positivity)]
     exact_mod_cast (Nat.lt_succ_sqrt L).le.trans_eq (by rw [Nat.succ_eq_add_one]; ring)
-  have hlog0 : 0 ≤ Real.log (4 * L) := by
+  have hmul : √(L : ℝ) * Real.log (4 * L) ≤ (Nat.sqrt L + 1) * Real.log (4 * L + 1) := by
     rcases Nat.eq_zero_or_pos L with rfl | hL
     · simp
     · have : (1 : ℝ) ≤ L := by exact_mod_cast hL
-      exact Real.log_nonneg (by linarith)
-  have hlog : Real.log (4 * L) ≤ Real.log (4 * L + 1) := by
-    rcases Nat.eq_zero_or_pos L with rfl | hL
-    · simp
-    · exact Real.log_le_log (by positivity) (by linarith)
-  have hmul : √(L : ℝ) * Real.log (4 * L) ≤ (Nat.sqrt L + 1) * Real.log (4 * L + 1) :=
-    mul_le_mul hs hlog hlog0 (by positivity)
+      exact mul_le_mul hs (Real.log_le_log (by positivity) (by linarith))
+        (Real.log_nonneg (by linarith)) (by positivity)
   have hlog4 : Real.log 4 = 2 * Real.log 2 := by
     rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
     norm_num

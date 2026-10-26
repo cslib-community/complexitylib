@@ -146,13 +146,15 @@ private theorem hAcc : ComputableTidilyInSpace (fun y : Tuple × Bool => y.1.acc
 private theorem hTop : ComputableTidilyInSpace
     (fun y : Tuple × Bool => y.1.stack.headD dfr) encStepInT
     encFrame stepBudget :=
-  budget_comp_linear (of_inO (.of_linear (ListEncoding.headD (enc := encList encFrame) dfr)))
+  budget_comp_linear (of_inO (.of_linear (Internal.NormalForm.linear
+      (ListEncoding.headD (enc := encList encFrame) dfr))))
     stack_inSpace.tidy
 
 /-- The rest of the stack. -/
 theorem rest_inSpace : ComputableInSpace (fun y : Tuple × Bool => y.1.stack.tail) encStepInT
     (encList encFrame) stepBudget :=
-  .of_tidy (budget_comp_linear (of_inO (.of_linear (ListEncoding.tail encFrame)))
+  .of_tidy (budget_comp_linear (of_inO (.of_linear (Internal.NormalForm.linear
+      (ListEncoding.tail encFrame))))
     stack_inSpace.tidy)
 
 /-- A function of the finite fields of the top frame. -/
@@ -410,7 +412,8 @@ private theorem branch5_inSpace :
         (.call true ((y.1.stack.headD dfr).target + 1)) runCtl, []))
       encStepInT encStepOut stepBudget := by
   have hempty := budget_comp_linear
-    (of_inO (.of_linear (ListEncoding.isEmpty (enc₁ := encFrame) (enc := encList encFrame))))
+    (of_inO (.of_linear (Internal.NormalForm.linear
+      (ListEncoding.isEmpty (enc₁ := encFrame) (enc := encList encFrame)))))
       stack_inSpace.tidy
   have hG := budget_comp tableLength_inSpace.tidy ell_inSpace.tidy
     (.const_mul 4096 (ell_le_stepBudget.add
@@ -502,7 +505,8 @@ private theorem branch3_inSpace :
   have hlenEq := budget_comp_linear natEq (budget_prod (budget_comp length stack_inSpace.tidy
     (.const_mul 8 ((length_le stack_inSpace.tidy).add (.const 1 _)))) height_inSpace.tidy)
   have hempty := budget_comp_linear
-    (of_inO (.of_linear (ListEncoding.isEmpty (enc₁ := encFrame) (enc := encList encFrame))))
+    (of_inO (.of_linear (Internal.NormalForm.linear
+      (ListEncoding.isEmpty (enc₁ := encFrame) (enc := encList encFrame)))))
       stack_inSpace.tidy
   have hph (k : Fin 4) := hTopFinite (encB := encBool) fun g => decide (g.1 = k)
   have hR0 := scaleT_inSpace hRegs (hModeFinite (encB := encReg) fun m => m.target + 1)

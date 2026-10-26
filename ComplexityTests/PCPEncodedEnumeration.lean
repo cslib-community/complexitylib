@@ -76,7 +76,7 @@ example (g : Graph Bool) :
       131941395333120 * g.edges.length := by
   rw [Graph.length_edges_amplifyEnumerated]
   simp only [Graph.PowerLabel, Fintype.card_prod, Fintype.card_fun, Fintype.card_fin,
-    Graph.PreprocessLabel, Fintype.card_sum, Fintype.card_unique, Fintype.card_bool,
+    ConstraintGraph.PreprocessLabel, Fintype.card_sum, Fintype.card_unique, Fintype.card_bool,
     Graph.PowerAlphabet]
   ring
 

@@ -396,143 +396,150 @@ theorem walkEuclidean_eigenvalues_zero [Nonempty D] (hm0 : 0 < m) :
       G.isSymmetric_walkEuclidean.eigenvalues_antitone hm
         (show (⟨0, hm0⟩ : Fin m) ≤ i from Nat.zero_le i.1)
 
-/-- On at least two vertices and positive degree, the second largest eigenvalue of
-`G.walkEuclidean` counted with multiplicity is `G.secondEigenvalue`. -/
-theorem secondEigenvalue_eq_walkEuclidean_eigenvalues_one [Nonempty D] (hm1 : 1 < m) :
-    G.secondEigenvalue = G.isSymmetric_walkEuclidean.eigenvalues hm ⟨1, hm1⟩ := by
+/-- Any nonzero `u : EuclideanSpace ℝ V` with `𝔼 v, u.ofLp v = 0` and
+`μ * ‖u‖ ^ 2 ≤ ⟪u, G.walkEuclidean u⟫` satisfies `μ ≤ G.secondEigenvalue`. -/
+private theorem le_secondEigenvalue_of_mul_norm_sq_le_inner [Nonempty V]
+    {u : EuclideanSpace ℝ V} (hu_ne : u ≠ 0) (hu_exp : 𝔼 v, u.ofLp v = 0) {μ : ℝ}
+    (hu_quad : μ * ‖u‖ ^ 2 ≤ ⟪u, G.walkEuclidean u⟫) :
+    μ ≤ G.secondEigenvalue := by
+  set f : V → ℝ := u.ofLp
+  have hf_ne : f ≠ 0 := fun h ↦ hu_ne (WithLp.ofLp_injective 2 h)
+  obtain ⟨v₀, hv₀⟩ := Function.ne_iff.1 hf_ne
+  have hpos : 0 < 𝔼 v, f v ^ 2 :=
+    expect_pos' (fun _ _ ↦ sq_nonneg _) ⟨v₀, mem_univ v₀, sq_pos_iff.2 hv₀⟩
+  have hinner : ⟪u, G.walkEuclidean u⟫ = (Fintype.card V : ℝ) * 𝔼 v, f v * G.walk f v :=
+    (card_mul_expect_mul u (G.walkEuclidean u)).symm
+  have hnorm : ‖u‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, f v ^ 2 :=
+    (card_mul_expect_sq u).symm
+  rw [hinner, hnorm, mul_left_comm] at hu_quad
+  have hle₁ := le_of_mul_le_mul_left hu_quad (Nat.cast_pos.2 Fintype.card_pos)
+  have hle₂ := G.expect_mul_walk_le_secondEigenvalue_mul hu_exp
+  exact le_of_mul_le_mul_right (hle₁.trans hle₂) hpos
+
+/-- When `eigenvalues hm ⟨1, hm1⟩ < 1`, the top eigenvector of `G.walkEuclidean` spans the constant
+functions, so every `x : EuclideanSpace ℝ V` of mean zero has `0`-th coordinate `0` in the
+eigenvector basis. -/
+private theorem walkEuclidean_eigenvectorBasis_repr_zero_eq_zero [Nonempty V] [Nonempty D]
+    (hm1 : 1 < m) (hlt : G.isSymmetric_walkEuclidean.eigenvalues hm ⟨1, hm1⟩ < 1)
+    {x : EuclideanSpace ℝ V} (hf : 𝔼 v, x.ofLp v = 0) :
+    (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr x ⟨0, by omega⟩ = 0 := by
+  let i₀ : Fin m := ⟨0, by omega⟩
+  let i₁ : Fin m := ⟨1, hm1⟩
+  let oneVec : EuclideanSpace ℝ V := WithLp.toLp 2 (fun _ ↦ 1)
+  have hone_walk : G.walkEuclidean oneVec = oneVec :=
+    WithLp.ofLp_injective 2 (G.walk_const 1)
+  have hone_repr (i : Fin m) (hi : i ≠ i₀) :
+      (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr oneVec i = 0 := by
+    have hhi : i₁ ≤ i := Nat.one_le_iff_ne_zero.2 (Fin.val_ne_of_ne hi)
+    have hμi : G.isSymmetric_walkEuclidean.eigenvalues hm i < 1 :=
+      (G.isSymmetric_walkEuclidean.eigenvalues_antitone hm hhi).trans_lt hlt
+    have heq := G.isSymmetric_walkEuclidean.eigenvectorBasis_apply_self_apply hm oneVec i
+    simp only [hone_walk, RCLike.ofReal_real_eq_id, id_eq] at heq
+    nlinarith
+  have hone_ne : oneVec ≠ 0 := fun h ↦ by
+    obtain ⟨v₀⟩ := (inferInstance : Nonempty V)
+    simpa [oneVec] using congrFun (congrArg WithLp.ofLp h) v₀
+  have hone_i₀ : (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr oneVec i₀ ≠ 0 :=
+    fun h0 ↦ hone_ne <| (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr.injective <| by
+      ext i
+      rcases eq_or_ne i i₀ with rfl | hi
+      · simp [h0]
+      · simp [hone_repr i hi]
+  have hx_orth : ⟪oneVec, x⟫ = 0 := by
+    rw [← card_mul_expect_mul]
+    simp [oneVec, hf]
+  rw [← (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr.inner_map_map oneVec x,
+    EuclideanSpace.inner_eq_star_dotProduct, star_trivial, dotProduct,
+    Fintype.sum_eq_single i₀] at hx_orth
+  · exact (mul_eq_zero.1 hx_orth).resolve_right hone_i₀
+  · intro i hi
+    change (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr x i *
+      (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr oneVec i = 0
+    rw [hone_repr i hi, mul_zero]
+
+/-- On at least two vertices and positive degree, `G.secondEigenvalue` is at most the second
+eigenvalue of `G.walkEuclidean`. -/
+private theorem secondEigenvalue_le_walkEuclidean_eigenvalues_one [Nonempty D] (hm1 : 1 < m) :
+    G.secondEigenvalue ≤ G.isSymmetric_walkEuclidean.eigenvalues hm ⟨1, hm1⟩ := by
   have hm0 : 0 < m := by omega
-  have hcard : Fintype.card V = m := by
-    simpa [finrank_euclideanSpace] using hm
+  have hcard : Fintype.card V = m := by simpa [finrank_euclideanSpace] using hm
   have : Nontrivial V := Fintype.one_lt_card_iff_nontrivial.1 (by omega)
   let i₀ : Fin m := ⟨0, hm0⟩
   let i₁ : Fin m := ⟨1, hm1⟩
+  rcases (le_of_abs_le (G.abs_walkEuclidean_eigenvalues_le_one hm i₁)).eq_or_lt with h1 | hlt
+  · rw [h1]
+    exact G.secondEigenvalue_le_one
+  refine G.secondEigenvalue_le_iff.2 fun f hf ↦ ?_
+  let x : EuclideanSpace ℝ V := WithLp.toLp 2 f
+  have hx_i₀ : (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr x i₀ = 0 :=
+    G.walkEuclidean_eigenvectorBasis_repr_zero_eq_zero hm hm1 hlt hf
+  have hle : ⟪x, G.walkEuclidean x⟫ ≤
+      G.isSymmetric_walkEuclidean.eigenvalues hm i₁ * ‖x‖ ^ 2 := by
+    rw [inner_self_eq_sum_eigenvalues G.isSymmetric_walkEuclidean hm x,
+      norm_sq_eq_sum_eigenvectorBasis_repr G.isSymmetric_walkEuclidean hm x, mul_sum]
+    refine sum_le_sum fun i _ ↦ ?_
+    rcases eq_or_ne i i₀ with rfl | hi
+    · rw [hx_i₀]
+      simp
+    · have hhi : i₁ ≤ i := Nat.one_le_iff_ne_zero.2 (Fin.val_ne_of_ne hi)
+      exact mul_le_mul_of_nonneg_right
+        (G.isSymmetric_walkEuclidean.eigenvalues_antitone hm hhi) (sq_nonneg _)
+  have hinner : ⟪x, G.walkEuclidean x⟫ = (Fintype.card V : ℝ) * 𝔼 v, f v * G.walk f v :=
+    (card_mul_expect_mul x (G.walkEuclidean x)).symm
+  have hnorm : ‖x‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, f v ^ 2 :=
+    (card_mul_expect_sq x).symm
+  rw [hinner, hnorm, mul_left_comm] at hle
+  exact le_of_mul_le_mul_left hle (Nat.cast_pos.2 Fintype.card_pos)
+
+/-- On at least two vertices, the second eigenvalue of `G.walkEuclidean` is at most
+`G.secondEigenvalue`. -/
+private theorem walkEuclidean_eigenvalues_one_le_secondEigenvalue (hm1 : 1 < m) :
+    G.isSymmetric_walkEuclidean.eigenvalues hm ⟨1, hm1⟩ ≤ G.secondEigenvalue := by
+  have hcard : Fintype.card V = m := by simpa [finrank_euclideanSpace] using hm
+  have : Nontrivial V := Fintype.one_lt_card_iff_nontrivial.1 (by omega)
+  let i₀ : Fin m := ⟨0, by omega⟩
+  let i₁ : Fin m := ⟨1, hm1⟩
   have hi₀₁ : i₀ ≠ i₁ := Fin.ne_of_val_ne (by decide : (0 : ℕ) ≠ 1)
-  refine le_antisymm ?_ ?_
-  · rcases (le_of_abs_le (G.abs_walkEuclidean_eigenvalues_le_one hm i₁)).eq_or_lt with h1 | hlt
-    · rw [h1]
-      exact G.secondEigenvalue_le_one
-    let oneVec : EuclideanSpace ℝ V := WithLp.toLp 2 (fun _ ↦ 1)
-    have hone_walk : G.walkEuclidean oneVec = oneVec :=
-      WithLp.ofLp_injective 2 (G.walk_const 1)
-    have hone_repr (i : Fin m) (hi : i ≠ i₀) :
-        (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr oneVec i = 0 := by
-      have hhi : i₁ ≤ i := Nat.one_le_iff_ne_zero.2 (Fin.val_ne_of_ne hi)
-      have hμi : G.isSymmetric_walkEuclidean.eigenvalues hm i < 1 :=
-        (G.isSymmetric_walkEuclidean.eigenvalues_antitone hm hhi).trans_lt hlt
-      have heq := G.isSymmetric_walkEuclidean.eigenvectorBasis_apply_self_apply hm oneVec i
-      simp only [hone_walk, RCLike.ofReal_real_eq_id, id_eq] at heq
-      nlinarith
-    have hone_ne : oneVec ≠ 0 := fun h ↦ by
-      obtain ⟨v₀⟩ := (inferInstance : Nonempty V)
-      simpa [oneVec] using congrFun (congrArg WithLp.ofLp h) v₀
-    have hone_i₀ : (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr oneVec i₀ ≠ 0 :=
-      fun h0 ↦ hone_ne <| (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr.injective <| by
-        ext i
-        rcases eq_or_ne i i₀ with rfl | hi
-        · simp [h0]
-        · simp [hone_repr i hi]
-    refine G.secondEigenvalue_le_iff.2 fun f hf ↦ ?_
-    let x : EuclideanSpace ℝ V := WithLp.toLp 2 f
-    have hx_orth : ⟪oneVec, x⟫ = 0 := by
-      rw [← card_mul_expect_mul]
-      simp [oneVec, x, hf]
-    have hx_i₀ : (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr x i₀ = 0 := by
-      rw [← (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr.inner_map_map oneVec x,
-        EuclideanSpace.inner_eq_star_dotProduct, star_trivial, dotProduct,
-        Fintype.sum_eq_single i₀] at hx_orth
-      · exact (mul_eq_zero.1 hx_orth).resolve_right hone_i₀
-      · intro i hi
-        change (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr x i *
-          (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr oneVec i = 0
-        rw [hone_repr i hi, mul_zero]
-    have hle : ⟪x, G.walkEuclidean x⟫ ≤
-        G.isSymmetric_walkEuclidean.eigenvalues hm i₁ * ‖x‖ ^ 2 := by
-      rw [inner_self_eq_sum_eigenvalues G.isSymmetric_walkEuclidean hm x,
-        norm_sq_eq_sum_eigenvectorBasis_repr G.isSymmetric_walkEuclidean hm x, mul_sum]
-      refine sum_le_sum fun i _ ↦ ?_
-      rcases eq_or_ne i i₀ with rfl | hi
-      · rw [hx_i₀]
-        simp
-      · have hhi : i₁ ≤ i := Nat.one_le_iff_ne_zero.2 (Fin.val_ne_of_ne hi)
-        exact mul_le_mul_of_nonneg_right
-          (G.isSymmetric_walkEuclidean.eigenvalues_antitone hm hhi) (sq_nonneg _)
-    have hinner : ⟪x, G.walkEuclidean x⟫ = (Fintype.card V : ℝ) * 𝔼 v, f v * G.walk f v :=
-      (card_mul_expect_mul x (G.walkEuclidean x)).symm
-    have hnorm : ‖x‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, f v ^ 2 :=
-      (card_mul_expect_sq x).symm
-    rw [hinner, hnorm, mul_left_comm] at hle
-    exact le_of_mul_le_mul_left hle (Nat.cast_pos.2 Fintype.card_pos)
-  · set b := G.isSymmetric_walkEuclidean.eigenvectorBasis hm
-    set a : ℝ := 𝔼 v, (b i₁).ofLp v
-    set c : ℝ := 𝔼 v, (b i₀).ofLp v
-    rcases eq_or_ne a 0 with ha | ha
-    · set f : V → ℝ := (b i₁).ofLp
-      have hf_ne : f ≠ 0 := fun h ↦ b.toBasis.ne_zero i₁ (WithLp.ofLp_injective 2 h)
-      obtain ⟨v₀, hv₀⟩ := Function.ne_iff.1 hf_ne
-      have hpos : 0 < 𝔼 v, f v ^ 2 :=
-        expect_pos' (fun _ _ ↦ sq_nonneg _) ⟨v₀, mem_univ v₀, sq_pos_iff.2 hv₀⟩
-      have hwalk : G.walk f = G.isSymmetric_walkEuclidean.eigenvalues hm i₁ • f :=
-        congrArg WithLp.ofLp (G.isSymmetric_walkEuclidean.apply_eigenvectorBasis hm i₁)
-      have hmul : 𝔼 v, f v * G.walk f v =
-          G.isSymmetric_walkEuclidean.eigenvalues hm i₁ * 𝔼 v, f v ^ 2 := by
-        rw [hwalk, mul_expect]
-        exact expect_congr rfl fun v _ ↦ by
-          simp only [Pi.smul_apply, smul_eq_mul]
-          ring
-      have hle := G.expect_mul_walk_le_secondEigenvalue_mul ha
-      rw [hmul] at hle
-      exact le_of_mul_le_mul_right hle hpos
-    · let u : EuclideanSpace ℝ V := a • b i₀ - c • b i₁
-      have hu_exp : 𝔼 v, u.ofLp v = 0 := by
-        simp only [u, WithLp.ofLp_sub, WithLp.ofLp_smul, Pi.sub_apply,
-          Pi.smul_apply, smul_eq_mul, expect_sub_distrib, ← mul_expect]
-        change a * c - c * a = 0
-        ring
-      have hu_i₀ : (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr u i₀ = a := by
-        change (b.repr (a • b i₀ - c • b i₁)).ofLp i₀ = a
-        rw [map_sub, map_smul, map_smul, WithLp.ofLp_sub, WithLp.ofLp_smul, WithLp.ofLp_smul,
-          Pi.sub_apply, Pi.smul_apply, Pi.smul_apply, smul_eq_mul, smul_eq_mul,
-          b.repr_apply_apply, b.repr_apply_apply, real_inner_self_eq_norm_sq, b.orthonormal.1 i₀,
-          b.orthonormal.2 hi₀₁]
-        ring
-      have hu_other (i : Fin m) (hi0 : i ≠ i₀) (hi1 : i ≠ i₁) :
-          (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).repr u i = 0 := by
-        change (b.repr (a • b i₀ - c • b i₁)).ofLp i = 0
-        rw [map_sub, map_smul, map_smul, WithLp.ofLp_sub, WithLp.ofLp_smul, WithLp.ofLp_smul,
-          Pi.sub_apply, Pi.smul_apply, Pi.smul_apply, smul_eq_mul, smul_eq_mul,
-          b.repr_apply_apply, b.repr_apply_apply, b.orthonormal.2 hi0, b.orthonormal.2 hi1]
-        ring
-      have hu_ne : u ≠ 0 := fun h0 ↦ ha <| by
-        have h := hu_i₀
-        rw [h0, map_zero] at h
-        exact h.symm
-      have hu_quad :
-          G.isSymmetric_walkEuclidean.eigenvalues hm i₁ * ‖u‖ ^ 2 ≤ ⟪u, G.walkEuclidean u⟫ := by
-        rw [inner_self_eq_sum_eigenvalues G.isSymmetric_walkEuclidean hm u,
-          norm_sq_eq_sum_eigenvectorBasis_repr G.isSymmetric_walkEuclidean hm u, mul_sum]
-        refine sum_le_sum fun i _ ↦ ?_
-        rcases eq_or_ne i i₀ with rfl | hi0
-        · exact mul_le_mul_of_nonneg_right
-            (G.isSymmetric_walkEuclidean.eigenvalues_antitone hm
-              (show i₀ ≤ i₁ from Nat.zero_le _))
-            (sq_nonneg _)
-        rcases eq_or_ne i i₁ with rfl | hi1
-        · exact le_rfl
-        · rw [hu_other i hi0 hi1]
-          simp
-      set f : V → ℝ := u.ofLp
-      have hf_ne : f ≠ 0 := fun h ↦ hu_ne (WithLp.ofLp_injective 2 h)
-      obtain ⟨v₀, hv₀⟩ := Function.ne_iff.1 hf_ne
-      have hpos : 0 < 𝔼 v, f v ^ 2 :=
-        expect_pos' (fun _ _ ↦ sq_nonneg _) ⟨v₀, mem_univ v₀, sq_pos_iff.2 hv₀⟩
-      have hinner : ⟪u, G.walkEuclidean u⟫ = (Fintype.card V : ℝ) * 𝔼 v, f v * G.walk f v :=
-        (card_mul_expect_mul u (G.walkEuclidean u)).symm
-      have hnorm : ‖u‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, f v ^ 2 :=
-        (card_mul_expect_sq u).symm
-      rw [hinner, hnorm, mul_left_comm] at hu_quad
-      have hle₁ := le_of_mul_le_mul_left hu_quad (Nat.cast_pos.2 Fintype.card_pos)
-      have hle₂ := G.expect_mul_walk_le_secondEigenvalue_mul hu_exp
-      exact le_of_mul_le_mul_right (hle₁.trans hle₂) hpos
+  let b := G.isSymmetric_walkEuclidean.eigenvectorBasis hm
+  let a : ℝ := 𝔼 v, (b i₁).ofLp v
+  let c : ℝ := 𝔼 v, (b i₀).ofLp v
+  rcases eq_or_ne a 0 with ha | ha
+  · refine G.le_secondEigenvalue_of_mul_norm_sq_le_inner (u := b i₁) (b.toBasis.ne_zero i₁) ha ?_
+    rw [G.isSymmetric_walkEuclidean.apply_eigenvectorBasis hm i₁, real_inner_smul_right,
+      real_inner_self_eq_norm_sq]
+    exact le_rfl
+  · let u : EuclideanSpace ℝ V := a • b i₀ - c • b i₁
+    have hu_exp : 𝔼 v, u.ofLp v = 0 := by
+      simp only [u, WithLp.ofLp_sub, WithLp.ofLp_smul, Pi.sub_apply,
+        Pi.smul_apply, smul_eq_mul, expect_sub_distrib, ← mul_expect]
+      ring
+    have hu_repr (i : Fin m) : (b.repr u).ofLp i = a * ⟪b i, b i₀⟫ - c * ⟪b i, b i₁⟫ := by
+      rw [map_sub, map_smul, map_smul, WithLp.ofLp_sub, WithLp.ofLp_smul, WithLp.ofLp_smul,
+        Pi.sub_apply, Pi.smul_apply, Pi.smul_apply, smul_eq_mul, smul_eq_mul,
+        b.repr_apply_apply, b.repr_apply_apply]
+    have hu_i₀ : (b.repr u).ofLp i₀ = a := by
+      rw [hu_repr, real_inner_self_eq_norm_sq, b.orthonormal.1 i₀, b.orthonormal.2 hi₀₁]
+      ring
+    have hu_ne : u ≠ 0 := fun h0 ↦ ha (by simpa [h0] using hu_i₀.symm)
+    refine G.le_secondEigenvalue_of_mul_norm_sq_le_inner hu_ne hu_exp ?_
+    rw [inner_self_eq_sum_eigenvalues G.isSymmetric_walkEuclidean hm u,
+      norm_sq_eq_sum_eigenvectorBasis_repr G.isSymmetric_walkEuclidean hm u, mul_sum]
+    refine sum_le_sum fun i _ ↦ ?_
+    rcases eq_or_ne i i₀ with rfl | hi0
+    · exact mul_le_mul_of_nonneg_right
+        (G.isSymmetric_walkEuclidean.eigenvalues_antitone hm (show i₀ ≤ i₁ from Nat.zero_le _))
+        (sq_nonneg _)
+    rcases eq_or_ne i i₁ with rfl | hi1
+    · exact le_rfl
+    · rw [hu_repr i, b.orthonormal.2 hi0, b.orthonormal.2 hi1]
+      simp
+
+/-- On at least two vertices and positive degree, the second largest eigenvalue of
+`G.walkEuclidean` counted with multiplicity is `G.secondEigenvalue`. -/
+theorem secondEigenvalue_eq_walkEuclidean_eigenvalues_one [Nonempty D] (hm1 : 1 < m) :
+    G.secondEigenvalue = G.isSymmetric_walkEuclidean.eigenvalues hm ⟨1, hm1⟩ :=
+  le_antisymm (G.secondEigenvalue_le_walkEuclidean_eigenvalues_one hm hm1)
+    (G.walkEuclidean_eigenvalues_one_le_secondEigenvalue hm hm1)
 
 end FullSpectrum
 

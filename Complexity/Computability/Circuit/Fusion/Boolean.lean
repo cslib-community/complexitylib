@@ -21,7 +21,9 @@ Supplied functions are free in `ecomplexityFrom`. In particular, supplying negat
 does not charge their construction. The circuit itself has only constants, AND and OR gates.
 Circuits with internal NOT gates are handled in
 `Complexity/Computability/Circuit/Fusion/DeMorgan.lean`, through the dual-rail
-translation, at the cost of a factor two in size.
+translation. The translated circuit has twice as many total gates and exactly one AND gate per
+original binary gate, so the pair-cover complexity bounds the original binary-gate cost and its
+ordinary size.
 
 ## Main results
 

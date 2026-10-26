@@ -41,14 +41,14 @@ a certificate of scalar primitives, not of memory, complete RAM steps or runs.
 ## References
 
 Uses Christian Reitwiessner's binary natural encodings and native machine arithmetic through the
-library's polynomial-time calculus.
+library's plain polynomial-time calculus.
 -/
 
 @[expose] public section
 
 namespace Cslib.GenericRAM.BoundedNat
 
-open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableTidilyInPolyTime
+open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Addition and strict comparison with an exclusive bound on values, addresses and labels. -/
 abbrev model : Model where
@@ -75,8 +75,8 @@ def encoding : Model.Encoding model := ⟨encNat, encNat, encNat⟩
 /-- A literal is checked at every runtime bound, including zero. -/
 @[program_certificate]
 theorem constant_polyTime (c : ℕ) :
-    ComputableTidilyInPolyTime (model.checkedConstant c) encNat (encOption encNat) := by
-  change ComputableTidilyInPolyTime
+    ComputableInPolyTime (model.checkedConstant c) encNat (encOption encNat) := by
+  change ComputableInPolyTime
     (fun k => if decide (c < k) then some c else none) _ _
   simpa only [decide_eq_true_eq, Function.comp_def] using
     (binary_lt.comp ((const c).prod (of_eq (encIn := encNat) fun _ => rfl))).ite_decide
@@ -85,12 +85,12 @@ theorem constant_polyTime (c : ℕ) :
 /-- Addition checks its result before accepting it. -/
 @[program_certificate]
 theorem operation_polyTime (op : model.operations.Op) :
-    ComputableTidilyInPolyTime (model.checkedOp op)
+    ComputableInPolyTime (model.checkedOp op)
       (encPair encNat (encPi encNat)) (encOption encNat) := by
   have hx := (pi_apply encNat (0 : Fin 2)).comp (snd encNat (encPi encNat))
   have hy := (pi_apply encNat (1 : Fin 2)).comp (snd encNat (encPi encNat))
   have hadd := binary_add.comp (hx.prod hy)
-  change ComputableTidilyInPolyTime
+  change ComputableInPolyTime
     (fun p : ℕ × (Fin 2 → ℕ) => if decide (p.2 0 + p.2 1 < p.1)
       then some (p.2 0 + p.2 1) else none)
     (encPair encNat (encPi encNat (Index := Fin 2))) (encOption encNat)
@@ -100,7 +100,7 @@ theorem operation_polyTime (op : model.operations.Op) :
 
 /-- Tests distinguish a false result from rejection of either invalid operand. -/
 theorem test_polyTime (t : model.tests.Op) :
-    ComputableTidilyInPolyTime (fun p => model.evalTest p.1 t p.2)
+    ComputableInPolyTime (fun p => model.evalTest p.1 t p.2)
       (encPair encNat (encPi encNat)) (encOption encBool) := by
   have hx := (pi_apply encNat (0 : Fin 2)).comp (snd encNat (encPi encNat))
   have hy := (pi_apply encNat (1 : Fin 2)).comp (snd encNat (encPi encNat))
@@ -111,20 +111,20 @@ theorem test_polyTime (t : model.tests.Op) :
 
 /-- Address extraction checks the runtime bound. -/
 theorem address_polyTime :
-    ComputableTidilyInPolyTime (fun p => model.address p.1 p.2)
+    ComputableInPolyTime (fun p => model.address p.1 p.2)
       (encPair encNat encNat) (encOption encNat) :=
   (binary_lt.comp ((snd encNat encNat).prod (fst encNat encNat))).ite_decide
     ((optionSome encNat).comp (snd encNat encNat)) (const none)
 
 /-- Existing values are checked independently of newly produced values. -/
 theorem validMove_polyTime :
-    ComputableTidilyInPolyTime (fun p => model.validMove p.1 p.2)
+    ComputableInPolyTime (fun p => model.validMove p.1 p.2)
       (encPair encNat encNat) encBool :=
   binary_lt.comp ((snd encNat encNat).prod (fst encNat encNat))
 
 /-- Both current and continuing control labels use this checked predicate. -/
 theorem validPC_polyTime :
-    ComputableTidilyInPolyTime (fun p => model.validPC p.1 p.2)
+    ComputableInPolyTime (fun p => model.validPC p.1 p.2)
       (encPair encNat encNat) encBool :=
   binary_lt.comp ((snd encNat encNat).prod (fst encNat encNat))
 

@@ -4,182 +4,134 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.MCSP.NP
-import Complexity.Computability.Complexity.Problems.CircuitSAT
-import Complexity.Computability.Complexity.Problems.CircuitValue
+import Complexity.Computability.Complexity.Classes.NP.SelfReduction
+import Complexity.Computability.Complexity.Classes.PH.KarpLipton
+import Complexity.Foundations.Data.BitString.Enumeration
 
 /-!
-# Tests for circuits as data
+# Tests for the SAT self-reduction and the Karp–Lipton theorem
 
-Concrete codes, decoding boundaries, evaluation, certificates, the circuit value problem, circuit
-satisfiability, the circuit of a formula and MCSP, with axiom checks for the headline results.
+The self-reduction on concrete formulas with a brute-force decision procedure, which satisfies the
+hypothesis of `SAT.verifier_search`; and advice strings for a concrete family of circuits.
 -/
 
 namespace Cslib.Complexity.Tests.KarpLipton
 
-open Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Turing.MultiTapeTM
+open Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
-/-! ### Codes and decoding -/
+/-! ### The self-reduction -/
 
-/-- The circuit `x₀ ∧ ¬x₁` on two inputs. -/
-def andNot : Circuit signature 2 1 :=
-  ⟨(Program.empty.gate ⟨Op.not, ![Wire.input 1]⟩).gate ⟨Op.and, ![Wire.input 0, Wire.gate 0]⟩,
-    fun _ => Wire.gate 1⟩
+/-- A brute-force decision procedure for `SAT`: try every certificate with one bit for each literal
+occurrence. -/
+def bruteSAT (ψ : CNF ℕ) : Bool :=
+  (BitString.enumList ψ.vars.length).any fun w => SAT.verifier (ψ, w)
 
-example : andNot.code = ([(.not, [1]), (.and, [0, 2])], [3]) := by decide
+/-- The brute-force procedure decides `SAT`, so it meets the hypothesis of
+`SAT.verifier_search` at every length. -/
+theorem bruteSAT_iff (ψ : CNF ℕ) : bruteSAT ψ = true ↔ ψ ∈ SAT := by
+  rw [bruteSAT, List.any_eq_true]
+  constructor
+  · rintro ⟨w, -, hw⟩
+    exact ⟨_, hw⟩
+  · rintro ⟨τ, hτ⟩
+    refine ⟨ψ.vars.map τ, BitString.mem_enumList.2 (by simp), ?_⟩
+    refine (CNF.eval_congr fun v hv => ?_).trans hτ
+    have hlt : ψ.vars.idxOf v < ψ.vars.length := List.idxOf_lt_length_iff.2 hv
+    rw [SAT.assignment, List.getD_eq_getElem _ _ (by simpa using hlt), List.getElem_map,
+      List.getElem_idxOf hlt]
 
--- Decoding accepts exactly the codes of circuits.
-example : (Circuit.ofCode 2 1 andNot.code : Option (Circuit signature 2 1)) = some andNot :=
-  Circuit.ofCode_code andNot
+/-- `(x₀ ∨ x₁) ∧ ¬x₀`, with literal occurrences `x₀, x₁, x₀`. -/
+def φ₁ : CNF ℕ := [[(0, true), (1, true)], [(0, false)]]
 
--- A gate reading itself, a wire beyond the circuit, the wrong arity, or a missing output
--- is rejected.
-example : (Circuit.ofCode 2 1 ([(.not, [2])], [2]) : Option (Circuit signature 2 1)) = none := by
+-- `x₀` is fixed to false, then `x₁` to true; the second occurrence of `x₀` repeats its value.
+example : SAT.selfReduce bruteSAT φ₁ = [(0, false), (1, true), (0, false)] := by decide
+example : SAT.search bruteSAT φ₁ = [false, true, false] := by decide
+example : SAT.verifier (φ₁, SAT.search bruteSAT φ₁) = true := by decide
+
+example : SAT.verifier (φ₁, SAT.search bruteSAT φ₁) = true :=
+  SAT.verifier_search (fun ψ _ => bruteSAT_iff ψ) ⟨fun v => v == 1, by decide⟩
+
+/-- `x₀ ∧ ¬x₀`. -/
+def φ₂ : CNF ℕ := [[(0, true)], [(0, false)]]
+
+-- On an unsatisfiable formula, no certificate is accepted.
+example : SAT.verifier (φ₂, SAT.search bruteSAT φ₂) = false := by decide
+
+-- With wrong answers, the self-reduction can miss a satisfying assignment.
+example : SAT.search (fun _ => true) φ₁ = [true, true, true] := by decide
+example : SAT.verifier (φ₁, SAT.search (fun _ => true) φ₁) = false := by decide
+
+example : SAT.queryBound 1 = 39 := rfl
+
+/-! ### Advice strings -/
+
+/-- A family of circuits for the first input bit, `false` on the empty input. -/
+def firstBit : (m : ℕ) → Circuit signature m 1
+  | 0 => ⟨Program.empty.gate ⟨Op.const false, ![]⟩, fun _ => Wire.gate 0⟩
+  | _ + 1 => ⟨Program.empty.gate ⟨Op.or, ![Wire.input 0, Wire.input 0]⟩, fun _ => Wire.gate 0⟩
+
+theorem size_firstBit (m : ℕ) : (firstBit m).size ≤ 1 := by
+  cases m <;> rfl
+
+example : (familyAdvice 3 1 firstBit).length = 4 * certLength 3 1 :=
+  length_familyAdvice fun m _ => size_firstBit m
+
+example : evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [] = false := by decide
+example : evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [true, false] = true := by
   decide
-example : (Circuit.ofCode 2 1 ([(.not, [1])], [3]) : Option (Circuit signature 2 1)) = none := by
-  decide
-example : (Circuit.ofCode 2 1 ([(.not, [0, 1])], [2]) : Option (Circuit signature 2 1)) = none := by
-  decide
-example : (Circuit.ofCode 2 1 ([(.not, [1])], []) : Option (Circuit signature 2 1)) = none := by
-  decide
+example : evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [false, true, true] = false :=
+  by decide
 
-example : Program.IsCodeFrom signature 2 0 andNot.code.1 := by decide
-example : ¬Program.IsCodeFrom signature 2 0 [(Op.and, [0, 3])] := by decide
+example (x : List Bool) (hx : x.length ≤ 3) :
+    evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) x =
+      (firstBit x.length).eval interpretation (fun i => x[i]) 0 :=
+  evalAdvice_familyAdvice (fun m _ => size_firstBit m) hx
 
--- The encoding writes the number of inputs in unary.
-example : (encCircuit 1 ⟨2, andNot⟩).take 5 = [true, true, true, true, false] := by decide
+-- Beyond the listed lengths the advice string is empty: it reads as no gates and output wire `0`,
+-- the first input.
+example : evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [true, true, true, true] =
+    true := by decide
 
-/-! ### Evaluation -/
+/-! ### Nonuniform quantifier elimination and `PH ⊆ P/poly` -/
 
-example : evalCode interpretation false [true, false] andNot.code.1 =
-    [true, false, true, true] := by decide
+/-- The language of non-empty bit strings whose first bit is `true`, computed by the 1-gate family
+`firstBit`. -/
+def firstBitLanguage : Language Bool :=
+  Language.ofSlices fun m x => (firstBit m).eval interpretation x 0
 
-example : andNot.eval interpretation ![true, false] 0 = true := by decide
-example : andNot.eval interpretation ![true, true] 0 = false := by decide
+theorem firstBitLanguage_mem_PPoly : firstBitLanguage ∈ PPoly :=
+  mem_PPoly_iff_exists_mem_SIZE.2 ⟨1, fun m =>
+    (complexity_le_of_computes (firstBit m)
+      (Circuit.computes_single_iff.2 fun _ =>
+        by rw [firstBitLanguage, Language.slice_ofSlices])).trans
+      (by simpa using (size_firstBit m).trans (Nat.le_add_left 1 m))⟩
 
--- Missing arguments and wires not yet computed read the default.
-example : evalCode interpretation false [true] [(.and, [0]), (.or, [5, 0])] =
-    [true, false, true] := by decide
-example : evalCode interpretation true [false] [(.and, [7, 7])] = [false, true] := by decide
+-- Reversing a bit string reduces "last bit is true" to `firstBitLanguage` in polynomial time,
+-- witnessing `PolyTimeReducible.mem_PPolyOn` on a concrete reduction without open hypotheses.
+example : {x : List Bool | x.reverse ∈ firstBitLanguage} ∈ PPolyOn encBits := by
+  have hred : PolyTimeReducible encBits encBits
+      {x : List Bool | x.reverse ∈ firstBitLanguage} (firstBitLanguage : Set (List Bool)) :=
+    ⟨List.reverse, ComputableInPolyTime.bitsReverse, fun _ => Iff.rfl⟩
+  exact hred.mem_PPolyOn (mem_PPolyOn_encBits_iff.2 firstBitLanguage_mem_PPoly)
 
-/-! ### Certificates -/
+example (hNP : NP encBits ⊆ PPolyOn encBits)
+    (k : ℕ) {A : Language Bool} (hA : (A : Set (List Bool)) ∈ SigmaP k encBits) :
+    A ∈ PPoly :=
+  mem_PPolyOn_encBits_iff.1 (SigmaP_subset_PPolyOn_of_NP_subset_PPoly hNP k hA)
 
-example : readCertificate 2 3 (certificate 2 3 andNot.code.1 3 ++ [true, true]) =
-    (andNot.code.1, 3) :=
-  readCertificate_certificate_append (by decide) (by decide) (by decide) _
+example (hNP : NP encBits ⊆ PPolyOn encBits)
+    (k : ℕ) {A : Language Bool} (hA : (A : Set (List Bool)) ∈ PiP k encBits) :
+    A ∈ PPoly :=
+  mem_PPolyOn_encBits_iff.1 (PiP_subset_PPolyOn_of_NP_subset_PPoly hNP k hA)
 
-example : (certificate 2 3 andNot.code.1 3).length = certLength 2 3 := by decide
+example (hNP : NP encBits ⊆ PPolyOn encBits)
+    {A : Language Bool} (hA : (A : Set (List Bool)) ∈ PH encBits) :
+    A ∈ PPoly :=
+  mem_PPolyOn_encBits_iff.1 (PH_subset_PPolyOn_of_NP_subset_PPoly hNP hA)
 
--- Every word reads as at most `s` gates, here none.
-example : readCertificate 2 0 [true, true, true] = ([], 2) := by decide
-
-/-! ### The circuit value problem -/
-
-example : (⟨2, andNot, ![true, false]⟩ : Σ n, Circuit signature n 1 × BitString n) ∈
-    CircuitValue :=
-  mem_CircuitValue.2 (by decide)
-example : (⟨2, andNot, ![false, false]⟩ : Σ n, Circuit signature n 1 × BitString n) ∉
-    CircuitValue :=
-  fun h => absurd (mem_CircuitValue.1 h) (by decide)
-
-/-! ### Circuit satisfiability -/
-
-example : (⟨2, andNot⟩ : Σ n, Circuit signature n 1) ∈ CircuitSAT := ⟨![true, false], by decide⟩
-
-/-- The unsatisfiable circuit `x₀ ∧ ¬x₀`. -/
-def contradiction : Circuit signature 1 1 :=
-  ⟨(Program.empty.gate ⟨Op.not, ![Wire.input 0]⟩).gate ⟨Op.and, ![Wire.input 0, Wire.gate 0]⟩,
-    fun _ => Wire.gate 1⟩
-
-example : (⟨1, contradiction⟩ : Σ n, Circuit signature n 1) ∉ CircuitSAT := by
-  rintro ⟨x, hx⟩
-  have : ∀ y : BitString 1, contradiction.eval interpretation y 0 = false := by decide
-  exact absurd hx (by rw [this x]; decide)
-
--- A circuit with no inputs is satisfiable exactly when it outputs true.
-example : (⟨0, ⟨Program.empty.gate ⟨Op.const true, ![]⟩, fun _ => Wire.gate 0⟩⟩ :
-    Σ n, Circuit signature n 1) ∈ CircuitSAT := ⟨![], rfl⟩
-
-/-! ### The circuit of a formula -/
-
-open Cslib.Logic.PL in
-/-- `(x₃ ∨ ¬x₇) ∧ x₇`, with arbitrary variable numbers. -/
-def φ : CNF ℕ := [[(3, true), (7, false)], [(7, true)]]
-
-example : (SAT.toCircuit φ).1 = 3 := rfl
-example : (SAT.circuitGates φ).length = 18 := by decide
-
--- The inputs are the literal occurrences; `x₇` is read at its first occurrence, input `1`.
-example : (SAT.toCircuit φ).2.eval interpretation
-    (fun i => [true, true, false].getD i false) 0 = true := by
-  rw [SAT.eval_toCircuit]
-  decide
-example : (SAT.toCircuit φ).2.eval interpretation
-    (fun i => [false, true, true].getD i false) 0 = false := by
-  rw [SAT.eval_toCircuit]
-  decide
-
--- The empty formula is true and the empty clause false.
-example : (SAT.toCircuit []).2.eval interpretation (fun _ => false) 0 = true := by
-  rw [SAT.eval_toCircuit]
-  rfl
-example : (SAT.toCircuit [[]]).2.eval interpretation (fun _ => false) 0 = false := by
-  rw [SAT.eval_toCircuit]
-  rfl
-
-/-! ### MCSP -/
-
--- The identity function on one input needs no gate, and the verifier accepts the certificate
--- of the zero-gate circuit at threshold `0`.
-example : MCSP.verifier (⟨1, ![false, true], 0⟩, certificate 1 0 [] 0) = true := by decide
-
--- The zero-gate circuit does not compute negation, and the one-gate circuit does.
-example : MCSP.verifier (⟨1, ![true, false], 0⟩, certificate 1 0 [] 0) = false := by decide
-example : MCSP.verifier (⟨1, ![true, false], 1⟩, certificate 1 1 [(.not, [0])] 1) = true := by
-  decide
-
--- A certificate that is not a circuit is rejected: the gate reads itself.
-example : MCSP.verifier (⟨1, ![true, false], 1⟩, certificate 1 1 [(.not, [1])] 1) = false := by
-  decide
-
-example : (⟨1, ![false, true], 0⟩ : MCSP.Instance) ∈ MCSP :=
-  MCSP.mem_of_verifier_eq_true (w := certificate 1 0 [] 0) (by decide)
-
-example : (⟨1, ![true, false], 1⟩ : MCSP.Instance) ∈ MCSP :=
-  MCSP.mem_of_verifier_eq_true (w := certificate 1 1 [(.not, [0])] 1) (by decide)
-
-example : (⟨1, ![true, false], 0⟩ : MCSP.Instance) ∉ MCSP := by
-  intro hx
-  obtain ⟨_ | ⟨b, _ | _⟩, hu, hV⟩ := MCSP.exists_verifier_append hx
-  · revert hu; decide
-  · have := hV []; revert this; cases b <;> decide
-  · simp [certLength, MCSP.budget] at hu
-
-example : [false, true] ∈ (GapMCSP (fun _ => 0) (fun _ => 0) fun _ => le_rfl).yes :=
-  (GapMCSP.ofFn_mem_yesSet_iff_mem_MCSP (n := 1) (T := ![false, true])).mpr
-    (MCSP.mem_of_verifier_eq_true (x := ⟨1, ![false, true], 0⟩) (w := certificate 1 0 [] 0)
-      (by decide))
-
-example : [true, false] ∈ (GapMCSP (fun _ => 0) (fun _ => 0) fun _ => le_rfl).no := by
-  refine (GapMCSP.ofFn_mem_noSet_iff_notMem_MCSP (n := 1) (T := ![true, false])).mpr ?_
-  intro hx
-  obtain ⟨_ | ⟨b, _ | _⟩, hu, hV⟩ := MCSP.exists_verifier_append hx
-  · revert hu; decide
-  · have := hV []; revert this; cases b <;> decide
-  · simp [certLength, MCSP.budget] at hu
-
-/-! ### Axioms -/
-
-/--
-info: 'Cslib.Circuits.Circuit.ofCode_code' depends on axioms: [propext, Quot.sound]
--/
-#guard_msgs in
-#print axioms Cslib.Circuits.Circuit.ofCode_code
-
-/--
-info: 'Cslib.Circuits.Circuit.code_of_ofCode_eq_some' depends on axioms: [propext, Quot.sound]
--/
-#guard_msgs in
-#print axioms Cslib.Circuits.Circuit.code_of_ofCode_eq_some
+example (hSAT : SAT ∈ PPolyOn encCNF)
+    {α : Type} {enc : α ↪ List Bool} (k : ℕ) {A : Set α} (hA : A ∈ SigmaP k enc) :
+    A ∈ PPolyOn enc :=
+  SigmaP_subset_PPolyOn_of_NP_subset_PPoly (NP_subset_PPolyOn_iff_SAT.2 hSAT) k hA
 
 end Cslib.Complexity.Tests.KarpLipton

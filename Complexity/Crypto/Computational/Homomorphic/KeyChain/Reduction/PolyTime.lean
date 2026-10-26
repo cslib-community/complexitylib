@@ -56,17 +56,22 @@ include hkeyGen in
 @[fun_prop]
 theorem isPPTOn_chooseLinkAt {n beforeCount afterCount bitIndex : α → ℕ}
     {challengePk : α → List Bool}
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hbefore : ComputableTidilyInPolyTime beforeCount input encUnary)
-    (hafter : ComputableTidilyInPolyTime afterCount input encUnary)
-    (hindex : ComputableTidilyInPolyTime bitIndex input encUnary)
-    (hpk : ComputableTidilyInPolyTime challengePk input encBits) :
+    (hn : ComputableInPolyTime n input encUnary)
+    (hbefore : ComputableInPolyTime beforeCount input encUnary)
+    (hafter : ComputableInPolyTime afterCount input encUnary)
+    (hindex : ComputableInPolyTime bitIndex input encUnary)
+    (hpk : ComputableInPolyTime challengePk input encBits) :
     IsPPTOn input (encPair (encPair encBool encBool) encBits)
       (fun a => E.chooseLinkAt (n a) (beforeCount a) (afterCount a) (bitIndex a)
         (challengePk a)) := by
+  have hn := hn.tidy
+  have hbefore := hbefore.tidy
+  have hafter := hafter.tidy
+  have hindex := hindex.tidy
+  have hpk := hpk.tidy
   have hkey := hkeyGen.preprocess (.of_tidy hn)
-  have hfront := hkey.replicate hbefore
-  have hback := hkey.replicate hafter
+  have hfront := hkey.replicate (.of_tidy hbefore)
+  have hback := hkey.replicate (.of_tidy hafter)
   unfold chooseLinkAt
   apply hfront.bind_with
   apply (hkey.preprocess (ComputableInPolyTime.fst _ _)).bind_with
@@ -91,12 +96,15 @@ include hencrypt htest in
 /-- The guessing stage is native strict PPT on every saved string, including malformed ones. -/
 @[fun_prop]
 theorem isPPTOn_guessLink {n : α → ℕ} {state challengeCiphertext : α → List Bool}
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hstate : ComputableTidilyInPolyTime state input encBits)
-    (hchallenge : ComputableTidilyInPolyTime challengeCiphertext input encBits) :
+    (hn : ComputableInPolyTime n input encUnary)
+    (hstate : ComputableInPolyTime state input encBits)
+    (hchallenge : ComputableInPolyTime challengeCiphertext input encBits) :
     IsPPTOn input encBool
       (fun a => E.guessLink test (n a) (state a) (challengeCiphertext a)) := by
-  have hcontext := linkStateDecoder.computableTidilyInPolyTime.comp hstate
+  have hn := hn.tidy
+  have hstate := hstate.tidy
+  have hchallenge := hchallenge.tidy
+  have hcontext := linkStateDecoder.computableInPolyTime.tidy.comp hstate
   dsimp only [encLinkState] at hcontext
   have hbefore := hcontext.snd'.fst'
   have hpredecessor := hcontext.snd'.snd'.fst'
@@ -105,8 +113,9 @@ theorem isPPTOn_guessLink {n : α → ℕ} {state challengeCiphertext : α → L
   have hindex := hcontext.snd'.snd'.snd'.snd'.snd'
   have htarget := hpk.prod (ComputableTidilyInPolyTime.bitsReplicate false |>.comp
     (ComputableTidilyInPolyTime.length_bits.comp hpredecessor.snd'))
-  have hlinks := isPPTOn_spliceEncryptedKeyLink hencrypt hn hbefore hpredecessor htarget
-    hafter hindex hchallenge
+  have hlinks := isPPTOn_spliceEncryptedKeyLink hencrypt (.of_tidy hn) (.of_tidy hbefore)
+    (.of_tidy hpredecessor) (.of_tidy htarget)
+    (.of_tidy hafter) (.of_tidy hindex) (.of_tidy hchallenge)
   have hpublic : ComputableTidilyInPolyTime
       (fun a => ((linkStateDecoder.decode (state a)).2.1 ++
         (linkStateDecoder.decode (state a)).2.2.1 ::
@@ -135,9 +144,9 @@ include hkeyGen hencrypt htest
 
 /-- Efficient unary index families give one admissible chosen-message adversary. -/
 theorem isPPT_linkAdversaryAt {beforeCount afterCount bitIndex : ℕ → ℕ}
-    (hbefore : ComputableTidilyInPolyTime beforeCount encUnary encUnary)
-    (hafter : ComputableTidilyInPolyTime afterCount encUnary encUnary)
-    (hindex : ComputableTidilyInPolyTime bitIndex encUnary encUnary) :
+    (hbefore : ComputableInPolyTime beforeCount encUnary encUnary)
+    (hafter : ComputableInPolyTime afterCount encUnary encUnary)
+    (hindex : ComputableInPolyTime bitIndex encUnary encUnary) :
     (E.linkAdversaryAt beforeCount afterCount bitIndex test).IsPPT := by
   constructor
   · change IsPPTOn (encPair encUnary encBits) (encPair (encPair encBool encBool) encBits)
@@ -147,8 +156,8 @@ theorem isPPT_linkAdversaryAt {beforeCount afterCount bitIndex : ℕ → ℕ}
 
 /-- Uniform dyadic link and bit selection remains strict PPT, including rejected padding. -/
 theorem isPPT_linkAdversary {depth capacity : ℕ → ℕ}
-    (hdepth : ComputableTidilyInPolyTime depth encUnary encUnary)
-    (hcapacity : ComputableTidilyInPolyTime capacity encUnary encUnary) :
+    (hdepth : ComputableInPolyTime depth encUnary encUnary)
+    (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
     (E.linkAdversary depth capacity test).IsPPT := by
   constructor
   · change IsPPTOn (encPair encUnary encBits) (encPair (encPair encBool encBool) encBits)

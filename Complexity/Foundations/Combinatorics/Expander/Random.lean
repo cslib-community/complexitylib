@@ -158,6 +158,12 @@ private theorem card_filter_mul_pow_le (S : Finset V) {k : ℕ} (hk : k ≤ Fint
 
 end Count
 
+/-- For any natural number `s`, `s ^ s / s! ≤ 3 ^ s`. -/
+private theorem pow_div_factorial_le_three_pow (s : ℕ) : (s : ℝ) ^ s / s ! ≤ 3 ^ s :=
+  (Real.pow_div_factorial_le_exp _ (Nat.cast_nonneg s) s).trans <| by
+    rw [← mul_one (s : ℝ), Real.exp_nat_mul]
+    exact pow_le_pow_left₀ (Real.exp_pos 1).le (Real.exp_one_lt_d9.le.trans (by norm_num)) s
+
 /-- The arithmetic of the union bound: for `1 ≤ s`, `2 s ≤ n` and `9 s ≤ 10 k`, the `C(n, s)`
 sets of size `s`, each failed by thirty permutations with probability at most
 `(3^s (s / 2n)^k)^30`, are failed with probability at most `2^{-s} / 4` in total. -/
@@ -173,10 +179,7 @@ private theorem choose_mul_pow_le {n s k : ℕ} (hs : 0 < s) (hsn : 2 * s ≤ n)
     have : (2 * s : ℝ) ≤ n := by exact_mod_cast hsn
     linarith
   have hchoose : (n.choose s : ℝ) ≤ (3 / (2 * x)) ^ s := by
-    have h3 : (s : ℝ) ^ s / s ! ≤ 3 ^ s :=
-      (Real.pow_div_factorial_le_exp _ hs'.le s).trans <| by
-        rw [← mul_one (s : ℝ), Real.exp_nat_mul]
-        exact pow_le_pow_left₀ (Real.exp_pos 1).le (Real.exp_one_lt_d9.le.trans (by norm_num)) s
+    have h3 := pow_div_factorial_le_three_pow s
     calc (n.choose s : ℝ) ≤ n ^ s / s ! := Nat.choose_le_pow_div s n
       _ = (n / s) ^ s * (s ^ s / s !) := by
         rw [div_pow]
@@ -235,6 +238,34 @@ private theorem card_filter_pow_le {S : Finset V} (hS : 0 < #S)
         rw [le_div_iff₀' hC]
         exact choose_mul_pow_le hS hSn (by omega)
 
+/-- Summing the 30-tuple failure bound over all `S` with `0 < #S` and `2 * #S ≤ |V|` gives at
+most `(|V|!)^30 / 2`. -/
+private theorem sum_card_filter_pow_thirty_le :
+    ∑ S ∈ ({S : Finset V | 0 < #S ∧ 2 * #S ≤ Fintype.card V} : Finset (Finset V)),
+      (#{τ : Perm V | #S - (#S - 1) / 10 ≤ #{v ∈ S | τ v ∈ S}} : ℝ) ^ 30 ≤
+      ((Fintype.card V)! : ℝ) ^ 30 / 2 := by
+  set n := Fintype.card V
+  set 𝒮 : Finset (Finset V) := {S | 0 < #S ∧ 2 * #S ≤ n}
+  calc _ ≤ ∑ S ∈ 𝒮, (n ! : ℝ) ^ 30 * ((1 / 2) ^ #S / 4 / n.choose #S) :=
+        sum_le_sum fun S hS ↦ card_filter_pow_le (mem_filter.1 hS).2.1 (mem_filter.1 hS).2.2
+    _ ≤ ∑ S : Finset V, (n ! : ℝ) ^ 30 * ((1 / 2) ^ #S / 4 / n.choose #S) :=
+        sum_le_sum_of_subset_of_nonneg (subset_univ _) fun _ _ _ ↦ by positivity
+    _ = ∑ m ∈ range (n + 1), (n ! : ℝ) ^ 30 / 4 * (1 / 2) ^ m := by
+        have := sum_powerset_apply_card
+          (fun m ↦ (n ! : ℝ) ^ 30 * ((1 / 2) ^ m / 4 / n.choose m)) (x := (univ : Finset V))
+        rw [← powerset_univ, this, card_univ]
+        refine sum_congr rfl fun m hm ↦ ?_
+        have : (n.choose m : ℝ) ≠ 0 :=
+          Nat.cast_ne_zero.2 (Nat.choose_pos (Nat.lt_succ_iff.1 (mem_range.1 hm))).ne'
+        rw [nsmul_eq_mul]
+        field_simp
+        rfl
+    _ ≤ (n ! : ℝ) ^ 30 / 4 * 2 := by
+        rw [← mul_sum]
+        gcongr
+        exact sum_geometric_two_le _
+    _ = (n ! : ℝ) ^ 30 / 2 := by ring
+
 variable (V) in
 /-- **Random permutations move small sets**: there are thirty permutations of a finite type `V` such
 that every set `S` of at most half of the points has at least a tenth of its points moved out of `S`
@@ -267,27 +298,7 @@ theorem exists_perms_card_le_mul_card_filter_notMem :
     simp only [card_univ, Fintype.card_pi, Fintype.card_perm, prod_const, Fintype.card_fin,
       Fintype.card_piFinset] at this
     exact_mod_cast this
-  have hup : ∑ S ∈ 𝒮, (#{τ : Perm V | #S - (#S - 1) / 10 ≤ #{v ∈ S | τ v ∈ S}} : ℝ) ^ 30 ≤
-      (n ! : ℝ) ^ 30 / 2 :=
-    calc _ ≤ ∑ S ∈ 𝒮, (n ! : ℝ) ^ 30 * ((1 / 2) ^ #S / 4 / n.choose #S) :=
-          sum_le_sum fun S hS ↦ card_filter_pow_le (mem_filter.1 hS).2.1 (mem_filter.1 hS).2.2
-      _ ≤ ∑ S : Finset V, (n ! : ℝ) ^ 30 * ((1 / 2) ^ #S / 4 / n.choose #S) :=
-          sum_le_sum_of_subset_of_nonneg (subset_univ _) fun _ _ _ ↦ by positivity
-      _ = ∑ m ∈ range (n + 1), (n ! : ℝ) ^ 30 / 4 * (1 / 2) ^ m := by
-          have := sum_powerset_apply_card
-            (fun m ↦ (n ! : ℝ) ^ 30 * ((1 / 2) ^ m / 4 / n.choose m)) (x := (univ : Finset V))
-          rw [← powerset_univ, this, card_univ]
-          refine sum_congr rfl fun m hm ↦ ?_
-          have : (n.choose m : ℝ) ≠ 0 :=
-            Nat.cast_ne_zero.2 (Nat.choose_pos (Nat.lt_succ_iff.1 (mem_range.1 hm))).ne'
-          rw [nsmul_eq_mul]
-          field_simp
-          rfl
-      _ ≤ (n ! : ℝ) ^ 30 / 4 * 2 := by
-          rw [← mul_sum]
-          gcongr
-          exact sum_geometric_two_le _
-      _ = (n ! : ℝ) ^ 30 / 2 := by ring
+  have hup := sum_card_filter_pow_thirty_le (V := V)
   have : (0 : ℝ) < (n ! : ℝ) ^ 30 := by positivity
   linarith
 

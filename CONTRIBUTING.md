@@ -142,7 +142,9 @@ forbidden proof tokens, `set_option` justifications and the key order of `refere
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
 listed in a module docstring's "Main …" sections must exist, and a new test file must do more
-than restate signatures with `example … := name`. CI runs both.
+than restate signatures with `example … := name`. CI runs both. On pull requests CI also runs
+`python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
+public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 
 The helper hard-links package sources by default, copies root and dependency build caches with
 independent files (including symlink targets), isolates dependency `.git` directories and pointer
@@ -163,6 +165,9 @@ there for another contributor to assess the change; a path into a local `.lake/`
 a durable review record. Recheck changes made after review and identify the final reviewed revision.
 Link the hosted CI run for the final revision rather than asserting which checks passed. Keep review
 verdicts short: the revision, the verdict and the findings, linking evidence rather than pasting it.
+Before requesting review, run `python3 scripts/check_pr_names.py --pr N` on the PR head: it lists
+backticked Lean names in the description that the head does not declare (CI posts the same advisory
+notice).
 
 ## Documentation
 

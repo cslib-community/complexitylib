@@ -131,7 +131,7 @@ private def coordinateScalar : BlockDecomposition (fun x : Fin 1 → Bool => x 0
     refine ⟨fun _ => 1, fun _ t => decide ((1 : ℝ) ≤ t),
       fun _ => ChangesAtMost.decide_le 1, ?_⟩
     intro x
-    cases hx : x 0 <;> simp [hx]
+    cases hx : x 0 <;> simp [weightedSum, hx]
   output_history := by simp
 
 example : coordinateScalar.cost = 4 := by

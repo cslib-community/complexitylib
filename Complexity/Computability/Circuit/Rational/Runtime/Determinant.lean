@@ -599,7 +599,7 @@ theorem computableInPolyTime_squareRows :
       (encList (encList encIntBin)) (encList (encList encIntBin)) :=
   (computableInPolyTime_tabulateRows (.of_tidy (length_list _)) (.of_tidy (by fun_prop)))
 
-@[fun_prop]
+@[local fun_prop]
 private theorem dropUnary_list {β : Type} {encB : β ↪ List Bool} {l : α → List β} {n : α → ℕ}
     (hl : ComputableTidilyInPolyTime l encIn (encList encB))
     (hn : ComputableTidilyInPolyTime n encIn encUnary) :

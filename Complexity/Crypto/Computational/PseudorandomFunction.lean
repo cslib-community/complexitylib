@@ -140,16 +140,4 @@ structure PseudorandomFunction (family : List Bool → List Bool → List Bool) 
     (fun adversary n => ProbComp.eval (prfRealGame family adversary n))
     (fun adversary n => ProbComp.eval (prfIdealGame adversary n)) (IsOraclePPT encBool)
 
-/-- Recover the tidy presentation for proofs without changing the security contract. -/
-theorem pseudorandomFunction_iff_tidy {family : List Bool → List Bool → List Bool} :
-    PseudorandomFunction family ↔
-    (ComputableTidilyInPolyTime (fun pair => family pair.1 pair.2)
-    (encPair encBits encBits) encBits) ∧
-    (∀ key query, query.length = key.length → (family key query).length = key.length) ∧
-    (Game.Indistinguishable
-    (fun adversary n => ProbComp.eval (prfRealGame family adversary n))
-    (fun adversary n => ProbComp.eval (prfIdealGame adversary n)) (IsOraclePPT encBool)) :=
-  ⟨fun h => ⟨h.polyTime.tidy, h.length_eq, h.secure⟩,
-    fun ⟨h0, h1, h2⟩ => ⟨.of_tidy h0, h1, h2⟩⟩
-
 end Cslib.Crypto

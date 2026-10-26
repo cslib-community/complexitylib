@@ -13,6 +13,7 @@ public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.List.OfFn
 public import Mathlib.RingTheory.Trace.Defs
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
 /-!
@@ -67,15 +68,15 @@ variable {F : Type*} [Field F] [Algebra (ZMod 2) F] {n : ℕ}
 /-- The field element whose coordinates in the basis `B` are the first `n` bits of `a`; missing
 bits are zero. -/
 noncomputable def fieldOfBits (B : Basis (Fin n) (ZMod 2) F) (a : List Bool) : F :=
-  ∑ u : Fin n, bitEquiv.symm (a.getD u false) • B u
+  ofBits B fun u => a.getD u false
 
 theorem repr_fieldOfBits (B : Basis (Fin n) (ZMod 2) F) (a : List Bool) (u : Fin n) :
     B.repr (fieldOfBits B a) u = bitEquiv.symm (a.getD u false) := by
-  rw [fieldOfBits, Basis.repr_sum_self]
+  rw [fieldOfBits, ofBits, Basis.repr_sum_self]
 
 @[simp]
 theorem fieldOfBits_nil (B : Basis (Fin n) (ZMod 2) F) : fieldOfBits B [] = 0 := by
-  simp [fieldOfBits]
+  simp [fieldOfBits, ofBits]
 
 /-- The coordinates of a sum: `listXor` adds coordinate words. -/
 theorem fieldOfBits_listXor (B : Basis (Fin n) (ZMod 2) F) (words : List (List Bool)) :
@@ -84,7 +85,7 @@ theorem fieldOfBits_listXor (B : Basis (Fin n) (ZMod 2) F) (words : List (List B
       (words.map fun w => w.getD u false).foldl xor false := by
     rw [List.getD_eq_getElem _ _ (by simp)]
     simp [listXor, List.getD_eq_getElem?_getD]
-  simp only [fieldOfBits, hget, bitEquiv_symm_foldl_xor, List.map_map]
+  simp only [fieldOfBits, ofBits, hget, bitEquiv_symm_foldl_xor, List.map_map]
   clear hget
   induction words with
   | nil => simp
@@ -124,7 +125,7 @@ theorem fieldOfBits_fieldMul {B : Basis (Fin n) (ZMod 2) F} {tab : List (List (L
     fieldOfBits B (fieldMul tab a b) = fieldOfBits B a * fieldOfBits B b := by
   rw [fieldMul, htab.1, fieldOfBits_listXor, sum_map_flatMap, List.sum_map_range]
   simp_rw [List.map_map, Function.comp_def, List.sum_map_range]
-  rw [fieldOfBits, fieldOfBits, Finset.sum_mul_sum]
+  rw [fieldOfBits, fieldOfBits, ofBits, ofBits, Finset.sum_mul_sum]
   refine Finset.sum_congr rfl fun u _ => Finset.sum_congr rfl fun w _ => ?_
   rw [smul_mul_smul_comm, htab.2 u w]
   cases a.getD u false <;> cases b.getD w false <;>
@@ -268,7 +269,7 @@ theorem traceBit_traceVector {B : Basis (Fin n) (ZMod 2) F} {tab : List (List (L
   have hlen : (traceVector tab).length = n := by simp [traceVector, htab.1]
   apply bitEquiv.symm.injective
   rw [traceBit, hlen, bitEquiv_symm_foldl_xor, RingEquiv.symm_apply_apply, List.map_map,
-    Function.comp_def, List.sum_map_range, fieldOfBits, map_sum]
+    Function.comp_def, List.sum_map_range, fieldOfBits, ofBits, map_sum]
   refine Finset.sum_congr rfl fun u _ => ?_
   rw [map_smul, smul_eq_mul, ← hτ u]
   cases a.getD u false <;> cases (traceVector tab).getD u false <;> decide
@@ -279,16 +280,13 @@ input bits. -/
 def blockPos {r n N : ℕ} (h : r * n ≤ N) (q : Fin r × Fin n) : Fin N :=
   Fin.castLE h (finProdFinEquiv q)
 
-theorem getD_take_drop (x : List Bool) {n u : ℕ} (hu : u < n) (i : ℕ) :
-    ((x.drop (n * i)).take n).getD u false = x.getD (n * i + u) false := by
-  rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD, List.getElem?_take_of_lt hu,
-    List.getElem?_drop]
-
 private theorem readField_blockPos (B : Basis (Fin n) (ZMod 2) F) {r N : ℕ} (h : r * n ≤ N)
     (x : List Bool) (i : Fin r) :
     readField B (blockPos h) (ofList N x) i = fieldOfBits B ((x.drop (n * i)).take n) := by
-  refine Finset.sum_congr rfl fun u _ => ?_
-  rw [getD_take_drop x u.2]
+  rw [readField, fieldOfBits]
+  congr 1
+  funext u
+  rw [List.getD_take_drop x (n * i) u.2]
   simp [blockPos, ofList, finProdFinEquiv_apply_val, add_comm]
 
 /-- **Ben-Sasson and Kopparty's function in coordinates**: `traceSym 1 r t` at the elements with

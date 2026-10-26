@@ -21,7 +21,7 @@ open Turing.MultiTapeTM Cslib Cslib.Crypto Cslib.Complexity
 
 -- The preimage-prefix problem of a concrete polynomial-time function is in `NP`.
 example : preimagePrefix (fun x => x ++ x) ∈ NP encPreimagePrefix :=
-  preimagePrefix_mem_NP (by fun_prop)
+  preimagePrefix_mem_NP (.of_tidy (by fun_prop))
 
 -- The search hypothesis is satisfiable: with an exact (classical) decision procedure, the search
 -- recovers the input of an injective function.
@@ -40,7 +40,7 @@ example : preimageSearch (fun p => decide (p.2.2 <+: p.2.1 ∧ p.2.1.length = p.
 
 -- The inverter lemma applies: the identity is not one-way, by its own inverse.
 example : ¬ OneWay id :=
-  not_oneWay_of_lengthInverse Prod.snd (ComputableTidilyInPolyTime.snd _ _) fun _ => rfl
+  not_oneWay_of_lengthInverse Prod.snd (ComputableInPolyTime.snd _ _) fun _ => rfl
 
 /-- The preimage-prefix problem of a constant function is in `P`: an image has a preimage of
 length `n` with a given prefix exactly when it is the constant and the prefix is short enough. -/
@@ -83,7 +83,7 @@ example : ∃ c : ℕ, ∀ (key : List Bool) (m : ℕ), m ≤ key.length →
       (Circuits.single (KabanetsCai.restriction (fun query => key ++ query) key.length m)) ≤
         c * (3 * key.length + 2) ^ c + 2 :=
   KabanetsCai.exists_complexity_restriction_le (family := fun key query => key ++ query)
-    (by fun_prop)
+    (.of_tidy (by fun_prop))
 
 -- A random function restricts to a uniformly random Boolean function.
 example : (Probability.PMF.uniformOfFintype (BitString 3 → BitString 3)).map
@@ -94,6 +94,6 @@ example : (Probability.PMF.uniformOfFintype (BitString 3 → BitString 3)).map
 -- The distinguisher certificate applies to a concrete polynomial-time decider.
 example : Probability.IsOraclePPT Turing.MultiTapeTM.encBool
     (KabanetsCai.mcspDistinguisher 0 (fun x => x.2.isEmpty) 3) :=
-  KabanetsCai.isOraclePPT_mcspDistinguisher 3 (by fun_prop)
+  KabanetsCai.isOraclePPT_mcspDistinguisher 3 (.of_tidy (by fun_prop))
 
 end ComplexityTests.OneWayMetacomplexity

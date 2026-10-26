@@ -43,17 +43,21 @@ instruction count. It does not impose new validity assumptions on existing WordR
 namespace Cslib.WordRAM
 
 /-- Natural word values and addresses, with exactly the existing word-RAM checking policy.
-The two test symbols are `false` for equality and `true` for unsigned comparison. -/
+The test symbols are `some false` for equality, `some true` for unsigned comparison, and `none`
+for an unconditionally faulting nullary test used to translate `Instr.rand` under deterministic
+execution. -/
 abbrev Basis.genericModel (B : Basis) : GenericRAM.Model where
   Value := ℕ
   Address := ℕ
   Config := ℕ
   Const := ℕ
   operations := B.toSignature
-  tests := ⟨Bool, fun _ => 2⟩
+  tests := ⟨Option Bool, fun | some _ => 2 | none => 0⟩
   constant _ c := some c
   evalOp w f args := B.interp w f args
-  evalTest _ f args := some (if f then decide (args 0 < args 1) else decide (args 0 = args 1))
+  evalTest _
+    | some f, args => some (if f then decide (args 0 < args 1) else decide (args 0 = args 1))
+    | none, _ => none
   admissible w v := decide (Fits w v)
   address _ v := some v
   validMove _ _ := true
@@ -71,8 +75,8 @@ def State.toGeneric (B : Basis) (s : State r) : GenericRAM.State B.genericModel 
 
 /-- Translate an equality or comparison test. -/
 def Cond.toGeneric (B : Basis) : Cond r → GenericRAM.Cond B.genericModel r
-  | .eq i j => .test false ![i, j]
-  | .lt i j => .test true ![i, j]
+  | .eq i j => .test (some false) ![i, j]
+  | .lt i j => .test (some true) ![i, j]
 
 /-- Translate a data instruction without changing its registers or operation. -/
 def Op.toGeneric : Op B r → GenericRAM.Op B.genericModel r
@@ -88,6 +92,7 @@ def Instr.toGeneric : Instr B r → GenericRAM.Instr B.genericModel r
   | .jump t => .jump t
   | .branch c t => .branch (c.toGeneric B) t
   | .halt i => .halt i
+  | .rand _ _ => .branch (.test none Fin.elim0) 0
 
 /-- Instruction-for-instruction translation to the generic core. -/
 def Program.toGeneric (p : Program B r) : GenericRAM.Program B.genericModel r :=
@@ -150,6 +155,8 @@ theorem step_toGeneric (w : ℕ) (p : Program B r) (s : State r) :
       simp [Instr.toGeneric, Cond.eval_toGeneric, step, hp, GenericRAM.Outcome.continue,
         Basis.genericModel, Outcome.toGeneric, State.toGeneric]
     | halt i => simp [Instr.toGeneric, step, hp, Outcome.toGeneric, Data.toGeneric]
+    | rand _ _ =>
+      simp [Instr.toGeneric, step, hp, GenericRAM.Cond.eval, Basis.genericModel, Outcome.toGeneric]
 
 /-- The interpreter returns exactly the original output and instruction count at every fuel. -/
 theorem run_toGeneric (w : ℕ) (p : Program B r) (fuel : ℕ) (s : State r) :

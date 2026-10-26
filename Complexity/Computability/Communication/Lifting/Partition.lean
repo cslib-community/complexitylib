@@ -102,6 +102,27 @@ def Violates (τ : ℝ) (W : Finset (Fin n → Fin m)) (I : Finset (Fin n)) (α 
     Prop :=
   (#W : ℝ) < #(agreeOn W I α) * τ ^ #I
 
+/-- For disjoint `I` and `J`, agreeing with `if i ∈ I then α i else β i` on `I ∪ J` is agreeing
+with `α` on `I` and with `β` on `J`. -/
+private theorem agreeOn_union_ite {W : Finset (Fin n → Fin m)} {I J : Finset (Fin n)}
+    (hdisj : Disjoint I J) (α β : Fin n → Fin m) :
+    agreeOn W (I ∪ J) (fun i => if i ∈ I then α i else β i) =
+      (agreeOn W I α).filter fun x => ∀ i ∈ J, x i = β i := by
+  ext x
+  simp only [agreeOn, mem_filter, mem_union]
+  constructor
+  · rintro ⟨hx, h⟩
+    refine ⟨⟨hx, fun i hi => by simpa [hi] using h i (Or.inl hi)⟩, fun i hi => ?_⟩
+    have hiI : i ∉ I := fun h' => disjoint_left.mp hdisj h' hi
+    simpa [hiI] using h i (Or.inr hi)
+  · rintro ⟨⟨hx, hI⟩, hJ'⟩
+    refine ⟨hx, fun i hi => ?_⟩
+    by_cases hiI : i ∈ I
+    · simp only [hiI, ite_true]
+      exact hI i hiI
+    · simp only [hiI, ite_false]
+      exact hJ' i (hi.resolve_left hiI)
+
 /-- **Claim 3.4 of Mertz and Pitassi.** Fixing a set `W` on a maximal concentrated set `I` of
 coordinates leaves it dense on the other coordinates. -/
 theorem isDense_agreeOn (hτ : 0 < τ) {W : Finset (Fin n → Fin m)} {I : Finset (Fin n)}
@@ -117,19 +138,8 @@ theorem isDense_agreeOn (hτ : 0 < τ) {W : Finset (Fin n → Fin m)} {I : Finse
     rw [disjoint_iff_ne]
     rintro a ha b hb rfl
     exact (mem_sdiff.mp (hJ hb)).2 ha
-  have hfilt : agreeOn W (I ∪ J) α' = (agreeOn W I α).filter fun x => ∀ i ∈ J, x i = β i := by
-    ext x
-    simp only [agreeOn, mem_filter, mem_union, α']
-    constructor
-    · rintro ⟨hx, h⟩
-      refine ⟨⟨hx, fun i hi => by simpa [hi] using h i (Or.inl hi)⟩, fun i hi => ?_⟩
-      have hiI : i ∉ I := fun h' => disjoint_left.mp hdisj h' hi
-      simpa [hiI] using h i (Or.inr hi)
-    · rintro ⟨⟨hx, hI⟩, hJ'⟩
-      refine ⟨hx, fun i hi => ?_⟩
-      by_cases hiI : i ∈ I
-      · simp only [hiI, ite_true]; exact hI i hiI
-      · simp only [hiI, ite_false]; exact hJ' i (hi.resolve_left hiI)
+  have hfilt : agreeOn W (I ∪ J) α' = (agreeOn W I α).filter fun x => ∀ i ∈ J, x i = β i :=
+    agreeOn_union_ite hdisj α β
   have hviol : Violates τ W (I ∪ J) α' := by
     unfold Violates
     rw [hfilt, card_union_of_disjoint hdisj, pow_add]
@@ -151,6 +161,42 @@ theorem isDense_agreeOn (hτ : 0 < τ) {W : Finset (Fin n → Fin m)} {I : Finse
   have : 0 < #J := card_pos.mpr hJne
   omega
 
+/-- Either some `I ⊆ F` and `α` maximize `#I` among the pairs violating `τ`-density on `W`, or
+`(∅, x₀)` satisfies the same maximality and lower-bound conditions. -/
+private theorem exists_max_violates_or_empty {W : Finset (Fin n → Fin m)}
+    (x₀ : Fin n → Fin m) (F : Finset (Fin n)) (τ : ℝ) :
+    ∃ (I : Finset (Fin n)) (α : Fin n → Fin m), I ⊆ F ∧
+      (#W : ℝ) ≤ #(agreeOn W I α) * τ ^ #I ∧
+      (∀ I' ⊆ F, ∀ α', Violates τ W I' α' → #I' ≤ #I) ∧
+      (I.Nonempty → Violates τ W I α) := by
+  classical
+  set C : Finset (Finset (Fin n) × (Fin n → Fin m)) :=
+    (F.powerset ×ˢ univ).filter fun p => Violates τ W p.1 p.2
+  by_cases hC : C.Nonempty
+  · obtain ⟨⟨I, α⟩, hp, hpmax⟩ := exists_max_image C (fun p => #p.1) hC
+    simp only [C, mem_filter, mem_product, mem_powerset, mem_univ, and_true] at hp
+    refine ⟨I, α, hp.1, hp.2.le, fun I' hI' α' hv => hpmax (I', α') ?_, fun _ => hp.2⟩
+    simp only [C, mem_filter, mem_product, mem_powerset, mem_univ, and_true]
+    exact ⟨hI', hv⟩
+  · refine ⟨∅, x₀, empty_subset _, by simp [agreeOn], fun I' hI' α' hv => ?_, by simp⟩
+    have hmem : (I', α') ∈ C := by
+      simp only [C, mem_filter, mem_product, mem_powerset, mem_univ, and_true]
+      exact ⟨hI', hv⟩
+    exact absurd ⟨_, hmem⟩ hC
+
+/-- When `W` is nonempty and `#W ≤ #(agreeOn W I α) * τ ^ #I`, `agreeOn W I α` is nonempty and
+removing it strictly reduces `#W`. -/
+private theorem card_sdiff_agreeOn_lt {W : Finset (Fin n → Fin m)} {I : Finset (Fin n)}
+    {α : Fin n → Fin m} (hWne : W.Nonempty) (hW : (#W : ℝ) ≤ #(agreeOn W I α) * τ ^ #I) :
+    #(W \ agreeOn W I α) < #W := by
+  have hWpos : (0 : ℝ) < #W := by exact_mod_cast card_pos.mpr hWne
+  have hPne : (agreeOn W I α).Nonempty := by
+    rw [nonempty_iff_ne_empty]
+    intro h
+    rw [h, card_empty, Nat.cast_zero, zero_mul] at hW
+    linarith
+  exact card_lt_card (sdiff_ssubset (filter_subset _ _) hPne)
+
 /-- **Phase I: the density-restoring partition** [Mertz and Pitassi, Algorithm 1, Claims 3.4 and
 3.5][MertzPitassi2020]. Every set of pointer vectors has a density-restoring partition. -/
 theorem exists_pieces (hτ : 0 < τ) (F : Finset (Fin n)) (X : Finset (Fin n → Fin m)) :
@@ -168,62 +214,30 @@ theorem exists_pieces (hτ : 0 < τ) (F : Finset (Fin n)) (X : Finset (Fin n →
   induction k using Nat.strong_induction_on with
   | _ k ih =>
   intro W hWX hWk
-  by_cases hsmall : 2 * (#W : ℝ) < #X
-  · exact ⟨[], by simp, by simp, by simp, by simp, by simp, by simp, by simp; linarith⟩
+  by_cases hsmall : 2 * (#W : ℝ) < #X ∨ W = ∅
+  · refine ⟨[], by simp, by simp, by simp, by simp, by simp, by simp, ?_⟩
+    rcases hsmall with hsmall | rfl
+    · simp only [List.map_nil, List.sum_nil]
+      linarith
+    · simp only [card_empty, Nat.cast_zero, List.map_nil, List.sum_nil]
+      linarith [show (0 : ℝ) ≤ #X by positivity]
   push Not at hsmall
-  by_cases hWe : W = ∅
-  · subst hWe
-    refine ⟨[], by simp, by simp, by simp, by simp, by simp, by simp, ?_⟩
-    simp only [card_empty, Nat.cast_zero] at hsmall ⊢
-    simp; linarith
-  obtain ⟨x₀, hx₀⟩ := nonempty_iff_ne_empty.mpr hWe
-  -- the candidate concentrated sets
-  set C : Finset (Finset (Fin n) × (Fin n → Fin m)) :=
-    (F.powerset ×ˢ univ).filter fun p => Violates τ W p.1 p.2
+  obtain ⟨hsmall, hWe⟩ := hsmall
+  obtain ⟨x₀, hx₀⟩ := hWe
   -- choose a maximal concentrated set, or the empty set if there is none
-  obtain ⟨I, α, hIF, hW, hmax, hstrict⟩ : ∃ (I : Finset (Fin n)) (α : Fin n → Fin m), I ⊆ F ∧
-      (#W : ℝ) ≤ #(agreeOn W I α) * τ ^ #I ∧
-      (∀ I' ⊆ F, ∀ α', Violates τ W I' α' → #I' ≤ #I) ∧
-      (I.Nonempty → Violates τ W I α) := by
-    by_cases hC : C.Nonempty
-    · obtain ⟨⟨I, α⟩, hp, hpmax⟩ := exists_max_image C (fun p => #p.1) hC
-      simp only [C, mem_filter, mem_product, mem_powerset, mem_univ, and_true] at hp
-      refine ⟨I, α, hp.1, hp.2.le, fun I' hI' α' hv => hpmax (I', α') ?_, fun _ => hp.2⟩
-      simp only [C, mem_filter, mem_product, mem_powerset, mem_univ, and_true]
-      exact ⟨hI', hv⟩
-    · refine ⟨∅, x₀, empty_subset _, by simp [agreeOn], fun I' hI' α' hv => ?_, by simp⟩
-      have hmem : (I', α') ∈ C := by
-        simp only [C, mem_filter, mem_product, mem_powerset, mem_univ, and_true]
-        exact ⟨hI', hv⟩
-      exact absurd ⟨_, hmem⟩ hC
+  obtain ⟨I, α, hIF, hW, hmax, hstrict⟩ := exists_max_violates_or_empty (W := W) x₀ F τ
   set P := agreeOn W I α
-  have hPdense : IsDense τ (F \ I) P := isDense_agreeOn hτ hW hmax hIF hstrict
-  have hWpos : (0 : ℝ) < #W := by exact_mod_cast card_pos.mpr ⟨x₀, hx₀⟩
-  have hPne : P.Nonempty := by
-    rw [nonempty_iff_ne_empty]
-    intro h
-    rw [h, card_empty, Nat.cast_zero, zero_mul] at hW
-    linarith
   have hPW : P ⊆ W := filter_subset _ _
-  have hlt : #(W \ P) < k := by
-    rw [← hWk]
-    exact card_lt_card (sdiff_ssubset hPW hPne)
   obtain ⟨L, h1, h2, h3, h4, h5, h6, h7⟩ :=
-    ih _ hlt (W \ P) (sdiff_subset.trans hWX) rfl
-  refine ⟨⟨I, α, P⟩ :: L, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · simp only [List.mem_cons, forall_eq_or_imp]
-    exact ⟨hPW, fun q hq => (h1 q hq).trans sdiff_subset⟩
-  · refine List.Pairwise.cons (fun q hq => ?_) h2
-    exact disjoint_of_subset_right (h1 q hq) disjoint_sdiff
-  · simp only [List.mem_cons, forall_eq_or_imp]; exact ⟨hIF, h3⟩
-  · simp only [List.mem_cons, forall_eq_or_imp]
-    exact ⟨fun x hx i hi => (mem_filter.mp hx).2 i hi, h4⟩
-  · simp only [List.mem_cons, forall_eq_or_imp]; exact ⟨hPdense, h5⟩
-  · simp only [List.mem_cons, forall_eq_or_imp]
-    refine ⟨by linarith, h6⟩
-  · have hcard : (#(W \ P) : ℝ) = #W - #P := by
-      rw [card_sdiff_of_subset hPW, Nat.cast_sub (card_le_card hPW)]
-    rw [hcard] at h7
+    ih _ (hWk ▸ card_sdiff_agreeOn_lt ⟨x₀, hx₀⟩ hW) (W \ P) (sdiff_subset.trans hWX) rfl
+  refine ⟨⟨I, α, P⟩ :: L, ?_,
+    List.Pairwise.cons (fun q hq => disjoint_of_subset_right (h1 q hq) disjoint_sdiff) h2,
+    List.forall_mem_cons.mpr ⟨hIF, h3⟩,
+    List.forall_mem_cons.mpr ⟨fun x hx i hi => (mem_filter.mp hx).2 i hi, h4⟩,
+    List.forall_mem_cons.mpr ⟨isDense_agreeOn hτ hW hmax hIF hstrict, h5⟩,
+    List.forall_mem_cons.mpr ⟨by linarith, h6⟩, ?_⟩
+  · exact List.forall_mem_cons.mpr ⟨hPW, fun q hq => (h1 q hq).trans sdiff_subset⟩
+  · rw [card_sdiff_of_subset hPW, Nat.cast_sub (card_le_card hPW)] at h7
     simp only [List.map_cons, List.sum_cons]
     linarith
 
@@ -279,6 +293,74 @@ abbrev allowing (Y : Finset (Fin n → Fin m → Bool)) (I : Finset (Fin n)) (α
     (β : Fin n → Bool) : Finset (Fin n → Fin m → Bool) :=
   Y.filter fun y => ∀ i ∈ I, y i (α i) = β i
 
+/-- If a piece `q ∈ L` of a `τ`-partition of `X` fails to leave a `(4 * τ) ^ (-#q.I)` fraction of
+`Y` for `β`, then at most `#Y * #q.P / (2 * #X)` inputs of `Y` allow `β`. -/
+private theorem card_allowing_le_of_lt {X : Finset (Fin n → Fin m)}
+    {Y : Finset (Fin n → Fin m → Bool)} {L : List (Piece n m)} (hτ : 0 < τ)
+    (hL : IsPartition τ F X L) (hX : X.Nonempty) {q : Piece n m} (hq : q ∈ L)
+    {β : Fin n → Bool} (h1 : (#(allowing Y q.I q.α β) : ℝ) * (4 * τ) ^ #q.I < #Y) :
+    (#(allowing Y q.I q.α β) : ℝ) ≤ #Y * #q.P / (2 * #X) := by
+  have hXpos : (0 : ℝ) < #X := by exact_mod_cast card_pos.mpr hX
+  have hIne : q.I.Nonempty := by
+    rw [nonempty_iff_ne_empty]
+    intro h
+    rw [h] at h1
+    simp [allowing] at h1
+  have h2 := hL.card_le q hq
+  have h4 : (4 : ℝ) ≤ 4 ^ #q.I := le_self_pow₀ (by norm_num) (card_ne_zero.mpr hIne)
+  have hτI : (0 : ℝ) < τ ^ #q.I := by positivity
+  rw [le_div_iff₀ (by positivity)]
+  have hA : (0 : ℝ) ≤ #(allowing Y q.I q.α β) := by positivity
+  have hYpos : (0 : ℝ) ≤ #Y := by positivity
+  rw [mul_pow] at h1
+  nlinarith [mul_le_mul_of_nonneg_left h4 (mul_nonneg hA hτI.le),
+    mul_le_mul_of_nonneg_left h2 hYpos, mul_le_mul_of_nonneg_left h2 hA]
+
+/-- Removing the union of bad pieces (each of size at most `#Y * #q.P / (2 * #X)`) from `Y`
+leaves at least half of `Y`. -/
+private theorem card_le_two_mul_card_sdiff_unionOf_allowing {X : Finset (Fin n → Fin m)}
+    {Y : Finset (Fin n → Fin m → Bool)} {L : List (Piece n m)}
+    (hL : IsPartition τ F X L) (hX : X.Nonempty) (βq : Piece n m → Fin n → Bool)
+    (hsmall : ∀ q ∈ L, (#(allowing Y q.I q.α (βq q)) : ℝ) ≤ #Y * #q.P / (2 * #X)) :
+    (#Y : ℝ) ≤ 2 * #(Y \ unionOf (L.map fun q => allowing Y q.I q.α (βq q))) := by
+  have hXpos : (0 : ℝ) < #X := by exact_mod_cast card_pos.mpr hX
+  set Ybad := unionOf (L.map fun q => allowing Y q.I q.α (βq q))
+  set Ygood := Y \ Ybad
+  have hbad : (#Ybad : ℝ) ≤ #Y / 2 := by
+    refine (card_unionOf_le _).trans ?_
+    rw [List.map_map]
+    calc (L.map ((fun s => (#s : ℝ)) ∘ fun q => allowing Y q.I q.α (βq q))).sum
+        ≤ (L.map fun q => (#Y * #q.P / (2 * #X) : ℝ)).sum :=
+          List.sum_le_sum fun q hq => hsmall q hq
+      _ = #Y / (2 * #X) * (L.map fun q => (#q.P : ℝ)).sum := by
+          rw [← List.sum_map_mul_left]
+          congr 1
+          exact List.map_congr_left fun q _ => by ring
+      _ ≤ #Y / (2 * #X) * #X := by
+          gcongr
+          exact sum_card_le_of_pairwise hL.subset hL.pairwise
+      _ = #Y / 2 := by field_simp
+  have h1 : #Y - #Ybad ≤ #Ygood := le_card_sdiff _ _
+  have h2 : (#Y : ℝ) - #Ybad ≤ #Ygood := by
+    have := Nat.sub_le_iff_le_add.mp h1
+    have : (#Y : ℝ) ≤ #Ygood + #Ybad := by exact_mod_cast this
+    linarith
+  linarith
+
+/-- The union `unionOf (L.map Piece.P)` of the pieces of a partition of `X` is a subset of `X`
+containing at least half of `X`. -/
+private theorem IsPartition.subset_and_card_le_two_mul_card_unionOf
+    {X : Finset (Fin n → Fin m)} {L : List (Piece n m)} (hL : IsPartition τ F X L) :
+    unionOf (L.map Piece.P) ⊆ X ∧ (#X : ℝ) ≤ 2 * #(unionOf (L.map Piece.P)) := by
+  refine ⟨fun x hx => ?_, ?_⟩
+  · obtain ⟨s, hs, hxs⟩ := mem_unionOf.mp hx
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hs
+    exact hL.subset q hq hxs
+  · have hX'sum : (L.map fun q => (#q.P : ℝ)).sum ≤ #(unionOf (L.map Piece.P)) :=
+      sum_card_le_of_pairwise
+        (fun q hq x hx => mem_unionOf.mpr ⟨q.P, List.mem_map.mpr ⟨q, hq, rfl⟩, hx⟩) hL.pairwise
+    exact hL.cover.trans (by linarith)
+
 /-- **Choosing a piece** [Mertz and Pitassi, Lemma 3.6][MertzPitassi2020]. Let `X` hold at least
 half of a `τ`-dense set and let `Y` have at most `D` bits of deficiency on the blocks of `F`,
 with `64 #F (D + 2) ≤ τ`, both fixed outside `F`. Then some piece `(I, α, P)` of a
@@ -295,57 +377,15 @@ theorem exists_piece_forall_le_card_filter {X X₀ : Finset (Fin n → Fin m)}
   push Not at hcon
   choose! βq hβq using hcon
   have hXpos : (0 : ℝ) < #X := by exact_mod_cast card_pos.mpr hX
-  -- each piece has few inputs allowing its bad value
-  have hsmall : ∀ q ∈ L, (#(allowing Y q.I q.α (βq q)) : ℝ) ≤ #Y * #q.P / (2 * #X) := by
-    intro q hq
-    have h1 := hβq q hq
-    have hIne : q.I.Nonempty := by
-      rw [nonempty_iff_ne_empty]
-      intro h
-      rw [h] at h1
-      simp [allowing] at h1
-    have h2 := hL.card_le q hq
-    have h4 : (4 : ℝ) ≤ 4 ^ #q.I := le_self_pow₀ (by norm_num) (card_ne_zero.mpr hIne)
-    have hτI : (0 : ℝ) < τ ^ #q.I := by positivity
-    rw [le_div_iff₀ (by positivity)]
-    have hA : (0 : ℝ) ≤ #(allowing Y q.I q.α (βq q)) := by positivity
-    have hYpos : (0 : ℝ) ≤ #Y := by positivity
-    rw [mul_pow] at h1
-    nlinarith [mul_le_mul_of_nonneg_left h4 (mul_nonneg hA hτI.le),
-      mul_le_mul_of_nonneg_left h2 hYpos, mul_le_mul_of_nonneg_left h2 hA]
-  -- so at least half of `Y` allows none of the bad values
+  -- each piece has few inputs allowing its bad value, so at least half of `Y` allows none
   set Ybad := unionOf (L.map fun q => allowing Y q.I q.α (βq q))
   set Ygood := Y \ Ybad
-  have hbad : (#Ybad : ℝ) ≤ #Y / 2 := by
-    refine (card_unionOf_le _).trans ?_
-    rw [List.map_map]
-    calc (L.map ((fun s => (#s : ℝ)) ∘ fun q => allowing Y q.I q.α (βq q))).sum
-        ≤ (L.map fun q => (#Y * #q.P / (2 * #X) : ℝ)).sum :=
-          List.sum_le_sum fun q hq => hsmall q hq
-      _ = #Y / (2 * #X) * (L.map fun q => (#q.P : ℝ)).sum := by
-          rw [← List.sum_map_mul_left]; congr 1; exact List.map_congr_left fun q _ => by ring
-      _ ≤ #Y / (2 * #X) * #X := by
-          gcongr
-          exact sum_card_le_of_pairwise hL.subset hL.pairwise
-      _ = #Y / 2 := by field_simp
-  have hgood : (#Y : ℝ) ≤ 2 * #Ygood := by
-    have h1 : #Y - #Ybad ≤ #Ygood := le_card_sdiff _ _
-    have h2 : (#Y : ℝ) - #Ybad ≤ #Ygood := by
-      have := Nat.sub_le_iff_le_add.mp h1
-      have : (#Y : ℝ) ≤ #Ygood + #Ybad := by exact_mod_cast this
-      linarith
-    linarith
+  have hgood : (#Y : ℝ) ≤ 2 * #Ygood :=
+    card_le_two_mul_card_sdiff_unionOf_allowing hL hX βq
+      fun q hq => card_allowing_le_of_lt hτ hL hX hq (hβq q hq)
   -- the vectors in the pieces
   set X' := unionOf (L.map Piece.P)
-  have hX'X : X' ⊆ X := by
-    intro x hx
-    obtain ⟨s, hs, hxs⟩ := mem_unionOf.mp hx
-    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hs
-    exact hL.subset q hq hxs
-  have hX'sum : (L.map fun q => (#q.P : ℝ)).sum ≤ #X' :=
-    sum_card_le_of_pairwise
-      (fun q hq x hx => mem_unionOf.mpr ⟨q.P, List.mem_map.mpr ⟨q, hq, rfl⟩, hx⟩) hL.pairwise
-  have hX'big : (#X : ℝ) ≤ 2 * #X' := hL.cover.trans (by linarith)
+  obtain ⟨hX'X, hX'big⟩ := hL.subset_and_card_le_two_mul_card_unionOf
   have hX'ne : X'.Nonempty := by
     rw [← card_pos]
     have : (0 : ℝ) < #X' := by linarith

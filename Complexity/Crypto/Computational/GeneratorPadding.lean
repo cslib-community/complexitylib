@@ -60,13 +60,18 @@ def generate (seedBits commonBits : ℕ) (generator : List Bool → List Bool)
 /-- Padding uses only the supplied generator, word slicing, and concatenation. -/
 theorem isPolyTime_generate {α : Type} {input : α ↪ List Bool}
     {seedBits commonBits : α → ℕ} {generator : α → List Bool → List Bool} {seed : α → List Bool}
-    (hseedBits : ComputableTidilyInPolyTime seedBits input encUnary)
-    (hcommon : ComputableTidilyInPolyTime commonBits input encUnary)
-    (hgenerator : ComputableTidilyInPolyTime (fun a => generator a.1 a.2)
+    (hseedBits : ComputableInPolyTime seedBits input encUnary)
+    (hcommon : ComputableInPolyTime commonBits input encUnary)
+    (hgenerator : ComputableInPolyTime (fun a => generator a.1 a.2)
       (encPair input encBits) encBits)
-    (hseed : ComputableTidilyInPolyTime seed input encBits) :
-    ComputableTidilyInPolyTime
+    (hseed : ComputableInPolyTime seed input encBits) :
+    ComputableInPolyTime
       (fun a => generate (seedBits a) (commonBits a) (generator a) (seed a)) input encBits := by
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hseedBits
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcommon
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hgenerator
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hseed
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
   unfold generate
   polytime
 
@@ -121,11 +126,11 @@ noncomputable def test (seedBits commonBits : ℕ) (adversary : List Bool → Pr
 theorem isPPTOn_test {α : Type} {input : α ↪ List Bool}
     {seedBits commonBits : α → ℕ} {adversary : α → List Bool → ProbComp Bool}
     {word : α → List Bool}
-    (hseedBits : ComputableTidilyInPolyTime seedBits input encUnary)
-    (hcommon : ComputableTidilyInPolyTime commonBits input encUnary)
+    (hseedBits : ComputableInPolyTime seedBits input encUnary)
+    (hcommon : ComputableInPolyTime commonBits input encUnary)
     (hadversary : IsPPTOn (encPair input encBits) encBool
       (fun a => adversary a.1 a.2))
-    (hword : ComputableTidilyInPolyTime word input encBits) :
+    (hword : ComputableInPolyTime word input encBits) :
     IsPPTOn input encBool
       (fun a => test (seedBits a) (commonBits a) (adversary a) (word a)) := by
   unfold test

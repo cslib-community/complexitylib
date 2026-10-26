@@ -11,8 +11,9 @@ import Mathlib.Tactic.NormNum.Prime
 /-! # The GKR protocol
 
 For a one-gate multiplication circuit over `ZMod 101`, the GKR protocol is perfectly complete and
-sound with error `5 / 101`: five rounds of error at most `1 / 101` each (two sumcheck rounds of
-error `2 / 101` and the line step of error `1 / 101`).
+sound with error `5 / 101`: two sumcheck challenges of error at most `2 / 101` each and one line
+challenge of error at most `1 / 101`. The output step adds nothing, because the single output gate
+is indexed by zero bits.
 -/
 
 namespace ComplexityTests.GKRProtocol

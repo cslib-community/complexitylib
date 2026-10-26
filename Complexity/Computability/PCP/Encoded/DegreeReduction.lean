@@ -100,8 +100,19 @@ theorem isPolyTime_degreeReduceDarts {graph : Input → Graph C}
     (hgraph : ComputableInPolyTime graph input (encoding enc)) (labels : List D) :
     ComputableInPolyTime (fun x => (graph x).degreeReduceDarts labels)
       input (encList (encPair (encPair encUnary encBool) (encOption labelEncoding))) := by
-  unfold degreeReduceDarts List.product
-  polytime
+  let choices := none :: labels.map some
+  have houter := ComputableInPolyTime.fst
+    (encPair input (encPair encUnary encBool)) (encOption labelEncoding)
+  have hchoice := ComputableInPolyTime.snd
+    (encPair input (encPair encUnary encBool)) (encOption labelEncoding)
+  have hbody := ComputableInPolyTime.mapWithInput
+    (f := fun p : Input × (ℕ × Bool) => fun d : Option D => (p.2, d))
+    (ComputableInPolyTime.const (encOut := encList (encOption labelEncoding)) choices)
+    (houter.snd'.prod hchoice)
+  have h := ComputableInPolyTime.flatMapWithInput
+    (f := fun _ halfEdge => choices.map fun d => (halfEdge, d))
+    (isPolyTime_halfEdges hgraph) hbody
+  simpa only [degreeReduceDarts, List.product, choices] using h
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Every output edge is computed uniformly in the input graph and dart. -/

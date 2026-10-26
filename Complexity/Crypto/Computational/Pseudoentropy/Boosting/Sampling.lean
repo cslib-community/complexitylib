@@ -110,12 +110,12 @@ theorem weightNumerator_div (denominator rateNumerator threshold : ℕ)
 /-- The weight's natural numerator is polynomial time in its complete encoded input. -/
 @[fun_prop] theorem isPolyTime_weightNumerator {α : Type} {input : α ↪ List Bool}
     {denominator rateNumerator threshold : α → ℕ} {votes : α → List Bool} {truth : α → Bool}
-    (hdenominator : ComputableTidilyInPolyTime denominator input encUnary)
-    (hrate : ComputableTidilyInPolyTime rateNumerator input encUnary)
-    (hthreshold : ComputableTidilyInPolyTime threshold input encUnary)
-    (hvotes : ComputableTidilyInPolyTime votes input encBits)
-    (htruth : ComputableTidilyInPolyTime truth input encBool) :
-    ComputableTidilyInPolyTime
+    (hdenominator : ComputableInPolyTime denominator input encUnary)
+    (hrate : ComputableInPolyTime rateNumerator input encUnary)
+    (hthreshold : ComputableInPolyTime threshold input encUnary)
+    (hvotes : ComputableInPolyTime votes input encBits)
+    (htruth : ComputableInPolyTime truth input encBool) :
+    ComputableInPolyTime
       (fun a => weightNumerator (denominator a) (rateNumerator a) (threshold a) (votes a) (truth a))
       input encUnary := by
   unfold weightNumerator
@@ -164,15 +164,17 @@ theorem sampleWeight_density_deviation {α : Type} [Fintype α] (source : ProbCo
 /-- Runtime-dependent parameters, votes, and labels compose to a uniform strict PPT sampler. -/
 theorem isPPTOn_sampleWeight {α : Type} {input : α ↪ List Bool}
     {bound rateNumerator threshold : α → ℕ} {votes : α → List Bool} {truth : α → Bool}
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hrate : ComputableTidilyInPolyTime rateNumerator input encUnary)
-    (hthreshold : ComputableTidilyInPolyTime threshold input encUnary)
-    (hvotes : ComputableTidilyInPolyTime votes input encBits)
-    (htruth : ComputableTidilyInPolyTime truth input encBool) :
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hrate : ComputableInPolyTime rateNumerator input encUnary)
+    (hthreshold : ComputableInPolyTime threshold input encUnary)
+    (hvotes : ComputableInPolyTime votes input encBits)
+    (htruth : ComputableInPolyTime truth input encBool) :
     IsPPTOn input encBool (fun a =>
       sampleWeight (bound a) (rateNumerator a) (threshold a) (votes a) (truth a)) := by
   unfold sampleWeight
-  ppt
+  exact isPPTOn_sampleDyadicCoin hbound
+    (isPolyTime_weightNumerator (ComputableInPolyTime.unary_dyadicSize.comp hbound)
+      hrate hthreshold hvotes htruth)
 
 attribute [program_certificate] isPPTOn_sampleWeight
 

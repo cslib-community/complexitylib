@@ -295,8 +295,8 @@ theorem isPPTOn_rewind {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary e
   have hrespond := hA.2
   unfold SchnorrImpersonator.rewind
   refine hA.1.bind_with ?_
-  refine (ComputableTidilyInPolyTime.sampleList (by fun_prop)).bind_with ?_
-  refine (ComputableTidilyInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
   refine (hrespond.preprocess
     (prepare := fun p : (((ℕ × F.Desc × List Bool) × List Bool × List Bool) × List Bool) ×
       List Bool => (p.1.1.1.1, (p.1.1.2.2, p.1.2))) (by fun_prop)).bind_with ?_

@@ -8,6 +8,11 @@ module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 -- vendored: move pure degree bounds to ResourceBounds.Degree and add direct plain certificates.
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeComposition
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeClosure
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreePrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
@@ -48,15 +53,7 @@ namespace Turing.MultiTapeTM
 
 universe u
 
-namespace DegreeBounded
 
-variable {α β : Type*} {size : α → ℕ} {u v : α → ℕ} {d d₁ d₂ : ℕ}
-
-public theorem polyBounded (h : DegreeBounded size u d) : PolyBounded size u :=
-  let ⟨c, hu⟩ := h
-  .of_forall_le c d hu
-
-end DegreeBounded
 
 /-! ### Tidy computability with bounds of given degrees -/
 
@@ -188,14 +185,15 @@ public theorem pair {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
     (hf : ComputableTidilyInDegree f encIn enc₁ d₁ e₁)
     (hg : ComputableTidilyInDegree g encIn enc₂ d₂ e₂) :
     ComputableTidilyInDegree (fun x => (f x, g x)) encIn enc (max d₁ d₂) (max d₁ d₂) := by
-  obtain ⟨⟨t₁, s₁, ht₁, hs₁, h₁⟩, -⟩ := hf
-  obtain ⟨⟨t₂, s₂, ht₂, hs₂, h₂⟩, -⟩ := hg
-  obtain ⟨c, h⟩ := hP.pair_mono h₁ h₂
-  have ht := ((ht₁.add_max ht₂).add_const 1).smul c
-  refine of_bounds ht ((((hs₁.add_max hs₂).add ht).add_const 1).smul c)
-    (h.mono (fun _ => le_rfl) (fun x => Nat.mul_le_mul_left c ?_))
-  have := h.length_le x
-  omega
+  obtain ⟨⟨t₁, s₁, ht₁, hs₁, h₁⟩, hl₁⟩ := hf
+  obtain ⟨⟨t₂, s₂, ht₂, hs₂, h₂⟩, hl₂⟩ := hg
+  have hp := ComputableInDegree.pair (enc := enc)
+    (show ComputableInDegree f encIn enc₁ d₁ e₁ from
+      ⟨⟨t₁, s₁, ht₁, hs₁, h₁.computableInTimeAndSpace⟩, hl₁⟩)
+    (show ComputableInDegree g encIn enc₂ d₂ e₂ from
+      ⟨⟨t₂, s₂, ht₂, hs₂, h₂.computableInTimeAndSpace⟩, hl₂⟩)
+  obtain ⟨t, s, ht, hs, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.degree hp
+  exact ⟨⟨t, s, ht, hs, k, Q, hfin, tm, htm⟩, hp.2⟩
 
 /-- Pairing with the framed encoding of pairs. -/
 public theorem prod {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
@@ -245,59 +243,30 @@ variable {enc₁ : β ↪ List Bool}
 /-- `Option.some`. -/
 public theorem optionSome {enc : Option β ↪ List Bool} [OptionEncoding enc₁ enc] :
     ComputableTidilyInDegree some enc₁ enc 1 1 :=
-  of_linear OptionEncoding.some
+  of_linear (Internal.NormalForm.linear OptionEncoding.some)
 
 /-- `Option.getD`. -/
 public theorem getD {enc : Option β ↪ List Bool} [OptionEncoding enc₁ enc] (d : β) :
     ComputableTidilyInDegree (fun o => o.getD d) enc enc₁ 1 1 :=
-  of_linear (OptionEncoding.getD d)
+  of_linear (Internal.NormalForm.linear (OptionEncoding.getD d))
 
 /-- `List.headD`. -/
 public theorem headD {enc : List β ↪ List Bool} [ListEncoding enc₁ enc] (d : β) :
     ComputableTidilyInDegree (fun l => l.headD d) enc enc₁ 1 1 :=
-  of_linear (ListEncoding.headD d)
+  of_linear (Internal.NormalForm.linear (ListEncoding.headD d))
 
 /-- `List.tail`. -/
 public theorem tail {enc : List β ↪ List Bool} [ListEncoding enc₁ enc] :
     ComputableTidilyInDegree List.tail enc enc 1 1 :=
-  of_linear (ListEncoding.tail (enc₁ := enc₁))
+  of_linear (Internal.NormalForm.linear (ListEncoding.tail (enc₁ := enc₁)))
 
 /-- `List.isEmpty`. -/
 public theorem isEmpty {enc : List β ↪ List Bool} [ListEncoding enc₁ enc] :
     ComputableTidilyInDegree List.isEmpty enc encBool 1 1 :=
-  of_linear (ListEncoding.isEmpty (enc₁ := enc₁))
+  of_linear (Internal.NormalForm.linear (ListEncoding.isEmpty (enc₁ := enc₁)))
 
 end ComputableTidilyInDegree
 
-namespace ComputableInDegree
 
-variable {α β : Type*} {f : α → β} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
-  {d e d' e' : ℕ}
-
-/-- Increasing either degree retains the same realizing machine. -/
-public theorem mono (h : ComputableInDegree f encIn encOut d e)
-    (hd : d ≤ d' := by first | decide | omega) (he : e ≤ e' := by first | decide | omega) :
-    ComputableInDegree f encIn encOut d' e' :=
-  let ⟨⟨t, s, ht, hs, hf⟩, hl⟩ := h
-  ⟨⟨t, s, ht.mono_deg hd, hs.mono_deg hd, hf⟩, hl.mono_deg he⟩
-
-/-- Exact time and workspace bounds of degree `d` also bound the output length in degree `d`. -/
-public theorem of_bounds {t s : α → ℕ}
-    (ht : DegreeBounded (fun a => (encIn a).length) t d)
-    (hs : DegreeBounded (fun a => (encIn a).length) s d)
-    (hf : ComputableInTimeAndSpace f encIn encOut t s) :
-    ComputableInDegree f encIn encOut d d :=
-  ⟨⟨t, s, ht, hs, hf⟩, ht.mono hf.length_le⟩
-
-/-- Fixed time and workspace degrees give plain polynomial-time computability, including degree
-zero. Encoded output is bounded separately and is not charged to workspace. -/
-public theorem computableInPolyTime (h : ComputableInDegree f encIn encOut d e) :
-    ComputableInPolyTime f encIn encOut := by
-  obtain ⟨⟨_, _, ht, hs, h⟩, _⟩ := h
-  obtain ⟨T, hT, ht⟩ := ht.polyBounded
-  obtain ⟨S, hS, hs⟩ := hs.polyBounded
-  exact ⟨T, S, hT, hS, h.mono ht hs⟩
-
-end ComputableInDegree
 
 end Turing.MultiTapeTM

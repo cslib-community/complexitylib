@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Bolton Bailey, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Bolton Bailey, Samuel Schlesinger
+Authors: Bolton Bailey, Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -60,8 +60,51 @@ theorem polytime_lookup (label : D ↪ List Bool) :
       p.1.lookup p.2.1 p.2.2)
       (encPair (encoding label) (encPair encUnary (encPair label label)))
       (encPair encUnary (encPair label label)) := by
-  unfold lookup encoding
-  polytime
+  let row : ((D × D) → ℕ × (D × D)) ↪ List Bool :=
+    encPi (encPair encUnary (encPair label label))
+  let rows := encList row
+  have htail : ComputableInPolyTime List.tail rows rows := by
+    obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.tail (enc₁ := row) (enc := rows)
+    exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
+      k, Q, hfin, tm, fun l => htm l⟩
+  have heq (l : List ((D × D) → ℕ × (D × D))) (n : ℕ) :
+      (List.replicate n true).foldl (fun acc _ => acc.tail) l = l.drop n := by
+    simp [List.foldl_const, List.tail_iterate]
+  have hdrop : ComputableInPolyTime
+      (fun p : List ((D × D) → ℕ × (D × D)) × ℕ => p.1.drop p.2)
+      (encPair rows encUnary) rows := by
+    have hfold := ComputableInPolyTime.foldl' (encA := encBool) (encL := encBits)
+      (list := fun p : List ((D × D) → ℕ × (D × D)) × ℕ => List.replicate p.2 true)
+      (step := fun acc _ => acc.tail)
+      ((ComputableInPolyTime.of_eq (encIn := encUnary) (encOut := encBits)
+        (fun _ => rfl)).comp (ComputableInPolyTime.snd rows encUnary))
+      (ComputableInPolyTime.fst rows encUnary)
+      (htail.comp (ComputableInPolyTime.fst rows encBool))
+      (B := fun p => (encPair rows encUnary p).length) .self (fun p i _ => by
+        rw [List.take_replicate, heq]
+        have := SizedListEncoding.length_drop_le (encA := row) (encL := rows) p.1 (min i p.2)
+        simp only [length_encPair]
+        omega)
+    simpa only [heq] using hfold
+  have hhead : ComputableInPolyTime
+      (fun l : List ((D × D) → ℕ × (D × D)) => l.headD (fun label => (0, label))) rows row := by
+    obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.headD
+      (enc₁ := row) (enc := rows) (fun label => (0, label))
+    exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
+      k, Q, hfin, tm, fun l => htm l⟩
+  have htable := ComputableInPolyTime.fst rows (encPair encUnary (encPair label label))
+  have hargs := ComputableInPolyTime.snd rows (encPair encUnary (encPair label label))
+  have hrow := hhead.comp (hdrop.comp (htable.prod hargs.fst'))
+  have hp := ComputableInPolyTime.pi_apply' hrow hargs.snd'
+  have hplain : ComputableInPolyTime
+      (fun p : TowerTable D × (ℕ × (D × D)) => p.1.lookup p.2.1 p.2.2)
+      (encPair (encoding label) (encPair encUnary (encPair label label)))
+      (encPair encUnary (encPair label label)) := by
+    simpa only [lookup, List.headD_eq_head?_getD, List.head?_drop,
+      List.getD_eq_getElem?_getD, Function.comp_def, encoding, rows, row] using hp
+  obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hplain
+  exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
+    .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
 
 /-- Each new row uses two stored rotations and fixed finite base operations. -/
 @[fun_prop]

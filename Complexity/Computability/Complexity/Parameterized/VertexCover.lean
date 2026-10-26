@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Problems.VertexCover
+import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -33,8 +34,8 @@ step `j` (`Cslib.Complexity.VertexCover.foldBranch`). To keep the path length bo
 of the graph even when the binary target `k` exceeds the number `n` of distinct declared vertices,
 the search caps the depth at `min n k` (`Cslib.Complexity.VertexCover.cap`) and checks `k ≤ n`
 separately (`Cslib.Complexity.mem_VertexCover_iff_exists_card_le`). Iterating over the
-`2 ^ min n k` paths (`Cslib.Complexity.VertexCover.search`) runs within time `2 ^ k` times a
-polynomial in the length of the encoded instance
+`2 ^ min n k` paths (`Cslib.Complexity.DecidableInExpTime.of_exhaustiveSearch`) runs within time
+`2 ^ k` times a polynomial in the length of the encoded instance
 (`Cslib.Complexity.VertexCover_decidableInExpTime_one`), so `VertexCover` is fixed-parameter
 tractable in the target size `k` (`Cslib.Complexity.VertexCover_mem_FPT`).
 
@@ -49,7 +50,6 @@ tractable in the target size `k` (`Cslib.Complexity.VertexCover_mem_FPT`).
 * `Cslib.Complexity.VertexCover.exists_lt_two_pow_isCover_foldBranch`: if a graph has a vertex
   cover of at most `m` vertices, one of the `2 ^ m` paths of length `m` finds a cover.
 * `Cslib.Complexity.VertexCover.search_eq_true_iff`: `VertexCover.search` decides `VertexCover`.
-* `Cslib.Complexity.VertexCover.exists_computableInO_search`: its running time.
 * `Cslib.Complexity.VertexCover_decidableInExpTime_one`: `VertexCover` is decidable within time
   `2 ^ k` times a polynomial in the length of the encoded instance.
 * `Cslib.Complexity.VertexCover_mem_FPT`, `Cslib.Complexity.VertexCover_hasKernel`: `VertexCover`
@@ -234,51 +234,20 @@ def cap (x : Graph × ℕ) : ℕ :=
 theorem cap_eq (x : Graph × ℕ) : cap x = min x.1.1.toFinset.card x.2 := by
   rw [cap, Graph.length_distinctVertices]
 
-private theorem cap_le_length (x : Graph × ℕ) : cap x ≤ (encGraph x.1).length :=
-  (Nat.min_le_left _ _).trans x.1.length_distinctVertices_le
-
 theorem cap_le_snd (x : Graph × ℕ) : cap x ≤ x.2 :=
   Nat.min_le_right _ _
-
-/-- The state of the bounded-search-tree iteration: the instance `(G, k)`, the capped depth `cap`
-in unary, the number of the next root-to-leaf path to try, and whether a cover has been found. -/
-abbrev State : Type := ((Graph × ℕ) × ℕ) × (ℕ × Bool)
-
-/-- States encoded as framed tuples, with the capped depth in unary. -/
-private abbrev encState : State ↪ List Bool :=
-  encPair (encPair (encPair encGraph encNat) encUnary) (encPair encNat encBool)
-
-/-- Try the next numbered path in the bounded search tree. -/
-def step (s : State) : State :=
-  (s.1, (s.2.1 + 1,
-    s.2.2 || isCover s.1.1.1 (foldBranch s.1.1.1 ((List.range s.1.2).map s.2.1.testBit))))
-
-/-- The initial state: no path tried yet. -/
-def init (x : Graph × ℕ) : State := ((x, cap x), (0, false))
-
-/-- Check that the target `k` is at most `|V|` (`s.1.2 = s.1.1.2`) and that a cover was found. -/
-def finish (s : State) : Bool :=
-  decide (s.1.2 = s.1.1.2) && s.2.2
 
 /-- **Bounded-search-tree decision procedure for `VertexCover`**: try all `2 ^ cap x` paths of
 length `cap x` and check that `k ≤ |V|` (`cap x = k`). -/
 def search (x : Graph × ℕ) : Bool :=
-  finish (step^[2 ^ cap x] (init x))
-
-private theorem iterate_step_init (x : Graph × ℕ) (j : ℕ) :
-    step^[j] (init x) = ((x, cap x),
-      (j, (List.range j).any fun i =>
-        isCover x.1 (foldBranch x.1 ((List.range (cap x)).map i.testBit)))) := by
-  induction j with
-  | zero => rfl
-  | succ j ih =>
-    rw [Function.iterate_succ_apply', ih, step, List.range_succ, List.any_append]
-    simp
+  decide (cap x = x.2) &&
+    (List.range (2 ^ cap x)).any fun i =>
+      isCover x.1 (foldBranch x.1 ((List.range (cap x)).map i.testBit))
 
 /-- **`VertexCover.search` decides `VertexCover`.** -/
 theorem search_eq_true_iff (x : Graph × ℕ) : search x = true ↔ x ∈ VertexCover := by
   rcases x with ⟨G, k⟩
-  rw [search, iterate_step_init, finish, mem_VertexCover_iff_exists_card_le]
+  rw [search, mem_VertexCover_iff_exists_card_le]
   simp only [Bool.and_eq_true, decide_eq_true_eq, List.any_eq_true, List.mem_range, cap_eq,
     min_eq_right_iff]
   refine and_congr_right fun hk => ?_
@@ -336,13 +305,19 @@ private theorem length_encList_branchStep_le (G : Graph) (C : List ℕ) (b : Boo
   · simp only [↓reduceIte]
     omega
 
+/-- Candidate path tuples `((G, k), cap (G, k), i)`, with `cap (G, k)` in unary. -/
+private abbrev Cand : Type := ((Graph × ℕ) × ℕ) × ℕ
+
+private abbrev encCand : Cand ↪ List Bool :=
+  encPair (encPair (encPair encGraph encNat) encUnary) encNat
+
 open ComputableTidilyInPolyTime in
 /-- Computing the `m` branching bits of path `i` is polynomial-time. -/
 private theorem computableTidilyInPolyTime_branchBits :
-    ComputableTidilyInPolyTime (fun s : State => (List.range s.1.2).map s.2.1.testBit)
-      encState (encList encBool) := by
-  have heq : (fun s : State => (List.range s.1.2).map s.2.1.testBit) =
-      fun s => (List.range s.1.2).map fun j => (encNat s.2.1).getD j false := by
+    ComputableTidilyInPolyTime (fun s : Cand => (List.range s.1.2).map s.2.testBit)
+      encCand (encList encBool) := by
+  have heq : (fun s : Cand => (List.range s.1.2).map s.2.testBit) =
+      fun s => (List.range s.1.2).map fun j => (encNat s.2).getD j false := by
     funext s
     congr 1
     funext j
@@ -350,150 +325,79 @@ private theorem computableTidilyInPolyTime_branchBits :
     rfl
   rw [heq]
   exact mapWithInput (range.comp ((snd _ _).comp (fst _ _)))
-    (bitsGetDWithInput ((encode encNat).comp ((fst _ _).comp ((snd _ _).comp (fst _ _))))
+    (bitsGetDWithInput ((encode encNat).comp ((snd _ _).comp (fst _ _)))
       (snd _ _) false)
 
 open ComputableTidilyInPolyTime in
 /-- Following a root-to-leaf path in the bounded search tree is polynomial-time. -/
 private theorem computableTidilyInPolyTime_foldBranch :
     ComputableTidilyInPolyTime
-      (fun s : State => foldBranch s.1.1.1 ((List.range s.1.2).map s.2.1.testBit))
-      encState (encList encNat) := by
-  have hG : ComputableTidilyInPolyTime (fun s : State => s.1.1.1) encState encGraph := by fun_prop
-  have hgrowth_poly : PolyBounded (fun s : State => (encState s).length)
-      (fun s : State => 2 * (encGraph s.1.1.1).length + 2) :=
+      (fun s : Cand => foldBranch s.1.1.1 ((List.range s.1.2).map s.2.testBit))
+      encCand (encList encNat) := by
+  have hG : ComputableTidilyInPolyTime (fun s : Cand => s.1.1.1) encCand encGraph := by fun_prop
+  have hgrowth_poly : PolyBounded (fun s : Cand => (encCand s).length)
+      (fun s : Cand => 2 * (encGraph s.1.1.1).length + 2) :=
     ((PolyBounded.const 2).mul hG.polyBounded_length).add (.const 2)
   exact foldlWith_of_bounded_growth hG computableTidilyInPolyTime_branchBits (const [])
     computableInPolyTime_branchStep.tidy hgrowth_poly
     fun s C b _ => length_encList_branchStep_le s.1.1.1 C b
 
 open ComputableTidilyInPolyTime in
-/-- One step of the search iteration is polynomial-time. -/
-private theorem computableTidilyInPolyTime_step
-    : ComputableTidilyInPolyTime step encState encState := by
+/-- Checking whether candidate path `i` yields a valid vertex cover of size `k ≤ |V|` is
+polynomial-time. -/
+private theorem computableInPolyTime_checkCand :
+    ComputableInPolyTime
+      (fun s : Cand =>
+        decide (s.1.2 = s.1.1.2) &&
+          isCover s.1.1.1 (foldBranch s.1.1.1 ((List.range s.1.2).map s.2.testBit)))
+      encCand encBool := by
+  refine .of_tidy ?_
   have hcov : ComputableTidilyInPolyTime
-      (fun s : State => isCover s.1.1.1 (foldBranch s.1.1.1 ((List.range s.1.2).map s.2.1.testBit)))
-      encState encBool :=
+      (fun s : Cand => isCover s.1.1.1 (foldBranch s.1.1.1 ((List.range s.1.2).map s.2.testBit)))
+      encCand encBool :=
     computableInPolyTime_isCover.tidy.comp
-      ((show ComputableTidilyInPolyTime (fun s : State => s.1.1.1) encState encGraph
+      ((show ComputableTidilyInPolyTime (fun s : Cand => s.1.1.1) encCand encGraph
         by fun_prop).prod computableTidilyInPolyTime_foldBranch)
-  have hor : ComputableTidilyInPolyTime
-      (fun s : State =>
-        s.2.2 || isCover s.1.1.1 (foldBranch s.1.1.1 ((List.range s.1.2).map s.2.1.testBit)))
-      encState encBool :=
-    bool_or.comp ((show ComputableTidilyInPolyTime (fun s : State => s.2.2) encState encBool
-      by fun_prop).prod hcov)
-  exact (fst _ _).prod ((computableTidilyInPolyTime_succ.comp (by fun_prop)).prod hor)
-
-open ComputableTidilyInPolyTime in
-/-- The initial state of the search is computed in polynomial time. -/
-private theorem computableTidilyInPolyTime_init :
-    ComputableTidilyInPolyTime init (encPair encGraph encNat) encState := by
-  have hcap := computableInPolyTime_cap.tidy
-  unfold init
-  fun_prop
-
-open ComputableTidilyInPolyTime in
-/-- The number `2 ^ cap x` of paths is computed in binary in polynomial time. -/
-private theorem computableTidilyInPolyTime_count :
-    ComputableTidilyInPolyTime (fun x => 2 ^ cap x) (encPair encGraph encNat) encNat := by
-  have hcap := computableInPolyTime_cap.tidy
-  fun_prop
-
-open ComputableTidilyInPolyTime in
-/-- Extracting the final answer from the search state is polynomial-time. -/
-private theorem computableTidilyInPolyTime_finish :
-    ComputableTidilyInPolyTime finish encState encBool := by
-  unfold finish
   exact bool_and'
     ((unary_to_binary.comp ((snd _ _).comp (fst _ _))).decide_eq' (by fun_prop))
-    (by fun_prop)
-
-/-- **Running time of the bounded search tree for `VertexCover`**: within time `2 ^ k` times a
-polynomial in the length of the encoded instance. -/
-theorem exists_computableInO_search : ∃ e, ComputableInO search
-    (encPair encGraph encNat) encBool
-    (fun x => 2 ^ x.2 * ((encPair encGraph encNat x).length + 1) ^ e)
-    fun x => 2 ^ x.2 * ((encPair encGraph encNat x).length + 1) ^ e := by
-  have this : ∃ e, ComputableTidilyInO search (encPair encGraph encNat) encBool
-      (fun x => 2 ^ x.2 * ((encPair encGraph encNat x).length + 1) ^ e) fun x => 2 ^ x.2 *
-      ((encPair encGraph encNat x).length + 1) ^ e := by
-    obtain ⟨d, _, hstep⟩ := computableTidilyInPolyTime_step.exists_degree
-    obtain ⟨d₀, _, hinit⟩ := computableTidilyInPolyTime_init.exists_degree
-    obtain ⟨d₁, _, hcount⟩ := computableTidilyInPolyTime_count.exists_degree
-    obtain ⟨d₂, _, hans⟩ := computableTidilyInPolyTime_finish.exists_degree
-    set size : Graph × ℕ → ℕ := fun x => (encPair encGraph encNat x).length
-    set B : Graph × ℕ → ℕ := fun x => 16 * (size x + 1)
-    have hcap (x : Graph × ℕ) : cap x ≤ size x :=
-      (cap_le_length x).trans (by simp only [size, length_encPair]; omega)
-    have hstate : ∀ x, ∀ j ≤ 2 ^ cap x,
-        (encState (step^[j] (init x))).length ≤ B x := by
-      intro x j hj
-      have hK := ComputableTidilyInO.length_encNat_mono hj
-      rw [encNat_two_pow] at hK
-      have h₁ := hcap x
-      rw [iterate_step_init]
-      simp only [List.length_append, List.length_replicate, List.length_singleton] at hK
-      simp only [encState, length_encPair, encUnary_apply, List.length_replicate, encBool_apply,
-        List.length_singleton, B, size] at h₁ ⊢
-      omega
-    have hiter := ComputableTidilyInO.iterate hcount.inO hinit.inO hstep.inO
-      (R := fun x => (B x + 1) ^ d) (Q := fun x => (B x + 1) ^ d) (B := B)
-      (fun x j hj => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate x j hj) 1) d)
-      (fun x j hj => Nat.pow_le_pow_left (Nat.add_le_add_right (hstate x j hj) 1) d) hstate
-    have h := hans.inO.comp hiter
-    have hB : PolyBounded size B := .of_forall_le 16 1 fun _ => by simp [B]
-    have hpow (j : ℕ) : PolyBounded size fun x => (B x + 1) ^ j :=
-      ((PolyBounded.of_polynomiallyBounded id (bound := fun n => (n + 1) ^ j) (by fun_prop)).comp
-        hB).mono fun _ => le_rfl
-    have hL (j : ℕ) : PolyBounded size fun x => (size x + 1) ^ j :=
-      .of_forall_le 1 j fun _ => by simp
-    obtain ⟨c, e, hT⟩ := exists_le_mul_two_pow_of_polyBounded (size := size) (μ := Prod.snd)
-      ((hpow d).add (hB.add (.of_forall_le 4 2 fun _ => le_rfl)))
-      ((hL d₁).add ((hL d₀).add (hpow d₂)))
-      (T := fun x => ((encPair encGraph encNat x).length + 1) ^ d₁ +
-        ((encPair encGraph encNat x).length + 1) ^ d₀ +
-        (2 ^ cap x + 1) * ((B x + 1) ^ d + B x + ((encNat (2 ^ cap x)).length + 1) ^ 2) +
-        ((encState (step^[2 ^ cap x] (init x))).length + 1) ^ d₂)
-      (fun x => by
-        have hK : ((encNat (2 ^ cap x)).length + 1) ^ 2 ≤ 4 * (size x + 1) ^ 2 := by
-          rw [encNat_two_pow]
-          simp only [List.length_append, List.length_replicate, List.length_singleton]
-          calc (cap x + 1 + 1) ^ 2 ≤ (2 * (size x + 1)) ^ 2 :=
-                Nat.pow_le_pow_left (by have := hcap x; omega) 2
-            _ = 4 * (size x + 1) ^ 2 := by ring
-        have hS := Nat.pow_le_pow_left (Nat.add_le_add_right (hstate x _ le_rfl) 1) d₂
-        have h2 : 2 ^ cap x ≤ 2 ^ x.2 := Nat.pow_le_pow_right (by norm_num) (cap_le_snd x)
-        have h3 := Nat.mul_le_mul (Nat.add_le_add_right h2 1)
-          (Nat.add_le_add_left hK ((B x + 1) ^ d + B x))
-        simp only [size] at h3 hS ⊢
-        nlinarith)
-    refine ⟨e, (h.mono c (fun x => ?_) fun x => ?_).of_enc_eq fun x => rfl⟩
-    all_goals
-      have h₁ := hT x
-      simp only [size] at h₁
-      generalize 2 ^ cap x = N at h₁ ⊢
-      generalize (encNat N).length = K at h₁ ⊢
-      obtain ⟨X, hX⟩ : ∃ X, (B x + 1) ^ d + B x = X := ⟨_, rfl⟩
-      rw [hX] at h₁
-      have h₂ : K ≤ (K + 1) ^ 2 := by nlinarith
-      have h₃ : X + (K + 1) ^ 2 ≤ (N + 1) * (X + (K + 1) ^ 2) := Nat.le_mul_of_pos_left _ (by omega)
-      nlinarith
-  simpa only [computableInO_iff_computableTidilyInO] using this
+    hcov
 
 end VertexCover
 
+open ComputableTidilyInPolyTime in
 /-- **`VertexCover` by bounded search tree**: `VertexCover` is decidable within time `2 ^ k` times
 a polynomial in the length of the encoded instance, for target cover size `k`. -/
 theorem VertexCover_decidableInExpTime_one :
     DecidableInExpTime VertexCover (encPair encGraph encNat) Prod.snd 1 := by
-  obtain ⟨e, h⟩ := VertexCover.exists_computableInO_search
-  refine DecidableInExpTime.of_computableInO h (fun x => (VertexCover.search_eq_true_iff x).symm) 1
-    e
-    fun x => ?_
-  rw [one_mul, Real.rpow_natCast]
-  push_cast
-  rw [one_mul]
+  have hB : DecidableInExpTime
+      {s : VertexCover.Cand |
+        (decide (s.1.2 = s.1.1.2) &&
+          VertexCover.isCover s.1.1.1
+            (VertexCover.foldBranch s.1.1.1 ((List.range s.1.2).map s.2.testBit))) = true}
+      VertexCover.encCand (fun _ => 0) 0 :=
+    .of_computableInPolyTime VertexCover.computableInPolyTime_checkCand (fun _ => Iff.rfl)
+  have hf : ComputableInPolyTime
+      (fun q : (Graph × ℕ) × ℕ => ((q.1, VertexCover.cap q.1), q.2))
+      (encPair (encPair encGraph encNat) encNat) VertexCover.encCand := by
+    have := VertexCover.computableInPolyTime_cap.tidy
+    exact .of_tidy (by fun_prop)
+  have hfA (x : Graph × ℕ) : x ∈ VertexCover ↔ ∃ i < 2 ^ VertexCover.cap x,
+      ((x, VertexCover.cap x), i) ∈
+        {s : VertexCover.Cand |
+          (decide (s.1.2 = s.1.1.2) &&
+            VertexCover.isCover s.1.1.1
+              (VertexCover.foldBranch s.1.1.1 ((List.range s.1.2).map s.2.testBit))) = true} := by
+    rw [← VertexCover.search_eq_true_iff, VertexCover.search]
+    simp only [Bool.and_eq_true, decide_eq_true_eq, List.any_eq_true, List.mem_range,
+      Set.mem_ofPred_eq]
+    constructor
+    · rintro ⟨hcap, i, hi, hcov⟩
+      exact ⟨i, hi, hcap, hcov⟩
+    · rintro ⟨i, hi, hcap, hcov⟩
+      exact ⟨hcap, i, hi, hcov⟩
+  simpa using hB.of_exhaustiveSearch hf VertexCover.computableInPolyTime_cap hfA
+    (c := 0) (fun _ _ => Nat.zero_le _) (M := 1) (K := 0)
+    (fun x => by simpa using VertexCover.cap_le_snd x) le_rfl
 
 /-- **`VertexCover` is fixed-parameter tractable** in the target cover size `k`. -/
 theorem VertexCover_mem_FPT : VertexCover ∈ FPT (encPair encGraph encNat) Prod.snd :=

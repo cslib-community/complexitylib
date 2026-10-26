@@ -37,6 +37,7 @@ least `d - (N - r n)`, and `Cslib.AffineDisperser.exists_traceSym_ne` transfers 
 
 ## Main definitions
 
+* `Cslib.AffineDisperser.ofBits`: the field element with given bit coordinates in a basis.
 * `Cslib.AffineDisperser.readField`: `r` field elements read from a bit string.
 * `Cslib.AffineDisperser.traceSymBits`: `traceSym` on bit strings.
 
@@ -59,11 +60,15 @@ open BitString Module
 
 variable {F : Type*} [Field F] [Algebra (ZMod 2) F] {ι : Type*} [Fintype ι] {r N : ℕ}
 
+/-- The element of `F` whose coordinates in the basis `b` are the bits `v j`. -/
+noncomputable def ofBits (b : Basis ι (ZMod 2) F) (v : ι → Bool) : F :=
+  ∑ j, bitEquiv.symm (v j) • b j
+
 /-- The `r` elements of `F` read from the bits of `x`: element `i` has coordinate `x (pos (i, j))`
 on the basis vector `b j`. -/
 noncomputable def readField (b : Basis ι (ZMod 2) F) (pos : Fin r × ι → Fin N) (x : BitString N) :
     Fin r → F :=
-  fun i => ∑ j, bitEquiv.symm (x (pos (i, j))) • b j
+  fun i => ofBits b fun j => x (pos (i, j))
 
 /-- Ben-Sasson and Kopparty's function `traceSym μ r t` on bit strings: the trace, as a bit, at the
 `r` field elements read from `x` by `readField b pos`. -/
@@ -84,7 +89,7 @@ private noncomputable def readLinear (b : Basis ι (ZMod 2) F) (pos : Fin r × �
 private theorem readField_eq (b : Basis ι (ZMod 2) F) (pos : Fin r × ι → Fin N)
     (x : BitString N) : readField b pos x = readLinear b pos (toZMod N x) := by
   funext i
-  simp [readField, readLinear, toZMod, Basis.equivFun_symm_apply]
+  simp [readField, ofBits, readLinear, toZMod, Basis.equivFun_symm_apply]
 
 /-- Reading forgets at most `N - r n` dimensions. -/
 private theorem finrank_ker_readLinear_le (b : Basis ι (ZMod 2) F) {pos : Fin r × ι → Fin N}

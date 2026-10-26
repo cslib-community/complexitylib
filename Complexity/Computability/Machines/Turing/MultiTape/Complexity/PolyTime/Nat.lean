@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Mathlib.Algebra.Polynomial.Eval.Defs
@@ -230,53 +231,35 @@ theorem unary_mul :
   encUnary :=
   .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul
 
+/-- Add two computed unary naturals with the same full input context. -/
+@[fun_prop]
+theorem unary_add' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encUnary)
+    (hright : ComputableInPolyTime right input encUnary) :
+    ComputableInPolyTime (fun a => left a + right a) input encUnary :=
+  unary_add.comp (hleft.prod hright)
+
+/-- Subtract two computed unary naturals with the same full input context. -/
+@[fun_prop]
+theorem unary_sub' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encUnary)
+    (hright : ComputableInPolyTime right input encUnary) :
+    ComputableInPolyTime (fun a => left a - right a) input encUnary :=
+  unary_sub.comp (hleft.prod hright)
+
+/-- Multiply two computed unary naturals with the same full input context. -/
+@[fun_prop]
+theorem unary_mul' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encUnary)
+    (hright : ComputableInPolyTime right input encUnary) :
+    ComputableInPolyTime (fun a => left a * right a) input encUnary :=
+  unary_mul.comp (hleft.prod hright)
+
 /-- A fixed power of a unary natural. -/
 @[fun_prop]
 theorem unary_pow (d : ℕ) :
     ComputableInPolyTime (fun (n : ℕ) => n ^ d)
   encUnary encUnary :=
   .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow d)
-
-/-- Truncated subtraction of unary naturals. -/
-@[fun_prop]
-theorem unary_sub :
-    ComputableInPolyTime (fun (p : ℕ × ℕ) => p.1 - p.2)
-  (encPair encUnary encUnary)
-  encUnary :=
-  .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub
-
-/-- Comparison of unary naturals. -/
-@[fun_prop]
-theorem unary_le :
-    ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
-      (encPair encUnary encUnary) encBool :=
-  .of_tidy ComputableTidilyInPolyTime.unary_le
-
-/-- Strict comparison of unary naturals. -/
-@[fun_prop]
-theorem unary_lt :
-    ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 < p.2))
-      (encPair encUnary encUnary) encBool :=
-  .of_tidy ComputableTidilyInPolyTime.unary_lt
-
-/-- Compare computed unary values, with both operand encodings fixed. -/
-@[fun_prop]
-theorem unary_le' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
-    (hleft : ComputableInPolyTime left input encUnary)
-    (hright : ComputableInPolyTime right input encUnary) :
-    ComputableInPolyTime (fun a => decide (left a ≤ right a)) input encBool :=
-  unary_le.comp (hleft.prod hright)
-
-/-- Strictly compare computed unary values, with both operand encodings fixed. -/
-@[fun_prop]
-theorem unary_lt' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
-    (hleft : ComputableInPolyTime left input encUnary)
-    (hright : ComputableInPolyTime right input encUnary) :
-    ComputableInPolyTime (fun a => decide (left a < right a)) input encBool :=
-  unary_lt.comp (hleft.prod hright)
-
-/-- Convert a unary natural to its binary encoding. -/
-theorem unary_to_binary : ComputableInPolyTime (fun n : ℕ => n) encUnary encNat :=
-  .of_tidy ComputableTidilyInPolyTime.unary_to_binary
 
 end Turing.MultiTapeTM.ComputableInPolyTime

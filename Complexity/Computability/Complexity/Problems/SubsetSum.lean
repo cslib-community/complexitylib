@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Logics.Propositional.CNF.PolyTime
+import Mathlib.Data.List.GetD
 
 /-!
 # Subset sum
@@ -194,15 +195,12 @@ open Finset
 
 variable {φ : CNF ℕ}
 
-private theorem getD_eq_getElem {j : ℕ} (hj : j < φ.length) : φ.getD j [] = φ[j] := by
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj, Option.getD_some]
-
 /-- The variable of every literal of `φ` is listed in `φ.distinctVars`. -/
 private theorem mem_distinctVars_of_mem {j : ℕ} {l : Literal ℕ} (hl : l ∈ φ.getD j []) :
     l.1 ∈ φ.distinctVars := by
   refine CNF.mem_distinctVars.2 ?_
   rcases Nat.lt_or_ge j φ.length with hj | hj
-  · rw [getD_eq_getElem hj] at hl
+  · rw [List.getD_eq_getElem _ _ hj] at hl
     exact List.mem_map.2 ⟨l, List.mem_flatten.2 ⟨_, List.getElem_mem hj, hl⟩, rfl⟩
   · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none hj] at hl
     simp at hl
@@ -422,7 +420,7 @@ theorem digit_mem_SubsetSum_iff_counts (hφ : ∀ c ∈ φ, c.length ≤ 3) :
     · rw [itemSet, card_filter_clause subset_rfl hj]
       have h₁ := card_filter_covers_le (φ := φ)
         (range φ.distinctVars.length ×ˢ (univ : Finset Bool)) j
-      rw [getD_eq_getElem hj] at h₁
+      rw [List.getD_eq_getElem _ _ hj] at h₁
       have h₂ := hφ _ (List.getElem_mem hj)
       have h₃ := card_filter_fst_le (range φ.length ×ˢ (univ : Finset Bool)) j
       lia
@@ -485,7 +483,7 @@ theorem counts_iff_satisfiable (hφ : ∀ c ∈ φ, c.length ≤ 3) :
     obtain ⟨⟨i, b⟩, ha⟩ := card_pos.1 hpos
     obtain ⟨haA, hcov⟩ := mem_filter.1 ha
     obtain ⟨l, hl, hi, hb⟩ := covers_eq_true_iff.1 hcov
-    rw [getD_eq_getElem hj] at hl
+    rw [List.getD_eq_getElem _ _ hj] at hl
     refine (Clause.eval_eq_true_iff _ _).2 ⟨l, hl, ?_⟩
     simp only at hi hb
     rw [hi, hb]
@@ -518,11 +516,11 @@ theorem counts_iff_satisfiable (hφ : ∀ c ∈ φ, c.length ≤ 3) :
       · rintro ⟨rfl, rfl⟩
         exact ⟨⟨hi, rfl⟩, rfl⟩
     · have hle : cnt j ≤ 3 := (card_filter_covers_le A j).trans
-        (by rw [getD_eq_getElem hj]; exact hφ _ (List.getElem_mem hj))
+        (by rw [List.getD_eq_getElem _ _ hj]; exact hφ _ (List.getElem_mem hj))
       have hpos : 1 ≤ cnt j := by
         obtain ⟨l, hl, hσl⟩ := (Clause.eval_eq_true_iff _ _).1
           ((CNF.eval_eq_true_iff _ _).1 hσ _ (List.getElem_mem hj))
-        have hl' : l ∈ φ.getD j [] := by rwa [getD_eq_getElem hj]
+        have hl' : l ∈ φ.getD j [] := by rwa [List.getD_eq_getElem _ _ hj]
         have hidx : φ.distinctVars.idxOf l.1 < φ.distinctVars.length :=
           List.idxOf_lt_length_iff.2 (mem_distinctVars_of_mem hl')
         refine card_pos.2 ⟨(φ.distinctVars.idxOf l.1, l.2), mem_filter.2 ⟨(hmemA _).2

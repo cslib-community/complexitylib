@@ -219,9 +219,9 @@ query register gives `z` with probability `sin²((2k + 1) θ)`. -/
 theorem regProb_run_grover (hN : 2 ≤ N) (z : Fin N) (k : ℕ) :
     regProb (run (grover N) (uniform N) (marked z) k) z =
       Real.sin ((2 * k + 1) * groverAngle N) ^ 2 := by
-  simp only [regProb, run_grover hN, Fintype.sum_prod_type, Fintype.sum_bool, Fintype.univ_unit,
-    sum_singleton, ite_true, Bool.false_eq_true, ite_false, norm_zero, Complex.norm_real,
-    Real.norm_eq_abs, sq_abs]
+  simp only [regProb_eq_sum, run_grover hN, Fintype.sum_prod_type, Fintype.sum_bool,
+    Fintype.univ_unit, sum_singleton, ite_true, Bool.false_eq_true, ite_false, norm_zero,
+    Complex.norm_real, Real.norm_eq_abs, sq_abs]
   ring
 
 /-- **Grover's algorithm** [Grover][Grover1996]: for `N ≥ 2` and every `z`, with

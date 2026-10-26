@@ -10,7 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Mathlib.Data.Fintype.EquivFin
 public import Mathlib.Data.List.OfFn
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 
 /-!
 # Encodings of fixed finite tables

@@ -195,6 +195,135 @@ private theorem two_pow_mul_thirteen_pow_le (E : ℕ) :
   rw [pow_mul, pow_mul, ← mul_pow]
   exact Nat.pow_le_pow_left (by norm_num) _
 
+/-- When every `c x` has the parity of `x ∈ S` and some trial isolates `S` if `S` is nonempty, the
+combined product has odd parity if and only if `S` is nonempty. -/
+private theorem odd_one_add_prod_trials_iff {M T B : ℕ} (c : (Fin M → Bool) → ℕ)
+    (S : Finset (Fin M → Bool)) (s : Fin T → BitString B) (hgood : ∀ x, Odd (c x) ↔ x ∈ S)
+    (hiso : S.Nonempty → ∃ j : Fin T,
+      #{x ∈ S | hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (s j)) (List.ofFn x)} = 1) :
+    Odd (1 + ∏ j : Fin T, (1 + ∑ x with
+      hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (s j)) (List.ofFn x) = true, c x)) ↔
+      S.Nonempty := by
+  classical
+  -- the good randomness
+  rw [odd_one_add_prod_one_add]
+  have hpar (j : Fin T) : Odd (∑ x with
+      hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (s j)) (List.ofFn x) = true, c x) ↔
+      Odd #{x ∈ S | hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (s j)) (List.ofFn x)} := by
+    rw [Finset.odd_sum_iff_odd_card_odd, Finset.filter_filter]
+    congr! 2
+    ext x
+    simp only [mem_filter, mem_univ, true_and, hgood x, and_comm]
+  simp only [hpar]
+  refine ⟨fun ⟨j, hj⟩ => ?_, fun hS => ?_⟩
+  · obtain ⟨x, hx⟩ := Finset.card_pos.1 hj.pos
+    exact ⟨x, (mem_filter.1 hx).1⟩
+  · obtain ⟨j, hj⟩ := hiso hS
+    exact ⟨j, hj ▸ odd_one⟩
+
+/-- At the isolating level `k₀ = log₂ #S + 2`, at most `13 / 16` of the seeds of length `B` fail to
+isolate `S`. -/
+private theorem sixteen_mul_card_filter_ne_one_le {M B : ℕ} {S : Finset (Fin M → Bool)}
+    (hS : S.Nonempty) (hB : (M + 2) * (M + 1) ≤ B) :
+    Nat.log 2 #S + 2 ≤ M + 2 ∧
+      16 * (univ.filter fun σ : Fin B → Bool =>
+        ¬#{x ∈ S | hashesToZero (Nat.log 2 #S + 2) (List.ofFn σ) (List.ofFn x)} = 1).card ≤
+        13 * 2 ^ B := by
+  classical
+  set k₀ := Nat.log 2 #S + 2 with hk₀
+  have hk₀M : k₀ ≤ M + 2 := by
+    have hcard : #S ≤ 2 ^ M := (card_le_univ S).trans (by simp)
+    have := Nat.log_mono_right (b := 2) hcard
+    rw [Nat.log_pow (by decide)] at this
+    omega
+  have hk₀B : k₀ * M + k₀ ≤ B := by nlinarith
+  have hgood := three_mul_two_pow_le_card_filter_card_eq_one (B := B) hS hk₀B
+  rw [← hk₀] at hgood
+  have hsplit := Finset.card_filter_add_card_filter_not (s := (univ : Finset (Fin B → Bool)))
+    (fun σ => #{x ∈ S | hashesToZero k₀ (List.ofFn σ) (List.ofFn x)} = 1)
+  simp only [card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] at hsplit
+  exact ⟨hk₀M, by omega⟩
+
+/-- For a nonempty set `S`, the number of `t * (M + 3)`-tuples of seeds that fail to isolate `S` at
+every trial is at most `(13 / 16) ^ t` of all seed tuples. -/
+private theorem sixteen_pow_mul_card_filter_no_isolation_le {M t B : ℕ} {S : Finset (Fin M → Bool)}
+    (hS : S.Nonempty) (hB : (M + 2) * (M + 1) ≤ B) :
+    16 ^ t * (univ.filter fun s : Fin (t * (M + 3)) → BitString B => ∀ j : Fin (t * (M + 3)),
+      ¬#{x ∈ S | hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (s j)) (List.ofFn x)} = 1).card ≤
+      13 ^ t * (2 ^ B) ^ (t * (M + 3)) := by
+  classical
+  -- no isolation in any round has probability at most `(13 / 16) ^ t`
+  set T := t * (M + 3)
+  set k₀ := Nat.log 2 #S + 2
+  obtain ⟨hk₀M, hF⟩ := sixteen_mul_card_filter_ne_one_le hS hB
+  set Fbad := univ.filter fun σ : Fin B → Bool =>
+    ¬#{x ∈ S | hashesToZero k₀ (List.ofFn σ) (List.ofFn x)} = 1 with hFbad
+  -- the rounds use the level `k₀` at the indices `i * (M + 3) + k₀`
+  let idx : Fin t → Fin T := fun i => ⟨i * (M + 3) + k₀, by
+    have := i.2
+    calc i * (M + 3) + k₀ < i * (M + 3) + (M + 3) := by omega
+      _ = (i + 1) * (M + 3) := by ring
+      _ ≤ t * (M + 3) := Nat.mul_le_mul_right _ this⟩
+  have hidx : Function.Injective idx := fun i i' h => by
+    simp only [idx, Fin.mk.injEq] at h
+    ext
+    exact Nat.eq_of_mul_eq_mul_right (by omega) (show (i : ℕ) * (M + 3) = i' * (M + 3) by omega)
+  have hmod (i : Fin t) : ((idx i : Fin T) : ℕ) % (M + 3) = k₀ := by
+    simp only [idx]
+    rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt (by omega)]
+  have hsub : (univ.filter fun s : Fin T → BitString B => ∀ j : Fin T,
+      ¬#{x ∈ S | hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (s j)) (List.ofFn x)} = 1) ⊆
+      univ.filter fun s : Fin T → BitString B => ∀ i, s (idx i) ∈ Fbad := by
+    intro s hs
+    simp only [hFbad, mem_filter, mem_univ, true_and] at hs ⊢
+    intro i
+    simpa only [hmod i] using hs (idx i)
+  have hcount := card_filter_forall_apply_mem idx hidx Fbad
+  simp only [Fintype.card_fin, Fintype.card_fun, Fintype.card_bool] at hcount
+  calc 16 ^ t * _ ≤ 16 ^ t * (#Fbad ^ t * (2 ^ B) ^ (T - t)) :=
+        hcount ▸ Nat.mul_le_mul_left _ (card_le_card hsub)
+    _ = (16 * #Fbad) ^ t * (2 ^ B) ^ (T - t) := by ring
+    _ ≤ (13 * 2 ^ B) ^ t * (2 ^ B) ^ (T - t) := by gcongr
+    _ = 13 ^ t * (2 ^ B) ^ (t + (T - t)) := by ring
+    _ = 13 ^ t * (2 ^ B) ^ T := by
+        have : t ≤ T := Nat.le_mul_of_pos_right t (by omega)
+        rw [Nat.add_sub_cancel' this]
+
+/-- For a nonempty set `S`, at most a `2 ^ -(E + 1)` fraction of seed tuples of length
+`4 * (E + 1) * (M + 3)` fail to isolate `S` at every trial. -/
+private theorem two_pow_mul_card_filter_no_isolation_le {M E B : ℕ} {S : Finset (Fin M → Bool)}
+    (hS : S.Nonempty) (hB : (M + 2) * (M + 1) ≤ B) :
+    2 ^ (E + 1) * (univ.filter fun s : Fin (4 * (E + 1) * (M + 3)) → BitString B =>
+      ∀ j : Fin (4 * (E + 1) * (M + 3)),
+        ¬#{x ∈ S | hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (s j)) (List.ofFn x)} = 1).card ≤
+      (2 ^ B) ^ (4 * (E + 1) * (M + 3)) := by
+  classical
+  set t := 4 * (E + 1)
+  set T := t * (M + 3)
+  set Bc := univ.filter fun s : Fin T → BitString B => ∀ j : Fin T,
+    ¬#{x ∈ S | hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (s j)) (List.ofFn x)} = 1
+  have h2 : 16 ^ t * (2 ^ (E + 1) * #Bc) ≤ 16 ^ t * (2 ^ B) ^ T :=
+    calc 16 ^ t * (2 ^ (E + 1) * #Bc) = 2 ^ (E + 1) * (16 ^ t * #Bc) := by ring
+      _ ≤ 2 ^ (E + 1) * (13 ^ t * (2 ^ B) ^ T) :=
+        Nat.mul_le_mul_left _ (sixteen_pow_mul_card_filter_no_isolation_le hS hB)
+      _ = (2 ^ (E + 1) * 13 ^ t) * (2 ^ B) ^ T := by ring
+      _ ≤ 16 ^ t * (2 ^ B) ^ T := Nat.mul_le_mul_right _ (two_pow_mul_thirteen_pow_le E)
+  exact Nat.le_of_mul_le_mul_left h2 (by positivity)
+
+/-- Union bound over `Fin M → Bool`: if each `x` fails with probability at most `2 ^ (-e')` for
+`E + M + 1 ≤ e'`, then the event that some `x` fails has probability at most `2 ^ -(E + 1)`. -/
+private theorem two_pow_succ_mul_card_filter_exists_le {R M E e' : ℕ}
+    {P : (Fin R → Bool) → (Fin M → Bool) → Prop} [DecidableRel P]
+    (hc : ∀ x, 2 ^ e' * (univ.filter fun r => P r x).card ≤ 2 ^ R) (he : E + M + 1 ≤ e') :
+    2 ^ (E + 1) * (univ.filter fun r : Fin R → Bool => ∃ x, P r x).card ≤ 2 ^ R := by
+  -- the inner randomness is bad with probability at most `2 ^ (M - e')`
+  have h1 : 2 ^ (E + M + 1) * (univ.filter fun r : Fin R → Bool => ∃ x, P r x).card ≤
+      2 ^ M * 2 ^ R :=
+    (Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) he)).trans
+      (two_pow_mul_card_filter_exists_le hc)
+  rw [show E + M + 1 = M + (E + 1) by ring, pow_add, mul_assoc] at h1
+  exact Nat.le_of_mul_le_mul_left h1 (by positivity)
+
 /-- **The isolation step errs with probability at most `2 ^ (-E)`.** Let `c r x` be numbers
 whose parity says whether `x ∈ S`, except for at most a `2 ^ (-e')` fraction of the random
 strings `r` of length `R`, for each string `x` of length `M`, where `e' ≥ E + M + 1`. Draw seeds
@@ -211,13 +340,10 @@ theorem two_pow_mul_card_filter_not_odd_iff_le {R M E e' B : ℕ}
         hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (p.2 j)) (List.ofFn x) = true, c p.1 x)) ↔
         S.Nonempty)).card ≤ 2 ^ R * 2 ^ (4 * (E + 1) * (M + 3) * B) := by
   classical
-  set t := 4 * (E + 1)
-  set T := t * (M + 3)
-  -- the good randomness
+  set T := 4 * (E + 1) * (M + 3)
   set A := (univ.filter fun r : Fin R → Bool => ∃ x, ¬(Odd (c r x) ↔ x ∈ S)) with hA
-  set Iso : Fin T → BitString B → Prop := fun j σ =>
-    #{x ∈ S | hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn σ) (List.ofFn x)} = 1 with hIso
-  set Bc := (univ.filter fun s : Fin T → BitString B => ∀ j, ¬Iso j (s j)) with hBc
+  set Bc := (univ.filter fun s : Fin T → BitString B => ∀ j : Fin T,
+    ¬#{x ∈ S | hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (s j)) (List.ofFn x)} = 1) with hBc
   -- the bad event is covered
   have hcover : (univ.filter fun p : (Fin R → Bool) × (Fin T → BitString B) =>
       ¬(Odd (1 + ∏ j : Fin T, (1 + ∑ x with
@@ -226,121 +352,33 @@ theorem two_pow_mul_card_filter_not_odd_iff_le {R M E e' B : ℕ}
     intro p hp
     simp only [mem_filter, mem_univ, true_and] at hp
     by_contra hnot
-    rw [mem_union, not_or] at hnot
-    obtain ⟨hA', hB''⟩ := hnot
-    have hgood : ∀ x, (Odd (c p.1 x) ↔ x ∈ S) := fun x => by
-      by_contra h
-      exact hA' (mem_product.2 ⟨by rw [hA, mem_filter]; exact ⟨mem_univ _, x, h⟩, mem_univ _⟩)
-    have hiso : S.Nonempty → ∃ j, Iso j (p.2 j) := fun hS => by
-      by_contra h
-      push Not at h
-      exact hB'' (mem_filter.2 ⟨mem_product.2 ⟨mem_univ _, by
-        rw [hBc, mem_filter]; exact ⟨mem_univ _, h⟩⟩, hS⟩)
-    apply hp
-    rw [odd_one_add_prod_one_add]
-    have hpar (j : Fin T) : Odd (∑ x with
-        hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (p.2 j)) (List.ofFn x) = true, c p.1 x) ↔
-        Odd #{x ∈ S | hashesToZero ((j : ℕ) % (M + 3)) (List.ofFn (p.2 j)) (List.ofFn x)} := by
-      rw [Finset.odd_sum_iff_odd_card_odd, Finset.filter_filter]
-      congr! 2
-      ext x
-      simp only [mem_filter, mem_univ, true_and]
-      rw [hgood x, and_comm]
-    simp only [hpar]
-    constructor
-    · rintro ⟨j, hj⟩
-      obtain ⟨x, hx⟩ := Finset.card_pos.1 hj.pos
-      exact ⟨x, (mem_filter.1 hx).1⟩
-    · intro hS
-      obtain ⟨j, hj⟩ := hiso hS
-      exact ⟨j, by rw [hIso] at hj; rw [hj]; exact odd_one⟩
-  -- the inner randomness is bad with probability at most `2 ^ (M - e')`
-  have hAbound : 2 ^ e' * #A ≤ 2 ^ M * 2 ^ R := two_pow_mul_card_filter_exists_le hc
-  -- no isolation in any round has probability at most `(13 / 16) ^ t`
-  have hBbound : S.Nonempty → 16 ^ t * #Bc ≤ 13 ^ t * (2 ^ B) ^ T := by
-    intro hS
-    set k₀ := Nat.log 2 #S + 2 with hk₀
-    have hk₀M : k₀ ≤ M + 2 := by
-      have hcard : #S ≤ 2 ^ M := (card_le_univ S).trans (by simp)
-      have := Nat.log_mono_right (b := 2) hcard
-      rw [Nat.log_pow (by decide)] at this
-      omega
-    have hk₀B : k₀ * M + k₀ ≤ B := by nlinarith
-    set Fbad := (univ.filter fun σ : Fin B → Bool =>
-      ¬#{x ∈ S | hashesToZero k₀ (List.ofFn σ) (List.ofFn x)} = 1) with hFbad
-    have hgood : 3 * 2 ^ B ≤ 16 * (univ.filter fun σ : Fin B → Bool =>
-        #{x ∈ S | hashesToZero k₀ (List.ofFn σ) (List.ofFn x)} = 1).card :=
-      three_mul_two_pow_le_card_filter_card_eq_one (B := B) hS hk₀B
-    have hsplit := Finset.card_filter_add_card_filter_not (s := (univ : Finset (Fin B → Bool)))
-      (fun σ => #{x ∈ S | hashesToZero k₀ (List.ofFn σ) (List.ofFn x)} = 1)
-    simp only [card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] at hsplit
-    have hF : 16 * #Fbad ≤ 13 * 2 ^ B := by rw [hFbad]; omega
-    -- the rounds use the level `k₀` at the indices `i * (M + 3) + k₀`
-    let idx : Fin t → Fin T := fun i => ⟨i * (M + 3) + k₀, by
-      have := i.2
-      calc i * (M + 3) + k₀ < i * (M + 3) + (M + 3) := by omega
-        _ = (i + 1) * (M + 3) := by ring
-        _ ≤ t * (M + 3) := Nat.mul_le_mul_right _ this⟩
-    have hidx : Function.Injective idx := by
-      intro i i' h
-      simp only [idx, Fin.mk.injEq] at h
-      ext
-      have h' : (i : ℕ) * (M + 3) = i' * (M + 3) := by omega
-      exact Nat.eq_of_mul_eq_mul_right (by omega) h'
-    have hmod (i : Fin t) : ((idx i : Fin T) : ℕ) % (M + 3) = k₀ := by
-      simp only [idx]
-      rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt (by omega)]
-    have hsub : Bc ⊆ univ.filter fun s : Fin T → BitString B => ∀ i, s (idx i) ∈ Fbad := by
-      intro s hs
-      simp only [hBc, hIso, mem_filter, mem_univ, true_and] at hs ⊢
-      intro i
-      simp only [hFbad, mem_filter, mem_univ, true_and]
-      have := hs (idx i)
-      rwa [hmod i] at this
-    have hcount := card_filter_forall_apply_mem idx hidx Fbad
-    simp only [Fintype.card_fin, Fintype.card_fun, Fintype.card_bool] at hcount
-    calc 16 ^ t * #Bc ≤ 16 ^ t * (#Fbad ^ t * (2 ^ B) ^ (T - t)) := by
-          rw [← hcount]; exact Nat.mul_le_mul_left _ (card_le_card hsub)
-      _ = (16 * #Fbad) ^ t * (2 ^ B) ^ (T - t) := by ring
-      _ ≤ (13 * 2 ^ B) ^ t * (2 ^ B) ^ (T - t) := by gcongr
-      _ = 13 ^ t * (2 ^ B) ^ (t + (T - t)) := by ring
-      _ = 13 ^ t * (2 ^ B) ^ T := by
-          congr 2
-          have : t ≤ T := Nat.le_mul_of_pos_right t (by omega)
-          omega
-  -- combining
+    obtain ⟨hA', hB''⟩ := not_or.1 (mem_union.not.1 hnot)
+    exact hp (odd_one_add_prod_trials_iff (c p.1) S p.2
+      (fun x => by
+        by_contra hx
+        exact hA' (mem_product.2 ⟨mem_filter.2 ⟨mem_univ _, x, hx⟩, mem_univ _⟩))
+      (fun hS => by
+        by_contra h
+        exact hB'' (mem_filter.2 ⟨mem_product.2 ⟨mem_univ _,
+          mem_filter.2 ⟨mem_univ _, fun j hj => h ⟨j, hj⟩⟩⟩, hS⟩)))
+  have hE : 2 ^ (E + 1) * #A ≤ 2 ^ R := two_pow_succ_mul_card_filter_exists_le hc he
   have hT : (2 : ℕ) ^ (4 * (E + 1) * (M + 3) * B) = (2 ^ B) ^ T := by
     rw [← pow_mul, Nat.mul_comm B]
-  have hcardS : Fintype.card (Fin T → BitString B) = (2 ^ B) ^ T := by simp
-  have hE : 2 ^ (E + 1) * #A ≤ 2 ^ R := by
-    have h1 : 2 ^ (E + M + 1) * #A ≤ 2 ^ M * 2 ^ R :=
-      (Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) he)).trans hAbound
-    rw [show E + M + 1 = M + (E + 1) by ring, pow_add, mul_assoc] at h1
-    exact Nat.le_of_mul_le_mul_left h1 (by positivity)
-  refine (Nat.mul_le_mul_left _ (card_le_card hcover)).trans ?_
-  refine (Nat.mul_le_mul_left _ (card_union_le _ _)).trans ?_
-  rw [card_product, card_univ, hcardS, hT]
+  -- combining
+  refine (Nat.mul_le_mul_left _ ((card_le_card hcover).trans (card_union_le _ _))).trans ?_
+  rw [card_product, card_univ, show Fintype.card (Fin T → BitString B) = (2 ^ B) ^ T by simp, hT]
+  have h2E : 2 ^ (E + 1) = 2 * 2 ^ E := by ring
+  rw [h2E] at hE
+  have h1 := Nat.mul_le_mul_right ((2 ^ B) ^ T) hE
   by_cases hS : S.Nonempty
   · rw [Finset.filter_true_of_mem fun _ _ => hS, card_product, card_univ, Fintype.card_fun,
       Fintype.card_bool, Fintype.card_fin]
-    have hB' := hBbound hS
-    have h13 := two_pow_mul_thirteen_pow_le E
-    have hE' : 2 ^ (E + 1) * #Bc ≤ (2 ^ B) ^ T := by
-      have h2 : 16 ^ t * (2 ^ (E + 1) * #Bc) ≤ 16 ^ t * (2 ^ B) ^ T :=
-        calc 16 ^ t * (2 ^ (E + 1) * #Bc) = 2 ^ (E + 1) * (16 ^ t * #Bc) := by ring
-          _ ≤ 2 ^ (E + 1) * (13 ^ t * (2 ^ B) ^ T) := Nat.mul_le_mul_left _ hB'
-          _ = (2 ^ (E + 1) * 13 ^ t) * (2 ^ B) ^ T := by ring
-          _ ≤ 16 ^ t * (2 ^ B) ^ T := Nat.mul_le_mul_right _ h13
-      exact Nat.le_of_mul_le_mul_left h2 (by positivity)
-    have h2E : 2 ^ (E + 1) = 2 * 2 ^ E := by ring
-    rw [h2E] at hE hE'
-    have h1 := Nat.mul_le_mul_right ((2 ^ B) ^ T) hE
-    have h2 := Nat.mul_le_mul_left (2 ^ R) hE'
+    have hE' : 2 ^ (E + 1) * #Bc ≤ (2 ^ B) ^ T :=
+      two_pow_mul_card_filter_no_isolation_le (E := E) hS hB
+    rw [h2E] at hE'
+    have := Nat.mul_le_mul_left (2 ^ R) hE'
     nlinarith
   · rw [Finset.filter_false_of_mem fun _ _ => hS, card_empty, Nat.add_zero]
-    have h2E : 2 ^ (E + 1) = 2 * 2 ^ E := by ring
-    rw [h2E] at hE
-    have h1 := Nat.mul_le_mul_right ((2 ^ B) ^ T) hE
     nlinarith [Nat.zero_le (2 ^ E * #A * (2 ^ B) ^ T)]
 
 end Cslib.Complexity.Toda

@@ -172,64 +172,71 @@ theorem computableInPolyTime_subsetTest {γ : Type} {input : γ ↪ List Bool}
       encBool :=
   .of_tidy (computableTidilyInPolyTime_subsetTest hacc.tidy hK.tidy hZ.tidy hk.tidy hzs.tidy)
 
+/-- A bit string `z` has no `true` bits in `List.ofFn z` if and only if `z = 0`. -/
+private theorem not_any_ofFn_eq_true_iff {Z : ℕ} (z : Fin Z → Bool) :
+    (!(List.ofFn z).any fun b => b) = true ↔ z = 0 := by
+  simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, List.mem_ofFn,
+    forall_exists_index, forall_apply_eq_imp_iff, Bool.not_eq_true]
+  exact ⟨fun h => funext h, fun h i => congrFun h i⟩
+
+/-- The block-level predicate corresponding to `subsetTest`: the first `k` blocks are accepted and
+strictly increasing in lexicographic order, and the remaining blocks are zero. -/
+private def SubsetBlockPred (acc : List Bool → Bool) {K Z k : ℕ} (hk : k ≤ K)
+    (t : Fin K → BitString Z) : Prop :=
+  (∀ j : Fin K, ((j : ℕ) < k → acc (List.ofFn (t j)) = true) ∧ (k ≤ j → t j = 0)) ∧
+    ∀ (i : ℕ) (h : i + 1 < k), toLex (t ⟨i, by omega⟩) < toLex (t ⟨i + 1, by omega⟩)
+
+/-- `subsetTest` on `List.ofFn v` holds if and only if `SubsetBlockPred` holds on the blocks of
+`v`. -/
+private theorem subsetTest_ofFn_iff (acc : List Bool → Bool) {K k Z : ℕ} (hk : k ≤ K)
+    (v : Fin (K * Z) → Bool) :
+    subsetTest acc K Z k (List.ofFn v) = true ↔
+      SubsetBlockPred acc hk (BitString.blocksEquiv v) := by
+  -- the test on blocks
+  have hrows : BitString.listRows K Z (List.ofFn v) =
+      List.ofFn fun j => List.ofFn (BitString.blocksEquiv v j) := by
+    rw [BitString.listRows_eq_ofFn, BitString.ofList_ofFn]
+    rfl
+  have hrow (i : ℕ) (hi : i < K) :
+      BitString.listRow Z i (List.ofFn v) = List.ofFn (BitString.blocksEquiv v ⟨i, hi⟩) := by
+    rw [BitString.listRow_eq_ofFn (count := K) Z ⟨i, hi⟩, BitString.ofList_ofFn]
+    rfl
+  simp only [subsetTest, Bool.and_eq_true, hrows, SubsetBlockPred]
+  refine and_congr ?_ ?_
+  · simp only [List.all_eq_true, Prod.forall]
+    refine ⟨fun h j => ?_, fun h w j hw => ?_⟩
+    · have hj := h (List.ofFn (BitString.blocksEquiv v j)) j
+        (by rw [List.mem_zipIdx_iff_getElem?]; simp)
+      refine ⟨fun hjk => by simpa [hjk] using hj, fun hjk => ?_⟩
+      rw [ite_eq_right (by omega)] at hj
+      exact (not_any_ofFn_eq_true_iff _).1 hj
+    · rw [List.mem_zipIdx_iff_getElem?, List.getElem?_ofFn] at hw
+      simp only at hw
+      split at hw
+      · rename_i hjK
+        rw [← Option.some.inj hw]
+        split
+        · exact (h ⟨j, hjK⟩).1 (by simpa)
+        · rename_i hjk
+          exact (not_any_ofFn_eq_true_iff _).2 ((h ⟨j, hjK⟩).2 (Nat.le_of_not_lt hjk))
+      · exact absurd hw (by simp)
+  · simp only [List.all_eq_true, List.mem_range]
+    refine ⟨fun h i hi => ?_, fun h i hi => ?_⟩
+    · have := h i (by omega)
+      rwa [hrow i (by omega), hrow (i + 1) (by omega), BitString.wordLt_ofFn_iff] at this
+    · rw [hrow i (by omega), hrow (i + 1) (by omega), BitString.wordLt_ofFn_iff]
+      exact h i (by omega)
+
 /-- **The `k`-subset test counts `k`-element sets of accepted words**, for `k ≤ K`. -/
 private theorem card_filter_subsetTest (acc : List Bool → Bool) {K k : ℕ} (Z : ℕ) (hk : k ≤ K) :
     (univ.filter fun zs : Fin (K * Z) → Bool => subsetTest acc K Z k (List.ofFn zs) = true).card =
       ((univ.filter fun z : Fin Z → Bool => acc (List.ofFn z) = true).card).choose k := by
   classical
   set A := univ.filter fun z : Fin Z → Bool => acc (List.ofFn z) = true with hA
-  -- the test on blocks
-  have hrows (v : Fin (K * Z) → Bool) : BitString.listRows K Z (List.ofFn v) =
-      List.ofFn fun j => List.ofFn (BitString.blocksEquiv v j) := by
-    rw [BitString.listRows_eq_ofFn, BitString.ofList_ofFn]
-    rfl
-  have hrow (v : Fin (K * Z) → Bool) (i : ℕ) (hi : i < K) :
-      BitString.listRow Z i (List.ofFn v) = List.ofFn (BitString.blocksEquiv v ⟨i, hi⟩) := by
-    rw [BitString.listRow_eq_ofFn (count := K) Z ⟨i, hi⟩, BitString.ofList_ofFn]
-    rfl
-  have hzero (z : Fin Z → Bool) : (!(List.ofFn z).any fun b => b) = true ↔ z = 0 := by
-    simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, List.mem_ofFn,
-      forall_exists_index, forall_apply_eq_imp_iff, Bool.not_eq_true]
-    exact ⟨fun h => funext h, fun h i => by rw [h]; rfl⟩
-  set P : (Fin K → BitString Z) → Prop := fun t =>
-    (∀ j : Fin K, (j < k → acc (List.ofFn (t j)) = true) ∧ (k ≤ j → t j = 0)) ∧
-      ∀ (i : ℕ) (h : i + 1 < k), toLex (t ⟨i, by omega⟩) < toLex (t ⟨i + 1, by omega⟩) with hP
-  have htest (v : Fin (K * Z) → Bool) :
-      subsetTest acc K Z k (List.ofFn v) = true ↔ P (BitString.blocksEquiv v) := by
-    simp only [subsetTest, Bool.and_eq_true, hrows, hP]
-    refine and_congr ?_ ?_
-    · simp only [List.all_eq_true, Prod.forall]
-      constructor
-      · intro h j
-        have hj := h (List.ofFn (BitString.blocksEquiv v j)) j
-          (by rw [List.mem_zipIdx_iff_getElem?]; simp)
-        constructor
-        · intro hjk
-          simpa [hjk] using hj
-        · intro hjk
-          rw [ite_eq_right (by omega)] at hj
-          exact (hzero _).1 hj
-      · intro h w j hw
-        rw [List.mem_zipIdx_iff_getElem?, List.getElem?_ofFn] at hw
-        simp only at hw
-        split at hw
-        · rename_i hjK
-          rw [← Option.some.inj hw]
-          split
-          · exact (h ⟨j, hjK⟩).1 (by simpa)
-          · rename_i hjk
-            exact (hzero _).2 ((h ⟨j, hjK⟩).2 (Nat.le_of_not_lt hjk))
-        · exact absurd hw (by simp)
-    · simp only [List.all_eq_true, List.mem_range]
-      constructor
-      · intro h i hi
-        have := h i (by omega)
-        rwa [hrow v i (by omega), hrow v (i + 1) (by omega), BitString.wordLt_ofFn_iff] at this
-      · intro h i hi
-        rw [hrow v i (by omega), hrow v (i + 1) (by omega), BitString.wordLt_ofFn_iff]
-        exact h i (by omega)
+  set P := SubsetBlockPred acc (Z := Z) hk with hP
   rw [show (univ.filter fun zs : Fin (K * Z) → Bool => subsetTest acc K Z k (List.ofFn zs) = true)
-      = univ.filter fun zs => P (BitString.blocksEquiv zs) by simp only [htest]]
+      = univ.filter fun zs => P (BitString.blocksEquiv zs) by
+    simp only [subsetTest_ofFn_iff _ hk, hP]]
   rw [show (univ.filter fun zs : Fin (K * Z) → Bool => P (BitString.blocksEquiv zs)).card =
       (univ.filter P).card from card_equiv BitString.blocksEquiv
         (fun v => by simp only [mem_filter, mem_univ, true_and])]
@@ -238,30 +245,28 @@ private theorem card_filter_subsetTest (acc : List Bool → Bool) {K k : ℕ} (Z
       StrictMono g ∧ ∀ i, g i ∈ A.map toLex.toEmbedding).card := by
     refine card_bij (fun t _ i => toLex (t (Fin.castLE hk i))) ?_ ?_ ?_
     · intro t ht
-      simp only [mem_filter, mem_univ, true_and, hP] at ht ⊢
+      simp only [mem_filter, mem_univ, true_and, hP, SubsetBlockPred] at ht ⊢
       refine ⟨strictMono_of_lt_succ fun i hi => ht.2 i hi, fun i => ?_⟩
       rw [mem_map]
       exact ⟨_, by rw [hA, mem_filter]; exact ⟨mem_univ _, (ht.1 _).1 i.2⟩, rfl⟩
     · intro t ht t' ht' h
-      simp only [mem_filter, mem_univ, true_and, hP] at ht ht'
+      simp only [mem_filter, mem_univ, true_and, hP, SubsetBlockPred] at ht ht'
       funext j
       by_cases hj : (j : ℕ) < k
-      · have := congrFun h ⟨j, hj⟩
-        exact toLex.injective this
+      · exact toLex.injective (congrFun h ⟨j, hj⟩)
       · rw [(ht.1 j).2 (by omega), (ht'.1 j).2 (by omega)]
     · intro g hg
       simp only [mem_filter, mem_univ, true_and] at hg
-      refine ⟨fun j => if h : (j : ℕ) < k then ofLex (g ⟨j, h⟩) else 0, ?_, ?_⟩
-      · simp only [mem_filter, mem_univ, true_and, hP]
-        refine ⟨fun j => ⟨fun hj => ?_, fun hj => by simp [show ¬(j : ℕ) < k by omega]⟩,
-          fun i hi => ?_⟩
-        · obtain ⟨z, hz, hzg⟩ := mem_map.1 (hg.2 ⟨j, hj⟩)
-          simp only [hj, ↓reduceDIte, ← hzg]
-          simpa [hA] using hz
-        · simp only [show i < k by omega, hi, dite_true]
-          exact hg.1 (Fin.mk_lt_mk.2 (Nat.lt_succ_self i))
-      · funext i
-        simp [i.2]
+      refine ⟨fun j => if h : (j : ℕ) < k then ofLex (g ⟨j, h⟩) else 0, ?_,
+        funext fun i => by simp [i.2]⟩
+      simp only [mem_filter, mem_univ, true_and, hP, SubsetBlockPred]
+      refine ⟨fun j => ⟨fun hj => ?_, fun hj => by simp [show ¬(j : ℕ) < k by omega]⟩,
+        fun i hi => ?_⟩
+      · obtain ⟨z, hz, hzg⟩ := mem_map.1 (hg.2 ⟨j, hj⟩)
+        simp only [hj, ↓reduceDIte, ← hzg]
+        simpa [hA] using hz
+      · simp only [show i < k by omega, hi, dite_true]
+        exact hg.1 (Fin.mk_lt_mk.2 (Nat.lt_succ_self i))
   rw [hrestrict, card_filter_strictMono, card_map]
 
 /-! ### The counting test -/
@@ -364,7 +369,7 @@ private theorem card_filter_coeffTest {K k : ℕ} (hk : 1 ≤ k) (hkK : k ≤ K)
     (fun u => (!(List.ofFn u).any fun b => b) = true)
   simp only [card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] at hsum
   have hpow : 2 ^ (K + 1 - k) * 2 ^ (k - 1) = 2 ^ K := by
-    rw [← pow_add]; congr 1; omega
+    rw [← pow_add, show K + 1 - k + (k - 1) = K by omega]
   unfold coeffTest parityCoeff
   split
   · rename_i hodd
@@ -389,6 +394,52 @@ in `K` rows of `Z` bits. -/
 def countingTest (accept : List Bool → List Bool → Bool) (K R Z : ℕ) (w : List Bool) : Bool :=
   unaryTest K (w.take K) && coeffTest K ((w.take K).count true) ((w.drop K).take K) &&
     subsetTest (accept ((w.drop (K + K)).take R)) K Z ((w.take K).count true) (w.drop (K + K + R))
+
+/-- For a fixed size `1 ≤ k ≤ K`, the number of words passing both `coeffTest` and `subsetTest` is
+`parityCoeff K (k - 1)` times the sum over `r` of `choose (f r) k`. -/
+private theorem card_filter_coeff_and_subsetTest (accept : List Bool → List Bool → Bool)
+    {K R Z k : ℕ} (hk1 : 1 ≤ k) (hkK : k ≤ K) :
+    (univ.filter fun w : Fin (K + (R + K * Z)) → Bool =>
+      coeffTest K k ((List.ofFn w).take K) = true ∧
+        subsetTest (accept (((List.ofFn w).drop K).take R)) K Z k ((List.ofFn w).drop (K + R)) =
+          true).card =
+      parityCoeff K (k - 1) * ∑ r : Fin R → Bool,
+        ((univ.filter fun z : Fin Z → Bool =>
+          accept (List.ofFn r) (List.ofFn z) = true).card).choose k := by
+  classical
+  -- split off the coefficient bits
+  have h3 := BitString.card_filter_ofFn_add K (R + K * Z) (fun u v => coeffTest K k u = true ∧
+    subsetTest (accept (v.take R)) K Z k (v.drop R) = true)
+  have h3' : (univ.filter fun w : Fin (K + (R + K * Z)) → Bool =>
+      coeffTest K k ((List.ofFn w).take K) = true ∧
+        subsetTest (accept (((List.ofFn w).drop K).take R)) K Z k
+          ((List.ofFn w).drop (K + R)) = true).card =
+      ∑ u : Fin K → Bool, (univ.filter fun w : Fin (R + K * Z) → Bool =>
+        coeffTest K k (List.ofFn u) = true ∧
+          subsetTest (accept ((List.ofFn w).take R)) K Z k ((List.ofFn w).drop R) =
+            true).card := by
+    rw [← h3]
+    congr 1 with w
+    simp only [mem_filter, mem_univ, true_and, List.drop_drop]
+  rw [h3']
+  set Y := (univ.filter fun w : Fin (R + K * Z) → Bool =>
+    subsetTest (accept ((List.ofFn w).take R)) K Z k ((List.ofFn w).drop R) = true).card with hY
+  have hY' : Y = ∑ r : Fin R → Bool,
+      ((univ.filter fun z : Fin Z → Bool => accept (List.ofFn r) (List.ofFn z) = true).card).choose
+        k := by
+    rw [hY, BitString.card_filter_ofFn_add R (K * Z)
+      (fun u v => subsetTest (accept u) K Z k v = true)]
+    exact sum_congr rfl fun r _ => card_filter_subsetTest _ Z hkK
+  have hsum : ∑ u : Fin K → Bool, (univ.filter fun w : Fin (R + K * Z) → Bool =>
+      coeffTest K k (List.ofFn u) = true ∧
+        subsetTest (accept ((List.ofFn w).take R)) K Z k ((List.ofFn w).drop R) =
+          true).card =
+        ∑ u : Fin K → Bool, if coeffTest K k (List.ofFn u) = true then Y else 0 := by
+    refine sum_congr rfl fun u _ => ?_
+    by_cases h : coeffTest K k (List.ofFn u) = true
+    · simp only [h, true_and, ↓reduceIte, hY]
+    · simp [h]
+  rw [hsum, ← Finset.sum_filter, sum_const, smul_eq_mul, card_filter_coeffTest hk1 hkK, hY']
 
 /-- **The count of the counting test**: `∑ i < K, parityCoeff K i * ∑ r, choose (f r) (i + 1)`,
 where `f r` counts the words accepted by `accept r`. -/
@@ -420,56 +471,15 @@ theorem card_filter_countingTest (accept : List Bool → List Bool → Bool) (K 
       rw [show K + K + R = K + (K + R) by omega, ← List.drop_drop, List.drop_left' hlen,
         ← List.drop_drop, List.drop_left' hlen]
     simp only [hw]
-    split
-    · rename_i hu
-      simp only [hu, Bool.true_and, Bool.and_eq_true, hC]
-    · rename_i hu
-      simp only [Bool.not_eq_true] at hu
-      simp [hu]
+    by_cases hu : unaryTest K (List.ofFn kb) = true
+    · simp only [hu, ↓reduceIte, Bool.true_and, Bool.and_eq_true, hC]
+    · simp [hu]
   simp only [h2]
   rw [sum_unaryTest]
   refine Finset.sum_congr rfl fun i hi => ?_
   have hiK : i < K := by simpa using hi
-  rw [hC]
-  simp only
-  -- split off the coefficient bits
-  have h3 := BitString.card_filter_ofFn_add K (R + K * Z) (fun u v => coeffTest K (i + 1) u = true ∧
-    subsetTest (accept (v.take R)) K Z (i + 1) (v.drop R) = true)
-  have h3' : (univ.filter fun w : Fin (K + (R + K * Z)) → Bool =>
-      coeffTest K (i + 1) ((List.ofFn w).take K) = true ∧
-        subsetTest (accept (((List.ofFn w).drop K).take R)) K Z (i + 1)
-          ((List.ofFn w).drop (K + R)) = true).card =
-      ∑ u : Fin K → Bool, (univ.filter fun w : Fin (R + K * Z) → Bool =>
-        coeffTest K (i + 1) (List.ofFn u) = true ∧
-          subsetTest (accept ((List.ofFn w).take R)) K Z (i + 1) ((List.ofFn w).drop R) =
-            true).card := by
-    rw [← h3]
-    congr 1
-    ext w
-    simp only [mem_filter, mem_univ, true_and, List.drop_drop]
-  rw [h3']
-  set Y := (univ.filter fun w : Fin (R + K * Z) → Bool =>
-    subsetTest (accept ((List.ofFn w).take R)) K Z (i + 1) ((List.ofFn w).drop R) = true).card
-    with hY
-  have hY' : Y = ∑ r : Fin R → Bool,
-      ((univ.filter fun z : Fin Z → Bool => accept (List.ofFn r) (List.ofFn z) = true).card).choose
-        (i + 1) := by
-    rw [hY, BitString.card_filter_ofFn_add R (K * Z)
-      (fun u v => subsetTest (accept u) K Z (i + 1) v = true)]
-    exact sum_congr rfl fun r _ => card_filter_subsetTest _ Z (by omega)
-  have hsum : ∑ u : Fin K → Bool, (univ.filter fun w : Fin (R + K * Z) → Bool =>
-      coeffTest K (i + 1) (List.ofFn u) = true ∧
-        subsetTest (accept ((List.ofFn w).take R)) K Z (i + 1) ((List.ofFn w).drop R) =
-          true).card =
-        ∑ u : Fin K → Bool, if coeffTest K (i + 1) (List.ofFn u) = true then Y else 0 := by
-    refine sum_congr rfl fun u _ => ?_
-    split
-    · rename_i h
-      simp only [h, true_and, hY]
-    · rename_i h
-      simp [h]
-  rw [hsum, ← Finset.sum_filter, sum_const, smul_eq_mul,
-    card_filter_coeffTest (by omega) (by omega), Nat.add_sub_cancel, hY']
+  exact (card_filter_coeff_and_subsetTest accept (by omega) (by omega)).trans
+    (by rw [Nat.add_sub_cancel])
 
 /-- **The count of the counting test is the number of random strings with an odd number of
 accepted words**, modulo `2 ^ (R + 1)`, with sizes up to `K = R + 1`. -/

@@ -13,6 +13,7 @@ public import Complexity.Computability.Languages.Slice
 public import Complexity.Computability.Circuit.Boolean.Substitution
 public import Complexity.Foundations.FieldTheory.Finite.BinaryField
 public import Mathlib.Analysis.SpecificLimits.Normed
+import Complexity.Foundations.Data.Nat.Asymptotics
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Positivity
@@ -408,29 +409,6 @@ theorem isAverageCaseHard_encodedSlice_of {L : Language Bool} {M N σ : ℕ} (hM
 
 /-! ### Hardness at all large lengths -/
 
-/-- Polynomials are eventually below `2 ^ ⌊b / 4⌋`. -/
-private theorem eventually_mul_pow_le (C k : ℕ) : ∀ᶠ b : ℕ in atTop, C * b ^ k ≤ 2 ^ (b / 4) := by
-  -- first `C 4 ^ k (t + 1) ^ k ≤ 2 ^ t` for large `t`
-  have h := (tendsto_pow_const_div_const_pow_of_one_lt k (r := 2) one_lt_two).comp
-    (tendsto_add_atTop_nat 1)
-  have hpos : (0 : ℝ) < 1 / (2 * C * 4 ^ k + 1) := by positivity
-  have ht : ∀ᶠ t : ℕ in atTop, C * (4 * (t + 1)) ^ k ≤ 2 ^ t := by
-    filter_upwards [h.eventually (gt_mem_nhds hpos)] with t ht
-    simp only [Function.comp_apply, Nat.cast_add, Nat.cast_one] at ht
-    rw [div_lt_div_iff₀ (by positivity) (by positivity), one_mul, pow_succ] at ht
-    have hX : (0 : ℝ) ≤ ((t : ℝ) + 1) ^ k := by positivity
-    have hreal : (C : ℝ) * (4 * ((t : ℝ) + 1)) ^ k ≤ 2 ^ t := by
-      rw [mul_pow]
-      nlinarith
-    exact_mod_cast hreal
-  -- then `b ≤ 4 (⌊b / 4⌋ + 1)`
-  have hdiv := (Nat.tendsto_div_const_atTop (n := 4) (by norm_num)).eventually ht
-  filter_upwards [hdiv] with b hb
-  calc C * b ^ k ≤ C * (4 * (b / 4 + 1)) ^ k := by
-        gcongr
-        omega
-    _ ≤ 2 ^ (b / 4) := hb
-
 /-- **Exponential worst-case hardness gives exponential average-case hardness**
 [SudanTrevisanVadhan2001], [ImpagliazzoWigderson1997]. If the slices of `L` need De Morgan circuits
 of size `2 ^ (γ n)` for all large `n`, for some `γ > 0`, then the encoded slices of `L` at all large
@@ -464,7 +442,8 @@ theorem eventually_isAverageCaseHard_encodedSlice {L : Language Bool} {γ : ℝ}
       nlinarith
     rw [Real.rpow_natCast] at h1
     exact_mod_cast h1.trans hb
-  have hev := eventually_mul_pow_le (2 ^ 27 * M ^ 3 + 4608 * M + 128) 6
+  have hev := Nat.eventually_mul_pow_le_pow_div (2 ^ 27 * M ^ 3 + 4608 * M + 128) 6 4
+    one_lt_two (by positivity)
   filter_upwards [hblock.eventually (hhard.and (hev.and (eventually_ge_atTop 1)))] with N hN
   obtain ⟨hNhard, hNev, hNb⟩ := hN
   refine isAverageCaseHard_encodedSlice_of hM hNb hNev ?_ hNhard

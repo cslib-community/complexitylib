@@ -106,8 +106,8 @@ theorem reduction_isPPTOn :
       (fun p : (ℕ × (CNF ℕ × (List Bool × List Bool))) × List Bool =>
         GMW.gmwViewReduction tripleGen (fun k => 3 * k + 1) id adaptiveVerifier retainedTest
           p.1.1 p.1.2.1 p.1.2.2.1 p.1.2.2.2 p.2) :=
-  GMW.isPPTOn_gmwViewReduction tripleGen_polyTime length_tripleGen
-    ComputableTidilyInPolyTime.id' adaptiveVerifier_isOraclePPTOn retainedTest_isPPTOn
+  GMW.isPPTOn_gmwViewReduction (.of_tidy tripleGen_polyTime) length_tripleGen
+    (.of_tidy ComputableTidilyInPolyTime.id') adaptiveVerifier_isOraclePPTOn retainedTest_isPPTOn
 
 noncomputable def viewAdvantage (n : ℕ) (φ : CNF ℕ) (w z : List Bool) : ℝ≥0 :=
   Game.advantage

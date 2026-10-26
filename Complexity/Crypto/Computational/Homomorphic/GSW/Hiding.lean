@@ -48,7 +48,7 @@ bootstrappability.
 namespace Cslib.Crypto.Homomorphic.GSW
 
 open Probability Probability.PMF
-open scoped Matrix NNReal
+open scoped _root_.Matrix NNReal
 
 variable {n m w : ℕ}
 

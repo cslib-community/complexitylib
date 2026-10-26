@@ -104,11 +104,6 @@ theorem natDegree_restrictLine_le {k : ℕ} (y w : Fin k → F) (W : (Fin k → 
 
 /-! ### The line step -/
 
-/-- The rounds of the line step: the prover sends a univariate polynomial, the verifier a field
-element. -/
-abbrev lineSpec (F : Type) [Semiring F] : Spec :=
-  [.prover (Polynomial F) (OracleInterface.full _), .verifier F]
-
 /-- A claim about layer `j`: a point `z` and the claimed value of the multilinear extension of the
 layer at `z`, stored as a sumcheck claim of round `0`. -/
 abbrev LayerClaim (C : LayeredCircuit) (F : Type) (j : ℕ) : Type :=
@@ -143,7 +138,7 @@ restriction `q` of `W̃` to the line through the two halves `y`, `w` of the last
 verifier checks the last sumcheck claim against `q 0 = W̃(y)` and `q 1 = W̃(w)`, draws `t` and
 outputs the claim `W̃(ℓ(t)) = q(t)`. -/
 noncomputable def lineStep (W : (Fin (C.width i) → Bool) → F) :
-    Reduction OracleSpec.empty OracleSpec.empty (lineSpec F) (SumcheckEnd C F i) Unit
+    Reduction OracleSpec.empty OracleSpec.empty (Sumcheck.roundSpec F) (SumcheckEnd C F i) Unit
       (LayerClaim C F i) Unit where
   prover x _ :=
     let q := restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W
@@ -153,12 +148,12 @@ noncomputable def lineStep (W : (Fin (C.width i) → Bool) → F) :
   verifier :=
     { samplers := (ProbComp.uniform F, ())
       decide := fun x c => do
-        let q ← OracleComp.query (spec := OracleSpec.empty ⊕ₒ msgSpec (lineSpec F))
+        let q ← OracleComp.query (spec := OracleSpec.empty ⊕ₒ msgSpec (Sumcheck.roundSpec F))
           (.inr (.inl ()))
         return if C.lineAccepts i x q then some (C.lineClaim i x q c.1) else none }
 
 theorem lineStep_outputOn (W : (Fin (C.width i) → Bool) → F) (x : SumcheckEnd C F i)
-    (τ : Transcript (lineSpec F)) :
+    (τ : Transcript (Sumcheck.roundSpec F)) :
     (C.lineStep i W).verifier.outputOn x τ =
       if C.lineAccepts i x τ.1 then some (C.lineClaim i x τ.1 τ.2.1) else none :=
   rfl
@@ -509,7 +504,7 @@ theorem inputStep_rbrSound (x : (Fin (C.width 0) → Bool) → F) :
 
 /-- The rounds of layer `i`: sumcheck on `2 · width i` variables, then the line step. -/
 abbrev layerSpec (i : ℕ) : Spec :=
-  iterSpec (fun _ => Sumcheck.roundSpec F) (C.sumcheckVars i) ++ lineSpec F
+  iterSpec (fun _ => Sumcheck.roundSpec F) (C.sumcheckVars i) ++ Sumcheck.roundSpec F
 
 /-- **One layer of GKR**: a claim about layer `i + 1` becomes a claim about layer `i`. -/
 noncomputable def layer (x : (Fin (C.width 0) → Bool) → F) (i : ℕ) :

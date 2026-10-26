@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Complexity
 public import Complexity.Computability.Circuit.Counting
 public import Complexity.Computability.Complexity.Classes.Promise.Basic
+public import Complexity.Computability.Languages.Slice
 public import Complexity.Foundations.Data.BitString.Basic
 public import Cslib.Computability.Circuit.Boolean.Complexity
 public import Cslib.Computability.Circuit.Boolean.Counting
@@ -51,6 +52,7 @@ cslib's `computableFunctions n s`, so there are as many of them as such function
   instances of MCSP, as circuits and as computable functions.
 * `Cslib.MCSP.ncard_setOf_mem`: the number of yes-instances of a given arity and threshold.
 * `Cslib.GapMCSP.ofFn_mem_yesSet_iff_mem_MCSP`,
+  `Cslib.GapMCSP.slice_yesSet_eq_true_iff`,
   `Cslib.GapMCSP.ofFn_mem_noSet_iff_notMem_MCSP`: characterization of truth tables of length `2^n`
   in the yes and no sets.
 * `Cslib.GapMCSP.disjoint_yesSet_noSet`: the promise of `GapMCSP[s₁, s₂]` is consistent when
@@ -217,6 +219,13 @@ if and only if `⟨n, T, s₁ n⟩ ∈ MCSP`. -/
 theorem ofFn_mem_yesSet_iff_mem_MCSP {n : ℕ} {T : BitString (2 ^ n)} :
     List.ofFn T ∈ yesSet s₁ ↔ (⟨n, T, s₁ n⟩ : MCSP.Instance) ∈ MCSP :=
   ofFn_mem_yesSet_iff
+
+/-- The `2 ^ n`-bit slice of `yesSet s₁` evaluates to `true` on `T` if and only if its circuit
+complexity is at most `s₁ n`. -/
+theorem slice_yesSet_eq_true_iff {n : ℕ} {T : BitString (2 ^ n)} :
+    (yesSet s₁).slice (2 ^ n) T = true ↔
+      complexity interpretation (single ((truthTable n).symm T)) ≤ s₁ n := by
+  rw [Language.slice_eq_true_iff, ofFn_mem_yesSet_iff]
 
 /-- A `2 ^ n`-bit string `T`, viewed as a list via `List.ofFn`, belongs to `noSet s₂`
 if and only if its circuit complexity is strictly greater than `s₂ n`. -/

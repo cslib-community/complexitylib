@@ -26,6 +26,27 @@ CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, L
 input hash already matches a build trace in `.lake`. A fresh runner would otherwise download a
 complete set on every run, although `.lake` usually has most of it.
 
+## Merge-queue handoff
+
+After all required checks pass, a merge-group run packages its root `.lake/build` outputs in a
+GitHub Actions artifact retained for two days. A `push` to `main` can restore that artifact before
+building, avoiding a second compilation of the exact revision just validated by the merge queue.
+The existing build, test and lint commands still run, and Lake checks its normal input traces.
+
+The handoff accepts only the latest run's current successful attempt of `lean_action_ci.yml` in
+this repository, triggered by `merge_group` for the exact landed commit. It checks the source,
+run and attempt, toolchain, Lake configuration, dependency manifest and runner platform before
+installing outputs. Native validation tools are included, so unlike the public per-module cache,
+this handoff requires a matching runner OS, architecture and image version. A missing artifact, a rerun
+still in progress, a changed commit or incompatible metadata leaves the normal build in place.
+It never waits for another run to finish and does not reuse artifacts from pull-request runs.
+
+`scripts/cache_handoff.py` creates a compressed archive with its digest and provenance, validates
+the complete archive before restoration, and swaps the root build directory without modifying
+existing hard-linked cache objects. Merge groups do not publish to GCS: the normal successful
+`main` run remains the only public-cache writer. This makes its outputs available sooner to
+following builds while preserving the public cache's authorization boundary.
+
 ## Automatic restoration
 
 `scripts/build.sh` runs `scripts/cache/ensure.sh`, then forwards its arguments and exit status to

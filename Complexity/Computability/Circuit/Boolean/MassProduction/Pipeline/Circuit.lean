@@ -326,7 +326,7 @@ theorem lineSums_eval_recoveryCircuit (scalar : Fin s ≃ {c : K // c ≠ 0})
     · intro y hy
       obtain ⟨⟨i', j'⟩, rfl⟩ := finProdFinEquiv.surjective y
       rw [hkey, hslot, slotKey_slotEquiv, append_eq_append_iff] at hy
-      have hpt : point i' j' = point i j := (pointEquiv bits).injective hy.2
+      have hpt : point i' j' = point i j := pointBits_injective bits hy.2
       obtain rfl : i' = i := by
         by_contra hne
         exact disjoint_left.mp (hdisj i' i hne) (hmem i' j') (hpt ▸ hmem i j)
@@ -380,8 +380,7 @@ theorem lineSums_eval_recoveryCircuit (scalar : Fin s ≃ {c : K // c ≠ 0})
       obtain rfl := indexBits_injective hy.2
       funext _
       simp only [substitute, Sum.elim_inl, Fin.append_left, hbank, hscatter, slotResource,
-        Equiv.symm_apply_apply]
-      rw [← pointEquiv_apply, Equiv.symm_apply_apply]
+        Equiv.symm_apply_apply, pointEquiv_coe_symm_pointBits]
   rw [lineSums, recoveryCircuit, Circuit.eval_comp, Circuit.eval_comp, Circuit.eval_comp, h1, h2,
     h3]
   have hsum := sum_resource bits scalar (C := C) (place := place) (f := f) (a i) (z i) (hdirs i)

@@ -86,6 +86,7 @@ private theorem preserves_rename {k : ℕ} {f : Fin k → Fin registers} (c : Co
   | seq a b iha ihb => exact ⟨iha, ihb⟩
   | branch cond pos neg ihp ihn => exact ⟨ihp, ihn⟩
   | loop cond body ih => exact ih
+  | rand dst src => simpa only [Code.rename, Code.Preserves] using hi dst
 
 /-- In particular, a contiguous bank frames every physical register outside its interval. -/
 theorem preserves_bank {k offset : ℕ} (hk : offset + k ≤ registers)

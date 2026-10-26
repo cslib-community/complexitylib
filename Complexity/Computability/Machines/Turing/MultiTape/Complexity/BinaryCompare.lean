@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
 
 /-!
@@ -28,7 +29,8 @@ namespace Turing.MultiTapeTM
 
 namespace ComputableTidilyInO
 
-theorem iterate_sub_one (k n : ℕ) : (· - 1)^[k] n = n - k := Nat.pred_iterate n k
+open Internal.BinaryCounter
+
 
 /-- **Truncated subtraction in binary**, `b - a` from `(a, b)`. -/
 public theorem natSub :

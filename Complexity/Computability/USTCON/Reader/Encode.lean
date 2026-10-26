@@ -87,10 +87,6 @@ def encLab : Label ↪ List Bool :=
 def encFrame : ReingoldPc × Label ↪ List Bool :=
   encFinEnum (ReingoldPc × Label)
 
-/-- Three numbers. -/
-abbrev encNat3 : ℕ × ℕ × ℕ ↪ List Bool :=
-  encPair encNat (encPair encNat encNat)
-
 /-- The state of the evaluation: the slot, the labels and the frames. -/
 abbrev encEval : (ℕ × ℕ) × List Label × List (ReingoldPc × Label) ↪ List Bool :=
   encPair (encPair encNat encNat) (encPair (encList encLab) (encList encFrame))

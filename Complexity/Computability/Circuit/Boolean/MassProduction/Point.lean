@@ -47,7 +47,7 @@ namespace Cslib.BitString
 variable {K : Type*} {ℓ b s t : ℕ}
 
 /-- The bits of a point: block `i` holds the bits of coordinate `i`. -/
-def pointBits [Add K] (bits : K ≃+ BitString b) (u : Fin ℓ → K) : BitString (ℓ * b) :=
+def pointBits (bits : K → BitString b) (u : Fin ℓ → K) : BitString (ℓ * b) :=
   blocksEquiv.symm (bits ∘ u)
 
 /-- Point bits add coordinatewise. -/
@@ -56,19 +56,39 @@ theorem pointBits_add [Add K] (bits : K ≃+ BitString b) (u v : Fin ℓ → K) 
   funext x
   simp only [pointBits, blocksEquiv_symm_apply, Function.comp_apply, Pi.add_apply, map_add]
 
-/-- Distinct points have distinct bits. -/
-theorem pointBits_injective [Add K] (bits : K ≃+ BitString b) :
-    Function.Injective (pointBits (ℓ := ℓ) bits) :=
-  blocksEquiv.symm.injective.comp (bits.injective.comp_left)
-
 /-- Points of `K ^ ℓ` are their bits. -/
-def pointEquiv [Add K] (bits : K ≃+ BitString b) : (Fin ℓ → K) ≃ BitString (ℓ * b) :=
-  (Equiv.arrowCongr (Equiv.refl (Fin ℓ)) bits.toEquiv).trans blocksEquiv.symm
+def pointEquiv (bits : K ≃ BitString b) : (Fin ℓ → K) ≃ BitString (ℓ * b) :=
+  (Equiv.arrowCongr (Equiv.refl (Fin ℓ)) bits).trans blocksEquiv.symm
 
 /-- `pointEquiv bits` sends a point to its bits `pointBits bits`. -/
-@[simp] theorem pointEquiv_apply [Add K] (bits : K ≃+ BitString b) (u : Fin ℓ → K) :
+@[simp] theorem pointEquiv_apply (bits : K ≃ BitString b) (u : Fin ℓ → K) :
     pointEquiv bits u = pointBits bits u :=
   rfl
+
+/-- `(pointEquiv bits).symm` decodes coordinate `i` from block `i` (`Cslib.BitString.block`). -/
+@[simp] theorem pointEquiv_symm_apply (bits : K ≃ BitString b) (y : BitString (ℓ * b))
+    (i : Fin ℓ) : (pointEquiv bits).symm y i = bits.symm (block y i) :=
+  rfl
+
+/-- Decoding the bits of a point gives the point back. -/
+@[simp] theorem pointEquiv_symm_pointBits (bits : K ≃ BitString b) (u : Fin ℓ → K) :
+    (pointEquiv bits).symm (pointBits bits u) = u :=
+  (pointEquiv bits).symm_apply_apply u
+
+/-- Decoding the bits of a point (under an additive equivalence) gives the point back. -/
+@[simp] theorem pointEquiv_coe_symm_pointBits [Add K] (bits : K ≃+ BitString b)
+    (u : Fin ℓ → K) : (pointEquiv bits).symm (pointBits bits u) = u :=
+  (pointEquiv (bits : K ≃ BitString b)).symm_apply_apply u
+
+/-- Encoding the point with given bits gives the bits back. -/
+@[simp] theorem pointBits_pointEquiv_symm (bits : K ≃ BitString b) (y : BitString (ℓ * b)) :
+    pointBits bits ((pointEquiv bits).symm y) = y :=
+  (pointEquiv bits).apply_symm_apply y
+
+/-- Distinct points have distinct bits. -/
+theorem pointBits_injective {E : Type*} [EquivLike E K (BitString b)] (bits : E) :
+    Function.Injective (pointBits (ℓ := ℓ) bits) :=
+  (pointEquiv (EquivLike.toEquiv bits)).injective
 
 /-- The bits of a batch of points: block `i` holds the bits of point `i`. -/
 def targetBits [Add K] (bits : K ≃+ BitString b) (targets : Fin t → Fin ℓ → K) :

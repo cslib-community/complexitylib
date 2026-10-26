@@ -51,8 +51,9 @@ reduction from `MCSP` to `PartialMCSP` are in `Complexity.Computability.MCSP.Par
 * `Cslib.PartialMCSP`: yes-instances under the all-gates De Morgan circuit size measure.
 * `Cslib.PartialMCSP.BinaryGate`: yes-instances under Ilango's AND/OR-only gate measure
   (`binaryCost`).
-* `Cslib.PartialMCSP.Instance.ofTotal`, `Cslib.PartialMCSP.Instance.toSuccinct`: embeddings into
-  `PartialMCSP` from `MCSP` and from `PartialMCSP` into `SuccinctMCSP`.
+* `Cslib.PartialMCSP.Instance.ofTotal`, `Cslib.PartialMCSP.Instance.toSuccinct`,
+  `Cslib.PartialMCSP.Instance.restrictTable`: embeddings into `PartialMCSP` from `MCSP`, from
+  `PartialMCSP` into `SuccinctMCSP`, and by restricting a total truth table to a subset of inputs.
 
 ## Main results
 
@@ -63,8 +64,8 @@ reduction from `MCSP` to `PartialMCSP` are in `Complexity.Computability.MCSP.Par
   `Cslib.PartialMCSP.isBinary_of_mem_of_threshold_le`,
   `Cslib.PartialMCSP.mem_iff_mem_binaryGate_of_all_isBinary`: bridge theorems between `PartialMCSP`
   and `PartialMCSP.BinaryGate`.
-* `Cslib.PartialMCSP.ofTotal_mem_iff`, `Cslib.PartialMCSP.toSuccinct_mem_iff`: exact compatibility
-  with `MCSP` and `SuccinctMCSP`.
+* `Cslib.PartialMCSP.ofTotal_mem_iff`, `Cslib.PartialMCSP.toSuccinct_mem_iff`,
+  `Cslib.PartialMCSP.restrictTable_mem_iff`: exact compatibility with `MCSP` and `SuccinctMCSP`.
 
 ## References
 
@@ -424,6 +425,62 @@ def Instance.toSuccinct (x : Instance) : SuccinctMCSP.Instance :=
 @[simp] theorem toSuccinct_mem_iff (x : Instance) :
     x.toSuccinct ∈ SuccinctMCSP ↔ x ∈ PartialMCSP := by
   rw [Instance.toSuccinct, SuccinctMCSP.ofFunction_mem_iff, Instance.coe_definedFinset, mem_iff]
+
+/-- Restrict a total truth table `T : BitString (2 ^ n)` to a subset `S : Finset (BitString n)` of
+defined inputs at threshold `s`, setting all entries outside `S` to `none` (`*`). -/
+def Instance.restrictTable {n : ℕ} (T : BitString (2 ^ n)) (S : Finset (BitString n)) (s : ℕ) :
+    Instance where
+  arity := n
+  table i := if (BitString.equivFin n).symm i ∈ S then some (T i) else none
+  threshold := s
+
+@[simp] theorem Instance.arity_restrictTable {n : ℕ} (T : BitString (2 ^ n))
+    (S : Finset (BitString n)) (s : ℕ) :
+    (Instance.restrictTable T S s).arity = n :=
+  rfl
+
+@[simp] theorem Instance.threshold_restrictTable {n : ℕ} (T : BitString (2 ^ n))
+    (S : Finset (BitString n)) (s : ℕ) :
+    (Instance.restrictTable T S s).threshold = s :=
+  rfl
+
+@[simp] theorem Instance.partialFunction_restrictTable {n : ℕ} (T : BitString (2 ^ n))
+    (S : Finset (BitString n)) (s : ℕ) (y : BitString n) :
+    (Instance.restrictTable T S s).partialFunction y =
+      if y ∈ S then some (T (BitString.equivFin n y)) else none := by
+  change (if (BitString.equivFin n).symm (BitString.equivFin n y) ∈ S then
+    some (T (BitString.equivFin n y)) else none) = _
+  rw [Equiv.symm_apply_apply]
+
+@[simp] theorem Instance.definedFinset_restrictTable {n : ℕ} (T : BitString (2 ^ n))
+    (S : Finset (BitString n)) (s : ℕ) :
+    (Instance.restrictTable T S s).definedFinset = S := by
+  change Finset.univ.filter
+    (fun z : BitString n => ((Instance.restrictTable T S s).partialFunction z).isSome) = S
+  ext y
+  simp
+
+/-- Viewing `Instance.restrictTable T S s` as a `SuccinctMCSP.Instance` via `Instance.toSuccinct`
+yields `SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T) S s`. -/
+@[simp] theorem Instance.toSuccinct_restrictTable {n : ℕ} (T : BitString (2 ^ n))
+    (S : Finset (BitString n)) (s : ℕ) :
+    (Instance.restrictTable T S s).toSuccinct =
+      SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T) S s := by
+  unfold Instance.toSuccinct SuccinctMCSP.Instance.ofFunction
+  simp only [Instance.arity_restrictTable, Instance.definedFinset_restrictTable,
+    Instance.threshold_restrictTable]
+  congr 1
+  refine Finset.image_congr fun y hy => ?_
+  have hyS : y ∈ S := Finset.mem_coe.mp hy
+  simp [Instance.completion, hyS]
+
+/-- The partial truth table `Instance.restrictTable T S s` is in `PartialMCSP` if and only if
+`SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T) S s` is in `SuccinctMCSP`. -/
+@[simp] theorem restrictTable_mem_iff {n : ℕ} (T : BitString (2 ^ n))
+    (S : Finset (BitString n)) (s : ℕ) :
+    Instance.restrictTable T S s ∈ PartialMCSP ↔
+      SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T) S s ∈ SuccinctMCSP := by
+  rw [← toSuccinct_mem_iff, Instance.toSuccinct_restrictTable]
 
 end PartialMCSP
 

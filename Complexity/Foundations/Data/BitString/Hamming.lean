@@ -64,8 +64,8 @@ is.
   `Cslib.BitString.two_mul_hammingDist_add_proj`: projections and their shifts are half the cube
   apart.
 * `Cslib.BitString.hammingDist_flip_self`, `Cslib.BitString.hammingDist_le_flip_add_one`,
-  `Cslib.BitString.hammingDist_flip_le_add_one`, `Cslib.BitString.hammingDist_flip_eq_add_one`:
-  effect of flipping one coordinate on Hamming distance.
+  `Cslib.BitString.hammingDist_flip_le_add_one`, `Cslib.BitString.hammingDist_flip_eq_add_one`,
+  `Cslib.BitString.hammingDist_flip`: effect of flipping one coordinate on Hamming distance.
 
 ## References
 
@@ -92,52 +92,41 @@ def median (f g h : ι → Bool) : ι → Bool :=
 /-- The median is the majority of three bits at each coordinate. -/
 theorem median_apply_eq_majority (f g h : ι → Bool) (i : ι) :
     median f g h i = majority 3 ![f i, g i, h i] := by
-  have key : ∀ a b c : Bool, (a && b || b && c || c && a) = majority 3 ![a, b, c] := by
-    decide
-  exact key (f i) (g i) (h i)
+  simp only [median]
+  cases f i <;> cases g i <;> cases h i <;> decide
 
 /-- **The majority law**: a point repeated twice is the median. -/
 @[simp] theorem median_self_left (f g : ι → Bool) : median f f g = f := by
   funext i
-  have key : ∀ a b : Bool, (a && a || a && b || b && a) = a := by decide
-  exact key (f i) (g i)
+  simp only [median]
+  cases f i <;> cases g i <;> rfl
 
 /-- The median is symmetric in its first two arguments. -/
 theorem median_swap_left (f g h : ι → Bool) : median f g h = median g f h := by
   funext i
-  have key : ∀ a b c : Bool, (a && b || b && c || c && a) = (b && a || a && c || c && b) := by
-    decide
-  exact key (f i) (g i) (h i)
+  simp only [median]
+  cases f i <;> cases g i <;> cases h i <;> rfl
 
 /-- The median is symmetric in its last two arguments. -/
 theorem median_swap_right (f g h : ι → Bool) : median f g h = median f h g := by
   funext i
-  have key : ∀ a b c : Bool, (a && b || b && c || c && a) = (a && c || c && b || b && a) := by
-    decide
-  exact key (f i) (g i) (h i)
+  simp only [median]
+  cases f i <;> cases g i <;> cases h i <;> rfl
 
 /-- **The associative law** of median algebras. Together with the majority law and symmetry it
 makes the cube a median algebra. -/
 theorem median_assoc (f g h k : ι → Bool) :
     median (median f k g) k h = median f k (median g k h) := by
   funext i
-  have key : ∀ a b c d : Bool,
-      ((a && d || d && b || b && a) && d || d && c || c && (a && d || d && b || b && a)) =
-        (a && d || d && (b && d || d && c || c && b) || (b && d || d && c || c && b) && a) := by
-    decide
-  exact key (f i) (g i) (h i) (k i)
+  simp only [median]
+  cases f i <;> cases g i <;> cases h i <;> cases k i <;> rfl
 
 /-- **The median distributes over itself.** -/
 theorem median_median_distrib (f g h k l : ι → Bool) :
     median (median f g h) k l = median (median f k l) (median g k l) (median h k l) := by
   funext i
-  have key : ∀ a b c d e : Bool,
-      ((a && b || b && c || c && a) && d || d && e || e && (a && b || b && c || c && a)) =
-        ((a && d || d && e || e && a) && (b && d || d && e || e && b) ||
-          (b && d || d && e || e && b) && (c && d || d && e || e && c) ||
-          (c && d || d && e || e && c) && (a && d || d && e || e && a)) := by
-    decide
-  exact key (f i) (g i) (h i) (k i) (l i)
+  simp only [median]
+  cases f i <;> cases g i <;> cases h i <;> cases k i <;> cases l i <;> rfl
 
 section Fintype
 
@@ -157,11 +146,7 @@ theorem hammingDist_and_add_hammingDist_or (f g h : ι → Bool) :
       hammingDist f h + hammingDist g h := by
   simp only [hammingDist_eq_sum, ← sum_add_distrib]
   refine sum_congr rfl fun i _ => ?_
-  have key : ∀ a b c : Bool,
-      ((if (a && b) ≠ c then 1 else 0) + if (a || b) ≠ c then 1 else 0 : ℕ) =
-        (if a ≠ c then 1 else 0) + if b ≠ c then 1 else 0 := by
-    decide
-  exact key (f i) (g i) (h i)
+  cases f i <;> cases g i <;> cases h i <;> decide
 
 /-- **The conjunction lies on a geodesic** from `f` to `g`. -/
 theorem hammingDist_add_hammingDist_and (f g : ι → Bool) :
@@ -169,11 +154,7 @@ theorem hammingDist_add_hammingDist_and (f g : ι → Bool) :
       hammingDist f g := by
   simp only [hammingDist_eq_sum, ← sum_add_distrib]
   refine sum_congr rfl fun i _ => ?_
-  have key : ∀ a b : Bool,
-      ((if a ≠ (a && b) then 1 else 0) + if (a && b) ≠ b then 1 else 0 : ℕ) =
-        if a ≠ b then 1 else 0 := by
-    decide
-  exact key (f i) (g i)
+  cases f i <;> cases g i <;> decide
 
 /-- **The disjunction lies on a geodesic** from `f` to `g`. -/
 theorem hammingDist_add_hammingDist_or (f g : ι → Bool) :
@@ -181,11 +162,7 @@ theorem hammingDist_add_hammingDist_or (f g : ι → Bool) :
       hammingDist f g := by
   simp only [hammingDist_eq_sum, ← sum_add_distrib]
   refine sum_congr rfl fun i _ => ?_
-  have key : ∀ a b : Bool,
-      ((if a ≠ (a || b) then 1 else 0) + if (a || b) ≠ b then 1 else 0 : ℕ) =
-        if a ≠ b then 1 else 0 := by
-    decide
-  exact key (f i) (g i)
+  cases f i <;> cases g i <;> decide
 
 /-- Conjunction is `1`-Lipschitz in each argument. -/
 theorem hammingDist_and_le (f f' g g' : ι → Bool) :
@@ -227,11 +204,7 @@ theorem hammingDist_add_hammingDist_median (f g h : ι → Bool) :
     hammingDist f (median f g h) + hammingDist (median f g h) g = hammingDist f g := by
   simp only [hammingDist_eq_sum, ← sum_add_distrib, median]
   refine sum_congr rfl fun i _ => ?_
-  have key : ∀ a b c : Bool,
-      ((if a ≠ (a && b || b && c || c && a) then 1 else 0) +
-        if (a && b || b && c || c && a) ≠ b then 1 else 0 : ℕ) = if a ≠ b then 1 else 0 := by
-    decide
-  exact key (f i) (g i) (h i)
+  by_cases hf : f i <;> by_cases hg : g i <;> by_cases hh : h i <;> simp_all
 
 /-- **The median minimizes the total distance** to its three arguments. -/
 theorem hammingDist_median_le (f g h k : ι → Bool) :
@@ -239,13 +212,8 @@ theorem hammingDist_median_le (f g h k : ι → Bool) :
       hammingDist k f + hammingDist k g + hammingDist k h := by
   simp only [hammingDist_eq_sum, ← sum_add_distrib, median]
   refine sum_le_sum fun i _ => ?_
-  have key : ∀ a b c d : Bool,
-      ((if (a && b || b && c || c && a) ≠ a then 1 else 0) +
-          (if (a && b || b && c || c && a) ≠ b then 1 else 0) +
-          if (a && b || b && c || c && a) ≠ c then 1 else 0 : ℕ) ≤
-        (if d ≠ a then 1 else 0) + (if d ≠ b then 1 else 0) + if d ≠ c then 1 else 0 := by
-    decide
-  exact key (f i) (g i) (h i) (k i)
+  by_cases hf : f i <;> by_cases hg : g i <;> by_cases hh : h i <;>
+    by_cases hk : k i <;> simp_all
 
 /-! ### Parities and coordinate projections -/
 
@@ -327,6 +295,18 @@ theorem hammingDist_flip_eq_add_one (x z : ι → Bool) (i : ι)
   rw [hammingDist, h, Finset.card_insert_of_notMem]
   · rfl
   · simp [hi]
+
+/-- Flipping one coordinate changes the Hamming distance to `z` by one: it increases by one if
+`x i = z i` and decreases by one otherwise. -/
+theorem hammingDist_flip (x z : ι → Bool) (i : ι) :
+    hammingDist (flipOn {i} x) z =
+      if x i = z i then hammingDist x z + 1 else hammingDist x z - 1 := by
+  split_ifs with hi
+  · exact hammingDist_flip_eq_add_one x z i hi
+  · have h := hammingDist_flip_eq_add_one (flipOn {i} x) z i
+      (by rw [flipOn_singleton_self]; cases hx : x i <;> cases hz : z i <;> simp_all)
+    rw [flipOn_flipOn] at h
+    omega
 
 end Fintype
 

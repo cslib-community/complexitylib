@@ -182,6 +182,15 @@ theorem radix_carry_split {B t u z v : ℕ} (hB : 0 < B) (hz : z < B)
     simpa only [hm] using (Nat.mod_add_div t B).symm
   exact ⟨ht, by nlinarith⟩
 
+/-- When `x₀, y₀ < B` and `b, c₀ ≤ B`, `(x₀ * b + y₀ + c₀) / B ≤ B`. -/
+private theorem add_mul_add_div_le {B b c₀ x₀ y₀ : ℕ} (hB : 1 < B) (hb : b ≤ B) (hc₀ : c₀ ≤ B)
+    (hx₀ : x₀ < B) (hy₀ : y₀ < B) : (x₀ * b + y₀ + c₀) / B ≤ B := by
+  have hp := Nat.mul_le_mul (show x₀ ≤ B - 1 by lia) hb
+  have hpred : B - 1 + 1 = B := by lia
+  have := (Nat.div_lt_iff_lt_mul (by lia : 0 < B)).mpr
+    (show x₀ * b + y₀ + c₀ < (B + 1) * B by nlinarith)
+  lia
+
 /-- Bounded, zero-ended carries characterize multiplication by one digit plus another word. -/
 theorem radix_affine_carries_iff {B d b c₀ : ℕ} (hB : 1 < B) (hb : b ≤ B)
     (hc₀ : c₀ ≤ B) (x y z : Fin d → ℕ)
@@ -213,36 +222,22 @@ theorem radix_affine_carries_iff {B d b c₀ : ℕ} (hB : 1 < B) (hb : b ≤ B)
       nlinarith [congrArg (B * ·) ht]
     · intro he
       let t := x 0 * b + y 0 + c₀
-      have ht : t < B * (B + 1) := by
-        have hx0 := hx 0
-        have hy0 := hy 0
-        have hp := Nat.mul_le_mul (show x 0 ≤ B - 1 by lia) hb
-        have hpred : B - 1 + 1 = B := by lia
-        dsimp [t]
-        nlinarith
       obtain ⟨he0, he1⟩ := radix_carry_split (by lia : 0 < B) (hz 0)
         (show t + B * (b * ofDigits B (List.ofFn (fun i => x i.succ)) +
             ofDigits B (List.ofFn (fun i => y i.succ))) =
             z 0 + B * ofDigits B (List.ofFn (fun i => z i.succ)) by
           dsimp [t]
           nlinarith [he])
-      have hc : t / B ≤ B := by
-        have := (Nat.div_lt_iff_lt_mul (by lia : 0 < B)).mpr
-          (show t < (B + 1) * B by nlinarith)
-        lia
+      have hc : t / B ≤ B := add_mul_add_div_le hB hb hc₀ (hx 0) (hy 0)
       obtain ⟨c, hc0, hce, hcb, hstep⟩ :=
         (ih hc (fun i => x i.succ) (fun i => y i.succ) (fun i => z i.succ)
           (fun i => hx i.succ) (fun i => hy i.succ) (fun i => hz i.succ)).mpr he1
-      refine ⟨Fin.cons c₀ c, rfl, ?_, ?_, ?_⟩
-      · simpa using hce
-      · intro i
-        refine Fin.cases hc₀ (fun j => ?_) i
-        exact hcb j
-      · intro i
-        refine Fin.cases ?_ (fun j => ?_) i
-        · simpa only [Fin.cons_zero, Fin.castSucc_zero, Fin.succ_zero_eq_one,
-            Fin.cons_one, hc0] using he0
-        · simpa only [← Fin.succ_castSucc, Fin.cons_succ] using hstep j
+      refine ⟨Fin.cons c₀ c, rfl, by simpa using hce, fun i => Fin.cases hc₀ hcb i, ?_⟩
+      intro i
+      refine Fin.cases ?_ (fun j => ?_) i
+      · simpa only [Fin.cons_zero, Fin.castSucc_zero, Fin.succ_zero_eq_one,
+          Fin.cons_one, hc0] using he0
+      · simpa only [← Fin.succ_castSucc, Fin.cons_succ] using hstep j
 
 /-- Every universe larger than eight admits binary digits whose products fit, while its
 cardinality itself fits in seven digits. The cardinality need not be a source element. -/

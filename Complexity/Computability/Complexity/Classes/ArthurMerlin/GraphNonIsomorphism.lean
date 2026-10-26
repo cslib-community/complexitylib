@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Factorial
 import Complexity.Foundations.Data.BitString.Basic
+import Complexity.Foundations.Data.List.Lookup
 import Complexity.Foundations.Data.Matrix.Reindex
 import Mathlib.Data.List.GetD
 
@@ -203,10 +204,6 @@ private def certBit (b : Bool) (τ : Equiv.Perm (Fin n)) (q : ℕ) : Bool :=
 private def cert (C : ℕ) (b : Bool) (τ : Equiv.Perm (Fin n)) : BitString C :=
   fun q => certBit b τ q
 
-private theorem getD_ofFn {E : ℕ} (x : BitString E) {p : ℕ} (hp : p < E) :
-    (List.ofFn x).getD p false = x ⟨p, hp⟩ := by
-  rw [List.getD_eq_getElem _ _ (by simpa using hp), List.getElem_ofFn]
-
 /-- The matrix read from the first `n * n` bits of a word. -/
 private def decodeMatrix (n : ℕ) (u : List Bool) : Matrix (Fin n) (Fin n) Bool :=
   Matrix.of fun i j => u.getD (i * n + j) false
@@ -251,7 +248,7 @@ private def decodeMap (n k : ℕ) (u : List Bool) (i : Fin n) : Fin n :=
 private theorem decodeMatrix_code {E : ℕ} (hE : n * n ≤ E) (M : Matrix (Fin n) (Fin n) Bool)
     (σ : Equiv.Perm (Fin n)) : decodeMatrix n (List.ofFn (code E M σ)) = M := by
   ext i j
-  rw [decodeMatrix, Matrix.of_apply, getD_ofFn _ ((index_lt i j).trans_le hE)]
+  rw [decodeMatrix, Matrix.of_apply, List.getD_ofFn_of_lt _ ((index_lt i j).trans_le hE)]
   simp only [code, codeBit, index_lt i j, ↓reduceIte, matrixBit_index]
 
 /-- In the matrix of a permutation `σ`, row `i` has its set bit at `σ i`. -/
@@ -265,14 +262,14 @@ private theorem decodeMap_code {E : ℕ} (hE : 2 * (n * n) ≤ E) (M : Matrix (F
   refine Fin.ext (image_eq (σ i).2 fun j hj => ?_)
   have hlt : (i : ℕ) * n + j < n * n := index_lt i ⟨j, hj⟩
   rw [List.getD_eq_getElem?_getD, List.getElem?_drop, ← List.getD_eq_getElem?_getD,
-    getD_ofFn _ (by omega)]
+    List.getD_ofFn_of_lt _ (by omega)]
   simp only [code, codeBit, show ¬(n * n + (i * n + j) < n * n) by omega, ↓reduceIte,
     Nat.add_sub_cancel_left]
   rw [matrixBit_index _ i ⟨j, hj⟩, Matrix.of_apply, decide_val_eq hj]
 
 private theorem getD_ofFn_cert_zero {C : ℕ} (hC : 0 < C) (b : Bool) (τ : Equiv.Perm (Fin n)) :
     (List.ofFn (cert C b τ)).getD 0 false = b := by
-  rw [getD_ofFn _ hC]
+  rw [List.getD_ofFn_of_lt _ hC]
   simp [cert, certBit]
 
 private theorem decodeMap_cert {C : ℕ} (hC : n * n + 1 ≤ C) (b : Bool) (τ : Equiv.Perm (Fin n)) :
@@ -281,7 +278,7 @@ private theorem decodeMap_cert {C : ℕ} (hC : n * n + 1 ≤ C) (b : Bool) (τ :
   refine Fin.ext (image_eq (τ i).2 fun j hj => ?_)
   have hlt : (i : ℕ) * n + j < n * n := index_lt i ⟨j, hj⟩
   rw [List.getD_eq_getElem?_getD, List.getElem?_drop, ← List.getD_eq_getElem?_getD,
-    getD_ofFn _ (by omega)]
+    List.getD_ofFn_of_lt _ (by omega)]
   simp only [cert, certBit, show 1 + (i * n + j) ≠ 0 by omega, ↓reduceIte,
     Nat.add_sub_cancel_left]
   rw [matrixBit_index _ i ⟨j, hj⟩, Matrix.of_apply, decide_val_eq hj]
@@ -332,29 +329,14 @@ def test (N : Polynomial ℕ) (x : (Graph × Graph) × List Bool) : Bool :=
       (x.2.take (N.eval (encPair encGraph encGraph x.1).length))
       (x.2.drop (N.eval (encPair encGraph encGraph x.1).length))
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_adjIndex
-    {γ : Type} {input : γ ↪ List Bool} {G : γ → Graph}
-    {i j : γ → ℕ} (hG : ComputableTidilyInPolyTime G input encGraph)
-    (hi : ComputableTidilyInPolyTime i input encUnary)
-    (hj : ComputableTidilyInPolyTime j input encUnary) :
-    ComputableTidilyInPolyTime (fun x => (G x).adjIndex (i x) (j x)) input encBool :=
-  (ComputableInPolyTime.tidy (Graph.computableInPolyTime_adjIndex (.of_tidy hG) (.of_tidy hi)
-      (.of_tidy hj)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_distinctVertices :
-    ComputableTidilyInPolyTime Graph.distinctVertices encGraph (encList encNat) :=
-  (ComputableInPolyTime.tidy (Graph.computableInPolyTime_distinctVertices))
-
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The test is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_test (N : Polynomial ℕ) :
     ComputableInPolyTime (test N) (encPair (encPair encGraph encGraph) encBits) encBool := by
-  refine .of_tidy ?_
   unfold test check
   dsimp only
-  fun_prop
+  exact .of_tidy (by fun_prop)
 
 /-! ### Counting the certified pairs -/
 
@@ -394,6 +376,74 @@ private theorem decodeMatrix_mem_orbit (h : check n E adj u v = true) :
 
 end Check
 
+/-- Every pair `(M, σ)` in `pairs (Matrix.of fun i j => adj b i j)` has a certificate of `C` bits
+that passes `check` on `code E M σ`. -/
+private theorem exists_cert_check_code {E C : ℕ} (hE : 2 * (n * n) + 1 ≤ E) (hC : n * n + 1 ≤ C)
+    (adj : Bool → ℕ → ℕ → Bool) {M : Matrix (Fin n) (Fin n) Bool} {σ : Equiv.Perm (Fin n)}
+    {b : Bool} (hb : (M, σ) ∈ pairs (Matrix.of fun i j : Fin n => adj b i j)) :
+    ∃ z : BitString C, check n E adj (List.ofFn (code E M σ)) (List.ofFn z) = true := by
+  obtain ⟨-, horb, haut⟩ := mem_filter.1 hb
+  obtain ⟨τ, hτ⟩ := mem_orbit.1 horb
+  refine ⟨cert C b τ, check_eq_true_iff.2 ⟨fun p hp => ?_, fun i hi j hj => ?_⟩⟩
+  · rw [List.getD_ofFn_of_lt _ (by omega)]
+    simp only [code, codeBit, show ¬(2 * (n * n) + p < n * n) by omega, ↓reduceIte]
+    exact matrixBit_of_le _ (by omega)
+  · have hf := congrArg Fin.val (congrFun (decodeMap_code (by omega : 2 * (n * n) ≤ E) M σ) ⟨i, hi⟩)
+    have hg := congrArg Fin.val (congrFun (decodeMap_cert hC b τ) ⟨i, hi⟩)
+    have hf' := congrArg Fin.val (congrFun (decodeMap_code (by omega : 2 * (n * n) ≤ E) M σ)
+      ⟨j, hj⟩)
+    have hg' := congrArg Fin.val (congrFun (decodeMap_cert hC b τ) ⟨j, hj⟩)
+    simp only [decodeMap] at hf hg hf' hg'
+    have hM (i' j' : Fin n) : (List.ofFn (code E M σ)).getD (i' * n + j') false = M i' j' := by
+      simpa [decodeMatrix] using
+        congrFun₂ (decodeMatrix_code (by omega : n * n ≤ E) M σ) i' j'
+    rw [hf, hg, hf', hg', getD_ofFn_cert_zero (by omega)]
+    have hlt : i * n + j < n * n := index_lt ⟨i, hi⟩ ⟨j, hj⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    · rw [List.getD_ofFn_of_lt _ (by omega)]
+      simp only [code, codeBit, show ¬(n * n + (i * n + j) < n * n) by omega, ↓reduceIte,
+        Nat.add_sub_cancel_left]
+      rw [matrixBit_index _ ⟨i, hi⟩ ⟨j, hj⟩, Matrix.of_apply]
+      exact decide_eq_decide.2 Fin.ext_iff
+    · by_cases hij : i = j
+      · exact Or.inl hij
+      · exact Or.inr fun h => hij (by simpa using σ.injective (Fin.ext h))
+    · rw [hM, hM ⟨i, hi⟩ ⟨j, hj⟩]
+      exact reindex_eq_iff.1 haut ⟨i, hi⟩ ⟨j, hj⟩
+    · by_cases hij : i = j
+      · exact Or.inl hij
+      · exact Or.inr fun h => hij (by simpa using τ.injective (Fin.ext h))
+    · rw [hM]
+      exact reindex_eq_iff.1 hτ ⟨i, hi⟩ ⟨j, hj⟩
+
+/-- Decoding an element `x` that passes `check` and encoding it again recovers `x`. -/
+private theorem code_decodeMatrix_of_check {E C : ℕ} {adj : Bool → ℕ → ℕ → Bool}
+    {x : BitString E} {z : BitString C}
+    (hz : check n E adj (List.ofFn x) (List.ofFn z) = true) :
+    code E (decodeMatrix n (List.ofFn x))
+      (Equiv.ofBijective _ (Finite.injective_iff_bijective.1 (injective_decodeMap_left hz))) =
+      x := by
+  obtain ⟨hrest, hrows⟩ := check_eq_true_iff.1 hz
+  funext p
+  change codeBit _ _ p.1 = x p
+  by_cases h₁ : p.1 < n * n
+  · simp only [codeBit, h₁, ↓reduceIte, matrixBit, ↓reduceDIte, BitString.blocksEquiv_symm_apply,
+      Matrix.of_symm_apply, decodeMatrix, Matrix.of_apply]
+    rw [index_symm h₁, List.getD_ofFn_of_lt _ p.2]
+  · by_cases h₂ : p.1 - n * n < n * n
+    · simp only [codeBit, h₁, ↓reduceIte, matrixBit, h₂, ↓reduceDIte,
+        BitString.blocksEquiv_symm_apply, Matrix.of_symm_apply, Matrix.of_apply,
+        Equiv.ofBijective_apply, decodeMap]
+      have hrow := (hrows _ (finProdFinEquiv.symm ⟨p.1 - n * n, h₂⟩).1.2 _
+        (finProdFinEquiv.symm ⟨p.1 - n * n, h₂⟩).2.2).1
+      rw [index_symm h₂, Nat.add_sub_cancel' (by omega), List.getD_ofFn_of_lt _ p.2] at hrow
+      rw [hrow]
+      exact decide_eq_decide.2 Fin.ext_iff
+    · simp only [codeBit, h₁, ↓reduceIte, matrixBit_of_le _ (Nat.not_lt.1 h₂)]
+      have := hrest (p.1 - 2 * (n * n)) (by omega)
+      rw [Nat.add_sub_cancel' (by omega), List.getD_ofFn_of_lt _ p.2] at this
+      exact this.symm
+
 /-- **The certified pairs**: the elements of `E` bits with a certificate of `C` bits that passes
 `check` are as many as the pairs of a relabelling of one of the two adjacency matrices and an
 automorphism of it. -/
@@ -416,68 +466,11 @@ theorem card_filter_check {E C : ℕ} (hE : 2 * (n * n) + 1 ≤ E) (hC : n * n +
     · exact Or.inl (mem_filter.2 ⟨mem_univ _, horb, reindex_decodeMatrix hz⟩)
     · exact Or.inr (mem_filter.2 ⟨mem_univ _, horb, reindex_decodeMatrix hz⟩)
   · -- a pair has an accepted code
-    obtain ⟨M, σ⟩ := t
-    obtain ⟨b, hb⟩ : ∃ b : Bool, (M, σ) ∈ pairs (Matrix.of fun i j : Fin n => adj b i j) := by
-      rcases mem_union.1 ht with h | h
-      · exact ⟨false, h⟩
-      · exact ⟨true, h⟩
-    obtain ⟨-, horb, haut⟩ := mem_filter.1 hb
-    obtain ⟨τ, hτ⟩ := mem_orbit.1 horb
-    refine mem_filter.2 ⟨mem_univ _, cert C b τ, check_eq_true_iff.2 ⟨fun p hp => ?_,
-      fun i hi j hj => ?_⟩⟩
-    · rw [getD_ofFn _ (by omega)]
-      simp only [code, codeBit, show ¬(2 * (n * n) + p < n * n) by omega, ↓reduceIte]
-      exact matrixBit_of_le _ (by omega)
-    · have hf := congrArg Fin.val (congrFun (decodeMap_code (by omega : 2 * (n * n) ≤ E) M σ)
-        ⟨i, hi⟩)
-      have hg := congrArg Fin.val (congrFun (decodeMap_cert hC b τ) ⟨i, hi⟩)
-      have hf' := congrArg Fin.val (congrFun (decodeMap_code (by omega : 2 * (n * n) ≤ E) M σ)
-        ⟨j, hj⟩)
-      have hg' := congrArg Fin.val (congrFun (decodeMap_cert hC b τ) ⟨j, hj⟩)
-      simp only [decodeMap] at hf hg hf' hg'
-      have hM (i' j' : Fin n) : (List.ofFn (code E M σ)).getD (i' * n + j') false = M i' j' := by
-        simpa [decodeMatrix] using
-          congrFun₂ (decodeMatrix_code (by omega : n * n ≤ E) M σ) i' j'
-      rw [hf, hg, hf', hg', getD_ofFn_cert_zero (by omega)]
-      have hlt : i * n + j < n * n := index_lt ⟨i, hi⟩ ⟨j, hj⟩
-      refine ⟨?_, ?_, ?_, ?_, ?_⟩
-      · rw [getD_ofFn _ (by omega)]
-        simp only [code, codeBit, show ¬(n * n + (i * n + j) < n * n) by omega, ↓reduceIte,
-          Nat.add_sub_cancel_left]
-        rw [matrixBit_index _ ⟨i, hi⟩ ⟨j, hj⟩, Matrix.of_apply]
-        exact decide_eq_decide.2 Fin.ext_iff
-      · by_cases hij : i = j
-        · exact Or.inl hij
-        · exact Or.inr fun h => hij (by simpa using σ.injective (Fin.ext h))
-      · rw [hM, hM ⟨i, hi⟩ ⟨j, hj⟩]
-        exact reindex_eq_iff.1 haut ⟨i, hi⟩ ⟨j, hj⟩
-      · by_cases hij : i = j
-        · exact Or.inl hij
-        · exact Or.inr fun h => hij (by simpa using τ.injective (Fin.ext h))
-      · rw [hM]
-        exact reindex_eq_iff.1 hτ ⟨i, hi⟩ ⟨j, hj⟩
+    rcases mem_union.1 ht with h | h
+    · exact mem_filter.2 ⟨mem_univ _, exists_cert_check_code hE hC adj (b := false) h⟩
+    · exact mem_filter.2 ⟨mem_univ _, exists_cert_check_code hE hC adj (b := true) h⟩
   · -- decoding an accepted element and coding it again gives it back
-    have hz := (mem_filter.1 hx).2.choose_spec
-    obtain ⟨hrest, hrows⟩ := check_eq_true_iff.1 hz
-    funext p
-    change codeBit _ _ p.1 = x p
-    by_cases h₁ : p.1 < n * n
-    · simp only [codeBit, h₁, ↓reduceIte, matrixBit, ↓reduceDIte, BitString.blocksEquiv_symm_apply,
-        Matrix.of_symm_apply, decodeMatrix, Matrix.of_apply]
-      rw [index_symm h₁, getD_ofFn _ p.2]
-    · by_cases h₂ : p.1 - n * n < n * n
-      · simp only [codeBit, h₁, ↓reduceIte, matrixBit, h₂, ↓reduceDIte,
-          BitString.blocksEquiv_symm_apply, Matrix.of_symm_apply, Matrix.of_apply,
-          Equiv.ofBijective_apply, decodeMap]
-        have hrow := (hrows _ (finProdFinEquiv.symm ⟨p.1 - n * n, h₂⟩).1.2 _
-          (finProdFinEquiv.symm ⟨p.1 - n * n, h₂⟩).2.2).1
-        rw [index_symm h₂, Nat.add_sub_cancel' (by omega), getD_ofFn _ p.2] at hrow
-        rw [hrow]
-        exact decide_eq_decide.2 Fin.ext_iff
-      · simp only [codeBit, h₁, ↓reduceIte, matrixBit_of_le _ (Nat.not_lt.1 h₂)]
-        have := hrest (p.1 - 2 * (n * n)) (by omega)
-        rw [Nat.add_sub_cancel' (by omega), getD_ofFn _ p.2] at this
-        exact this.symm
+    exact code_decodeMatrix_of_check (mem_filter.1 hx).2.choose_spec
   · -- coding a pair and decoding it gives it back
     refine Prod.ext (decodeMatrix_code (by omega) _ _) (Equiv.ext fun i => ?_)
     simp only [Equiv.ofBijective_apply]
@@ -499,6 +492,46 @@ theorem mem_GraphIsomorphism_iff_mem_orbit {G₀ G₁ : Graph}
   rw [reindex_eq_iff]
   simp only [Matrix.of_apply]
 
+/-- The square of the number of distinct vertices of `G₀` is at most the square of the encoded
+pair's length. -/
+private theorem length_distinctVertices_mul_le (G₀ G₁ : Graph) :
+    G₀.distinctVertices.length * G₀.distinctVertices.length ≤
+      (encPair encGraph encGraph (G₀, G₁)).length ^ 2 := by
+  -- the lengths
+  have := G₀.length_distinctVertices_le
+  have : G₀.distinctVertices.length ≤ (encPair encGraph encGraph (G₀, G₁)).length := by
+    simp only [length_encPair]
+    omega
+  nlinarith
+
+/-- For graphs with equally many distinct vertices, `certifiedSet` has the same cardinality as the
+union of the two `pairs` sets. -/
+private theorem card_certifiedSet_eq_card_pairs_union {G₀ G₁ : Graph}
+    (h : G₁.distinctVertices.length = G₀.distinctVertices.length) :
+    #(certifiedSet (encPair encGraph encGraph) (2 * Polynomial.X ^ 2 + 1)
+        (Polynomial.X ^ 2 + 1) (test (2 * Polynomial.X ^ 2 + 1)) (G₀, G₁)) =
+      #(pairs (Matrix.of fun i j : Fin G₀.distinctVertices.length => G₀.adjIndex i j) ∪
+        pairs (Matrix.of fun i j : Fin G₀.distinctVertices.length => G₁.adjIndex i j)) := by
+  -- with equally many vertices, the certified set has `n!` or `2 n!` elements
+  set N : Polynomial ℕ := 2 * Polynomial.X ^ 2 + 1
+  set c : Polynomial ℕ := Polynomial.X ^ 2 + 1
+  have hset : certifiedSet (encPair encGraph encGraph) N c (test N) (G₀, G₁) =
+      univ.filter fun x : BitString (N.eval (encPair encGraph encGraph (G₀, G₁)).length) =>
+        ∃ z : BitString (c.eval (encPair encGraph encGraph (G₀, G₁)).length),
+          check G₀.distinctVertices.length (N.eval (encPair encGraph encGraph (G₀, G₁)).length)
+            (fun b i j => if b then G₁.adjIndex i j else G₀.adjIndex i j)
+            (List.ofFn x) (List.ofFn z) = true := by
+    refine filter_congr fun x _ => exists_congr fun z => ?_
+    simp only [test, h, ne_eq, not_true_eq_false, decide_false, Bool.false_or,
+      List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn]
+  have hlen' := length_distinctVertices_mul_le G₀ G₁
+  rw [hset, card_filter_check
+    (by simp only [N, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_X, Polynomial.eval_one, Polynomial.eval_ofNat]; omega)
+    (by simp only [c, Polynomial.eval_add, Polynomial.eval_pow, Polynomial.eval_X,
+      Polynomial.eval_one]; omega)]
+  rfl
+
 /-- **Graph non-isomorphism is in `AM`** [Goldwasser and Sipser][GoldwasserSipser1986],
 [Arora and Barak, Section 8.2][AroraBarak09]: the set lower bound protocol applied to the pairs
 of a relabelling of one of the graphs and an automorphism of it, which are `2 n!` many for
@@ -514,63 +547,33 @@ theorem mem_AM : GraphNonIsomorphism ∈ AM (encPair encGraph encGraph) := by
         ((ComputableTidilyInPolyTime.length_list encNat).comp
           (Graph.computableInPolyTime_distinctVertices.tidy.comp
             (ComputableTidilyInPolyTime.fst encGraph encGraph))))
-  -- the lengths
-  have hlen (G₀ G₁ : Graph) :
-      G₀.distinctVertices.length * G₀.distinctVertices.length ≤
-        (encPair encGraph encGraph (G₀, G₁)).length ^ 2 := by
-    have := G₀.length_distinctVertices_le
-    have : G₀.distinctVertices.length ≤ (encPair encGraph encGraph (G₀, G₁)).length := by
-      simp only [length_encPair]
-      omega
-    nlinarith
-  have hE (L : ℕ) : N.eval L = 2 * L ^ 2 + 1 := by simp [hN]
-  have hC (L : ℕ) : c.eval L = L ^ 2 + 1 := by simp [hc]
-  -- with equally many vertices, the certified set has `n!` or `2 n!` elements
-  have hpairs (G₀ G₁ : Graph) (h : G₁.distinctVertices.length = G₀.distinctVertices.length) :
-      #(certifiedSet (encPair encGraph encGraph) N c (test N) (G₀, G₁)) =
-        #(pairs (Matrix.of fun i j : Fin G₀.distinctVertices.length => G₀.adjIndex i j) ∪
-          pairs (Matrix.of fun i j : Fin G₀.distinctVertices.length => G₁.adjIndex i j)) := by
-    have hset : certifiedSet (encPair encGraph encGraph) N c (test N) (G₀, G₁) =
-        univ.filter fun x : BitString (N.eval (encPair encGraph encGraph (G₀, G₁)).length) =>
-          ∃ z : BitString (c.eval (encPair encGraph encGraph (G₀, G₁)).length),
-            check G₀.distinctVertices.length (N.eval (encPair encGraph encGraph (G₀, G₁)).length)
-              (fun b i j => if b then G₁.adjIndex i j else G₀.adjIndex i j)
-              (List.ofFn x) (List.ofFn z) = true := by
-      refine filter_congr fun x _ => exists_congr fun z => ?_
-      simp only [test, h, ne_eq, not_true_eq_false, decide_false, Bool.false_or,
-        List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn]
-    have hlen' := hlen G₀ G₁
-    rw [hset, card_filter_check (by rw [hE]; omega) (by rw [hC]; omega)]
-    rfl
   refine mem_AM_of_card_certifiedSet (N := N) (c := c) (R := test N)
     (computableInPolyTime_test N) (.of_tidy hK) (fun a => by positivity) (fun a ha => ?_)
     fun a ha => ?_
   · obtain ⟨G₀, G₁⟩ := a
     dsimp only
     by_cases h : G₁.distinctVertices.length = G₀.distinctVertices.length
-    · rw [hpairs G₀ G₁ h, card_pairs_union,
+    · rw [card_certifiedSet_eq_card_pairs_union h, card_pairs_union,
         ite_eq_right fun hmem => ha ((mem_GraphIsomorphism_iff_mem_orbit h).2 hmem)]
     · -- with different numbers of vertices, every string is certified
       have hset : certifiedSet (encPair encGraph encGraph) N c (test N) (G₀, G₁) = univ := by
         refine filter_true_of_mem fun x _ => ⟨fun _ => false, ?_⟩
         simp only [test, h, ne_eq, not_false_eq_true, decide_true, Bool.true_or]
-      have hlen' := hlen G₀ G₁
-      rw [hset, card_univ, BitString.card, hE]
+      have hlen' := length_distinctVertices_mul_le G₀ G₁
+      rw [hset, card_univ, BitString.card, show N.eval (encPair encGraph encGraph (G₀, G₁)).length =
+        2 * (encPair encGraph encGraph (G₀, G₁)).length ^ 2 + 1 by
+          simp only [hN, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+            Polynomial.eval_X, Polynomial.eval_one, Polynomial.eval_ofNat], pow_succ]
       have hfac : G₀.distinctVertices.length.factorial ≤
           2 ^ (2 * (encPair encGraph encGraph (G₀, G₁)).length ^ 2) :=
-        calc G₀.distinctVertices.length.factorial
-            ≤ G₀.distinctVertices.length ^ G₀.distinctVertices.length := Nat.factorial_le_pow _
-          _ ≤ (2 ^ G₀.distinctVertices.length) ^ G₀.distinctVertices.length :=
-            Nat.pow_le_pow_left (Nat.lt_two_pow_self).le _
-          _ = 2 ^ (G₀.distinctVertices.length * G₀.distinctVertices.length) := by rw [← pow_mul]
-          _ ≤ 2 ^ (2 * (encPair encGraph encGraph (G₀, G₁)).length ^ 2) :=
-            Nat.pow_le_pow_right (by norm_num) (by omega)
-      rw [pow_succ]
+        (Nat.factorial_le_pow _).trans
+          (((Nat.pow_le_pow_left (Nat.lt_two_pow_self).le _).trans_eq (by rw [← pow_mul])).trans
+            (Nat.pow_le_pow_right (by norm_num) (by omega)))
       omega
   · obtain ⟨G₀, G₁⟩ := a
     have hiso : (G₀, G₁) ∈ GraphIsomorphism := not_not.1 ha
     have h := length_distinctVertices_eq_of_mem_GraphIsomorphism hiso
-    rw [hpairs G₀ G₁ h, card_pairs_union,
+    rw [card_certifiedSet_eq_card_pairs_union h, card_pairs_union,
       ite_eq_left ((mem_GraphIsomorphism_iff_mem_orbit h).1 hiso)]
 
 end GraphNonIsomorphism

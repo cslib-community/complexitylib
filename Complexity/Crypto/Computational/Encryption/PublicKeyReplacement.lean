@@ -82,10 +82,60 @@ theorem isPPT_keyDistinguisher
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
       (fun input => encrypt input.1 input.2.1 input.2.2))
     (hadversary : adversary.IsPPT) : IsPPT encBool (keyDistinguisher encrypt adversary) := by
-  have hchoose := hadversary.choose
-  have hguess := hadversary.guess
-  unfold keyDistinguisher
-  ppt
+  let choiceEncoding := encPair (encPair encBool encBool) encBits
+  let baseEncoding := encPair encUnary encBits
+  let coinEncoding := encPair (encPair baseEncoding choiceEncoding) encBool
+  have hchoose := hadversary.choose.on
+  have hcoin := isPPTOn_uniform_bool (encPair baseEncoding choiceEncoding)
+  have hencryptArg : ComputableInPolyTime
+      (fun p : ((ℕ × List Bool) × ((Bool × Bool) × List Bool)) × Bool =>
+        (p.1.1.1, p.1.1.2, if p.2 then p.1.2.1.2 else p.1.2.1.1))
+      coinEncoding (encPair encUnary (encPair encBits encBool)) := by
+    dsimp only [coinEncoding, baseEncoding, choiceEncoding]
+    fun_prop
+  have hcipher := hencrypt.preprocess hencryptArg
+  have hguessArg : ComputableInPolyTime
+      (fun p : (((ℕ × List Bool) × ((Bool × Bool) × List Bool)) × Bool) × List Bool =>
+        (p.1.1.1.1, p.1.1.2.2, p.2)) (encPair coinEncoding encBits)
+      (encPair encUnary (encPair encBits encBits)) := by
+    dsimp only [coinEncoding, baseEncoding, choiceEncoding]
+    fun_prop
+  have hguess := hadversary.guess.preprocess hguessArg
+  have hxor : ComputableInPolyTime
+      (fun p : (((((ℕ × List Bool) × ((Bool × Bool) × List Bool)) × Bool) × List Bool) × Bool) =>
+        p.2 ^^ p.1.1.2) (encPair (encPair coinEncoding encBits) encBool) encBool := by
+    have hx := ComputableInPolyTime.of_finite
+      (encIn := encPair encBool encBool) (encOut := encBool) (fun p : Bool × Bool => p.1 ^^ p.2)
+    have harg : ComputableInPolyTime
+        (fun p : (((((ℕ × List Bool) × ((Bool × Bool) × List Bool)) × Bool) × List Bool) × Bool) =>
+          (p.2, p.1.1.2)) (encPair (encPair coinEncoding encBits) encBool)
+        (encPair encBool encBool) := by
+      dsimp only [coinEncoding, baseEncoding, choiceEncoding]
+      fun_prop
+    simpa only [Function.comp_def] using hx.comp harg
+  have hlast := hguess.map_with
+    (f := fun p guess => guess ^^ p.1.2) hxor
+  have hlast' : IsPPTOn (encPair coinEncoding encBits) encBool
+      (fun p : (((ℕ × List Bool) × ((Bool × Bool) × List Bool)) × Bool) × List Bool => do
+        let guess ← adversary.guess p.1.1.1.1 p.1.1.2.2 p.2
+        pure (guess ^^ p.1.2)) := by
+    simpa only [bind_pure_comp] using hlast
+  have hbody := hcipher.bind_with
+    (second := fun p ciphertext => do
+      let guess ← adversary.guess p.1.1.1 p.1.2.2 ciphertext
+      pure (guess ^^ p.2)) hlast'
+  have hbits := hcoin.bind_with
+    (second := fun p bit => do
+      let ciphertext ← encrypt p.1.1 p.1.2 (if bit then p.2.1.2 else p.2.1.1)
+      let guess ← adversary.guess p.1.1 p.2.2 ciphertext
+      pure (guess ^^ bit)) hbody
+  simpa only [IsPPT, keyDistinguisher, choiceEncoding, baseEncoding, coinEncoding,
+    Function.comp_def, bind_pure_comp] using
+    hchoose.bind_with (second := fun p choice => do
+      let bit ← ProbComp.uniform Bool
+      let ciphertext ← encrypt p.1 p.2 (if bit then choice.1.2 else choice.1.1)
+      let guess ← adversary.guess p.1 choice.2 ciphertext
+      pure (guess ^^ bit)) hbits
 
 /-- The hidden-bit experiment averages the two chosen-message games, complementing the second.
 No finiteness or independence assumption is imposed on the saved state. -/

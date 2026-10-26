@@ -87,7 +87,7 @@ instance (i : Instr .standard r) : Decidable i.IsAdditive :=
   | .op (.alu (.bin f) ..) => inferInstanceAs (Decidable (f = .add ∨ f = .sub))
   | .op (.alu .width ..) => isFalse id
   | .op (.const ..) | .op (.copy ..) | .op (.load ..) | .op (.store ..) | .jump .. | .branch ..
-  | .halt .. => isTrue trivial
+  | .halt .. | .rand .. => isTrue trivial
 
 /-- Every instruction belongs to the additive-memory fragment. -/
 def Program.IsAdditive (p : Program .standard r) : Prop := ∀ i ∈ p, i.IsAdditive
@@ -510,6 +510,7 @@ private theorem next_simulation {p : Program .standard r} {q : RAM.Program} {bas
       subst t
       exact branch_simulation hc hσ hs
     | halt i => simp [Next, WordRAM.step, hi] at h
+    | rand _ _ => simp [Next, WordRAM.step, hi] at h
 
 private theorem runs_simulation {p : Program .standard r} {q : RAM.Program} {base w n : ℕ}
     {s t : State r} {σ : URM.Regs}
@@ -564,7 +565,7 @@ theorem executes_compile {p : Program .standard r} (hp : p.IsAdditive) (pre : RA
     | op o =>
       simp only [WordRAM.step, hi] at ht
       split at ht <;> cases ht
-    | jump | branch => simp [WordRAM.step, hi] at ht
+    | jump | branch | rand => simp [WordRAM.step, hi] at ht
 
 /-- The padded target input convention: zero working registers, followed by the source input
 length and words. Installing this list is uncharged; the compiler's two initialization

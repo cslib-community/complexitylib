@@ -107,6 +107,7 @@ example : IsPPTOn (encList encBool) encBool (fun word =>
     OracleComp.sampleBest (word.length + 1) (word.length + 1) (pure true)
       (fun candidate => pure (candidate == listStrictMajority word)) false) := by ppt
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Training and prediction compose directly, including computation of the final precision.
 example : IsPPTOn encBits encBool (fun word => do
     let params : Parameters := ⟨word.length + 1, 0, 0, 0, word.length⟩
@@ -115,6 +116,7 @@ example : IsPPTOn encBits encBool (fun word => do
     predict (fun code observation => listStrictMajority (code ++ observation))
       params.predictionGridBound model word) := by ppt
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : IsPPTOn (encList encBool) (encPair State.encoding encUnary) (fun word =>
     train (fun code observation => listStrictMajority (code ++ observation)) (pure (word, true))
       (fun state => pure (word.take (state.threshold + 1)))
@@ -128,6 +130,26 @@ example (evaluate : List Bool → List Bool → Bool)
     IsPPTOn encBits encBool (fun word =>
       predict evaluate word.length (⟨true, 0, [word]⟩, word.length) word) := by
   fail_if_success (clear hevaluate; ppt)
+  ppt
+
+end ComplexityTests.PseudoentropyTraining
+
+
+namespace ComplexityTests.PseudoentropyTraining
+open Cslib Cslib.Probability Turing.MultiTapeTM
+
+-- Selection retains arbitrary caller/output encodings and every supplied callback contract.
+example {α β : Type} {input : α ↪ List Bool} {output : β ↪ List Bool}
+    {values : α → List β} {trials : α → ℕ} {test : α → β → ProbComp Bool}
+    (fallback : β)
+    (hv : ComputableInPolyTime values input (encList output))
+    (hn : ComputableInPolyTime trials input encUnary)
+    (ht : IsPPTOn (encPair input output) encBool (fun p => test p.1 p.2)) :
+    IsPPTOn input output (fun a => OracleComp.selectFrom (values a) (trials a) (test a)
+      fallback) := by
+  fail_if_success (clear hv; ppt)
+  fail_if_success (clear hn; ppt)
+  fail_if_success (clear ht; ppt)
   ppt
 
 end ComplexityTests.PseudoentropyTraining

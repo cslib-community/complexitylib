@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Multiword.Digits
+public import Complexity.Computability.WordRAM.Multiword.Workspace
 
 /-!
 # Checked multiword subtraction
@@ -19,9 +19,8 @@ the physical word, even at width two. In particular, no modular overflow is used
 
 ## Main definitions
 
-* `Difference.total`, `Difference.borrow`, `Difference.base`, `Difference.one`,
-  `Difference.IsDigit`, `Difference.Frame`: reserved workspace registers, digit-register
-  predicate, and frame relation.
+* `Difference.borrow`, `Difference.one`: reserved borrow and constant-one workspace registers
+  (sharing `Workspace.total`, `Workspace.base`, `Workspace.IsDigit`, and `Workspace.Frame`).
 * `Difference.cell`, `Difference.cellResult`: six standard instructions for a digit and
   outgoing borrow, and their mathematical state update.
 * `Difference.digits`, `Difference.program`: unrolled digit cells and the fixed-length,
@@ -41,29 +40,15 @@ the physical word, even at width two. In particular, no modular overflow is used
 
 namespace Cslib.WordRAM.Multiword.Difference
 
+open Workspace
+
 variable {r : ℕ}
 
-/-- Arithmetic workspace. -/
-abbrev total : Fin (r + 4) := ⟨0, by omega⟩
-/-- Incoming and outgoing borrow. -/
-abbrev borrow : Fin (r + 4) := ⟨1, by omega⟩
-/-- Half-word radix. -/
-abbrev base : Fin (r + 4) := ⟨2, by omega⟩
-/-- Preserved one. -/
-abbrev one : Fin (r + 4) := ⟨3, by omega⟩
-
-/-- Registers available for operand digits. -/
-def IsDigit (i : Fin (r + 4)) : Prop := 4 ≤ i.val
-
-private theorem digit_ne {i : Fin (r + 4)} (hi : IsDigit i) :
-    i ≠ total ∧ i ≠ borrow ∧ i ≠ base ∧ i ≠ one := by
-  dsimp only [IsDigit] at hi
-  simp only [ne_eq, Fin.ext_iff, total, borrow, base, one]
-  omega
-
-/-- Only destination digits and the two arithmetic workspaces may change. -/
-def Frame (x y : Data (r + 4)) (ds : List (Fin (r + 4))) : Prop :=
-  y.mem = x.mem ∧ ∀ i, i ∉ ds → i ≠ total → i ≠ borrow → y.regs i = x.regs i
+/-- Incoming and outgoing borrow, reusing workspace register 1 (`Workspace.carry`). -/
+abbrev borrow : Fin (r + 4) := carry
+/-- Preserved one, reusing workspace register 3 (`Workspace.zero`, which holds `0` in addition
+and `1` in subtraction). -/
+abbrev one : Fin (r + 4) := zero
 
 /-- Subtract one digit and the incoming borrow, replacing the minuend digit. -/
 def cell (b d : Fin (r + 4)) : Code .standard (r + 4) := ram[
@@ -208,11 +193,11 @@ theorem exec_digits {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
           (digit_ne (hds i (by simp [hi]))).2.1
       have hzb : z.regs base = radix w := by
         rw [hzf.2 base (by simp [Ne.symm (digit_ne hd0).2.2.1])
-          (by simp [base, total]) (by simp [base, borrow])]
+          (by simp [base, total]) (by simp [base])]
         exact hbase
       have hzo : z.regs one = 1 := by
         rw [hzf.2 one (by simp [Ne.symm (digit_ne hd0).2.2.2])
-          (by simp [one, total]) (by simp [one, borrow])]
+          (by simp [one, total]) (by simp [one])]
         exact hone
       obtain ⟨y, hey, hyd, hyc, hyeq, hyf⟩ := ih ds hlen'
         (fun i hi => hbs i (by simp [hi])) (fun i hi => hds i (by simp [hi]))
@@ -243,11 +228,7 @@ theorem exec_digits {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
       · rw [value_cons, value_cons, value_cons, hyd0, List.length_cons, pow_succ]
         rw [hvalbs, hvalds] at hyeq
         nlinarith
-      · refine ⟨hyf.1.trans hzf.1, ?_⟩
-        intro i hi hit hic
-        have hine : i ≠ d := fun h => hi (List.mem_cons.mpr (Or.inl h))
-        have him : i ∉ ds := fun hm => hi (by simp [hm])
-        exact (hyf.2 i him hit hic).trans (hzf.2 i (by simp [hine]) hit hic)
+      · exact frame_trans (frame_mono hzf (by simp)) (frame_mono hyf (by simp))
 
 /-- Width-only constants, followed by a zero incoming borrow and the unrolled cells. -/
 def program (w : ℕ) (bs ds : List (Fin (r + 4))) : Code .standard (r + 4) :=

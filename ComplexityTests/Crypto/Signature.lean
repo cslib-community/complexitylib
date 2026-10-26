@@ -38,6 +38,14 @@ noncomputable def trivialSignatureScheme : SignatureScheme where
 noncomputable def idLamportScheme : SignatureScheme :=
   lamportScheme (fun x => x) .id'
 
+-- Ordinary certificates construct the actual scheme and reduction, with no public raw premise.
+example {f : List Bool → List Bool} (hf : ComputableInPolyTime f encBits encBits) :
+    (lamportScheme f hf).verify = lamportVerify f := rfl
+
+example {f : List Bool → List Bool} (hf : ComputableInPolyTime f encBits encBits)
+    {adversary : Forger} (ha : IsOraclePPT (encPair encBits encBits) adversary) :
+    IsPPT encBits (lamportInverter f hf adversary) := isPPT_lamportInverter hf ha
+
 -- Each message bit selects the corresponding secret from its pair.
 example : lamportSign (encList encBits
       [[false, false], [false, true], [true, false], [true, true]]) [false, true] =

@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Protocols.SigmaProtocol.Identification
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
 public import Complexity.Languages.Probabilistic.Forking
+import Complexity.Foundations.Data.List.Lookup
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Languages.Probabilistic.Presample
@@ -778,12 +779,6 @@ private theorem map_run_le_accept (P : SigmaProtocol X Y T C Z)
   · rw [Bool.eq_false_iff.mpr hw]
     simp
 
-omit [DecidableEq M] [DecidableEq T] [Fintype C] [Nonempty C] in
-/-- The entry of a list of `n` values at a position below `n`. -/
-private theorem getD_ofFn {n : ℕ} (h : Fin n → C) (j : Fin n) (d : C) :
-    (List.ofFn h).getD j d = h j := by
-  simp [List.getD_eq_getElem?_getD]
-
 variable [DecidableEq C]
 
 /-- **Extraction from a successful fork.** Both runs of a successful fork name the same query,
@@ -818,7 +813,7 @@ private theorem fork_le_oneWayGame [Nonempty X] {P : SigmaProtocol X Y T C Z}
     obtain ⟨-, hnamed'⟩ := runWithAnswers_forkingProgram P A _ (List.ofFn h') hout'.symm
     obtain ⟨hp, hc, hv⟩ := hnamed j hj
     obtain ⟨hp', hc', hv'⟩ := hnamed' j hj'
-    rw [getD_ofFn] at hc hc'
+    rw [List.getD_ofFn] at hc hc'
     have hpoint : out.1.2.2.1 = out'.1.2.2.1 :=
       Option.some.inj (hp.symm.trans (hq.trans (hq'.symm.trans hp')))
     have hR := hsound key hkey out.1.2.2.1.2 out.1.2.2.2.1 out.1.2.2.2.2 out'.1.2.2.2.1

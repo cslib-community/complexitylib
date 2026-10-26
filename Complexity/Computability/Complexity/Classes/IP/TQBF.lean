@@ -180,14 +180,6 @@ private theorem val_one_sub (c : ZMod (modOf I)) : (1 - c).val = subMod (modOf I
     rw [natCast_subMod, Nat.cast_one, ZMod.natCast_zmod_val]
   rw [h, val_natCast_of_lt I (subMod_lt _ _)]
 
-private theorem leaf_case (rest : List (ArithQBF.Kind × ℕ)) (St : List Claim) (m : ℕ) (s : S)
-    (b : Bool) :
-    runWith respond (verdict I (rest, St, b) m) s =
-      (PMF.pure (b, s)).bind fun x =>
-        if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
-        else PMF.pure (false, x.2) := by
-  rw [PMF.pure_bind, runWith_verdict_ite]
-
 private theorem reject_case (rest : List (ArithQBF.Kind × ℕ)) (St : List Claim) (m : ℕ)
     (s : S) (cont : Bool × S → PMF (Bool × S))
     (hcont : cont (false, s) = PMF.pure (false, s)) :
@@ -197,6 +189,141 @@ private theorem reject_case (rest : List (ArithQBF.Kind × ℕ)) (St : List Clai
         cont := by
   rw [verdict_of_ok_eq_false I rfl, ProbOracleComp.runWith_pure, ProbOracleComp.runWith_pure,
     PMF.pure_bind, hcont]
+
+private theorem binNext_eq_ite (o : ArithQBF.Connective) (e₁ e₂ : ArithQBF ℕ)
+    (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → ZMod (modOf I)) (c : ZMod (modOf I))
+    (St : List Claim) {a : StepData} (hsuf : a.2.1 = (ArithQBF.bin o e₁ e₂).tokens ++ rest)
+    (htop : a.top = (canonPt I.1.1 r, c.val)) (hbelow : a.below = St) (hxs : a.xs = I.1.1)
+    (hmod : a.modulus = modOf I) (hdeg : a.degree = I.1.2.2) (w : List Bool) :
+    binNext o a w =
+      if o.apply (((decodeReply (modOf I) I.1.2.2 w).getD 0 0 : ℕ) : ZMod (modOf I))
+          ((decodeReply (modOf I) I.1.2.2 w).getD 1 0) = c then
+        (e₁.tokens ++ (e₂.tokens ++ rest),
+          (canonPt I.1.1 r,
+            (((decodeReply (modOf I) I.1.2.2 w).getD 0 0 : ℕ) : ZMod (modOf I)).val) ::
+          (canonPt I.1.1 r,
+            (((decodeReply (modOf I) I.1.2.2 w).getD 1 0 : ℕ) : ZMod (modOf I)).val) :: St,
+          true)
+      else (a.2.1.tail, St, false) := by
+  have hx₁ := getD_decodeReply_lt I w 0
+  have hx₂ := getD_decodeReply_lt I w 1
+  unfold binNext reject replyOf
+  rw [hmod, hdeg, htop, hxs, hbelow, normPt_canonPt, val_natCast_of_lt I hx₁,
+    val_natCast_of_lt I hx₂]
+  generalize (decodeReply (modOf I) I.1.2.2 w).getD 0 0 = x₁ at hx₁ ⊢
+  generalize (decodeReply (modOf I) I.1.2.2 w).getD 1 0 = x₂ at hx₂ ⊢
+  have hiff : connectiveMod (modOf I) o x₁ x₂ % modOf I = c.val % modOf I ↔
+      o.apply (x₁ : ZMod (modOf I)) x₂ = c := by
+    rw [mod_eq_val_mod_iff, natCast_connectiveMod]
+  by_cases hcheck : o.apply (x₁ : ZMod (modOf I)) x₂ = c
+  · simp only [hiff.2 hcheck, hcheck, ↓reduceIte, hsuf]
+    cases o <;> simp only [ArithQBF.tokens, List.cons_append, List.append_assoc, List.tail_cons]
+  · simp only [mt hiff.1 hcheck, hcheck, ↓reduceIte]
+
+private theorem runWith_verdict_bin (o : ArithQBF.Connective) (e₁ e₂ : ArithQBF ℕ)
+    (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → ZMod (modOf I)) (c : ZMod (modOf I))
+    (St : List Claim) (m : ℕ) (s : S) {a : StepData}
+    (hsuf : a.2.1 = (ArithQBF.bin o e₁ e₂).tokens ++ rest)
+    (htop : a.top = (canonPt I.1.1 r, c.val)) (hbelow : a.below = St) (hxs : a.xs = I.1.1)
+    (hmod : a.modulus = modOf I) (hdeg : a.degree = I.1.2.2)
+    (ih₁ : ∀ rest r c St m s,
+      runWith respond (verdict I (e₁.tokens ++ rest, (canonPt I.1.1 r, c.val) :: St, true)
+          (e₁.tokens.length + m)) s =
+        (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.1.2.2 e₁ rest r c) s).bind
+          fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+            else PMF.pure (false, x.2))
+    (ih₂ : ∀ rest r c St m s,
+      runWith respond (verdict I (e₂.tokens ++ rest, (canonPt I.1.1 r, c.val) :: St, true)
+          (e₂.tokens.length + m)) s =
+        (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.1.2.2 e₂ rest r c) s).bind
+          fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+            else PMF.pure (false, x.2)) :
+    ((runWith respond (ask a >>= fun word => pure (binNext o a word)) s).bind fun x =>
+      runWith respond (verdict I x.1 (e₁.tokens.length + (e₂.tokens.length + m))) x.2) =
+    (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.1.2.2 (.bin o e₁ e₂) rest r c)
+      s).bind fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+        else PMF.pure (false, x.2) := by
+  have hmsg : message a = queryMessage I (.bin o e₁ e₂, rest, r) := by
+    rw [message, queryMessage, hsuf, htop]
+  rw [ProbOracleComp.runWith_bind, runWith_ask, PMF.bind_map, PMF.bind_bind, verifyAt,
+    runWith_query_bind, PMF.bind_bind, hmsg]
+  refine congrArg _ (funext fun y => ?_)
+  simp only [Function.comp_apply, ProbOracleComp.runWith_pure, PMF.pure_bind]
+  rw [getD_decodeTyped, getD_decodeTyped, hmod, hdeg,
+    binNext_eq_ite I o e₁ e₂ rest r c St hsuf htop hbelow hxs hmod hdeg]
+  split_ifs with hcheck
+  · rw [ih₁, ProbOracleComp.runWith_bind, PMF.bind_bind]
+    refine congrArg _ (funext fun z => ?_)
+    cases z.1
+    · simp only [Bool.false_eq_true, ↓reduceIte, ProbOracleComp.runWith_pure, PMF.pure_bind]
+    · simp only [↓reduceIte]
+      exact ih₂ _ _ _ _ _ _
+  · exact reject_case respond I _ _ _ _ _ (by simp)
+
+private theorem opNext_eq (o : ArithQBF.Operator) (v : ℕ) (e : ArithQBF ℕ)
+    (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → ZMod (modOf I)) (c : ZMod (modOf I))
+    (St : List Claim) {a : StepData} (hsuf : a.2.1 = (ArithQBF.op o v e).tokens ++ rest)
+    (hhead : a.head.2 = v) (htop : a.top = (canonPt I.1.1 r, c.val)) (hbelow : a.below = St)
+    (hxs : a.xs = I.1.1) (hmod : a.modulus = modOf I) (hdeg : a.degree = I.1.2.2)
+    (w : List Bool) (n : ℕ) :
+    opNext a w n =
+      (e.tokens ++ rest, (canonPt I.1.1 (Function.update r v (n : ZMod (modOf I))),
+        (evalCoeffList (n : ZMod (modOf I))
+          ((decodeReply (modOf I) I.1.2.2 w).map Nat.cast)).val) :: St, true) := by
+  unfold opNext replyOf
+  rw [hmod, hdeg, htop, hhead, hxs, hbelow, hsuf, updatePt_canonPt,
+    ← val_natCast_of_lt I (hornerMod_lt _ _), natCast_hornerMod]
+  cases o <;> simp only [ArithQBF.tokens, List.cons_append, List.tail_cons]
+
+private theorem runWith_verdict_op (o : ArithQBF.Operator) (v : ℕ) (hv : v ∈ I.1.1) (e : ArithQBF ℕ)
+    (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → ZMod (modOf I)) (c : ZMod (modOf I))
+    (St : List Claim) (m : ℕ) (s : S) {a : StepData}
+    (hsuf : a.2.1 = (ArithQBF.op o v e).tokens ++ rest) (hhead : a.head.2 = v)
+    (htop : a.top = (canonPt I.1.1 r, c.val)) (hbelow : a.below = St) (hxs : a.xs = I.1.1)
+    (hmod : a.modulus = modOf I) (hdeg : a.degree = I.1.2.2)
+    (ih : ∀ rest r c St m s,
+      runWith respond (verdict I (e.tokens ++ rest, (canonPt I.1.1 r, c.val) :: St, true)
+          (e.tokens.length + m)) s =
+        (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.1.2.2 e rest r c) s).bind
+          fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+            else PMF.pure (false, x.2)) :
+    ((runWith respond (ask a >>= opCont o a) s).bind fun x =>
+      runWith respond (verdict I x.1 (e.tokens.length + m)) x.2) =
+    (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.1.2.2 (.op o v e) rest r c)
+      s).bind fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+        else PMF.pure (false, x.2) := by
+  have hmsg : message a = queryMessage I (.op o v e, rest, r) := by
+    rw [message, queryMessage, hsuf, htop]
+  rw [ProbOracleComp.runWith_bind, runWith_ask, PMF.bind_map, PMF.bind_bind, verifyAt,
+    runWith_query_bind, PMF.bind_bind, hmsg]
+  refine congrArg _ (funext fun y => ?_)
+  simp only [Function.comp_apply]
+  rw [take_decodeTyped, hmod, hdeg]
+  set w := y.1.take (replyLimit (modOf I) I.1.2.2)
+  set l := decodeReply (modOf I) I.1.2.2 w with hl
+  have hlT : decodeTyped I y.1 = l.map Nat.cast := rfl
+  rw [hlT]
+  have hiff : operatorMod (modOf I) o (lookupPt a.top.1 a.head.2 % modOf I)
+        (hornerMod (modOf I) 0 l) (hornerMod (modOf I) 1 l) % modOf I = a.top.2 % modOf I ↔
+      o.apply (r v) (evalCoeffList 0 (l.map Nat.cast)) (evalCoeffList 1 (l.map Nat.cast)) = c := by
+    rw [htop, hhead, lookupPt_canonPt r hv, mod_eq_val_mod_iff, natCast_operatorMod,
+      ZMod.natCast_mod, ZMod.natCast_zmod_val, natCast_hornerMod, natCast_hornerMod,
+      Nat.cast_zero, Nat.cast_one]
+  unfold opCont opCheck replyOf
+  rw [hmod, hdeg, ← hl]
+  by_cases hcheck :
+      o.apply (r v) (evalCoeffList 0 (l.map Nat.cast)) (evalCoeffList 1 (l.map Nat.cast)) = c
+  · simp only [hiff.2 hcheck, hcheck, decide_true, ↓reduceIte]
+    rw [ProbOracleComp.runWith_map, ProbOracleComp.runWith_sample, PMF.map_comp, PMF.bind_map,
+      ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, samplerOf, ProbComp.eval_map,
+      PMF.map_comp, PMF.bind_map, PMF.bind_bind]
+    refine Probability.PMF.bind_congr_on_support _ _ _ fun n _ => ?_
+    simp only [Function.comp_apply, Prod.map_fst, Prod.map_snd, id_eq,
+      opNext_eq I o v e rest r c St hsuf hhead htop hbelow hxs hmod hdeg, ← hl]
+    exact ih _ _ _ _ _ _
+  · simp only [mt hiff.1 hcheck, hcheck, decide_false, Bool.false_eq_true, ↓reduceIte]
+    rw [ProbOracleComp.runWith_pure, PMF.pure_bind]
+    exact reject_case respond I _ _ _ _ _ (by simp)
 
 /-- **The machine simulates the protocol.** From a state whose remaining tokens are those of `e`
 followed by `rest`, and whose top claim holds the values below `p` of a point `r` on the variables
@@ -213,183 +340,50 @@ theorem runWith_verdict (e : ArithQBF ℕ) (he : ∀ w ∈ e.vars, w ∈ I.1.1)
           else PMF.pure (false, x.2) := by
   induction e generalizing rest r c St m s with
   | var w =>
-    have hw : w ∈ I.1.1 := he w (List.mem_singleton_self w)
-    have hcount : (ArithQBF.var w).tokens.length + m = m + 1 := by
-      simp only [ArithQBF.tokens, List.length_singleton]
-      omega
-    rw [hcount, verdict_succ, ProbOracleComp.runWith_bind]
-    simp only [ArithQBF.tokens, List.cons_append, List.nil_append, step_cons]
-    rw [stepAt, ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt,
-      ProbOracleComp.runWith_pure]
-    simp only [StepData.top, StepData.head, StepData.below, StepData.modulus, List.headD_cons,
-      List.tail_cons, lookupPt_canonPt r hw, mod_eq_val_mod_iff, ZMod.natCast_zmod_val]
-    exact leaf_case respond I rest St m s _
+    rw [show (ArithQBF.var w).tokens.length + m = m + 1 from Nat.add_comm 1 m,
+      verdict_succ, ProbOracleComp.runWith_bind]
+    simp only [ArithQBF.tokens, List.cons_append, List.nil_append, step_cons, stepAt,
+      ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt, StepData.top, StepData.head,
+      StepData.below, StepData.modulus, List.headD_cons, List.tail_cons,
+      lookupPt_canonPt r (he w (List.mem_singleton_self w)), mod_eq_val_mod_iff,
+      ZMod.natCast_zmod_val]; exact runWith_verdict_ite respond I rest St _ m s
   | top =>
-    have hcount : ArithQBF.top.tokens.length + m = m + 1 := by
-      simp only [ArithQBF.tokens, List.length_singleton]
-      omega
-    rw [hcount, verdict_succ, ProbOracleComp.runWith_bind]
-    simp only [ArithQBF.tokens, List.cons_append, List.nil_append, step_cons]
-    rw [stepAt, ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt,
-      ProbOracleComp.runWith_pure]
-    simp only [StepData.top, StepData.below, StepData.modulus, List.headD_cons,
-      List.tail_cons, mod_eq_val_mod_iff, Nat.cast_one]
-    rw [decide_eq_decide.2 eq_comm]
-    exact leaf_case respond I rest St m s _
+    rw [show ArithQBF.top.tokens.length + m = m + 1 from Nat.add_comm 1 m,
+      verdict_succ, ProbOracleComp.runWith_bind]
+    simp only [ArithQBF.tokens, List.cons_append, List.nil_append, step_cons, stepAt,
+      ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt, StepData.top, StepData.below,
+      StepData.modulus, List.headD_cons, List.tail_cons, mod_eq_val_mod_iff, Nat.cast_one,
+      decide_eq_decide.2 eq_comm]; exact runWith_verdict_ite respond I rest St _ m s
   | bot =>
-    have hcount : ArithQBF.bot.tokens.length + m = m + 1 := by
-      simp only [ArithQBF.tokens, List.length_singleton]
-      omega
-    rw [hcount, verdict_succ, ProbOracleComp.runWith_bind]
-    simp only [ArithQBF.tokens, List.cons_append, List.nil_append, step_cons]
-    rw [stepAt, ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt,
-      ProbOracleComp.runWith_pure]
-    simp only [StepData.top, StepData.below, StepData.modulus, List.headD_cons,
-      List.tail_cons, mod_eq_val_mod_iff, Nat.cast_zero]
-    rw [decide_eq_decide.2 eq_comm]
-    exact leaf_case respond I rest St m s _
+    rw [show ArithQBF.bot.tokens.length + m = m + 1 from Nat.add_comm 1 m,
+      verdict_succ, ProbOracleComp.runWith_bind]
+    simp only [ArithQBF.tokens, List.cons_append, List.nil_append, step_cons, stepAt,
+      ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt, StepData.top, StepData.below,
+      StepData.modulus, List.headD_cons, List.tail_cons, mod_eq_val_mod_iff, Nat.cast_zero,
+      decide_eq_decide.2 eq_comm]; exact runWith_verdict_ite respond I rest St _ m s
   | not e ih =>
-    have hcount : e.not.tokens.length + m = (e.tokens.length + m) + 1 := by
-      simp only [ArithQBF.tokens, List.length_cons]
-      omega
-    rw [hcount, verdict_succ, ProbOracleComp.runWith_bind]
-    simp only [ArithQBF.tokens, List.cons_append, step_cons]
-    rw [stepAt, ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt]
-    simp only [StepData.top, StepData.below, StepData.modulus, StepData.xs, List.headD_cons,
-      List.tail_cons, normPt_canonPt, ← val_one_sub]
-    exact ih he _ _ _ _ _ _
+    rw [show e.not.tokens.length + m = (e.tokens.length + m) + 1 from
+      Nat.add_right_comm e.tokens.length 1 m, verdict_succ, ProbOracleComp.runWith_bind]
+    simp only [ArithQBF.tokens, List.cons_append, step_cons, stepAt, ProbOracleComp.runWith_pure,
+      PMF.pure_bind, verifyAt, StepData.top, StepData.below, StepData.modulus, StepData.xs,
+      List.headD_cons, List.tail_cons, normPt_canonPt, ← val_one_sub, ih he]
   | bin o e₁ e₂ ih₁ ih₂ =>
-    have he₁ : ∀ w ∈ e₁.vars, w ∈ I.1.1 := fun w hw => he w (List.mem_append_left _ hw)
-    have he₂ : ∀ w ∈ e₂.vars, w ∈ I.1.1 := fun w hw => he w (List.mem_append_right _ hw)
-    have hcount : (ArithQBF.bin o e₁ e₂).tokens.length + m =
-        (e₁.tokens.length + (e₂.tokens.length + m)) + 1 := by
-      cases o <;> simp only [ArithQBF.tokens, List.length_cons, List.length_append] <;> omega
-    rw [hcount, verdict_succ, ProbOracleComp.runWith_bind]
-    have hmsg : ∀ a : StepData, a.2.1 = (ArithQBF.bin o e₁ e₂).tokens ++ rest →
-        a.top.1 = canonPt I.1.1 r → message a = queryMessage I (.bin o e₁ e₂, rest, r) :=
-      fun a h₁ h₂ => by rw [message, queryMessage, h₁, h₂]
-    have hstep : ∀ a : StepData, a.2.1 = (ArithQBF.bin o e₁ e₂).tokens ++ rest →
-        a.top = (canonPt I.1.1 r, c.val) → a.below = St → a.xs = I.1.1 → a.modulus = modOf I →
-        a.degree = I.1.2.2 →
-        ((runWith respond (ask a >>= fun word => pure (binNext o a word)) s).bind fun x =>
-          runWith respond (verdict I x.1 (e₁.tokens.length + (e₂.tokens.length + m))) x.2) =
-        (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.1.2.2 (.bin o e₁ e₂) rest r c)
-          s).bind fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
-            else PMF.pure (false, x.2) := by
-      intro a hsuf htop hbelow hxs hmod hdeg
-      rw [ProbOracleComp.runWith_bind, runWith_ask, PMF.bind_map, PMF.bind_bind, verifyAt,
-        runWith_query_bind, PMF.bind_bind, hmsg a hsuf (by rw [htop])]
-      refine congrArg _ (funext fun y => ?_)
-      simp only [Function.comp_apply, ProbOracleComp.runWith_pure, PMF.pure_bind]
-      rw [getD_decodeTyped, getD_decodeTyped, hmod, hdeg]
-      have hx₁ := getD_decodeReply_lt I (y.1.take (replyLimit (modOf I) I.1.2.2)) 0
-      have hx₂ := getD_decodeReply_lt I (y.1.take (replyLimit (modOf I) I.1.2.2)) 1
-      have hnext : binNext o a (y.1.take (replyLimit (modOf I) I.1.2.2)) =
-          if o.apply (((decodeReply (modOf I) I.1.2.2
-              (y.1.take (replyLimit (modOf I) I.1.2.2))).getD 0 0 : ℕ) : ZMod (modOf I))
-              ((decodeReply (modOf I) I.1.2.2 (y.1.take (replyLimit (modOf I) I.1.2.2))).getD 1 0)
-            = c then
-            ((e₁.tokens ++ (e₂.tokens ++ rest)), (canonPt I.1.1 r,
-              (((decodeReply (modOf I) I.1.2.2
-                (y.1.take (replyLimit (modOf I) I.1.2.2))).getD 0 0 : ℕ) : ZMod (modOf I)).val) ::
-              (canonPt I.1.1 r, (((decodeReply (modOf I) I.1.2.2
-                (y.1.take (replyLimit (modOf I) I.1.2.2))).getD 1 0 : ℕ) : ZMod (modOf I)).val) ::
-                St, true)
-          else (a.2.1.tail, St, false) := by
-        unfold binNext reject replyOf
-        rw [hmod, hdeg, htop, hxs, hbelow, normPt_canonPt, val_natCast_of_lt I hx₁,
-          val_natCast_of_lt I hx₂]
-        generalize (decodeReply (modOf I) I.1.2.2
-          (y.1.take (replyLimit (modOf I) I.1.2.2))).getD 0 0 = x₁ at hx₁ ⊢
-        generalize (decodeReply (modOf I) I.1.2.2
-          (y.1.take (replyLimit (modOf I) I.1.2.2))).getD 1 0 = x₂ at hx₂ ⊢
-        have hiff : connectiveMod (modOf I) o x₁ x₂ % modOf I = c.val % modOf I ↔
-            o.apply (x₁ : ZMod (modOf I)) x₂ = c := by
-          rw [mod_eq_val_mod_iff, natCast_connectiveMod]
-        by_cases hcheck : o.apply (x₁ : ZMod (modOf I)) x₂ = c
-        · simp only [hiff.2 hcheck, hcheck, ↓reduceIte, hsuf]
-          cases o <;> simp only [ArithQBF.tokens, List.cons_append, List.append_assoc,
-            List.tail_cons]
-        · simp only [mt hiff.1 hcheck, hcheck, ↓reduceIte]
-      rw [hnext]
-      split_ifs with hcheck
-      · rw [ih₁ he₁, ProbOracleComp.runWith_bind, PMF.bind_bind]
-        refine congrArg _ (funext fun z => ?_)
-        cases z.1
-        · simp only [Bool.false_eq_true, ↓reduceIte, ProbOracleComp.runWith_pure, PMF.pure_bind]
-        · simp only [↓reduceIte]
-          exact ih₂ he₂ _ _ _ _ _ _
-      · exact reject_case respond I _ _ _ _ _ (by simp)
-    cases o
-    · simp only [ArithQBF.tokens, List.cons_append, List.append_assoc, step_cons]
-      exact hstep _ (by simp [ArithQBF.tokens]) rfl rfl rfl rfl rfl
-    · simp only [ArithQBF.tokens, List.cons_append, List.append_assoc, step_cons]
-      exact hstep _ (by simp [ArithQBF.tokens]) rfl rfl rfl rfl rfl
+    rw [show (ArithQBF.bin o e₁ e₂).tokens.length + m =
+        (e₁.tokens.length + (e₂.tokens.length + m)) + 1 by
+      cases o <;> simp only [ArithQBF.tokens, List.length_cons, List.length_append] <;> omega,
+      verdict_succ, ProbOracleComp.runWith_bind]
+    cases o <;> simp only [ArithQBF.tokens, List.cons_append, List.append_assoc, step_cons] <;>
+      exact runWith_verdict_bin respond I _ e₁ e₂ rest r c St m s (by simp [ArithQBF.tokens])
+        rfl rfl rfl rfl rfl (ih₁ fun w hw => he w (List.mem_append_left _ hw))
+        (ih₂ fun w hw => he w (List.mem_append_right _ hw))
   | op o v e ih =>
-    have hv : v ∈ I.1.1 := he v List.mem_cons_self
-    have he' : ∀ w ∈ e.vars, w ∈ I.1.1 := fun w hw => he w (List.mem_cons_of_mem v hw)
-    have hcount : (ArithQBF.op o v e).tokens.length + m = (e.tokens.length + m) + 1 := by
-      cases o <;> simp only [ArithQBF.tokens, List.length_cons] <;> omega
-    rw [hcount, verdict_succ, ProbOracleComp.runWith_bind]
-    have hstep : ∀ a : StepData, a.2.1 = (ArithQBF.op o v e).tokens ++ rest → a.head.2 = v →
-        a.top = (canonPt I.1.1 r, c.val) → a.below = St → a.xs = I.1.1 → a.modulus = modOf I →
-        a.degree = I.1.2.2 →
-        ((runWith respond (ask a >>= opCont o a) s).bind fun x =>
-          runWith respond (verdict I x.1 (e.tokens.length + m)) x.2) =
-        (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.1.2.2 (.op o v e) rest r c)
-          s).bind fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
-            else PMF.pure (false, x.2) := by
-      intro a hsuf hhead htop hbelow hxs hmod hdeg
-      have hmsg : message a = queryMessage I (.op o v e, rest, r) := by
-        rw [message, queryMessage, hsuf, htop]
-      rw [ProbOracleComp.runWith_bind, runWith_ask, PMF.bind_map, PMF.bind_bind, verifyAt,
-        runWith_query_bind, PMF.bind_bind, hmsg]
-      refine congrArg _ (funext fun y => ?_)
-      simp only [Function.comp_apply]
-      rw [take_decodeTyped, hmod, hdeg]
-      generalize hl : decodeReply (modOf I) I.1.2.2 (y.1.take (replyLimit (modOf I) I.1.2.2)) = l
-      have hlT : decodeTyped I y.1 = l.map Nat.cast := by rw [decodeTyped, hl]
-      rw [hlT]
-      have hiff : operatorMod (modOf I) o (lookupPt a.top.1 a.head.2 % modOf I)
-            (hornerMod (modOf I) 0 l) (hornerMod (modOf I) 1 l) % modOf I = a.top.2 % modOf I ↔
-          o.apply (r v) (evalCoeffList 0 (l.map Nat.cast)) (evalCoeffList 1 (l.map Nat.cast)) =
-            c := by
-        rw [htop, hhead, lookupPt_canonPt r hv, mod_eq_val_mod_iff, natCast_operatorMod,
-          ZMod.natCast_mod, ZMod.natCast_zmod_val, natCast_hornerMod, natCast_hornerMod,
-          Nat.cast_zero, Nat.cast_one]
-      unfold opCont opCheck replyOf
-      rw [hmod, hdeg, hl]
-      by_cases hcheck :
-          o.apply (r v) (evalCoeffList 0 (l.map Nat.cast)) (evalCoeffList 1 (l.map Nat.cast)) = c
-      · simp only [hiff.2 hcheck, hcheck, decide_true, ↓reduceIte]
-        rw [ProbOracleComp.runWith_map, ProbOracleComp.runWith_sample, PMF.map_comp, PMF.bind_map,
-          ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, samplerOf, ProbComp.eval_map,
-          PMF.map_comp, PMF.bind_map, PMF.bind_bind]
-        refine Probability.PMF.bind_congr_on_support _ _ _ fun n hn => ?_
-        have hnp : n < modOf I := lt_of_mem_support_sampleMod hn
-        simp only [Function.comp_apply, Prod.map_fst, Prod.map_snd, id_eq]
-        have hnext : opNext a (y.1.take (replyLimit (modOf I) I.1.2.2)) n =
-            (e.tokens ++ rest, (canonPt I.1.1 (Function.update r v (n : ZMod (modOf I))),
-              (evalCoeffList (n : ZMod (modOf I)) (l.map Nat.cast)).val) :: St, true) := by
-          unfold opNext replyOf
-          rw [hmod, hdeg, hl, htop, hhead, hxs, hbelow, hsuf, updatePt_canonPt]
-          have hval : hornerMod (modOf I) n l =
-              (evalCoeffList (n : ZMod (modOf I)) (l.map Nat.cast)).val := by
-            rw [← natCast_hornerMod, val_natCast_of_lt I (hornerMod_lt _ _)]
-          rw [hval]
-          cases o <;> simp only [ArithQBF.tokens, List.cons_append, List.tail_cons]
-        rw [hnext]
-        exact ih he' _ _ _ _ _ _
-      · simp only [mt hiff.1 hcheck, hcheck, decide_false, Bool.false_eq_true, ↓reduceIte]
-        rw [ProbOracleComp.runWith_pure, PMF.pure_bind]
-        exact reject_case respond I _ _ _ _ _ (by simp)
-    cases o
-    · simp only [ArithQBF.tokens, List.cons_append, step_cons]
-      exact hstep _ (by simp [ArithQBF.tokens]) rfl rfl rfl rfl rfl rfl
-    · simp only [ArithQBF.tokens, List.cons_append, step_cons]
-      exact hstep _ (by simp [ArithQBF.tokens]) rfl rfl rfl rfl rfl rfl
-    · simp only [ArithQBF.tokens, List.cons_append, step_cons]
-      exact hstep _ (by simp [ArithQBF.tokens]) rfl rfl rfl rfl rfl rfl
+    rw [show (ArithQBF.op o v e).tokens.length + m = (e.tokens.length + m) + 1 by
+      cases o <;> simp only [ArithQBF.tokens, List.length_cons] <;> omega,
+      verdict_succ, ProbOracleComp.runWith_bind]
+    cases o <;> simp only [ArithQBF.tokens, List.cons_append, step_cons] <;>
+      exact runWith_verdict_op respond I _ v (he v List.mem_cons_self) e rest r c St m s
+        (by simp [ArithQBF.tokens]) rfl rfl rfl rfl rfl rfl
+        (ih fun w hw => he w (List.mem_cons_of_mem v hw))
 
 end Simulation
 

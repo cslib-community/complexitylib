@@ -238,7 +238,7 @@ declarations, 9 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.CheckTests.AllowlistAccepted allowing [
-  Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat
+  Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 ]
 
 end ComplexityTests.Abstracts.CheckTests

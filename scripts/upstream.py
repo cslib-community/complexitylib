@@ -7,10 +7,10 @@ Usage:
 
 For each module the script
   * locates `Complexity/<Path>.lean` and the mirrored destination `<cslib>/Cslib/<Path>.lean`,
-  * rewrites `import Complexity.` / `public import Complexity.` to the `Cslib.` prefix,
+  * rewrites local imports, including `public`, `meta` and `all` modifiers, to `Cslib.`,
     mapping `Complexity.Init` to `Cslib.Init`, and likewise backticked module names
     (`` `Complexity.Foo.Bar` `` naming an existing module) in comments and docstrings,
-  * drops the `-- upstream:` marker line,
+  * drops standalone `-- upstream:` marker comments,
   * refuses to continue if the module imports a local module whose marker is not
     `merged`/`submitted` (those must be upstreamed first, in the same stack),
   * refuses to overwrite an existing destination file or symlink in the cslib checkout
@@ -27,29 +27,66 @@ import re
 import subprocess
 import sys
 
+from proof_lengths import masks
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LIB = "Complexity"
 UPSTREAM_LIB = "Cslib"
 
-IMPORT_RE = re.compile(r"^(?P<prefix>\s*(?:public\s+)?import\s+(?:all\s+)?)Complexity(?P<rest>\.\S+|)\s*$")
+HEADER_RE = re.compile(r"\s*(?:module\s+)?(?:prelude\s+)?")
+IMPORT_RE = re.compile(r"(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?(?P<module>\S+)\s*")
+COMMENT_RE = re.compile(r"/-|--")
+BLOCK_DELIMITER_RE = re.compile(r"/-|-/")
 MARKER_RE = re.compile(r"^--\s*upstream:\s*(?P<status>.*?)\s*$")
-TITLE_RE = re.compile(r"^#\s+(?P<title>.+?)\s*$")
+TITLE_RE = re.compile(r"^#\s+(?P<title>.+?)\s*$", re.M)
 MODULE_REF_RE = re.compile(r"`Complexity(?P<rest>(?:\.[A-Z][A-Za-z0-9_']*)+)`")
 
 
 def module_to_path(module: str, root: pathlib.Path = ROOT) -> pathlib.Path:
     parts = module.split(".")
-    if parts[0] != LIB:
-        sys.exit(f"error: module {module} does not start with {LIB}.")
+    if len(parts) < 2 or parts[0] != LIB or any(not p or "/" in p or "\\" in p for p in parts):
+        sys.exit(f"error: invalid module {module!r}; expected {LIB}.<Name> with dot-separated components")
     return root.joinpath(*parts).with_suffix(".lean")
 
 
+def comment_spans(text: str, code: str | None = None) -> list[tuple[int, int]]:
+    """Locate whole comments using the shared lexer to exclude comment-like literals."""
+    code = masks(text)[0] if code is None else code
+    spans = []
+    end = 0
+    for match in COMMENT_RE.finditer(text):
+        start = match.start()
+        if start < end or code[start] != " ":
+            continue
+        if match[0] == "--":
+            end = text.find("\n", start)
+            end = len(text) if end < 0 else end
+        else:
+            depth = 1
+            for delimiter in BLOCK_DELIMITER_RE.finditer(text, match.end()):
+                depth += 1 if delimiter[0] == "/-" else -1
+                if depth == 0:
+                    end = delimiter.end()
+                    break
+        spans.append((start, end))
+    return spans
+
+
+def marker_match(text: str, start: int, end: int) -> re.Match[str] | None:
+    """Only a standalone line comment is an upstream marker."""
+    line_start = text.rfind("\n", 0, start) + 1
+    if text[line_start:start].strip():
+        return None
+    return MARKER_RE.fullmatch(text[start:end])
+
+
+def upstream_markers(text: str) -> list[str]:
+    return [match.group("status") for start, end in comment_spans(text)
+            if (match := marker_match(text, start, end))]
+
+
 def marker_of(path: pathlib.Path) -> str | None:
-    for line in path.read_text(encoding="utf-8").splitlines():
-        m = MARKER_RE.match(line)
-        if m:
-            return m.group("status")
-    return None
+    return next(iter(upstream_markers(path.read_text(encoding="utf-8"))), None)
 
 
 def rewrite_module_ref(m: re.Match[str], root: pathlib.Path = ROOT) -> str:
@@ -61,29 +98,37 @@ def rewrite_module_ref(m: re.Match[str], root: pathlib.Path = ROOT) -> str:
 
 
 def rewrite(module: str, text: str, root: pathlib.Path = ROOT) -> tuple[str, list[str], str | None]:
-    out: list[str] = []
+    code, syntax = masks(text)
+    edits: list[tuple[int, int, str]] = []
     local_imports: list[str] = []
     title: str | None = None
-    in_doc = False
-    for line in text.splitlines():
-        if MARKER_RE.match(line):
+    # Lean's header permits comments/newlines between tokens and one module per import.
+    # Stop at the first command so syntax quotations in the body are never rewritten.
+    pos = HEADER_RE.match(syntax).end()
+    while match := IMPORT_RE.match(syntax, pos):
+        imported = match.group("module")
+        if imported == LIB or imported.startswith(LIB + "."):
+            local_imports.append(imported)
+            start = match.start("module")
+            edits.append((start, start + len(LIB), UPSTREAM_LIB))
+        pos = match.end()
+
+    for start, end in comment_spans(text, code):
+        comment = text[start:end]
+        if marker_match(text, start, end):
+            line_start = text.rfind("\n", 0, start) + 1
+            edits.append((line_start, end + (end < len(text)), ""))
             continue
-        m = IMPORT_RE.match(line)
-        if m:
-            rest = m.group("rest")
-            local_imports.append(LIB + rest)
-            out.append(f"{m.group('prefix')}{UPSTREAM_LIB}{rest}")
-            continue
-        if line.startswith("/-!"):
-            in_doc = True
-        if in_doc and title is None:
-            t = TITLE_RE.match(line)
-            if t:
-                title = t.group("title")
-        if in_doc and line.rstrip().endswith("-/"):
-            in_doc = False
-        out.append(MODULE_REF_RE.sub(lambda match: rewrite_module_ref(match, root=root), line))
-    return "\n".join(out) + "\n", local_imports, title
+        if comment.startswith("/-!") and title is None:
+            if heading := TITLE_RE.search(comment):
+                title = heading.group("title")
+        rewritten = MODULE_REF_RE.sub(lambda match: rewrite_module_ref(match, root=root), comment)
+        if rewritten != comment:
+            edits.append((start, end, rewritten))
+
+    for start, end, replacement in sorted(edits, reverse=True):
+        text = text[:start] + replacement + text[end:]
+    return text if text.endswith("\n") else text + "\n", local_imports, title
 
 
 def suggest_title(module: str, title: str | None) -> str:

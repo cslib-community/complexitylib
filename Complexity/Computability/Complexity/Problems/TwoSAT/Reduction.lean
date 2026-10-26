@@ -88,64 +88,66 @@ theorem mem_reachabilityFormula {I : STCONInstance} {c : Clause ℕ} :
       split_ifs at h with huv
       exact .inr ⟨u, huv.1, v, huv.2, by simp [harc]⟩
 
+/-- Any satisfying assignment of `reachabilityFormula I` propagates `true` along paths from `s`,
+excluding `I` from `STCON`. -/
+private theorem notMem_STCON_of_eval_reachabilityFormula {I : STCONInstance} {σ : ℕ → Bool}
+    (hσ : (reachabilityFormula I).eval σ = true) : I ∉ STCON := by
+  -- a satisfying assignment makes every reachable vertex true
+  rw [mem_STCON]
+  intro hst
+  have hcl : ∀ c ∈ reachabilityFormula I, ∃ l ∈ c, σ l.1 = l.2 := fun c hc =>
+    (Clause.eval_eq_true_iff σ c).mp ((CNF.eval_eq_true_iff σ _).mp hσ c hc)
+  have key : ∀ x, Relation.ReflTransGen I.Adj I.s x → σ x = true := by
+    intro x hx
+    induction hx with
+    | refl =>
+      obtain ⟨l, hl, hlσ⟩ := hcl _ (mem_reachabilityFormula.mpr (.inl rfl))
+      rw [List.mem_singleton] at hl
+      subst hl
+      exact hlσ
+    | @tail y z _ hyz ih =>
+      have harc : arc I y z = true := by
+        rw [arc, dite_eq_left ⟨y.isLt, z.isLt⟩]
+        exact hyz
+      obtain ⟨l, hl, hlσ⟩ := hcl _ (mem_reachabilityFormula.mpr (.inr (.inr ⟨y, z, harc, rfl⟩)))
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hl
+      rcases hl with rfl | rfl
+      · simp only at hlσ
+        exact absurd (ih.symm.trans hlσ) (by decide)
+      · exact hlσ
+  obtain ⟨l, hl, hlσ⟩ := hcl _ (mem_reachabilityFormula.mpr (.inr (.inl rfl)))
+  rw [List.mem_singleton] at hl
+  subst hl
+  simp only at hlσ
+  exact absurd ((key _ hst).symm.trans hlσ) (by decide)
+
 /-- **The formula is in `TwoSAT` exactly when `t` is not reachable from `s`.** -/
 theorem reachabilityFormula_mem_TwoSAT_iff (I : STCONInstance) :
     reachabilityFormula I ∈ TwoSAT ↔ I ∉ STCON := by
   have hw : ∀ c ∈ reachabilityFormula I, c.length ≤ 2 := by
     intro c hc
     rcases mem_reachabilityFormula.mp hc with rfl | rfl | ⟨u, v, -, rfl⟩ <;> simp
-  rw [mem_TwoSAT, and_iff_right hw, mem_STCON]
-  constructor
-  · -- a satisfying assignment makes every reachable vertex true
-    rintro ⟨σ, hσ⟩ hst
-    have hcl : ∀ c ∈ reachabilityFormula I, ∃ l ∈ c, σ l.1 = l.2 := fun c hc =>
-      (Clause.eval_eq_true_iff σ c).mp ((CNF.eval_eq_true_iff σ _).mp hσ c hc)
-    have key : ∀ x, Relation.ReflTransGen I.Adj I.s x → σ x = true := by
-      intro x hx
-      induction hx with
-      | refl =>
-        obtain ⟨l, hl, hlσ⟩ := hcl _ (mem_reachabilityFormula.mpr (.inl rfl))
-        rw [List.mem_singleton] at hl
-        subst hl
-        exact hlσ
-      | @tail y z _ hyz ih =>
-        have harc : arc I y z = true := by
-          rw [arc, dite_eq_left ⟨y.isLt, z.isLt⟩]
-          exact hyz
-        obtain ⟨l, hl, hlσ⟩ := hcl _ (mem_reachabilityFormula.mpr (.inr (.inr ⟨y, z, harc, rfl⟩)))
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hl
-        rcases hl with rfl | rfl
-        · simp only at hlσ
-          rw [ih] at hlσ
-          exact absurd hlσ (by decide)
-        · exact hlσ
-    obtain ⟨l, hl, hlσ⟩ := hcl _ (mem_reachabilityFormula.mpr (.inr (.inl rfl)))
-    rw [List.mem_singleton] at hl
-    subst hl
-    simp only at hlσ
-    rw [key _ hst] at hlσ
-    exact absurd hlσ (by decide)
-  · -- the reachable vertices give a satisfying assignment
-    intro hst
-    classical
-    let σ : ℕ → Bool := fun x => decide (∃ h : x < I.n, Relation.ReflTransGen I.Adj I.s ⟨x, h⟩)
-    refine ⟨σ, (CNF.eval_eq_true_iff σ _).mpr fun c hc => (Clause.eval_eq_true_iff σ c).mpr ?_⟩
-    rcases mem_reachabilityFormula.mp hc with rfl | rfl | ⟨u, v, harc, rfl⟩
-    · refine ⟨_, List.mem_singleton_self _, ?_⟩
-      change decide _ = true
-      exact decide_eq_true ⟨I.s.isLt, .refl⟩
-    · refine ⟨_, List.mem_singleton_self _, ?_⟩
-      simp only [σ, decide_eq_false_iff_not]
-      rintro ⟨h, hr⟩
-      exact hst hr
-    · simp only [arc] at harc
-      split_ifs at harc with huv
-      by_cases hu : σ u = true
-      · refine ⟨(v, true), by simp, ?_⟩
-        simp only [σ, decide_eq_true_eq] at hu ⊢
-        obtain ⟨h, hr⟩ := hu
-        exact ⟨huv.2, hr.tail harc⟩
-      · exact ⟨(u, false), by simp, by simpa using hu⟩
+  rw [mem_TwoSAT, and_iff_right hw]
+  refine ⟨fun ⟨σ, hσ⟩ => notMem_STCON_of_eval_reachabilityFormula hσ, fun hst => ?_⟩
+  -- the reachable vertices give a satisfying assignment
+  rw [mem_STCON] at hst
+  classical
+  let σ : ℕ → Bool := fun x => decide (∃ h : x < I.n, Relation.ReflTransGen I.Adj I.s ⟨x, h⟩)
+  refine ⟨σ, (CNF.eval_eq_true_iff σ _).mpr fun c hc => (Clause.eval_eq_true_iff σ c).mpr ?_⟩
+  rcases mem_reachabilityFormula.mp hc with rfl | rfl | ⟨u, v, harc, rfl⟩
+  · exact ⟨_, List.mem_singleton_self _, decide_eq_true ⟨I.s.isLt, .refl⟩⟩
+  · refine ⟨_, List.mem_singleton_self _, ?_⟩
+    simp only [σ, decide_eq_false_iff_not]
+    rintro ⟨_, hr⟩
+    exact hst hr
+  · simp only [arc] at harc
+    split_ifs at harc with huv
+    by_cases hu : σ u = true
+    · refine ⟨(v, true), by simp, ?_⟩
+      simp only [σ, decide_eq_true_eq] at hu ⊢
+      obtain ⟨_, hr⟩ := hu
+      exact ⟨huv.2, hr.tail harc⟩
+    · exact ⟨(u, false), by simp, by simpa using hu⟩
 
 /-! ### The writer -/
 
@@ -192,66 +194,56 @@ private theorem set_getD_self {regs : List ℕ} {i : ℕ} (hi : i < regs.length)
 
 variable {P : CounterProgram} {w : List Bool} {B : ℕ}
 
+/-- The digit-writing loop of `literalCode`, writing the binary digits of `q` from register `5`. -/
+private theorem reachesOut_literalCode_loop {b r exit : ℕ} {sign : Bool}
+    (hcode : P.CodeAt b (literalCode b r sign exit)) :
+    ∀ q (regs' : List ℕ), regs'.getD 5 0 = q → 5 < regs'.length → (∀ x ∈ regs', x ≤ B) →
+      P.ReachesOut w (P.Active B) (b + 1, regs') (b + 13, regs'.set 5 0)
+        (q.bits.flatMap fun y => List.replicate 7 true ++ [y]) := by
+  have hi (i : ℕ) (h : i < 23) := hcode i (length_literalCode b r sign exit ▸ h)
+  -- the seven markers before a digit
+  have hmarks : ∀ (regs' : List ℕ), (∀ x ∈ regs', x ≤ B) →
+      P.ReachesOut w (P.Active B) (b + 2, regs') (b + 9, regs') (List.replicate 7 true) :=
+    fun _ hB' => ReachesOut.emit (hi 2 (by omega)) hB' <| ReachesOut.emit (hi 3 (by omega)) hB' <|
+      ReachesOut.emit (hi 4 (by omega)) hB' <| ReachesOut.emit (hi 5 (by omega)) hB' <|
+      ReachesOut.emit (hi 6 (by omega)) hB' <| ReachesOut.emit (hi 7 (by omega)) hB' <|
+      ReachesOut.emit (hi 8 (by omega)) hB' <| ReachesOut.refl _
+  -- the digits
+  intro q
+  induction q using Nat.strong_induction_on with
+  | _ q ih =>
+  intro regs' hq hlen hB'
+  refine ReachesOut.lt (hi 1 (by omega)) hB' ?_
+  rcases Nat.eq_zero_or_pos q with rfl | hq0
+  · simp only [eval_const, eval_reg, hq, lt_irrefl, ↓reduceIte, Nat.zero_bits, List.flatMap_nil]
+    rw [← hq, set_getD_self hlen]
+    exact ReachesOut.refl _
+  · simp only [eval_const, eval_reg, hq, hq0, ↓reduceIte]
+    rw [bits_of_pos hq0, List.flatMap_cons, List.append_assoc, List.singleton_append]
+    refine (hmarks regs' hB').trans ?_
+    have hqB : q ≤ B := by
+      rw [← hq, List.getD_eq_getElem _ _ hlen]
+      exact hB' _ (List.getElem_mem hlen)
+    have hhalf := ih (q / 2) (by omega) (regs'.set 5 (q / 2)) (by simp [hlen])
+      (by simpa using hlen) (List.forall_mem_set_of_forall_mem hB' (by omega))
+    rw [List.set_set] at hhalf
+    refine ReachesOut.lt (hi 9 (by omega)) hB' ?_
+    simp only [eval_mod, eval_reg, eval_const, hq]
+    rcases Nat.mod_two_eq_zero_or_one q with h | h
+    · simp only [h, Nat.zero_lt_one, ↓reduceIte]
+      refine ReachesOut.emit (hi 10 (by omega)) hB' (ReachesOut.assign (hi 12 (by omega)) hB' ?_)
+      simpa only [eval_div, eval_reg, eval_const, hq] using hhalf
+    · simp only [h, lt_irrefl, ↓reduceIte]
+      refine ReachesOut.emit (hi 11 (by omega)) hB' (ReachesOut.assign (hi 12 (by omega)) hB' ?_)
+      simpa only [eval_div, eval_reg, eval_const, hq] using hhalf
+
 /-- **The code of a literal writes it**, through register `5`, which ends at `0`. -/
 theorem reachesOut_literalCode {b r exit : ℕ} {sign : Bool}
     (hcode : P.CodeAt b (literalCode b r sign exit)) {regs : List ℕ} (h5 : 5 < regs.length)
     (hB : ∀ x ∈ regs, x ≤ B) :
     P.ReachesOut w (P.Active B) (b, regs) (exit, regs.set 5 0)
       (literalBits (regs.getD r 0) sign) := by
-  have hlen : (literalCode b r sign exit).length = 23 := length_literalCode b r sign exit
-  have hi (i : ℕ) (h : i < 23) := hcode i (hlen ▸ h)
-  have h0 : P.instr b = assign 5 (reg r) (b + 1) := hi 0 (by omega)
-  have h1 : P.instr (b + 1) = lt (const 0) (reg 5) (b + 2) (b + 13) := hi 1 (by omega)
-  have h9 : P.instr (b + 9) = lt (mod (reg 5) (const 2)) (const 1) (b + 10) (b + 11) :=
-    hi 9 (by omega)
-  have h10 : P.instr (b + 10) = emit false (b + 12) := hi 10 (by omega)
-  have h11 : P.instr (b + 11) = emit true (b + 12) := hi 11 (by omega)
-  have h12 : P.instr (b + 12) = assign 5 (div (reg 5) (const 2)) (b + 1) := hi 12 (by omega)
-  -- the seven markers before a digit
-  have hmarks : ∀ (regs' : List ℕ), (∀ x ∈ regs', x ≤ B) →
-      P.ReachesOut w (P.Active B) (b + 2, regs') (b + 9, regs') (List.replicate 7 true) := by
-    intro regs' hB'
-    exact ReachesOut.emit (hi 2 (by omega)) hB' <| ReachesOut.emit (hi 3 (by omega)) hB' <|
-      ReachesOut.emit (hi 4 (by omega)) hB' <| ReachesOut.emit (hi 5 (by omega)) hB' <|
-      ReachesOut.emit (hi 6 (by omega)) hB' <| ReachesOut.emit (hi 7 (by omega)) hB' <|
-      ReachesOut.emit (hi 8 (by omega)) hB' <| ReachesOut.refl _
-  -- the digits
-  have hloop : ∀ q (regs' : List ℕ), regs'.getD 5 0 = q → 5 < regs'.length →
-      (∀ x ∈ regs', x ≤ B) →
-      P.ReachesOut w (P.Active B) (b + 1, regs') (b + 13, regs'.set 5 0)
-        (q.bits.flatMap fun y => List.replicate 7 true ++ [y]) := by
-    intro q
-    induction q using Nat.strong_induction_on with
-    | _ q ih =>
-    intro regs' hq hlen hB'
-    rcases Nat.eq_zero_or_pos q with rfl | hq0
-    · refine ReachesOut.lt h1 hB' ?_
-      simp only [eval_const, eval_reg, hq, lt_irrefl, ↓reduceIte, Nat.zero_bits, List.flatMap_nil]
-      rw [← hq, set_getD_self hlen]
-      exact ReachesOut.refl _
-    · refine ReachesOut.lt h1 hB' ?_
-      simp only [eval_const, eval_reg, hq, hq0, ↓reduceIte]
-      rw [bits_of_pos hq0, List.flatMap_cons, List.append_assoc, List.singleton_append]
-      refine (hmarks regs' hB').trans ?_
-      have hhalf := ih (q / 2) (by omega) (regs'.set 5 (q / 2)) (by simp [hlen])
-        (by simpa using hlen) (List.forall_mem_set_of_forall_mem hB' (by
-          have : q ≤ B := by
-            rw [← hq, List.getD_eq_getElem _ _ hlen]
-            exact hB' _ (List.getElem_mem hlen)
-          omega))
-      rw [List.set_set] at hhalf
-      refine ReachesOut.lt h9 hB' ?_
-      simp only [eval_mod, eval_reg, eval_const, hq]
-      rcases Nat.mod_two_eq_zero_or_one q with h | h
-      · simp only [h, Nat.zero_lt_one, ↓reduceIte]
-        refine ReachesOut.emit h10 hB' (ReachesOut.assign h12 hB' ?_)
-        simp only [eval_div, eval_reg, eval_const, hq]
-        exact hhalf
-      · simp only [h, lt_irrefl, ↓reduceIte]
-        refine ReachesOut.emit h11 hB' (ReachesOut.assign h12 hB' ?_)
-        simp only [eval_div, eval_reg, eval_const, hq]
-        exact hhalf
-  -- the register, then the end of the literal
+  have hi (i : ℕ) (h : i < 23) := hcode i (length_literalCode b r sign exit ▸ h)
   have hrB : regs.getD r 0 ≤ B := by
     rcases lt_or_ge r regs.length with hr | hr
     · rw [List.getD_eq_getElem _ _ hr]
@@ -260,6 +252,7 @@ theorem reachesOut_literalCode {b r exit : ℕ} {sign : Bool}
       exact Nat.zero_le _
   have hB0 : ∀ x ∈ regs.set 5 0, x ≤ B :=
     List.forall_mem_set_of_forall_mem hB (Nat.zero_le _)
+  -- the register, then the end of the literal
   have htail : P.ReachesOut w (P.Active B) (b + 13, regs.set 5 0) (exit, regs.set 5 0)
       [true, true, true, false, true, true, true, sign, true, false] :=
     ReachesOut.emit (hi 13 (by omega)) hB0 <| ReachesOut.emit (hi 14 (by omega)) hB0 <|
@@ -268,11 +261,11 @@ theorem reachesOut_literalCode {b r exit : ℕ} {sign : Bool}
       ReachesOut.emit (hi 19 (by omega)) hB0 <| ReachesOut.emit (hi 20 (by omega)) hB0 <|
       ReachesOut.emit (hi 21 (by omega)) hB0 <| ReachesOut.emit (hi 22 (by omega)) hB0 <|
       ReachesOut.refl _
-  have hdigits := hloop (regs.getD r 0) (regs.set 5 (regs.getD r 0))
-    (List.getD_set_self (by omega)) (by simpa using h5)
+  have hdigits := reachesOut_literalCode_loop (w := w) hcode (regs.getD r 0)
+    (regs.set 5 (regs.getD r 0)) (List.getD_set_self (by omega)) (by simpa using h5)
     (List.forall_mem_set_of_forall_mem hB hrB)
   rw [List.set_set] at hdigits
-  refine ReachesOut.assign h0 hB ?_
+  refine ReachesOut.assign (hi 0 (by omega)) hB ?_
   simp only [eval_reg]
   exact (hdigits.trans htail).of_eq rfl
 
@@ -323,75 +316,119 @@ private theorem bounded6 {a₀ a₁ a₂ a₃ a₄ a₅ : ℕ} (h₀ : a₀ ≤ 
   simp only [List.mem_cons, List.not_mem_nil, or_false]
   omega
 
+/-- Reading `I.n` from the unary header into register `0`. -/
+private theorem reachesOut_header_n (hB : I.n ≤ B) :
+    ∀ j ≤ I.n, writer.ReachesOut I.encode (writer.Active B) (0, [j, 0, 0, 0, 0, 0])
+      (2, [I.n, 0, 0, 0, 0, 0]) [] := by
+  intro j hj
+  induction h : I.n - j generalizing j with
+  | zero =>
+    obtain rfl : j = I.n := by omega
+    refine ReachesOut.read (show writer.instr 0 = _ from rfl)
+      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
+    simp only [eval_reg, List.getD_cons_zero, I.getElem?_encode_n le_rfl, lt_irrefl,
+      decide_false, readLabel]
+    exact ReachesOut.refl _
+  | succ _ ih =>
+    refine ReachesOut.read (show writer.instr 0 = _ from rfl)
+      (bounded6 (hj.trans hB) (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
+    simp only [eval_reg, List.getD_cons_zero, I.getElem?_encode_n hj,
+      show j < I.n by omega, decide_true, readLabel]
+    refine ReachesOut.assign (show writer.instr 1 = _ from rfl)
+      (bounded6 (hj.trans hB) (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
+    simpa using ih (j + 1) (by omega) (by omega)
+
+/-- Reading `I.s` from the unary header into register `1`. -/
+private theorem reachesOut_header_s (hB : I.n ≤ B) :
+    ∀ j ≤ (I.s : ℕ), writer.ReachesOut I.encode (writer.Active B)
+      (2, [I.n, j, 0, 0, 0, 0]) (4, [I.n, I.s, 0, 0, 0, 0]) [] := by
+  have hs := I.s.isLt
+  intro j hj
+  induction h : (I.s : ℕ) - j generalizing j with
+  | zero =>
+    obtain rfl : j = I.s := by omega
+    refine ReachesOut.read (show writer.instr 2 = _ from rfl)
+      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
+    simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
+      I.getElem?_encode_s le_rfl, lt_irrefl, decide_false, readLabel]
+    exact ReachesOut.refl _
+  | succ _ ih =>
+    refine ReachesOut.read (show writer.instr 2 = _ from rfl)
+      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
+    simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
+      I.getElem?_encode_s hj, show j < I.s by omega, decide_true, readLabel]
+    refine ReachesOut.assign (show writer.instr 3 = _ from rfl)
+      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
+    simpa using ih (j + 1) (by omega) (by omega)
+
+/-- Reading `I.t` from the unary header into register `2`. -/
+private theorem reachesOut_header_t (hB : I.n ≤ B) :
+    ∀ j ≤ (I.t : ℕ), writer.ReachesOut I.encode (writer.Active B)
+      (4, [I.n, I.s, j, 0, 0, 0]) (6, [I.n, I.s, I.t, 0, 0, 0]) [] := by
+  have hs := I.s.isLt
+  have ht := I.t.isLt
+  intro j hj
+  induction h : (I.t : ℕ) - j generalizing j with
+  | zero =>
+    obtain rfl : j = I.t := by omega
+    refine ReachesOut.read (show writer.instr 4 = _ from rfl)
+      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
+    simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
+      I.getElem?_encode_t le_rfl, lt_irrefl, decide_false, readLabel]
+    exact ReachesOut.refl _
+  | succ _ ih =>
+    refine ReachesOut.read (show writer.instr 4 = _ from rfl)
+      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
+    simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
+      I.getElem?_encode_t hj, show j < I.t by omega, decide_true, readLabel]
+    refine ReachesOut.assign (show writer.instr 5 = _ from rfl)
+      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
+    simpa using ih (j + 1) (by omega) (by omega)
+
 /-- The header is read into registers `0`, `1` and `2`. -/
 private theorem reachesOut_header (hB : I.n ≤ B) :
     writer.ReachesOut I.encode (writer.Active B) (0, [0, 0, 0, 0, 0, 0])
-      (6, [I.n, I.s, I.t, 0, 0, 0]) [] := by
-  have hs := I.s.isLt
-  have ht := I.t.isLt
-  have hn : ∀ j ≤ I.n, writer.ReachesOut I.encode (writer.Active B) (0, [j, 0, 0, 0, 0, 0])
-      (2, [I.n, 0, 0, 0, 0, 0]) [] := by
-    intro j hj
-    induction h : I.n - j generalizing j with
-    | zero =>
-      obtain rfl : j = I.n := by omega
-      refine ReachesOut.read (show writer.instr 0 = _ from rfl)
-        (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_reg, List.getD_cons_zero, I.getElem?_encode_n le_rfl, lt_irrefl,
-        decide_false, readLabel]
-      exact ReachesOut.refl _
-    | succ m ih =>
-      refine ReachesOut.read (show writer.instr 0 = _ from rfl)
-        (bounded6 (hj.trans hB) (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_reg, List.getD_cons_zero, I.getElem?_encode_n hj,
-        show j < I.n by omega, decide_true, readLabel]
-      refine ReachesOut.assign (show writer.instr 1 = _ from rfl)
-        (bounded6 (hj.trans hB) (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-      simpa using ih (j + 1) (by omega) (by omega)
-  have hs' : ∀ j ≤ (I.s : ℕ), writer.ReachesOut I.encode (writer.Active B)
-      (2, [I.n, j, 0, 0, 0, 0]) (4, [I.n, I.s, 0, 0, 0, 0]) [] := by
-    intro j hj
-    induction h : (I.s : ℕ) - j generalizing j with
-    | zero =>
-      obtain rfl : j = I.s := by omega
-      refine ReachesOut.read (show writer.instr 2 = _ from rfl)
-        (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
-        I.getElem?_encode_s le_rfl, lt_irrefl, decide_false, readLabel]
-      exact ReachesOut.refl _
-    | succ m ih =>
-      refine ReachesOut.read (show writer.instr 2 = _ from rfl)
-        (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
-        I.getElem?_encode_s hj, show j < I.s by omega, decide_true, readLabel]
-      refine ReachesOut.assign (show writer.instr 3 = _ from rfl)
-        (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-      simpa using ih (j + 1) (by omega) (by omega)
-  have ht' : ∀ j ≤ (I.t : ℕ), writer.ReachesOut I.encode (writer.Active B)
-      (4, [I.n, I.s, j, 0, 0, 0]) (6, [I.n, I.s, I.t, 0, 0, 0]) [] := by
-    intro j hj
-    induction h : (I.t : ℕ) - j generalizing j with
-    | zero =>
-      obtain rfl : j = I.t := by omega
-      refine ReachesOut.read (show writer.instr 4 = _ from rfl)
-        (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
-        I.getElem?_encode_t le_rfl, lt_irrefl, decide_false, readLabel]
-      exact ReachesOut.refl _
-    | succ m ih =>
-      refine ReachesOut.read (show writer.instr 4 = _ from rfl)
-        (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
-        I.getElem?_encode_t hj, show j < I.t by omega, decide_true, readLabel]
-      refine ReachesOut.assign (show writer.instr 5 = _ from rfl)
-        (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-      simpa using ih (j + 1) (by omega) (by omega)
-  exact ((hn 0 (Nat.zero_le _)).trans
-    ((hs' 0 (Nat.zero_le _)).trans (ht' 0 (Nat.zero_le _)))).of_eq rfl
+      (6, [I.n, I.s, I.t, 0, 0, 0]) [] :=
+  ((reachesOut_header_n I hB 0 (Nat.zero_le _)).trans
+    ((reachesOut_header_s I hB 0 (Nat.zero_le _)).trans
+      (reachesOut_header_t I hB 0 (Nat.zero_le _)))).of_eq rfl
 
 private theorem codeAt_literal {b r exit : ℕ} {sign : Bool}
     (h : ∀ i (hi : i < 23), writer.instr (b + i) = (literalCode b r sign exit)[i]'hi) :
     writer.CodeAt b (literalCode b r sign exit) := fun i hi => h i hi
+
+/-- Writing the clause for entry `(u, v)` of the adjacency matrix when `arc I u v` holds. -/
+private theorem reachesOut_entry (hB : I.n ≤ B) {u v : ℕ} (hu : u < I.n) (hv : v < I.n) :
+    writer.ReachesOut I.encode (writer.Active B)
+      (60, [I.n, I.s, I.t, u, v, 0]) (59, [I.n, I.s, I.t, u, v, 0])
+      (if arc I u v then literalBits u false ++ literalBits v true ++ [false] else []) := by
+  -- an entry of the matrix
+  have hs := I.s.isLt
+  have ht := I.t.isLt
+  have hb : ∀ z ∈ [I.n, (I.s : ℕ), (I.t : ℕ), u, v, 0], z ≤ B :=
+    bounded6 hB (by omega) (by omega) (hu.le.trans hB) (hv.le.trans hB) (Nat.zero_le _)
+  have hlit₁ : writer.CodeAt 61 (literalCode 61 3 false 84) := codeAt_literal fun i hi => by
+    interval_cases i <;> rfl
+  have hlit₂ : writer.CodeAt 84 (literalCode 84 4 true 107) := codeAt_literal fun i hi => by
+    interval_cases i <;> rfl
+  refine ReachesOut.read (show writer.instr 60 = _ from rfl) hb ?_
+  simp only [eval_add, eval_mul, eval_reg, eval_const, List.getD_cons_zero,
+    List.getD_cons_succ, I.getElem?_encode_matrix hu hv]
+  have harc : arc I u v = I.adj ⟨u, hu⟩ ⟨v, hv⟩ := by
+    rw [arc, dite_eq_left ⟨hu, hv⟩]
+  rw [← harc]
+  cases arc I u v
+  · exact ReachesOut.refl _
+  · simp only [readLabel, ↓reduceIte]
+    have h₁ := reachesOut_literalCode (w := I.encode) (B := B) hlit₁
+      (regs := [I.n, I.s, I.t, u, v, 0]) (by simp) hb
+    have h₂ := reachesOut_literalCode (w := I.encode) (B := B) hlit₂
+      (regs := [I.n, I.s, I.t, u, v, 0]) (by simp) hb
+    simp only [List.set_cons_succ, List.set_cons_zero, List.getD_cons_succ,
+      List.getD_cons_zero] at h₁ h₂
+    refine (h₁.trans (h₂.trans (ReachesOut.emit (show writer.instr 107 = _ from rfl) hb
+      (ReachesOut.refl _)))).of_eq ?_
+    simp
 
 /-- **The matrix row by row**: from the loop over the rows, the clauses of all arcs. -/
 private theorem reachesOut_rows (hB : I.n ≤ B) {i₀ : ℕ} (hi₀ : i₀ ≤ I.n) :
@@ -411,33 +448,6 @@ private theorem reachesOut_rows (hB : I.n ≤ B) {i₀ : ℕ} (hi₀ : i₀ ≤ 
   have hcode₂ : writer.CodeAt 57 (forCode 57 4 (reg 0) 60 56) := by
     simp only [forCode, codeAt_cons, codeAt_nil, and_true]
     exact ⟨rfl, rfl, rfl⟩
-  have hlit₁ : writer.CodeAt 61 (literalCode 61 3 false 84) := codeAt_literal fun i hi => by
-    interval_cases i <;> rfl
-  have hlit₂ : writer.CodeAt 84 (literalCode 84 4 true 107) := codeAt_literal fun i hi => by
-    interval_cases i <;> rfl
-  -- an entry of the matrix
-  have hentry : ∀ u < I.n, ∀ v < I.n, writer.ReachesOut I.encode (writer.Active B)
-      (60, [I.n, I.s, I.t, u, v, 0]) (59, [I.n, I.s, I.t, u, v, 0])
-      (if arc I u v then literalBits u false ++ literalBits v true ++ [false] else []) := by
-    intro u hu v hv
-    have hb := hreg (u := u) (v := v) (y := 0) hu.le hv.le (Nat.zero_le _)
-    refine ReachesOut.read (show writer.instr 60 = _ from rfl) hb ?_
-    simp only [eval_add, eval_mul, eval_reg, eval_const, List.getD_cons_zero,
-      List.getD_cons_succ, I.getElem?_encode_matrix hu hv]
-    have harc : arc I u v = I.adj ⟨u, hu⟩ ⟨v, hv⟩ := by rw [arc, dite_eq_left ⟨hu, hv⟩]
-    rw [← harc]
-    cases arc I u v
-    · exact ReachesOut.refl _
-    · simp only [readLabel, ↓reduceIte]
-      have h₁ := reachesOut_literalCode (w := I.encode) (B := B) hlit₁
-        (regs := [I.n, I.s, I.t, u, v, 0]) (by simp) hb
-      have h₂ := reachesOut_literalCode (w := I.encode) (B := B) hlit₂
-        (regs := [I.n, I.s, I.t, u, v, 0]) (by simp) hb
-      simp only [List.set_cons_succ, List.set_cons_zero, List.getD_cons_succ,
-        List.getD_cons_zero] at h₁ h₂
-      refine (h₁.trans (h₂.trans (ReachesOut.emit (show writer.instr 107 = _ from rfl) hb
-        (ReachesOut.refl _)))).of_eq ?_
-      simp
   obtain ⟨regs, hreach, x, rfl, -, hx⟩ := reachesOut_forCode (w := I.encode) (N := I.n)
     (o := fun u => (List.range I.n).flatMap fun v =>
       if arc I u v then literalBits u false ++ literalBits v true ++ [false] else []) hcode₁
@@ -456,7 +466,8 @@ private theorem reachesOut_rows (hB : I.n ≤ B) {i₀ : ℕ} (hi₀ : i₀ ≤ 
           exact ⟨rfl, rfl, by simp, hreg hu.le hv (Nat.zero_le _)⟩)
         (by
           rintro v hv regs ⟨rfl, -⟩
-          exact ⟨_, hentry u hu v hv, rfl, hreg hu.le hv.le (Nat.zero_le _), by simp, by omega⟩)
+          exact ⟨_, reachesOut_entry I hB hu hv, rfl, hreg hu.le hv.le (Nat.zero_le _), by simp,
+            by omega⟩)
         [I.n, I.s, I.t, u, x, 0]
         (hreg hu.le hx (Nat.zero_le _)) ⟨by simp, by omega⟩
       exact ⟨_, hreach, rfl, hreg hu.le le_rfl (Nat.zero_le _), I.n, by simp, by omega, le_rfl⟩)

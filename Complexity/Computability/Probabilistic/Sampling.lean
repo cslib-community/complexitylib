@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Probabilistic.PPT.Composition
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sampling
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
@@ -24,7 +25,9 @@ strict fair-coin PPT.
 
 * `Cslib.Probability.isPPTOn_uniform_bool`: one fair bit is uniformly PPT.
 * `Cslib.Probability.isPPTOn_sampleList`: uniform words from a unary count.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.sampleList`: sample an efficiently computed length.
+* `Cslib.Probability.IsPPTOn.of_seeded`: running a polynomial-time function on an input and an
+  efficiently computed number of sampled fair bits is uniformly PPT.
+* `Turing.MultiTapeTM.ComputableInPolyTime.sampleList`: sample an efficiently computed length.
 
 ## References
 
@@ -61,13 +64,22 @@ theorem isPPTOn_sampleList :
     Turing.MultiTapeTM.encUnary_apply, List.length_replicate, pow_one, one_mul, PMF.map_id] using
     (Turing.MultiTapePTM.eval_uniformListMachine (Turing.MultiTapeTM.encUnary n)).symm
 
+/-- Running a deterministic polynomial-time function on the input paired with an efficiently
+computed unary count of independent fair bits is a uniform strict PPT program. -/
+theorem IsPPTOn.of_seeded {α β : Type} {input : α ↪ List Bool} {output : β ↪ List Bool}
+    {count : α → ℕ} {f : α × List Bool → β}
+    (hcount : Turing.MultiTapeTM.ComputableInPolyTime count input Turing.MultiTapeTM.encUnary)
+    (hf : Turing.MultiTapeTM.ComputableInPolyTime f
+      (Turing.MultiTapeTM.encPair input Turing.MultiTapeTM.encBits) output) :
+    IsPPTOn input output (fun a => (fun w => f (a, w)) <$> BitString.sampleList (count a)) :=
+  (isPPTOn_sampleList.preprocess hcount).map_with hf
+
 end Cslib.Probability
 
 /-- Sample an efficiently computed number of independent fair bits, charging the count in unary. -/
 @[fun_prop]
-theorem Turing.MultiTapeTM.ComputableTidilyInPolyTime.sampleList {α : Type}
+theorem Turing.MultiTapeTM.ComputableInPolyTime.sampleList {α : Type}
     {input : α ↪ List Bool} {count : α → ℕ}
-    (hcount : ComputableTidilyInPolyTime count input encUnary) :
+    (hcount : ComputableInPolyTime count input encUnary) :
     Cslib.Probability.IsPPTOn input encBits (fun a => Cslib.BitString.sampleList (count a)) :=
-  Cslib.Probability.isPPTOn_sampleList.preprocess
-    (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy hcount)
+  Cslib.Probability.isPPTOn_sampleList.preprocess hcount

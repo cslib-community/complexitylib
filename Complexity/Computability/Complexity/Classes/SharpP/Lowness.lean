@@ -18,7 +18,7 @@ import Complexity.Computability.Complexity.Classes.SharpP.Products
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Oracle
-import Complexity.Foundations.Data.List.Lookup
+import Mathlib.Data.List.OfFn
 
 /-!
 # Oracle lowness of `#P`, `UP ∩ coUP`, `SPP`, and modular counting classes
@@ -321,7 +321,7 @@ private theorem replayWeightedSum_eq_of_le_one
   let w₀ : Fin (T a) → Bool :=
     fun i => (machine.oracleReplies g (T a) (input a))[i.val]'(by omega)
   have hw₀ : List.ofFn w₀ = machine.oracleReplies g (T a) (input a) :=
-    List.ofFn_getElem_of_length_eq (machine.oracleReplies g (T a) (input a)) hlen
+    (List.ofFn_congr hlen.symm _).trans List.ofFn_getElem
   unfold replayWeightedSum
   rw [Finset.sum_eq_single w₀]
   · have hpos : 0 < replayPathCount machine input fYes fNo (a, List.ofFn w₀) := by

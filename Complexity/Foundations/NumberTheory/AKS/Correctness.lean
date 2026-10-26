@@ -133,12 +133,6 @@ theorem linProd_injective (hB : B < p) : Function.Injective (linProd (B := B) p)
     exact Fin.ext hab
   exact Sym.coe_injective (Multiset.map_injective hinj hroots)
 
-omit [Fact p.Prime] [DecidableEq K] [Algebra (ZMod p) K] in
-/-- Powers of a primitive `r`-th root of unity only depend on the exponent modulo `r`. -/
-theorem _root_.IsPrimitiveRoot.pow_eq_pow_of_natCast_eq {ζ : K} (hζ : IsPrimitiveRoot ζ r)
-    {m₁ m₂ : ℕ} (h : (m₁ : ZMod r) = m₂) : ζ ^ m₁ = ζ ^ m₂ :=
-  pow_eq_pow_of_modEq ((ZMod.natCast_eq_natCast_iff m₁ m₂ r).mp h) hζ.pow_eq_one
-
 /-- **The lower bound.** Let `S` be a set of more than `B` residues modulo `r`, each the residue
 of a number introspective for every product `∏_{a ∈ s} (X + a)`. If `B < p`, these `C(2B, B)`
 products take distinct values at a primitive `r`-th root of unity `ζ`: two products agreeing at `ζ`
@@ -165,8 +159,8 @@ theorem card_image_aeval_linProd [NeZero r] {ζ : K} (hζ : IsPrimitiveRoot ζ r
     intro y hy
     obtain ⟨x, hx, rfl⟩ := mem_image.mp hy
     obtain ⟨m, rfl, hm⟩ := hS x hx
-    rw [mem_roots hF, IsRoot, eval_map_algebraMap, map_sub, sub_eq_zero,
-      hζ.pow_eq_pow_of_natCast_eq (ZMod.natCast_zmod_val _), ← hm s ζ hζr, ← hm s' ζ hζr, hss']
+    rw [mem_roots hF, IsRoot, eval_map_algebraMap, map_sub, sub_eq_zero, ZMod.val_natCast,
+      pow_eq_pow_of_modEq (Nat.mod_modEq m r) hζr, ← hm s ζ hζr, ← hm s' ζ hζr, hss']
   have hcard : (S.image fun x => ζ ^ x.val).card = S.card := by
     refine card_image_of_injOn fun x _ y _ hxy => ZMod.val_injective r ?_
     exact hζ.pow_inj (ZMod.val_lt x) (ZMod.val_lt y) hxy
@@ -198,7 +192,8 @@ theorem card_image_aeval_linProd_le {ζ : K} (hζ : IsPrimitiveRoot ζ r) {m₁ 
     intro y hy
     obtain ⟨s, -, rfl⟩ := mem_image.mp hy
     rw [mem_roots hQ, IsRoot, eval_sub, eval_pow, eval_X, eval_pow, eval_X, sub_eq_zero,
-      h₁ s ζ hζr, h₂ s ζ hζr, hζ.pow_eq_pow_of_natCast_eq hmod]
+      h₁ s ζ hζr, h₂ s ζ hζr,
+      pow_eq_pow_of_modEq ((ZMod.natCast_eq_natCast_iff m₁ m₂ r).mp hmod) hζr]
   refine (card_le_degree_of_subset_roots hsub).trans ((natDegree_sub_le _ _).trans ?_)
   simp only [natDegree_X_pow, le_refl]
 

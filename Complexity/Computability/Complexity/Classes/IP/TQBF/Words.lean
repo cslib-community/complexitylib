@@ -425,18 +425,6 @@ theorem computableInPolyTime_updatePt {p : γ → ℕ} {xs : γ → List ℕ}
   unfold updatePt
   fun_prop
 
-/-- An entry of a computed list of unary numbers, `0` outside the list. -/
-@[fun_prop]
-theorem computableInPolyTime_getD_zero {l : γ → List ℕ} {i : γ → ℕ}
-    (hl : ComputableInPolyTime l encIn (encList encUnary))
-    (hi : ComputableInPolyTime i encIn encUnary) :
-    ComputableInPolyTime (fun x => (l x).getD (i x) 0) encIn encUnary := by
-  have hl := hl.tidy
-  have hi := hi.tidy
-  refine .of_tidy ?_
-  simp only [List.getD_eq_getElem?_getD]
-  exact optionGetDWithInput (getElem? hl hi) (const 0)
-
 @[fun_prop]
 theorem computableInPolyTime_width {p : γ → ℕ}
     (hp : ComputableInPolyTime p encIn encUnary) :
@@ -465,9 +453,9 @@ theorem computableInPolyTime_decodeReply {p D : γ → ℕ} {word : γ → List 
 /-- The samples are strict PPT in a unary modulus. -/
 theorem isPPTOn_sampleMod {p : γ → ℕ} (hp : ComputableInPolyTime p encIn encUnary) :
     IsPPTOn encIn encUnary (fun x => sampleMod (p x)) := by
-  have hp := hp.tidy
   unfold sampleMod
-  exact IsPPTOn.map_with (f := fun x i => i % p x) (isPPTOn_sampleDyadicIndex hp) (by fun_prop)
+  exact IsPPTOn.map_with (f := fun x i => i % p x)
+    (isPPTOn_sampleDyadicIndex hp) (by fun_prop)
 
 end PolyTime
 

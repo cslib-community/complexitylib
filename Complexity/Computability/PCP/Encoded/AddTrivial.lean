@@ -61,8 +61,20 @@ theorem isPolyTime_addTrivial (enc : C ↪ List Bool) (truth : C) :
     ComputableInPolyTime (fun p : Graph C × List (ℕ × ℕ) =>
       p.1.addTrivial truth p.2)
       (encPair (encoding enc) (encList (encPair encUnary encUnary))) (encoding enc) := by
+  have hgraph : ComputableInPolyTime (fun p : Graph C × List (ℕ × ℕ) => p.1)
+      (encPair (encoding enc) (encList (encPair encUnary encUnary))) (encoding enc) :=
+    ComputableInPolyTime.fst _ _
+  have hextra : ComputableInPolyTime (fun p : Graph C × List (ℕ × ℕ) => p.2)
+      (encPair (encoding enc) (encList (encPair encUnary encUnary)))
+      (encList (encPair encUnary encUnary)) := ComputableInPolyTime.snd _ _
+  have hedge : ComputableInPolyTime (fun p : ℕ × ℕ => Edge.mk p.1 p.2 truth)
+      (encPair encUnary encUnary) (Edge.encoding enc) :=
+    Edge.isPolyTime_mk (ComputableInPolyTime.fst _ _) (ComputableInPolyTime.snd _ _)
+      (ComputableInPolyTime.const truth)
   unfold addTrivial
-  polytime
+  exact isPolyTime_mk (isPolyTime_vertices hgraph)
+    (ComputableInPolyTime.listAppend' (isPolyTime_edges hgraph)
+      ((ComputableInPolyTime.map hedge).comp hextra))
 
 /-- Constructing all self-loops, including enumerating their endpoints, is polynomial-time. -/
 @[fun_prop]

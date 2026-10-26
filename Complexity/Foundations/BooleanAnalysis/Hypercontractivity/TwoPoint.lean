@@ -77,32 +77,36 @@ private theorem hasDerivAt_one_sub_rpow (p : ℝ) {t : ℝ} (ht : t < 1) :
     simp only [id_eq]
     linarith))
 
+/-- For `1 ≤ p ≤ 2`, `(1 + t) ^ (p - 1) - (1 - t) ^ (p - 1) - 2 (p - 1) t` is monotone on
+`[0, 1]`. -/
+private theorem monotoneOn_one_add_rpow_sub_one_sub_rpow_sub {p : ℝ} (hp : 1 ≤ p) (hp' : p ≤ 2) :
+    MonotoneOn (fun t : ℝ => (1 + t) ^ (p - 1) - (1 - t) ^ (p - 1) - 2 * (p - 1) * t)
+      (Icc 0 1) := by
+  refine monotoneOn_of_hasDerivWithinAt_nonneg (convex_Icc 0 1)
+    (f' := fun t => (p - 1) * ((1 + t) ^ (p - 2) + (1 - t) ^ (p - 2) - 2))
+    (((((Real.continuous_rpow_const (by linarith)).comp
+      (continuous_const.add continuous_id)).sub
+      ((Real.continuous_rpow_const (by linarith)).comp
+        (continuous_const.sub continuous_id))).sub
+      (continuous_const.mul continuous_id)).continuousOn) (fun t ht => ?_) fun t ht => ?_
+  · rw [interior_Icc] at ht
+    have h := ((hasDerivAt_one_add_rpow (p - 1) (by linarith [ht.1] : -1 < t)).sub
+      (hasDerivAt_one_sub_rpow (p - 1) ht.2)).sub ((hasDerivAt_id t).const_mul (2 * (p - 1)))
+    convert h.hasDerivWithinAt using 1
+    · rfl
+    · rw [show p - 1 - 1 = p - 2 by ring]
+      ring
+  · rw [interior_Icc] at ht
+    exact mul_nonneg (by linarith)
+      (by linarith [two_le_one_add_rpow_add_one_sub_rpow hp' ht.1 ht.2])
+
 /-- For `1 ≤ p ≤ 2` and `0 ≤ t ≤ 1`, `2 + p (p - 1) t ^ 2 ≤ (1 + t) ^ p + (1 - t) ^ p`: the
 right side minus `p (p - 1) t ^ 2` increases from `2`, since its derivative is `p` times
 `(1 + t) ^ (p - 1) - (1 - t) ^ (p - 1) - 2 (p - 1) t`, which increases from `0`. -/
 private theorem two_add_mul_sq_le_one_add_rpow_add_one_sub_rpow {p t : ℝ} (hp : 1 ≤ p)
     (hp' : p ≤ 2) (ht : 0 ≤ t) (ht' : t ≤ 1) :
     2 + p * (p - 1) * t ^ 2 ≤ (1 + t) ^ p + (1 - t) ^ p := by
-  -- `ψ t = (1 + t) ^ (p - 1) - (1 - t) ^ (p - 1) - 2 (p - 1) t` increases from `ψ 0 = 0`
-  have hψ : MonotoneOn (fun t : ℝ => (1 + t) ^ (p - 1) - (1 - t) ^ (p - 1) - 2 * (p - 1) * t)
-      (Icc 0 1) := by
-    refine monotoneOn_of_hasDerivWithinAt_nonneg (convex_Icc 0 1)
-      (f' := fun t => (p - 1) * ((1 + t) ^ (p - 2) + (1 - t) ^ (p - 2) - 2))
-      (((((Real.continuous_rpow_const (by linarith)).comp
-        (continuous_const.add continuous_id)).sub
-        ((Real.continuous_rpow_const (by linarith)).comp
-          (continuous_const.sub continuous_id))).sub
-        (continuous_const.mul continuous_id)).continuousOn) (fun t ht => ?_) fun t ht => ?_
-    · rw [interior_Icc] at ht
-      have h := ((hasDerivAt_one_add_rpow (p - 1) (by linarith [ht.1] : -1 < t)).sub
-        (hasDerivAt_one_sub_rpow (p - 1) ht.2)).sub ((hasDerivAt_id t).const_mul (2 * (p - 1)))
-      convert h.hasDerivWithinAt using 1
-      · rfl
-      · rw [show p - 1 - 1 = p - 2 by ring]
-        ring
-    · rw [interior_Icc] at ht
-      exact mul_nonneg (by linarith)
-        (by linarith [two_le_one_add_rpow_add_one_sub_rpow hp' ht.1 ht.2])
+  have hψ := monotoneOn_one_add_rpow_sub_one_sub_rpow_sub hp hp'
   -- `φ t = (1 + t) ^ p + (1 - t) ^ p - p (p - 1) t ^ 2` increases from `φ 0 = 2`
   have hφ : MonotoneOn (fun t : ℝ => (1 + t) ^ p + (1 - t) ^ p - p * (p - 1) * t ^ 2)
       (Icc 0 1) := by

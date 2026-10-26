@@ -9,9 +9,9 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.AtLeast
 public import Complexity.Computability.Circuit.Boolean.BitBlast
+public import Complexity.Computability.Circuit.Boolean.MassProduction.Point
 public import Complexity.Computability.Circuit.ReedMullerDecoding
 public import Complexity.Crypto.Computational.GoldreichLevin.Nonuniform
-public import Complexity.Foundations.Data.BitString.Block
 
 /-!
 # The stages of local list decoding as De Morgan circuits
@@ -41,8 +41,6 @@ operation.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.pointOfBits`, `Cslib.Circuits.Boolean.bitsOfPoint`: points of `F ^ m`
-  and their bits.
 * `Cslib.Circuits.Boolean.BitSynthesis`: bit-synthesizable functions.
 * `Cslib.Circuits.Boolean.glPredictor`, `Cslib.Circuits.Boolean.glCost`: the Goldreich–Levin
   decoder of the inner code and its gate budget.
@@ -68,32 +66,7 @@ open Finset Cslib.Code Cslib.LinearAlgebra
 
 variable {F : Type*} {w m : ℕ}
 
-/-! ### Points and their bits -/
-
-/-- The point of `F ^ m` whose coordinates have the given bits: coordinate `i` decodes block `i`
-(`Cslib.BitString.block`). -/
-def pointOfBits (enc : F ≃ BitString w) (y : BitString (m * w)) : Fin m → F :=
-  fun i => enc.symm (BitString.block y i)
-
-/-- The bits of the coordinates of a point of `F ^ m`, block after block
-(`Cslib.BitString.blocksEquiv`). -/
-def bitsOfPoint (enc : F ≃ BitString w) (x : Fin m → F) : BitString (m * w) :=
-  BitString.blocksEquiv.symm fun i => enc (x i)
-
-/-- Decoding the bits of a point gives the point back. -/
-@[simp]
-theorem pointOfBits_bitsOfPoint (enc : F ≃ BitString w) (x : Fin m → F) :
-    pointOfBits enc (bitsOfPoint enc x) = x := by
-  funext i
-  simp only [pointOfBits, bitsOfPoint, ← BitString.blocksEquiv_apply, Equiv.apply_symm_apply,
-    Equiv.symm_apply_apply]
-
-/-- Encoding the point with given bits gives the bits back. -/
-@[simp]
-theorem bitsOfPoint_pointOfBits (enc : F ≃ BitString w) (y : BitString (m * w)) :
-    bitsOfPoint enc (pointOfBits enc y) = y := by
-  simp only [pointOfBits, bitsOfPoint, Equiv.apply_symm_apply, ← BitString.blocksEquiv_apply,
-    Equiv.symm_apply_apply]
+/-! ### Bit-synthesizable functions -/
 
 /-- `G` is *bit-synthesizable with `cost` gates*: whenever the bits of the coordinates of a point
 are available, the bits of the value of `G` at the point can be made available with `cost` further
@@ -117,7 +90,8 @@ element. -/
 def glPredictor (enc : F ≃ BitString w) (C : BooleanFunction (m * w + w)) {K : ℕ}
     (masks : Fin K → BitString w) (guess : BitString K) : (Fin m → F) → F :=
   fun x => enc.symm
-    (Crypto.GoldreichLevin.candidate (fun r => C (Fin.append (bitsOfPoint enc x) r)) masks guess)
+    (Crypto.GoldreichLevin.candidate
+      (fun r => C (Fin.append (BitString.pointBits enc x) r)) masks guess)
 
 /-- The gate budget of the Goldreich–Levin stage: two constants, and for each output bit,
 `2 ^ K - 1` copies of the predictor, each with at most one negation, and a strict majority. -/
@@ -171,12 +145,12 @@ theorem bitSynthesis_glPredictor (enc : F ≃ BitString w) {C : BooleanFunction 
     (Synthesis.const (s := S) true).union (Synthesis.const (s := S) false)
   set S₁ := S ∪ ({fun _ => true} ∪ {fun _ => false})
   -- the bits of the point
-  let xb : Fin (m * w) → BooleanFunction n := fun k v => bitsOfPoint enc (fun i => φ i v) k
+  let xb : Fin (m * w) → BooleanFunction n := fun k v => BitString.pointBits enc (fun i => φ i v) k
   have hxb : ∀ k, xb k ∈ S₁ := fun k =>
     Set.mem_union_left _ (hφ (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2)
   -- one corrected vote: the predictor at a fixed query, xored with a fixed bit
   have hvote : ∀ (r : BitString w) (bit : Bool), Synthesis interpretation S₁
-      {fun v => C (Fin.append (bitsOfPoint enc fun i => φ i v) r) ^^ bit} (sC + 1) := by
+      {fun v => C (Fin.append (BitString.pointBits enc fun i => φ i v) r) ^^ bit} (sC + 1) := by
     intro r bit
     let g : Fin (m * w + w) → BooleanFunction n := Fin.append xb fun k _ => r k
     have hg : ∀ k, g k ∈ S₁ := by
@@ -190,7 +164,7 @@ theorem bitSynthesis_glPredictor (enc : F ≃ BitString w) {C : BooleanFunction 
         · exact Set.mem_union_right _ (Set.mem_union_left _ rfl)
     have hcirc := Synthesis.circuit (I := interpretation) c g hg
     have heval : (fun v => c.eval interpretation (fun k => g k v) 0) =
-        fun v => C (Fin.append (bitsOfPoint enc fun i => φ i v) r) := by
+        fun v => C (Fin.append (BitString.pointBits enc fun i => φ i v) r) := by
       funext v
       rw [hc]
       simp only [single_apply]
@@ -199,7 +173,7 @@ theorem bitSynthesis_glPredictor (enc : F ≃ BitString w) {C : BooleanFunction 
       change Fin.append xb (fun k _ => r k) k v = _
       rw [append_apply]
     have h1 : Synthesis interpretation S₁
-        {fun v => C (Fin.append (bitsOfPoint enc fun i => φ i v) r)} sC :=
+        {fun v => C (Fin.append (BitString.pointBits enc fun i => φ i v) r)} sC :=
       hcirc.mono Set.Subset.rfl (Set.singleton_subset_iff.2 ⟨0, heval⟩) hsize
     cases bit
     · simpa using h1.mono Set.Subset.rfl Set.Subset.rfl (Nat.le_succ _)
@@ -207,7 +181,8 @@ theorem bitSynthesis_glPredictor (enc : F ≃ BitString w) {C : BooleanFunction 
   -- the strict majority for each output bit
   set T := Crypto.GoldreichLevin.nonemptySubsets K
   let V : Fin w → Finset (Fin K) → BooleanFunction n := fun j t v =>
-    C (Fin.append (bitsOfPoint enc fun i => φ i v) (Pi.single j 1 + ∑ l ∈ t, masks l)) ^^
+    C (Fin.append (BitString.pointBits enc fun i => φ i v)
+      (Pi.single j 1 + ∑ l ∈ t, masks l)) ^^
       ∑ l ∈ t, guess l
   have hbit : ∀ j, Synthesis interpretation S₁
       {bitsOf enc (fun v => glPredictor enc C masks guess fun i => φ i v) j}

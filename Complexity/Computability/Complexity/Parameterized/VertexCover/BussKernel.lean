@@ -461,189 +461,110 @@ namespace VertexCover.Buss
 
 open ComputableTidilyInPolyTime
 
-/-! Tidy views of the plain certificates of `Graph` and `VertexCover`, for tidy `fun_prop` in the
-proofs below. -/
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_adjBool :
-    ComputableTidilyInPolyTime (fun p : (Graph × ℕ) × ℕ => p.1.1.adjBool p.1.2 p.2)
-      (encPair (encPair encGraph encNat) encNat) encBool :=
-  Graph.computableInPolyTime_adjBool.tidy
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_cap :
-    ComputableTidilyInPolyTime cap (encPair encGraph encNat) encUnary :=
-  computableInPolyTime_cap.tidy
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_distinctVertices :
-    ComputableTidilyInPolyTime Graph.distinctVertices encGraph (encList encNat) :=
-  Graph.computableInPolyTime_distinctVertices.tidy
-
-private theorem computableTidilyInPolyTime_adjBool_comp {γ : Type} {enc : γ ↪ List Bool}
-    {G : γ → Graph} {u v : γ → ℕ} (hG : ComputableTidilyInPolyTime G enc encGraph)
-    (hu : ComputableTidilyInPolyTime u enc encNat) (hv : ComputableTidilyInPolyTime v enc encNat) :
-    ComputableTidilyInPolyTime (fun c => (G c).adjBool (u c) (v c)) enc encBool :=
-  (Graph.computableInPolyTime_adjBool_comp (.of_tidy hG) (.of_tidy hu) (.of_tidy hv)).tidy
-
-attribute [local fun_prop] computableTidilyInPolyTime_adjBool_comp
-
-private theorem computableTidilyInPolyTime_degree :
-    ComputableTidilyInPolyTime (fun p : Graph × ℕ => degree p.1 p.2)
-      (encPair encGraph encNat) encUnary := by
-  unfold degree
-  fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_degree
-
 /-- Computing a degree is polynomial-time, with the degree in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_degree :
     ComputableInPolyTime (fun p : Graph × ℕ => degree p.1 p.2)
-      (encPair encGraph encNat) encUnary :=
-  .of_tidy (computableTidilyInPolyTime_degree)
-
-private theorem computableTidilyInPolyTime_isHigh :
-    ComputableTidilyInPolyTime (fun p : (Graph × ℕ) × ℕ => isHigh p.1 p.2)
-      (encPair (encPair encGraph encNat) encNat) encBool := by
-  unfold isHigh
+      (encPair encGraph encNat) encUnary := by
+  unfold degree
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_isHigh
 
 /-- Testing for a high vertex is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_isHigh :
     ComputableInPolyTime (fun p : (Graph × ℕ) × ℕ => isHigh p.1 p.2)
-      (encPair (encPair encGraph encNat) encNat) encBool :=
-  .of_tidy (computableTidilyInPolyTime_isHigh)
-
-private theorem computableTidilyInPolyTime_high :
-    ComputableTidilyInPolyTime high (encPair encGraph encNat) (encList encNat) := by
-  unfold high
+      (encPair (encPair encGraph encNat) encNat) encBool := by
+  unfold isHigh
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_high
 
 /-- Listing the high vertices is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_high :
-    ComputableInPolyTime high (encPair encGraph encNat) (encList encNat) :=
-  .of_tidy (computableTidilyInPolyTime_high)
-
-private theorem computableTidilyInPolyTime_low :
-    ComputableTidilyInPolyTime low (encPair encGraph encNat) (encList encNat) := by
-  unfold low
+    ComputableInPolyTime high (encPair encGraph encNat) (encList encNat) := by
+  unfold high
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_low
 
 /-- Listing the low vertices is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_low :
-    ComputableInPolyTime low (encPair encGraph encNat) (encList encNat) :=
-  .of_tidy (computableTidilyInPolyTime_low)
-
-private theorem computableTidilyInPolyTime_isActive :
-    ComputableTidilyInPolyTime (fun p : (Graph × ℕ) × ℕ => isActive p.1 p.2)
-      (encPair (encPair encGraph encNat) encNat) encBool := by
-  unfold isActive
+    ComputableInPolyTime low (encPair encGraph encNat) (encList encNat) := by
+  unfold low
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_isActive
 
 /-- Testing for an active vertex is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_isActive :
     ComputableInPolyTime (fun p : (Graph × ℕ) × ℕ => isActive p.1 p.2)
-      (encPair (encPair encGraph encNat) encNat) encBool :=
-  .of_tidy (computableTidilyInPolyTime_isActive)
-
-private theorem computableTidilyInPolyTime_active :
-    ComputableTidilyInPolyTime active (encPair encGraph encNat) (encList encNat) := by
-  unfold active
+      (encPair (encPair encGraph encNat) encNat) encBool := by
+  unfold isActive
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_active
 
 /-- Listing the active vertices is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_active :
-    ComputableInPolyTime active (encPair encGraph encNat) (encList encNat) :=
-  .of_tidy (computableTidilyInPolyTime_active)
-
-private theorem computableTidilyInPolyTime_param :
-    ComputableTidilyInPolyTime param (encPair encGraph encNat) encUnary := by
-  unfold param
+    ComputableInPolyTime active (encPair encGraph encNat) (encList encNat) := by
+  unfold active
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_param
 
 /-- The kernel target is computed in unary in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_param :
-    ComputableInPolyTime param (encPair encGraph encNat) encUnary :=
-  .of_tidy (computableTidilyInPolyTime_param)
-
-private theorem computableTidilyInPolyTime_numVertices :
-    ComputableTidilyInPolyTime numVertices (encPair encGraph encNat) encUnary := by
-  unfold numVertices
+    ComputableInPolyTime param (encPair encGraph encNat) encUnary := by
+  unfold param
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_numVertices
 
 /-- The number of kernel vertices is computed in unary in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_numVertices :
-    ComputableInPolyTime numVertices (encPair encGraph encNat) encUnary :=
-  .of_tidy (computableTidilyInPolyTime_numVertices)
-
-private theorem computableTidilyInPolyTime_accept :
-    ComputableTidilyInPolyTime accept (encPair encGraph encNat) encBool := by
-  unfold accept
-  exact bool_and' (bool_and'
-    ((unary_to_binary.comp computableInPolyTime_cap.tidy).decide_eq' (snd _ _)) (by fun_prop))
-    (by fun_prop)
-
-attribute [local fun_prop] computableTidilyInPolyTime_accept
+    ComputableInPolyTime numVertices (encPair encGraph encNat) encUnary := by
+  unfold numVertices
+  fun_prop
 
 /-- The tests of the kernel are polynomial-time. The capped target `cap x` is computed in unary
 and converted to binary to compare it with the binary target. -/
 @[fun_prop]
 theorem computableInPolyTime_accept :
-    ComputableInPolyTime accept (encPair encGraph encNat) encBool :=
-  .of_tidy (computableTidilyInPolyTime_accept)
-
-private theorem computableTidilyInPolyTime_edges :
-    ComputableTidilyInPolyTime edges (encPair encGraph encNat)
-      (encList (encPair encNat encNat)) := by
-  unfold edges
-  polytime
-
-attribute [local fun_prop] computableTidilyInPolyTime_edges
+    ComputableInPolyTime accept (encPair encGraph encNat) encBool := by
+  refine .of_tidy ?_
+  unfold accept
+  have := computableInPolyTime_high.tidy
+  have := computableInPolyTime_active.tidy
+  have := computableInPolyTime_cap.tidy
+  exact bool_and' (bool_and'
+    ((unary_to_binary.comp computableInPolyTime_cap.tidy).decide_eq' (snd _ _)) (by fun_prop))
+    (by fun_prop)
 
 /-- Listing the kernel edges is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_edges :
     ComputableInPolyTime edges (encPair encGraph encNat)
-      (encList (encPair encNat encNat)) :=
-  .of_tidy (computableTidilyInPolyTime_edges)
-
-private theorem computableTidilyInPolyTime_graph :
-    ComputableTidilyInPolyTime graph (encPair encGraph encNat) encGraph := by
-  have hV : ComputableTidilyInPolyTime (fun x : Graph × ℕ => List.range (numVertices x))
-      (encPair encGraph encNat) (encList encNat) := by
-    simpa only [Function.comp_def, List.map_id'] using
-      (map unary_to_binary).comp (range.comp computableTidilyInPolyTime_numVertices)
-  exact (hV.prod computableTidilyInPolyTime_edges).of_enc_eq fun _ => rfl
-
-attribute [local fun_prop] computableTidilyInPolyTime_graph
+      (encList (encPair encNat encNat)) := by
+  have hact := computableInPolyTime_active.tidy
+  have hact1 : ComputableTidilyInPolyTime (fun p : (Graph × ℕ) × ℕ => active p.1)
+      (encPair (encPair encGraph encNat) encUnary) (encList encNat) :=
+    hact.comp (fst _ _)
+  have hact2 : ComputableTidilyInPolyTime (fun p : ((Graph × ℕ) × ℕ) × ℕ => active p.1.1)
+      (encPair (encPair (encPair encGraph encNat) encUnary) encUnary) (encList encNat) :=
+    hact1.comp (fst _ _)
+  unfold edges
+  refine ComputableInPolyTime.flatMapWithInput (.of_tidy (by fun_prop)) ?_
+  refine ComputableInPolyTime.mapWithInput
+    (ComputableInPolyTime.filterWithInput (.of_tidy (by fun_prop)) ?_)
+    (.of_tidy (by fun_prop))
+  exact Graph.computableInPolyTime_adjBool_comp (.of_tidy (by fun_prop))
+    (ComputableInPolyTime.listGetDWithInput (.of_tidy hact2) (.of_tidy (by fun_prop)) 0)
+    (ComputableInPolyTime.listGetDWithInput (.of_tidy hact2) (.of_tidy (by fun_prop)) 0)
 
 /-- Building the kernel graph is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_graph :
-    ComputableInPolyTime graph (encPair encGraph encNat) encGraph :=
-  .of_tidy (computableTidilyInPolyTime_graph)
+    ComputableInPolyTime graph (encPair encGraph encNat) encGraph := by
+  refine .of_tidy ?_
+  have hV : ComputableTidilyInPolyTime (fun x : Graph × ℕ => List.range (numVertices x))
+      (encPair encGraph encNat) (encList encNat) := by
+    simpa only [Function.comp_def, List.map_id'] using
+      (map unary_to_binary).comp (range.comp computableInPolyTime_numVertices.tidy)
+  exact (hV.prod computableInPolyTime_edges.tidy).of_enc_eq fun _ => rfl
 
 end VertexCover.Buss
 
@@ -690,21 +611,16 @@ theorem length_encode_bussKernel_le (x : Graph × ℕ) :
     have : 1 ≤ (x.2 + 1) ^ 6 := Nat.one_le_pow _ _ (Nat.succ_pos _)
     omega
 
-private theorem computableTidilyInPolyTime_bussKernel :
-    ComputableTidilyInPolyTime bussKernel (encPair encGraph encNat) (encPair encGraph encNat) := by
-  unfold bussKernel
-  exact computableTidilyInPolyTime_accept.cond
-    (computableTidilyInPolyTime_graph.prod
-      (ComputableTidilyInPolyTime.unary_to_binary.comp computableTidilyInPolyTime_param))
-    (ComputableTidilyInPolyTime.const _)
-
-attribute [local fun_prop] computableTidilyInPolyTime_bussKernel
-
 /-- **Buss's kernel is polynomial-time.** -/
 @[fun_prop]
 theorem computableInPolyTime_bussKernel :
-    ComputableInPolyTime bussKernel (encPair encGraph encNat) (encPair encGraph encNat) :=
-  .of_tidy (computableTidilyInPolyTime_bussKernel)
+    ComputableInPolyTime bussKernel (encPair encGraph encNat) (encPair encGraph encNat) := by
+  refine .of_tidy ?_
+  unfold bussKernel
+  exact computableInPolyTime_accept.tidy.cond
+    (computableInPolyTime_graph.tidy.prod
+      (ComputableTidilyInPolyTime.unary_to_binary.comp computableInPolyTime_param.tidy))
+    (ComputableTidilyInPolyTime.const _)
 
 /-- Buss's kernel has target at most `k`, or `1`. -/
 theorem bussKernel_snd_le (x : Graph × ℕ) : (bussKernel x).2 ≤ max x.2 1 := by

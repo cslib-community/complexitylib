@@ -161,6 +161,13 @@ theorem coverRank_coverDecode {q e t : ℕ} (ht : t < ballSize q e) :
         simp only [Bool.false_eq_true, ↓reduceIte, htail]
         exact ih (by omega)
 
+/-- A word of weight at most `0` is identically `false`. -/
+private theorem eq_false_of_weight_le_zero {q : ℕ} {z : Fin q → Bool} (hz : weight z ≤ 0)
+    (i : Fin q) : z i = false := by
+  by_contra h
+  have hpos : 0 < weight z := card_pos.mpr ⟨i, by simp [Bool.eq_true_of_not_eq_false h]⟩
+  omega
+
 /-- Decoding the rank `coverRank e z` of a word `z : Fin q → Bool` with `weight z ≤ e` recovers
 `z`. -/
 @[simp]
@@ -173,14 +180,8 @@ theorem coverDecode_coverRank {q e : ℕ} (z : Fin q → Bool) (hz : weight z �
   | succ q ih =>
     cases e with
     | zero =>
-      have hz0 : ∀ i : Fin (q + 1), z i = false := by
-        intro i
-        by_contra h
-        have hi : z i = true := Bool.eq_true_of_not_eq_false h
-        have hpos : 0 < weight z := card_pos.mpr ⟨i, by simp [hi]⟩
-        omega
       funext i
-      rw [hz0 i]
+      rw [eq_false_of_weight_le_zero hz i]
       rfl
     | succ e =>
       have hcons := weight_cons_succ z
@@ -191,28 +192,22 @@ theorem coverDecode_coverRank {q e : ℕ} (z : Fin q → Bool) (hz : weight z �
         have hlt : coverRank (e + 1) (fun i : Fin q => z i.succ) < ballSize q (e + 1) :=
           coverRank_lt_ballSize (e + 1) _ hz'
         have hnot : ¬ ballSize q (e + 1) ≤ coverRank (e + 1) z := by
-          rw [coverRank, h0]
-          simp only [Bool.false_eq_true, ↓reduceIte, not_le]
-          exact hlt
+          simpa [coverRank, h0] using hlt
         funext i
-        refine Fin.cases ?_ (fun j => ?_) i
-        · simp [coverDecode, hnot, h0]
-        · have hstep : coverDecode (q + 1) (e + 1) (coverRank (e + 1) z) j.succ =
-              coverDecode q (e + 1) (coverRank (e + 1) (fun k : Fin q => z k.succ)) j := by
-            simp [coverDecode, coverRank, h0, not_le.mpr hlt]
-          rw [hstep, ih _ hz']
+        refine Fin.cases (by simp [coverDecode, hnot, h0]) (fun j => ?_) i
+        have hstep : coverDecode (q + 1) (e + 1) (coverRank (e + 1) z) j.succ =
+            coverDecode q (e + 1) (coverRank (e + 1) (fun k : Fin q => z k.succ)) j := by
+          simp [coverDecode, coverRank, h0, not_le.mpr hlt]
+        rw [hstep, ih _ hz']
       · have hz' : weight (fun i : Fin q => z i.succ) ≤ e := by
           simp only [h0, Bool.toNat_true] at hcons
           omega
-        have hle : ballSize q (e + 1) ≤ coverRank (e + 1) z := by
-          rw [coverRank, h0]
-          simp
+        have hle : ballSize q (e + 1) ≤ coverRank (e + 1) z := by simp [coverRank, h0]
         funext i
-        refine Fin.cases ?_ (fun j => ?_) i
-        · simp [coverDecode, hle, h0]
-        · have hstep : coverDecode (q + 1) (e + 1) (coverRank (e + 1) z) j.succ =
-              coverDecode q e (coverRank e (fun k : Fin q => z k.succ)) j := by
-            simp [coverDecode, coverRank, h0]
-          rw [hstep, ih _ hz']
+        refine Fin.cases (by simp [coverDecode, hle, h0]) (fun j => ?_) i
+        have hstep : coverDecode (q + 1) (e + 1) (coverRank (e + 1) z) j.succ =
+            coverDecode q e (coverRank e (fun k : Fin q => z k.succ)) j := by
+          simp [coverDecode, coverRank, h0]
+        rw [hstep, ih _ hz']
 
 end Cslib.BitString

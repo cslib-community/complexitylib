@@ -83,16 +83,6 @@ structure HardCore (f : List Bool → List Bool) (predicate : List Bool → Bool
     (fun adversary n => ProbComp.eval (predictionGame f predicate adversary n))
     (fun _ _ => PMF.uniformOfFintype Bool) (IsPPT encBool)
 
-/-- Recover the tidy presentation for proofs without changing the security contract. -/
-theorem hardCore_iff_tidy {f : List Bool → List Bool} {predicate : List Bool → Bool} :
-    HardCore f predicate ↔
-    (ComputableTidilyInPolyTime predicate encBits encBool) ∧
-    (Game.Indistinguishable
-    (fun adversary n => ProbComp.eval (predictionGame f predicate adversary n))
-    (fun _ _ => PMF.uniformOfFintype Bool) (IsPPT encBool)) :=
-  ⟨fun h => ⟨h.polyTime.tidy, h.secure⟩,
-    fun ⟨h0, h1⟩ => ⟨.of_tidy h0, h1⟩⟩
-
 /-- The shared security property gives negligible absolute prediction bias. -/
 theorem HardCore.unpredictable {f : List Bool → List Bool} {predicate : List Bool → Bool}
     (h : HardCore f predicate) (adversary : Distinguisher) (ha : IsPPT encBool adversary) :
@@ -100,16 +90,17 @@ theorem HardCore.unpredictable {f : List Bool → List Bool} {predicate : List B
 
 /-- Establish a hard-core predicate from efficient evaluation and negligible prediction bias. -/
 theorem HardCore.of_unpredictable {f : List Bool → List Bool} {predicate : List Bool → Bool}
-    (hp : ComputableTidilyInPolyTime predicate encBits encBool)
+    (hp : ComputableInPolyTime predicate encBits encBool)
     (h : ∀ adversary : Distinguisher, IsPPT encBool adversary →
-      Negligible (predictionAdvantage f predicate adversary)) : HardCore f predicate :=
-      ⟨.of_tidy hp, h⟩
+      Negligible (predictionAdvantage f predicate adversary)) : HardCore f predicate := by
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hp
+  exact ⟨.of_tidy hp, h⟩
 
 /-- The prediction experiment is a uniform PPT program when its ingredients are efficient. -/
 @[program_certificate]
 theorem isPPTOn_predictionGame {f : List Bool → List Bool} {predicate : List Bool → Bool}
-    {adversary : Distinguisher} (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hp : ComputableTidilyInPolyTime predicate encBits encBool) (ha : IsPPT encBool adversary) :
+    {adversary : Distinguisher} (hf : ComputableInPolyTime f encBits encBits)
+    (hp : ComputableInPolyTime predicate encBits encBool) (ha : IsPPT encBool adversary) :
     IsPPTOn encUnary encBool (predictionGame f predicate adversary) := by
   unfold predictionGame
   ppt
@@ -232,12 +223,13 @@ theorem HardCore.indistinguishable_of_uniform {f : List Bool → List Bool}
 /-- An efficient length-preserving function that preserves uniform seeds gives a one-bit PRG
 when extended by a hard-core predicate. The later predicate construction uses one-wayness. -/
 theorem HardCore.pseudorandomGenerator {f : List Bool → List Bool} {predicate : List Bool → Bool}
-    (h : HardCore f predicate) (hf : ComputableTidilyInPolyTime f encBits encBits)
+    (h : HardCore f predicate) (hf : ComputableInPolyTime f encBits encBits)
     (hlen : ∀ word, (f word).length = word.length)
     (huniform : ∀ n, (BitString.uniformList n).map f = BitString.uniformList n) :
     PseudorandomGenerator (fun seed => f seed ++ [predicate seed]) (fun n => n + 1) := by
+  have hf := hf.tidy
   have hp := h.polyTime.tidy
-  refine PseudorandomGenerator.of_indistinguishable (by fun_prop) ?_ Nat.lt_succ_self
+  refine PseudorandomGenerator.of_indistinguishable (.of_tidy (by fun_prop)) ?_ Nat.lt_succ_self
     (h.indistinguishable_of_uniform huniform)
   intro seed
   simp [hlen]
@@ -246,6 +238,6 @@ theorem HardCore.pseudorandomGenerator {f : List Bool → List Bool} {predicate 
 theorem OneWayPermutation.pseudorandomGenerator_of_hardCore {f : List Bool → List Bool}
     {predicate : List Bool → Bool} (hf : OneWayPermutation f) (h : HardCore f predicate) :
     PseudorandomGenerator (fun seed => f seed ++ [predicate seed]) (fun n => n + 1) :=
-  h.pseudorandomGenerator hf.oneWay.polyTime.tidy hf.length_eq hf.uniformList_map
+  h.pseudorandomGenerator hf.oneWay.polyTime hf.length_eq hf.uniformList_map
 
 end Cslib.Crypto

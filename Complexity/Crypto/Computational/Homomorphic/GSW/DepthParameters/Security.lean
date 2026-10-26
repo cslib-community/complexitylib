@@ -40,8 +40,8 @@ theorem indCPA
     Encryption.INDCPA
       (fun k => keyGenSerialized (dimension k) (samples k) (width k) (noise k))
       (fun k => encryptSerialized (dimension k) (samples k) (width k)) :=
-  indCPA_of_decisionLWE Parameters.computableTidilyInPolyTime_dimension
-    computableTidilyInPolyTime_samples computableTidilyInPolyTime_width
+  indCPA_of_decisionLWE Parameters.computableInPolyTime_dimension
+    DepthParameters.computableInPolyTime_samples DepthParameters.computableInPolyTime_width
     (Filter.Eventually.of_forall entropy_margin) hLWE
 
 end Cslib.Crypto.Homomorphic.GSW.DepthParameters

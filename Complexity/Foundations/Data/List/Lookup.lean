@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Mathlib.Data.List.Basic
 public import Mathlib.Order.Lattice.Nat
+import Mathlib.Data.List.Forall2
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.OfFn
 
@@ -21,17 +22,29 @@ import Mathlib.Data.List.OfFn
 * `List.getD_mem_or`, `List.getD_idxOf`: a defaulted lookup returns a member or the default,
   and returns a member at its first index.
 * `List.getD_set_self`, `List.getD_set_ne`: reading an updated entry or an unchanged entry.
+* `List.Forall₂.getD`: related lists are related at every in-range defaulted lookup.
+* `List.getD_append_cons_length`, `List.getD_append_cons_of_ne`: reading the entry at index
+  `front.length` of `front ++ x :: back`, and the reads that do not depend on it.
+* `List.getD_take_drop`: reading an in-range entry of `(l.drop k).take w` reads index `k + i`
+  of `l`.
+* `List.getD_ofFn_of_lt`, `List.getD_ofFn`: reading `List.ofFn f` at a valid index returns `f`.
 * `List.forall_mem_set_of_forall_mem`, `List.getD_le_of_forall_le`: preserve invariants under
   updates and bound defaulted reads of numeric register files.
 * `List.getD_map_range`: read a function tabulated over a bounded range.
 * `List.map_range_eq_ofFn`: runtime tabulation agrees with the finite coordinate view.
-* `List.ofFn_getElem_of_length_eq`: a list whose length equals `n` matches `List.ofFn` of its
-  elements.
 * `List.find?_range_getD_eq_sInf`: the least index below `m` passing a test, or `m`, as a search
   over a range.
 -/
 
 @[expose] public section
+
+/-- Related lists are related at every in-range defaulted lookup, whatever the defaults. -/
+theorem List.Forall₂.getD {α β : Type*} {R : α → β → Prop} {l₁ : List α} {l₂ : List β}
+    (h : List.Forall₂ R l₁ l₂) {i : ℕ} (hi : i < l₁.length) (d₁ : α) (d₂ : β) :
+    R (l₁.getD i d₁) (l₂.getD i d₂) := by
+  have hi' : i < l₂.length := hi.trans_eq h.length_eq
+  simpa only [List.getD_eq_getElem _ _ hi, List.getD_eq_getElem _ _ hi',
+    List.get_eq_getElem] using h.get hi hi'
 
 /-- Reading the updated entry of a list. -/
 theorem List.getD_set_self {α : Type*} {l : List α} {i : ℕ} {x d : α} (h : i < l.length) :
@@ -42,6 +55,35 @@ theorem List.getD_set_self {α : Type*} {l : List α} {i : ℕ} {x d : α} (h : 
 theorem List.getD_set_ne {α : Type*} {l : List α} {i j : ℕ} {x d : α} (h : i ≠ j) :
     (l.set i x).getD j d = l.getD j d := by
   simp only [List.getD_eq_getElem?_getD, List.getElem?_set_ne h]
+
+/-- The entry at index `front.length` of `front ++ x :: back` is `x`. -/
+theorem List.getD_append_cons_length {α : Type*} (front back : List α) (x d : α) :
+    (front ++ x :: back).getD front.length d = x := by
+  simp
+
+/-- Reads of `front ++ x :: back` away from index `front.length` do not depend on `x`. -/
+theorem List.getD_append_cons_of_ne {α : Type*} (front back : List α) (x y d : α) {i : ℕ}
+    (h : i ≠ front.length) : (front ++ x :: back).getD i d = (front ++ y :: back).getD i d := by
+  rcases lt_or_gt_of_ne h with hlt | hgt
+  · rw [List.getD_append _ _ _ _ hlt, List.getD_append _ _ _ _ hlt]
+  · rw [List.getD_append_right _ _ _ _ hgt.le, List.getD_append_right _ _ _ _ hgt.le]
+    obtain ⟨j, hj⟩ : ∃ j, i - front.length = j + 1 := ⟨i - front.length - 1, by omega⟩
+    rw [hj, List.getD_cons_succ, List.getD_cons_succ]
+
+/-- Reading the `i`-th entry below `w` of `(l.drop k).take w` reads index `k + i` of `l`. -/
+theorem List.getD_take_drop {α : Type*} (l : List α) (k : ℕ) {w i : ℕ} (hi : i < w) (d : α) :
+    ((l.drop k).take w).getD i d = l.getD (k + i) d := by
+  simp only [List.getD_eq_getElem?_getD, List.getElem?_take_of_lt hi, List.getElem?_drop]
+
+/-- Reading `List.ofFn f` at a valid index returns the function value, whatever the default. -/
+theorem List.getD_ofFn_of_lt {α : Type*} {n : ℕ} (f : Fin n → α) {i : ℕ} (hi : i < n)
+    (d : α) : (List.ofFn f).getD i d = f ⟨i, hi⟩ := by
+  rw [List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_ofFn]
+
+/-- Reading `List.ofFn f` at `i : Fin n` returns `f i`, whatever the default. -/
+theorem List.getD_ofFn {α : Type*} {n : ℕ} (f : Fin n → α) (i : Fin n) (d : α) :
+    (List.ofFn f).getD i d = f i :=
+  List.getD_ofFn_of_lt f i.isLt d
 
 /-- A property of all the entries of a list holds of all the entries of an update by a value
 having it. -/
@@ -84,11 +126,6 @@ theorem List.map_range_eq_ofFn {α : Type*} (n : ℕ) (f : ℕ → α) :
   apply List.ext_getElem (by simp)
   intro i hi hi'
   simp
-
-/-- A list whose length equals `n` matches `List.ofFn` of its elements indexed by `Fin n`. -/
-theorem List.ofFn_getElem_of_length_eq {α : Type*} {n : ℕ} (L : List α) (h : L.length = n) :
-    List.ofFn (fun i : Fin n => L[i.val]'(by omega)) = L :=
-  List.ext_getElem (by simp [h]) fun _ _ _ => by simp
 
 /-- The least index below `m` passing a test, or `m`, as a search over `List.range m`. -/
 theorem List.find?_range_getD_eq_sInf (m : ℕ) (p : ℕ → Bool) :

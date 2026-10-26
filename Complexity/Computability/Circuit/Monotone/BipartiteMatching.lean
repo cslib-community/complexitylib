@@ -402,6 +402,52 @@ theorem depth_reduction_le : (reduction p h i₀ k).depth ≤ k * (p.depth + 1) 
   exact_mod_cast Protocol.depth_runAll_le fun i => depth_oneRun_le (σs i)
 
 include hp in
+/-- At most a `2 ^ (-k)` fraction of `k`-tuples of relabelings make `repeatedRun` disagree with
+`disjointness x y`. -/
+private theorem card_filter_repeatedRun_ne_mul_two_pow_le (hk : 0 < k) (x y : BitString m) :
+    open scoped Classical in
+    #((univ : Finset (Fin k → Relabeling m e)).filter
+      (· ∈ repeatedRun p h i₀ ⁻¹' {q | ¬disjointness x y = q.run x y})) * 2 ^ k ≤
+      Fintype.card (Relabeling m e) ^ k := by
+  classical
+  set bad := (univ : Finset (Fin k → Relabeling m e)).filter
+    (· ∈ repeatedRun p h i₀ ⁻¹' {q | ¬disjointness x y = q.run x y})
+  by_cases hxy : disjointness x y = true
+  · -- On disjoint sets the reduction never errs.
+    suffices bad = ∅ by simp [this]
+    refine filter_eq_empty_iff.mpr fun σs _ => ?_
+    simp [repeatedRun, run_oneRun_of_disjointness hp hxy, hxy]
+  by_cases h₀ : x i₀ = true ∧ y i₀ = true
+  · -- If `i₀` is in both sets, it never errs either.
+    suffices bad = ∅ by simp [this]
+    have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+    refine filter_eq_empty_iff.mpr fun σs _ => ?_
+    rw [Bool.not_eq_true] at hxy
+    simp [repeatedRun, run_oneRun_of_mem hp h₀.1 h₀.2, hxy]
+  -- Otherwise it errs only when every run answers `true`.
+  have hℓ : ∃ ℓ, x ℓ = true ∧ y ℓ = true := by
+    simpa only [disjointness, decide_eq_true_eq, not_forall, Bool.and_eq_false_iff, not_or,
+      Bool.not_eq_false] using hxy
+  obtain ⟨ℓ, hxℓ, hyℓ⟩ := hℓ
+  have hℓ₀ : ℓ ≠ i₀ := fun h' => h₀ (h' ▸ ⟨hxℓ, hyℓ⟩)
+  set E := (univ : Finset (Relabeling m e)).filter fun σ => (oneRun p h i₀ σ).run x y = true
+  have hsub : bad ⊆ Fintype.piFinset fun _ => E := by
+    intro σs hσs
+    simp only [bad, mem_filter, Set.mem_preimage, Set.mem_ofPred_eq, repeatedRun,
+      Protocol.run_runAll] at hσs
+    rw [Fintype.mem_piFinset]
+    intro i
+    rw [Bool.not_eq_true] at hxy
+    rw [hxy, eq_comm, Bool.not_eq_false, decide_eq_true_iff] at hσs
+    exact mem_filter.mpr ⟨mem_univ _, hσs.2 i⟩
+  have hE := two_mul_card_filter_run_oneRun_le (p := p) (h := h) hℓ₀ hxℓ hyℓ
+  calc #bad * 2 ^ k ≤ #E ^ k * 2 ^ k := by
+        gcongr
+        simpa using card_le_card hsub
+    _ = (2 * #E) ^ k := by ring
+    _ ≤ Fintype.card (Relabeling m e) ^ k := Nat.pow_le_pow_left hE k
+
+include hp in
 /-- **The error of the reduction**: it decides disjointness with error at most `2 ^ (-k)`, for
 `k > 0`. On disjoint sets every run answers `true`; if `i₀` is in both sets, every run answers
 `false`; otherwise each run answers `true` with probability at most `1 / 2`
@@ -413,43 +459,7 @@ theorem solves_reduction (hk : 0 < k) :
   intro x _ y _
   rw [PublicCoin.errorProb, reduction, PMF.toOuterMeasure_map_apply,
     Probability.PMF.toOuterMeasure_uniformOfFintype_toReal]
-  set bad := (univ : Finset (Fin k → Relabeling m e)).filter
-    (· ∈ repeatedRun p h i₀ ⁻¹' {q | ¬disjointness x y = q.run x y})
-  have hbad : #bad * 2 ^ k ≤ Fintype.card (Relabeling m e) ^ k := by
-    by_cases hxy : disjointness x y = true
-    · -- On disjoint sets the reduction never errs.
-      suffices bad = ∅ by simp [this]
-      refine filter_eq_empty_iff.mpr fun σs _ => ?_
-      simp [repeatedRun, run_oneRun_of_disjointness hp hxy, hxy]
-    by_cases h₀ : x i₀ = true ∧ y i₀ = true
-    · -- If `i₀` is in both sets, it never errs either.
-      suffices bad = ∅ by simp [this]
-      have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
-      refine filter_eq_empty_iff.mpr fun σs _ => ?_
-      rw [Bool.not_eq_true] at hxy
-      simp [repeatedRun, run_oneRun_of_mem hp h₀.1 h₀.2, hxy]
-    -- Otherwise it errs only when every run answers `true`.
-    have hℓ : ∃ ℓ, x ℓ = true ∧ y ℓ = true := by
-      simpa only [disjointness, decide_eq_true_eq, not_forall, Bool.and_eq_false_iff, not_or,
-        Bool.not_eq_false] using hxy
-    obtain ⟨ℓ, hxℓ, hyℓ⟩ := hℓ
-    have hℓ₀ : ℓ ≠ i₀ := fun h' => h₀ (h' ▸ ⟨hxℓ, hyℓ⟩)
-    set E := (univ : Finset (Relabeling m e)).filter fun σ => (oneRun p h i₀ σ).run x y = true
-    have hsub : bad ⊆ Fintype.piFinset fun _ => E := by
-      intro σs hσs
-      simp only [bad, mem_filter, Set.mem_preimage, Set.mem_ofPred_eq, repeatedRun,
-        Protocol.run_runAll] at hσs
-      rw [Fintype.mem_piFinset]
-      intro i
-      rw [Bool.not_eq_true] at hxy
-      rw [hxy, eq_comm, Bool.not_eq_false, decide_eq_true_iff] at hσs
-      exact mem_filter.mpr ⟨mem_univ _, hσs.2 i⟩
-    have hE := two_mul_card_filter_run_oneRun_le (p := p) (h := h) hℓ₀ hxℓ hyℓ
-    calc #bad * 2 ^ k ≤ #E ^ k * 2 ^ k := by
-          gcongr
-          simpa using card_le_card hsub
-      _ = (2 * #E) ^ k := by ring
-      _ ≤ Fintype.card (Relabeling m e) ^ k := Nat.pow_le_pow_left hE k
+  have hbad := card_filter_repeatedRun_ne_mul_two_pow_le (h := h) (i₀ := i₀) hp hk x y
   have hpos : (0 : ℝ) < Fintype.card (Relabeling m e) ^ k := by positivity
   rw [Fintype.card_fun, Fintype.card_fin, Nat.cast_pow, div_le_div_iff₀ hpos (by positivity),
     one_mul]

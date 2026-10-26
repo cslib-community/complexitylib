@@ -108,6 +108,38 @@ theorem exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq (f : 
 
 /-! ### The weight outside the influential coordinates -/
 
+/-- If every coordinate outside `J` has influence at most `τ` on `F = signVal ∘ f`, then the
+`1/3`-damped Fourier weight of sets meeting `Jᶜ`, counted with multiplicity `#(S \ J)`, is at
+most `√τ / 3 * totalInfluence F`. -/
+private theorem sum_card_sdiff_mul_one_third_pow_fourierCoeff_sq_le
+    (f : (ι → Bool) → Bool) {J : Finset ι} {τ : ℝ}
+    (hJ : ∀ i ∉ J, influence i (fun x => signVal (f x)) ≤ τ) :
+    ∑ S : Finset ι, (#(S \ J) : ℝ) *
+      ((1 / 3) ^ #S * fourierCoeff (fun x => signVal (f x)) S ^ 2) ≤
+      √τ / 3 * totalInfluence (fun x => signVal (f x)) := by
+  set F : (ι → Bool) → ℝ := fun x => signVal (f x)
+  set g : Finset ι → ℝ := fun S => (1 / 3) ^ #S * fourierCoeff F S ^ 2
+  -- the sets meeting the complement of `J`, counted with multiplicity
+  have hswap : ∑ S, (#(S \ J) : ℝ) * g S = ∑ i with i ∉ J, ∑ S with i ∈ S, g S := by
+    have h := sum_comm' (s := univ) (t := fun S => S \ J) (t' := univ.filter (· ∉ J))
+      (s' := fun i => univ.filter (i ∈ ·)) (f := fun S _ => g S) (fun S i => by simp [and_comm])
+    rw [← h]
+    exact sum_congr rfl fun S _ => by rw [sum_const, nsmul_eq_mul]
+  rw [hswap]
+  calc ∑ i with i ∉ J, ∑ S with i ∈ S, g S
+      ≤ ∑ i with i ∉ J, influence i F * √τ / 3 := by
+        refine sum_le_sum fun i hi => ?_
+        refine (sum_filter_mem_one_third_pow_mul_fourierCoeff_sq_le f i).trans ?_
+        have := Real.sqrt_le_sqrt (hJ i (mem_filter.1 hi).2)
+        have := influence_nonneg i F
+        gcongr
+    _ ≤ ∑ i, influence i F * √τ / 3 :=
+        sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun i _ _ =>
+          div_nonneg (mul_nonneg (influence_nonneg i F) (Real.sqrt_nonneg τ)) (by norm_num)
+    _ = √τ / 3 * totalInfluence F := by
+        rw [totalInfluence, mul_sum]
+        exact sum_congr rfl fun i _ => by ring
+
 /-- **The Fourier weight outside the influential coordinates**: if every coordinate outside `J`
 has influence at most `τ` on a Boolean function read as signs `F`, then for every `A > 1`,
 `∑_{S ⊄ J} F̂(S) ^ 2 ≤ log 3 / log A · I[F] + A / 3 · √τ · I[F]`
@@ -135,26 +167,7 @@ theorem sum_filter_not_subset_fourierCoeff_sq_le (f : (ι → Bool) → Bool) {J
     · nlinarith [hc S]
     · have : c S ≤ A * (1 / 3) ^ #S * c S := le_mul_of_one_le_left (hc S) h.le
       nlinarith [hc S, hg S]
-  -- the sets meeting the complement of `J`, counted with multiplicity
-  have hswap : ∑ S, (#(S \ J) : ℝ) * g S = ∑ i with i ∉ J, ∑ S with i ∈ S, g S := by
-    have h := sum_comm' (s := univ) (t := fun S => S \ J) (t' := univ.filter (· ∉ J))
-      (s' := fun i => univ.filter (i ∈ ·)) (f := fun S _ => g S) (fun S i => by simp [and_comm])
-    rw [← h]
-    exact sum_congr rfl fun S _ => by rw [sum_const, nsmul_eq_mul]
-  have hlow : ∑ i with i ∉ J, ∑ S with i ∈ S, g S ≤ √τ / 3 * totalInfluence F := by
-    calc ∑ i with i ∉ J, ∑ S with i ∈ S, g S
-        ≤ ∑ i with i ∉ J, influence i F * √τ / 3 := by
-          refine sum_le_sum fun i hi => ?_
-          refine (sum_filter_mem_one_third_pow_mul_fourierCoeff_sq_le f i).trans ?_
-          have := Real.sqrt_le_sqrt (hJ i (mem_filter.1 hi).2)
-          have := influence_nonneg i F
-          gcongr
-      _ ≤ ∑ i, influence i F * √τ / 3 :=
-          sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun i _ _ =>
-            div_nonneg (mul_nonneg (influence_nonneg i F) (Real.sqrt_nonneg τ)) (by norm_num)
-      _ = √τ / 3 * totalInfluence F := by
-          rw [totalInfluence, mul_sum]
-          exact sum_congr rfl fun i _ => by ring
+  have hlow := sum_card_sdiff_mul_one_third_pow_fourierCoeff_sq_le f hJ
   calc ∑ S with ¬S ⊆ J, c S
       ≤ ∑ S with ¬S ⊆ J, (log 3 / log A * (#S * c S) + A * (#(S \ J) * g S)) :=
         sum_le_sum fun S hS => hpt S (mem_filter.1 hS).2
@@ -162,14 +175,59 @@ theorem sum_filter_not_subset_fourierCoeff_sq_le (f : (ι → Bool) → Bool) {J
         sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun S _ _ =>
           add_nonneg (mul_nonneg hL (mul_nonneg (by positivity) (hc S)))
             (mul_nonneg hA0 (mul_nonneg (by positivity) (hg S)))
-    _ = log 3 / log A * totalInfluence F + A * ∑ i with i ∉ J, ∑ S with i ∈ S, g S := by
-        rw [sum_add_distrib, ← mul_sum, ← mul_sum, ← hswap,
+    _ = log 3 / log A * totalInfluence F + A * ∑ S, (#(S \ J) : ℝ) * g S := by
+        rw [sum_add_distrib, ← mul_sum, ← mul_sum,
           totalInfluence_eq_sum_card_mul_fourierCoeff_sq]
     _ ≤ log 3 / log A * totalInfluence F + A / 3 * √τ * totalInfluence F := by
         have := mul_le_mul_of_nonneg_left hlow hA0
         linarith [show A * (√τ / 3 * totalInfluence F) = A / 3 * √τ * totalInfluence F by ring]
 
 /-! ### Friedgut's junta theorem -/
+
+/-- If `totalInfluence F ≤ K` with `0 < K` and `0 < ε`, then at most
+`4 K ^ 3 / (9 ε ^ 2) · 81 ^ (K / ε)` coordinates have influence above
+`(3 ε / (2 K · 9 ^ (K / ε))) ^ 2`. -/
+private theorem card_filter_lt_influence_le_of_totalInfluence_le (F : (ι → Bool) → ℝ)
+    {K ε : ℝ} (hK0 : 0 < K) (hε : 0 < ε) (hK : totalInfluence F ≤ K) :
+    let A : ℝ := 9 ^ (K / ε)
+    let τ : ℝ := (3 * ε / (2 * K * A)) ^ 2
+    (#({i : ι | τ < influence i F} : Finset ι) : ℝ) ≤
+      4 * K ^ 3 / (9 * ε ^ 2) * 81 ^ (K / ε) := by
+  intro A τ
+  have hA0 : 0 < A := rpow_pos_of_pos (by norm_num) _
+  have hτ : 0 < τ := sq_pos_of_pos (by positivity)
+  have hcard : #{i : ι | τ < influence i F} * τ ≤ K :=
+    calc #{i : ι | τ < influence i F} * τ = ∑ _i ∈ {i : ι | τ < influence i F}, τ := by
+          rw [sum_const, nsmul_eq_mul]
+      _ ≤ ∑ i ∈ {i : ι | τ < influence i F}, influence i F :=
+          sum_le_sum fun i hi => (mem_filter.1 hi).2.le
+      _ ≤ totalInfluence F :=
+          sum_le_sum_of_subset_of_nonneg (subset_univ _) fun i _ _ => influence_nonneg i F
+      _ ≤ K := hK
+  have hA2 : A * A = 81 ^ (K / ε) := by
+    rw [← mul_rpow (by norm_num) (by norm_num)]
+    norm_num
+  refine ((le_div_iff₀ hτ).2 hcard).trans_eq ?_
+  rw [← hA2, show τ = (3 * ε / (2 * K * A)) ^ 2 from rfl]
+  field_simp
+  ring
+
+/-- When `totalInfluence (signVal ∘ f) ≤ 0`, `f` is within relative Hamming distance `ε > 0` of a
+function depending on `∅`. -/
+private theorem exists_empty_dependsOn_of_totalInfluence_le_zero (f : (ι → Bool) → Bool)
+    {K ε : ℝ} (hε : 0 < ε) (hK : totalInfluence (fun x => signVal (f x)) ≤ K) (hK0 : 0 = K) :
+    ∃ (J : Finset ι) (g : (ι → Bool) → Bool),
+      (#J : ℝ) ≤ 4 * K ^ 3 / (9 * ε ^ 2) * 81 ^ (K / ε) ∧ DependsOn g (J : Set ι) ∧
+        (hammingDist f g : ℝ) / 2 ^ Fintype.card ι ≤ ε := by
+  obtain ⟨g, hg, hfg⟩ :=
+    exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq f ∅
+  refine ⟨∅, g, by rw [← hK0]; simp, hg, hfg.trans ?_⟩
+  have h := sum_filter_not_subset_fourierCoeff_sq_le f (J := ∅) (τ := 1)
+    (fun i _ => influence_signVal_le_one f i) (A := 3) (by norm_num)
+  have hI0 : totalInfluence (fun x => signVal (f x)) = 0 :=
+    le_antisymm (hK0 ▸ hK) (totalInfluence_nonneg _)
+  rw [hI0, mul_zero, mul_zero, add_zero] at h
+  exact h.trans hε.le
 
 /-- **Friedgut's junta theorem**: if a Boolean function read as signs `F` has total influence at
 most `K`, then for every `ε > 0` it is at relative Hamming distance at most `ε` from a Boolean
@@ -181,18 +239,9 @@ theorem exists_dependsOn_hammingDist_div_le_of_totalInfluence_le (f : (ι → Bo
       (#J : ℝ) ≤ 4 * K ^ 3 / (9 * ε ^ 2) * 81 ^ (K / ε) ∧ DependsOn g (J : Set ι) ∧
         (hammingDist f g : ℝ) / 2 ^ Fintype.card ι ≤ ε := by
   set F : (ι → Bool) → ℝ := fun x => signVal (f x)
-  have hI := totalInfluence_nonneg F
-  rcases (hI.trans hK).lt_or_eq with hK0 | hK0
+  rcases ((totalInfluence_nonneg F).trans hK).lt_or_eq with hK0 | hK0
   swap
-  · -- no influence: `f` is close to a constant
-    obtain ⟨g, hg, hfg⟩ :=
-      exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq f ∅
-    refine ⟨∅, g, by rw [← hK0]; simp, hg, hfg.trans ?_⟩
-    have h := sum_filter_not_subset_fourierCoeff_sq_le f (J := ∅) (τ := 1)
-      (fun i _ => influence_signVal_le_one f i) (A := 3) (by norm_num)
-    have hI0 : totalInfluence F = 0 := le_antisymm (hK0 ▸ hK) hI
-    rw [hI0, mul_zero, mul_zero, add_zero] at h
-    exact h.trans hε.le
+  · exact exists_empty_dependsOn_of_totalInfluence_le_zero f hε hK hK0
   -- the parameters `A = 9 ^ (K / ε)` and `√τ = 3 ε / (2 K A)`
   set A : ℝ := 9 ^ (K / ε)
   have hA : 1 < A := one_lt_rpow (by norm_num) (div_pos hK0 hε)
@@ -203,43 +252,27 @@ theorem exists_dependsOn_hammingDist_div_le_of_totalInfluence_le (f : (ι → Bo
     field_simp
     push_cast
     ring
-  have hA2 : A * A = 81 ^ (K / ε) := by
-    rw [← mul_rpow (by norm_num) (by norm_num)]
-    norm_num
   set s : ℝ := 3 * ε / (2 * K * A)
   have hs : 0 < s := by positivity
   set τ : ℝ := s ^ 2
   set J : Finset ι := {i | τ < influence i F}
   obtain ⟨g, hg, hfg⟩ :=
     exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq f J
-  refine ⟨J, g, ?_, hg, hfg.trans ?_⟩
-  · -- `J` has at most `K / τ` elements
-    have hcard : #J * τ ≤ K :=
-      calc #J * τ = ∑ i ∈ J, τ := by rw [sum_const, nsmul_eq_mul]
-        _ ≤ ∑ i ∈ J, influence i F := sum_le_sum fun i hi => (mem_filter.1 hi).2.le
-        _ ≤ totalInfluence F :=
-            sum_le_sum_of_subset_of_nonneg (subset_univ _) fun i _ _ => influence_nonneg i F
-        _ ≤ K := hK
-    have hτ : 0 < τ := by positivity
-    rw [← le_div_iff₀ hτ] at hcard
-    refine hcard.trans_eq ?_
-    rw [← hA2, show τ = (3 * ε / (2 * K * A)) ^ 2 from rfl]
+  refine ⟨J, g, card_filter_lt_influence_le_of_totalInfluence_le F hK0 hε hK, hg, hfg.trans ?_⟩
+  -- both terms of the weight bound are at most `ε / 2`
+  have h := sum_filter_not_subset_fourierCoeff_sq_le f (J := J) (τ := τ)
+    (fun i hi => not_lt.1 fun h => hi (mem_filter.2 ⟨mem_univ i, h⟩)) hA
+  rw [hlogA, Real.sqrt_sq hs.le] at h
+  refine h.trans ?_
+  have e : A / 3 * s = ε / (2 * K) := by
+    rw [show s = 3 * ε / (2 * K * A) from rfl]
     field_simp
-    ring
-  · -- both terms of the weight bound are at most `ε / 2`
-    have h := sum_filter_not_subset_fourierCoeff_sq_le f (J := J) (τ := τ)
-      (fun i hi => not_lt.1 fun h => hi (mem_filter.2 ⟨mem_univ i, h⟩)) hA
-    rw [hlogA, Real.sqrt_sq hs.le] at h
-    refine h.trans ?_
-    have e : A / 3 * s = ε / (2 * K) := by
-      rw [show s = 3 * ε / (2 * K * A) from rfl]
-      field_simp
-    rw [e]
-    have h1 : ε / (2 * K) * totalInfluence F ≤ ε / (2 * K) * K :=
-      mul_le_mul_of_nonneg_left hK (by positivity)
-    have h2 : ε / (2 * K) * K = ε / 2 := by
-      field_simp
-    linarith
+  rw [e]
+  have h1 : ε / (2 * K) * totalInfluence F ≤ ε / (2 * K) * K :=
+    mul_le_mul_of_nonneg_left hK (by positivity)
+  have h2 : ε / (2 * K) * K = ε / 2 := by
+    field_simp
+  linarith
 
 /-- **Friedgut's junta theorem, exponential form**: if a Boolean function read as signs `F` has
 total influence at most `K`, then for every `0 < ε ≤ 1` it is at relative Hamming distance at most

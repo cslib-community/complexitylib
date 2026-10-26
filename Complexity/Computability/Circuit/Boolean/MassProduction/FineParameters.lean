@@ -10,7 +10,7 @@ module
 public import Complexity.Init
 public import Mathlib.Data.Nat.Log
 public import Mathlib.Order.Filter.AtTopBot.Basic
-import Cslib.Foundations.Data.Nat.Asymptotics
+import Complexity.Foundations.Data.Nat.Asymptotics
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -147,17 +147,6 @@ theorem dimension_mul_fieldWidth_le (n : ℕ) :
     unfold fieldWidth blocks
     rw [Nat.sub_eq_zero_of_le (by omega), Nat.zero_div, Nat.mul_zero]
 
-/-- Linear growth eventually dominates any affine function of `log₂ (n + 2)`. -/
-theorem eventually_add_mul_log_le (A B : ℕ) :
-    ∀ᶠ n in atTop, A + B * Nat.log 2 (n + 2) ≤ n := by
-  filter_upwards [Nat.eventually_mul_log_le (2 * B + 1) one_lt_two,
-    eventually_ge_atTop (2 * (A + 2 * B) + 4)] with n hlog hn
-  have h2 : Nat.log 2 (n + 2) ≤ Nat.log 2 n + 1 := by
-    calc Nat.log 2 (n + 2) ≤ Nat.log 2 (2 * n) := Nat.log_mono_right (by omega)
-      _ = Nat.log 2 n + 1 := by
-        rw [mul_comm, Nat.log_mul_base (by norm_num) (by omega)]
-  nlinarith
-
 /-- The scheduler budget: `(dimension - 2) * fieldWidth n` eventually exceeds `depth n` by any
 fixed amount. -/
 theorem eventually_add_depth_le (hnd : num < den) (c : ℕ) :
@@ -169,8 +158,8 @@ theorem eventually_add_depth_le (hnd : num < den) (c : ℕ) :
   have hℓa : ℓ = 4 * a + 3 := rfl
   have hhpos : 0 < h := blockWidth_pos
   have hmpos : 0 < m := Nat.mul_pos (by omega) (by omega)
-  filter_upwards [eventually_add_mul_log_le (ℓ * m * c + ℓ * (X + 1) * den +
-      (4 * a + 1) * (m + m * ℓ * h)) (3 * (4 * a + 1) * m)] with n hn
+  filter_upwards [Nat.eventually_add_mul_log_add_le (ℓ * m * c + ℓ * (X + 1) * den +
+      (4 * a + 1) * (m + m * ℓ * h)) (3 * (4 * a + 1) * m) 2 one_lt_two] with n hn
   set p := prefixWidth num den X n with hp
   set L := Nat.log 2 (n + 2) with hL
   set F := fieldWidth num den X n with hF
@@ -245,8 +234,8 @@ theorem eventually_le_blocks (hden : 0 < den) (c : ℕ) :
   have hℓh : 0 < dimension num den X * blockWidth num den X :=
     Nat.mul_pos (by have := three_le_dimension (num := num) (den := den) (X := X); omega)
       blockWidth_pos
-  filter_upwards [eventually_add_mul_log_le ((X + 1) * (c * (dimension num den X *
-      blockWidth num den X) + 1)) (3 * (X + 1))] with n hn
+  filter_upwards [Nat.eventually_add_mul_log_add_le ((X + 1) * (c * (dimension num den X *
+      blockWidth num den X) + 1)) (3 * (X + 1)) 2 one_lt_two] with n hn
   have hp := lt_mul_prefixWidth_add_one (X := X) (num := num) hden n
   unfold blocks
   apply (Nat.le_div_iff_mul_le hℓh).mpr
@@ -310,22 +299,6 @@ theorem mul_add_le_of_slack {P n w p den num R L O : ℕ}
       2 * P * ((den - num) * n * (R * L)) + 2 * P * (den - num) * n * O := by ring
   have e2 : 2 * ((P + 1) * den * 2 ^ n) = (2 * P + 1) * (den * 2 ^ n) + den * 2 ^ n := by ring
   omega
-
-/-- Any polynomial is eventually below `2 ^ (n / c)`. -/
-theorem eventually_mul_pow_le_two_pow_div (A E c : ℕ) (hc : 0 < c) :
-    ∀ᶠ n in atTop, A * (n + 1) ^ E ≤ 2 ^ (n / c) := by
-  have htend : Tendsto (fun n : ℕ => n / c) atTop atTop :=
-    tendsto_atTop_atTop.mpr fun k => ⟨c * k, fun n hn =>
-      (Nat.le_div_iff_mul_le hc).mpr (by rw [mul_comm]; exact hn)⟩
-  filter_upwards [htend.eventually (Nat.eventually_mul_pow_le_pow (A * (2 * c) ^ E) E
-    one_lt_two), eventually_ge_atTop c] with n hn hcn
-  have hk : n + 1 ≤ 2 * c * (n / c) := by
-    have := Nat.lt_mul_div_succ n hc
-    have : 1 ≤ n / c := (Nat.le_div_iff_mul_le hc).mpr (by omega)
-    nlinarith
-  calc A * (n + 1) ^ E ≤ A * (2 * c * (n / c)) ^ E := by gcongr
-    _ = A * (2 * c) ^ E * (n / c) ^ E := by rw [mul_pow]; ring
-    _ ≤ 2 ^ (n / c) := hn
 
 /-- The last, partly filled code copy is negligible: eventually
 `X' * fieldWidth n * 2 ^ (dimension * fieldWidth n) ≤ 2 ^ prefixWidth n`. -/
@@ -420,7 +393,8 @@ theorem eventually_overhead_le (hnd : num < den) (hX : 0 < X) (P A E : ℕ) :
   set c := (X + 1) * den * dimension num den X with hc
   have hcpos : 0 < c := Nat.mul_pos (Nat.mul_pos (by omega) (by omega))
     (by have := three_le_dimension (num := num) (den := den) (X := X); omega)
-  filter_upwards [eventually_mul_pow_le_two_pow_div (8 * P * den * A) (E + 1) c hcpos]
+  filter_upwards [Nat.eventually_mul_add_one_pow_le_pow_div (8 * P * den * A) (E + 1) c one_lt_two
+      hcpos]
     with n hn
   set p := prefixWidth num den X n
   set q := depth num den n + fieldWidth num den X n

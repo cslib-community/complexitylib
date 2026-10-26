@@ -125,6 +125,49 @@ theorem toeplitz_smul {R : Type*} [SMul R α] (c : R) (a : Fin (m + n - 1) → �
     toeplitz (c • a) = c • toeplitz a :=
   ext fun _ _ => rfl
 
+/-- Every nonzero vector `v : Fin k → α` has a last nonzero coordinate `j₀`. -/
+private theorem exists_last_ne_zero {k : ℕ} [Zero α] {v : Fin k → α} (hv : v ≠ 0) :
+    ∃ j₀ : Fin k, v j₀ ≠ 0 ∧ (∀ j, v j ≠ 0 → j ≤ j₀) ∧ ∀ j, j₀ < j → v j = 0 := by
+  classical
+  obtain ⟨j, hj⟩ := Function.ne_iff.1 hv
+  obtain ⟨j₀, h₀, hmax⟩ := exists_max_image {j | v j ≠ 0} id ⟨j, by simpa using hj⟩
+  have hle (j : Fin k) (hj : v j ≠ 0) : j ≤ j₀ := hmax j (by simpa using hj)
+  exact ⟨j₀, by simpa using h₀, hle, fun j hj => by_contra fun h => (hle j h).not_gt hj⟩
+
+/-- `toeplitzBand j₀ w` writes `w` on the `m` diagonals through column `j₀`, starting from row
+`0`. -/
+private def toeplitzBand [Semiring α] (j₀ : Fin n) : (Fin m → α) →ₗ[α] Fin (m + n - 1) → α :=
+  LinearMap.pi fun k =>
+    if h : n - 1 - (j₀ : ℕ) ≤ k ∧ (k : ℕ) - (n - 1 - j₀) < m then
+      LinearMap.proj (⟨(k : ℕ) - (n - 1 - j₀), h.2⟩ : Fin m)
+    else 0
+
+/-- If `d` vanishes beyond `j₀` and `w` vanishes beyond `i`, then the `i`-th coordinate of
+`toeplitz (toeplitzBand j₀ w) *ᵥ d` is `w i * d j₀`. -/
+private theorem toeplitzBand_mulVec_apply [Semiring α] {d : Fin n → α} {j₀ : Fin n}
+    (hmax : ∀ j, d j ≠ 0 → j ≤ j₀) (w : Fin m → α) (i : Fin m)
+    (hw : ∀ i', i < i' → w i' = 0) :
+    (toeplitz (toeplitzBand j₀ w) *ᵥ d) i = w i * d j₀ := by
+  change ∑ j, toeplitz (toeplitzBand j₀ w) i j * d j = w i * d j₀
+  rw [sum_eq_single j₀]
+  · congr 1
+    simp only [toeplitz_apply, toeplitzBand, LinearMap.pi_apply]
+    rw [dite_eq_left (by omega)]
+    simp only [LinearMap.proj_apply]
+    congr 1
+    ext
+    simp only
+    omega
+  · intro j _ hj
+    by_cases hdj : d j = 0
+    · rw [hdj, mul_zero]
+    have hlt : (j : ℕ) < j₀ := Fin.lt_def.1 (lt_of_le_of_ne (hmax j hdj) hj)
+    simp only [toeplitz_apply, toeplitzBand, LinearMap.pi_apply]
+    split_ifs with h
+    · rw [LinearMap.proj_apply, hw _ (Fin.lt_def.2 (by simp only; omega)), zero_mul]
+    · rw [LinearMap.zero_apply, zero_mul]
+  · exact fun h => absurd (mem_univ _) h
+
 /-- **Toeplitz matrices reach every vector**: over a field, for every nonzero vector `d`, every
 vector is `T d` for some `m × n` Toeplitz matrix `T`. If `j₀` is the last coordinate with
 `d j₀ ≠ 0`, then for a Toeplitz matrix `T` supported on the `m` diagonals through column `j₀`,
@@ -133,58 +176,24 @@ entries further down the diagonals; this triangular system can be solved for any
 theorem toeplitz_mulVec_surjective [Field α] {d : Fin n → α} (hd : d ≠ 0) :
     Function.Surjective fun a : Fin (m + n - 1) → α => toeplitz a *ᵥ d := by
   classical
-  obtain ⟨j₀, hj₀, hmax⟩ : ∃ j₀, d j₀ ≠ 0 ∧ ∀ j, d j ≠ 0 → j ≤ j₀ := by
-    obtain ⟨j, hj⟩ := Function.ne_iff.1 hd
-    obtain ⟨j₀, h₀, hmax⟩ := exists_max_image {j | d j ≠ 0} id (⟨j, by simpa using hj⟩)
-    exact ⟨j₀, by simpa using h₀, fun j hj => hmax j (by simpa using hj)⟩
-  -- `band w` writes `w` on the `m` diagonals through column `j₀`, starting from row `0`.
-  let band : (Fin m → α) →ₗ[α] Fin (m + n - 1) → α := LinearMap.pi fun k =>
-    if h : n - 1 - (j₀ : ℕ) ≤ k ∧ (k : ℕ) - (n - 1 - j₀) < m then
-      LinearMap.proj (⟨(k : ℕ) - (n - 1 - j₀), h.2⟩ : Fin m)
-    else 0
+  obtain ⟨j₀, hj₀, hmax, -⟩ := exists_last_ne_zero hd
   let L : (Fin m → α) →ₗ[α] Fin m → α :=
-    { toFun w := toeplitz (band w) *ᵥ d
+    { toFun w := toeplitz (toeplitzBand j₀ w) *ᵥ d
       map_add' w w' := by
         rw [map_add, toeplitz_add, add_mulVec]
       map_smul' c w := by
         simp only [RingHom.id_apply]
         rw [map_smul, toeplitz_smul, smul_mulVec] }
-  -- If `w` vanishes beyond `i`, then the `i`-th coordinate of `L w` is `w i * d j₀`.
-  have hL (w : Fin m → α) (i : Fin m) (hw : ∀ i', i < i' → w i' = 0) : L w i = w i * d j₀ := by
-    change ∑ j, toeplitz (band w) i j * d j = w i * d j₀
-    rw [sum_eq_single j₀]
-    · congr 1
-      simp only [toeplitz_apply, band, LinearMap.pi_apply]
-      rw [dite_eq_left (by omega)]
-      simp only [LinearMap.proj_apply]
-      congr 1
-      ext
-      simp only
-      omega
-    · intro j _ hj
-      by_cases hdj : d j = 0
-      · rw [hdj, mul_zero]
-      have hlt : (j : ℕ) < j₀ := Fin.lt_def.1 (lt_of_le_of_ne (hmax j hdj) hj)
-      simp only [toeplitz_apply, band, LinearMap.pi_apply]
-      split_ifs with h
-      · rw [LinearMap.proj_apply, hw _ (Fin.lt_def.2 (by simp only; omega)), zero_mul]
-      · rw [LinearMap.zero_apply, zero_mul]
-    · exact fun h => absurd (mem_univ _) h
   -- `L` is injective: if `L w = 0` with `w ≠ 0`, look at the last `i` with `w i ≠ 0`.
   have hinj : Function.Injective L := by
     refine (injective_iff_map_eq_zero L).2 fun w hw => ?_
     by_contra hne
-    obtain ⟨i₁, hi₁⟩ := Function.ne_iff.1 hne
-    obtain ⟨i, hi, himax⟩ := exists_max_image {i | w i ≠ 0} id ⟨i₁, by simpa using hi₁⟩
-    have hwi : w i ≠ 0 := by simpa using hi
-    have hbeyond (i' : Fin m) (hi' : i < i') : w i' = 0 := by
-      by_contra h
-      exact (himax i' (by simpa using h)).not_gt hi'
-    have hLi := hL w i hbeyond
+    obtain ⟨i, hwi, -, hbeyond⟩ := exists_last_ne_zero hne
+    have hLi : L w i = w i * d j₀ := toeplitzBand_mulVec_apply hmax w i hbeyond
     rw [hw, Pi.zero_apply] at hLi
     exact mul_ne_zero hwi hj₀ hLi.symm
   intro c
   obtain ⟨w, rfl⟩ := LinearMap.injective_iff_surjective.1 hinj c
-  exact ⟨band w, rfl⟩
+  exact ⟨toeplitzBand j₀ w, rfl⟩
 
 end Matrix

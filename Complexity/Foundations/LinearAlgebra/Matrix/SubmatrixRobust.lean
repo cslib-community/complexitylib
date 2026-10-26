@@ -148,6 +148,14 @@ private theorem spanCoeff_spec {R : Matrix (Fin k) (Fin k) (ZMod 2)} {S T' : Fin
   simp only [h, ↓reduceDIte]
   exact Classical.choose_spec ((Submodule.mem_span_image_finset_iff_exists_fun (ZMod 2)).mp h)
 
+/-- The complement of `S ×ˢ D` in `Fin k × Fin k` has `k * k - #S * #D` elements. -/
+private theorem card_compl_product_add (S D : Finset (Fin k)) :
+    #((S ×ˢ D)ᶜ : Finset (Fin k × Fin k)) + #S * #D = k * k := by
+  rw [card_compl, card_product, Fintype.card_prod, Fintype.card_fin]
+  have : #S * #D ≤ k * k :=
+    Nat.mul_le_mul (card_le_univ S |>.trans (by simp)) (card_le_univ D |>.trans (by simp))
+  omega
+
 /-- **Counting spanned matrices.** A matrix in `spannedBy S T T'` is determined by the
 coefficients of its columns in `T \ T'` and by its entries outside `S × (T \ T')`. -/
 private theorem card_spannedBy_mul_le (S T T' : Finset (Fin k)) :
@@ -183,21 +191,41 @@ private theorem card_spannedBy_mul_le (S T T' : Finset (Fin k)) :
   have hcard := card_le_card_of_injOn Φ (fun _ _ => mem_univ _) hinj
   rw [card_univ, Fintype.card_prod, Fintype.card_fun, Fintype.card_fun, Fintype.card_fun,
     ZMod.card, Fintype.card_coe, Fintype.card_coe, Fintype.card_coe] at hcard
-  have hZ : #Z + #S * #D = k * k := by
-    rw [card_compl, card_product, Fintype.card_prod, Fintype.card_fin]
-    have : #S * #D ≤ k * k :=
-      Nat.mul_le_mul (card_le_univ S |>.trans (by simp)) (card_le_univ D |>.trans (by simp))
-    omega
   calc #(spannedBy S T T') * 2 ^ (#S * #D)
       ≤ (2 ^ #T') ^ #D * 2 ^ #Z * 2 ^ (#S * #D) := Nat.mul_le_mul_right _ hcard
     _ = 2 ^ (#D * #T') * 2 ^ (k * k) := by
-        rw [mul_assoc, ← pow_add, hZ, ← pow_mul, mul_comm #T']
+        rw [mul_assoc, ← pow_add, card_compl_product_add S D, ← pow_mul, mul_comm #T']
 
 open Classical in
 /-- The matrices with a deficient square block on the rows `S` and the columns `T`. -/
 private noncomputable def deficientOn (t : ℕ) (S T : Finset (Fin k)) :
     Finset (Matrix (Fin k) (Fin k) (ZMod 2)) :=
   {R | #S = #T ∧ R.blockRank ↑S ↑T + t < #S}
+
+/-- When `T' ⊆ T`, `#T' + t < #S`, and `#S = #T`, at most a `2 ^ -((t + 1) ^ 2)` fraction of
+`k × k` matrices belong to `spannedBy S T T'`. -/
+private theorem card_spannedBy_mul_two_pow_sq_le {t : ℕ} {S T T' : Finset (Fin k)}
+    (hT'T : T' ⊆ T) (hlt : #T' + t < #S) (hST : #S = #T) :
+    #(spannedBy S T T') * 2 ^ ((t + 1) ^ 2) ≤ 2 ^ (k * k) := by
+  have hsplit := card_sdiff_add_card_eq_card hT'T
+  set d := #(T \ T')
+  have hd : t + 1 ≤ d := by omega
+  have H := card_spannedBy_mul_le S T T'
+  rw [hST, ← hsplit] at H
+  have hpow : 2 ^ ((t + 1) ^ 2) ≤ 2 ^ (d * d) :=
+    Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+  have key : #(spannedBy S T T') * 2 ^ (d * d) * 2 ^ (d * #T') ≤
+      2 ^ (k * k) * 2 ^ (d * #T') := by
+    calc #(spannedBy S T T') * 2 ^ (d * d) * 2 ^ (d * #T')
+        = #(spannedBy S T T') * 2 ^ ((d + #T') * d) := by
+          rw [mul_assoc, ← pow_add]
+          congr 2
+          ring
+      _ ≤ 2 ^ (d * #T') * 2 ^ (k * k) := H
+      _ = _ := mul_comm _ _
+  calc #(spannedBy S T T') * 2 ^ ((t + 1) ^ 2)
+      ≤ #(spannedBy S T T') * 2 ^ (d * d) := Nat.mul_le_mul_left _ hpow
+    _ ≤ _ := Nat.le_of_mul_le_mul_right key (by positivity)
 
 /-- Each block is deficient for at most a `2 ^ (k - (t + 1)²)` fraction of all matrices. -/
 private theorem card_deficientOn_mul_le (t : ℕ) (S T : Finset (Fin k)) :
@@ -210,28 +238,9 @@ private theorem card_deficientOn_mul_le (t : ℕ) (S T : Finset (Fin k)) :
     obtain ⟨T', hT', hcard, hspan⟩ := exists_spanning_columns R S T
     refine mem_biUnion.mpr ⟨T', mem_filter.mpr ⟨mem_powerset.mpr hT', by omega, hST⟩, ?_⟩
     exact mem_filter.mpr ⟨mem_univ _, hspan⟩
-  have hone : ∀ T' ∈ 𝒯, #(spannedBy S T T') * 2 ^ ((t + 1) ^ 2) ≤ 2 ^ (k * k) := by
-    intro T' hT'
+  have hone : ∀ T' ∈ 𝒯, #(spannedBy S T T') * 2 ^ ((t + 1) ^ 2) ≤ 2 ^ (k * k) := fun T' hT' => by
     obtain ⟨hT'T, hlt, hST⟩ := mem_filter.mp hT'
-    have hsplit := card_sdiff_add_card_eq_card (mem_powerset.mp hT'T)
-    set d := #(T \ T')
-    have hd : t + 1 ≤ d := by omega
-    have H := card_spannedBy_mul_le S T T'
-    rw [hST, ← hsplit] at H
-    have hpow : 2 ^ ((t + 1) ^ 2) ≤ 2 ^ (d * d) :=
-      Nat.pow_le_pow_right (by norm_num) (by nlinarith)
-    have key : #(spannedBy S T T') * 2 ^ (d * d) * 2 ^ (d * #T') ≤
-        2 ^ (k * k) * 2 ^ (d * #T') := by
-      calc #(spannedBy S T T') * 2 ^ (d * d) * 2 ^ (d * #T')
-          = #(spannedBy S T T') * 2 ^ ((d + #T') * d) := by
-            rw [mul_assoc, ← pow_add]
-            congr 2
-            ring
-        _ ≤ 2 ^ (d * #T') * 2 ^ (k * k) := H
-        _ = _ := mul_comm _ _
-    calc #(spannedBy S T T') * 2 ^ ((t + 1) ^ 2)
-        ≤ #(spannedBy S T T') * 2 ^ (d * d) := Nat.mul_le_mul_left _ hpow
-      _ ≤ _ := Nat.le_of_mul_le_mul_right key (by positivity)
+    exact card_spannedBy_mul_two_pow_sq_le (mem_powerset.mp hT'T) hlt hST
   have h𝒯 : #𝒯 ≤ 2 ^ k := by
     calc #𝒯 ≤ #T.powerset := card_filter_le _ _
       _ = 2 ^ #T := card_powerset T

@@ -32,7 +32,7 @@ and bridged:
 * **Thresholds in the instance (`Cslib.Kolmogorov.MINKT`):**
   An instance `i : MINKT.Instance` consists of a binary string `i.string`, a time bound `i.time`,
   and a size threshold `i.size`, encoded by `MINKT.enc` as `x` followed by `1^time` and `1^size` in
-  unary ([Ko][Ko1991]; [Hirahara, Definition II.4][Hirahara2018]). The instance belongs to `MINKT`
+  unary ([Ko][Ko1991]; [Hirahara, Definition 9][Hirahara2018]). The instance belongs to `MINKT`
   when `timeBoundedAt i.time i.string ≤ i.size`.
 * **Fixed-function thresholds (`Cslib.Kolmogorov.MINKTAt t s`):**
   For time and size threshold functions `t s : ℕ → ℕ`, `MINKTAt t s : Set (List Bool)` is the
@@ -51,7 +51,7 @@ and bridged:
   `{x | timeBounded t x ≤ s x.length}` and its canonical embedding into `MINKT.Instance`.
 * `Cslib.Kolmogorov.GapMINKT`, `Cslib.Kolmogorov.GapMINKT.yesSet`,
   `Cslib.Kolmogorov.GapMINKT.noSet`: Hirahara's promise problem `GapMINKT[σ, τ]` and its yes/no sets
-  ([Hirahara, Definition II.6][Hirahara2018]).
+  ([Hirahara, Definition 11][Hirahara2018]).
 
 ## Main results
 
@@ -89,7 +89,7 @@ open Cslib.Complexity DescriptionMethod
 namespace MINKT
 
 /-- An instance of `MINKT`: a target binary string `string`, a step bound `time`, and a program size
-threshold `size` ([Ko][Ko1991]; [Hirahara, Definition II.4][Hirahara2018]). -/
+threshold `size` ([Ko][Ko1991]; [Hirahara, Definition 9][Hirahara2018]). -/
 structure Instance where
   /-- The target binary string `x`. -/
   string : List Bool
@@ -102,7 +102,7 @@ structure Instance where
 end MINKT
 
 /-- **The Minimum Time-Bounded Kolmogorov Complexity Problem (`MINKT`)**
-([Ko][Ko1991]; [Hirahara, Definition II.4][Hirahara2018]): the set of instances
+([Ko][Ko1991]; [Hirahara, Definition 9][Hirahara2018]): the set of instances
 `(x, t, s)` such that some binary program of length at most `s` outputs `x` within `t` steps under
 `universalTM`. -/
 def MINKT : Set MINKT.Instance :=
@@ -111,7 +111,7 @@ def MINKT : Set MINKT.Instance :=
 namespace MINKT
 
 /-- Standard encoding of `MINKT.Instance`: the string `x`, followed by `1^time` and `1^size` in
-unary ([Ko][Ko1991]; [Hirahara, Definition II.4][Hirahara2018]). -/
+unary ([Ko][Ko1991]; [Hirahara, Definition 9][Hirahara2018]). -/
 def enc : Instance ↪ List Bool :=
   (⟨fun i => (i.string, (i.time, i.size)), fun i j h => by
     cases i; cases j; simpa using h⟩ : Instance ↪ List Bool × (ℕ × ℕ)).trans
@@ -350,12 +350,12 @@ end MINKTAt
 namespace GapMINKT
 
 /-- The yes-instances of `GapMINKT`: instances `(x, t, s)` with $K^t(x) \le s$
-([Hirahara, Definition II.6][Hirahara2018]). -/
+([Hirahara, Definition 11][Hirahara2018]). -/
 def yesSet : Set MINKT.Instance :=
   MINKT
 
 /-- The raw no-instances of `GapMINKT[σ, τ]`: instances `(x, t, s)` with
-$K^{\tau(|x|, t)}(x) > \sigma(|x|, s)$ ([Hirahara, Definition II.6][Hirahara2018]). -/
+$K^{\tau(|x|, t)}(x) > \sigma(|x|, s)$ ([Hirahara, Definition 11][Hirahara2018]). -/
 def noSet (σ τ : ℕ → ℕ → ℕ) : Set MINKT.Instance :=
   {i | (σ i.string.length i.size : ℕ∞) <
     timeBoundedAt (τ i.string.length i.time) i.string}
@@ -373,7 +373,7 @@ theorem mem_noSet_iff {σ τ : ℕ → ℕ → ℕ} {i : MINKT.Instance} :
   Iff.rfl
 
 /-- When $\sigma(n, s) \ge s$ and $\tau(n, t) \ge t$ (as required in
-[Hirahara, Definition II.6][Hirahara2018]), `GapMINKT.yesSet` and `GapMINKT.noSet σ τ`
+[Hirahara, Definition 11][Hirahara2018]), `GapMINKT.yesSet` and `GapMINKT.noSet σ τ`
 are disjoint. -/
 theorem disjoint_yesSet_noSet {σ τ : ℕ → ℕ → ℕ}
     (hσ : ∀ n s, s ≤ σ n s) (hτ : ∀ n t, t ≤ τ n t) :
@@ -395,7 +395,7 @@ theorem noSet_id_eq_compl : noSet (fun _ s => s) (fun _ t => t) = MINKTᶜ := by
 
 end GapMINKT
 
-/-- **Hirahara's `GapMINKT` promise problem** ([Hirahara, Definition II.6][Hirahara2018]):
+/-- **Hirahara's `GapMINKT` promise problem** ([Hirahara, Definition 11][Hirahara2018]):
 the promise problem whose yes-instances are `MINKT`, and whose no-instances are
 `GapMINKT.noSet σ τ`, when `s ≤ σ n s` and `t ≤ τ n t`. Following Hirahara, the gap hypotheses
 `hσ` and `hτ` are bundled to ensure disjointness of yes- and no-instances by construction. -/

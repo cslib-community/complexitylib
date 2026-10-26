@@ -43,8 +43,8 @@ correct on all well-sized raw inputs. They do not yet construct that circuit or 
 
 namespace Cslib.Crypto.Homomorphic.GSW
 
-open Matrix
-open scoped Matrix
+open _root_.Matrix
+open scoped _root_.Matrix
 
 /-- Recompose one ciphertext row, then take its inner product with `(1,-t)`. -/
 def decryptionPhase {n w : ℕ} (t : Fin n → ZMod (2 ^ w)) (C : Ciphertext n w)

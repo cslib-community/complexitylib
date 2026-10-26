@@ -282,15 +282,11 @@ section Verifier
 
 variable {k : ℕ} {State : Type} [Finite State] (ntm : MultiTapeNTM k Bool State) (c d : ℕ)
 
-/-- The width of the codes of the views of `ntm` on `enc a`, under the space bound
-`c * ((enc a).length + 1) ^ d`. -/
-noncomputable def savitchWidth (a : α) : ℕ := 2 * ntm.codeWidth c d (enc a) + 2
-
 /-- **The verifier of Savitch's midpoint game** on the codes of the views of `ntm` on `enc a`,
 from the code of the initial view to the accepting code, at depth the width of the codes. -/
 noncomputable def savitchVerifier (x : α × List Bool) : Bool :=
-  midpointGame ntm.codeEdge (savitchWidth (enc := enc) ntm c d x.1)
-    (savitchWidth (enc := enc) ntm c d x.1)
+  midpointGame ntm.codeEdge (ntm.viewCodeWidth c d (enc x.1))
+    (ntm.viewCodeWidth c d (enc x.1))
     (MultiTapeNTM.viewCode (ntm.codeWidth c d (enc x.1)) (ntm.initView (enc x.1)))
     (MultiTapeNTM.acceptCode (ntm.codeWidth c d (enc x.1))) x.2
 
@@ -305,10 +301,10 @@ theorem computableInPolyTime_savitchVerifier :
     (MultiTapeNTM.computableTidilyInPolyTime_codeWidth c d).comp
       (ComputableTidilyInPolyTime.fst enc encBits)
   have hw : ComputableTidilyInPolyTime
-      (fun x : α × List Bool => savitchWidth (enc := enc) ntm c d x.1) (encPair enc encBits)
-      encUnary := by
-    unfold savitchWidth
-    fun_prop
+      (fun x : α × List Bool => ntm.viewCodeWidth c d (enc x.1)) (encPair enc encBits)
+      encUnary :=
+    (ntm.computableInPolyTime_viewCodeWidth c d).tidy.comp
+      ((ComputableTidilyInPolyTime.encode enc).comp (ComputableTidilyInPolyTime.fst enc encBits))
   have hinit : ComputableTidilyInPolyTime (fun x : α × List Bool =>
       (MultiTapeNTM.viewCode (ntm.codeWidth c d (enc x.1)) (ntm.initView (enc x.1)),
         MultiTapeNTM.acceptCode (ntm.codeWidth c d (enc x.1)), x.2))
@@ -320,8 +316,8 @@ theorem computableInPolyTime_savitchVerifier :
         (ComputableTidilyInPolyTime.snd enc encBits))
   have hloop := ComputableTidilyInPolyTime.iterateWith_of_bounded_growth hw hw hinit
     computableInPolyTime_midpointStep.tidy
-    (growth := fun x => 2 * savitchWidth (enc := enc) ntm c d x.1)
-    (ComputableTidilyInPolyTime.polyBounded (by unfold savitchWidth; fun_prop)) fun x s => by
+    (growth := fun x => 2 * ntm.viewCodeWidth c d (enc x.1))
+    (ComputableTidilyInPolyTime.polyBounded (by fun_prop)) fun x s => by
       unfold midpointStep
       split <;> simp only [length_encPair, encBits_apply, List.length_drop,
         length_midpointMoves] <;> omega
@@ -355,15 +351,14 @@ theorem exists_isGameVerifier_of_mem_PSPACE (h : A ∈ PSPACE enc) :
     obtain ⟨c, d, hcd⟩ := hs.exists_le
     -- the number of rounds of the game is polynomially bounded
     have hrounds : ComputableTidilyInPolyTime
-        (fun a => (savitchWidth (enc := enc) ntm c d a + 1) * savitchWidth (enc := enc) ntm c d a)
+        (fun a => (ntm.viewCodeWidth c d (enc a) + 1) * ntm.viewCodeWidth c d (enc a))
         enc encUnary := by
-      have := MultiTapeNTM.computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
-      unfold savitchWidth
+      have := (ntm.computableInPolyTime_viewCodeWidth c d).tidy.comp (.encode enc)
       fun_prop
     obtain ⟨p, hr⟩ := hrounds.polyBounded.exists_polynomial
     refine ⟨p, savitchVerifier (enc := enc) ntm c d,
       (computableInPolyTime_savitchVerifier ntm c d).tidy, fun a => ?_⟩
-    set w := savitchWidth (enc := enc) ntm c d a
+    set w := ntm.viewCodeWidth c d (enc a)
     have hle : 2 * ((w + 1) * w) ≤ 2 * p.eval (enc a).length :=
       Nat.mul_le_mul_left 2 (hr a)
     rw [(hA.recognizesInSpace a).2,

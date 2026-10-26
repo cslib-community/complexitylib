@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
 public import Complexity.Computability.Machines.Turing.MultiTape.Run
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Correct
 
@@ -87,12 +88,6 @@ theorem Computes.output_eq_of_halted {output : List Symbol} (h : tm.Computes inp
 theorem halts_iff_exists_computes : tm.Halts input ↔ ∃ output, tm.Computes input output :=
   ⟨fun ⟨t, ht⟩ => ⟨_, t, ht, rfl⟩, fun ⟨_, h⟩ => h.halts⟩
 
-/-- **An output computed without bounds is computed within bounds**: the time at which the machine
-halts, and the space it has used by then. -/
-theorem Computes.exists_computesInTimeAndSpace {output : List Symbol}
-    (h : tm.Computes input output) : ∃ t s, tm.ComputesInTimeAndSpace input output t s :=
-  let ⟨u, hu, _⟩ := h
-  ⟨u, _, h, runsInTime_of_halted hu, runsInSpace_of_halted hu le_rfl⟩
 
 namespace Universal
 

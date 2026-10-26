@@ -319,6 +319,22 @@ private theorem add_sqrt_div_two_le {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
   nlinarith [sq_nonneg (c - (Real.sqrt a + Real.sqrt b) / 2),
     Real.sq_sqrt ha, Real.sq_sqrt hb]
 
+/-- One coordinate step of Korten's harmonic-transform inequality on `Fin (n + 1) → Bool`. -/
+private theorem add_sqrt_harmonicTransform_cons_le {n : ℕ} {f : (Fin (n + 1) → Bool) → ℝ}
+    (hf : ∀ x, 0 ≤ f x) (s : Fin n → Bool) :
+    1 / 2 * Real.sqrt (harmonicTransform (fun x => f (Fin.cons false x)) s) +
+      1 / 2 * Real.sqrt (harmonicTransform (fun x => f (Fin.cons true x)) s) ≤
+    3 / 4 * Real.sqrt
+        (harmonicTransform (fun x => (f (Fin.cons false x) + f (Fin.cons true x)) / 2) s) +
+      1 / 4 * Real.sqrt (harmonicTransform f (Fin.cons true s)) := by
+  have h0 : ∀ x, 0 ≤ f (Fin.cons false x) := fun x => hf (Fin.cons false x)
+  have h1 : ∀ x, 0 ≤ f (Fin.cons true x) := fun x => hf (Fin.cons true x)
+  have hb := add_sqrt_div_two_le
+    (harmonicTransform_nonneg h0 s) (harmonicTransform_nonneg h1 s)
+  have hc := Real.sqrt_le_sqrt (harmonicTransform_midpoint h0 h1 s)
+  rw [harmonicTransform_cons_true hf]
+  linarith
+
 private theorem expect_sqrt_le_bernoulliAverage_sqrt_harmonicTransform_fin {n : ℕ}
     {f : (Fin n → Bool) → ℝ} (hf : ∀ x, 0 ≤ f x) :
     (𝔼 x, Real.sqrt (f x)) ≤
@@ -332,26 +348,12 @@ private theorem expect_sqrt_le_bernoulliAverage_sqrt_harmonicTransform_fin {n : 
   | succ n ih =>
     let f0 := fun x => f (Fin.cons false x)
     let f1 := fun x => f (Fin.cons true x)
-    have h0 : ∀ x, 0 ≤ f0 x := fun x => hf (Fin.cons false x)
-    have h1 : ∀ x, 0 ≤ f1 x := fun x => hf (Fin.cons true x)
-    have hi0 := ih h0
-    have hi1 := ih h1
-    have hpoint (s : Fin n → Bool) :
-        1 / 2 * Real.sqrt (harmonicTransform f0 s) +
-          1 / 2 * Real.sqrt (harmonicTransform f1 s) ≤
-        3 / 4 * Real.sqrt (harmonicTransform (fun x => (f0 x + f1 x) / 2) s) +
-          1 / 4 * Real.sqrt (harmonicTransform f (Fin.cons true s)) := by
-      have hb := add_sqrt_div_two_le
-        (harmonicTransform_nonneg h0 s) (harmonicTransform_nonneg h1 s)
-      have hc := Real.sqrt_le_sqrt (harmonicTransform_midpoint h0 h1 s)
-      rw [harmonicTransform_cons_true hf]
-      dsimp [f0, f1] at hb hc ⊢
-      linarith
+    have hi0 := ih (fun x => hf (Fin.cons false x))
+    have hi1 := ih (fun x => hf (Fin.cons true x))
     rw [Fin.expect_univ_cons_bool]
     calc
       _ ≤ 1 / 2 * bernoulliAverage (1 / 4) (fun s => Real.sqrt (harmonicTransform f0 s)) +
           1 / 2 * bernoulliAverage (1 / 4) (fun s => Real.sqrt (harmonicTransform f1 s)) := by
-        dsimp [f0, f1] at hi0 hi1
         linarith
       _ = bernoulliAverage (1 / 4) (fun s =>
           1 / 2 * Real.sqrt (harmonicTransform f0 s) +
@@ -360,7 +362,7 @@ private theorem expect_sqrt_le_bernoulliAverage_sqrt_harmonicTransform_fin {n : 
       _ ≤ bernoulliAverage (1 / 4) (fun s =>
           3 / 4 * Real.sqrt (harmonicTransform (fun x => (f0 x + f1 x) / 2) s) +
             1 / 4 * Real.sqrt (harmonicTransform f (Fin.cons true s))) :=
-        bernoulliAverage_mono (by norm_num) (by norm_num) hpoint
+        bernoulliAverage_mono (by norm_num) (by norm_num) (add_sqrt_harmonicTransform_cons_le hf)
       _ = _ := by
         rw [bernoulliAverage_add, bernoulliAverage_const_mul, bernoulliAverage_const_mul,
           bernoulliAverage_cons]

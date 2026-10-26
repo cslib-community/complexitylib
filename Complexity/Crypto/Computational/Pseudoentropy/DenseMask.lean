@@ -60,12 +60,12 @@ theorem HasGap.eventually_exists_indexed_mask {pair : SamplablePair} {gap : ℕ 
       (encList (encPair encBits encBool))) encBool
         (fun input => test input.1.1 input.1.2 input.2))
     {candidates count densityBound inverseGap : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ}
-    (hcandidates : ComputableTidilyInPolyTime candidates encUnary encUnary)
-    (hcount : ComputableTidilyInPolyTime count encUnary encUnary)
-    (hnumerator : ComputableTidilyInPolyTime (fun input => numerator input.1 input.2)
+    (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
+    (hcount : ComputableInPolyTime count encUnary encUnary)
+    (hnumerator : ComputableInPolyTime (fun input => numerator input.1 input.2)
       (encPair encUnary encUnary) encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary)
-    (hinverseGap : ComputableTidilyInPolyTime inverseGap encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
+    (hinverseGap : ComputableInPolyTime inverseGap encUnary encUnary)
     (hgap : ∀ n, 0 < inverseGap n) :
     ∀ᶠ n in atTop, ∀ i < candidates n,
       0 < numerator n i → numerator n i ≤ dyadicSize (densityBound n) →
@@ -82,6 +82,11 @@ theorem HasGap.eventually_exists_indexed_mask {pair : SamplablePair} {gap : ℕ 
           (ProbComp.eval (OracleComp.replicate (count n) (maskedSample (pair.latentSample n)
             (fun value => pair.encode n value.1) Prod.snd mask) >>= test n i)) : ℝ) <
               (dyadicSize (count n) : ℝ) / inverseGap n := by
+  have hcandidates := hcandidates.tidy
+  have hcount := hcount.tidy
+  have hnumerator := hnumerator.tidy
+  have hdensity := hdensity.tidy
+  have hinverseGap := hinverseGap.tidy
   classical
   let source : ℕ → ProbComp (List Bool × Bool) := fun n => (fun value : pair.Observation n × Bool =>
     (pair.encode n value.1, value.2)) <$> pair.latentSample n
@@ -112,7 +117,13 @@ theorem HasGap.eventually_exists_indexed_mask {pair : SamplablePair} {gap : ℕ 
   have hparams : ComputableTidilyInPolyTime (fun input => params input.1 input.2)
       base Parameters.encoding := by
     dsimp only [params, base]
-    fun_prop
+    apply ComputableInPolyTime.tidy
+    apply SequenceLearner.isPolyTime_parameters
+    · exact .of_tidy (by fun_prop)
+    · exact .of_tidy (by fun_prop)
+    · exact .of_tidy (by fun_prop)
+    · exact .of_tidy (by fun_prop)
+    · fun_prop
   have hrate : ComputableTidilyInPolyTime (fun n => (params n 0).rateBound)
       encUnary encUnary := by
     dsimp only [params, SequenceLearner.parameters]
@@ -129,7 +140,8 @@ theorem HasGap.eventually_exists_indexed_mask {pair : SamplablePair} {gap : ℕ 
     unfold Parameters.predictionInverseTolerance Parameters.inverseRate Parameters.denominator
     dsimp only [params, SequenceLearner.parameters]
     fun_prop
-  have hhard := hpair.eventually_indexed_error_ge adversary hadversary hcandidates htolerance
+  have hhard := hpair.eventually_indexed_error_ge adversary hadversary (.of_tidy hcandidates)
+    (.of_tidy htolerance)
     (fun n => Nat.mul_pos (by decide) (params n 0).predictionInverseTolerance_pos)
   have hsmall := SequenceLearner.failureBound_eventually_le (params := fun n => params n 0)
     (inverseGap := inverseGap) (by change PolynomiallyBounded id; exact .id)
@@ -221,10 +233,10 @@ theorem HasGap.eventually_exists_mask {pair : SamplablePair} {gap : ℕ → ℝ}
       (encList (encPair encBits encBool))) encBool
         (fun input => test input.1 input.2))
     {count numerator densityBound inverseGap : ℕ → ℕ}
-    (hcount : ComputableTidilyInPolyTime count encUnary encUnary)
-    (hnumerator : ComputableTidilyInPolyTime numerator encUnary encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary)
-    (hinverseGap : ComputableTidilyInPolyTime inverseGap encUnary encUnary)
+    (hcount : ComputableInPolyTime count encUnary encUnary)
+    (hnumerator : ComputableInPolyTime numerator encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
+    (hinverseGap : ComputableInPolyTime inverseGap encUnary encUnary)
     (hgap : ∀ n, 0 < inverseGap n) :
     ∀ᶠ n in atTop, 0 < numerator n → numerator n ≤ dyadicSize (densityBound n) →
       (numerator n : ℝ) / dyadicSize (densityBound n) ≤

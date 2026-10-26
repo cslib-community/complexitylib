@@ -133,6 +133,28 @@ private theorem sum_split (S : Finset (Fin (n + 1) → Bool)) (f : (Fin (n + 1) 
   rw [hsplit, hsplit, ← sum_filter_add_sum_filter_not S (fun σ => σ 0 = true)]
   congr 1
 
+/-- When `slice S (!b)` is empty, each element of `slice S b` gains at least one isolation bit
+under `Fin.cons b`. -/
+private theorem sum_slice_mul_two_le_of_not_nonempty {n : ℕ} (S : Finset (Fin (n + 1) → Bool))
+    (b : Bool) (hnot : ¬(slice S (!b)).Nonempty) :
+    (∑ τ ∈ slice S b, 2 ^ isolation (slice S b) τ) * 2 ≤
+      ∑ τ ∈ slice S b, 2 ^ isolation S (Fin.cons b τ) := by
+  have hmem : ∀ τ ∈ slice S b, Fin.cons (!b) τ ∉ S := fun τ _ h => hnot ⟨τ, mem_slice.mpr h⟩
+  calc (∑ τ ∈ slice S b, 2 ^ isolation (slice S b) τ) * 2
+      = ∑ τ ∈ slice S b, 2 ^ (isolation (slice S b) τ +
+          if Fin.cons (!b) τ ∈ S then 0 else 1) := by
+        rw [sum_mul]
+        exact sum_congr rfl fun τ hτ => by rw [ite_eq_right (hmem τ hτ), pow_succ]
+    _ ≤ ∑ τ ∈ slice S b, 2 ^ isolation S (Fin.cons b τ) :=
+        sum_le_sum fun τ _ => Nat.pow_le_pow_right two_pos (isolation_cons_ge S b τ)
+
+/-- Lifting `slice S b` by `Fin.cons b` does not decrease `∑ 2 ^ isolation`. -/
+private theorem sum_slice_le {n : ℕ} (S : Finset (Fin (n + 1) → Bool)) (b : Bool) :
+    ∑ τ ∈ slice S b, 2 ^ isolation (slice S b) τ ≤
+      ∑ τ ∈ slice S b, 2 ^ isolation S (Fin.cons b τ) :=
+  sum_le_sum fun τ _ =>
+    Nat.pow_le_pow_right two_pos ((Nat.le_add_right _ _).trans (isolation_cons_ge S b τ))
+
 /-- **The isolation inequality**: every nonempty set `S` of bit strings of length `n` satisfies
 `2^n ≤ ∑_{σ ∈ S} 2^{isolation S σ}`. -/
 theorem two_pow_le_sum_two_pow_isolation :
@@ -147,42 +169,22 @@ theorem two_pow_le_sum_two_pow_isolation :
         single_le_sum (f := fun σ => 2 ^ isolation S σ) (fun _ _ => Nat.zero_le _) hσ
   | n + 1, S, hS => by
     rw [sum_split S fun σ => 2 ^ isolation S σ]
-    have hbound (b : Bool) : ∑ τ ∈ slice S b, 2 ^ (isolation (slice S b) τ +
-        (if Fin.cons (!b) τ ∈ S then 0 else 1)) ≤ ∑ τ ∈ slice S b, 2 ^ isolation S (Fin.cons b τ) :=
-      sum_le_sum fun τ _ => Nat.pow_le_pow_right two_pos (isolation_cons_ge S b τ)
     by_cases h0 : (slice S false).Nonempty <;> by_cases h1 : (slice S true).Nonempty
     · -- Both slices are nonempty.
       have ih0 := two_pow_le_sum_two_pow_isolation (slice S false) h0
       have ih1 := two_pow_le_sum_two_pow_isolation (slice S true) h1
-      rw [Fintype.sum_bool]
-      have e0 : ∑ τ ∈ slice S false, 2 ^ isolation (slice S false) τ ≤
-          ∑ τ ∈ slice S false, 2 ^ isolation S (Fin.cons false τ) :=
-        le_trans (sum_le_sum fun τ _ => Nat.pow_le_pow_right two_pos (Nat.le_add_right _ _))
-          (hbound false)
-      have e1 : ∑ τ ∈ slice S true, 2 ^ isolation (slice S true) τ ≤
-          ∑ τ ∈ slice S true, 2 ^ isolation S (Fin.cons true τ) :=
-        le_trans (sum_le_sum fun τ _ => Nat.pow_le_pow_right two_pos (Nat.le_add_right _ _))
-          (hbound true)
-      rw [pow_succ]
+      have e0 := sum_slice_le S false
+      have e1 := sum_slice_le S true
+      rw [Fintype.sum_bool, pow_succ]
       omega
     · -- Only the slice with first coordinate `false` is nonempty.
       have ih0 := two_pow_le_sum_two_pow_isolation (slice S false) h0
-      have hempty : slice S true = ∅ := not_nonempty_iff_eq_empty.mp h1
-      rw [Fintype.sum_bool, hempty, sum_empty, zero_add]
-      refine le_trans ?_ (hbound false)
-      have hnot : ∀ τ ∈ slice S false, Fin.cons (!false) τ ∉ S := fun τ _ hmem =>
-        (not_nonempty_iff_eq_empty.mpr hempty) ⟨τ, mem_slice.mpr hmem⟩
-      rw [sum_congr rfl fun τ hτ => by rw [ite_eq_right (hnot τ hτ), pow_succ], ← sum_mul, pow_succ]
-      exact Nat.mul_le_mul_right 2 ih0
+      rw [Fintype.sum_bool, not_nonempty_iff_eq_empty.mp h1, sum_empty, zero_add, pow_succ]
+      exact (Nat.mul_le_mul_right 2 ih0).trans (sum_slice_mul_two_le_of_not_nonempty S false h1)
     · -- Only the slice with first coordinate `true` is nonempty.
       have ih1 := two_pow_le_sum_two_pow_isolation (slice S true) h1
-      have hempty : slice S false = ∅ := not_nonempty_iff_eq_empty.mp h0
-      rw [Fintype.sum_bool, hempty, sum_empty, add_zero]
-      refine le_trans ?_ (hbound true)
-      have hnot : ∀ τ ∈ slice S true, Fin.cons (!true) τ ∉ S := fun τ _ hmem =>
-        (not_nonempty_iff_eq_empty.mpr hempty) ⟨τ, mem_slice.mpr hmem⟩
-      rw [sum_congr rfl fun τ hτ => by rw [ite_eq_right (hnot τ hτ), pow_succ], ← sum_mul, pow_succ]
-      exact Nat.mul_le_mul_right 2 ih1
+      rw [Fintype.sum_bool, not_nonempty_iff_eq_empty.mp h0, sum_empty, add_zero, pow_succ]
+      exact (Nat.mul_le_mul_right 2 ih1).trans (sum_slice_mul_two_le_of_not_nonempty S true h0)
     · -- Both slices are empty, so `S` is empty.
       exfalso
       obtain ⟨σ, hσ⟩ := hS

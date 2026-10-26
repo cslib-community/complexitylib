@@ -42,12 +42,9 @@ lookup and every copied runtime graph are charged by the joint certificates.
 
 namespace Cslib.PCP.Encoded.Graph
 
-open Turing.MultiTapeTM
+open Turing.MultiTapeTM ConstraintGraph
 
 variable {C α D : Type}
-
-/-- Original-edge, cloud, global-family and self-loop labels. -/
-abbrev PreprocessLabel (D : Type) := (((Unit ⊕ D) ⊕ D) ⊕ Unit)
 
 /-- Decode a numbered half-edge into its edge index and endpoint bit. -/
 def halfEdgeOfNumber (n : ℕ) : ℕ × Bool :=

@@ -7,6 +7,9 @@ Authors: Christian Reitwiessner
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeUnaryPrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.WordEquality
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Fold
 import Mathlib.Tactic.FinCases
 
@@ -31,12 +34,6 @@ namespace Turing.MultiTapeTM
 
 /-! ### Unary numbers -/
 
-/-- Natural numbers in unary: `n` is encoded by `n` ones. -/
-@[expose] public def encUnary : ℕ ↪ List Bool :=
-  ⟨fun n => List.replicate n true, fun m n h => by simpa using congrArg List.length h⟩
-
-@[simp]
-public lemma encUnary_apply (n : ℕ) : encUnary n = List.replicate n true := rfl
 
 namespace ComputableTidilyInDegree
 
@@ -146,29 +143,7 @@ end ComputableTidilyInDegree
 
 /-! ### Equality -/
 
-namespace EqWords
 
-/-- One step of comparing a word with `s.1`, the part of the other word still to be matched;
-`s.2` records whether the words agree so far. -/
-@[expose] public def step (s : List Bool × Bool) (b : Bool) : List Bool × Bool :=
-  (s.1.tail, s.2 && !s.1.isEmpty && (s.1.headD false == b))
-
-public lemma foldl_fst (l r : List Bool) (ok : Bool) :
-    (l.foldl step (r, ok)).1 = r.drop l.length := by
-  induction l generalizing r ok with
-  | nil => rfl
-  | cons b l ih =>
-    cases r <;> simp [step, ih]
-
-public lemma foldl_result (l r : List Bool) (ok : Bool) :
-    ((l.foldl step (r, ok)).2 && (l.foldl step (r, ok)).1.isEmpty) = (ok && decide (l = r)) := by
-  induction l generalizing r ok with
-  | nil => cases r <;> simp
-  | cons b l ih =>
-    rw [List.foldl_cons, ih]
-    cases r <;> grind [step]
-
-end EqWords
 
 namespace ComputableTidilyInDegree
 

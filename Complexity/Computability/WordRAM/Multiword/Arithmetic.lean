@@ -198,6 +198,8 @@ end Schoolbook
 
 namespace Difference
 
+open Workspace
+
 /-- Subtraction without a sign hypothesis, retaining the exact final borrow equation.
 This is the arithmetic core used before clearing a negative result. -/
 private theorem exec_borrow_framed {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
@@ -234,7 +236,7 @@ private theorem exec_borrow_framed {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (
     convert hsetup.seq he using 1 <;> [rfl; omega]
   refine ⟨y, he', hyd, hyc, ?_, ?_, hyf.1,
     fun i hi hid => he'.regs_eq (preserves_program w bs ds i hi hid)⟩
-  · rw [hyf.2 one (fun hm => ?_) (by simp [one, total]) (by simp [one, borrow])]
+  · rw [hyf.2 one (fun hm => ?_) (by simp [one, total]) (by simp [one])]
     · simp [z, one, borrow]
     · have := hds one hm
       simp [IsDigit] at this

@@ -72,8 +72,10 @@ equivalent to `SAT ∈ PPolyOn encCNF` (`Cslib.Complexity.NP_subset_PPolyOn_iff_
 * `Cslib.Complexity.PH_eq_SigmaP_two_of_NP_subset_PPoly`: if `NP ⊆ P/poly`, then `PH = Σ₂`.
 * `Cslib.Complexity.PolyTimeReducible.mem_PPolyOn`: preimages of `P/poly` are closed under
   polynomial-time many-one reductions.
-* `Cslib.Complexity.mem_PPoly_of_exists_frame_append`: nonuniform existential quantifier
-  elimination in `P/poly` under `NP ⊆ P/poly`.
+* `Cslib.Complexity.mem_PPoly_of_exists_frame_append`,
+  `Cslib.Complexity.PPolyOn.exists_of_computableInPolyTime_length`,
+  `Cslib.Complexity.PPolyOn.forall_of_computableInPolyTime_length`: nonuniform existential and
+  universal quantifier elimination in `P/poly` under `NP ⊆ P/poly`.
 * `Cslib.Complexity.SigmaP_subset_PPolyOn_of_NP_subset_PPoly`,
   `Cslib.Complexity.PiP_subset_PPolyOn_of_NP_subset_PPoly`,
   `Cslib.Complexity.PH_subset_PPolyOn_of_NP_subset_PPoly`: if `NP ⊆ P/poly`, then `Σₖ ⊆ P/poly`,
@@ -308,6 +310,62 @@ theorem mem_PPoly_of_exists_frame_append
       rw [List.length_take, hw, Nat.min_eq_left hle]
     exact ⟨w.take (p.eval x.length), htake, (hV_frame _ htake).1 hwV⟩
 
+/-- **Nonuniform existential quantifier elimination in `PPolyOn`.** Under `NP ⊆ P/poly`, if a
+relation `P : α → List Bool → Prop` is in `PPolyOn (encPair enc encBits)` and the witness length
+`N : α → ℕ` is computable in polynomial time in unary, then `{a | ∃ u, u.length = N a ∧ P a u}` is
+in `PPolyOn enc`. -/
+theorem PPolyOn.exists_of_computableInPolyTime_length
+    (hNP : NP encBits ⊆ PPolyOn encBits) {N : α → ℕ}
+    (hN : ComputableInPolyTime N enc encUnary) {P : α → List Bool → Prop}
+    (hP : {p : α × List Bool | P p.1 p.2} ∈ PPolyOn (encPair enc encBits)) :
+    {a : α | ∃ u : List Bool, u.length = N a ∧ P a u} ∈ PPolyOn enc := by
+  let B : Set (α × List Bool) := {p | P p.1 (p.2.take (N p.1))}
+  have hred : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
+      B {p : α × List Bool | P p.1 p.2} := by
+    refine ⟨fun p => (p.1, p.2.take (N p.1)), ?_, fun _ => Iff.rfl⟩
+    exact .of_tidy ((ComputableTidilyInPolyTime.fst enc encBits).prod
+      (ComputableTidilyInPolyTime.bitsTakeWithInput
+        (ComputableTidilyInPolyTime.snd enc encBits)
+        (hN.tidy.comp (ComputableTidilyInPolyTime.fst enc encBits))))
+  obtain ⟨M, hM, hBM⟩ := hred.mem_PPolyOn hP
+  obtain ⟨p, hp⟩ := hN.tidy.polyBounded.exists_polynomial
+  refine ⟨{x : List Bool | ∃ w : List Bool, w.length = p.eval x.length ∧ frame x ++ w ∈ M},
+    mem_PPoly_of_exists_frame_append hNP hM p, fun a => ?_⟩
+  have hle : N a ≤ p.eval (enc a).length := hp a
+  constructor
+  · rintro ⟨u, hu, hPu⟩
+    refine ⟨u ++ List.replicate (p.eval (enc a).length - N a) false,
+      by rw [List.length_append, List.length_replicate, hu, Nat.add_sub_cancel' hle], ?_⟩
+    have htake : (u ++ List.replicate (p.eval (enc a).length - N a) false).take (N a) = u := by
+      rw [← hu, List.take_left]
+    have hmem : (a, u ++ List.replicate (p.eval (enc a).length - N a) false) ∈ B := by
+      change P a ((u ++ List.replicate (p.eval (enc a).length - N a) false).take (N a))
+      rwa [htake]
+    simpa [encPair_apply, encBits_apply] using (hBM _).1 hmem
+  · rintro ⟨w, hw, hwM⟩
+    have hmem : (a, w) ∈ B :=
+      (hBM (a, w)).2 (by simpa [encPair_apply, encBits_apply] using hwM)
+    refine ⟨w.take (N a), ?_, hmem⟩
+    rw [List.length_take, hw, Nat.min_eq_left hle]
+
+/-- **Nonuniform universal quantifier elimination in `PPolyOn`.** Under `NP ⊆ P/poly`, if a
+relation `P : α → List Bool → Prop` is in `PPolyOn (encPair enc encBits)` and the bound `N : α → ℕ`
+is computable in polynomial time in unary, then `{a | ∀ u, u.length = N a → P a u}` is in
+`PPolyOn enc`. -/
+theorem PPolyOn.forall_of_computableInPolyTime_length
+    (hNP : NP encBits ⊆ PPolyOn encBits) {N : α → ℕ}
+    (hN : ComputableInPolyTime N enc encUnary) {P : α → List Bool → Prop}
+    (hP : {p : α × List Bool | P p.1 p.2} ∈ PPolyOn (encPair enc encBits)) :
+    {a : α | ∀ u : List Bool, u.length = N a → P a u} ∈ PPolyOn enc := by
+  have hex : {a : α | ∃ u : List Bool, u.length = N a ∧ ¬ P a u} ∈ PPolyOn enc :=
+    PPolyOn.exists_of_computableInPolyTime_length hNP hN (PPolyOn.compl hP)
+  have h_eq : {a : α | ∀ u : List Bool, u.length = N a → P a u} =
+      {a : α | ∃ u : List Bool, u.length = N a ∧ ¬ P a u}ᶜ := by
+    ext a
+    simp
+  rw [h_eq]
+  exact PPolyOn.compl hex
+
 /-- **Karp–Lipton, `NP ⊆ P/poly ⇒ Σₖ ⊆ P/poly`.** If `NP ⊆ P/poly` over bitstrings, then every
 level `Σₖ` of the polynomial hierarchy, with any encoding of its instances, is in `P/poly`
 [Karp and Lipton, Section 3][KarpLipton1980], [Arora and Barak, Section 6.4][AroraBarak09]. -/
@@ -321,13 +379,14 @@ theorem SigmaP_subset_PPolyOn_of_NP_subset_PPoly
   | succ k ih =>
     intro A hA
     obtain ⟨p, B, hB, hAB⟩ := exists_mem_PiP_of_mem_SigmaP_succ hA
-    obtain ⟨M₀, hM₀, hBM₀⟩ := ih (compl_mem_SigmaP_of_mem_PiP hB)
-    have hM : M₀ᶜ ∈ PPoly := PPoly.compl hM₀
-    refine ⟨{x : List Bool | ∃ w : List Bool, w.length = p.eval x.length ∧ frame x ++ w ∈ M₀ᶜ},
-      mem_PPoly_of_exists_frame_append hNP hM p, fun a => (hAB a).trans ?_⟩
-    exact exists_congr fun w => and_congr_right fun _ => by
-      have := (hBM₀ (a, w)).not
-      rwa [Set.mem_compl_iff, Classical.not_not, encPair_apply, encBits_apply] at this
+    have hB_PPoly : B ∈ PPolyOn (encPair enc encBits) := by
+      simpa using PPolyOn.compl (ih (compl_mem_SigmaP_of_mem_PiP hB))
+    have hN : ComputableInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary :=
+      (unary_eval p).comp (encoding_length enc)
+    have hA_eq : A = {a : α | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ (a, w) ∈ B} :=
+      Set.ext hAB
+    rw [hA_eq]
+    exact PPolyOn.exists_of_computableInPolyTime_length hNP hN hB_PPoly
 
 /-- **Karp–Lipton, `NP ⊆ P/poly ⇒ Πₖ ⊆ P/poly`.** If `NP ⊆ P/poly` over bitstrings, then every
 level `Πₖ` of the polynomial hierarchy, with any encoding of its instances, is in `P/poly`. -/

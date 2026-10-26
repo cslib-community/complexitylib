@@ -72,38 +72,40 @@ open ConstraintGraph HadamardTester Logic.PL RotationMap
 
 /-- **Dinur's round** on a finite constraint graph over the fixed alphabet `Σ₀`:
 `amplify walkLength killRate`, with the vertices and edges it builds from the edges of its input. -/
-noncomputable def round (G : FinConstraintGraph.{u} Alphabet) : FinConstraintGraph.{u} Alphabet :=
+noncomputable def round (G : FinConstraintGraph.{u} SelectedAlphabet) :
+    FinConstraintGraph.{u} SelectedAlphabet :=
   letI := Classical.decEq G.V
-  ⟨AmplifyVertex G.E Alphabet walkLength killRate, AmplifyEdge G.E Alphabet walkLength killRate,
+  ⟨AmplifyVertex G.E SelectedAlphabet walkLength killRate,
+    AmplifyEdge G.E SelectedAlphabet walkLength killRate,
     G.graph.amplify walkLength killRate⟩
 
 /-- Dinur's round preserves satisfiability. -/
-theorem satisfiable_round_iff (G : FinConstraintGraph.{u} Alphabet) :
+theorem satisfiable_round_iff (G : FinConstraintGraph.{u} SelectedAlphabet) :
     (round G).graph.Satisfiable ↔ G.graph.Satisfiable :=
   letI := Classical.decEq G.V
   satisfiable_amplify_iff G.graph
 
 /-- **Dinur's main theorem** [Dinur, Theorem 4.1][Dinur2005]: Dinur's round doubles the value up
 to the threshold `gap`. -/
-theorem min_le_unsatVal_round (G : FinConstraintGraph.{u} Alphabet) :
+theorem min_le_unsatVal_round (G : FinConstraintGraph.{u} SelectedAlphabet) :
     min (2 * G.graph.unsatVal) gap ≤ (round G).graph.unsatVal :=
   letI := Classical.decEq G.V
   min_le_unsatVal_amplify G.graph
 
 /-- Dinur's round has `vertexFactor` vertices per edge of its input. -/
-theorem card_vertices_round (G : FinConstraintGraph.{u} Alphabet) :
+theorem card_vertices_round (G : FinConstraintGraph.{u} SelectedAlphabet) :
     Fintype.card (round G).V = vertexFactor * Fintype.card G.E :=
   card_vertices_amplify
 
 /-- Dinur's round has `edgeFactor` edges per edge of its input. -/
-theorem card_edges_round (G : FinConstraintGraph.{u} Alphabet) :
+theorem card_edges_round (G : FinConstraintGraph.{u} SelectedAlphabet) :
     Fintype.card (round G).E = edgeFactor * Fintype.card G.E :=
   card_edges_amplify
 
 /-- **Dinur's amplifier** [Dinur, Theorem 4.1][Dinur2005]: Dinur's round on finite constraint
 graphs over the fixed alphabet `Σ₀`, which doubles the value up to the threshold `gap` and
 multiplies the numbers of vertices and edges by at most `vertexFactor + edgeFactor`. -/
-noncomputable def amplifier : Amplifier.{u} Alphabet where
+noncomputable def amplifier : Amplifier.{u} SelectedAlphabet where
   toFun := round
   factor := vertexFactor + edgeFactor
   gap := gap
@@ -133,7 +135,7 @@ variable {V : Type u} [DecidableEq V] (φ : CNF V)
 /-- The constraint graph of a formula `φ` over the fixed alphabet `Σ₀`: its constraint graph
 `ofCNF φ`, preprocessed, then composed. Preprocessing replaces the vertices by the half-edges, so
 that the variables of `φ` disappear, and composition brings the alphabet to `Σ₀`. -/
-noncomputable def cnfGraph : FinConstraintGraph.{0} Alphabet :=
+noncomputable def cnfGraph : FinConstraintGraph.{0} SelectedAlphabet :=
   ⟨_, _, ((ofCNF φ).preprocess expanderFamily).toConstraintGraph.composeSelected⟩
 
 /-- The vertices of the constraint graph of a formula over `Σ₀`: those of the composed graph of
@@ -186,7 +188,7 @@ theorem card_vertices_cnfGraph :
 
 /-- **The gap graph** of a formula `φ` [Dinur, Corollary 4.2][Dinur2005]: `⌈log₂ |E|⌉` rounds of
 Dinur's amplifier on the constraint graph of `φ` over `Σ₀`, which has `|E|` edges. -/
-noncomputable def gapGraph : FinConstraintGraph.{0} Alphabet :=
+noncomputable def gapGraph : FinConstraintGraph.{0} SelectedAlphabet :=
   amplifier.iter (Nat.clog 2 (Fintype.card (cnfGraph φ).E)) (cnfGraph φ)
 
 /-- **Completeness and soundness of the gap graph**: if the clauses of `φ` have at most three

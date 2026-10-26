@@ -200,29 +200,25 @@ section Reduction
 variable {α : Type} (enc : α ↪ List Bool) {k : ℕ} {State : Type} [Finite State]
   (ntm : MultiTapeNTM k Bool State) (c d : ℕ)
 
-/-- The width of the words of the reduction on `a`: the codes of the views of `ntm` on `enc a`,
-of `2 * W + 2` bits for the width `W` of `Turing.MultiTapeNTM.codeWidth`. -/
-noncomputable def width (a : α) : ℕ := 2 * ntm.codeWidth c d (enc a) + 2
-
 /-- **The test of one step or none between codes**, on the instance `a` and the concatenation of
 the two codes. -/
 noncomputable def edgeTest (p : α × List Bool) : Bool :=
-  reach ntm.codeEdge (width enc ntm c d p.1) 0 (p.2.take (width enc ntm c d p.1))
-    (p.2.drop (width enc ntm c d p.1))
+  reach ntm.codeEdge (ntm.viewCodeWidth c d (enc p.1)) 0
+    (p.2.take (ntm.viewCodeWidth c d (enc p.1))) (p.2.drop (ntm.viewCodeWidth c d (enc p.1)))
 
 /-- The time allowed to a machine computing the test on `encPair enc encBits (a, z)` with
-`|z| = 2 * width enc ntm c d a`, for the time bound `cV * (n + 1) ^ dV`. -/
+`|z| = 2 * ntm.viewCodeWidth c d (enc a)`, for the time bound `cV * (n + 1) ^ dV`. -/
 noncomputable def edgeTime (cV dV : ℕ) (a : α) : ℕ :=
-  cV * (2 * (enc a).length + 2 * width enc ntm c d a + 2) ^ dV
+  cV * (2 * (enc a).length + 2 * ntm.viewCodeWidth c d (enc a) + 2) ^ dV
 
 /-- **The reduction to `TQBF`**: Savitch's formula on the codes of the views of `ntm` on `enc a`,
 from the code of the initial view to the accepting code, with the Cook–Levin tableau of the
 machine `tmV` computing the test of one step or none as its formula of level `0`. -/
 noncomputable def reduce {kV : ℕ} {StateV : Type} [Fintype StateV] [DecidableEq StateV]
     (tmV : MultiTapeTM kV Bool StateV) (cV dV : ℕ) (a : α) : QBF ℕ :=
-  savitchFormula (width enc ntm c d a) (width enc ntm c d a)
-    (baseFormula (CookLevin.tableau tmV (frame (enc a)) (2 * width enc ntm c d a)
-      (edgeTime enc ntm c d cV dV a)) (width enc ntm c d a))
+  savitchFormula (ntm.viewCodeWidth c d (enc a)) (ntm.viewCodeWidth c d (enc a))
+    (baseFormula (CookLevin.tableau tmV (frame (enc a)) (2 * ntm.viewCodeWidth c d (enc a))
+      (edgeTime enc ntm c d cV dV a)) (ntm.viewCodeWidth c d (enc a)))
     (MultiTapeNTM.viewCode (ntm.codeWidth c d (enc a)) (ntm.initView (enc a)))
     (MultiTapeNTM.acceptCode (ntm.codeWidth c d (enc a)))
 
@@ -239,7 +235,7 @@ theorem reduce_mem_TQBF_iff {kV : ℕ} {StateV : Type} [Fintype StateV] [Decidab
     {a : α} {s : ℕ} (hs : ntm.RunsInSpace (enc a) s) (hsc : s ≤ c * ((enc a).length + 1) ^ d) :
     reduce enc ntm c d tmV cV dV a ∈ TQBF ↔ ntm.Accepts (enc a) := by
   set W := ntm.codeWidth c d (enc a)
-  set w := width enc ntm c d a with hw_def
+  set w := ntm.viewCodeWidth c d (enc a) with hw_def
   -- the formula of level `0` is the test of one step or none
   have hbase (σ : ℕ → Bool) : (baseFormula (CookLevin.tableau tmV (frame (enc a)) (2 * w)
       (edgeTime enc ntm c d cV dV a)) w).eval σ =

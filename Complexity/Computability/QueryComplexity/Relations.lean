@@ -211,7 +211,7 @@ theorem certificateComplexityFor_le_sensitivityFor_mul_blockSensitivityFor
     rw [hx] at this
     exact this.trans (Nat.mul_le_mul_left _ (blockSensitivityAt_le_blockSensitivityFor hx))
 
-/-! ### Restricting by the answers to a certificate -/
+/-! ### Restricting by answers on a sensitive block -/
 
 /-- Flipping a block in the free coordinates commutes with filling in `S`. -/
 private theorem piecewise_flipBlock (S B : Finset (Fin n)) (a z : BitString n) :
@@ -221,12 +221,11 @@ private theorem piecewise_flipBlock (S B : Finset (Fin n)) (a z : BitString n) :
   · simp [hiS]
   · by_cases hiB : i ∈ B <;> simp [hiS, hiB]
 
-/-- After restricting by the answers `a` to a certificate `S` of an input `w` of value `1`, every
-input `z` of value `0` has one sensitive block fewer than the filled input in the original
-function: the coordinates of `S` on which the filled input differs from `w`. -/
-private theorem blockSensitivityAt_comp_piecewise_add_one_le {w : BitString n} {S : Finset (Fin n)}
-    (hS : IsCertificate f w S) (hw : f w = true) (a z : BitString n)
-    (hz : f (S.piecewise a z) = false) :
+/-- Restricting the coordinates in `S` lowers block sensitivity at an input whenever the filled
+input has a sensitive block contained in `S`. This block can be added to every sensitive family
+of the restricted function after removing the fixed coordinates from its blocks. -/
+theorem blockSensitivityAt_comp_piecewise_add_one_le {S B₀ : Finset (Fin n)}
+    (a z : BitString n) (hB₀S : B₀ ⊆ S) (hB₀ : IsSensitiveBlock f (S.piecewise a z) B₀) :
     blockSensitivityAt (fun y => f (S.piecewise a y)) z + 1 ≤
       blockSensitivityAt f (S.piecewise a z) := by
   obtain ⟨F, hF, hFcard⟩ := exists_mem_eq_sup (sensitiveFamilies (fun y => f (S.piecewise a y)) z)
@@ -244,23 +243,14 @@ private theorem blockSensitivityAt_comp_piecewise_add_one_le {w : BitString n} {
       change B₁ \ S = B₂ \ S at h
       rwa [← h]
     exact disjoint_left.1 (hF.2 hB₁ hB₂ hne) (mem_sdiff.1 hi).1 (mem_sdiff.1 hi').1
-  -- the coordinates of `S` where the filled input differs from `w`
   set x' := S.piecewise a z
-  set B₀ : Block n := {i ∈ S | x' i ≠ w i}
-  have hB₀ : IsSensitiveBlock f x' B₀ := by
-    rw [IsSensitiveBlock, hS _ fun i hi => ?_, hw, hz]
-    · decide
-    by_cases h : x' i = w i
-    · rw [flipBlock_apply_of_notMem (by simp [B₀, h]), h]
-    · rw [flipBlock_apply_of_mem (by simp [B₀, hi, h])]
-      cases hx : x' i <;> cases hw' : w i <;> simp_all
   have hB₀F : B₀ ∉ F.image (· \ S) := fun h => by
     obtain ⟨B, hB, hBeq⟩ := mem_image.1 h
     obtain ⟨i, hi⟩ := hfree B hB
     have hi₀ : i ∈ B₀ := by
       rw [← show B \ S = B₀ from hBeq]
       exact hi
-    exact (mem_sdiff.1 hi).2 (mem_filter.1 hi₀).1
+    exact (mem_sdiff.1 hi).2 (hB₀S hi₀)
   have hG : IsSensitiveFamily f x' (insert B₀ (F.image (· \ S))) := by
     refine ⟨fun B hB => ?_, ?_⟩
     · rcases mem_insert.1 hB with rfl | hB
@@ -271,9 +261,28 @@ private theorem blockSensitivityAt_comp_piecewise_add_one_le {w : BitString n} {
       refine (hF.2.image_of_le fun B => show B \ S ≤ B from sdiff_subset).insert
         fun B hB _ => ?_
       obtain ⟨B', -, rfl⟩ := hB
-      exact disjoint_left.2 fun i hi hi' => (mem_sdiff.1 hi').2 (mem_filter.1 hi).1
+      exact disjoint_left.2 fun i hi hi' => (mem_sdiff.1 hi').2 (hB₀S hi)
   have := card_le_blockSensitivityAt hG
   rwa [card_insert_of_notMem hB₀F, card_image_of_injOn hinj, ← hFcard] at this
+
+/-- After restricting by the answers `a` to a certificate `S` of an input `w` of value `1`, every
+input `z` of value `0` has one sensitive block fewer than the filled input in the original
+function: the coordinates of `S` on which the filled input differs from `w`. -/
+private theorem blockSensitivityAt_comp_piecewise_add_one_le_of_isCertificate
+    {w : BitString n} {S : Finset (Fin n)} (hS : IsCertificate f w S) (hw : f w = true)
+    (a z : BitString n) (hz : f (S.piecewise a z) = false) :
+    blockSensitivityAt (fun y => f (S.piecewise a y)) z + 1 ≤
+      blockSensitivityAt f (S.piecewise a z) := by
+  set x' := S.piecewise a z
+  set B₀ : Block n := {i ∈ S | x' i ≠ w i}
+  refine blockSensitivityAt_comp_piecewise_add_one_le (B₀ := B₀) a z (filter_subset _ S) ?_
+  change IsSensitiveBlock f x' B₀
+  rw [IsSensitiveBlock, hS _ fun i hi => ?_, hw, hz]
+  · decide
+  by_cases h : x' i = w i
+  · rw [flipBlock_apply_of_notMem (by simp [B₀, h]), h]
+  · rw [flipBlock_apply_of_mem (by simp [B₀, hi, h])]
+    cases hx : x' i <;> cases hw' : w i <;> simp_all
 
 /-- Restricting by the answers to a certificate of an input of value `1` lowers `bs₀(f)`. -/
 private theorem blockSensitivityFor_comp_piecewise_false_le {w : BitString n} {S : Finset (Fin n)}
@@ -282,7 +291,7 @@ private theorem blockSensitivityFor_comp_piecewise_false_le {w : BitString n} {S
     blockSensitivityFor (fun y => f (S.piecewise a y)) false ≤ m :=
   Finset.sup_le fun z hz => by
     have hz : f (S.piecewise a z) = false := (mem_filter.1 hz).2
-    have := (blockSensitivityAt_comp_piecewise_add_one_le hS hw a z hz).trans
+    have := (blockSensitivityAt_comp_piecewise_add_one_le_of_isCertificate hS hw a z hz).trans
       ((blockSensitivityAt_le_blockSensitivityFor hz).trans hm)
     omega
 

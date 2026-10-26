@@ -12,7 +12,8 @@ import Complexity.Computability.Circuit.Boolean.Iteration.Batch
 Input times are evaluated on a two-bit counter, including zero time bits; the shared lookup on
 present, absent and duplicated keys; the finishing step without a flagged time; the
 checkpoint-free power on the identity; and the input-time and batched theorems on the bit-flip
-circuit, including an empty batch and the balanced bounds.
+circuit, including an empty batch and the balanced bounds. Promised batches use a proper invariant
+set and a non-invariant singleton, checking both actual outputs and the smaller storage budget.
 -/
 
 namespace ComplexityTests.Iteration.Batch
@@ -95,5 +96,62 @@ example (c : Circuit signature 3 3) (T : ℕ) : ∃ out : Circuit signature (2 *
     out.Computes interpretation (blockMap (c.eval interpretation)^[T] 2) ∧
       (out.size : ℝ) ≤ 300000 * optimizedBatchBudget 3 c.size 8 2 :=
   batched_fixed_power_optimized c 2 T two_pos (by decide)
+
+/-! ### Batches on a promised set of states -/
+
+/-- Preserve the first bit and flip the second. -/
+private def flipTail : Circuit signature 2 2 :=
+  ⟨.gate .empty ⟨.not, fun _ => .input 1⟩, ![.input 0, .gate 0]⟩
+
+private def leftHalf : Finset (BitString 2) := {![false, false], ![false, true]}
+
+private theorem flipTail_invariant : ∀ x ∈ leftHalf, flipTail.eval interpretation x ∈ leftHalf :=
+  by decide
+
+-- Three members share the two-state table. Applying the promised theorem gives an actual
+-- output on a mixed batch, and the bound charges two relevant states rather than four.
+example : ∃ out : Circuit signature 6 6,
+    out.eval interpretation ![false, false, false, true, false, false] =
+      ![false, true, false, false, false, true] ∧
+    out.size ≤ 16500000 := by
+  obtain ⟨out, hout, hs⟩ := batched_fixed_power_on flipTail leftHalf 3 3 1
+    flipTail_invariant (by decide) one_pos (by decide)
+  refine ⟨out, ?_, by simpa [leftHalf, flipTail, batchBudget] using hs⟩
+  have hx : ∀ member : Fin 3,
+      directProductInput ![false, false, false, true, false, false] member ∈ leftHalf := by decide
+  exact (hout hx).trans (by decide)
+
+-- The promise is proper, and the improved budget is strictly smaller than the global one.
+example : ¬∀ member : Fin 3,
+    directProductInput ![true, false, false, true, false, false] member ∈ leftHalf := by decide
+
+example : batchBudget 2 1 leftHalf.card 3 1 = 165 ∧ batchBudget 2 1 4 3 1 = 219 := by decide
+
+-- Prefix containment does not assume invariance: this singleton is left after one step.
+example : flipTail.eval interpretation ![false, false] ∉
+    ({![false, false]} : Finset (BitString 2)) := by decide
+
+example : ∃ out : Circuit signature 6 6,
+    out.eval interpretation ![false, false, false, false, false, false] =
+      ![false, true, false, true, false, true] ∧
+    out.size ≤ 13800000 := by
+  obtain ⟨out, hout, hs⟩ := batched_fixed_power_on_prefixes flipTail {![false, false]} 3 3 1
+    (by decide) one_pos (by decide)
+  refine ⟨out, ?_, by simpa [flipTail, batchBudget] using hs⟩
+  have hx : ∀ member : Fin 3, ∀ i : Fin 1,
+      (flipTail.eval interpretation)^[i.val]
+        (directProductInput ![false, false, false, false, false, false] member) ∈
+          ({![false, false]} : Finset (BitString 2)) := by decide
+  exact (hout hx).trans (by decide)
+
+-- The optimized theorem keeps the same proper input domain.
+example (T : ℕ) : ∃ out : Circuit signature 6 6,
+    out.ComputesOn interpretation
+      {x | ∀ member : Fin 3, directProductInput x member ∈ leftHalf}
+      (blockMap (flipTail.eval interpretation)^[T] 3) ∧
+    (out.size : ℝ) ≤ 300000 * optimizedBatchBudget 2 1 2 3 := by
+  simpa [leftHalf, flipTail] using
+    batched_fixed_power_on_optimized flipTail leftHalf 3 T flipTail_invariant
+      (by decide) (by decide)
 
 end ComplexityTests.Iteration.Batch

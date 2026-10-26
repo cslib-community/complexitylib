@@ -36,7 +36,7 @@ and edges are those of `G` times factors depending on `|α|`, `T` and `q` only
 (`card_vertices_amplify`, `card_edges_amplify`): the vertices of a preprocessed graph are the
 half-edges, so the result does not depend on the vertices of `G` at all.
 
-Over the fixed alphabet `Σ₀ = Bool × (Fin 6 → Bool)` (`Cslib.PCP.Dinur.Alphabet`),
+Over the fixed alphabet `Σ₀ = Bool × (Fin 6 → Bool)` (`Cslib.PCP.SelectedAlphabet`),
 with the killing rate `q = 2 ^ 94 + 1` and the walk length `T = 2 ^ 103` chosen once and for all,
 the round maps `Σ₀` to itself and **doubles the value up to the threshold** `γ = 2 ^ (-61)`:
 `min (2 UNSAT(G)) γ ≤ UNSAT(G.amplify T q)` (`Cslib.PCP.Dinur.min_le_unsatVal_amplify`). This is
@@ -53,8 +53,8 @@ asymptotic: despite the smaller answer alphabet, the size factors are triply exp
   composition.
 * `Cslib.PCP.ConstraintGraph.amplifyVertexFactor`, `Cslib.PCP.ConstraintGraph.amplifyEdgeFactor`:
   the numbers of vertices and edges of the round per edge of the original graph.
-* `Cslib.PCP.Dinur.Alphabet`, `Cslib.PCP.Dinur.killRate`, `Cslib.PCP.Dinur.walkLength`,
-  `Cslib.PCP.Dinur.gap`: the fixed alphabet, the parameters of the round and its threshold.
+* `Cslib.PCP.Dinur.killRate`, `Cslib.PCP.Dinur.walkLength`, `Cslib.PCP.Dinur.gap`:
+  the parameters of the round and its threshold.
 
 ## Main results
 
@@ -204,14 +204,6 @@ namespace Dinur
 
 open ConstraintGraph
 
-/-- The fixed alphabet `Σ₀` of selected composition: one bit and six claimed answers. -/
-abbrev Alphabet : Type :=
-  SelectedAlphabet
-
-/-- The fixed alphabet has `128` symbols. -/
-theorem card_alphabet : Fintype.card Alphabet = 128 :=
-  card_alphabet_composeSelected
-
 /-- The killing rate `q = 2 ^ 94 + 1` gives enough gain for the chosen spectral bound and
 selected composition loss. It is irreducible to avoid evaluating the resulting finite types. -/
 irreducible_def killRate : ℕ :=
@@ -236,8 +228,8 @@ theorem one_le_walkLength : 1 ≤ walkLength :=
   walkLength_def ▸ Nat.one_le_two_pow
 
 /-- The walk length is the one that the powering bound asks for. -/
-theorem walkLength_eq : walkLength = 4 * Fintype.card Alphabet * (killRate - 1) := by
-  rw [card_alphabet, walkLength_def, killRate_def, Nat.add_sub_cancel]
+theorem walkLength_eq : walkLength = 4 * Fintype.card SelectedAlphabet * (killRate - 1) := by
+  rw [card_alphabet_composeSelected, walkLength_def, killRate_def, Nat.add_sub_cancel]
   norm_num
 
 /-- The threshold `γ = 2 ^ (-61)` up to which Dinur's round doubles the value. -/
@@ -250,7 +242,7 @@ theorem gap_pos : 0 < gap := by norm_num [gap]
 /-- The threshold is at most one. -/
 theorem gap_le_one : gap ≤ 1 := by norm_num [gap]
 
-variable {V E : Type*} [Fintype E] [DecidableEq V] (G : ConstraintGraph V E Alphabet)
+variable {V E : Type*} [Fintype E] [DecidableEq V] (G : ConstraintGraph V E SelectedAlphabet)
 
 /-- **Dinur's round preserves satisfiability.** -/
 theorem satisfiable_amplify_iff :
@@ -263,7 +255,7 @@ theorem min_le_unsatVal_amplify :
     min (2 * G.unsatVal) gap ≤ (G.amplify walkLength killRate).unsatVal := by
   apply G.min_le_unsatVal_amplifyWith (.ofFamily G expanderFamily)
     (by norm_num) two_le_killRate walkLength_eq gap_pos.le
-  rw [card_alphabet, killRate_def, walkLength_def]
+  rw [card_alphabet_composeSelected, killRate_def, walkLength_def]
   norm_num [Amplification.gain, Amplification.retention, gap]
 
 /-- The number of vertices of Dinur's round per edge of the original graph. -/
@@ -277,14 +269,15 @@ def edgeFactor : ℕ :=
 /-- **The size of Dinur's round**: every edge of the original graph gives `vertexFactor`
 vertices. -/
 theorem card_vertices_amplify :
-    Fintype.card (AmplifyVertex E Alphabet walkLength killRate) =
+    Fintype.card (AmplifyVertex E SelectedAlphabet walkLength killRate) =
       vertexFactor * Fintype.card E := by
-  rw [ConstraintGraph.card_vertices_amplify, card_alphabet, vertexFactor]
+  rw [ConstraintGraph.card_vertices_amplify, card_alphabet_composeSelected, vertexFactor]
 
 /-- **The size of Dinur's round**: every edge of the original graph gives `edgeFactor` edges. -/
 theorem card_edges_amplify :
-    Fintype.card (AmplifyEdge E Alphabet walkLength killRate) = edgeFactor * Fintype.card E := by
-  rw [ConstraintGraph.card_edges_amplify, card_alphabet, edgeFactor]
+    Fintype.card (AmplifyEdge E SelectedAlphabet walkLength killRate) =
+      edgeFactor * Fintype.card E := by
+  rw [ConstraintGraph.card_edges_amplify, card_alphabet_composeSelected, edgeFactor]
 
 end Dinur
 

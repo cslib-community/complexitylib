@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate (independent growth-bound algebra)
 
+public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial
 public import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Mathlib.Tactic.Ring
 
@@ -93,6 +94,16 @@ public theorem comp {size' : β → ℕ} {v : β → ℕ} {g : α → β} (hv : 
       omega
     refine (h₂ (g a)).trans ((Nat.mul_le_mul_left c₂ (Nat.pow_le_pow_left h d₂)).trans_eq ?_)
     rw [Nat.mul_pow, ← Nat.pow_mul, Nat.mul_assoc]⟩
+
+end DegreeBounded
+
+namespace DegreeBounded
+
+variable {α β : Type*} {size : α → ℕ} {u v : α → ℕ} {d d₁ d₂ : ℕ}
+
+public theorem polyBounded (h : DegreeBounded size u d) : PolyBounded size u :=
+  let ⟨c, hu⟩ := h
+  .of_forall_le c d hu
 
 end DegreeBounded
 

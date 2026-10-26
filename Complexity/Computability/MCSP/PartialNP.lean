@@ -144,16 +144,9 @@ def verifier (p : Instance × List Bool) : Bool :=
 
 private theorem certLength_le_enc_of_encT (encT : ℕ ↪ List Bool) (x : Instance) :
     certLength x.arity (MCSP.budget x.arity x.threshold) ≤
-      MCSP.certPolynomial.eval (encPair (encList (encOption encBool)) encT (toRaw x)).length := by
-  set L := (encPair (encList (encOption encBool)) encT (toRaw x)).length
+      MCSP.certPolynomial.eval (encPair (encList (encOption encBool)) encT (toRaw x)).length :=
   have hT := two_pow_le_length_enc_of_encT encT x
-  have hn : x.arity ≤ L := (Nat.lt_two_pow_self).le.trans hT
-  have hS : MCSP.budget x.arity x.threshold ≤ L * (2 * L + 3) + 1 :=
-    (Nat.min_le_right _ _).trans (Nat.add_le_add_right
-      (Nat.mul_le_mul hT (by omega)) 1)
-  simp only [MCSP.certPolynomial, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_add,
-    Polynomial.eval_X, Polynomial.eval_one, Polynomial.eval_ofNat, certLength]
-  nlinarith
+  MCSP.certLength_sampleBudget_le ((Nat.lt_two_pow_self).le.trans hT) hT
 
 /-- **Soundness of the verifier.** An instance with an accepted certificate, of any length, is in
 `PartialMCSP`. -/
@@ -209,7 +202,7 @@ def tableVerifier (r : (List (Option Bool) × ℕ) × List Bool) : Bool :=
   let n := Nat.log 2 r.1.1.length
   MCSP.checkCertificate
     (fun y out => (tableEntry r.1.1 y).getD out == out)
-    n (min r.1.2 (r.1.1.length * (2 * n + 3) + 1)) r.2
+    n (MCSP.sampleBudget n r.1.1.length r.1.2) r.2
 
 theorem verifier_eq_tableVerifier (p : Instance × List Bool) :
     verifier p = tableVerifier ((List.ofFn p.1.table, p.1.threshold), p.2) := by
