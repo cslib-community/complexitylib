@@ -23,6 +23,17 @@ example {α Key Value : Type} [BEq Key] [LawfulBEq Key] {input : α ↪ List Boo
     IsPPTOn input (encPair valueEncoding (encList (encPair keyEncoding valueEncoding)))
       (fun a => memoize (compute a) (query a) (cache a)) := by ppt
 
+-- The same generic interface also consumes plain query/cache certificates directly.
+example {α Key Value : Type} [BEq Key] [LawfulBEq Key] {input : α ↪ List Bool}
+    {keyEncoding : Key ↪ List Bool} {valueEncoding : Value ↪ List Bool}
+    {compute : α → Key → ProbComp Value} {query : α → Key} {cache : α → List (Key × Value)}
+    (hcompute : IsPPTOn input valueEncoding (fun a => compute a (query a)))
+    (hquery : ComputableInPolyTime query input keyEncoding)
+    (hcache : ComputableInPolyTime cache input
+      (encList (encPair keyEncoding valueEncoding))) :
+    IsPPTOn input (encPair valueEncoding (encList (encPair keyEncoding valueEncoding)))
+      (fun a => memoize (compute a) (query a) (cache a)) := by ppt
+
 -- Runtime word lengths and the whole initial cache are charged, including all framing.
 example : IsPPTOn (encPair encBits (encList (encPair encBits encBits)))
     (encPair encBits (encList (encPair encBits encBits)))

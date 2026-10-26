@@ -9,7 +9,9 @@ module
 
 public import Complexity.Computability.GenericRAM.Native
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
 
 /-!
@@ -62,21 +64,21 @@ variable {α β γ δ : Type} {ei : α ↪ List Bool} {em : β ↪ List Bool}
     (d.comp c).space a = c.space a + d.space (f a) := rfl
 
 /-- Package a native linear-time/space implementation with its explicit input-length bound. -/
-def linear (h : ComputableTidilyInO f ei em
+def linear (h : ComputableInO f ei em
     (fun a => (ei a).length) (fun a => (ei a).length)) : NativeCertificate f ei em :=
   ⟨fun a => (ei a).length, fun a => (ei a).length, h⟩
 
-@[simp] theorem linear_time (h : ComputableTidilyInO f ei em
+@[simp] theorem linear_time (h : ComputableInO f ei em
     (fun a => (ei a).length) (fun a => (ei a).length)) (a : α) :
     (linear h).time a = (ei a).length := rfl
 
-@[simp] theorem linear_space (h : ComputableTidilyInO f ei em
+@[simp] theorem linear_space (h : ComputableInO f ei em
     (fun a => (ei a).length) (fun a => (ei a).length)) (a : α) :
     (linear h).space a = (ei a).length := rfl
 
 /-- A fixed literal, charged by the full input length. -/
 def const (b : β) : NativeCertificate (fun _ : α => b) ei em :=
-  linear (ComputableTidilyInO.const b)
+  linear (ComputableInO.const b)
 
 @[simp] theorem const_time (b : β) (a : α) :
     (const (ei := ei) (em := em) b).time a = (ei a).length := rfl
@@ -98,18 +100,18 @@ def prod (c : NativeCertificate f ei em) (d : NativeCertificate g ei eo) :
 
 /-- Linear postprocessing is absorbed using the producer output-length guarantee. -/
 def post {g : β → γ} (c : NativeCertificate f ei em)
-    (h : ComputableTidilyInO g em eo
+    (h : ComputableInO g em eo
       (fun b => (em b).length) (fun b => (em b).length)) :
     NativeCertificate (g ∘ f) ei eo :=
   ⟨c.time, c.space, h.comp_linear c.computes⟩
 
 @[simp] theorem post_time {g : β → γ} (c : NativeCertificate f ei em)
-    (h : ComputableTidilyInO g em eo
+    (h : ComputableInO g em eo
       (fun b => (em b).length) (fun b => (em b).length)) :
     (post c h).time = c.time := rfl
 
 @[simp] theorem post_space {g : β → γ} (c : NativeCertificate f ei em)
-    (h : ComputableTidilyInO g em eo
+    (h : ComputableInO g em eo
       (fun b => (em b).length) (fun b => (em b).length)) :
     (post c h).space = c.space := rfl
 
@@ -144,8 +146,44 @@ def option {value : α → Option β} {fallback : α → γ} {body : α × β �
       (value a).elim (no.time a) (fun b => yes.time (a, b)),
     fun a => 2 * c.space a + (ei a).length +
       (value a).elim (no.space a) (fun b => yes.space (a, b)),
-    ComputableTidilyInO.optionElimWithInput (body := fun a b => body (a, b))
-      c.computes no.computes yes.computes⟩
+    by
+      rcases isEmpty_or_nonempty β with h | h
+      · have hv : ∀ a, value a = none := by
+          intro a
+          cases value a with
+          | none => rfl
+          | some b => exact isEmptyElim b
+        simpa only [hv, Option.elim_none] using no.computes.mono_le
+          (T' := fun a => 2 * c.time a + (ei a).length + no.time a)
+          (S' := fun a => 2 * c.space a + (ei a).length + no.space a)
+          (fun _ => by omega) (fun _ => by omega)
+      · obtain ⟨b⟩ := h
+        have hget := (ComputableInDegree.getD (enc₁ := em) (enc := encOption em) b).inO_one
+          |>.comp_linear c.computes
+        have htag := (ComputableInDegree.isSome em).inO_one.comp_linear c.computes
+        have hid : ComputableInO (fun a : α => a) ei ei
+            (fun a => (ei a).length) (fun a => (ei a).length) := .of_eq fun _ => rfl
+        have h := htag.ite (yes.computes.comp (hid.prod hget)) no.computes
+        have h' := h.mono_le
+          (T' := fun a => 2 * c.time a + (ei a).length +
+            (value a).elim (no.time a) (fun b => yes.time (a, b)))
+          (S' := fun a => 2 * c.space a + (ei a).length +
+            (value a).elim (no.space a) (fun b => yes.space (a, b)))
+          (fun a => by
+            cases hv : value a <;>
+              simp only [Function.comp_def, hv, Option.isSome_none, Option.isSome_some,
+                Option.getD_some, Option.elim_none, Option.elim_some, Bool.false_eq_true,
+                ite_false, ite_true] <;> omega)
+          (fun a => by
+            cases hv : value a <;>
+              simp only [Function.comp_def, hv, Option.isSome_none, Option.isSome_some,
+                Option.getD_some, Option.elim_none, Option.elim_some, Bool.false_eq_true,
+                ite_false, ite_true] <;> omega)
+        convert h' using 1
+        funext a
+        change (value a).elim (fallback a) (fun b => body (a, b)) =
+          if (value a).isSome then body (a, (value a).getD b) else fallback a
+        cases value a <;> rfl⟩
 
 @[simp] theorem option_time {value : α → Option β} {fallback : α → γ} {body : α × β → γ}
     (c : NativeCertificate value ei (encOption em))
@@ -164,7 +202,7 @@ def option {value : α → Option β} {fallback : α → γ} {body : α × β �
 /-- Project the first field, absorbing linear work in the producer bounds. -/
 def fst {f : α → β × γ} (c : NativeCertificate f ei (encPair em eo)) :
     NativeCertificate (fun a => (f a).1) ei em :=
-  post c (ComputableTidilyInO.fst em eo)
+  post c (ComputableInO.fst em eo)
 
 @[simp] theorem fst_time {f : α → β × γ} (c : NativeCertificate f ei (encPair em eo)) :
     (fst c).time = c.time := rfl
@@ -175,7 +213,7 @@ def fst {f : α → β × γ} (c : NativeCertificate f ei (encPair em eo)) :
 /-- Project the second field, absorbing linear work in the producer bounds. -/
 def snd {f : α → β × γ} (c : NativeCertificate f ei (encPair em eo)) :
     NativeCertificate (fun a => (f a).2) ei eo :=
-  post c (ComputableTidilyInO.snd em eo)
+  post c (ComputableInO.snd em eo)
 
 @[simp] theorem snd_time {f : α → β × γ} (c : NativeCertificate f ei (encPair em eo)) :
     (snd c).time = c.time := rfl
@@ -186,7 +224,7 @@ def snd {f : α → β × γ} (c : NativeCertificate f ei (encPair em eo)) :
 /-- Add an option tag, absorbing linear work in the producer bounds. -/
 def some (c : NativeCertificate f ei em) :
     NativeCertificate (fun a => Option.some (f a)) ei (encOption em) :=
-  post c ComputableTidilyInDegree.optionSome.inO_one
+  post c ComputableInDegree.optionSome.inO_one
 
 @[simp] theorem some_time (c : NativeCertificate f ei em) :
     (some c).time = c.time := rfl
@@ -197,7 +235,11 @@ def some (c : NativeCertificate f ei em) :
 /-- Add a left sum tag, absorbing linear work in the producer bounds. -/
 def inl (c : NativeCertificate f ei em) (right : γ ↪ List Bool) :
     NativeCertificate (fun a => Sum.inl (f a)) ei (encSum em right) :=
-  post c (ComputableTidilyInO.inl em right)
+  post c (by
+    have hid : ComputableInO (fun b : β => b) em em
+        (fun b => (em b).length) (fun b => (em b).length) := .of_eq fun _ => rfl
+    exact ((ComputableInO.const (encMid := encBool) false).append hid
+      (fun _ => rfl)).mono 2 (fun _ => by omega) (fun _ => by omega))
 
 @[simp] theorem inl_time (c : NativeCertificate f ei em) (right : γ ↪ List Bool) :
     (inl c right).time = c.time := rfl
@@ -208,7 +250,11 @@ def inl (c : NativeCertificate f ei em) (right : γ ↪ List Bool) :
 /-- Add a right sum tag, absorbing linear work in the producer bounds. -/
 def inr (left : γ ↪ List Bool) (c : NativeCertificate f ei em) :
     NativeCertificate (fun a => Sum.inr (f a)) ei (encSum left em) :=
-  post c (ComputableTidilyInO.inr left em)
+  post c (by
+    have hid : ComputableInO (fun b : β => b) em em
+        (fun b => (em b).length) (fun b => (em b).length) := .of_eq fun _ => rfl
+    exact ((ComputableInO.const (encMid := encBool) true).append hid
+      (fun _ => rfl)).mono 2 (fun _ => by omega) (fun _ => by omega))
 
 @[simp] theorem inr_time (left : γ ↪ List Bool) (c : NativeCertificate f ei em) :
     (inr left c).time = c.time := rfl
@@ -230,7 +276,7 @@ def congr {g : α → β} (c : NativeCertificate f ei em) (h : ∀ a, f a = g a)
 /-- Retain a producer on the first component of an extended input. -/
 def pull (c : NativeCertificate f ei em) (other : δ ↪ List Bool) :
     NativeCertificate (fun a : α × δ => f a.1) (encPair ei other) em :=
-  c.comp (linear (ComputableTidilyInO.fst ei other))
+  c.comp (linear (ComputableInO.fst ei other))
 
 @[simp] theorem pull_time (c : NativeCertificate f ei em) (other : δ ↪ List Bool) (a : α × δ) :
     (pull c other).time a = (encPair ei other a).length + c.time a.1 := rfl
@@ -241,7 +287,7 @@ def pull (c : NativeCertificate f ei em) (other : δ ↪ List Bool) :
 /-- Extract a retained-input continuation payload in linear time and space. -/
 def payload (input : α ↪ List Bool) (out : β ↪ List Bool) :
     NativeCertificate (fun a : α × β => a.2) (encPair input out) out :=
-  linear (ComputableTidilyInO.snd input out)
+  linear (ComputableInO.snd input out)
 
 @[simp] theorem payload_time (input : α ↪ List Bool) (out : β ↪ List Bool) (a : α × β) :
     (payload input out).time a = (encPair input out a).length := rfl
@@ -315,7 +361,7 @@ def iterate {n : α → ℕ} {init : α → β} {step : β → β}
     · exact (cinit.computes.mono_le (fun _ => by omega)
         (fun _ => by omega)).of_enc_eq fun a => isEmptyElim (init a)
     · let : Inhabited β := ⟨b₀⟩
-      exact ComputableTidilyInO.iterate cn.computes cinit.computes cstep.computes
+      exact ComputableInO.iterate cn.computes cinit.computes cstep.computes
         (fun a j hj => le_maxRoundTime cstep hj (init a))
         (fun a j hj => le_maxRoundSpace cstep hj (init a))
         (fun a j hj => le_maxStateLength eb step hj (init a))
@@ -344,7 +390,7 @@ theorem polyBounded_pow_of_polyBounded {size u : α → ℕ} (hu : PolyBounded s
     c d fun _ => le_rfl).comp hu
 
 theorem linear_isPolynomial {f : α → β}
-    (h : ComputableTidilyInO f ei eb (fun a => (ei a).length) (fun a => (ei a).length)) :
+    (h : ComputableInO f ei eb (fun a => (ei a).length) (fun a => (ei a).length)) :
     (linear h).IsPolynomial :=
   ⟨.self, .self⟩
 
@@ -359,7 +405,7 @@ theorem prod_isPolynomial {f : α → β} {g : α → γ}
 
 theorem post_isPolynomial {f : α → β} {g : β → γ}
     (c : NativeCertificate f ei eb)
-    (h : ComputableTidilyInO g eb eo (fun b => (eb b).length) (fun b => (eb b).length))
+    (h : ComputableInO g eb eo (fun b => (eb b).length) (fun b => (eb b).length))
     (hc : c.IsPolynomial) :
     (post c h).IsPolynomial := hc
 
@@ -390,7 +436,7 @@ theorem congr_isPolynomial {f g : α → β}
 theorem pull_isPolynomial {f : α → β}
     (c : NativeCertificate f ei eb) (other : δ ↪ List Bool) (hc : c.IsPolynomial) :
     (pull c other).IsPolynomial :=
-  comp_isPolynomial c (linear (ComputableTidilyInO.fst ei other)) hc ⟨.self, .self⟩
+  comp_isPolynomial c (linear (ComputableInO.fst ei other)) hc ⟨.self, .self⟩
 
 theorem payload_isPolynomial (input : α ↪ List Bool) (out : β ↪ List Bool) :
     (payload input out).IsPolynomial :=

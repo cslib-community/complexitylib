@@ -506,7 +506,7 @@ private theorem isPPTOn_heuristic {t : ℕ → ℕ}
       (fun p : List Bool × List Bool => heuristicCand t evalA p.1 p.2)
       E2 encNat :=
     ComputableTidilyInPolyTime.unary_to_binary.comp hcand_unary
-  exact IsPPTOn.map_with hbudget.sampleList (.of_tidy hcand)
+  exact IsPPTOn.map_with (ComputableInPolyTime.of_tidy hbudget).sampleList (.of_tidy hcand)
 
 /-! ### Uniform distribution and failure probability bounds -/
 

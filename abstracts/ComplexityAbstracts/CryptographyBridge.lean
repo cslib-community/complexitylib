@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 -- upstream: local-only (formal abstract library)
 
 import ComplexityAbstracts.CookLevinBridge
+import ComplexityAbstracts.Randomized
 import Complexity.Crypto.Computational.OneWayToPRG
 import Complexity.Crypto.Computational.PRGToOneWay
 import Complexity.Crypto.Computational.GoldreichLevin.HardCore
@@ -26,6 +27,7 @@ semantic interface with the library's strict fair-coin Turing-machine certificat
 namespace ComplexityTests.Abstracts.CryptographyBridge
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
+open ComplexityTests.Abstracts.Randomized
 open scoped NNReal
 
 def frame (w : List Bool) : List Bool := w.flatMap (fun b => [true, b]) ++ [false]
@@ -54,15 +56,6 @@ theorem polyTime_iff {α β : Type} {f : α → β} {a : α ↪ List Bool} {b : 
     PolyTime f a b ↔ ComputableTidilyInPolyTime f a b :=
   Turing.MultiTapeTM.computableTidilyInPolyTime_iff_exists_computableInTimeAndSpaceOfLength.symm
 
-noncomputable def uniformBits (n : ℕ) : PMF (List Bool) :=
-  (Cslib.Probability.PMF.uniformOfFintype (Fin n → Bool)).map List.ofFn
-
-def StrictPPT {α β : Type} (a : α ↪ List Bool) (b : β ↪ List Bool)
-    (law : α → PMF β) : Prop :=
-  ∃ (c d : ℕ) (evaluate : α → List Bool → β),
-    PolyTime (fun p : α × List Bool => evaluate p.1 p.2) (pairEncoding a bitsEncoding) b ∧
-    ∀ x, law x = (uniformBits (c * ((a x).length + 1) ^ d)).map (evaluate x)
-
 theorem strictPPT_iff {α β : Type} {a : α ↪ List Bool} {b : β ↪ List Bool}
     {law : α → PMF β} :
     StrictPPT a b law ↔ ∃ program : α → ProbComp β,
@@ -85,24 +78,11 @@ theorem strictPPT_iff {α β : Type} {a : α ↪ List Bool} {b : β ↪ List Boo
     exact ⟨c, d, evaluate, polyTime_iff.mpr hevaluate,
       fun x => (hlaw x).symm.trans (heq x)⟩
 
-def Negligible (ε : ℕ → ℝ≥0) : Prop :=
-  ∀ k : ℕ, Filter.Tendsto (fun n : ℕ => (n : ℝ≥0) ^ k * ε n)
-    Filter.atTop (nhds 0)
-
-noncomputable def probability (p : PMF Bool) : ℝ≥0 := (p true).toNNReal
-
-def Indistinguishable (X Y : ℕ → PMF (List Bool)) : Prop :=
-  ∀ test : ℕ → List Bool → PMF Bool,
-    StrictPPT (pairEncoding unaryEncoding bitsEncoding) boolEncoding
-      (fun p => test p.1 p.2) →
-    Negligible (fun n => nndist (probability ((X n).bind (test n)))
-      (probability ((Y n).bind (test n))))
-
 theorem indistinguishable_iff {X Y : ℕ → PMF (List Bool)} :
     Indistinguishable X Y ↔ Crypto.ComputationallyIndistinguishable X Y := by
   rw [Crypto.computationallyIndistinguishable_iff_tests]
   have hadmissible (test : ℕ → List Bool → PMF Bool) :
-      StrictPPT (pairEncoding unaryEncoding bitsEncoding) boolEncoding
+      StrictPPT (Encoding.encPair Encoding.encUnary Encoding.encBits) Encoding.encBool
         (fun p => test p.1 p.2) ↔ Crypto.IsPPTTest test := by
     rw [strictPPT_iff]
     constructor
@@ -111,7 +91,7 @@ theorem indistinguishable_iff {X Y : ℕ → PMF (List Bool)} :
     · rintro ⟨program, hp, heq⟩
       exact ⟨fun p => program p.1 p.2, hp, fun p => heq p.1 p.2⟩
   simp only [Indistinguishable, hadmissible, Crypto.Game.Indistinguishable,
-    Crypto.Game.advantage, Crypto.Game.succProbability, probability,
+    Crypto.Game.advantage, Crypto.Game.succProbability, probability, PMF.monad_bind_eq_bind,
     Negligible, Crypto.Negligible, Asymptotics.SuperpolynomialDecay]
 
 def OneWay (f : List Bool → List Bool) : Prop :=
@@ -151,7 +131,7 @@ theorem generator_iff {g : List Bool → List Bool} {length : ℕ → ℕ} :
     PseudorandomGenerator g length ↔ Crypto.PseudorandomGenerator g length := by
   constructor
   · rintro ⟨hg, hlength, hstretch, hsecure⟩
-    exact Crypto.PseudorandomGenerator.of_indistinguishable (polyTime_iff.mp hg) hlength
+    exact Crypto.PseudorandomGenerator.of_indistinguishable (.of_tidy (polyTime_iff.mp hg)) hlength
       hstretch (indistinguishable_iff.mp hsecure)
   · intro hg
     exact ⟨polyTime_iff.mpr hg.polyTime.tidy, hg.length_eq, hg.stretch,
@@ -173,7 +153,7 @@ theorem stretch {g : List Bool → List Bool}
     (htarget : PolyTime target unaryEncoding unaryEncoding) (hgreater : ∀ n, n < target n) :
     ∃ g' : List Bool → List Bool, PseudorandomGenerator g' target :=
   ⟨_, generator_iff.mpr ((generator_iff.mp hg).amplify target
-    (polyTime_iff.mp htarget) hgreater)⟩
+    (.of_tidy (polyTime_iff.mp htarget)) hgreater)⟩
 
 abbrev OracleResponse : Sum ℕ (Unit × List Bool) → Type :=
   Cslib.probOracleSpec (fun _ : Unit × List Bool => List Bool)

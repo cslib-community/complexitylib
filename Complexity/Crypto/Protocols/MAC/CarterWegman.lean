@@ -104,10 +104,42 @@ This module formalizes:
    Theorem 7.10). This models the nonce-based Carter–Wegman construction under two restrictions
    compared to Boneh–Shoup Attack Game 7.4: (a) the signer's counter schedule `nonce n i` fixes the
    nonces rather than letting the adversary choose distinct nonces, and (b) `checkCounterSlot` /
-   `checkCounterGlobal` / `checkCounterStrong` accept forgeries only at issued counter slots
+   `checkCounterEUF` / `checkCounterSUF` accept forgeries only at issued counter slots
    (`pads[idx]? = some r`) and reject unissued `idx`, which removes the `1 / |T|` unissued-nonce
    guessing term.
-7. **Concrete instantiations** for Carter–Wegman polynomial hashing (`xpolyHash`, bound
+7. **Full nonce-based Carter–Wegman MAC (`NonceForger`, `nonceFnHandler`, `nonceSimHandler`,
+   `reconstructPadFn`, `checkNonceSUF`, `checkNonceEUF`, `nonceStrongGame`, `nonceGame`,
+   `nonceStrongGame_le_max`, `nonceStrongGame_le`, `nonceGame_le_max`, `nonceGame_le`,
+   `maskedNonceStrongGame`, `maskedNonceGame`, `nonceFnDistinguisher`, `prfFnDist`,
+   `prfNonceStrongGame`, `prfNonceGame`, `prfNonceStrongGame_le_of_distinguisher`,
+   `prfNonceGame_le_of_distinguisher`, `PseudorandomFunction.negligible_prfNonceStrongGame`,
+   `PseudorandomFunction.negligible_prfNonceGame`)**: models Boneh–Shoup Attack Game 7.4 and
+   Theorem 7.10 ([BonehShoup2023], Section 7.5.1, p. 274) under a statistical `IsDeltaUniversalHash`
+   family, where the adversary adaptively chooses distinct signing nonces `x_i : N` and outputs a
+   candidate forgery `((m', x'), t')` at any (issued or unissued) nonce `x'`, achieving forgery
+   probability at most `max ε (1 / |Y|) ≤ ε + 1 / |Y|` under a random function
+   `rf ← PMF.uniformOfFintype (N → Y)`, and at most `ε.toReal + (2 ^ n)⁻¹ + Game.advantage ...`
+   under a PRF pad family `prfFnDist family n` when given an `OracleDistinguisher` `D` simulating
+   `nonceFnDistinguisher` (constructing `D` from a word-level `IsOraclePPT` nonce-MAC forger remains
+   open in #736).
+8. **Randomized Carter–Wegman MAC (`RandomNonceForger`, `randomNonceFnHandler`,
+   `randomNonceSimHandler`, `checkRandomNonceSUF`, `checkRandomNonceEUF`,
+   `randomNonceStrongGame`, `randomNonceGame`, `randomNonceStrongGame_le`, `randomNonceGame_le`,
+   `maskedRandomNonceStrongGame`, `maskedRandomNonceGame`, `randomNonceFnDistinguisher`,
+   `prfRandomNonceStrongGame`, `prfRandomNonceGame`,
+   `prfRandomNonceStrongGame_le_of_distinguisher`, `prfRandomNonceGame_le_of_distinguisher`,
+   `PseudorandomFunction.negligible_prfRandomNonceStrongGame`,
+   `PseudorandomFunction.negligible_prfRandomNonceGame`)**: models Boneh–Shoup Section 7.4,
+   Theorem 7.9 ([BonehShoup2023], pp. 267–270) under a statistical `IsDeltaUniversalHash` family,
+   where the signer samples a fresh uniform nonce `x_i ← PMF.uniformOfFintype N` on each signing
+   query, bounding any `Q`-query adaptive forger's winning probability by
+   `((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / |N| + max ε (1 / |Y|) ≤`
+   `Q ^ 2 / (2 * |N|) + 1 / |Y| + ε`
+   under a random function and adding the PRF distinguishing advantage under `prfFnDist family n`
+   when given an `OracleDistinguisher` `D` simulating `randomNonceFnDistinguisher` (constructing `D`
+   from a word-level `IsOraclePPT` forger and packaging randomized Carter–Wegman as a `MACScheme`
+   with `SUFCMA` remain open in #736).
+9. **Concrete instantiations** for Carter–Wegman polynomial hashing (`xpolyHash`, bound
    `(ℓ + 1) / |F|`), Boolean-matrix linear hashing (`BitString.LinearHash.hash`, bound `2⁻ᵐ`),
    subset-sum hashing (`BitString.SubsetSum.hash`, bound `1 / |G|`), and pairwise independent
    hash families (`IsPairwiseIndependentHash`, bound `1 / |Y|`).
@@ -147,6 +179,34 @@ This module formalizes:
   `Cslib.Crypto.Protocols.CarterWegman.prfCounterStrongGame`,
   `Cslib.Crypto.Protocols.CarterWegman.prfMultiPadDistinguisher`: multi-query fresh-nonce
   PRF-masked Carter–Wegman experiments and the `Q`-query `OracleDistinguisher` adapter.
+* `Cslib.Crypto.Protocols.CarterWegman.NonceForger`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceFnHandler`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceSimHandler`,
+  `Cslib.Crypto.Protocols.CarterWegman.reconstructPadFn`,
+  `Cslib.Crypto.Protocols.CarterWegman.checkNonceSUF`,
+  `Cslib.Crypto.Protocols.CarterWegman.checkNonceEUF`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.maskedNonceStrongGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.maskedNonceGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceFnDistinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfFnDist`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfNonceStrongGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfNonceGame`: full nonce-based Carter–Wegman experiments
+  (Boneh–Shoup Attack Game 7.4 and Theorem 7.10).
+* `Cslib.Crypto.Protocols.CarterWegman.RandomNonceForger`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceFnHandler`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceSimHandler`,
+  `Cslib.Crypto.Protocols.CarterWegman.checkRandomNonceSUF`,
+  `Cslib.Crypto.Protocols.CarterWegman.checkRandomNonceEUF`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceStrongGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.maskedRandomNonceStrongGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.maskedRandomNonceGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceFnDistinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceStrongGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceGame`: randomized Carter–Wegman experiments
+  (Boneh–Shoup Section 7.4, Theorem 7.9, p. 270).
 
 ## Main results
 
@@ -192,15 +252,44 @@ This module formalizes:
   `Cslib.Crypto.PseudorandomFunction.negligible_prfCounterStrongGame`: multi-query fresh-nonce
   PRF-masked Carter–Wegman security, `IsOraclePPT` admissibility, and asymptotic security
   (after Boneh–Shoup Section 7.5, Theorem 7.10).
+* `Cslib.Crypto.Protocols.CarterWegman.uniform_bind_run_interpret_nonceFnHandler`,
+  `Cslib.Crypto.Protocols.CarterWegman.seed_uniform_checkNonceSUF_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_le_max`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceGame_le_max`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceGame_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.maskedNonceStrongGame_toReal_le_add_advantage`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfNonceStrongGame_le_of_distinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfNonceGame_le_of_distinguisher`,
+  `Cslib.Crypto.PseudorandomFunction.negligible_prfNonceStrongGame`,
+  `Cslib.Crypto.PseudorandomFunction.negligible_prfNonceGame`: full nonce-based Carter–Wegman
+  security (Boneh–Shoup Attack Game 7.4 and Theorem 7.10).
+* `Cslib.Crypto.Protocols.CarterWegman.uniform_bind_run_interpret_randomNonceFnHandler`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceSimHandler_not_nodup_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceStrongGame_le_sum_add_max`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceStrongGame_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceGame_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.maskedRandomNonceStrongGame_toReal_le_add_advantage`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceStrongGame_le_of_distinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceGame_le_of_distinguisher`,
+  `Cslib.Crypto.PseudorandomFunction.negligible_prfRandomNonceStrongGame`,
+  `Cslib.Crypto.PseudorandomFunction.negligible_prfRandomNonceGame`: randomized Carter–Wegman
+  security (Boneh–Shoup Section 7.4, Theorem 7.9, p. 270).
 * `Cslib.Crypto.Protocols.CarterWegman.oneTimeGame_xpolyHash_le`,
   `Cslib.Crypto.Protocols.CarterWegman.counterGame_xpolyHash_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_xpolyHash_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceStrongGame_xpolyHash_le`,
   `Cslib.Crypto.Protocols.CarterWegman.oneTimeGame_linearHash_le`,
   `Cslib.Crypto.Protocols.CarterWegman.counterGame_linearHash_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_linearHash_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.randomNonceStrongGame_linearHash_le`,
   `Cslib.Crypto.Protocols.CarterWegman.prfOneTimeGame_linearHash_le`,
   `Cslib.Crypto.Protocols.CarterWegman.oneTimeGame_subsetSum_le`,
   `Cslib.Crypto.Protocols.CarterWegman.counterGame_subsetSum_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_subsetSum_le`,
   `Cslib.Crypto.Protocols.CarterWegman.oneTimeGame_of_isPairwiseIndependentHash_le`,
-  `Cslib.Crypto.Protocols.CarterWegman.counterGame_of_isPairwiseIndependentHash_le`.
+  `Cslib.Crypto.Protocols.CarterWegman.counterGame_of_isPairwiseIndependentHash_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_of_isPairwiseIndependentHash_le`.
 
 ## References
 
@@ -1790,6 +1879,1344 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfCounterStrongGame
 
 end PRFCounter
 
+/-! ### Full nonce-based Carter–Wegman MAC (Boneh–Shoup Attack Game 7.4 and Theorem 7.10) -/
+
+section Nonce
+
+variable {K M N Y : Type} [AddGroup Y]
+
+/-- An adaptive multi-query forger in the nonce-based MAC game ([BonehShoup2023], Section 7.5.1,
+Attack Game 7.4, p. 274): it draws private coins `s ← coins`, makes adaptive signing queries
+`(m, x) : M × N` (receiving tag `t : Y`), and outputs a candidate forgery
+`((m', x'), t') : (M × N) × Y`. -/
+structure NonceForger (M N Y : Type) where
+  /-- Type of the forger's private coins. -/
+  Coins : Type
+  /-- Distribution of the forger's private coins. -/
+  coins : PMF Coins
+  /-- Adaptive oracle program making signing queries `(m, x) : M × N` and outputting a candidate
+  forgery `((m', x'), t') : (M × N) × Y`. -/
+  forge : Coins → OracleComp (fun _ : M × N => Y) ((M × N) × Y)
+
+/-- Nonce-based Carter–Wegman signing handler driven by a pad function `padFn : N → Y`:
+on signing query `q = (m, x)`, compute `t = sign hash k (padFn x) m`, append `(q, t)` to the
+query–tag transcript `tr`, and return `t`. -/
+noncomputable def nonceFnHandler (hash : K → M → Y) (k : K) (padFn : N → Y) (q : M × N) :
+    StateT (List ((M × N) × Y)) PMF Y := fun tr =>
+  let t := sign hash k (padFn q.2) q.1
+  PMF.pure (t, tr ++ [(q, t)])
+
+/-- Simulated key-independent nonce signing handler: on query `q = (m, x)`, sample a uniform tag
+`t ← PMF.uniformOfFintype Y`, append `(q, t)` to the query–tag transcript `tr`, and return `t`. -/
+noncomputable def nonceSimHandler [Fintype Y] [Nonempty Y] (q : M × N) :
+    StateT (List ((M × N) × Y)) PMF Y := fun tr => do
+  let t ← PMF.uniformOfFintype Y
+  return (t, tr ++ [(q, t)])
+
+/-- Reconstruct a pad function `N → Y` from a query–tag transcript `tr : List ((M × N) × Y)` and a
+background table `table : N → Y`, setting the pad at each queried nonce `x_i` to
+`-hash k m_i + t_i` while retaining `table x` at all unqueried nonces `x`. -/
+def reconstructPadFn [DecidableEq N] (hash : K → M → Y) (k : K)
+    (tr : List ((M × N) × Y)) (table : N → Y) : N → Y :=
+  tr.foldl (fun fn e => Function.update fn e.1.2 (-hash k e.1.1 + e.2)) table
+
+@[simp]
+theorem reconstructPadFn_nil [DecidableEq N] (hash : K → M → Y) (k : K) (table : N → Y) :
+    reconstructPadFn hash k [] table = table := rfl
+
+@[simp]
+theorem reconstructPadFn_cons [DecidableEq N] (hash : K → M → Y) (k : K)
+    (e : (M × N) × Y) (tr : List ((M × N) × Y)) (table : N → Y) :
+    reconstructPadFn hash k (e :: tr) table =
+      reconstructPadFn hash k tr (Function.update table e.1.2 (-hash k e.1.1 + e.2)) := rfl
+
+@[simp]
+theorem reconstructPadFn_append_singleton [DecidableEq N] (hash : K → M → Y) (k : K)
+    (tr : List ((M × N) × Y)) (e : (M × N) × Y) (table : N → Y) :
+    reconstructPadFn hash k (tr ++ [e]) table =
+      Function.update (reconstructPadFn hash k tr table) e.1.2 (-hash k e.1.1 + e.2) := by
+  simp [reconstructPadFn]
+
+/-- At any nonce `x` not appearing in `tr`, `reconstructPadFn hash k tr table x = table x`. -/
+theorem reconstructPadFn_apply_of_not_mem [DecidableEq N] (hash : K → M → Y) (k : K)
+    {tr : List ((M × N) × Y)} {x : N} (hx : x ∉ tr.map (fun e => e.1.2))
+    (table : N → Y) :
+    reconstructPadFn hash k tr table x = table x := by
+  induction tr generalizing table with
+  | nil => rfl
+  | cons e tr ih =>
+    simp only [List.map_cons, List.mem_cons, not_or] at hx
+    rw [reconstructPadFn_cons, ih hx.2, Function.update_of_ne hx.1]
+
+/-- If `table₁` and `table₂` agree away from `x`, then so do `reconstructPadFn hash k tr table₁`
+and `reconstructPadFn hash k tr table₂`. -/
+theorem reconstructPadFn_congr_of_forall_ne [DecidableEq N] (hash : K → M → Y) (k : K)
+    {tr : List ((M × N) × Y)} {x : N} {table₁ table₂ : N → Y}
+    (h : ∀ z ≠ x, table₁ z = table₂ z) :
+    ∀ z ≠ x, reconstructPadFn hash k tr table₁ z = reconstructPadFn hash k tr table₂ z := by
+  induction tr generalizing table₁ table₂ with
+  | nil => exact h
+  | cons e tr ih =>
+    simp only [reconstructPadFn_cons]
+    refine ih fun z hz => ?_
+    by_cases he : z = e.1.2
+    · subst he; simp
+    · simp [Function.update_of_ne he, h z hz]
+
+/-- Updating `table` at `x` before folding `tr ++ [((m, x), t)]` is overwritten by the final update
+at `x`. -/
+theorem reconstructPadFn_append_update_self [DecidableEq N] (hash : K → M → Y) (k : K)
+    (tr : List ((M × N) × Y)) (m : M) (x : N) (t r : Y) (table : N → Y) :
+    reconstructPadFn hash k (tr ++ [((m, x), t)]) (Function.update table x r) =
+      reconstructPadFn hash k (tr ++ [((m, x), t)]) table := by
+  rw [reconstructPadFn_append_singleton, reconstructPadFn_append_singleton]
+  funext z
+  by_cases hz : z = x
+  · subst hz; simp
+  · simp only [Function.update_of_ne hz]
+    exact reconstructPadFn_congr_of_forall_ne hash k
+      (fun w hw => Function.update_of_ne hw r table) z hz
+
+/-- When `x ∉ tr.map (fun e => e.1.2)`, appending `((m, x), sign hash k (table x) m)` leaves
+`reconstructPadFn hash k tr table` unchanged. -/
+theorem reconstructPadFn_append_sign_of_not_mem [DecidableEq N] (hash : K → M → Y) (k : K)
+    {tr : List ((M × N) × Y)} (m : M) {x : N} (hx : x ∉ tr.map (fun e => e.1.2))
+    (table : N → Y) :
+    reconstructPadFn hash k (tr ++ [((m, x), sign hash k (table x) m)]) table =
+      reconstructPadFn hash k tr table := by
+  rw [reconstructPadFn_append_singleton]
+  dsimp only
+  rw [sign, neg_add_cancel_left, ← reconstructPadFn_apply_of_not_mem hash k hx table,
+    Function.update_eq_self]
+
+/-- For any entry `e ∈ tr` in a transcript with distinct nonces `(tr.map (fun e => e.1.2)).Nodup`,
+`reconstructPadFn` evaluates at `e.1.2` to `-hash k e.1.1 + e.2`. -/
+theorem reconstructPadFn_apply_of_mem_of_nodup [DecidableEq N] (hash : K → M → Y) (k : K)
+    {tr : List ((M × N) × Y)} {e : (M × N) × Y} (he : e ∈ tr)
+    (hnodup : (tr.map (fun e => e.1.2)).Nodup) (table : N → Y) :
+    reconstructPadFn hash k tr table e.1.2 = -hash k e.1.1 + e.2 := by
+  induction tr generalizing table with
+  | nil => contradiction
+  | cons hd tl ih =>
+    simp only [List.map_cons, List.nodup_cons] at hnodup
+    rw [reconstructPadFn_cons]
+    rcases List.mem_cons.mp he with rfl | htl
+    · rw [reconstructPadFn_apply_of_not_mem hash k hnodup.1, Function.update_self]
+    · exact ih htl hnodup.2 _
+
+/-- Single-step pad-to-tag resampling identity for a fresh nonce `x ∉ tr.map (fun e => e.1.2)`:
+sampling `table ← PMF.uniformOfFintype (N → Y)` and signing `m` at `x` under
+`reconstructPadFn hash k tr table` is identical to sampling a uniform tag
+`t ← PMF.uniformOfFintype Y` and reconstructing
+`reconstructPadFn hash k (tr ++ [((m, x), t)]) table`. -/
+theorem uniform_reconstructPadFn_step {β : Type} [Fintype N] [DecidableEq N]
+    [Fintype Y] [Nonempty Y] (hash : K → M → Y) (k : K)
+    {tr : List ((M × N) × Y)} (m : M) {x : N} (hx : x ∉ tr.map (fun e => e.1.2))
+    (F : Y → List ((M × N) × Y) → (N → Y) → PMF β) :
+    ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+      let t := sign hash k (reconstructPadFn hash k tr table x) m
+      F t (tr ++ [((m, x), t)]) (reconstructPadFn hash k tr table)) =
+    ((PMF.uniformOfFintype Y).bind fun t =>
+      (PMF.uniformOfFintype (N → Y)).bind fun table =>
+        F t (tr ++ [((m, x), t)]) (reconstructPadFn hash k (tr ++ [((m, x), t)]) table)) := by
+  have h1 (table : N → Y) :
+      (let t := sign hash k (reconstructPadFn hash k tr table x) m
+      F t (tr ++ [((m, x), t)]) (reconstructPadFn hash k tr table)) =
+      (let t := sign hash k (table x) m
+      F t (tr ++ [((m, x), t)]) (reconstructPadFn hash k (tr ++ [((m, x), t)]) table)) := by
+    dsimp only
+    rw [reconstructPadFn_apply_of_not_mem hash k hx table,
+      reconstructPadFn_append_sign_of_not_mem hash k m hx table]
+  simp only [h1]
+  conv_lhs =>
+    rw [← PMF.uniformOfFintype_update (γ := Y) x, PMF.bind_bind]
+  simp only [PMF.bind_map, Function.comp_def, Function.update_self,
+    reconstructPadFn_append_update_self]
+  conv_rhs =>
+    rw [← map_sign_eq_uniform hash k m, PMF.bind_map]
+  rfl
+
+omit [AddGroup Y] in
+private theorem not_nodup_map_append_of_mem {tr : List ((M × N) × Y)} (m : M) {x : N} (t : Y)
+    (hx : x ∈ tr.map (fun e => e.1.2)) :
+    ¬ ((tr ++ [((m, x), t)]).map (fun e => e.1.2)).Nodup := by
+  rw [List.map_append, List.map_singleton, List.nodup_append]
+  rintro ⟨-, -, hdisj⟩
+  exact hdisj x hx x (List.mem_singleton.mpr rfl) rfl
+
+omit [AddGroup Y] in
+private theorem run_interpret_bind_of_not_nodup {ι : Type} {spec : OracleSpec ι} {α β : Type}
+    (oracle : (q : ι) → StateT (List ((M × N) × Y)) PMF (spec q))
+    (happ : ∀ q tr res, res ∈ (oracle q tr).support → ∃ e, res.2 = tr ++ [e])
+    (prog : OracleComp spec α) {tr : List ((M × N) × Y)}
+    (hnot : ¬ (tr.map (fun e => e.1.2)).Nodup)
+    (g : α → List ((M × N) × Y) → PMF β) (c : PMF β)
+    (hg : ∀ a tr', ¬ (tr'.map (fun e => e.1.2)).Nodup → g a tr' = c) :
+    ((OracleComp.interpret oracle prog).run tr).bind (fun res => g res.1 res.2) = c := by
+  induction prog using OracleComp.induction generalizing tr with
+  | pure a =>
+    simp [hg a tr hnot, PMF.monad_pure_eq_pure]
+  | query_bind q cont ih =>
+    simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+      PMF.monad_bind_eq_bind, PMF.bind_bind]
+    have hcongr : ∀ res ∈ (oracle q tr).support,
+        ((OracleComp.interpret oracle (cont res.1)).run res.2).bind
+          (fun res' => g res'.1 res'.2) = c := by
+      intro res hres
+      obtain ⟨e, he⟩ := happ q tr res hres
+      refine ih res.1 (he ▸ ?_)
+      rw [List.map_append]
+      exact fun h => hnot (h.sublist (List.sublist_append_left _ _))
+    rw [PMF.bind_congr_on_support _ _ _ hcongr, PMF.bind_const]
+
+/-- **Multi-query simulation equivalence for `nonceFnHandler` under a random function**:
+for any post-processing `post` that collapses to a constant distribution `c` whenever the transcript
+has a repeated nonce (`¬ (tr'.map (fun e => e.1.2)).Nodup`), running `prog` against
+`nonceFnHandler hash k (reconstructPadFn hash k tr table)` over
+`table ← PMF.uniformOfFintype (N → Y)` has the exact same distribution as running `prog` against the
+key-independent `nonceSimHandler` and reconstructing `reconstructPadFn hash k res.2 table` at the
+end. -/
+theorem uniform_bind_run_interpret_nonceFnHandler {α β : Type} [Fintype N] [DecidableEq N]
+    [Fintype Y] [Nonempty Y] (hash : K → M → Y) (k : K)
+    (prog : OracleComp (fun _ : M × N => Y) α) (tr : List ((M × N) × Y))
+    (post : α → List ((M × N) × Y) → (N → Y) → PMF β) (c : PMF β)
+    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun e => e.1.2)).Nodup → post a tr' padFn = c) :
+    ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+      ((OracleComp.interpret
+        (nonceFnHandler hash k (reconstructPadFn hash k tr table)) prog).run tr).bind
+        fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) =
+    (((OracleComp.interpret nonceSimHandler prog).run tr).bind fun res =>
+      (PMF.uniformOfFintype (N → Y)).bind fun table =>
+        post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
+  have happ_fn (padFn : N → Y) :
+      ∀ q tr₁ res, res ∈ (nonceFnHandler hash k padFn q tr₁).support → ∃ e, res.2 = tr₁ ++ [e] := by
+    intro q tr₁ res hres
+    simp only [nonceFnHandler, PMF.support_pure, Set.mem_singleton_iff] at hres
+    exact ⟨(q, _), congrArg Prod.snd hres⟩
+  have happ_sim :
+      ∀ q tr₁ res, res ∈ (nonceSimHandler (M := M) (N := N) (Y := Y) q tr₁).support →
+        ∃ e, res.2 = tr₁ ++ [e] := by
+    intro q tr₁ res hres
+    simp only [nonceSimHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hres
+    rcases hres with ⟨t, -, hres⟩
+    exact ⟨(q, t), congrArg Prod.snd hres⟩
+  have hpost_sim : ∀ a tr', ¬ (tr'.map (fun e => e.1.2)).Nodup →
+      ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+        post a tr' (reconstructPadFn hash k tr' table)) = c := by
+    intro a tr' hnot
+    simp only [hpost a tr' _ hnot, PMF.bind_const]
+  induction prog using OracleComp.induction generalizing tr with
+  | pure a =>
+    simp [PMF.monad_pure_eq_pure]
+  | query_bind q cont ih =>
+    by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
+    · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+        nonceFnHandler, nonceSimHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+        PMF.bind_bind, PMF.pure_bind]
+      by_cases hx : q.2 ∈ tr.map (fun e => e.1.2)
+      · have hnot (t : Y) : ¬ ((tr ++ [(q, t)]).map (fun e => e.1.2)).Nodup :=
+          not_nodup_map_append_of_mem q.1 t hx
+        have hlhs (table : N → Y) :
+            ((OracleComp.interpret
+              (nonceFnHandler hash k (reconstructPadFn hash k tr table))
+              (cont (sign hash k (reconstructPadFn hash k tr table q.2) q.1))).run
+              (tr ++ [(q, sign hash k (reconstructPadFn hash k tr table q.2) q.1)])).bind
+              (fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) = c :=
+          run_interpret_bind_of_not_nodup _ (happ_fn _) _ (hnot _) _ c
+            (fun a tr' h => hpost a tr' _ h)
+        have hrhs (t : Y) :
+            ((OracleComp.interpret nonceSimHandler (cont t)).run (tr ++ [(q, t)])).bind
+              (fun res => (PMF.uniformOfFintype (N → Y)).bind fun table =>
+                post res.1 res.2 (reconstructPadFn hash k res.2 table)) = c :=
+          run_interpret_bind_of_not_nodup _ happ_sim _ (hnot t) _ c hpost_sim
+        simp only [hlhs, hrhs, PMF.bind_const]
+      · rw [uniform_reconstructPadFn_step hash k q.1 hx
+          (fun t tr' fn =>
+            ((OracleComp.interpret (nonceFnHandler hash k fn) (cont t)).run tr').bind
+              fun res => post res.1 res.2 fn)]
+        congr 1; funext t
+        exact ih t (tr ++ [(q, t)])
+    · have hlhs (table : N → Y) :
+          ((OracleComp.interpret
+            (nonceFnHandler hash k (reconstructPadFn hash k tr table))
+            (OracleComp.query q >>= cont)).run tr).bind
+            (fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) = c :=
+        run_interpret_bind_of_not_nodup _ (happ_fn _) _ hnodup _ c
+          (fun a tr' h => hpost a tr' _ h)
+      have hrhs :
+          ((OracleComp.interpret nonceSimHandler (OracleComp.query q >>= cont)).run tr).bind
+            (fun res => (PMF.uniformOfFintype (N → Y)).bind fun table =>
+              post res.1 res.2 (reconstructPadFn hash k res.2 table)) = c :=
+        run_interpret_bind_of_not_nodup _ happ_sim _ hnodup _ c hpost_sim
+      simp only [hlhs, hrhs, PMF.bind_const]
+
+variable [DecidableEq M] [DecidableEq N] [DecidableEq Y]
+
+/-- Nonce-based SUF-CMA verification predicate on a query–tag transcript `tr` and pad function
+`padFn` ([BonehShoup2023], Section 7.5.1, Attack Game 7.4, p. 274): all signing queries in `tr` used
+distinct nonces (`(tr.map (fun e => e.1.2)).Nodup`), the candidate `out = ((m', x'), t')` was not
+returned by any signing query (`!tr.contains out`), and `verify hash k (padFn x') m' t' = true`. -/
+def checkNonceSUF (hash : K → M → Y) (k : K) (padFn : N → Y) (tr : List ((M × N) × Y))
+    (out : (M × N) × Y) : Bool :=
+  decide (tr.map (fun e => e.1.2)).Nodup &&
+    !tr.contains out &&
+    verify hash k (padFn out.1.2) out.1.1 out.2
+
+/-- Nonce-based EUF-CMA (message-freshness) verification predicate on a query–tag transcript `tr`
+and pad function `padFn`: all signing queries in `tr` used distinct nonces, the message
+`m' = out.1.1` was never queried (`!(tr.map (fun e => e.1.1)).contains out.1.1`), and
+`verify hash k (padFn x') m' t' = true`. -/
+def checkNonceEUF (hash : K → M → Y) (k : K) (padFn : N → Y) (tr : List ((M × N) × Y))
+    (out : (M × N) × Y) : Bool :=
+  decide (tr.map (fun e => e.1.2)).Nodup &&
+    !(tr.map (fun e => e.1.1)).contains out.1.1 &&
+    verify hash k (padFn out.1.2) out.1.1 out.2
+
+/-- Global message freshness (`checkNonceEUF`) implies pair freshness (`checkNonceSUF`). -/
+theorem checkNonceEUF_imp_checkNonceSUF (hash : K → M → Y) (k : K) (padFn : N → Y)
+    (tr : List ((M × N) × Y)) (out : (M × N) × Y) :
+    checkNonceEUF hash k padFn tr out = true → checkNonceSUF hash k padFn tr out = true := by
+  simp only [checkNonceEUF, checkNonceSUF, Bool.and_eq_true, Bool.not_eq_true',
+    List.contains_eq_mem, decide_eq_false_iff_not, List.mem_map]
+  rintro ⟨⟨hnodup, hnotm⟩, hv⟩
+  refine ⟨⟨hnodup, fun hout => hnotm ⟨out, hout, rfl⟩⟩, hv⟩
+
+/-- The nonce-based Carter–Wegman SUF-CMA experiment under an arbitrary pad-function distribution
+`rfDist : PMF (N → Y)`. -/
+noncomputable def maskedNonceStrongGame (seed : PMF K) (rfDist : PMF (N → Y))
+    (hash : K → M → Y) (forger : NonceForger M N Y) : PMF Bool := do
+  let k ← seed
+  let rf ← rfDist
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkNonceSUF hash k rf res.2 res.1
+
+/-- The nonce-based Carter–Wegman EUF-CMA (message-freshness) experiment under an arbitrary
+pad-function distribution `rfDist : PMF (N → Y)`. -/
+noncomputable def maskedNonceGame (seed : PMF K) (rfDist : PMF (N → Y))
+    (hash : K → M → Y) (forger : NonceForger M N Y) : PMF Bool := do
+  let k ← seed
+  let rf ← rfDist
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkNonceEUF hash k rf res.2 res.1
+
+/-- Monotonicity from message-freshness (`maskedNonceGame`) to triple-freshness
+(`maskedNonceStrongGame`). -/
+theorem maskedNonceGame_le_maskedNonceStrongGame (seed : PMF K) (rfDist : PMF (N → Y))
+    (hash : K → M → Y) (forger : NonceForger M N Y) :
+    maskedNonceGame seed rfDist hash forger true ≤
+      maskedNonceStrongGame seed rfDist hash forger true := by
+  dsimp only [maskedNonceGame, maskedNonceStrongGame, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure]
+  refine bind_apply_mono_on_support seed true fun k _ => ?_
+  refine bind_apply_mono_on_support rfDist true fun rf _ => ?_
+  refine bind_apply_mono_on_support forger.coins true fun s _ => ?_
+  refine bind_apply_mono_on_support
+    ((OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []) true fun res _ => ?_
+  by_cases h : checkNonceEUF hash k rf res.2 res.1 = true
+  · rw [h, checkNonceEUF_imp_checkNonceSUF hash k rf res.2 res.1 h]
+  · simp [Bool.eq_false_iff.mpr h]
+
+/-- The induced pad-function distinguisher `(N → Y) → PMF Bool` for `maskedNonceStrongGame`. -/
+noncomputable def nonceFnDistinguisher (seed : PMF K) (hash : K → M → Y)
+    (forger : NonceForger M N Y) (rf : N → Y) : PMF Bool := do
+  let k ← seed
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkNonceSUF hash k rf res.2 res.1
+
+theorem maskedNonceStrongGame_eq_bind_nonceFnDistinguisher (seed : PMF K) (rfDist : PMF (N → Y))
+    (hash : K → M → Y) (forger : NonceForger M N Y) :
+    maskedNonceStrongGame seed rfDist hash forger =
+      rfDist.bind (nonceFnDistinguisher seed hash forger) :=
+  PMF.bind_comm seed rfDist _
+
+variable [Fintype N] [Fintype Y] [Nonempty Y]
+
+/-- Under `IsDeltaUniversalHash seed hash ε`, for any fixed transcript `tr` and candidate forgery
+`out = ((m', x'), t')`, the probability over `k ← seed` and `table ← PMF.uniformOfFintype (N → Y)`
+that `checkNonceSUF hash k (reconstructPadFn hash k tr table) tr out = true` is at most
+`max ε (Fintype.card Y : ℝ≥0∞)⁻¹`: at most `ε` when `x'` is an issued nonce in `tr`, and at most
+`(Fintype.card Y : ℝ≥0∞)⁻¹` when `x'` is an unissued nonce. -/
+theorem seed_uniform_checkNonceSUF_le {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε)
+    (tr : List ((M × N) × Y)) (out : (M × N) × Y) :
+    (seed.bind fun k =>
+      (PMF.uniformOfFintype (N → Y)).bind fun table =>
+        PMF.pure (checkNonceSUF hash k (reconstructPadFn hash k tr table) tr out)) true ≤
+      max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+  by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
+  · by_cases hx : out.1.2 ∈ tr.map (fun e => e.1.2)
+    · rw [List.mem_map] at hx
+      rcases hx with ⟨e, he, hex⟩
+      have hpad (k : K) (table : N → Y) :
+          reconstructPadFn hash k tr table out.1.2 = -hash k e.1.1 + e.2 := by
+        rw [← hex]
+        exact reconstructPadFn_apply_of_mem_of_nodup hash k he hnodup table
+      have hbind (k : K) :
+          ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+            PMF.pure (checkNonceSUF hash k (reconstructPadFn hash k tr table) tr out)) =
+          PMF.pure (checkNonceSUF hash k (fun _ => -hash k e.1.1 + e.2) tr out) := by
+        simp only [checkNonceSUF, hpad, PMF.bind_const]
+      simp only [hbind]
+      refine ( (bind_apply_mono_on_support seed true fun k _ => ?_).trans
+        (seed_bind_verify_neg_add_le hh e.1.1 out.1.1 e.2 out.2) ).trans (le_max_left _ _)
+      by_cases hcheck : checkNonceSUF hash k (fun _ => -hash k e.1.1 + e.2) tr out = true
+      · rw [hcheck]
+        simp only [checkNonceSUF, Bool.and_eq_true, Bool.not_eq_true', List.contains_eq_mem,
+          decide_eq_false_iff_not, decide_eq_true_iff] at hcheck
+        rcases hcheck with ⟨⟨-, hnotmem⟩, hv⟩
+        have hne : out.1.1 ≠ e.1.1 := by
+          intro hmeq
+          apply hnotmem
+          have hteq : out.2 = e.2 := by
+            have hv' := (verify_neg_add_eq_true_iff hash k e.1.1 out.1.1 e.2 out.2).mp hv
+            rw [hmeq, sub_self] at hv'
+            exact sub_eq_zero.mp hv'.symm
+          have hout : out = e := Prod.ext (Prod.ext hmeq hex.symm) hteq
+          rwa [hout]
+        simp [hne, hv]
+      · simp [Bool.eq_false_iff.mpr hcheck]
+    · rw [PMF.bind_apply]
+      refine (tsum_mul_le_of_forall_le seed fun k => ?_).trans (le_max_right _ _)
+      have hpad (table : N → Y) :
+          reconstructPadFn hash k tr table out.1.2 = table out.1.2 :=
+        reconstructPadFn_apply_of_not_mem hash k hx table
+      have hle :
+          ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+            PMF.pure (checkNonceSUF hash k (reconstructPadFn hash k tr table) tr out)) true ≤
+          ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+            PMF.pure (verify hash k (table out.1.2) out.1.1 out.2)) true := by
+        refine bind_apply_mono_on_support (PMF.uniformOfFintype (N → Y)) true fun table _ => ?_
+        simp only [checkNonceSUF, hpad]
+        cases decide (tr.map (fun e => e.1.2)).Nodup && !tr.contains out <;> simp
+      refine hle.trans (le_of_eq ?_)
+      have heval :
+          ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+            PMF.pure (verify hash k (table out.1.2) out.1.1 out.2)) =
+          (PMF.uniformOfFintype Y).bind fun r =>
+            PMF.pure (verify hash k r out.1.1 out.2) := by
+        conv_lhs =>
+          rw [← PMF.pi_uniformOfFintype (ι := N) (α := fun _ => Y)]
+        conv_rhs =>
+          rw [← PMF.pi_map_eval (fun _ : N => PMF.uniformOfFintype Y) out.1.2, PMF.bind_map]
+        rfl
+      have h1 : ((PMF.uniformOfFintype Y).bind fun r =>
+          PMF.pure (verify hash k r out.1.1 out.2)) =
+          (PMF.uniformOfFintype Y).map (fun t => decide (t = out.2)) := by
+        conv_rhs => rw [← map_sign_eq_uniform hash k out.1.1]
+        rw [PMF.map_comp]
+        rfl
+      rw [heval, h1, PMF.map_apply, tsum_eq_single out.2]
+      · simp [PMF.uniformOfFintype_apply]
+      · intro t ht; simp [ht]
+  · simp [checkNonceSUF, hnodup]
+
+/-- The ideal nonce-based Carter–Wegman SUF-CMA experiment ([BonehShoup2023], Section 7.5.1,
+Attack Game 7.4 and Theorem 7.10, p. 274) under a truly random function
+`rf ← PMF.uniformOfFintype (N → Y)`. -/
+noncomputable def nonceStrongGame (seed : PMF K) (hash : K → M → Y)
+    (forger : NonceForger M N Y) : PMF Bool := do
+  let k ← seed
+  let rf ← PMF.uniformOfFintype (N → Y)
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkNonceSUF hash k rf res.2 res.1
+
+/-- The ideal nonce-based Carter–Wegman EUF-CMA (message-freshness) experiment implied by the SUF
+game (`nonceStrongGame`) under a truly random function `rf ← PMF.uniformOfFintype (N → Y)`. -/
+noncomputable def nonceGame (seed : PMF K) (hash : K → M → Y)
+    (forger : NonceForger M N Y) : PMF Bool := do
+  let k ← seed
+  let rf ← PMF.uniformOfFintype (N → Y)
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkNonceEUF hash k rf res.2 res.1
+
+/-- Monotonicity from the message-freshness variant (`nonceGame`) to `nonceStrongGame`. -/
+theorem nonceGame_le_nonceStrongGame (seed : PMF K) (hash : K → M → Y)
+    (forger : NonceForger M N Y) :
+    nonceGame seed hash forger true ≤ nonceStrongGame seed hash forger true := by
+  dsimp only [nonceGame, nonceStrongGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  refine bind_apply_mono_on_support seed true fun k _ => ?_
+  refine bind_apply_mono_on_support (PMF.uniformOfFintype (N → Y)) true fun rf _ => ?_
+  refine bind_apply_mono_on_support forger.coins true fun s _ => ?_
+  refine bind_apply_mono_on_support
+    ((OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []) true fun res _ => ?_
+  by_cases h : checkNonceEUF hash k rf res.2 res.1 = true
+  · rw [h, checkNonceEUF_imp_checkNonceSUF hash k rf res.2 res.1 h]
+  · simp [Bool.eq_false_iff.mpr h]
+
+/-- **Ideal nonce-based Carter–Wegman SUF-CMA security (`max` bound)** ([BonehShoup2023],
+Section 7.5.1, Theorem 7.10, p. 274): under `IsDeltaUniversalHash seed hash ε`, every adaptive
+`NonceForger` wins `nonceStrongGame` with probability at most `max ε (Fintype.card Y : ℝ≥0∞)⁻¹`. -/
+theorem nonceStrongGame_le_max {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε) (forger : NonceForger M N Y) :
+    nonceStrongGame seed hash forger true ≤ max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+  dsimp only [nonceStrongGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  have hcomm (k : K) :
+      ((PMF.uniformOfFintype (N → Y)).bind fun rf =>
+        forger.coins.bind fun s =>
+          ((OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []).bind
+            fun res => PMF.pure (checkNonceSUF hash k rf res.2 res.1)) =
+      (forger.coins.bind fun s =>
+        (PMF.uniformOfFintype (N → Y)).bind fun rf =>
+          ((OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []).bind
+            fun res => PMF.pure (checkNonceSUF hash k rf res.2 res.1)) :=
+    PMF.bind_comm (PMF.uniformOfFintype (N → Y)) forger.coins _
+  have hsim (k : K) (s : forger.Coins) :
+      ((PMF.uniformOfFintype (N → Y)).bind fun rf =>
+        ((OracleComp.interpret (nonceFnHandler hash k rf) (forger.forge s)).run []).bind fun res =>
+          PMF.pure (checkNonceSUF hash k rf res.2 res.1)) =
+      (((OracleComp.interpret nonceSimHandler (forger.forge s)).run []).bind fun res =>
+        (PMF.uniformOfFintype (N → Y)).bind fun table =>
+          PMF.pure (checkNonceSUF hash k (reconstructPadFn hash k res.2 table) res.2 res.1)) := by
+    simpa only [reconstructPadFn_nil] using
+      uniform_bind_run_interpret_nonceFnHandler hash k (forger.forge s) []
+        (fun out tr' padFn => PMF.pure (checkNonceSUF hash k padFn tr' out))
+        (PMF.pure false)
+        (fun out tr' padFn hnot => by simp [checkNonceSUF, hnot])
+  simp only [hcomm, hsim]
+  rw [PMF.bind_comm seed forger.coins, PMF.bind_apply]
+  refine tsum_mul_le_of_forall_le forger.coins fun s => ?_
+  rw [PMF.bind_comm seed ((OracleComp.interpret nonceSimHandler (forger.forge s)).run []),
+    PMF.bind_apply]
+  refine tsum_mul_le_of_forall_le
+    ((OracleComp.interpret nonceSimHandler (forger.forge s)).run []) fun ⟨out, tr⟩ => ?_
+  exact seed_uniform_checkNonceSUF_le hh tr out
+
+/-- **Ideal nonce-based Carter–Wegman SUF-CMA security (`+` bound)** ([BonehShoup2023],
+Section 7.5.1, Theorem 7.10, p. 274): winning probability is at most
+`ε + (Fintype.card Y : ℝ≥0∞)⁻¹`. -/
+theorem nonceStrongGame_le {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε) (forger : NonceForger M N Y) :
+    nonceStrongGame seed hash forger true ≤ ε + (Fintype.card Y : ℝ≥0∞)⁻¹ :=
+  (nonceStrongGame_le_max hh forger).trans (max_le_add_of_nonneg zero_le zero_le)
+
+/-- **Ideal nonce-based Carter–Wegman EUF-CMA (message-freshness) security (`max` bound)**. -/
+theorem nonceGame_le_max {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε) (forger : NonceForger M N Y) :
+    nonceGame seed hash forger true ≤ max ε (Fintype.card Y : ℝ≥0∞)⁻¹ :=
+  (nonceGame_le_nonceStrongGame seed hash forger).trans (nonceStrongGame_le_max hh forger)
+
+/-- **Ideal nonce-based Carter–Wegman EUF-CMA (message-freshness) security (`+` bound)**. -/
+theorem nonceGame_le {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε) (forger : NonceForger M N Y) :
+    nonceGame seed hash forger true ≤ ε + (Fintype.card Y : ℝ≥0∞)⁻¹ :=
+  (nonceGame_le_nonceStrongGame seed hash forger).trans (nonceStrongGame_le hh forger)
+
+/-- **Hybrid bound for `maskedNonceStrongGame`** ([BonehShoup2023], Section 7.5.1, Theorem 7.10,
+p. 274): under `IsDeltaUniversalHash seed hash ε` (`ε ≠ ⊤`), the real-valued SUF-CMA forgery
+probability under `rfDist` is at most `ε.toReal + ((Fintype.card Y : ℝ≥0∞)⁻¹).toReal` plus the
+distinguishing advantage of `nonceFnDistinguisher` between `rfDist` and
+`PMF.uniformOfFintype (N → Y)`. -/
+theorem maskedNonceStrongGame_toReal_le_add_advantage {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε) (hε : ε ≠ ⊤) (rfDist : PMF (N → Y))
+    (forger : NonceForger M N Y) :
+    (maskedNonceStrongGame seed rfDist hash forger true).toReal ≤
+      ε.toReal + ((Fintype.card Y : ℝ≥0∞)⁻¹).toReal +
+        (Game.advantage
+          (rfDist.bind (nonceFnDistinguisher seed hash forger))
+          ((PMF.uniformOfFintype (N → Y)).bind (nonceFnDistinguisher seed hash forger)) : ℝ) := by
+  have hunif : (PMF.uniformOfFintype (N → Y)).bind (nonceFnDistinguisher seed hash forger) =
+      nonceStrongGame seed hash forger :=
+    (maskedNonceStrongGame_eq_bind_nonceFnDistinguisher seed (PMF.uniformOfFintype (N → Y))
+      hash forger).symm
+  have hinv_ne_top : (Fintype.card Y : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
+  have hle : (nonceStrongGame seed hash forger true).toReal ≤
+      ε.toReal + ((Fintype.card Y : ℝ≥0∞)⁻¹).toReal := by
+    rw [← ENNReal.toReal_add hε hinv_ne_top]
+    exact ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hε, hinv_ne_top⟩)
+      (nonceStrongGame_le hh forger)
+  rw [maskedNonceStrongGame_eq_bind_nonceFnDistinguisher, hunif,
+    Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability]
+  linarith [le_abs_self (((rfDist.bind (nonceFnDistinguisher seed hash forger)) true).toReal -
+    (nonceStrongGame seed hash forger true).toReal)]
+
+/-- The distribution on `BitString n → BitString n` induced by a uniform `n`-bit PRF key
+`key ← BitString.uniformList n` under `prfOracle family n key`. -/
+noncomputable def prfFnDist (family : List Bool → List Bool → List Bool) (n : ℕ) :
+    PMF (BitString n → BitString n) :=
+  (BitString.uniformList n).map fun key x =>
+    BitString.ofList n (prfOracle family n key (List.ofFn x))
+
+/-- The PRF-masked nonce-based Carter–Wegman SUF-CMA experiment ([BonehShoup2023], Section 7.5.1,
+Attack Game 7.4 and Theorem 7.10, p. 274). -/
+noncomputable def prfNonceStrongGame (seed : PMF K) (family : List Bool → List Bool → List Bool)
+    (n : ℕ) (hash : K → M → BitString n) (forger : NonceForger M (BitString n) (BitString n)) :
+    PMF Bool :=
+  maskedNonceStrongGame seed (prfFnDist family n) hash forger
+
+/-- The PRF-masked nonce-based Carter–Wegman EUF-CMA (message-freshness) experiment implied by
+`prfNonceStrongGame`. -/
+noncomputable def prfNonceGame (seed : PMF K) (family : List Bool → List Bool → List Bool)
+    (n : ℕ) (hash : K → M → BitString n) (forger : NonceForger M (BitString n) (BitString n)) :
+    PMF Bool :=
+  maskedNonceGame seed (prfFnDist family n) hash forger
+
+/-- **Nonce-based Carter–Wegman SUF-CMA reduction ([BonehShoup2023], Section 7.5.1, Theorem 7.10,
+p. 274)**: if `D` simulates `nonceFnDistinguisher seed hash forger` in `prfRealGame` and
+`prfIdealGame`, then the real-valued SUF-CMA forgery probability in `prfNonceStrongGame` is bounded
+by `ε.toReal + (2 ^ n)⁻¹` plus the PRF distinguishing advantage of `D`. -/
+theorem prfNonceStrongGame_le_of_distinguisher {n : ℕ} {seed : PMF K}
+    {hash : K → M → BitString n} {ε : ℝ≥0∞} (hh : IsDeltaUniversalHash seed hash ε) (hε : ε ≠ ⊤)
+    (family : List Bool → List Bool → List Bool)
+    (forger : NonceForger M (BitString n) (BitString n))
+    (D : OracleDistinguisher)
+    (hreal : ProbComp.eval (prfRealGame family D n) =
+      (prfFnDist family n).bind (nonceFnDistinguisher seed hash forger))
+    (hideal : ProbComp.eval (prfIdealGame D n) =
+      (PMF.uniformOfFintype (BitString n → BitString n)).bind
+        (nonceFnDistinguisher seed hash forger)) :
+    (prfNonceStrongGame seed family n hash forger true).toReal ≤
+      ε.toReal + ((2 : ℝ) ^ n)⁻¹ +
+        (Game.advantage
+          (ProbComp.eval (prfRealGame family D n))
+          (ProbComp.eval (prfIdealGame D n)) : ℝ) := by
+  rw [hreal, hideal]
+  have h := maskedNonceStrongGame_toReal_le_add_advantage hh hε (prfFnDist family n) forger
+  simpa only [prfNonceStrongGame, BitString.card, Nat.cast_pow, Nat.cast_ofNat, ENNReal.toReal_inv,
+    ENNReal.toReal_pow, ENNReal.toReal_ofNat] using h
+
+/-- **Nonce-based Carter–Wegman EUF-CMA (message-freshness) reduction** implied by
+`prfNonceStrongGame_le_of_distinguisher`. -/
+theorem prfNonceGame_le_of_distinguisher {n : ℕ} {seed : PMF K}
+    {hash : K → M → BitString n} {ε : ℝ≥0∞} (hh : IsDeltaUniversalHash seed hash ε) (hε : ε ≠ ⊤)
+    (family : List Bool → List Bool → List Bool)
+    (forger : NonceForger M (BitString n) (BitString n))
+    (D : OracleDistinguisher)
+    (hreal : ProbComp.eval (prfRealGame family D n) =
+      (prfFnDist family n).bind (nonceFnDistinguisher seed hash forger))
+    (hideal : ProbComp.eval (prfIdealGame D n) =
+      (PMF.uniformOfFintype (BitString n → BitString n)).bind
+        (nonceFnDistinguisher seed hash forger)) :
+    (prfNonceGame seed family n hash forger true).toReal ≤
+      ε.toReal + ((2 : ℝ) ^ n)⁻¹ +
+        (Game.advantage
+          (ProbComp.eval (prfRealGame family D n))
+          (ProbComp.eval (prfIdealGame D n)) : ℝ) := by
+  have hmono : (prfNonceGame seed family n hash forger true).toReal ≤
+      (prfNonceStrongGame seed family n hash forger true).toReal :=
+    ENNReal.toReal_mono (PMF.apply_ne_top _ _)
+      (maskedNonceGame_le_maskedNonceStrongGame seed (prfFnDist family n) hash forger)
+  exact hmono.trans (prfNonceStrongGame_le_of_distinguisher hh hε family forger D hreal hideal)
+
+/-- **Asymptotic nonce-based Carter–Wegman SUF-CMA security ([BonehShoup2023], Section 7.5.1,
+Theorem 7.10, p. 274)**: given an `OracleDistinguisher` `D` satisfying `IsOraclePPT encBool D`
+together with hypotheses `hreal` and `hideal` asserting that `D` simulates
+`nonceFnDistinguisher (seed n) (hash n) (forger n)` in `prfRealGame` and `prfIdealGame` (`forger`
+itself carries no efficiency assumption), `prfNonceStrongGame` has negligible success probability
+under `PseudorandomFunction family` and a statistical `IsDeltaUniversalHash` family with negligible
+`ε`. -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfNonceStrongGame
+    {K M : ℕ → Type} [∀ n, DecidableEq (M n)]
+    {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family)
+    {seed : (n : ℕ) → PMF (K n)} {hash : (n : ℕ) → K n → M n → BitString n}
+    {ε : ℕ → ℝ≥0} (hh : ∀ n, IsDeltaUniversalHash (seed n) (hash n) (ε n))
+    (hε : Negligible ε)
+    (forger : (n : ℕ) → NonceForger (M n) (BitString n) (BitString n))
+    (D : OracleDistinguisher) (hD : IsOraclePPT encBool D)
+    (hreal : ∀ᶠ n in Filter.atTop, ProbComp.eval (prfRealGame family D n) =
+      (prfFnDist family n).bind (nonceFnDistinguisher (seed n) (hash n) (forger n)))
+    (hideal : ∀ᶠ n in Filter.atTop, ProbComp.eval (prfIdealGame D n) =
+      (PMF.uniformOfFintype (BitString n → BitString n)).bind
+        (nonceFnDistinguisher (seed n) (hash n) (forger n))) :
+    Negligible (fun n =>
+      Game.succProbability (prfNonceStrongGame (seed n) family n (hash n) (forger n))) := by
+  have hgeom : Negligible (fun n => ((2 : ℝ≥0) ^ n)⁻¹) := by
+    simpa only [inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
+  have hdist := hprf.secure D hD
+  refine negligible_of_eventually_le ((hε.add hgeom).add hdist) ?_
+  filter_upwards [hreal, hideal] with n hreal_n hideal_n
+  rw [← NNReal.coe_le_coe, Game.coe_succProbability]
+  simp only [Pi.add_apply, NNReal.coe_add, NNReal.coe_inv, NNReal.coe_pow, NNReal.coe_ofNat]
+  simpa only [ENNReal.coe_toReal] using
+    prfNonceStrongGame_le_of_distinguisher (hh n) ENNReal.coe_ne_top family (forger n) D
+      hreal_n hideal_n
+
+/-- **Asymptotic nonce-based Carter–Wegman EUF-CMA (message-freshness) security** implied by
+`negligible_prfNonceStrongGame`; as there, `D`, `hreal`, and `hideal` assume the PRF reduction
+wrapper while `forger` carries no efficiency assumption. -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfNonceGame
+    {K M : ℕ → Type} [∀ n, DecidableEq (M n)]
+    {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family)
+    {seed : (n : ℕ) → PMF (K n)} {hash : (n : ℕ) → K n → M n → BitString n}
+    {ε : ℕ → ℝ≥0} (hh : ∀ n, IsDeltaUniversalHash (seed n) (hash n) (ε n))
+    (hε : Negligible ε)
+    (forger : (n : ℕ) → NonceForger (M n) (BitString n) (BitString n))
+    (D : OracleDistinguisher) (hD : IsOraclePPT encBool D)
+    (hreal : ∀ᶠ n in Filter.atTop, ProbComp.eval (prfRealGame family D n) =
+      (prfFnDist family n).bind (nonceFnDistinguisher (seed n) (hash n) (forger n)))
+    (hideal : ∀ᶠ n in Filter.atTop, ProbComp.eval (prfIdealGame D n) =
+      (PMF.uniformOfFintype (BitString n → BitString n)).bind
+        (nonceFnDistinguisher (seed n) (hash n) (forger n))) :
+    Negligible (fun n =>
+      Game.succProbability (prfNonceGame (seed n) family n (hash n) (forger n))) := by
+  refine negligible_of_le
+    (hprf.negligible_prfNonceStrongGame hh hε forger D hD hreal hideal) fun n => ?_
+  exact ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
+    (maskedNonceGame_le_maskedNonceStrongGame (seed n) (prfFnDist family n) (hash n) (forger n))
+
+end Nonce
+
+/-! ### Randomized Carter–Wegman MAC (Boneh–Shoup Section 7.4, Theorem 7.9) -/
+
+section Randomized
+
+variable {K M N Y : Type} [AddGroup Y]
+
+/-- An adaptive multi-query forger against the randomized Carter–Wegman MAC ([BonehShoup2023],
+Section 7.4, Theorem 7.9, p. 270): it draws private coins `s ← coins`, makes adaptive signing
+queries `m : M` (receiving `(x, t) : N × Y` where `x` is a random nonce chosen by the signer), and
+outputs a candidate forgery `((m', x'), t') : (M × N) × Y`. -/
+structure RandomNonceForger (M N Y : Type) where
+  /-- Type of the forger's private coins. -/
+  Coins : Type
+  /-- Distribution of the forger's private coins. -/
+  coins : PMF Coins
+  /-- Adaptive oracle program making signing queries `m : M` and outputting a candidate forgery
+  `((m', x'), t') : (M × N) × Y`. -/
+  forge : Coins → OracleComp (fun _ : M => N × Y) ((M × N) × Y)
+
+/-- Randomized Carter–Wegman signing handler driven by a pad function `padFn : N → Y`
+([BonehShoup2023], Section 7.4, p. 267): on signing query `m`, sample a uniform nonce
+`x ← PMF.uniformOfFintype N`, compute `t = sign hash k (padFn x) m`, append `((m, x), t)` to the
+transcript `tr`, and return `(x, t)`. -/
+noncomputable def randomNonceFnHandler [Fintype N] [Nonempty N]
+    (hash : K → M → Y) (k : K) (padFn : N → Y) (m : M) :
+    StateT (List ((M × N) × Y)) PMF (N × Y) := fun tr => do
+  let x ← PMF.uniformOfFintype N
+  let t := sign hash k (padFn x) m
+  return ((x, t), tr ++ [((m, x), t)])
+
+/-- Simulated key-independent randomized signing handler: on query `m`, sample independent uniform
+`(x, t) ← PMF.uniformOfFintype N × PMF.uniformOfFintype Y`, append `((m, x), t)` to `tr`, and
+return `(x, t)`. -/
+noncomputable def randomNonceSimHandler [Fintype N] [Nonempty N] [Fintype Y] [Nonempty Y]
+    (m : M) : StateT (List ((M × N) × Y)) PMF (N × Y) := fun tr => do
+  let x ← PMF.uniformOfFintype N
+  let t ← PMF.uniformOfFintype Y
+  return ((x, t), tr ++ [((m, x), t)])
+
+/-- **Multi-query simulation equivalence for `randomNonceFnHandler` under a random function**:
+for any post-processing `post` that collapses to a constant distribution `c` whenever the transcript
+has a repeated nonce (`¬ (tr'.map (fun e => e.1.2)).Nodup`), running `prog` against
+`randomNonceFnHandler hash k (reconstructPadFn hash k tr table)` over
+`table ← PMF.uniformOfFintype (N → Y)` has the exact same distribution as running `prog` against
+`randomNonceSimHandler` and reconstructing `reconstructPadFn hash k res.2 table` at the end. -/
+theorem uniform_bind_run_interpret_randomNonceFnHandler {α β : Type}
+    [Fintype N] [Nonempty N] [DecidableEq N] [Fintype Y] [Nonempty Y]
+    (hash : K → M → Y) (k : K)
+    (prog : OracleComp (fun _ : M => N × Y) α) (tr : List ((M × N) × Y))
+    (post : α → List ((M × N) × Y) → (N → Y) → PMF β) (c : PMF β)
+    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun e => e.1.2)).Nodup → post a tr' padFn = c) :
+    ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+      ((OracleComp.interpret
+        (randomNonceFnHandler hash k (reconstructPadFn hash k tr table)) prog).run tr).bind
+        fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) =
+    (((OracleComp.interpret randomNonceSimHandler prog).run tr).bind fun res =>
+      (PMF.uniformOfFintype (N → Y)).bind fun table =>
+        post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
+  have happ_fn (padFn : N → Y) :
+      ∀ m tr₁ res, res ∈ (randomNonceFnHandler hash k padFn m tr₁).support →
+        ∃ e, res.2 = tr₁ ++ [e] := by
+    intro m tr₁ res hres
+    simp only [randomNonceFnHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hres
+    rcases hres with ⟨x, -, hres⟩
+    exact ⟨((m, x), _), congrArg Prod.snd hres⟩
+  have happ_sim :
+      ∀ m tr₁ res, res ∈ (randomNonceSimHandler (M := M) (N := N) (Y := Y) m tr₁).support →
+        ∃ e, res.2 = tr₁ ++ [e] := by
+    intro m tr₁ res hres
+    simp only [randomNonceSimHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hres
+    rcases hres with ⟨x, -, t, -, hres⟩
+    exact ⟨((m, x), t), congrArg Prod.snd hres⟩
+  have hpost_sim : ∀ a tr', ¬ (tr'.map (fun e => e.1.2)).Nodup →
+      ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+        post a tr' (reconstructPadFn hash k tr' table)) = c := by
+    intro a tr' hnot
+    simp only [hpost a tr' _ hnot, PMF.bind_const]
+  induction prog using OracleComp.induction generalizing tr with
+  | pure a =>
+    simp [PMF.monad_pure_eq_pure]
+  | query_bind m cont ih =>
+    by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
+    · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+        randomNonceFnHandler, randomNonceSimHandler, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (PMF.uniformOfFintype N)]
+      congr 1; funext x
+      by_cases hx : x ∈ tr.map (fun e => e.1.2)
+      · have hnot (t : Y) : ¬ ((tr ++ [((m, x), t)]).map (fun e => e.1.2)).Nodup :=
+          not_nodup_map_append_of_mem m t hx
+        have hlhs (table : N → Y) :
+            ((OracleComp.interpret
+              (randomNonceFnHandler hash k (reconstructPadFn hash k tr table))
+              (cont (x, sign hash k (reconstructPadFn hash k tr table x) m))).run
+              (tr ++ [((m, x), sign hash k (reconstructPadFn hash k tr table x) m)])).bind
+              (fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) = c :=
+          run_interpret_bind_of_not_nodup _ (happ_fn _) _ (hnot _) _ c
+            (fun a tr' h => hpost a tr' _ h)
+        have hrhs (t : Y) :
+            ((OracleComp.interpret randomNonceSimHandler (cont (x, t))).run
+              (tr ++ [((m, x), t)])).bind
+              (fun res => (PMF.uniformOfFintype (N → Y)).bind fun table =>
+                post res.1 res.2 (reconstructPadFn hash k res.2 table)) = c :=
+          run_interpret_bind_of_not_nodup _ happ_sim _ (hnot t) _ c hpost_sim
+        simp only [hlhs, hrhs, PMF.bind_const]
+      · rw [uniform_reconstructPadFn_step hash k m hx
+          (fun t tr' fn =>
+            ((OracleComp.interpret (randomNonceFnHandler hash k fn) (cont (x, t))).run tr').bind
+              fun res => post res.1 res.2 fn)]
+        congr 1; funext t
+        exact ih (x, t) (tr ++ [((m, x), t)])
+    · have hlhs (table : N → Y) :
+          ((OracleComp.interpret
+            (randomNonceFnHandler hash k (reconstructPadFn hash k tr table))
+            (OracleComp.query m >>= cont)).run tr).bind
+            (fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) = c :=
+        run_interpret_bind_of_not_nodup _ (happ_fn _) _ hnodup _ c
+          (fun a tr' h => hpost a tr' _ h)
+      have hrhs :
+          ((OracleComp.interpret randomNonceSimHandler (OracleComp.query m >>= cont)).run tr).bind
+            (fun res => (PMF.uniformOfFintype (N → Y)).bind fun table =>
+              post res.1 res.2 (reconstructPadFn hash k res.2 table)) = c :=
+        run_interpret_bind_of_not_nodup _ happ_sim _ hnodup _ c hpost_sim
+      simp only [hlhs, hrhs, PMF.bind_const]
+
+omit [AddGroup Y] in
+/-- Birthday-collision bound for `randomNonceSimHandler`: starting from `tr`, any `Q`-query-bounded
+program produces a transcript with a repeated nonce with probability at most
+`((∑ i ∈ Finset.range Q, (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N` when
+`(tr.map (fun e => e.1.2)).Nodup`, and at most `1` otherwise. -/
+theorem randomNonceSimHandler_not_nodup_le {α : Type} [Fintype N] [Nonempty N] [DecidableEq N]
+    [Fintype Y] [Nonempty Y]
+    {prog : OracleComp (fun _ : M => N × Y) α} {Q : ℕ}
+    (hprog : prog.IsQueryBounded Q) (tr : List ((M × N) × Y)) :
+    (((OracleComp.interpret randomNonceSimHandler prog).run tr).bind fun res =>
+      PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤
+      if (tr.map (fun e => e.1.2)).Nodup then
+        ((∑ i ∈ Finset.range Q, (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N
+      else 1 := by
+  induction hprog generalizing tr with
+  | pure a Q =>
+    by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup <;>
+      simp [hnodup, PMF.monad_pure_eq_pure]
+  | liftBind m cont Q hcont ih =>
+    by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
+    · simp only [hnodup, ↓reduceIte, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+        randomNonceSimHandler, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      let B : ℝ≥0∞ := ((∑ i ∈ Finset.range Q, (tr.length + 1 + i) : ℕ) : ℝ≥0∞) / Fintype.card N
+      have hxt (x : N) (t : Y) :
+          (((OracleComp.interpret randomNonceSimHandler (cont (x, t))).run
+            (tr ++ [((m, x), t)])).bind fun res =>
+              PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤
+          (PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B := by
+        by_cases hx : x ∈ tr.map (fun e => e.1.2)
+        · simp only [decide_eq_true hx, PMF.pure_apply, ↓reduceIte]
+          exact (PMF.coe_le_one _ _).trans le_self_add
+        · have hnodup' : ((tr ++ [((m, x), t)]).map (fun e => e.1.2)).Nodup := by
+            rw [List.map_append, List.map_singleton, List.nodup_append]
+            refine ⟨hnodup, List.nodup_singleton _, fun a ha b hb hab => ?_⟩
+            rw [List.mem_singleton] at hb
+            subst hb; subst hab
+            exact hx ha
+          have hih := ih (x, t) (tr ++ [((m, x), t)])
+          simp only [hnodup', ↓reduceIte, List.length_append, List.length_singleton] at hih
+          simp only [decide_eq_false hx, PMF.pure_apply, Bool.true_eq_false, ↓reduceIte, zero_add]
+          exact hih
+      have hx_bound (x : N) :
+          ((PMF.uniformOfFintype Y).bind fun t =>
+            ((OracleComp.interpret randomNonceSimHandler (cont (x, t))).run
+              (tr ++ [((m, x), t)])).bind fun res =>
+                PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤
+          (PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B := by
+        rw [PMF.bind_apply]
+        exact tsum_mul_le_of_forall_le (PMF.uniformOfFintype Y) (hxt x)
+      have hmem_le :
+          ((PMF.uniformOfFintype N).bind fun x =>
+            PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true ≤
+          (tr.length : ℝ≥0∞) / Fintype.card N := by
+        let s : Set N := {x | x ∈ tr.map (fun e => e.1.2)}
+        have h_eq :
+            ((PMF.uniformOfFintype N).bind fun x =>
+              PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true =
+            (PMF.uniformOfFintype N).toOuterMeasure s := by
+          rw [PMF.bind_apply, PMF.toOuterMeasure_apply]
+          change ∑' x, PMF.uniformOfFintype N x * (PMF.pure (decide (x ∈ s))) true =
+            ∑' x, s.indicator (PMF.uniformOfFintype N) x
+          refine tsum_congr fun x => ?_
+          by_cases hx : x ∈ s <;> simp [hx]
+        rw [h_eq, Probability.PMF.toOuterMeasure_uniformOfFintype, div_eq_mul_inv]
+        gcongr
+        have hsub : Finset.univ.filter (· ∈ s) ⊆ (tr.map (fun e => e.1.2)).toFinset := by
+          intro x hx
+          rw [Finset.mem_filter] at hx
+          exact List.mem_toFinset.mpr hx.2
+        have hcard : (Finset.univ.filter (· ∈ s)).card ≤ tr.length :=
+          (Finset.card_le_card hsub).trans
+            ((List.toFinset_card_le _).trans (by simp))
+        exact_mod_cast hcard
+      rw [PMF.bind_apply]
+      calc ∑' x, PMF.uniformOfFintype N x *
+              ((PMF.uniformOfFintype Y).bind fun t =>
+                ((OracleComp.interpret randomNonceSimHandler (cont (x, t))).run
+                  (tr ++ [((m, x), t)])).bind fun res =>
+                    PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true
+          ≤ ∑' x, PMF.uniformOfFintype N x *
+              ((PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B) :=
+            ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hx_bound x) zero_le
+        _ = ((PMF.uniformOfFintype N).bind fun x =>
+              PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B := by
+            simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right,
+              (PMF.uniformOfFintype N).tsum_coe, one_mul, PMF.bind_apply]
+        _ ≤ (tr.length : ℝ≥0∞) / Fintype.card N + B := add_le_add hmem_le le_rfl
+        _ = ((∑ i ∈ Finset.range (Q + 1), (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N := by
+            dsimp only [B]
+            rw [← ENNReal.add_div, ← Nat.cast_add]
+            congr 2
+            rw [Finset.sum_range_succ', Nat.add_zero, add_comm (tr.length)]
+            congr 1
+            refine Finset.sum_congr rfl fun i _ => by omega
+    · simp only [hnodup, ↓reduceIte]
+      exact PMF.coe_le_one _ _
+
+variable [DecidableEq M] [DecidableEq N] [DecidableEq Y]
+
+/-- Randomized Carter–Wegman SUF-CMA verification predicate ([BonehShoup2023], Section 7.4,
+Theorem 7.9, p. 270): the candidate `out = ((m', x'), t')` was not returned by any signing query
+(`!tr.contains out`) and `verify hash k (padFn x') m' t' = true`. -/
+def checkRandomNonceSUF (hash : K → M → Y) (k : K) (padFn : N → Y) (tr : List ((M × N) × Y))
+    (out : (M × N) × Y) : Bool :=
+  !tr.contains out && verify hash k (padFn out.1.2) out.1.1 out.2
+
+/-- Randomized Carter–Wegman EUF-CMA (message-freshness) verification predicate: the message
+`m' = out.1.1` was never queried (`!(tr.map (fun e => e.1.1)).contains out.1.1`) and
+`verify hash k (padFn x') m' t' = true`. -/
+def checkRandomNonceEUF (hash : K → M → Y) (k : K) (padFn : N → Y) (tr : List ((M × N) × Y))
+    (out : (M × N) × Y) : Bool :=
+  !(tr.map (fun e => e.1.1)).contains out.1.1 && verify hash k (padFn out.1.2) out.1.1 out.2
+
+/-- Auxiliary predicate that accepts whenever either a nonce collision occurred in `tr`
+(`!decide (tr.map (fun e => e.1.2)).Nodup`) or `checkNonceSUF hash k padFn tr out = true`. -/
+private def checkRandomNonceOrCollision (hash : K → M → Y) (k : K) (padFn : N → Y)
+    (tr : List ((M × N) × Y)) (out : (M × N) × Y) : Bool :=
+  !decide (tr.map (fun e => e.1.2)).Nodup || checkNonceSUF hash k padFn tr out
+
+/-- Randomized Carter–Wegman EUF-CMA implies SUF-CMA (`checkRandomNonceSUF`), since a fresh message
+`m'` cannot appear in any issued transcript triple `((mᵢ, xᵢ), tᵢ) ∈ tr`. -/
+theorem checkRandomNonceEUF_imp_checkRandomNonceSUF (hash : K → M → Y) (k : K) (padFn : N → Y)
+    (tr : List ((M × N) × Y)) (out : (M × N) × Y) :
+    checkRandomNonceEUF hash k padFn tr out = true →
+      checkRandomNonceSUF hash k padFn tr out = true := by
+  simp only [checkRandomNonceEUF, checkRandomNonceSUF, Bool.and_eq_true, Bool.not_eq_true',
+    List.contains_eq_mem, decide_eq_false_iff_not, List.mem_map]
+  rintro ⟨hnotm, hv⟩
+  exact ⟨fun hout => hnotm ⟨out, hout, rfl⟩, hv⟩
+
+private theorem checkRandomNonceSUF_imp_checkRandomNonceOrCollision (hash : K → M → Y) (k : K)
+    (padFn : N → Y) (tr : List ((M × N) × Y)) (out : (M × N) × Y) :
+    checkRandomNonceSUF hash k padFn tr out = true →
+      checkRandomNonceOrCollision hash k padFn tr out = true := by
+  unfold checkRandomNonceSUF checkRandomNonceOrCollision checkNonceSUF
+  cases decide (tr.map (fun e => e.1.2)).Nodup <;> simp
+
+variable [Fintype N] [Nonempty N]
+
+/-- The randomized Carter–Wegman SUF-CMA experiment under an arbitrary pad-function distribution
+`rfDist : PMF (N → Y)`. -/
+noncomputable def maskedRandomNonceStrongGame (seed : PMF K) (rfDist : PMF (N → Y))
+    (hash : K → M → Y) (forger : RandomNonceForger M N Y) : PMF Bool := do
+  let k ← seed
+  let rf ← rfDist
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkRandomNonceSUF hash k rf res.2 res.1
+
+/-- The randomized Carter–Wegman EUF-CMA (message-freshness) experiment under an arbitrary
+pad-function distribution `rfDist : PMF (N → Y)`. -/
+noncomputable def maskedRandomNonceGame (seed : PMF K) (rfDist : PMF (N → Y))
+    (hash : K → M → Y) (forger : RandomNonceForger M N Y) : PMF Bool := do
+  let k ← seed
+  let rf ← rfDist
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkRandomNonceEUF hash k rf res.2 res.1
+
+/-- In `maskedRandomNonceGame`, message-freshness forgery probability is bounded by strong
+unforgeability (`maskedRandomNonceStrongGame`). -/
+theorem maskedRandomNonceGame_le_maskedRandomNonceStrongGame (seed : PMF K) (rfDist : PMF (N → Y))
+    (hash : K → M → Y) (forger : RandomNonceForger M N Y) :
+    maskedRandomNonceGame seed rfDist hash forger true ≤
+      maskedRandomNonceStrongGame seed rfDist hash forger true := by
+  dsimp only [maskedRandomNonceGame, maskedRandomNonceStrongGame, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure]
+  refine bind_apply_mono_on_support seed true fun k _ => ?_
+  refine bind_apply_mono_on_support rfDist true fun rf _ => ?_
+  refine bind_apply_mono_on_support forger.coins true fun s _ => ?_
+  refine bind_apply_mono_on_support
+    ((OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []) true
+    fun res _ => ?_
+  by_cases h : checkRandomNonceEUF hash k rf res.2 res.1 = true
+  · rw [h, checkRandomNonceEUF_imp_checkRandomNonceSUF hash k rf res.2 res.1 h]
+  · simp [Bool.eq_false_iff.mpr h]
+
+/-- The induced pad-function distinguisher `(N → Y) → PMF Bool` for `maskedRandomNonceStrongGame`.
+-/
+noncomputable def randomNonceFnDistinguisher (seed : PMF K) (hash : K → M → Y)
+    (forger : RandomNonceForger M N Y) (rf : N → Y) : PMF Bool := do
+  let k ← seed
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkRandomNonceSUF hash k rf res.2 res.1
+
+/-- Factoring `maskedRandomNonceStrongGame` through `randomNonceFnDistinguisher`. -/
+theorem maskedRandomNonceStrongGame_eq_bind_randomNonceFnDistinguisher (seed : PMF K)
+    (rfDist : PMF (N → Y)) (hash : K → M → Y) (forger : RandomNonceForger M N Y) :
+    maskedRandomNonceStrongGame seed rfDist hash forger =
+      rfDist.bind (randomNonceFnDistinguisher seed hash forger) :=
+  PMF.bind_comm seed rfDist _
+
+variable [Fintype Y] [Nonempty Y]
+
+/-- The ideal randomized Carter–Wegman SUF-CMA experiment ([BonehShoup2023], Section 7.4,
+Theorem 7.9, p. 270) under a truly random function `rf ← PMF.uniformOfFintype (N → Y)`. -/
+noncomputable def randomNonceStrongGame (seed : PMF K) (hash : K → M → Y)
+    (forger : RandomNonceForger M N Y) : PMF Bool := do
+  let k ← seed
+  let rf ← PMF.uniformOfFintype (N → Y)
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkRandomNonceSUF hash k rf res.2 res.1
+
+/-- The ideal randomized Carter–Wegman EUF-CMA (message-freshness) experiment under a truly random
+function `rf ← PMF.uniformOfFintype (N → Y)`. -/
+noncomputable def randomNonceGame (seed : PMF K) (hash : K → M → Y)
+    (forger : RandomNonceForger M N Y) : PMF Bool := do
+  let k ← seed
+  let rf ← PMF.uniformOfFintype (N → Y)
+  let s ← forger.coins
+  let res ← (OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []
+  return checkRandomNonceEUF hash k rf res.2 res.1
+
+/-- In `randomNonceGame`, message-freshness forgery probability is bounded by strong
+unforgeability (`randomNonceStrongGame`). -/
+theorem randomNonceGame_le_randomNonceStrongGame (seed : PMF K) (hash : K → M → Y)
+    (forger : RandomNonceForger M N Y) :
+    randomNonceGame seed hash forger true ≤ randomNonceStrongGame seed hash forger true := by
+  dsimp only [randomNonceGame, randomNonceStrongGame, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure]
+  refine bind_apply_mono_on_support seed true fun k _ => ?_
+  refine bind_apply_mono_on_support (PMF.uniformOfFintype (N → Y)) true fun rf _ => ?_
+  refine bind_apply_mono_on_support forger.coins true fun s _ => ?_
+  refine bind_apply_mono_on_support
+    ((OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []) true
+    fun res _ => ?_
+  by_cases h : checkRandomNonceEUF hash k rf res.2 res.1 = true
+  · rw [h, checkRandomNonceEUF_imp_checkRandomNonceSUF hash k rf res.2 res.1 h]
+  · simp [Bool.eq_false_iff.mpr h]
+
+/-- **Ideal randomized Carter–Wegman SUF-CMA security (`∑ i < Q` + `max` bound)**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270): under `IsDeltaUniversalHash seed hash ε`,
+any `Q`-query-bounded `RandomNonceForger` wins `randomNonceStrongGame` with probability at most
+`((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / Fintype.card N + max ε (Fintype.card Y : ℝ≥0∞)⁻¹`. -/
+theorem randomNonceStrongGame_le_sum_add_max {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε) {forger : RandomNonceForger M N Y} {Q : ℕ}
+    (hforger : ∀ s, (forger.forge s).IsQueryBounded Q) :
+    randomNonceStrongGame seed hash forger true ≤
+      ((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / Fintype.card N +
+        max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+  have hmono : randomNonceStrongGame seed hash forger true ≤
+      (seed.bind fun k =>
+        forger.coins.bind fun s =>
+          (PMF.uniformOfFintype (N → Y)).bind fun rf =>
+            ((OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []).bind
+              fun res => PMF.pure (checkRandomNonceOrCollision hash k rf res.2 res.1)) true := by
+    dsimp only [randomNonceStrongGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+    refine bind_apply_mono_on_support seed true fun k _ => ?_
+    rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) forger.coins]
+    refine bind_apply_mono_on_support forger.coins true fun s _ => ?_
+    refine bind_apply_mono_on_support (PMF.uniformOfFintype (N → Y)) true fun rf _ => ?_
+    refine bind_apply_mono_on_support
+      ((OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []) true
+      fun res _ => ?_
+    by_cases h : checkRandomNonceSUF hash k rf res.2 res.1 = true
+    · rw [h, checkRandomNonceSUF_imp_checkRandomNonceOrCollision hash k rf res.2 res.1 h]
+    · simp [Bool.eq_false_iff.mpr h]
+  refine hmono.trans ?_
+  have hsim (k : K) (s : forger.Coins) :
+      ((PMF.uniformOfFintype (N → Y)).bind fun rf =>
+        ((OracleComp.interpret (randomNonceFnHandler hash k rf) (forger.forge s)).run []).bind
+          fun res => PMF.pure (checkRandomNonceOrCollision hash k rf res.2 res.1)) =
+      (((OracleComp.interpret randomNonceSimHandler (forger.forge s)).run []).bind fun res =>
+        (PMF.uniformOfFintype (N → Y)).bind fun table =>
+          PMF.pure
+            (checkRandomNonceOrCollision hash k
+              (reconstructPadFn hash k res.2 table) res.2 res.1)) := by
+    simpa only [reconstructPadFn_nil] using
+      uniform_bind_run_interpret_randomNonceFnHandler hash k (forger.forge s) []
+        (fun out tr' padFn => PMF.pure (checkRandomNonceOrCollision hash k padFn tr' out))
+        (PMF.pure true)
+        (fun out tr' padFn hnot => by simp [checkRandomNonceOrCollision, hnot])
+  simp only [hsim]
+  rw [PMF.bind_comm seed forger.coins, PMF.bind_apply]
+  refine tsum_mul_le_of_forall_le forger.coins fun s => ?_
+  rw [PMF.bind_comm seed ((OracleComp.interpret randomNonceSimHandler (forger.forge s)).run [])]
+  have hpoint (res : ((M × N) × Y) × List ((M × N) × Y)) :
+      (seed.bind fun k =>
+        (PMF.uniformOfFintype (N → Y)).bind fun table =>
+          PMF.pure
+            (checkRandomNonceOrCollision hash k
+              (reconstructPadFn hash k res.2 table) res.2 res.1)) true ≤
+      (PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
+        max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+    by_cases hnodup : (res.2.map (fun e => e.1.2)).Nodup
+    · have heq (k : K) (table : N → Y) :
+          checkRandomNonceOrCollision hash k
+            (reconstructPadFn hash k res.2 table) res.2 res.1 =
+          checkNonceSUF hash k (reconstructPadFn hash k res.2 table) res.2 res.1 := by
+        simp [checkRandomNonceOrCollision, hnodup]
+      simp only [heq, decide_eq_true hnodup, Bool.not_true, PMF.pure_apply, Bool.true_eq_false,
+        ↓reduceIte, zero_add]
+      exact seed_uniform_checkNonceSUF_le hh res.2 res.1
+    · simp only [decide_eq_false hnodup, Bool.not_false, PMF.pure_apply, ↓reduceIte]
+      exact (PMF.coe_le_one _ _).trans le_self_add
+  let simPMF := (OracleComp.interpret randomNonceSimHandler (forger.forge s)).run []
+  rw [PMF.bind_apply]
+  calc ∑' res, simPMF res *
+          (seed.bind fun k =>
+            (PMF.uniformOfFintype (N → Y)).bind fun table =>
+              PMF.pure
+                (checkRandomNonceOrCollision hash k
+                  (reconstructPadFn hash k res.2 table) res.2 res.1)) true
+      ≤ ∑' res, simPMF res *
+          ((PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
+            max ε (Fintype.card Y : ℝ≥0∞)⁻¹) :=
+        ENNReal.tsum_le_tsum fun res => mul_le_mul_of_nonneg_left (hpoint res) zero_le
+    _ = (simPMF.bind fun res =>
+          PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
+        max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+        simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, simPMF.tsum_coe, one_mul,
+          PMF.bind_apply]
+    _ ≤ ((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / Fintype.card N +
+        max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+        refine add_le_add ?_ le_rfl
+        have hcol := randomNonceSimHandler_not_nodup_le (hforger s) []
+        simpa using hcol
+
+/-- **Ideal randomized Carter–Wegman SUF-CMA security** ([BonehShoup2023], Section 7.4,
+Theorem 7.9, p. 270): under `IsDeltaUniversalHash seed hash ε`, any `Q`-query-bounded
+`RandomNonceForger` wins `randomNonceStrongGame` with probability at most
+`(Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + (Fintype.card Y : ℝ≥0∞)⁻¹ + ε`. -/
+theorem randomNonceStrongGame_le {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε) {forger : RandomNonceForger M N Y} {Q : ℕ}
+    (hforger : ∀ s, (forger.forge s).IsQueryBounded Q) :
+    randomNonceStrongGame seed hash forger true ≤
+      (Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + (Fintype.card Y : ℝ≥0∞)⁻¹ + ε := by
+  have hsum_nat : 2 * (∑ i ∈ Finset.range Q, i) ≤ Q ^ 2 := by
+    rw [Finset.sum_range_id, sq]
+    exact (Nat.mul_div_le (Q * (Q - 1)) 2).trans (Nat.mul_le_mul_left Q (Nat.sub_le Q 1))
+  have hsum : ((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / Fintype.card N ≤
+      (Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) := by
+    rw [← ENNReal.mul_div_mul_left _ _ (by norm_num : (2 : ℝ≥0∞) ≠ 0) ENNReal.ofNat_ne_top]
+    gcongr
+    exact_mod_cast hsum_nat
+  have hmax : max ε (Fintype.card Y : ℝ≥0∞)⁻¹ ≤ (Fintype.card Y : ℝ≥0∞)⁻¹ + ε := by
+    rw [add_comm]
+    exact max_le_add_of_nonneg zero_le zero_le
+  rw [add_assoc]
+  exact (randomNonceStrongGame_le_sum_add_max hh hforger).trans (add_le_add hsum hmax)
+
+/-- **Ideal randomized Carter–Wegman EUF-CMA (message-freshness) security** ([BonehShoup2023],
+Section 7.4, Theorem 7.9, p. 270). -/
+theorem randomNonceGame_le {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε) {forger : RandomNonceForger M N Y} {Q : ℕ}
+    (hforger : ∀ s, (forger.forge s).IsQueryBounded Q) :
+    randomNonceGame seed hash forger true ≤
+      (Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + (Fintype.card Y : ℝ≥0∞)⁻¹ + ε :=
+  (randomNonceGame_le_randomNonceStrongGame seed hash forger).trans
+    (randomNonceStrongGame_le hh hforger)
+
+/-- **Hybrid bound for `maskedRandomNonceStrongGame`** ([BonehShoup2023], Section 7.4,
+Theorem 7.9, p. 270): under `IsDeltaUniversalHash seed hash ε` (`ε ≠ ⊤`), any `Q`-query-bounded
+`RandomNonceForger` wins `maskedRandomNonceStrongGame` with real-valued probability at most
+`((Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N)).toReal + ((Fintype.card Y : ℝ≥0∞)⁻¹).toReal + ε.toReal`
+plus the distinguishing advantage of `randomNonceFnDistinguisher`. -/
+theorem maskedRandomNonceStrongGame_toReal_le_add_advantage {seed : PMF K} {hash : K → M → Y}
+    {ε : ℝ≥0∞} (hh : IsDeltaUniversalHash seed hash ε) (hε : ε ≠ ⊤) (rfDist : PMF (N → Y))
+    {forger : RandomNonceForger M N Y} {Q : ℕ}
+    (hforger : ∀ s, (forger.forge s).IsQueryBounded Q) :
+    (maskedRandomNonceStrongGame seed rfDist hash forger true).toReal ≤
+      ((Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N)).toReal +
+        ((Fintype.card Y : ℝ≥0∞)⁻¹).toReal + ε.toReal +
+        (Game.advantage
+          (rfDist.bind (randomNonceFnDistinguisher seed hash forger))
+          ((PMF.uniformOfFintype (N → Y)).bind
+            (randomNonceFnDistinguisher seed hash forger)) : ℝ) := by
+  have hunif : (PMF.uniformOfFintype (N → Y)).bind (randomNonceFnDistinguisher seed hash forger) =
+      randomNonceStrongGame seed hash forger :=
+    (maskedRandomNonceStrongGame_eq_bind_randomNonceFnDistinguisher seed
+      (PMF.uniformOfFintype (N → Y)) hash forger).symm
+  have hcol_ne_top : (Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) ≠ ⊤ :=
+    ENNReal.div_ne_top (ENNReal.pow_ne_top (ENNReal.natCast_ne_top Q))
+      (mul_ne_zero (by norm_num) (Nat.cast_ne_zero.mpr Fintype.card_ne_zero))
+  have hinv_ne_top : (Fintype.card Y : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
+  have hle : (randomNonceStrongGame seed hash forger true).toReal ≤
+      ((Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N)).toReal +
+        ((Fintype.card Y : ℝ≥0∞)⁻¹).toReal + ε.toReal := by
+    rw [← ENNReal.toReal_add hcol_ne_top hinv_ne_top,
+      ← ENNReal.toReal_add (ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩) hε]
+    exact ENNReal.toReal_mono
+      (ENNReal.add_ne_top.mpr ⟨ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩, hε⟩)
+      (randomNonceStrongGame_le hh hforger)
+  rw [maskedRandomNonceStrongGame_eq_bind_randomNonceFnDistinguisher, hunif,
+    Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability]
+  linarith [le_abs_self
+    (((rfDist.bind (randomNonceFnDistinguisher seed hash forger)) true).toReal -
+      (randomNonceStrongGame seed hash forger true).toReal)]
+
+/-- The PRF-masked randomized Carter–Wegman SUF-CMA experiment ([BonehShoup2023], Section 7.4,
+Theorem 7.9, p. 270). -/
+noncomputable def prfRandomNonceStrongGame (seed : PMF K)
+    (family : List Bool → List Bool → List Bool) (n : ℕ) (hash : K → M → BitString n)
+    (forger : RandomNonceForger M (BitString n) (BitString n)) : PMF Bool :=
+  maskedRandomNonceStrongGame seed (prfFnDist family n) hash forger
+
+/-- The PRF-masked randomized Carter–Wegman EUF-CMA (message-freshness) experiment
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270). -/
+noncomputable def prfRandomNonceGame (seed : PMF K)
+    (family : List Bool → List Bool → List Bool) (n : ℕ) (hash : K → M → BitString n)
+    (forger : RandomNonceForger M (BitString n) (BitString n)) : PMF Bool :=
+  maskedRandomNonceGame seed (prfFnDist family n) hash forger
+
+/-- **Randomized Carter–Wegman SUF-CMA reduction ([BonehShoup2023], Section 7.4, Theorem 7.9,
+p. 270)**: if `D` simulates `randomNonceFnDistinguisher seed hash forger` in `prfRealGame` and
+`prfIdealGame`, then any `Q`-query-bounded `RandomNonceForger` wins `prfRandomNonceStrongGame` with
+real-valued probability at most `(Q : ℝ) ^ 2 / (2 * 2 ^ n) + (2 ^ n)⁻¹ + ε.toReal` plus the PRF
+distinguishing advantage of `D`. -/
+theorem prfRandomNonceStrongGame_le_of_distinguisher {n : ℕ} {seed : PMF K}
+    {hash : K → M → BitString n} {ε : ℝ≥0∞} (hh : IsDeltaUniversalHash seed hash ε) (hε : ε ≠ ⊤)
+    (family : List Bool → List Bool → List Bool)
+    {forger : RandomNonceForger M (BitString n) (BitString n)} {Q : ℕ}
+    (hforger : ∀ s, (forger.forge s).IsQueryBounded Q)
+    (D : OracleDistinguisher)
+    (hreal : ProbComp.eval (prfRealGame family D n) =
+      (prfFnDist family n).bind (randomNonceFnDistinguisher seed hash forger))
+    (hideal : ProbComp.eval (prfIdealGame D n) =
+      (PMF.uniformOfFintype (BitString n → BitString n)).bind
+        (randomNonceFnDistinguisher seed hash forger)) :
+    (prfRandomNonceStrongGame seed family n hash forger true).toReal ≤
+      (Q : ℝ) ^ 2 / (2 * (2 : ℝ) ^ n) + ((2 : ℝ) ^ n)⁻¹ + ε.toReal +
+        (Game.advantage
+          (ProbComp.eval (prfRealGame family D n))
+          (ProbComp.eval (prfIdealGame D n)) : ℝ) := by
+  rw [hreal, hideal]
+  have h := maskedRandomNonceStrongGame_toReal_le_add_advantage hh hε (prfFnDist family n) hforger
+  simpa only [prfRandomNonceStrongGame, BitString.card, Nat.cast_pow, Nat.cast_ofNat,
+    ENNReal.toReal_div, ENNReal.toReal_pow, ENNReal.toReal_natCast, ENNReal.toReal_mul,
+    ENNReal.toReal_ofNat, ENNReal.toReal_inv] using h
+
+/-- **Randomized Carter–Wegman EUF-CMA (message-freshness) reduction ([BonehShoup2023],
+Section 7.4, Theorem 7.9, p. 270)**. -/
+theorem prfRandomNonceGame_le_of_distinguisher {n : ℕ} {seed : PMF K}
+    {hash : K → M → BitString n} {ε : ℝ≥0∞} (hh : IsDeltaUniversalHash seed hash ε) (hε : ε ≠ ⊤)
+    (family : List Bool → List Bool → List Bool)
+    {forger : RandomNonceForger M (BitString n) (BitString n)} {Q : ℕ}
+    (hforger : ∀ s, (forger.forge s).IsQueryBounded Q)
+    (D : OracleDistinguisher)
+    (hreal : ProbComp.eval (prfRealGame family D n) =
+      (prfFnDist family n).bind (randomNonceFnDistinguisher seed hash forger))
+    (hideal : ProbComp.eval (prfIdealGame D n) =
+      (PMF.uniformOfFintype (BitString n → BitString n)).bind
+        (randomNonceFnDistinguisher seed hash forger)) :
+    (prfRandomNonceGame seed family n hash forger true).toReal ≤
+      (Q : ℝ) ^ 2 / (2 * (2 : ℝ) ^ n) + ((2 : ℝ) ^ n)⁻¹ + ε.toReal +
+        (Game.advantage
+          (ProbComp.eval (prfRealGame family D n))
+          (ProbComp.eval (prfIdealGame D n)) : ℝ) := by
+  have hmono : (prfRandomNonceGame seed family n hash forger true).toReal ≤
+      (prfRandomNonceStrongGame seed family n hash forger true).toReal :=
+    ENNReal.toReal_mono (PMF.apply_ne_top _ _)
+      (maskedRandomNonceGame_le_maskedRandomNonceStrongGame seed (prfFnDist family n) hash forger)
+  exact hmono.trans
+    (prfRandomNonceStrongGame_le_of_distinguisher hh hε family hforger D hreal hideal)
+
+/-- **Asymptotic randomized Carter–Wegman SUF-CMA security ([BonehShoup2023], Section 7.4,
+Theorem 7.9, p. 270)**: if `family` is a `PseudorandomFunction`, `hash n` is a family of
+`ε n`-difference-universal hashes into `BitString n` with `Negligible ε`, `forger n` is bounded by
+`Q n` queries with `PolynomiallyBounded Q`, and `D` is an `IsOraclePPT encBool` distinguisher that
+simulates `randomNonceFnDistinguisher` in `prfRealGame` (`hreal`) and `prfIdealGame` (`hideal`),
+then the SUF-CMA success probability `Game.succProbability (prfRandomNonceStrongGame ...)` is
+`Negligible`. Note that this theorem assumes the PRF reduction wrapper `D` and its simulation
+contracts `hreal`/`hideal` as hypotheses (whilst `forger` carries only the query bound `hforger`
+and no efficiency certificate). -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfRandomNonceStrongGame
+    {K M : ℕ → Type} [∀ n, DecidableEq (M n)]
+    {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family)
+    {seed : (n : ℕ) → PMF (K n)} {hash : (n : ℕ) → K n → M n → BitString n}
+    {ε : ℕ → ℝ≥0} (hh : ∀ n, IsDeltaUniversalHash (seed n) (hash n) (ε n))
+    (hε : Negligible ε)
+    {Q : ℕ → ℕ} (hQ : PolynomiallyBounded Q)
+    (forger : (n : ℕ) → RandomNonceForger (M n) (BitString n) (BitString n))
+    (hforger : ∀ᶠ n in Filter.atTop, ∀ s, ((forger n).forge s).IsQueryBounded (Q n))
+    (D : OracleDistinguisher) (hD : IsOraclePPT encBool D)
+    (hreal : ∀ᶠ n in Filter.atTop, ProbComp.eval (prfRealGame family D n) =
+      (prfFnDist family n).bind (randomNonceFnDistinguisher (seed n) (hash n) (forger n)))
+    (hideal : ∀ᶠ n in Filter.atTop, ProbComp.eval (prfIdealGame D n) =
+      (PMF.uniformOfFintype (BitString n → BitString n)).bind
+        (randomNonceFnDistinguisher (seed n) (hash n) (forger n))) :
+    Negligible (fun n =>
+      Game.succProbability (prfRandomNonceStrongGame (seed n) family n (hash n) (forger n))) := by
+  have hgeom : Negligible (fun n => ((2 : ℝ≥0) ^ n)⁻¹) := by
+    simpa only [inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
+  have hcol : Negligible (fun n => (Q n : ℝ≥0) ^ 2 / (2 * (2 : ℝ≥0) ^ n)) := by
+    refine negligible_of_le (hgeom.polynomiallyBounded_mul (hQ.pow 2)) fun n => ?_
+    rw [div_eq_mul_inv, mul_inv, Nat.cast_pow]
+    exact mul_le_mul_of_nonneg_left
+      (mul_le_of_le_one_left zero_le (by norm_num : (2⁻¹ : ℝ≥0) ≤ 1)) zero_le
+  have hdist := hprf.secure D hD
+  refine negligible_of_eventually_le (((hcol.add hgeom).add hε).add hdist) ?_
+  filter_upwards [hforger, hreal, hideal] with n hforger_n hreal_n hideal_n
+  rw [← NNReal.coe_le_coe, Game.coe_succProbability]
+  simp only [Pi.add_apply, NNReal.coe_add, NNReal.coe_div, NNReal.coe_pow, NNReal.coe_natCast,
+    NNReal.coe_mul, NNReal.coe_ofNat, NNReal.coe_inv]
+  simpa only [ENNReal.coe_toReal] using
+    prfRandomNonceStrongGame_le_of_distinguisher (hh n) ENNReal.coe_ne_top family hforger_n D
+      hreal_n hideal_n
+
+/-- **Asymptotic randomized Carter–Wegman EUF-CMA (message-freshness) security ([BonehShoup2023],
+Section 7.4, Theorem 7.9, p. 270)**, assuming the `IsOraclePPT encBool` PRF reduction wrapper `D`
+and its simulation contracts `hreal`/`hideal`. -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfRandomNonceGame
+    {K M : ℕ → Type} [∀ n, DecidableEq (M n)]
+    {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family)
+    {seed : (n : ℕ) → PMF (K n)} {hash : (n : ℕ) → K n → M n → BitString n}
+    {ε : ℕ → ℝ≥0} (hh : ∀ n, IsDeltaUniversalHash (seed n) (hash n) (ε n))
+    (hε : Negligible ε)
+    {Q : ℕ → ℕ} (hQ : PolynomiallyBounded Q)
+    (forger : (n : ℕ) → RandomNonceForger (M n) (BitString n) (BitString n))
+    (hforger : ∀ᶠ n in Filter.atTop, ∀ s, ((forger n).forge s).IsQueryBounded (Q n))
+    (D : OracleDistinguisher) (hD : IsOraclePPT encBool D)
+    (hreal : ∀ᶠ n in Filter.atTop, ProbComp.eval (prfRealGame family D n) =
+      (prfFnDist family n).bind (randomNonceFnDistinguisher (seed n) (hash n) (forger n)))
+    (hideal : ∀ᶠ n in Filter.atTop, ProbComp.eval (prfIdealGame D n) =
+      (PMF.uniformOfFintype (BitString n → BitString n)).bind
+        (randomNonceFnDistinguisher (seed n) (hash n) (forger n))) :
+    Negligible (fun n =>
+      Game.succProbability (prfRandomNonceGame (seed n) family n (hash n) (forger n))) := by
+  refine negligible_of_le
+    (hprf.negligible_prfRandomNonceStrongGame hh hε hQ forger hforger D hD hreal hideal) fun n => ?_
+  exact ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
+    (maskedRandomNonceGame_le_maskedRandomNonceStrongGame (seed n) (prfFnDist family n)
+      (hash n) (forger n))
+
+end Randomized
+
 /-! ### Concrete Carter–Wegman instantiations -/
 
 section Instantiations
@@ -1913,6 +3340,94 @@ theorem counterGame_of_isPairwiseIndependentHash_le {K M Y : Type} [Fintype K] [
     (hh : IsPairwiseIndependentHash hash) (forger : CounterForger M Y) :
     counterGame (PMF.uniformOfFintype K) hash forger true ≤ (Fintype.card Y : ℝ≥0∞)⁻¹ :=
   counterGame_le hh.isDeltaUniversalHash forger
+
+/-- **Polynomial Carter–Wegman nonce-based MAC (`xpolyHash`)** ([BonehShoup2023], Section 7.4.1
+and Section 7.5.1, Theorem 7.10, p. 274): over a finite field `F` and finite nonce space `N`,
+authenticating messages of length at most `ℓ` via `xpolyHash` has adaptive nonce-based SUF-CMA
+forgery probability at most `(ℓ + 1) / |F|` (since `1 / |F| ≤ (ℓ + 1) / |F|`). -/
+theorem nonceStrongGame_xpolyHash_le {F N : Type} [Field F] [Fintype F] [DecidableEq F]
+    [Fintype N] [DecidableEq N] (ℓ : ℕ)
+    (forger : NonceForger {m : List F // m.length ≤ ℓ} N F) :
+    nonceStrongGame (PMF.uniformOfFintype F)
+      (fun k (m : {m : List F // m.length ≤ ℓ}) => xpolyHash k m) forger true ≤
+      (ℓ + 1) / Fintype.card F := by
+  refine (nonceStrongGame_le_max (isDeltaUniversalHash_xpolyHash ℓ) forger).trans (max_le le_rfl ?_)
+  rw [← one_div]
+  gcongr
+  exact le_add_self
+
+/-- **Polynomial Carter–Wegman nonce-based EUF-CMA (message-freshness) security (`xpolyHash`)**. -/
+theorem nonceGame_xpolyHash_le {F N : Type} [Field F] [Fintype F] [DecidableEq F]
+    [Fintype N] [DecidableEq N] (ℓ : ℕ)
+    (forger : NonceForger {m : List F // m.length ≤ ℓ} N F) :
+    nonceGame (PMF.uniformOfFintype F)
+      (fun k (m : {m : List F // m.length ≤ ℓ}) => xpolyHash k m) forger true ≤
+      (ℓ + 1) / Fintype.card F :=
+  (nonceGame_le_nonceStrongGame _ _ forger).trans (nonceStrongGame_xpolyHash_le ℓ forger)
+
+/-- **Polynomial Carter–Wegman randomized MAC (`xpolyHash`)** ([BonehShoup2023], Section 7.4,
+Theorem 7.9, p. 270): over a finite field `F` and nonempty finite nonce space `N`, any
+`Q`-query-bounded `RandomNonceForger` wins `randomNonceStrongGame` with probability at most
+`(Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + (Fintype.card F : ℝ≥0∞)⁻¹ + (ℓ + 1) / Fintype.card F`. -/
+theorem randomNonceStrongGame_xpolyHash_le {F N : Type} [Field F] [Fintype F] [DecidableEq F]
+    [Fintype N] [Nonempty N] [DecidableEq N] (ℓ : ℕ)
+    {forger : RandomNonceForger {m : List F // m.length ≤ ℓ} N F} {Q : ℕ}
+    (hforger : ∀ s, (forger.forge s).IsQueryBounded Q) :
+    randomNonceStrongGame (PMF.uniformOfFintype F)
+      (fun k (m : {m : List F // m.length ≤ ℓ}) => xpolyHash k m) forger true ≤
+      (Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + (Fintype.card F : ℝ≥0∞)⁻¹ +
+        (ℓ + 1) / Fintype.card F :=
+  randomNonceStrongGame_le (isDeltaUniversalHash_xpolyHash ℓ) hforger
+
+/-- **Boolean-matrix Carter–Wegman nonce-based MAC (`BitString.LinearHash.hash`)**:
+hashing `n`-bit messages to `m`-bit tags with a uniform Boolean matrix has adaptive nonce-based
+SUF-CMA forgery probability at most `2⁻ᵐ` (since `max (2⁻ᵐ) (2⁻ᵐ) = 2⁻ᵐ`). -/
+theorem nonceStrongGame_linearHash_le {N : Type} [Fintype N] [DecidableEq N] (n m : ℕ)
+    (forger : NonceForger (BitString n) N (BitString m)) :
+    nonceStrongGame (PMF.uniformOfFintype (Fin m → BitString n))
+      BitString.LinearHash.hash forger true ≤ ((2 : ℝ≥0∞) ^ m)⁻¹ := by
+  simpa only [max_self, BitString.card, Nat.cast_pow, Nat.cast_ofNat] using
+    nonceStrongGame_le_max (BitString.LinearHash.isDeltaUniversalHash n m) forger
+
+/-- **Boolean-matrix Carter–Wegman nonce-based EUF-CMA (message-freshness) security
+(`BitString.LinearHash.hash`)**. -/
+theorem nonceGame_linearHash_le {N : Type} [Fintype N] [DecidableEq N] (n m : ℕ)
+    (forger : NonceForger (BitString n) N (BitString m)) :
+    nonceGame (PMF.uniformOfFintype (Fin m → BitString n))
+      BitString.LinearHash.hash forger true ≤ ((2 : ℝ≥0∞) ^ m)⁻¹ :=
+  (nonceGame_le_nonceStrongGame _ _ forger).trans (nonceStrongGame_linearHash_le n m forger)
+
+/-- **Boolean-matrix Carter–Wegman randomized MAC (`BitString.LinearHash.hash`)**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270): any `Q`-query-bounded `RandomNonceForger`
+wins `randomNonceStrongGame` with probability at most
+`(Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + ((2 : ℝ≥0∞) ^ m)⁻¹ + ((2 : ℝ≥0∞) ^ m)⁻¹`. -/
+theorem randomNonceStrongGame_linearHash_le {N : Type} [Fintype N] [Nonempty N] [DecidableEq N]
+    (n m : ℕ) {forger : RandomNonceForger (BitString n) N (BitString m)} {Q : ℕ}
+    (hforger : ∀ s, (forger.forge s).IsQueryBounded Q) :
+    randomNonceStrongGame (PMF.uniformOfFintype (Fin m → BitString n))
+      BitString.LinearHash.hash forger true ≤
+      (Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + ((2 : ℝ≥0∞) ^ m)⁻¹ + ((2 : ℝ≥0∞) ^ m)⁻¹ := by
+  simpa only [BitString.card, Nat.cast_pow, Nat.cast_ofNat] using
+    randomNonceStrongGame_le (BitString.LinearHash.isDeltaUniversalHash n m) hforger
+
+/-- **Subset-sum Carter–Wegman nonce-based MAC (`BitString.SubsetSum.hash`)**:
+adaptive nonce-based SUF-CMA forgery probability is at most `1 / |G|`. -/
+theorem nonceStrongGame_subsetSum_le {ι N G : Type} [Fintype ι] [DecidableEq ι]
+    [Fintype N] [DecidableEq N] [AddCommGroup G] [Fintype G] [DecidableEq G]
+    (forger : NonceForger (ι → Bool) N G) :
+    nonceStrongGame (PMF.uniformOfFintype (ι → G)) BitString.SubsetSum.hash forger true ≤
+      (Fintype.card G : ℝ≥0∞)⁻¹ := by
+  simpa only [max_self] using
+    nonceStrongGame_le_max BitString.SubsetSum.isDeltaUniversalHash forger
+
+/-- **Pairwise-independent Carter–Wegman nonce-based MAC**: any pairwise independent hash family
+`hash : K → M → Y` has adaptive nonce-based SUF-CMA forgery probability at most `1 / |Y|`. -/
+theorem nonceStrongGame_of_isPairwiseIndependentHash_le {K M N Y : Type} [Fintype K] [Nonempty K]
+    [Fintype N] [DecidableEq N] [AddGroup Y] [Fintype Y] [Nonempty Y] [DecidableEq M]
+    [DecidableEq Y] {hash : K → M → Y}
+    (hh : IsPairwiseIndependentHash hash) (forger : NonceForger M N Y) :
+    nonceStrongGame (PMF.uniformOfFintype K) hash forger true ≤ (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+  simpa only [max_self] using nonceStrongGame_le_max hh.isDeltaUniversalHash forger
 
 end Instantiations
 

@@ -57,7 +57,7 @@ example : IsPPTOn encBits encBits (fun word => do
 
 -- A standard cryptographic client: generate a key, then follow the original GGM path.
 example (generator : List Bool → List Bool)
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits) :
+    (hgenerator : ComputableInPolyTime generator encBits encBits) :
     IsPPTOn encBits encBits (fun path => do
       let seed ← BitString.sampleList path.length
       pure (Crypto.GGM.eval generator seed path)) := by
@@ -70,5 +70,12 @@ example (count : List Bool → ℕ)
     have : IsPPTOn encBits encBits (fun word => BitString.sampleList (count word)) := by ppt
   fail_if_success have : IsPPTOn encNat encBits BitString.sampleList := by ppt
   trivial
+
+-- A computed count remains an ordinary plain certificate under arbitrary encoded inputs.
+example {α : Type} {input : α ↪ List Bool} {count : α → ℕ}
+    (hcount : ComputableInPolyTime count input encUnary) :
+    IsPPTOn input encBits (fun a => BitString.sampleList (count a)) := by
+  fail_if_success (clear hcount; ppt)
+  ppt
 
 end ComplexityTests.ProbabilisticSampling

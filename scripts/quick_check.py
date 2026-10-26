@@ -25,6 +25,13 @@ class Plan:
     targets: list[str]
 
 
+@dataclass
+class Executable:
+    path: str
+    source: Path
+    target: str
+
+
 def git(root: Path, *args: str) -> str:
     result = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True)
     if result.returncode or "ambiguous" in result.stderr.lower():
@@ -114,6 +121,37 @@ def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str]]:
     return modules, aggregates, roots
 
 
+def executable_sources(root: Path) -> list[Executable]:
+    """Executable roots and their source directories, for detecting omitted clients.
+
+    Executables importing local modules must be built explicitly: the default build may omit
+    them. The project's validation tools only import dependencies and need no additional build.
+    """
+    config = tomllib.loads((root / "lakefile.toml").read_text())
+    executables = config.get("lean_exe", [])
+    if not isinstance(executables, list):
+        raise FullCheck("invalid executable configuration")
+    sources: list[Executable] = []
+    for executable in executables:
+        if not isinstance(executable, dict):
+            raise FullCheck("invalid executable configuration")
+        target = executable.get("name", "")
+        if not isinstance(target, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9-]*", target):
+            raise FullCheck("unsupported executable name")
+        name = executable.get("root", target)
+        if not isinstance(name, str) or not re.fullmatch(
+                r"[A-Za-z_][A-Za-z_0-9]*(\.[A-Za-z_][A-Za-z_0-9]*)*", name):
+            raise FullCheck("unsupported executable root")
+        source = root / executable.get("srcDir", ".")
+        path = source / Path(*name.split(".")).with_suffix(".lean")
+        if (source.is_symlink() or path.is_symlink() or not path.is_file()
+                or not path.resolve().is_relative_to(root.resolve())):
+            raise FullCheck("missing or symlinked executable source")
+        sources.append(Executable(path.resolve().relative_to(root.resolve()).as_posix(),
+                                  source.resolve(), f"@/{target}"))
+    return sources
+
+
 def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
     if git(root, "ls-files", "--unmerged", "-z"):
         raise FullCheck("unresolved merge entries")
@@ -145,9 +183,24 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
         changed.add(by_path[path])
     if changed & aggregates:
         raise FullCheck("a library import aggregate changed")
-    imports = (parser or imports_from_lean)(root, list(by_path))
+    executables = executable_sources(root)
+    imports = (parser or imports_from_lean)(
+        root, list(dict.fromkeys([*by_path, *(exe.path for exe in executables)])))
+    executable_targets: set[str] = set()
+    if changed:
+        for exe in executables:
+            # A helper outside the library graph may import a changed module indirectly.
+            # Build its executable conservatively instead of silently omitting that client.
+            if by_path.get(exe.path) in changed or any(
+                    any(dependency == r or dependency.startswith(r + ".") for r in roots) or any(
+                        (directory / Path(*dependency.split(".")).with_suffix(".lean")).exists()
+                        for directory in (exe.source, root))
+                    for dependency in imports[exe.path]):
+                executable_targets.add(exe.target)
     reverse: dict[str, set[str]] = defaultdict(set)
     for path, dependencies in imports.items():
+        if path not in by_path:
+            continue
         consumer = by_path[path]
         for dependency in dependencies:
             if any(dependency == r or dependency.startswith(r + ".") for r in roots):
@@ -162,7 +215,7 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                 affected.add(consumer)
                 queue.append(consumer)
     # Traverse aggregates above: a real client importing one must never disappear from the plan.
-    return Plan(base, sorted(affected - aggregates))
+    return Plan(base, sorted((affected - aggregates) | executable_targets))
 
 
 def run_check(root: Path, command: list[str], label: str) -> int:
@@ -193,7 +246,8 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
     except (FullCheck, OSError, ValueError, TypeError) as error:
         print(f"Quick check falls back to all six gates: {error}", flush=True)
         return subprocess.run([str(root / "scripts/check.sh")], cwd=root).returncode
-    print(f"Quick check against merge base {plan.base}; {len(plan.targets)} affected modules.", flush=True)
+    print(f"Quick check against merge base {plan.base}; {len(plan.targets)} affected build targets.",
+          flush=True)
     print("This is not full validation: global test, lint, style and init-import gates are skipped.", flush=True)
     if not plan.targets:
         print("No Lean source changes; checking import aggregates only.", flush=True)

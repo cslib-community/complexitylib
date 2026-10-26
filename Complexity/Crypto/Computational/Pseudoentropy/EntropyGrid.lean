@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule
 public import Complexity.Probability.UniformNat
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Probabilistic.UniformNat
 import Mathlib.Algebra.Order.Floor.Ring
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
@@ -86,18 +87,18 @@ def numerator (bound index : ℕ) : ℕ := index % dyadicSize bound + 4
 
 /-- The grid has polynomially many entries. -/
 theorem isPolyTime_size {α : Type} {input : α ↪ List Bool} {sourceBits bound : α → ℕ}
-    (hsource : ComputableTidilyInPolyTime sourceBits input encUnary)
-    (hbound : ComputableTidilyInPolyTime bound input encUnary) :
-    ComputableTidilyInPolyTime (fun a => size (sourceBits a) (bound a)) input encUnary := by
+    (hsource : ComputableInPolyTime sourceBits input encUnary)
+    (hbound : ComputableInPolyTime bound input encUnary) :
+    ComputableInPolyTime (fun a => size (sourceBits a) (bound a)) input encUnary := by
   unfold size
   polytime
 
 /-- The common slack unit is uniformly efficient. -/
 theorem isPolyTime_scale {α : Type} {input : α ↪ List Bool} {n sourceBits bound : α → ℕ}
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hsource : ComputableTidilyInPolyTime sourceBits input encUnary)
-    (hbound : ComputableTidilyInPolyTime bound input encUnary) :
-    ComputableTidilyInPolyTime (fun a => scale (n a) (sourceBits a) (bound a)) input encUnary := by
+    (hn : ComputableInPolyTime n input encUnary)
+    (hsource : ComputableInPolyTime sourceBits input encUnary)
+    (hbound : ComputableInPolyTime bound input encUnary) :
+    ComputableInPolyTime (fun a => scale (n a) (sourceBits a) (bound a)) input encUnary := by
   unfold scale
   polytime
 
@@ -106,11 +107,11 @@ attribute [program_certificate] isPolyTime_size isPolyTime_scale
 /-- The observation digest length is uniformly efficient in the candidate index. -/
 theorem isPolyTime_observationBits {α : Type} {input : α ↪ List Bool}
     {n sourceBits bound index : α → ℕ}
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hsource : ComputableTidilyInPolyTime sourceBits input encUnary)
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hindex : ComputableTidilyInPolyTime index input encUnary) :
-    ComputableTidilyInPolyTime
+    (hn : ComputableInPolyTime n input encUnary)
+    (hsource : ComputableInPolyTime sourceBits input encUnary)
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hindex : ComputableInPolyTime index input encUnary) :
+    ComputableInPolyTime
       (fun a => observationBits (n a) (sourceBits a) (bound a) (index a)) input encUnary := by
   unfold observationBits
   polytime
@@ -118,11 +119,11 @@ theorem isPolyTime_observationBits {α : Type} {input : α ↪ List Bool}
 /-- The label digest length is uniformly efficient in the candidate index. -/
 theorem isPolyTime_labelBits {α : Type} {input : α ↪ List Bool}
     {n sourceBits bound index : α → ℕ}
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hsource : ComputableTidilyInPolyTime sourceBits input encUnary)
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hindex : ComputableTidilyInPolyTime index input encUnary) :
-    ComputableTidilyInPolyTime
+    (hn : ComputableInPolyTime n input encUnary)
+    (hsource : ComputableInPolyTime sourceBits input encUnary)
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hindex : ComputableInPolyTime index input encUnary) :
+    ComputableInPolyTime
       (fun a => labelBits (n a) (sourceBits a) (bound a) (index a)) input encUnary := by
   unfold labelBits
   polytime
@@ -130,20 +131,20 @@ theorem isPolyTime_labelBits {α : Type} {input : α ↪ List Bool}
 /-- The retained-seed digest length is uniformly efficient in the candidate index. -/
 theorem isPolyTime_remainingBits {α : Type} {input : α ↪ List Bool}
     {n sourceBits bound index : α → ℕ}
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hsource : ComputableTidilyInPolyTime sourceBits input encUnary)
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hindex : ComputableTidilyInPolyTime index input encUnary) :
-    ComputableTidilyInPolyTime
+    (hn : ComputableInPolyTime n input encUnary)
+    (hsource : ComputableInPolyTime sourceBits input encUnary)
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hindex : ComputableInPolyTime index input encUnary) :
+    ComputableInPolyTime
       (fun a => remainingBits (n a) (sourceBits a) (bound a) (index a)) input encUnary := by
   unfold remainingBits
   polytime
 
 /-- The requested density is uniformly efficient in the candidate index. -/
 theorem isPolyTime_numerator {α : Type} {input : α ↪ List Bool} {bound index : α → ℕ}
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hindex : ComputableTidilyInPolyTime index input encUnary) :
-    ComputableTidilyInPolyTime (fun a => numerator (bound a) (index a)) input encUnary := by
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hindex : ComputableInPolyTime index input encUnary) :
+    ComputableInPolyTime (fun a => numerator (bound a) (index a)) input encUnary := by
   unfold numerator
   polytime
 

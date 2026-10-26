@@ -64,9 +64,9 @@ noncomputable def lweDistinguisher (n m w : ℕ → ℕ)
 
 /-- Efficient parameter functions instantiate the actual reduction's uniform native certificate. -/
 theorem isPPT_lweDistinguisher {n m w : ℕ → ℕ} {adversary : Encryption.Adversary}
-    (hn : ComputableTidilyInPolyTime n encUnary encUnary)
-    (hm : ComputableTidilyInPolyTime m encUnary encUnary)
-    (hw : ComputableTidilyInPolyTime w encUnary encUnary)
+    (hn : ComputableInPolyTime n encUnary encUnary)
+    (hm : ComputableInPolyTime m encUnary encUnary)
+    (hw : ComputableInPolyTime w encUnary encUnary)
     (hadversary : adversary.IsPPT) : IsPPT encBool (lweDistinguisher n m w adversary) := by
   apply Encryption.isPPT_keyDistinguisher ?_ hadversary
   exact isPPTOn_encryptSerialized (hn.comp (by fun_prop)) (hm.comp (by fun_prop))
@@ -133,16 +133,19 @@ open Filter in
 /-- The actual encryption scheme is IND-CPA secure under its exact decision-LWE assumption,
 provided efficient dimensions have an eventual entropy surplus of twice the security parameter. -/
 theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
-    (hn : ComputableTidilyInPolyTime n encUnary encUnary)
-    (hm : ComputableTidilyInPolyTime m encUnary encUnary)
-    (hw : ComputableTidilyInPolyTime w encUnary encUnary)
+    (hn : ComputableInPolyTime n encUnary encUnary)
+    (hm : ComputableInPolyTime m encUnary encUnary)
+    (hw : ComputableInPolyTime w encUnary encUnary)
     (hmargin : ∀ᶠ security in atTop, (n security + 1) * w security + 2 * security ≤ m security)
     (hLWE : DecisionLWE n m w (fun k => noiseLaw (w k) (η k))) :
     Encryption.INDCPA (fun k => keyGenSerialized (n k) (m k) (w k) (η k))
       (fun k => encryptSerialized (n k) (m k) (w k)) := by
+  have hn := hn.tidy
+  have hm := hm.tidy
+  have hw := hw.tidy
   intro adversary hadversary
   have hsource := hLWE (lweDistinguisher n m w adversary)
-    (isPPT_lweDistinguisher hn hm hw hadversary)
+    (isPPT_lweDistinguisher (.of_tidy hn) (.of_tidy hm) (.of_tidy hw) hadversary)
   have hrows : PolynomiallyBounded (fun k => (n k + 1) * w k) := by
     have := hn.polynomiallyBounded
     have := hw.polynomiallyBounded
@@ -162,8 +165,8 @@ theorem Parameters.indCPA
         (Parameters.width k) (Parameters.noise k))
       (fun k => encryptSerialized (Parameters.dimension k) (Parameters.samples k)
         (Parameters.width k)) :=
-  indCPA_of_decisionLWE Parameters.computableTidilyInPolyTime_dimension
-    Parameters.computableTidilyInPolyTime_samples Parameters.computableTidilyInPolyTime_width
+  indCPA_of_decisionLWE GSW.Parameters.computableInPolyTime_dimension
+    GSW.Parameters.computableInPolyTime_samples GSW.Parameters.computableInPolyTime_width
     (Filter.Eventually.of_forall Parameters.entropy_margin) hLWE
 
 end Cslib.Crypto.Homomorphic.GSW

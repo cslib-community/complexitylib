@@ -14,6 +14,7 @@ import Complexity.Computability.Complexity.Classes.SharpP.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Foundations.Data.List.Lookup
 import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
@@ -93,8 +94,7 @@ private theorem answerGap_eq {α : Type} {A : Set (α × ℕ)} {g f : α × ℕ 
       (∏ i ∈ range (r a), if (List.ofFn w).getD i false then g (a, i) else
         f (a, i) - g (a, i)) = if w = v then ∏ i ∈ range (r a), f (a, i) else 0 := by
     rw [← Fin.prod_univ_eq_prod_range, ← Fin.prod_univ_eq_prod_range]
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, dite_eq_left, Fin.isLt,
-      Option.getD_some]
+    simp only [List.getD_ofFn]
     by_cases hw : w = v
     · subst w
       rw [ite_eq_left rfl]

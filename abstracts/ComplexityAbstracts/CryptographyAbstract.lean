@@ -9,6 +9,7 @@ Authors: Samuel Schlesinger
 import ComplexityAbstracts.Check
 import ComplexityAbstracts.Encoding
 import ComplexityAbstracts.Computation
+import ComplexityAbstracts.Randomized
 import ComplexityAbstracts.CryptographyBridge
 
 /-! # One-way functions, generators and adaptive pseudorandom functions
@@ -20,7 +21,9 @@ than its seed and computationally indistinguishable from uniform bits. The
 Goldreich–Goldwasser–Micali construction then produces a keyed function that looks like one
 consistently chosen random function even when each query depends on earlier answers.
 Existence of a one-way function remains a hypothesis; efficiency and security use uniform
-finite-control machines with strict polynomial bounds and independent fair coins.
+finite-control machines with strict polynomial bounds and independent fair coins. These
+conventions, `Randomized.StrictPPT`, `Randomized.Negligible` and `Randomized.Indistinguishable`,
+are the shared foundations displayed in the appendix.
 The definitions and theorem statements below specify the claim; Lean checks their proofs through
 `CryptographyBridge`. The audit allows only the listed foundational program, interpretation and
 machine modules across the implementation boundary, without importing a security definition.
@@ -40,51 +43,16 @@ as credited in `Complexity.Languages.Probabilistic.Basic`.
 
 namespace ComplexityTests.Abstracts.CryptographyAbstract
 
-/-- Exactly `n` independent fair bits, as a word of length `n`. -/
-noncomputable def uniformBits (n : ℕ) : PMF (List Bool) :=
-  (Cslib.Probability.PMF.uniformOfFintype (Fin n → Bool)).map List.ofFn
-
-/-- A uniformly strict polynomial-time probability law: one deterministic evaluator, supplied
-with polynomially many independent fair bits, realizes every input's law exactly. Its time
-includes reading the coin tape and writing the encoded output. Both evaluator and polynomial
-are fixed before the input. This also bounds every execution, rather than its expectation. -/
-def StrictPPT {α β : Type} (a : α ↪ List Bool) (b : β ↪ List Bool)
-    (law : α → PMF β) : Prop :=
-  ∃ (c d : ℕ) (evaluate : α → List Bool → β),
-    Computation.PolyTime (fun p : α × List Bool => evaluate p.1 p.2)
-      (Encoding.encPair a Encoding.encBits) b ∧
-    ∀ x, law x = (uniformBits (c * ((a x).length + 1) ^ d)).map (evaluate x)
-
-/-- A nonnegative error is negligible if multiplication by every fixed power of the security
-parameter still tends to zero. The threshold and decay bound may depend on the whole adversary. -/
-def Negligible (ε : ℕ → NNReal) : Prop :=
-  ∀ k : ℕ, Filter.Tendsto (fun n : ℕ => (n : NNReal) ^ k * ε n)
-    Filter.atTop (nhds 0)
-
-/-- Probability that a Boolean experiment returns true. -/
-noncomputable def probability (p : PMF Bool) : NNReal := (p true).toNNReal
-
-/-- Every one uniform strict PPT test has negligible distinguishing advantage.
-The test receives the unary seed length and a sample. `bind` samples the word and then runs
-the test with independent coins; `nndist` is the absolute difference of success probabilities. -/
-def Indistinguishable (X Y : ℕ → PMF (List Bool)) : Prop :=
-  ∀ test : ℕ → List Bool → PMF Bool,
-    StrictPPT (Encoding.encPair Encoding.encUnary Encoding.encBits) Encoding.encBool
-      (fun p => test p.1 p.2) →
-    Negligible (fun n => nndist
-      (probability (do let sample ← X n; test n sample))
-      (probability (do let sample ← Y n; test n sample)))
-
 /-- A polynomial-time function is one-way if every strict PPT inverter, given unary `n` and
 `f(x)` for a uniform `n`-bit `x`, finds any preimage only with negligible probability.
 The candidate's length is unrestricted, and recovering the sampled `x` is unnecessary. -/
 def OneWay (f : List Bool → List Bool) : Prop :=
   Computation.PolyTime f Encoding.encBits Encoding.encBits ∧
     ∀ inverter : ℕ → List Bool → PMF (List Bool),
-      StrictPPT (Encoding.encPair Encoding.encUnary Encoding.encBits) Encoding.encBits
+      Randomized.StrictPPT (Encoding.encPair Encoding.encUnary Encoding.encBits) Encoding.encBits
         (fun p => inverter p.1 p.2) →
-      Negligible (fun n => probability (do
-        let x ← uniformBits n
+      Randomized.Negligible (fun n => Randomized.probability (do
+        let x ← Randomized.uniformBits n
         (inverter n (f x)).map fun candidate => f candidate == f x))
 
 /-- A deterministic polynomial-time generator has exact seed-dependent output length,
@@ -94,7 +62,8 @@ seed length. The function need not be injective. -/
 def PseudorandomGenerator (g : List Bool → List Bool) (length : ℕ → ℕ) : Prop :=
   Computation.PolyTime g Encoding.encBits Encoding.encBits ∧
     (∀ seed, (g seed).length = length seed.length) ∧ (∀ n, n < length n) ∧
-    Indistinguishable (fun n => (uniformBits n).map g) (fun n => uniformBits (length n))
+    Randomized.Indistinguishable (fun n => (Randomized.uniformBits n).map g)
+      (fun n => Randomized.uniformBits (length n))
 
 /-- **Håstad–Impagliazzo–Levin–Luby:** any uniform one-way function yields a deterministic
 uniform polynomial-time generator stretching every `n`-bit seed to `n+1` bits. The proof follows
@@ -169,7 +138,7 @@ with that key's function. Wrong-length queries return the empty word. The advers
 unary `n` and an empty auxiliary input. -/
 noncomputable def realPRF (family : List Bool → List Bool → List Bool)
     (adversary : ℕ → List Bool → OracleProgram Bool) (n : ℕ) : PMF Bool := do
-  let key ← uniformBits n
+  let key ← Randomized.uniformBits n
   evaluateOracle (adversary n [])
     (fun query => if query.length = n then family key query else [])
 
@@ -190,8 +159,8 @@ def PseudorandomFunction (family : List Bool → List Bool → List Bool) : Prop
     (Encoding.encPair Encoding.encBits Encoding.encBits) Encoding.encBits ∧
   (∀ key query, query.length = key.length → (family key query).length = key.length) ∧
   ∀ adversary : ℕ → List Bool → OracleProgram Bool, OraclePPT adversary →
-    Negligible (fun n => nndist (probability (realPRF family adversary n))
-      (probability (idealPRF adversary n)))
+    Randomized.Negligible (fun n => nndist (Randomized.probability (realPRF family adversary n))
+      (Randomized.probability (idealPRF adversary n)))
 
 /-- **One-way functions imply adaptive pseudorandom functions:** HILL, polynomial stretching
 and the Goldreich–Goldwasser–Micali tree construction give an efficient family satisfying the
@@ -217,11 +186,11 @@ abbrev OracleResponse : Sum ℕ (Unit × List Bool) → Type :=
   Cslib.probOracleSpec (fun _ : Unit × List Bool => List Bool)
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`: 21 root declarations, 254 dependencies checked
+info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`: 15 root declarations, 254 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.CryptographyAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation,
+  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation, ComplexityAbstracts.Randomized,
   Complexity.Languages.Probabilistic.Basic,
   Complexity.Languages.Probabilistic.Oracle,
   Complexity.Languages.Probabilistic.Sum,

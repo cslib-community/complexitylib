@@ -177,6 +177,6 @@ theorem circuits_poly : ComputableTidilyInPolyTime
 
 -- The key sampler is one fair bit followed by finite deterministic processing.
 theorem keyGen_ppt : IsPPTOn encUnary (encPair encBits encBits) tagged.keyGen :=
-  (isPPTOn_uniform_bool encUnary).map (ComputableTidilyInPolyTime.of_finite _)
+  (isPPTOn_uniform_bool encUnary).map (ComputableInPolyTime.of_finite _)
 
 end ComplexityTests.HomomorphicExample

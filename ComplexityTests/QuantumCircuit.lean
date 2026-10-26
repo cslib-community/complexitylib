@@ -91,6 +91,60 @@ example : Circuit.run [cnot₂₀] ![true, true, false] = ket ![true, true, fals
   · exact (splitEquiv_symm_apply_of_not ⟨![2, 0], _⟩ _ _ 1 (by decide)).trans rfl
   · exact splitEquiv_symm_apply_wire ⟨![2, 0], _⟩ _ _ 0
 
+/-- Qubit `0` of a two-qubit register. -/
+def w₀ : Fin 1 ↪ Fin 2 := ⟨![0], by decide⟩
+
+/-- The Hadamard gate on qubit `0` of a two-qubit register; qubit `1` is idle. -/
+noncomputable def hq₀ : PlacedGate 2 := ⟨1, Gate.hadamard, w₀⟩
+
+/-- CNOT with control qubit `0` and target qubit `1` of a two-qubit register. -/
+noncomputable def cx₀₁ : PlacedGate 2 := ⟨2, Gate.cnot, Function.Embedding.refl _⟩
+
+theorem hq₀_matrix_apply (y x : Fin 2 → Bool) : (hq₀.matrix : Matrix _ _ ℂ) y x =
+    if y 1 = x 1 then (if y 0 && x 0 then -1 else 1) * (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) else 0 := by
+  change (place w₀ Gate.hadamard : Matrix _ _ ℂ) y x = _
+  rw [place_apply]
+  have h1 : (∀ j, (¬∃ i, w₀ i = j) → y j = x j) ↔ y 1 = x 1 := by
+    constructor
+    · intro h
+      exact h 1 (by rintro ⟨i, hi⟩; fin_cases i; exact absurd hi (by decide))
+    · intro h j hj
+      fin_cases j
+      · exact absurd ⟨0, rfl⟩ hj
+      · exact h
+  simp only [h1]
+  rfl
+
+-- The Bell state: a Hadamard gate next to an idle qubit followed by CNOT gives
+-- `(|00⟩ + |11⟩)/√2`, so the two qubits always agree.
+theorem run_bell : Circuit.run [hq₀, cx₀₁] ![false, false] =
+    ((Real.sqrt 2)⁻¹ : ℂ) • (ket ![false, false] + ket ![true, true]) := by
+  have step₁ : hq₀.eval (ket ![false, false]) =
+      ((Real.sqrt 2)⁻¹ : ℂ) • (ket ![false, false] + ket ![true, false]) := by
+    ext y
+    rw [PlacedGate.eval_ket_apply, hq₀_matrix_apply]
+    have hy : y = ![y 0, y 1] := by funext j; fin_cases j <;> rfl
+    rw [hy]
+    generalize y 0 = a
+    generalize y 1 = b
+    cases a <;> cases b <;> simp [funext_iff, Fin.forall_fin_two]
+  have step₂ (x : Fin 2 → Bool) : cx₀₁.eval (ket x) = ket ![x 0, x 1 ^^ x 0] := by
+    simp only [cx₀₁, Gate.cnot, Gate.ofInvolutive, PlacedGate.eval_ofPerm_ket]
+    congr 1
+    funext j
+    exact (splitEquiv_symm_apply_wire (Function.Embedding.refl _) _ _ j).trans (by
+      fin_cases j <;> rfl)
+  simp only [Circuit.run, Circuit.eval_cons, Circuit.eval_nil, step₁, map_smul, map_add, step₂]
+  simp
+
+example : Circuit.measure [hq₀, cx₀₁] ![false, false] ![true, true] = 1 / 2 := by
+  rw [Circuit.measure_apply, run_bell]
+  simp [funext_iff, Fin.forall_fin_two]
+
+example : Circuit.measure [hq₀, cx₀₁] ![false, false] ![true, false] = 0 := by
+  rw [Circuit.measure_apply, run_bell]
+  simp [funext_iff, Fin.forall_fin_two]
+
 -- The circuit `H; Toffoli` is over the gate set `{H, Toffoli}`, but a circuit containing `H` is
 -- not over `{Toffoli}`.
 example : Circuit.IsOver {⟨1, Gate.hadamard⟩, ⟨3, Gate.toffoli⟩}

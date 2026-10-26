@@ -29,11 +29,13 @@ open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols SigmaProtocol
 A second stage that passes only at the challenge `0 : Fin 4` succeeds once with probability
 `1 / 4` and never twice at distinct challenges, so `ε ^ 2 - ε / N = 0` is attained. -/
 
-example : (Rewinding.once (PMF.pure ()) (fun _ _ => PMF.pure ()) fun _ (t : Fin 4) _ =>
+example : (Rewinding.once (PMF.pure ()) (fun _ => PMF.uniformOfFintype (Fin 4))
+    (fun _ _ => PMF.pure ()) fun _ (t : Fin 4) _ =>
     decide (t = 0)) true = 1 / 4 := by
   simp [Rewinding.once, PMF.bind_apply, tsum_fintype]
 
-example : (Rewinding.twice (PMF.pure ()) (fun _ _ => PMF.pure ()) fun _ (t : Fin 4) _ =>
+example : (Rewinding.twice (PMF.pure ()) (fun _ => PMF.uniformOfFintype (Fin 4))
+    (fun _ _ => PMF.pure ()) fun _ (t : Fin 4) _ =>
     decide (t = 0)) true = 0 := by
   simp [Rewinding.twice, PMF.bind_apply, tsum_fintype, Fin.sum_univ_four]
 

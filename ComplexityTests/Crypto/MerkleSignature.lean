@@ -37,7 +37,7 @@ theorem computableInPolyTime_truncHash :
 
 /-- Lamport's scheme on the identity function, a concrete (insecure) one-time scheme. -/
 noncomputable abbrev lamportId : SignatureScheme :=
-  lamportScheme id ComputableTidilyInPolyTime.id'
+  lamportScheme id ComputableInPolyTime.id'
 
 /-- Two leaves. -/
 theorem hcapOne : ComputableInPolyTime (fun _ : ℕ => 2 ^ 1) encUnary encUnary :=

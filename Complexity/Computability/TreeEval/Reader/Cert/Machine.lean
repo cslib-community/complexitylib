@@ -16,7 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pla
 
 The halting test, the address and the step of `Cslib.TreeEval.Reader.machine` are computable
 within the space budget `Cslib.TreeEval.Reader.stateBudget` of its states, and the step machine
-simulating it is tidy.
+simulating it has a plain resource certificate.
 
 ## Main definitions
 
@@ -24,7 +24,8 @@ simulating it is tidy.
 
 ## Main results
 
-* `Cslib.TreeEval.Reader.tidy_machine`: the step machine simulating the read machine is tidy.
+* `Cslib.TreeEval.Reader.machine_resourceCertificate`: the simulating step machine has a resource
+  certificate.
 
 ## References
 
@@ -123,15 +124,24 @@ private theorem step_inSpace :
   · simp only [stateBudget, stepBudget_bool]; exact le_rfl
   · rw [stepT_toTuple, encPair_apply, encPair_apply, encState_apply]
 
-/-- **The step machine simulating the read machine is tidy**, within the space of its states
+/-- **The simulating step machine has a resource certificate**, within the space of its states
 together with the position of its head. -/
-theorem tidy_machine : ∃ T, machine.toStepMachine.Tidy (encPair encState encNat)
+theorem machine_resourceCertificate :
+    ∃ T, machine.toStepMachine.ResourceCertificate (encPair encState encNat)
     (ReadMachine.stateT encState T stateBudget) (ReadMachine.stateS encState stateBudget) := by
-  obtain ⟨T₁, h₁⟩ := halt_inSpace
-  obtain ⟨T₂, h₂⟩ := addr_inSpace
-  obtain ⟨T₃, h₃⟩ := step_inSpace
+  obtain ⟨T₁, c₁, ⟨k₁, Q₁, hf₁, tm₁, hm₁⟩, hl₁⟩ := halt_inSpace
+  obtain ⟨T₂, c₂, ⟨k₂, Q₂, hf₂, tm₂, hm₂⟩, hl₂⟩ := addr_inSpace
+  obtain ⟨T₃, c₃, ⟨k₃, Q₃, hf₃, tm₃, hm₃⟩, hl₃⟩ := step_inSpace
+  have h₁ : ComputableInO machine.halt encState encBool T₁ stateBudget :=
+    ⟨c₁, ⟨k₁, Q₁, hf₁, tm₁, fun s => (hm₁ s).computesInTimeAndSpace⟩, hl₁⟩
+  have h₂ : ComputableInO machine.addr encState (encOption encNat) T₂ stateBudget :=
+    ⟨c₂, ⟨k₂, Q₂, hf₂, tm₂, fun s => (hm₂ s).computesInTimeAndSpace⟩, hl₂⟩
+  have h₃ : ComputableInO (fun p : State × Bool => machine.step p.1 p.2)
+      (encPair encState encBool) (encPair encState encBits) T₃ (fun p => stateBudget p.1) :=
+    ⟨c₃, ⟨k₃, Q₃, hf₃, tm₃, fun p => (hm₃ p).computesInTimeAndSpace⟩, hl₃⟩
   let T : State → ℕ := fun s => T₁ s + T₂ s + T₃ (s, false) + T₃ (s, true)
-  exact ⟨T, ReadMachine.tidy_toStepMachine (h₁.mono_le (fun s => by simp only [T]; omega)
+  exact ⟨T, ReadMachine.toStepMachine_resourceCertificate
+    (h₁.mono_le (fun s => by simp only [T]; omega)
     fun _ => le_rfl) (h₂.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
     (h₃.mono_le (fun p => by rcases p with ⟨s, _ | _⟩ <;> simp only [T] <;> omega)
       fun _ => le_rfl)⟩

@@ -225,6 +225,32 @@ private theorem slack_le {r s : ℕ} (hs : 48 * r ≤ s) (hs1 : 1 ≤ s) :
       _ ≤ s * (27 / 32) ^ r := mul_le_mul_of_nonneg_left h3 (by positivity)
   linarith
 
+/-- For `48 * r ≤ m + 1` and `0 ≤ b ≤ 2 ^ m`, the scaled slack term on `Tyᶜ` is at most
+`18 * (m + 1) * 4 ^ m * (27 / 32) ^ r`. -/
+private theorem two_pow_succ_mul_slack_mul_le {m r : ℕ} {b : ℝ} (hr : 48 * r ≤ m + 1)
+    (hb0 : 0 ≤ b) (hb : b ≤ 2 ^ m) :
+    (2 : ℝ) ^ (m + 1) * (8 * ((m : ℝ) + 1) * (27 / 32) ^ r +
+        (12 * (r : ℝ) + 1) * 2 ^ (12 * r) * (3 / 4) ^ (m + 1)) * b ≤
+      18 * ((m : ℝ) + 1) * 4 ^ m * (27 / 32) ^ r := by
+  have hsl := slack_le (r := r) (s := m + 1) hr (by omega)
+  push_cast at hsl
+  have hpow : (2 : ℝ) ^ (m + 1) * 2 ^ m = 2 * 4 ^ m := by
+    rw [pow_succ, show (4 : ℝ) ^ m = 2 ^ m * 2 ^ m by rw [← mul_pow]; norm_num]
+    ring
+  have hE : (2 : ℝ) ^ (m + 1) * (8 * ((m : ℝ) + 1) * (27 / 32) ^ r +
+      (12 * (r : ℝ) + 1) * 2 ^ (12 * r) * (3 / 4) ^ (m + 1)) ≤
+      2 ^ (m + 1) * (9 * ((m : ℝ) + 1) * (27 / 32) ^ r) :=
+    mul_le_mul_of_nonneg_left hsl (by positivity)
+  have h1 := mul_le_mul_of_nonneg_right hE hb0
+  have h2 : (2 : ℝ) ^ (m + 1) * (9 * ((m : ℝ) + 1) * (27 / 32) ^ r) * b ≤
+      2 ^ (m + 1) * (9 * ((m : ℝ) + 1) * (27 / 32) ^ r) * 2 ^ m :=
+    mul_le_mul_of_nonneg_left hb (by positivity)
+  have h3 : (2 : ℝ) ^ (m + 1) * (9 * ((m : ℝ) + 1) * (27 / 32) ^ r) * 2 ^ m =
+      18 * ((m : ℝ) + 1) * 4 ^ m * (27 / 32) ^ r := by
+    rw [mul_comm _ ((2 : ℝ) ^ m), ← mul_assoc, mul_comm ((2 : ℝ) ^ m), hpow]
+    ring
+  exact (h1.trans h2).trans_eq h3
+
 /-- **The corruption inequality on one side.** Over the partitions `(i, Tx, Ty)` of `2 m + 1`
 points, the products `low A Tx * low B Ty` with `i` bad for `A` relative to `Ty` add up to at most
 a quarter of all of them, up to an exponentially small error. -/
@@ -254,32 +280,14 @@ private theorem four_mul_sum_filter_le (hU : Fintype.card U = 2 * m + 1)
     exact_mod_cast this
   have hKL := four_mul_sum_card_filter_notMem_le A Tyᶜ (r := r) (j := 12 * r) (by omega)
   rw [hS] at hKL
-  have hsl := slack_le (r := r) (s := m + 1) hr (by omega)
-  push_cast at hsl
+  push_cast at hKL
   simp only [low_compl_insert, high]
   rw [← sum_filter, ← sum_mul, ← sum_mul]
-  set a := ∑ i ∈ Tyᶜ with 3 * #{x ∈ A | i ∈ x ∧ x ⊆ Tyᶜ} < #{x ∈ A | x ⊆ Tyᶜ ∧ i ∉ x},
-    (#{x ∈ A | x ⊆ Tyᶜ ∧ i ∉ x} : ℝ)
-  set a' := ∑ i ∈ Tyᶜ, (#{x ∈ A | x ⊆ Tyᶜ ∧ i ∉ x} : ℝ)
   have hb0 : (0 : ℝ) ≤ low B Ty := Nat.cast_nonneg _
-  have hpow : (2 : ℝ) ^ (m + 1) * 2 ^ m = 2 * 4 ^ m := by
-    rw [pow_succ, show (4 : ℝ) ^ m = 2 ^ m * 2 ^ m by rw [← mul_pow]; norm_num]
-    ring
-  have hE : (2 : ℝ) ^ (m + 1) * (8 * ((m : ℝ) + 1) * (27 / 32) ^ r +
-      (((12 * r : ℕ) : ℝ) + 1) * 2 ^ (12 * r) * (3 / 4) ^ (m + 1)) ≤
-      2 ^ (m + 1) * (9 * ((m : ℝ) + 1) * (27 / 32) ^ r) :=
-    mul_le_mul_of_nonneg_left (by push_cast; linarith) (by positivity)
-  push_cast at hKL hE
-  have h1 : 4 * a * low B Ty ≤ (a' + 2 ^ (m + 1) * (9 * ((m : ℝ) + 1) * (27 / 32) ^ r)) *
-      low B Ty := mul_le_mul_of_nonneg_right (by linarith) hb0
-  have h2 : (2 : ℝ) ^ (m + 1) * (9 * ((m : ℝ) + 1) * (27 / 32) ^ r) * low B Ty ≤
-      2 ^ (m + 1) * (9 * ((m : ℝ) + 1) * (27 / 32) ^ r) * 2 ^ m :=
-    mul_le_mul_of_nonneg_left hb (by positivity)
-  have h3 : (2 : ℝ) ^ (m + 1) * (9 * ((m : ℝ) + 1) * (27 / 32) ^ r) * 2 ^ m =
-      18 * ((m : ℝ) + 1) * 4 ^ m * (27 / 32) ^ r := by
-    rw [mul_comm _ ((2 : ℝ) ^ m), ← mul_assoc, mul_comm ((2 : ℝ) ^ m), hpow]
-    ring
-  nlinarith
+  have h1 := mul_le_mul_of_nonneg_right hKL hb0
+  rw [add_mul] at h1
+  have h2 := two_pow_succ_mul_slack_mul_le hr hb0 hb
+  linarith
 
 /-- **The corruption inequality over partitions.** Over the partitions `(i, Tx, Ty)` of `2 m + 1`
 points, the members of `A` inside `Tx` times the members of `B` inside `Ty` add up to at most `18`

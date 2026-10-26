@@ -11,6 +11,7 @@ public import Complexity.Crypto.Game
 public import Complexity.Foundations.Data.BitString.Basic
 public import Complexity.Languages.Probabilistic.QueryCount
 public import Complexity.Probability.HashFamily
+public import Complexity.Probability.HashFamily.Uniform
 public import Mathlib.Data.Fintype.Perm
 import Complexity.Languages.Probabilistic.RandomOracle
 import Complexity.Languages.Probabilistic.RandomPermutation
@@ -122,8 +123,8 @@ We prove the **Luby–Rackoff theorem** ([BonehShoup2023], Section 4.5, Theorem 
 
 * `Cslib.Crypto.LubyRackoff.prodComm_trans_feistelNetwork_reverse_trans_prodComm`: swap-reversal
   conjugation identity for Feistel decryption over groups of exponent two.
-* `Cslib.Crypto.LubyRackoff.isDeltaUniversalHash_uniformOfFintype`,
-  `Cslib.Crypto.LubyRackoff.isDeltaUniversalHash_neg_uniformOfFintype`: a uniform random function
+* `Cslib.Probability.isDeltaUniversalHash_uniformOfFintype`,
+  `Cslib.Probability.isDeltaUniversalHash_neg_uniformOfFintype`: a uniform random function
   into `G` and its negation are `|G|⁻¹`-Δ-universal.
 * `Cslib.Crypto.LubyRackoff.feistel3HashIdealGame_apply_le`,
   `Cslib.Crypto.LubyRackoff.randomFunctionGame_apply_le_feistel3HashIdealGame`: two-sided
@@ -313,29 +314,6 @@ theorem feistel4_symm_apply (f₁ f₂ f₃ f₄ : G → G) (wz : G × G) :
     (feistel4 f₁ f₂ f₃ f₄).symm wz = (feistel3 f₁ f₂ f₃).symm (feistelInvRound f₄ wz) := rfl
 
 end Algebraic
-
-/-! ### Uniform random functions are `|G|⁻¹`-Δ-universal -/
-
-section UniformDeltaUniversal
-
-/-- A uniformly random function from a finite domain `X` into a finite additive group `G` is
-`|G|⁻¹`-almost-Δ-universal. -/
-theorem isDeltaUniversalHash_uniformOfFintype {X G : Type*} [Fintype X] [DecidableEq X]
-    [AddGroup G] [Fintype G] [Nonempty G] :
-    IsDeltaUniversalHash (PMF.uniformOfFintype (X → G)) id (Fintype.card G : ℝ≥0∞)⁻¹ := by
-  refine IsDeltaUniversalHash.of_map_sub_eq_uniform fun x x' hx => ?_
-  rw [← Probability.PMF.uniformOfFintype_update x, PMF.map_bind]
-  simp only [id_eq, PMF.map_comp, Function.comp_def, Function.update_self,
-    Function.update_of_ne hx.symm]
-  simp only [PMF.map, Function.comp_def]
-  rw [PMF.bind_comm]
-  have hsub (f : X → G) :
-      ((PMF.uniformOfFintype G).bind fun a => PMF.pure (a - f x')) =
-        PMF.uniformOfFintype G :=
-    Probability.PMF.uniformOfFintype_map_equiv (Equiv.subRight (f x'))
-  simp only [hsub, PMF.bind_const]
-
-end UniformDeltaUniversal
 
 /-! ### The 3-round Luby–Rackoff theorem -/
 
@@ -3167,18 +3145,6 @@ private theorem toOuterMeasure_bad_idealRoundHandler4 (f₁ f₄ : G → G)
   rw [PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_map_apply] at h
   exact h
 
-/-- The negated uniform random function `f ↦ (fun x => -f x)` from a finite domain `X` into a
-finite additive group `G` is `|G|⁻¹`-almost-Δ-universal. -/
-theorem isDeltaUniversalHash_neg_uniformOfFintype {X G : Type*} [Fintype X] [DecidableEq X]
-    [AddGroup G] [Fintype G] [Nonempty G] :
-    IsDeltaUniversalHash (PMF.uniformOfFintype (X → G)) (fun f x => -f x)
-      (Fintype.card G : ℝ≥0∞)⁻¹ := by
-  intro x x' hx δ
-  have hmap := Probability.PMF.uniformOfFintype_map_equiv
-    (Equiv.piCongrRight fun _ : X => Equiv.neg G)
-  have h := isDeltaUniversalHash_uniformOfFintype x x' hx δ
-  rw [← hmap, PMF.toOuterMeasure_map_apply] at h
-  exact h
 
 omit [AddGroup G] [Fintype G] [DecidableEq G] [Nonempty G] in
 private theorem pairwise_swapCache_of_pairwise_snd {qc : List ((G × G) × (G × G))}

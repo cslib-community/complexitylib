@@ -204,6 +204,60 @@ theorem sum_spectralWeight_le_one (k : ℕ) (A : (α → Bool) → Bool) :
   · simp only [hTk, false_and, ↓reduceIte, sum_const_zero]
     exact sq_nonneg _
 
+/-- For a character `S` of size `< k` containing `y`, its squared Fourier coefficient is at most
+`k * spectralWeight k B y`. -/
+private theorem fourierCoeff_sq_le_mul_spectralWeight {k : ℕ} (B : (α → Bool) → Bool)
+    {S : Finset α} (hSk : #S < k) {y : α} (hy : y ∈ S) :
+    fourierCoeff (fun f => signVal (B f)) S ^ 2 ≤ (k : ℝ) * spectralWeight k B y := by
+  have hpos : (0 : ℝ) < #S := by exact_mod_cast card_pos.2 ⟨y, hy⟩
+  have hle : (#S : ℝ) ≤ k := by exact_mod_cast hSk.le
+  have hsingle : fourierCoeff (fun f => signVal (B f)) S ^ 2 / #S ≤ spectralWeight k B y := by
+    rw [spectralWeight]
+    exact single_le_sum
+      (f := fun S : Finset α => fourierCoeff (fun f => signVal (B f)) S ^ 2 / #S)
+      (fun _ _ => div_nonneg (sq_nonneg _) (Nat.cast_nonneg _))
+      (mem_filter.2 ⟨mem_univ S, hSk, hy⟩)
+  calc fourierCoeff (fun f => signVal (B f)) S ^ 2
+    _ = #S * (fourierCoeff (fun f => signVal (B f)) S ^ 2 / #S) :=
+        (mul_div_cancel₀ _ hpos.ne').symm
+    _ ≤ (k : ℝ) * spectralWeight k B y :=
+        mul_le_mul hle hsingle (div_nonneg (sq_nonneg _) (Nat.cast_nonneg _)) (Nat.cast_nonneg k)
+
+/-- Each low-degree character `T` with `#T < k` and `projectSet π T ≠ ∅` contributes at most
+`k ^ 2` times the sum over `x ∈ T` of `(fourierCoeff F_A T ^ 2 / #T) * spectralWeight k B (π x)`. -/
+private theorem ite_fourierCoeff_sq_mul_le (π : β → γ) (k : ℕ)
+    (B : (γ → Bool) → Bool) (A : (β → Bool) → Bool) (T : Finset β) :
+    (if #T < k ∧ projectSet π T ≠ ∅ then
+      fourierCoeff (fun g => signVal (A g)) T ^ 2 *
+        fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2
+    else 0) ≤
+      (k : ℝ) ^ 2 * ∑ x : β,
+        (if #T < k ∧ x ∈ T then fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T else 0) *
+          spectralWeight k B (π x) := by
+  have hnn (x : β) : 0 ≤ (if #T < k ∧ x ∈ T then
+      fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T else 0) * spectralWeight k B (π x) := by
+    split_ifs
+    · exact mul_nonneg (div_nonneg (sq_nonneg _) (Nat.cast_nonneg _))
+        (spectralWeight_nonneg k B (π x))
+    · simp
+  split_ifs with hT
+  · obtain ⟨hTk, hne⟩ := hT
+    obtain ⟨_, hy⟩ := nonempty_iff_ne_empty.2 hne
+    obtain ⟨x₀, hx₀T, rfl⟩ := exists_mem_of_mem_projectSet hy
+    have hpos : (0 : ℝ) < #T := by exact_mod_cast card_pos.2 ⟨x₀, hx₀T⟩
+    have hA : fourierCoeff (fun g => signVal (A g)) T ^ 2 ≤
+        (k : ℝ) * (fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T) := by
+      rw [mul_div_assoc', le_div_iff₀' hpos]
+      exact mul_le_mul_of_nonneg_right (by exact_mod_cast hTk.le : (#T : ℝ) ≤ k) (sq_nonneg _)
+    have hB := fourierCoeff_sq_le_mul_spectralWeight B ((card_projectSet_le π T).trans_lt hTk) hy
+    have hsingle : (fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T) *
+        spectralWeight k B (π x₀) ≤ ∑ x : β,
+          (if #T < k ∧ x ∈ T then fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T else 0) *
+            spectralWeight k B (π x) := by
+      simpa [hTk, hx₀T] using single_le_sum (fun x _ => hnn x) (mem_univ x₀)
+    nlinarith [mul_le_mul hA hB (sq_nonneg _) (by positivity), sq_nonneg (k : ℝ)]
+  · exact mul_nonneg (sq_nonneg _) (sum_nonneg fun x _ => hnn x)
+
 /-- Low-degree terms in the Cauchy–Schwarz bound are controlled by the collision probability of the
 spectral decoding distributions along `π`. -/
 private theorem sum_lowDegree_fourierCoeff_sq_le (π : β → γ) (k : ℕ)
@@ -212,82 +266,6 @@ private theorem sum_lowDegree_fourierCoeff_sq_le (π : β → γ) (k : ℕ)
       fourierCoeff (fun g => signVal (A g)) T ^ 2 *
         fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2) ≤
       (k : ℝ) ^ 2 * ∑ x : β, spectralWeight k A x * spectralWeight k B (π x) := by
-  have hterm (T : Finset β) :
-      (if #T < k ∧ projectSet π T ≠ ∅ then
-        fourierCoeff (fun g => signVal (A g)) T ^ 2 *
-          fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2
-      else 0) ≤
-        (k : ℝ) ^ 2 * ∑ x : β,
-          (if #T < k ∧ x ∈ T then fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T else 0) *
-            spectralWeight k B (π x) := by
-    split_ifs with hT
-    · obtain ⟨hTk, hne⟩ := hT
-      obtain ⟨y, hy⟩ := nonempty_iff_ne_empty.2 hne
-      obtain ⟨x₀, hx₀T, rfl⟩ := exists_mem_of_mem_projectSet hy
-      have hcardT_pos : (0 : ℝ) < #T := by
-        exact_mod_cast card_pos.2 ⟨x₀, hx₀T⟩
-      have hcardT_le : (#T : ℝ) ≤ k := by exact_mod_cast hTk.le
-      have hcardS_pos : (0 : ℝ) < #(projectSet π T) := by
-        exact_mod_cast card_pos.2 ⟨π x₀, hy⟩
-      have hcardS_lt : #(projectSet π T) < k := (card_projectSet_le π T).trans_lt hTk
-      have hcardS_le : (#(projectSet π T) : ℝ) ≤ k := by exact_mod_cast hcardS_lt.le
-      have hB_le :
-          fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2 / #(projectSet π T) ≤
-            spectralWeight k B (π x₀) := by
-        rw [spectralWeight]
-        refine single_le_sum
-          (f := fun S : Finset γ => fourierCoeff (fun f => signVal (B f)) S ^ 2 / #S)
-          (fun S _ => div_nonneg (sq_nonneg _) (Nat.cast_nonneg _)) ?_
-        simp [hcardS_lt, hy]
-      have hB_le' :
-          fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2 ≤
-            (k : ℝ) * spectralWeight k B (π x₀) := by
-        have h1 : fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2 =
-            #(projectSet π T) *
-              (fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2 / #(projectSet π T)) := by
-          rw [mul_div_cancel₀ _ hcardS_pos.ne']
-        conv_lhs => rw [h1]
-        exact mul_le_mul hcardS_le hB_le (div_nonneg (sq_nonneg _) (Nat.cast_nonneg _))
-          (Nat.cast_nonneg k)
-      have hA_le' :
-          fourierCoeff (fun g => signVal (A g)) T ^ 2 ≤
-            (k : ℝ) * (fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T) := by
-        have h1 : fourierCoeff (fun g => signVal (A g)) T ^ 2 =
-            #T * (fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T) := by
-          rw [mul_div_cancel₀ _ hcardT_pos.ne']
-        conv_lhs => rw [h1]
-        exact mul_le_mul_of_nonneg_right hcardT_le (div_nonneg (sq_nonneg _) (Nat.cast_nonneg _))
-      have hprod :
-          fourierCoeff (fun g => signVal (A g)) T ^ 2 *
-              fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2 ≤
-            (k : ℝ) ^ 2 *
-              ((fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T) *
-                spectralWeight k B (π x₀)) := by
-        calc fourierCoeff (fun g => signVal (A g)) T ^ 2 *
-              fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2
-          _ ≤ ((k : ℝ) * (fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T)) *
-                ((k : ℝ) * spectralWeight k B (π x₀)) :=
-            mul_le_mul hA_le' hB_le' (sq_nonneg _) (by positivity)
-          _ = (k : ℝ) ^ 2 *
-                ((fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T) *
-                  spectralWeight k B (π x₀)) := by ring
-      refine hprod.trans (mul_le_mul_of_nonneg_left ?_ (sq_nonneg _))
-      have hsingle := single_le_sum
-        (f := fun x : β =>
-          (if #T < k ∧ x ∈ T then fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T else 0) *
-            spectralWeight k B (π x))
-        (fun x _ => by
-          split_ifs
-          · exact mul_nonneg (div_nonneg (sq_nonneg _) (Nat.cast_nonneg _))
-              (spectralWeight_nonneg k B (π x))
-          · simp)
-        (mem_univ x₀)
-      simpa [hTk, hx₀T] using hsingle
-    · refine mul_nonneg (sq_nonneg _) (sum_nonneg fun x _ => ?_)
-      split_ifs
-      · exact mul_nonneg (div_nonneg (sq_nonneg _) (Nat.cast_nonneg _))
-          (spectralWeight_nonneg k B (π x))
-      · simp
   rw [sum_filter]
   calc (∑ T : Finset β,
         if #T < k ∧ projectSet π T ≠ ∅ then
@@ -296,7 +274,7 @@ private theorem sum_lowDegree_fourierCoeff_sq_le (π : β → γ) (k : ℕ)
         else 0)
     _ ≤ ∑ T : Finset β, (k : ℝ) ^ 2 * ∑ x : β,
           (if #T < k ∧ x ∈ T then fourierCoeff (fun g => signVal (A g)) T ^ 2 / #T else 0) *
-            spectralWeight k B (π x) := sum_le_sum fun T _ => hterm T
+            spectralWeight k B (π x) := sum_le_sum fun T _ => ite_fourierCoeff_sq_mul_le π k B A T
     _ = (k : ℝ) ^ 2 * ∑ x : β, spectralWeight k A x * spectralWeight k B (π x) := by
       rw [← mul_sum, sum_comm]
       congr 1
@@ -304,6 +282,29 @@ private theorem sum_lowDegree_fourierCoeff_sq_le (π : β → γ) (k : ℕ)
       rw [← sum_mul]
       congr 1
       rw [spectralWeight, sum_filter]
+
+/-- By Cauchy–Schwarz and Parseval's identity on `A`, `linearCorr π δ B A ^ 2` is at most the
+`fourierCoeff F_A T ^ 2`-weighted sum of the squared attenuated coefficients of `B`. -/
+private theorem linearCorr_sq_le_sum_fourierCoeff_sq (π : β → γ) (δ : ℝ)
+    (B : (γ → Bool) → Bool) (A : (β → Bool) → Bool) :
+    linearCorr π δ B A ^ 2 ≤
+      ∑ T : Finset β,
+        fourierCoeff (fun g => signVal (A g)) T ^ 2 *
+          ((1 - 2 * δ) ^ #T * fourierCoeff (fun f => signVal (B f)) (projectSet π T)) ^ 2 := by
+  rw [linearCorr_eq_sum, show (∑ T : Finset β,
+      (1 - 2 * δ) ^ #T * fourierCoeff (fun g => signVal (A g)) T ^ 2 *
+        fourierCoeff (fun f => signVal (B f)) (projectSet π T)) =
+    ∑ T : Finset β, fourierCoeff (fun g => signVal (A g)) T *
+      (fourierCoeff (fun g => signVal (A g)) T *
+        ((1 - 2 * δ) ^ #T * fourierCoeff (fun f => signVal (B f)) (projectSet π T))) from
+    sum_congr rfl fun _ _ => by ring]
+  have h1 := sum_mul_sq_le_sq_mul_sq univ
+    (fun T : Finset β => fourierCoeff (fun g => signVal (A g)) T)
+    (fun T : Finset β =>
+      fourierCoeff (fun g => signVal (A g)) T *
+        ((1 - 2 * δ) ^ #T * fourierCoeff (fun f => signVal (B f)) (projectSet π T)))
+  rw [sum_fourierCoeff_sq_signVal, one_mul] at h1
+  exact h1.trans_eq (sum_congr rfl fun _ _ => by ring)
 
 /-- **Cauchy–Schwarz and Parseval soundness bound for Håstad's 3-bit linear test**
 [Håstad, Lemma 5.2][Hastad2001]: for any folded (odd) table `B`, any table `A`, noise rate
@@ -314,29 +315,8 @@ theorem linearCorr_sq_le (π : β → γ) {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : �
     linearCorr π δ B A ^ 2 ≤
       (1 - 2 * δ) ^ (2 * k) +
         (k : ℝ) ^ 2 * ∑ x : β, spectralWeight k A x * spectralWeight k B (π x) := by
-  have hcs :
-      linearCorr π δ B A ^ 2 ≤
-        ∑ T : Finset β,
-          fourierCoeff (fun g => signVal (A g)) T ^ 2 *
-            ((1 - 2 * δ) ^ #T * fourierCoeff (fun f => signVal (B f)) (projectSet π T)) ^ 2 := by
-    rw [linearCorr_eq_sum]
-    have hrewrite :
-        (∑ T : Finset β,
-          (1 - 2 * δ) ^ #T * fourierCoeff (fun g => signVal (A g)) T ^ 2 *
-            fourierCoeff (fun f => signVal (B f)) (projectSet π T)) =
-        ∑ T : Finset β,
-          fourierCoeff (fun g => signVal (A g)) T *
-            (fourierCoeff (fun g => signVal (A g)) T *
-              ((1 - 2 * δ) ^ #T * fourierCoeff (fun f => signVal (B f)) (projectSet π T))) :=
-      sum_congr rfl fun T _ => by ring
-    rw [hrewrite]
-    have h1 := sum_mul_sq_le_sq_mul_sq univ
-      (fun T : Finset β => fourierCoeff (fun g => signVal (A g)) T)
-      (fun T : Finset β =>
-        fourierCoeff (fun g => signVal (A g)) T *
-          ((1 - 2 * δ) ^ #T * fourierCoeff (fun f => signVal (B f)) (projectSet π T)))
-    rw [sum_fourierCoeff_sq_signVal, one_mul] at h1
-    refine h1.trans_eq (sum_congr rfl fun T _ => by ring)
+  have hρ0 : 0 ≤ 1 - 2 * δ := by linarith
+  have hρ1 : 1 - 2 * δ ≤ 1 := by linarith
   have hsplit :
       (∑ T : Finset β,
         fourierCoeff (fun g => signVal (A g)) T ^ 2 *
@@ -347,48 +327,30 @@ theorem linearCorr_sq_le (π : β → γ) {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : �
             fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2 := by
     rw [mul_sum, sum_filter, ← sum_add_distrib]
     refine sum_le_sum fun T _ => ?_
-    have hρ0 : 0 ≤ 1 - 2 * δ := by linarith
-    have hρ1 : 1 - 2 * δ ≤ 1 := by linarith
+    have hnn : 0 ≤ (1 - 2 * δ) ^ (2 * k) * fourierCoeff (fun g => signVal (A g)) T ^ 2 :=
+      mul_nonneg (pow_nonneg hρ0 _) (sq_nonneg _)
     by_cases hTk : #T < k
     · by_cases hne : projectSet π T ≠ ∅
       · simp only [hTk, hne, ne_eq, not_false_eq_true, and_self, ↓reduceIte]
         have hpow : ((1 - 2 * δ) ^ #T) ^ 2 ≤ 1 := by
           rw [← pow_mul]
           exact pow_le_one₀ hρ0 hρ1
-        have hnonneg : 0 ≤ (1 - 2 * δ) ^ (2 * k) * fourierCoeff (fun g => signVal (A g)) T ^ 2 :=
-          mul_nonneg (pow_nonneg hρ0 _) (sq_nonneg _)
-        have hle1 :
-            fourierCoeff (fun g => signVal (A g)) T ^ 2 *
-                ((1 - 2 * δ) ^ #T * fourierCoeff (fun f => signVal (B f)) (projectSet π T)) ^ 2 ≤
-              fourierCoeff (fun g => signVal (A g)) T ^ 2 *
-                fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2 := by
-          rw [mul_pow, ← mul_assoc, mul_comm (fourierCoeff _ T ^ 2), mul_assoc]
-          simpa only [one_mul] using
-            mul_le_mul_of_nonneg_right hpow (mul_nonneg (sq_nonneg _) (sq_nonneg _))
-        linarith
+        nlinarith [mul_le_mul_of_nonneg_left hpow
+          (mul_nonneg (sq_nonneg (fourierCoeff (fun g => signVal (A g)) T))
+            (sq_nonneg (fourierCoeff (fun f => signVal (B f)) (projectSet π T))))]
       · push Not at hne
-        simp only [hTk, hne, ne_eq, not_true_eq_false, and_false, ↓reduceIte, add_zero,
-          hB.fourierCoeff_empty, mul_zero, sq (0 : ℝ)]
-        exact mul_nonneg (pow_nonneg hρ0 _) (sq_nonneg _)
+        simpa only [hTk, hne, ne_eq, not_true_eq_false, and_false, ↓reduceIte, add_zero,
+          hB.fourierCoeff_empty, mul_zero, sq (0 : ℝ)] using hnn
     · simp only [hTk, false_and, ↓reduceIte, add_zero]
-      have hkT : 2 * k ≤ #T * 2 := by omega
       have hpow : ((1 - 2 * δ) ^ #T) ^ 2 ≤ (1 - 2 * δ) ^ (2 * k) := by
         rw [← pow_mul]
-        exact pow_le_pow_of_le_one hρ0 hρ1 hkT
-      have hFB : fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2 ≤ 1 :=
-        Cslib.BitString.fourierCoeff_sq_signVal_le_one B (projectSet π T)
-      calc fourierCoeff (fun g => signVal (A g)) T ^ 2 *
-            ((1 - 2 * δ) ^ #T * fourierCoeff (fun f => signVal (B f)) (projectSet π T)) ^ 2
-        _ = fourierCoeff (fun g => signVal (A g)) T ^ 2 *
-              (((1 - 2 * δ) ^ #T) ^ 2 *
-                fourierCoeff (fun f => signVal (B f)) (projectSet π T) ^ 2) := by ring
-        _ ≤ fourierCoeff (fun g => signVal (A g)) T ^ 2 * ((1 - 2 * δ) ^ (2 * k) * 1) := by
-          refine mul_le_mul_of_nonneg_left ?_ (sq_nonneg _)
-          exact mul_le_mul hpow hFB (sq_nonneg _) (pow_nonneg hρ0 _)
-        _ = (1 - 2 * δ) ^ (2 * k) * fourierCoeff (fun g => signVal (A g)) T ^ 2 := by ring
+        exact pow_le_pow_of_le_one hρ0 hρ1 (by omega)
+      have hFB := Cslib.BitString.fourierCoeff_sq_signVal_le_one B (projectSet π T)
+      nlinarith [mul_le_mul hpow hFB (sq_nonneg _) (pow_nonneg hρ0 _),
+        sq_nonneg (fourierCoeff (fun g => signVal (A g)) T)]
   rw [sum_fourierCoeff_sq_signVal, mul_one] at hsplit
-  have hlow := sum_lowDegree_fourierCoeff_sq_le π k B A
-  linarith
+  linarith [linearCorr_sq_le_sum_fourierCoeff_sq π δ B A, hsplit,
+    sum_lowDegree_fourierCoeff_sq_le π k B A]
 
 end Soundness
 

@@ -80,9 +80,9 @@ example : IsPPTOn (encList encBool) encBits (fun word => do
 
 -- An evaluator supplied by the caller composes with signed descriptions and captured inputs.
 example (evaluate : List Bool → List Bool → Bool)
-    (hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+    (hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
       (encPair encBits encBits) encBool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun word => signedPredict evaluate (true :: word) (word ++ [false]))
       (encList encBool) encBool := by
   fun_prop
@@ -142,7 +142,7 @@ example {Observation Label Seed : Type} (source : ProbComp (Observation × Label
   rw [eval_extractLabels_of_subsingleton, Game.advantage_self]
 
 -- Repetition and slack computation compose through alternative input encodings.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun word => (ExtractionSchedule.count word.length (word.length + 1) 2,
       ExtractionSchedule.slack word.length (word.length + 1) 2))
     (encList encBool) (encPair encUnary encUnary) := by fun_prop

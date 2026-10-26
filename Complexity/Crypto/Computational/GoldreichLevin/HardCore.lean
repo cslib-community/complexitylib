@@ -61,15 +61,15 @@ def paddedPredicate (seed : List Bool) : Bool :=
 /-- The padded function uses ordinary slicing and one call to the supplied function. -/
 @[fun_prop]
 theorem polyTime_paddedFunction {f : List Bool → List Bool}
-    (hf : ComputableTidilyInPolyTime f encBits encBits) :
-    ComputableTidilyInPolyTime (paddedFunction f) encBits encBits := by
+    (hf : ComputableInPolyTime f encBits encBits) :
+    ComputableInPolyTime (paddedFunction f) encBits encBits := by
   unfold paddedFunction
   polytime
 
 /-- The hard-core predicate is an efficient dot product of the two halves. -/
 @[fun_prop]
 theorem polyTime_paddedPredicate :
-    ComputableTidilyInPolyTime paddedPredicate encBits encBool := by
+    ComputableInPolyTime paddedPredicate encBits encBool := by
   unfold paddedPredicate
   polytime
 
@@ -191,7 +191,7 @@ theorem OneWayPermutation.pseudorandomGenerator {f : List Bool → List Bool}
     (hf : OneWayPermutation f) :
     PseudorandomGenerator (generator f) (fun n => n + 1) :=
   (padded_hardCore hf.oneWay).pseudorandomGenerator
-    (polyTime_paddedFunction hf.oneWay.polyTime.tidy) (paddedFunction_length hf.length_eq)
+    (polyTime_paddedFunction hf.oneWay.polyTime) (paddedFunction_length hf.length_eq)
     (paddedFunction_uniform hf.uniformList_map)
 
 end Cslib.Crypto

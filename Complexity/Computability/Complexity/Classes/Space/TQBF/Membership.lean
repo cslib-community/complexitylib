@@ -369,7 +369,7 @@ theorem exists_computableInO_evaluate : ∃ e, ComputableInO evaluate encQBF enc
       have hpow (a : ℕ) (ha : a ≤ E / 2) :
           (16 * (L + 1) ^ 2 + 1) ^ a ≤ 17 ^ a * (L + 1) ^ E := by
         calc (16 * (L + 1) ^ 2 + 1) ^ a ≤ (17 * (L + 1) ^ 2) ^ a :=
-              Nat.pow_le_pow_left (by nlinarith [Nat.one_le_pow 2 (L + 1) hP]) a
+              Nat.pow_le_pow_left (by linarith only [Nat.one_le_pow 2 (L + 1) hP]) a
           _ = 17 ^ a * (L + 1) ^ (2 * a) := by rw [Nat.mul_pow, ← pow_mul]
           _ ≤ 17 ^ a * (L + 1) ^ E := Nat.mul_le_mul_left _ (pow_le_pow_of_le hP (by omega))
       have hR := hpow d (by omega)
@@ -382,7 +382,8 @@ theorem exists_computableInO_evaluate : ∃ e, ComputableInO evaluate encQBF enc
       have hK : 17 ^ d ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
       have hK₁ : 17 ^ d₁ ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
       have hN : 1 ≤ 2 ^ L := Nat.one_le_two_pow
-      have hsq : (L + 1 + 1) ^ 2 ≤ 4 * (L + 1) ^ 2 := by nlinarith
+      have hsq : (L + 1 + 1) ^ 2 ≤ 4 * (L + 1) ^ 2 := by
+        nlinarith only [Nat.zero_le L]
       generalize (16 * (L + 1) ^ 2 + 1) ^ d = X at *
       generalize ((encState s).length + 1) ^ d₁ = A at *
       generalize (L + 1) ^ E = M at *
@@ -397,7 +398,8 @@ theorem exists_computableInO_evaluate : ∃ e, ComputableInO evaluate encQBF enc
     · have hround : X + 16 * Q + (L + 1 + 1) ^ 2 ≤ 21 * (K * M) := by omega
       have hrounds := Nat.mul_le_mul_left (N + 1) hround
       have hNM : K * M ≤ N * (K * M) := Nat.le_mul_of_pos_left _ hN
-      nlinarith
+      linarith only [hM1, hM0, hKM, hA', hrounds, hNM, Nat.zero_le K,
+        Nat.zero_le (N * (K * M))]
     · have : K * 64 * (M + 1) = 64 * (K * M) + 64 * K := by ring
       omega
   simpa only [computableInO_iff_computableTidilyInO] using this

@@ -158,7 +158,7 @@ theorem maskedSample_prediction_gap {α β : Type} [Fintype α] (source : ProbCo
 @[program_certificate]
 theorem isPPTOn_maskBit {α : Type} {input : α ↪ List Bool} {mask : α → ProbComp Bool}
     {truth : α → Bool} (hmask : IsPPTOn input encBool mask)
-    (htruth : ComputableTidilyInPolyTime truth input encBool) :
+    (htruth : ComputableInPolyTime truth input encBool) :
     IsPPTOn input encBool (fun a => maskBit (mask a) (truth a)) := by
   unfold maskBit
   ppt
@@ -170,9 +170,9 @@ theorem isPPTOn_maskedSample {α β γ : Type} {input : α ↪ List Bool}
     {sample : β ↪ List Bool} {output : γ ↪ List Bool} {source : α → ProbComp β}
     {observe : α → β → γ} {truth : α → β → Bool} {mask : α → β → ProbComp Bool}
     (hsource : IsPPTOn input sample source)
-    (hobserve : ComputableTidilyInPolyTime (fun pair : α × β => observe pair.1 pair.2)
+    (hobserve : ComputableInPolyTime (fun pair : α × β => observe pair.1 pair.2)
       (encPair input sample) output)
-    (htruth : ComputableTidilyInPolyTime (fun pair : α × β => truth pair.1 pair.2)
+    (htruth : ComputableInPolyTime (fun pair : α × β => truth pair.1 pair.2)
       (encPair input sample) encBool)
     (hmask : IsPPTOn (encPair input sample) encBool (fun pair => mask pair.1 pair.2)) :
     IsPPTOn input (encPair output encBool)
@@ -221,15 +221,15 @@ theorem isPPTOn_maskedSequencePredictor {Param α β : Type} {input : Param ↪ 
     {count : Param → ℕ} {test : Param → List (β × Bool) → ProbComp Bool}
     {observation : Param → β}
     (hsource : IsPPTOn input sample source)
-    (hobserve : ComputableTidilyInPolyTime (fun pair : Param × α => observe pair.1 pair.2)
+    (hobserve : ComputableInPolyTime (fun pair : Param × α => observe pair.1 pair.2)
       (encPair input sample) output)
-    (htruth : ComputableTidilyInPolyTime (fun pair : Param × α => truth pair.1 pair.2)
+    (htruth : ComputableInPolyTime (fun pair : Param × α => truth pair.1 pair.2)
       (encPair input sample) encBool)
     (hmask : IsPPTOn (encPair input sample) encBool (fun pair => mask pair.1 pair.2))
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
+    (hcount : ComputableInPolyTime count input encUnary)
     (htest : IsPPTOn (encPair input (encList (encPair output encBool))) encBool
       (fun pair => test pair.1 pair.2))
-    (hobservation : ComputableTidilyInPolyTime observation input output) :
+    (hobservation : ComputableInPolyTime observation input output) :
     IsPPTOn input encBool (fun a => maskedSequencePredictor (source a) (observe a)
       (truth a) (mask a) (count a) (test a) (observation a)) := by
   have hmasked := isPPTOn_maskedSample hsource hobserve htruth hmask

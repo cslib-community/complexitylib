@@ -86,3 +86,22 @@ example {α : Type} {encode : α ↪ List Bool} {bound : α → ℕ}
     Turing.MultiTapeTM.ComputableInPolyTime
       (fun a => Cslib.Probability.dyadicSize (bound a)) encode Turing.MultiTapeTM.encUnary := by
   fun_prop
+
+-- Public sampler rules consume plain numeric certificates on arbitrary encoded inputs.
+example {α : Type} {input : α ↪ List Bool} {bound numerator : α → ℕ}
+    (hb : Turing.MultiTapeTM.ComputableInPolyTime bound input Turing.MultiTapeTM.encUnary)
+    (hn : Turing.MultiTapeTM.ComputableInPolyTime numerator input Turing.MultiTapeTM.encUnary) :
+    Cslib.Probability.IsPPTOn input Turing.MultiTapeTM.encBool
+      (fun a => Cslib.ProbComp.sampleDyadicCoin (bound a) (numerator a)) := by
+  exact Cslib.Probability.isPPTOn_sampleDyadicCoin hb hn
+
+example {α : Type} {input : α ↪ List Bool} {width : α → ℕ}
+    (hw : Turing.MultiTapeTM.ComputableInPolyTime width input Turing.MultiTapeTM.encUnary) :
+    Cslib.Probability.IsPPTOn input Turing.MultiTapeTM.encNat
+      (fun a => Cslib.ProbComp.sampleBinaryNat (width a)) := by
+  exact hw.sampleBinaryNat
+
+-- The convenience theorem has one canonical public name, with no superseded raw alias.
+run_elab do
+  if (← Lean.getEnv).contains `Turing.MultiTapeTM.ComputableTidilyInPolyTime.sampleBinaryNat then
+    throwError "superseded raw sampler theorem remains exported"

@@ -22,19 +22,19 @@ example : ThreeSource.Efficient (fun _ => 1) (fun _ => 2) (fun _ => 3) (fun _ =>
   constructor <;> fun_prop
 
 -- Runtime divisors, including zero, use the same total quotient/remainder certificate.
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (p.1 / p.2, p.1 % p.2))
+example : ComputableInPolyTime (fun p : ℕ × ℕ => (p.1 / p.2, p.1 % p.2))
     (encPair encUnary encUnary) (encPair encUnary encUnary) :=
-  ComputableTidilyInPolyTime.unary_divMod
+  .of_tidy ComputableTidilyInPolyTime.unary_divMod
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : Bool × ℕ × ℕ => (p.2.1 / p.2.2, p.2.1 % p.2.2))
     (encPair encBool (encPair encUnary encUnary)) (encPair encUnary encUnary) := by fun_prop
 
-example : ComputableTidilyInPolyTime (fun n : ℕ => (n / 0, n % 0))
+example : ComputableInPolyTime (fun n : ℕ => (n / 0, n % 0))
     encUnary (encPair encUnary encUnary) := by polytime
 
 -- All three lengths compose with ordinary computed parameters and indices.
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ =>
+example : ComputableInPolyTime (fun p : ℕ × ℕ =>
     (EntropyGrid.observationBits p.1 (p.1 + 1) p.2 (p.1 + p.2),
       EntropyGrid.labelBits p.1 (p.1 + 1) p.2 (p.1 + p.2),
       EntropyGrid.remainingBits p.1 (p.1 + 1) p.2 (p.1 + p.2)))
@@ -61,9 +61,9 @@ example (n seedBits bound index : ℕ) :
 
 -- An arbitrary evaluator may capture the parameter; the theorem charges every call and hash.
 example (evaluate : ℕ → List Bool → List Bool × Bool)
-    (hevaluate : ComputableTidilyInPolyTime (fun p => evaluate p.1 p.2)
+    (hevaluate : ComputableInPolyTime (fun p => evaluate p.1 p.2)
       (encPair encUnary encBits) (encPair encBits encBool)) :
-    ComputableTidilyInPolyTime (fun p : ℕ × List Bool =>
+    ComputableInPolyTime (fun p : ℕ × List Bool =>
       ThreeSource.generate (p.1 + 1) p.1 p.1 1 1 1 (evaluate p.1) p.2)
       (encPair encUnary encBits) encBits := by
   fail_if_success (clear hevaluate; polytime)

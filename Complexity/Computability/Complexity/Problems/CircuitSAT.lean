@@ -15,6 +15,7 @@ import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
 /-!
@@ -88,7 +89,7 @@ theorem isVerifier : IsVerifier (encCircuit 1) Polynomial.X verifier CircuitSAT 
   refine ⟨List.ofFn x, by simpa using le_length_encCircuit c, fun k => ?_⟩
   rw [verifier]
   convert hx using 3 with i
-  rw [List.getD_append _ _ _ _ (by simp), List.getD_eq_getElem _ _ (by simp), List.getElem_ofFn]
+  rw [List.getD_append _ _ _ _ (by simp), List.getD_ofFn]
 
 /-- The verifier evaluates the code of the circuit on the first bits of the certificate. -/
 private theorem verifier_eq_evalOutput (p : (Σ n, Circuit signature n 1) × List Bool) :
@@ -340,9 +341,8 @@ theorem toCircuit_mem_CircuitSAT_iff (φ : CNF ℕ) : toCircuit φ ∈ CircuitSA
     rw [eval_toCircuit, CNF.eval_congr fun v hv => ?_]
     · exact hτ
     · have hlt : φ.vars.idxOf v < φ.vars.length := List.idxOf_lt_length_iff.2 hv
-      rw [assignment, List.getD_eq_getElem _ _ (by rw [List.length_ofFn]; exact hlt),
-        List.getElem_ofFn]
-      exact congrArg τ (List.getElem_idxOf hlt)
+      rw [assignment]
+      exact (List.getD_ofFn_of_lt _ hlt _).trans (congrArg τ (List.getElem_idxOf hlt))
 
 /-! ### The reduction is polynomial-time -/
 

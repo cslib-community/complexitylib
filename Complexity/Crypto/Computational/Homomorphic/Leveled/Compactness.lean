@@ -45,7 +45,7 @@ open Circuits Turing.MultiTapeTM
 
 variable {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ}
   (D : DecryptionCircuits E secretWidth ciphertextWidth)
-  (hD : ComputableTidilyInPolyTime
+  (hD : ComputableInPolyTime
     (fun n => (⟨_, D.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
     encUnary (Boolean.encCircuit 1))
 
@@ -56,7 +56,7 @@ parameter alone. The native certificate itself covers arbitrary input words. -/
 theorem exists_decrypt_parameter_bound :
     ∃ (time space : ℕ × List Bool × List Bool → ℕ) (bound : ℕ → ℕ),
       PolynomiallyBounded bound ∧
-        (∀ budget : ℕ → ℕ, ComputableTidilyInTimeAndSpace
+        (∀ budget : ℕ → ℕ, ComputableInTimeAndSpace
           (fun p : ℕ × List Bool × List Bool => (scheme D budget).decrypt p.1 p.2.1 p.2.2)
           (encPair encUnary (encPair encBits encBits)) encBool time space) ∧
         ∀ n (sk ciphertext : List Bool),
@@ -64,21 +64,25 @@ theorem exists_decrypt_parameter_bound :
           ciphertext.length = ciphertextWidth n + 1 →
           time (n, sk, ciphertext) ≤ bound n ∧ space (n, sk, ciphertext) ≤ bound n := by
   obtain ⟨time, space, ht, hs, hdecrypt⟩ :=
-    computableTidilyInPolyTime_scheme_decrypt D hD (fun _ => 0)
-  obtain ⟨ct, dt, ht⟩ := ht.exists_le
-  obtain ⟨cs, ds, hs⟩ := hs.exists_le
+    computableInPolyTime_scheme_decrypt D hD (fun _ => 0)
+  obtain ⟨ct, dt, ht⟩ := polynomiallyBounded_iff_le.mp ht
+  obtain ⟨cs, ds, hs⟩ := polynomiallyBounded_iff_le.mp hs
   obtain ⟨hkey, hciphertext⟩ := polynomiallyBounded_widths D hD
   let N := fun n => 2 * n + 1 + (2 * (3 * secretWidth n + 1) + 1 +
     (ciphertextWidth n + 1))
   have hN : PolynomiallyBounded N := by dsimp [N]; fun_prop
   let bound := fun n => ct * (N n + 1) ^ dt + cs * (N n + 1) ^ ds
-  refine ⟨time, space, bound, by dsimp [bound]; fun_prop, fun _ => hdecrypt, ?_⟩
+  refine ⟨fun p => time ((encPair encUnary (encPair encBits encBits)) p).length,
+    fun p => space ((encPair encUnary (encPair encBits encBits)) p).length,
+    bound, by dsimp [bound]; fun_prop, fun _ => hdecrypt, ?_⟩
   intro n sk ciphertext hsk hc
   have hlength : (encPair encUnary (encPair encBits encBits) (n, sk, ciphertext)).length =
       N n := by simp [N, hsk, hc]
   constructor
-  · exact (ht (n, sk, ciphertext)).trans (by rw [hlength]; exact Nat.le_add_right _ _)
-  · exact (hs (n, sk, ciphertext)).trans (by rw [hlength]; exact Nat.le_add_left _ _)
+  · exact (ht (((encPair encUnary (encPair encBits encBits)) (n, sk, ciphertext)).length)).trans
+      (by rw [hlength]; exact Nat.le_add_right _ _)
+  · exact (hs (((encPair encUnary (encPair encBits encBits)) (n, sk, ciphertext)).length)).trans
+      (by rw [hlength]; exact Nat.le_add_left _ _)
 
 include hD in
 /-- The actual decoder, tag selection and base-circuit evaluation have polynomial-size circuits
@@ -99,7 +103,8 @@ theorem exists_decrypt_circuits :
   have hdecrypt : ComputableTidilyInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt D p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) encBool := by
-    apply computableTidilyInPolyTime_decrypt D hD <;> fun_prop
+    apply ComputableInPolyTime.tidy
+    apply computableInPolyTime_decrypt D hD <;> fun_prop
   obtain ⟨L, hL, hdecryptL⟩ := Boolean.PPoly.exists_of_polyTime (.of_tidy hdecrypt)
   obtain ⟨c, p, hp, hc⟩ := Boolean.mem_PPoly_iff_exists_circuits.mp hL
   let K := fun n => 3 * secretWidth n + 1

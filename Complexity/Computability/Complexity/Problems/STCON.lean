@@ -14,6 +14,7 @@ public import Mathlib.Data.List.GetD
 public import Mathlib.Data.Nat.Size
 public import Mathlib.Data.List.Range
 import Complexity.Foundations.Data.List.Append
+import Complexity.Foundations.Data.List.Lookup
 import Complexity.Foundations.Data.Nat.Div
 
 /-!
@@ -110,7 +111,7 @@ theorem mul_add_lt (a b : Fin I.n) : (a : ℕ) * I.n + b < I.n * I.n := by
 /-- The entry of the row `a` and the column `b` is the bit at `a * n + b` of the matrix. -/
 theorem getD_matrix (a b : Fin I.n) : I.matrix.getD (a * I.n + b) false = I.adj a b := by
   unfold matrix
-  rw [List.getD_eq_getElem (hn := by simpa using I.mul_add_lt a b), List.getElem_ofFn]
+  rw [List.getD_ofFn_of_lt _ (I.mul_add_lt a b)]
   congr 1
   · ext
     simp only

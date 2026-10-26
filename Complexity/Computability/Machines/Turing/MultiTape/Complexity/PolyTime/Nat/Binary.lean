@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -89,41 +90,6 @@ theorem size_add_le (m n : ℕ) : (m + n).size ≤ m.size + n.size + 1 := by
   have h₂ : 2 ^ n.size ≤ 2 ^ (m.size + n.size) := Nat.pow_le_pow_right (by lia) (by lia)
   rw [Nat.pow_succ]
   lia
-
-/-- `m < n` exactly when some bit position below the length of `n` holds a zero in `m` and a one
-in `n`, and every higher position below the total length agrees. -/
-theorem lt_iff_exists_testBit (m n : ℕ) :
-    m < n ↔ ∃ i < n.size, m.testBit i = false ∧ n.testBit i = true ∧
-      ∀ j < m.size + n.size, i < j → m.testBit j = n.testBit j := by
-  have hbig {k j : ℕ} (hj : k.size ≤ j) : k.testBit j = false :=
-    Nat.testBit_eq_false_of_lt ((Nat.lt_size_self k).trans_le (Nat.pow_le_pow_right (by lia) hj))
-  constructor
-  · intro hlt
-    obtain ⟨i, hi, hhigh⟩ := Nat.exists_most_significant_bit
-      (show m ^^^ n ≠ 0 from fun h => hlt.ne (Nat.eq_of_testBit_eq fun j => by
-        have := Nat.testBit_xor m n j
-        rw [h, Nat.zero_testBit] at this
-        revert this
-        cases m.testBit j <;> cases n.testBit j <;> simp))
-    rw [Nat.testBit_xor] at hi
-    have heq : ∀ j, i < j → m.testBit j = n.testBit j := fun j hj => by
-      have := hhigh j hj
-      rw [Nat.testBit_xor] at this
-      revert this
-      cases m.testBit j <;> cases n.testBit j <;> simp
-    cases hmi : m.testBit i <;> cases hni : n.testBit i <;> rw [hmi, hni] at hi
-    · simp at hi
-    · refine ⟨i, ?_, hmi, hni, fun j _ hj => heq j hj⟩
-      by_contra h
-      rw [hbig (Nat.le_of_not_lt h)] at hni
-      exact Bool.false_ne_true hni
-    · exact absurd (Nat.lt_of_testBit i hni hmi fun j hj => (heq j hj).symm) (Nat.lt_asymm hlt)
-    · simp at hi
-  · rintro ⟨i, -, hm, hn, h⟩
-    refine Nat.lt_of_testBit i hm hn fun j hj => ?_
-    by_cases hj' : j < m.size + n.size
-    · exact h j hj' hj
-    · rw [hbig (by lia), hbig (by lia)]
 
 /-- The binary length of a sum is at most one more than the longer binary length of the
 summands. -/
@@ -278,8 +244,10 @@ namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 /-- Decode arbitrary little-endian bit words to binary naturals. -/
 @[fun_prop]
 theorem bitsToNat : ComputableTidilyInPolyTime ofBits encBits encNat := by
-  obtain ⟨d, e, h⟩ := Decoder.nat.computable
-  exact h.computableTidilyInPolyTime
+  obtain ⟨c, d, k, State, hfin, tm, htm⟩ :=
+    Internal.NormalForm.polyTime ComputableInPolyTime.bitsToNat
+  exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
+    .of_forall_le c d (fun _ => le_rfl), k, State, hfin, tm, htm⟩
 
 
 /-- The binary digits of a natural number, as a raw bit string. -/
@@ -600,11 +568,11 @@ theorem binary_xor' {α : Type} {input : α ↪ List Bool} {left right : α → 
 
 /-- The bit-length `Nat.size n` of a binary natural, returned in unary. -/
 @[fun_prop, program_certificate]
-theorem binary_size : ComputableInPolyTime Nat.size encNat encUnary :=
-  .of_tidy <|
-    ((ComputableTidilyInPolyTime.length encBool).comp
-      ComputableTidilyInPolyTime.natBits).of_enc_eq fun n =>
-      congrArg encUnary (Nat.size_eq_bits_len n).symm
+theorem binary_size : ComputableInPolyTime Nat.size encNat encUnary := by
+  have hbits : ComputableInPolyTime Nat.bits encNat encBits := of_eq fun _ => rfl
+  convert Internal.DecoderWords.unary_degree.computableInPolyTime.comp hbits using 1
+  funext n
+  exact (Nat.size_eq_bits_len n).symm
 
 /-- The smaller of a unary natural and a binary natural, returned in unary by saturating binary
 decoding. -/
@@ -642,18 +610,8 @@ end Turing.MultiTapeTM.ComputableInPolyTime
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
-/-- Multiply computed binary values, fixing their intermediate encodings for proof search. -/
-@[fun_prop]
-theorem binary_mul' {α : Type}
-    {input : α ↪ List Bool}
-    {left : α → ℕ}
-    {right : α → ℕ}
-    (hleft : ComputableInPolyTime left input encNat)
-    (hright : ComputableInPolyTime right input encNat) :
-    ComputableInPolyTime (fun (a : α) => left a * right a) input
-  encNat :=
-  .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul' α input left right
-      hleft.tidy hright.tidy)
+-- Preserve the original facade's registration scope for captured binary multiplication.
+attribute [fun_prop] binary_mul'
 
 /-- `2 ^ k` in binary, from `k` in unary, by doubling. -/
 @[fun_prop]

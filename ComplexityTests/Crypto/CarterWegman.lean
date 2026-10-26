@@ -256,4 +256,171 @@ example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFun
   · intro n padSeq
     simp [counterPadSeqDistinguisher, zeroQueryCounterForger, checkCounterSlot]
 
+-- Concrete `checkNonceSUF` and `checkRandomNonceSUF` checks over `ZMod 7`:
+-- issued nonce `0` with `m₀ = [2, 4]`, `t₀ = 5`, pad function `fun x => if x = 0 then 4 else 1`.
+-- Unissued nonce `1` with `m' = [2, 4]` and `t' = xpolyHash 3 [2, 4] + 1 = 1 + 1 = 2` is accepted
+-- by `checkNonceSUF` and `checkRandomNonceSUF`.
+example :
+    checkNonceSUF (xpolyHash (F := ZMod 7)) 3 (fun x : ZMod 7 => if x = 0 then 4 else 1)
+      [((([2, 4], 0), 5))] (([2, 4], 1), 2) = true := by decide
+
+-- Repeated nonce in transcript (`0` used twice) is rejected by `checkNonceSUF`.
+example :
+    checkNonceSUF (xpolyHash (F := ZMod 7)) 3 (fun _ : ZMod 7 => 4)
+      [((([2, 4], 0), 5)), ((([1], 0), 0))] (([2, 4], 1), 5) = false := by decide
+
+example :
+    checkRandomNonceSUF (xpolyHash (F := ZMod 7)) 3 (fun x : ZMod 7 => if x = 0 then 4 else 1)
+      [((([2, 4], 0), 5))] (([2, 4], 1), 2) = true := by decide
+
+/-- Concrete two-query adaptive nonce-based forger over `ZMod 7` messages of length at most `2`:
+queries `(m₀ = [1, 2], x₀ = 0)` (receiving `t₀`), queries `(m₁ = [2, 1], x₁ = 1)` (receiving `t₁`),
+and outputs a forgery attempt `(([0, 3], 2), t₀ + t₁)` at an unissued nonce `x' = 2`. -/
+noncomputable def sampleNonceForger :
+    NonceForger {m : List (ZMod 7) // m.length ≤ 2} (ZMod 7) (ZMod 7) where
+  Coins := Unit
+  coins := PMF.pure ()
+  forge _ := do
+    let t₀ ← OracleComp.query
+      (spec := fun _ : {m : List (ZMod 7) // m.length ≤ 2} × ZMod 7 => ZMod 7)
+      (⟨[1, 2], by decide⟩, 0)
+    let t₁ ← OracleComp.query
+      (spec := fun _ : {m : List (ZMod 7) // m.length ≤ 2} × ZMod 7 => ZMod 7)
+      (⟨[2, 1], by decide⟩, 1)
+    return ((⟨[0, 3], by decide⟩, 2), t₀ + t₁)
+
+-- Concrete instantiation of two-query adaptive nonce-based Carter–Wegman security over `ZMod 7`
+-- (`ℓ = 2`): forgery probability (even at an unissued nonce `x' = 2`) is at most `3 / 7`.
+example :
+    nonceStrongGame (PMF.uniformOfFintype (ZMod 7))
+      (fun k (m : {m : List (ZMod 7) // m.length ≤ 2}) => xpolyHash k m)
+      sampleNonceForger true ≤ (2 + 1) / Fintype.card (ZMod 7) :=
+  nonceStrongGame_xpolyHash_le 2 sampleNonceForger
+
+example :
+    nonceGame (PMF.uniformOfFintype (ZMod 7))
+      (fun k (m : {m : List (ZMod 7) // m.length ≤ 2}) => xpolyHash k m)
+      sampleNonceForger true ≤ (2 + 1) / Fintype.card (ZMod 7) :=
+  nonceGame_xpolyHash_le 2 sampleNonceForger
+
+/-- Concrete two-query adaptive randomized Carter–Wegman forger over `ZMod 7` messages of length at
+most `2`: queries `m₀ = [1, 2]` (receiving `(x₀, t₀)`), queries `m₁ = [2, 1]` (receiving
+`(x₁, t₁)`), and outputs `(([0, 3], x₀), t₀ + t₁)`. -/
+noncomputable def sampleRandomNonceForger :
+    RandomNonceForger {m : List (ZMod 7) // m.length ≤ 2} (ZMod 7) (ZMod 7) where
+  Coins := Unit
+  coins := PMF.pure ()
+  forge _ := do
+    let p₀ ← OracleComp.query
+      (spec := fun _ : {m : List (ZMod 7) // m.length ≤ 2} => ZMod 7 × ZMod 7)
+      ⟨[1, 2], by decide⟩
+    let p₁ ← OracleComp.query
+      (spec := fun _ : {m : List (ZMod 7) // m.length ≤ 2} => ZMod 7 × ZMod 7)
+      ⟨[2, 1], by decide⟩
+    return ((⟨[0, 3], by decide⟩, p₀.1), p₀.2 + p₁.2)
+
+theorem isQueryBounded_sampleRandomNonceForger (s : sampleRandomNonceForger.Coins) :
+    (sampleRandomNonceForger.forge s).IsQueryBounded 2 :=
+  .liftBind _ _ 1 fun _ => .liftBind _ _ 0 fun _ => .pure _ 0
+
+-- Concrete instantiation of two-query adaptive randomized Carter–Wegman security over `ZMod 7`
+-- (`ℓ = 2`, `Q = 2`): forgery probability is at most `2^2 / (2 * 7) + 1 / 7 + 3 / 7`.
+example :
+    randomNonceStrongGame (PMF.uniformOfFintype (ZMod 7))
+      (fun k (m : {m : List (ZMod 7) // m.length ≤ 2}) => xpolyHash k m)
+      sampleRandomNonceForger true ≤
+      (2 : ℝ≥0∞) ^ 2 / (2 * Fintype.card (ZMod 7)) + (Fintype.card (ZMod 7) : ℝ≥0∞)⁻¹ +
+        (2 + 1) / Fintype.card (ZMod 7) :=
+  randomNonceStrongGame_xpolyHash_le 2 isQueryBounded_sampleRandomNonceForger
+
+/-- Smoke-test nonce-based forger over `BitString n` that queries `(0, 0)` twice at the same
+nonce `0` (so `Nodup` fails and `checkNonceSUF = false`, giving a trivial distinguisher
+`nonceFnDistinguisher = fun _ => PMF.pure false`). -/
+noncomputable def repeatedNonceForger (n : ℕ) :
+    NonceForger (BitString n) (BitString n) (BitString n) where
+  Coins := Unit
+  coins := PMF.pure ()
+  forge _ := do
+    let _ ← OracleComp.query (0, 0)
+    let t ← OracleComp.query (0, 0)
+    return ((0, 0), t)
+
+@[simp]
+theorem nonceFnDistinguisher_repeatedNonceForger {K : Type} (seed : PMF K) (n : ℕ)
+    (hash : K → BitString n → BitString n) :
+    nonceFnDistinguisher seed hash (repeatedNonceForger n) = fun _ => PMF.pure false := by
+  funext padFn
+  simp only [nonceFnDistinguisher, repeatedNonceForger, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.pure_bind,
+    OracleComp.run_interpret_bind, OracleComp.run_interpret_query, OracleComp.run_interpret_pure]
+  simp [nonceFnHandler, checkNonceSUF]
+
+-- Smoke test of `PseudorandomFunction.negligible_prfNonceStrongGame`: instantiates the asymptotic
+-- wrapper theorem on the trivial always-losing forger `repeatedNonceForger` matched against a
+-- constant-`false` `prfPadDistinguisher`.
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family)
+    {ε : ℕ → NNReal}
+    (hh : ∀ n, IsDeltaUniversalHash
+      (PMF.uniformOfFintype (Fin n → BitString n)) (BitString.LinearHash.hash (n := n) (m := n))
+      (ε n))
+    (hε : Negligible ε) :
+    Negligible (fun n =>
+      Game.succProbability
+        (prfNonceStrongGame (PMF.uniformOfFintype (Fin n → BitString n)) family n
+          BitString.LinearHash.hash (repeatedNonceForger n))) := by
+  refine hprf.negligible_prfNonceStrongGame hh hε repeatedNonceForger
+    (prfPadDistinguisher (fun _ _ => pure false)) (isOraclePPT_prfPadDistinguisher (by ppt))
+    (Filter.Eventually.of_forall fun n => ?_)
+    (Filter.Eventually.of_forall fun n => ?_)
+  · rw [eval_prfRealGame_prfPadDistinguisher]
+    simp
+  · rw [eval_prfIdealGame_prfPadDistinguisher]
+    simp
+
+/-- Smoke-test single-query randomized forger over `BitString n` that queries `0`, receives
+`(x, t)`, and echoes the issued pair `((0, x), t)` (so `!tr.contains out = false` and
+`checkRandomNonceSUF = false`, giving a trivial distinguisher
+`randomNonceFnDistinguisher = fun _ => PMF.pure false`). -/
+noncomputable def echoRandomNonceForger (n : ℕ) :
+    RandomNonceForger (BitString n) (BitString n) (BitString n) where
+  Coins := Unit
+  coins := PMF.pure ()
+  forge _ := do
+    let p ← OracleComp.query 0
+    return ((0, p.1), p.2)
+
+@[simp]
+theorem randomNonceFnDistinguisher_echoRandomNonceForger {K : Type} (seed : PMF K) (n : ℕ)
+    (hash : K → BitString n → BitString n) :
+    randomNonceFnDistinguisher seed hash (echoRandomNonceForger n) = fun _ => PMF.pure false := by
+  funext padFn
+  simp only [randomNonceFnDistinguisher, echoRandomNonceForger, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.pure_bind,
+    OracleComp.run_interpret_bind, OracleComp.run_interpret_query, OracleComp.run_interpret_pure]
+  simp [randomNonceFnHandler, checkRandomNonceSUF, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+
+-- Smoke test of `PseudorandomFunction.negligible_prfRandomNonceStrongGame`: instantiates the
+-- asymptotic wrapper theorem on the trivial always-losing forger `echoRandomNonceForger` matched
+-- against a constant-`false` `prfPadDistinguisher`.
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family)
+    {ε : ℕ → NNReal}
+    (hh : ∀ n, IsDeltaUniversalHash
+      (PMF.uniformOfFintype (Fin n → BitString n)) (BitString.LinearHash.hash (n := n) (m := n))
+      (ε n))
+    (hε : Negligible ε) :
+    Negligible (fun n =>
+      Game.succProbability
+        (prfRandomNonceStrongGame (PMF.uniformOfFintype (Fin n → BitString n)) family n
+          BitString.LinearHash.hash (echoRandomNonceForger n))) := by
+  refine hprf.negligible_prfRandomNonceStrongGame hh hε (Q := fun _ => 1)
+    (PolynomiallyBounded.const 1) echoRandomNonceForger
+    (Filter.Eventually.of_forall fun _ _ => .liftBind _ _ 0 fun _ => .pure _ 0)
+    (prfPadDistinguisher (fun _ _ => pure false)) (isOraclePPT_prfPadDistinguisher (by ppt))
+    (Filter.Eventually.of_forall fun n => ?_)
+    (Filter.Eventually.of_forall fun n => ?_)
+  · rw [eval_prfRealGame_prfPadDistinguisher]
+    simp
+  · rw [eval_prfIdealGame_prfPadDistinguisher]
+    simp
+
 end ComplexityTests.Crypto.CarterWegman

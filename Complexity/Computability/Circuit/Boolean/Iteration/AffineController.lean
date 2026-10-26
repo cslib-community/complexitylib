@@ -43,6 +43,11 @@ affine payload therefore has a circuit of size at most `affineControllerBudget q
 32 * 2 ^ q * (q + p ^ 2 + 1)` (`affine_controller_power`, `affineControllerBudget_le`), which is
 polynomial in the total width whenever `2 ^ q` is (`affine_controller_polynomial`).
 
+`Iteration.AffineControllerSynthesis` sharpens this bound by synthesizing the controller-selected
+matrix coefficients before evaluating one affine map. For `q ≥ 16` its fixed-power budget is
+`(q + p * (p + 1)) * (27 * 2 ^ q / q) + p * (5 * (p + 1) + 1)`;
+`Iteration.AffineControllerLupanov` gives the asymptotic coefficient `1 + ε` in place of `27`.
+
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.Iteration.controlledMap`: product map with an autonomous controller and a

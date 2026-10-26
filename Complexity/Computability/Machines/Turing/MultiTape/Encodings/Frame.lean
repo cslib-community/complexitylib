@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate (additions to crei/tidy-universal `Encodings/Basic.lean`)
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Words
 import Mathlib.Data.List.GetD
 
 /-!

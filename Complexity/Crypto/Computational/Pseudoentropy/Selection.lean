@@ -66,14 +66,17 @@ efficient. All callbacks may capture the original input. -/
 theorem isPPTOn_selectPredictor {α : Type} {input : α ↪ List Bool}
     {count trials : α → ℕ} {source : α → ProbComp (List Bool × Bool)}
     {predict : α → ℕ → List Bool → ProbComp Bool} {observation : α → List Bool}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (htrials : ComputableTidilyInPolyTime trials input encUnary)
+    (hcount : ComputableInPolyTime count input encUnary)
+    (htrials : ComputableInPolyTime trials input encUnary)
     (hsource : IsPPTOn input (encPair encBits encBool) source)
     (hpredict : IsPPTOn (encPair (encPair input encUnary) encBits)
       encBool (fun x => predict x.1.1 x.1.2 x.2))
-    (hobservation : ComputableTidilyInPolyTime observation input encBits) :
+    (hobservation : ComputableInPolyTime observation input encBits) :
     IsPPTOn input encBool (fun a =>
       selectPredictor (count a) (trials a) (source a) (predict a) (observation a)) := by
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcount
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at htrials
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hobservation
   have htrial := hpredict.preprocess
     (input := encPair (encPair input encUnary) (encPair encBits encBool))
     (prepare := fun x : (α × ℕ) × (List Bool × Bool) => (x.1, x.2.1)) (by fun_prop)
@@ -81,7 +84,7 @@ theorem isPPTOn_selectPredictor {α : Type} {input : α ↪ List Bool}
     (prepare := fun x : α × ℕ => (x, observation x.1)) (by fun_prop)
   unfold selectPredictor
   apply IsPPTOn.bind_with (left := encUnary) ?_ hfinal
-  apply IsPPTOn.selectBest ?_ hcount htrials
+  apply IsPPTOn.selectBest ?_ (.of_tidy hcount) (.of_tidy htrials)
   exact (hsource.preprocess (by fun_prop)).bind_with (htrial.map_with (by fun_prop))
 
 attribute [program_certificate] isPPTOn_selectPredictor
@@ -123,13 +126,15 @@ theorem HasGap.eventually_indexed_error_ge {pair : SamplablePair} {gap : ℕ →
       (encPair (encPair encUnary encUnary) encBits) encBool
       (fun x => predict x.1.1 x.1.2 x.2))
     {count inverseTolerance : ℕ → ℕ}
-    (hcount : ComputableTidilyInPolyTime count encUnary encUnary)
-    (htolerance : ComputableTidilyInPolyTime inverseTolerance encUnary encUnary)
+    (hcount : ComputableInPolyTime count encUnary encUnary)
+    (htolerance : ComputableInPolyTime inverseTolerance encUnary encUnary)
     (hpos : ∀ n, 0 < inverseTolerance n) :
     ∀ᶠ n in atTop, ∀ i < count n,
       (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤
         (ProbComp.eval (predictionGame pair.sample (fun n => predict n i) n) false).toReal +
           1 / inverseTolerance n := by
+  have hcount := hcount.tidy
+  have htolerance := htolerance.tidy
   have hsource := pair.efficient
   have hefficient : IsPPT encBool (fun n => selectPredictor (count n)
       ((n + 1) * (4 * inverseTolerance n) ^ 2) (pair.sample n) (predict n)) := by

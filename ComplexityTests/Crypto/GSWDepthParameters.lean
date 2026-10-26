@@ -80,33 +80,37 @@ example (security : ℕ) (left right : Bool) :=
       DepthParameters.fresh_margin security)
     (DepthParameters.nand_margin security) left right
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Native routines return the full varying parameters, not a fixed finite-type code.
 example : ComputableTidilyInPolyTime
     (fun security => (DepthParameters.width security,
       DepthParameters.samples security, DepthParameters.depthBudget security))
     encUnary (encPair encUnary (encPair encUnary encUnary)) := by fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The much larger modulus is returned in binary, not unary.
 example : ComputableTidilyInPolyTime DepthParameters.modulus encUnary encNat := by fun_prop
 
 example : PolynomiallyBounded (fun security => DepthParameters.rows security ^ 2) := by
-  have := DepthParameters.computableTidilyInPolyTime_rows.polynomiallyBounded
+  have := DepthParameters.computableInPolyTime_rows.tidy.polynomiallyBounded
   fun_prop
 
 example : IsPPTOn encUnary (encPair encBits encBits)
     (fun security => keyGenSerialized (Parameters.dimension security)
       (DepthParameters.samples security) (DepthParameters.width security)
       (Parameters.noise security)) :=
-  isPPTOn_keyGenSerialized Parameters.computableTidilyInPolyTime_dimension
-    DepthParameters.computableTidilyInPolyTime_samples
-    DepthParameters.computableTidilyInPolyTime_width Parameters.computableTidilyInPolyTime_noise
+  isPPTOn_keyGenSerialized Parameters.computableInPolyTime_dimension
+    DepthParameters.computableInPolyTime_samples
+    DepthParameters.computableInPolyTime_width Parameters.computableInPolyTime_noise
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- This certificate includes every raw public word and bit, including malformed input words.
 example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => encryptSerialized (Parameters.dimension p.1) (DepthParameters.samples p.1)
       (DepthParameters.width p.1) p.2.1 p.2.2) :=
-  isPPTOn_encryptSerialized (by fun_prop) (by fun_prop) (by fun_prop)
-    (by fun_prop) (by fun_prop)
+  isPPTOn_encryptSerialized (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+    fun_prop))
+    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
 
 -- Only this exact family's LWE hypothesis is supplied: no old-family or encryption-security
 -- assumption, efficient-width premise, or unproved decryption-circuit contract is added.

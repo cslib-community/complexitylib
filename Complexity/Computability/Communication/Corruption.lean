@@ -71,6 +71,19 @@ variable [DecidableEq Z] {ν : PMF (X × Y)} {f : X → Y → Z} {z : Z} {α δ 
 theorem nonneg (h : Corrupted ν f z α δ) : 0 ≤ δ := by
   simpa using h ∅ ∅
 
+/-- The `ν`-mass of `{q | f q.1 q.2 = z}` is at most the mass where both `p.run` and `f` equal `z`
+plus the distributional error of `p`. -/
+private theorem toReal_eq_le_add_distributionalError [Fintype X] [Fintype Y]
+    (p : Protocol X Y Z) :
+    (ν.toOuterMeasure {q | f q.1 q.2 = z}).toReal ≤
+      (∑ q : X × Y, if p.run q.1 q.2 = z ∧ f q.1 q.2 = z then (ν q).toReal else 0) +
+        p.distributionalError ν (fun x y b => f x y = b) := by
+  classical
+  simp only [Protocol.distributionalError, PMF.toOuterMeasure_apply_toReal, Set.mem_ofPred_eq,
+    ← sum_add_distrib]
+  refine sum_le_sum fun q _ => ?_
+  split_ifs <;> simp_all
+
 variable [Finite X] [Finite Y]
 
 /-- **The corruption bound** for deterministic protocols: if `f` is `(α, δ)`-corrupted on `z` under
@@ -102,10 +115,6 @@ theorem mul_sub_distributionalError_le (h : Corrupted ν f z α δ) (hα : 0 ≤
     simp only [E, Protocol.distributionalError, PMF.toOuterMeasure_apply_toReal,
       Set.mem_ofPred_eq]
     exact sum_congr rfl fun q _ => by split_ifs <;> simp_all
-  have hz : (ν.toOuterMeasure {q | f q.1 q.2 = z}).toReal =
-      ∑ q : X × Y, if f q.1 q.2 = z then (ν q).toReal else 0 := by
-    simp only [PMF.toOuterMeasure_apply_toReal, Set.mem_ofPred_eq]
-    exact sum_congr rfl fun q _ => by split_ifs <;> simp_all
   have hw : ∑ q : X × Y with p.run q.1 q.2 = z, w q.1 q.2 =
       α * (∑ q : X × Y, if p.run q.1 q.2 = z ∧ f q.1 q.2 = z then (ν q).toReal else 0) -
         ∑ q : X × Y, if p.run q.1 q.2 = z ∧ f q.1 q.2 ≠ z then (ν q).toReal else 0 := by
@@ -115,16 +124,13 @@ theorem mul_sub_distributionalError_le (h : Corrupted ν f z α δ) (hα : 0 ≤
     split_ifs <;> simp_all
   -- `f` is `z` only where the protocol answers `z` or errs, and the protocol errs where it answers
   -- `z` but `f` is not `z`.
-  have h₁ : (∑ q : X × Y, if f q.1 q.2 = z then (ν q).toReal else 0) ≤
-      (∑ q : X × Y, if p.run q.1 q.2 = z ∧ f q.1 q.2 = z then (ν q).toReal else 0) + E := by
-    rw [hE, ← sum_add_distrib]
-    refine sum_le_sum fun q _ => ?_
-    split_ifs <;> simp_all
+  have h₁ : (ν.toOuterMeasure {q | f q.1 q.2 = z}).toReal ≤
+      (∑ q : X × Y, if p.run q.1 q.2 = z ∧ f q.1 q.2 = z then (ν q).toReal else 0) + E :=
+    toReal_eq_le_add_distributionalError p
   have h₂ : (∑ q : X × Y, if p.run q.1 q.2 = z ∧ f q.1 q.2 ≠ z then (ν q).toReal else 0) ≤ E := by
     rw [hE]
     refine sum_le_sum fun q _ => ?_
     split_ifs <;> simp_all
-  rw [hz]
   have h₃ := mul_le_mul_of_nonneg_left (sub_le_iff_le_add.mpr h₁) hα
   linarith
 

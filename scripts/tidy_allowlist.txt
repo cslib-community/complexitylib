@@ -15,9 +15,27 @@ Complexity/Computability/Machines/Turing/MultiTape/Combinators/StreamFold.lean
 Complexity/Computability/Machines/Turing/MultiTape/Combinators/TidyNormalForm.lean
 Complexity/Computability/Machines/Turing/MultiTape/Combinators/TidyZeroSpace.lean
 Complexity/Computability/Machines/Turing/MultiTape/Combinators/Transducer.lean
+# Bare fixed-machine combinators and supplied-machine conditional assembly, #862:
+# https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6408000749
+Complexity/Computability/Machines/Turing/MultiTape/Internal/ConditionalMachine.lean
+Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelAppend.lean
+Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelComp.lean
+Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelFacts.lean
+Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelIte.lean
+Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelNormalForm.lean
+Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelTransducer.lean
+Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelZeroSpace.lean
+# Existing loop/wrapper laws and supplied-machine fold compiler, exact #862 disposition:
+# https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6408754101
+Complexity/Computability/Machines/Turing/MultiTape/Internal/FoldCompiler.lean
+Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelIterateWhile.lean
+Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelOnWords.lean
 # Bare machine-witness normalization only; Internal kernel boundary approved in #862:
 # https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6400704445
 Complexity/Computability/Machines/Turing/MultiTape/Internal/NormalForm.lean
+# Three unchanged fixed-machine tape lemmas; kernel classification approved in #862:
+# https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6403378531
+Complexity/Computability/Machines/Turing/MultiTape/Internal/OnWords.lean
 Complexity/Computability/Machines/Turing/MultiTape/Plumbing/InputFromTape.lean
 Complexity/Computability/Machines/Turing/MultiTape/Plumbing/OnWords.lean
 Complexity/Computability/Machines/Turing/MultiTape/Plumbing/OutputToTape.lean

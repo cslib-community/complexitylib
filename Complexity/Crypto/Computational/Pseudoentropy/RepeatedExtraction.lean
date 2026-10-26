@@ -128,9 +128,9 @@ theorem isPPTOn_extractLabels {Param Observation Seed Output : Type} {input : Pa
     {seed : Param → ProbComp Seed} {hash : Param → Seed → List Bool → Output}
     {samples : Param → List (Observation × Bool)}
     (hseed : IsPPTOn input key seed)
-    (hhash : ComputableTidilyInPolyTime (fun pair => hash pair.1.1 pair.1.2 pair.2)
+    (hhash : ComputableInPolyTime (fun pair => hash pair.1.1 pair.1.2 pair.2)
       (encPair (encPair input key) encBits) output)
-    (hsamples : ComputableTidilyInPolyTime samples input (encList (encPair observation encBool))) :
+    (hsamples : ComputableInPolyTime samples input (encList (encPair observation encBool))) :
     IsPPTOn input (encPair (encList observation) (encPair key output))
       (fun a => extractLabels (seed a) (hash a) (samples a)) := by
   unfold extractLabels
@@ -143,9 +143,9 @@ theorem isPPTOn_extractLabels_list {Param Observation Label Seed Output : Type}
     {seed : Param → ProbComp Seed} {hash : Param → Seed → List Label → Output}
     {samples : Param → List (Observation × Label)}
     (hseed : IsPPTOn input key seed)
-    (hhash : ComputableTidilyInPolyTime (fun pair => hash pair.1.1 pair.1.2 pair.2)
+    (hhash : ComputableInPolyTime (fun pair => hash pair.1.1 pair.1.2 pair.2)
       (encPair (encPair input key) (encList label)) output)
-    (hsamples : ComputableTidilyInPolyTime samples input (encList (encPair observation label))) :
+    (hsamples : ComputableInPolyTime samples input (encList (encPair observation label))) :
     IsPPTOn input (encPair (encList observation) (encPair key output))
       (fun a => extractLabels (seed a) (hash a) (samples a)) := by
   unfold extractLabels

@@ -123,7 +123,7 @@ theorem IsComputable.prod {α β₁ β₂ : Type u} {encIn : α ↪ List Bool} {
     IsComputable (fun a => (f a, g a)) encIn enc :=
   let ⟨_, _, hf⟩ := hf.exists_computableTidilyInTimeAndSpace
   let ⟨_, _, hg⟩ := hg.exists_computableTidilyInTimeAndSpace
-  let ⟨_, h⟩ := PairEncoding.pair_mono hf hg
+  let ⟨_, h⟩ := PairEncoding.pair_mono hf.computableInTimeAndSpace hg.computableInTimeAndSpace
   h.isComputable
 
 /-! ### Decidable sets -/

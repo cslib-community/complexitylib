@@ -187,48 +187,33 @@ private theorem hit_iff_splitHit (A : V → WalkLabels D T → α) (σ : V → �
     (hi : i < killTime p.2.2) :
     R.Hit T q A σ p i ↔ R.SplitHit T A σ (hi.le.trans hℓ.le) ((Nat.sub_le _ _).trans hℓ.le)
       (R.graph.splitWalk ⟨i, hi⟩ (p.1, Fin.take _ hℓ.le p.2.1)) := by
-  have hd : R.graph.walkDart (p.1, Fin.take _ hℓ.le p.2.1) ⟨i, hi⟩ =
-      R.graph.walkDart (p.1, p.2.1) ⟨i, hi.trans hℓ⟩ :=
+  let y := R.graph.splitWalk ⟨i, hi⟩ (p.1, Fin.take _ hℓ.le p.2.1)
+  have e₁ : y.1 = R.graph.walkDart (p.1, p.2.1) ⟨i, hi.trans hℓ⟩ :=
     R.graph.walkDart_take (p.1, p.2.1) hℓ.le ⟨i, hi⟩
   -- the reverse of the steps before step `i` leads back to the start of `p`
-  have hr : R.report T A (hi.le.trans hℓ.le)
-      ((R.graph.walkDart (p.1, Fin.take _ hℓ.le p.2.1) ⟨i, hi⟩).1,
-        ((R.graph.pow i).rot (p.1, Fin.take i hi.le (Fin.take _ hℓ.le p.2.1))).2) =
-        A p.1 (.take i (hi.le.trans hℓ.le) p.2.1) := by
-    rw [show ((R.graph.walkDart (p.1, Fin.take _ hℓ.le p.2.1) ⟨i, hi⟩).1,
-        ((R.graph.pow i).rot (p.1, Fin.take i hi.le (Fin.take _ hℓ.le p.2.1))).2) =
+  have e₂ : R.report T A (hi.le.trans hℓ.le) (y.1.1, y.2.1) =
+      A p.1 (.take i (hi.le.trans hℓ.le) p.2.1) := by
+    rw [show (y.1.1, y.2.1) =
         (R.graph.pow i).rot (p.1, Fin.take i hi.le (Fin.take _ hℓ.le p.2.1)) from
       Prod.ext (R.graph.fst_rot_pow_take (p.1, Fin.take _ hℓ.le p.2.1) hi.le).symm rfl,
       report_rot_pow]
     rfl
   -- the steps after step `i` lead on to the end of `p`, and their reverse is read there
-  have hs : R.report T A ((Nat.sub_le _ _).trans hℓ.le)
-      ((R.graph.rot (R.graph.walkDart (p.1, Fin.take _ hℓ.le p.2.1) ⟨i, hi⟩)).1,
-        (R.graph.walkDrop (p.1, Fin.take _ hℓ.le p.2.1) (i + 1)).2) =
-        A ((R.graph.killedPow T q).rot p).1 (.take (killTime p.2.2 - (i + 1))
-          ((Nat.sub_le _ _).trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.1) := by
-    rw [show ((R.graph.rot (R.graph.walkDart (p.1, Fin.take _ hℓ.le p.2.1) ⟨i, hi⟩)).1,
-        (R.graph.walkDrop (p.1, Fin.take _ hℓ.le p.2.1) (i + 1)).2) =
+  have e₃ : R.report T A ((Nat.sub_le _ _).trans hℓ.le) ((R.graph.rot y.1).1, y.2.2) =
+      A ((R.graph.killedPow T q).rot p).1 (.take (killTime p.2.2 - (i + 1))
+        ((Nat.sub_le _ _).trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.1) := by
+    rw [show ((R.graph.rot y.1).1, y.2.2) =
         R.graph.walkDrop (p.1, Fin.take _ hℓ.le p.2.1) (i + 1) from
       Prod.ext (R.graph.fst_rot_walkDart _ ⟨i, hi⟩) rfl,
       report, R.graph.rot_pow_walkDrop, R.graph.rot_pow_killTime T q p]
     rfl
-  have ht : σ (R.graph.rot (R.graph.walkDart (p.1, Fin.take _ hℓ.le p.2.1) ⟨i, hi⟩)).1 =
+  have e₄ : σ (R.graph.rot y.1).1 =
       R.truthful T σ ((R.graph.killedPow T q).rot p).1 (.take (killTime p.2.2 - (i + 1))
         ((Nat.sub_le _ _).trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.1) := by
+    change σ (R.graph.rot (R.graph.walkDart (p.1, Fin.take _ hℓ.le p.2.1) ⟨i, hi⟩)).1 = _
     rw [R.truthful_take_rot_killedPow T q σ p (Nat.sub_le _ _),
       Nat.sub_sub_self (Nat.succ_le_of_lt hi), R.graph.fst_rot_walkDart _ ⟨i, hi⟩]
     exact congrArg σ (R.graph.walkAt_take (p.1, p.2.1) hℓ.le (Nat.succ_le_of_lt hi))
-  set y := R.graph.splitWalk ⟨i, hi⟩ (p.1, Fin.take _ hℓ.le p.2.1)
-  have e₁ : y.1 = R.graph.walkDart (p.1, p.2.1) ⟨i, hi.trans hℓ⟩ := hd
-  have e₂ : R.report T A (hi.le.trans hℓ.le) (y.1.1, y.2.1) =
-      A p.1 (.take i (hi.le.trans hℓ.le) p.2.1) := hr
-  have e₃ : R.report T A ((Nat.sub_le _ _).trans hℓ.le) ((R.graph.rot y.1).1, y.2.2) =
-      A ((R.graph.killedPow T q).rot p).1 (.take (killTime p.2.2 - (i + 1))
-        ((Nat.sub_le _ _).trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.1) := hs
-  have e₄ : σ (R.graph.rot y.1).1 =
-      R.truthful T σ ((R.graph.killedPow T q).rot p).1 (.take (killTime p.2.2 - (i + 1))
-        ((Nat.sub_le _ _).trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.1) := ht
   rw [SplitHit, e₂, e₃, e₄, e₁, walkDart_fst, ← R.truthful_take T σ p.1 (hi.le.trans hℓ.le)]
   exact ⟨fun ⟨_, h⟩ ↦ h, fun h ↦ ⟨hi, h⟩⟩
 
@@ -294,6 +279,37 @@ private theorem numHits_eq_sum (A : V → WalkLabels D T → α) (σ : V → α)
   rfl
 
 open Classical in
+/-- A killed walk hit at step `i` is killed at a single step `i + j + 1`, so the indicators over
+`j ∈ range (H + 1)` sum to at most the indicator of `R.Hit T q A σ p i`. -/
+private theorem sum_ite_killTime_eq_and_hit_le (A : V → WalkLabels D T → α) (σ : V → α)
+    (H i : ℕ) (p : V × (Fin T → D) × (Fin T → Fin q)) :
+    ∑ j ∈ range (H + 1), (if killTime p.2.2 = i + j + 1 ∧ R.Hit T q A σ p i then 1 else 0 : ℝ) ≤
+      if R.Hit T q A σ p i then 1 else 0 := by
+  by_cases h : R.Hit T q A σ p i
+  · have hk := h.lt_killTime
+    simp only [h, and_true, ↓reduceIte]
+    rw [sum_congr rfl fun j _ ↦ if_congr (show killTime p.2.2 = i + j + 1 ↔
+      j = killTime p.2.2 - (i + 1) by omega) rfl rfl, sum_ite_eq']
+    split_ifs <;> norm_num
+  · simp [h]
+
+/-- The kill time `i + j + 1` has `q - 1` times the product of the probabilities of `i` and `j`, so
+`(q - 1) * (b * (∑ i, P i * x i) * (∑ j, P j * y j))` expands as the double sum with weight
+`P (i + j + 1)`. -/
+private theorem sub_one_mul_sum_mul_sum_eq (H : ℕ) (b : ℝ) (x y : ℕ → ℝ) :
+    ((q : ℝ) - 1) * (b * ((∑ i ∈ range (H + 1), (1 - (q : ℝ)⁻¹) ^ i / q * x i) *
+      ∑ j ∈ range (H + 1), (1 - (q : ℝ)⁻¹) ^ j / q * y j)) =
+      ∑ i ∈ range (H + 1), ∑ j ∈ range (H + 1),
+        (1 - (q : ℝ)⁻¹) ^ (i + j + 1) / q * (b * x i * y j) := by
+  have hq : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.2 (NeZero.ne q)
+  rw [sum_mul_sum, mul_sum, mul_sum]
+  refine sum_congr rfl fun i _ ↦ ?_
+  rw [mul_sum, mul_sum]
+  refine sum_congr rfl fun j _ ↦ ?_
+  rw [pow_succ, pow_add]
+  field_simp
+
+open Classical in
 /-- **The first moment** [Dinur, Lemma 5.1][Dinur2005]: for `2 H + 1 < T`, a uniformly random
 killed walk is hit by a labelling `A` of the powered constraint graph, relative to its plurality
 decoding, at least `(q - 1) (1 / |α| - (1 - 1 / q) ^ (H + 1)) ^ 2` times the proportion of the darts
@@ -316,27 +332,10 @@ theorem le_expect_numHits [Fintype V] [Fintype D] [Nonempty D] [Fintype α] [Non
   set P : ℕ → ℝ := fun ℓ ↦ (1 - (q : ℝ)⁻¹) ^ ℓ / q
   set b : V × D → ℝ := fun d ↦ if d ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0
   set S : V → ℝ := fun u ↦ ∑ ℓ ∈ range (H + 1), P ℓ * R.truthProb T A σ u ℓ
-  have hq : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.2 (NeZero.ne q)
   have hq₁ : (0 : ℝ) ≤ q - 1 := sub_nonneg.2 (Nat.one_le_cast.2 NeZero.one_le)
   have hβ : 0 ≤ β := sub_nonneg.2 hα
   have hb (d : V × D) : 0 ≤ b d := by positivity
   have hS (u : V) : β ≤ S u := R.inv_card_sub_le_sum_truthProb T q A u (by omega)
-  -- the kill time `i + j + 1` has `q - 1` times the product of the probabilities of `i` and `j`
-  have hP (i j : ℕ) : P (i + j + 1) = (q - 1) * (P i * P j) := by
-    simp only [P]
-    rw [pow_succ, pow_add]
-    field_simp
-  -- a killed walk hit at step `i` is killed at a single step `i + j + 1`
-  have hpt (i : ℕ) (p : V × (Fin T → D) × (Fin T → Fin q)) :
-      ∑ j ∈ range (H + 1), (if killTime p.2.2 = i + j + 1 ∧ R.Hit T q A σ p i then 1 else 0 : ℝ) ≤
-        if R.Hit T q A σ p i then 1 else 0 := by
-    by_cases h : R.Hit T q A σ p i
-    · have hk := h.lt_killTime
-      simp only [h, and_true, ↓reduceIte]
-      rw [sum_congr rfl fun j _ ↦ if_congr (show killTime p.2.2 = i + j + 1 ↔
-        j = killTime p.2.2 - (i + 1) by omega) rfl rfl, sum_ite_eq']
-      split_ifs <;> norm_num
-    · simp [h]
   calc ((q : ℝ) - 1) * β ^ 2 * R.toConstraintGraph.unsatFrac σ
       = 𝔼 d, (q - 1) * (b d * (β * β)) := by
         rw [← ConstraintGraph.expect_mem_unsatEdges, mul_expect]
@@ -346,17 +345,7 @@ theorem le_expect_numHits [Fintype V] [Fintype D] [Nonempty D] [Fintype α] [Non
           (mul_le_mul (hS _) (hS _) hβ (hβ.trans (hS _))) (hb d)) hq₁
     _ = ∑ i ∈ range (H + 1), ∑ j ∈ range (H + 1), P (i + j + 1) *
           𝔼 d, b d * R.truthProb T A σ d.1 i * R.truthProb T A σ (R.graph.rot d).1 j := by
-        have h (d : V × D) : (q - 1) * (b d * (S d.1 * S (R.graph.rot d).1)) =
-            ∑ i ∈ range (H + 1), ∑ j ∈ range (H + 1), P (i + j + 1) *
-              (b d * R.truthProb T A σ d.1 i * R.truthProb T A σ (R.graph.rot d).1 j) := by
-          simp only [S]
-          rw [sum_mul_sum, mul_sum, mul_sum]
-          refine sum_congr rfl fun i _ ↦ ?_
-          rw [mul_sum, mul_sum]
-          refine sum_congr rfl fun j _ ↦ ?_
-          rw [hP]
-          ring
-        simp only [h, expect_sum_comm, mul_expect]
+        simp only [S, P, sub_one_mul_sum_mul_sum_eq q H, expect_sum_comm, mul_expect]
     _ = ∑ i ∈ range (H + 1), ∑ j ∈ range (H + 1),
           𝔼 p, (if killTime p.2.2 = i + j + 1 ∧ R.Hit T q A σ p i then 1 else 0 : ℝ) := by
         refine sum_congr rfl fun i hi ↦ sum_congr rfl fun j hj ↦ ?_
@@ -366,7 +355,7 @@ theorem le_expect_numHits [Fintype V] [Fintype D] [Nonempty D] [Fintype α] [Non
     _ ≤ ∑ i ∈ range (H + 1), 𝔼 p, (if R.Hit T q A σ p i then 1 else 0 : ℝ) := by
         refine sum_le_sum fun i _ ↦ ?_
         rw [← expect_sum_comm]
-        exact expect_le_expect fun p _ ↦ hpt i p
+        exact expect_le_expect fun p _ ↦ R.sum_ite_killTime_eq_and_hit_le T q A σ H i p
     _ ≤ ∑ i ∈ range T, 𝔼 p, (if R.Hit T q A σ p i then 1 else 0 : ℝ) :=
         sum_le_sum_of_subset_of_nonneg (range_subset_range.2 (by omega))
           fun i _ _ ↦ expect_nonneg fun p _ ↦ by positivity
@@ -378,6 +367,45 @@ theorem le_expect_numHits [Fintype V] [Fintype D] [Nonempty D] [Fintype α] [Non
 section SecondMoment
 
 variable [Fintype V] [Fintype D]
+
+open Classical in
+/-- The square of the number of hits of a walk `p` is at most its number of hits plus the number
+of ordered pairs of distinct steps that cross darts violated by `σ`. -/
+private theorem numHits_sq_le_add_sum (A : V → WalkLabels D T → α) (σ : V → α)
+    (p : V × (Fin T → D) × (Fin T → Fin q)) :
+    (R.numHits T q A σ p : ℝ) ^ 2 ≤ R.numHits T q A σ p + ∑ i : Fin T, ∑ j : Fin T,
+      if i = j then 0 else
+        (if R.graph.walkDart (p.1, p.2.1) i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0) *
+          if R.graph.walkDart (p.1, p.2.1) j ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0 := by
+  set h : Fin T → ℝ := fun i ↦ if R.Hit T q A σ p i then 1 else 0
+  set c : Fin T → ℝ := fun i ↦
+    if R.graph.walkDart (p.1, p.2.1) i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0
+  have hN : (R.numHits T q A σ p : ℝ) = ∑ i, h i := by
+    rw [numHits_eq_sum, ← Fin.sum_univ_eq_sum_range]
+  -- a hit at step `i` crosses a violated dart
+  have hhc (i : Fin T) : h i ≤ c i := by
+    simp only [h, c]
+    split_ifs with h₁ h₂
+    · exact le_rfl
+    · exact absurd ((ConstraintGraph.mem_unsatEdges).2 h₁.2.1) h₂
+    · exact zero_le_one
+    · exact le_rfl
+  have hh₀ (i : Fin T) : 0 ≤ h i := by
+    simp only [h]
+    positivity
+  rw [hN, sq, sum_mul_sum, ← sum_add_distrib]
+  refine sum_le_sum fun i _ ↦ ?_
+  calc ∑ j, h i * h j
+      ≤ ∑ j, ((if i = j then h j else 0) + if i = j then 0 else c i * c j) := by
+        refine sum_le_sum fun j _ ↦ ?_
+        by_cases hij : i = j
+        · subst hij
+          simp only [↓reduceIte, add_zero, h]
+          split_ifs <;> norm_num
+        · simp only [hij, ↓reduceIte, zero_add]
+          exact mul_le_mul (hhc i) (hhc j) (hh₀ j) ((hh₀ i).trans (hhc i))
+    _ = h i + ∑ j, if i = j then 0 else c i * c j := by
+        rw [sum_add_distrib, Fintype.sum_ite_eq]
 
 open Classical in
 /-- Two darts of a uniformly random walk at steps `i < j` are both violated by `σ` with probability
@@ -404,6 +432,45 @@ theorem expect_mem_unsatEdges_mul_le (σ : V → α) {i j : Fin T} (hij : i < j)
   nlinarith [(abs_le.1 h).2, mul_nonneg hlam (sq_nonneg (R.toConstraintGraph.unsatFrac σ))]
 
 open Classical in
+/-- Two distinct crossings are almost independent: two steps `i, j : Fin T` of a random walk both
+cross darts violated by `σ` with probability at most `ε ^ 2 + ε * g i j + ε * g j i`, where
+`g i j = λ ^ (j - (i + 1))` for `i < j` and `0` otherwise. -/
+private theorem ite_expect_walkDart_mem_unsatEdges_mul_le (σ : V → α) (i j : Fin T) :
+    (if i = j then 0 else 𝔼 p : V × (Fin T → D) × (Fin T → Fin q),
+      (if R.graph.walkDart (p.1, p.2.1) i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0 : ℝ) *
+        if R.graph.walkDart (p.1, p.2.1) j ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0) ≤
+      R.toConstraintGraph.unsatFrac σ ^ 2 +
+        R.toConstraintGraph.unsatFrac σ *
+          (if i < j then R.graph.spectralExpansion ^ (j - (i + 1) : ℕ) else 0) +
+        R.toConstraintGraph.unsatFrac σ *
+          (if j < i then R.graph.spectralExpansion ^ (i - (j + 1) : ℕ) else 0) := by
+  have hε : 0 ≤ R.toConstraintGraph.unsatFrac σ := R.toConstraintGraph.unsatFrac_nonneg σ
+  have hlam₀ : 0 ≤ R.graph.spectralExpansion := R.graph.spectralExpansion_nonneg
+  have hg (a b : Fin T) :
+      0 ≤ if a < b then R.graph.spectralExpansion ^ (b - (a + 1) : ℕ) else 0 := by positivity
+  rcases lt_trichotomy i j with hij | rfl | hij
+  · rw [ite_eq_right hij.ne, Fintype.expect_comp_fst_snd_fst (γ := Fin T → Fin q)
+      (fun w ↦ (if R.graph.walkDart w i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0) *
+        (if R.graph.walkDart w j ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0)),
+      ite_eq_left hij]
+    linarith [R.expect_mem_unsatEdges_mul_le T σ hij, mul_nonneg hε (hg j i)]
+  · rw [ite_eq_left rfl]
+    have := mul_nonneg hε (hg i i)
+    positivity
+  · rw [ite_eq_right hij.ne', show (𝔼 p : V × (Fin T → D) × (Fin T → Fin q),
+        (if R.graph.walkDart (p.1, p.2.1) i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0 : ℝ) *
+          if R.graph.walkDart (p.1, p.2.1) j ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0) =
+        𝔼 p : V × (Fin T → D) × (Fin T → Fin q),
+        (if R.graph.walkDart (p.1, p.2.1) j ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0 : ℝ) *
+          if R.graph.walkDart (p.1, p.2.1) i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0 from
+        expect_congr rfl fun p _ ↦ mul_comm _ _,
+      Fintype.expect_comp_fst_snd_fst (γ := Fin T → Fin q)
+      (fun w ↦ (if R.graph.walkDart w j ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0) *
+        (if R.graph.walkDart w i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0)),
+      ite_eq_left hij]
+    linarith [R.expect_mem_unsatEdges_mul_le T σ hij, mul_nonneg hε (hg i j)]
+
+open Classical in
 /-- **The second moment** [Dinur, Lemma 5.2][Dinur2005]: on an expander, the number of hits of a
 uniformly random killed walk has second moment at most its first moment plus
 `T ^ 2 ε ^ 2 + 2 T ε / (1 - λ)`, where `ε` is the proportion of the darts violated by `σ` and
@@ -417,64 +484,11 @@ theorem expect_numHits_sq_le (A : V → WalkLabels D T → α) (σ : V → α)
         2 * T * R.toConstraintGraph.unsatFrac σ / (1 - R.graph.spectralExpansion) := by
   set ε := R.toConstraintGraph.unsatFrac σ
   set lam := R.graph.spectralExpansion
-  set h : Fin T → V × (Fin T → D) × (Fin T → Fin q) → ℝ :=
-    fun i p ↦ if R.Hit T q A σ p i then 1 else 0
   set c : Fin T → V × (Fin T → D) × (Fin T → Fin q) → ℝ := fun i p ↦
     if R.graph.walkDart (p.1, p.2.1) i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0
   set g : Fin T → Fin T → ℝ := fun i j ↦ if i < j then lam ^ (j - (i + 1) : ℕ) else 0
   have hε : 0 ≤ ε := R.toConstraintGraph.unsatFrac_nonneg σ
   have hlam₀ : 0 ≤ lam := R.graph.spectralExpansion_nonneg
-  have hg (i j : Fin T) : 0 ≤ g i j := by simp only [g]; positivity
-  have hN (p : V × (Fin T → D) × (Fin T → Fin q)) :
-      (R.numHits T q A σ p : ℝ) = ∑ i, h i p := by
-    rw [numHits_eq_sum, ← Fin.sum_univ_eq_sum_range]
-  -- a hit at step `i` crosses a violated dart
-  have hhc (i : Fin T) (p : V × (Fin T → D) × (Fin T → Fin q)) : h i p ≤ c i p := by
-    simp only [h, c]
-    split_ifs with h₁ h₂
-    · exact le_rfl
-    · exact absurd ((ConstraintGraph.mem_unsatEdges).2 h₁.2.1) h₂
-    · exact zero_le_one
-    · exact le_rfl
-  have hh₀ (i : Fin T) (p : V × (Fin T → D) × (Fin T → Fin q)) : 0 ≤ h i p := by
-    simp only [h]
-    positivity
-  -- the square of the number of hits, as the hits and the pairs of distinct crossings
-  have hpt (p : V × (Fin T → D) × (Fin T → Fin q)) :
-      (R.numHits T q A σ p : ℝ) ^ 2 ≤
-        R.numHits T q A σ p + ∑ i, ∑ j, if i = j then 0 else c i p * c j p := by
-    rw [hN, sq, sum_mul_sum, ← sum_add_distrib]
-    refine sum_le_sum fun i _ ↦ ?_
-    calc ∑ j, h i p * h j p
-        ≤ ∑ j, ((if i = j then h j p else 0) + if i = j then 0 else c i p * c j p) := by
-          refine sum_le_sum fun j _ ↦ ?_
-          by_cases hij : i = j
-          · subst hij
-            simp only [↓reduceIte, add_zero, h]
-            split_ifs <;> norm_num
-          · simp only [hij, ↓reduceIte, zero_add]
-            exact mul_le_mul (hhc i p) (hhc j p) (hh₀ j p) ((hh₀ i p).trans (hhc i p))
-      _ = h i p + ∑ j, if i = j then 0 else c i p * c j p := by
-          rw [sum_add_distrib, Fintype.sum_ite_eq]
-  -- two distinct crossings are almost independent
-  have hcc (i j : Fin T) :
-      (if i = j then 0 else 𝔼 p, c i p * c j p) ≤ ε ^ 2 + ε * g i j + ε * g j i := by
-    rcases lt_trichotomy i j with hij | rfl | hij
-    · rw [ite_eq_right hij.ne, Fintype.expect_comp_fst_snd_fst (γ := Fin T → Fin q)
-        (fun w ↦ (if R.graph.walkDart w i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0) *
-          (if R.graph.walkDart w j ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0)),
-        show g i j = lam ^ (j - (i + 1) : ℕ) from ite_eq_left hij]
-      linarith [R.expect_mem_unsatEdges_mul_le T σ hij, mul_nonneg hε (hg j i)]
-    · rw [ite_eq_left rfl]
-      have := mul_nonneg hε (hg i i)
-      positivity
-    · rw [ite_eq_right hij.ne', show (𝔼 p, c i p * c j p) = 𝔼 p, c j p * c i p from
-          expect_congr rfl fun p _ ↦ mul_comm _ _,
-        Fintype.expect_comp_fst_snd_fst (γ := Fin T → Fin q)
-        (fun w ↦ (if R.graph.walkDart w j ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0) *
-          (if R.graph.walkDart w i ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0)),
-        show g j i = lam ^ (i - (j + 1) : ℕ) from ite_eq_left hij]
-      linarith [R.expect_mem_unsatEdges_mul_le T σ hij, mul_nonneg hε (hg i j)]
   -- the errors sum to a geometric series at every step
   have hgsum : ∑ i, ∑ j, g i j ≤ T * (1 / (1 - lam)) := by
     calc ∑ i, ∑ j, g i j ≤ ∑ _i : Fin T, 1 / (1 - lam) := by
@@ -485,7 +499,7 @@ theorem expect_numHits_sq_le (A : V → WalkLabels D T → α) (σ : V → α)
       _ = T * (1 / (1 - lam)) := by simp
   calc 𝔼 p, (R.numHits T q A σ p : ℝ) ^ 2
       ≤ 𝔼 p, ((R.numHits T q A σ p : ℝ) + ∑ i, ∑ j, if i = j then 0 else c i p * c j p) :=
-        expect_le_expect fun p _ ↦ hpt p
+        expect_le_expect fun p _ ↦ numHits_sq_le_add_sum R T q A σ p
     _ = 𝔼 p, (R.numHits T q A σ p : ℝ) +
           ∑ i, ∑ j, if i = j then 0 else 𝔼 p, c i p * c j p := by
         rw [expect_add_distrib, expect_sum_comm]
@@ -496,7 +510,7 @@ theorem expect_numHits_sq_le (A : V → WalkLabels D T → α) (σ : V → α)
     _ ≤ 𝔼 p, (R.numHits T q A σ p : ℝ) +
           ∑ i : Fin T, ∑ j : Fin T, (ε ^ 2 + ε * g i j + ε * g j i) := by
         gcongr with i _ j _
-        exact hcc i j
+        exact ite_expect_walkDart_mem_unsatEdges_mul_le R T q σ i j
     _ ≤ 𝔼 p, (R.numHits T q A σ p : ℝ) + T ^ 2 * ε ^ 2 + 2 * T * ε / (1 - lam) := by
         have hsum : ∑ i : Fin T, ∑ j : Fin T, (ε ^ 2 + ε * g i j + ε * g j i) =
             T ^ 2 * ε ^ 2 + ε * ∑ i, ∑ j, g i j + ε * ∑ i, ∑ j, g i j := by

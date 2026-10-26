@@ -49,8 +49,9 @@ are charged, including when the number of runs depends on the complete input. -/
 theorem IsPPTOn.replicate {α β : Type} {input : α ↪ List Bool} {output : β ↪ List Bool}
     {program : α → ProbComp β} {count : α → ℕ}
     (hprogram : IsPPTOn input output program)
-    (hcount : ComputableTidilyInPolyTime count input encUnary) :
+    (hcount : ComputableInPolyTime count input encUnary) :
     IsPPTOn input (encList output) (fun a => OracleComp.replicate (count a) (program a)) := by
+  have hcount := hcount.tidy
   obtain ⟨c, d, evaluate, hevaluate, hlaw⟩ := hprogram.exists_seeded_evaluator
   let budget (a : α) := c * ((input a).length + 1) ^ d
   have hbudget : ComputableTidilyInPolyTime budget input encUnary := by
@@ -61,7 +62,8 @@ theorem IsPPTOn.replicate {α β : Type} {input : α ↪ List Bool} {output : β
       (encPair input encBits) (encList encBits) := by fun_prop
   have hmap := ComputableTidilyInPolyTime.mapWith hevaluate
     (ComputableTidilyInPolyTime.fst input encBits) hrows
-  have hcoins := (ComputableTidilyInPolyTime.unary_mul.comp (hcount.prod hbudget)).sampleList
+  have hcoins := (ComputableInPolyTime.of_tidy
+    (ComputableTidilyInPolyTime.unary_mul.comp (hcount.prod hbudget))).sampleList
   apply (hcoins.map_with (f := fun a coins =>
     (BitString.listRows (count a) (budget a) coins).map (evaluate a)) (.of_tidy hmap)).congr
   intro a
@@ -74,17 +76,17 @@ theorem IsPPTOn.replicate {α β : Type} {input : α ↪ List Bool} {output : β
 theorem IsPPTOn.replicate_bool {α : Type} {input : α ↪ List Bool}
     {program : α → ProbComp Bool} {count : α → ℕ}
     (hprogram : IsPPTOn input encBool program)
-    (hcount : ComputableTidilyInPolyTime count input encUnary) :
+    (hcount : ComputableInPolyTime count input encUnary) :
     IsPPTOn input encBits (fun a => OracleComp.replicate (count a) (program a)) := by
   simpa only [id_map'] using (hprogram.replicate hcount).map
-    ComputableTidilyInPolyTime.listToBits
+    ComputableInPolyTime.listToBits
 
 /-- Count successes in independent trials, charging all collected bits and the unary result. -/
 @[program_certificate]
 theorem IsPPTOn.countTrue {α : Type} {input : α ↪ List Bool}
     {program : α → ProbComp Bool} {count : α → ℕ}
     (hprogram : IsPPTOn input encBool program)
-    (hcount : ComputableTidilyInPolyTime count input encUnary) :
+    (hcount : ComputableInPolyTime count input encUnary) :
     IsPPTOn input encUnary (fun a => OracleComp.countTrue (count a) (program a)) := by
   unfold OracleComp.countTrue
   fun_prop
@@ -94,9 +96,9 @@ theorem IsPPTOn.countTrue {α : Type} {input : α ↪ List Bool}
 theorem IsPPTOn.testProbabilityLT {α : Type} {input : α ↪ List Bool}
     {program : α → ProbComp Bool} {count numerator denominator : α → ℕ}
     (hprogram : IsPPTOn input encBool program)
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hnumerator : ComputableTidilyInPolyTime numerator input encUnary)
-    (hdenominator : ComputableTidilyInPolyTime denominator input encUnary) :
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hnumerator : ComputableInPolyTime numerator input encUnary)
+    (hdenominator : ComputableInPolyTime denominator input encUnary) :
     IsPPTOn input encBool (fun a =>
       OracleComp.testProbabilityLT (count a) (numerator a) (denominator a) (program a)) := by
   unfold OracleComp.testProbabilityLT

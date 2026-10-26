@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Computational.Homomorphic.Circuit
 public import Complexity.Computability.Circuit.Boolean.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Circuit.Boolean.CodeComposition
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -25,7 +26,7 @@ The circuit encoding records its input count in unary and its wire indices in bi
 
 ## Main results
 
-* `Cslib.Crypto.Homomorphic.computableTidilyInPolyTime_augmentNand`: uniform polynomial-time
+* `Cslib.Crypto.Homomorphic.computableInPolyTime_augmentNand`: uniform polynomial-time
   construction of the actual NAND augmentation.
 
 ## References
@@ -91,10 +92,11 @@ private theorem computableTidilyInPolyTime_augmentCode {α : Type} {enc : α ↪
 
 /-- Generate the concrete NAND augmentation in uniform polynomial time. The input arity and
 all gates, wire indices and output references are read and written through `encCircuit 1`. -/
-@[fun_prop] theorem computableTidilyInPolyTime_augmentNand :
-    ComputableTidilyInPolyTime
+@[fun_prop] theorem computableInPolyTime_augmentNand :
+    ComputableInPolyTime
       (fun D : Σ n, Circuit signature n 1 => ⟨D.1 + D.1, augmentNand D.2⟩)
       (encCircuit 1) (encCircuit 1) := by
+  refine .of_tidy ?_
   have hview : ComputableTidilyInPolyTime
       (fun D : Σ n, Circuit signature n 1 => (D.1, D.2.code))
       (encCircuit 1) (encPair encUnary encCode) := .of_eq fun _ => rfl

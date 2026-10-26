@@ -49,18 +49,23 @@ open Probability BitString Turing.MultiTapeTM Filter
 
 /-- The entire grid fits one efficient increasing seed-length schedule. -/
 theorem exists_common_seedLength {sourceBits observationBound densityBound : ℕ → ℕ}
-    (hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary)
-    (hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary) :
-    ∃ common : ℕ → ℕ, ComputableTidilyInPolyTime common encUnary encUnary ∧
+    (hsource : ComputableInPolyTime sourceBits encUnary encUnary)
+    (hobservation : ComputableInPolyTime observationBound encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary) :
+    ∃ common : ℕ → ℕ, ComputableInPolyTime common encUnary encUnary ∧
       StrictMono common ∧ (∀ n, n + 1 ≤ common n) ∧
       ∀ n index, index < size (sourceBits n) (densityBound n) →
         seedLength n (sourceBits n) (observationBound n) (densityBound n) index ≤ common n := by
-  have hsize := (isPolyTime_size hsource hdensity).polynomiallyBounded
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hsource
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hobservation
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hdensity
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
+  have hsize := (isPolyTime_size (.of_tidy hsource) (.of_tidy hdensity)).tidy.polynomiallyBounded
   have hseed : ComputableTidilyInPolyTime (fun input => seedLength input.1 (sourceBits input.1)
       (observationBound input.1) (densityBound input.1) input.2)
       (encPair encUnary encUnary) encUnary := by
-    apply isPolyTime_seedLength <;> polytime
+    apply ComputableInPolyTime.tidy
+    apply isPolyTime_seedLength <;> exact .of_tidy (by polytime)
   obtain ⟨c, d, hbound⟩ := hseed.indexed_polynomial_bound
     (f := fun n index => seedLength n (sourceBits n) (observationBound n) (densityBound n) index)
     hsize
@@ -76,9 +81,9 @@ entropy grid. The observation bound applies only on support; the seed bound cove
 entry. Security assumptions and the entropy gap remain separate. -/
 structure PaddingBounds {pair : SamplablePair} (saved : pair.SeedRealization)
     (observationBound densityBound common : ℕ → ℕ) : Prop where
-  observation_isPolyTime : ComputableTidilyInPolyTime observationBound encUnary encUnary
-  density_isPolyTime : ComputableTidilyInPolyTime densityBound encUnary encUnary
-  common_isPolyTime : ComputableTidilyInPolyTime common encUnary encUnary
+  observation_isPolyTime : ComputableInPolyTime observationBound encUnary encUnary
+  density_isPolyTime : ComputableInPolyTime densityBound encUnary encUnary
+  common_isPolyTime : ComputableInPolyTime common encUnary encUnary
   observation_fits : ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
     (pair.encode n observation).length ≤ observationBound n
   seed_fits : ∀ n index, index < size (saved.length n) (densityBound n) →
@@ -93,22 +98,26 @@ def paddedGenerate (n sourceBits observationBound densityBound commonBits index 
 /-- The padded family uses the same saved sampler and ordinary word operations. -/
 theorem isPolyTime_paddedGenerate {pair : SamplablePair} (saved : pair.SeedRealization)
     {observationBound densityBound common : ℕ → ℕ}
-    (hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary)
-    (hcommon : ComputableTidilyInPolyTime common encUnary encUnary) :
-    ComputableTidilyInPolyTime (fun input => paddedGenerate input.1.1 (saved.length input.1.1)
+    (hobservation : ComputableInPolyTime observationBound encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
+    (hcommon : ComputableInPolyTime common encUnary encUnary) :
+    ComputableInPolyTime (fun input => paddedGenerate input.1.1 (saved.length input.1.1)
       (observationBound input.1.1) (densityBound input.1.1) (common input.1.1) input.1.2
       (saved.evaluate input.1.1) input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits := by
+  have hobservation := hobservation.tidy
+  have hdensity := hdensity.tidy
+  have hcommon := hcommon.tidy
   have hlength := saved.length_isPolyTime.tidy
-  have hgenerate := isPolyTime_generate_of_realization saved hobservation hdensity
+  have hgenerate := (isPolyTime_generate_of_realization saved (.of_tidy hobservation) (.of_tidy
+    hdensity)).tidy
   unfold paddedGenerate
   apply GeneratorPadding.isPolyTime_generate
-  · apply isPolyTime_seedLength <;> fun_prop
-  · fun_prop
-  · exact hgenerate.comp (g := fun p : ((ℕ × ℕ) × List Bool) × List Bool =>
-      (p.1.1, p.2)) (by fun_prop)
-  · fun_prop
+  · apply isPolyTime_seedLength <;> exact .of_tidy (by fun_prop)
+  · exact .of_tidy (by fun_prop)
+  · exact .of_tidy (hgenerate.comp (g := fun p : ((ℕ × ℕ) × List Bool) × List Bool =>
+      (p.1.1, p.2)) (by fun_prop))
+  · exact .of_tidy (by fun_prop)
 
 /-- Correctly sized common inputs give exactly one bit of stretch. -/
 theorem length_paddedGenerate {pair : SamplablePair} (saved : pair.SeedRealization)
@@ -141,22 +150,26 @@ theorem exists_secure_padded_choice {pair : SamplablePair} {gap : ℕ → ℝ}
               (fun word => ProbComp.eval (test n (choose n) word)))
           ((uniformList (common n + 1)).bind
             (fun word => ProbComp.eval (test n (choose n) word)))) := by
-  obtain ⟨hobservation, hdensity, hcommon, hfits, hbound⟩ := bounds
+  obtain ⟨hobservationPlain, hdensityPlain, hcommonPlain, hfits, hbound⟩ := bounds
+  have hobservation := hobservationPlain.tidy
+  have hdensity := hdensityPlain.tidy
+  have hcommon := hcommonPlain.tidy
   obtain ⟨choose, hchoose, hsecure⟩ :=
-    exists_secure_choice hpair saved hobservation hdensity hfits hgap
+    exists_secure_choice hpair saved (.of_tidy hobservation) (.of_tidy hdensity) hfits hgap
   refine ⟨choose, hchoose, fun test htest => ?_⟩
   have hlength := saved.length_isPolyTime.tidy
   have hseed : ComputableTidilyInPolyTime (fun input => seedLength input.1 (saved.length input.1)
       (observationBound input.1) (densityBound input.1) input.2)
       (encPair encUnary encUnary) encUnary := by
-    apply isPolyTime_seedLength <;> fun_prop
+    apply ComputableInPolyTime.tidy
+    apply isPolyTime_seedLength <;> exact .of_tidy (by fun_prop)
   let reduction := fun n index => GeneratorPadding.test
     (seedLength n (saved.length n) (observationBound n) (densityBound n) index) (common n)
     (test n index)
   have h := hsecure reduction (by
     dsimp only [reduction]
     apply GeneratorPadding.isPPTOn_test
-    · exact hseed.comp (g := Prod.fst) (by fun_prop)
+    · exact .of_tidy (hseed.comp (g := Prod.fst) (by fun_prop))
     · fun_prop
     · exact htest.preprocess (prepare := fun p : ((ℕ × ℕ) × List Bool) × List Bool =>
         (p.1.1, p.2)) (by fun_prop)

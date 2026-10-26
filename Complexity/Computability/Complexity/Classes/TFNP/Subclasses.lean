@@ -233,7 +233,7 @@ theorem computableInPolyTime_undirectedEdge {enc : α ↪ List Bool}
       (encPair enc encBits) encBool :=
   .of_tidy (computableTidilyInPolyTime_undirectedEdge hN₁.tidy hN₂.tidy hu.tidy hv.tidy)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_bool_bne {encIn : α ↪ List Bool} {f g : α → Bool}
     (hf : ComputableTidilyInPolyTime f encIn encBool)
     (hg : ComputableTidilyInPolyTime g encIn encBool) :

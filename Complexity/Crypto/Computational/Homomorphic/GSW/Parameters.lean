@@ -9,7 +9,9 @@ module
 
 public import Complexity.Crypto.Negligible.Dyadic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Foundations.Data.Nat.Log
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Compatible positive-noise GSW parameters
@@ -30,9 +32,9 @@ decision-LWE hardness for the finite centered-binomial error nor prove bootstrap
 * `entropy_margin`: twice the security parameter in surplus source bits.
 * `fresh_margin`, `nand_margin`: strict decoding margins with positive noise.
 * `negligible_statistical_error`: the shared-public-matrix error is negligible.
-* `computableTidilyInPolyTime_dimension`, `computableTidilyInPolyTime_noise`,
-  `computableTidilyInPolyTime_width`, `computableTidilyInPolyTime_rows`,
-  `computableTidilyInPolyTime_samples`, `computableTidilyInPolyTime_modulus`: uniform unary
+* `computableInPolyTime_dimension`, `computableInPolyTime_noise`,
+  `computableInPolyTime_width`, `computableInPolyTime_rows`,
+  `computableInPolyTime_samples`, `computableInPolyTime_modulus`: uniform unary
   native computation of each parameter.
 
 ## References
@@ -145,45 +147,47 @@ theorem fresh_margin (security : ℕ) : 4 * samples security * noise security < 
 
 /-- The secret dimension is uniformly computable on unary parameters. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_dimension :
-    ComputableTidilyInPolyTime dimension encUnary encUnary := by
+theorem computableInPolyTime_dimension :
+    ComputableInPolyTime dimension encUnary encUnary := by
   unfold dimension
   fun_prop
 
 /-- The positive noise width is uniformly computable on unary parameters. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_noise :
-    ComputableTidilyInPolyTime noise encUnary encUnary := by
+theorem computableInPolyTime_noise :
+    ComputableInPolyTime noise encUnary encUnary := by
   unfold noise
   fun_prop
 
 /-- The logarithmic digit width is uniformly computable on unary parameters. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_width :
-    ComputableTidilyInPolyTime width encUnary encUnary := by
+theorem computableInPolyTime_width :
+    ComputableInPolyTime width encUnary encUnary := by
+  refine .of_tidy ?_
   have := unary_clog_const 2
   unfold width
   fun_prop
 
 /-- The ciphertext dimension is uniformly computable on unary parameters. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_rows :
-    ComputableTidilyInPolyTime rows encUnary encUnary := by
+theorem computableInPolyTime_rows :
+    ComputableInPolyTime rows encUnary encUnary := by
   unfold rows
   fun_prop
 
 /-- The public sample count is uniformly computable on unary parameters. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_samples :
-    ComputableTidilyInPolyTime samples encUnary encUnary := by
+theorem computableInPolyTime_samples :
+    ComputableInPolyTime samples encUnary encUnary := by
   unfold samples
   fun_prop
 
 /-- Even the modulus itself has a uniform unary native certificate. This uses bounded powers
 of a ceiling logarithm, rather than treating arbitrary unary exponentiation as efficient. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_modulus :
-    ComputableTidilyInPolyTime modulus encUnary encUnary := by
+theorem computableInPolyTime_modulus :
+    ComputableInPolyTime modulus encUnary encUnary := by
+  refine .of_tidy ?_
   have := unary_pow_clog_const (input := encUnary) (size := fun security => security + 1)
     (by fun_prop) 256 2
   have hmodulus : modulus = fun security => 65536 * 256 ^ Nat.clog 2 (security + 1) := by
@@ -196,18 +200,18 @@ theorem computableTidilyInPolyTime_modulus :
 theorem polynomiallyBounded_parameters :
     PolynomiallyBounded dimension ∧ PolynomiallyBounded noise ∧ PolynomiallyBounded width ∧
       PolynomiallyBounded rows ∧ PolynomiallyBounded samples ∧ PolynomiallyBounded modulus :=
-  ⟨computableTidilyInPolyTime_dimension.polynomiallyBounded,
-    computableTidilyInPolyTime_noise.polynomiallyBounded,
-    computableTidilyInPolyTime_width.polynomiallyBounded,
-    computableTidilyInPolyTime_rows.polynomiallyBounded,
-    computableTidilyInPolyTime_samples.polynomiallyBounded,
-    computableTidilyInPolyTime_modulus.polynomiallyBounded⟩
+  ⟨computableInPolyTime_dimension.tidy.polynomiallyBounded,
+    computableInPolyTime_noise.tidy.polynomiallyBounded,
+    computableInPolyTime_width.tidy.polynomiallyBounded,
+    computableInPolyTime_rows.tidy.polynomiallyBounded,
+    computableInPolyTime_samples.tidy.polynomiallyBounded,
+    computableInPolyTime_modulus.tidy.polynomiallyBounded⟩
 
 /-- The exact shared-public-matrix error bound is negligible for this positive-noise family. -/
 theorem negligible_statistical_error :
     Negligible (fun security => (rows security : ℝ≥0) *
       NNReal.sqrt ((2 : ℝ≥0) ^ rows security / 2 ^ samples security)) :=
-  negligible_mul_sqrt_pow_two_div_pow_two computableTidilyInPolyTime_rows.polynomiallyBounded
+  negligible_mul_sqrt_pow_two_div_pow_two computableInPolyTime_rows.tidy.polynomiallyBounded
     (Filter.Eventually.of_forall entropy_margin)
 
 end Cslib.Crypto.Homomorphic.GSW.Parameters

@@ -56,7 +56,7 @@ variable {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ}
   (hevaluate : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
     encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
-  (hD : ComputableTidilyInPolyTime
+  (hD : ComputableInPolyTime
     (fun n => (⟨_, D.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
     encUnary (Boolean.encCircuit 1))
 
@@ -64,7 +64,7 @@ variable {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ}
 -- All properties concern the same constructed scheme, with ordinary base IND-CPA only.
 example (P : ℕ → Prop) :
     ∃ budget : ℕ → ℕ,
-      ComputableTidilyInPolyTime budget encUnary encUnary ∧
+      ComputableInPolyTime budget encUnary encUnary ∧
       (∀ n, predicateDepth P n ≤ budget n) ∧
       (Leveled.scheme D budget).Correct ∧
       (∀ n c, c.2.depth ≤ predicateDepth P n → (Leveled.scheme D budget).permitted n c) ∧
@@ -75,7 +75,7 @@ example (P : ℕ → Prop) :
       IsPPTOn encUnary (encPair encBits encBits) (Leveled.scheme D budget).keyGen ∧
       IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
         (fun p => (Leveled.scheme D budget).encrypt p.1 p.2.1 p.2.2) ∧
-      ComputableTidilyInPolyTime
+      ComputableInPolyTime
         (fun p : ℕ × List Bool × List Bool => (Leveled.scheme D budget).decrypt p.1 p.2.1 p.2.2)
         (encPair encUnary (encPair encBits encBits)) encBool ∧
       IsPPTOn
@@ -87,7 +87,7 @@ example (P : ℕ → Prop) :
 
 -- An eventual degree-one bound cannot justify silently discarding the first 100 parameters.
 example : ∃ budget : ℕ → ℕ,
-    ComputableTidilyInPolyTime budget encUnary encUnary ∧
+    ComputableInPolyTime budget encUnary encUnary ∧
     1000000000000 ≤ budget 0 ∧
     (∀ n, spikedDepth n ≤ budget n) ∧
     (Leveled.scheme D budget).Correct ∧
@@ -109,11 +109,11 @@ example : tagged.Correct ∧ tagged.FixedWidth (fun _ => 1) (fun _ => 2) ∧
     IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
       encBits (fun p => tagged.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) ∧
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun n => (⟨_, decryptionCircuits.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1) :=
   ⟨tagged_correct, tagged_width, tagged_bootstrappable, keyGen_ppt, encrypt_ppt,
-    evaluate_ppt, circuits_poly⟩
+    evaluate_ppt, .of_tidy circuits_poly⟩
 
 -- Actual correctness and exact compact widths hold even for a predicate-dependent budget.
 example (P : ℕ → Prop) :
@@ -125,13 +125,13 @@ example (P : ℕ → Prop) :
 -- One native decryption certificate works across all budgets and all input serializations.
 example : ∃ (time space : ℕ × List Bool × List Bool → ℕ) (bound : ℕ → ℕ),
     PolynomiallyBounded bound ∧
-    (∀ budget : ℕ → ℕ, ComputableTidilyInTimeAndSpace
+    (∀ budget : ℕ → ℕ, ComputableInTimeAndSpace
       (fun p : ℕ × List Bool × List Bool =>
         (Leveled.scheme decryptionCircuits budget).decrypt p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) encBool time space) ∧
     ∀ n (sk ciphertext : List Bool), sk.length = 4 → ciphertext.length = 3 →
       time (n, sk, ciphertext) ≤ bound n ∧ space (n, sk, ciphertext) ≤ bound n :=
-  Leveled.exists_decrypt_parameter_bound decryptionCircuits circuits_poly
+  Leveled.exists_decrypt_parameter_bound decryptionCircuits (.of_tidy circuits_poly)
 
 -- The same polynomial-size circuit family implements the complete decoder and tag selection
 -- for every budget, not only the base XOR circuit or only supported secrets.
@@ -141,7 +141,7 @@ example : ∃ circuits : ℕ → Circuit Boolean.signature 7 1,
       sk.length = 4 → ciphertext.length = 3 →
       (circuits n).eval Boolean.interpretation (BitString.ofList 7 (sk ++ ciphertext)) 0 =
         (Leveled.scheme decryptionCircuits budget).decrypt n sk ciphertext :=
-  Leveled.exists_decrypt_circuits decryptionCircuits circuits_poly
+  Leveled.exists_decrypt_circuits decryptionCircuits (.of_tidy circuits_poly)
 
 private def malformedSecret : List Bool := [true, true, true, true]
 
@@ -159,7 +159,7 @@ example : ∃ circuits : ℕ → Circuit Boolean.signature 7 1,
         (Leveled.scheme decryptionCircuits budget).decrypt n malformedSecret
           [true, true, false] := by
   obtain ⟨circuits, hsize, hcorrect⟩ :=
-    Leveled.exists_decrypt_circuits decryptionCircuits circuits_poly
+    Leveled.exists_decrypt_circuits decryptionCircuits (.of_tidy circuits_poly)
   exact ⟨circuits, hsize, fun budget n => hcorrect budget n _ _ rfl rfl⟩
 
 end ComplexityTests.Bootstrapping

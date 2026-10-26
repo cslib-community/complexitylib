@@ -48,8 +48,7 @@ theorem isPPTOn_sampleUniformInterval {α : Type} {input : α ↪ List Bool}
     IsPPTOn input (encOption encUnary)
       (fun a => sampleUniformInterval (bound a) (attempts a)) := by
   have hb := hbound.tidy
-  have ha := hattempts.tidy
-  have hs := (isPPTOn_sampleBoundedIndex hb).replicate ha
+  have hs := (isPPTOn_sampleBoundedIndex hbound).replicate hattempts
   have hfind : ComputableTidilyInPolyTime
       (fun p : α × List ℕ => p.2.find? (fun value => decide (value < bound p.1)))
       (encPair input (encList encUnary)) (encOption encUnary) := by fun_prop
@@ -69,7 +68,6 @@ theorem isPPTOn_sampleUniformInterval_binary {α : Type} {input : α ↪ List Bo
       (fun a => sampleUniformInterval (bound a) (attempts a)) := by
   have hb := hbound.tidy
   have hw := hwidth.tidy
-  have ha := hattempts.tidy
   have hleft := hb.comp (ComputableTidilyInPolyTime.fst input encNat)
   have hright := ComputableTidilyInPolyTime.snd input encNat
   have hmin : ComputableTidilyInPolyTime (fun p : α × ℕ => min (bound p.1) p.2)
@@ -89,7 +87,7 @@ theorem isPPTOn_sampleUniformInterval_binary {α : Type} {input : α ↪ List Bo
     apply ComputableTidilyInPolyTime.findWithInput (by fun_prop)
     exact ComputableTidilyInPolyTime.binary_lt.comp
       ((ComputableTidilyInPolyTime.snd _ _).prod (by fun_prop))
-  exact (hs.replicate ha).map_with (.of_tidy hfind)
+  exact (hs.replicate hattempts).map_with (.of_tidy hfind)
 
 /-- A runtime-varying integer box is sampled in uniform strict PPT when the numerical radius,
 dimension and per-coordinate attempt budget are efficiently supplied in unary. The full
@@ -103,7 +101,6 @@ theorem isPPTOn_sampleIntegerBox {α : Type} {input : α ↪ List Bool}
     IsPPTOn input (encOption (encList encInt))
       (fun a => sampleIntegerBox (radius a) (dimension a) (attempts a)) := by
   have hr := hradius.tidy
-  have hd := hdimension.tidy
   have hb : ComputableInPolyTime (fun a => 2 * radius a + 1) input encUnary :=
     .of_tidy (by fun_prop)
   have hs := isPPTOn_sampleUniformInterval hb hattempts
@@ -122,7 +119,7 @@ theorem isPPTOn_sampleIntegerBox {α : Type} {input : α ↪ List Bool}
       (encList (encOption encInt)) (encOption (encList encInt)) := by
     unfold collectBox
     fun_prop
-  exact (((hs.map_with (.of_tidy hcoordinate)).replicate hd).map hcollect)
+  exact (((hs.map_with (.of_tidy hcoordinate)).replicate hdimension).map (.of_tidy hcollect))
 
 /-- The complete framed optional output has a direct linear bound in dimension and unary
 radius; failure encodes as the empty word. -/

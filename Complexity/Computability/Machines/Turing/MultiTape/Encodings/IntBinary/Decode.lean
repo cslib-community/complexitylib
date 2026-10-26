@@ -53,10 +53,22 @@ theorem decodeIntBin_encIntBin (z : ℤ) : decodeIntBin (encIntBin z) = z := by
 @[fun_prop]
 theorem computableInPolyTime_decodeIntBin :
     ComputableInPolyTime decodeIntBin encBits encIntBin := by
-  apply ComputableInPolyTime.of_tidy
-  have hsign : ComputableTidilyInPolyTime (fun word : List Bool => word.headD false)
-      encBits encBool := ComputableTidilyInPolyTime.headD false
-  have hmag := Decoder.nat.computableTidilyInPolyTime.comp ComputableTidilyInPolyTime.bitsTail
-  exact ComputableTidilyInPolyTime.intBin_signMagnitude.comp (hsign.prod hmag)
+  have hsign := Internal.DecoderWords.bool_degree.computableInPolyTime
+  have hmag := Decoder.nat.computableInPolyTime.comp ComputableInPolyTime.bitsTail
+  have hassemble : ComputableInPolyTime
+      (fun p : Bool × ℕ => if p.1 then -(p.2 : ℤ) else p.2)
+      (encPair encBool encNat) encIntBin := by
+    have hbits : ComputableInPolyTime (fun p : Bool × ℕ => p.2.bits)
+        (encPair encBool encNat) encBits :=
+      (ComputableInPolyTime.snd encBool encNat).of_enc_eq fun _ => rfl
+    have htag := ComputableInPolyTime.bool_and.comp
+      ((ComputableInPolyTime.fst encBool encNat).prod
+        (ComputableInPolyTime.bool_not.comp (ComputableInPolyTime.bitsIsEmpty.comp hbits)))
+    refine (ComputableInPolyTime.bitsCons htag hbits).of_enc_eq fun ⟨sign, n⟩ => ?_
+    have hz : n.bits.isEmpty = decide (n = 0) := by
+      rw [Bool.eq_iff_iff, List.isEmpty_iff, decide_eq_true_eq, ← List.length_eq_zero_iff,
+        Nat.size_eq_bits_len, Nat.size_eq_zero]
+    cases sign <;> simp [hz, Nat.pos_iff_ne_zero]
+  exact hassemble.comp (hsign.prod hmag)
 
 end Turing.MultiTapeTM

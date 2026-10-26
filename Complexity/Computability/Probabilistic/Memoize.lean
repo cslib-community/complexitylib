@@ -60,11 +60,13 @@ theorem IsPPTOn.memoize {α Key Value : Type} [BEq Key] [LawfulBEq Key] {input :
     {keyEncoding : Key ↪ List Bool} {valueEncoding : Value ↪ List Bool}
     {compute : α → Key → ProbComp Value} {query : α → Key} {cache : α → List (Key × Value)}
     (hcompute : IsPPTOn input valueEncoding (fun a => compute a (query a)))
-    (hquery : ComputableTidilyInPolyTime query input keyEncoding)
-    (hcache : ComputableTidilyInPolyTime cache input
+    (hquery : ComputableInPolyTime query input keyEncoding)
+    (hcache : ComputableInPolyTime cache input
       (encList (encPair keyEncoding valueEncoding))) :
     IsPPTOn input (encPair valueEncoding (encList (encPair keyEncoding valueEncoding)))
       (fun a => memoize (compute a) (query a) (cache a)) := by
+  have hquery := hquery.tidy
+  have hcache := hcache.tidy
   let found (a : α) := (cache a).find? (fun entry => query a == entry.1)
   have hfound : ComputableTidilyInPolyTime found input
       (encOption (encPair keyEncoding valueEncoding)) := by fun_prop

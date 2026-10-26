@@ -11,7 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Resour
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Defs
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelNormalForm
 import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
 import Complexity.Computability.Machines.Turing.MultiTape.Deterministic
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure

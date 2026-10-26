@@ -156,24 +156,30 @@ theorem frontierOracle_bounds (generator : List Bool → List Bool) (n depth : �
 theorem isPPTOn_frontierOracle {α : Type} {input : α ↪ List Bool}
     {generator : List Bool → List Bool} {parameter depth : α → ℕ}
     {query : α → List Bool} {cache : α → Cache}
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits)
-    (hparameter : ComputableTidilyInPolyTime parameter input encUnary)
-    (hdepth : ComputableTidilyInPolyTime depth input encUnary)
-    (hquery : ComputableTidilyInPolyTime query input encBits)
-    (hcache : ComputableTidilyInPolyTime cache input cacheEncoding) :
+    (hgenerator : ComputableInPolyTime generator encBits encBits)
+    (hparameter : ComputableInPolyTime parameter input encUnary)
+    (hdepth : ComputableInPolyTime depth input encUnary)
+    (hquery : ComputableInPolyTime query input encBits)
+    (hcache : ComputableInPolyTime cache input cacheEncoding) :
     IsPPTOn input (encPair encBits cacheEncoding)
       (fun a => frontierOracle generator (parameter a) (depth a) (query a) (cache a)) := by
-  have heval := computableTidilyInPolyTime_eval hgenerator
+  have hgenerator := hgenerator.tidy
+  have hparameter := hparameter.tidy
+  have hdepth := hdepth.tidy
+  have hquery := hquery.tidy
+  have hcache := hcache.tidy
+  have heval := (computableInPolyTime_eval (.of_tidy hgenerator)).tidy
   unfold frontierOracle cacheEncoding
   fun_prop
 
 /-- A uniform adversary's complete adaptive prefix game is strict PPT, uniformly over the chosen
 level. The local invariant accounts for every reply and all added encoded storage. -/
 theorem isPPTOn_hybridGame {generator : List Bool → List Bool}
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits)
+    (hgenerator : ComputableInPolyTime generator encBits encBits)
     {adversary : OracleDistinguisher} (hadversary : IsOraclePPT encBool adversary) :
     IsPPTOn (encPair encUnary encUnary) encBool
       (fun pair => hybridGame generator adversary pair.1 pair.2) := by
+  have hgenerator := hgenerator.tidy
   have hrun : IsPPTOn (encPair encUnary encUnary) (encPair encBool cacheEncoding)
       (fun pair : ℕ × ℕ => (OracleComp.interpret
         (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
@@ -188,6 +194,6 @@ theorem isPPTOn_hybridGame {generator : List Bool → List Bool}
     obtain ⟨hcache', hreply, hgrowth⟩ :=
       frontierOracle_bounds generator pair.1 pair.2 request.2 cache hcache result hresult
     exact ⟨hcache', by lia, by lia⟩
-  exact hrun.map (ComputableTidilyInPolyTime.fst _ _)
+  exact hrun.map (ComputableInPolyTime.fst _ _)
 
 end Cslib.Crypto.GGM

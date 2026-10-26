@@ -662,7 +662,7 @@ theorem computableInLogSpace_of_reaches {α β : Type} {enc : α ↪ List Bool}
     ⟨d, fun a u hu => ?_⟩
   · rw [hrun, ht, halted, hhalt]
     rfl
-  · rw [QueryMachine.output]
+  · rw [P.toQueryMachine.output_eq_of_not_halted _ (fun i hi => hstep a hi)]
     have hnil : ((List.range (t a)).map fun i => P.toQueryMachine.emit
         (P.toQueryMachine.run (enc a) i,
           P.toQueryMachine.read (enc a) (P.toQueryMachine.run (enc a) i))).flatten = [] := by

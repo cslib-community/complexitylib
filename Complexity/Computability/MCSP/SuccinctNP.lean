@@ -253,6 +253,13 @@ and the unary threshold `s`. -/
 def ofFunctionEncLength (n q s : ℕ) : ℕ :=
   4 * n + 3 + q * (8 * n + 10) + s
 
+/-- `SuccinctMCSP.ofFunctionEncLength` is monotone in the number of samples `q`. -/
+theorem ofFunctionEncLength_mono (n s : ℕ) :
+    Monotone (fun q => ofFunctionEncLength n q s) := by
+  intro q₁ q₂ hq
+  simp only [ofFunctionEncLength]
+  exact Nat.add_le_add_right (Nat.add_le_add_left (Nat.mul_le_mul_right _ hq) _) _
+
 private theorem length_encList_rawSamples_ofFunction {n : ℕ} (f : BooleanFunction n)
     (S : Finset (BitString n)) (s : ℕ) :
     (encList (encPair encBits encBool)

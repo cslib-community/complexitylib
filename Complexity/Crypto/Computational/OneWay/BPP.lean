@@ -90,16 +90,17 @@ noncomputable def randomizedPreimageSearch (p : Polynomial ℕ)
 /-- The randomized search is a uniform strict PPT inverter when `V` is polynomial-time. -/
 theorem isPPT_randomizedPreimageSearch {p : Polynomial ℕ}
     {V : (ℕ × List Bool × List Bool) × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair encPreimagePrefix encBits) encBool) :
+    (hV : ComputableInPolyTime V (encPair encPreimagePrefix encBits) encBool) :
     IsPPT encBits (randomizedPreimageSearch p V) := by
+  have hV := hV.tidy
   apply IsPPTOn.isPPT
   have hlen : ComputableTidilyInPolyTime (fun q : ℕ × List Bool => searchCoinLength p q)
       (encPair encUnary encBits) encUnary := by
     unfold searchCoinLength
     exact (unary_eval p).comp ((encoding_length encPreimagePrefix).comp
       ((fst _ _).prod ((snd _ _).prod ((bitsReplicate false).comp (fst _ _)))))
-  refine IsPPTOn.map_with hlen.sampleList
-    (.of_tidy (computableTidilyInPolyTime_preimageSearch_of_input ?_ (fst _ _)))
+  refine IsPPTOn.map_with (ComputableInPolyTime.of_tidy hlen).sampleList
+    (computableInPolyTime_preimageSearch_of_input (.of_tidy ?_) (.of_tidy (fst _ _)))
   exact hV.comp ((snd _ _).prod (bitsTakeWithInput (fst _ _).snd'
     ((unary_eval p).comp ((encoding_length encPreimagePrefix).comp (snd _ _)))))
 
@@ -224,7 +225,7 @@ theorem exists_inverter_of_preimagePrefix_mem_BPP
     ∃ inverter : Inverter, IsPPT encBits inverter ∧
       ∀ n, 1 / 2 ≤ Game.succProbability (ProbComp.eval (inversionGame f inverter n)) := by
   obtain ⟨p, V, hV, herr⟩ := mem_BPP_iff_forall_decidesWithErrorExponent.1 h (Polynomial.X + 1)
-  exact ⟨randomizedPreimageSearch p V, isPPT_randomizedPreimageSearch hV.tidy,
+  exact ⟨randomizedPreimageSearch p V, isPPT_randomizedPreimageSearch hV,
     half_le_succProbability_inversionGame herr⟩
 
 /-- **One-way functions have preimage-prefix problems outside `BPP`.** -/
@@ -236,14 +237,14 @@ theorem OneWay.preimagePrefix_notMem_BPP (hf : OneWay f) :
 /-- **One-way functions imply `NP ⊄ BPP`**, for instances of the preimage-prefix problem. -/
 theorem OneWay.not_NP_subset_BPP (hf : OneWay f) :
     ¬ NP encPreimagePrefix ⊆ BPP encPreimagePrefix := fun h =>
-  hf.preimagePrefix_notMem_BPP (h (preimagePrefix_mem_NP hf.polyTime.tidy))
+  hf.preimagePrefix_notMem_BPP (h (preimagePrefix_mem_NP hf.polyTime))
 
 /-- **One-way functions imply `SAT ∉ BPP`**: by the Cook–Levin theorem the preimage-prefix problem
 reduces to `SAT`, and `BPP` is closed under polynomial-time reductions. -/
 theorem OneWay.SAT_notMem_BPP (hf : OneWay f) : SAT ∉ BPP encCNF := fun h =>
   hf.preimagePrefix_notMem_BPP
     ((CookLevin.SAT_npComplete.2 encPreimagePrefix _
-      (preimagePrefix_mem_NP hf.polyTime.tidy)).mem_BPP h)
+      (preimagePrefix_mem_NP hf.polyTime)).mem_BPP h)
 
 /-- If `SAT` is in `BPP`, no function is one-way. -/
 theorem not_oneWay_of_SAT_mem_BPP (h : SAT ∈ BPP encCNF) : ¬ OneWay f := fun hf =>

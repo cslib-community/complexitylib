@@ -130,9 +130,11 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1)
     (candidates := fun n => n + 1) (inverseSlack := fun _ => 0)
     (outputBits := fun n _ => ExtractionSchedule.slack n (saved.length n) 0)
     (numerator := fun _ _ => 2) (densityBound := fun _ => 0)
-    (by fun_prop)
-    (ExtractionSchedule.isPolyTime_slack (by fun_prop) (by fun_prop) (by fun_prop))
-    (by fun_prop) (by fun_prop) (by fun_prop) (Eventually.of_forall hchoose)
+    (.of_tidy (by fun_prop))
+    (ExtractionSchedule.isPolyTime_slack (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
+      (.of_tidy (by fun_prop)))
+    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
+      (Eventually.of_forall hchoose)
     (Eventually.of_forall (by intro n; rw [fairPair_entropy]; norm_num [dyadicSize]))
     ?_ test htest
   apply Eventually.of_forall
@@ -159,7 +161,8 @@ example : ∀ᶠ n in atTop, ∀ i < n + 1,
     (candidates := fun n => n + 1) (count := fun n => n + 1)
     (numerator := fun _ _ => 1) (densityBound := fun _ => 1)
     (inverseGap := fun n => 4 * (n + 1))
-    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by lia)
+    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+      fun_prop)) (.of_tidy (by fun_prop)) (by lia)
   filter_upwards [h] with n hn
   intro i hi
   obtain ⟨mask, hdense, _, hclose⟩ := hn i hi (by decide) (by decide)
