@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Computability.WordRAM.Randomized
+public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Notation
 
 /-!
@@ -68,7 +68,7 @@ theorem randZero_eval (w : ℕ) :
   rfl
 
 theorem randZero_halts_and_calls (w : ℕ) :
-    HaltsWithin w randZeroProg (.init []) 2 ∧
+    RandHaltsWithin w randZeroProg (.init []) 2 ∧
     RandCallsBounded w randZeroProg (.init []) 2 1 ∧
     RandBitsBounded w randZeroProg (.init []) 2 0 := by
   have hw : ExecRandWithin w randZeroCode (.init []) (fun y => y.regs r0 = 0) 1 1 :=
@@ -196,7 +196,7 @@ private theorem allOnesSetup_exec {w : ℕ} (hw : 1 ≤ w) (x : Data 6) :
 /-- `allOnesRandProg` halts in `8` steps using `1` `rand` call (`w` bits) and induces the exact
 uniform distribution on `Fin (2 ^ w)` (`[0, 2 ^ w - 1]`). -/
 theorem allOnesRand_uniform {w : ℕ} (hw : 1 ≤ w) :
-    HaltsWithin w allOnesRandProg (.init []) 8 ∧
+    RandHaltsWithin w allOnesRandProg (.init []) 8 ∧
     RandCallsBounded w allOnesRandProg (.init []) 8 1 ∧
     RandBitsBounded w allOnesRandProg (.init []) 8 w ∧
     ((evalRand w allOnesRandProg 8 (.init [])).map fun
@@ -221,7 +221,7 @@ theorem allOnesRand_uniform {w : ℕ} (hw : 1 ≤ w) :
     cases OracleComp.eq_of_mem_supportWith_pure hk
     omega
   have hrun := hex.runRand_program a_out (T := 8) hT
-  have hhalt : HaltsWithin w allOnesRandProg (.init []) 8 := by
+  have hhalt : RandHaltsWithin w allOnesRandProg (.init []) 8 := by
     intro cfg hcfg
     rw [State.init, hrun] at hcfg
     obtain ⟨z, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
@@ -235,11 +235,11 @@ theorem allOnesRand_uniform {w : ℕ} (hw : 1 ≤ w) :
   have hbits : RandBitsBounded w allOnesRandProg (.init []) 8 w := by
     simpa only [Nat.one_mul] using hcalls.randBitsBounded
   refine ⟨hhalt, hcalls, hbits, ?_⟩
-  have hm_eq : ((fun z => Cfg.halted (z.1.regs a_out) z.1) <$>
+  have hm_eq : ((fun z => RandCfg.halted (z.1.regs a_out) z.1) <$>
       ((fun z => (z.1, 6 + z.2)) <$> do
         let k ← ProbComp.unifFin (y.regs a_lo)
         pure (y.set a_out k.val, 1))) =
-      (fun k => Cfg.halted k.val (y.set a_out k.val)) <$> ProbComp.unifFin (y.regs a_lo) := by
+      (fun k => RandCfg.halted k.val (y.set a_out k.val)) <$> ProbComp.unifFin (y.regs a_lo) := by
     simp only [← bind_pure_comp, bind_assoc, pure_bind, Data.set_regs, Function.update_self]
   rw [evalRand, State.init, hrun, hm_eq, ProbComp.eval_map, PMF.map_comp, ProbComp.eval_unifFin]
   have hcard : y.regs a_lo + 1 = 2 ^ w := by
@@ -258,8 +258,8 @@ theorem rand_out_of_range_faults (w : ℕ) (n : ℕ) (hn : 2 ^ w ≤ n) :
     let s : State 1 := ⟨0, ⟨fun _ => n, fun _ => 0⟩⟩
     runRand w p 1 (.running s) = pure .faulted ∧
     evalRand w p 1 s = PMF.pure .faulted ∧
-    ¬FaultFree w p s ∧
-    ∀ T, ¬HaltsWithin w p s T := by
+    ¬RandFaultFree w p s ∧
+    ∀ T, ¬RandHaltsWithin w p s T := by
   intro p s
   have hnot : ¬Fits w (s.data.regs 0) := by
     rw [fits_iff]
@@ -269,8 +269,8 @@ theorem rand_out_of_range_faults (w : ℕ) (n : ℕ) (hn : 2 ^ w ≤ n) :
     rw [runRand_succ, stepRand_rand_of_not_fits (by rfl) hnot, pure_bind, runRand_zero]
   have heval : evalRand w p 1 s = PMF.pure .faulted := by
     simp only [evalRand, h1, ProbComp.eval_pure]
-  have hnf : ¬FaultFree w p s := fun hff => hff 1 (by rw [h1]; rfl)
-  exact ⟨h1, heval, hnf, fun T hhw => hnf hhw.faultFree⟩
+  have hnf : ¬RandFaultFree w p s := fun hff => hff 1 (by rw [h1]; rfl)
+  exact ⟨h1, heval, hnf, fun T hhw => hnf hhw.randFaultFree⟩
 
 /-! ## 4. Multi-call distribution: sum of two `rand(1)` coins is `(1/4, 1/2, 1/4)` -/
 
@@ -288,7 +288,7 @@ theorem twoCoins_dist {w : ℕ} (hw : 2 ≤ w) :
     let outLaw := (evalRand w twoCoinsProg 5 (.init [])).map fun
       | .halted v _ => v
       | _ => 99
-    HaltsWithin w twoCoinsProg (.init []) 5 ∧
+    RandHaltsWithin w twoCoinsProg (.init []) 5 ∧
     RandCallsBounded w twoCoinsProg (.init []) 5 2 ∧
     outLaw 0 = (1 : ℝ≥0∞) / 4 ∧
     outLaw 1 = (1 : ℝ≥0∞) / 2 ∧
@@ -375,7 +375,7 @@ theorem twoCoins_dist {w : ℕ} (hw : 2 ≤ w) :
     cases OracleComp.eq_of_mem_supportWith_pure hfin
     omega
   have hrun := hex.runRand_program r3 (T := 5) hT
-  have hhalt : HaltsWithin w twoCoinsProg (.init []) 5 := by
+  have hhalt : RandHaltsWithin w twoCoinsProg (.init []) 5 := by
     intro cfg hcfg
     rw [State.init, hrun] at hcfg
     obtain ⟨z, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
@@ -393,7 +393,7 @@ theorem twoCoins_dist {w : ℕ} (hw : 2 ≤ w) :
     simpa only [Nat.add_zero] using hq2.bind fun _ => .pure _ 0
   have houtLaw : outLaw = ((ProbComp.unifFin 1).eval.bind fun k1 =>
       (ProbComp.unifFin 1).eval.map fun k2 => k1.val + k2.val) := by
-    have hm_eq : ((fun z => Cfg.halted (z.1.regs r3) z.1) <$>
+    have hm_eq : ((fun z => RandCfg.halted (z.1.regs r3) z.1) <$>
         ((fun z => (z.1, 1 + z.2)) <$> (do
           let z₁ ← m1
           let z₂ ← m2 z₁.1
@@ -401,7 +401,7 @@ theorem twoCoins_dist {w : ℕ} (hw : 2 ≤ w) :
         (do
           let k1 ← ProbComp.unifFin 1
           let k2 ← ProbComp.unifFin 1
-          pure (Cfg.halted (k1.val + k2.val)
+          pure (RandCfg.halted (k1.val + k2.val)
             (((x1.set r1 k1.val).set r2 k2.val).set r3 (k1.val + k2.val)))) := by
       simp only [m1, m2, ← bind_pure_comp, bind_assoc, pure_bind, Data.set_regs,
         Function.update_self]

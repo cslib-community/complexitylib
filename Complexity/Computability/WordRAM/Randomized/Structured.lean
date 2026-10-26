@@ -25,8 +25,8 @@ supporting Hoare-style rules for data instructions, `rand`, sequencing, branches
 loops (`ExecRandWithin.loop_potential`).
 
 Every structured randomized execution refines `Code.assemble` (`ExecRand.runRand_assemble`) and
-compiles via `Code.program out` to a flat `Program B r` establishing `HaltsWithin`,
-`RandCallsBounded`, and the memory postcondition `P` directly on `Cfg.halted`
+compiles via `Code.program out` to a flat `Program B r` establishing `RandHaltsWithin`,
+`RandCallsBounded`, and the memory postcondition `P` directly on `RandCfg.halted`
 (`ExecRandWithin.program`).
 
 ## Main definitions
@@ -45,7 +45,7 @@ compiles via `Code.program out` to a flat `Program B r` establishing `HaltsWithi
   `rand`-call rule for randomized loops.
 * `Cslib.WordRAM.ExecRand.runRand_assemble`, `Cslib.WordRAM.ExecRand.runRand_program`,
   `Cslib.WordRAM.Exec.runRand_program`, `Cslib.WordRAM.ExecRandWithin.program`: assembly
-  refinement into flat `runRand`, `HaltsWithin`, and `RandCallsBounded`.
+  refinement into flat `runRand`, `RandHaltsWithin`, and `RandCallsBounded`.
 
 ## References
 
@@ -605,7 +605,7 @@ theorem rename {f : Fin r → Fin r'} (hf : f.Injective) {x : Data r'}
 
 end ExecRandWithin
 
-/-! ## Compilation to flat `runRand`, `HaltsWithin`, and `RandCallsBounded` -/
+/-! ## Compilation to flat `runRand`, `RandHaltsWithin`, and `RandCallsBounded` -/
 
 section Compile
 
@@ -780,7 +780,7 @@ once `T ≥ n + 1` on every path. -/
 theorem ExecRand.runRand_program {c : Code B r} {x : Data r} {m : ProbComp (Data r × ℕ)}
     (h : ExecRand w c x m) (out : Fin r) {T : ℕ} (hT : ∀ z ∈ m.support, z.2 + 1 ≤ T) :
     runRand w (c.program out) T (.running ⟨0, x⟩) =
-      (fun z => Cfg.halted (z.1.regs out) z.1) <$> m := by
+      (fun z => RandCfg.halted (z.1.regs out) z.1) <$> m := by
   have hT_le : ∀ z ∈ m.support, z.2 ≤ T := fun z hz => Nat.le_of_succ_le (hT z hz)
   rw [h.runRand_assemble (Program.Contains.self (c.program out)).append_left hT_le,
     ← bind_pure_comp]
@@ -803,11 +803,12 @@ theorem Exec.runRand_program {c : Code B r} {x y : Data r} {n T : ℕ}
     exact hT]
   rfl
 
-/-- Compiling an `ExecRandWithin w c x P T R` certificate via `c.program out` yields `HaltsWithin`,
-`RandCallsBounded`, and pathwise `P` on the halting data at any fuel `T' ≥ T + 1`. -/
+/-- Compiling an `ExecRandWithin w c x P T R` certificate via `c.program out` yields
+`RandHaltsWithin`, `RandCallsBounded`, and pathwise `P` on the halting data at any fuel
+`T' ≥ T + 1`. -/
 theorem ExecRandWithin.program {c : Code B r} {x : Data r} {P : Data r → Prop} {T T' R : ℕ}
     (h : ExecRandWithin w c x P T R) (out : Fin r) (hT : T + 1 ≤ T') :
-    HaltsWithin w (c.program out) ⟨0, x⟩ T' ∧
+    RandHaltsWithin w (c.program out) ⟨0, x⟩ T' ∧
     RandCallsBounded w (c.program out) ⟨0, x⟩ T' R ∧
     ∀ cfg ∈ (runRand w (c.program out) T' (.running ⟨0, x⟩)).support,
       ∃ y, cfg = .halted (y.regs out) y ∧ P y := by
