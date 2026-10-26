@@ -28,6 +28,10 @@ more than `2 ^ (2 ⌊√k⌋)` gates (`two_pow_two_mul_sqrt_lt_size`), hence mor
 (`two_rpow_sqrt_lt_size`). This is the `2 ^ (ε √k)` bound of Razborov and of Alon and Boppana,
 in the form of [Arora and Barak, Theorem 14.7][AroraBarak09], with `ε = 1`.
 
+`Monotone/Clique/LogarithmicPetals.lean` gives stronger finite parameter bounds by choosing
+`4 * w * t` petals for dyadic `w = 2 ^ t`: the lower bound becomes `w ^ w` when `k ^ 4 ≤ n`,
+or remains `64 ^ w` with only `1024 * t ^ 2 * w ^ 4 * k ≤ n` vertices.
+
 ## Main results
 
 * `Cslib.Circuits.Monotone.two_pow_two_mul_sqrt_lt_ecomplexity_clique`: the lower bound for the

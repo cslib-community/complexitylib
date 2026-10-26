@@ -22,14 +22,14 @@ theorem norm_ψ₀ : ‖ψ₀‖ = 1 := by simp [ψ₀]
 example : ∀ z, 2 / 3 ≤ regProb (run (fun _ => LinearIsometry.id) ψ₀ (marked z) 0) z := by
   intro z
   fin_cases z
-  simp [run, regProb, ψ₀, Fintype.sum_prod_type]
+  simp [run, regProb_eq_sum, ψ₀, Fintype.sum_prod_type]
   norm_num
 
 example : ((1 : ℕ) : ℝ) - 2 ≤ 144 * ((0 : ℕ) : ℝ) ^ 2 :=
   card_sub_two_le (fun _ => LinearIsometry.id) norm_ψ₀ 0 (by
     intro z
     fin_cases z
-    simp [run, regProb, ψ₀, Fintype.sum_prod_type]
+    simp [run, regProb_eq_sum, ψ₀, Fintype.sum_prod_type]
     norm_num)
 
 -- The controlled phase oracle flips the sign on marked indices with control bit `1`, and leaves

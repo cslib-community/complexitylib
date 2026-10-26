@@ -173,19 +173,6 @@ private theorem computableTidilyInPolyTime_prod_of_le {α : Type} {input : α �
         (List.prod_pos fun p hp => hpos a p (List.mem_of_mem_drop hp)))
   simpa only [← List.prod_eq_foldl] using h
 
-/-- Look up a computed index in a computed list of lists, with a fixed default; the element
-encoding is that of the list. Restricting to lists of lists keeps this rule away from raw bit
-strings, which have their own lookup rule. -/
-@[fun_prop]
-theorem computableInPolyTime_getD_list {α γ : Type} {input : α ↪ List Bool}
-    {enc : List γ ↪ List Bool} {L : α → List (List γ)} {i : α → ℕ}
-    (hL : ComputableInPolyTime L input (encList enc))
-    (hi : ComputableInPolyTime i input encUnary) (d : List γ) :
-    ComputableInPolyTime (fun a => (L a).getD (i a) d) input enc := by
-  have hL := hL.tidy
-  have hi := hi.tidy
-  exact .of_tidy ((listGetD (encA := enc) (encL := encList enc) d).comp (hL.prod hi))
-
 /-! ### The parameters -/
 
 /-- The primes in `(a, b]`, from unary bounds. -/
@@ -426,7 +413,7 @@ theorem computableInPolyTime_tableEntry {α : Type} {input : α ↪ List Bool}
     (hu : ComputableInPolyTime u input encUnary)
     (hw : ComputableInPolyTime w input encUnary) :
     ComputableInPolyTime (fun a => tableEntry (tab a) (u a) (w a)) input encBits :=
-  computableInPolyTime_getD_list (computableInPolyTime_getD_list htab hu []) hw []
+  ComputableInPolyTime.listGetDWithInput (ComputableInPolyTime.listGetDWithInput htab hu []) hw []
 
 /-- **Multiplication in coordinates**, uniformly in the multiplication table: the sum of at most
 `n ^ 2` table entries, `n` the number of rows. -/
@@ -523,7 +510,7 @@ private theorem computableTidilyInPolyTime_esymmCoords : ComputableTidilyInPolyT
         omega
       · simp)).1
   unfold esymmCoords
-  exact (computableInPolyTime_getD_list (.of_tidy h) (.of_tidy (by fun_prop)) []).tidy
+  exact (ComputableInPolyTime.listGetDWithInput (.of_tidy h) (.of_tidy (by fun_prop)) []).tidy
 
 /-- The elementary symmetric polynomial in coordinates, as a composition rule. -/
 @[fun_prop]
@@ -574,48 +561,18 @@ theorem computableInPolyTime_traceBit' {α : Type} {input : α ↪ List Bool}
   refine .of_tidy ?_
   simpa only [Function.comp_def] using computableTidilyInPolyTime_traceBit.comp (hτ.prod ha)
 
-/-- The tidy composition rules of the trace computation, for tidy `fun_prop` inside proofs. -/
-private theorem computableTidilyInPolyTime_powerPred' {α : Type} {input : α ↪ List Bool}
-    {tab : α → List (List (List Bool))} {y : α → List Bool} {k : α → ℕ}
-    (htab : ComputableTidilyInPolyTime tab input encTable)
-    (hy : ComputableTidilyInPolyTime y input encBits)
-    (hk : ComputableTidilyInPolyTime k input encUnary) :
-    ComputableTidilyInPolyTime (fun x => powerPred (tab x) (y x) (k x)) input encBits := by
-  simpa only [Function.comp_def] using
-    computableTidilyInPolyTime_powerPred.comp (htab.prod (hy.prod hk))
-
-private theorem computableTidilyInPolyTime_esymmCoords' {α : Type} {input : α ↪ List Bool}
-    {tab : α → List (List (List Bool))} {t : α → ℕ} {zs : α → List (List Bool)}
-    (htab : ComputableTidilyInPolyTime tab input encTable)
-    (ht : ComputableTidilyInPolyTime t input encUnary)
-    (hzs : ComputableTidilyInPolyTime zs input (encList encBits)) :
-    ComputableTidilyInPolyTime (fun x => esymmCoords (tab x) (t x) (zs x)) input encBits := by
-  simpa only [Function.comp_def] using
-    computableTidilyInPolyTime_esymmCoords.comp ((htab.prod ht).prod hzs)
-
-private theorem computableTidilyInPolyTime_traceVector' {α : Type} {input : α ↪ List Bool}
-    {tab : α → List (List (List Bool))} (htab : ComputableTidilyInPolyTime tab input encTable) :
-    ComputableTidilyInPolyTime (fun x => traceVector (tab x)) input encBits := by
-  simpa only [Function.comp_def] using computableTidilyInPolyTime_traceVector.comp htab
-
-private theorem computableTidilyInPolyTime_traceBit' {α : Type} {input : α ↪ List Bool}
-    {τ a : α → List Bool} (hτ : ComputableTidilyInPolyTime τ input encBits)
-    (ha : ComputableTidilyInPolyTime a input encBits) :
-    ComputableTidilyInPolyTime (fun x => traceBit (τ x) (a x)) input encBool := by
-  simpa only [Function.comp_def] using computableTidilyInPolyTime_traceBit.comp (hτ.prod ha)
-
-attribute [local fun_prop] computableTidilyInPolyTime_powerPred'
-  computableTidilyInPolyTime_esymmCoords' computableTidilyInPolyTime_traceVector'
-  computableTidilyInPolyTime_traceBit' in
 /-- **`traceSym 1 r t` in coordinates**, uniformly in the multiplication table, `r` and `t` in
 unary, and the input bits. -/
 theorem computableInPolyTime_traceSymCoords : ComputableInPolyTime
     (fun p : ((List (List (List Bool)) × ℕ) × ℕ) × List Bool =>
       traceSymCoords p.1.1.1 p.1.1.2 p.1.2 p.2)
     (encPair (encPair (encPair encTable encUnary) encUnary) encBits) encBool := by
-  refine .of_tidy ?_
   unfold traceSymCoords
-  fun_prop
+  refine computableInPolyTime_traceBit' (by fun_prop)
+    (computableInPolyTime_esymmCoords' (by fun_prop) (by fun_prop) ?_)
+  refine ComputableInPolyTime.mapWithInput (.of_tidy (by fun_prop)) ?_
+  refine computableInPolyTime_powerPred' (by fun_prop) (.of_tidy (by fun_prop))
+    (.of_tidy (by fun_prop))
 
 /-! ### The explicit disperser -/
 

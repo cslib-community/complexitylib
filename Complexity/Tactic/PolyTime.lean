@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length

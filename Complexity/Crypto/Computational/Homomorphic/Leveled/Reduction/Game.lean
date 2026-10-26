@@ -52,8 +52,8 @@ theorem eval_game_keyGen (E : Scheme) (budget : ℕ → ℕ)
       ProbComp.eval (E.publicKeyChainHybrid n (2 * budget n) (2 * budget n) >>=
         publicKeyGame E adversary bit n) := by
   rw [ProbComp.eval_bind, E.eval_publicKeyChainHybrid_depth]
-  simp only [Encryption.game, keyGen, keyPair, encrypt, publicKeyGame,
-    ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map, Function.comp_def,
+  simp only [Encryption.game, Encryption.gameOn, ↓reduceIte, keyGen, keyPair, encrypt,
+    publicKeyGame, ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map, Function.comp_def,
     publicKeyDecoder_decode_enc]
 
 /-- The zero-link base adversary simulates the entire adaptive chosen-message experiment.
@@ -66,7 +66,8 @@ theorem eval_zeroLinkAdversary (E : Scheme) (depth : ℕ → ℕ)
       (zeroLinkAdversary E depth adversary) bit n) =
       ProbComp.eval (E.publicKeyChainHybrid n (depth n) 0 >>=
         publicKeyGame E adversary bit n) := by
-  simp only [Encryption.game, zeroLinkAdversary, Scheme.publicKeyChainHybrid_zero,
+  simp only [Encryption.game, Encryption.gameOn, ↓reduceIte,
+    zeroLinkAdversary, Scheme.publicKeyChainHybrid_zero,
     Scheme.generateKeys, OracleComp.replicate_succ, publicKeyGame,
     ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
     PMF.bind_bind, PMF.bind_map, PMF.pure_bind, Function.comp_def,

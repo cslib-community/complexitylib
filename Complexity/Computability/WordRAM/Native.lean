@@ -110,22 +110,29 @@ theorem checkedConstant_polyTime (B : Basis) (c : ℕ) :
   exact .of_tidy <|
     (binary_lt' (const c) binary_two_pow).ite_decide (const (some c)) (const none)
 
-/-- Both word-RAM register tests (`eq` and `lt`) are polynomial-time at every encoded width. -/
+/-- All word-RAM generic tests (`eq`, `lt`, and the faulting test `none`) are polynomial-time at
+every encoded width. -/
 @[fun_prop, program_certificate]
-theorem evalTest_polyTime (B : Basis) (t : Bool) :
+theorem evalTest_polyTime (B : Basis) (t : Option Bool) :
     ComputableInPolyTime (fun p => B.genericModel.evalTest p.1 t p.2)
       (encPair encUnary (encPi encNat)) (encOption encBool) := by
-  have hx := (pi_apply encNat (0 : Fin 2)).comp (snd encUnary (encPi encNat))
-  have hy := (pi_apply encNat (1 : Fin 2)).comp (snd encUnary (encPi encNat))
-  cases t
-  · change ComputableInPolyTime
-      (fun p : ℕ × (Fin 2 → ℕ) => some (decide (p.2 0 = p.2 1)))
-      (encPair encUnary (encPi encNat (Index := Fin 2))) (encOption encBool)
-    exact .of_tidy <| (optionSome encBool).comp ((decide_eq encNat).comp (hx.prod hy))
-  · change ComputableInPolyTime
-      (fun p : ℕ × (Fin 2 → ℕ) => some (decide (p.2 0 < p.2 1)))
-      (encPair encUnary (encPi encNat (Index := Fin 2))) (encOption encBool)
-    exact .of_tidy <| (optionSome encBool).comp (binary_lt' hx hy)
+  cases t with
+  | none =>
+    change ComputableInPolyTime (fun _ : ℕ × (Fin 0 → ℕ) => (none : Option Bool))
+      (encPair encUnary (encPi encNat (Index := Fin 0))) (encOption encBool)
+    exact .of_tidy (const none)
+  | some b =>
+    have hx := (pi_apply encNat (0 : Fin 2)).comp (snd encUnary (encPi encNat))
+    have hy := (pi_apply encNat (1 : Fin 2)).comp (snd encUnary (encPi encNat))
+    cases b
+    · change ComputableInPolyTime
+        (fun p : ℕ × (Fin 2 → ℕ) => some (decide (p.2 0 = p.2 1)))
+        (encPair encUnary (encPi encNat (Index := Fin 2))) (encOption encBool)
+      exact .of_tidy <| (optionSome encBool).comp ((decide_eq encNat).comp (hx.prod hy))
+    · change ComputableInPolyTime
+        (fun p : ℕ × (Fin 2 → ℕ) => some (decide (p.2 0 < p.2 1)))
+        (encPair encUnary (encPi encNat (Index := Fin 2))) (encOption encBool)
+      exact .of_tidy <| (optionSome encBool).comp (binary_lt' hx hy)
 
 /-- Word-RAM address extraction is the total identity into `Option ℕ`. -/
 @[fun_prop, program_certificate]

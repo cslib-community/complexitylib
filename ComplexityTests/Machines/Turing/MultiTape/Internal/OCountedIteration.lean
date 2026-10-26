@@ -95,7 +95,11 @@ example : ComputableInO (fun p : ℕ × ℕ => decide (p.1 < p.2))
 open Lean Elab Command in
 run_cmd do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
-      `Turing.MultiTapeTM.ComputableTidilyInO, `Turing.MultiTapeTM.ComputableTidilyInDegree] do
+      `Turing.MultiTapeTM.ComputableTidilyInO, `Turing.MultiTapeTM.ComputableTidilyInDegree,
+      `Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.iterateWhile,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.comp_linear,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.exists_onWords] do
     if (← getEnv).contains name then
       throwError "A higher tidy calculus was imported: {name}"
 

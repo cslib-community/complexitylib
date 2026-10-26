@@ -568,11 +568,11 @@ theorem binary_xor' {α : Type} {input : α ↪ List Bool} {left right : α → 
 
 /-- The bit-length `Nat.size n` of a binary natural, returned in unary. -/
 @[fun_prop, program_certificate]
-theorem binary_size : ComputableInPolyTime Nat.size encNat encUnary :=
-  .of_tidy <|
-    ((ComputableTidilyInPolyTime.length encBool).comp
-      ComputableTidilyInPolyTime.natBits).of_enc_eq fun n =>
-      congrArg encUnary (Nat.size_eq_bits_len n).symm
+theorem binary_size : ComputableInPolyTime Nat.size encNat encUnary := by
+  have hbits : ComputableInPolyTime Nat.bits encNat encBits := of_eq fun _ => rfl
+  convert Internal.DecoderWords.unary_degree.computableInPolyTime.comp hbits using 1
+  funext n
+  exact (Nat.size_eq_bits_len n).symm
 
 /-- The smaller of a unary natural and a binary natural, returned in unary by saturating binary
 decoding. -/
@@ -610,18 +610,8 @@ end Turing.MultiTapeTM.ComputableInPolyTime
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
-/-- Multiply computed binary values, fixing their intermediate encodings for proof search. -/
-@[fun_prop]
-theorem binary_mul' {α : Type}
-    {input : α ↪ List Bool}
-    {left : α → ℕ}
-    {right : α → ℕ}
-    (hleft : ComputableInPolyTime left input encNat)
-    (hright : ComputableInPolyTime right input encNat) :
-    ComputableInPolyTime (fun (a : α) => left a * right a) input
-  encNat :=
-  .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul' α input left right
-      hleft.tidy hright.tidy)
+-- Preserve the original facade's registration scope for captured binary multiplication.
+attribute [fun_prop] binary_mul'
 
 /-- `2 ^ k` in binary, from `k` in unary, by doubling. -/
 @[fun_prop]
