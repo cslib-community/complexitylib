@@ -18,14 +18,17 @@ At word size `w`, a *word* is a number below `2 ^ w`. A machine has `r` register
 `R[r - 1]` and a memory cell `M[a]` at every address `a : ℕ`; all hold natural numbers.
 Every instruction takes one unit of time.
 
-The machine is defined from scratch, with only Lean and Mathlib, and two theorems at the end say
-that it is the library's word RAM `Cslib.WordRAM` over its exact basis. To check this, a reader
-only needs to inspect the definitions and theorem statements in this file. Lean checks the
-proofs through `WordRAMBridge`, using only Lean's three standard axioms (`propext`,
-`Classical.choice`, `Quot.sound`). `#check_abstract` checks mechanically that every definition
-and theorem statement here depends only on this file, Lean, Mathlib, upstream CSLib, and the
-modules `Defs`, `Basis` and `Time` of the library's word RAM; these modules appear only in the
-last section.
+The machine is defined from scratch, with only Lean and Mathlib. Two theorems at the end connect
+it to the deterministic part of the library's word RAM `Cslib.WordRAM` over its exact basis. The
+library's instruction type also includes a random-sampling instruction `rand`, on which
+deterministic execution faults. Step-for-step equivalence matches programs here with `rand`-free
+library programs. Deterministic decidability in time `T` agrees without that restriction. To
+check this, a reader only needs to inspect the definitions and theorem statements in this file.
+Lean checks the proofs through `WordRAMBridge`, using only Lean's three standard axioms
+(`propext`, `Classical.choice`, `Quot.sound`). `#check_abstract` checks mechanically that every
+definition and theorem statement here depends only on this file, Lean, Mathlib, upstream CSLib,
+and the modules `Defs`, `Basis` and `Time` of the library's word RAM; these modules appear only
+in the last section.
 
 ## References
 
@@ -215,15 +218,18 @@ def DecidableInTime {α : Type*} (A : Set α) (encode : α → List ℕ) (T bits
 
 /-! ## Connection to the library
 
-Two theorems say that the machine of this file is the library's word RAM `Cslib.WordRAM` over
-its exact basis `Cslib.WordRAM.Basis.exact`. Names with the prefix `Cslib.WordRAM.` are from the
+Two theorems connect the machine of this file to the library's word RAM `Cslib.WordRAM` over its
+exact basis `Cslib.WordRAM.Basis.exact`. Names with the prefix `Cslib.WordRAM.` are from the
 library: `Cslib.WordRAM.Program .exact r` is a program over the exact basis with `r` registers,
-a state `⟨pc, ⟨reg, mem⟩⟩` has the same three parts as here, `Cslib.WordRAM.step` is one step,
-and `Cslib.WordRAM.Executes w q s v n` says that `q` halts from `s` with output `v` after
-exactly `n` instructions. A reader does not need to know how these library definitions are
-made: `decidableInTime_iff` makes the library's uniform decidability in time `T`
-(`Cslib.WordRAM.UniformDecidableInTime`) equal to that of this file, and `runsAgree` does the
-same for single steps and halting runs.
+a state `⟨pc, ⟨reg, mem⟩⟩` has the same three parts as here, `Cslib.WordRAM.step` is one
+deterministic step, and `Cslib.WordRAM.Executes w q s v n` says that `q` halts from `s` with
+output `v` after exactly `n` instructions. The library's instruction type also has `rand` for
+randomized algorithms, on which `Cslib.WordRAM.step` faults. The predicate `q.IsRandFree` says
+that `q` contains no `rand` instruction. A reader does not need to know how these library
+definitions are made: `runsAgree` matches programs of this file with the `rand`-free library
+programs for single steps and halting runs, and `decidableInTime_iff` equates the library's
+uniform decidability in time `T` (`Cslib.WordRAM.UniformDecidableInTime`) with that of this file
+without restriction.
 -/
 
 /-- An outcome of this file and an outcome of `Cslib.WordRAM` *agree* if both continue in the
@@ -243,12 +249,12 @@ def Same (p : Program r) (q : Cslib.WordRAM.Program .exact r) : Prop :=
     OutcomeAgrees (step w p ⟨pc, reg, mem⟩) (Cslib.WordRAM.step w q ⟨pc, ⟨reg, mem⟩⟩) ∧
     ∀ v n, Halts w p ⟨pc, reg, mem⟩ v n ↔ Cslib.WordRAM.Executes w q ⟨pc, ⟨reg, mem⟩⟩ v n
 
-/-- **Same machine.** Each program of this file runs alike with some program of `Cslib.WordRAM`
-over `Basis.exact` with the same registers, and conversely. (In the proof, the program of the
-other machine is a translation instruction by instruction.) -/
+/-- **Same machine.** Each program of this file runs alike with some `rand`-free program of
+`Cslib.WordRAM` over `Basis.exact` with the same registers, and conversely every `rand`-free
+program of `Cslib.WordRAM` over `Basis.exact` runs alike with some program of this file. -/
 theorem runsAgree (r : ℕ) :
-    (∀ p : Program r, ∃ q : Cslib.WordRAM.Program .exact r, Same p q) ∧
-      ∀ q : Cslib.WordRAM.Program .exact r, ∃ p : Program r, Same p q :=
+    (∀ p : Program r, ∃ q : Cslib.WordRAM.Program .exact r, q.IsRandFree ∧ Same p q) ∧
+      ∀ q : Cslib.WordRAM.Program .exact r, q.IsRandFree → ∃ p : Program r, Same p q :=
   WordRAMBridge.runsAgree
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump, .branchEq, .branchLt, .halt,
@@ -275,7 +281,7 @@ theorem decidableInTime_iff {α : Type u} (A : Set α) (encode : α → List ℕ
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.WordRAMAbstract`: 234 root
-declarations, 340 dependencies checked
+declarations, 346 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.WordRAMAbstract allowing [

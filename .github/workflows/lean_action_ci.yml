@@ -27,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Main may download the exact landed revision's successful merge-group build artifact.
+      actions: read
       # Only the remote-cache upload on `main` pushes uses this; the Google Cloud identity pool
       # also refuses tokens for any other repository, ref or event (scripts/cache/README.md).
       id-token: write
@@ -63,6 +65,16 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
         run: scripts/cache/get-missing.sh
+      # A merge-group build has already checked this exact commit before it lands on main.
+      # Reuse its root outputs without granting merge groups access to the public-cache writer.
+      # Missing, expired or mismatched handoffs leave the ordinary build below unchanged.
+      - name: Restore validated merge-group build outputs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B scripts/cache_handoff.py restore
       - name: "lake build"
         run: lake build --wfail --iofail @complexitylib @/mk_all @/checkInitImports @mathlib/lint-style
       - name: "lake test"
@@ -168,6 +180,25 @@ jobs:
         run: |
           set -e
           lake exe checkInitImports
+      # Stage after every required check. Consumers also require the producer's current attempt
+      # to have completed successfully; an artifact from a failed/cancelled run is never reused.
+      - name: Stage merge-group build outputs
+        id: cache-handoff
+        if: github.event_name == 'merge_group'
+        continue-on-error: true
+        timeout-minutes: 3
+        run: python3 -B scripts/cache_handoff.py pack --output "$RUNNER_TEMP/lean-handoff"
+      - name: Upload merge-group build outputs
+        if: github.event_name == 'merge_group' && steps.cache-handoff.outputs.artifact-name != ''
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.cache-handoff.outputs.artifact-name }}
+          path: ${{ runner.temp }}/lean-handoff/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 2
       # Publish the build outputs to the remote cache read by scripts/cache/get.sh. Skipped until
       # the maintainer sets the repository variables described in scripts/cache/README.md.
       - name: "Authenticate to the remote cache"

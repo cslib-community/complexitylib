@@ -71,6 +71,7 @@ def Instr.mapOp (φ : B.Hom B') : Instr B r → Instr B' r
   | .jump t => .jump t
   | .branch c t => .branch c t
   | .halt i => .halt i
+  | .rand dst src => .rand dst src
 
 /-- The program applying `φ f` in place of each operation `f`, instruction for instruction. -/
 def Program.mapOp (φ : B.Hom B') (p : Program B r) : Program B' r := p.map (Instr.mapOp φ)
@@ -81,6 +82,7 @@ def Code.mapOp (φ : B.Hom B') : Code B r → Code B' r
   | .seq c₁ c₂ => .seq (c₁.mapOp φ) (c₂.mapOp φ)
   | .branch c pos neg => .branch c (pos.mapOp φ) (neg.mapOp φ)
   | .loop c body => .loop c (body.mapOp φ)
+  | .rand dst src => .rand dst src
 
 variable (φ : B.Hom B')
 
@@ -127,6 +129,22 @@ theorem Code.readsWidth_of_mapOp {c : Code B r} (h : (c.mapOp φ).ReadsWidth) : 
   | seq _ _ ih₁ ih₂ => exact h.imp ih₁ ih₂
   | branch _ _ _ ihp ihn => exact h.imp ihp ihn
   | loop _ _ ih => exact ih h
+  | rand _ _ => exact h
+
+/-- Translating an instruction along a basis homomorphism preserves `IsRandFree`. -/
+@[simp]
+theorem Instr.isRandFree_mapOp (i : Instr B r) : (i.mapOp φ).IsRandFree ↔ i.IsRandFree := by
+  cases i <;> rfl
+
+/-- Translating a flat program along a basis homomorphism preserves `IsRandFree`. -/
+@[simp]
+theorem Program.isRandFree_mapOp (p : Program B r) : (p.mapOp φ).IsRandFree ↔ p.IsRandFree := by
+  simp [Program.mapOp, Program.IsRandFree]
+
+/-- Translating a structured program along a basis homomorphism preserves `IsRandFree`. -/
+@[simp]
+theorem Code.isRandFree_mapOp (c : Code B r) : (c.mapOp φ).IsRandFree ↔ c.IsRandFree := by
+  induction c <;> simp_all [Code.mapOp, Code.IsRandFree]
 
 /-! ## Runs -/
 
@@ -194,6 +212,7 @@ theorem Code.assemble_mapOp (c : Code B r) (pc : ℕ) :
   | branch c pos neg ihp ihn =>
     simp [Code.mapOp, Code.assemble, Program.mapOp, ihp, ihn, Instr.mapOp]
   | loop c body ih => simp [Code.mapOp, Code.assemble, Program.mapOp, ih, Instr.mapOp]
+  | rand _ _ => rfl
 
 /-- Translation commutes with compiling a structured program into a complete halting program. -/
 theorem Code.program_mapOp (c : Code B r) (out : Fin r) :

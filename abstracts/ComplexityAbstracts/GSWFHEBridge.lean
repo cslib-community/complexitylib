@@ -629,7 +629,8 @@ theorem chosenMessageSecure_of_indCPA {S : Homomorphic.Scheme}
     ⟨fun security pk => chooseProgram (security, pk),
       fun security state ciphertext => guessProgram (security, state, ciphertext)⟩
   have h := hS adversary ⟨hchooseProgram, hguessProgram⟩
-  simpa only [Encryption.game, adversary, ProbComp.eval_bind, hchooseLaw, hguessLaw,
+  simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte,
+    adversary, ProbComp.eval_bind, hchooseLaw, hguessLaw,
     chosenMessageGame, PMF.monad_bind_eq_bind, Randomized.Negligible, Crypto.Negligible,
     Asymptotics.SuperpolynomialDecay, Crypto.Game.advantage, Crypto.Game.succProbability,
     Randomized.probability] using h

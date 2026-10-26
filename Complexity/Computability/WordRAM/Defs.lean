@@ -49,7 +49,9 @@ to the flat programs of this file with the same instruction counts.
   (`Cslib.WordRAM.Op.width`); the exact basis (`Cslib.WordRAM.Basis.exact`) has the same
   operations, with subtraction below zero and division by zero undefined. The control
   instructions jump, branch on an equality or unsigned
-  comparison of two registers, and halt with the contents of a register as output.
+  comparison of two registers, and halt with the contents of a register as output. `Instr.rand`
+  is the random-sampling instruction interpreted by `Cslib.WordRAM.stepRand` and
+  `Cslib.WordRAM.runRand`. Deterministic `Cslib.WordRAM.step` faults on `Instr.rand`.
 * A run starts at instruction `0` with all registers `0`, the input length at address `0` and the
   input words at addresses `1, …, n` (`Cslib.WordRAM.State.init`); all other cells hold `0`.
   Installing this initial input and extracting the halting output are uncharged; executing the
@@ -128,6 +130,8 @@ convention.
   word, and word-bounded machine data.
 * `Cslib.WordRAM.Op.ReadsWidth`, `Cslib.WordRAM.Instr.ReadsWidth`,
   `Cslib.WordRAM.Program.ReadsWidth`: predicates for reading the word size `w`.
+* `Cslib.WordRAM.Instr.IsRandFree`, `Cslib.WordRAM.Program.IsRandFree`: predicates for
+  programs that do not use `Instr.rand`.
 * `Cslib.WordRAM.run`: a computable interpreter with a step budget.
 
 ## Main results
@@ -227,8 +231,8 @@ def Op.exactBin (f : BinOp) (d i j : Fin r) : Op .exact r := .alu (.bin f) d ![i
 /-- `exactWidth d` sets register `d` to the word size, over the exact basis. -/
 def Op.exactWidth (d : Fin r) : Op .exact r := .alu .width d ![]
 
-/-- Instructions over the basis `B`: data instructions, jumps, conditional branches and halting.
-Jump and branch targets are instruction indices. -/
+/-- Instructions over the basis `B`: data instructions, jumps, conditional branches, halting, and
+random sampling. Jump and branch targets are instruction indices. -/
 inductive Instr (B : Basis) (r : ℕ) where
   /-- Execute a data instruction and proceed to the next instruction. -/
   | op (o : Op B r)
@@ -238,6 +242,9 @@ inductive Instr (B : Basis) (r : ℕ) where
   | branch (c : Cond r) (t : ℕ)
   /-- Halt with the contents of register `i` as output. -/
   | halt (i : Fin r)
+  /-- Sample uniformly from `[0, regs src]` into register `dst` under randomized execution;
+  faults under deterministic `step`. -/
+  | rand (dst src : Fin r)
   deriving DecidableEq
 
 /-- A program over the basis `B` and `r` registers is a list of instructions, indexed by the
@@ -425,6 +432,7 @@ def step (w : ℕ) (p : Program B r) (s : State r) : Outcome r :=
   | some (.jump t) => .next ⟨t, s.data⟩
   | some (.branch c t) => .next ⟨if c.Holds s.data then t else s.pc + 1, s.data⟩
   | some (.halt i) => .halt (s.data.regs i)
+  | some (.rand _ _) => .fault
 
 section Step
 
@@ -454,6 +462,11 @@ theorem step_branch {c : Cond r} {t : ℕ} (hp : p[s.pc]? = some (.branch c t)) 
 /-- Stepping on `halt i` halts with output `s.data.regs i`. -/
 theorem step_halt {i : Fin r} (hp : p[s.pc]? = some (.halt i)) :
     step w p s = .halt (s.data.regs i) := by
+  simp only [step, hp]
+
+/-- Stepping deterministically on `rand dst src` faults. -/
+theorem step_rand {dst src : Fin r} (hp : p[s.pc]? = some (.rand dst src)) :
+    step w p s = .fault := by
   simp only [step, hp]
 
 end Step
@@ -727,7 +740,25 @@ def Instr.ReadsWidth : Instr B r → Prop
 instance : DecidablePred (Instr.ReadsWidth (B := B) (r := r)) := fun i =>
   match i with
   | .op o => inferInstanceAs (Decidable o.ReadsWidth)
-  | .jump .. | .branch .. | .halt .. => isFalse id
+  | .jump .. | .branch .. | .halt .. | .rand .. => isFalse id
+
+/-- An instruction is `rand`-free if it is not `Instr.rand`. -/
+def Instr.IsRandFree : Instr B r → Prop
+  | .rand _ _ => False
+  | _ => True
+
+/-- Decidability of `Instr.IsRandFree`. -/
+instance (i : Instr B r) : Decidable i.IsRandFree :=
+  match i with
+  | .rand _ _ => isFalse id
+  | .op _ | .jump _ | .branch _ _ | .halt _ => isTrue trivial
+
+/-- A program is `rand`-free if none of its instructions is `Instr.rand`. -/
+def Program.IsRandFree (p : Program B r) : Prop := ∀ i ∈ p, i.IsRandFree
+
+/-- Decidability of `Program.IsRandFree`. -/
+instance (p : Program B r) : Decidable p.IsRandFree :=
+  inferInstanceAs (Decidable (∀ i ∈ p, i.IsRandFree))
 
 /-- A program reads the word size if one of its instructions does. -/
 def Program.ReadsWidth (p : Program B r) : Prop := ∃ i ∈ p, i.ReadsWidth
@@ -767,6 +798,7 @@ theorem Next.mono_width {w w' : ℕ} {p : Program B r} {s t : State r} (hp : ¬p
     | jump t => rw [step_jump hpc] at h ⊢; exact h
     | branch c t => rw [step_branch hpc] at h ⊢; exact h
     | halt i => simp [step_halt hpc] at h
+    | rand dst src => simp [step_rand hpc] at h
 
 theorem step_halt_mono_width {w w' : ℕ} {p : Program B r} {s : State r} {v : ℕ}
     (h : step w p s = .halt v) : step w' p s = .halt v := by
@@ -780,6 +812,7 @@ theorem step_halt_mono_width {w w' : ℕ} {p : Program B r} {s : State r} {v : �
     | jump t => simp [step_jump hpc] at h
     | branch c t => simp [step_branch hpc] at h
     | halt i => rw [step_halt hpc] at h ⊢; exact h
+    | rand dst src => simp [step_rand hpc] at h
 
 /-- Multi-step runs of a program that does not read the word width lift to any larger width. -/
 theorem Runs.mono_width {w w' : ℕ} {p : Program B r} {s t : State r} {n : ℕ}

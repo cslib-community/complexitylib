@@ -10,13 +10,15 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.B
 public import Mathlib.Data.Nat.Size
 import Mathlib.Data.Nat.Bitwise
 import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Ring
 
 /-!
-# Binary word addition and comparison
+# Binary word arithmetic and comparison
 
 The carry fold, its value and length laws, and the highest-differing-bit characterization of
 strict order are pure facts about least-significant-first binary words. They do not import a
-computability calculus.
+computability calculus. The multiplication bit fold and its prefix-size laws are shared with
+the direct and legacy resource proofs, retaining the original shift-and-add data.
 -/
 
 @[expose] public section
@@ -91,6 +93,47 @@ lemma length_foldl_addStep (l : List Bool) (s : Bool × List Bool × List Bool) 
     exact ⟨h₁.trans (by simp [addStep]), h₂.trans (by simp [addStep]; omega)⟩
 
 end NatAdd
+
+/-! ### Binary multiplication fold
+
+The existing NatMul word-fold data and laws are moved from Complexity/Arith with Christian
+Reitwiessner's source and proof bodies unchanged. Only these four previously module-private
+names are exposed for shared direct and legacy resource proofs.
+-/
+
+namespace NatMul
+
+/-- One round: add the shifted factor `s.2` to the product `s.1` if the digit `a` is `1`, and shift
+the factor. -/
+def mulStep (s : ℕ × ℕ) (a : Bool) : ℕ × ℕ := (if a then s.1 + s.2 else s.1, s.2 + s.2)
+
+/-- The bit fold multiplies the shifted factor and adds the initial accumulator. -/
+lemma foldl_mulStep (m acc sh : ℕ) : (m.bits.foldl mulStep (acc, sh)).1 = acc + m * sh := by
+  induction m using Nat.binaryRec' generalizing acc sh with
+  | zero => simp
+  | bit a m hm ih =>
+    rw [Nat.bits_append_bit _ _ hm, List.foldl_cons, mulStep, ih, Nat.bit_val]
+    cases a <;> simp <;> ring
+
+/-- Prefix accumulators and shifts are bounded by the number of processed binary digits. -/
+lemma foldl_mulStep_le (l : List Bool) (acc sh : ℕ) :
+    (l.foldl mulStep (acc, sh)).1 + sh ≤ acc + 2 ^ l.length * sh ∧
+      (l.foldl mulStep (acc, sh)).2 = 2 ^ l.length * sh := by
+  induction l generalizing acc sh with
+  | nil => simp
+  | cons a l ih =>
+    obtain ⟨h₁, h₂⟩ := ih (if a then acc + sh else acc) (sh + sh)
+    have h : (if a then acc + sh else acc) ≤ acc + sh := by split <;> omega
+    simp only [List.foldl_cons, mulStep, List.length_cons, pow_succ] at h₁ h₂ ⊢
+    refine ⟨?_, by rw [h₂]; ring⟩
+    nlinarith
+
+/-- A shifted numerical bound gives an additive bound on binary size. -/
+lemma size_le_of_le {x n : ℕ} (i : ℕ) (h : x ≤ 2 ^ i * n) : x.size ≤ i + n.size :=
+  Nat.size_le.2 (h.trans_lt (by
+    rw [pow_add]; exact Nat.mul_lt_mul_of_pos_left (Nat.lt_size_self n) (Nat.two_pow_pos i)))
+
+end NatMul
 
 end Turing.MultiTapeTM
 

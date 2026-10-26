@@ -124,9 +124,9 @@ example {n : ℕ} (f : BooleanFunction n) :
 example {n : ℕ} (f : BooleanFunction n) :
     certificateComplexity f ≤ 2 * sensitivity f ^ 5 ∧
       DecisionTree.complexity f ≤ sensitivity f * blockSensitivity f ^ 2 ∧
-      DecisionTree.complexity f ≤ 4 * sensitivity f ^ 9 :=
+      DecisionTree.complexity f ≤ 2 * sensitivity f ^ 6 :=
   ⟨certificateComplexity_le_two_mul_sensitivity_pow_five f,
     DecisionTree.complexity_le_sensitivity_mul_blockSensitivity_sq f,
-    DecisionTree.complexity_le_four_mul_sensitivity_pow_nine f⟩
+    DecisionTree.complexity_le_two_mul_sensitivity_pow_six f⟩
 
 end ComplexityTests.QueryComplexity.Sensitivity
