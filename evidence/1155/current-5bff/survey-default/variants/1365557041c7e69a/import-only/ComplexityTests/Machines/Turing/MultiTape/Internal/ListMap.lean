@@ -1,0 +1,47 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Samuel Schlesinger
+-/
+module
+-- upstream: local-only (test driver)
+
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
+
+
+import Diag1155.Measure
+/-! # Captured list mapping with full uniform callback contexts -/
+
+open Turing.MultiTapeTM
+
+run_elab do
+  for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
+      `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInO] do
+    if (← Lean.getEnv).contains name then throwError "unexpected higher tidy calculus: {name}"
+
+example {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+    {encIn : γ ↪ List Bool} {f : γ → α → β} {list : γ → List α}
+    (hlist : ComputableInPolyTime list encIn (encList encA))
+    (hf : ComputableInPolyTime (fun p : γ × α => f p.1 p.2) (encPair encIn encA) encB) :
+    ComputableInPolyTime (fun x => (list x).map (f x)) encIn (encList encB) := by
+  fail_if_success (clear hlist; fun_prop)
+  fail_if_success (clear hf; fun_prop)
+  exact @ComputableInPolyTime.mapWithInput α β γ encA encB encIn f list hlist hf
+
+example {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {list : γ → List α} (hlist : ComputableInPolyTime list encIn (encList encA)) :
+    ComputableInPolyTime (fun x => (list x).map fun a => (x, a))
+      encIn (encList (encPair encIn encA)) := by fun_prop
+
+example {γ : Type} {encIn : γ ↪ List Bool} :
+    ComputableInPolyTime (fun x : γ => ([] : List Bool).map fun _ => x)
+      encIn (encList encIn) :=
+  ComputableInPolyTime.mapWithInput (encA := encBool)
+    (ComputableInPolyTime.const []) (ComputableInPolyTime.fst encIn encBool)
+
+example (n : ℕ) : ((List.range n).map fun i => (n, i)).length = n := by simp
+example : (([] : List Bool).map fun b => (b, true)) = [] := rfl
+
+/-- info: 'Turing.MultiTapeTM.ComputableInPolyTime.mapWithInput' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Turing.MultiTapeTM.ComputableInPolyTime.mapWithInput

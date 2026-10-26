@@ -1,0 +1,26 @@
+{
+  "pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "targets": [
+    "Complexity.Computability.Complexity.Problems.CircuitSAT",
+    "Complexity.Computability.Complexity.Problems.PlanarThreeSATThree"
+  ],
+  "reason": "Late-detected guide-exclusive direct import omission in initial root filter; no source/option correction. Pending focused preparation before selectedguidefile.",
+  "selected_importers": {
+    "Complexity.Computability.Complexity.Problems.CircuitSAT": [
+      "guide/ComplexityGuide/NPCompleteness.lean"
+    ],
+    "Complexity.Computability.Complexity.Problems.PlanarThreeSATThree": [
+      "guide/ComplexityGuide/NPCompleteness.lean"
+    ]
+  },
+  "start_utc": "2026-10-26T20:33:46.387408+00:00",
+  "source_hashes": {
+    "Complexity.Computability.Complexity.Problems.CircuitSAT": "b61779e408eb4637b5d6e2368f61fefa6340cfe75630cce039fd725fe0ce7617",
+    "Complexity.Computability.Complexity.Problems.PlanarThreeSATThree": "89cf06ab44beaa8299d558aeb8edff7e5f048d1368e8a68412a9b937675912a5"
+  },
+  "outputs_preexisting": {
+    "Complexity.Computability.Complexity.Problems.CircuitSAT": false,
+    "Complexity.Computability.Complexity.Problems.PlanarThreeSATThree": false
+  },
+  "guide_already_attempted_before": false
+}

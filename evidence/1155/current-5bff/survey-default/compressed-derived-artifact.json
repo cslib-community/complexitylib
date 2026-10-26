@@ -1,0 +1,8 @@
+{
+  "uncompressed": "trace-messages.json",
+  "uncompressed_sha256": "05b44310f4f4eb009d020e7bee926296e574de8e396babb8527aefecf378796d",
+  "uncompressed_bytes": 147430110,
+  "gzip": "trace-messages.json.gz",
+  "gzip_sha256": "175bfabe3ac2ac8f9026286704716519299061745cb1d716a6b8c6c21b92d785",
+  "qualification": "Lossless compression of derived JSON only. Every raw per-file event and log is unchanged; no compiler artifacts published."
+}

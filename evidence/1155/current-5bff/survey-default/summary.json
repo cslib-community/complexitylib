@@ -1,0 +1,16 @@
+{
+  "pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "files_with_commands": 647,
+  "commands": 2588,
+  "whole_command_failures": 3,
+  "attempts": 9822,
+  "statuses": {
+    "returned": 9126,
+    "exception": 694,
+    "censored_unknown": 2
+  },
+  "mapped_attempts": 8961,
+  "unsupported_dispatches": 0,
+  "native_trace_messages": 12779,
+  "qualification": "Partial dynamic survey. Returned tactics are not final proof attribution. Thread-local inclusive HB; async/shared-host wall and trace overhead qualified. No missing/censored cost imputed. Original command budgets unchanged."
+}

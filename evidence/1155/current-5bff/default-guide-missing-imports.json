@@ -1,0 +1,16 @@
+{
+  "pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "targets": [
+    "Complexity.Computability.Complexity.Problems.CircuitSAT",
+    "Complexity.Computability.Complexity.Problems.PlanarThreeSATThree"
+  ],
+  "reason": "Late-detected guide-exclusive direct import omission in initial root filter; no source/option correction. Pending focused preparation before selectedguidefile.",
+  "selected_importers": {
+    "Complexity.Computability.Complexity.Problems.CircuitSAT": [
+      "guide/ComplexityGuide/NPCompleteness.lean"
+    ],
+    "Complexity.Computability.Complexity.Problems.PlanarThreeSATThree": [
+      "guide/ComplexityGuide/NPCompleteness.lean"
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "collector_sha256": "1dadc7600d2e6b7d00001503b4d4282ea812947c3531e1ec25b143881214fe56",
+  "parser_sha256": "6bd6b80cfb83fab786670bb4bd03c2fdfaf21407a5c04de36629a04fb030cbc4",
+  "protocol": "original-Lake-options; JSON diagnostics; external Lake-equivalent warning acceptance",
+  "run_id": "current-5bff-a9f87090-1172-4484-82e2-4376d0ca8899",
+  "source_pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "static_source": "5bc08fe7a82eb89dc744d443f190612f5d06e091",
+  "plan_sha256": "56f52a3eb5d19b30cf45728b3bb6bad2c3aced0ce4e50c403248b8ce4e427c56",
+  "headers_sha256": "83c799355bb95efc3edd29ec8388ec2772b7991209d607c943a0b8c2d06403cb",
+  "producer_sources": {
+    "MeasureBase.lean": "dbe1c6c7323c5fc672230d616eec361fa5a130078f7b5b1c6ff8328cbc661247",
+    "Measure.lean": "410a2008cdebba3cc3746c9dae25eabeea59eea571af52854e4245127c4a9565",
+    "HeaderPositions.lean": "c2e25e61b2ab6b10e26331f8949dd814c705d7401dc7e131d6f727e68a811809"
+  },
+  "private_producer_hashes": {
+    "MeasureBase.olean.private": "ad7c570ea11663d090bb46957487b24ab7cec9ee6e6a531f395d246dbb675fc4",
+    "MeasureBase.olean.server": "854277cde6d3fd5b6197afb8ad81d54ccaab127aeb4b4913215643f694c8fcc3",
+    "MeasureBase.olean": "8a290ac145357070cd8a2fbe428e3bc8fe2898121381fedd880b4976da960cfc",
+    "Measure.olean": "a36c573950da9c836d89e337f3de97f874dfd560b91fa53d0765fab53cce5c90",
+    "Measure.olean.private": "2ec5c61ff85b2a5febb1b441393cca424324729770c44f6b057f287916fe6711",
+    "Measure.olean.server": "457174ae986410c9ebe7d001316640ca87cbd3bb62342a8fcffdbe4f07f2fda5"
+  },
+  "modes": [
+    "baseline",
+    "import-only",
+    "measured",
+    "traced"
+  ],
+  "external_timeout_seconds": 1800,
+  "budget_not_overridden": true,
+  "trace_flags": [
+    "trace.Meta.Tactic.fun_prop=true",
+    "trace.aesop=true"
+  ],
+  "compiled_outputs_published": false,
+  "parallel_file_pipelines": 8,
+  "per_process_lean_threads": 2
+}

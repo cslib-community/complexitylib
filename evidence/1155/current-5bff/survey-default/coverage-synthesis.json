@@ -1,0 +1,116 @@
+{
+  "pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "protocol": "original Lake options, separately instrumented diagnostic bodies",
+  "files": 647,
+  "commands": 2588,
+  "all_four_modes_accepted_files": 644,
+  "baseline_import_measured_accepted_files": 647,
+  "failed_commands": [
+    {
+      "path": "Complexity/Crypto/Computational/OneWay/LiuPass.lean",
+      "mode": "traced",
+      "process_returncode": 1,
+      "external_warning_acceptance": false,
+      "context_error": null
+    },
+    {
+      "path": "ComplexityTests/CookLevinPolyTime.lean",
+      "mode": "traced",
+      "process_returncode": 1,
+      "external_warning_acceptance": false,
+      "context_error": null
+    },
+    {
+      "path": "ComplexityTests/PolyTimeContracts.lean",
+      "mode": "traced",
+      "process_returncode": 1,
+      "external_warning_acceptance": false,
+      "context_error": null
+    }
+  ],
+  "static_authored_candidates": 4195,
+  "measured_observed_distinct_authored_heads": 4195,
+  "not_observed_authored_heads": 0,
+  "explicit_argument_static_candidates": 93,
+  "explicit_argument_observed_heads": 93,
+  "measured_attempt_statuses": {
+    "returned": 4564,
+    "exception": 348
+  },
+  "measured_mapping_counts": {
+    "exact_native_full_span_and_static_head": 4481,
+    "synthetic_source_info": 429,
+    "generated_quoted_or_unindexed_anchor": 2
+  },
+  "measured_syntactic_goal_heads": {
+    "Cslib.PolynomiallyBounded": 196,
+    "Turing.MultiTapeTM.ComputableTidilyInPolyTime": 2822,
+    "Measurable": 26,
+    "Continuous": 3,
+    "Turing.MultiTapeTM.ComputableInPolyTime": 1357,
+    "Cslib.Probability.IsOraclePPTOn": 21,
+    "<no constant head>": 7,
+    "Turing.MultiTapeTM.ComputableTidilyInDegree": 44,
+    "Cslib.Probability.IsPPTOn": 358,
+    "Cslib.Probability.IsPPT": 44,
+    "Cslib.Crypto.Negligible": 5,
+    "AEMeasurable": 3,
+    "MeasureTheory.AEStronglyMeasurable": 1,
+    "Cslib.Probability.IsOraclePPT": 4,
+    "Turing.MultiTapeTM.ComputableTidilyInPolySpace": 1,
+    "Turing.MultiTapeTM.ComputableTidilyInO": 5,
+    "Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace": 4,
+    "Cslib.Complexity.ComputableInPolyTimeWithOracle": 1,
+    "Turing.MultiTapeTM.ComputableInPolySpace": 5,
+    "Cslib.WordRAM.UniformComputableInPolyTime": 3,
+    "Cslib.WordRAM.ComputableInPolyTime": 2
+  },
+  "measured_authored_syntactic_goal_heads": {
+    "Cslib.PolynomiallyBounded": 196,
+    "Turing.MultiTapeTM.ComputableTidilyInPolyTime": 2393,
+    "Measurable": 26,
+    "Continuous": 3,
+    "Turing.MultiTapeTM.ComputableInPolyTime": 1355,
+    "Cslib.Probability.IsOraclePPTOn": 21,
+    "<no constant head>": 7,
+    "Turing.MultiTapeTM.ComputableTidilyInDegree": 44,
+    "Cslib.Probability.IsPPTOn": 358,
+    "Cslib.Probability.IsPPT": 44,
+    "Cslib.Crypto.Negligible": 5,
+    "AEMeasurable": 3,
+    "MeasureTheory.AEStronglyMeasurable": 1,
+    "Cslib.Probability.IsOraclePPT": 4,
+    "Turing.MultiTapeTM.ComputableTidilyInPolySpace": 1,
+    "Turing.MultiTapeTM.ComputableTidilyInO": 5,
+    "Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace": 4,
+    "Cslib.Complexity.ComputableInPolyTimeWithOracle": 1,
+    "Turing.MultiTapeTM.ComputableInPolySpace": 5,
+    "Cslib.WordRAM.UniformComputableInPolyTime": 3,
+    "Cslib.WordRAM.ComputableInPolyTime": 2
+  },
+  "measured_other_syntactic_goal_heads": {
+    "Turing.MultiTapeTM.ComputableTidilyInPolyTime": 429,
+    "Turing.MultiTapeTM.ComputableInPolyTime": 2
+  },
+  "primary_returned_closed_goal_costs": {
+    "polytime": {
+      "returned_closed_goal_attempts": 513,
+      "distinct_authored_heads": 496,
+      "median_instrumented_body_user_hb": 6912.117,
+      "max_instrumented_body_user_hb": 189734.684
+    },
+    "fun_prop": {
+      "returned_closed_goal_attempts": 3429,
+      "distinct_authored_heads": 3168,
+      "median_instrumented_body_user_hb": 28.51,
+      "max_instrumented_body_user_hb": 198534.557
+    },
+    "ppt": {
+      "returned_closed_goal_attempts": 290,
+      "distinct_authored_heads": 283,
+      "median_instrumented_body_user_hb": 7205.077,
+      "max_instrumented_body_user_hb": 81772.77
+    }
+  },
+  "qualification": "One pass/mode; not minimum budgets or program runtimes. Primary costs require exact authored mapping, original baseline/import/measured whole-file acceptance, returned zero-goal observation, and available endpoint-same-thread raw HB. Exceptions/censored/generated/unobserved remain separate. Inclusive nested costs and shared-host wall are not additive. Returned is not final proof attribution. Native trace messages are attempts/retained diagnostics, not a final proof rule ledger. No costs transferred from warning-strict/historical pins."
+}
