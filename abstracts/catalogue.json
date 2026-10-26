@@ -277,8 +277,8 @@
       "headline_theorems": [
         "ComplexityAbstracts.RandomizedWordRAMAbstract.quicksort"
       ],
-      "summary": "One 16-register randomized word-RAM program sorts every word-fitting array in place in O(n log n) expected steps and quadratic worst-case steps.",
-      "scope": "Exact ten-operation ALU basis plus uniform bounded random sampling (one step and one call per draw, faulting above word size); in-place sorted permutation on every branch within 20n² + 8n + 32 steps and n - 1 random calls, with expected time at most 120n(Nat.log 2 n + 1) + 32 including duplicate keys."
+      "summary": "One 16-register randomized word-RAM program sorts a word-fitting n-word array in place using a 2n-word auxiliary stack, at word size w ≥ 3 * (Nat.log 2 n + 1), in O(n log n) expected steps and quadratic worst-case steps.",
+      "scope": "Exact ten-operation ALU basis plus unit-cost uniform bounded sampling; assumes word-fitting n-word input and w ≥ 3 * (Nat.log 2 n + 1). Sorts the original array using a 2n-word auxiliary stack within 20n² + 8n + 32 steps and max(n - 1, 0) random calls on every branch, with expected time at most 120n(Nat.log 2 n + 1) + 32 including duplicate keys."
     }
   ]
 }

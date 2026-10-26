@@ -57,11 +57,17 @@ sampled pivot `off ← rand (hi - lo - 1)` ensures that:
   `RandHaltsWithin`, `RandCallsBounded` (`≤ n - 1`), pathwise sorted-array realization + `Modifies`
   frame, and `O(n log n)` `expectedTime` at word size `w ≥ logWidth 3 input.length`.
 
+Classical background on randomized quicksort, equal-key partitioning and the expected-cost
+recurrence appears in [CLRS2009], Section 7.3, Section 7.4.2 and Problems 7-2–7-3;
+[MitzenmacherUpfal2017], Section 2.5, gives additional expected-cost background. The word-RAM
+implementation and step constants, constant-56 explicit-stack potential, ranked-loop drift
+formulation and duplicate-key rank-domination proof are original to this formalization.
+
 ## References
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009]
-* [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
+  Algorithms*][CLRS2009], Section 7.3, Section 7.4.2 and Problems 7-2–7-3.
+* [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017], Section 2.5.
 -/
 
 @[expose] public section

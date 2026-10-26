@@ -39,10 +39,14 @@ average recursive subproblem cost arising in randomized quicksort and random bin
   `2 * ∑ r ∈ Finset.range m, (r + 1) * harmonic r = m * (m + 1) * harmonic m - m * (m + 3) / 2`.
 * `harmonic_le_log_add_one`: `harmonic n ≤ Nat.log 2 n + 1` in `ℚ`.
 
+The dyadic grouping argument is classical; see [CLRS2009], Appendix A.2, pp. 1153–1154.
+The rational half-splitting and weighted-sum induction proofs below are this formalization's
+adaptations for the word-RAM analysis.
+
 ## References
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009]
+  Algorithms*][CLRS2009], Appendix A.2, pp. 1153–1154.
 -/
 
 @[expose] public section

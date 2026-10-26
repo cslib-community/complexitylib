@@ -17,6 +17,10 @@ import Mathlib.Data.Nat.Log
 This file states the randomized word-RAM model, its worst-case and expected running time, and the
 correctness and cost bounds of randomized in-place three-way quicksort.
 
+For an `n`-word input, the theorem assumes word-fitting values and
+`3 * (Nat.log 2 n + 1) ≤ w`. It sorts the original array using a `2 * n`-word auxiliary range
+stack in `[n + 1, 3 * n + 1)`; memory outside the input-and-stack frame is preserved.
+
 At word size `w`, a *word* is a natural number below `2 ^ w`. A machine has `r` registers
 `R[0], …, R[r - 1]` and memory `M[a]` for `a : ℕ`. Its ten deterministic instructions, `init`, and
 `InputFits` match `WordRAMAbstract` (restated because an abstract cannot import another abstract,
@@ -282,13 +286,6 @@ theorem quicksort :
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval, Comp.CallsAtMost,
         stepRand, runRand])
-
-/--
-info: 'ComplexityAbstracts.RandomizedWordRAMAbstract.quicksort' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms quicksort
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.RandomizedWordRAMAbstract`: 281 root

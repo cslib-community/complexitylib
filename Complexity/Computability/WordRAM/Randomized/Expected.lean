@@ -18,20 +18,22 @@ public import Complexity.Probability.PMF.Event
 
 Expected instruction counts for flat (`Program`) and structured (`Code`) randomized word RAM
 programs, valued in the extended nonnegative reals `ℝ≥0∞` so expectations are total without
-summability side conditions and diverging executions evaluate to `⊤`.
+summability side conditions; nonsummable running-probability tails have value `⊤`.
 
 For a flat program `p` starting at state `s`, the expected running time is defined via the
 discrete tail-sum formula over clocked horizons:
 `expectedTime w p s = ∑' t : ℕ, (evalRand w p t s).toOuterMeasure {cfg | ∃ u, cfg = .running u}`.
 Because `.halted` and `.faulted` are absorbing, each horizon `t` contributes the probability that
-execution has not yet terminated after `t` steps. Summing over `t : ℕ` yields the exact 1-step
+execution is still running before either halt or fault after `t` steps. Summing over `t : ℕ` yields the exact 1-step
 Bellman equation `expectedStepsFrom_running`, connects directly to structured `ExecRand` trees via
 `ExecRand.expectedTime_program`, reduces to a finite sum under `RandHaltsWithin`
 (`RandHaltsWithin.expectedTime_eq_sum`, `expectedTime_le_of_randHaltsWithin`), and recovers exact
 deterministic step counts (`Executes.expectedTime_eq`).
 
 For structured `Code B r` programs, `expectedCodeTime` measures the expected instruction count of
-`codeComp w c x` (or `⊤` if `c` can fault or diverge from `x`), satisfying exact sequential
+`codeComp w c x` when a finite, fault-free `ExecRand` tree exists, and is `⊤` otherwise. Thus
+unbounded almost-surely terminating loops can receive a conservative infinite structured cost.
+It satisfies exact sequential
 additivity (`expectedCodeTime_seq`), branch laws (`expectedCodeTime_branch_pos`,
 `expectedCodeTime_branch_neg`, `expectedCodeTime_branch_le`), and a potential/drift bound for
 `while` loops (`expectedCodeTime_loop_le_of_drift`).
@@ -61,11 +63,15 @@ additivity (`expectedCodeTime_seq`), branch laws (`expectedCodeTime_branch_pos`,
   `Cslib.WordRAM.expectedCodeTime_loop_le_of_drift`: compositional expected-time rules for
   structured `Code`.
 
+Discrete and conditional expectation principles are classical background; see
+[MitzenmacherUpfal2017], Sections 2.1 and 2.3. The particular native tail-sum/Bellman definitions,
+finite structured-execution-tree bridge and ranked-loop expected-cost formalization are original
+library constructions in this module.
+
 ## References
 
-* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009]
-* [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
+* [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017],
+  Sections 2.1 and 2.3.
 -/
 
 @[expose] public section
