@@ -703,11 +703,8 @@ theorem bitsFoldlWithInput (op : Bool → Bool → Bool) {list : α → List Boo
     (hlist : ComputableInPolyTime list input encBits)
     (hinit : ComputableInPolyTime init input encBool) :
     ComputableInPolyTime (fun a => (list a).foldl op (init a)) input encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.bitsFoldlWithInput (op := op)
-    (list := list)
-    (init := init)
-    (hlist := hlist.tidy)
-    (hinit := hinit.tidy))
+  foldl' (encA := encBool) hlist hinit (of_finite (fun p : Bool × Bool => op p.1 p.2))
+    (.const 1) (fun _ _ _ => by simp)
 
 /-- Apply a fixed Boolean operation pointwise, stopping at the shorter word. -/
 @[fun_prop]
