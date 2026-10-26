@@ -145,4 +145,55 @@ example {α β : Type} {input : α ↪ List Bool} {output : β ↪ List Bool}
     ComputableInPolyTime (fun a => if guard a then yes a else no a) input output := by
   polytime
 
+-- These source-only controls enter the supplied-guard fast attempt, then require a branch
+-- certificate. A globally registered raw certificate must not supply that missing branch.
+@[irreducible] private def rawBranch (word : List Bool) : List Bool := word.reverse
+
+private theorem rawBranch_certificate :
+    ComputableTidilyInPolyTime rawBranch encBits encBits := by
+  unfold rawBranch
+  exact ComputableInPolyTime.bitsReverse.tidy
+
+attribute [local fun_prop] rawBranch_certificate
+
+private abbrev RawBranchAlias {α β : Type} (f : α → β)
+    (input : α ↪ List Bool) (output : β ↪ List Bool) :=
+  ComputableTidilyInPolyTime f input output
+
+set_option maxHeartbeats 200000 in
+-- Keep the original default budget for this conditional privacy control.
+example (guard : List Bool → Bool)
+    (hc : ComputableInPolyTime guard encBits encBool)
+    (_hn : ComputableInPolyTime (fun word : List Bool => word) encBits encBits) :
+    ComputableInPolyTime
+      (fun word => if guard word then rawBranch word else word) encBits encBits := by
+  fail_if_success polytime
+  -- The failed scoped command restores the ordinary raw-to-plain FunProp route.
+  fun_prop
+
+set_option maxHeartbeats 200000 in
+-- Keep the original default budget for this conditional privacy control.
+example (guard : List Bool → Bool) (yes no : List Bool → List Bool)
+    (hy : ComputableInPolyTime yes encBits encBits)
+    (hn : ComputableInPolyTime no encBits encBits)
+    (h : RawBranchAlias rawBranch encBits encBits →
+      ComputableInPolyTime guard encBits encBool) :
+    ComputableInPolyTime
+      (fun word => if guard word then yes word else no word) encBits encBits := by
+  fail_if_success polytime
+  -- The implication cannot supply a complete guard; ordinary search is restored afterward.
+  fun_prop
+
+set_option maxHeartbeats 200000 in
+-- Keep the original default budget for this conditional supplied-evidence control.
+example (guard : List Bool → Bool) (yes no : List Bool → List Bool)
+    (hy : ComputableInPolyTime yes encBits encBits)
+    (hn : ComputableInPolyTime no encBits encBits)
+    (h : RawBranchAlias rawBranch encBits encBits →
+      ComputableInPolyTime guard encBits encBool)
+    (hf : RawBranchAlias rawBranch encBits encBits) :
+    ComputableInPolyTime
+      (fun word => if guard word then yes word else no word) encBits encBits := by
+  polytime
+
 end ConditionalDispatchTests
