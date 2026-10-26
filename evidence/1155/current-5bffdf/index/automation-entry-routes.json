@@ -1,0 +1,1442 @@
+[
+  {
+    "id": "a42500965db35d33c18e739eb267daa82ceeb1c7ed854964e6d4d6a436df1cf7:Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Length.lean:1532-1537:route",
+    "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Length.lean",
+    "line": 38,
+    "command_id": "a42500965db35d33c18e739eb267daa82ceeb1c7ed854964e6d4d6a436df1cf7:Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Length.lean:1520-1924:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a42500965db35d33c18e739eb267daa82ceeb1c7ed854964e6d4d6a436df1cf7:Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Length.lean:1936-1941:route",
+    "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Length.lean",
+    "line": 45,
+    "command_id": "a42500965db35d33c18e739eb267daa82ceeb1c7ed854964e6d4d6a436df1cf7:Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Length.lean:1924-2272:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "9385a31963ac06712b8b8907ba5e8d1e9687e3a2fd120ea7ab8677884e7a852a:Complexity/Computability/Machines/Turing/MultiTape/Counting.lean:10438-10443:route",
+    "path": "Complexity/Computability/Machines/Turing/MultiTape/Counting.lean",
+    "line": 218,
+    "command_id": "9385a31963ac06712b8b8907ba5e8d1e9687e3a2fd120ea7ab8677884e7a852a:Complexity/Computability/Machines/Turing/MultiTape/Counting.lean:9748-10625:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "8098501a7cca285787004cbfab368848308e9872fb7909c8dc329222506c9a1b:Complexity/Crypto/Computational/Homomorphic/FixedKey/Basic.lean:2825-2830:route",
+    "path": "Complexity/Crypto/Computational/Homomorphic/FixedKey/Basic.lean",
+    "line": 66,
+    "command_id": "8098501a7cca285787004cbfab368848308e9872fb7909c8dc329222506c9a1b:Complexity/Crypto/Computational/Homomorphic/FixedKey/Basic.lean:2326-2832:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "c7d25be765afcaf2e073000d104c15f4ea5dc491b2f70f225464f63dad6eea98:Complexity/Foundations/Geometry/Orthogonal.lean:2606-2611:route",
+    "path": "Complexity/Foundations/Geometry/Orthogonal.lean",
+    "line": 73,
+    "command_id": "c7d25be765afcaf2e073000d104c15f4ea5dc491b2f70f225464f63dad6eea98:Complexity/Foundations/Geometry/Orthogonal.lean:2255-2686:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "92f7ce4b887d0cb94cdd33902706c3384cd112255f0cf108f0ba7a6b83982ada:Complexity/Foundations/Geometry/Orthogonal/Layout.lean:3668-3673:route",
+    "path": "Complexity/Foundations/Geometry/Orthogonal/Layout.lean",
+    "line": 92,
+    "command_id": "92f7ce4b887d0cb94cdd33902706c3384cd112255f0cf108f0ba7a6b83982ada:Complexity/Foundations/Geometry/Orthogonal/Layout.lean:2968-3743:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "21c623b2a2dbeecd35c868f02b3a6bb976ee35ff6fa41b065b9fbe44f034d056:Complexity/Foundations/Geometry/Orthogonal/Subdivision.lean:9949-9954:route",
+    "path": "Complexity/Foundations/Geometry/Orthogonal/Subdivision.lean",
+    "line": 245,
+    "command_id": "21c623b2a2dbeecd35c868f02b3a6bb976ee35ff6fa41b065b9fbe44f034d056:Complexity/Foundations/Geometry/Orthogonal/Subdivision.lean:9406-9956:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "f97914d35fbec76c541f12c2ee3cb880fadf386aa0672aea2b9833e2f059375e:Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean:2417-2422:route",
+    "path": "Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean",
+    "line": 58,
+    "command_id": "f97914d35fbec76c541f12c2ee3cb880fadf386aa0672aea2b9833e2f059375e:Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean:2415-2648:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "f97914d35fbec76c541f12c2ee3cb880fadf386aa0672aea2b9833e2f059375e:Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean:2650-2655:route",
+    "path": "Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean",
+    "line": 64,
+    "command_id": "f97914d35fbec76c541f12c2ee3cb880fadf386aa0672aea2b9833e2f059375e:Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean:2648-2903:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "f97914d35fbec76c541f12c2ee3cb880fadf386aa0672aea2b9833e2f059375e:Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean:3485-3490:route",
+    "path": "Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean",
+    "line": 81,
+    "command_id": "f97914d35fbec76c541f12c2ee3cb880fadf386aa0672aea2b9833e2f059375e:Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean:3483-3703:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "f97914d35fbec76c541f12c2ee3cb880fadf386aa0672aea2b9833e2f059375e:Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean:3705-3710:route",
+    "path": "Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean",
+    "line": 86,
+    "command_id": "f97914d35fbec76c541f12c2ee3cb880fadf386aa0672aea2b9833e2f059375e:Complexity/Logics/FirstOrder/Ordered/TupleInterpretation.lean:3703-3849:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "b091cc31074995001dff15b47d6b7df5262f6bcf26bcd74b7cbeace64096df70:Complexity/Logics/FirstOrder/Ordered/TupleSuccessor.lean:7677-7682:route",
+    "path": "Complexity/Logics/FirstOrder/Ordered/TupleSuccessor.lean",
+    "line": 187,
+    "command_id": "b091cc31074995001dff15b47d6b7df5262f6bcf26bcd74b7cbeace64096df70:Complexity/Logics/FirstOrder/Ordered/TupleSuccessor.lean:7675-8072:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "b5b2e3683690277ef3f0b1d7b2837a5b6c3d9c459ec25fcdbc09ddde46925892:Complexity/Logics/FirstOrder/Problems/SizedGraph.lean:8162-8167:route",
+    "path": "Complexity/Logics/FirstOrder/Problems/SizedGraph.lean",
+    "line": 171,
+    "command_id": "b5b2e3683690277ef3f0b1d7b2837a5b6c3d9c459ec25fcdbc09ddde46925892:Complexity/Logics/FirstOrder/Problems/SizedGraph.lean:8160-8570:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "b5b2e3683690277ef3f0b1d7b2837a5b6c3d9c459ec25fcdbc09ddde46925892:Complexity/Logics/FirstOrder/Problems/SizedGraph.lean:8572-8577:route",
+    "path": "Complexity/Logics/FirstOrder/Problems/SizedGraph.lean",
+    "line": 179,
+    "command_id": "b5b2e3683690277ef3f0b1d7b2837a5b6c3d9c459ec25fcdbc09ddde46925892:Complexity/Logics/FirstOrder/Problems/SizedGraph.lean:8570-8968:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "b5b2e3683690277ef3f0b1d7b2837a5b6c3d9c459ec25fcdbc09ddde46925892:Complexity/Logics/FirstOrder/Problems/SizedGraph.lean:8970-8975:route",
+    "path": "Complexity/Logics/FirstOrder/Problems/SizedGraph.lean",
+    "line": 187,
+    "command_id": "b5b2e3683690277ef3f0b1d7b2837a5b6c3d9c459ec25fcdbc09ddde46925892:Complexity/Logics/FirstOrder/Problems/SizedGraph.lean:8968-9448:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:16976-16981:route",
+    "path": "Complexity/Logics/FirstOrder/Projection.lean",
+    "line": 339,
+    "command_id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:16965-17033:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:17044-17049:route",
+    "path": "Complexity/Logics/FirstOrder/Projection.lean",
+    "line": 340,
+    "command_id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:17033-17212:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:17214-17219:route",
+    "path": "Complexity/Logics/FirstOrder/Projection.lean",
+    "line": 343,
+    "command_id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:17212-17644:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:17646-17651:route",
+    "path": "Complexity/Logics/FirstOrder/Projection.lean",
+    "line": 353,
+    "command_id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:17644-18101:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:18103-18108:route",
+    "path": "Complexity/Logics/FirstOrder/Projection.lean",
+    "line": 365,
+    "command_id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:18101-18439:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:18441-18446:route",
+    "path": "Complexity/Logics/FirstOrder/Projection.lean",
+    "line": 371,
+    "command_id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:18439-18788:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:18790-18795:route",
+    "path": "Complexity/Logics/FirstOrder/Projection.lean",
+    "line": 377,
+    "command_id": "d41650cd034a33dc6ecad7a615791e877e4b71bae65fb47606e0ea86f9393e04:Complexity/Logics/FirstOrder/Projection.lean:18788-19099:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:6280-6285:route",
+    "path": "Complexity/Logics/FirstOrder/ProjectionFormula.lean",
+    "line": 141,
+    "command_id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:6278-6679:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:13553-13558:route",
+    "path": "Complexity/Logics/FirstOrder/ProjectionFormula.lean",
+    "line": 289,
+    "command_id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:13551-13794:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:13796-13801:route",
+    "path": "Complexity/Logics/FirstOrder/ProjectionFormula.lean",
+    "line": 294,
+    "command_id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:13794-14230:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:14232-14237:route",
+    "path": "Complexity/Logics/FirstOrder/ProjectionFormula.lean",
+    "line": 301,
+    "command_id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:14230-14685:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:14687-14692:route",
+    "path": "Complexity/Logics/FirstOrder/ProjectionFormula.lean",
+    "line": 310,
+    "command_id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:14685-15005:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:15007-15012:route",
+    "path": "Complexity/Logics/FirstOrder/ProjectionFormula.lean",
+    "line": 317,
+    "command_id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:15005-15429:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:18627-18632:route",
+    "path": "Complexity/Logics/FirstOrder/ProjectionFormula.lean",
+    "line": 393,
+    "command_id": "19f961bdcb67144d390063f7edc1d3fdaa0f762203e10b29899ba06b2dd0beb5:Complexity/Logics/FirstOrder/ProjectionFormula.lean:18057-18634:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:1742-1747:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 51,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:1740-2158:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:2160-2165:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 61,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:2158-2575:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:2577-2582:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 71,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:2575-2830:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:2832-2837:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 76,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:2830-3123:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:3125-3130:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 82,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:3123-3612:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:3614-3619:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 94,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:3612-3781:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:3906-3911:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 103,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:3904-4154:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:4156-4161:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 109,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:4154-4344:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:4436-4441:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 119,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:4434-4650:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:4652-4657:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 124,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:4650-4871:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:4873-4878:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 129,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:4871-5090:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:5092-5097:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 134,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:5090-5351:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:5353-5358:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 139,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:5351-5606:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:5608-5613:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 144,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:5606-5873:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:5875-5880:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 150,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:5873-6064:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:6298-6303:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 170,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:6296-6506:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:6508-6513:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 175,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:6506-6732:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:6734-6739:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 180,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:6732-6953:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:6955-6960:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 185,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:6953-7165:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:7167-7172:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 190,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:7165-7396:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:7398-7403:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 195,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:7396-7561:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:8257-8262:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 215,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:8246-8314:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:8325-8330:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 216,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:8314-8519:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:8521-8526:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 220,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:8519-9140:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:9142-9147:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 233,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:9140-9446:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:9448-9453:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 239,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:9446-9705:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:9707-9712:route",
+    "path": "Complexity/Logics/FirstOrder/QuantifierFree.lean",
+    "line": 244,
+    "command_id": "a76b6091864019521823870256954b393fe382a9854e28b2422d670c03916a7b:Complexity/Logics/FirstOrder/QuantifierFree.lean:9705-10076:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:8070-8075:route",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 155,
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:8031-8505:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:8516-8521:route",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 162,
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:8505-8806:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:8808-8813:route",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 167,
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:8806-9393:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:9395-9400:route",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 178,
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:9393-10145:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:10198-10203:route",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 195,
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:10145-10537:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:10605-10610:route",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 202,
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:10537-10733:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:1764-1769:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 48,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:1753-1909:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:1911-1916:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 51,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:1909-2160:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:2162-2167:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 56,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:2160-2390:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:2392-2397:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 61,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:2390-2881:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:3256-3261:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 80,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:3254-4170:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:4880-4885:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 106,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:4878-5083:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:5085-5090:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 111,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:5083-5396:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6153-6158:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 129,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6151-6387:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6389-6394:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 134,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6387-6625:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6627-6632:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 139,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6625-6880:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6958-6968:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 145,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6880-7113:command",
+    "token": "evalTactic",
+    "classification": "metaprogram_context_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6996-7001:route",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 146,
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6880-7113:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:3800-3805:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 78,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:3798-4081:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:4083-4088:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 84,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:4081-4687:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:4698-4703:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 94,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:4687-4825:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:4836-4841:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 97,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:4825-5106:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:6175-6180:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 121,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:6056-6752:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:6763-6768:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 132,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:6752-6847:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:7498-7503:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 145,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:7496-7786:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:9090-9095:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 177,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:9088-9352:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:9549-9554:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 185,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:9352-10105:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:13267-13272:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 251,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:13081-13692:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:28284-28291:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 532,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:26871-28462:command",
+    "token": "funProp",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:30086-30091:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 572,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:29823-31551:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:31289-31299:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 591,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:29823-31551:command",
+    "token": "evalTactic",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:31329-31334:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 592,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:29823-31551:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:32108-32118:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 607,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:31551-32280:command",
+    "token": "evalTactic",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:32282-32287:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 610,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:32280-32702:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:37172-37182:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 690,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:36126-37660:command",
+    "token": "evalTactic",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:37232-37237:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 691,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:36126-37660:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:37415-37425:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 695,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:36126-37660:command",
+    "token": "evalTactic",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:37491-37502:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 696,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:36126-37660:command",
+    "token": "solveTagged",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:39211-39216:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 732,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:39200-39268:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:39279-39284:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 734,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:39268-39611:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:39613-39618:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 739,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:39611-40175:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40177-40182:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 749,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40175-40334:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40336-40341:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 753,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40334-40486:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40488-40493:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 757,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40486-40641:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40643-40648:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 761,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40641-41021:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41023-41028:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 770,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41021-41186:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41188-41193:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 774,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41186-41345:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41347-41352:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 778,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41345-41790:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41868-41878:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 786,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41790-42018:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41906-41911:route",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 787,
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41790-42018:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:8735-8746:route",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 172,
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:8731-10189:command",
+    "token": "solveTagged",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:9303-9308:route",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 184,
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:8731-10189:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:9455-9460:route",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 188,
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:8731-10189:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:11942-11953:route",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 231,
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:11283-12567:command",
+    "token": "solveTagged",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:18094-18104:route",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 349,
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:17277-19123:command",
+    "token": "evalTactic",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:18152-18157:route",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 350,
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:17277-19123:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:18502-18513:route",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 355,
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:17277-19123:command",
+    "token": "solveTagged",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "6c71d0f68e169bbfdec3015af150336e9015f875a6f3b1a286107b0e45a645d1:Complexity/Tactic/Stateful.lean:1249-1254:route",
+    "path": "Complexity/Tactic/Stateful.lean",
+    "line": 33,
+    "command_id": "6c71d0f68e169bbfdec3015af150336e9015f875a6f3b1a286107b0e45a645d1:Complexity/Tactic/Stateful.lean:1238-1539:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "6c71d0f68e169bbfdec3015af150336e9015f875a6f3b1a286107b0e45a645d1:Complexity/Tactic/Stateful.lean:1586-1591:route",
+    "path": "Complexity/Tactic/Stateful.lean",
+    "line": 38,
+    "command_id": "6c71d0f68e169bbfdec3015af150336e9015f875a6f3b1a286107b0e45a645d1:Complexity/Tactic/Stateful.lean:1539-1620:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:1679-1684:route",
+    "path": "Complexity/Tactic/WordRAM.lean",
+    "line": 42,
+    "command_id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:1677-2353:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:2355-2360:route",
+    "path": "Complexity/Tactic/WordRAM.lean",
+    "line": 58,
+    "command_id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:2353-2592:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:2594-2599:route",
+    "path": "Complexity/Tactic/WordRAM.lean",
+    "line": 63,
+    "command_id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:2592-2822:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:2824-2829:route",
+    "path": "Complexity/Tactic/WordRAM.lean",
+    "line": 68,
+    "command_id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:2822-2987:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "4e6f3362bd8aae21e4fe36e033173288540f32ba126f707f18b2e5558d2e567f:ComplexityTests/MachineSequential.lean:3725-3730:route",
+    "path": "ComplexityTests/MachineSequential.lean",
+    "line": 80,
+    "command_id": "4e6f3362bd8aae21e4fe36e033173288540f32ba126f707f18b2e5558d2e567f:ComplexityTests/MachineSequential.lean:3025-3786:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "4e6f3362bd8aae21e4fe36e033173288540f32ba126f707f18b2e5558d2e567f:ComplexityTests/MachineSequential.lean:4511-4516:route",
+    "path": "ComplexityTests/MachineSequential.lean",
+    "line": 93,
+    "command_id": "4e6f3362bd8aae21e4fe36e033173288540f32ba126f707f18b2e5558d2e567f:ComplexityTests/MachineSequential.lean:3786-4688:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:11958-11963:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 270,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:11728-12165:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:12048-12058:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 272,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:11728-12165:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:12080-12085:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 273,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:11728-12165:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:12265-12270:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 276,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:12165-12549:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:12355-12365:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 278,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:12165-12549:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:12387-12392:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 279,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:12165-12549:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:13885-13890:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 309,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:13639-13995:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:14398-14403:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 320,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:13995-14522:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:14908-14918:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 331,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:14522-15049:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:14934-14939:route",
+    "path": "ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean",
+    "line": 331,
+    "command_id": "7a53b40218e6f24894ddf2ace328c14428a8522a2276ad5db130843eef454c1c:ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeBoundary.lean:14522-15049:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1587-1597:route",
+    "path": "ComplexityTests/PPTMemoScope.lean",
+    "line": 40,
+    "command_id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1318-1722:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1661-1671:route",
+    "path": "ComplexityTests/PPTMemoScope.lean",
+    "line": 41,
+    "command_id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1318-1722:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1687-1692:route",
+    "path": "ComplexityTests/PPTMemoScope.lean",
+    "line": 41,
+    "command_id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1318-1722:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": true,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1869-1879:route",
+    "path": "ComplexityTests/PPTMemoScope.lean",
+    "line": 45,
+    "command_id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1722-1995:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:2323-2333:route",
+    "path": "ComplexityTests/PPTMemoScope.lean",
+    "line": 53,
+    "command_id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1995-2536:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:2409-2419:route",
+    "path": "ComplexityTests/PPTMemoScope.lean",
+    "line": 54,
+    "command_id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:1995-2536:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:2774-2784:route",
+    "path": "ComplexityTests/PPTMemoScope.lean",
+    "line": 63,
+    "command_id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:2536-2886:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:2848-2858:route",
+    "path": "ComplexityTests/PPTMemoScope.lean",
+    "line": 64,
+    "command_id": "c9334eeebea7ee0a07cffe626766d1a4ea06f0a9e8bad85d924f3650f88bcfed:ComplexityTests/PPTMemoScope.lean:2536-2886:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "757a1b1cbac1cd2ab62c632b6d91f4b99c022318889b37e76ae8777333918da7:ComplexityTests/PPTPlainSource.lean:12030-12040:route",
+    "path": "ComplexityTests/PPTPlainSource.lean",
+    "line": 272,
+    "command_id": "757a1b1cbac1cd2ab62c632b6d91f4b99c022318889b37e76ae8777333918da7:ComplexityTests/PPTPlainSource.lean:11346-12255:command",
+    "token": "evalTactic",
+    "classification": "qualified_identifier_reference",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "757a1b1cbac1cd2ab62c632b6d91f4b99c022318889b37e76ae8777333918da7:ComplexityTests/PPTPlainSource.lean:12062-12067:route",
+    "path": "ComplexityTests/PPTPlainSource.lean",
+    "line": 273,
+    "command_id": "757a1b1cbac1cd2ab62c632b6d91f4b99c022318889b37e76ae8777333918da7:ComplexityTests/PPTPlainSource.lean:11346-12255:command",
+    "token": "aesop",
+    "classification": "quoted_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "73f15019be423de0a830f7bcddb973ff5d69f6e2c6739b1cd34038ad1946c7bc:ComplexityTests/ProbabilisticComposition.lean:1942-1947:route",
+    "path": "ComplexityTests/ProbabilisticComposition.lean",
+    "line": 44,
+    "command_id": "73f15019be423de0a830f7bcddb973ff5d69f6e2c6739b1cd34038ad1946c7bc:ComplexityTests/ProbabilisticComposition.lean:1393-1995:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "73f15019be423de0a830f7bcddb973ff5d69f6e2c6739b1cd34038ad1946c7bc:ComplexityTests/ProbabilisticComposition.lean:2474-2479:route",
+    "path": "ComplexityTests/ProbabilisticComposition.lean",
+    "line": 54,
+    "command_id": "73f15019be423de0a830f7bcddb973ff5d69f6e2c6739b1cd34038ad1946c7bc:ComplexityTests/ProbabilisticComposition.lean:1995-2527:command",
+    "token": "aesop",
+    "classification": "authored_tactic_candidate",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  },
+  {
+    "id": "9295008a22337e57ebee5e96a89910fdb577711c8bba62ae9a58b5f27cb024b8:ComplexityTests/StatefulRefinement.lean:6710-6715:route",
+    "path": "ComplexityTests/StatefulRefinement.lean",
+    "line": 173,
+    "command_id": "9295008a22337e57ebee5e96a89910fdb577711c8bba62ae9a58b5f27cb024b8:ComplexityTests/StatefulRefinement.lean:6693-6779:command",
+    "token": "aesop",
+    "classification": "attribute_registration",
+    "lexical_polytime_or_ppt_ruleset": false,
+    "qualification": "Source entry/forwarding signal only; not an additional executed goal or verified call."
+  }
+]

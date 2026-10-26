@@ -1,0 +1,371 @@
+{
+  "pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "records": [
+    {
+      "id": "addtrivial",
+      "case": "AddTrivial unfolded original automation",
+      "historical_revision_context": "main9e552300 → staging8654d5d6 →96cf0062 →a06a0f10",
+      "reported_measurement": "Minimum fun_prop maxSteps intervals:25–32 →401–512 →171–180 →21–24. Original polytime fails at8654 and passes at96cf/a06 independently of explicit production proof.",
+      "metric_kind": "search-step threshold intervals, NOT elapsed time/heartbeats",
+      "reported_limit": "original scripts/limits retained in cited probes",
+      "evidence_scope_and_limits": "Reported outside-review measurements in exact historical imports. Generic pair/range remained registered after extra comp registration was removed; later inner-first ordering changed the threshold further. Not fresh current-main measurement.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902",
+          "body_sha256_at_collection": "0e70a40ee3ceed28540de184666637258ddf559d9b87a000c8863fd823111329"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400732408",
+          "body_sha256_at_collection": "b4e062804f2836e03f71a41485cdae86532ef642725526741911df4484f88a39"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical search-cost changes; original automated block retained in current CI source",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax",
+      "current_causal_qualification": "Threshold intervals remain attached to historical imports/revisions. Explicit production proof and original automatic fixture are distinct observations.",
+      "current_sources": [
+        "https://github.com/cslib-community/complexitylib/pull/1171"
+      ],
+      "current_source_paths": [
+        "ComplexityTests/AutomationAddTrivial.lean"
+      ]
+    },
+    {
+      "id": "cloud-endpoint",
+      "case": "Cloud isPolyTime_endpoint",
+      "historical_revision_context": "main9e552300 / staging8654d5d6 /96cf0062",
+      "reported_measurement": "Minimum maxSteps intervals177–192 /513–768 /257–320; polytime closes at96cf.",
+      "metric_kind": "search-step threshold intervals",
+      "reported_limit": null,
+      "evidence_scope_and_limits": "Outside-review import-specific probe; no current timing.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902",
+          "body_sha256_at_collection": "0e70a40ee3ceed28540de184666637258ddf559d9b87a000c8863fd823111329"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical evidence retained; current cost not established by this static survey",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax"
+    },
+    {
+      "id": "cloud-controls",
+      "case": "Cloud halfEdges and range-path controls",
+      "historical_revision_context": "main9e552300 /96cf0062",
+      "reported_measurement": "halfEdges97–128 at both; cloud/addLoops range paths≤16 at both. Intermediate8654 not measured.",
+      "metric_kind": "search-step threshold intervals",
+      "reported_limit": null,
+      "evidence_scope_and_limits": "Useful unaffected controls, not evidence every pair/range rule is costly.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902",
+          "body_sha256_at_collection": "0e70a40ee3ceed28540de184666637258ddf559d9b87a000c8863fd823111329"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical evidence retained; current cost not established by this static survey",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax"
+    },
+    {
+      "id": "extraction",
+      "case": "Original PseudoentropyExtraction:50",
+      "historical_revision_context": "96cf0062 →a06a0f10; controlled6c82d444 order probe",
+      "reported_measurement": "Reviewer #count_heartbeats25757→3384. Controlled order probe:table projection621 raw heartbeats (~0.621 HB), actual search3307591 raw (~3307.591 HB); unchanged original goal passes after inner-first order.",
+      "metric_kind": "heartbeats; raw/1000 conversion explicitly reported",
+      "reported_limit": "original12000",
+      "evidence_scope_and_limits": "Original test/imports/program preserved. Duplicate relevant FunctionTheorem hypothesis rejected. Failed composed-length frontend and pair/range-removal probes did not fix goal. Historical staging contexts, not measurements at census pin.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400307034",
+          "body_sha256_at_collection": "277b81e64c848a54c570961b63090c75745c0e2ddf7fb9fae5f94596aa657cf5"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400425510",
+          "body_sha256_at_collection": "cb8559ceee5cc9d127f598af86b82a9721430e84893c09a24ad77834ebff5272"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400732408",
+          "body_sha256_at_collection": "b4e062804f2836e03f71a41485cdae86532ef642725526741911df4484f88a39"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical evidence retained; current cost not established by this static survey",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax"
+    },
+    {
+      "id": "liupass",
+      "case": "LiuPass thresholdValue automation tradeoff",
+      "historical_revision_context": "96cf0062 →a06a0f10",
+      "reported_measurement": "Old unfolded fun_prop passes at96cf but times out at200000 at a06; explicit composition repairs same header/program.",
+      "metric_kind": "success/heartbeat-limit failure",
+      "reported_limit": "200000",
+      "evidence_scope_and_limits": "Controlled reviewer restatement supports order tradeoff; no per-call wall-time baseline in this record. Later direct unary_sub reuse is proof-only.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400732408",
+          "body_sha256_at_collection": "b4e062804f2836e03f71a41485cdae86532ef642725526741911df4484f88a39"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical inner/outer composition tradeoff; original-goal current representative fixture is worker559 task",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax",
+      "current_causal_qualification": "Production explicit composition is historically motivated. Do not infer the original current automated expression passes/fails from the production proof; the new unchanged-goal runtime result is separate.",
+      "current_sources": [
+        "https://github.com/cslib-community/complexitylib/issues/1155#issuecomment-6424094073"
+      ],
+      "current_source_paths": [
+        "Complexity/Crypto/Computational/OneWay/LiuPass.lean"
+      ]
+    },
+    {
+      "id": "hardness",
+      "case": "MCSP HardnessConsequences unary nest",
+      "historical_revision_context": "post-671 merge6f9af3b0 →proof repairba2a95aa /f2f92a06",
+      "reported_measurement": "Hosted source whnf timeout at471 (369 shares same declaration budget); after explicit hm_bound/hs_bound/hg composition, author reports module ~2s locally.",
+      "metric_kind": "hosted limit failure; reported whole-module seconds",
+      "reported_limit": "200000 unchanged",
+      "evidence_scope_and_limits": "Do not treat471/369 as independently timed failures or module2s as per-call speedup. #733 explicitly notes order attribution was not a controlled before/after timing result.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/pull/1063#issuecomment-6403509003",
+          "body_sha256_at_collection": "f71db84681949cd6238923616dda2f0e18d4162e37d241c18ff03f9b2c14c0c2"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/pull/1063#issuecomment-6404882875",
+          "body_sha256_at_collection": "0e2b07f36562918d1f5872addb91629e262a8c46f02adce524a5aa018b22762d"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/733#issuecomment-6403782631",
+          "body_sha256_at_collection": "391bb91c7e62f85b75f1886ecda778fc069296fe3abae96abbed469c6f637869"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical explicit-composition repair; original automated arithmetic expression is now also guarded by #1171",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax",
+      "current_causal_qualification": "No source occurrence of comp alone is called a workaround. The historical report explicitly describes the timeout and same-goal composition repair; current runtime is not remeasured here.",
+      "current_sources": [
+        "https://github.com/cslib-community/complexitylib/pull/1171"
+      ],
+      "current_source_paths": [
+        "ComplexityTests/AutomationArithmetic1063.lean"
+      ]
+    },
+    {
+      "id": "bool-conditionals",
+      "case": "Nested Boolean conditionals / ite_decide",
+      "historical_revision_context": "2baf1f04 →a40cd66e",
+      "reported_measurement": "Kernel-only positive depth2/4/8/12:60/91/162/247→291/554/1093/1654 HB; negative88/127/229/352→320/590/1160/1762. Library imports: succeeding unchanged; failing fun_prop+32%, polytime+8–20%. New unary-pair conditionals gain successes7513/8352 HB.",
+      "metric_kind": "whole-command #count_heartbeats",
+      "reported_limit": null,
+      "evidence_scope_and_limits": "Import-sensitive controlled reviewer probes; linear depth growth, not exponential blow-up. Rule priority was ignored by pinned function-theorem ordering; this is not a current-main profile.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6403982121",
+          "body_sha256_at_collection": "330e64e8e3d594a8b077e512a5942869ae399e2fa6df56788fb1615c7ef0306a"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical evidence retained; current cost not established by this static survey",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax"
+    },
+    {
+      "id": "ppt114-preparation",
+      "case": "PPTTactic original114 setup versus matching",
+      "historical_revision_context": "4940d11b",
+      "reported_measurement": "First unresolved-encoding attempt:preparation10273.059 HB versus matching228.614 HB (97.82% preparation);2359 global function/lambda entries scanned.",
+      "metric_kind": "instrumented phase heartbeats",
+      "reported_limit": "12000; backend256 steps",
+      "evidence_scope_and_limits": "Only first attempt, instrumentation overhead disclosed; fixed-Unary continuation comparison is NOT proof original unresolved search solved.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6392036946",
+          "body_sha256_at_collection": "a4d8eab616cd22349baf5cbf7cbd8540c87b2370e5d8647f7491725cffc97e41"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical evidence retained; current cost not established by this static survey",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax"
+    },
+    {
+      "id": "ppt114-apply",
+      "case": "PPTTactic original114 unrelated unsafe applications",
+      "historical_revision_context": "00d6cfec",
+      "reported_measurement": "cond598.518 +ite1943.325 +iterateWith-growth560.041 +iterate-growth558.631 +iterate-length558.740 =4219.255 HB; roughly98% of measured4297-HB interval.",
+      "metric_kind": "instrumented failed-apply heartbeats",
+      "reported_limit": "12000",
+      "evidence_scope_and_limits": "Actual continuation not yet expanded in that interval. Does not support blaming binary-first choice, known facts or another classifier sweep. Isolated continuation probes solve unresolved/unary; binary exhausts, not whole-original acceptance.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6392560858",
+          "body_sha256_at_collection": "4f814aaf55a37f9c520715b42b45a2eb074543ec1f43a9744087a91e7eb3a403"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical evidence retained; current cost not established by this static survey",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax"
+    },
+    {
+      "id": "ppt59-shared",
+      "case": "PPTTactic literal negative followed by positive",
+      "historical_revision_context": "1827cd16",
+      "reported_measurement": "Negative returns108233.470 HB (~6.47s traced); following supplied-callback positive exhausts shared200000 allowance.",
+      "metric_kind": "traced shared-command heartbeats/time",
+      "reported_limit": "original200000",
+      "evidence_scope_and_limits": "It is incorrect to call this negative alone a200k timeout. hlist-first anyWithInput opens unresolved encodings before callback evidence; trace includes repeated256-step backend cap. Not a fresh census-pin result.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6393958663",
+          "body_sha256_at_collection": "41841a42218bba1a11e84611c7dbc2a3121a09964473324faddb200fd3184028"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical evidence retained; current cost not established by this static survey",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax"
+    },
+    {
+      "id": "basic-facade",
+      "case": "Boolean plain module-import visibility",
+      "historical_revision_context": "8654d5d6 →96cf0062",
+      "reported_measurement": "public-import-only client loses bool_and/bool_not and fun_prop fails; restored public reexport fixes named/automatic access.",
+      "metric_kind": "functional import regression, no timing",
+      "reported_limit": null,
+      "evidence_scope_and_limits": "Non-module callers had differed; not a search-time regression. Composite !(p.1&&p.2) failed at both historical main and candidate, so not newly regressed.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6399594564",
+          "body_sha256_at_collection": "c8d6f7274285424b5aa549099b6865352e04abe81ffa38dc7a6b9acd2acf35ca"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902",
+          "body_sha256_at_collection": "0e70a40ee3ceed28540de184666637258ddf559d9b87a000c8863fd823111329"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "historical evidence retained; current cost not established by this static survey",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax"
+    },
+    {
+      "id": "guide-filter",
+      "case": "Guide List.filter (· ≤ p.2)",
+      "historical_revision_context": "API-docs run40265276356 at8d845488 versus prior PR1122 headb971639d",
+      "reported_measurement": "Published API-docs failure:polytime exhausts Aesop; pre-restack guide passed.",
+      "metric_kind": "workflow success/failure, no per-call profile",
+      "reported_limit": "original guide budget not measured in collected public record",
+      "evidence_scope_and_limits": "Causation to1137/1146 is an UNCONFIRMED hypothesis in issue1148, not established by these different-source-context runs. Sole builder is investigating current67c6ea4d; pending durable measured diagnosis is not fabricated here.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/1148",
+          "body_sha256_at_collection": "4548e582da47790edcf6d093f1be3232fc650a0cc15b3fb7d633b0fedf937f70"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/1148#issuecomment-6411747338",
+          "body_sha256_at_collection": "ca38593c32f504a13146e0e9a5381ebb982d4c62513fa1784f88f4c0bfbd0605"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "resolved by actual #1168 squash3a6d7706; not an open current-pin missing route",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax",
+      "current_causal_qualification": "Isolated binary<=/captured callback missing, unary<=/binary< pass; selecting filter still failed at callback. Computed-operand binary_le plus public low-provider import fixed original guide. No established #1137/#1146 ordering cause.",
+      "current_sources": [
+        "https://github.com/cslib-community/complexitylib/issues/1148#issuecomment-6412123104",
+        "https://github.com/cslib-community/complexitylib/pull/1168"
+      ],
+      "current_source_paths": [
+        "ComplexityTests/GuideFilterPolyTime.lean",
+        "guide/ComplexityGuide/NPCompleteness.lean"
+      ]
+    },
+    {
+      "id": "program-request",
+      "case": "Requested representative suite / coverage gap",
+      "historical_revision_context": "issue1155 request",
+      "reported_measurement": "AddTrivial,Extraction,LiuPass,1063,1148,nested Boolean,Cloud endpoint/halfEdges requested.",
+      "metric_kind": "requested measurement/suite, not measured data",
+      "reported_limit": null,
+      "evidence_scope_and_limits": "This evidence branch implements only static census and evidence consolidation. It does not implement CI suite or design synthesis.",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/1155",
+          "body_sha256_at_collection": "b20ecab6d71cbda28273a47bb69c3e1314e2bd34153b35b1eeac9bb63ddd364c"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/1155#issuecomment-6411747610",
+          "body_sha256_at_collection": "85fd33087b77be9801dceb3bbebec5ea407df5d8be926f1274508349bc0e99f4"
+        }
+      ],
+      "current_pin_measurement": null,
+      "current_disposition": "partially delivered representative suite; dynamic all-call coverage remains incomplete",
+      "semantic_classification": "reported case/control, not generalized to arbitrary matching source syntax",
+      "current_causal_qualification": "Current source contains #1171 arithmetic/AddTrivial, #1168 guide, minimal/PPT Boolean and PPT shape controls. This is not coverage of all authored calls.",
+      "current_sources": [
+        "https://github.com/cslib-community/complexitylib/pull/1171"
+      ],
+      "current_source_paths": [
+        "ComplexityTests/AutomationAddTrivial.lean",
+        "ComplexityTests/AutomationArithmetic1063.lean",
+        "ComplexityTests/AutomationBooleanMinimal.lean",
+        "ComplexityTests/AutomationBooleanPPT.lean",
+        "ComplexityTests/GuideFilterPolyTime.lean",
+        "ComplexityTests/PPTProgramShapes.lean"
+      ]
+    },
+    {
+      "id": "binary-add-global-auto",
+      "case": "Direct binary addition registration experiments",
+      "current_disposition": "OPEN general/default-global automation obligation; named direct certificate shipped and current source leaves it unregistered",
+      "reported_measurement": "Captured registration regressed unchanged original LiuPass/CookLevin/Learning controls; production named-only configuration passes these controls at unchanged200k.",
+      "metric_kind": "controlled pass/fail/import comparison, no current per-call timing",
+      "semantic_classification": "demonstrated registration/encoding search interaction; no engine fix inferred",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/pull/1137"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6406129844"
+        }
+      ],
+      "current_source_paths": [
+        "Complexity/Computability/Machines/Turing/MultiTape/Internal/PolyTimeBinaryPrimitives.lean"
+      ],
+      "current_pin_measurement": null
+    },
+    {
+      "id": "binary-mul-attribute-location",
+      "case": "Direct captured multiplication registration exposure",
+      "current_disposition": "resolved scope correction in actual #1184 squash95cf6d73; original facade keeps canonical registration",
+      "reported_measurement": "Moving theorem proof low with its registration exposed it earlier to four unchanged unary/PPT import contexts. Attribute-only A/B keeping same theorem at old facade restored those originals; low-only named and facade-default controls stay separate.",
+      "metric_kind": "controlled source/registration-location A/B, not a global ordering policy or new timing",
+      "semantic_classification": "demonstrated visibility/registration-location effect; no theorem/priority/budget change",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/pull/1184"
+        },
+        {
+          "url": "https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6416198065"
+        }
+      ],
+      "current_source_paths": [
+        "Complexity/Computability/Machines/Turing/MultiTape/Internal/PolyTimeBinaryPrimitives.lean",
+        "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Binary.lean"
+      ],
+      "current_pin_measurement": null
+    },
+    {
+      "id": "private-property-registry",
+      "case": "Private fun_prop property registration repair in final pin",
+      "current_disposition": "actual #1205 included before final5bff collection; source repair is material to search context",
+      "metric_kind": "functional registry/source repair, not a timing measurement or cause attribution to arithmetic",
+      "semantic_classification": "source integration fact; no current runtime result supplied by this survey",
+      "sources": [
+        {
+          "url": "https://github.com/cslib-community/complexitylib/pull/1205"
+        }
+      ],
+      "current_source_paths": [
+        "ComplexityTests/PrivateFunProp.lean"
+      ],
+      "current_pin_measurement": null
+    }
+  ],
+  "limits": "Complete retained curated record set plus all132 keyword-index comment bodies. These are not132 verified distinct regressions; historical source-keyword candidates remain explicit. This corpus is not proof that every GitHub regression report in fourteen days has been discovered. No new current timing or causal attribution is inferred."
+}

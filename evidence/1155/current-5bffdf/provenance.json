@@ -1,0 +1,24 @@
+{
+  "source_pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "historical_evidence_pin": "c0e03da5365cbf7b8b3050e315807ae0903478a7",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "tool_sha256": {
+    "survey.py": "1515bd13823fb83c98874f1455a6fc2fc7d7b01d0cc76caad6b7b738bbb18598",
+    "test_survey.py": "63c284b1d216a0800c5d75d05cb7fab521818f3166c98fde1a25c336761e68b6",
+    "join_runtime.py": "f0f35f2a0c754183b25e4689d4e13bea125642ae1f3556f48ccc7be5550d6274"
+  },
+  "scanner_dependency": {
+    "path": "scripts/proof_lengths.py",
+    "sha256": "11b90856ad2bb7574304468b913ae2dd097a44dbd34bc2852d11b1493b1f22cd",
+    "basis": "Read-only repository command scanner, extended locally to recognize meta declaration prefixes"
+  },
+  "default_budget_source": {
+    "toolchain": "leanprover/lean4:v4.36.0-rc1",
+    "path": "src/lean/Lean/CoreM.lean",
+    "declaration": "register_builtin_option maxHeartbeats",
+    "defValue": 200000,
+    "url": "https://github.com/leanprover/lean4/blob/v4.36.0-rc1/src/Lean/CoreM.lean#L30"
+  },
+  "validation": "Seven Python source/identity/join tests; no Lean execution",
+  "production_changes": false
+}

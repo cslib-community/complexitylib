@@ -1,0 +1,754 @@
+[
+  {
+    "historical_call_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3036-3044:polytime",
+    "historical_call_token": "c4b5fc8ce302aeabb",
+    "mapping_path": "evidence/1155/cloud-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "current_call_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3036-3044:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/cloud-run-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_halfEdges",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3504-3512:polytime",
+    "historical_call_token": "cf424e17a775e47f6",
+    "mapping_path": "evidence/1155/cloud-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "current_call_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3504-3512:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/cloud-run-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_endpoint",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3973-3981:polytime",
+    "historical_call_token": "c36d701736c1936d3",
+    "mapping_path": "evidence/1155/cloud-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "current_call_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3973-3981:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/cloud-run-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_cloud",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "4a4017fe2397fd140829fd045aa5323d2567f09476336f4162bb5eb48bf5fe73:Complexity/Computability/PCP/Encoded/AddTrivial.lean:3616-3624:polytime",
+    "historical_call_token": "cbf405609ac7e9847",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/PCP/Encoded/AddTrivial.lean",
+    "current_call_id": "4a4017fe2397fd140829fd045aa5323d2567f09476336f4162bb5eb48bf5fe73:Complexity/Computability/PCP/Encoded/AddTrivial.lean:3616-3624:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_addLoops",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "14848076c39947cb573d9cc483650b28fcbf24732be924a16941d4d3ab82b230:Complexity/Computability/PCP/Encoded/Amplification.lean:3587-3595:fun_prop",
+    "historical_call_token": "c05ebf856657dbf33",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/PCP/Encoded/Amplification.lean",
+    "current_call_id": "14848076c39947cb573d9cc483650b28fcbf24732be924a16941d4d3ab82b230:Complexity/Computability/PCP/Encoded/Amplification.lean:3587-3595:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_amplify",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "2dd6eb4946ff96008a28eb635b50b4155407f9d3cd0f700404cbff89fe8fcc62:Complexity/Computability/PCP/Encoded/Amplification/Enumeration.lean:3203-3211:fun_prop",
+    "historical_call_token": "cf46375f604ff6d92",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/PCP/Encoded/Amplification/Enumeration.lean",
+    "current_call_id": "2dd6eb4946ff96008a28eb635b50b4155407f9d3cd0f700404cbff89fe8fcc62:Complexity/Computability/PCP/Encoded/Amplification/Enumeration.lean:3203-3211:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_amplifyEnumerated",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "f9962c274cf332efee7f35885fb5db8ce427d5e2111373e2a39b1f9679a103ee:Complexity/Computability/PCP/Encoded/Constraints.lean:4973-4981:polytime",
+    "historical_call_token": "ca5c9fdcccbea7a08",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/PCP/Encoded/Constraints.lean",
+    "current_call_id": "f9962c274cf332efee7f35885fb5db8ce427d5e2111373e2a39b1f9679a103ee:Complexity/Computability/PCP/Encoded/Constraints.lean:4973-4981:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_mapConstraints",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "f9962c274cf332efee7f35885fb5db8ce427d5e2111373e2a39b1f9679a103ee:Complexity/Computability/PCP/Encoded/Constraints.lean:6606-6614:polytime",
+    "historical_call_token": "cbf522a16c32397ee",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/PCP/Encoded/Constraints.lean",
+    "current_call_id": "f9962c274cf332efee7f35885fb5db8ce427d5e2111373e2a39b1f9679a103ee:Complexity/Computability/PCP/Encoded/Constraints.lean:6606-6614:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_constraintTableEval",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "95d4c9a25b34d4a13d95a2557ecfb12f230f177cecb55c5e74c9e4f471319eb5:Complexity/Computability/PCP/Encoded/Preprocess.lean:5117-5125:fun_prop",
+    "historical_call_token": "cdbdeea977b41a6fb",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/PCP/Encoded/Preprocess.lean",
+    "current_call_id": "95d4c9a25b34d4a13d95a2557ecfb12f230f177cecb55c5e74c9e4f471319eb5:Complexity/Computability/PCP/Encoded/Preprocess.lean:5117-5125:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_preprocess",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "eaac819732b0b866de1269e1334cdc82f7919a742ffe6c6e85684c1ce984633c:Complexity/Computability/Complexity/Problems/ExactThreeSAT.lean:4424-4432:fun_prop",
+    "historical_call_token": "c85ccb56b2e350c05",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/Problems/ExactThreeSAT.lean",
+    "current_call_id": "eaac819732b0b866de1269e1334cdc82f7919a742ffe6c6e85684c1ce984633c:Complexity/Computability/Complexity/Problems/ExactThreeSAT.lean:4424-4432:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_padClause",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "eaac819732b0b866de1269e1334cdc82f7919a742ffe6c6e85684c1ce984633c:Complexity/Computability/Complexity/Problems/ExactThreeSAT.lean:5390-5398:fun_prop",
+    "historical_call_token": "c2c003996d1f856d9",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/Problems/ExactThreeSAT.lean",
+    "current_call_id": "eaac819732b0b866de1269e1334cdc82f7919a742ffe6c6e85684c1ce984633c:Complexity/Computability/Complexity/Problems/ExactThreeSAT.lean:5390-5398:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_verifier",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "24aad4bec54a42609c3b463807d455f6dbf8f385d66e51c728fd97e615aa3230:Complexity/Computability/Complexity/Problems/Partition.lean:3949-3957:fun_prop",
+    "historical_call_token": "c56a56722b9589817",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/Problems/Partition.lean",
+    "current_call_id": "24aad4bec54a42609c3b463807d455f6dbf8f385d66e51c728fd97e615aa3230:Complexity/Computability/Complexity/Problems/Partition.lean:3949-3957:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_verifier",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "24aad4bec54a42609c3b463807d455f6dbf8f385d66e51c728fd97e615aa3230:Complexity/Computability/Complexity/Problems/Partition.lean:5938-5946:fun_prop",
+    "historical_call_token": "c465ef2dac62bc24f",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/Problems/Partition.lean",
+    "current_call_id": "24aad4bec54a42609c3b463807d455f6dbf8f385d66e51c728fd97e615aa3230:Complexity/Computability/Complexity/Problems/Partition.lean:5938-5946:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_toPartition",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "8c0f1e9e6faf46d31ed5404cff71e7c29a248ba9c42c6bb59b7b7903806c6f12:Complexity/Crypto/Computational/GeneratorPadding.lean:3327-3335:polytime",
+    "historical_call_token": "c7be3404817da26f0",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/GeneratorPadding.lean",
+    "current_call_id": "8c0f1e9e6faf46d31ed5404cff71e7c29a248ba9c42c6bb59b7b7903806c6f12:Complexity/Crypto/Computational/GeneratorPadding.lean:3327-3335:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_generate",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "8c0f1e9e6faf46d31ed5404cff71e7c29a248ba9c42c6bb59b7b7903806c6f12:Complexity/Crypto/Computational/GeneratorPadding.lean:6639-6642:ppt",
+    "historical_call_token": "c4aeeed1a75014401",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/GeneratorPadding.lean",
+    "current_call_id": "8c0f1e9e6faf46d31ed5404cff71e7c29a248ba9c42c6bb59b7b7903806c6f12:Complexity/Crypto/Computational/GeneratorPadding.lean:6639-6642:ppt",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPPTOn_test",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "18a1ec0ab3fc053737299afac2cb5f2d764234520bbcbee776cefeea94d99f4d:Complexity/Crypto/Computational/Prediction.lean:4747-4750:ppt",
+    "historical_call_token": "cc9325cb5abc5af6a",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Prediction.lean",
+    "current_call_id": "18a1ec0ab3fc053737299afac2cb5f2d764234520bbcbee776cefeea94d99f4d:Complexity/Crypto/Computational/Prediction.lean:4747-4750:ppt",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPPTOn_trialPredictor",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "18a1ec0ab3fc053737299afac2cb5f2d764234520bbcbee776cefeea94d99f4d:Complexity/Crypto/Computational/Prediction.lean:5161-5164:ppt",
+    "historical_call_token": "cf6137f959648d1b6",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Prediction.lean",
+    "current_call_id": "18a1ec0ab3fc053737299afac2cb5f2d764234520bbcbee776cefeea94d99f4d:Complexity/Crypto/Computational/Prediction.lean:5161-5164:ppt",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPPTOn_bitPredictor",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "18a1ec0ab3fc053737299afac2cb5f2d764234520bbcbee776cefeea94d99f4d:Complexity/Crypto/Computational/Prediction.lean:7228-7231:ppt",
+    "historical_call_token": "ccec1794f7ac5fb4b",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Prediction.lean",
+    "current_call_id": "18a1ec0ab3fc053737299afac2cb5f2d764234520bbcbee776cefeea94d99f4d:Complexity/Crypto/Computational/Prediction.lean:7228-7231:ppt",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPPTOn_calibratedTest",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "75a90c68947b91225298a666cbad549906163362717788f83f66724c071159d9:Complexity/Crypto/Computational/Pseudoentropy/ExtractionSchedule.lean:2705-2713:polytime",
+    "historical_call_token": "cc7494f7f6b82104a",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Pseudoentropy/ExtractionSchedule.lean",
+    "current_call_id": "75a90c68947b91225298a666cbad549906163362717788f83f66724c071159d9:Complexity/Crypto/Computational/Pseudoentropy/ExtractionSchedule.lean:2705-2713:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_count",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "75a90c68947b91225298a666cbad549906163362717788f83f66724c071159d9:Complexity/Crypto/Computational/Pseudoentropy/ExtractionSchedule.lean:3191-3199:polytime",
+    "historical_call_token": "c637c0e7d06a33f7d",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Pseudoentropy/ExtractionSchedule.lean",
+    "current_call_id": "75a90c68947b91225298a666cbad549906163362717788f83f66724c071159d9:Complexity/Crypto/Computational/Pseudoentropy/ExtractionSchedule.lean:3191-3199:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_slack",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "ad2b4b2812f6fc819ade7a513ac04c503d297fded07c925ec37e9e40219bf79c:Complexity/Crypto/Computational/Pseudoentropy/RepeatedExtraction.lean:7475-7478:ppt",
+    "historical_call_token": "ca9c1b63a0948660c",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Pseudoentropy/RepeatedExtraction.lean",
+    "current_call_id": "ad2b4b2812f6fc819ade7a513ac04c503d297fded07c925ec37e9e40219bf79c:Complexity/Crypto/Computational/Pseudoentropy/RepeatedExtraction.lean:7475-7478:ppt",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPPTOn_extractLabels",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "ad2b4b2812f6fc819ade7a513ac04c503d297fded07c925ec37e9e40219bf79c:Complexity/Crypto/Computational/Pseudoentropy/RepeatedExtraction.lean:8396-8399:ppt",
+    "historical_call_token": "cca5840d6a165b5ec",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Pseudoentropy/RepeatedExtraction.lean",
+    "current_call_id": "ad2b4b2812f6fc819ade7a513ac04c503d297fded07c925ec37e9e40219bf79c:Complexity/Crypto/Computational/Pseudoentropy/RepeatedExtraction.lean:8396-8399:ppt",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPPTOn_extractLabels_list",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "f16ae9d54e7334e42477647b5ea27d070c0df7d80bc269717e51541db557255e:Complexity/Crypto/Computational/Pseudoentropy/WordSeedExtraction.lean:9952-9955:ppt",
+    "historical_call_token": "cfd75cba13a0c4e94",
+    "mapping_path": "evidence/1155/larger-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Pseudoentropy/WordSeedExtraction.lean",
+    "current_call_id": "f16ae9d54e7334e42477647b5ea27d070c0df7d80bc269717e51541db557255e:Complexity/Crypto/Computational/Pseudoentropy/WordSeedExtraction.lean:9952-9955:ppt",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/larger-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPPTOn_extractWordSeeds",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "26b242e2b9b04f3922fdea12c078e5cc568a6a9eff1dfe97ec9ee110f9c8d342:Complexity/Computability/Complexity/CookLevin/Parameters.lean:2023-2031:fun_prop",
+    "historical_call_token": "c36edb70f6e7b114b",
+    "mapping_path": "evidence/1155/limited-batch-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/CookLevin/Parameters.lean",
+    "current_call_id": "26b242e2b9b04f3922fdea12c078e5cc568a6a9eff1dfe97ec9ee110f9c8d342:Complexity/Computability/Complexity/CookLevin/Parameters.lean:2023-2031:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/limited-batch-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_parameters",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "baad11b78ac6c6bce3af488e787475f84233750d4a308189d63c989579b64942:Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean:2594-2602:polytime",
+    "historical_call_token": "c404e391d404e1bea",
+    "mapping_path": "evidence/1155/limited-batch-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean",
+    "current_call_id": "baad11b78ac6c6bce3af488e787475f84233750d4a308189d63c989579b64942:Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean:2594-2602:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/limited-batch-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "polyTime_paddedFunction",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "baad11b78ac6c6bce3af488e787475f84233750d4a308189d63c989579b64942:Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean:2819-2827:polytime",
+    "historical_call_token": "c1171b3eb836e971b",
+    "mapping_path": "evidence/1155/limited-batch-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean",
+    "current_call_id": "baad11b78ac6c6bce3af488e787475f84233750d4a308189d63c989579b64942:Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean:2819-2827:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/limited-batch-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "polyTime_paddedPredicate",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "baad11b78ac6c6bce3af488e787475f84233750d4a308189d63c989579b64942:Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean:5816-5819:ppt",
+    "historical_call_token": "c8388401961e46454",
+    "mapping_path": "evidence/1155/limited-batch-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean",
+    "current_call_id": "baad11b78ac6c6bce3af488e787475f84233750d4a308189d63c989579b64942:Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean:5816-5819:ppt",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/limited-batch-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPPT_paddedPredictor",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "d7a7f10591ebc67a4e07e7606e78177b7fa0b0eedb0cf19df0af6208e3a62b5a:Complexity/Crypto/Computational/Pseudoentropy/MatrixExtraction.lean:4614-4617:ppt",
+    "historical_call_token": "ced783161d0885fa5",
+    "mapping_path": "evidence/1155/limited-batch-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Pseudoentropy/MatrixExtraction.lean",
+    "current_call_id": "d7a7f10591ebc67a4e07e7606e78177b7fa0b0eedb0cf19df0af6208e3a62b5a:Complexity/Crypto/Computational/Pseudoentropy/MatrixExtraction.lean:4614-4617:ppt",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/limited-batch-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPPTOn_extractMatrixLabels",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "5d04a6f95d2a682b78e837543ecbe6448b2f3c916f1f37954941d5b9e4f72c0e:Complexity/Computability/Circuit/Boolean/MachineSimulation.lean:20734-20742:fun_prop",
+    "historical_call_token": "c16b0d62b00f96344",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Circuit/Boolean/MachineSimulation.lean",
+    "current_call_id": "5d04a6f95d2a682b78e837543ecbe6448b2f3c916f1f37954941d5b9e4f72c0e:Complexity/Computability/Circuit/Boolean/MachineSimulation.lean:20734-20742:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "polynomiallyBounded_simulationCost",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "88126f7b929b107629c3c249a92379a3fb4d7bf6408180bc54f67d5c3c250841:Complexity/Computability/Circuit/Frontier/Layouts/Gaussian/EdgeScores.lean:4756-4764:fun_prop",
+    "historical_call_token": "cde70424752a21064",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Circuit/Frontier/Layouts/Gaussian/EdgeScores.lean",
+    "current_call_id": "88126f7b929b107629c3c249a92379a3fb4d7bf6408180bc54f67d5c3c250841:Complexity/Computability/Circuit/Frontier/Layouts/Gaussian/EdgeScores.lean:4756-4764:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "measurable_edgeScore",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "1a339c482892c054a8656df6146013e84973d36ed89fe60feeb830505f491883:Complexity/Computability/Circuit/Frontier/Layouts/VertexGaussian.lean:4026-4034:fun_prop",
+    "historical_call_token": "c1e03ef28b232b93a",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Circuit/Frontier/Layouts/VertexGaussian.lean",
+    "current_call_id": "1a339c482892c054a8656df6146013e84973d36ed89fe60feeb830505f491883:Complexity/Computability/Circuit/Frontier/Layouts/VertexGaussian.lean:4026-4034:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "measurable_vertexScore",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b:Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean:5051-5059:fun_prop",
+    "historical_call_token": "cdc8b795e1eadd2f5",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean",
+    "current_call_id": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b:Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean:5051-5059:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_sigmaTwoVerifier",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b:Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean:10517-10525:fun_prop",
+    "historical_call_token": "cc99be2c14e7704be",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean",
+    "current_call_id": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b:Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean:10517-10525:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_piTwoVerifier",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "c15180b2b545bc690b240a62ac0ac30a1b4a131ec5f74be5f9347c3f0f16dc4e:Complexity/Computability/Complexity/Classes/ArthurMerlin/SetLowerBound.lean:8937-8945:fun_prop",
+    "historical_call_token": "c5894a2a6c0eaef4c",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/SetLowerBound.lean",
+    "current_call_id": "c15180b2b545bc690b240a62ac0ac30a1b4a131ec5f74be5f9347c3f0f16dc4e:Complexity/Computability/Complexity/Classes/ArthurMerlin/SetLowerBound.lean:8937-8945:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_verifier",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "8e58f6e1a4f16b7cc13977aebdd4f65ae4c4f4763d1857625240ca12798c5e57:Complexity/Computability/Complexity/Problems/MonotoneCircuitValue/Completeness.lean:15109-15117:fun_prop",
+    "historical_call_token": "c687803b1d60e61a3",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/Problems/MonotoneCircuitValue/Completeness.lean",
+    "current_call_id": null,
+    "join_status": "changed-source-requires-parser/context-revalidation",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInLogSpace_dualTableauInstance",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "b6933aa9aaeaf6c117ab61d33b0086a61140f5d89012add22b653d33eade6108:Complexity/Computability/Complexity/Problems/SubsetSum/Mask.lean:5380-5388:fun_prop",
+    "historical_call_token": "c8ebd4d3ffac9458f",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Complexity/Problems/SubsetSum/Mask.lean",
+    "current_call_id": "b6933aa9aaeaf6c117ab61d33b0086a61140f5d89012add22b653d33eade6108:Complexity/Computability/Complexity/Problems/SubsetSum/Mask.lean:5380-5388:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_maskSelect",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "6c6df6c3cba810a49d2a9f41ff55b81cf8da8934c835073af19d60b108632ed8:Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Prime.lean:1980-1988:fun_prop",
+    "historical_call_token": "cfabbfceadd13b8d5",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Prime.lean",
+    "current_call_id": "6c6df6c3cba810a49d2a9f41ff55b81cf8da8934c835073af19d60b108632ed8:Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Prime.lean:1980-1988:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "unary_decide_prime",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean:3827-3835:fun_prop",
+    "historical_call_token": "cacc2ec56c78d5f0e",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean",
+    "current_call_id": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean:3827-3835:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "outputClass",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean:4154-4162:fun_prop",
+    "historical_call_token": "c68d8c0ea782eb26e",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean",
+    "current_call_id": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean:4154-4162:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "finiteCfg_summarizeOutput",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean:6592-6600:fun_prop",
+    "historical_call_token": "c5bc90d18648ead33",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean",
+    "current_call_id": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean:6592-6600:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableTidilyInPolyTime_codeWidth",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean:6948-6956:fun_prop",
+    "historical_call_token": "cc5885e602823dc65",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean",
+    "current_call_id": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean:6948-6956:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_viewCodeWidth",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "37f3950e78d23b3abf4ee432c40a8d33d35713280e0853450bb4b585727509bd:Complexity/Crypto/Computational/Pseudoentropy/Boosting/Sampling.lean:6050-6058:fun_prop",
+    "historical_call_token": "c92ccdea3a91bfb6a",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Pseudoentropy/Boosting/Sampling.lean",
+    "current_call_id": "37f3950e78d23b3abf4ee432c40a8d33d35713280e0853450bb4b585727509bd:Complexity/Crypto/Computational/Pseudoentropy/Boosting/Sampling.lean:6050-6058:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "weightNumerator_div",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "4bbdbe264c68ea97717c12d75a27d3bf31e15ecf59279ee852315a16a6ee1b0c:Complexity/Crypto/Computational/Pseudoentropy/ThreeSource/Seeded.lean:7807-7815:polytime",
+    "historical_call_token": "c2bea16980720d334",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Computational/Pseudoentropy/ThreeSource/Seeded.lean",
+    "current_call_id": "4bbdbe264c68ea97717c12d75a27d3bf31e15ecf59279ee852315a16a6ee1b0c:Complexity/Crypto/Computational/Pseudoentropy/ThreeSource/Seeded.lean:7807-7815:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "isPolyTime_generate",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "d8dc46d307b4b8ffbf1b1526e4e24459a48588d5405c570b3762608ec8cf7704:Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean:5538-5546:fun_prop",
+    "historical_call_token": "c4a5148403a0413c1",
+    "mapping_path": "evidence/1155/next-source-prep-3a6d/mapping.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean",
+    "current_call_id": "d8dc46d307b4b8ffbf1b1526e4e24459a48588d5405c570b3762608ec8cf7704:Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean:5538-5546:fun_prop",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/next-source-prep-3a6d/parsed.json"
+    ],
+    "historical_expected": "returned",
+    "historical_case": "computableInPolyTime_lyubashevskyExtractList",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "e67ed48a4e5f7b9a6a30c4b71f56cac5559abc4b2dd3b2082955e394b95823e3:guide/ComplexityGuide/NPCompleteness.lean:4977-4985:polytime",
+    "historical_call_token": "c8fb166d0e3491174",
+    "mapping_path": "evidence/1155/wrapper-compact-3a6d/parsed.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "guide/ComplexityGuide/NPCompleteness.lean",
+    "current_call_id": "e67ed48a4e5f7b9a6a30c4b71f56cac5559abc4b2dd3b2082955e394b95823e3:guide/ComplexityGuide/NPCompleteness.lean:4977-4985:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/wrapper-compact-3a6d/parsed.json"
+    ],
+    "historical_expected": null,
+    "historical_case": "guide",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "6db6798ddaf6d7dcaeff46dec118058ec71176b2739f1d8c8823f07ebde7cb91:ComplexityTests/GuideFilterPolyTime.lean:2277-2285:polytime",
+    "historical_call_token": "c5c94c54ea0c74b4a",
+    "mapping_path": "evidence/1155/wrapper-compact-3a6d/parsed.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "ComplexityTests/GuideFilterPolyTime.lean",
+    "current_call_id": "6db6798ddaf6d7dcaeff46dec118058ec71176b2739f1d8c8823f07ebde7cb91:ComplexityTests/GuideFilterPolyTime.lean:2277-2285:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/wrapper-compact-3a6d/parsed.json"
+    ],
+    "historical_expected": null,
+    "historical_case": "supplied",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  },
+  {
+    "historical_call_id": "6db6798ddaf6d7dcaeff46dec118058ec71176b2739f1d8c8823f07ebde7cb91:ComplexityTests/GuideFilterPolyTime.lean:2727-2735:polytime",
+    "historical_call_token": "cb7163cb627cf406f",
+    "mapping_path": "evidence/1155/wrapper-compact-3a6d/parsed.json",
+    "historical_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+    "path": "ComplexityTests/GuideFilterPolyTime.lean",
+    "current_call_id": "6db6798ddaf6d7dcaeff46dec118058ec71176b2739f1d8c8823f07ebde7cb91:ComplexityTests/GuideFilterPolyTime.lean:2727-2735:polytime",
+    "join_status": "exact-source-token-identity",
+    "archived_observation_artifacts": [
+      "evidence/1155/wrapper-compact-3a6d/parsed.json"
+    ],
+    "historical_expected": null,
+    "historical_case": "missing",
+    "runtime_transferred": false,
+    "note": "Mapping describes selected source only; consult archived results/events for actual execution and freshness. No current timing inferred."
+  }
+]

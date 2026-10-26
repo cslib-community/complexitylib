@@ -1,0 +1,648 @@
+[
+  {
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:0-4607:command",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 1,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "polytime"
+    ]
+  },
+  {
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:8031-8505:command",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 154,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:8505-8806:command",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 162,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:8806-9393:command",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 167,
+    "lexical_declaration": "unfoldDefinitions",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:9393-10145:command",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 178,
+    "lexical_declaration": "casesRelationSymbol",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:10145-10537:command",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 194,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "77855afee591ea6a4703fa7a11a0b2cb934d7986ae6eb9e894e85ec0904f553b:Complexity/Tactic/FirstOrder.lean:10537-10733:command",
+    "path": "Complexity/Tactic/FirstOrder.lean",
+    "line": 201,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:0-1669:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 1,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "polytime",
+      "ppt"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:1753-1909:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 48,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:1909-2160:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 51,
+    "lexical_declaration": "Cslib.Tactic.PPT.pptKnownCall",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "pptKnownCall"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:2160-2390:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 56,
+    "lexical_declaration": "Cslib.Tactic.PPT.pptCertificate",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "pptCertificate"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:2390-2881:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 61,
+    "lexical_declaration": "Cslib.Tactic.PPT.pptFunProp",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "pptFunProp"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:3254-4170:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 80,
+    "lexical_declaration": "Cslib.Tactic.PPT.pptCaptured",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "pptCaptured"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:4878-5083:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 106,
+    "lexical_declaration": "Cslib.Tactic.PPT.pptCond",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "pptCond",
+      "pptConditional"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:5083-5396:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 111,
+    "lexical_declaration": "Cslib.Tactic.PPT.pptIte",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "pptConditional",
+      "pptIte"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6151-6387:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 129,
+    "lexical_declaration": "Cslib.Tactic.PPT.pptIterateLength",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "pptIterate",
+      "pptIterateLength"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6387-6625:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 134,
+    "lexical_declaration": "Cslib.Tactic.PPT.pptIterateGrowth",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "pptIterate",
+      "pptIterateGrowth"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6625-6880:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 139,
+    "lexical_declaration": "Cslib.Tactic.PPT.pptIterateCaptured",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "pptIterate",
+      "pptIterateCaptured"
+    ]
+  },
+  {
+    "command_id": "e1186e7207280917acd49f1a5d5a6e49a669922f60fd493c7dda2353cfb4ddee:Complexity/Tactic/PPT.lean:6880-7113:command",
+    "path": "Complexity/Tactic/PPT.lean",
+    "line": 144,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "evalTactic",
+      "ppt"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:0-2091:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 1,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "polytime"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:3798-4081:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 78,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.plainBoolNot",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:4081-4687:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 84,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.plainPiApply",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:4687-4825:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 94,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:4825-5106:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 97,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:6056-6752:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 119,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeListInstance",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeListInstance"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:6752-6847:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 132,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:7496-7786:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 145,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeKnownCall",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeKnownCall",
+      "polytimePredicate"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:9088-9352:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 177,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeCertificate",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeCertificate",
+      "polytimePredicate"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:9352-10105:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 182,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeScanKnownCallback",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeScanKnownCallback"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:13081-13692:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 248,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeKnownFacts",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeKnownFacts",
+      "polytimePredicate"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:26871-28462:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 509,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.Internal.funPropWithPlainBoundary",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "funProp"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:29823-31551:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 568,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeRawFromPlain",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "evalTactic",
+      "polytimeRawFromPlain"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:31551-32280:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 597,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeFunProp",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "evalTactic",
+      "polytimeFunProp",
+      "polytimePlainFunProp",
+      "polytimePredicate"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:32280-32702:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 610,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.bool_not_rule",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:36126-37660:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 672,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeFold",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "evalTactic",
+      "polytimeFold",
+      "polytimePredicate"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:39200-39268:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 732,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:39268-39611:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 734,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:39611-40175:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 739,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeConstructFast",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeConstruct",
+      "polytimeConstructFast",
+      "polytimePredicate"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40175-40334:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 749,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeFunPropFast",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeFunProp",
+      "polytimeFunPropFast"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40334-40486:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 753,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeFoldFast",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeFold",
+      "polytimeFoldFast"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40486-40641:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 757,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeIterateFast",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeIterate",
+      "polytimeIterateFast"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:40641-41021:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 761,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeConstructAlternative",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeConstruct",
+      "polytimeConstructAlternative",
+      "polytimePredicate"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41021-41186:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 770,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeFunPropAlternative",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeFunProp",
+      "polytimeFunPropAlternative"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41186-41345:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 774,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeFoldAlternative",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeFold",
+      "polytimeFoldAlternative"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41345-41790:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 778,
+    "lexical_declaration": "Cslib.Tactic.PolyTime.polytimeIterateAlternative",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "polytimeIterate",
+      "polytimeIterateAlternative"
+    ]
+  },
+  {
+    "command_id": "7de6ac02d1e7b92eaa0d10d79e76f62b2f2b0fc6f629455430629d020f91d25b:Complexity/Tactic/PolyTime.lean:41790-42018:command",
+    "path": "Complexity/Tactic/PolyTime.lean",
+    "line": 785,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "evalTactic",
+      "polytime"
+    ]
+  },
+  {
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:0-1912:command",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 1,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "polytime"
+    ]
+  },
+  {
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:6045-7518:command",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 127,
+    "lexical_declaration": "Cslib.Tactic.hasGlobalFunProp",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "polytime",
+      "ppt"
+    ]
+  },
+  {
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:7601-8731:command",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 150,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "polytime",
+      "ppt"
+    ]
+  },
+  {
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:8731-10189:command",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 172,
+    "lexical_declaration": "Cslib.Tactic.solveTagged",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "557812b0d3b14e2e61f980851a606190c5f53f26ffc7e8c33d7c098d7a1a8d16:Complexity/Tactic/PolyTime/Init.lean:17277-19123:command",
+    "path": "Complexity/Tactic/PolyTime/Init.lean",
+    "line": 333,
+    "lexical_declaration": "Cslib.Tactic.applyScanWithLocalCallback",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop",
+      "evalTactic"
+    ]
+  },
+  {
+    "command_id": "6c71d0f68e169bbfdec3015af150336e9015f875a6f3b1a286107b0e45a645d1:Complexity/Tactic/Stateful.lean:0-1037:command",
+    "path": "Complexity/Tactic/Stateful.lean",
+    "line": 1,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "polytime"
+    ]
+  },
+  {
+    "command_id": "6c71d0f68e169bbfdec3015af150336e9015f875a6f3b1a286107b0e45a645d1:Complexity/Tactic/Stateful.lean:1238-1539:command",
+    "path": "Complexity/Tactic/Stateful.lean",
+    "line": 33,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "6c71d0f68e169bbfdec3015af150336e9015f875a6f3b1a286107b0e45a645d1:Complexity/Tactic/Stateful.lean:1539-1620:command",
+    "path": "Complexity/Tactic/Stateful.lean",
+    "line": 38,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:0-1402:command",
+    "path": "Complexity/Tactic/WordRAM.lean",
+    "line": 1,
+    "lexical_declaration": null,
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "polytime"
+    ]
+  },
+  {
+    "command_id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:1677-2353:command",
+    "path": "Complexity/Tactic/WordRAM.lean",
+    "line": 42,
+    "lexical_declaration": "Cslib.Tactic.ramControllerCertificate",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:2353-2592:command",
+    "path": "Complexity/Tactic/WordRAM.lean",
+    "line": 58,
+    "lexical_declaration": "Cslib.Tactic.ramControllerAlternative",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:2592-2822:command",
+    "path": "Complexity/Tactic/WordRAM.lean",
+    "line": 63,
+    "lexical_declaration": "Cslib.Tactic.ramFunctionCertificate",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  },
+  {
+    "command_id": "4e143af556bb9492963a64c2625d04dc850a60a8436af32d11b97771b55b5bce:Complexity/Tactic/WordRAM.lean:2822-2987:command",
+    "path": "Complexity/Tactic/WordRAM.lean",
+    "line": 68,
+    "lexical_declaration": "Cslib.Tactic.ramUniformFunctionCertificate",
+    "classification": "automation implementation/forwarding source; not additional authored-call count",
+    "references": [
+      "aesop"
+    ]
+  }
+]

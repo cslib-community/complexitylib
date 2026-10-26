@@ -1,0 +1,56 @@
+{
+  "pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "archive_pin": "c0e03da5365cbf7b8b3050e315807ae0903478a7",
+  "source_roots": [
+    "Complexity",
+    "ComplexityTests",
+    "abstracts",
+    "guide"
+  ],
+  "lean_files": 2955,
+  "all_exact_code_tokens": 6006,
+  "by_classification": {
+    "attribute_registration": 1798,
+    "authored_tactic_candidate": 4195,
+    "quoted_tactic_candidate": 9,
+    "quoted_identifier_reference": 4
+  },
+  "by_root_tactic": {
+    "Complexity:fun_prop": 3976,
+    "Complexity:polytime": 220,
+    "Complexity:ppt": 93,
+    "ComplexityTests:fun_prop": 1103,
+    "ComplexityTests:ppt": 231,
+    "ComplexityTests:polytime": 362,
+    "abstracts:ppt": 2,
+    "abstracts:fun_prop": 6,
+    "guide:fun_prop": 7,
+    "guide:polytime": 6
+  },
+  "options": 40,
+  "option_scope_classes": {
+    "command-prefix": 27,
+    "nested-unresolved": 5,
+    "source-setting": 8
+  },
+  "plumbing_occurrences": 17999,
+  "plumbing_classifications_are_semantic": false,
+  "all_source_commands": 71456,
+  "indexed_commands_with_context": 9186,
+  "historical_selected_source_calls": 47,
+  "historical_join_status": {
+    "exact-source-token-identity": 46,
+    "changed-source-requires-parser/context-revalidation": 1
+  },
+  "current_pin_calls_measured_by_this_survey": 0,
+  "archived_parsed_observations": 47,
+  "current_source_calls_with_exact_historical_observation": 46,
+  "parser_confirmed_calls": 0,
+  "limits": [
+    "Complete lexical target-token accounting, not complete Lean AST enumeration. Macro-generated and alias invocations require parser/runtime forwarding.",
+    "Candidate syntax extents and declaration/namespace contexts are source heuristics; full original command is provided for auditable correction.",
+    "Effective elaborator options and shared heartbeat consumption are not derivable from source alone.",
+    "All composition/fallback occurrences are lexical; no workaround, raised-budget necessity, successful fallback or causal regression inferred.",
+    "Historical selected-source maps are joined exactly or explicitly unmatched; measurements remain at original pins."
+  ]
+}
