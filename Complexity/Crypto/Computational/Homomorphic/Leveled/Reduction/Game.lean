@@ -226,10 +226,10 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
   funext second
   cases first <;> cases second
   · simp only [Bool.false_eq_true, ↓reduceIte]
-    simpa only [Encryption.game, ProbComp.eval_bind] using
+    simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte, ProbComp.eval_bind] using
       eval_tagLeveledChoice_false_false E depth capacity adversary bit n
   · simp only [Bool.false_eq_true, ↓reduceIte]
-    simpa only [Encryption.game, ProbComp.eval_bind] using
+    simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte, ProbComp.eval_bind] using
       eval_tagLeveledChoice_false_true E depth capacity adversary bit n
   · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, PMF.bind_bind]
     rw [PMF.bind_comm]
@@ -252,7 +252,7 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
         simpa only [ProbComp.eval_bind] using
           eval_rejectLeveledChoice E depth capacity adversary bit n
       · simp only [↓reduceIte]
-        simpa only [Encryption.game, ProbComp.eval_bind] using
+        simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte, ProbComp.eval_bind] using
           eval_tagLeveledChoice_true_false E depth capacity adversary bit n
   · simp only [↓reduceIte, ProbComp.eval_pure, PMF.pure_bind]
     simpa only [ProbComp.eval_bind] using

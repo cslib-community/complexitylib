@@ -154,9 +154,9 @@ theorem isPPT_leveledAdversary
     (leveledAdversary E depth capacity adversary).IsPPT := by
   have hzero := isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen hdepth
   have hlinkFalse := Scheme.isPPT_linkAdversary hkeyGen hencrypt
-    (isPPTOn_publicKeyGame hencrypt hadversary false) hdepth.tidy hcapacity.tidy
+    (isPPTOn_publicKeyGame hencrypt hadversary false) hdepth hcapacity
   have hlinkTrue := Scheme.isPPT_linkAdversary hkeyGen hencrypt
-    (isPPTOn_publicKeyGame hencrypt hadversary true) hdepth.tidy hcapacity.tidy
+    (isPPTOn_publicKeyGame hencrypt hadversary true) hdepth hcapacity
   constructor
   · change IsPPTOn (encPair encUnary encBits) (encPair (encPair encBool encBool) encBits)
       (fun p => (leveledAdversary E depth capacity adversary).choose p.1 p.2)
@@ -168,21 +168,21 @@ theorem isPPT_leveledAdversary
     · apply IsPPTOn.cond (by fun_prop)
       · exact (ComputableTidilyInPolyTime.const rejectLeveledChoice).isPPTOn
       · apply (isPPTOn_sampleDyadicCoin
-          (hdepth.tidy.comp (by fun_prop)) (by fun_prop)).bind_with
+          (hdepth.comp (by fun_prop)) (by fun_prop)).bind_with
         apply (isPPTOn_sampleDyadicCoin
-          (hcapacity.tidy.comp (by fun_prop)) (by fun_prop)).bind_with
+          (hcapacity.comp (by fun_prop)) (by fun_prop)).bind_with
         apply IsPPTOn.cond (by fun_prop)
         · apply IsPPTOn.cond (by fun_prop)
           · exact (hzero.choose.preprocess (by fun_prop) (by fun_prop)).map
-              (computableTidilyInPolyTime_tagLeveledChoice true false)
+              (.of_tidy (computableTidilyInPolyTime_tagLeveledChoice true false))
           · exact (ComputableTidilyInPolyTime.const rejectLeveledChoice).isPPTOn
         · exact (ComputableTidilyInPolyTime.const rejectLeveledChoice).isPPTOn
     · apply IsPPTOn.cond (by fun_prop)
       · exact (hlinkTrue.choose.preprocess (by fun_prop) (by fun_prop)).map
-          ((computableTidilyInPolyTime_tagLeveledChoice false true).comp
-            computableTidilyInPolyTime_swapLeveledChoice)
+          (.of_tidy ((computableTidilyInPolyTime_tagLeveledChoice false true).comp
+            computableTidilyInPolyTime_swapLeveledChoice))
       · exact (hlinkFalse.choose.preprocess (by fun_prop) (by fun_prop)).map
-          (computableTidilyInPolyTime_tagLeveledChoice false false)
+          (.of_tidy (computableTidilyInPolyTime_tagLeveledChoice false false))
   · dsimp only [leveledAdversary]
     have hstate : ComputableTidilyInPolyTime
         (fun p : ℕ × List Bool × List Bool => p.2.1)
