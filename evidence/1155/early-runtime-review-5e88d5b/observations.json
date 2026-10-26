@@ -1,0 +1,442 @@
+[
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114232:496424650833645",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 1,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 12460,
+    "body_user_heartbeat_units": 12.46,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114234:496424656789207",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 3,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 2447,
+    "body_user_heartbeat_units": 2.447,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114228:496424659746952",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 3,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 2342,
+    "body_user_heartbeat_units": 2.342,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114229:496424664339849",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 3,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 6308,
+    "body_user_heartbeat_units": 6.308,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114233:496424673840468",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 3,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 10145,
+    "body_user_heartbeat_units": 10.145,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114525:496426613985689",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 1,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 39300,
+    "body_user_heartbeat_units": 39.3,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114528:496426616628739",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 3,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 4773,
+    "body_user_heartbeat_units": 4.773,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114527:496426618779419",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 3,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 4326,
+    "body_user_heartbeat_units": 4.326,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114530:496426627063065",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 3,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 16408,
+    "body_user_heartbeat_units": 16.408,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3114535:496426633312643",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 3,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.PolynomiallyBounded",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.PolynomiallyBounded"
+      }
+    ],
+    "body_raw_heartbeats": 30785,
+    "body_user_heartbeat_units": 30.785,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3161826:496765381641964",
+    "kind": "Cslib.Tactic.PolyTime.tacticPolytime",
+    "original_source_info": true,
+    "macro_stack_depth": 0,
+    "text": "polytime",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Turing.MultiTapeTM.ComputableTidilyInPolyTime",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+      }
+    ],
+    "body_raw_heartbeats": 6447054,
+    "body_user_heartbeat_units": 6447.054,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3161826:496765817632973",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": false,
+    "macro_stack_depth": 0,
+    "text": "polytime",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Turing.MultiTapeTM.ComputableTidilyInPolyTime",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+      }
+    ],
+    "body_raw_heartbeats": 953404,
+    "body_user_heartbeat_units": 953.404,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3162091:496767573290779",
+    "kind": "Cslib.Tactic.PolyTime.tacticPolytime",
+    "original_source_info": true,
+    "macro_stack_depth": 0,
+    "text": "polytime",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Turing.MultiTapeTM.ComputableTidilyInPolyTime",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+      }
+    ],
+    "body_raw_heartbeats": 6833105,
+    "body_user_heartbeat_units": 6833.105,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3162091:496768038797665",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": false,
+    "macro_stack_depth": 0,
+    "text": "polytime",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Turing.MultiTapeTM.ComputableTidilyInPolyTime",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+      }
+    ],
+    "body_raw_heartbeats": 1191597,
+    "body_user_heartbeat_units": 1191.597,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3262471:497188489935659",
+    "kind": "Cslib.Tactic.PPT.tacticPpt",
+    "original_source_info": true,
+    "macro_stack_depth": 1,
+    "text": "ppt",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.Probability.IsPPT",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.Probability.IsPPT"
+      }
+    ],
+    "body_raw_heartbeats": 7473068,
+    "body_user_heartbeat_units": 7473.068,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3262493:497188494534391",
+    "kind": "Cslib.Tactic.PPT.tacticPpt",
+    "original_source_info": true,
+    "macro_stack_depth": 1,
+    "text": "ppt",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.Probability.IsPPT",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.Probability.IsPPT"
+      }
+    ],
+    "body_raw_heartbeats": 7327555,
+    "body_user_heartbeat_units": 7327.555,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3262490:497188499780454",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 2,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Turing.MultiTapeTM.ComputableTidilyInPolyTime",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+      }
+    ],
+    "body_raw_heartbeats": 24189,
+    "body_user_heartbeat_units": 24.189,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "measured",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3262490:497188507599504",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 2,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Turing.MultiTapeTM.ComputableTidilyInPolyTime",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+      }
+    ],
+    "body_raw_heartbeats": 8296,
+    "body_user_heartbeat_units": 8.296,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3262787:497191018606786",
+    "kind": "Cslib.Tactic.PPT.tacticPpt",
+    "original_source_info": true,
+    "macro_stack_depth": 1,
+    "text": "ppt",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.Probability.IsPPT",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.Probability.IsPPT"
+      }
+    ],
+    "body_raw_heartbeats": 7642689,
+    "body_user_heartbeat_units": 7642.689,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3262781:497191022260961",
+    "kind": "Cslib.Tactic.PPT.tacticPpt",
+    "original_source_info": true,
+    "macro_stack_depth": 1,
+    "text": "ppt",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Cslib.Probability.IsPPT",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Cslib.Probability.IsPPT"
+      }
+    ],
+    "body_raw_heartbeats": 7363779,
+    "body_user_heartbeat_units": 7363.779,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3262778:497191027251430",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 2,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Turing.MultiTapeTM.ComputableTidilyInPolyTime",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+      }
+    ],
+    "body_raw_heartbeats": 81240,
+    "body_user_heartbeat_units": 81.24,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  },
+  {
+    "file": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "traced",
+    "event_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b:3262778:497191042576573",
+    "kind": "Mathlib.Meta.FunProp.funPropTacStx",
+    "original_source_info": true,
+    "macro_stack_depth": 2,
+    "text": "fun_prop",
+    "syntactic_goal_heads": [
+      {
+        "head_after_foralls_mdata": "Turing.MultiTapeTM.ComputableTidilyInPolyTime",
+        "leading_foralls": 0,
+        "normalized": false,
+        "raw_syntactic_head": "Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+      }
+    ],
+    "body_raw_heartbeats": 27849,
+    "body_user_heartbeat_units": 27.849,
+    "qualification": "Inclusive diagnostic body; synthetic/nested/repeated events and traced/untraced modes are not additive source-call costs; no final proof/rule attribution."
+  }
+]

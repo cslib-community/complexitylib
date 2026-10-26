@@ -1,0 +1,129 @@
+{
+  "reviewed_snapshot": "5e88d5bedc4aa8187298284d09e346f612056b61",
+  "source_pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "scope": "Exactly three frozen completed files; no global647-file coverage/collector approval and no self-authored static census/joins assessment",
+  "snapshot_artifact_hashes_checked": 33,
+  "whole_commands": 12,
+  "all_pass": true,
+  "complete_unique_attempt_pairs": 22,
+  "file_results": [
+    {
+      "path": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+      "whole_commands": 4,
+      "all_whole_commands_pass": true,
+      "source_variants_reversible": true,
+      "native_context_names_count": 22,
+      "modes": [
+        {
+          "mode": "measured",
+          "attempts": 5,
+          "synthetic_source_info": 0,
+          "per_thread_nested_attempts": 0,
+          "trace_messages": 0,
+          "kinds": {
+            "Mathlib.Meta.FunProp.funPropTacStx": 5
+          },
+          "raw_syntactic_heads": {
+            "Cslib.PolynomiallyBounded": 5
+          }
+        },
+        {
+          "mode": "traced",
+          "attempts": 5,
+          "synthetic_source_info": 0,
+          "per_thread_nested_attempts": 0,
+          "trace_messages": 5,
+          "kinds": {
+            "Mathlib.Meta.FunProp.funPropTacStx": 5
+          },
+          "raw_syntactic_heads": {
+            "Cslib.PolynomiallyBounded": 5
+          }
+        }
+      ]
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+      "whole_commands": 4,
+      "all_whole_commands_pass": true,
+      "source_variants_reversible": true,
+      "native_context_names_count": 11,
+      "modes": [
+        {
+          "mode": "measured",
+          "attempts": 2,
+          "synthetic_source_info": 1,
+          "per_thread_nested_attempts": 1,
+          "trace_messages": 0,
+          "kinds": {
+            "Cslib.Tactic.PolyTime.tacticPolytime": 1,
+            "Mathlib.Meta.FunProp.funPropTacStx": 1
+          },
+          "raw_syntactic_heads": {
+            "Turing.MultiTapeTM.ComputableTidilyInPolyTime": 2
+          }
+        },
+        {
+          "mode": "traced",
+          "attempts": 2,
+          "synthetic_source_info": 1,
+          "per_thread_nested_attempts": 1,
+          "trace_messages": 6,
+          "kinds": {
+            "Cslib.Tactic.PolyTime.tacticPolytime": 1,
+            "Mathlib.Meta.FunProp.funPropTacStx": 1
+          },
+          "raw_syntactic_heads": {
+            "Turing.MultiTapeTM.ComputableTidilyInPolyTime": 2
+          }
+        }
+      ]
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Basic.lean",
+      "whole_commands": 4,
+      "all_whole_commands_pass": true,
+      "source_variants_reversible": true,
+      "native_context_names_count": 14,
+      "modes": [
+        {
+          "mode": "measured",
+          "attempts": 4,
+          "synthetic_source_info": 0,
+          "per_thread_nested_attempts": 0,
+          "trace_messages": 0,
+          "kinds": {
+            "Cslib.Tactic.PPT.tacticPpt": 2,
+            "Mathlib.Meta.FunProp.funPropTacStx": 2
+          },
+          "raw_syntactic_heads": {
+            "Cslib.Probability.IsPPT": 2,
+            "Turing.MultiTapeTM.ComputableTidilyInPolyTime": 2
+          }
+        },
+        {
+          "mode": "traced",
+          "attempts": 4,
+          "synthetic_source_info": 0,
+          "per_thread_nested_attempts": 0,
+          "trace_messages": 12,
+          "kinds": {
+            "Cslib.Tactic.PPT.tacticPpt": 2,
+            "Mathlib.Meta.FunProp.funPropTacStx": 2
+          },
+          "raw_syntactic_heads": {
+            "Cslib.Probability.IsPPT": 2,
+            "Turing.MultiTapeTM.ComputableTidilyInPolyTime": 2
+          }
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Raw syntactic heads are unnormalized, not semantic classification of all goals.",
+    "Retained native traces are search-attempt evidence, not final winning proof or counts of rules fired.",
+    "Thread-local raw heartbeat counts divided by1000 are user units; nanoseconds are not seconds; process wall is shared-host and includes imports.",
+    "Diagnostic overhead consumes unchanged command budget; nested/repeated/synthetic and traced/untraced costs are not summed as distinct authored calls.",
+    "No Lean/build/cache rerun; compiler digests are not independent recompilation evidence."
+  ]
+}
