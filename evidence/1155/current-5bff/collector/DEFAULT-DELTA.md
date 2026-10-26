@@ -11,7 +11,7 @@ Control: unchanged whole Cloud and CodeComposition each baseline/import-only/mea
 Authoritative full command (not yet executed at this freeze):
 
 ```sh
-python3 evidence/1155/current-5bff/collector/collect-default.py run --checkout /home/samuel/Code/complexitylib-codex/automation-full-d7-1155 --out /home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey-default --headers /home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey-default/headers.json --producer /home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/method-v3 --traces --jobs8
+python3 evidence/1155/current-5bff/collector/collect-default.py run --checkout /home/samuel/Code/complexitylib-codex/automation-full-d7-1155 --out /home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey-default --headers /home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey-default/headers.json --producer /home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/method-v3 --traces --jobs 8
 ```
 
-The executable CLI uses `--jobs 8` (separate argument). All647native positions reuse exact identical original bytes/parser results from dae3; new filenames are bound in headers. Five configured abstract direct-import targets prepared successfully before this arm (default-abstract-imports-result.json). No individual default supplement or source repair.
+All647native positions reuse exact identical original bytes/parser results from dae3; new filenames are bound in headers. Five configured abstract direct-import targets prepared successfully before this arm (default-abstract-imports-result.json). No individual default supplement or source repair.
