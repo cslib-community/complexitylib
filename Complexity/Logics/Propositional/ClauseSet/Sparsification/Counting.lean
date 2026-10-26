@@ -110,6 +110,30 @@ theorem not_sat_both_countingChild (ψ : ClauseSet V) (c : ℕ)
   rw [sat_countingChild_false_iff, sat_countingChild_true_iff]
   exact fun h => h.2.2 h.1.2
 
+/-- The parent and heart support hypotheses preserve the declared-variable invariant in both
+children. This is separate from the unconditional semantic partition. -/
+theorem support_countingChild (ψ : ClauseSet V) (c : ℕ) (H : Finset (Literal V))
+    (declared : Finset V) (hψ : ∀ C ∈ ψ, ∀ l ∈ C, l.1 ∈ declared)
+    (hH : ∀ l ∈ H, l.1 ∈ declared) (b : Bool) :
+    ∀ C ∈ countingChild ψ c H b, ∀ l ∈ C, l.1 ∈ declared := by
+  intro C hC l hl
+  cases b with
+  | false =>
+    rcases Finset.mem_union.mp (child_subset ψ c H false hC) with hC | hC
+    · exact hψ C hC l hl
+    · have hCH : C = H := by simpa only [intro, Finset.mem_singleton] using hC
+      exact hH l (hCH ▸ hl)
+  | true =>
+    rcases Finset.mem_union.mp (reduce_subset _ hC) with hC | hC
+    · rcases Finset.mem_union.mp hC with hC | hC
+      · exact hψ C hC l hl
+      · obtain ⟨D, hD, rfl⟩ := mem_petals.mp hC
+        exact hψ D (flower_subset ψ c H hD) l (Finset.mem_sdiff.mp hl).1
+    · obtain ⟨a, ha, rfl⟩ := Finset.mem_image.mp hC
+      have hl : l = Std.Sat.Literal.negate a := Finset.mem_singleton.mp hl
+      subst l
+      exact hH a ha
+
 /-- Counting both children over the same declared variables recovers the parent count.
 No support premise is needed for this identity because all three evaluations use the same
 extension by `false`. For a declared-input interpretation, support containment is a separate
