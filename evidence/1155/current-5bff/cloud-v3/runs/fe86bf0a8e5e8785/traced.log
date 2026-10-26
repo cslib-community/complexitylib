@@ -1,0 +1,683 @@
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/traced/Complexity/Computability/PCP/Encoded/Cloud.lean:20:0: error: The module doc-string for a file should be the first command after the imports
+and any necessary `set_option` commands.
+Please, add a module doc-string (`/-! ... -/`) before `diag1155_install`.
+
+Hint: Type `m(odule docstring) + [tab]` to insert a template via snippet.
+
+Note: This linter can be disabled with `set_option linter.style.header false`
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x => List.flatMap (fun a => List.map (Prod.mk a) [false, true]) (List.range (graph x).edges.length)) input
+      (encList (encPair encUnary encBool))
+  [aesop] Initial goal:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        ⊢ ComputableInPolyTime
+            (fun x => List.flatMap (fun a => List.map (Prod.mk a) [false, true]) (List.range (graph x).edges.length))
+            input (encList (encPair encUnary encBool))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        ⊢ ComputableInPolyTime
+            (fun x => List.flatMap (fun a => List.map (Prod.mk a) [false, true]) (List.range (graph x).edges.length))
+            input (encList (encPair encUnary encBool))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x => List.flatMap (fun a => List.map (Prod.mk a) [false, true]) (List.range (graph x).edges.length)) input
+      (encList (encPair encUnary encBool))
+  [aesop] C Input : Type
+      input : Input ↪ List Bool
+      enc : C ↪ List Bool
+      graph : Input → Graph C
+      hgraph : ComputableInPolyTime graph input (encoding enc)
+      ⊢ ComputableInPolyTime
+          (fun x => List.flatMap (fun a => List.map (Prod.mk a) [false, true]) (List.range (graph x).edges.length))
+          input (encList (encPair encUnary encBool))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.347.10):
+      [aesop] C Input : Type
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          graph : Input → Graph C
+          hgraph : ComputableInPolyTime graph input (encoding enc)
+          ⊢ ComputableInPolyTime
+              (fun x => List.flatMap (fun a => List.map (Prod.mk a) [false, true]) (List.range (graph x).edges.length))
+              input (encList (encPair encUnary encBool))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x => List.flatMap (fun a => List.map (Prod.mk a) [false, true]) (List.range (graph x).edges.length)) input
+      (encList (encPair encUnary encBool))
+  [aesop] Initial goal:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        ⊢ ComputableInPolyTime
+            (fun x => List.flatMap (fun a => List.map (Prod.mk a) [false, true]) (List.range (graph x).edges.length))
+            input (encList (encPair encUnary encBool))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] C Input : Type
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          graph : Input → Graph C
+          hgraph : ComputableInPolyTime graph input (encoding enc)
+          ⊢ ComputableInPolyTime
+              (fun x => List.flatMap (fun a => [(a, false), (a, true)]) (List.range (graph x).edges.length)) input
+              (encList (encPair encUnary encBool))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        ⊢ ComputableInPolyTime
+            (fun x => List.flatMap (fun a => [(a, false), (a, true)]) (List.range (graph x).edges.length)) input
+            (encList (encPair encUnary encBool))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          C Input : Type
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          graph : Input → Graph C
+          hgraph : ComputableInPolyTime graph input (encoding enc)
+          ⊢ ComputableInPolyTime
+              (fun x => List.flatMap (fun a => [(a, false), (a, true)]) (List.range (graph x).edges.length)) input
+              (encList (encPair encUnary encBool))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => List.flatMap (fun a => [(a, false), (a, true)]) (List.range (graph x).edges.length))
+            input (encList (encPair encUnary encBool))
+        [Meta.Tactic.fun_prop] candidate theorems for List.flatMap #[Turing.MultiTapeTM.ComputableInPolyTime.flatMapWithInput]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.flatMapWithInput
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => List.range (graph x).edges.length) input (encList encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for List.range #[Turing.MultiTapeTM.ComputableInPolyTime.range]
+            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.range as:
+                                   (fun x0 => List.range x0) ∘ (fun x => (graph x).edges.length)
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (graph x).edges.length) input encNat
+                [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary', Turing.MultiTapeTM.ComputableInPolyTime.encoding_length, Turing.MultiTapeTM.ComputableInPolyTime.length_list, Turing.MultiTapeTM.ComputableInPolyTime.length_bits, Turing.MultiTapeTM.ComputableInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (graph a).edges) input (encList (Edge.encoding enc))
+                    [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.edges #[Cslib.PCP.Encoded.Graph.isPolyTime_edges]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_edges
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (encoding enc)
+                        [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableInPolyTime graph input (encoding enc)]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableInPolyTime graph input (encoding enc)
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x0 => List.range x0) encNat (encList ?encA)
+                [Meta.Tactic.fun_prop] candidate theorems for List.range #[Turing.MultiTapeTM.ComputableInPolyTime.range]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.range
+                  [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.range
+                      ComputableInPolyTime List.range encUnary (encList encUnary)
+                      with
+                      ComputableInPolyTime (fun x0 => List.range x0) encNat (encList ?encA)
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `List.range`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                    ComputableInPolyTime (fun x0 => List.range x0) encNat (encList ?encA)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x0 => List.range x0) encUnary (encList encUnary)
+                [Meta.Tactic.fun_prop] candidate theorems for List.range #[Turing.MultiTapeTM.ComputableInPolyTime.range]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.range
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (graph x).edges.length) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary', Turing.MultiTapeTM.ComputableInPolyTime.encoding_length, Turing.MultiTapeTM.ComputableInPolyTime.length_list, Turing.MultiTapeTM.ComputableInPolyTime.length_bits, Turing.MultiTapeTM.ComputableInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary'
+                  [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.length_list_binary'
+                      ComputableInPolyTime (fun a => List.length (?list a)) ?input encNat
+                      with
+                      ComputableInPolyTime (fun x => (graph x).edges.length) input encUnary
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.encoding_length
+                  [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.encoding_length
+                      ComputableInPolyTime (fun a => (?enc a).length) ?enc encUnary
+                      with
+                      ComputableInPolyTime (fun x => (graph x).edges.length) input encUnary
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.length_list as:
+                                       (fun x1 => x1.length) ∘ (fun x => (graph x).edges)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (graph x).edges) input (encList (Edge.encoding enc))
+                    [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.edges #[Cslib.PCP.Encoded.Graph.isPolyTime_edges]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_edges
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (encoding enc)
+                        [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableInPolyTime graph input (encoding enc)]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableInPolyTime graph input (encoding enc)
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x1 => x1.length) (encList (Edge.encoding enc)) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary', Turing.MultiTapeTM.ComputableInPolyTime.encoding_length, Turing.MultiTapeTM.ComputableInPolyTime.length_list, Turing.MultiTapeTM.ComputableInPolyTime.length_bits, Turing.MultiTapeTM.ComputableInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary'
+                      [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.length_list_binary'
+                          ComputableInPolyTime (fun a => List.length (?list a)) ?input encNat
+                          with
+                          ComputableInPolyTime (fun x1 => x1.length) (encList (Edge.encoding enc)) encUnary
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.encoding_length
+                      [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.encoding_length
+                          ComputableInPolyTime (fun a => (?enc a).length) ?enc encUnary
+                          with
+                          ComputableInPolyTime (fun x1 => x1.length) (encList (Edge.encoding enc)) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.length_list
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => [(p.2, false), (p.2, true)]) (encPair input encUnary)
+                (encList (encPair encUnary encBool))
+            [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableInPolyTime.cons', Turing.MultiTapeTM.ComputableInPolyTime.bitsCons]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.cons'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (x.2, false)) (encPair input encUnary) (encPair encUnary encBool)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input encUnary) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encUnary) (encPair input encUnary)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => false) (encPair input encUnary) encBool
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => [(x.2, true)]) (encPair input encUnary) (encList (encPair encUnary encBool))
+                [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableInPolyTime.cons', Turing.MultiTapeTM.ComputableInPolyTime.bitsCons]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.cons'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (x.2, true)) (encPair input encUnary) (encPair encUnary encBool)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input encUnary) encUnary
+                        [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime Prod.snd
+                              (encPair input encUnary) encUnary
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => true) (encPair input encUnary) encBool
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => []) (encPair input encUnary) (encList (encPair encUnary encBool))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        have e := edgeAt fallback (graph x) (halfEdge x).1;
+        if (halfEdge x).2 = true then e.dst else e.src)
+      input encUnary
+  [aesop] Initial goal:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        halfEdge : Input → ℕ × Bool
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+        fallback : C
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              have e := edgeAt fallback (graph x) (halfEdge x).1;
+              if (halfEdge x).2 = true then e.dst else e.src)
+            input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        halfEdge : Input → ℕ × Bool
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+        fallback : C
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              have e := edgeAt fallback (graph x) (halfEdge x).1;
+              if (halfEdge x).2 = true then e.dst else e.src)
+            input encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        have e := edgeAt fallback (graph x) (halfEdge x).1;
+        if (halfEdge x).2 = true then e.dst else e.src)
+      input encUnary
+  [aesop] C Input : Type
+      input : Input ↪ List Bool
+      enc : C ↪ List Bool
+      graph : Input → Graph C
+      halfEdge : Input → ℕ × Bool
+      hgraph : ComputableInPolyTime graph input (encoding enc)
+      hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+      fallback : C
+      ⊢ ComputableInPolyTime
+          (fun x =>
+            have e := edgeAt fallback (graph x) (halfEdge x).1;
+            if (halfEdge x).2 = true then e.dst else e.src)
+          input encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.435.13):
+      [aesop] C Input : Type
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          graph : Input → Graph C
+          halfEdge : Input → ℕ × Bool
+          hgraph : ComputableInPolyTime graph input (encoding enc)
+          hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+          fallback : C
+          ⊢ ComputableInPolyTime
+              (fun x =>
+                have e := edgeAt fallback (graph x) (halfEdge x).1;
+                if (halfEdge x).2 = true then e.dst else e.src)
+              input encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        have e := edgeAt fallback (graph x) (halfEdge x).1;
+        if (halfEdge x).2 = true then e.dst else e.src)
+      input encUnary
+  [aesop] Initial goal:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        halfEdge : Input → ℕ × Bool
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+        fallback : C
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              have e := edgeAt fallback (graph x) (halfEdge x).1;
+              if (halfEdge x).2 = true then e.dst else e.src)
+            input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] C Input : Type
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          graph : Input → Graph C
+          halfEdge : Input → ℕ × Bool
+          hgraph : ComputableInPolyTime graph input (encoding enc)
+          hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+          fallback : C
+          ⊢ ComputableInPolyTime
+              (fun x =>
+                if (halfEdge x).2 = true then (edgeAt fallback (graph x) (halfEdge x).1).dst
+                else (edgeAt fallback (graph x) (halfEdge x).1).src)
+              input encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        halfEdge : Input → ℕ × Bool
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+        fallback : C
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              if (halfEdge x).2 = true then (edgeAt fallback (graph x) (halfEdge x).1).dst
+              else (edgeAt fallback (graph x) (halfEdge x).1).src)
+            input encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          C Input : Type
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          graph : Input → Graph C
+          halfEdge : Input → ℕ × Bool
+          hgraph : ComputableInPolyTime graph input (encoding enc)
+          hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+          fallback : C
+          ⊢ ComputableInPolyTime
+              (fun x =>
+                if (halfEdge x).2 = true then (edgeAt fallback (graph x) (halfEdge x).1).dst
+                else (edgeAt fallback (graph x) (halfEdge x).1).src)
+              input encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+            (fun x =>
+              if (halfEdge x).2 = true then (edgeAt fallback (graph x) (halfEdge x).1).dst
+              else (edgeAt fallback (graph x) (halfEdge x).1).src)
+            input encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (halfEdge x).2) input encBool
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+                [Meta.Tactic.fun_prop] candidate local theorems for halfEdge #[hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)]
+                [Meta.Tactic.fun_prop] ✅️ applying: hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBool encBool
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (edgeAt fallback (graph x) (halfEdge x).1).dst) input encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Edge.dst #[Cslib.PCP.Encoded.Edge.isPolyTime_dst]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Edge.isPolyTime_dst
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => edgeAt fallback (graph x) (halfEdge x).1) input (Edge.encoding enc)
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.edgeAt #[Cslib.PCP.Encoded.Graph.isPolyTime_edgeAt]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_edgeAt
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (encoding enc)
+                    [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableInPolyTime graph input (encoding enc)]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableInPolyTime graph input (encoding enc)
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (halfEdge x).1) input encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+                        [Meta.Tactic.fun_prop] candidate local theorems for halfEdge #[hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hhalfEdge : ComputableInPolyTime halfEdge input (encPair encUnary encBool)
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (edgeAt fallback (graph x) (halfEdge x).1).src) input encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Edge.src #[Cslib.PCP.Encoded.Edge.isPolyTime_src]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Edge.isPolyTime_src
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => edgeAt fallback (graph x) (halfEdge x).1) input (Edge.encoding enc)
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.edgeAt #[Cslib.PCP.Encoded.Graph.isPolyTime_edgeAt]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_edgeAt
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (encoding enc)
+                    [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableInPolyTime graph input (encoding enc)]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableInPolyTime graph input (encoding enc)
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (halfEdge x).1) input encUnary
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime
+                          (fun x => (halfEdge x).1) input encUnary
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+      (encList (encPair encUnary encBool))
+  [aesop] Initial goal:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        vertex : Input → ℕ
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        hvertex : ComputableInPolyTime vertex input encUnary
+        fallback : C
+        ⊢ ComputableInPolyTime
+            (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+            (encList (encPair encUnary encBool))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        vertex : Input → ℕ
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        hvertex : ComputableInPolyTime vertex input encUnary
+        fallback : C
+        ⊢ ComputableInPolyTime
+            (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+            (encList (encPair encUnary encBool))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+      (encList (encPair encUnary encBool))
+  [aesop] C Input : Type
+      input : Input ↪ List Bool
+      enc : C ↪ List Bool
+      graph : Input → Graph C
+      vertex : Input → ℕ
+      hgraph : ComputableInPolyTime graph input (encoding enc)
+      hvertex : ComputableInPolyTime vertex input encUnary
+      fallback : C
+      ⊢ ComputableInPolyTime
+          (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+          (encList (encPair encUnary encBool))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.555.13):
+      [aesop] C Input : Type
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          graph : Input → Graph C
+          vertex : Input → ℕ
+          hgraph : ComputableInPolyTime graph input (encoding enc)
+          hvertex : ComputableInPolyTime vertex input encUnary
+          fallback : C
+          ⊢ ComputableInPolyTime
+              (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+              (encList (encPair encUnary encBool))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+      (encList (encPair encUnary encBool))
+  [aesop] Initial goal:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        vertex : Input → ℕ
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        hvertex : ComputableInPolyTime vertex input encUnary
+        fallback : C
+        ⊢ ComputableInPolyTime
+            (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+            (encList (encPair encUnary encBool))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        C Input : Type
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        graph : Input → Graph C
+        vertex : Input → ℕ
+        hgraph : ComputableInPolyTime graph input (encoding enc)
+        hvertex : ComputableInPolyTime vertex input encUnary
+        fallback : C
+        ⊢ ComputableInPolyTime
+            (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+            (encList (encPair encUnary encBool))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          C Input : Type
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          graph : Input → Graph C
+          vertex : Input → ℕ
+          hgraph : ComputableInPolyTime graph input (encoding enc)
+          hvertex : ComputableInPolyTime vertex input encUnary
+          fallback : C
+          ⊢ ComputableInPolyTime
+              (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+              (encList (encPair encUnary encBool))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges)
+            input (encList (encPair encUnary encBool))
+        [Meta.Tactic.fun_prop] candidate theorems for List.filter #[Turing.MultiTapeTM.ComputableInPolyTime.bitsFilterWithInput, Turing.MultiTapeTM.ComputableInPolyTime.filterWithInput]
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsFilterWithInput
+          [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.bitsFilterWithInput
+              ComputableInPolyTime (fun a => List.filter (?test a) (?list a)) ?input encBits
+              with
+              ComputableInPolyTime
+                (fun x => List.filter (fun p => endpoint fallback (graph x) p == vertex x) (graph x).halfEdges) input
+                (encList (encPair encUnary encBool))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.filterWithInput
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (graph x).halfEdges) input (encList (encPair encUnary encBool))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.halfEdges #[Cslib.PCP.Encoded.Graph.isPolyTime_halfEdges]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_halfEdges
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (encoding enc)
+                [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableInPolyTime graph input (encoding enc)]
+                [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableInPolyTime graph input (encoding enc)
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => endpoint fallback (graph p.1) p.2 == vertex p.1)
+                (encPair input (encPair encUnary encBool)) encBool
+            [Meta.Tactic.fun_prop] candidate theorems for BEq.beq #[Turing.MultiTapeTM.ComputableInPolyTime.beq]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.beq
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => endpoint fallback (graph x.1) x.2) (encPair input (encPair encUnary encBool)) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.endpoint #[Cslib.PCP.Encoded.Graph.isPolyTime_endpoint]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_endpoint
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => graph x.1) (encPair input (encPair encUnary encBool)) (encoding enc)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1) (encPair input (encPair encUnary encBool)) input
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input (encPair encUnary encBool)) (encPair input (encPair encUnary encBool))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x0 => graph x0) input (encoding enc)
+                        [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableInPolyTime graph input (encoding enc)]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableInPolyTime graph input (encoding enc)
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input (encPair encUnary encBool)) (encPair encUnary encBool)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input (encPair encUnary encBool)) (encPair input (encPair encUnary encBool))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary encBool) (encPair encUnary encBool)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => vertex x.1) (encPair input (encPair encUnary encBool)) encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1) (encPair input (encPair encUnary encBool)) input
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input (encPair encUnary encBool)) (encPair input (encPair encUnary encBool))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x0 => vertex x0) input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for vertex #[hvertex : ComputableInPolyTime vertex input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hvertex : ComputableInPolyTime vertex input encUnary
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

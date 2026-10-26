@@ -1,0 +1,268 @@
+[
+  {
+    "file_id": "fe86bf0a8e5e8785",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "baseline",
+    "run_id": "current-5bff-5d4bf6a5-0a84-426c-81a4-cafc15d161ff",
+    "provenance": "1f06d498c72691910b69c1029111d9e547d6473300e3a5f9bfdecb22871c44b7",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.8693164119613357,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/baseline",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-5d4bf6a5-0a84-426c-81a4-cafc15d161ff/fe86bf0a8e5e8785-baseline.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/baseline/Complexity/Computability/PCP/Encoded/Cloud.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "original_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "insertion_offset": 486,
+    "insertion_bytes": 0,
+    "actual_context": {
+      "module": "Complexity.Computability.PCP.Encoded.Cloud",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.DegreeReduction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.NodupEquivFin",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.ProdSigma",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.cloud",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_apply",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_symm_apply",
+        "Cslib.PCP.Encoded.Graph.endpoint",
+        "Cslib.PCP.Encoded.Graph.endpoint_eq",
+        "Cslib.PCP.Encoded.Graph.halfEdges",
+        "Cslib.PCP.Encoded.Graph.halfEdgesEnumeration",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_cloud",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_endpoint",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_halfEdges",
+        "Cslib.PCP.Encoded.Graph.length_cloud_le",
+        "Cslib.PCP.Encoded.Graph.length_halfEdges",
+        "Cslib.PCP.Encoded.Graph.mem_cloud_iff",
+        "Cslib.PCP.Encoded.Graph.mem_halfEdges_iff",
+        "Cslib.PCP.Encoded.Graph.nodup_cloud",
+        "Cslib.PCP.Encoded.Graph.nodup_halfEdges"
+      ],
+      "private_ilean_sha256": "03594323bff61048e297393fb0036336cf980a404af14b8ee81784e86a11344b",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "fe86bf0a8e5e8785",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "import-only",
+    "run_id": "current-5bff-5d4bf6a5-0a84-426c-81a4-cafc15d161ff",
+    "provenance": "1f06d498c72691910b69c1029111d9e547d6473300e3a5f9bfdecb22871c44b7",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.368400889041368,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/import-only",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-5d4bf6a5-0a84-426c-81a4-cafc15d161ff/fe86bf0a8e5e8785-import-only.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/import-only/Complexity/Computability/PCP/Encoded/Cloud.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "782bf7b95f391a04647b7efeb7520c4edcd23f6e0c8926cdcdc4a610e8cde31d",
+    "original_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "insertion_offset": 486,
+    "insertion_bytes": 25,
+    "actual_context": {
+      "module": "Complexity.Computability.PCP.Encoded.Cloud",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.DegreeReduction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.NodupEquivFin",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.ProdSigma",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.cloud",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_apply",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_symm_apply",
+        "Cslib.PCP.Encoded.Graph.endpoint",
+        "Cslib.PCP.Encoded.Graph.endpoint_eq",
+        "Cslib.PCP.Encoded.Graph.halfEdges",
+        "Cslib.PCP.Encoded.Graph.halfEdgesEnumeration",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_cloud",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_endpoint",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_halfEdges",
+        "Cslib.PCP.Encoded.Graph.length_cloud_le",
+        "Cslib.PCP.Encoded.Graph.length_halfEdges",
+        "Cslib.PCP.Encoded.Graph.mem_cloud_iff",
+        "Cslib.PCP.Encoded.Graph.mem_halfEdges_iff",
+        "Cslib.PCP.Encoded.Graph.nodup_cloud",
+        "Cslib.PCP.Encoded.Graph.nodup_halfEdges"
+      ],
+      "private_ilean_sha256": "9f8e0768486214c3342b16ea92a8b11c8eb96249d21d72a614562317cad8bb6c",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "fe86bf0a8e5e8785",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "measured",
+    "run_id": "current-5bff-5d4bf6a5-0a84-426c-81a4-cafc15d161ff",
+    "provenance": "1f06d498c72691910b69c1029111d9e547d6473300e3a5f9bfdecb22871c44b7",
+    "returncode": 1,
+    "external_timeout": false,
+    "process_wall_seconds": 2.3686640129890293,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/measured",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-5d4bf6a5-0a84-426c-81a4-cafc15d161ff/fe86bf0a8e5e8785-measured.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/measured/Complexity/Computability/PCP/Encoded/Cloud.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "e9ccc454eef15b337535831aff00873e3814b1d0c37b8e3aee832b430c655c13",
+    "original_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "insertion_offset": 486,
+    "insertion_bytes": 43,
+    "actual_context": null,
+    "context_error": null
+  },
+  {
+    "file_id": "fe86bf0a8e5e8785",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "traced",
+    "run_id": "current-5bff-5d4bf6a5-0a84-426c-81a4-cafc15d161ff",
+    "provenance": "1f06d498c72691910b69c1029111d9e547d6473300e3a5f9bfdecb22871c44b7",
+    "returncode": 1,
+    "external_timeout": false,
+    "process_wall_seconds": 2.468652214971371,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "-Dtrace.Meta.Tactic.fun_prop=true",
+      "-Dtrace.aesop=true",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/traced",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-5d4bf6a5-0a84-426c-81a4-cafc15d161ff/fe86bf0a8e5e8785-traced.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/traced/Complexity/Computability/PCP/Encoded/Cloud.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "e9ccc454eef15b337535831aff00873e3814b1d0c37b8e3aee832b430c655c13",
+    "original_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "insertion_offset": 486,
+    "insertion_bytes": 43,
+    "actual_context": null,
+    "context_error": null
+  }
+]

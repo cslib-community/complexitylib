@@ -1,0 +1,7 @@
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/cloud-v3/variants/fe86bf0a8e5e8785/measured/Complexity/Computability/PCP/Encoded/Cloud.lean:20:0: error: The module doc-string for a file should be the first command after the imports
+and any necessary `set_option` commands.
+Please, add a module doc-string (`/-! ... -/`) before `diag1155_install`.
+
+Hint: Type `m(odule docstring) + [tab]` to insert a template via snippet.
+
+Note: This linter can be disabled with `set_option linter.style.header false`

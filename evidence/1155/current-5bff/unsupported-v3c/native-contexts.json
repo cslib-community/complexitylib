@@ -1,0 +1,98 @@
+{
+  "baseline": {
+    "module": "UnsupportedControl",
+    "directImports": [
+      [
+        "Mathlib.Tactic.FunProp",
+        true,
+        false,
+        false
+      ],
+      [
+        "Lean.Elab.Command",
+        true,
+        false,
+        true
+      ],
+      [
+        "Lean.Elab.Tactic.Basic",
+        true,
+        false,
+        true
+      ]
+    ],
+    "source_declaration_names": [
+      "_private.UnsupportedControl.0.privateWord",
+      "_private.UnsupportedControl.0.privateWord_id",
+      "namedReflexive"
+    ]
+  },
+  "import-only": {
+    "module": "UnsupportedControl",
+    "directImports": [
+      [
+        "Mathlib.Tactic.FunProp",
+        true,
+        false,
+        false
+      ],
+      [
+        "Lean.Elab.Command",
+        true,
+        false,
+        true
+      ],
+      [
+        "Lean.Elab.Tactic.Basic",
+        true,
+        false,
+        true
+      ],
+      [
+        "Diag1155.Measure",
+        true,
+        false,
+        false
+      ]
+    ],
+    "source_declaration_names": [
+      "_private.UnsupportedControl.0.privateWord",
+      "_private.UnsupportedControl.0.privateWord_id",
+      "namedReflexive"
+    ]
+  },
+  "measured": {
+    "module": "UnsupportedControl",
+    "directImports": [
+      [
+        "Mathlib.Tactic.FunProp",
+        true,
+        false,
+        false
+      ],
+      [
+        "Lean.Elab.Command",
+        true,
+        false,
+        true
+      ],
+      [
+        "Lean.Elab.Tactic.Basic",
+        true,
+        false,
+        true
+      ],
+      [
+        "Diag1155.Measure",
+        true,
+        false,
+        false
+      ]
+    ],
+    "source_declaration_names": [
+      "_private.UnsupportedControl.0.privateWord",
+      "_private.UnsupportedControl.0.privateWord_id",
+      "namedReflexive"
+    ]
+  }
+}

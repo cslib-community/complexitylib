@@ -1,0 +1,35 @@
+{
+  "run_id": "current-5bff-5d4bf6a5-0a84-426c-81a4-cafc15d161ff",
+  "source_pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "static_source": "5bc08fe7a82eb89dc744d443f190612f5d06e091",
+  "plan_sha256": "c13c3477474729d856e81d0dfa1155269d9124c0dacf598fe471b62709a56467",
+  "headers_sha256": "bc52f8b521c5f6a058356a7fd534cd449877e68dd8af35519ee139c502833ceb",
+  "producer_sources": {
+    "MeasureBase.lean": "dbe1c6c7323c5fc672230d616eec361fa5a130078f7b5b1c6ff8328cbc661247",
+    "Measure.lean": "410a2008cdebba3cc3746c9dae25eabeea59eea571af52854e4245127c4a9565",
+    "HeaderPositions.lean": "d14f1f5d1e5e916a3edca03c0582c9aab53d0735bcbf994becb98fba7be19f54"
+  },
+  "private_producer_hashes": {
+    "MeasureBase.olean.private": "ad7c570ea11663d090bb46957487b24ab7cec9ee6e6a531f395d246dbb675fc4",
+    "MeasureBase.olean.server": "854277cde6d3fd5b6197afb8ad81d54ccaab127aeb4b4913215643f694c8fcc3",
+    "MeasureBase.olean": "8a290ac145357070cd8a2fbe428e3bc8fe2898121381fedd880b4976da960cfc",
+    "Measure.olean": "a36c573950da9c836d89e337f3de97f874dfd560b91fa53d0765fab53cce5c90",
+    "Measure.olean.private": "2ec5c61ff85b2a5febb1b441393cca424324729770c44f6b057f287916fe6711",
+    "Measure.olean.server": "457174ae986410c9ebe7d001316640ca87cbd3bb62342a8fcffdbe4f07f2fda5"
+  },
+  "modes": [
+    "baseline",
+    "import-only",
+    "measured",
+    "traced"
+  ],
+  "external_timeout_seconds": 1800,
+  "budget_not_overridden": true,
+  "trace_flags": [
+    "trace.Meta.Tactic.fun_prop=true",
+    "trace.aesop=true"
+  ],
+  "compiled_outputs_published": false,
+  "parallel_file_pipelines": 1,
+  "per_process_lean_threads": 2
+}

@@ -1,0 +1,71 @@
+[
+  {
+    "mode": "baseline",
+    "exit": 0,
+    "wall": 1.0795260639861226,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-unsupported-v3c/baseline",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-unsupported-v3c/baseline.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-unsupported-v3c/baseline/UnsupportedControl.lean"
+    ],
+    "insertion_bytes": 0
+  },
+  {
+    "mode": "import-only",
+    "exit": 0,
+    "wall": 1.0917860550107434,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-unsupported-v3c/import-only",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-unsupported-v3c/import-only.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-unsupported-v3c/import-only/UnsupportedControl.lean"
+    ],
+    "insertion_bytes": 25
+  },
+  {
+    "mode": "measured",
+    "exit": 0,
+    "wall": 1.0928672029986046,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-unsupported-v3c/measured",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-unsupported-v3c/measured.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-unsupported-v3c/measured/UnsupportedControl.lean"
+    ],
+    "insertion_bytes": 43
+  }
+]
