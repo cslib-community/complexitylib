@@ -24,8 +24,9 @@ For a flat program `p` starting at state `s`, the expected running time is defin
 discrete tail-sum formula over clocked horizons:
 `expectedTime w p s = ∑' t : ℕ, (evalRand w p t s).toOuterMeasure {cfg | ∃ u, cfg = .running u}`.
 Because `.halted` and `.faulted` are absorbing, each horizon `t` contributes the probability that
-execution is still running before either halt or fault after `t` steps. Summing over `t : ℕ` yields the exact 1-step
-Bellman equation `expectedStepsFrom_running`, connects directly to structured `ExecRand` trees via
+execution is still running before either halt or fault after `t` steps. Summing over `t : ℕ` yields
+the exact 1-step Bellman equation `expectedStepsFrom_running`, connects directly to structured
+`ExecRand` trees via
 `ExecRand.expectedTime_program`, reduces to a finite sum under `RandHaltsWithin`
 (`RandHaltsWithin.expectedTime_eq_sum`, `expectedTime_le_of_randHaltsWithin`), and recovers exact
 deterministic step counts (`Executes.expectedTime_eq`).
