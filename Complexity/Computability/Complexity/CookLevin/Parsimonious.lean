@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.SharpP
 public import Complexity.Computability.Complexity.CookLevin.Reduction
 public import Complexity.Logics.Propositional.CNF.ModelCount
+import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
 
 /-!
 # The Cook–Levin reduction is parsimonious

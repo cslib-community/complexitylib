@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Problems.ThreeSAT
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
+import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
 import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain

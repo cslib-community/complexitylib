@@ -28,6 +28,8 @@ Adapted from `lean-trominoes` at `6d5b36c15cec6cb18d30137b7f1c7fb92ea24332`,
 `LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThree{,Correctness,ExactSize}.lean`.
 This construction uses ordinary CNF formulas and Boolean assignments.
 
+The model-count preservation proof is original here, an elementary consequence of `copies_agree`.
+
 ## Main definitions
 
 * `Cslib.Logic.PL.CNF.occurrenceClauses`: separate the literal occurrences.

@@ -149,7 +149,7 @@ theorem sharpThreeSATThree_toPlanarThreeSATThree (φ : CNF ℕ) :
     SharpThreeSATThree (toPlanarThreeSATThree φ) = SharpThreeSATThree φ := by
   have hout := (ThreeSATThree.syntaxCheck_iff (toPlanarThreeSATThree φ)).2
     ⟨width_toPlanarThreeSATThree φ, count_vars_toPlanarThreeSATThree φ⟩
-  simp only [SharpThreeSATThree, hout, ↓reduceIte]
+  simp only [SharpThreeSATThree, SharpSAT, hout, ↓reduceIte]
   by_cases hg : ThreeSATThree.syntaxCheck φ = true
   · have hs := (ThreeSATThree.syntaxCheck_iff φ).1 hg
     rw [modelCount_toPlanarThreeSATThree φ hs.1 hs.2]

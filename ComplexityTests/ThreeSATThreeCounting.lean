@@ -6,6 +6,8 @@ Authors: Erik Demaine
 
 import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.ThreeSATThree.Counting
+import Complexity.Logics.Propositional.CNF.Compact.ModelCount
+import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
 
 /-! # Exact counts under occurrence splitting and numbering -/
 
@@ -61,4 +63,53 @@ example : SharpThreeSATThree [[(0, true), (0, true), (0, true)], [(0, true)]] = 
 example : SharpThreeSATThree
     (toThreeSATThree [[(0, true), (0, true), (0, true)], [(0, true)]]) = 1 := by
   rw [sharpThreeSATThree_toThreeSATThree]
+  decide
+
+/-- Two used labels stay distinct even though parity merges many unused labels. -/
+example : CNF.modelCount (CNF.relabel (fun v : ℕ => v % 2) [[(7, true), (42, true)]]) = 3 := by
+  rw [CNF.modelCount_relabel_of_injOn _ (by
+    intro a ha b hb h
+    change a ∈ [7, 42] at ha
+    change b ∈ [7, 42] at hb
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha hb
+    rcases ha with rfl | rfl <;> rcases hb with rfl | rfl <;> first | rfl | norm_num at h)]
+  decide
+
+/-- Identifying two occurring variables can change a disjunction's model count. -/
+example :
+    CNF.modelCount ([[(0, true), (1, true)]] : CNF ℕ) = 3 ∧
+    CNF.modelCount (CNF.relabel (fun _ => 0) ([[(0, true), (1, true)]] : CNF ℕ)) = 1 := by
+  decide
+
+/-- The transport theorem also applies to an empty source variable type. -/
+example : CNF.modelCount (CNF.relabel (fun v => nomatch v : Empty → ℕ) []) = 1 := by
+  rw [CNF.modelCount_relabel_of_injOn _ (fun v => nomatch v)]
+  decide
+
+/-- An empty support permits even a constant map from an infinite variable type. -/
+example : CNF.modelCount (CNF.relabel (fun _ => 0) ([] : CNF ℕ)) = 1 := by
+  rw [CNF.modelCount_relabel_of_injOn _ (by simp [CNF.vars, Set.InjOn])]
+  decide
+
+/-- Repeated first occurrences leave a gap in compact names while preserving all models. -/
+example :
+    CNF.compact ([[(1000000, true), (1000000, true), (7, true)]] : CNF ℕ) =
+      [[(0, true), (0, true), (2, true)]] ∧
+    CNF.modelCount (CNF.compact ([[(1000000, true), (1000000, true), (7, true)]] : CNF ℕ)) = 3 := by
+  constructor
+  · decide
+  · rw [CNF.modelCount_compact]
+    decide
+
+/-- Positive guarded source counts recover the existing decision language. -/
+example : [[(7, true)]] ∈ ThreeSAT :=
+  SharpThreeSAT.mem_ThreeSAT_iff.mpr (by decide)
+
+/-- Positive guarded target counts recover the existing decision language. -/
+example : [[(7, true)]] ∈ ThreeSATThree :=
+  SharpThreeSATThree.mem_ThreeSATThree_iff.mpr (by decide)
+
+/-- Rejected target syntax cannot belong to the decision language, even when satisfiable. -/
+example : [[(0, true), (0, true), (0, true)], [(0, true)]] ∉ ThreeSATThree := by
+  rw [SharpThreeSATThree.mem_ThreeSATThree_iff]
   decide

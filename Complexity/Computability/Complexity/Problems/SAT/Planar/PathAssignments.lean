@@ -100,8 +100,7 @@ theorem occurrencePath_crossing_straight {φ : CNF ℕ}
   have hdeg : ∀ v, G.incidenceVertices.count v ≤ 3 := SAT.incidenceGraph_degree_le hw hv
   have hi := occurrence_index_lt ho
   obtain ⟨j, hj, hji, hpj⟩ := List.exists_other_index_of_two_le_filter_contains (paths φ) p
-    ((Cslib.Logic.PL.occurrences φ).idxOf o)
-    (by simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hi) hsite.2.2
+    ((Cslib.Logic.PL.occurrences φ).idxOf o) hsite.2.2
   have hj' : j < G.2.length := by
     simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hj
   have hpi' : p ∈ G.unitPath ((Cslib.Logic.PL.occurrences φ).idxOf o) := by
@@ -181,10 +180,11 @@ theorem shared_ordinary_cell_center {φ : CNF ℕ}
   apply hp
   apply (mem_crossingSites φ p).2
   refine ⟨hcandidate, hc, ?_⟩
-  exact List.two_le_filter_contains_of_indices (paths φ) p
-    (by simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using occurrence_index_lt ho)
-    (by simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using occurrence_index_lt ht)
-    hij (path_mem_paths_get ho hpo) (path_mem_paths_get ht hpt)
+  exact (List.two_le_filter_contains_iff (paths φ) p).2
+    ⟨_, _,
+      by simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using occurrence_index_lt ho,
+      by simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using occurrence_index_lt ht,
+      hij, path_mem_paths_get ho hpo, path_mem_paths_get ht hpt⟩
 
 /-- No retained wire cell is the clause-center endpoint removed by `dropLast`. -/
 theorem clause_center_not_mem_dropLast {φ : CNF ℕ} {o : Occurrence ℕ}

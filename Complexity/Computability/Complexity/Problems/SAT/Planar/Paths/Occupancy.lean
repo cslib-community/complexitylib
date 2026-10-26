@@ -43,7 +43,7 @@ theorem paths_filter_length_le_one {φ : CNF ℕ}
   by_contra h
   have ht : 2 ≤ ((paths φ).filter fun r => r.contains p).length := by omega
   obtain ⟨i, j, hi, hj, hij, hpi, hpj⟩ :=
-    List.exists_pair_indices_of_two_le_filter_contains (paths φ) p ht
+    (List.two_le_filter_contains_iff (paths φ) p).1 ht
   have hi' : i < (SAT.incidenceGraph φ).2.length := by
     simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hi
   have hj' : j < (SAT.incidenceGraph φ).2.length := by
