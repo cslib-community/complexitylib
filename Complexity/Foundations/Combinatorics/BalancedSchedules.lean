@@ -9,7 +9,10 @@ module
 public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.Algebra.Field.Rat
-import Mathlib.Tactic
+import Mathlib.Tactic.FieldSimp
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Positivity
+import Mathlib.Tactic.Ring
 
 /-!
 # Collision potentials for balanced label schedules
@@ -41,13 +44,15 @@ variable {A B : Type*} [Fintype A] [Fintype B] [DecidableEq B]
 /-- The total occupancy is the number of objects, also when that number is zero. -/
 theorem sum_occupancy (label : A → B) :
     ∑ u, occupancy label u = Fintype.card A := by
-  simpa only [occupancy, Finset.sum_const, Finset.card_univ, smul_eq_mul, mul_one] using
+  simpa only [occupancy, Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
+    Nat.cast_id, mul_one] using
     (Fintype.sum_fiberwise' label (fun _ => (1 : ℕ)))
 
 /-- Counting collisions by their common label or by their first object gives the same result. -/
 theorem sum_occupancy_sq (label : A → B) :
     ∑ u, occupancy label u ^ 2 = ∑ a, occupancy label (label a) := by
-  simpa only [occupancy, Finset.sum_const, Finset.card_univ, smul_eq_mul, pow_two] using
+  simpa only [occupancy, Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
+    Nat.cast_id, pow_two] using
     (Fintype.sum_fiberwise' label (fun u => occupancy label u))
 
 /-- Exact ordered-pair expansion of the collision count. Diagonal collisions are retained. -/
