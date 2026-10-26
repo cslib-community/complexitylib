@@ -375,6 +375,8 @@ public import Complexity.Computability.Circuit.Frontier.Correlation.Circuit
 public import Complexity.Computability.Circuit.Frontier.Correlation.Rectangle
 public import Complexity.Computability.Circuit.Frontier.Demand
 public import Complexity.Computability.Circuit.Frontier.FanInTwo
+public import Complexity.Computability.Circuit.Frontier.Incidence
+public import Complexity.Computability.Circuit.Frontier.IncidenceComponents
 public import Complexity.Computability.Circuit.Frontier.Layouts.Basic
 public import Complexity.Computability.Circuit.Frontier.Layouts.BoundedDegree
 public import Complexity.Computability.Circuit.Frontier.Layouts.Components
@@ -1916,6 +1918,7 @@ public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.Markov
 public import Complexity.Foundations.Data.Finset.Quantile
 public import Complexity.Foundations.Data.Finset.Sampling
+public import Complexity.Foundations.Data.Finset.SubsetSum
 public import Complexity.Foundations.Data.Finset.SymmDiff
 public import Complexity.Foundations.Data.Hamming
 public import Complexity.Foundations.Data.Hamming.Expansion

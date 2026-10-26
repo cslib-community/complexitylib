@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import Mathlib.Analysis.Asymptotics.Defs
+import Complexity.Computability.Circuit.Frontier.Layouts.Basic
 import Mathlib.Analysis.Asymptotics.Lemmas
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Tactic.FieldSimp
@@ -16,14 +17,13 @@ import Mathlib.Tactic.FieldSimp
 /-!
 # Asymptotic lower bounds for bounded direct input support
 
-The finite cut estimate gives a coefficient `1 / (2 * (1 - 2⁻ᵈ))` for input-reading gates
+The random-cut estimate gives a coefficient `1 / (2 * (1 - 2⁻ᵈ))` for input-reading gates
 whose aggregated support on original inputs has size at most the fixed positive integer `d`.
 The two Boolean fibers must be rectangle-free at a threshold with sublinear binary logarithm.
 Internal predecessor fan-in, depth, fan-out, and real weights remain unrestricted.
 
-For `d = 3` the coefficient is `4 / 7`, strengthening the general `1 / 2` coefficient in this
-restricted model. The separate support-at-most-two theorem gives the stronger coefficient `1`
-when `d = 2`.
+For `d = 3`, incidence layouts improve the coefficient to `2 / 3`. The separate
+support-at-most-two theorem gives the stronger coefficient `1` when `d = 2`.
 
 This follows from the finite support bound. It does not construct an explicit family with the
 required rectangle-freeness property.
@@ -33,7 +33,7 @@ required rectangle-freeness property.
 * `Cslib.Circuits.Boolean.WeightedThreshold.eventually_lt_inputGates_of_inputSupport_card_le`:
   the asymptotic bound for native programs and any fixed Boolean readout of their gate values.
 * `Cslib.Circuits.Boolean.WeightedThreshold.eventually_lt_inputGates_of_inputSupport_card_le_three`:
-  the coefficient `4 / 7` for direct support of size at most three.
+  the coefficient `2 / 3` for direct support of size at most three.
 -/
 
 public section
@@ -97,6 +97,54 @@ private theorem eventually_lt_of_support_bounds {a : ℝ} (ha : 0 < a) (d : ℕ)
   have hpos := mul_pos (mul_pos ha hε) hNpos
   nlinarith
 
+private theorem eventually_lt_of_three_support_bounds {k : ℕ → ℕ}
+    (hk : (fun n => (k n : ℝ)) =o[atTop] fun n => (n : ℝ))
+    {ε : ℝ} (hε : 0 < ε) (C : ℝ) :
+    ∃ T : ℕ, ∀ᶠ n : ℕ in atTop, ∀ q : ℕ,
+      2 * (n : ℝ) < (3 + 6 / (T + 1 : ℝ)) * q +
+        (max 3 T : ℕ) * (Nat.log 2 (n + q) : ℝ) + 6 * k n + C →
+      (2 / 3 - ε) * n < q := by
+  obtain ⟨T, hT⟩ := exists_nat_gt ((6 : ℝ) / ε)
+  have hcoeff : (6 : ℝ) / (T + 1) ≤ ε := by
+    apply (div_le_iff₀ (by positivity : (0 : ℝ) < T + 1)).mpr
+    have h := (div_lt_iff₀ hε).mp hT
+    nlinarith
+  let D : ℝ := (max 3 T : ℕ)
+  have hD : 0 < D := by
+    dsimp only [D]
+    exact_mod_cast (show 0 < max 3 T by omega)
+  obtain ⟨B, hB⟩ := Frontier.exists_natLog_le_mul_add
+    (ε := ε / (4 * D)) (by positivity)
+  refine ⟨T, ?_⟩
+  filter_upwards [hk.bound (show 0 < ε / 6 by positivity),
+    eventually_ge_atTop ⌈2 * (D * B + C) / ε⌉₊] with n hnK hn
+  intro q hbound
+  have hN : (0 : ℝ) ≤ n := Nat.cast_nonneg n
+  simp only [Real.norm_eq_abs, abs_of_nonneg (Nat.cast_nonneg (k n) : (0 : ℝ) ≤ k n),
+    abs_of_nonneg hN] at hnK
+  by_contra! hsmall
+  have hqn : (q : ℝ) ≤ n := by nlinarith [mul_nonneg hε.le hN]
+  have herror : (6 : ℝ) / (T + 1) * q ≤ ε * n := by
+    calc
+      _ ≤ ((6 : ℝ) / (T + 1)) * n := mul_le_mul_of_nonneg_left hqn (by positivity)
+      _ ≤ ε * n := mul_le_mul_of_nonneg_right hcoeff hN
+  have hconstant : D * B + C ≤ ε / 2 * n := by
+    have hceil := (Nat.le_ceil (2 * (D * B + C) / ε)).trans
+      (show (⌈2 * (D * B + C) / ε⌉₊ : ℝ) ≤ n by exact_mod_cast hn)
+    have h := (div_le_iff₀ hε).mp hceil
+    linarith
+  have hlog : D * (Nat.log 2 (n + q) : ℝ) + C ≤ ε * n := by
+    calc
+      _ ≤ D * (ε / (4 * D) * (n + q) + B) + C := by
+        have h := mul_le_mul_of_nonneg_left (hB (n + q)) hD.le
+        push_cast at h
+        linarith
+      _ ≤ D * (ε / (4 * D) * (2 * n) + B) + C := by gcongr; linarith
+      _ = ε / 2 * n + (D * B + C) := by field_simp; ring
+      _ ≤ ε * n := by linarith
+  dsimp only [D] at hlog
+  nlinarith
+
 /-- A family with both fibers `K(n)`-rectangle-free, with `K(n) ≤ 2 ^ k(n)` and `k(n) = o(n)`,
 requires more than `(1 / (2 * (1 - 2⁻ᵈ)) - ε) n` input-reading gates for every `ε > 0` and all
 sufficiently large `n`, when each gate directly reads at most `d > 0` original inputs.
@@ -128,9 +176,8 @@ theorem eventually_lt_inputGates_of_inputSupport_card_le {d : ℕ} (hd : 0 < d)
   gcongr
   linarith
 
-/-- The direct-support-at-most-three improvement over the generic `n / 2` coefficient:
-more than `(4 / 7 - ε) n` input-reading gates are required for all sufficiently large
-input lengths. -/
+/-- For direct support of size at most three, incidence layouts force more than
+`(2 / 3 - ε) n` input-reading gates for all sufficiently large input lengths. -/
 theorem eventually_lt_inputGates_of_inputSupport_card_le_three
     {f : ∀ n, Cslib.BooleanFunction n} {K k : ℕ → ℕ}
     (hf : ∀ᶠ n in atTop, ∀ b : Bool, Frontier.RectangleFree {x | f n x = b} (K n))
@@ -141,9 +188,12 @@ theorem eventually_lt_inputGates_of_inputSupport_card_le_three
       (readout : (Fin g → Bool) → Bool),
       (∀ x, readout (p.eval interpretation x) = f n x) →
       (∀ gate, (inputSupport p gate).card ≤ 3) →
-      (4 / 7 - ε) * n < (inputGates p).card := by
-  have h := eventually_lt_inputGates_of_inputSupport_card_le (d := 3) (by decide) hf hK hk hε
-  norm_num only [show (1 / (2 * (1 - (1 / 2 : ℝ) ^ 3))) = 4 / 7 by norm_num] at h
-  exact h
+      (2 / 3 - ε) * n < (inputGates p).card := by
+  obtain ⟨T, hnum⟩ := eventually_lt_of_three_support_bounds hk hε 1
+  filter_upwards [hf, hK, hnum] with n hfn hKn hn
+  intro g p readout hreadout hsupport
+  apply hn (inputGates p).card
+  exact two_mul_lt_inputGates_of_inputSupport_card_le_three p readout hreadout hfn
+    hsupport T hKn
 
 end Cslib.Circuits.Boolean.WeightedThreshold

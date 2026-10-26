@@ -115,6 +115,16 @@ example : (1 : ℝ) ≤ (2 * (1 - (1 / 2 : ℝ) ^ 1) + 1) *
     (d := 1) (fun gate => (Finset.card_le_univ _).trans (by decide)) 0 (k := 1) le_rfl
   simpa using h
 
+-- The sharper incidence bound permits cutoff zero as well, including the empty residual
+-- input type and a gate whose original input support is empty.
+example : (2 : ℝ) < 9 * (inputGates negateCircuit.program).card +
+    3 * (Nat.log 2 (1 + (inputGates negateCircuit.program).card) : ℝ) + 7 := by
+  have h := circuit_two_mul_lt_of_inputSupport_card_le_three
+    negateCircuit ⟨(1 : Fin 2), rfl⟩ negateCircuit_eval (oneBit_rectangleFree _)
+    (fun gate => (Finset.card_le_univ _).trans (by decide)) 0 (k := 1) le_rfl
+  norm_num at h ⊢
+  linarith
+
 -- Fixing every input makes the residual-coordinate type empty; the original circuit
 -- and its rectangle-free output are still valid inputs to the incidence theorem.
 example : (1 : ℝ) ≤ 2 * (1 - (1 / 2 : ℝ) ^ 1) *

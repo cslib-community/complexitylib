@@ -29,6 +29,8 @@ forces the mean deficit below `k + (D + 1) √(|ι| / 2)`.
 
 * `Cslib.HypergraphCut.card_le_of_deficit`: a finite support-sensitive bound from a deficit
   obstruction on every cut.
+* `Cslib.HypergraphCut.card_lt_of_deficit_chain`: a chain whose cuts cross few supports gives
+  a bound without a concentration error.
 
 ## References
 
@@ -211,5 +213,77 @@ theorem card_le_of_deficit (S : κ → Finset ι) {d D : ℕ} {k : ℝ}
       Real.sqrt_mul (sq_nonneg _), Real.sqrt_sq (by positivity)]
   rw [expect_deficit, hroot] at hm
   linarith
+
+/-- If a chain from the empty set to the whole coordinate set adds at most one coordinate
+per step and crosses at most `W` supports at each cut, then a cut-deficit obstruction forces
+`|ι| < |κ| + W + 2 k`. The first cut with deficit at least `k` has deficit exactly `k`;
+counting supports on both sides then bounds the complementary deficit. -/
+theorem card_lt_of_deficit_chain (S : κ → Finset ι) (U : ℕ → Finset ι) {m W k : ℕ}
+    (hzero : U 0 = ∅) (hlast : U m = univ)
+    (hstep : ∀ t, t < m → U t ⊆ U (t + 1))
+    (hcard : ∀ t, t < m → (U (t + 1)).card ≤ (U t).card + 1)
+    (hcross : ∀ t, t ≤ m → (univ.filter fun j =>
+      ¬Disjoint (S j) (U t) ∧ ¬Disjoint (S j) (U t)ᶜ).card ≤ W)
+    (hcut : ∀ V : Finset ι,
+      V.card < (univ.filter fun j => ¬Disjoint (S j) V).card + k ∨
+      Vᶜ.card < (univ.filter fun j => ¬Disjoint (S j) Vᶜ).card + k) :
+    Fintype.card ι < Fintype.card κ + W + 2 * k := by
+  classical
+  let A (t : ℕ) := univ.filter fun j => ¬Disjoint (S j) (U t)
+  let f (t : ℕ) := (U t).card + Fintype.card κ - (A t).card
+  have hA (t : ℕ) : (A t).card ≤ Fintype.card κ := card_le_univ _
+  have hf0 : f 0 = Fintype.card κ := by simp [f, A, hzero]
+  have hfm : Fintype.card ι ≤ f m := by
+    have h := hA m
+    simp only [f, hlast, card_univ]
+    omega
+  have hfstep (t : ℕ) (ht : t < m) : f (t + 1) ≤ f t + 1 := by
+    have hAm : (A t).card ≤ (A (t + 1)).card := by
+      apply card_le_card
+      intro j hj
+      refine mem_filter.mpr ⟨mem_univ _, ?_⟩
+      intro hdisj
+      exact (mem_filter.mp hj).2 (hdisj.mono_right (hstep t ht))
+    have hc := hcard t ht
+    have h₀ := hA t
+    have h₁ := hA (t + 1)
+    dsimp only [f]
+    omega
+  by_contra! hN
+  have htop : Fintype.card κ + k ≤ f m := by omega
+  have hex : ∃ t, Fintype.card κ + k ≤ f t := ⟨m, htop⟩
+  let t := Nat.find hex
+  have ht : t ≤ m := Nat.find_min' hex htop
+  have hft : Fintype.card κ + k ≤ f t := Nat.find_spec hex
+  have heq : f t = Fintype.card κ + k := by
+    by_cases ht0 : t = 0
+    · rw [ht0, hf0] at hft ⊢
+      omega
+    · have hprev : ¬Fintype.card κ + k ≤ f (t - 1) :=
+        Nat.find_min hex (by omega : t - 1 < t)
+      have hs := hfstep (t - 1) (by omega)
+      rw [Nat.sub_add_cancel (by omega : 1 ≤ t)] at hs
+      omega
+  have hleft : (U t).card = (A t).card + k := by
+    have h := hA t
+    dsimp only [f] at heq
+    omega
+  let B := univ.filter fun j => ¬Disjoint (S j) (U t)ᶜ
+  have hinter : A t ∩ B = univ.filter (fun j =>
+      ¬Disjoint (S j) (U t) ∧ ¬Disjoint (S j) (U t)ᶜ) := by
+    ext j
+    simp [A, B]
+  have hsum : (A t).card + B.card ≤ Fintype.card κ + W := by
+    have hu := card_le_univ (A t ∪ B)
+    have hc := card_union_add_card_inter (A t) B
+    have hi := hcross t ht
+    rw [← hinter] at hi
+    omega
+  have hc := card_compl_add_card (U t)
+  rcases hcut (U t) with h | h
+  · change (U t).card < (A t).card + k at h
+    omega
+  · change (U t)ᶜ.card < B.card + k at h
+    omega
 
 end Cslib.HypergraphCut
