@@ -31,6 +31,11 @@ ends at `budget n` (`offset + step = budget n`) yields a ciphertext that
 wiring hop at an intermediate offset) produces a `true`-tagged ciphertext under key
 `2 * (offset + step)` that `(scheme D budget).decrypt` cannot decrypt.
 
+This level-indexed hop API is an original adaptation, closest to Gentry's sub-scheme `E^(δ)`
+([Gentry2009], Section 2, p. 171). GHV is cited for the multi-hop notion (paraphrase: evaluation
+can be applied to its own outputs) [GentryHaleviVaikuntanathan2010]; that notion is not claimed
+for the fixed-start scheme evaluator `(scheme D budget).evaluate` itself.
+
 ## Main results
 
 * `Cslib.Crypto.Homomorphic.Leveled.encryptedWires_evaluateCircuit_drop`: evaluating a padded

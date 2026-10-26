@@ -64,11 +64,13 @@ Priorities live in this list and in the tiers of [#897].
   family instantiates the generic theorem: leveled FHE under decision LWE with quasi-polynomial
   modulus for exactly that family, and FHE under the additional one-key circular-security
   assumption. The checked formal abstract `gsw-fhe` states both endpoints with GSW's algorithms
-  written out. Multi-hop evaluation is proved for both the fixed-key scheme and the depth-budgeted
-  leveled scheme (`FixedKey.evaluate_twoHop_spec`, `Leveled.evaluateHop_spec`, and
-  `Leveled.evaluateHop_twoHop_spec`). Open in [#1104]: a uniform generator for the leveled
-  scheme's wrapper decryption circuits (uniform compactness) and Gentry's exact concrete-security
-  loss.
+  written out. Multi-hop evaluation is proved for the fixed-key scheme
+  (`FixedKey.evaluate_twoHop_spec`). For the leveled scheme, the original level-indexed hop
+  evaluator `Leveled.evaluateHop` composes hops within the depth budget (`Leveled.evaluateHop_spec`
+  and `Leveled.evaluateHop_twoHop_spec`); the scheme evaluator itself remains single-hop.
+  Open in [#1104]: a uniform generator for the leveled scheme's wrapper decryption circuits
+  (uniform compactness) and the exact constant and multiplicative running-time bound in
+  Gentry's Theorem 4.
 - **Completeness of oblivious transfer.** In the ideal OT-hybrid model, every polynomial-time
   multiparty functionality admits a protocol secure against static malicious corruptions, with
   real/ideal simulation and abort, under the standard communication assumptions.

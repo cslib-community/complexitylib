@@ -19,6 +19,10 @@ randomness. Inputs need only have the base ciphertext width and the desired decr
 includes outputs of previous evaluations. Every finite circuit preserves the same key and exact
 ciphertext width.
 
+GHV is cited for the multi-hop notion (paraphrase: evaluation can be applied to its own outputs)
+[GentryHaleviVaikuntanathan2010], which `evaluate_twoHop_spec` instantiates for the fixed-key
+scheme evaluator itself.
+
 ## Main results
 
 * `Cslib.Crypto.Homomorphic.FixedKey.encryptedWires_evaluateCircuit`: arbitrary circuit outputs

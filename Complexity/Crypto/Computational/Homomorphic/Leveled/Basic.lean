@@ -42,6 +42,11 @@ decrypt, because the private artifact retains only the two endpoint secrets (`0`
 intermediate offset) produces a `true`-tagged ciphertext under key `2 * (offset + step)` that
 `(scheme D budget).decrypt` cannot decrypt.
 
+This level-indexed hop API is an original adaptation, closest to Gentry's sub-scheme `E^(δ)`
+([Gentry2009], Section 2, p. 171). GHV is cited for the multi-hop notion (paraphrase: evaluation
+can be applied to its own outputs) [GentryHaleviVaikuntanathan2010]; that notion is not claimed
+for the fixed-start scheme evaluator `(scheme D budget).evaluate` itself.
+
 ## Main definitions
 
 * `Cslib.Crypto.Homomorphic.Leveled.keyPair`: serialize the public and private artifacts.
@@ -103,7 +108,8 @@ def evaluateCircuit (n budget : ℕ) (publicKeys : List (List Bool))
   (fun row => compiled.2.map (row.getD · [])) <$>
     Scheme.evaluateLayers D n publicKeys links inputs layers
 
-/-- Strip tags, evaluate a step-bounded circuit starting at depth offset `offset` along the
+/-- Original level-indexed adaptation: strip tags and evaluate a step-bounded circuit starting
+at depth offset `offset` along the
 public key chain (`2 * offset` layer transitions into the public artifact), and tag the result
 with `true`. The scheme evaluator `(scheme D budget).evaluate` remains single-hop; multi-hop
 evaluation goes through `evaluateHop`, and the caller tracks the offsets. Only a hop that ends at
