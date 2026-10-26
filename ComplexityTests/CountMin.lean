@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Algorithms.Streaming.CountMin.LinearHash
-import Complexity.Algorithms.Streaming.CountMin.Program
+module
+
+public import Complexity.Algorithms.Streaming.CountMin.LinearHash
+public import Complexity.Algorithms.Streaming.CountMin.Program
 import Mathlib.Tactic.NormNum
 
 /-! # Count-Min clients
@@ -14,6 +16,8 @@ The executable examples check stored rows, weighted updates, an absent queried i
 The probabilistic example instantiates the proved bound with an existing concrete universal hash
 family, four buckets and three independent rows.
 -/
+
+public section
 
 namespace ComplexityTests.CountMin
 
@@ -61,16 +65,17 @@ example : mass ([(0, 0), (2, 0)] : List (Fin 4 × ℕ)) = 0 ∧
     ∀ x : Fin 4, estimate hashBank (run hashBank [(0, 0), (2, 0)]) x = 0 := by
   decide
 
--- Four buckets and three independent matrix seeds give additive error at most half the mass,
--- except on at most one eighth of the hash banks, for any fixed stream and query.
-example {n : ℕ} (s : List (BitString n × ℕ)) (x : BitString n) :
+/-- Four buckets and three independent matrix seeds give additive error at most half the mass,
+except on at most one eighth of the hash banks, for any fixed stream and query. -/
+theorem fixed_query_error_le_one_eighth {n : ℕ} (s : List (BitString n × ℕ)) (x : BitString n) :
     (Finset.dens {seeds : Fin 3 → Fin 2 → BitString n |
       (frequency s x : ℝ) + (1 / 2 : ℝ) * mass s <
         (estimate (fun r => indexedHash (seeds r))
           (run (fun r => indexedHash (seeds r)) s) x : ℝ)} : ℝ) ≤ 1 / 8 := by
   convert dens_estimate_error_le_inv_two_pow (d := 3)
     (indexedHash (n := n) (m := 2)) (isTwoUniversal_indexedHash n 2) s x
-    (ε := (1 / 2 : ℝ)) (by norm_num) (by norm_num) using 1 <;> norm_num
+    (ε := (1 / 2 : ℝ)) (by norm_num) (by norm_num) using 1
+  norm_num
 
 -- The same theorem accepts a nonempty stream of total weight zero.
 example {n : ℕ} (item x : BitString n) :
@@ -92,6 +97,7 @@ example {n : ℕ} (s : List (BitString n × ℕ)) (x : BitString n) :
   convert sampleQuery_error_le_inv_two_pow (d := 3)
     (ProbComp.uniform (Fin 2 → BitString n)) (ProbComp.eval_uniform (Fin 2 → BitString n))
     (indexedHash (n := n) (m := 2)) (isTwoUniversal_indexedHash n 2) s x
-    (ε := (1 / 2 : ℝ)) (by norm_num) (by norm_num) using 1 <;> norm_num
+    (ε := (1 / 2 : ℝ)) (by norm_num) (by norm_num) using 1
+  norm_num
 
 end ComplexityTests.CountMin
