@@ -12,6 +12,7 @@ public import Complexity.Crypto.Computational.CramerShoup.ProjectiveHash
 public import Complexity.Crypto.Computational.DiffieHellman
 public import Complexity.Crypto.Computational.ElGamal
 public import Complexity.Crypto.Computational.Encryption.CCA
+public import Complexity.Crypto.Game.UntilBad
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -34,9 +35,10 @@ against an adaptive `CCA2AdversaryOf Msg`. Groups are written additively as
 `ZMod (F.order d)`-modules (matching `DiscreteLog`, `DiffieHellman`, `ElGamal`, and
 `ProjectiveHash`).
 
-## Source Statements ([BonehShoup2023], Sections 12.5.2–12.5.3 & Exercise 12.27)
+## Source Statements ([BonehShoup2023], Sections 12.5.1–12.5.3 & Exercise 12.27)
 
-Verbatim from [BonehShoup2023], Section 12.5.2 (printed pp. 486, 488):
+Verbatim from [BonehShoup2023], Sections 12.5.1–12.5.2 (Lemma 12.6 in §12.5.1, printed p. 486;
+Lemma 12.8 in §12.5.2, printed p. 488):
 > **Lemma 12.6.** In Attack Game 12.4, $\Pr[W_0] = \Pr[W_1]$ for all adversaries $\mathcal{A}$.
 > …
 > **Lemma 12.8.** In Attack Game 12.5, for any adversary $\mathcal{A}$ that outputs at most $Q$
@@ -110,6 +112,11 @@ Verbatim from [BonehShoup2023], Exercise 12.27 (printed pp. 521–522):
 * `Cslib.Crypto.Encryption.CCA2AdversaryOf` (`Encryption/CCA.lean`) and
   `Cslib.Crypto.isCollisionFor` (`CollisionResistant.lean`): reused for adaptive 1CCA adversaries
   and Phase 2 hash collisions in `ZMod (F.order d)`.
+* `Cslib.Crypto.Game` (`Game.lean`, `Game/UntilBad.lean`): reused for `runStatelessOracle`,
+  `advantage_runStatelessOracle_bind_le`, `bind_runStatelessOracle_comm`,
+  `advantage_runStatelessOracle_le_of_support`, `advantage_bind_le_nnreal`,
+  `advantage_bind_le_of_support`, `advantage_bind_comm`, and
+  `advantage_uniform_bind_of_eq_of_ne`.
 
 ## Main definitions and results
 
@@ -132,7 +139,7 @@ Verbatim from [BonehShoup2023], Exercise 12.27 (printed pp. 521–522):
 
 namespace Cslib.Crypto.PrimeOrderGroupFamily
 
-open Probability Turing.MultiTapeTM ProjectiveHash Encryption
+open Probability Turing.MultiTapeTM ProjectiveHash Encryption Game
 open scoped ENNReal NNReal
 
 variable (F : PrimeOrderGroupFamily)
@@ -668,178 +675,6 @@ theorem computableInPolyTime_decodeCramerShoup
   .of_tidy (F.computableTidilyInPolyTime_decodeCramerShoup hH.tidy hisElem.tidy
     (by fun_prop) (by fun_prop) (by fun_prop))
 
-/-! ### Stateless oracle simulation lemmas -/
-
-/-- Run a `WordOracleComp Unit α` against a stateless deterministic oracle
-`o : List Bool → List Bool` and feed its output to `next : α → Game`. -/
-noncomputable def runStatelessOracle {α : Type} (o : List Bool → List Bool)
-    (prog : WordOracleComp Unit α) (next : α → Game) : Game :=
-  (ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
-      (fun req (s : Unit) => pure (o req.2, s)))
-    prog).run ())).bind (fun out => next out.1)
-
-@[simp]
-theorem runStatelessOracle_pure {α : Type} (o : List Bool → List Bool)
-    (a : α) (next : α → Game) :
-    runStatelessOracle o (pure a) next = next a := by
-  simp [runStatelessOracle]
-
-theorem runStatelessOracle_query_inl {α : Type} (o : List Bool → List Bool)
-    (m : ℕ)
-    (k : probOracleSpec (fun _ : Unit × List Bool => List Bool) (Sum.inl m) →
-      OracleComp (probOracleSpec (fun _ : Unit × List Bool => List Bool)) α)
-    (next : α → Game) :
-    runStatelessOracle o (OracleComp.query (Sum.inl m) >>= k) next =
-      (PMF.uniformOfFintype (Fin (m + 1))).bind
-        (fun x => runStatelessOracle o (k x) next) := by
-  simp [runStatelessOracle, ProbOracleComp.handler, StateT.run_bind,
-    ProbComp.eval_bind, PMF.bind_bind]
-
-theorem runStatelessOracle_query_inr {α : Type} (o : List Bool → List Bool)
-    (req : Unit × List Bool)
-    (k : probOracleSpec (fun _ : Unit × List Bool => List Bool) (Sum.inr req) →
-      OracleComp (probOracleSpec (fun _ : Unit × List Bool => List Bool)) α)
-    (next : α → Game) :
-    runStatelessOracle o (OracleComp.query (Sum.inr req) >>= k) next =
-      runStatelessOracle o (k (o req.2)) next := by
-  rw [runStatelessOracle, OracleComp.interpret_bind, OracleComp.interpret_query,
-    ProbOracleComp.handler, StateT.run_bind]
-  rfl
-
-/-- **Stateless oracle until-bad bound**: if `prog` makes at most `Q` oracle queries, `o₁ τ req`
-agrees with `o₂ req` whenever `isBad τ req = false`, and for every `req` the `μ`-probability of
-`isBad τ req = true` is at most `δ`, then replacing `o₁ τ` by `o₂` (with continuation `next τ`)
-changes the probability of each outcome `b : Bool` by at most `Q * δ`. -/
-private theorem runStatelessOracle_bind_le {T α : Type} (μ : PMF T)
-    (o₁ : T → List Bool → List Bool) (o₂ : List Bool → List Bool)
-    (isBad : T → List Bool → Bool) (next : T → α → Game)
-    {Q : ℕ} {δ : ℝ≥0∞}
-    {prog : WordOracleComp Unit α} (hq : prog.IsQueryBounded Q)
-    (hagree : ∀ τ req, isBad τ req = false → o₁ τ req = o₂ req)
-    (hbad : ∀ req, (∑' τ, μ τ * if isBad τ req then (1 : ℝ≥0∞) else 0) ≤ δ)
-    (b : Bool) :
-    ((μ.bind fun τ => runStatelessOracle (o₁ τ) prog (next τ)) b ≤
-      (μ.bind fun τ => runStatelessOracle o₂ prog (next τ)) b + (Q : ℝ≥0∞) * δ) ∧
-    ((μ.bind fun τ => runStatelessOracle o₂ prog (next τ)) b ≤
-      (μ.bind fun τ => runStatelessOracle (o₁ τ) prog (next τ)) b + (Q : ℝ≥0∞) * δ) := by
-  induction hq with
-  | pure a Q =>
-    simp only [runStatelessOracle_pure]
-    exact ⟨le_self_add, le_self_add⟩
-  | liftBind q k Q _ ih =>
-    rcases q with m | req
-    · simp only [Sum.elim_inl, Nat.add_zero]
-      have hinl (o : T → List Bool → List Bool) :
-          (μ.bind fun τ =>
-            runStatelessOracle (o τ) (OracleComp.query (Sum.inl m) >>= k) (next τ)) =
-          (PMF.uniformOfFintype (Fin (m + 1))).bind
-            (fun x => μ.bind fun τ => runStatelessOracle (o τ) (k x) (next τ)) := by
-        rw [show (fun τ =>
-            runStatelessOracle (o τ) (OracleComp.query (Sum.inl m) >>= k) (next τ)) = _ from
-          funext fun τ => runStatelessOracle_query_inl (o τ) m k (next τ)]
-        exact PMF.bind_comm μ (PMF.uniformOfFintype (Fin (m + 1))) _
-      rw [hinl o₁, hinl (fun _ => o₂)]
-      simp only [PMF.bind_apply]
-      have hsum (f g : Fin (m + 1) → ℝ≥0∞) (hle : ∀ x, f x ≤ g x + (Q : ℝ≥0∞) * δ) :
-          (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * f x) ≤
-            (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * g x) + (Q : ℝ≥0∞) * δ := by
-        calc ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * f x
-            ≤ ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * (g x + (Q : ℝ≥0∞) * δ) :=
-              ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hle x) zero_le
-          _ = (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * g x) + (Q : ℝ≥0∞) * δ := by
-              simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-      exact ⟨hsum _ _ (fun x => (ih x).1), hsum _ _ (fun x => (ih x).2)⟩
-    · simp only [Sum.elim_inr]
-      have hinr₁ :
-          (fun τ => runStatelessOracle (o₁ τ) (OracleComp.query (Sum.inr req) >>= k) (next τ)) =
-            fun τ => runStatelessOracle (o₁ τ) (k (o₁ τ req.2)) (next τ) :=
-        funext fun τ => runStatelessOracle_query_inr (o₁ τ) req k (next τ)
-      have hinr₂ :
-          (fun τ => runStatelessOracle o₂ (OracleComp.query (Sum.inr req) >>= k) (next τ)) =
-            fun τ => runStatelessOracle o₂ (k (o₂ req.2)) (next τ) :=
-        funext fun τ => runStatelessOracle_query_inr o₂ req k (next τ)
-      rw [hinr₁, hinr₂]
-      have hstep (f g : T → Game)
-          (hfg : ∀ τ, isBad τ req.2 = false → f τ = g τ) :
-          (μ.bind f) b ≤ (μ.bind g) b + δ := by
-        simp only [PMF.bind_apply]
-        calc ∑' τ, μ τ * f τ b
-            ≤ ∑' τ, (μ τ * g τ b + μ τ * if isBad τ req.2 then 1 else 0) := by
-              refine ENNReal.tsum_le_tsum fun τ => ?_
-              by_cases hb : isBad τ req.2 = true
-              · simp only [hb, ↓reduceIte, mul_one]
-                exact le_add_of_le_right (mul_le_of_le_one_right zero_le (PMF.coe_le_one _ _))
-              · simp only [Bool.not_eq_true] at hb
-                rw [hfg τ hb]; simp [hb]
-          _ = (∑' τ, μ τ * g τ b) + ∑' τ, μ τ * if isBad τ req.2 then 1 else 0 := ENNReal.tsum_add
-          _ ≤ (∑' τ, μ τ * g τ b) + δ := add_le_add le_rfl (hbad req.2)
-      have hstep1 := hstep
-        (fun τ => runStatelessOracle (o₁ τ) (k (o₁ τ req.2)) (next τ))
-        (fun τ => runStatelessOracle (o₁ τ) (k (o₂ req.2)) (next τ))
-        (fun τ hb => by rw [hagree τ req.2 hb])
-      have hstep2 := hstep
-        (fun τ => runStatelessOracle (o₁ τ) (k (o₂ req.2)) (next τ))
-        (fun τ => runStatelessOracle (o₁ τ) (k (o₁ τ req.2)) (next τ))
-        (fun τ hb => by rw [hagree τ req.2 hb])
-      have hcast : ((Q + 1 : ℕ) : ℝ≥0∞) * δ = (Q : ℝ≥0∞) * δ + δ := by
-        rw [Nat.cast_add, Nat.cast_one, add_mul, one_mul]
-      rw [hcast]
-      exact ⟨(hstep1.trans (add_le_add (ih (o₂ req.2)).1 le_rfl)).trans_eq (add_assoc _ _ _),
-        ((ih (o₂ req.2)).2.trans (add_le_add hstep2 le_rfl)).trans_eq (by ac_rfl)⟩
-
-/-- `Game.advantage` corollary of `runStatelessOracle_bind_le` when `δ = (q : ℝ≥0∞)⁻¹`. -/
-private theorem advantage_runStatelessOracle_bind_le {T α : Type} (μ : PMF T)
-    (o₁ : T → List Bool → List Bool) (o₂ : List Bool → List Bool)
-    (isBad : T → List Bool → Bool) (next : T → α → Game)
-    {Q q : ℕ} [NeZero q]
-    {prog : WordOracleComp Unit α} (hq : prog.IsQueryBounded Q)
-    (hagree : ∀ τ req, isBad τ req = false → o₁ τ req = o₂ req)
-    (hbad : ∀ req, (∑' τ, μ τ * if isBad τ req then (1 : ℝ≥0∞) else 0) ≤ (q : ℝ≥0∞)⁻¹) :
-    Game.advantage
-      (μ.bind fun τ => runStatelessOracle (o₁ τ) prog (next τ))
-      (μ.bind fun τ => runStatelessOracle o₂ prog (next τ)) ≤
-      (Q : ℝ≥0) / (q : ℝ≥0) := by
-  have h := runStatelessOracle_bind_le μ o₁ o₂ isBad next hq hagree hbad true
-  have hne : (Q : ℝ≥0∞) * (q : ℝ≥0∞)⁻¹ ≠ ⊤ :=
-    ENNReal.mul_ne_top (ENNReal.natCast_ne_top Q)
-      (ENNReal.inv_ne_top.mpr (Nat.cast_ne_zero.mpr (NeZero.ne q)))
-  have hadv := Game.advantage_le_of_apply_le hne h.1 h.2
-  rw [ENNReal.toReal_mul, ENNReal.toReal_natCast, ENNReal.toReal_inv, ENNReal.toReal_natCast,
-    ← div_eq_mul_inv] at hadv
-  exact NNReal.coe_le_coe.mp (by simpa only [NNReal.coe_div, NNReal.coe_natCast] using hadv)
-
-/-- `ℝ≥0` version of `Game.advantage_bind_le`. -/
-theorem advantage_bind_le_nnreal {α : Type*} (d : PMF α) (game1 game2 : α → Game)
-    {ε : ℝ≥0} (h : ∀ a, Game.advantage (game1 a) (game2 a) ≤ ε) :
-    Game.advantage (d.bind game1) (d.bind game2) ≤ ε :=
-  NNReal.coe_le_coe.mp (Game.advantage_bind_le d game1 game2 fun a => NNReal.coe_le_coe.mpr (h a))
-
-/-- Averaging pointwise acceptance-probability bounds `game1 x b ≤ game2 x b + err x b` and
-`game2 x b ≤ game1 x b + err x b` over `μ : PMF β` preserves the bounds for `μ.bind`. -/
-theorem bind_apply_le_add_bind_apply {β : Type*} (μ : PMF β)
-    (game1 game2 err : β → Game) (b : Bool)
-    (h : ∀ x, game1 x b ≤ game2 x b + err x b ∧ game2 x b ≤ game1 x b + err x b) :
-    (μ.bind game1) b ≤ (μ.bind game2) b + (μ.bind err) b ∧
-      (μ.bind game2) b ≤ (μ.bind game1) b + (μ.bind err) b := by
-  have h1 (f g : β → Game) (hle : ∀ x, f x b ≤ g x b + err x b) :
-      (μ.bind f) b ≤ (μ.bind g) b + (μ.bind err) b := by
-    simp only [PMF.bind_apply, ← ENNReal.tsum_add, ← mul_add]
-    exact ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hle x) zero_le
-  exact ⟨h1 game1 game2 fun x => (h x).1, h1 game2 game1 fun x => (h x).2⟩
-
-/-- Averaging pointwise acceptance-probability bounds `game1 x true ≤ game2 x true + err x true`
-and `game2 x true ≤ game1 x true + err x true` over `μ : PMF β` bounds the `Game.advantage` of the
-mixtures by `Game.succProbability (μ.bind err)`. -/
-theorem advantage_bind_le_succProbability_bind {β : Type*} (μ : PMF β)
-    (game1 game2 err : β → Game)
-    (h : ∀ x, game1 x true ≤ game2 x true + err x true ∧
-      game2 x true ≤ game1 x true + err x true) :
-    Game.advantage (μ.bind game1) (μ.bind game2) ≤ Game.succProbability (μ.bind err) := by
-  have ⟨h1, h2⟩ := bind_apply_le_add_bind_apply μ game1 game2 err true h
-  have hadv := Game.advantage_le_of_apply_le (PMF.apply_ne_top (μ.bind err) true) h1 h2
-  exact NNReal.coe_le_coe.mp (by simpa only [Game.coe_succProbability] using hadv)
-
 /-- Change of variables `σ ↦ δ - α * τ` under two independent uniform draws in `ZMod q`. -/
 private theorem uniform_sub_mul_bind {α_out : Type*} (q : ℕ) [NeZero q] (α : ZMod q)
     (f : ZMod q → ZMod q → PMF α_out) :
@@ -1270,72 +1105,11 @@ private theorem tsum_isCramerShoupBadDH_phase2_le
         simp only [skNatOfZMod, ZMod.natCast_zmod_val, projHash2_fiber_query_eq,
           projHash2QueryFiberEquiv_apply, ρ', r', parts]⟩
 
-theorem advantage_bind_le_of_support {α : Type*} (μ : PMF α) (game1 game2 : α → Game)
-    {ε : ℝ≥0} (h : ∀ a ∈ μ.support, Game.advantage (game1 a) (game2 a) ≤ ε) :
-    Game.advantage (μ.bind game1) (μ.bind game2) ≤ ε := by
-  classical
-  let game2' : α → Game := fun a => if a ∈ μ.support then game2 a else game1 a
-  have hbind : μ.bind game2 = μ.bind game2' := by
-    ext b; simp only [PMF.bind_apply]
-    refine tsum_congr fun a => ?_
-    by_cases ha : a ∈ μ.support
-    · simp only [game2', ha, ↓reduceIte]
-    · simp [show μ a = 0 by simpa [PMF.mem_support_iff] using ha]
-  rw [hbind]
-  refine advantage_bind_le_nnreal μ game1 game2' fun a => ?_
-  dsimp only [game2']; split_ifs with ha
-  · exact h a ha
-  · simp
-
-theorem advantage_bind_comm {α β : Type*} (p : PMF α) (q : PMF β) (f g : α → β → Game) :
-    Game.advantage (p.bind fun a => q.bind fun b => f a b)
-      (p.bind fun a => q.bind fun b => g a b) =
-    Game.advantage (q.bind fun b => p.bind fun a => f a b)
-      (q.bind fun b => p.bind fun a => g a b) := by
-  rw [PMF.bind_comm p q f, PMF.bind_comm p q g]
-
-private theorem bind_runStatelessOracle_comm {α β : Type} (μ : PMF β)
-    (o : List Bool → List Bool) (prog : WordOracleComp Unit α) (next : β → α → Game) :
-    (μ.bind fun b => runStatelessOracle o prog (next b)) =
-      runStatelessOracle o prog (fun a => μ.bind fun b => next b a) := by
-  unfold runStatelessOracle; exact PMF.bind_comm μ _ _
-
-private theorem advantage_runStatelessOracle_le_of_support {α : Type}
-    (o : List Bool → List Bool) (prog : WordOracleComp Unit α)
-    (next₁ next₂ : α → Game) {ε : ℝ≥0}
-    (h : ∀ out ∈ (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
-        (fun req (s : Unit) => pure (o req.2, s))) prog).run ())).support,
-      Game.advantage (next₁ out.1) (next₂ out.1) ≤ ε) :
-    Game.advantage (runStatelessOracle o prog next₁) (runStatelessOracle o prog next₂) ≤ ε :=
-  advantage_bind_le_of_support _ _ _ h
-
 theorem div_order_le_div_of_le {d : F.Desc} {Q m : ℕ} (hm0 : 0 < m) (hm : m ≤ F.order d) :
     (Q : ℝ≥0) / (F.order d : ℝ≥0) ≤ (Q : ℝ≥0) / (m : ℝ≥0) := by
   have hm_pos : (0 : ℝ≥0) < (m : ℝ≥0) := Nat.cast_pos.mpr hm0
   have hm_le : (m : ℝ≥0) ≤ (F.order d : ℝ≥0) := Nat.cast_le.mpr hm
   gcongr
-
-private theorem advantage_uniform_bind_of_eq_of_ne {q : ℕ} [NeZero q] (x₀ : ZMod q)
-    (g₁ g₂ : ZMod q → Game) (heq : ∀ x ≠ x₀, g₁ x = g₂ x) :
-    Game.advantage
-      ((PMF.uniformOfFintype (ZMod q)).bind g₁)
-      ((PMF.uniformOfFintype (ZMod q)).bind g₂) ≤ 1 / (q : ℝ≥0) := by
-  let err : ZMod q → Game := fun x => PMF.pure (decide (x = x₀))
-  have hadv := advantage_bind_le_succProbability_bind (PMF.uniformOfFintype (ZMod q)) g₁ g₂ err
-    fun x => by
-      by_cases hx : x = x₀
-      · rw [show err x true = 1 by simp [err, hx]]
-        exact ⟨le_add_of_le_right (PMF.coe_le_one _ _),
-          le_add_of_le_right (PMF.coe_le_one _ _)⟩
-      · rw [heq x hx]; exact ⟨le_self_add, le_self_add⟩
-  have hsucc :
-      Game.succProbability ((PMF.uniformOfFintype (ZMod q)).bind err) = 1 / (q : ℝ≥0) := by
-    have happly : (((PMF.uniformOfFintype (ZMod q)).bind err) true) = (q : ℝ≥0∞)⁻¹ := by
-      simp only [err, PMF.bind_apply, PMF.pure_apply, true_eq_decide_iff, mul_ite, mul_one,
-        mul_zero, tsum_ite_eq, PMF.uniformOfFintype_apply, ZMod.card]
-    rw [Game.succProbability, happly, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast, one_div]
-  exact hadv.trans_eq hsucc
 
 /-- Phase 1 query bound on honest public keys at security parameter `n`. -/
 def HonestPhase1QueryBound {Msg : Type} (setup : ℕ → PMF F.Desc)
