@@ -1998,6 +1998,7 @@ public import Complexity.Foundations.GroupTheory.Perm.Fin
 public import Complexity.Foundations.GroupTheory.Perm.FiveCycle
 public import Complexity.Foundations.GroupTheory.Perm.Last
 public import Complexity.Foundations.LinearAlgebra.CubeSum
+public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
