@@ -22,6 +22,7 @@ for instance local abbreviations of elements of `Fin r`. The statements are:
   operation (`Cslib.WordRAM.BinOp`) on registers `i` and `j`;
 * `d ← *a`, `*a ← s`: load from and store to the memory cell whose address is in register `a`;
 * `d ← width%`: set register `d` to the word size;
+* `d ← rand s`: sample uniformly from `[0, regs s]` into register `d`;
 * `if i = j then [ … ] else [ … ]`, `if i < j then [ … ] else [ … ]`: a conditional;
 * `while i = j do [ … ]`, `while i < j do [ … ]`: a loop;
 * `⟪c⟫`: the structured program `c`, for instance a subroutine.
@@ -103,6 +104,8 @@ syntax ident " ← " "*" ident : wramStmt
 syntax "*" ident " ← " ident : wramStmt
 /-- Read the word size. -/
 syntax ident " ← " "width%" : wramStmt
+/-- Sample uniformly from `[0, regs s]` into a register. -/
+syntax ident " ← " &"rand" ppSpace ident : wramStmt
 /-- A conditional on the equality of two registers. -/
 syntax "if " ident " = " ident " then " wramBlock " else " wramBlock : wramStmt
 /-- A conditional on the comparison of two registers. -/
@@ -145,6 +148,7 @@ macro_rules
   | `(ram_stmt% $d:ident ← *$a:ident) => `(Cslib.WordRAM.Code.op (.load $d $a))
   | `(ram_stmt% *$a:ident ← $s:ident) => `(Cslib.WordRAM.Code.op (.store $a $s))
   | `(ram_stmt% $d:ident ← width%) => `(Cslib.WordRAM.Code.op (.width $d))
+  | `(ram_stmt% $d:ident ← rand $s:ident) => `(Cslib.WordRAM.Code.rand $d $s)
   | `(ram_stmt% if $i:ident = $j:ident then $p:wramBlock else $n:wramBlock) =>
     `(Cslib.WordRAM.Code.branch (.eq $i $j) (ram_block% $p) (ram_block% $n))
   | `(ram_stmt% if $i:ident < $j:ident then $p:wramBlock else $n:wramBlock) =>

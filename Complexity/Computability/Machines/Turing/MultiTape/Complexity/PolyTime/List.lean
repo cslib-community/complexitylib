@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.DecoderPrimitives
 
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
@@ -941,7 +942,37 @@ theorem length_list {α : Type} (enc : α ↪ List Bool) :
 theorem length_bits :
     ComputableInPolyTime (fun (l : List Bool) => l.length)
   encBits encUnary :=
-  .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits
+  Internal.DecoderWords.unary_degree.computableInPolyTime
+
+/-- Count matches of a predicate that captures the original input. The count is in unary. -/
+@[fun_prop]
+theorem countPWithInput {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {test : γ → α → Bool} {list : γ → List α}
+    (hlist : ComputableInPolyTime list encIn (encList encA))
+    (htest : ComputableInPolyTime (fun p : γ × α => test p.1 p.2)
+      (encPair encIn encA) encBool) :
+    ComputableInPolyTime (fun x => (list x).countP (test x)) encIn encUnary :=
+  .of_tidy (ComputableTidilyInPolyTime.countPWithInput hlist.tidy htest.tidy)
+
+/-- Read a computed framed list at a computed unary index with a fixed fallback, inferring the
+element encoding from the list. -/
+@[fun_prop]
+theorem listGetDWithInput {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {list : γ → List α} {index : γ → ℕ}
+    (hlist : ComputableInPolyTime list encIn (encList encA))
+    (hindex : ComputableInPolyTime index encIn encUnary) (fallback : α) :
+    ComputableInPolyTime (fun x => (list x).getD (index x) fallback) encIn encA :=
+  (listGetD fallback).comp (hlist.prod hindex)
+
+/-- Read a computed bit string at a computed unary index. Registered after `listGetDWithInput` so
+`fun_prop` tries raw bit-string lookup before framed-list lookup on `Bool`. -/
+@[fun_prop]
+theorem bitsGetDWithInput {γ : Type} {encIn : γ ↪ List Bool}
+    {list : γ → List Bool} {index : γ → ℕ}
+    (hlist : ComputableInPolyTime list encIn encBits)
+    (hindex : ComputableInPolyTime index encIn encUnary) (fallback : Bool) :
+    ComputableInPolyTime (fun x => (list x).getD (index x) fallback) encIn encBool :=
+  (listGetD fallback).comp (hlist.prod hindex)
 
 /-- Drop a computed unary number of bits from a computed raw word. Counts beyond the word
 length return the empty word, with no promise on the count or input. -/

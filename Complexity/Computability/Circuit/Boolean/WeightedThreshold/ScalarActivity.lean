@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
+public import Complexity.Computability.DecisionTree.Leaves
 public import Complexity.Foundations.Data.BitString.CoverCoding
 
 /-!
@@ -33,6 +34,13 @@ one-dimensional representation with the multilevel rectangle-free capacity bound
 activity lower bounds for two-sided `K`-rectangle-free functions (Corollary 4.2). Cover's
 enumerative coding for weight-bounded words (Theorem 4.3) is in
 `Complexity.Foundations.Data.BitString.CoverCoding`.
+
+Conversely, a supplied ordered class index on the Boolean cube can be computed by real threshold
+comparisons along `weightedSum w` with the exact ordered-tree capacity
+(`exists_scalarComparisonTree_iff`). Scores may tie within a class; distinct ordered classes must
+have strictly separated scores. Relabelling integer queries preserves the tree shape, depth and
+true-answer energy. This supplies the real-score tree, not the subsequent compilation into a
+fixed number of native input-reading circuit stages.
 
 ## Main definitions
 
@@ -62,6 +70,9 @@ enumerative coding for weight-bounded words (Theorem 4.3) is in
   `Cslib.Circuits.Boolean.WeightedThreshold.two_pow_lt_mul_sum_choose_of_direction`,
   `Cslib.Circuits.Boolean.WeightedThreshold.two_pow_lt_mul_sum_choose_gateActivity_of_direction`:
   rectangle-free scalar activity bounds (Corollary 4.2).
+* `Cslib.Circuits.Boolean.WeightedThreshold.exists_scalarComparisonTree_iff`: real threshold trees
+  realizing a supplied ordered class index, with exact structural leaf count and bounded depth
+  and true-answer energy.
 
 ## References
 
@@ -500,5 +511,76 @@ theorem circuit_two_pow_lt_mul_sum_choose_gateActivity_of_direction (c : Circuit
   obtain ⟨gate, hgate⟩ := houtput
   apply two_pow_lt_mul_sum_choose_gateActivity_of_direction c.program (fun z => z gate) w hw ?_ hf
   simpa only [Circuit.eval_of_output_eq_gate hgate] using hcomputes
+
+/-! ### Real-score realization of ordered class indices -/
+
+private theorem exists_scalarThreshold (w : Fin n → ℝ)
+    (index : (Fin n → Bool) → ℕ)
+    (horder : ∀ x y, index x < index y → weightedSum w x < weightedSum w y) (k : ℕ) :
+    ∃ θ : ℝ, ∀ x, θ ≤ weightedSum w x ↔ k ≤ index x := by
+  classical
+  let upper : Finset (Fin n → Bool) := univ.filter fun x => k ≤ index x
+  by_cases hupper : upper.Nonempty
+  · obtain ⟨y, hy, hmin⟩ := exists_min_image upper (weightedSum w) hupper
+    refine ⟨weightedSum w y, fun x => ⟨?_, ?_⟩⟩
+    · intro hs
+      by_contra hx
+      have hxy : index x < index y :=
+        lt_of_lt_of_le (Nat.lt_of_not_ge hx) (mem_filter.mp hy).2
+      exact (not_lt_of_ge hs) (horder x y hxy)
+    · intro hx
+      exact hmin x (mem_filter.mpr ⟨mem_univ _, hx⟩)
+  · obtain ⟨y, -, hmax⟩ := exists_max_image (univ : Finset (Fin n → Bool))
+      (weightedSum w) ⟨fun _ => false, mem_univ _⟩
+    refine ⟨weightedSum w y + 1, fun x => ?_⟩
+    have hscore : ¬weightedSum w y + 1 ≤ weightedSum w x := by
+      have hxmax := hmax x (mem_univ x)
+      linarith
+    have hindex : ¬k ≤ index x := fun hx =>
+      hupper ⟨x, mem_filter.mpr ⟨mem_univ _, hx⟩⟩
+    exact iff_of_false hscore hindex
+
+open scoped Classical in
+/-- **Real-score realization of ordered query-activity capacity.** Suppose `index` labels
+ordered score classes by natural numbers below `L`: whenever one label is smaller than another,
+every score in the first class is strictly below every score in the second. There is a tree of
+real comparisons `θ ≤ weightedSum w x`, with exactly `L` structural leaves, depth at most `q`,
+and true-answer energy at most `e`, returning `index x` on every input, exactly when
+`0 < L ≤ ballSize q e`.
+
+Scores may tie within a class. If every index below `L` occurs, every counted leaf is reachable;
+otherwise the exact structural leaf count can include unreachable leaves. No minimality of the
+supplied class partition is asserted. This is the real-score realization step in the proof of
+Theorem 4.1 of [ThresholdCircuitRepresentations2026], not the native circuit compiler. -/
+theorem exists_scalarComparisonTree_iff (w : Fin n → ℝ)
+    (index : (Fin n → Bool) → ℕ) (q e L : ℕ)
+    (hbound : ∀ x, index x < L)
+    (horder : ∀ x y, index x < index y → weightedSum w x < weightedSum w y) :
+    (∃ t : DecisionTree ℝ ℕ, t.leafCount = L ∧ t.depth ≤ q ∧ t.energy ≤ e ∧
+      ∀ x, t.eval (fun θ => decide (θ ≤ weightedSum w x)) = index x) ↔
+      0 < L ∧ L ≤ ballSize q e := by
+  classical
+  constructor
+  · rintro ⟨t, hcount, hdepth, henergy, _⟩
+    constructor
+    · simpa only [hcount] using t.leafCount_pos
+    · simpa only [hcount, ballSize] using
+        t.leafCount_le_sum_choose_of_energy_le henergy hdepth
+  · intro hcap
+    obtain ⟨t, hcount, hdepth, henergy, heval⟩ :=
+      (DecisionTree.exists_orderedComparisonTree_iff q e L 0).mpr hcap
+    choose θ hθ using fun k => exists_scalarThreshold w index horder k
+    refine ⟨t.mapQueries θ, ?_, ?_, ?_, ?_⟩
+    · simpa only [DecisionTree.leafCount_mapQueries] using hcount
+    · simpa only [DecisionTree.depth_mapQueries] using hdepth
+    · simpa only [DecisionTree.energy_mapQueries] using henergy
+    · intro x
+      rw [DecisionTree.eval_mapQueries]
+      have horacle : (fun s => decide (s ≤ weightedSum w x)) ∘ θ =
+          fun k => decide (k ≤ index x) := by
+        funext k
+        simp only [Function.comp_apply, hθ]
+      rw [horacle]
+      simpa only [zero_add] using heval (index x) (hbound x)
 
 end Cslib.Circuits.Boolean.WeightedThreshold

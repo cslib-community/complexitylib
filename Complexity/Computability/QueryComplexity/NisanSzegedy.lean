@@ -36,9 +36,9 @@ of `[0, 1]` where `q' ≥ 1 - 2ε`. The Nisan–Szegedy lemma, a consequence of 
 `(1 - 2ε) b ≤ D² (1 - 2ε + 1 + 2ε) = 2 D²`.
 
 With Huang's theorem `deg(f) ≤ s(f)²` this gives `bs(f) ≤ 2 s(f)⁴`, and with
-`D(f) ≤ bs(f)³` [BealsBuhrmanCleveMoscaDeWolf2001] it gives `D(f) ≤ 8 deg(f)⁶` and
-`D(f) ≤ 216 adeg(f)⁶`: decision tree complexity, degree and approximate degree are polynomially
-related.
+`D(f) ≤ bs(f)³` [BealsBuhrmanCleveMoscaDeWolf2001] it gives `D(f) ≤ 216 adeg(f)⁶`.
+The sharper exact-degree bound `D(f) ≤ 2 deg(f)³` is proved in
+`Complexity.Computability.QueryComplexity.Midrijanis`.
 
 ## Main results
 
@@ -50,7 +50,6 @@ related.
 * `Cslib.QueryComplexity.blockSensitivity_le_six_mul_approxDegree_sq`:
   `bs(f) ≤ 6 adeg_{1/3}(f)²`.
 * `Cslib.QueryComplexity.blockSensitivity_le_two_mul_sensitivity_pow_four`: `bs(f) ≤ 2 s(f)⁴`.
-* `Cslib.DecisionTree.complexity_le_eight_mul_degree_pow_six`: `D(f) ≤ 8 deg(f)⁶`.
 * `Cslib.DecisionTree.complexity_le_mul_approxDegree_pow_six`: `D(f) ≤ 216 adeg_{1/3}(f)⁶`.
 
 ## References
@@ -248,12 +247,6 @@ namespace DecisionTree
 open QueryComplexity
 
 variable {n : ℕ}
-
-/-- `D(f) ≤ 8 deg(f)⁶`, from `D(f) ≤ bs(f)³` and `bs(f) ≤ 2 deg(f)²`. -/
-theorem complexity_le_eight_mul_degree_pow_six (f : BooleanFunction n) :
-    complexity f ≤ 8 * degree f ^ 6 :=
-  (complexity_le_blockSensitivity_pow_three f).trans
-    ((Nat.pow_le_pow_left (blockSensitivity_le_two_mul_degree_sq f) 3).trans_eq (by ring))
 
 /-- `D(f) ≤ 216 adeg(f)⁶` for the approximate degree `adeg = adeg_{1/3}`, from `D(f) ≤ bs(f)³` and
 `bs(f) ≤ 6 adeg(f)²`. -/

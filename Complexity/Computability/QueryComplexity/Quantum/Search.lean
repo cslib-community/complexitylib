@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Complexity.Foundations.Quantum.Measurement
 import Mathlib.Algebra.Order.Chebyshev
 
 /-!
@@ -113,15 +113,32 @@ theorem norm_run (U : ℕ → State N W →ₗᵢ[ℂ] State N W) (ψ₀ : State
   | zero => exact (U 0).norm_map ψ₀
   | succ t ih => rw [run, LinearIsometry.norm_map, norm_phaseOracle, ih]
 
-/-- The probability of measuring query index `i` in the state `ψ`: `∑_{b, w} |ψ(i, b, w)|²`. -/
-noncomputable def regProb (ψ : State N W) (i : Fin N) : ℝ := ∑ w : Bool × W, ‖ψ.ofLp (i, w)‖ ^ 2
+/-- The probability of measuring query index `i` in the state `ψ`: the probability
+(`Cslib.Quantum.measureProb`) that measuring `ψ` gives an outcome `(i, b, w)`. -/
+noncomputable def regProb (ψ : State N W) (i : Fin N) : ℝ :=
+  measureProb ψ (univ.filter fun p => p.1 = i)
+
+/-- The probability of measuring query index `i` is `∑_{b, w} |ψ(i, b, w)|²`. -/
+theorem regProb_eq_sum (ψ : State N W) (i : Fin N) :
+    regProb ψ i = ∑ w : Bool × W, ‖ψ.ofLp (i, w)‖ ^ 2 := by
+  have h : (univ.filter fun p : Fin N × Bool × W => p.1 = i) =
+      univ.map ⟨fun w => (i, w), fun _ _ h => (Prod.mk.inj h).2⟩ := by
+    ext ⟨j, w⟩
+    simp only [mem_filter, mem_univ, true_and, mem_map]
+    constructor
+    · rintro rfl
+      exact ⟨w, rfl⟩
+    · rintro ⟨w', h⟩
+      exact (Prod.mk.inj h).1.symm
+  rw [regProb, measureProb, h, sum_map]
+  rfl
 
 /-- The projection `Π_z` onto query index `z`. -/
 noncomputable def proj (z : Fin N) (ψ : State N W) : State N W :=
   WithLp.toLp 2 fun p => if p.1 = z then ψ.ofLp p else 0
 
 theorem norm_sq_proj (z : Fin N) (ψ : State N W) : ‖proj z ψ‖ ^ 2 = regProb ψ z := by
-  rw [EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type, regProb]
+  rw [EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type, regProb_eq_sum]
   simp only [proj, PiLp.toLp_apply]
   rw [sum_eq_single z (fun i _ hi => by simp [hi]) (by simp)]
   simp
@@ -142,8 +159,8 @@ theorem norm_proj_le (z : Fin N) (ψ : State N W) : ‖proj z ψ‖ ≤ ‖ψ‖
 
 /-- The measurement probabilities of all query indices sum to `‖ψ‖²`. -/
 theorem sum_regProb (ψ : State N W) : ∑ i, regProb ψ i = ‖ψ‖ ^ 2 := by
+  simp only [regProb_eq_sum]
   rw [EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type]
-  rfl
 
 /-- The projection onto query index `z` with control bit `1`: the part of the state the oracle
 of `e_z` acts on. -/

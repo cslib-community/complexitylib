@@ -118,7 +118,8 @@ theorem eval_zeroAdversary (E : Scheme) (adversary : Encryption.Adversary)
     ProbComp.eval (Encryption.game E.keyGen E.encrypt (zeroAdversary E adversary) bit n) =
       ProbComp.eval (Encryption.circularPublicKey E.keyGen E.encrypt false n >>=
         publicKeyGame E adversary bit n) := by
-  simp only [Encryption.game, zeroAdversary, Encryption.circularPublicKey, publicKeyGame,
+  simp only [Encryption.game, Encryption.gameOn, zeroAdversary, Encryption.circularPublicKey,
+    publicKeyGame,
     Scheme.encryptBits, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.bind_bind, PMF.pure_bind]
   apply Probability.PMF.bind_congr_on_support

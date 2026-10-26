@@ -295,14 +295,6 @@ private theorem computableTidilyInPolyTime_updatePt {γ : Type} {encIn : γ ↪ 
       (.of_tidy hpt) (.of_tidy hv) (.of_tidy hz)))
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_getD_zero {γ : Type} {encIn : γ ↪ List Bool}
-    {l : γ → List ℕ} {i : γ → ℕ}
-    (hl : ComputableTidilyInPolyTime l encIn (encList encUnary))
-    (hi : ComputableTidilyInPolyTime i encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => (l x).getD (i x) 0) encIn encUnary :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_getD_zero (.of_tidy hl) (.of_tidy hi)))
-
-@[local fun_prop]
 private theorem computableTidilyInPolyTime_width {γ : Type} {encIn : γ ↪ List Bool}
     {p : γ → ℕ}
     (hp : ComputableTidilyInPolyTime p encIn encUnary) :
@@ -381,6 +373,14 @@ private theorem computableTidilyInPolyTime_decodeReply {γ : Type} {encIn : γ �
 private lemma binNext_pt (o : ArithQBF.Connective) :
     ComputableTidilyInPolyTime (fun pair : StepData × List Bool => binNext o pair.1 pair.2)
       (encPair encStepData encBits) encVState := by
+  have h0 : ComputableTidilyInPolyTime
+      (fun pair : StepData × List Bool => (replyOf pair.1 pair.2).getD 0 0)
+      (encPair encStepData encBits) encUnary :=
+    (listGetD 0).comp (replyOf_pt.prod (const 0))
+  have h1 : ComputableTidilyInPolyTime
+      (fun pair : StepData × List Bool => (replyOf pair.1 pair.2).getD 1 0)
+      (encPair encStepData encBits) encUnary :=
+    (listGetD 0).comp (replyOf_pt.prod (const 1))
   cases o <;> unfold binNext <;> simp only [connectiveMod] <;> fun_prop
 
 private lemma opCheck_pt (o : ArithQBF.Operator) :
