@@ -346,6 +346,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   separations, and randomized lifting.
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
+- **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
+  storage and evaluation; AMS frequency moments, CountSketch, turnstile updates, and heavy-hitter
+  recovery; communication-to-streaming transfers with explicit state encodings and pass counts.
+  The first Count-Min milestone is scoped in [#1201](https://github.com/cslib-community/complexitylib/issues/1201).
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic/SQ learning, learning lower bounds, compression and refutation.
