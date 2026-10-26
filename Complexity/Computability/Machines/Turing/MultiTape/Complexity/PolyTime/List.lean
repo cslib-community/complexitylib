@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.DecoderPrimitives
 
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
@@ -941,7 +942,7 @@ theorem length_list {α : Type} (enc : α ↪ List Bool) :
 theorem length_bits :
     ComputableInPolyTime (fun (l : List Bool) => l.length)
   encBits encUnary :=
-  .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits
+  Internal.DecoderWords.unary_degree.computableInPolyTime
 
 /-- Count matches of a predicate that captures the original input. The count is in unary. -/
 @[fun_prop]

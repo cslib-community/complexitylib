@@ -829,6 +829,7 @@ public import Complexity.Computability.Complexity.Problems.TQBF.Closed
 public import Complexity.Computability.Complexity.Problems.TSP
 public import Complexity.Computability.Complexity.Problems.ThreeSAT
 public import Complexity.Computability.Complexity.Problems.ThreeSATThree
+public import Complexity.Computability.Complexity.Problems.ThreeSATThree.Counting
 public import Complexity.Computability.Complexity.Problems.ThreeSATThree.Size
 public import Complexity.Computability.Complexity.Problems.ThreeSATThree.Syntax
 public import Complexity.Computability.Complexity.Problems.TwoSAT
@@ -1893,10 +1894,13 @@ public import Complexity.Foundations.Data.List.BalancedFold
 public import Complexity.Foundations.Data.List.Basic
 public import Complexity.Foundations.Data.List.Counting
 public import Complexity.Foundations.Data.List.Equiv
+public import Complexity.Foundations.Data.List.Filter
 public import Complexity.Foundations.Data.List.Fold
+public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
 public import Complexity.Foundations.Data.List.Lookup
 public import Complexity.Foundations.Data.List.OfFn
+public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.SelectDistinct
 public import Complexity.Foundations.Data.Matrix.Binary
 public import Complexity.Foundations.Data.Matrix.Permanent
@@ -2089,6 +2093,7 @@ public import Complexity.Logics.FirstOrder.Tuple
 public import Complexity.Logics.Propositional.CNF
 public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
+public import Complexity.Logics.Propositional.CNF.Compact.ModelCount
 public import Complexity.Logics.Propositional.CNF.Compact.Relabel
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.Gadgets

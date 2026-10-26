@@ -191,6 +191,8 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Counting and modular classes
 
+- The Another Solution Problem (ASP) framework: solution-preserving reductions with explicit
+  polynomial-time solution bijections, and applications to SAT and planar SAT.
 - Counting reductions and further oracle results preserving exact multiplicities; permanent
   #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's
   approximate counting.

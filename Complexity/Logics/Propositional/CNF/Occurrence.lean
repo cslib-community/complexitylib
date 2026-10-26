@@ -24,6 +24,12 @@ The proof follows the indexed-copy uniqueness argument in `CNF.ThreeOccurrence`.
 
 namespace Cslib.Logic.PL
 
+/-- The variable named by an indexed literal occurrence occurs in the formula. -/
+theorem variable_mem_of_mem_occurrences {V : Type*} {φ : CNF V} {o : Occurrence V}
+    (ho : o ∈ occurrences φ) : o.2.2.1 ∈ φ.vars := by
+  rw [← map_occurrences]
+  exact List.mem_map_of_mem ho
+
 /-- Clause and literal indices distinguish every source occurrence, including repeated literals. -/
 theorem occurrences_nodup {V : Type*} (φ : CNF V) : (occurrences φ).Nodup := by
   rw [occurrences, List.nodup_flatMap]

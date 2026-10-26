@@ -42,6 +42,7 @@ This endpoint imposes no planarity condition.
 ## Main results
 
 * `Cslib.Complexity.mem_ThreeSATThree_toThreeSATThree_iff`: correctness of the reduction.
+* `Cslib.Complexity.modelCount_toThreeSATThree`: preservation of counts for width-three inputs.
 * `Cslib.Complexity.computableInPolyTime_toThreeSATThree`: native polynomial time under `encCNF`.
 * `Cslib.Complexity.ThreeSATThree_npComplete`: 3SAT-3 is NP-complete.
 
@@ -148,6 +149,14 @@ theorem length_vars_toThreeSATThree (φ : CNF ℕ) (hφ : ∀ c ∈ φ, c.length
     (toThreeSATThree φ).vars.length = 3 * φ.vars.length := by
   have hg : φ.all (fun c => decide (c.length ≤ 3)) = true := by simpa using hφ
   simp [toThreeSATThree, hg, CNF.vars_relabel, CNF.length_vars_toThreeOccurrence]
+
+/-- For a width-three input, occurrence splitting and injective numbering preserve the number of
+satisfying assignments on occurring variables. -/
+theorem modelCount_toThreeSATThree (φ : CNF ℕ) (hφ : ∀ c ∈ φ, c.length ≤ 3) :
+    (toThreeSATThree φ).modelCount = φ.modelCount := by
+  have hg : φ.all (fun c => decide (c.length ≤ 3)) = true := by simpa using hφ
+  simp only [toThreeSATThree, hg, ↓reduceIte]
+  rw [CNF.modelCount_relabel ThreeSATThree.numberCopy_injective, CNF.modelCount_toThreeOccurrence]
 
 /-- The total splitter is polynomial-time under binary `encCNF`. -/
 @[fun_prop]

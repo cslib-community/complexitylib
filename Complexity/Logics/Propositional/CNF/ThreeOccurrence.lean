@@ -35,7 +35,9 @@ This construction uses ordinary CNF formulas and Boolean assignments.
 
 ## Main results
 
+* `Cslib.Logic.PL.CNF.eval_toThreeOccurrence_iff`: correspondence of satisfying assignments.
 * `Cslib.Logic.PL.CNF.satisfiable_toThreeOccurrence`: equisatisfiability.
+* `Cslib.Logic.PL.CNF.modelCount_toThreeOccurrence`: preservation of satisfying-assignment counts.
 * `Cslib.Logic.PL.CNF.width_toThreeOccurrence`: preservation of width bounds of at least two.
 * `Cslib.Logic.PL.CNF.count_vars_toThreeOccurrence_le`: at most three literal occurrences.
 * `Cslib.Logic.PL.CNF.length_toThreeOccurrence`,
@@ -114,11 +116,14 @@ theorem copies_agree [DecidableEq V] {φ : CNF V} {τ : V × ℕ × ℕ → Bool
   · simp [occurrenceCopies, hx]
   · simp [occurrenceCopies, hy, he]
 
-/-- Occurrence splitting preserves satisfiability, including empty clauses and formulas. -/
-theorem satisfiable_toThreeOccurrence [DecidableEq V] (φ : CNF V) :
-    φ.toThreeOccurrence.Satisfiable ↔ φ.Satisfiable := by
+/-- An assignment satisfies the split formula exactly when its occurring copies agree with a
+satisfying assignment of the original formula. Together with `copies_agree`, this retains the
+assignment correspondence, rather than just equisatisfiability. -/
+theorem eval_toThreeOccurrence_iff [DecidableEq V] (φ : CNF V) (τ : V × ℕ × ℕ → Bool) :
+    φ.toThreeOccurrence.eval τ = true ↔
+      ∃ σ : V → Bool, φ.eval σ = true ∧ ∀ x ∈ φ.occurrenceClauses.vars, σ x.1 = τ x := by
   constructor
-  · rintro ⟨τ, hτ⟩
+  · intro hτ
     classical
     let σ : V → Bool := fun v =>
       if h : ∃ x ∈ φ.occurrenceClauses.vars, x.1 = v then τ (Classical.choose h) else false
@@ -127,21 +132,33 @@ theorem satisfiable_toThreeOccurrence [DecidableEq V] (φ : CNF V) :
       have hex : ∃ y ∈ φ.occurrenceClauses.vars, y.1 = x.1 := ⟨x, hx, rfl⟩
       simp only [σ, dite_eq_left hex]
       exact copies_agree hτ (Classical.choose_spec hex).1 hx (Classical.choose_spec hex).2
-    refine ⟨σ, ?_⟩
+    refine ⟨σ, ?_, he⟩
     rw [← eval_occurrenceClauses]
     have ht := hτ
     simp only [toThreeOccurrence, eval_append, Bool.and_eq_true] at ht
     exact (eval_congr he).trans ht.1
-  · rintro ⟨σ, hσ⟩
-    refine ⟨σ ∘ Prod.fst, ?_⟩
-    rw [toThreeOccurrence, eval_append, Bool.and_eq_true, eval_occurrenceClauses]
-    refine ⟨hσ, (eval_flatMap_eq_true_iff _ _ _).2 fun v _ => ?_⟩
+  · rintro ⟨σ, hσ, he⟩
+    rw [toThreeOccurrence, eval_append, Bool.and_eq_true]
+    refine ⟨(eval_congr he).symm.trans ((eval_occurrenceClauses φ σ).trans hσ),
+      (eval_flatMap_eq_true_iff _ _ _).2 fun v _ => ?_⟩
     rw [eval_implicationCycle]
     intro x hx y hy
-    have hx := (List.mem_filter.1 hx).2
-    have hy := (List.mem_filter.1 hy).2
-    simp only [beq_iff_eq] at hx hy
-    simp [hx, hy]
+    obtain ⟨hx, hxv⟩ := List.mem_filter.1 hx
+    obtain ⟨hy, hyv⟩ := List.mem_filter.1 hy
+    simp only [beq_iff_eq] at hxv hyv
+    calc τ x = σ x.1 := (he x hx).symm
+      _ = σ y.1 := congrArg σ (hxv.trans hyv.symm)
+      _ = τ y := he y hy
+
+/-- Occurrence splitting preserves satisfiability, including empty clauses and formulas. -/
+theorem satisfiable_toThreeOccurrence [DecidableEq V] (φ : CNF V) :
+    φ.toThreeOccurrence.Satisfiable ↔ φ.Satisfiable := by
+  constructor
+  · rintro ⟨τ, hτ⟩
+    obtain ⟨σ, hσ, _⟩ := (eval_toThreeOccurrence_iff φ τ).1 hτ
+    exact ⟨σ, hσ⟩
+  · rintro ⟨σ, hσ⟩
+    exact ⟨σ ∘ Prod.fst, (eval_toThreeOccurrence_iff φ _).2 ⟨σ, hσ, fun _ _ => rfl⟩⟩
 
 /-- Cycles are binary, so a width bound of at least two is preserved. -/
 theorem width_toThreeOccurrence [DecidableEq V] {φ : CNF V} {k : ℕ} (hk : 2 ≤ k)
@@ -270,5 +287,53 @@ theorem numVars_toThreeOccurrence [DecidableEq V] (φ : CNF V) :
     omega
   rw [numVars, he, List.toFinset_card_of_nodup (nodup_vars_occurrenceClauses φ)]
   simpa using congrArg List.length (map_fst_vars_occurrenceClauses φ)
+
+/-- Occurrence splitting preserves the number of satisfying assignments on occurring variables,
+including empty formulas, empty clauses, and repeated literals. -/
+theorem modelCount_toThreeOccurrence [DecidableEq V] (φ : CNF V) :
+    φ.toThreeOccurrence.modelCount = φ.modelCount := by
+  classical
+  have hmem (x : V × ℕ × ℕ) :
+      x ∈ φ.toThreeOccurrence.vars ↔ x ∈ φ.occurrenceClauses.vars := by
+    simp only [← List.count_pos_iff, count_vars_toThreeOccurrence]
+    omega
+  have hfst {x : V × ℕ × ℕ} (hx : x ∈ φ.occurrenceClauses.vars) : x.1 ∈ φ.vars := by
+    rw [← map_fst_vars_occurrenceClauses]
+    exact List.mem_map.2 ⟨x, hx, rfl⟩
+  have hex (v : φ.vars.toFinset) : ∃ x ∈ φ.occurrenceClauses.vars, x.1 = v := by
+    apply List.mem_map.1
+    simpa only [map_fst_vars_occurrenceClauses] using List.mem_toFinset.1 v.2
+  let copy (v : φ.vars.toFinset) : V × ℕ × ℕ := Classical.choose (hex v)
+  have hcopy (v : φ.vars.toFinset) : copy v ∈ φ.occurrenceClauses.vars ∧ (copy v).1 = v :=
+    Classical.choose_spec (hex v)
+  let f (τ : V × ℕ × ℕ → Bool) (v : φ.vars.toFinset) : Bool := τ (copy v)
+  refine modelCount_eq_card_filter f (fun τ => φ.eval (φ.extendAssignment τ) = true)
+    (fun σ τ hσ hτ => ?_) fun τ => ?_
+  · constructor
+    · intro he x hx
+      have hx := (hmem x).1 hx
+      let v : φ.vars.toFinset := ⟨x.1, List.mem_toFinset.2 (hfst hx)⟩
+      calc σ x = σ (copy v) := copies_agree hσ hx (hcopy v).1 (hcopy v).2.symm
+        _ = τ (copy v) := congrFun he v
+        _ = τ x := copies_agree hτ (hcopy v).1 hx (hcopy v).2
+    · intro he
+      exact funext fun v => he (copy v) ((hmem _).2 (hcopy v).1)
+  · constructor
+    · intro hτ
+      refine ⟨φ.extendAssignment τ ∘ Prod.fst, ?_, funext fun v => ?_⟩
+      · exact (eval_toThreeOccurrence_iff φ _).2 ⟨φ.extendAssignment τ, hτ, fun _ _ => rfl⟩
+      · change φ.extendAssignment τ (copy v).1 = τ v
+        rw [(hcopy v).2, extendAssignment_of_mem _ (List.mem_toFinset.1 v.2)]
+    · rintro ⟨σ, hσ, rfl⟩
+      rw [← eval_occurrenceClauses]
+      have he : ∀ x ∈ φ.occurrenceClauses.vars,
+          (φ.extendAssignment (f σ) ∘ Prod.fst) x = σ x := by
+        intro x hx
+        change φ.extendAssignment (f σ) x.1 = σ x
+        rw [extendAssignment_of_mem _ (hfst hx)]
+        exact copies_agree hσ (hcopy _).1 hx (hcopy _).2
+      have ht := hσ
+      simp only [toThreeOccurrence, eval_append, Bool.and_eq_true] at ht
+      exact (eval_congr he).trans ht.1
 
 end Cslib.Logic.PL.CNF
