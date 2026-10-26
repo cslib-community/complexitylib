@@ -21,8 +21,8 @@ Every instruction takes one unit of time.
 The machine is defined from scratch, with only Lean and Mathlib. Two theorems at the end connect
 it to the deterministic part of the library's word RAM `Cslib.WordRAM` over its exact basis. The
 library's instruction type also includes a random-sampling instruction `rand`, on which
-deterministic `step` faults; step-for-step equivalence matches programs here with `rand`-free
-library programs, while deterministic decidability in time `T` agrees without restriction. To
+deterministic execution faults. Step-for-step equivalence matches programs here with `rand`-free
+library programs. Deterministic decidability in time `T` agrees without that restriction. To
 check this, a reader only needs to inspect the definitions and theorem statements in this file.
 Lean checks the proofs through `WordRAMBridge`, using only Lean's three standard axioms
 (`propext`, `Classical.choice`, `Quot.sound`). `#check_abstract` checks mechanically that every
@@ -224,11 +224,12 @@ library: `Cslib.WordRAM.Program .exact r` is a program over the exact basis with
 a state `⟨pc, ⟨reg, mem⟩⟩` has the same three parts as here, `Cslib.WordRAM.step` is one
 deterministic step, and `Cslib.WordRAM.Executes w q s v n` says that `q` halts from `s` with
 output `v` after exactly `n` instructions. The library's instruction type also has `rand` for
-randomized algorithms, on which `Cslib.WordRAM.step` faults, and `q.IsRandFree` says that `q`
-contains no `rand` instruction. A reader does not need to know how these library definitions are
-made: `runsAgree` matches programs of this file with the `rand`-free library programs for single
-steps and halting runs, and `decidableInTime_iff` equates the library's uniform decidability in
-time `T` (`Cslib.WordRAM.UniformDecidableInTime`) with that of this file without restriction.
+randomized algorithms, on which `Cslib.WordRAM.step` faults. The predicate `q.IsRandFree` says
+that `q` contains no `rand` instruction. A reader does not need to know how these library
+definitions are made: `runsAgree` matches programs of this file with the `rand`-free library
+programs for single steps and halting runs, and `decidableInTime_iff` equates the library's
+uniform decidability in time `T` (`Cslib.WordRAM.UniformDecidableInTime`) with that of this file
+without restriction.
 -/
 
 /-- An outcome of this file and an outcome of `Cslib.WordRAM` *agree* if both continue in the

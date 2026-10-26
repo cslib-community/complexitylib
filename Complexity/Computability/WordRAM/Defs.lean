@@ -49,9 +49,9 @@ to the flat programs of this file with the same instruction counts.
   (`Cslib.WordRAM.Op.width`); the exact basis (`Cslib.WordRAM.Basis.exact`) has the same
   operations, with subtraction below zero and division by zero undefined. The control
   instructions jump, branch on an equality or unsigned
-  comparison of two registers, and halt with the contents of a register as output; `Instr.rand`
-  is the random-sampling instruction interpreted by `Cslib.WordRAM.Randomized` (and treated as a
-  fault by deterministic `step`).
+  comparison of two registers, and halt with the contents of a register as output. `Instr.rand`
+  is the random-sampling instruction interpreted by `Cslib.WordRAM.stepRand` and
+  `Cslib.WordRAM.runRand`. Deterministic `Cslib.WordRAM.step` faults on `Instr.rand`.
 * A run starts at instruction `0` with all registers `0`, the input length at address `0` and the
   input words at addresses `1, …, n` (`Cslib.WordRAM.State.init`); all other cells hold `0`.
   Installing this initial input and extracting the halting output are uncharged; executing the
