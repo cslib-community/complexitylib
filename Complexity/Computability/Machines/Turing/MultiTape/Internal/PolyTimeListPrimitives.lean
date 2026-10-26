@@ -162,10 +162,10 @@ theorem snoc {α : Type} (enc : α ↪ List Bool) :
   apply ofTransducer snocTransducer
   intro p
   change encList enc (p.1 ++ [p.2]) =
-    snocTransducer.run none (frame (encList enc p.1) ++ enc p.2)
+    snocTransducer.run none (Turing.MultiTapeTM.frame (encList enc p.1) ++ enc p.2)
   rw [snocRun]
-  change ((p.1 ++ [p.2]).flatMap (frame ∘ enc)) =
-    p.1.flatMap (frame ∘ enc) ++ frame (enc p.2)
+  change ((p.1 ++ [p.2]).flatMap (Turing.MultiTapeTM.frame ∘ enc)) =
+    p.1.flatMap (Turing.MultiTapeTM.frame ∘ enc) ++ Turing.MultiTapeTM.frame (enc p.2)
   simp only [List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
     Function.comp_apply, List.append_nil]
 
@@ -200,14 +200,14 @@ theorem bitsReverse : ComputableInPolyTime List.reverse encBits encBits := by
 theorem bitsTail : ComputableInPolyTime List.tail encBits encBits := by
   obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.tail (enc₁ := encBool) (enc := encBits)
   exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfinite, tm, fun word => (htm word).computesInTimeAndSpace⟩
+    k, Q, hfinite, tm, fun word => htm word⟩
 
 /-- Test whether the complete raw word is empty, with the Boolean result encoding fixed. -/
 @[fun_prop]
 theorem bitsIsEmpty : ComputableInPolyTime List.isEmpty encBits encBool := by
   obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.isEmpty (enc₁ := encBool) (enc := encBits)
   exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfinite, tm, fun word => (htm word).computesInTimeAndSpace⟩
+    k, Q, hfinite, tm, fun word => htm word⟩
 
 private theorem rangeStepCertificate :
     ComputableInPolyTime (fun p : RangeState × Bool => rangeStep p.1 p.2)
@@ -339,8 +339,9 @@ theorem listAppend' {γ α : Type} {encIn : γ ↪ List Bool} {encA : α ↪ Lis
     ComputableInPolyTime (fun x => left x ++ right x) encIn (encList encA) := by
   apply appendEncoded hleft hright
   intro x
-  change ((left x ++ right x).flatMap (frame ∘ encA)) =
-    (left x).flatMap (frame ∘ encA) ++ (right x).flatMap (frame ∘ encA)
+  change ((left x ++ right x).flatMap (Turing.MultiTapeTM.frame ∘ encA)) =
+    (left x).flatMap (Turing.MultiTapeTM.frame ∘ encA) ++
+      (right x).flatMap (Turing.MultiTapeTM.frame ∘ encA)
   exact List.flatMap_append
 
 /-- Reverse a computed framed list, inferring its element encoding from the result. -/
@@ -355,11 +356,11 @@ theorem listReverseWithInput {γ α : Type} {encIn : γ ↪ List Bool} {encA : �
       (B := fun l => (encList encA l).length) .self (fun l i _ => by
         rw [foldlReverse]
         simp only [List.append_nil]
-        have hp := (List.reverse_perm (l.take i)).flatMap_right (frame ∘ encA)
-        change (((l.take i).reverse).flatMap (frame ∘ encA)).length ≤
-          (l.flatMap (frame ∘ encA)).length
+        have hp := (List.reverse_perm (l.take i)).flatMap_right (Turing.MultiTapeTM.frame ∘ encA)
+        change (((l.take i).reverse).flatMap (Turing.MultiTapeTM.frame ∘ encA)).length ≤
+          (l.flatMap (Turing.MultiTapeTM.frame ∘ encA)).length
         rw [hp.length_eq]
-        exact ((List.take_sublist i l).flatMap (frame ∘ encA)).length_le)
+        exact ((List.take_sublist i l).flatMap (Turing.MultiTapeTM.frame ∘ encA)).length_le)
     simpa only [foldlReverse, List.append_nil, id_eq] using hfold
   exact hreverse.comp hlist
 

@@ -16,7 +16,13 @@ open Turing.MultiTapeTM
 
 run_elab do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
-      `Turing.MultiTapeTM.ComputableTidilyInO, `Turing.MultiTapeTM.ComputableTidilyInDegree] do
+      `Turing.MultiTapeTM.ComputableTidilyInO, `Turing.MultiTapeTM.ComputableTidilyInDegree,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.exists_onWords,
+      `Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.comp_linear,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.ite,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.iterateWhile,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.foldl] do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus: {name}"
 

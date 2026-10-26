@@ -51,7 +51,7 @@ theorem bool_degree : ComputableInDegree (fun w : List Bool => w.headD false)
 theorem tail_degree : ComputableInDegree List.tail encBits encBits 1 1 := by
   obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.tail (enc₁ := encBool) (enc := encBits)
   refine ⟨⟨_, _, ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, Q, hfin, tm, fun w => (htm w).computesInTimeAndSpace⟩,
+    k, Q, hfin, tm, fun w => htm w⟩,
     ⟨c, fun w => ?_⟩⟩
   simpa using (htm w).length_output_le
 
@@ -59,7 +59,7 @@ theorem tail_degree : ComputableInDegree List.tail encBits encBits 1 1 := by
 theorem empty_degree : ComputableInDegree List.isEmpty encBits encBool 1 1 := by
   obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.isEmpty (enc₁ := encBool) (enc := encBits)
   refine ⟨⟨_, _, ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, Q, hfin, tm, fun w => (htm w).computesInTimeAndSpace⟩,
+    k, Q, hfin, tm, fun w => htm w⟩,
     ⟨c, fun w => ?_⟩⟩
   simpa using (htm w).length_output_le
 

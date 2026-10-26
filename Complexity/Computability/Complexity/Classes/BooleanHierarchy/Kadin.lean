@@ -764,7 +764,7 @@ theorem exists_mem_BH_encBits_and_polyTimeReducible {r : ℕ} {A : Set α} (hA :
     let B₀ : Set (List Bool) := {w | cnfDecoder.decode w ∈ SAT}
     have hB₀ : B₀ ∈ NP encBits :=
       PolyTimeReducible.mem_NP
-        ⟨cnfDecoder.decode, .of_tidy cnfDecoder.computableTidilyInPolyTime, fun _ => Iff.rfl⟩
+        ⟨cnfDecoder.decode, cnfDecoder.computableInPolyTime, fun _ => Iff.rfl⟩
         SAT.mem_NP
     have hunframe : PolyTimeReducible encBits encBits {w | unframe w ∈ B₀} B₀ :=
       ⟨unframe, .of_tidy ComputableTidilyInPolyTime.unframe, fun _ => Iff.rfl⟩

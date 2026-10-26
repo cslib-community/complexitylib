@@ -281,13 +281,13 @@ def doubleInit (x : ℕ) : FiniteState model 2 :=
 noncomputable def doubleInitCert :
     NativeCertificate doubleInit encNat (FiniteState.encoding encoding) :=
   FiniteState.initConstCertificate (r := 2) encoding
-    (NativeCertificate.linear ComputableTidilyInDegree.id'.inO_one)
+    (NativeCertificate.linear (.of_tidy ComputableTidilyInDegree.id'.inO_one))
     (NativeCertificate.const 0)
     (NativeCertificate.const ∅)
 
 theorem doubleInitCert_isPolynomial : doubleInitCert.IsPolynomial :=
   FiniteState.initConstCertificate_isPolynomial (r := 2) encoding _ _ _
-    (NativeCertificate.linear_isPolynomial ComputableTidilyInDegree.id'.inO_one)
+    (NativeCertificate.linear_isPolynomial (.of_tidy ComputableTidilyInDegree.id'.inO_one))
     (NativeCertificate.const_isPolynomial 0)
     (NativeCertificate.const_isPolynomial ∅)
 
@@ -302,10 +302,10 @@ theorem doubleConfig_polyTime :
 
 /-- Native certificate for `doubleConfig`. -/
 noncomputable def doubleConfigCert : NativeCertificate doubleConfig encNat encNat :=
-  .ofPolyTime doubleConfig_polyTime
+  .ofPolyTime (.of_tidy doubleConfig_polyTime)
 
 theorem doubleConfigCert_isPolynomial : doubleConfigCert.IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial doubleConfig_polyTime
+  NativeCertificate.ofPolyTime_isPolynomial (.of_tidy doubleConfig_polyTime)
 
 /-- Constant step budget `6` for `doubleProgram`. -/
 noncomputable def doubleStepsCert : NativeCertificate (fun _ : ℕ => 6) encNat encNat :=
@@ -395,13 +395,13 @@ noncomputable def wordDoubleInitCert :
     NativeCertificate wordDoubleInit encNat
       (FiniteState.encoding Cslib.WordRAM.Basis.standard.encoding) :=
   FiniteState.initConstCertificate (r := 2) Cslib.WordRAM.Basis.standard.encoding
-    (NativeCertificate.linear ComputableTidilyInDegree.id'.inO_one)
+    (NativeCertificate.linear (.of_tidy ComputableTidilyInDegree.id'.inO_one))
     (NativeCertificate.const 0)
     (NativeCertificate.const ∅)
 
 theorem wordDoubleInitCert_isPolynomial : wordDoubleInitCert.IsPolynomial :=
   FiniteState.initConstCertificate_isPolynomial (r := 2) Cslib.WordRAM.Basis.standard.encoding _ _ _
-    (NativeCertificate.linear_isPolynomial ComputableTidilyInDegree.id'.inO_one)
+    (NativeCertificate.linear_isPolynomial (.of_tidy ComputableTidilyInDegree.id'.inO_one))
     (NativeCertificate.const_isPolynomial 0)
     (NativeCertificate.const_isPolynomial ∅)
 
@@ -415,10 +415,10 @@ theorem wordDoubleWidth_polyTime :
 
 /-- Native certificate for `wordDoubleWidth`. -/
 noncomputable def wordDoubleWidthCert : NativeCertificate wordDoubleWidth encNat encUnary :=
-  .ofPolyTime wordDoubleWidth_polyTime.tidy
+  .ofPolyTime wordDoubleWidth_polyTime
 
 theorem wordDoubleWidthCert_isPolynomial : wordDoubleWidthCert.IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial wordDoubleWidth_polyTime.tidy
+  NativeCertificate.ofPolyTime_isPolynomial wordDoubleWidth_polyTime
 
 /-- Constant step budget `5` for `wordDoubleProgram`. -/
 noncomputable def wordDoubleStepsCert : NativeCertificate (fun _ : ℕ => 5) encNat encNat :=

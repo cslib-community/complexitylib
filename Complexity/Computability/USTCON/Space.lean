@@ -20,8 +20,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 (`Cslib.USTCON.computableInLogSpace_decide`) [Reingold, Theorem 4.1][Reingold2008]
 [Arora and Barak, Section 21.4][AroraBarak09].
 
-The step machine simulating the read machine `Cslib.USTCON.Reader.machine` is tidy within the space
-of its states and the position of its head (`Cslib.USTCON.Reader.tidy_machine`). It computes the
+The step machine simulating the read machine `Cslib.USTCON.Reader.machine` has a resource
+certificate within the space of its states and the position of its head
+(`Cslib.USTCON.Reader.machine_resourceCertificate`). It computes the
 output of the read machine (`Turing.ReadMachine.computes_toStepMachine`), which halts on an encoded
 instance with the answer (`Cslib.USTCON.Reader.exists_run_eq`), and its states along the run are
 states of the read machine together with a head position at most `m + 1`
@@ -54,7 +55,7 @@ length. -/
 theorem computableInBigO_decide : ∃ t, ComputableInBigO
     (fun I : USTCONInstance ↦ decide (I ∈ USTCON)) encUSTCON encBool t
     fun I ↦ Nat.log2 (encUSTCON I).length + 1 := by
-  obtain ⟨T, hT⟩ := tidy_machine
+  obtain ⟨T, hT⟩ := machine_resourceCertificate
   have hc (I : USTCONInstance) :
       machine.toStepMachine.Computes (encUSTCON I) [decide (I ∈ USTCON)] := by
     obtain ⟨k, hhalt, hout⟩ := exists_run_eq I
@@ -64,8 +65,7 @@ theorem computableInBigO_decide : ∃ t, ComputableInBigO
   let tS := ReadMachine.stateT encState T stateBudget
   let tMax (I : USTCONInstance) : ℕ := ∑ i ∈ Finset.range (rounds I + 1),
     tS (machine.toStepMachine.run (encUSTCON I) i).state
-  refine ⟨_, ComputableTidilyInBigO.computableInBigO <|
-    (hT.computableTidilyInTimeAndSpace (fun I : USTCONInstance ↦ decide (I ∈ USTCON))
+  refine ⟨_, (hT.computableInBigO (fun I : USTCONInstance ↦ decide (I ∈ USTCON))
     rounds hr (fun I ↦ by rw [encBool_apply, ho]) (tMax := tMax)
     (sMax := fun I ↦ 6 * stateConst * (Nat.log2 (encUSTCON I).length + 2) +
       2 * (Nat.log2 (encUSTCON I).length + 2) + 12) fun I i hi ↦ ⟨?_, ?_⟩).weaken

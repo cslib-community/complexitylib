@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Prim
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Data.List.GetD
+import Complexity.Foundations.Data.List.Lookup
 
 /-!
 # Binary encodings of finite relational structures
@@ -196,23 +197,21 @@ holds in `M`. -/
 theorem getD_relTable_eq_true_iff (M : Type) [L.Structure M] {n : ℕ} (e : M ≃ Fin n) {k : ℕ}
     (r : L.Relations k) (x : Fin k → Fin n) :
     (relTable M e ⟨k, r⟩).getD (tupleIndex x) false = true ↔ RelMap r (e.symm ∘ x) := by
-  rw [relTable, List.getD_eq_getElem _ _ (by simpa using tupleIndex_lt x), List.getElem_ofFn,
-    decide_eq_true_eq]
+  rw [relTable, List.getD_ofFn_of_lt _ (tupleIndex_lt x), decide_eq_true_eq]
   simp only [tupleIndex]
   rw [Fin.eta, finFunctionFinEquiv.symm_apply_apply x]
 
 /-- In `v.encode M e`, the table associated to relation symbol `r` is `relTable M e r`. -/
 theorem table_encode (M : Type) [L.Structure M] {n : ℕ} (e : M ≃ Fin n)
     (r : Σ k, L.Relations k) : v.table (v.encode M e) r = relTable M e r := by
-  rw [table, encode, List.getD_eq_getElem _ _ (by rw [List.length_ofFn]; exact v.index_lt r),
-    List.getElem_ofFn]
+  rw [table, encode, List.getD_ofFn_of_lt _ (v.index_lt r)]
   simp [index]
 
 /-- Encodings are well formed. -/
 theorem wellFormed_encode (M : Type) [L.Structure M] {n : ℕ} (e : M ≃ Fin n) :
     v.WellFormed (v.encode M e) := by
   refine ⟨by simp [encode], fun i => ?_⟩
-  rw [encode, List.getD_eq_getElem _ _ (by rw [List.length_ofFn]; exact i.2), List.getElem_ofFn]
+  rw [encode, List.getD_ofFn]
   simp [arity, length_relTable]
 
 variable (v) in

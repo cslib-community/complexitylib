@@ -244,7 +244,7 @@ theorem computableInPolyTime_layeredAugment :
       Layered.compile (inputWidth p.1 p.2 + inputWidth p.1 p.2)
         (augmentNand (circuit p.1 p.2)).code)
       (encPair encUnary encUnary) Layered.encCompiled := by
-  have ha := computableTidilyInPolyTime_augmentNand.comp native_circuit
+  have ha := computableInPolyTime_augmentNand.tidy.comp native_circuit
   have hview : ComputableTidilyInPolyTime
       (fun D : Σ m, Circuit signature m 1 => (D.1, D.2.code))
       (encCircuit 1) (encPair encUnary encCode) := .of_eq fun _ => rfl

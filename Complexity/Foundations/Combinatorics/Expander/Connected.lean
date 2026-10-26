@@ -84,6 +84,23 @@ theorem interedges_compl_nonempty (hG : G.toSimpleGraph.Preconnected) {S : Finse
   obtain ⟨x, hx⟩ := hS
   exact hS' (eq_univ_of_forall fun y ↦ G.mem_of_reachable hcl hx (hG x y))
 
+omit [Fintype V] in
+/-- If at least half of the edges at `v` are self-loops, the average over `i : D` of `c` on
+self-loops and `-c` on non-loop edges is nonnegative for `c ≥ 0`. -/
+private theorem expect_ite_neighbor_eq_nonneg {v : V}
+    (hv : Fintype.card D ≤ 2 * G.edgeCount v v) {c : ℝ} (hc : 0 ≤ c) :
+    0 ≤ 𝔼 i, (if G.neighbor v i = v then c else -c) := by
+  rw [Fintype.expect_eq_sum_div_card]
+  refine div_nonneg ?_ (Nat.cast_nonneg _)
+  rw [sum_ite, sum_const, sum_const, nsmul_eq_mul, nsmul_eq_mul]
+  have hcard := card_filter_add_card_filter_not (s := (univ : Finset D))
+    (fun i ↦ G.neighbor v i = v)
+  rw [card_univ] at hcard
+  have hle : (#{i | ¬G.neighbor v i = v} : ℝ) ≤ #{i | G.neighbor v i = v} := by
+    rw [edgeCount] at hv
+    exact_mod_cast (by omega : #{i | ¬G.neighbor v i = v} ≤ #{i | G.neighbor v i = v})
+  nlinarith
+
 /-- If at least half of the edges at every vertex are self-loops, the walk operator is positive
 semidefinite: `0 ≤ 𝔼 v, f v * G.walk f v` for every `f`. -/
 theorem expect_mul_walk_nonneg (hG : ∀ v, Fintype.card D ≤ 2 * G.edgeCount v v)
@@ -113,20 +130,8 @@ theorem expect_mul_walk_nonneg (hG : ∀ v, Fintype.card D ≤ 2 * G.edgeCount v
     rw [← expect_add_distrib]
     refine expect_congr rfl fun i _ ↦ ?_
     split_ifs <;> ring
-  have hvertex (v : V) : 0 ≤ 𝔼 i, (if G.neighbor v i = v then f v ^ 2 else -f v ^ 2) := by
-    rw [Fintype.expect_eq_sum_div_card]
-    refine div_nonneg ?_ (Nat.cast_nonneg _)
-    rw [sum_ite, sum_const, sum_const, nsmul_eq_mul, nsmul_eq_mul]
-    have hcard := card_filter_add_card_filter_not (s := (univ : Finset D))
-      (fun i ↦ G.neighbor v i = v)
-    rw [card_univ] at hcard
-    have hle : (#{i | ¬G.neighbor v i = v} : ℝ) ≤ #{i | G.neighbor v i = v} := by
-      have := hG v
-      rw [edgeCount] at this
-      exact_mod_cast (by omega : #{i | ¬G.neighbor v i = v} ≤ #{i | G.neighbor v i = v})
-    nlinarith [sq_nonneg (f v)]
   calc (0 : ℝ) ≤ 𝔼 v, 𝔼 i, (if G.neighbor v i = v then f v ^ 2 else -f v ^ 2) :=
-        expect_nonneg fun v _ ↦ hvertex v
+        expect_nonneg fun v _ ↦ G.expect_ite_neighbor_eq_nonneg (hG v) (sq_nonneg _)
     _ = 𝔼 v, 𝔼 i, g v (G.neighbor v i) := hsplit.symm
     _ ≤ 𝔼 v, 𝔼 i, f v * f (G.neighbor v i) :=
         expect_le_expect fun v _ ↦ expect_le_expect fun i _ ↦ hfg v _

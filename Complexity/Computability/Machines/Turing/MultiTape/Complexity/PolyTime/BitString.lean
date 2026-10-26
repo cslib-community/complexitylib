@@ -528,7 +528,7 @@ theorem bitsRowWithInput {α : Type} {input : α ↪ List Bool}
 /-- Frame the existing input encoding, charging every delimiter. -/
 @[fun_prop]
 theorem bitsFrame {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun a => frame (enc a)) enc encBits :=
+    ComputableInPolyTime (fun a => Turing.MultiTapeTM.frame (enc a)) enc encBits :=
   .of_tidy (ComputableTidilyInPolyTime.bitsFrame (α := α) (enc := enc))
 
 /-- Saturating binary decoding to unary is polynomial time on arbitrary input words. -/

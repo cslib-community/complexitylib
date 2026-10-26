@@ -44,7 +44,7 @@ calculus.
 
 namespace Cslib.Probability
 
-open Turing.MultiTapeTM (ComputableInPolyTime ComputableTidilyInPolyTime)
+open Turing.MultiTapeTM (ComputableInPolyTime)
 
 variable {α β γ : Type} {input : α ↪ List Bool} {middle : β ↪ List Bool}
   {output : γ ↪ List Bool}
@@ -73,7 +73,7 @@ theorem IsPPTOn.preprocess {program : β → ProbComp γ} {prepare : α → β}
 /-- Polynomial-time deterministic processing of each sampled result preserves PPT. -/
 @[fun_prop]
 theorem IsPPTOn.map {program : α → ProbComp β} {f : β → γ}
-    (hprogram : IsPPTOn input middle program) (hf : ComputableTidilyInPolyTime f middle output) :
+    (hprogram : IsPPTOn input middle program) (hf : ComputableInPolyTime f middle output) :
     IsPPTOn input output (fun a => f <$> program a) := by
   simpa only [bind_pure_comp] using hprogram.bind hf.isPPTOn
 

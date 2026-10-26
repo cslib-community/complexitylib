@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Crypto.Computational.GGM.Evaluation
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-! Functional pipelines use the ordinary monadic interface and existing deterministic proofs. -/
 
@@ -37,7 +38,7 @@ example {α β γ : Type} {input : α ↪ List Bool} {middle : β ↪ List Bool}
 example {α : Type} {input : α ↪ List Bool}
     {sample : α → ProbComp (List Bool × List Bool)} {generator : List Bool → List Bool}
     (hsample : IsPPTOn input (encPair encBits encBits) sample)
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits) :
+    (hgenerator : ComputableInPolyTime generator encBits encBits) :
     IsPPTOn input encBits (fun a => do
       let pair ← sample a
       pure (Crypto.GGM.eval generator pair.1 pair.2)) := by
@@ -71,7 +72,7 @@ example {sample : List Bool → ProbComp Bool} (hsample : IsPPTOn encBits encBoo
 -- GGM consumes the original query path after a seed has been sampled.
 example {sample : List Bool → ProbComp (List Bool)} {generator : List Bool → List Bool}
     (hsample : IsPPTOn encBits encBits sample)
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits) :
+    (hgenerator : ComputableInPolyTime generator encBits encBits) :
     IsPPTOn encBits encBits (fun path => do
       let seed ← sample path
       pure (Crypto.GGM.eval generator seed path)) := by
@@ -84,3 +85,12 @@ example {yes no : List Bool → ProbComp Bool}
   fun_prop
 
 end ComplexityTests.PPTComposition
+
+-- Plain deterministic postprocessing retains the full arbitrary encoded contract.
+example {α β γ : Type} {input : α ↪ List Bool} {middle : β ↪ List Bool}
+    {output : γ ↪ List Bool} {sample : α → Cslib.ProbComp β} {finish : β → γ}
+    (hs : Cslib.Probability.IsPPTOn input middle sample)
+    (hf : Turing.MultiTapeTM.ComputableInPolyTime finish middle output) :
+    Cslib.Probability.IsPPTOn input output (fun a => finish <$> sample a) := by
+  fail_if_success (clear hf; fun_prop)
+  fun_prop

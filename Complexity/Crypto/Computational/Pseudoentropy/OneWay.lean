@@ -67,7 +67,7 @@ theorem eventually_prediction_entropy_le {f : List Bool → List Bool} (hf : One
         1 / (hashCount n : ℝ) := by
   obtain ⟨c, d, evaluate, hefficient, _, hrealize⟩ := hPPT.on.exists_total_seeded_evaluator
   have hinversion := hf.inversion_negligible _
-    (isPPT_wordInverter hf.polyTime.tidy hefficient c d 3)
+    (isPPT_wordInverter hf.polyTime (.of_tidy hefficient) c d 3)
   have hloss : Negligible (fun n => 128 * (dyadicSize (16 * hashCount n) : ℝ≥0) ^ 2 *
       Game.succProbability
         (ProbComp.eval (inversionGame f (wordInverter f evaluate c d 3) n))) := by
@@ -93,7 +93,7 @@ theorem pair_hasGap {f : List Bool → List Bool} (hf : OneWay f)
     (finiteFunction : ∀ n, BitString n → Image n) (encodeImage : ∀ n, Image n ↪ List Bool)
     (hencode : ∀ n x, f (List.ofFn x) = encodeImage n (finiteFunction n x))
     (imageLength : ℕ → ℕ) (hlength : ∀ n image, (encodeImage n image).length = imageLength n) :
-    (pair f hf.polyTime.tidy finiteFunction encodeImage hencode).HasGap
+    (pair f hf.polyTime finiteFunction encodeImage hencode).HasGap
       (fun n => 1 / (hashCount n : ℝ)) :=
   eventually_prediction_entropy_le hf finiteFunction encodeImage hencode imageLength hlength
 
@@ -114,7 +114,7 @@ theorem OneWay.exists_pseudoentropyPair {f : List Bool → List Bool} (hf : OneW
   have hencode (n : ℕ) (x : BitString n) :
       g (List.ofFn x) = encodeImage n (finiteFunction n x) := by
     exact (ofFn_ofList (by simp [hlength])).symm
-  refine ⟨HashPair.pair g hg.polyTime.tidy finiteFunction encodeImage hencode,
+  refine ⟨HashPair.pair g hg.polyTime finiteFunction encodeImage hencode,
     (HashPair.pair_hasGap hg finiteFunction encodeImage hencode length
       (fun _ _ => List.length_ofFn)).mono
       (fun n => ?_)⟩

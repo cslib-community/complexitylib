@@ -233,7 +233,8 @@ private theorem computableInPolyTime_mul_log_two_succ (d : ℕ) :
   have hunary :
       ComputableInPolyTime (fun x : List Bool => d * (Nat.log 2 x.length + 1))
         encBits encUnary := by
-    polytime
+    have hlog := ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_log_two
+    fun_prop
   exact ComputableInPolyTime.unary_to_binary.comp hunary
 
 private noncomputable def thresholdDistinguisher (γ d c : ℕ) (H : List Bool → ProbComp ℕ) :
@@ -251,7 +252,8 @@ private theorem isPPT_thresholdDistinguisher (γ d c : ℕ) {H : List Bool → P
   have hprep : ComputableInPolyTime
       (fun p : ℕ × List Bool => p.2.take (p.1 + γ * Nat.log 2 p.1 - c))
       (encPair encUnary encBits) encBits := by
-    polytime
+    have hlog := ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_log_two
+    fun_prop
   have hcmp : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × ℕ => decide (thresholdValue γ d c pair.1.1 ≤ pair.2))
       (encPair (encPair encUnary encBits) encNat) encBool := by

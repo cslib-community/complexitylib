@@ -91,6 +91,51 @@ theorem spectralExpansion_complete [Fintype V] :
 
 variable [Fintype V] [Fintype D] [Nonempty D]
 
+open Classical in
+/-- Applying `expect_walk_sq_le_spectralExpansion_sq_mul` to the centered indicator
+`f u v = (if v = u then 1 else 0) - 1 / |V|` bounds the column sum of centered normalized edge
+counts by `λ(G)² (1 - 1 / |V|)`. -/
+private theorem sum_edgeCount_div_sub_sq_le_spectralExpansion_sq_mul (G : RotationMap V D)
+    (hV : 2 ≤ Fintype.card V) (u : V) :
+    ∑ v, ((G.edgeCount v u : ℝ) / Fintype.card D - 1 / Fintype.card V) ^ 2 ≤
+      G.spectralExpansion ^ 2 * (1 - 1 / Fintype.card V) := by
+  set N : ℝ := (Fintype.card V : ℝ) with hN
+  set d : ℝ := (Fintype.card D : ℝ) with hd
+  have hN2 : (2 : ℝ) ≤ N := by rw [hN]; exact_mod_cast hV
+  have hNpos : (0 : ℝ) < N := by linarith
+  have hdpos : (0 : ℝ) < d := Nat.cast_pos.2 Fintype.card_pos
+  -- the test function `δ_u - 1 / N`, of expectation zero
+  set f : V → ℝ := fun v => (if v = u then 1 else 0) - 1 / N with hfdef
+  have hf_exp : 𝔼 v, f v = 0 := by
+    rw [Fintype.expect_eq_sum_div_card]
+    simp only [hfdef, sum_sub_distrib, sum_ite_eq', mem_univ, ite_true, sum_const, card_univ,
+      nsmul_eq_mul]
+    rw [← hN]
+    field_simp
+    ring
+  have hf_sq : ∑ v, f v ^ 2 = 1 - 1 / N := by
+    have h (v : V) : f v ^ 2 = (if v = u then 1 - 2 / N else 0) + 1 / N ^ 2 := by
+      simp only [hfdef]
+      split_ifs <;> ring
+    simp only [h, sum_add_distrib, sum_ite_eq', mem_univ, ite_true, sum_const, card_univ,
+      nsmul_eq_mul]
+    rw [← hN]
+    field_simp
+    ring
+  have hwalk (v : V) : G.walk f v = (G.edgeCount v u : ℝ) / d - 1 / N := by
+    rw [walk_apply, Fintype.expect_eq_sum_div_card]
+    simp only [hfdef, edgeCount, sum_sub_distrib, sum_boole, sum_const, card_univ,
+      nsmul_eq_mul]
+    rw [← hd]
+    field_simp
+  have h := expect_walk_sq_le_spectralExpansion_sq_mul (G := G) hf_exp
+  rw [Fintype.expect_eq_sum_div_card, Fintype.expect_eq_sum_div_card, hf_sq] at h
+  simp only [hwalk] at h
+  rw [← hN, div_le_iff₀ hNpos] at h
+  calc ∑ v, ((G.edgeCount v u : ℝ) / d - 1 / N) ^ 2
+      ≤ G.spectralExpansion ^ 2 * ((1 - 1 / N) / N) * N := h
+    _ = G.spectralExpansion ^ 2 * (1 - 1 / N) := by field_simp
+
 /-- **Trace bound.** A `D`-regular multigraph on `N ≥ 2` vertices has
 `(N - D) / (D (N - 1)) ≤ λ(G) ^ 2`. -/
 theorem div_le_sq_spectralExpansion (G : RotationMap V D) (hV : 2 ≤ Fintype.card V) :
@@ -101,77 +146,37 @@ theorem div_le_sq_spectralExpansion (G : RotationMap V D) (hV : 2 ≤ Fintype.ca
   set d : ℝ := (Fintype.card D : ℝ) with hd
   have hN2 : (2 : ℝ) ≤ N := by rw [hN]; exact_mod_cast hV
   have hNpos : (0 : ℝ) < N := by linarith
-  have hd1 : (1 : ℝ) ≤ d := by rw [hd]; exact Nat.one_le_cast.2 Fintype.card_pos
-  have hdpos : (0 : ℝ) < d := by linarith
-  set lam := G.spectralExpansion with hlamdef
-  -- the test functions `δ_u - 1 / N`, of expectation zero
-  set f : V → V → ℝ := fun u v => (if v = u then 1 else 0) - 1 / N with hfdef
+  have hdpos : (0 : ℝ) < d := Nat.cast_pos.2 Fintype.card_pos
+  set lam := G.spectralExpansion
   -- the number of edges from `v` to `u`
   set a : V → V → ℝ := fun v u => (G.edgeCount v u : ℝ) with hadef
-  have hf_exp (u : V) : 𝔼 v, f u v = 0 := by
-    rw [Fintype.expect_eq_sum_div_card]
-    simp only [hfdef, sum_sub_distrib, sum_ite_eq', mem_univ, ite_true, sum_const, card_univ,
-      nsmul_eq_mul]
-    rw [← hN]
-    field_simp
-    ring
-  have hf_sq (u : V) : ∑ v, f u v ^ 2 = 1 - 1 / N := by
-    have h (v : V) : f u v ^ 2 = (if v = u then 1 - 2 / N else 0) + 1 / N ^ 2 := by
-      simp only [hfdef]
-      split_ifs <;> ring
-    simp only [h, sum_add_distrib, sum_ite_eq', mem_univ, ite_true, sum_const, card_univ,
-      nsmul_eq_mul]
-    rw [← hN]
-    field_simp
-    ring
-  have hwalk (u v : V) : G.walk (f u) v = a v u / d - 1 / N := by
-    rw [walk_apply, Fintype.expect_eq_sum_div_card]
-    simp only [hfdef, hadef, edgeCount, sum_sub_distrib, sum_boole, sum_const, card_univ,
-      nsmul_eq_mul]
-    rw [← hd]
-    field_simp
   have ha_sum (v : V) : ∑ u, a v u = d := by
     simp only [hadef, ← Nat.cast_sum, G.sum_edgeCount, hd]
-  have ha_sq (v u : V) : a v u ≤ a v u ^ 2 := by
-    simp only [hadef]
-    exact_mod_cast Nat.le_self_pow two_ne_zero _
   have hrow (v : V) : 1 / d - 1 / N ≤ ∑ u, (a v u / d - 1 / N) ^ 2 := by
     calc 1 / d - 1 / N = ∑ u, (a v u / d ^ 2 - 2 * a v u / (d * N) + 1 / N ^ 2) := by
-          rw [sum_add_distrib, sum_sub_distrib, ← sum_div, ← sum_div, ← mul_sum, ha_sum]
-          simp only [sum_const, card_univ, nsmul_eq_mul]
-          rw [← hN]
+          rw [sum_add_distrib, sum_sub_distrib, ← sum_div, ← sum_div, ← mul_sum, ha_sum,
+            sum_const, card_univ, nsmul_eq_mul, ← hN]
           field_simp
           ring
       _ ≤ ∑ u, (a v u / d - 1 / N) ^ 2 := by
           refine sum_le_sum fun u _ => ?_
           have h1 : a v u / d ^ 2 ≤ a v u ^ 2 / d ^ 2 :=
-            div_le_div_of_nonneg_right (ha_sq v u) (by positivity)
-          have h2 : (a v u / d - 1 / N) ^ 2 =
-              a v u ^ 2 / d ^ 2 - 2 * a v u / (d * N) + 1 / N ^ 2 := by
-            field_simp
-            ring
-          rw [h2]
-          linarith
-  have hcol (u : V) : ∑ v, (a v u / d - 1 / N) ^ 2 ≤ lam ^ 2 * (1 - 1 / N) := by
-    have h := expect_walk_sq_le_spectralExpansion_sq_mul (G := G) (hf_exp u)
-    rw [Fintype.expect_eq_sum_div_card, Fintype.expect_eq_sum_div_card, hf_sq] at h
-    simp only [hwalk] at h
-    rw [← hN, ← hlamdef, div_le_iff₀ hNpos] at h
-    calc ∑ v, (a v u / d - 1 / N) ^ 2 ≤ lam ^ 2 * ((1 - 1 / N) / N) * N := h
-      _ = lam ^ 2 * (1 - 1 / N) := by field_simp
-  have htot : N * (1 / d - 1 / N) ≤ N * (lam ^ 2 * (1 - 1 / N)) := by
-    calc N * (1 / d - 1 / N) = ∑ _v : V, (1 / d - 1 / N) := by
-          simp only [sum_const, card_univ, nsmul_eq_mul, hN]
+            div_le_div_of_nonneg_right
+              (by simp only [hadef]; exact_mod_cast Nat.le_self_pow two_ne_zero _) (by positivity)
+          linarith [show (a v u / d - 1 / N) ^ 2 =
+            a v u ^ 2 / d ^ 2 - 2 * a v u / (d * N) + 1 / N ^ 2 by ring]
+  have htot : (N - d) / d ≤ lam ^ 2 * (N - 1) := by
+    calc (N - d) / d = N * (1 / d - 1 / N) := by field_simp
+      _ = ∑ _v : V, (1 / d - 1 / N) := by simp only [sum_const, card_univ, nsmul_eq_mul, hN]
       _ ≤ ∑ v, ∑ u, (a v u / d - 1 / N) ^ 2 := sum_le_sum fun v _ => hrow v
       _ = ∑ u, ∑ v, (a v u / d - 1 / N) ^ 2 := sum_comm
-      _ ≤ ∑ _u : V, lam ^ 2 * (1 - 1 / N) := sum_le_sum fun u _ => hcol u
-      _ = N * (lam ^ 2 * (1 - 1 / N)) := by
-          simp only [sum_const, card_univ, nsmul_eq_mul, hN]
+      _ ≤ ∑ _u : V, lam ^ 2 * (1 - 1 / N) :=
+          sum_le_sum fun u _ => G.sum_edgeCount_div_sub_sq_le_spectralExpansion_sq_mul hV u
+      _ = N * (lam ^ 2 * (1 - 1 / N)) := by simp only [sum_const, card_univ, nsmul_eq_mul, hN]
+      _ = lam ^ 2 * (N - 1) := by field_simp
   have hN1 : 0 < N - 1 := by linarith
   rw [div_le_iff₀ (by positivity)]
-  have e1 : N * (1 / d - 1 / N) = (N - d) / d := by field_simp
-  have e2 : N * (lam ^ 2 * (1 - 1 / N)) = lam ^ 2 * (N - 1) := by field_simp
-  rw [e1, e2, div_le_iff₀ hdpos] at htot
+  rw [div_le_iff₀ hdpos] at htot
   linarith
 
 /-- **Trace bound**, square-root form: a `D`-regular multigraph on `N ≥ 2` vertices has

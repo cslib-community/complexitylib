@@ -591,7 +591,7 @@ private theorem computableTidilyInPolyTime_collisionOf :
   have hvks := (ComputableTidilyInPolyTime.map
     (ComputableTidilyInPolyTime.fst encBits encBits)).comp hkeys
   have hvku := (ComputableTidilyInPolyTime.listGetD (encA := encBits) []).comp (hvks.prod hu)
-  have hdec := signatureDecoder.computableTidilyInPolyTime.comp hsig
+  have hdec := signatureDecoder.computableInPolyTime.tidy.comp hsig
   have hvk := (ComputableTidilyInPolyTime.fst _ _).comp hdec
   have hpath' := (ComputableTidilyInPolyTime.snd _ _).comp
     ((ComputableTidilyInPolyTime.snd _ _).comp hdec)
@@ -627,8 +627,8 @@ theorem isPPT_collisionFinder {adversary : IndexedForger}
     (fun p => collisionFinder S H depth hH hlen hcap adversary p.1 p.2)
   have hkeys : IsPPTOn (encPair encUnary encBits) (encList (encPair encBits encBits))
       (fun p : ℕ × List Bool => OracleComp.replicate (2 ^ depth p.1) (S.keyGen p.1)) :=
-    (S.isPPTOn_keyGen_comp (ComputableTidilyInPolyTime.fst encUnary encBits)).replicate
-      (hcap.tidy.comp (ComputableTidilyInPolyTime.fst encUnary encBits))
+    (S.isPPTOn_keyGen_comp (ComputableInPolyTime.fst encUnary encBits)).replicate
+      (.of_tidy (hcap.tidy.comp (ComputableTidilyInPolyTime.fst encUnary encBits)))
   have hfst := ComputableTidilyInPolyTime.fst (encPair encUnary encBits)
     (encList (encPair encBits encBits))
   have hkk : ComputableTidilyInPolyTime
@@ -663,7 +663,7 @@ include hcap in
 theorem isPPTOn_leafIndex : IsPPTOn encUnary encUnary (leafIndex depth) := by
   have hdepth := (computableInPolyTime_depth hcap).tidy
   unfold leafIndex
-  exact (ComputableTidilyInPolyTime.sampleList hdepth).map_with
+  exact (ComputableInPolyTime.sampleList (.of_tidy hdepth)).map_with
     (.of_tidy (ComputableTidilyInPolyTime.bitsBoundedBinaryValueWithInput
       (hcap.tidy.comp (ComputableTidilyInPolyTime.fst _ _)) (ComputableTidilyInPolyTime.snd _ _)))
 
@@ -677,13 +677,14 @@ private theorem isPPTOn_plantKeys :
   have hn : ComputableTidilyInPolyTime (fun c : (ℕ × List Bool) × ℕ => c.1.1) E1 encUnary :=
     (ComputableTidilyInPolyTime.fst _ _).comp (ComputableTidilyInPolyTime.fst _ _)
   have hk : IsPPTOn E1 encBits (fun c : (ℕ × List Bool) × ℕ => BitString.sampleList c.1.1) :=
-    hn.sampleList
+    ComputableInPolyTime.sampleList (.of_tidy hn)
   have hn2 := hn.comp (ComputableTidilyInPolyTime.fst E1 encBits)
   have hfront : IsPPTOn (encPair E1 encBits) EK
       (fun q : ((ℕ × List Bool) × ℕ) × List Bool =>
         OracleComp.replicate q.1.2 (S.keyGen q.1.1.1)) :=
-    (S.isPPTOn_keyGen_comp hn2).replicate
-      ((ComputableTidilyInPolyTime.snd _ _).comp (ComputableTidilyInPolyTime.fst E1 encBits))
+    (S.isPPTOn_keyGen_comp (.of_tidy hn2)).replicate
+      (.of_tidy ((ComputableTidilyInPolyTime.snd _ _).comp
+        (ComputableTidilyInPolyTime.fst E1 encBits)))
   have hn3 := hn2.comp (ComputableTidilyInPolyTime.fst (encPair E1 encBits) EK)
   have hback : IsPPTOn (encPair (encPair E1 encBits) EK) EK
       (fun q : (((ℕ × List Bool) × ℕ) × List Bool) × List (List Bool × List Bool) =>
@@ -696,7 +697,7 @@ private theorem isPPTOn_plantKeys :
     have hcount := ComputableTidilyInPolyTime.unary_sub.comp
       ((ComputableTidilyInPolyTime.unary_sub.comp ((hcap.tidy.comp hn3).prod hi)).prod
         (ComputableTidilyInPolyTime.const 1))
-    exact (S.isPPTOn_keyGen_comp hn3).replicate hcount
+    exact (S.isPPTOn_keyGen_comp (.of_tidy hn3)).replicate (.of_tidy hcount)
   have hret : ComputableTidilyInPolyTime
       (fun r : ((((ℕ × List Bool) × ℕ) × List Bool) × List (List Bool × List Bool)) ×
           List (List Bool × List Bool) =>
@@ -760,7 +761,7 @@ private theorem isOraclePPTOn_plantedHandler {bound : ℕ → ℕ}
   have hw := (ComputableTidilyInPolyTime.snd _ _).comp
     ((ComputableTidilyInPolyTime.fst _ _).comp hrest)
   have hsigned := (ComputableTidilyInPolyTime.snd _ _).comp hrest
-  have hr := IndexedSignatureScheme.requestDecoder.computableTidilyInPolyTime.comp hw
+  have hr := IndexedSignatureScheme.requestDecoder.computableInPolyTime.tidy.comp hw
   have hu := (ComputableTidilyInPolyTime.fst _ _).comp hr
   have hm := (ComputableTidilyInPolyTime.snd _ _).comp hr
   have hcapn := hcap.tidy.comp hn
@@ -802,7 +803,8 @@ private theorem isOraclePPTOn_plantedHandler {bound : ℕ → ℕ}
   have hkeyu :=
     (ComputableTidilyInPolyTime.listGetD (encA := encPair encBits encBits) ([], [])).comp
       (hkeys.prod hu)
-  have hots := S.isPPTOn_sign_comp ((ComputableTidilyInPolyTime.snd _ _).comp hkeyu) hdigest
+  have hots := S.isPPTOn_sign_comp
+    (.of_tidy ((ComputableTidilyInPolyTime.snd _ _).comp hkeyu)) (.of_tidy hdigest)
   have hpathu := (computableInPolyTime_merklePath hH hlen).tidy.comp (hk.prod (hvks.prod hu))
   have hsignPost := (ComputableTidilyInPolyTime.encode
     (encPair encBits (encPair encBits (encList encBits)))).comp
@@ -1003,7 +1005,7 @@ theorem isOraclePPT_oneTimeForger {bound : ℕ → ℕ}
     have hsig := (ComputableTidilyInPolyTime.snd encBits encBits).comp hms
     exact (hH.tidy.comp (hk.prod hm)).prod ((ComputableTidilyInPolyTime.fst _ _).comp
       ((ComputableTidilyInPolyTime.snd _ _).comp
-        (signatureDecoder.computableTidilyInPolyTime.comp hsig)))
+        (signatureDecoder.computableInPolyTime.tidy.comp hsig)))
   have hstage : IsOraclePPTOn (encPair (encPair encUnary encBits) encUnary)
       (encPair encBits encBits)
       (fun c : (ℕ × List Bool) × ℕ =>

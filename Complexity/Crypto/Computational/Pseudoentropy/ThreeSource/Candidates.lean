@@ -77,23 +77,23 @@ section Lengths
 
 variable {α : Type} {input : α ↪ List Bool}
   {n sourceBits observationBound densityBound index : α → ℕ}
-  (hn : ComputableTidilyInPolyTime n input encUnary)
-  (hsource : ComputableTidilyInPolyTime sourceBits input encUnary)
-  (hobservation : ComputableTidilyInPolyTime observationBound input encUnary)
-  (hdensity : ComputableTidilyInPolyTime densityBound input encUnary)
-  (hindex : ComputableTidilyInPolyTime index input encUnary)
+  (hn : ComputableInPolyTime n input encUnary)
+  (hsource : ComputableInPolyTime sourceBits input encUnary)
+  (hobservation : ComputableInPolyTime observationBound input encUnary)
+  (hdensity : ComputableInPolyTime densityBound input encUnary)
+  (hindex : ComputableInPolyTime index input encUnary)
 
 include hn hsource hobservation hdensity hindex
 
 /-- The exact input size is uniformly available in unary. -/
-theorem isPolyTime_seedLength : ComputableTidilyInPolyTime
+theorem isPolyTime_seedLength : ComputableInPolyTime
     (fun a => seedLength (n a) (sourceBits a) (observationBound a) (densityBound a) (index a))
     input encUnary := by
   unfold seedLength
   polytime
 
 /-- The exact output size is uniformly available in unary. -/
-theorem isPolyTime_outputLength : ComputableTidilyInPolyTime
+theorem isPolyTime_outputLength : ComputableInPolyTime
     (fun a => outputLength (n a) (sourceBits a) (observationBound a) (densityBound a) (index a))
     input encUnary := by
   unfold outputLength
@@ -107,33 +107,33 @@ attribute [program_certificate] isPolyTime_seedLength isPolyTime_outputLength
 theorem isPolyTime_generate {α : Type} {input : α ↪ List Bool}
     {n sourceBits observationBound densityBound index : α → ℕ}
     {evaluate : α → List Bool → List Bool × Bool} {seed : α → List Bool}
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hsource : ComputableTidilyInPolyTime sourceBits input encUnary)
-    (hobservation : ComputableTidilyInPolyTime observationBound input encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound input encUnary)
-    (hindex : ComputableTidilyInPolyTime index input encUnary)
-    (hevaluate : ComputableTidilyInPolyTime (fun a => evaluate a.1 a.2)
+    (hn : ComputableInPolyTime n input encUnary)
+    (hsource : ComputableInPolyTime sourceBits input encUnary)
+    (hobservation : ComputableInPolyTime observationBound input encUnary)
+    (hdensity : ComputableInPolyTime densityBound input encUnary)
+    (hindex : ComputableInPolyTime index input encUnary)
+    (hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2)
       (encPair input encBits) (encPair encBits encBool))
-    (hseed : ComputableTidilyInPolyTime seed input encBits) :
-    ComputableTidilyInPolyTime (fun a => generate (n a) (sourceBits a) (observationBound a)
+    (hseed : ComputableInPolyTime seed input encBits) :
+    ComputableInPolyTime (fun a => generate (n a) (sourceBits a) (observationBound a)
       (densityBound a) (index a) (evaluate a) (seed a)) input encBits := by
   unfold generate
-  polytime
+  apply ThreeSource.isPolyTime_generate <;> fun_prop
 
 attribute [program_certificate] isPolyTime_generate
 
 /-- A saved sampler gives one efficient evaluator for the entire indexed family. -/
 theorem isPolyTime_generate_of_realization {pair : SamplablePair} (saved : pair.SeedRealization)
     {observationBound densityBound : ℕ → ℕ}
-    (hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary) :
-    ComputableTidilyInPolyTime (fun input => generate input.1.1 (saved.length input.1.1)
+    (hobservation : ComputableInPolyTime observationBound encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary) :
+    ComputableInPolyTime (fun input => generate input.1.1 (saved.length input.1.1)
       (observationBound input.1.1) (densityBound input.1.1) input.1.2
       (saved.evaluate input.1.1) input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits := by
-  have hlength := saved.length_isPolyTime.tidy
-  have hevaluate := saved.efficient.tidy
-  apply isPolyTime_generate <;> polytime
+  have hlength := saved.length_isPolyTime
+  have hevaluate := saved.efficient
+  apply isPolyTime_generate <;> fun_prop
 
 /-- The advertised lengths give strict expansion for every entry, even an inaccurate guess. -/
 theorem seedLength_lt_outputLength (n sourceBits observationBound densityBound index : ℕ) :
@@ -176,8 +176,8 @@ made before the test is quantified and is used only in the proof, never by `gene
 theorem exists_secure_choice {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (saved : pair.SeedRealization)
     {observationBound densityBound : ℕ → ℕ}
-    (hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary)
+    (hobservation : ComputableInPolyTime observationBound encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
     (hfits : ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
       (pair.encode n observation).length ≤ observationBound n)
     (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
@@ -193,6 +193,8 @@ theorem exists_secure_choice {pair : SamplablePair} {gap : ℕ → ℝ}
                 (fun word => ProbComp.eval (test n (choose n) word)))
           ((uniformList (outputLength n (saved.length n) (observationBound n) (densityBound n)
             (choose n))).bind (fun word => ProbComp.eval (test n (choose n) word)))) := by
+  have hobservation := hobservation.tidy
+  have hdensity := hdensity.tidy
   obtain ⟨choose, hvalid⟩ := exists_valid_choice hpair saved hgap
   refine ⟨choose, hvalid.mono (fun _ h => h.index_lt), ?_⟩
   intro test htest

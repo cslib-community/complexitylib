@@ -80,6 +80,7 @@ theorem unary_lt' {α : Type} {input : α ↪ List Bool} {left right : α → �
   unary_lt.comp (hleft.prod hright)
 
 /-- Convert a unary natural to its binary encoding. -/
+@[fun_prop]
 theorem unary_to_binary : ComputableInPolyTime (fun n : ℕ => n) encUnary encNat := by
   have hsize (n : ℕ) : (encNat n).length ≤ n := by
     rw [encNat_apply, Nat.size_eq_bits_len]
@@ -121,7 +122,7 @@ theorem bitsGetD (fallback : Bool) :
     obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.headD
       (enc₁ := encBool) (enc := encBits) fallback
     exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-      k, Q, hfin, tm, fun l => (htm l).computesInTimeAndSpace⟩
+      k, Q, hfin, tm, fun l => htm l⟩
   simpa only [Function.comp_def, List.headD_eq_head?_getD, List.head?_drop,
     List.getD_eq_getElem?_getD] using hhead.comp bitsDropUnary
 

@@ -29,7 +29,7 @@ example : GeneratorReindex.parameter schedule 0 = 0 := by decide
 example : GeneratorReindex.parameter schedule 3 = 1 := by decide
 example : GeneratorReindex.parameter schedule 4 = 3 := by decide
 
-example : ComputableTidilyInPolyTime (GeneratorReindex.parameter schedule) encUnary encUnary := by
+example : ComputableInPolyTime (GeneratorReindex.parameter schedule) encUnary encUnary := by
   apply GeneratorReindex.isPolyTime_parameter
   · unfold schedule
     fun_prop
@@ -50,7 +50,7 @@ example (seed : List Bool) :
       seed.length + 1 :=
   GeneratorReindex.length_generate (fun _ _ h => by simp [h]) seed
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (GeneratorReindex.generate schedule (fun _ seed => seed ++ [true])) encBits encBits := by
   apply GeneratorReindex.isPolyTime_generate
   · unfold schedule
@@ -90,7 +90,8 @@ example (adversary : ℕ → ℕ → List Bool → ProbComp Bool)
       Game.advantage (ProbComp.eval (sampleList n >>= adversary n index))
         (ProbComp.eval (sampleList n >>= adversary n index)) ≤ ε n := by
   apply ComputationallyIndistinguishable.uniform_bound
-    (ComputationallyIndistinguishable.refl _) (by ppt) (by ppt) (by fun_prop) adversary hadversary
+    (ComputationallyIndistinguishable.refl _) (by ppt) (by ppt) (.of_tidy (by fun_prop))
+      adversary hadversary
 
 -- The uniform test accepts captured data and a computed challenge in ordinary functional form.
 example : IsPPTOn (encPair encUnary encBits) encBool (fun p =>

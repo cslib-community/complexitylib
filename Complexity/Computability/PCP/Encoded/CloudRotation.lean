@@ -69,8 +69,19 @@ theorem isPolyTime_cloudRotation {graph : Input → Graph C}
     ComputableInPolyTime
       (fun x => (graph x).cloudRotation fallback rotate (halfEdge x))
       input (encPair (encPair encUnary encBool) labelEncoding) := by
-  unfold cloudRotation
-  polytime
+  have hhalf := hhalfEdge.fst'
+  have hvertex := isPolyTime_endpoint hgraph hhalf fallback
+  have hmembers := isPolyTime_cloud hgraph hvertex fallback
+  have hlength := (ComputableInPolyTime.length_list (encPair encUnary encBool)).comp hmembers
+  have hindex := (ComputableInPolyTime.idxOf (encPair encUnary encBool)).comp
+    (hmembers.prod hhalf)
+  have hnext := hrotate.comp (hlength.prod (hindex.prod hhalfEdge.snd'))
+  have hdrop := (ComputableInPolyTime.dropUnary (encA := encPair encUnary encBool)).comp
+    (hmembers.prod hnext.fst')
+  have hget := (ComputableInPolyTime.head? (encPair encUnary encBool)).comp hdrop
+  have hresult := (ComputableInPolyTime.optionGetD (encPair encUnary encBool)).comp
+    (hget.prod hhalf)
+  simpa only [cloudRotation, Function.comp_def, List.head?_drop] using hresult.prod hnext.snd'
 
 /-- Transport a numbered graph family to the explicitly enumerated mathematical clouds. -/
 def cloudFamily (g : Graph C) (eval : C → α → α → Bool) (fallback : C)

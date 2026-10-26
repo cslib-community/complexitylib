@@ -432,6 +432,31 @@ theorem le_edgeExpansion_of_spectralExpansion_le [Nontrivial V] {μ : ℝ}
   have := G.secondEigenvalue_le_spectralExpansion.trans hG
   gcongr
 
+open Classical in
+/-- When `ψ ≥ 0` vanishes outside `T` and takes minimum `ψ v₀` on `T`, peeling `ψ v₀` on `T` splits
+`|ψ p.1 - ψ (G.neighbor p.1 p.2)|` into the peeled difference plus `ψ v₀` on darts crossing `T`. -/
+private theorem abs_sub_eq_add_mul_ite_interedges {T : Finset V} {ψ : V → ℝ}
+    (hψ : ∀ v, 0 ≤ ψ v) (hT : ∀ v ∉ T, ψ v = 0) {v₀ : V} (hmin : ∀ v ∈ T, ψ v₀ ≤ ψ v)
+    (p : V × D) :
+    let ψ' : V → ℝ := fun v ↦ if v ∈ T then ψ v - ψ v₀ else 0
+    |ψ p.1 - ψ (G.neighbor p.1 p.2)| =
+      |ψ' p.1 - ψ' (G.neighbor p.1 p.2)| + ψ v₀ * ((if p ∈ G.interedges T Tᶜ then 1 else 0) +
+        if p ∈ G.interedges Tᶜ T then 1 else 0) := by
+  intro ψ'
+  have hu := hmin p.1
+  have hw := hmin (G.neighbor p.1 p.2)
+  by_cases h₁ : p.1 ∈ T <;> by_cases h₂ : G.neighbor p.1 p.2 ∈ T
+  · simp [ψ', h₁, h₂]
+  · simp only [ψ', mem_interedges, mem_compl, h₁, h₂, hT _ h₂, ite_true, ite_false, not_true,
+      not_false_eq_true, and_true, and_false, sub_zero, add_zero, mul_one]
+    rw [abs_of_nonneg (hψ _), abs_of_nonneg (sub_nonneg.2 (hu h₁))]
+    ring
+  · simp only [ψ', mem_interedges, mem_compl, h₁, h₂, hT _ h₁, ite_true, ite_false, not_true,
+      not_false_eq_true, and_true, and_false, zero_sub, zero_add, mul_one, abs_neg]
+    rw [abs_of_nonneg (hψ _), abs_of_nonneg (sub_nonneg.2 (hw h₂))]
+    ring
+  · simp [ψ', h₁, h₂, hT _ h₁, hT _ h₂]
+
 /-- **The co-area inequality.** If `ψ ≥ 0` vanishes outside `T` and at least `c |S|` edges leave
 every `S ⊆ T`, then the variation `∑ |ψ u - ψ w|` of `ψ` over the darts `(u, w)` is at least
 `2 c ∑ ψ`. Writing `ψ` as its least value `μ` on `T` times the indicator of `T` plus a function
@@ -460,28 +485,13 @@ private theorem two_mul_mul_sum_le_sum_abs_sub {c : ℝ} (T : Finset V) {ψ : V 
   have hsum : ∑ v, ψ' v = ∑ v, ψ v - #T * ψ v₀ := by
     rw [hψ'_def, sum_ite_mem, univ_inter, sum_sub_distrib, sum_const, nsmul_eq_mul,
       sum_subset (subset_univ T) fun v _ hv ↦ hT v hv]
-  have hdart (p : V × D) : |ψ p.1 - ψ (G.neighbor p.1 p.2)| =
-      |ψ' p.1 - ψ' (G.neighbor p.1 p.2)| + ψ v₀ * ((if p ∈ G.interedges T Tᶜ then 1 else 0) +
-        if p ∈ G.interedges Tᶜ T then 1 else 0) := by
-    have hu := hmin p.1
-    have hw := hmin (G.neighbor p.1 p.2)
-    by_cases h₁ : p.1 ∈ T <;> by_cases h₂ : G.neighbor p.1 p.2 ∈ T
-    · simp [ψ', h₁, h₂]
-    · simp only [ψ', mem_interedges, mem_compl, h₁, h₂, hT _ h₂, ite_true, ite_false, not_true,
-        not_false_eq_true, and_true, and_false, sub_zero, add_zero, mul_one]
-      rw [abs_of_nonneg (hψ _), abs_of_nonneg (sub_nonneg.2 (hu h₁))]
-      ring
-    · simp only [ψ', mem_interedges, mem_compl, h₁, h₂, hT _ h₁, ite_true, ite_false, not_true,
-        not_false_eq_true, and_true, and_false, zero_sub, zero_add, mul_one, abs_neg]
-      rw [abs_of_nonneg (hψ _), abs_of_nonneg (sub_nonneg.2 (hw h₂))]
-      ring
-    · simp [ψ', h₁, h₂, hT _ h₁, hT _ h₂]
   have he : ∑ p : V × D, ((if p ∈ G.interedges T Tᶜ then (1 : ℝ) else 0) +
       if p ∈ G.interedges Tᶜ T then 1 else 0) = 2 * #(G.interedges T Tᶜ) := by
     rw [sum_add_distrib, sum_boole, sum_boole, filter_mem_eq_inter, filter_mem_eq_inter,
       univ_inter, univ_inter, ← G.card_interedges_comm T Tᶜ]
     ring
-  rw [sum_congr rfl fun p _ ↦ hdart p, sum_add_distrib, ← mul_sum, he]
+  rw [sum_congr rfl fun p _ ↦ G.abs_sub_eq_add_mul_ite_interedges hψ hT hmin p, sum_add_distrib,
+    ← mul_sum, he]
   have hμ := mul_le_mul_of_nonneg_left (hc T subset_rfl) (hψ v₀)
   rw [hsum] at ih'
   linarith

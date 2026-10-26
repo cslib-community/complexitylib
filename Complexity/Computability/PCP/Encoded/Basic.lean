@@ -231,8 +231,13 @@ theorem isPolyTime_checkEdge {alphabet : α ↪ List Bool}
     (hindex : ComputableInPolyTime index input encUnary) :
     ComputableInPolyTime
       (fun x => checkEdge eval fallback label (graph x) (labels x) (index x)) input encBool := by
-  unfold checkEdge
-  polytime
+  have hedge := isPolyTime_edgeAt hgraph hindex fallback
+  have hsrc := Edge.isPolyTime_src hedge
+  have hdst := Edge.isPolyTime_dst hedge
+  have hconstraint := Edge.isPolyTime_constraint hedge
+  exact heval.comp (hconstraint.prod
+    (((ComputableInPolyTime.listGetD (encA := alphabet) label).comp (hlabels.prod hsrc)).prod
+      ((ComputableInPolyTime.listGetD (encA := alphabet) label).comp (hlabels.prod hdst))))
 
 /-- Interpret the explicit edge list on natural-number vertices. Unlisted vertices are isolated. -/
 def toGraph (g : Graph C) (eval : C → α → α → Bool) :

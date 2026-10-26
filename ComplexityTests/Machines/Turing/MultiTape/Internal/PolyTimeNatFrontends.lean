@@ -75,3 +75,19 @@ info: 'Turing.MultiTapeTM.ComputableInPolyTime.binary_testBit' depends on axioms
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Turing.MultiTapeTM.ComputableInPolyTime.binary_testBit
+
+
+-- The registered identity is automatic; opaque computed callbacks retain the direct generic
+-- composition API. Only the proved unary-to-binary direction is available.
+example : ComputableInPolyTime (fun n : ℕ => n) encUnary encNat := by fun_prop
+
+example {α : Type} {input : α ↪ List Bool} {n : α → ℕ}
+    (hn : ComputableInPolyTime n input encUnary) :
+    ComputableInPolyTime n input encNat := by
+  fail_if_success (clear hn; fun_prop)
+  exact ComputableInPolyTime.unary_to_binary.comp hn
+
+example : True := by
+  fail_if_success
+    have : ComputableInPolyTime (fun n : ℕ => n) encNat encUnary := by fun_prop
+  trivial

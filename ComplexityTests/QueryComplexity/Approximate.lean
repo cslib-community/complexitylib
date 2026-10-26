@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.QueryComplexity.ApproximateDegree.Or
+import Complexity.Computability.QueryComplexity.Midrijanis
 import Complexity.Foundations.Analysis.MarkovBrothersInequality
 import Complexity.Foundations.BooleanAnalysis.Symmetrization
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
@@ -23,20 +24,21 @@ open Cslib Cslib.BitString Cslib.QueryComplexity Polynomial
 /-- Markov's bound is attained: `T n` is bounded by `1` on `[-1, 1]`, its derivative is bounded by
 `n²` there, with equality at `1`. -/
 example (n : ℕ) :
-    (∀ x ∈ Set.Icc (-1 : ℝ) 1, |(derivative (Chebyshev.T ℝ n)).eval x| ≤ n ^ 2 * 1) ∧
-      (derivative (Chebyshev.T ℝ n)).eval 1 = n ^ 2 := by
+    (∀ x ∈ Set.Icc (-1 : ℝ) 1, |(Polynomial.derivative (Chebyshev.T ℝ n)).eval x| ≤ n ^ 2 * 1) ∧
+      (Polynomial.derivative (Chebyshev.T ℝ n)).eval 1 = n ^ 2 := by
   refine ⟨fun x hx => abs_eval_derivative_le_sq_mul (Chebyshev.natDegree_T ℝ n).le
     (fun y hy => Chebyshev.abs_eval_T_real_le_one n (abs_le.2 hy)) hx, ?_⟩
   exact_mod_cast Chebyshev.derivative_T_eval_one (R := ℝ) n
 
 /-- Bernstein's inequality at the center: `|p'(0)| ≤ n M`. -/
 example {n : ℕ} {p : ℝ[X]} (hp : p.natDegree ≤ n) {M : ℝ}
-    (hM : ∀ y ∈ Set.Icc (-1 : ℝ) 1, |p.eval y| ≤ M) : |(derivative p).eval 0| ≤ n * M := by
+    (hM : ∀ y ∈ Set.Icc (-1 : ℝ) 1, |p.eval y| ≤ M) :
+    |(Polynomial.derivative p).eval 0| ≤ n * M := by
   simpa using sqrt_mul_abs_eval_derivative_le hp hM (x := 0) (by norm_num)
 
 /-- Markov's inequality on `[0, 2]` for `X²`, bounded by `4`: `2 |2x| ≤ 2 · 2² · 4`. -/
-example (x : ℝ) (hx : x ∈ Set.Icc (0 : ℝ) 2) : (2 - 0) * |(derivative (X ^ 2 : ℝ[X])).eval x| ≤
-    2 * (2 : ℕ) ^ 2 * 4 :=
+example (x : ℝ) (hx : x ∈ Set.Icc (0 : ℝ) 2) :
+    (2 - 0) * |(Polynomial.derivative (X ^ 2 : ℝ[X])).eval x| ≤ 2 * (2 : ℕ) ^ 2 * 4 :=
   sub_mul_abs_eval_derivative_le (by simp) (by norm_num) (fun y hy => by
     simp only [eval_pow, eval_X]
     rw [abs_of_nonneg (by positivity)]
@@ -129,9 +131,9 @@ example {n : ℕ} (f : BooleanFunction n) :
     blockSensitivity_le_two_mul_sensitivity_pow_four f⟩
 
 example {n : ℕ} (f : BooleanFunction n) :
-    DecisionTree.complexity f ≤ 8 * degree f ^ 6 ∧
+    DecisionTree.complexity f ≤ 2 * degree f ^ 3 ∧
       DecisionTree.complexity f ≤ 216 * approxDegree (1 / 3) f ^ 6 :=
-  ⟨DecisionTree.complexity_le_eight_mul_degree_pow_six f,
+  ⟨DecisionTree.complexity_le_two_mul_degree_pow_three f,
     DecisionTree.complexity_le_mul_approxDegree_pow_six f⟩
 
 /-- The bound at a general error: `(1 - 2ε) bs(f) ≤ 2 adeg_ε(f)²`, here at `ε = 1/4`. -/

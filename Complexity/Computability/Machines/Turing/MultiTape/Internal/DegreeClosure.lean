@@ -7,7 +7,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Append
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelAppend
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.ConditionalMachine
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 
 /-!
@@ -50,14 +51,14 @@ theorem pair {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
   obtain ⟨c, k, Q, hfin, tm, h⟩ := hP.pair
     (t := fun a => t₁ a + t₂ a) (s := fun a => s₁ a + s₂ a)
     ⟨k₁, Q₁, inferInstance, tm₁, fun a =>
-      (h₁ a).mono (Nat.le_add_right _ _) (Nat.le_add_right _ _)⟩
+      ((h₁ a).mono (Nat.le_add_right _ _) (Nat.le_add_right _ _)).computesInTimeAndSpace⟩
     ⟨k₂, Q₂, inferInstance, tm₂, fun a =>
-      (h₂ a).mono (Nat.le_add_left _ _) (Nat.le_add_left _ _)⟩
+      ((h₂ a).mono (Nat.le_add_left _ _) (Nat.le_add_left _ _)).computesInTimeAndSpace⟩
   have ht := ((ht₁.add_max ht₂).add_const 1).smul c
   have hs := ((((hs₁.add_max hs₂).add ht).add_const 1).smul c)
   refine ⟨⟨_, _, ht, hs, k, Q, hfin, tm, fun a => ?_⟩,
     ht.mono fun a => (h a).length_output_le⟩
-  refine ((h a).mono le_rfl ?_).computesInTimeAndSpace
+  refine ⟨(h a).1, (h a).2.1, (h a).2.2.mono ?_⟩
   apply Nat.mul_le_mul_left
   have hl : (enc (f a, g a)).length ≤ c * (t₁ a + t₂ a + 1) :=
     (h a).length_output_le
@@ -88,21 +89,13 @@ theorem ite {encC : Bool ↪ List Bool} {c : α → Bool} {f g : α → β} {dc 
     Internal.NormalForm.degree hg
   obtain ⟨clf, hlf⟩ := hf.2
   obtain ⟨clg, hlg⟩ := hg.2
-  let h₀ : ComputableTidilyInTimeAndSpace c encIn encC tc sc :=
-    ⟨kc, Qc, inferInstance, tmc, hmc⟩
-  let h₁ : ComputableTidilyInTimeAndSpace (f ∘ Subtype.val)
-      ((Function.Embedding.subtype (c · = true)).trans encIn) encMid tf sf :=
-    ⟨kf, Qf, inferInstance, tmf, hmf⟩
-  let h₂ : ComputableTidilyInTimeAndSpace (g ∘ Subtype.val)
-      ((Function.Embedding.subtype (c · = false)).trans encIn) encMid tg sg :=
-    ⟨kg, Qg, inferInstance, tmg, hmg⟩
   -- the bounds of the branches, extended to all inputs
   let ext (u : {x // c x = true} → ℕ) (v : {x // c x = false} → ℕ) (x : α) : ℕ :=
     if h : c x = true then u ⟨x, h⟩ else v ⟨x, by simpa using h⟩
-  obtain ⟨k, h⟩ := ComputableTidilyInTimeAndSpace.ite h₀ (tf := ext tf tg) (sf := ext sf sg)
-    (tg := ext tf tg) (sg := ext sf sg)
-    (h₁.mono (fun x => by simp [ext, x.2]) (fun x => by simp [ext, x.2]))
-    (h₂.mono (fun x => by simp [ext, x.2]) (fun x => by simp [ext, x.2]))
+  obtain ⟨k, km, Qm, hmfin, tm, htm⟩ := Internal.conditional hmc
+    (tf := ext tf tg) (sf := ext sf sg) (tg := ext tf tg) (sg := ext sf sg)
+    (fun x => (hmf x).mono (by simp [ext, x.2]) (by simp [ext, x.2]))
+    (fun x => (hmg x).mono (by simp [ext, x.2]) (by simp [ext, x.2]))
   have hext {u v} {cu du cv dv : ℕ}
       (hu : ∀ x : {x // c x = true}, u x ≤ cu * ((encIn x).length + 1) ^ du)
       (hv : ∀ x : {x // c x = false}, v x ≤ cv * ((encIn x).length + 1) ^ dv) :
@@ -113,7 +106,6 @@ theorem ite {encC : Bool ↪ List Bool} {c : α → Bool} {f g : α → β} {dc 
       · simpa [ext, hx] using Nat.le_add_right_of_le (hu ⟨x, hx⟩)
       · simpa [ext, hx] using Nat.le_add_left_of_le (hv ⟨x, by simpa using hx⟩)
   have hd : max d₁ d₂ ≤ max dc (max d₁ d₂) := le_max_right _ _
-  obtain ⟨km, Qm, hmfin, tm, htm⟩ := h
   refine ⟨⟨_, _, ((htc.mono_deg (le_max_left _ _)).add ((hext htf htg).mono_deg hd)).add_const k,
     ((hsc.mono_deg (le_max_left _ _)).add ((hext hsf hsg).mono_deg hd)).add_const k,
     km, Qm, hmfin, tm, fun x => ((htm x).mono ?_ ?_).computesInTimeAndSpace⟩,

@@ -29,7 +29,7 @@ theorem fst {β₁ β₂ : Type u} (enc₁ : β₁ ↪ List Bool) (enc₂ : β�
   refine ⟨⟨fun p => c * ((encPair enc₁ enc₂ p).length + 1),
     fun p => c * ((encPair enc₁ enc₂ p).length + 1),
     ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, State, hfin, tm, fun p => (htm p).computesInTimeAndSpace⟩,
+    k, State, hfin, tm, fun p => htm p⟩,
     ⟨c, fun p => ?_⟩⟩
   simpa using (htm p).length_output_le
 
@@ -41,7 +41,7 @@ theorem snd {β₁ β₂ : Type u} (enc₁ : β₁ ↪ List Bool) (enc₂ : β�
   refine ⟨⟨fun p => c * ((encPair enc₁ enc₂ p).length + 1),
     fun p => c * ((encPair enc₁ enc₂ p).length + 1),
     ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, State, hfin, tm, fun p => (htm p).computesInTimeAndSpace⟩,
+    k, State, hfin, tm, fun p => htm p⟩,
     ⟨c, fun p => ?_⟩⟩
   simpa using (htm p).length_output_le
 

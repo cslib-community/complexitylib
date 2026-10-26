@@ -254,8 +254,7 @@ theorem WeakOneWayAt.normalize {f : List Bool → List Bool} {α : ℕ → ℝ}
     (hbound : ComputableInPolyTime bound encUnary encUnary) :
     WeakOneWayAt (OneWayNormalization.normalize f bound) α := by
   have hbound_tidy := hbound.tidy
-  refine ⟨.of_tidy
-      (OneWayNormalization.computableTidilyInPolyTime_normalize hf.polyTime.tidy hbound_tidy),
+  refine ⟨OneWayNormalization.computableInPolyTime_normalize hf.polyTime hbound,
     fun adversary hPPT => ?_⟩
   have hreduce : IsPPT encBits (fun n image =>
       adversary n (BitString.padWord (bound n) image)) := by ppt
@@ -326,7 +325,8 @@ private theorem computableTidilyInPolyTime_reindex {m : ℕ → ℕ} {core : ℕ
     ComputableTidilyInPolyTime (reindex m core) encBits encBits := by
   have hparam : ComputableTidilyInPolyTime
       (fun x : List Bool => GeneratorReindex.parameter m x.length) encBits encUnary :=
-    GeneratorReindex.isPolyTime_parameter hm (ComputableTidilyInPolyTime.encoding_length encBits)
+    (GeneratorReindex.isPolyTime_parameter (.of_tidy hm)
+      (ComputableInPolyTime.encoding_length encBits)).tidy
   have htake : ComputableTidilyInPolyTime
       (fun x : List Bool => x.take (m (GeneratorReindex.parameter m x.length))) encBits encBits :=
     ComputableTidilyInPolyTime.bitsTakeWithInput ComputableTidilyInPolyTime.id' (hm.comp hparam)
@@ -470,7 +470,7 @@ private theorem isPPT_familyInverter {m : ℕ → ℕ} {core : ℕ → List Bool
     have hw := hwrap.comp (ComputableTidilyInPolyTime.fst E1 encBits)
     have hcoins := ComputableTidilyInPolyTime.snd E1 encBits
     exact heval.comp ((hbest.prod hw).prod hcoins)
-  exact IsPPTOn.map_with hbudget.sampleList (.of_tidy hsearch)
+  exact IsPPTOn.map_with (ComputableInPolyTime.of_tidy hbudget).sampleList (.of_tidy hsearch)
 
 /-- **Fundamental schedule-reindexing reduction
 (`OneWayReindex.exists_familyInverter_inversion_le`).**

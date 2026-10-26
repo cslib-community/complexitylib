@@ -113,4 +113,70 @@ example :
       ![true] = none := by
   decide
 
+-- Concrete checks for `FormulaSIZE`, `FormulaPoly`, `FormulaSIZEOn`, and `FormulaPolyOn`.
+example : (0 : Language Bool) ∈ FormulaPoly := FormulaPoly.zero_mem
+
+example : (⊤ : Language Bool) ∈ FormulaPoly := FormulaPoly.top_mem
+
+example :
+    ((0 : Language Bool) : Set (List Bool)) ∈ FormulaPolyOn encBits :=
+  mem_FormulaPolyOn_encBits_iff.mpr FormulaPoly.zero_mem
+
+-- Concrete check of `card_filter_agreesOn_eq_two_pow`: on `n = 1` with sample set `{![false]}`,
+-- exactly `2 ^ (2 ^ 1 - 1) = 2` of the 4 truth tables agree with `fun x => x 0` on `{![false]}`.
+example :
+    (Finset.univ.filter fun T : BitString (2 ^ 1) =>
+      ∀ y ∈ ({![false]} : Finset (BitString 1)),
+        (MCSP.truthTable 1).symm T y = y 0).card = 2 := by
+  simpa using card_filter_agreesOn_eq_two_pow 1 {![false]} (fun x => x 0)
+
+-- Concrete check of Lemma 26 (`card_filter_ofFunction_mem_succinctMCSP_le`) on `n = 1`, `s = 0`,
+-- `S = Finset.univ`: at most `(computableFunctions 1 0).card * 2 ^ 0 ≤ 2` truth tables are in
+-- `SuccinctMCSP` at threshold `0`.
+open Classical in
+example :
+    (Finset.univ.filter fun T : BitString (2 ^ 1) =>
+      SuccinctMCSP.Instance.ofFunction
+        ((MCSP.truthTable 1).symm T) Finset.univ 0 ∈ SuccinctMCSP).card ≤ 2 := by
+  have hle := card_filter_ofFunction_mem_succinctMCSP_le 1 Finset.univ 0
+  have hcard : (Finset.univ : Finset (BitString 1)).card = 2 ^ 1 := by simp [BitString]
+  rw [hcard, Nat.sub_self, pow_zero, mul_one] at hle
+  exact hle.trans card_computableFunctions_one_zero_le
+
+-- Concrete value check of `computableFunctionsLogBound` at `n = 2, s = 3`
+-- (`(3 + 1) * (2 * 3 + 3) = 36`).
+example : computableFunctionsLogBound 2 3 = 36 := by decide
+
+-- Genuine non-vacuity check for `exists_formula_zero_error_average_case_of_succinctMCSP` at
+-- `n = 4, s = 0, r = 1`, where `computableFunctionsLogBound 4 0 + 1 = 9 + 1 = 10 ≤ 16 = 2 ^ 4`.
+example : computableFunctionsLogBound 4 0 + 1 ≤ 2 ^ 4 := by decide
+
+open Classical in
+example :
+    ∃ F : Formula signature (2 ^ 4),
+      F.leafSize ≤
+        formulaSize (Language.slice (SuccinctMCSP.enc '' SuccinctMCSP)
+          (avgCaseMCSPQueryEncLength 4 0 1)) ∧
+      (∀ T : BitString (2 ^ 4), List.ofFn T ∈ GapMCSP.yesSet (fun _ => 0) →
+        F.eval interpretation T = true) ∧
+      (Finset.univ.filter fun T : BitString (2 ^ 4) =>
+        F.eval interpretation T = true).card ≤ 2 ^ (2 ^ 4 - 1) :=
+  exists_formula_zero_error_average_case_of_succinctMCSP (s := fun _ => 0) (n := 4) (r := 1)
+    (by decide)
+
+-- Direct check of `exists_formula_ofFunction_SuccinctMCSP_of_agrees` with an explicit agreeing
+-- language (`SuccinctMCSP.enc '' SuccinctMCSP`).
+open Classical in
+example :
+    ∃ F : Formula signature (2 ^ 1),
+      (∀ T : BitString (2 ^ 1),
+        F.eval interpretation T =
+          decide (SuccinctMCSP.Instance.ofFunction
+            ((MCSP.truthTable 1).symm T) Finset.univ 0 ∈ SuccinctMCSP)) ∧
+      F.leafSize ≤
+        formulaSize (Language.slice (SuccinctMCSP.enc '' SuccinctMCSP)
+          (SuccinctMCSP.ofFunctionEncLength 1 (Finset.univ : Finset (BitString 1)).card 0)) :=
+  exists_formula_ofFunction_SuccinctMCSP_of_agrees
+    (fun _ => SuccinctMCSP.enc.injective.mem_set_image.symm) 1 Finset.univ 0
+
 end ComplexityTests.FormulaMagnification

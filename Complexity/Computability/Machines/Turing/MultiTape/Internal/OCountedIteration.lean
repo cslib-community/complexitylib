@@ -11,7 +11,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelIterateWhile
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelComp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -77,8 +78,8 @@ public theorem iterate {n : γ → ℕ} {init : γ → β} {step : β → β}
       (fun x => Tn x + Ti x + (n x + 1) * (R x + B x + ((encNat (n x)).length + 1) ^ 2))
       fun x => Sn x + Si x + Q x + B x + (encNat (n x)).length := by
   -- the iteration on `Option (ℕ × β)`, until the counter is exhausted
-  obtain ⟨c, hf, -⟩ := Internal.NormalForm.inO (countStep_inO (Ts := Ts) (Ss := Ss) hstep)
-  change ComputableTidilyInTimeAndSpace (countStep step) _ _ _ _ at hf
+  obtain ⟨c, ⟨kf, Qf, _, tmf, hf⟩, -⟩ :=
+    Internal.NormalForm.inO (countStep_inO (Ts := Ts) (Ss := Ss) hstep)
   have hr (o : Option (ℕ × β)) :
       IsLeast {m | encOption (encPair encNat encB) ((countStep step)^[m + 1] o) = []}
         ((o.map Prod.fst).getD 0) := by
@@ -92,14 +93,51 @@ public theorem iterate {n : γ → ℕ} {init : γ → β} {step : β → β}
         simp only [Set.mem_ofPred_eq, Option.map_some, Option.getD_some, not_le] at hm hlt
         rw [iterate_countStep step t b hlt] at hm
         simp at hm
-  obtain ⟨d, hit⟩ := hf.iterateWhile hr
+  let encC := encOption (encPair encNat encB)
+  let r (o : Option (ℕ × β)) := (o.map Prod.fst).getD 0
+  let tf (o : Option (ℕ × β)) := c * ((encC o).length +
+    ((encNat (o.getD default).1).length + 1) ^ 2 + Ts (o.getD default).2 + 1)
+  let sf (o : Option (ℕ × β)) := c * ((encC o).length + Ss (o.getD default).2 + 1)
+  let d := 2 * (kf + 3) * (6 * kf + 54) + (4 * kf + 42)
+  have hit (o : Option (ℕ × β)) : (tmf.iterateWhile true).ComputesTidilyInTimeAndSpace
+      (encC o) (encC ((countStep step)^[r o] o))
+      ((r o + 1) * ((Finset.Iic (r o)).sup (fun j => tf ((countStep step)^[j] o)) +
+        d * ((Finset.Iic (r o)).sup (fun j => (encC ((countStep step)^[j] o)).length) + 1)))
+      (d * ((Finset.Iic (r o)).sup (fun j => sf ((countStep step)^[j] o)) +
+        (Finset.Iic (r o)).sup (fun j => (encC ((countStep step)^[j] o)).length) + 1)) := by
+    have h := computesTidily_iterateWhile
+      (w := fun j => encC ((countStep step)^[j] o)) (r := r o)
+      (fun j hj => by
+        simpa only [Function.iterate_succ_apply'] using (hf ((countStep step)^[j] o)).mono
+          (Finset.le_sup (f := fun j => tf ((countStep step)^[j] o)) (Finset.mem_Iic.mpr hj))
+          (Finset.le_sup (f := fun j => sf ((countStep step)^[j] o)) (Finset.mem_Iic.mpr hj)))
+      (fun j hj => Finset.le_sup (f := fun j => (encC ((countStep step)^[j] o)).length)
+        (Finset.mem_Iic.mpr hj))
+      (fun j hj he => absurd ((hr o).2 he) (by dsimp only [r] at hj; omega)) (hr o).1 true
+    refine h.mono ?_ ?_ <;> dsimp [d] <;> ring_nf <;> omega
   -- the start, and its iterates
   have hstart := (ComputableInDegree.optionSome (enc₁ := encPair encNat encB)
     (enc := encOption (encPair encNat encB))).inO_one.comp_linear (hn.prod hinit)
-  obtain ⟨c₀, h₀, l₀⟩ := Internal.NormalForm.inO hstart
-  change ComputableTidilyInTimeAndSpace (fun x => some (n x, init x)) _ _ _ _ at h₀
-  -- Compose the two bare exact-bound machine witnesses.
-  obtain ⟨c₁, h⟩ := hit.comp_linear h₀
+  obtain ⟨c₀, ⟨k₀, Q₀, _, tm₀, h₀⟩, l₀⟩ := Internal.NormalForm.inO hstart
+  -- Compose these same two machines, retaining independent bounds and the output charge.
+  let c₁ := 6 * max k₀ (kf + 1 + 2) + 29
+  have h (x : γ) : ((tmf.iterateWhile true).comp tm₀ true).ComputesTidilyInTimeAndSpace
+      (encIn x) (encC ((countStep step)^[n x] (some (n x, init x))))
+      (c₀ * (Tn x + Ti x + 1) +
+        (n x + 1) * ((Finset.Iic (n x)).sup
+          (fun j => tf ((countStep step)^[j] (some (n x, init x)))) +
+          d * ((Finset.Iic (n x)).sup
+            (fun j => (encC ((countStep step)^[j] (some (n x, init x)))).length) + 1)) +
+        c₁ * ((encC (some (n x, init x))).length + 1))
+      (c₀ * (Sn x + Si x + 1) +
+        d * ((Finset.Iic (n x)).sup (fun j => sf ((countStep step)^[j] (some (n x, init x)))) +
+          (Finset.Iic (n x)).sup
+            (fun j => (encC ((countStep step)^[j] (some (n x, init x)))).length) + 1) +
+        c₁ * ((encC (some (n x, init x))).length + 1)) := by
+    have hx := (h₀ x).comp (hit (some (n x, init x))) true
+    simp only [r, Option.map_some, Option.getD_some, Function.comp_apply] at hx
+    apply hx.mono
+    all_goals dsimp only [c₁, encC]; ring_nf; omega
   have hiter (x : γ) {k : ℕ} (hk : k ≤ n x) :
       (countStep step)^[k] (some (n x, init x)) = some (n x - k, step^[k] (init x)) :=
     iterate_countStep step _ _ hk
@@ -151,15 +189,15 @@ public theorem iterate {n : γ → ℕ} {init : γ → β} {step : β → β}
       (encOption (encPair encNat encB))
       (fun x => Tn x + Ti x + (n x + 1) * (R x + B x + ((encNat (n x)).length + 1) ^ 2))
       fun x => Sn x + Si x + Q x + B x + (encNat (n x)).length := by
-    refine of_bounds h.computableInTimeAndSpace
+    refine of_bounds ⟨_, _, inferInstance, (tmf.iterateWhile true).comp tm₀ true,
+      fun x => (h x).computesInTimeAndSpace⟩
       (c₀ + c₁ * (c₀ + 1) + 8 * (c + d + 1) + 4 * d * (c + 1)) (fun x => ?_)
       (fun x => ?_)
       (fun x => ?_)
-    · simp only [Option.map_some, Option.getD_some]
-      set P := R x + B x + ((encNat (n x)).length + 1) ^ 2
+    · set P := R x + B x + ((encNat (n x)).length + 1) ^ 2
       have h₁ := hT x
       have h₂ := hL x
-      have h₃ := h₀.length_le x
+      have h₃ := (h₀ x).length_output_le
       have h₄ : (encNat (n x)).length + 1 ≤ ((encNat (n x)).length + 1) ^ 2 :=
         Nat.le_self_pow two_ne_zero _
       have e₁ : c * (2 * (encNat (n x)).length + B x + 2 + ((encNat (n x)).length + 1) ^ 2 +
@@ -173,8 +211,7 @@ public theorem iterate {n : γ → ℕ} {init : γ → β} {step : β → β}
         ring_nf; nlinarith [Nat.zero_le (n x * P), Nat.zero_le P]
       exact sum_le (k' := 4 * d * (c + 1))
         ((e₂.trans e₃).trans (Nat.mul_le_mul_left _ (by omega))) h₃
-    · simp only [Option.map_some, Option.getD_some]
-      set W := Q x + B x + (encNat (n x)).length
+    · set W := Q x + B x + (encNat (n x)).length
       have h₁ := (hS x).trans (Nat.mul_le_mul_left c
         (show 2 * (encNat (n x)).length + B x + 2 + Q x + 1 ≤ 3 * (W + 1) by omega))
       have h₂ := (Nat.add_le_add_right (hL x) 1).trans

@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Factorial
 import Complexity.Foundations.Data.BitString.Basic
+import Complexity.Foundations.Data.List.Lookup
 import Complexity.Foundations.Data.Matrix.Reindex
 import Mathlib.Data.List.GetD
 
@@ -203,10 +204,6 @@ private def certBit (b : Bool) (τ : Equiv.Perm (Fin n)) (q : ℕ) : Bool :=
 private def cert (C : ℕ) (b : Bool) (τ : Equiv.Perm (Fin n)) : BitString C :=
   fun q => certBit b τ q
 
-private theorem getD_ofFn {E : ℕ} (x : BitString E) {p : ℕ} (hp : p < E) :
-    (List.ofFn x).getD p false = x ⟨p, hp⟩ := by
-  rw [List.getD_eq_getElem _ _ (by simpa using hp), List.getElem_ofFn]
-
 /-- The matrix read from the first `n * n` bits of a word. -/
 private def decodeMatrix (n : ℕ) (u : List Bool) : Matrix (Fin n) (Fin n) Bool :=
   Matrix.of fun i j => u.getD (i * n + j) false
@@ -251,7 +248,7 @@ private def decodeMap (n k : ℕ) (u : List Bool) (i : Fin n) : Fin n :=
 private theorem decodeMatrix_code {E : ℕ} (hE : n * n ≤ E) (M : Matrix (Fin n) (Fin n) Bool)
     (σ : Equiv.Perm (Fin n)) : decodeMatrix n (List.ofFn (code E M σ)) = M := by
   ext i j
-  rw [decodeMatrix, Matrix.of_apply, getD_ofFn _ ((index_lt i j).trans_le hE)]
+  rw [decodeMatrix, Matrix.of_apply, List.getD_ofFn_of_lt _ ((index_lt i j).trans_le hE)]
   simp only [code, codeBit, index_lt i j, ↓reduceIte, matrixBit_index]
 
 /-- In the matrix of a permutation `σ`, row `i` has its set bit at `σ i`. -/
@@ -265,14 +262,14 @@ private theorem decodeMap_code {E : ℕ} (hE : 2 * (n * n) ≤ E) (M : Matrix (F
   refine Fin.ext (image_eq (σ i).2 fun j hj => ?_)
   have hlt : (i : ℕ) * n + j < n * n := index_lt i ⟨j, hj⟩
   rw [List.getD_eq_getElem?_getD, List.getElem?_drop, ← List.getD_eq_getElem?_getD,
-    getD_ofFn _ (by omega)]
+    List.getD_ofFn_of_lt _ (by omega)]
   simp only [code, codeBit, show ¬(n * n + (i * n + j) < n * n) by omega, ↓reduceIte,
     Nat.add_sub_cancel_left]
   rw [matrixBit_index _ i ⟨j, hj⟩, Matrix.of_apply, decide_val_eq hj]
 
 private theorem getD_ofFn_cert_zero {C : ℕ} (hC : 0 < C) (b : Bool) (τ : Equiv.Perm (Fin n)) :
     (List.ofFn (cert C b τ)).getD 0 false = b := by
-  rw [getD_ofFn _ hC]
+  rw [List.getD_ofFn_of_lt _ hC]
   simp [cert, certBit]
 
 private theorem decodeMap_cert {C : ℕ} (hC : n * n + 1 ≤ C) (b : Bool) (τ : Equiv.Perm (Fin n)) :
@@ -281,7 +278,7 @@ private theorem decodeMap_cert {C : ℕ} (hC : n * n + 1 ≤ C) (b : Bool) (τ :
   refine Fin.ext (image_eq (τ i).2 fun j hj => ?_)
   have hlt : (i : ℕ) * n + j < n * n := index_lt i ⟨j, hj⟩
   rw [List.getD_eq_getElem?_getD, List.getElem?_drop, ← List.getD_eq_getElem?_getD,
-    getD_ofFn _ (by omega)]
+    List.getD_ofFn_of_lt _ (by omega)]
   simp only [cert, certBit, show 1 + (i * n + j) ≠ 0 by omega, ↓reduceIte,
     Nat.add_sub_cancel_left]
   rw [matrixBit_index _ i ⟨j, hj⟩, Matrix.of_apply, decide_val_eq hj]
@@ -388,7 +385,7 @@ private theorem exists_cert_check_code {E C : ℕ} (hE : 2 * (n * n) + 1 ≤ E) 
   obtain ⟨-, horb, haut⟩ := mem_filter.1 hb
   obtain ⟨τ, hτ⟩ := mem_orbit.1 horb
   refine ⟨cert C b τ, check_eq_true_iff.2 ⟨fun p hp => ?_, fun i hi j hj => ?_⟩⟩
-  · rw [getD_ofFn _ (by omega)]
+  · rw [List.getD_ofFn_of_lt _ (by omega)]
     simp only [code, codeBit, show ¬(2 * (n * n) + p < n * n) by omega, ↓reduceIte]
     exact matrixBit_of_le _ (by omega)
   · have hf := congrArg Fin.val (congrFun (decodeMap_code (by omega : 2 * (n * n) ≤ E) M σ) ⟨i, hi⟩)
@@ -403,7 +400,7 @@ private theorem exists_cert_check_code {E C : ℕ} (hE : 2 * (n * n) + 1 ≤ E) 
     rw [hf, hg, hf', hg', getD_ofFn_cert_zero (by omega)]
     have hlt : i * n + j < n * n := index_lt ⟨i, hi⟩ ⟨j, hj⟩
     refine ⟨?_, ?_, ?_, ?_, ?_⟩
-    · rw [getD_ofFn _ (by omega)]
+    · rw [List.getD_ofFn_of_lt _ (by omega)]
       simp only [code, codeBit, show ¬(n * n + (i * n + j) < n * n) by omega, ↓reduceIte,
         Nat.add_sub_cancel_left]
       rw [matrixBit_index _ ⟨i, hi⟩ ⟨j, hj⟩, Matrix.of_apply]
@@ -432,19 +429,19 @@ private theorem code_decodeMatrix_of_check {E C : ℕ} {adj : Bool → ℕ → �
   by_cases h₁ : p.1 < n * n
   · simp only [codeBit, h₁, ↓reduceIte, matrixBit, ↓reduceDIte, BitString.blocksEquiv_symm_apply,
       Matrix.of_symm_apply, decodeMatrix, Matrix.of_apply]
-    rw [index_symm h₁, getD_ofFn _ p.2]
+    rw [index_symm h₁, List.getD_ofFn_of_lt _ p.2]
   · by_cases h₂ : p.1 - n * n < n * n
     · simp only [codeBit, h₁, ↓reduceIte, matrixBit, h₂, ↓reduceDIte,
         BitString.blocksEquiv_symm_apply, Matrix.of_symm_apply, Matrix.of_apply,
         Equiv.ofBijective_apply, decodeMap]
       have hrow := (hrows _ (finProdFinEquiv.symm ⟨p.1 - n * n, h₂⟩).1.2 _
         (finProdFinEquiv.symm ⟨p.1 - n * n, h₂⟩).2.2).1
-      rw [index_symm h₂, Nat.add_sub_cancel' (by omega), getD_ofFn _ p.2] at hrow
+      rw [index_symm h₂, Nat.add_sub_cancel' (by omega), List.getD_ofFn_of_lt _ p.2] at hrow
       rw [hrow]
       exact decide_eq_decide.2 Fin.ext_iff
     · simp only [codeBit, h₁, ↓reduceIte, matrixBit_of_le _ (Nat.not_lt.1 h₂)]
       have := hrest (p.1 - 2 * (n * n)) (by omega)
-      rw [Nat.add_sub_cancel' (by omega), getD_ofFn _ p.2] at this
+      rw [Nat.add_sub_cancel' (by omega), List.getD_ofFn_of_lt _ p.2] at this
       exact this.symm
 
 /-- **The certified pairs**: the elements of `E` bits with a certificate of `C` bits that passes

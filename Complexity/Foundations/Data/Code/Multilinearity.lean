@@ -61,8 +61,9 @@ direction-`0` line that is affine and on which both slices are correct. Babai, F
 prove a bound polynomial in the dimension: if in every direction the proportion of `δ`-wrong
 lines is less than `ε`, then `f` is `3 n ^ 2 (ε + δ + 1 / N)`-approximately multilinear when
 `N ≥ 40 n ^ 2`, `δ ≤ 1 / (400 n ^ 2)` and `ε ≤ 1 / (800 n ^ 3)` [Babai, Fortnow, Lund, Theorem 5.13]
-[BabaiFortnowLund1991]. That bound, which needs their expansion, self-improvement and tree coloring
-lemmas, is not formalized here.
+[BabaiFortnowLund1991]. That bound, for the whole-line test, is
+`Cslib.Code.exists_isMultilinear_hammingDist_lt`, in the module
+`Complexity.Foundations.Data.Code.MultilinearitySoundness`.
 
 ## Main definitions
 
@@ -88,6 +89,10 @@ lemmas, is not formalized here.
   `Cslib.Code.isMultilinear_iff_exists_mem_restrictDegree`: multilinear functions are the
   evaluations of polynomials of degree at most one in each variable.
 * `Cslib.Code.multilinearityTestRejection_eq_zero_iff`: completeness and zero-error soundness.
+* `Cslib.Code.card_wrongPoints_succ`: the wrong points in direction `j.succ` are those of the
+  slices in direction `j`.
+* `Cslib.Code.exists_isMultilinear_hammingDist_le_of_slices`: interpolating multilinear
+  approximations of two slices.
 * `Cslib.Code.exists_isMultilinear_hammingDist_le`,
   `Cslib.Code.exists_isMultilinear_hammingDist_div_le`: quantitative soundness with a constant
   exponential in the dimension.
@@ -454,8 +459,9 @@ private theorem lineRestrict_succ (f : (Fin (n + 1) → F) → F) (x : Fin (n + 
   funext t
   simp only [lineRestrict, Fin.cons_update, Fin.cons_self_tail]
 
-/-- The wrong points of `f` in direction `j.succ` are those of its slices in direction `j`. -/
-private theorem card_wrongPoints_succ (f : (Fin (n + 1) → F) → F) (j : Fin n) :
+/-- The wrong points of `f` in direction `j.succ` are those of its slices `x 0 = t` in direction
+`j`. -/
+theorem card_wrongPoints_succ (f : (Fin (n + 1) → F) → F) (j : Fin n) :
     #(wrongPoints f j.succ) = ∑ t, #(wrongPoints (fun y => f (Fin.cons t y)) j) := by
   have : wrongPoints f j.succ = ({x | ¬IsAffineFun (lineRestrict (fun y => f (Fin.cons (x 0) y))
       (Fin.tail x) j)} : Finset (Fin (n + 1) → F)) := by
@@ -489,6 +495,70 @@ private theorem exists_two_mul_le_sum (D : F → ℕ) :
   rw [show m + 2 - 1 = m + 1 by omega] at hsum
   nlinarith
 
+/-- **Interpolating two slices**: if `g₁` and `g₂` are multilinear functions on `F ^ n` and
+`t₁ ≠ t₂`, then interpolating them in the first coordinate gives a multilinear function on
+`F ^ (n + 1)` that differs from `f` only at points that are wrong in direction `0` or that lie
+over a point where one of the slices `x 0 = t₁`, `x 0 = t₂` of `f` differs from `g₁`, `g₂`. This is
+the interpolation step in the proof of [Babai, Fortnow, Lund, Lemma 5.11][BabaiFortnowLund1991],
+for lines that are exactly affine. -/
+theorem exists_isMultilinear_hammingDist_le_of_slices (f : (Fin (n + 1) → F) → F) {t₁ t₂ : F}
+    (h12 : t₁ ≠ t₂) {g₁ g₂ : (Fin n → F) → F} (hg₁ : IsMultilinear g₁) (hg₂ : IsMultilinear g₂) :
+    ∃ g, IsMultilinear g ∧ hammingDist f g ≤ #(wrongPoints f 0) +
+      Fintype.card F * (hammingDist (fun y => f (Fin.cons t₁ y)) g₁ +
+        hammingDist (fun y => f (Fin.cons t₂ y)) g₂) := by
+  have hd : t₂ - t₁ ≠ 0 := sub_ne_zero.mpr h12.symm
+  -- The interpolation of `g₁` and `g₂` in the first coordinate.
+  let g : (Fin (n + 1) → F) → F := fun x =>
+    g₁ (Fin.tail x) + (x 0 - t₁) / (t₂ - t₁) * (g₂ (Fin.tail x) - g₁ (Fin.tail x))
+  have hg0 (x : Fin (n + 1) → F) : lineRestrict g x 0 = fun t =>
+      g₁ (Fin.tail x) + (t - t₁) / (t₂ - t₁) * (g₂ (Fin.tail x) - g₁ (Fin.tail x)) := by
+    funext t
+    simp only [g, lineRestrict, Fin.tail_update_zero, update_self]
+  have hg : IsMultilinear g := by
+    intro x i
+    induction i using Fin.cases with
+    | zero =>
+      rw [hg0]
+      exact ⟨(g₂ (Fin.tail x) - g₁ (Fin.tail x)) / (t₂ - t₁),
+        g₁ (Fin.tail x) - t₁ * ((g₂ (Fin.tail x) - g₁ (Fin.tail x)) / (t₂ - t₁)),
+        fun t => by ring⟩
+    | succ j =>
+      have : lineRestrict g x j.succ = fun t => lineRestrict g₁ (Fin.tail x) j t +
+          (x 0 - t₁) / (t₂ - t₁) *
+            (lineRestrict g₂ (Fin.tail x) j t - lineRestrict g₁ (Fin.tail x) j t) := by
+        funext t
+        simp only [g, lineRestrict, Fin.tail_update_succ,
+          update_of_ne (Fin.succ_ne_zero j).symm]
+      rw [this]
+      exact (hg₁ _ j).add (((hg₂ _ j).sub (hg₁ _ j)).const_mul _)
+  refine ⟨g, hg, ?_⟩
+  -- Every point where `f` and `g` differ is wrong in direction `0`, or lies over a point where
+  -- one of the two slices differs from its approximation.
+  let bad (t : F) (h : (Fin n → F) → F) : Finset (Fin (n + 1) → F) :=
+    {x | f (Fin.cons t (Fin.tail x)) ≠ h (Fin.tail x)}
+  have hsub : ({x | f x ≠ g x} : Finset (Fin (n + 1) → F)) ⊆
+      wrongPoints f 0 ∪ (bad t₁ g₁ ∪ bad t₂ g₂) := by
+    intro x hx
+    simp only [wrongPoints, bad, mem_filter, mem_univ, true_and, mem_union] at hx ⊢
+    by_contra! hc
+    obtain ⟨haff, h1, h2⟩ := hc
+    have hcons (t : F) : update x 0 t = Fin.cons t (Fin.tail x) := by
+      rw [← Fin.update_cons_zero (x 0) (Fin.tail x) t, Fin.cons_self_tail]
+    have hline := haff.eq_of_eq_of_eq (hg x 0) h12
+      (by rw [hg0]; simp only [lineRestrict, hcons, h1, sub_self, zero_div, zero_mul, add_zero])
+      (by rw [hg0]; simp only [lineRestrict, hcons, h2, div_self hd, one_mul,
+        add_sub_cancel])
+    exact hx (by simpa using congrFun hline (x 0))
+  have hcard (t : F) (h : (Fin n → F) → F) :
+      #(bad t h) = Fintype.card F * hammingDist (fun y => f (Fin.cons t y)) h := by
+    rw [card_filter_zero_tail (fun _ y => f (Fin.cons t y) ≠ h y), sum_const, card_univ,
+      smul_eq_mul, hammingDist]
+  calc hammingDist f g = #({x | f x ≠ g x} : Finset (Fin (n + 1) → F)) := rfl
+    _ ≤ #(wrongPoints f 0) + (#(bad t₁ g₁) + #(bad t₂ g₂)) :=
+      (card_le_card hsub).trans ((card_union_le _ _).trans
+        (Nat.add_le_add_left (card_union_le _ _) _))
+    _ = _ := by rw [hcard, hcard, mul_add]
+
 /-- **Quantitative soundness of the multilinearity test**, with a constant exponential in the
 dimension (an original bound): some multilinear `g` differs from `f` on at most
 `∑ i, 2 ^ i * #(wrongPoints f i)` points of `F ^ n`. The proof interpolates multilinear
@@ -503,64 +573,11 @@ theorem exists_isMultilinear_hammingDist_le (f : (Fin n → F) → F) :
     choose gs hgs hdist using fun t : F => ih fun y => f (Fin.cons t y)
     obtain ⟨t₁, t₂, h12, hD⟩ :=
       exists_two_mul_le_sum fun t => hammingDist (fun y => f (Fin.cons t y)) (gs t)
-    have hd : t₂ - t₁ ≠ 0 := sub_ne_zero.mpr h12.symm
-    -- The interpolation of `gs t₁` and `gs t₂` in the first coordinate.
-    let g : (Fin (n + 1) → F) → F := fun x =>
-      gs t₁ (Fin.tail x) + (x 0 - t₁) / (t₂ - t₁) * (gs t₂ (Fin.tail x) - gs t₁ (Fin.tail x))
-    have hg0 (x : Fin (n + 1) → F) : lineRestrict g x 0 = fun t =>
-        gs t₁ (Fin.tail x) + (t - t₁) / (t₂ - t₁) * (gs t₂ (Fin.tail x) - gs t₁ (Fin.tail x)) := by
-      funext t
-      simp only [g, lineRestrict, Fin.tail_update_zero, update_self]
-    have hg : IsMultilinear g := by
-      intro x i
-      induction i using Fin.cases with
-      | zero =>
-        rw [hg0]
-        exact ⟨(gs t₂ (Fin.tail x) - gs t₁ (Fin.tail x)) / (t₂ - t₁),
-          gs t₁ (Fin.tail x) - t₁ * ((gs t₂ (Fin.tail x) - gs t₁ (Fin.tail x)) / (t₂ - t₁)),
-          fun t => by ring⟩
-      | succ j =>
-        have : lineRestrict g x j.succ = fun t => lineRestrict (gs t₁) (Fin.tail x) j t +
-            (x 0 - t₁) / (t₂ - t₁) *
-              (lineRestrict (gs t₂) (Fin.tail x) j t - lineRestrict (gs t₁) (Fin.tail x) j t) := by
-          funext t
-          simp only [g, lineRestrict, Fin.tail_update_succ,
-            update_of_ne (Fin.succ_ne_zero j).symm]
-        rw [this]
-        exact (hgs t₁ _ j).add (((hgs t₂ _ j).sub (hgs t₁ _ j)).const_mul _)
+    obtain ⟨g, hg, hfg⟩ := exists_isMultilinear_hammingDist_le_of_slices f h12 (hgs t₁) (hgs t₂)
     refine ⟨g, hg, ?_⟩
-    -- Every point where `f` and `g` differ is wrong in direction `0`, or lies over a point where
-    -- one of the two slices differs from its approximation.
-    let bad (t : F) : Finset (Fin (n + 1) → F) :=
-      {x | f (Fin.cons t (Fin.tail x)) ≠ gs t (Fin.tail x)}
-    have hsub : ({x | f x ≠ g x} : Finset (Fin (n + 1) → F)) ⊆
-        wrongPoints f 0 ∪ (bad t₁ ∪ bad t₂) := by
-      intro x hx
-      simp only [wrongPoints, bad, mem_filter, mem_univ, true_and, mem_union] at hx ⊢
-      by_contra! hc
-      obtain ⟨haff, h1, h2⟩ := hc
-      have hcons (t : F) : update x 0 t = Fin.cons t (Fin.tail x) := by
-        rw [← Fin.update_cons_zero (x 0) (Fin.tail x) t, Fin.cons_self_tail]
-      have hline := haff.eq_of_eq_of_eq (hg x 0) h12
-        (by rw [hg0]; simp only [lineRestrict, hcons, h1, sub_self, zero_div, zero_mul, add_zero])
-        (by rw [hg0]; simp only [lineRestrict, hcons, h2, div_self hd, one_mul,
-          add_sub_cancel])
-      exact hx (by simpa using congrFun hline (x 0))
-    have hcard (t : F) :
-        #(bad t) = Fintype.card F * hammingDist (fun y => f (Fin.cons t y)) (gs t) := by
-      rw [card_filter_zero_tail (fun _ y => f (Fin.cons t y) ≠ gs t y), sum_const, card_univ,
-        smul_eq_mul, hammingDist]
-    calc hammingDist f g = #({x | f x ≠ g x} : Finset (Fin (n + 1) → F)) := rfl
-      _ ≤ #(wrongPoints f 0) + (Fintype.card F *
-            hammingDist (fun y => f (Fin.cons t₁ y)) (gs t₁) +
-          Fintype.card F * hammingDist (fun y => f (Fin.cons t₂ y)) (gs t₂)) := by
-        rw [← hcard, ← hcard]
-        exact (card_le_card hsub).trans ((card_union_le _ _).trans
-          (Nat.add_le_add_left (card_union_le _ _) _))
-      _ ≤ #(wrongPoints f 0) +
-          2 * ∑ t, hammingDist (fun y => f (Fin.cons t y)) (gs t) := by
-        rw [← mul_add]
-        exact Nat.add_le_add_left hD _
+    calc hammingDist f g ≤ #(wrongPoints f 0) +
+          2 * ∑ t, hammingDist (fun y => f (Fin.cons t y)) (gs t) :=
+        hfg.trans (Nat.add_le_add_left hD _)
       _ ≤ #(wrongPoints f 0) + 2 * ∑ t, ∑ j : Fin n,
             2 ^ (j : ℕ) * #(wrongPoints (fun y => f (Fin.cons t y)) j) :=
         Nat.add_le_add_left (Nat.mul_le_mul_left _ (sum_le_sum fun t _ => hdist t)) _
@@ -574,7 +591,8 @@ theorem exists_isMultilinear_hammingDist_le (f : (Fin n → F) → F) :
 /-- **Quantitative soundness of the multilinearity test**, as a probability: some multilinear `g`
 is within relative distance `n * 2 ^ (n - 1) * ρ` of `f`, where `ρ` is the rejection probability
 of the test. The constant is exponential in the dimension; the polynomial bound of
-[Babai, Fortnow, Lund, Theorem 5.13][BabaiFortnowLund1991] is not formalized here. -/
+[Babai, Fortnow, Lund, Theorem 5.13][BabaiFortnowLund1991] is
+`Cslib.Code.exists_isMultilinear_hammingDist_lt`. -/
 theorem exists_isMultilinear_hammingDist_div_le (f : (Fin n → F) → F) :
     ∃ g, IsMultilinear g ∧ (hammingDist f g : ℝ) / Fintype.card (Fin n → F) ≤
       n * 2 ^ (n - 1) * multilinearityTestRejection f := by

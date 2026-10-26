@@ -71,7 +71,7 @@ private theorem extractInput_decoder :
   let integer : Decoder encIntBin := {
     decode := decodeIntBin
     decode_enc := decodeIntBin_encIntBin
-    computable := computableInPolyTime_decodeIntBin.tidy.exists_degree }
+    computable := computableInPolyTime_decodeIntBin.exists_degree }
   let row := Decoder.pair Decoder.bits (Decoder.option (Decoder.list integer))
   let decoder := Decoder.pair (Decoder.pair Decoder.unary Decoder.unary) (Decoder.pair row row)
   exact ⟨decoder, rfl⟩
@@ -89,7 +89,7 @@ theorem computableInPolyTime_decodeLyubashevskyExtractInput :
     ComputableInPolyTime decodeLyubashevskyExtractInput encBits encLyubashevskyExtractInput := by
   obtain ⟨decoder, hdecoder⟩ := extractInput_decoder
   rw [← hdecoder]
-  exact .of_tidy decoder.computableTidilyInPolyTime
+  exact decoder.computableInPolyTime
 
 /-- Compute `z-z′` first, then the SIGNED challenge difference `c′-c`. The unary dimensions
 control both output segments; optional responses default to zero coordinatewise. -/

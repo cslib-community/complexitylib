@@ -357,7 +357,7 @@ private theorem sum_uniformOfFinset_le_mul_uniformOfFintype {n : ℕ}
 /-- The trivial inverter that ignores the challenge image and samples a uniform $k$-bit string. -/
 private noncomputable def trivialInverter : Inverter := fun k _ => BitString.sampleList k
 
-@[program_certificate]
+@[local program_certificate]
 private theorem isPPT_trivialInverter : IsPPT encBits trivialInverter := by
   unfold trivialInverter
   ppt
@@ -690,7 +690,7 @@ private theorem computableTidilyInPolyTime_rawGen {g : List Bool → List Bool} 
     (z.drop (wFn z + kFn z + kFn z * imgLen (kFn z))).take (h2Rows d γ_core (kFn z) * kFn z)
   let padFn (z : List Bool) := z.drop (coreSeedLen imgLen d γ_core (kFn z))
   have hk : ComputableTidilyInPolyTime kFn encBits encUnary :=
-    GeneratorReindex.isPolyTime_parameter (by fun_prop) (by fun_prop)
+    (GeneratorReindex.isPolyTime_parameter (by fun_prop) (by fun_prop)).tidy
   have hw : ComputableTidilyInPolyTime wFn encBits encUnary := by unfold wFn; fun_prop
   have hr : ComputableTidilyInPolyTime rFn encBits encUnary := by unfold rFn; fun_prop
   have hx : ComputableTidilyInPolyTime xFn encBits encBits := by unfold xFn; fun_prop
@@ -3343,7 +3343,7 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
   have hS (k : ℕ) : (S k).Nonempty := (hbucket k).choose_spec.1
   have hdense (k : ℕ) : 2 ^ k ≤ (k + 1) * (S k).card := (hbucket k).choose_spec.2.1
   refine ⟨fullGen g imgLen d γ_core γ, α,
-    computableInPolyTime_fullGen hg.polyTime.tidy himgLen_poly d γ_core γ,
+    computableInPolyTime_fullGen hg.polyTime.tidy himgLen_poly.tidy d γ_core γ,
     length_fullGen g imgLen d γ_core γ,
     condSeedSet imgLen d γ_core S r, condSeedSet_nonempty imgLen d γ_core S hS r, ?_, ?_⟩
   · intro adversary hadv
@@ -3351,7 +3351,7 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
     let D_inv := (2 * d + γ_core + 2) + 3 + (E + 1) + 2 + 2 + E * δ
     have hinv_ppt : IsPPT encBits
         (condInverter g imgLen evaluate d γ_core γ c_eval d_eval deg) :=
-      isPPT_condInverter hg.polyTime.tidy himgLen_poly hevaluate d γ_core γ c_eval d_eval deg
+      isPPT_condInverter hg.polyTime.tidy himgLen_poly.tidy hevaluate d γ_core γ c_eval d_eval deg
     have hinv_neg :=
       (hg.inversion_negligible _ hinv_ppt).eventually_le_inv_polynomial
         (p := fun k => (k + 1) ^ D_inv) (by fun_prop) (fun k => by positivity)

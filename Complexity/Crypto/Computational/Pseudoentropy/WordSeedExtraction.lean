@@ -70,13 +70,20 @@ theorem length_extractWordObservations (bound outputBits : ℕ) (observations : 
 /-- Observation padding and concatenation compose with the matrix extractor. -/
 theorem isPPTOn_extractWordObservations {α : Type} {input : α ↪ List Bool}
     {bound outputBits : α → ℕ} {observations : α → List (List Bool)}
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (houtput : ComputableTidilyInPolyTime outputBits input encUnary)
-    (hobservations : ComputableTidilyInPolyTime observations input (encList encBits)) :
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (houtput : ComputableInPolyTime outputBits input encUnary)
+    (hobservations : ComputableInPolyTime observations input (encList encBits)) :
     IsPPTOn input encBits
       (fun a => extractWordObservations (bound a) (outputBits a) (observations a)) := by
-  unfold extractWordObservations
-  ppt
+  have hpad : ComputableInPolyTime
+      (fun p : α × List Bool => padWord (bound p.1) p.2) (encPair input encBits) encBits :=
+    ComputableInPolyTime.bitsPadWord
+      (hbound.comp (ComputableInPolyTime.fst input encBits))
+      (ComputableInPolyTime.snd input encBits)
+  have hmapped := ComputableInPolyTime.mapWithInput (f := fun a word => padWord (bound a) word)
+    hobservations hpad
+  have hwords := ComputableInPolyTime.bitsFlatten hmapped
+  exact LinearHash.isPPTOn_extract houtput hwords
 
 attribute [program_certificate] isPPTOn_extractWordObservations
 
@@ -163,10 +170,10 @@ noncomputable def extractWordSeeds (count seedBits outputBits : ℕ)
 /-- Seed-block concatenation composes with the shared matrix extractor's PPT certificate. -/
 theorem isPPTOn_extractWordSeeds {α : Type} {input : α ↪ List Bool}
     {count seedBits outputBits : α → ℕ} {samples : α → List ((List Bool × Bool) × List Bool)}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hseed : ComputableTidilyInPolyTime seedBits input encUnary)
-    (houtput : ComputableTidilyInPolyTime outputBits input encUnary)
-    (hsamples : ComputableTidilyInPolyTime samples input
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hseed : ComputableInPolyTime seedBits input encUnary)
+    (houtput : ComputableInPolyTime outputBits input encUnary)
+    (hsamples : ComputableInPolyTime samples input
       (encList (encPair (encPair encBits encBool) encBits))) :
     IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits))
       (fun a => extractWordSeeds (count a) (seedBits a) (outputBits a) (samples a)) := by

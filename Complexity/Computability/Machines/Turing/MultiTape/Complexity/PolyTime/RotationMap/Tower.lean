@@ -66,7 +66,7 @@ theorem polytime_lookup (label : D ↪ List Bool) :
   have htail : ComputableInPolyTime List.tail rows rows := by
     obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.tail (enc₁ := row) (enc := rows)
     exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-      k, Q, hfin, tm, fun l => (htm l).computesInTimeAndSpace⟩
+      k, Q, hfin, tm, fun l => htm l⟩
   have heq (l : List ((D × D) → ℕ × (D × D))) (n : ℕ) :
       (List.replicate n true).foldl (fun acc _ => acc.tail) l = l.drop n := by
     simp [List.foldl_const, List.tail_iterate]
@@ -91,7 +91,7 @@ theorem polytime_lookup (label : D ↪ List Bool) :
     obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.headD
       (enc₁ := row) (enc := rows) (fun label => (0, label))
     exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-      k, Q, hfin, tm, fun l => (htm l).computesInTimeAndSpace⟩
+      k, Q, hfin, tm, fun l => htm l⟩
   have htable := ComputableInPolyTime.fst rows (encPair encUnary (encPair label label))
   have hargs := ComputableInPolyTime.snd rows (encPair encUnary (encPair label label))
   have hrow := hhead.comp (hdrop.comp (htable.prod hargs.fst'))

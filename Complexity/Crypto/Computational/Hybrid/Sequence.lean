@@ -166,12 +166,19 @@ theorem isPPTOn_sequenceHybrid {Param : Type} {input : Param ↪ List Bool} {sam
     {replacement original : Param → ProbComp α} {count split : Param → ℕ}
     (hreplacement : IsPPTOn input sample replacement)
     (horiginal : IsPPTOn input sample original)
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hsplit : ComputableTidilyInPolyTime split input encUnary) :
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hsplit : ComputableInPolyTime split input encUnary) :
     IsPPTOn input (encList sample)
       (fun a => sequenceHybrid (replacement a) (original a) (count a) (split a)) := by
-  unfold sequenceHybrid
-  ppt
+  have hfront := hreplacement.replicate hsplit
+  have hremain := ComputableInPolyTime.unary_sub.comp (hcount.prod hsplit)
+  have hback := (horiginal.replicate hremain).preprocess
+    (ComputableInPolyTime.fst input (encList sample))
+  have houter := ComputableInPolyTime.fst (encPair input (encList sample)) (encList sample)
+  have hlast := ComputableInPolyTime.snd (encPair input (encList sample)) (encList sample)
+  have hjoin := ComputableInPolyTime.listAppend' houter.snd' hlast
+  simpa only [sequenceHybrid, bind_pure_comp, Function.comp_def] using
+    hfront.bind_with (hback.map_with hjoin)
 
 /-- The inserted challenge and every simulated coordinate are charged by the strict PPT
 certificate. The test may capture the complete original input. -/
@@ -180,16 +187,30 @@ theorem isPPTOn_spliceTest {Param : Type} {input : Param ↪ List Bool} {sample 
     {test : Param → List α → ProbComp Bool} {challenge : Param → α}
     (hreplacement : IsPPTOn input sample replacement)
     (horiginal : IsPPTOn input sample original)
-    (hbefore : ComputableTidilyInPolyTime before input encUnary)
-    (hafter : ComputableTidilyInPolyTime after input encUnary)
+    (hbefore : ComputableInPolyTime before input encUnary)
+    (hafter : ComputableInPolyTime after input encUnary)
     (htest : IsPPTOn (encPair input (encList sample)) encBool
       (fun pair => test pair.1 pair.2))
-    (hchallenge : ComputableTidilyInPolyTime challenge input sample) :
+    (hchallenge : ComputableInPolyTime challenge input sample) :
     IsPPTOn input encBool
       (fun a => spliceTest (replacement a) (original a) (before a) (after a)
         (test a) (challenge a)) := by
-  unfold spliceTest
-  ppt
+  have hfront := hreplacement.replicate hbefore
+  have hback := (horiginal.replicate hafter).preprocess
+    (ComputableInPolyTime.fst input (encList sample))
+  have houter := ComputableInPolyTime.fst (encPair input (encList sample)) (encList sample)
+  have hlast := ComputableInPolyTime.snd (encPair input (encList sample)) (encList sample)
+  have harg := houter.fst'.prod (ComputableInPolyTime.listAppend' houter.snd'
+    (ComputableInPolyTime.cons' (hchallenge.comp houter.fst') hlast))
+  have hpost : IsPPTOn (encPair (encPair input (encList sample)) (encList sample)) encBool
+      (fun p => test p.1.1 (p.1.2 ++ challenge p.1.1 :: p.2)) := by
+    simpa only [Function.comp_def] using htest.preprocess harg
+  have hbody := hback.bind_with
+    (second := fun p back => test p.1 (p.2 ++ challenge p.1 :: back)) hpost
+  simpa only [spliceTest, Function.comp_def] using
+    hfront.bind_with (second := fun a front => do
+      let back ← OracleComp.replicate (after a) (original a)
+      test a (front ++ challenge a :: back)) hbody
 
 attribute [program_certificate] isPPTOn_spliceTest
 
@@ -200,14 +221,30 @@ theorem isPPTOn_sequenceTest {Param : Type} {input : Param ↪ List Bool} {sampl
     {test : Param → List α → ProbComp Bool} {challenge : Param → α}
     (hreplacement : IsPPTOn input sample replacement)
     (horiginal : IsPPTOn input sample original)
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
+    (hcount : ComputableInPolyTime count input encUnary)
     (htest : IsPPTOn (encPair input (encList sample)) encBool
       (fun pair => test pair.1 pair.2))
-    (hchallenge : ComputableTidilyInPolyTime challenge input sample) :
+    (hchallenge : ComputableInPolyTime challenge input sample) :
     IsPPTOn input encBool
       (fun a => sequenceTest (replacement a) (original a) (count a) (test a) (challenge a)) := by
-  unfold sequenceTest
-  ppt
+  have hfirst := isPPTOn_sampleDyadicIndex hcount
+  have ha := ComputableInPolyTime.fst input encUnary
+  have hi := ComputableInPolyTime.snd input encUnary
+  have htest' : IsPPTOn (encPair (encPair input encUnary) (encList sample)) encBool
+      (fun p => test p.1.1 p.2) := htest.preprocess
+    ((ComputableInPolyTime.fst (encPair input encUnary) (encList sample)).fst'.prod
+      (ComputableInPolyTime.snd (encPair input encUnary) (encList sample)))
+  have hafter := ComputableInPolyTime.unary_sub.comp
+    ((ComputableInPolyTime.unary_sub.comp ((hcount.comp ha).prod hi)).prod
+      (ComputableInPolyTime.const 1))
+  have hsplice := isPPTOn_spliceTest (test := fun p : Param × ℕ => test p.1)
+    (hreplacement.preprocess ha) (horiginal.preprocess ha)
+    hi hafter htest' (hchallenge.comp ha)
+  have hcond := ComputableInPolyTime.unary_lt' hi (hcount.comp ha)
+  have hfalse : IsPPTOn (encPair input encUnary) encBool (fun _ => pure false) :=
+    (ComputableInPolyTime.const false).isPPTOn
+  have hbranch := IsPPTOn.ite hcond.tidy hsplice hfalse
+  simpa only [sequenceTest, Function.comp_def] using hfirst.bind_with hbranch
 
 attribute [program_certificate] isPPTOn_sequenceTest
 
@@ -217,13 +254,14 @@ theorem ComputationallyIndistinguishable.replicate_bind {orig repl : ℕ → Pro
     (horig : IsPPTOn encUnary encBits orig) (hrepl : IsPPTOn encUnary encBits repl)
     (h : ComputationallyIndistinguishable
       (fun n => ProbComp.eval (orig n)) (fun n => ProbComp.eval (repl n)))
-    {count : ℕ → ℕ} (hcount : ComputableTidilyInPolyTime count encUnary encUnary)
+    {count : ℕ → ℕ} (hcount : ComputableInPolyTime count encUnary encUnary)
     {process : ℕ → List (List Bool) → ProbComp (List Bool)}
     (hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits
       (fun p => process p.1 p.2)) :
     ComputationallyIndistinguishable
       (fun n => ProbComp.eval (OracleComp.replicate (count n) (orig n) >>= process n))
       (fun n => ProbComp.eval (OracleComp.replicate (count n) (repl n) >>= process n)) := by
+  have hcount := hcount.tidy
   intro adversary hadversary
   let test (n : ℕ) (xs : List (List Bool)) : ProbComp Bool := process n xs >>= adversary n
   have htest : IsPPTOn (encPair encUnary (encList encBits)) encBool

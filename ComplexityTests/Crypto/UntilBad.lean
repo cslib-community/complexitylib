@@ -67,4 +67,37 @@ example : |(((interpret honest askOnce).run false).bind (fun x => PMF.pure x.1) 
 example : ((interpret silent askOnce).run false).toOuterMeasure {x | x.2 = true} = 1 / 2 := by
   rw [← identicalUntilBad.bad_eq, toOuterMeasure_bad]
 
+open Cslib.Crypto Cslib.Crypto.Game
+open scoped NNReal ENNReal
+
+example (o : List Bool → List Bool) (b : Bool) :
+    runStatelessOracle o (pure b) PMF.pure = PMF.pure b :=
+  runStatelessOracle_pure o b PMF.pure
+
+example {α β : Type} (μ : PMF β) (o : List Bool → List Bool)
+    (prog : WordOracleComp Unit α) (next : β → α → Game) :
+    (μ.bind fun b => runStatelessOracle o prog (next b)) =
+      runStatelessOracle o prog (fun a => μ.bind fun b => next b a) :=
+  bind_runStatelessOracle_comm μ o prog next
+
+example {q : ℕ} [NeZero q] (x₀ : ZMod q)
+    (g₁ g₂ : ZMod q → Game) (heq : ∀ x ≠ x₀, g₁ x = g₂ x) :
+    Game.advantage
+      ((PMF.uniformOfFintype (ZMod q)).bind g₁)
+      ((PMF.uniformOfFintype (ZMod q)).bind g₂) ≤ 1 / (q : ℝ≥0) :=
+  advantage_uniform_bind_of_eq_of_ne x₀ g₁ g₂ heq
+
+example {T α : Type} (μ : PMF T)
+    (o₁ : T → List Bool → List Bool) (o₂ : List Bool → List Bool)
+    (isBad : T → List Bool → Bool) (next : T → α → Game)
+    {Q q : ℕ} [NeZero q]
+    {prog : WordOracleComp Unit α} (hq : prog.IsQueryBounded Q)
+    (hagree : ∀ τ req, isBad τ req = false → o₁ τ req = o₂ req)
+    (hbad : ∀ req, (∑' τ, μ τ * if isBad τ req then (1 : ℝ≥0∞) else 0) ≤ (q : ℝ≥0∞)⁻¹) :
+    Game.advantage
+      (μ.bind fun τ => runStatelessOracle (o₁ τ) prog (next τ))
+      (μ.bind fun τ => runStatelessOracle o₂ prog (next τ)) ≤
+      (Q : ℝ≥0) / (q : ℝ≥0) :=
+  advantage_runStatelessOracle_bind_le μ o₁ o₂ isBad next hq hagree hbad
+
 end ComplexityTests.Crypto.UntilBad

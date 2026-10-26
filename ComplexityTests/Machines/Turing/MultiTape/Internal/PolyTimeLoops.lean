@@ -16,6 +16,12 @@ run_elab do
   let env ← Lean.getEnv
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
       `Turing.MultiTapeTM.ComputableTidilyInDegree,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.exists_onWords,
+      `Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.comp_linear,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.ite,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.iterateWhile,
+      `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.foldl,
       `Turing.MultiTapeTM.ComputableTidilyInO] do
     if env.contains name then throwError "unexpected high-level tidy predicate: {name}"
 

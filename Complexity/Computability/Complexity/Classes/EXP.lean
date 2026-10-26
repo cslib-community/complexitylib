@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.Hierarchy
 public import Complexity.Computability.Complexity.Classes.Time
+public import Complexity.Computability.Complexity.Reduction
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
@@ -54,6 +55,8 @@ in exponential time and applying the timed-reduction API.
 * `Cslib.Complexity.P_ssubset_EXP`: polynomial time is strictly within exponential time.
 * `Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad`: polynomial time on inputs
   padded to length `2 ^ n` gives `E`.
+* `Cslib.Complexity.PolyTimeReducible.mem_EXP`: `EXP` is closed under polynomial-time many-one
+  reductions.
 
 ## References
 
@@ -221,5 +224,42 @@ theorem setOf_mem_E_of_computableInPolyTime_pad {Ψ : List Bool × ℕ → Bool}
         exact (Nat.pow_le_pow_left hlen d).trans h2
     _ = (c * 4 ^ d + 3) * 2 ^ ((d + 2) * n) := by ring
     _ ≤ _ := Nat.le_add_right _ _
+
+/-- **`EXP` is closed under polynomial-time many-one reductions.** -/
+theorem PolyTimeReducible.mem_EXP {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+    {A : Set α} {B : Set β} (hAB : PolyTimeReducible encA encB A B) (hB : B ∈ EXP encB) :
+    A ∈ EXP encA := by
+  obtain ⟨f, hf, hred⟩ := hAB
+  obtain ⟨k, hk⟩ := mem_EXP_iff.mp hB
+  obtain ⟨t, s, ht, hs, h⟩ := hf.tidy
+  obtain ⟨c, d, hcd⟩ := (ht.add hs).exists_le
+  have hfO : ComputableInO f encA encB (fun a => c * ((encA a).length + 1) ^ d)
+      (fun a => c * ((encA a).length + 1) ^ d) :=
+    .of_tidy ((ComputableTidilyInO.of_bounds h 1 (fun _ => by omega) (fun _ => by omega)
+      fun a => (h.length_le a).trans (by omega)).mono_le (fun a => hcd _) (fun a => hcd _))
+  have hlen (a : α) : (encB (f a)).length ≤ c * ((encA a).length + 1) ^ d :=
+    (h.length_le a).trans ((Nat.le_add_right _ _).trans (hcd a))
+  have hpre : f ⁻¹' B ∈ DTIME encA
+      (fun n => c * (n + 1) ^ d + 2 ^ (c * (n + 1) ^ d) ^ k) := by
+    refine preimage_mem_DTIME (C := 1) hk hfO fun a => ?_
+    have hpow : 2 ^ (encB (f a)).length ^ k ≤ 2 ^ (c * ((encA a).length + 1) ^ d) ^ k :=
+      Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_left (hlen a) k)
+    omega
+  have hA_eq : A = f ⁻¹' B := Set.ext hred
+  rw [hA_eq]
+  have hpoly : PolynomiallyBounded
+      (fun n => c * (n + 1) ^ d + (c * (n + 1) ^ d) ^ k + 1) := by fun_prop
+  obtain ⟨D, hD⟩ := hpoly
+  refine mem_EXP_iff.mpr ⟨D, DTIME_mono_of_eventually_le ?_ hpre⟩
+  filter_upwards [hD] with n hn
+  set M := c * (n + 1) ^ d + (c * (n + 1) ^ d) ^ k
+  have h1 : c * (n + 1) ^ d ≤ 2 ^ M :=
+    (Nat.le_add_right _ _).trans (Nat.lt_two_pow_self.le)
+  have h2 : 2 ^ (c * (n + 1) ^ d) ^ k ≤ 2 ^ M :=
+    Nat.pow_le_pow_right (by norm_num) (Nat.le_add_left _ _)
+  calc
+    c * (n + 1) ^ d + 2 ^ (c * (n + 1) ^ d) ^ k ≤ 2 ^ M + 2 ^ M := Nat.add_le_add h1 h2
+    _ = 2 ^ (M + 1) := by rw [← two_mul, pow_succ']
+    _ ≤ 2 ^ n ^ D := Nat.pow_le_pow_right (by norm_num) hn
 
 end Cslib.Complexity

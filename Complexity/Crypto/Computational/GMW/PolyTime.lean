@@ -81,68 +81,88 @@ private theorem computableTidilyInPolyTime_clauseLitPol (i : ℕ) {α : Type} {i
   exact (snd encNat encBool).comp hget
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_gmwBit0Of8 {α : Type} {input : α ↪ List Bool} {t : α → ℕ}
-    (ht : ComputableTidilyInPolyTime t input encUnary) :
-    ComputableTidilyInPolyTime (fun a => gmwBit0Of8 (t a)) input encBool := by
+theorem computableInPolyTime_gmwBit0Of8 {α : Type} {input : α ↪ List Bool} {t : α → ℕ}
+    (ht : ComputableInPolyTime t input encUnary) :
+    ComputableInPolyTime (fun a => gmwBit0Of8 (t a)) input encBool := by
   dsimp only [gmwBit0Of8]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_gmwBit1Of8 {α : Type} {input : α ↪ List Bool} {t : α → ℕ}
-    (ht : ComputableTidilyInPolyTime t input encUnary) :
-    ComputableTidilyInPolyTime (fun a => gmwBit1Of8 (t a)) input encBool := by
+theorem computableInPolyTime_gmwBit1Of8 {α : Type} {input : α ↪ List Bool} {t : α → ℕ}
+    (ht : ComputableInPolyTime t input encUnary) :
+    ComputableInPolyTime (fun a => gmwBit1Of8 (t a)) input encBool := by
   dsimp only [gmwBit1Of8]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_gmwBit2Of8 {α : Type} {input : α ↪ List Bool} {t : α → ℕ}
-    (ht : ComputableTidilyInPolyTime t input encUnary) :
-    ComputableTidilyInPolyTime (fun a => gmwBit2Of8 (t a)) input encBool := by
+theorem computableInPolyTime_gmwBit2Of8 {α : Type} {input : α ↪ List Bool} {t : α → ℕ}
+    (ht : ComputableInPolyTime t input encUnary) :
+    ComputableInPolyTime (fun a => gmwBit2Of8 (t a)) input encBool := by
   dsimp only [gmwBit2Of8]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_gmwActiveIdx {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_gmwActiveIdx {α : Type} {input : α ↪ List Bool}
     {b₀ b₁ b₂ : α → Bool}
-    (hb₀ : ComputableTidilyInPolyTime b₀ input encBool)
-    (hb₁ : ComputableTidilyInPolyTime b₁ input encBool)
-    (hb₂ : ComputableTidilyInPolyTime b₂ input encBool) :
-    ComputableTidilyInPolyTime (fun a => gmwActiveIdx (b₀ a) (b₁ a) (b₂ a)) input encUnary := by
+    (hb₀ : ComputableInPolyTime b₀ input encBool)
+    (hb₁ : ComputableInPolyTime b₁ input encBool)
+    (hb₂ : ComputableInPolyTime b₂ input encBool) :
+    ComputableInPolyTime (fun a => gmwActiveIdx (b₀ a) (b₁ a) (b₂ a)) input encUnary := by
+  have hb₀ := hb₀.tidy
+  have hb₁ := hb₁.tidy
+  have hb₂ := hb₂.tidy
+  refine .of_tidy ?_
   dsimp only [gmwActiveIdx]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_clauseEvalBits {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_clauseEvalBits {α : Type} {input : α ↪ List Bool}
     {c : α → Clause ℕ} {b₀ b₁ b₂ : α → Bool}
-    (hc : ComputableTidilyInPolyTime c input (encList (encPair encNat encBool)))
-    (hb₀ : ComputableTidilyInPolyTime b₀ input encBool)
-    (hb₁ : ComputableTidilyInPolyTime b₁ input encBool)
-    (hb₂ : ComputableTidilyInPolyTime b₂ input encBool) :
-    ComputableTidilyInPolyTime (fun a => clauseEvalBits (c a) (b₀ a) (b₁ a) (b₂ a))
+    (hc : ComputableInPolyTime c input (encList (encPair encNat encBool)))
+    (hb₀ : ComputableInPolyTime b₀ input encBool)
+    (hb₁ : ComputableInPolyTime b₁ input encBool)
+    (hb₂ : ComputableInPolyTime b₂ input encBool) :
+    ComputableInPolyTime (fun a => clauseEvalBits (c a) (b₀ a) (b₁ a) (b₂ a))
       input encBool := by
+  have hc := hc.tidy
+  have hb₀ := hb₀.tidy
+  have hb₁ := hb₁.tidy
+  have hb₂ := hb₂.tidy
+  refine .of_tidy ?_
   have hp0 := computableTidilyInPolyTime_clauseLitPol 0 hc
   have hp1 := computableTidilyInPolyTime_clauseLitPol 1 hc
   have hp2 := computableTidilyInPolyTime_clauseLitPol 2 hc
   dsimp only [clauseEvalBits]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_varBit {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_varBit {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {vec : α → List Bool} {v : α → ℕ}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hvec : ComputableTidilyInPolyTime vec input encBits)
-    (hv : ComputableTidilyInPolyTime v input encNat) :
-    ComputableTidilyInPolyTime (fun a => varBit (φ a) (vec a) (v a)) input encBool := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hvec : ComputableInPolyTime vec input encBits)
+    (hv : ComputableInPolyTime v input encNat) :
+    ComputableInPolyTime (fun a => varBit (φ a) (vec a) (v a)) input encBool := by
+  have hφ := hφ.tidy
+  have hvec := hvec.tidy
+  have hv := hv.tidy
+  refine .of_tidy ?_
   dsimp only [varBit]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_clauseTableRow {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_clauseTableRow {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {m : α → List Bool} {c : α → Clause ℕ}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hm : ComputableTidilyInPolyTime m input encBits)
-    (hc : ComputableTidilyInPolyTime c input (encList (encPair encNat encBool))) :
-    ComputableTidilyInPolyTime (fun a => clauseTableRow (φ a) (m a) (c a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hm : ComputableInPolyTime m input encBits)
+    (hc : ComputableInPolyTime c input (encList (encPair encNat encBool))) :
+    ComputableInPolyTime (fun a => clauseTableRow (φ a) (m a) (c a)) input encBits := by
+  have hφ := hφ.tidy
+  have hm := hm.tidy
+  have hc := hc.tidy
+  refine .of_tidy ?_
   have hv0 : ComputableTidilyInPolyTime (fun p : α × ℕ => ((c p.1).getD 0 (0, false)).1)
       (encPair input encUnary) encNat :=
     computableTidilyInPolyTime_clauseLitVar 0 (hc.comp (fst input encUnary))
@@ -155,13 +175,18 @@ theorem computableTidilyInPolyTime_clauseTableRow {α : Type} {input : α ↪ Li
   dsimp only [clauseTableRow]
   exact mapToBitsWithInput (range.comp (const 8)) (by fun_prop)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_clauseActiveRow {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_clauseActiveRow {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {v : α → List Bool} {c : α → Clause ℕ}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hv : ComputableTidilyInPolyTime v input encBits)
-    (hc : ComputableTidilyInPolyTime c input (encList (encPair encNat encBool))) :
-    ComputableTidilyInPolyTime (fun a => clauseActiveRow (φ a) (v a) (c a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hv : ComputableInPolyTime v input encBits)
+    (hc : ComputableInPolyTime c input (encList (encPair encNat encBool))) :
+    ComputableInPolyTime (fun a => clauseActiveRow (φ a) (v a) (c a)) input encBits := by
+  have hφ := hφ.tidy
+  have hv := hv.tidy
+  have hc := hc.tidy
+  refine .of_tidy ?_
   have hv0 : ComputableTidilyInPolyTime (fun p : α × ℕ => ((c p.1).getD 0 (0, false)).1)
       (encPair input encUnary) encNat :=
     computableTidilyInPolyTime_clauseLitVar 0 (hc.comp (fst input encUnary))
@@ -176,249 +201,311 @@ theorem computableTidilyInPolyTime_clauseActiveRow {α : Type} {input : α ↪ L
   simp only [heq]
   exact mapToBitsWithInput (range.comp (const 8)) (by fun_prop)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_tableBits {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_tableBits {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {m : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hm : ComputableTidilyInPolyTime m input encBits) :
-    ComputableTidilyInPolyTime (fun a => tableBits (φ a) (m a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hm : ComputableInPolyTime m input encBits) :
+    ComputableInPolyTime (fun a => tableBits (φ a) (m a)) input encBits := by
+  have hφ := hφ.tidy
+  have hm := hm.tidy
+  refine .of_tidy ?_
   dsimp only [tableBits]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_activeTableFlags {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_activeTableFlags {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {v : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hv : ComputableTidilyInPolyTime v input encBits) :
-    ComputableTidilyInPolyTime (fun a => activeTableFlags (φ a) (v a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hv : ComputableInPolyTime v input encBits) :
+    ComputableInPolyTime (fun a => activeTableFlags (φ a) (v a)) input encBits := by
+  have hφ := hφ.tidy
+  have hv := hv.tidy
+  refine .of_tidy ?_
   dsimp only [activeTableFlags]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_copyLen {α : Type} {input : α ↪ List Bool}
-    {φ : α → CNF ℕ} (hφ : ComputableTidilyInPolyTime φ input encCNF) :
-    ComputableTidilyInPolyTime (fun a => copyLen (φ a)) input encUnary := by
-  have := (SAT.computableInPolyTime_length (.of_tidy hφ)).tidy
+theorem computableInPolyTime_copyLen {α : Type} {input : α ↪ List Bool}
+    {φ : α → CNF ℕ} (hφ : ComputableInPolyTime φ input encCNF) :
+    ComputableInPolyTime (fun a => copyLen (φ a)) input encUnary := by
+  have hφ := hφ.tidy
+  refine .of_tidy ?_
   dsimp only [copyLen]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_totalLen {α : Type} {input : α ↪ List Bool}
-    {φ : α → CNF ℕ} (hφ : ComputableTidilyInPolyTime φ input encCNF) :
-    ComputableTidilyInPolyTime (fun a => totalLen (φ a)) input encUnary := by
+theorem computableInPolyTime_totalLen {α : Type} {input : α ↪ List Bool}
+    {φ : α → CNF ℕ} (hφ : ComputableInPolyTime φ input encCNF) :
+    ComputableInPolyTime (fun a => totalLen (φ a)) input encUnary := by
   dsimp only [totalLen]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_mPart {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_mPart {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {copy : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hcopy : ComputableTidilyInPolyTime copy input encBits) :
-    ComputableTidilyInPolyTime (fun a => mPart (φ a) (copy a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hcopy : ComputableInPolyTime copy input encBits) :
+    ComputableInPolyTime (fun a => mPart (φ a) (copy a)) input encBits := by
+  have hφ := hφ.tidy
+  have hcopy := hcopy.tidy
+  refine .of_tidy ?_
   dsimp only [mPart]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_vPart {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_vPart {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {copy : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hcopy : ComputableTidilyInPolyTime copy input encBits) :
-    ComputableTidilyInPolyTime (fun a => vPart (φ a) (copy a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hcopy : ComputableInPolyTime copy input encBits) :
+    ComputableInPolyTime (fun a => vPart (φ a) (copy a)) input encBits := by
+  have hφ := hφ.tidy
+  have hcopy := hcopy.tidy
+  refine .of_tidy ?_
   dsimp only [vPart]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_tablePart {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_tablePart {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {copy : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hcopy : ComputableTidilyInPolyTime copy input encBits) :
-    ComputableTidilyInPolyTime (fun a => tablePart (φ a) (copy a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hcopy : ComputableInPolyTime copy input encBits) :
+    ComputableInPolyTime (fun a => tablePart (φ a) (copy a)) input encBits := by
+  have hφ := hφ.tidy
+  have hcopy := hcopy.tidy
+  refine .of_tidy ?_
   dsimp only [tablePart]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_realCopyBits {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_realCopyBits {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {w m : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hw : ComputableTidilyInPolyTime w input encBits)
-    (hm : ComputableTidilyInPolyTime m input encBits) :
-    ComputableTidilyInPolyTime (fun a => realCopyBits (φ a) (w a) (m a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hw : ComputableInPolyTime w input encBits)
+    (hm : ComputableInPolyTime m input encBits) :
+    ComputableInPolyTime (fun a => realCopyBits (φ a) (w a) (m a)) input encBits := by
+  have hφ := hφ.tidy
+  have hw := hw.tidy
+  have hm := hm.tidy
+  refine .of_tidy ?_
   dsimp only [realCopyBits]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_simCopyBits {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_simCopyBits {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {b : α → Bool} {rand : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hb : ComputableTidilyInPolyTime b input encBool)
-    (hrand : ComputableTidilyInPolyTime rand input encBits) :
-    ComputableTidilyInPolyTime (fun a => simCopyBits (φ a) (b a) (rand a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hb : ComputableInPolyTime b input encBool)
+    (hrand : ComputableInPolyTime rand input encBits) :
+    ComputableInPolyTime (fun a => simCopyBits (φ a) (b a) (rand a)) input encBits := by
+  have hφ := hφ.tidy
+  have hb := hb.tidy
+  have hrand := hrand.tidy
+  refine .of_tidy ?_
   dsimp only [simCopyBits]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_copyOpenFlags {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_copyOpenFlags {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {b : α → Bool} {copy : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hb : ComputableTidilyInPolyTime b input encBool)
-    (hcopy : ComputableTidilyInPolyTime copy input encBits) :
-    ComputableTidilyInPolyTime (fun a => copyOpenFlags (φ a) (b a) (copy a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hb : ComputableInPolyTime b input encBool)
+    (hcopy : ComputableInPolyTime copy input encBits) :
+    ComputableInPolyTime (fun a => copyOpenFlags (φ a) (b a) (copy a)) input encBits := by
+  have hφ := hφ.tidy
+  have hb := hb.tidy
+  have hcopy := hcopy.tidy
+  refine .of_tidy ?_
   dsimp only [copyOpenFlags]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifyCopyBits {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_verifyCopyBits {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {b : α → Bool} {copy : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hb : ComputableTidilyInPolyTime b input encBool)
-    (hcopy : ComputableTidilyInPolyTime copy input encBits) :
-    ComputableTidilyInPolyTime (fun a => verifyCopyBits (φ a) (b a) (copy a)) input encBool := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hb : ComputableInPolyTime b input encBool)
+    (hcopy : ComputableInPolyTime copy input encBits) :
+    ComputableInPolyTime (fun a => verifyCopyBits (φ a) (b a) (copy a)) input encBool := by
+  have hφ := hφ.tidy
+  have hb := hb.tidy
+  have hcopy := hcopy.tidy
+  refine .of_tidy ?_
   dsimp only [verifyCopyBits]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_gmwCopy0 {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_gmwCopy0 {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {bits : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hbits : ComputableTidilyInPolyTime bits input encBits) :
-    ComputableTidilyInPolyTime (fun a => gmwCopy0 (φ a) (bits a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hbits : ComputableInPolyTime bits input encBits) :
+    ComputableInPolyTime (fun a => gmwCopy0 (φ a) (bits a)) input encBits := by
   dsimp only [gmwCopy0]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_gmwCopy1 {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_gmwCopy1 {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {bits : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hbits : ComputableTidilyInPolyTime bits input encBits) :
-    ComputableTidilyInPolyTime (fun a => gmwCopy1 (φ a) (bits a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hbits : ComputableInPolyTime bits input encBits) :
+    ComputableInPolyTime (fun a => gmwCopy1 (φ a) (bits a)) input encBits := by
   dsimp only [gmwCopy1]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_gmwCopy2 {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_gmwCopy2 {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {bits : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hbits : ComputableTidilyInPolyTime bits input encBits) :
-    ComputableTidilyInPolyTime (fun a => gmwCopy2 (φ a) (bits a)) input encBits := by
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hbits : ComputableInPolyTime bits input encBits) :
+    ComputableInPolyTime (fun a => gmwCopy2 (φ a) (bits a)) input encBits := by
   dsimp only [gmwCopy2]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_realBits {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_realBits {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {w m₀ m₁ m₂ : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hw : ComputableTidilyInPolyTime w input encBits)
-    (hm₀ : ComputableTidilyInPolyTime m₀ input encBits)
-    (hm₁ : ComputableTidilyInPolyTime m₁ input encBits)
-    (hm₂ : ComputableTidilyInPolyTime m₂ input encBits) :
-    ComputableTidilyInPolyTime (fun a => realBits (φ a) (w a) (m₀ a) (m₁ a) (m₂ a))
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hw : ComputableInPolyTime w input encBits)
+    (hm₀ : ComputableInPolyTime m₀ input encBits)
+    (hm₁ : ComputableInPolyTime m₁ input encBits)
+    (hm₂ : ComputableInPolyTime m₂ input encBits) :
+    ComputableInPolyTime (fun a => realBits (φ a) (w a) (m₀ a) (m₁ a) (m₂ a))
       input encBits := by
   dsimp only [realBits]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_simBits {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_simBits {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {ch r₀ r₁ r₂ : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hch : ComputableTidilyInPolyTime ch input encBits)
-    (hr₀ : ComputableTidilyInPolyTime r₀ input encBits)
-    (hr₁ : ComputableTidilyInPolyTime r₁ input encBits)
-    (hr₂ : ComputableTidilyInPolyTime r₂ input encBits) :
-    ComputableTidilyInPolyTime (fun a => simBits (φ a) (ch a) (r₀ a) (r₁ a) (r₂ a))
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hch : ComputableInPolyTime ch input encBits)
+    (hr₀ : ComputableInPolyTime r₀ input encBits)
+    (hr₁ : ComputableInPolyTime r₁ input encBits)
+    (hr₂ : ComputableInPolyTime r₂ input encBits) :
+    ComputableInPolyTime (fun a => simBits (φ a) (ch a) (r₀ a) (r₁ a) (r₂ a))
       input encBits := by
   dsimp only [simBits]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_allOpenFlags {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_allOpenFlags {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {ch bits : α → List Bool}
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hch : ComputableTidilyInPolyTime ch input encBits)
-    (hbits : ComputableTidilyInPolyTime bits input encBits) :
-    ComputableTidilyInPolyTime (fun a => allOpenFlags (φ a) (ch a) (bits a))
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hch : ComputableInPolyTime ch input encBits)
+    (hbits : ComputableInPolyTime bits input encBits) :
+    ComputableInPolyTime (fun a => allOpenFlags (φ a) (ch a) (bits a))
       input encBits := by
   dsimp only [allOpenFlags]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_proverReply1 {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_proverReply1 {α : Type} {input : α ↪ List Bool}
     {generator : List Bool → List Bool} {m : α → ℕ}
     {r openFlags bits : α → List Bool} {seeds pads : α → List (List Bool)}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
-    (hm : ComputableTidilyInPolyTime m input encUnary)
-    (hr : ComputableTidilyInPolyTime r input encBits)
-    (hopen : ComputableTidilyInPolyTime openFlags input encBits)
-    (hbits : ComputableTidilyInPolyTime bits input encBits)
-    (hseeds : ComputableTidilyInPolyTime seeds input (encList encBits))
-    (hpads : ComputableTidilyInPolyTime pads input (encList encBits)) :
-    ComputableTidilyInPolyTime
+    (hg : ComputableInPolyTime generator encBits encBits)
+    (hm : ComputableInPolyTime m input encUnary)
+    (hr : ComputableInPolyTime r input encBits)
+    (hopen : ComputableInPolyTime openFlags input encBits)
+    (hbits : ComputableInPolyTime bits input encBits)
+    (hseeds : ComputableInPolyTime seeds input (encList encBits))
+    (hpads : ComputableInPolyTime pads input (encList encBits)) :
+    ComputableInPolyTime
       (fun a => proverReply1 generator (m a) (r a) (openFlags a) (bits a) (seeds a) (pads a))
       input encBits := by
   dsimp only [proverReply1]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_proverReply2 {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_proverReply2 {α : Type} {input : α ↪ List Bool}
     {s : α → ℕ} {φ : α → CNF ℕ} {ch bits : α → List Bool} {seeds : α → List (List Bool)}
-    (hs : ComputableTidilyInPolyTime s input encUnary)
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hch : ComputableTidilyInPolyTime ch input encBits)
-    (hbits : ComputableTidilyInPolyTime bits input encBits)
-    (hseeds : ComputableTidilyInPolyTime seeds input (encList encBits)) :
-    ComputableTidilyInPolyTime
+    (hs : ComputableInPolyTime s input encUnary)
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hch : ComputableInPolyTime ch input encBits)
+    (hbits : ComputableInPolyTime bits input encBits)
+    (hseeds : ComputableInPolyTime seeds input (encList encBits)) :
+    ComputableInPolyTime
       (fun a => proverReply2 (s a) (φ a) (ch a) (bits a) (seeds a))
       input encBits := by
   dsimp only [proverReply2]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifyCommitments {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_verifyCommitments {α : Type} {input : α ↪ List Bool}
     {generator : List Bool → List Bool} {s m : α → ℕ} {φ : α → CNF ℕ}
     {r flags commitReply openedBits openSeedsFlat : α → List Bool}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
-    (hs : ComputableTidilyInPolyTime s input encUnary)
-    (hm : ComputableTidilyInPolyTime m input encUnary)
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hr : ComputableTidilyInPolyTime r input encBits)
-    (hflags : ComputableTidilyInPolyTime flags input encBits)
-    (hcommit : ComputableTidilyInPolyTime commitReply input encBits)
-    (hopened : ComputableTidilyInPolyTime openedBits input encBits)
-    (hseeds : ComputableTidilyInPolyTime openSeedsFlat input encBits) :
-    ComputableTidilyInPolyTime
+    (hg : ComputableInPolyTime generator encBits encBits)
+    (hs : ComputableInPolyTime s input encUnary)
+    (hm : ComputableInPolyTime m input encUnary)
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hr : ComputableInPolyTime r input encBits)
+    (hflags : ComputableInPolyTime flags input encBits)
+    (hcommit : ComputableInPolyTime commitReply input encBits)
+    (hopened : ComputableInPolyTime openedBits input encBits)
+    (hseeds : ComputableInPolyTime openSeedsFlat input encBits) :
+    ComputableInPolyTime
       (fun a => verifyCommitments generator (s a) (m a) (φ a) (r a) (flags a)
         (commitReply a) (openedBits a) (openSeedsFlat a))
       input encBool := by
+  have hg := hg.tidy
+  have hs := hs.tidy
+  have hm := hm.tidy
+  have hφ := hφ.tidy
+  have hr := hr.tidy
+  have hflags := hflags.tidy
+  have hcommit := hcommit.tidy
+  have hopened := hopened.tidy
+  have hseeds := hseeds.tidy
+  refine .of_tidy ?_
+  have hnaor : ComputableTidilyInPolyTime
+      (fun p : α × ℕ => naorCommit generator (BitString.listRow (m p.1) 0 (r p.1))
+        ((openedBits p.1).getD p.2 false) (BitString.listRow (s p.1) p.2 (openSeedsFlat p.1)))
+      (encPair input encUnary) encBits := by
+    apply ComputableInPolyTime.tidy
+    apply computableInPolyTime_naorCommit (.of_tidy hg) <;> exact .of_tidy (by fun_prop)
   dsimp only [verifyCommitments]
   fun_prop
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_verifyTranscript {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_verifyTranscript {α : Type} {input : α ↪ List Bool}
     {generator : List Bool → List Bool} {s m : α → ℕ} {φ : α → CNF ℕ}
     {r commitReply ch openReply : α → List Bool}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
-    (hs : ComputableTidilyInPolyTime s input encUnary)
-    (hm : ComputableTidilyInPolyTime m input encUnary)
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hr : ComputableTidilyInPolyTime r input encBits)
-    (hcommit : ComputableTidilyInPolyTime commitReply input encBits)
-    (hch : ComputableTidilyInPolyTime ch input encBits)
-    (hopen : ComputableTidilyInPolyTime openReply input encBits) :
-    ComputableTidilyInPolyTime
+    (hg : ComputableInPolyTime generator encBits encBits)
+    (hs : ComputableInPolyTime s input encUnary)
+    (hm : ComputableInPolyTime m input encUnary)
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hr : ComputableInPolyTime r input encBits)
+    (hcommit : ComputableInPolyTime commitReply input encBits)
+    (hch : ComputableInPolyTime ch input encBits)
+    (hopen : ComputableInPolyTime openReply input encBits) :
+    ComputableInPolyTime
       (fun a => verifyTranscript generator (s a) (m a) (φ a) (r a)
         (commitReply a) (ch a) (openReply a))
       input encBool := by
   dsimp only [verifyTranscript]
   fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
 theorem isOraclePPTOn_gmwVerifier {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
+    (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
-    (hf : ComputableTidilyInPolyTime f enc encCNF) :
+    (hf : ComputableInPolyTime f enc encCNF) :
     IsOraclePPTOn (encPair encUnary enc) encBool
       (fun p : ℕ × α => gmwVerifier generator length f p.1 p.2) := by
-  have hlength := PRG.polyTime_length hg hlen
+  have hg := hg.tidy
+  have hf := hf.tidy
+  have hlength := (PRG.polyTime_length (.of_tidy hg) hlen).tidy
   dsimp only [gmwVerifier]
   fun_prop
 
@@ -431,15 +518,19 @@ theorem isPPTOn_runTwoRound {α Caller : Type} {enc : α ↪ List Bool} {input :
     {bound : Caller → ℕ}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
       (fun p => Vstar p.1 p.2.1 p.2.2))
-    (hprep : ComputableTidilyInPolyTime prepare input (encPair encUnary (encPair enc encBits)))
-    (hr1 : ComputableTidilyInPolyTime reply1 (encPair input encBits) encBits)
-    (hr2 : ComputableTidilyInPolyTime reply2 (encPair input encBits) encBits)
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
+    (hprep : ComputableInPolyTime prepare input (encPair encUnary (encPair enc encBits)))
+    (hr1 : ComputableInPolyTime reply1 (encPair input encBits) encBits)
+    (hr2 : ComputableInPolyTime reply2 (encPair input encBits) encBits)
+    (hbound : ComputableInPolyTime bound input encUnary)
     (hle1 : ∀ c q, (reply1 (c, q)).length ≤ bound c)
     (hle2 : ∀ c q, (reply2 (c, q)).length ≤ bound c) :
     IsPPTOn input (encPair encBits (encPair encUnary encBits))
       (fun c => runTwoRound (fun q => reply1 (c, q)) (fun q => reply2 (c, q))
         (Vstar (prepare c).1 (prepare c).2.1 (prepare c).2.2) (0, [false, false, false])) := by
+  have hprep := hprep.tidy
+  have hr1 := hr1.tidy
+  have hr2 := hr2.tidy
+  have hbound := hbound.tidy
   let stateEncoding : ℕ × List Bool ↪ List Bool := encPair encUnary encBits
   have hlen_state : ∀ s : ℕ × List Bool, s.1 ≤ 2 → s.2.length = 3 →
       (stateEncoding s).length ≤ 9 := by
@@ -487,18 +578,18 @@ theorem isPPTOn_runTwoRound_prover {α Caller : Type} {enc : α ↪ List Bool}
     {seeds pads : Caller → List (List Bool)}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
       (fun p => Vstar p.1 p.2.1 p.2.2))
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hs : ComputableTidilyInPolyTime s input encUnary)
-    (hm : ComputableTidilyInPolyTime m input encUnary)
-    (ha : ComputableTidilyInPolyTime a input enc)
-    (hz : ComputableTidilyInPolyTime z input encBits)
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hopen : ComputableTidilyInPolyTime openFlags input encBits)
-    (hbits : ComputableTidilyInPolyTime bits input encBits)
-    (hch : ComputableTidilyInPolyTime ch_guess input encBits)
-    (hseeds : ComputableTidilyInPolyTime seeds input (encList encBits))
-    (hpads : ComputableTidilyInPolyTime pads input (encList encBits)) :
+    (hg : ComputableInPolyTime generator encBits encBits)
+    (hn : ComputableInPolyTime n input encUnary)
+    (hs : ComputableInPolyTime s input encUnary)
+    (hm : ComputableInPolyTime m input encUnary)
+    (ha : ComputableInPolyTime a input enc)
+    (hz : ComputableInPolyTime z input encBits)
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hopen : ComputableInPolyTime openFlags input encBits)
+    (hbits : ComputableInPolyTime bits input encBits)
+    (hch : ComputableInPolyTime ch_guess input encBits)
+    (hseeds : ComputableInPolyTime seeds input (encList encBits))
+    (hpads : ComputableInPolyTime pads input (encList encBits)) :
     IsPPTOn input (encPair encBits (encPair encUnary encBits))
       (fun c => runTwoRound
         (fun r => proverReply1 generator (m c) r (openFlags c) (bits c) (seeds c) (pads c))
@@ -523,10 +614,10 @@ def gmwFirstSuccess (attempts : List (List Bool)) : List Bool :=
   ((attempts.filter (fun w => w.headD false)).headD []).tail
 
 @[fun_prop]
-theorem computableTidilyInPolyTime_gmwFirstSuccess {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_gmwFirstSuccess {α : Type} {input : α ↪ List Bool}
     {attempts : α → List (List Bool)}
-    (ha : ComputableTidilyInPolyTime attempts input (encList encBits)) :
-    ComputableTidilyInPolyTime (fun a => gmwFirstSuccess (attempts a)) input encBits := by
+    (ha : ComputableInPolyTime attempts input (encList encBits)) :
+    ComputableInPolyTime (fun a => gmwFirstSuccess (attempts a)) input encBits := by
   dsimp only [gmwFirstSuccess]
   fun_prop
 
@@ -540,16 +631,33 @@ noncomputable def gmwSampleSimCoins (s : ℕ) (φ : CNF ℕ) (ch_guess : List Bo
   let seeds ← OracleComp.replicate (totalLen φ) (BitString.sampleList s)
   return (simBits φ ch_guess r₀ r₁ r₂, seeds)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
 theorem isPPTOn_gmwSampleSimCoins {α : Type} {input : α ↪ List Bool}
     {s : α → ℕ} {φ : α → CNF ℕ} {ch_guess : α → List Bool}
-    (hs : ComputableTidilyInPolyTime s input encUnary)
-    (hφ : ComputableTidilyInPolyTime φ input encCNF)
-    (hch : ComputableTidilyInPolyTime ch_guess input encBits) :
+    (hs : ComputableInPolyTime s input encUnary)
+    (hφ : ComputableInPolyTime φ input encCNF)
+    (hch : ComputableInPolyTime ch_guess input encBits) :
     IsPPTOn input (encPair encBits (encList encBits))
       (fun a => gmwSampleSimCoins (s a) (φ a) (ch_guess a)) := by
+  have hvars := Cslib.Logic.PL.CNF.computableInPolyTime_vars_length hφ
+  have htotal := computableInPolyTime_totalLen hφ
   dsimp only [gmwSampleSimCoins]
-  ppt
+  apply IsPPTOn.bind_with (left := encBits)
+  · exact hvars.sampleList
+  apply IsPPTOn.bind_with (left := encBits)
+  · apply ComputableInPolyTime.sampleList
+    fun_prop
+  apply IsPPTOn.bind_with (left := encBits)
+  · apply ComputableInPolyTime.sampleList
+    fun_prop
+  simp only [bind_pure_comp]
+  apply IsPPTOn.map_with
+  · apply IsPPTOn.replicate
+    · apply ComputableInPolyTime.sampleList
+      fun_prop
+    · fun_prop
+  · fun_prop
 
 /-- Run one simulated GMW attempt with pre-sampled unopened pads `pads` (without any witness). -/
 noncomputable def gmwSimWithPads (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)
@@ -589,10 +697,20 @@ private theorem isPPTOn_gmwSimWithPads {α : Type} {enc : α ↪ List Bool}
       (fun p : (ℕ × α × List Bool) × List (List Bool) =>
         gmwSimWithPads generator (p.1.1 + 7) (length (p.1.1 + 7))
           (f p.1.2.1) (Vstar p.1.1 p.1.2.1 p.1.2.2) p.2) := by
-  have hlength := PRG.polyTime_length hg hlen
+  have hgPlain := ComputableInPolyTime.of_tidy hg
+  have hfPlain := ComputableInPolyTime.of_tidy hf
+  have hlength := PRG.polyTime_length hgPlain hlen
   dsimp only [gmwSimWithPads]
-  ppt
+  apply IsPPTOn.bind_with (left := encBits)
+  · exact (ComputableInPolyTime.const 3).sampleList
+  apply IsPPTOn.bind_with (left := encPair encBits (encList encBits))
+  · apply isPPTOn_gmwSampleSimCoins <;> fun_prop
+  simp only [bind_pure_comp]
+  apply IsPPTOn.map_with
+  · apply isPPTOn_runTwoRound_prover hV hgPlain <;> fun_prop
+  · fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 private theorem isPPTOn_gmwSimAttempt {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
@@ -605,26 +723,36 @@ private theorem isPPTOn_gmwSimAttempt {α : Type} {enc : α ↪ List Bool}
       (fun p : ℕ × α × List Bool =>
         gmwSimAttempt generator (p.1 + 7) (length (p.1 + 7))
           (f p.2.1) (Vstar p.1 p.2.1 p.2.2)) := by
-  have hlength := PRG.polyTime_length hg hlen
+  have hlength := PRG.polyTime_length (.of_tidy hg) hlen
+  have hfPlain := ComputableInPolyTime.of_tidy hf
   have hpad := isPPTOn_gmwSimWithPads hg hlen hf hV
   dsimp only [gmwSimAttempt]
-  ppt
+  apply IsPPTOn.bind_with ?_ hpad
+  apply IsPPTOn.replicate
+  · apply ComputableInPolyTime.sampleList
+    fun_prop
+  · fun_prop
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 theorem isPPTOn_gmwSimulator {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
+    (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
-    (hf : ComputableTidilyInPolyTime f enc encCNF)
+    (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
       (fun p => Vstar p.1 p.2.1 p.2.2)) :
     IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
       (fun p : ℕ × α × List Bool =>
         gmwSimulator generator length f Vstar p.1 p.2.1 p.2.2) := by
+  have hg := hg.tidy
+  have hf := hf.tidy
   have hattempt := isPPTOn_gmwSimAttempt hg hlen hf hV
   dsimp only [gmwSimulator]
-  ppt
+  apply IsPPTOn.map (hattempt.replicate (by fun_prop))
+  exact computableInPolyTime_gmwFirstSuccess ComputableInPolyTime.id'
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[local fun_prop]
 private theorem computableTidilyInPolyTime_honestReply1 {α : Type} {input : α ↪ List Bool}
     {generator : List Bool → List Bool} {m : α → ℕ} {φ : α → CNF ℕ}
@@ -637,9 +765,12 @@ private theorem computableTidilyInPolyTime_honestReply1 {α : Type} {input : α 
     ComputableTidilyInPolyTime
       (fun a => honestReply1 generator (m a) (φ a) (coins a) (r a))
       input encBits := by
+  have htotal := (computableInPolyTime_totalLen (.of_tidy hφ)).tidy
   dsimp only [honestReply1]
-  fun_prop
+  apply ComputableInPolyTime.tidy
+  apply computableInPolyTime_proverReply1 (.of_tidy hg) <;> exact .of_tidy (by fun_prop)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[local fun_prop]
 private theorem computableTidilyInPolyTime_honestReply2 {α : Type} {input : α ↪ List Bool}
     {s : α → ℕ} {φ : α → CNF ℕ}
@@ -682,24 +813,56 @@ private theorem isPPTOn_runTwoRound_honest {α Caller : Type} {enc : α ↪ List
     (reply1 := fun p => honestReply1 generator (m p.1) (φ p.1) (coins p.1) p.2)
     (reply2 := fun p => honestReply2 (s p.1) (φ p.1) (coins p.1) p.2)
     (bound := fun c => (coins c).1.length * m c + (coins c).1.length * (s c + 1))
-    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
+      fun_prop))
     (fun c q => by dsimp only [honestReply1]; exact (List.length_take_le _ _).trans (by omega))
     (fun c q => by dsimp only [honestReply2]; rw [length_proverReply2_any]; omega)
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 theorem isPPTOn_gmwInteract {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
+    (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
-    (hf : ComputableTidilyInPolyTime f enc encCNF)
+    (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
       (fun p => Vstar p.1 p.2.1 p.2.2)) :
     IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
       (fun p : ℕ × α × List Bool × List Bool =>
         gmwInteract generator (p.1 + 7) (length (p.1 + 7)) (f p.2.1) p.2.2.1
           (Vstar p.1 p.2.1 p.2.2.2)) := by
-  have hlength := PRG.polyTime_length hg hlen
-  dsimp only [gmwInteract, sampleHonestCoins]
-  ppt
+  have hgPlain := hg
+  have hfPlain := hf
+  have hg := hg.tidy
+  have hf := hf.tidy
+  have hlengthPlain := PRG.polyTime_length hgPlain hlen
+  have hlength := hlengthPlain.tidy
+  have hvars := (Cslib.Logic.PL.CNF.computableInPolyTime_vars_length (.of_tidy hf)).tidy
+  have htotal := (computableInPolyTime_totalLen (.of_tidy hf)).tidy
+  have hcoins : IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits)))
+      (encPair encBits (encList encBits)) (fun p : ℕ × α × List Bool × List Bool =>
+        sampleHonestCoins (p.1 + 7) (f p.2.1) p.2.2.1) := by
+    dsimp only [sampleHonestCoins]
+    apply IsPPTOn.bind_with (left := encBits)
+    · apply ComputableInPolyTime.sampleList
+      fun_prop
+    apply IsPPTOn.bind_with (left := encBits)
+    · apply ComputableInPolyTime.sampleList
+      fun_prop
+    apply IsPPTOn.bind_with (left := encBits)
+    · apply ComputableInPolyTime.sampleList
+      fun_prop
+    simp only [bind_pure_comp]
+    apply IsPPTOn.map_with
+    · apply IsPPTOn.replicate
+      · apply ComputableInPolyTime.sampleList
+        fun_prop
+      · fun_prop
+    · fun_prop
+  dsimp only [gmwInteract]
+  apply hcoins.bind_with
+  simp only [bind_pure_comp]
+  apply IsPPTOn.map ?_ (ComputableInPolyTime.fst encBits (encPair encUnary encBits))
+  apply isPPTOn_runTwoRound_honest hV hg <;> fun_prop
 
 end Cslib.Crypto.GMW

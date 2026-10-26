@@ -18,6 +18,7 @@ import Complexity.Computability.Complexity.Classes.SharpP.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Foundations.Data.List.Lookup
 import Cslib.Foundations.Data.Polynomial.Monotone
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
@@ -208,8 +209,7 @@ private theorem ppWordWeight_eq_prod_univ (M r : α → ℕ) (g : α × ℕ → 
         else newmanAmp (M a) (r a + 1) (-g (a, i.1)) := by
   unfold ppWordWeight
   rw [← Fin.prod_univ_eq_prod_range]
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, dite_eq_left, Fin.isLt,
-    Option.getD_some]
+  simp only [List.getD_ofFn]
 
 private theorem ppWordWeight_nonneg (M r : α → ℕ) (g : α × ℕ → ℤ) (a : α)
     (w : Fin (r a) → Bool) : 0 ≤ ppWordWeight M r g a w := by

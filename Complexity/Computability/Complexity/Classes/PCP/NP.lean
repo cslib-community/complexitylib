@@ -94,13 +94,31 @@ theorem isPolyTime_queryTable (hV : V.PolyTime enc)
 theorem isPolyTime_tableVerifier (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.tableVerifier (encPair enc encBits) encBool := by
-  refine .of_tidy ?_
-  have he := enum_coins hV hcoins
-  have hq := hV.2.1.tidy
-  have hv := hV.2.2.tidy
-  have ht := (isPolyTime_queryTable hV hcoins).tidy
-  unfold tableVerifier
-  polytime
+  have he : ComputableInPolyTime (fun a => BitString.enumList (V.coins a))
+      enc (encList encBits) := by
+    obtain ⟨t, s, ⟨T, hT, ht⟩, ⟨S, hS, hs⟩, k, Q, hfin, tm, htm⟩ := enum_coins hV hcoins
+    exact ⟨T, S, hT, hS, k, Q, hfin, tm,
+      fun a => ((htm a).mono (ht a) (hs a)).computesInTimeAndSpace⟩
+  have hq := hV.2.1
+  have hv := hV.2.2
+  have ht := isPolyTime_queryTable hV hcoins
+  have hinput := ComputableInPolyTime.fst (encPair enc encBits) encBits
+  have hword := ComputableInPolyTime.snd (encPair enc encBits) encBits
+  have hqueries := hq.comp (hinput.fst'.prod hword)
+  have htable := ht.comp hinput.fst'
+  have hproof := hinput.snd'
+  have houter := ComputableInPolyTime.fst (encPair (encPair enc encBits) encBits) encNat
+  have haddress := ComputableInPolyTime.snd (encPair (encPair enc encBits) encBits) encNat
+  have hlookup := (ComputableInPolyTime.bitsGetD false).comp
+    ((hproof.comp houter).prod ((ComputableInPolyTime.idxOf encNat).comp
+      ((htable.comp houter).prod haddress)))
+  have hanswers := ComputableInPolyTime.listToBits.comp
+    (ComputableInPolyTime.mapWithInput
+      (f := fun input address => input.1.2.getD (List.idxOf address (V.queryTable input.1.1)) false)
+      hqueries (by simpa only [Function.comp_def] using hlookup))
+  have htest := hv.comp ((hinput.fst'.prod hword).prod hanswers)
+  exact ComputableInPolyTime.allWithInput
+    (he.comp (ComputableInPolyTime.fst enc encBits)) htest
 
 private theorem mem_queryTable {a : α} {word : List Bool} {address : ℕ}
     (hword : word.length = V.coins a) (haddress : address ∈ V.queries (a, word)) :

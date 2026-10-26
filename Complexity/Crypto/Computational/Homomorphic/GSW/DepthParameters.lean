@@ -33,7 +33,7 @@ security.
 * `noise_margin`: the strict decoding margin after the entire declared depth budget.
 * `entropy_margin`, `negligible_statistical_error`: the statistical part of the security bound.
 * `polynomiallyBounded_parameters`: polynomial bounds for the unary numerical parameters.
-* `computableTidilyInPolyTime_modulus`: native computation of the binary modulus.
+* `computableInPolyTime_modulus`: native computation of the binary modulus.
 
 ## References
 
@@ -192,54 +192,56 @@ theorem nand_margin (security : ℕ) :
 
 /-- The logarithmic size is uniformly computable with unary input and output. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_logSize :
-    ComputableTidilyInPolyTime logSize encUnary encUnary := by
+theorem computableInPolyTime_logSize :
+    ComputableInPolyTime logSize encUnary encUnary := by
+  refine .of_tidy ?_
   have := unary_clog_const 2
   unfold logSize
   fun_prop
 
 /-- Compute the unary digit width, including its quadratic dependence on the logarithm. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_width :
-    ComputableTidilyInPolyTime width encUnary encUnary := by unfold width; fun_prop
+theorem computableInPolyTime_width :
+    ComputableInPolyTime width encUnary encUnary := by unfold width; fun_prop
 
 /-- Compute the unary ciphertext dimension. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_rows :
-    ComputableTidilyInPolyTime rows encUnary encUnary := by unfold rows; fun_prop
+theorem computableInPolyTime_rows :
+    ComputableInPolyTime rows encUnary encUnary := by unfold rows; fun_prop
 
 /-- Compute the unary public sample count. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_samples :
-    ComputableTidilyInPolyTime samples encUnary encUnary := by unfold samples; fun_prop
+theorem computableInPolyTime_samples :
+    ComputableInPolyTime samples encUnary encUnary := by unfold samples; fun_prop
 
 /-- Compute the unary logarithmic depth budget. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_depthBudget :
-    ComputableTidilyInPolyTime depthBudget encUnary encUnary := by unfold depthBudget; fun_prop
+theorem computableInPolyTime_depthBudget :
+    ComputableInPolyTime depthBudget encUnary encUnary := by unfold depthBudget; fun_prop
 
 /-- Compute the modulus in binary; this does not assert efficient unary output. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_modulus :
-    ComputableTidilyInPolyTime modulus encUnary encNat :=
-  binary_pow' (const 2) computableTidilyInPolyTime_width
+theorem computableInPolyTime_modulus :
+    ComputableInPolyTime modulus encUnary encNat :=
+  .of_tidy (binary_pow' (const 2) DepthParameters.computableInPolyTime_width.tidy)
 
 /-- All unary parameters have polynomial bounds; the modulus is deliberately excluded. -/
 theorem polynomiallyBounded_parameters :
     PolynomiallyBounded dimension ∧ PolynomiallyBounded noise ∧ PolynomiallyBounded width ∧
       PolynomiallyBounded rows ∧ PolynomiallyBounded samples ∧ PolynomiallyBounded depthBudget :=
-  ⟨Parameters.computableTidilyInPolyTime_dimension.polynomiallyBounded,
-    Parameters.computableTidilyInPolyTime_noise.polynomiallyBounded,
-    computableTidilyInPolyTime_width.polynomiallyBounded,
-    computableTidilyInPolyTime_rows.polynomiallyBounded,
-    computableTidilyInPolyTime_samples.polynomiallyBounded,
-    computableTidilyInPolyTime_depthBudget.polynomiallyBounded⟩
+  ⟨Parameters.computableInPolyTime_dimension.tidy.polynomiallyBounded,
+    Parameters.computableInPolyTime_noise.tidy.polynomiallyBounded,
+    DepthParameters.computableInPolyTime_width.tidy.polynomiallyBounded,
+    DepthParameters.computableInPolyTime_rows.tidy.polynomiallyBounded,
+    DepthParameters.computableInPolyTime_samples.tidy.polynomiallyBounded,
+    computableInPolyTime_depthBudget.tidy.polynomiallyBounded⟩
 
 /-- The actual shared-public-matrix error bound is negligible for this new family. -/
 theorem negligible_statistical_error :
     Negligible (fun security => (rows security : ℝ≥0) *
       NNReal.sqrt ((2 : ℝ≥0) ^ rows security / 2 ^ samples security)) :=
-  negligible_mul_sqrt_pow_two_div_pow_two computableTidilyInPolyTime_rows.polynomiallyBounded
+  negligible_mul_sqrt_pow_two_div_pow_two
+    DepthParameters.computableInPolyTime_rows.tidy.polynomiallyBounded
     (Filter.Eventually.of_forall entropy_margin)
 
 end Cslib.Crypto.Homomorphic.GSW.DepthParameters

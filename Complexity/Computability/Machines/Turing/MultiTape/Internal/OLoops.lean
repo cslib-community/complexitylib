@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Foldl
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.FoldCompiler
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option
 import Mathlib.Tactic.Linarith
@@ -64,22 +64,17 @@ theorem foldl [ListEncoding encA encL] [hS : SizedListEncoding encA encL]
     ComputableInO (fun x => (list x).foldl step (init x)) encIn encB
       (fun x => Tl x + Ti x + ((list x).length + 1) * (R x + B x + (encL (list x)).length))
       fun x => Sl x + Si x + Q x + B x + (encL (list x)).length := by
-  obtain ⟨cl, hl, -⟩ := Internal.NormalForm.inO hlist
-  change ComputableTidilyInTimeAndSpace list encIn encL
-    (fun x => cl * (Tl x + 1)) (fun x => cl * (Sl x + 1)) at hl
-  obtain ⟨ci, hi, -⟩ := Internal.NormalForm.inO hinit
-  change ComputableTidilyInTimeAndSpace init encIn encB
-    (fun x => ci * (Ti x + 1)) (fun x => ci * (Si x + 1)) at hi
-  obtain ⟨cs, hs, -⟩ := Internal.NormalForm.inO hstep
-  change ComputableTidilyInTimeAndSpace (fun p : β × α => step p.1 p.2)
-    (encPair encB encA) encB (fun p => cs * (Ts p + 1)) (fun p => cs * (Ss p + 1)) at hs
-  obtain ⟨c, h⟩ := ComputableTidilyInTimeAndSpace.foldl (encA := encA) (encL := encL)
+  obtain ⟨cl, ⟨kl, Ql, _, tml, hl⟩, -⟩ := Internal.NormalForm.inO hlist
+  obtain ⟨ci, ⟨ki, Qi, _, tmi, hi⟩, -⟩ := Internal.NormalForm.inO hinit
+  obtain ⟨cs, ⟨ks, Qs, _, tms, hs⟩, -⟩ := Internal.NormalForm.inO hstep
+  obtain ⟨c, k, State, hfinite, tm, h⟩ := Internal.FoldCompiler.foldl
+    (encA := encA) (encL := encL)
     (encBA := encPair encB encA) (encS := encPair encL encB)
     (encO := encOption (encPair encL encB))
-    (hl.mono (t' := fun x => cl * (Tl x + 1) + ci * (Ti x + 1))
-      (s' := fun x => cl * (Sl x + 1) + ci * (Si x + 1))
-      (fun _ => Nat.le_add_right _ _) (fun _ => Nat.le_add_right _ _))
-    (hi.mono (fun _ => Nat.le_add_left _ _) (fun _ => Nat.le_add_left _ _)) hs
+    (fun x => (hl x).mono (t' := cl * (Tl x + 1) + ci * (Ti x + 1))
+      (s' := cl * (Sl x + 1) + ci * (Si x + 1))
+      (Nat.le_add_right _ _) (Nat.le_add_right _ _))
+    (fun x => (hi x).mono (Nat.le_add_left _ _) (Nat.le_add_left _ _)) hs
     (tMax := fun x => cs * (R x + B x + 1)) (sMax := fun x => cs * (Q x + 1))
     (lMax := fun x => 2 * (encL (list x)).length + 1 + B x)
     (fun x i hi => Nat.mul_le_mul_left cs (by have := hround x i hi; omega))
@@ -90,7 +85,8 @@ theorem foldl [ListEncoding encA encL] [hS : SizedListEncoding encA encL]
       simp only [length_encPair]
       omega)
   set K := cl + ci + 2 * cs + 4
-  refine of_bounds h.computableInTimeAndSpace (c * K + 1) (fun x => ?_) (fun x => ?_) (fun x => ?_)
+  refine of_bounds ⟨k, State, hfinite, tm, fun x => (h x).computesInTimeAndSpace⟩
+    (c * K + 1) (fun x => ?_) (fun x => ?_) (fun x => ?_)
   · have h₁ : ((list x).length + 1) * (cs * (R x + B x + 1) + (2 * (encL (list x)).length + 1 +
         B x) + 1) ≤ ((list x).length + 1) * (cs * (R x + B x + 1) +
           (2 * (encL (list x)).length + 1 + (R x + B x)) + 1) :=
