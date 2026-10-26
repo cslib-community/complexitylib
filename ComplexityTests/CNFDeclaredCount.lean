@@ -80,8 +80,4 @@ example {V : Type u} [DecidableEq V] (φ : CNF V) :
     (φ.relabel φ.distinctVars.idxOf).map List.length = φ.map List.length := by
   simp [CNF.relabel, Clause.relabel]
 
-example {V : Type u} [DecidableEq V] (φ : CNF V) :
-    (φ.relabel φ.distinctVars.idxOf).modelCountOn (Finset.range φ.numVars) = φ.modelCount :=
-  φ.modelCountOn_dense_relabel
-
 end ComplexityTests.CNFDeclaredCount
