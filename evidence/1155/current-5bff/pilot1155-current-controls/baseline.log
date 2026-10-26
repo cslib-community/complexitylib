@@ -1,0 +1,6 @@
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls/baseline/MethodControls.lean:14:9: error: Variable name `f` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _f
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`

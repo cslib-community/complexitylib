@@ -1,0 +1,1 @@
+Historical d7d78b18 source-only method draft and rejected compiler probe. No source-file measurements were run. Two API errors (head! lacking Inhabited and Repr Options) were fixed only in the later5bff method. Never use this as runtime evidence.

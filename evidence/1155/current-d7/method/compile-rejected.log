@@ -1,0 +1,8 @@
+Diag1155/MeasureBase.lean:28:18: error(lean.synthInstanceFailed): failed to synthesize instance of type class
+  Inhabited (KeyedDeclsAttribute.AttributeEntry Tactic)
+
+Hint: Type class instance resolution failures can be inspected with the `set_option trace.Meta.synthInstance true` command.
+Diag1155/MeasureBase.lean:55:29: error(lean.synthInstanceFailed): failed to synthesize instance of type class
+  Repr Options
+
+Hint: Adding the command `deriving instance Repr for Lean.Options` may allow Lean to derive the missing instance.

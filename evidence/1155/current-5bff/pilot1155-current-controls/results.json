@@ -1,0 +1,24 @@
+[
+  {
+    "mode": "baseline",
+    "exit": 1,
+    "wall": 5.17695565597387,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls/baseline",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls/baseline.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls/baseline/MethodControls.lean"
+    ]
+  }
+]

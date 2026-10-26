@@ -1,0 +1,53 @@
+{
+  "baseline": {
+    "module": "MethodControls",
+    "directImports": [
+      [
+        "Complexity.Tactic.PPT",
+        true,
+        false,
+        false
+      ]
+    ],
+    "source_declaration_names": [],
+    "private_compiler_outputs_published": false
+  },
+  "import-only": {
+    "module": "MethodControls",
+    "directImports": [
+      [
+        "Complexity.Tactic.PPT",
+        true,
+        false,
+        false
+      ],
+      [
+        "Diag1155.Measure",
+        true,
+        false,
+        false
+      ]
+    ],
+    "source_declaration_names": [],
+    "private_compiler_outputs_published": false
+  },
+  "measured": {
+    "module": "MethodControls",
+    "directImports": [
+      [
+        "Complexity.Tactic.PPT",
+        true,
+        false,
+        false
+      ],
+      [
+        "Diag1155.Measure",
+        true,
+        false,
+        false
+      ]
+    ],
+    "source_declaration_names": [],
+    "private_compiler_outputs_published": false
+  }
+}

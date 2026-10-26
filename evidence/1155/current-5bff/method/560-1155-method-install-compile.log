@@ -1,0 +1,1 @@
+Diag1155/Measure.lean:9:0: error(lean.unknownIdentifier): Unknown constant `Lean.Elab.Command.CommandElab`

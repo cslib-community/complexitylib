@@ -1,0 +1,71 @@
+[
+  {
+    "mode": "baseline",
+    "exit": 0,
+    "wall": 4.883223470998928,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls-v2/baseline",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls-v2/baseline.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls-v2/baseline/MethodControls.lean"
+    ],
+    "insertion_bytes": 0
+  },
+  {
+    "mode": "import-only",
+    "exit": 0,
+    "wall": 4.4415118739707395,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls-v2/import-only",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls-v2/import-only.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls-v2/import-only/MethodControls.lean"
+    ],
+    "insertion_bytes": 25
+  },
+  {
+    "mode": "measured",
+    "exit": 0,
+    "wall": 4.471609752974473,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls-v2/measured",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls-v2/measured.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/pilot1155-current-controls-v2/measured/MethodControls.lean"
+    ],
+    "insertion_bytes": 43
+  }
+]

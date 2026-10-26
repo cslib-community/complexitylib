@@ -1,0 +1,12 @@
+{
+  "whole_commands": 3,
+  "attempts": 7,
+  "ordinary_failure": 1,
+  "generated_attempts": 1,
+  "distinct_authored_sites_observed": 5,
+  "repeated_site_attempts": 2,
+  "quoted_target_unexecuted": true,
+  "source_contexts_equal": true,
+  "status": "PASS",
+  "no_final_proof_attribution": true
+}

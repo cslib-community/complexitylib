@@ -1,0 +1,3 @@
+Diag1155/Measure.lean:12:2: error: invalid syntax node kind `Cslib.Tactic.PolyTime.tacticPolytime`
+Diag1155/Measure.lean:15:2: error: invalid syntax node kind `Mathlib.Meta.FunProp.funPropTacStx`
+Diag1155/Measure.lean:18:2: error: invalid syntax node kind `Cslib.Tactic.PPT.tacticPpt`
