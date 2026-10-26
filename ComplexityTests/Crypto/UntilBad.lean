@@ -100,4 +100,40 @@ example {T α : Type} (μ : PMF T)
       (Q : ℝ≥0) / (q : ℝ≥0) :=
   advantage_runStatelessOracle_bind_le μ o₁ o₂ isBad next hq hagree hbad
 
+example (o₂ : List Bool → List Bool) (isBad : List Bool → Bool)
+    (extract : List Bool → List Bool) (isGood : List Bool → Bool) (w : List Bool) :
+    runFinderOracle o₂ isBad extract (pure ()) (some w) isGood = PMF.pure (isGood w) :=
+  runFinderOracle_pure o₂ isBad extract () (some w) isGood
+
+example {α : Type} (o₁ o₂ : List Bool → List Bool)
+    (isBad : List Bool → Bool) (extract : List Bool → List Bool) (isGood : List Bool → Bool)
+    (hagree : ∀ req, isBad req = false → o₁ req = o₂ req)
+    (hgood : ∀ req, isBad req = true → isGood (extract req) = true)
+    (prog : WordOracleComp Unit α) (next : α → Game) (b : Bool) :
+    runStatelessOracle o₁ prog next b ≤
+      runStatelessOracle o₂ prog next b +
+        runFinderOracle o₂ isBad extract prog none isGood true ∧
+    runStatelessOracle o₂ prog next b ≤
+      runStatelessOracle o₁ prog next b +
+        runFinderOracle o₂ isBad extract prog none isGood true :=
+  runStatelessOracle_le_runFinderOracle o₁ o₂ isBad extract isGood hagree hgood prog next b
+
+/-- Concrete non-bad query (`req = [false]`) leaves the witness state `none` and evaluates to
+`PMF.pure false`. -/
+example :
+    runFinderOracle id (fun r => r == [true]) id
+      ((query (Sum.inr ((), [false])) >>= pure) : WordOracleComp Unit (List Bool))
+      none (fun w => w == [true]) = PMF.pure false := by
+  rw [runFinderOracle_query_inr]
+  simp [runFinderOracle_pure]
+
+/-- Concrete bad query (`req = [true]`) records the witness `some [true]` and evaluates to
+`PMF.pure true`. -/
+example :
+    runFinderOracle id (fun r => r == [true]) id
+      ((query (Sum.inr ((), [true])) >>= pure) : WordOracleComp Unit (List Bool))
+      none (fun w => w == [true]) = PMF.pure true := by
+  rw [runFinderOracle_query_inr]
+  simp [runFinderOracle_pure]
+
 end ComplexityTests.Crypto.UntilBad

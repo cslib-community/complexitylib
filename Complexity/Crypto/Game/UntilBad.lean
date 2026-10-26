@@ -33,6 +33,9 @@ resulting `μ.bind` acceptance-probability difference and `Game.advantage` by `Q
 
 * `Cslib.Crypto.Game.runStatelessOracle`: run a `WordOracleComp Unit α` against a stateless
   deterministic word oracle `o : List Bool → List Bool` and feed its output to `next : α → Game`.
+* `Cslib.Crypto.Game.finderPhase2Oracle`, `Cslib.Crypto.Game.runFinderOracle`: stateful witness
+  finder oracle handler that answers with `o₂` while recording `some (extract req)` whenever
+  `isBad req` holds.
 
 ## Main results
 
@@ -46,6 +49,8 @@ resulting `μ.bind` acceptance-probability difference and `Game.advantage` by `Q
 * `Cslib.Crypto.Game.runStatelessOracle_bind_le`,
   `Cslib.Crypto.Game.advantage_runStatelessOracle_bind_le`: stateless-oracle until-bad bounds with a
   secret-dependent continuation and a secret-independent clean oracle.
+* `Cslib.Crypto.Game.runStatelessOracle_le_runFinderOracle`: stateless-oracle until-bad bound into
+  a witness-finding game (`runFinderOracle`).
 * `Cslib.Crypto.Game.advantage_uniform_bind_of_eq_of_ne`: single-exceptional-point advantage bound
   `1 / q` for two `ZMod q`-indexed game families.
 
@@ -262,5 +267,138 @@ theorem advantage_uniform_bind_of_eq_of_ne {q : ℕ} [NeZero q] (x₀ : ZMod q)
         mul_zero, tsum_ite_eq, PMF.uniformOfFintype_apply, ZMod.card]
     rw [Game.succProbability, happly, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast, one_div]
   exact hadv.trans_eq hsucc
+
+/-- Stateful oracle handler that replies with `o₂ request.2` and updates its `Option (List Bool)`
+state to `some (extract request.2)` whenever `isBad request.2` holds. -/
+def finderPhase2Oracle (o₂ : List Bool → List Bool) (isBad : List Bool → Bool)
+    (extract : List Bool → List Bool) (request : Unit × List Bool) :
+    StateT (Option (List Bool)) ProbComp (List Bool) :=
+  fun s => pure (o₂ request.2, if isBad request.2 then some (extract request.2) else s)
+
+/-- Run `prog` against `finderPhase2Oracle` starting from `s : Option (List Bool)` and test whether
+the final state satisfies `isGood`. -/
+noncomputable def runFinderOracle {α : Type} (o₂ : List Bool → List Bool)
+    (isBad : List Bool → Bool) (extract : List Bool → List Bool)
+    (prog : WordOracleComp Unit α) (s : Option (List Bool))
+    (isGood : List Bool → Bool) : Game :=
+  (ProbComp.eval ((OracleComp.interpret
+    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (finderPhase2Oracle o₂ isBad extract))
+    prog).run s)).bind (fun out => PMF.pure (out.2.elim false isGood))
+
+@[simp]
+theorem runFinderOracle_pure {α : Type} (o₂ : List Bool → List Bool)
+    (isBad : List Bool → Bool) (extract : List Bool → List Bool)
+    (a : α) (s : Option (List Bool)) (isGood : List Bool → Bool) :
+    runFinderOracle o₂ isBad extract (pure a) s isGood = PMF.pure (s.elim false isGood) := by
+  simp [runFinderOracle]
+
+theorem runFinderOracle_query_inl {α : Type} (o₂ : List Bool → List Bool)
+    (isBad : List Bool → Bool) (extract : List Bool → List Bool)
+    (m : ℕ)
+    (k : probOracleSpec (fun _ : Unit × List Bool => List Bool) (Sum.inl m) →
+      OracleComp (probOracleSpec (fun _ : Unit × List Bool => List Bool)) α)
+    (s : Option (List Bool)) (isGood : List Bool → Bool) :
+    runFinderOracle o₂ isBad extract (OracleComp.query (Sum.inl m) >>= k) s isGood =
+      (PMF.uniformOfFintype (Fin (m + 1))).bind
+        (fun x => runFinderOracle o₂ isBad extract (k x) s isGood) := by
+  simp [runFinderOracle, ProbOracleComp.handler, StateT.run_bind,
+    ProbComp.eval_bind, PMF.bind_bind]
+
+theorem runFinderOracle_query_inr {α : Type} (o₂ : List Bool → List Bool)
+    (isBad : List Bool → Bool) (extract : List Bool → List Bool)
+    (req : Unit × List Bool)
+    (k : probOracleSpec (fun _ : Unit × List Bool => List Bool) (Sum.inr req) →
+      OracleComp (probOracleSpec (fun _ : Unit × List Bool => List Bool)) α)
+    (s : Option (List Bool)) (isGood : List Bool → Bool) :
+    runFinderOracle o₂ isBad extract (OracleComp.query (Sum.inr req) >>= k) s isGood =
+      runFinderOracle o₂ isBad extract (k (o₂ req.2))
+        (if isBad req.2 then some (extract req.2) else s) isGood := by
+  rw [runFinderOracle, OracleComp.interpret_bind, OracleComp.interpret_query,
+    ProbOracleComp.handler, StateT.run_bind]
+  rfl
+
+/-- Once `s` satisfies `s.elim false isGood = true`, `runFinderOracle` succeeds with
+probability `1`. -/
+theorem runFinderOracle_true_of_good {α : Type} (o₂ : List Bool → List Bool)
+    (isBad : List Bool → Bool) (extract : List Bool → List Bool)
+    (isGood : List Bool → Bool)
+    (hbad_good : ∀ req, isBad req = true → isGood (extract req) = true)
+    (prog : WordOracleComp Unit α) :
+    ∀ (s : Option (List Bool)), s.elim false isGood = true →
+      runFinderOracle o₂ isBad extract prog s isGood true = 1 := by
+  induction prog using OracleComp.induction with
+  | pure a =>
+    intro s hs
+    simp [hs]
+  | query_bind q k ih =>
+    rcases q with m | req
+    · intro s hs
+      rw [runFinderOracle_query_inl, PMF.bind_apply]
+      simp_rw [ih _ s hs, mul_one, PMF.tsum_coe]
+    · intro s hs
+      rw [runFinderOracle_query_inr]
+      apply ih
+      by_cases hb : isBad req.2 = true
+      · simp [hb, hbad_good req.2 hb]
+      · simp [hb, hs]
+
+/-- **Finder-oracle until-bad bound**: if `o₁ req = o₂ req` whenever `isBad req = false` and every
+query with `isBad req = true` satisfies `isGood (extract req) = true`, then the difference between
+`runStatelessOracle o₁ prog next` and `runStatelessOracle o₂ prog next` is bounded by the
+probability that `runFinderOracle o₂ isBad extract prog none isGood` outputs `true`. -/
+theorem runStatelessOracle_le_runFinderOracle {α : Type}
+    (o₁ o₂ : List Bool → List Bool) (isBad : List Bool → Bool)
+    (extract : List Bool → List Bool) (isGood : List Bool → Bool)
+    (hagree : ∀ req, isBad req = false → o₁ req = o₂ req)
+    (hbad_good : ∀ req, isBad req = true → isGood (extract req) = true)
+    (prog : WordOracleComp Unit α) (next : α → Game) (b : Bool) :
+    (runStatelessOracle o₁ prog next b ≤
+      runStatelessOracle o₂ prog next b +
+        runFinderOracle o₂ isBad extract prog none isGood true) ∧
+    (runStatelessOracle o₂ prog next b ≤
+      runStatelessOracle o₁ prog next b +
+        runFinderOracle o₂ isBad extract prog none isGood true) := by
+  induction prog using OracleComp.induction with
+  | pure a =>
+    simp only [runStatelessOracle_pure, runFinderOracle_pure]
+    exact ⟨le_self_add, le_self_add⟩
+  | query_bind q k ih =>
+    rcases q with m | req
+    · rw [runStatelessOracle_query_inl, runStatelessOracle_query_inl, runFinderOracle_query_inl]
+      simp only [PMF.bind_apply]
+      constructor
+      · calc ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * runStatelessOracle o₁ (k x) next b
+            ≤ ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x *
+                (runStatelessOracle o₂ (k x) next b +
+                  runFinderOracle o₂ isBad extract (k x) none isGood true) :=
+              ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (ih x).1 zero_le
+          _ = (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * runStatelessOracle o₂ (k x) next b) +
+                ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x *
+                  runFinderOracle o₂ isBad extract (k x) none isGood true := by
+              simp only [mul_add, ENNReal.tsum_add]
+      · calc ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * runStatelessOracle o₂ (k x) next b
+            ≤ ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x *
+                (runStatelessOracle o₁ (k x) next b +
+                  runFinderOracle o₂ isBad extract (k x) none isGood true) :=
+              ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (ih x).2 zero_le
+          _ = (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * runStatelessOracle o₁ (k x) next b) +
+                ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x *
+                  runFinderOracle o₂ isBad extract (k x) none isGood true := by
+              simp only [mul_add, ENNReal.tsum_add]
+    · rw [runStatelessOracle_query_inr, runStatelessOracle_query_inr, runFinderOracle_query_inr]
+      by_cases hb : isBad req.2 = true
+      · simp only [hb, ↓reduceIte]
+        have h1 :
+            runFinderOracle o₂ isBad extract (k (o₂ req.2)) (some (extract req.2)) isGood true =
+              1 :=
+          runFinderOracle_true_of_good o₂ isBad extract isGood hbad_good (k (o₂ req.2))
+            (some (extract req.2)) (hbad_good req.2 hb)
+        rw [h1]
+        exact ⟨le_add_of_le_right (PMF.coe_le_one _ _),
+          le_add_of_le_right (PMF.coe_le_one _ _)⟩
+      · simp only [Bool.not_eq_true] at hb
+        simp only [hb, Bool.false_eq_true, ↓reduceIte, hagree req.2 hb]
+        exact ih (o₂ req.2)
 
 end Cslib.Crypto.Game
