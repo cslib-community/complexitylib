@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Karn Seth, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Karn Seth, Samuel Schlesinger
 -/
 
 module
@@ -64,6 +64,8 @@ association-list cache `Cache α = List (α × α)`:
 * `Cslib.RandomPermutation.toOuterMeasure_bad_choose_two_le`: quadratic union bound
   `(n * size s + n.choose 2) * δ` for bad events with linearly growing step probability.
 * `Cslib.RandomPermutation.uniformPerm_bind_apply_le_forgetful`,
+  `Cslib.RandomPermutation.forgetfulAnswer_bind_apply_le_uniformPerm`,
+  `Cslib.RandomPermutation.toOuterMeasure_forgetfulAnswer_le_pairwise_and_length_le_add`,
   `Cslib.RandomPermutation.abs_sub_uniformPerm_forgetful_le`: bidirectional random-permutation
   switching bounds (`Q.choose 2 / |α|`).
 * `Cslib.RandomPermutation.abs_sub_uniformPerm_uniformFunc_le`: the PRP/PRF switching lemma
@@ -1293,6 +1295,141 @@ theorem uniformPerm_bind_apply_le_forgetful {β γ : Type}
   refine hdiff.trans (add_le_add le_rfl ?_)
   have hbad := toOuterMeasure_bad_forgetfulWithBad_le hQ []
   simpa only [List.length_nil, mul_zero, zero_add] using hbad
+
+/-- **Reverse bidirectional random-permutation switching inequality (`ℝ≥0∞`, one-sided)**: for any
+`Q`-query adaptive program, evaluating against `forgetfulAnswer` accepts within
+`Q.choose 2 * |α|⁻¹` of evaluating against a uniform permutation. -/
+theorem forgetfulAnswer_bind_apply_le_uniformPerm {β γ : Type}
+    {program : OracleComp (PermOracleSpec α) β} {Q : ℕ}
+    (hQ : IsQueryBounded program Q) (next : β → PMF γ) (c : γ) :
+    ((((OracleComp.interpret forgetfulAnswer program).run []).map Prod.fst).bind next) c ≤
+    ((do
+      let π ← PMF.uniformOfFintype (Equiv.Perm α)
+      OracleComp.interpret (fun q => PMF.pure (evalPerm π q)) program).bind next) c +
+      (Q.choose 2 : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹ := by
+  rw [uniform_interpret_eq_lazy,
+    ← run_interpret_exactWithBad_map_fst program [] false isPartialBijection_nil,
+    ← run_interpret_forgetfulWithBad_map_fst program [] false]
+  simp only [PMF.map_comp, Function.comp_def, PMF.bind_map]
+  have hdiff := identicalUntilBad_exactWithBad_forgetfulWithBad.symm.bind_apply_le
+    program ([], false) (fun x => next x.1) c
+  refine hdiff.trans (add_le_add le_rfl ?_)
+  have hbad := toOuterMeasure_bad_forgetfulWithBad_le hQ []
+  simpa only [List.length_nil, mul_zero, zero_add] using hbad
+
+private theorem forgetfulWithBad_step_good (q : PermQuery α) (c c' : Cache α) (a : α)
+    (hmem : (a, (c', false)) ∈ (forgetfulWithBad q (c, false)).support)
+    (hp1 : c.Pairwise (fun x y => x.1 ≠ y.1)) (hp2 : c.Pairwise (fun x y => x.2 ≠ y.2)) :
+    c'.Pairwise (fun x y => x.1 ≠ y.1) ∧ c'.Pairwise (fun x y => x.2 ≠ y.2) ∧
+      c'.length ≤ c.length + 1 := by
+  cases q with
+  | forward x =>
+    dsimp [forgetfulWithBad] at hmem
+    cases hx : c.lookup x with
+    | some y =>
+      rw [hx, PMF.mem_support_pure_iff] at hmem
+      obtain ⟨_, heq⟩ := Prod.mk.inj hmem
+      obtain ⟨rfl, _⟩ := Prod.mk.inj heq
+      exact ⟨hp1, hp2, Nat.le_succ _⟩
+    | none =>
+      rw [hx, PMF.mem_support_map_iff] at hmem
+      obtain ⟨y, -, heq⟩ := hmem
+      obtain ⟨rfl, heq'⟩ := Prod.mk.inj heq
+      obtain ⟨rfl, hbad⟩ := Prod.mk.inj heq'
+      rw [Bool.false_or, Option.isSome_eq_false_iff, Option.isNone_iff_eq_none] at hbad
+      exact ⟨List.pairwise_cons.mpr ⟨fun e he => (lookup_eq_none_iff.mp hx e he).symm, hp1⟩,
+        List.pairwise_cons.mpr ⟨fun e he => (invLookup_eq_none_iff.mp hbad e he).symm, hp2⟩,
+        le_rfl⟩
+  | inverse y =>
+    dsimp [forgetfulWithBad] at hmem
+    cases hy : invLookup c y with
+    | some x =>
+      rw [hy, PMF.mem_support_pure_iff] at hmem
+      obtain ⟨_, heq⟩ := Prod.mk.inj hmem
+      obtain ⟨rfl, _⟩ := Prod.mk.inj heq
+      exact ⟨hp1, hp2, Nat.le_succ _⟩
+    | none =>
+      rw [hy, PMF.mem_support_map_iff] at hmem
+      obtain ⟨x, -, heq⟩ := hmem
+      obtain ⟨rfl, heq'⟩ := Prod.mk.inj heq
+      obtain ⟨rfl, hbad⟩ := Prod.mk.inj heq'
+      rw [Bool.false_or, Option.isSome_eq_false_iff, Option.isNone_iff_eq_none] at hbad
+      exact ⟨List.pairwise_cons.mpr ⟨fun e he => (lookup_eq_none_iff.mp hbad e he).symm, hp1⟩,
+        List.pairwise_cons.mpr ⟨fun e he => (invLookup_eq_none_iff.mp hy e he).symm, hp2⟩,
+        le_rfl⟩
+
+private theorem forgetfulWithBad_pairwise_and_length_le {β : Type}
+    {program : OracleComp (PermOracleSpec α) β} {n : ℕ}
+    (hn : IsQueryBounded program n) {c c' : Cache α} {a : β}
+    (hp1 : c.Pairwise (fun x y => x.1 ≠ y.1)) (hp2 : c.Pairwise (fun x y => x.2 ≠ y.2))
+    (hmem : (a, (c', false)) ∈
+      ((OracleComp.interpret forgetfulWithBad program).run (c, false)).support) :
+    c'.Pairwise (fun x y => x.1 ≠ y.1) ∧ c'.Pairwise (fun x y => x.2 ≠ y.2) ∧
+      c'.length ≤ c.length + n := by
+  induction hn generalizing c with
+  | pure b n =>
+    change (a, (c', false)) ∈ (PMF.pure (b, (c, false))).support at hmem
+    rw [PMF.mem_support_pure_iff] at hmem
+    obtain ⟨_, heq⟩ := Prod.mk.inj hmem
+    obtain ⟨rfl, _⟩ := Prod.mk.inj heq
+    exact ⟨hp1, hp2, Nat.le_add_right _ _⟩
+  | liftBind q cont n _ ih =>
+    change (a, (c', false)) ∈
+      ((forgetfulWithBad q (c, false)).bind fun y =>
+        (OracleComp.interpret forgetfulWithBad (cont y.1)).run y.2).support at hmem
+    rw [PMF.mem_support_bind_iff] at hmem
+    obtain ⟨⟨r, c₁, b₁⟩, hstep, hcont⟩ := hmem
+    cases b₁ with
+    | false =>
+      obtain ⟨hp1', hp2', hlen₁⟩ := forgetfulWithBad_step_good q c c₁ r hstep hp1 hp2
+      obtain ⟨hp1'', hp2'', hlen₂⟩ := ih r hp1' hp2' hcont
+      exact ⟨hp1'', hp2'', by omega⟩
+    | true =>
+      have hbad := bad_of_mem_support_run
+        identicalUntilBad_exactWithBad_forgetfulWithBad.absorb_second (cont r) rfl _ hcont
+      exact Bool.noConfusion hbad
+
+/-- Any final-cache event `P` under `forgetfulAnswer` on a `Q`-query-bounded program has
+probability at most that of `(c.Pairwise (fun a b => a.1 ≠ b.1) ∧ c.Pairwise (fun a b => a.2 ≠ b.2)
+∧ c.length ≤ Q) ∧ P c` plus the `Q.choose 2 * |α|⁻¹` collision probability of
+`forgetfulWithBad`. -/
+theorem toOuterMeasure_forgetfulAnswer_le_pairwise_and_length_le_add {β : Type}
+    {program : OracleComp (PermOracleSpec α) β} {Q : ℕ}
+    (hQ : IsQueryBounded program Q) (P : Cache α → Prop) :
+    ((OracleComp.interpret forgetfulAnswer program).run []).toOuterMeasure {x | P x.2} ≤
+      ((OracleComp.interpret forgetfulAnswer program).run []).toOuterMeasure
+        {x | (x.2.Pairwise (fun a b => a.1 ≠ b.1) ∧
+          x.2.Pairwise (fun a b => a.2 ≠ b.2) ∧ x.2.length ≤ Q) ∧ P x.2} +
+      (Q.choose 2 : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹ := by
+  classical
+  rw [← run_interpret_forgetfulWithBad_map_fst program [] false,
+    PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_map_apply]
+  have hbad := toOuterMeasure_bad_forgetfulWithBad_le hQ []
+  simp only [List.length_nil, mul_zero, zero_add] at hbad
+  refine le_trans ?_ (add_le_add le_rfl hbad)
+  set q := (OracleComp.interpret forgetfulWithBad program).run ([], false)
+  change q.toOuterMeasure ((fun x : β × (Cache α × Bool) => (x.1, x.2.1)) ⁻¹' {x | P x.2}) ≤
+    q.toOuterMeasure ((fun x : β × (Cache α × Bool) => (x.1, x.2.1)) ⁻¹'
+      {x | (x.2.Pairwise (fun a b => a.1 ≠ b.1) ∧
+        x.2.Pairwise (fun a b => a.2 ≠ b.2) ∧ x.2.length ≤ Q) ∧ P x.2}) +
+      q.toOuterMeasure {x | x.2.2 = true}
+  simp only [PMF.toOuterMeasure_apply, ← ENNReal.tsum_add]
+  refine ENNReal.tsum_le_tsum fun ⟨a, c, b⟩ => ?_
+  by_cases hmem : (a, (c, b)) ∈ q.support
+  · by_cases hP : P c
+    · cases b with
+      | false =>
+        obtain ⟨hp1, hp2, hlen⟩ := forgetfulWithBad_pairwise_and_length_le hQ
+          List.Pairwise.nil List.Pairwise.nil hmem
+        have hg : c.Pairwise (fun a b => a.1 ≠ b.1) ∧
+            c.Pairwise (fun a b => a.2 ≠ b.2) ∧ c.length ≤ Q :=
+          ⟨hp1, hp2, by simpa using hlen⟩
+        simp [hP, hg]
+      | true =>
+        simp [hP]
+    · simp [hP]
+  · have hz : q (a, (c, b)) = 0 := (PMF.apply_eq_zero_iff _ _).mpr hmem
+    simp [Set.indicator_apply, hz]
 
 /-- **Bidirectional random-permutation switching bound (`ℝ`, two-sided, [BonehShoup2023],
 Section 4.7)**: for any `Q`-query adaptive program, the output distributions under a uniform

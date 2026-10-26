@@ -2214,6 +2214,7 @@ public import Complexity.Probability.Guessing
 public import Complexity.Probability.HashFamily
 public import Complexity.Probability.HashFamily.MultiplyShift
 public import Complexity.Probability.HashFamily.Polynomial
+public import Complexity.Probability.HashFamily.Uniform
 public import Complexity.Probability.HashIsolation
 public import Complexity.Probability.IID
 public import Complexity.Probability.Isolation
