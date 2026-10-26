@@ -1,0 +1,35 @@
+{
+  "data_revision": "c41194730ceb87aeb52641c7a5f90846a140187d",
+  "source_revision": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "static_revision": "5bc08fe7a82eb89dc744d443f190612f5d06e091",
+  "source_files": 647,
+  "authored_heads_selected_and_observed": 4195,
+  "explicit_argument_heads_observed": 93,
+  "mapped_attempts_both_modes": 8961,
+  "measured_mapping_counts": {
+    "exact_native_full_span_and_static_head": 4481,
+    "synthetic_source_info": 429,
+    "generated_quoted_or_unindexed_anchor": 2
+  },
+  "primary_returned_closed_goal_costs": {
+    "polytime": {
+      "returned_closed_goal_attempts": 513,
+      "distinct_authored_heads": 496,
+      "median_instrumented_body_user_hb": 6912.117,
+      "max_instrumented_body_user_hb": 189734.684
+    },
+    "fun_prop": {
+      "returned_closed_goal_attempts": 3429,
+      "distinct_authored_heads": 3168,
+      "median_instrumented_body_user_hb": 28.51,
+      "max_instrumented_body_user_hb": 198534.557
+    },
+    "ppt": {
+      "returned_closed_goal_attempts": 290,
+      "distinct_authored_heads": 283,
+      "median_instrumented_body_user_hb": 7205.077,
+      "max_instrumented_body_user_hb": 81772.77
+    }
+  },
+  "scope": "Static selection, original Git bytes, native-kind/full-span joins and derived cost table only. Runtime method/options/provenance acceptance has separate independent review. All inventoried authored heads were observed; no claim about aliases/generated calls in other files or final proof dependencies. Exceptions are attempts, including negative/fallback controls, not a bug rate. Inclusive current-thread diagnostic costs are not minima or program runtime."
+}
