@@ -285,11 +285,7 @@ certified DPLL solver runtimes.
   exceed the library's unconditional `3.5 N - o(N)` bound in P, so it needs an independent
   correctness review of the frontier core.
 - **Weighted threshold representations:** v1's explicit source-reduction family, universal scalar
-  circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting. The current
-  bounded-direct-input-support theorem gives `(4/7 - ε) N` input-reading gates for support at most
-  three, assuming both output fibers are rectangle-free with a sublinear logarithmic threshold.
-  A probabilistic witness establishes that the hypotheses are satisfiable; an explicit efficient
-  family remains open in the library.
+  circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
 - **Construction runtimes**, certified separately from gate counts: the mass-production
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
