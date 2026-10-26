@@ -49,7 +49,7 @@ def main():
  need(set(byfile)==set(files),'plan/command file membership differs')
  need(terminal.get('all_processes_terminal') is True,'terminal process state missing')
  need(terminal.get('commands')==len(commands),'terminal command accounting differs')
- status=collections.Counter();file_outcomes=[];all_event_ids=set();traces_total=0;pending_total=0;rows_by_event={};scope_heads=collections.Counter();synthetic=0;accepted_commands=0
+ status=collections.Counter();file_outcomes=[];all_event_ids=set();traces_total=0;pending_total=0;rows_by_event={};scope_heads=collections.Counter();synthetic=0;accepted_commands=0;unpositioned=0;localmaps=0
  for fid,f in files.items():
   rows=byfile.get(fid,[]);need(collections.Counter(c['mode'] for c in rows)==collections.Counter(side['modes']),'mode accounting '+f['path'])
   original=raw('originals/'+f['path']);need(sha(original)==f['sha256']==sha(obj(f['path'],PIN)),'original source hash '+f['path'])
@@ -102,8 +102,13 @@ def main():
     b=g['begin'];e=g.get('end');synthetic+=not b['original_source_info']
     for h in b.get('goal_heads',[]):scope_heads[h['head_after_foralls_mdata']]+=1;need(h['normalized'] is False,'goal normalization claim '+eid)
     if b['filemap_equals_input_file']:
-     need(b['filemap_bytes']==len(variant) and variant[b['start']:b['end']].decode()==b['text'],'native source span '+eid)
-    else:need(isinstance(b.get('local_filemap_source'),str),'unidentified local FileMap '+eid)
+     fm=variant;need(b['filemap_bytes']==len(variant),'native FileMap byte size '+eid)
+    else:
+     localmaps+=1;need(isinstance(b.get('local_filemap_source'),str),'unidentified local FileMap '+eid);fm=(b.get('local_filemap_source') or '').encode()
+    if type(b.get('start')) is int and type(b.get('end')) is int:
+     need(0<=b['start']<=b['end']<=len(fm) and fm[b['start']:b['end']].decode()==b['text'],'native source span '+eid)
+    else:
+     unpositioned+=1;need(b['text']=='','unpositioned event invents source text '+eid)
     if e is None:pending_total+=1;status['censored_unknown']+=1;rows_by_event[eid]=(c,None,False);continue
     status[e['status']]+=1;same=b['thread_id']==e['thread_id'];need(e['same_thread']==same and e['start_thread_id']==b['thread_id'],'thread identity '+eid)
     if same:need(type(e['raw_body_thread_heartbeats']) is int and 0<=e['raw_body_thread_heartbeats']<=e['raw_region_thread_heartbeats'],'raw current-thread cost '+eid)
@@ -123,6 +128,6 @@ def main():
    rawcost=e['raw_body_thread_heartbeats'];need(r['body_user_heartbeat_units']==(None if rawcost is None else rawcost/1000),'HB unit conversion '+eid)
   else:need(r['status']=='censored_unknown' and r['body_user_heartbeat_units'] is None and not r['accepted_whole_file_cost'],'censored treatment '+eid)
  failed=[r for r in file_outcomes if not r['accepted']]
- result={'revision':a.revision,'source_pin':PIN,'method':METHOD,'runner':RUNNER,'issues':issues,'consistency_status':'PASS' if not issues else 'FINDINGS','prepared_files':len(files),'commands':len(commands),'accepted_commands':accepted_commands,'nonaccepted_commands':failed,'raw_attempt_records':len(all_event_ids),'raw_status_counts':dict(status),'synthetic_source_info_attempts':synthetic,'retained_trace_records':traces_total,'pending_censored':pending_total,'parsed_attempt_rows':len(attempts),'raw_syntactic_goal_heads':dict(scope_heads),'excluded':'Own static census/classifications/joins; no final rule-proof attribution; no new Lean execution. Data consistency PASS does not waive corpus failures or claim all survey goals complete.'}
+ result={'revision':a.revision,'source_pin':PIN,'method':METHOD,'runner':RUNNER,'issues':issues,'consistency_status':'PASS' if not issues else 'FINDINGS','prepared_files':len(files),'commands':len(commands),'accepted_commands':accepted_commands,'nonaccepted_commands':failed,'raw_attempt_records':len(all_event_ids),'raw_status_counts':dict(status),'synthetic_source_info_attempts':synthetic,'retained_trace_records':traces_total,'pending_censored':pending_total,'unpositioned_attempts':unpositioned,'local_filemap_attempts':localmaps,'parsed_attempt_rows':len(attempts),'raw_syntactic_goal_heads':dict(scope_heads),'excluded':'Own static census/classifications/joins; no final rule-proof attribution; no new Lean execution. Data consistency PASS does not waive corpus failures or claim all survey goals complete.'}
  a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n');print(json.dumps({k:v for k,v in result.items() if k not in ('nonaccepted_commands','raw_syntactic_goal_heads')},indent=2));return bool(issues)
 if __name__=='__main__':raise SystemExit(main())
