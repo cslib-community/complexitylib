@@ -1,0 +1,275 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc
+      encUnary
+  [aesop] Initial goal:
+        α : Type
+        enc : α ↪ List Bool
+        n : α → ℕ
+        C : α × List Bool → ℕ
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat
+        c d : ℕ
+        hbound : ∀ (a : α × List Bool), (encNat (C a)).length ≤ c * (((encPair enc encBits) a).length + 1) ^ d
+        m : α → ℕ := fun a => c * (2 * (enc a).length + n a + 2) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        enc : α ↪ List Bool
+        n : α → ℕ
+        C : α × List Bool → ℕ
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat
+        c d : ℕ
+        hbound : ∀ (a : α × List Bool), (encNat (C a)).length ≤ c * (((encPair enc encBits) a).length + 1) ^ d
+        m : α → ℕ := fun a => c * (2 * (enc a).length + n a + 2) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc
+      encUnary
+  [aesop] α : Type
+      enc : α ↪ List Bool
+      n : α → ℕ
+      C : α × List Bool → ℕ
+      hn : ComputableTidilyInPolyTime n enc encUnary
+      hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat
+      c d : ℕ
+      hbound : ∀ (a : α × List Bool), (encNat (C a)).length ≤ c * (((encPair enc encBits) a).length + 1) ^ d
+      m : α → ℕ := fun a => c * (2 * (enc a).length + n a + 2) ^ d
+      ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.797.402):
+      [aesop] α : Type
+          enc : α ↪ List Bool
+          n : α → ℕ
+          C : α × List Bool → ℕ
+          hn : ComputableTidilyInPolyTime n enc encUnary
+          hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat
+          c d : ℕ
+          hbound : ∀ (a : α × List Bool), (encNat (C a)).length ≤ c * (((encPair enc encBits) a).length + 1) ^ d
+          m : α → ℕ := fun a => c * (2 * (enc a).length + n a + 2) ^ d
+          ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc
+      encUnary
+  [aesop] Initial goal:
+        α : Type
+        enc : α ↪ List Bool
+        n : α → ℕ
+        C : α × List Bool → ℕ
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat
+        c d : ℕ
+        hbound : ∀ (a : α × List Bool), (encNat (C a)).length ≤ c * (((encPair enc encBits) a).length + 1) ^ d
+        m : α → ℕ := fun a => c * (2 * (enc a).length + n a + 2) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] α : Type
+          enc : α ↪ List Bool
+          n : α → ℕ
+          C : α × List Bool → ℕ
+          hn : ComputableTidilyInPolyTime n enc encUnary
+          hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat
+          c d : ℕ
+          m : α → ℕ := fun a => c * (2 * (enc a).length + n a + 2) ^ d
+          hbound : ∀ (a : α) (b : List Bool), (C (a, b)).bits.length ≤ c * (2 * (enc a).length + 1 + b.length + 1) ^ d
+          ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        enc : α ↪ List Bool
+        n : α → ℕ
+        C : α × List Bool → ℕ
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat
+        c d : ℕ
+        m : α → ℕ := fun a => c * (2 * (enc a).length + n a + 2) ^ d
+        hbound : ∀ (a : α) (b : List Bool), (C (a, b)).bits.length ≤ c * (2 * (enc a).length + 1 + b.length + 1) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          enc : α ↪ List Bool
+          n : α → ℕ
+          C : α × List Bool → ℕ
+          hn : ComputableTidilyInPolyTime n enc encUnary
+          hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat
+          c d : ℕ
+          m : α → ℕ := fun a => c * (2 * (enc a).length + n a + 2) ^ d
+          hbound : ∀ (a : α) (b : List Bool), (C (a, b)).bits.length ≤ c * (2 * (enc a).length + 1 + b.length + 1) ^ d
+          ⊢ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul]
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul'
+          [Meta.Tactic.fun_prop] failed to unify @binary_mul'
+              ComputableTidilyInPolyTime (fun a => ?left a * ?right a) ?input encNat
+              with
+              ComputableTidilyInPolyTime (fun a => c * (2 * (enc a).length + n a + 2) ^ d) enc encUnary
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul as:
+                             (fun y => y.1 * y.2) ∘ (fun a => (c, (2 * (enc a).length + n a + 2) ^ d))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul'
+              [Meta.Tactic.fun_prop] failed to unify @binary_mul'
+                  ComputableTidilyInPolyTime (fun a => ?left a * ?right a) ?input encNat
+                  with
+                  ComputableTidilyInPolyTime (fun y => y.1 * y.2) ?encMid encUnary
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (c, (2 * (enc a).length + n a + 2) ^ d)) enc (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => c) enc encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (2 * (enc x).length + n x + 2) ^ d) enc encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_pow', Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_pow]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow as:
+                                       (fun x4 => x4 ^ d) ∘ (fun x => 2 * (enc x).length + n x + 2)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4 => x4 ^ d) encUnary encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_pow', Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_pow]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 2 * (enc x).length + n x + 2) enc encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.computableTidilyInPolyTime_succ, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.computableTidilyInPolyTime_succ as:
+                                           (fun x4 => x4 + 2) ∘ (fun x => 2 * (enc x).length + n x)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4 => x4 + 2) encUnary encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.computableTidilyInPolyTime_succ, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.computableTidilyInPolyTime_succ
+                          [Meta.Tactic.fun_prop] failed to unify computableTidilyInPolyTime_succ
+                              ComputableTidilyInPolyTime (fun x => x + 1) encNat encNat
+                              with
+                              ComputableTidilyInPolyTime (fun x4 => x4 + 2) ?encMid encUnary
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                          [Meta.Tactic.fun_prop] failed to unify @binary_add'
+                              ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                              with
+                              ComputableTidilyInPolyTime (fun x4 => x4 + 2) ?encMid encUnary
+                        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                                             (fun y => y.1 + y.2) ∘ (fun x4 => (x4, 2))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 + y.2) (encPair encUnary encUnary) encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                              [Meta.Tactic.fun_prop] failed to unify @binary_add'
+                                  ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                                  with
+                                  ComputableTidilyInPolyTime (fun y => y.1 + y.2) ?encMid encUnary
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4 => (x4, 2)) encUnary (encPair encUnary encUnary)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) encUnary encUnary
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 2) encUnary encUnary
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 2 * (enc x).length + n x) enc encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                          [Meta.Tactic.fun_prop] failed to unify @binary_add'
+                              ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                              with
+                              ComputableTidilyInPolyTime (fun x => 2 * (enc x).length + n x) enc encUnary
+                        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                                               (fun x4x5 => x4x5.1 + x4x5.2) ∘ (fun x => (2 * (enc x).length, n x))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 + x4x5.2) (encPair encUnary encUnary) encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                              [Meta.Tactic.fun_prop] failed to unify @binary_add'
+                                  ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                                  with
+                                  ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 + x4x5.2) ?encMid encUnary
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (2 * (enc x).length, n x)) enc (encPair encUnary encUnary)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 2 * (enc x).length) enc encUnary
+                                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul]
+                                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul'
+                                  [Meta.Tactic.fun_prop] failed to unify @binary_mul'
+                                      ComputableTidilyInPolyTime (fun a => ?left a * ?right a) ?input encNat
+                                      with
+                                      ComputableTidilyInPolyTime (fun x => 2 * (enc x).length) enc encUnary
+                                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul as:
+                                                     (fun y => y.1 * y.2) ∘ (fun x => (2, (enc x).length))
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+                                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul]
+                                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul'
+                                      [Meta.Tactic.fun_prop] failed to unify @binary_mul'
+                                          ComputableTidilyInPolyTime (fun a => ?left a * ?right a) ?input encNat
+                                          with
+                                          ComputableTidilyInPolyTime (fun y => y.1 * y.2) ?encMid encUnary
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (2, (enc x).length)) enc (encPair encUnary encUnary)
+                                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 2) enc encUnary
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (enc x).length) enc encUnary
+                                        [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (⇑enc) enc encBits
+                                            [Meta.Tactic.fun_prop] candidate local theorems for enc #[]
+                                            [Meta.Tactic.fun_prop] candidate morphism theorems: [@encode, @encoded]
+                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.encode
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime n enc encUnary
+                                [Meta.Tactic.fun_prop] candidate local theorems for n #[hn : ComputableTidilyInPolyTime n enc encUnary]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hn : ComputableTidilyInPolyTime n enc encUnary
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

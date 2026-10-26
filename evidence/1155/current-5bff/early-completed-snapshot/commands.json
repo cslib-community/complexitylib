@@ -1,0 +1,1306 @@
+[
+  {
+    "file_id": "cf7fd8a3b0daf227",
+    "path": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "baseline",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.2200585909886286,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/cf7fd8a3b0daf227/baseline",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/cf7fd8a3b0daf227-baseline.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/cf7fd8a3b0daf227/baseline/Complexity/Computability/Circuit/Boolean/AC0.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf",
+    "original_sha256": "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf",
+    "insertion_offset": 605,
+    "insertion_bytes": 0,
+    "insertions": [
+      {
+        "original_byte": 605,
+        "bytes": 0
+      },
+      {
+        "original_byte": 2284,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.Circuit.Boolean.AC0",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.ConstDepth",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.Unbounded",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Pi",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.Parity",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.Hastad",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Languages.Slice",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.Nat.PolynomialBound.Exponential",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Boolean.AC0",
+        "Cslib.Circuits.Boolean.ConstDepth.bot_mem",
+        "Cslib.Circuits.Boolean.ConstDepth.compl",
+        "Cslib.Circuits.Boolean.ConstDepth.inf",
+        "Cslib.Circuits.Boolean.ConstDepth.sup",
+        "Cslib.Circuits.Boolean.ConstDepth.top_mem",
+        "Cslib.Circuits.Boolean.Unbounded.binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.depth_binCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.depth_constCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.depth_notCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit_and",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit_or",
+        "Cslib.Circuits.Boolean.Unbounded.eval_constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.eval_notCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.notCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_notCircuit",
+        "Cslib.Circuits.Boolean.parity_notMem_AC0",
+        "_private.Complexity.Computability.Circuit.Boolean.AC0.0.Cslib.Circuits.Boolean.ConstDepth.binCircuit_mem"
+      ],
+      "private_ilean_sha256": "df53859e6ae4fe2e9afdd0fb191a93a73dccf637f2823868f500c36487f6db34",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "cf7fd8a3b0daf227",
+    "path": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "import-only",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 1.8670711719896644,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/cf7fd8a3b0daf227/import-only",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/cf7fd8a3b0daf227-import-only.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/cf7fd8a3b0daf227/import-only/Complexity/Computability/Circuit/Boolean/AC0.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "97d9daa58ba5f77c299d6b4b49635a575ea04e67285cbf323cdd007b26d16344",
+    "original_sha256": "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf",
+    "insertion_offset": 605,
+    "insertion_bytes": 25,
+    "insertions": [
+      {
+        "original_byte": 605,
+        "bytes": 25
+      },
+      {
+        "original_byte": 2284,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.Circuit.Boolean.AC0",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.ConstDepth",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.Unbounded",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Pi",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.Parity",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.Hastad",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Languages.Slice",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.Nat.PolynomialBound.Exponential",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Boolean.AC0",
+        "Cslib.Circuits.Boolean.ConstDepth.bot_mem",
+        "Cslib.Circuits.Boolean.ConstDepth.compl",
+        "Cslib.Circuits.Boolean.ConstDepth.inf",
+        "Cslib.Circuits.Boolean.ConstDepth.sup",
+        "Cslib.Circuits.Boolean.ConstDepth.top_mem",
+        "Cslib.Circuits.Boolean.Unbounded.binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.depth_binCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.depth_constCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.depth_notCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit_and",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit_or",
+        "Cslib.Circuits.Boolean.Unbounded.eval_constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.eval_notCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.notCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_notCircuit",
+        "Cslib.Circuits.Boolean.parity_notMem_AC0",
+        "_private.Complexity.Computability.Circuit.Boolean.AC0.0.Cslib.Circuits.Boolean.ConstDepth.binCircuit_mem"
+      ],
+      "private_ilean_sha256": "473ec140dd92efd88e109a08336d31c2c9d7f4698a2b67886feaa9644191d941",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "cf7fd8a3b0daf227",
+    "path": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "measured",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 1.8677422360051423,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/cf7fd8a3b0daf227/measured",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/cf7fd8a3b0daf227-measured.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/cf7fd8a3b0daf227/measured/Complexity/Computability/Circuit/Boolean/AC0.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "ecdb87f9f0762be3225aa0c835502948fad8098979a36fad863ee68b7bdf4823",
+    "original_sha256": "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf",
+    "insertion_offset": 605,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 605,
+        "bytes": 25
+      },
+      {
+        "original_byte": 2284,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.Circuit.Boolean.AC0",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.ConstDepth",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.Unbounded",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Pi",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.Parity",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.Hastad",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Languages.Slice",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.Nat.PolynomialBound.Exponential",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Boolean.AC0",
+        "Cslib.Circuits.Boolean.ConstDepth.bot_mem",
+        "Cslib.Circuits.Boolean.ConstDepth.compl",
+        "Cslib.Circuits.Boolean.ConstDepth.inf",
+        "Cslib.Circuits.Boolean.ConstDepth.sup",
+        "Cslib.Circuits.Boolean.ConstDepth.top_mem",
+        "Cslib.Circuits.Boolean.Unbounded.binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.depth_binCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.depth_constCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.depth_notCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit_and",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit_or",
+        "Cslib.Circuits.Boolean.Unbounded.eval_constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.eval_notCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.notCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_notCircuit",
+        "Cslib.Circuits.Boolean.parity_notMem_AC0",
+        "_private.Complexity.Computability.Circuit.Boolean.AC0.0.Cslib.Circuits.Boolean.ConstDepth.binCircuit_mem"
+      ],
+      "private_ilean_sha256": "dc9bc10a06a3dd6d049018dfec4075fa6d77b1cbaf091b6290e63c22bf6963e6",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "cf7fd8a3b0daf227",
+    "path": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+    "mode": "traced",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 1.9680092839989811,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "-Dtrace.Meta.Tactic.fun_prop=true",
+      "-Dtrace.aesop=true",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/cf7fd8a3b0daf227/traced",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/cf7fd8a3b0daf227-traced.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/cf7fd8a3b0daf227/traced/Complexity/Computability/Circuit/Boolean/AC0.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "ecdb87f9f0762be3225aa0c835502948fad8098979a36fad863ee68b7bdf4823",
+    "original_sha256": "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf",
+    "insertion_offset": 605,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 605,
+        "bytes": 25
+      },
+      {
+        "original_byte": 2284,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.Circuit.Boolean.AC0",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.ConstDepth",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.Unbounded",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Pi",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.Parity",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.Hastad",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Languages.Slice",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.Nat.PolynomialBound.Exponential",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Boolean.AC0",
+        "Cslib.Circuits.Boolean.ConstDepth.bot_mem",
+        "Cslib.Circuits.Boolean.ConstDepth.compl",
+        "Cslib.Circuits.Boolean.ConstDepth.inf",
+        "Cslib.Circuits.Boolean.ConstDepth.sup",
+        "Cslib.Circuits.Boolean.ConstDepth.top_mem",
+        "Cslib.Circuits.Boolean.Unbounded.binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.depth_binCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.depth_constCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.depth_notCircuit_le",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit_and",
+        "Cslib.Circuits.Boolean.Unbounded.eval_binCircuit_or",
+        "Cslib.Circuits.Boolean.Unbounded.eval_constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.eval_notCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.notCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_binCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_constCircuit",
+        "Cslib.Circuits.Boolean.Unbounded.size_notCircuit",
+        "Cslib.Circuits.Boolean.parity_notMem_AC0",
+        "_private.Complexity.Computability.Circuit.Boolean.AC0.0.Cslib.Circuits.Boolean.ConstDepth.binCircuit_mem"
+      ],
+      "private_ilean_sha256": "dc9bc10a06a3dd6d049018dfec4075fa6d77b1cbaf091b6290e63c22bf6963e6",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "c2447fa12ec294b4",
+    "path": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+    "mode": "baseline",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.2280153639730997,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c2447fa12ec294b4/baseline",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/c2447fa12ec294b4-baseline.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c2447fa12ec294b4/baseline/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "3dad545a4d94280cfebb00e35a8cfc8ee1539063f441991218c803b5d6c79705",
+    "original_sha256": "3dad545a4d94280cfebb00e35a8cfc8ee1539063f441991218c803b5d6c79705",
+    "insertion_offset": 506,
+    "insertion_bytes": 0,
+    "insertions": [
+      {
+        "original_byte": 506,
+        "bytes": 0
+      },
+      {
+        "original_byte": 1714,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.TFNP.Subclasses",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.CircuitValue.Compilation",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.EndOfLine_searchComplete",
+        "Cslib.Complexity.Leaf_searchComplete",
+        "Cslib.Complexity.LocalOpt_searchComplete",
+        "Cslib.Complexity.Pigeon_searchComplete",
+        "Cslib.Complexity.endOfLineRel_searchReducible_EndOfLine",
+        "Cslib.Complexity.exists_uniformCircuitCodes",
+        "Cslib.Complexity.leafRel_searchReducible_Leaf",
+        "Cslib.Complexity.localOptRel_searchReducible_LocalOpt",
+        "Cslib.Complexity.pigeonRel_searchReducible_Pigeon",
+        "_private.Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness.0.Cslib.Complexity.exists_costCodes",
+        "_private.Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness.0.Cslib.Complexity.exists_endomorphismCodes"
+      ],
+      "private_ilean_sha256": "ed6e0669d79bff1d324eddf136278bb72f6bc6846c2f5bbd96da6600db665224",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "c2447fa12ec294b4",
+    "path": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+    "mode": "import-only",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.1369913310045376,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c2447fa12ec294b4/import-only",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/c2447fa12ec294b4-import-only.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c2447fa12ec294b4/import-only/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "5384e685cdf629fffbb2d65b7742954cd5410ef7b9238ab82d88ac74d266246e",
+    "original_sha256": "3dad545a4d94280cfebb00e35a8cfc8ee1539063f441991218c803b5d6c79705",
+    "insertion_offset": 506,
+    "insertion_bytes": 25,
+    "insertions": [
+      {
+        "original_byte": 506,
+        "bytes": 25
+      },
+      {
+        "original_byte": 1714,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.TFNP.Subclasses",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.CircuitValue.Compilation",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.EndOfLine_searchComplete",
+        "Cslib.Complexity.Leaf_searchComplete",
+        "Cslib.Complexity.LocalOpt_searchComplete",
+        "Cslib.Complexity.Pigeon_searchComplete",
+        "Cslib.Complexity.endOfLineRel_searchReducible_EndOfLine",
+        "Cslib.Complexity.exists_uniformCircuitCodes",
+        "Cslib.Complexity.leafRel_searchReducible_Leaf",
+        "Cslib.Complexity.localOptRel_searchReducible_LocalOpt",
+        "Cslib.Complexity.pigeonRel_searchReducible_Pigeon",
+        "_private.Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness.0.Cslib.Complexity.exists_costCodes",
+        "_private.Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness.0.Cslib.Complexity.exists_endomorphismCodes"
+      ],
+      "private_ilean_sha256": "bf3966017f2e90ac711ddfa4f6e9832ee0b4aa8e8482a3049025b9bcb8585370",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "c2447fa12ec294b4",
+    "path": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+    "mode": "measured",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.1177279640105553,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c2447fa12ec294b4/measured",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/c2447fa12ec294b4-measured.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c2447fa12ec294b4/measured/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "d3af46ee593c26e3e64b88bdab297adc626a6ffb78ebed9c3aa65c89377febc4",
+    "original_sha256": "3dad545a4d94280cfebb00e35a8cfc8ee1539063f441991218c803b5d6c79705",
+    "insertion_offset": 506,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 506,
+        "bytes": 25
+      },
+      {
+        "original_byte": 1714,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.TFNP.Subclasses",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.CircuitValue.Compilation",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.EndOfLine_searchComplete",
+        "Cslib.Complexity.Leaf_searchComplete",
+        "Cslib.Complexity.LocalOpt_searchComplete",
+        "Cslib.Complexity.Pigeon_searchComplete",
+        "Cslib.Complexity.endOfLineRel_searchReducible_EndOfLine",
+        "Cslib.Complexity.exists_uniformCircuitCodes",
+        "Cslib.Complexity.leafRel_searchReducible_Leaf",
+        "Cslib.Complexity.localOptRel_searchReducible_LocalOpt",
+        "Cslib.Complexity.pigeonRel_searchReducible_Pigeon",
+        "_private.Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness.0.Cslib.Complexity.exists_costCodes",
+        "_private.Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness.0.Cslib.Complexity.exists_endomorphismCodes"
+      ],
+      "private_ilean_sha256": "db8afdb2bbe82affebf3387ddf031d6a6a57a1b4266802073a5f8b92a606b72f",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "c2447fa12ec294b4",
+    "path": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+    "mode": "traced",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.288983926002402,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "-Dtrace.Meta.Tactic.fun_prop=true",
+      "-Dtrace.aesop=true",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c2447fa12ec294b4/traced",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/c2447fa12ec294b4-traced.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c2447fa12ec294b4/traced/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "d3af46ee593c26e3e64b88bdab297adc626a6ffb78ebed9c3aa65c89377febc4",
+    "original_sha256": "3dad545a4d94280cfebb00e35a8cfc8ee1539063f441991218c803b5d6c79705",
+    "insertion_offset": 506,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 506,
+        "bytes": 25
+      },
+      {
+        "original_byte": 1714,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.TFNP.Subclasses",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.CircuitValue.Compilation",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.EndOfLine_searchComplete",
+        "Cslib.Complexity.Leaf_searchComplete",
+        "Cslib.Complexity.LocalOpt_searchComplete",
+        "Cslib.Complexity.Pigeon_searchComplete",
+        "Cslib.Complexity.endOfLineRel_searchReducible_EndOfLine",
+        "Cslib.Complexity.exists_uniformCircuitCodes",
+        "Cslib.Complexity.leafRel_searchReducible_Leaf",
+        "Cslib.Complexity.localOptRel_searchReducible_LocalOpt",
+        "Cslib.Complexity.pigeonRel_searchReducible_Pigeon",
+        "_private.Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness.0.Cslib.Complexity.exists_costCodes",
+        "_private.Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness.0.Cslib.Complexity.exists_endomorphismCodes"
+      ],
+      "private_ilean_sha256": "db8afdb2bbe82affebf3387ddf031d6a6a57a1b4266802073a5f8b92a606b72f",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "c4f6fefd9c115439",
+    "path": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "baseline",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.4161389890359715,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c4f6fefd9c115439/baseline",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/c4f6fefd9c115439-baseline.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c4f6fefd9c115439/baseline/Complexity/Crypto/Computational/Basic.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181",
+    "original_sha256": "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181",
+    "insertion_offset": 491,
+    "insertion_bytes": 0,
+    "insertions": [
+      {
+        "original_byte": 491,
+        "bytes": 0
+      },
+      {
+        "original_byte": 2159,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Crypto.Computational.Basic",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.Parameter",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Game",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Negligible.Basic",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.ComputationallyIndistinguishable",
+        "Cslib.Crypto.ComputationallyIndistinguishable.bind",
+        "Cslib.Crypto.ComputationallyIndistinguishable.map",
+        "Cslib.Crypto.ComputationallyIndistinguishable.refl",
+        "Cslib.Crypto.ComputationallyIndistinguishable.shift",
+        "Cslib.Crypto.ComputationallyIndistinguishable.symm",
+        "Cslib.Crypto.ComputationallyIndistinguishable.trans",
+        "Cslib.Crypto.Distinguisher",
+        "Cslib.Crypto.IsPPTTest",
+        "Cslib.Crypto.computationallyIndistinguishable_iff_tests",
+        "Cslib.Crypto.distinguishingGame",
+        "Cslib.Crypto.distinguishingGame_map",
+        "Cslib.Crypto.eval_bind_eq_distinguishingGame",
+        "Cslib.Crypto.isPPTTest_eval"
+      ],
+      "private_ilean_sha256": "e238cd961b6e897448e511470fe1c0d742690d6b66eb6fc001d0b695b6ce514e",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "c4f6fefd9c115439",
+    "path": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "import-only",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.6029979080194607,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c4f6fefd9c115439/import-only",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/c4f6fefd9c115439-import-only.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c4f6fefd9c115439/import-only/Complexity/Crypto/Computational/Basic.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "961afc4cf96754e8a9cafee80e5720177a93f44f227d44234411c38b41f442c3",
+    "original_sha256": "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181",
+    "insertion_offset": 491,
+    "insertion_bytes": 25,
+    "insertions": [
+      {
+        "original_byte": 491,
+        "bytes": 25
+      },
+      {
+        "original_byte": 2159,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Crypto.Computational.Basic",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.Parameter",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Game",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Negligible.Basic",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.ComputationallyIndistinguishable",
+        "Cslib.Crypto.ComputationallyIndistinguishable.bind",
+        "Cslib.Crypto.ComputationallyIndistinguishable.map",
+        "Cslib.Crypto.ComputationallyIndistinguishable.refl",
+        "Cslib.Crypto.ComputationallyIndistinguishable.shift",
+        "Cslib.Crypto.ComputationallyIndistinguishable.symm",
+        "Cslib.Crypto.ComputationallyIndistinguishable.trans",
+        "Cslib.Crypto.Distinguisher",
+        "Cslib.Crypto.IsPPTTest",
+        "Cslib.Crypto.computationallyIndistinguishable_iff_tests",
+        "Cslib.Crypto.distinguishingGame",
+        "Cslib.Crypto.distinguishingGame_map",
+        "Cslib.Crypto.eval_bind_eq_distinguishingGame",
+        "Cslib.Crypto.isPPTTest_eval"
+      ],
+      "private_ilean_sha256": "224e05ec03eadd40f5c87dd79114c7d1aace6e6318fef2b0f37eac4de64bd50b",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "c4f6fefd9c115439",
+    "path": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "measured",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.4311725790030323,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c4f6fefd9c115439/measured",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/c4f6fefd9c115439-measured.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c4f6fefd9c115439/measured/Complexity/Crypto/Computational/Basic.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "1b8fefc974a3d871a7f2f44cbbf92ad0d4c3022c86dfc92f0b7bf4187589eaf9",
+    "original_sha256": "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181",
+    "insertion_offset": 491,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 491,
+        "bytes": 25
+      },
+      {
+        "original_byte": 2159,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Crypto.Computational.Basic",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.Parameter",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Game",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Negligible.Basic",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.ComputationallyIndistinguishable",
+        "Cslib.Crypto.ComputationallyIndistinguishable.bind",
+        "Cslib.Crypto.ComputationallyIndistinguishable.map",
+        "Cslib.Crypto.ComputationallyIndistinguishable.refl",
+        "Cslib.Crypto.ComputationallyIndistinguishable.shift",
+        "Cslib.Crypto.ComputationallyIndistinguishable.symm",
+        "Cslib.Crypto.ComputationallyIndistinguishable.trans",
+        "Cslib.Crypto.Distinguisher",
+        "Cslib.Crypto.IsPPTTest",
+        "Cslib.Crypto.computationallyIndistinguishable_iff_tests",
+        "Cslib.Crypto.distinguishingGame",
+        "Cslib.Crypto.distinguishingGame_map",
+        "Cslib.Crypto.eval_bind_eq_distinguishingGame",
+        "Cslib.Crypto.isPPTTest_eval"
+      ],
+      "private_ilean_sha256": "3e9b4c36aa46405081638e9e1cf930ba485fd1d6e0294680a4131e8a5533e4b5",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "file_id": "c4f6fefd9c115439",
+    "path": "Complexity/Crypto/Computational/Basic.lean",
+    "mode": "traced",
+    "run_id": "current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b",
+    "provenance": "ea8a20699ed42b068e1eb9a75797ccf0d5893225ba81e302afd40a2c028d317c",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.54334089794429,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "-DwarningAsError=true",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "-Dtrace.Meta.Tactic.fun_prop=true",
+      "-Dtrace.aesop=true",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c4f6fefd9c115439/traced",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c908b801-af3c-4c94-a762-23eab4a7697b/c4f6fefd9c115439-traced.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c4f6fefd9c115439/traced/Complexity/Crypto/Computational/Basic.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "1b8fefc974a3d871a7f2f44cbbf92ad0d4c3022c86dfc92f0b7bf4187589eaf9",
+    "original_sha256": "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181",
+    "insertion_offset": 491,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 491,
+        "bytes": 25
+      },
+      {
+        "original_byte": 2159,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Crypto.Computational.Basic",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.Parameter",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Game",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Negligible.Basic",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.ComputationallyIndistinguishable",
+        "Cslib.Crypto.ComputationallyIndistinguishable.bind",
+        "Cslib.Crypto.ComputationallyIndistinguishable.map",
+        "Cslib.Crypto.ComputationallyIndistinguishable.refl",
+        "Cslib.Crypto.ComputationallyIndistinguishable.shift",
+        "Cslib.Crypto.ComputationallyIndistinguishable.symm",
+        "Cslib.Crypto.ComputationallyIndistinguishable.trans",
+        "Cslib.Crypto.Distinguisher",
+        "Cslib.Crypto.IsPPTTest",
+        "Cslib.Crypto.computationallyIndistinguishable_iff_tests",
+        "Cslib.Crypto.distinguishingGame",
+        "Cslib.Crypto.distinguishingGame_map",
+        "Cslib.Crypto.eval_bind_eq_distinguishingGame",
+        "Cslib.Crypto.isPPTTest_eval"
+      ],
+      "private_ilean_sha256": "3e9b4c36aa46405081638e9e1cf930ba485fd1d6e0294680a4131e8a5533e4b5",
+      "outputs_published": false
+    },
+    "context_error": null
+  }
+]

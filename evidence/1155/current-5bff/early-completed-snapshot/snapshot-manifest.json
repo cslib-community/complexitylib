@@ -1,0 +1,239 @@
+{
+  "source_pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "plan_source_revision": "dae3a4b1",
+  "full_plan_sha256": "3b16f1aa6da08abd0de12f799b630fb5c19edfffd6c7c13029a113b4e3b686a1",
+  "selected_file_entries": [
+    {
+      "file_id": "cf7fd8a3b0daf227",
+      "path": "Complexity/Computability/Circuit/Boolean/AC0.lean",
+      "sha256": "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf",
+      "bytes": 11225,
+      "static_module_hint": "Complexity.Computability.Circuit.Boolean.AC0",
+      "expected_native_module": "Complexity.Computability.Circuit.Boolean.AC0",
+      "source_root_prefix": "",
+      "project": ".",
+      "original_import_hints": [
+        "Complexity.Computability.Circuit.Boolean.ConstDepth",
+        "Complexity.Computability.Circuit.Boolean.Unbounded",
+        "Complexity.Computability.Circuit.Pi",
+        "Complexity.Foundations.Data.BitString.Parity",
+        "Complexity.Computability.Circuit.Boolean.Hastad",
+        "Complexity.Computability.Languages.Slice",
+        "Complexity.Foundations.Data.Nat.PolynomialBound.Exponential"
+      ],
+      "options": {
+        "weak.linter.mathlibStandardSet": true,
+        "weak.linter.flexible": true,
+        "weak.linter.pythonStyle": false,
+        "weak.linter.checkInitImports": false,
+        "weak.linter.allScriptsDocumented": false,
+        "weak.linter.unicodeLinter": false,
+        "autoImplicit": false
+      },
+      "candidate_head_ids": [
+        "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf:Complexity/Computability/Circuit/Boolean/AC0.lean:7435-7443:fun_prop",
+        "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf:Complexity/Computability/Circuit/Boolean/AC0.lean:8248-8256:fun_prop",
+        "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf:Complexity/Computability/Circuit/Boolean/AC0.lean:8672-8680:fun_prop",
+        "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf:Complexity/Computability/Circuit/Boolean/AC0.lean:9182-9190:fun_prop",
+        "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf:Complexity/Computability/Circuit/Boolean/AC0.lean:10017-10025:fun_prop"
+      ]
+    },
+    {
+      "file_id": "c2447fa12ec294b4",
+      "path": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+      "sha256": "3dad545a4d94280cfebb00e35a8cfc8ee1539063f441991218c803b5d6c79705",
+      "bytes": 12751,
+      "static_module_hint": "Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness",
+      "expected_native_module": "Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness",
+      "source_root_prefix": "",
+      "project": ".",
+      "original_import_hints": [
+        "Complexity.Computability.Complexity.Classes.TFNP.Subclasses",
+        "Complexity.Computability.Complexity.Problems.CircuitValue.Compilation",
+        "Complexity.Tactic.PolyTime",
+        "Mathlib.Data.List.GetD",
+        "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary"
+      ],
+      "options": {
+        "weak.linter.mathlibStandardSet": true,
+        "weak.linter.flexible": true,
+        "weak.linter.pythonStyle": false,
+        "weak.linter.checkInitImports": false,
+        "weak.linter.allScriptsDocumented": false,
+        "weak.linter.unicodeLinter": false,
+        "autoImplicit": false
+      },
+      "candidate_head_ids": [
+        "3dad545a4d94280cfebb00e35a8cfc8ee1539063f441991218c803b5d6c79705:Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean:8586-8594:polytime"
+      ]
+    },
+    {
+      "file_id": "c4f6fefd9c115439",
+      "path": "Complexity/Crypto/Computational/Basic.lean",
+      "sha256": "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181",
+      "bytes": 8037,
+      "static_module_hint": "Complexity.Crypto.Computational.Basic",
+      "expected_native_module": "Complexity.Crypto.Computational.Basic",
+      "source_root_prefix": "",
+      "project": ".",
+      "original_import_hints": [
+        "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+        "Complexity.Computability.Probabilistic.Parameter",
+        "Complexity.Crypto.Game",
+        "Complexity.Crypto.Negligible.Basic",
+        "Complexity.Probability.PMF",
+        "Complexity.Tactic.PPT"
+      ],
+      "options": {
+        "weak.linter.mathlibStandardSet": true,
+        "weak.linter.flexible": true,
+        "weak.linter.pythonStyle": false,
+        "weak.linter.checkInitImports": false,
+        "weak.linter.allScriptsDocumented": false,
+        "weak.linter.unicodeLinter": false,
+        "autoImplicit": false
+      },
+      "candidate_head_ids": [
+        "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181:Complexity/Crypto/Computational/Basic.lean:6655-6658:ppt",
+        "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181:Complexity/Crypto/Computational/Basic.lean:7314-7317:ppt",
+        "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181:Complexity/Crypto/Computational/Basic.lean:7862-7870:fun_prop",
+        "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181:Complexity/Crypto/Computational/Basic.lean:7876-7884:fun_prop"
+      ]
+    }
+  ],
+  "qualification": "Three completed immutable file pipelines only. No full survey claim. Raw sidecar bytes preserved, command paths retain actual execution provenance. No compiler outputs included.",
+  "files": [
+    {
+      "path": "originals/Complexity/Computability/Circuit/Boolean/AC0.lean",
+      "sha256": "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf"
+    },
+    {
+      "path": "runs/cf7fd8a3b0daf227/measured.jsonl",
+      "sha256": "b8fa4b613a0a2715938387e816a91623244ddadbb2a6347631467f094a2942fe"
+    },
+    {
+      "path": "runs/cf7fd8a3b0daf227/traced.jsonl",
+      "sha256": "cbdeff836ce4205c03206305a5a4a9324c077d45124d12e2cbf9bafec889d09e"
+    },
+    {
+      "path": "runs/cf7fd8a3b0daf227/traced.log",
+      "sha256": "2a516d7e0dfb75aefdb48cd3a77f2cc6ff671dee8b8eab955fb42d027f096a53"
+    },
+    {
+      "path": "runs/cf7fd8a3b0daf227/measured.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/cf7fd8a3b0daf227/import-only.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/cf7fd8a3b0daf227/baseline.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "variants/cf7fd8a3b0daf227/baseline/Complexity/Computability/Circuit/Boolean/AC0.lean",
+      "sha256": "a55d1ceeed6739ac8d5dcc2aaa5d9320cf2685fed34f361c649c1a8699cff3bf"
+    },
+    {
+      "path": "variants/cf7fd8a3b0daf227/import-only/Complexity/Computability/Circuit/Boolean/AC0.lean",
+      "sha256": "97d9daa58ba5f77c299d6b4b49635a575ea04e67285cbf323cdd007b26d16344"
+    },
+    {
+      "path": "variants/cf7fd8a3b0daf227/measured/Complexity/Computability/Circuit/Boolean/AC0.lean",
+      "sha256": "ecdb87f9f0762be3225aa0c835502948fad8098979a36fad863ee68b7bdf4823"
+    },
+    {
+      "path": "variants/cf7fd8a3b0daf227/traced/Complexity/Computability/Circuit/Boolean/AC0.lean",
+      "sha256": "ecdb87f9f0762be3225aa0c835502948fad8098979a36fad863ee68b7bdf4823"
+    },
+    {
+      "path": "originals/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+      "sha256": "3dad545a4d94280cfebb00e35a8cfc8ee1539063f441991218c803b5d6c79705"
+    },
+    {
+      "path": "runs/c2447fa12ec294b4/measured.jsonl",
+      "sha256": "3906af3c98deed4ac0bf5b145932aaa37b235dda258ca56e433da42201c11503"
+    },
+    {
+      "path": "runs/c2447fa12ec294b4/traced.jsonl",
+      "sha256": "ee4ab40d46b05a28937fd0394b53ea5450bdae9aecdb6f077c859ef4be363fd0"
+    },
+    {
+      "path": "runs/c2447fa12ec294b4/traced.log",
+      "sha256": "5a19f9a665101a03a4897285af5e55b5372948e668398c1c76bed22179478318"
+    },
+    {
+      "path": "runs/c2447fa12ec294b4/measured.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/c2447fa12ec294b4/import-only.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/c2447fa12ec294b4/baseline.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "variants/c2447fa12ec294b4/baseline/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+      "sha256": "3dad545a4d94280cfebb00e35a8cfc8ee1539063f441991218c803b5d6c79705"
+    },
+    {
+      "path": "variants/c2447fa12ec294b4/import-only/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+      "sha256": "5384e685cdf629fffbb2d65b7742954cd5410ef7b9238ab82d88ac74d266246e"
+    },
+    {
+      "path": "variants/c2447fa12ec294b4/measured/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+      "sha256": "d3af46ee593c26e3e64b88bdab297adc626a6ffb78ebed9c3aa65c89377febc4"
+    },
+    {
+      "path": "variants/c2447fa12ec294b4/traced/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+      "sha256": "d3af46ee593c26e3e64b88bdab297adc626a6ffb78ebed9c3aa65c89377febc4"
+    },
+    {
+      "path": "originals/Complexity/Crypto/Computational/Basic.lean",
+      "sha256": "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181"
+    },
+    {
+      "path": "runs/c4f6fefd9c115439/measured.jsonl",
+      "sha256": "a6cf1d4d83131d68f3714bc593ada53c0cd8c065140d5429421ee3d0ee32676b"
+    },
+    {
+      "path": "runs/c4f6fefd9c115439/traced.jsonl",
+      "sha256": "4bf13d88ba9a719d6ceddab9e9aface06848cc6306d786ea45bdaee61888df17"
+    },
+    {
+      "path": "runs/c4f6fefd9c115439/traced.log",
+      "sha256": "90de4f173b5bdff50af4e53b5a630ba7f46f4a03002696d85bb8228b0aad1b9c"
+    },
+    {
+      "path": "runs/c4f6fefd9c115439/measured.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/c4f6fefd9c115439/import-only.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/c4f6fefd9c115439/baseline.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "variants/c4f6fefd9c115439/baseline/Complexity/Crypto/Computational/Basic.lean",
+      "sha256": "7c6450a837865424d3524ec85bd5493974df0d487c0553ec4257225228c2e181"
+    },
+    {
+      "path": "variants/c4f6fefd9c115439/import-only/Complexity/Crypto/Computational/Basic.lean",
+      "sha256": "961afc4cf96754e8a9cafee80e5720177a93f44f227d44234411c38b41f442c3"
+    },
+    {
+      "path": "variants/c4f6fefd9c115439/measured/Complexity/Crypto/Computational/Basic.lean",
+      "sha256": "1b8fefc974a3d871a7f2f44cbbf92ad0d4c3022c86dfc92f0b7bf4187589eaf9"
+    },
+    {
+      "path": "variants/c4f6fefd9c115439/traced/Complexity/Crypto/Computational/Basic.lean",
+      "sha256": "1b8fefc974a3d871a7f2f44cbbf92ad0d4c3022c86dfc92f0b7bf4187589eaf9"
+    }
+  ]
+}
