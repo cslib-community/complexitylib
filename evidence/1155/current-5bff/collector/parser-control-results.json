@@ -1,0 +1,32 @@
+[
+  {
+    "synthetic_control": "complete",
+    "result": "PASS",
+    "measurement": false
+  },
+  {
+    "synthetic_control": "censored",
+    "result": "PASS",
+    "measurement": false
+  },
+  {
+    "synthetic_control": "missing_thread",
+    "result": "PASS",
+    "measurement": false
+  },
+  {
+    "synthetic_control": "duplicate_begin",
+    "result": "PASS",
+    "measurement": false
+  },
+  {
+    "synthetic_control": "unmatched_end",
+    "result": "PASS",
+    "measurement": false
+  },
+  {
+    "synthetic_control": "wrong_provenance",
+    "result": "PASS",
+    "measurement": false
+  }
+]

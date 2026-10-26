@@ -1,0 +1,110 @@
+[
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "baseline",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3036-3044:polytime",
+    "observed_attempts": 0,
+    "state": "not_observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "baseline",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3504-3512:polytime",
+    "observed_attempts": 0,
+    "state": "not_observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "baseline",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3973-3981:polytime",
+    "observed_attempts": 0,
+    "state": "not_observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "import-only",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3036-3044:polytime",
+    "observed_attempts": 0,
+    "state": "not_observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "import-only",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3504-3512:polytime",
+    "observed_attempts": 0,
+    "state": "not_observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "import-only",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3973-3981:polytime",
+    "observed_attempts": 0,
+    "state": "not_observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "measured",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3036-3044:polytime",
+    "observed_attempts": 1,
+    "state": "observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "measured",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3504-3512:polytime",
+    "observed_attempts": 1,
+    "state": "observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "measured",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3973-3981:polytime",
+    "observed_attempts": 1,
+    "state": "observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "traced",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3036-3044:polytime",
+    "observed_attempts": 1,
+    "state": "observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "traced",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3504-3512:polytime",
+    "observed_attempts": 1,
+    "state": "observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  },
+  {
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "traced",
+    "static_head_id": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3973-3981:polytime",
+    "observed_attempts": 1,
+    "state": "observed",
+    "whole_command_returncode": 0,
+    "qualification": "not observed is not zero cost; may be quoted, unreachable, unsupported, bypassed, or failed before invocation"
+  }
+]
