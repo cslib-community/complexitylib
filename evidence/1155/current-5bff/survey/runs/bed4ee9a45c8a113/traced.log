@@ -1,0 +1,1928 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        test : α → Bool → ProbComp Bool
+        trial : α → Bool
+        htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+        htrial : ComputableInPolyTime trial input encBool
+        ⊢ IsPPTOn input encBool fun a =>
+            (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        test : α → Bool → ProbComp Bool
+        trial : α → Bool
+        htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+        htrial : ComputableInPolyTime trial input encBool
+        ⊢ IsPPTOn input encBool fun a =>
+            (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+  [aesop] α : Type
+      input : α ↪ List Bool
+      test : α → Bool → ProbComp Bool
+      trial : α → Bool
+      htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+      htrial : ComputableInPolyTime trial input encBool
+      ⊢ IsPPTOn input encBool fun a => (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1676.19):
+      [aesop] α : Type
+          input : α ↪ List Bool
+          test : α → Bool → ProbComp Bool
+          trial : α → Bool
+          htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+          htrial : ComputableInPolyTime trial input encBool
+          ⊢ IsPPTOn input encBool fun a =>
+              (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        test : α → Bool → ProbComp Bool
+        trial : α → Bool
+        htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+        htrial : ComputableInPolyTime trial input encBool
+        ⊢ IsPPTOn input encBool fun a =>
+            (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        test : α → Bool → ProbComp Bool
+        trial : α → Bool
+        htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+        htrial : ComputableInPolyTime trial input encBool
+        ⊢ IsPPTOn input encBool fun a =>
+            (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          input : α ↪ List Bool
+          test : α → Bool → ProbComp Bool
+          trial : α → Bool
+          htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+          htrial : ComputableInPolyTime trial input encBool
+          ⊢ IsPPTOn input encBool fun a =>
+              (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a => (fun accept => if accept = true then trial a else !trial a) <$> test a (trial a)
+        [Meta.Tactic.fun_prop] candidate theorems for Functor.map #[Cslib.Probability.IsPPTOn.map_with]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.map_with
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a => test a (trial a)
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input encBool) encBool fun a0a1 => test a0a1.1 a0a1.2
+                [Meta.Tactic.fun_prop] candidate local theorems for test #[htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2]
+                [Meta.Tactic.fun_prop] ✅️ applying: htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (a, trial a)) input (encPair input encBool)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime trial input encBool
+                    [Meta.Tactic.fun_prop] candidate local theorems for trial #[htrial : ComputableInPolyTime trial input encBool]
+                    [Meta.Tactic.fun_prop] ✅️ applying: htrial : ComputableInPolyTime trial input encBool
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => if pair.2 = true then trial pair.1 else !trial pair.1) (encPair input encBool) encBool
+            [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input encBool) encBool
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encBool) (encPair input encBool)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBool encBool
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => trial x.1) (encPair input encBool) encBool
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1) (encPair input encBool) input
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encBool) (encPair input encBool)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x0 => trial x0) input encBool
+                    [Meta.Tactic.fun_prop] candidate local theorems for trial #[htrial : ComputableInPolyTime trial input encBool]
+                    [Meta.Tactic.fun_prop] ✅️ applying: htrial : ComputableInPolyTime trial input encBool
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => !trial x.1) (encPair input encBool) encBool
+                [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableInPolyTime.bool_not]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bool_not as:
+                                       (fun x0 => !x0) ∘ (fun x => trial x.1)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => trial x.1) (encPair input encBool) encBool
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1) (encPair input encBool) input
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encBool) (encPair input encBool)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x0 => trial x0) input encBool
+                        [Meta.Tactic.fun_prop] candidate local theorems for trial #[htrial : ComputableInPolyTime trial input encBool]
+                        [Meta.Tactic.fun_prop] ✅️ applying: htrial : ComputableInPolyTime trial input encBool
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x0 => !x0) encBool encBool
+                    [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableInPolyTime.bool_not]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bool_not
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a => do
+      let trial ← ProbComp.uniform Bool
+      trialPredictor (test a) trial
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        test : α → Bool → ProbComp Bool
+        htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+        ⊢ IsPPTOn input encBool fun a => do
+            let trial ← ProbComp.uniform Bool
+            trialPredictor (test a) trial
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        test : α → Bool → ProbComp Bool
+        htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+        ⊢ IsPPTOn input encBool fun a => do
+            let trial ← ProbComp.uniform Bool
+            trialPredictor (test a) trial
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a => do
+      let trial ← ProbComp.uniform Bool
+      trialPredictor (test a) trial
+  [aesop] α : Type
+      input : α ↪ List Bool
+      test : α → Bool → ProbComp Bool
+      htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+      ⊢ IsPPTOn input encBool fun a => do
+          let trial ← ProbComp.uniform Bool
+          trialPredictor (test a) trial
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1789.15):
+      [aesop] α : Type
+          input : α ↪ List Bool
+          test : α → Bool → ProbComp Bool
+          htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+          ⊢ IsPPTOn input encBool fun a => do
+              let trial ← ProbComp.uniform Bool
+              trialPredictor (test a) trial
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a => do
+      let trial ← ProbComp.uniform Bool
+      trialPredictor (test a) trial
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        test : α → Bool → ProbComp Bool
+        htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+        ⊢ IsPPTOn input encBool fun a => do
+            let trial ← ProbComp.uniform Bool
+            trialPredictor (test a) trial
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        test : α → Bool → ProbComp Bool
+        htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+        ⊢ IsPPTOn input encBool fun a => do
+            let trial ← ProbComp.uniform Bool
+            trialPredictor (test a) trial
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          input : α ↪ List Bool
+          test : α → Bool → ProbComp Bool
+          htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+          ⊢ IsPPTOn input encBool fun a => do
+              let trial ← ProbComp.uniform Bool
+              trialPredictor (test a) trial
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a => do
+            let trial ← ProbComp.uniform Bool
+            trialPredictor (test a) trial
+        [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsPPTOn.bind_with]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.bind_with
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a => ProbComp.uniform Bool
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.isPPTOn_uniform_bool
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input encBool) encBool fun pair => trialPredictor (test pair.1) pair.2
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.trialPredictor #[Cslib.Crypto.isPPTOn_trialPredictor]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.isPPTOn_trialPredictor
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair (encPair input encBool) encBool) encBool fun pair => test pair.1.1 pair.2
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+                  [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input encBool) encBool fun pair0pair1 => test pair0pair1.1 pair0pair1.2
+                    [Meta.Tactic.fun_prop] candidate local theorems for test #[htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2]
+                    [Meta.Tactic.fun_prop] ✅️ applying: htest : IsPPTOn (encPair input encBool) encBool fun pair => test pair.1 pair.2
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => (pair.1.1, pair.2)) (encPair (encPair input encBool) encBool) (encPair input encBool)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair input encBool) encBool) input
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair input encBool) encBool) (encPair input encBool)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input encBool) encBool) (encPair (encPair input encBool) encBool)
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input encBool) (encPair input encBool)
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair input encBool) encBool) encBool
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input encBool) encBool) (encPair (encPair input encBool) encBool)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBool encBool
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input encBool) encBool
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encBool) (encPair input encBool)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBool encBool
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun a => a) encBool
+                          encBool
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a => do
+      let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+      (fun result => result == direction) <$> challenge a
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input encBool fun a => do
+            let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+            (fun result => result == direction) <$> challenge a
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input encBool fun a => do
+            let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+            (fun result => result == direction) <$> challenge a
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a => do
+      let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+      (fun result => result == direction) <$> challenge a
+  [aesop] α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn input encBool fun a => do
+          let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+          (fun result => result == direction) <$> challenge a
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.25):
+      [aesop] α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn input encBool fun a => do
+              let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+              (fun result => result == direction) <$> challenge a
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a => do
+      let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+      (fun result => result == direction) <$> challenge a
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input encBool fun a => do
+            let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+            (fun result => result == direction) <$> challenge a
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input encBool fun a => do
+            let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+            (fun result => result == direction) <$> challenge a
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn input encBool fun a => do
+              let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+              (fun result => result == direction) <$> challenge a
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ❌️ IsPPTOn input encBool fun a => do
+            let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+            (fun result => result == direction) <$> challenge a
+        [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsPPTOn.bind_with]
+        [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.bind_with
+          [Meta.Tactic.fun_prop] ❌️ IsPPTOn input encBool fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.bitPredictor #[Cslib.Crypto.isPPTOn_bitPredictor]
+            [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Crypto.isPPTOn_bitPredictor
+              [Meta.Tactic.fun_prop] ❌️ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+                [Meta.Tactic.fun_prop] candidate theorems for ite #[]
+                [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `ite`
+                             now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @isPPTOn_bitPredictor, failed to discharge hypotheses
+                    IsPPTOn (encPair input encBool) encBool fun pair =>
+                      if pair.2 = true then real pair.1 else ideal pair.1
+            [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Cslib.Crypto.bitPredictor`
+                         trying again after decomposing function as: `(fun a0 => bitPredictor a0) ∘ (fun a trial => if trial = true then real a else ideal a)`
+            [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.preprocess
+              [Meta.Tactic.fun_prop] ❌️ IsPPTOn ?middle✝ encBool fun a0 => bitPredictor a0
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.bitPredictor #[Cslib.Crypto.isPPTOn_bitPredictor]
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Crypto.isPPTOn_bitPredictor
+                  [Meta.Tactic.fun_prop] ❌️ IsPPTOn (encPair ?middle✝ encBool) encBool fun pair => pair.1 pair.2
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[]
+                    [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Prod.fst`
+                                 trying again after decomposing function as: `(fun pair2pair3 => pair2pair3.1.1 pair2pair3.2) ∘ (fun pair => (pair, pair.2))`
+                    [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.preprocess
+                      [Meta.Tactic.fun_prop] ❌️ IsPPTOn ?middle encBool fun pair2pair3 => pair2pair3.1.1 pair2pair3.2
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[]
+                        [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Prod.fst`
+                                     now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+                        [Meta.Tactic.fun_prop] candidate transition theorems: []
+                      [Meta.Tactic.fun_prop] @IsPPTOn.preprocess, failed to discharge hypotheses
+                            IsPPTOn ?middle encBool fun pair2pair3 => pair2pair3.1.1 pair2pair3.2
+                  [Meta.Tactic.fun_prop] @isPPTOn_bitPredictor, failed to discharge hypotheses
+                        IsPPTOn (encPair ?middle✝ encBool) encBool fun pair => pair.1 pair.2
+                [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Cslib.Crypto.bitPredictor`
+                             now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @IsPPTOn.preprocess, failed to discharge hypotheses
+                    IsPPTOn ?middle✝ encBool fun a0 => bitPredictor a0
+          [Meta.Tactic.fun_prop] @IsPPTOn.bind_with, failed to discharge hypotheses
+                IsPPTOn input encBool fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+        [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Bind.bind`
+                     trying again after decomposing function as: `(fun a4a5 => a4a5.1 >>= a4a5.2) ∘ (fun a =>
+              (bitPredictor fun trial => if trial = true then real a else ideal a, fun direction =>
+                (fun result => result == direction) <$> challenge a))`
+        [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.preprocess
+          [Meta.Tactic.fun_prop] ❌️ IsPPTOn ?middle encBool fun a4a5 => a4a5.1 >>= a4a5.2
+            [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsPPTOn.bind_with]
+            [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.bind_with
+              [Meta.Tactic.fun_prop] ❌️ IsPPTOn ?middle ?left Prod.fst
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[]
+                [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Prod.fst`
+                             now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @IsPPTOn.bind_with, failed to discharge hypotheses
+                    IsPPTOn ?middle ?left Prod.fst
+            [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Bind.bind`
+                         now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @IsPPTOn.preprocess, failed to discharge hypotheses
+                IsPPTOn ?middle encBool fun a4a5 => a4a5.1 >>= a4a5.2
+      [aesop] no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`,
+           No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle encBool fun pair2pair3 => pair2pair3.1.1 pair2pair3.2`,
+           No theorems found for `Prod.fst` in order to prove `IsPPTOn (encPair ?middle encBool) encBool fun pair => pair.1 pair.2`,
+           No theorems found for `ite` in order to prove `IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1`]
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encBool
+          is not definitionally equal to the right-hand side
+            fun a => do
+              let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+              (fun result => result == direction) <$> challenge a
+          
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn input encBool fun a => do
+              let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+              (fun result => result == direction) <$> challenge a
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] no certificate for `Bind.bind` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+[aesop] ✅️ 🆕 ❓️ R1 [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+    [aesop] Success probability: 80.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2, 3]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: [_uniq.2779.15824]
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [64.0000%] ⋯ ⊢ IsPPTOn input ?left fun a =>
+      bitPredictor fun trial => if trial = true then real a else ideal a
+  [aesop] case hfirst
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn input ?left fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.15828):
+      [aesop] case hfirst
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn input ?left fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: [_uniq.2779.15824]
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G3 [64.0000%] ⋯ ⊢ IsPPTOn (encPair input ?left) encBool fun pair =>
+      (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] case hsecond
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn (encPair input ?left) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.15829):
+      [aesop] case hsecond
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input ?left) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: [_uniq.2779.15824]
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G1) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a => do
+      let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+      (fun result => result == direction) <$> challenge a
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input encBool fun a => do
+            let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+            (fun result => result == direction) <$> challenge a
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input encBool fun a => do
+            let direction ← bitPredictor fun trial => if trial = true then real a else ideal a
+            (fun result => result == direction) <$> challenge a
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ ✅️ (G3) [64.0000%] ⋯ ⊢ IsPPTOn (encPair input ?left) encBool fun pair =>
+      (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] Initial goal:
+        case hsecond
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input ?left) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hsecond
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input ?left) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hsecond
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input ?left) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [aesop] input encoding is not yet determined
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encBool
+          is not definitionally equal to the right-hand side
+            fun pair => (fun result => result == pair.2) <$> challenge pair.1
+          
+          case hsecond
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input ?left) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] no certificate for `Functor.map` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+[aesop] ✅️ 🆕 ❓️ R2 [64.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+    [aesop] Success probability: 64.0000%
+    [aesop] Parent goal: 3
+    [aesop] Child goals: [4, 5]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: [_uniq.2779.17155]
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G4 [40.9600%] ⋯ ⊢ IsPPTOn (encPair input ?left✝) ?hsecond.left fun a => challenge a.1
+  [aesop] case hsecond.hprogram
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn (encPair input ?left✝) ?hsecond.left fun a => challenge a.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 4
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.17159):
+      [aesop] case hsecond.hprogram
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input ?left✝) ?hsecond.left fun a => challenge a.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: [_uniq.2779.15824, _uniq.2779.17155]
+    [aesop] Parent rapp:  some (2)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 3
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 4
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G5 [40.9600%] ⋯ ⊢ ComputableInPolyTime (fun pair => pair.2 == pair.1.2)
+      (encPair (encPair input ?left✝) ?hsecond.left) encBool
+  [aesop] case hsecond.hf
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ ComputableInPolyTime (fun pair => pair.2 == pair.1.2) (encPair (encPair input ?left✝) ?hsecond.left) encBool
+  [aesop] ✅️ Metadata
+    [aesop] ID: 5
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.17160):
+      [aesop] case hsecond.hf
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ ComputableInPolyTime (fun pair => pair.2 == pair.1.2) (encPair (encPair input ?left✝) ?hsecond.left) encBool
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: [_uniq.2779.15824, _uniq.2779.17155]
+    [aesop] Parent rapp:  some (2)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 3
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 4
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G2) [64.0000%] ⋯ ⊢ IsPPTOn input ?left fun a =>
+      bitPredictor fun trial => if trial = true then real a else ideal a
+  [aesop] Initial goal:
+        case hfirst
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input ?left fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hfirst
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input ?left fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hfirst
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn input ?left fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ❌️ IsPPTOn input encBool fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.bitPredictor #[Cslib.Crypto.isPPTOn_bitPredictor]
+        [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Crypto.isPPTOn_bitPredictor
+          [Meta.Tactic.fun_prop] ❌️ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+            [Meta.Tactic.fun_prop] candidate theorems for ite #[]
+            [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `ite`
+                         now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @isPPTOn_bitPredictor, failed to discharge hypotheses
+                IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+        [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Cslib.Crypto.bitPredictor`
+                     trying again after decomposing function as: `(fun a0 => bitPredictor a0) ∘ (fun a trial => if trial = true then real a else ideal a)`
+        [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.preprocess
+          [Meta.Tactic.fun_prop] ❌️ IsPPTOn ?middle✝ encBool fun a0 => bitPredictor a0
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.bitPredictor #[Cslib.Crypto.isPPTOn_bitPredictor]
+            [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Crypto.isPPTOn_bitPredictor
+              [Meta.Tactic.fun_prop] ❌️ IsPPTOn (encPair ?middle✝ encBool) encBool fun pair => pair.1 pair.2
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[]
+                [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Prod.fst`
+                             trying again after decomposing function as: `(fun pair2pair3 => pair2pair3.1.1 pair2pair3.2) ∘ (fun pair => (pair, pair.2))`
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.preprocess
+                  [Meta.Tactic.fun_prop] ❌️ IsPPTOn ?middle encBool fun pair2pair3 => pair2pair3.1.1 pair2pair3.2
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[]
+                    [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Prod.fst`
+                                 now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                  [Meta.Tactic.fun_prop] @IsPPTOn.preprocess, failed to discharge hypotheses
+                        IsPPTOn ?middle encBool fun pair2pair3 => pair2pair3.1.1 pair2pair3.2
+              [Meta.Tactic.fun_prop] @isPPTOn_bitPredictor, failed to discharge hypotheses
+                    IsPPTOn (encPair ?middle✝ encBool) encBool fun pair => pair.1 pair.2
+            [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Cslib.Crypto.bitPredictor`
+                         now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @IsPPTOn.preprocess, failed to discharge hypotheses
+                IsPPTOn ?middle✝ encBool fun a0 => bitPredictor a0
+      [aesop] no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle encBool fun pair2pair3 => pair2pair3.1.1 pair2pair3.2`,
+           No theorems found for `Prod.fst` in order to prove `IsPPTOn (encPair ?middle encBool) encBool fun pair => pair.1 pair.2`,
+           No theorems found for `ite` in order to prove `IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1`]
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            ?left
+          is not definitionally equal to the right-hand side
+            fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+          
+          case hfirst
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn input ?left fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+[aesop] ✅️ 🆕 ❓️ R3 [79.2000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] Rule: [99.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+    [aesop] Success probability: 79.2000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: [7, 6]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: [_uniq.2779.15824]
+[aesop] ✅️ 🆕 ❓️ G7 [79.2000%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun pair =>
+      if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] case hfirst.htest
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 7
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.17502):
+      [aesop] case hfirst.htest
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (3)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 3
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 5
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G6 [79.2000%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun pair =>
+      (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] case hsecond
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn (encPair input encBool) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 6
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.15829):
+      [aesop] case hsecond
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (3)
+    [aesop] Child rapps:  []
+    [aesop] Origin: copy of 3, originally 3
+    [aesop] Depth: 3
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 5
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G6) [79.2000%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun pair =>
+      (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] Initial goal:
+        case hsecond
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hsecond
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hsecond
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input encBool) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+        [Meta.Tactic.fun_prop] candidate theorems for Functor.map #[Cslib.Probability.IsPPTOn.map_with]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.map_with
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input encBool) encBool fun a => challenge a.1
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a0 => challenge a0
+                [Meta.Tactic.fun_prop] candidate local theorems for challenge #[hchallenge : IsPPTOn input encBool challenge]
+                [Meta.Tactic.fun_prop] ✅️ applying: hchallenge : IsPPTOn input encBool challenge
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair input encBool) input
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encBool) (encPair input encBool)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => pair.2 == pair.1.2) (encPair (encPair input encBool) encBool) encBool
+            [Meta.Tactic.fun_prop] candidate theorems for BEq.beq #[Turing.MultiTapeTM.ComputableInPolyTime.beq]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.beq
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair input encBool) encBool) encBool
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input encBool) encBool) (encPair (encPair input encBool) encBool)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBool encBool
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1.2) (encPair (encPair input encBool) encBool) encBool
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair input encBool) encBool) (encPair input encBool)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input encBool) encBool) (encPair (encPair input encBool) encBool)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input encBool) (encPair input encBool)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBool encBool
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R4 [79.2000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 4
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 79.2000%
+    [aesop] Parent goal: 6
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G7) [79.2000%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun pair =>
+      if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] Initial goal:
+        case hfirst.htest
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hfirst.htest
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hfirst.htest
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ❌️ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+        [Meta.Tactic.fun_prop] candidate theorems for ite #[]
+        [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `ite`
+                     now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+        [Meta.Tactic.fun_prop] candidate transition theorems: []
+      [aesop] no compositional plain certificate: [No theorems found for `ite` in order to prove `IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1`]
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encBool
+          is not definitionally equal to the right-hand side
+            fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+          
+          case hfirst.htest
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] no certificate for `ite` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+      [aesop] expected probabilistic sequencing
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+[aesop] ✅️ 🆕 ❓️ R5 [63.3600%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+  [aesop] ✅️ Metadata
+    [aesop] ID: 5
+    [aesop] Rule: [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+    [aesop] Success probability: 63.3600%
+    [aesop] Parent goal: 7
+    [aesop] Child goals: [8, 9, 10]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G8 [63.3600%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.snd (encPair input encBool) encBool
+  [aesop] case hfirst.htest.hcondition
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ ComputableTidilyInPolyTime Prod.snd (encPair input encBool) encBool
+  [aesop] ✅️ Metadata
+    [aesop] ID: 8
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.18745):
+      [aesop] case hfirst.htest.hcondition
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ ComputableTidilyInPolyTime Prod.snd (encPair input encBool) encBool
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (5)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 4
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 7
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G9 [63.3600%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+  [aesop] case hfirst.htest.hyes
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 9
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.18746):
+      [aesop] case hfirst.htest.hyes
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (5)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 4
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 7
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G10 [63.3600%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+  [aesop] case hfirst.htest.hno
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 10
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.18747):
+      [aesop] case hfirst.htest.hno
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (5)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 4
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 7
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G7) [79.2000%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun pair =>
+      if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] Initial goal:
+        case hfirst.htest
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hfirst.htest
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+[aesop] ✅️ 🆕 ❓️ R6 [63.3600%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+  [aesop] ✅️ Metadata
+    [aesop] ID: 6
+    [aesop] Rule: [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+    [aesop] Success probability: 63.3600%
+    [aesop] Parent goal: 7
+    [aesop] Child goals: [11, 12, 13]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G11 [63.3600%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => decide (a.2 = true)) (encPair input encBool)
+      encBool
+  [aesop] case hfirst.htest.hcondition
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ ComputableTidilyInPolyTime (fun a => decide (a.2 = true)) (encPair input encBool) encBool
+  [aesop] ✅️ Metadata
+    [aesop] ID: 11
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.18779):
+      [aesop] case hfirst.htest.hcondition
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ ComputableTidilyInPolyTime (fun a => decide (a.2 = true)) (encPair input encBool) encBool
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (6)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 4
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 8
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G12 [63.3600%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+  [aesop] case hfirst.htest.hyes
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 12
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.18780):
+      [aesop] case hfirst.htest.hyes
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (6)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 4
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 8
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G13 [63.3600%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+  [aesop] case hfirst.htest.hno
+      α : Type
+      input : α ↪ List Bool
+      real ideal challenge : α → ProbComp Bool
+      hreal : IsPPTOn input encBool real
+      hideal : IsPPTOn input encBool ideal
+      hchallenge : IsPPTOn input encBool challenge
+      ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 13
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2779.18781):
+      [aesop] case hfirst.htest.hno
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (6)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 4
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 8
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G7) [79.2000%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun pair =>
+      if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] Initial goal:
+        case hfirst.htest
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hfirst.htest
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun pair => if pair.2 = true then real pair.1 else ideal pair.1
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ ❌️ (G3) [64.0000%] ⋯ ⊢ IsPPTOn (encPair input ?left) encBool fun pair =>
+      (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] Initial goal:
+        case hsecond
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input ?left) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hsecond
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input ?left) encBool fun pair => (fun result => result == pair.2) <$> challenge pair.1
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ ❌️ (G2) [64.0000%] ⋯ ⊢ IsPPTOn input ?left fun a =>
+      bitPredictor fun trial => if trial = true then real a else ideal a
+  [aesop] Initial goal:
+        case hfirst
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input ?left fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hfirst
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn input ?left fun a => bitPredictor fun trial => if trial = true then real a else ideal a
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+      [aesop] expected probabilistic sequencing
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ 🏁 (G11) [63.3600%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => decide (a.2 = true)) (encPair input encBool)
+      encBool
+  [aesop] Initial goal:
+        case hfirst.htest.hcondition
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ ComputableTidilyInPolyTime (fun a => decide (a.2 = true)) (encPair input encBool) encBool
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] case hfirst.htest.hcondition
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ ComputableTidilyInPolyTime (fun a => a.2) (encPair input encBool) encBool
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hfirst.htest.hcondition
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ ComputableTidilyInPolyTime (fun a => a.2) (encPair input encBool) encBool
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hfirst.htest.hcondition
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ ComputableTidilyInPolyTime (fun a => a.2) (encPair input encBool) encBool
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.2) (encPair input encBool) encBool
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair input encBool) (encPair input encBool)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBool encBool
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R7 [63.3600%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 7
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 63.3600%
+    [aesop] Parent goal: 11
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G10) [63.3600%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+  [aesop] Initial goal:
+        case hfirst.htest.hno
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hfirst.htest.hno
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hfirst.htest.hno
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input encBool) encBool fun a => ideal a.1
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a0 => ideal a0
+            [Meta.Tactic.fun_prop] candidate local theorems for ideal #[hideal : IsPPTOn input encBool ideal]
+            [Meta.Tactic.fun_prop] ✅️ applying: hideal : IsPPTOn input encBool ideal
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair input encBool) input
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encBool) (encPair input encBool)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R8 [63.3600%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 8
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 63.3600%
+    [aesop] Parent goal: 10
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G9) [63.3600%] ⋯ ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+  [aesop] Initial goal:
+        case hfirst.htest.hyes
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hfirst.htest.hyes
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hfirst.htest.hyes
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input encBool) encBool fun a => real a.1
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a0 => real a0
+            [Meta.Tactic.fun_prop] candidate local theorems for real #[hreal : IsPPTOn input encBool real]
+            [Meta.Tactic.fun_prop] ✅️ applying: hreal : IsPPTOn input encBool real
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair input encBool) input
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encBool) (encPair input encBool)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R9 [63.3600%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 9
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 63.3600%
+    [aesop] Parent goal: 9
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G8) [63.3600%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.snd (encPair input encBool) encBool
+  [aesop] Initial goal:
+        case hfirst.htest.hcondition
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ ComputableTidilyInPolyTime Prod.snd (encPair input encBool) encBool
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hfirst.htest.hcondition
+        α : Type
+        input : α ↪ List Bool
+        real ideal challenge : α → ProbComp Bool
+        hreal : IsPPTOn input encBool real
+        hideal : IsPPTOn input encBool ideal
+        hchallenge : IsPPTOn input encBool challenge
+        ⊢ ComputableTidilyInPolyTime Prod.snd (encPair input encBool) encBool
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hfirst.htest.hcondition
+          α : Type
+          input : α ↪ List Bool
+          real ideal challenge : α → ProbComp Bool
+          hreal : IsPPTOn input encBool real
+          hideal : IsPPTOn input encBool ideal
+          hchallenge : IsPPTOn input encBool challenge
+          ⊢ ComputableTidilyInPolyTime Prod.snd (encPair input encBool) encBool
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair input encBool) encBool
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair input encBool) (encPair input encBool)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBool encBool
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R10 [63.3600%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 10
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 63.3600%
+    [aesop] Parent goal: 8
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

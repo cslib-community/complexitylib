@@ -1,0 +1,525 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlaneTowerBase K).rot
+      (encPair (baseEncoding encode) (planeEncoding encode)) (encPair (baseEncoding encode) (planeEncoding encode))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+          (((RotationMap.affinePlane K).tensor (RotationMap.affinePlane K)).zigzag (RotationMap.affinePlane K)).rot
+          (encPair (encPair (encPair (planeEncoding encode) (planeEncoding encode)) (planeEncoding encode))
+            (planeEncoding encode))
+          (encPair (encPair (encPair (planeEncoding encode) (planeEncoding encode)) (planeEncoding encode))
+            (planeEncoding encode))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime ((RotationMap.affinePlane K).tensor (RotationMap.affinePlane K)).rot
+              (encPair (encPair (planeEncoding encode) (planeEncoding encode)) (planeEncoding encode))
+              (encPair (encPair (planeEncoding encode) (planeEncoding encode)) (planeEncoding encode))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.tensorRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_tensor]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_tensor
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlane K).rot (encPair (planeEncoding encode) encode)
+                  (encPair (planeEncoding encode) encode)
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.affinePlaneRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_affinePlane]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_affinePlane
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.1 * p.2) (encPair encode encode) encode
+                  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[]
+                  [Meta.Tactic.fun_prop] candidate local theorems for HMul.hMul #[hmul : ComputableTidilyInPolyTime (fun p => p.1 * p.2) (planeEncoding encode) encode]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hmul : ComputableTidilyInPolyTime (fun p => p.1 * p.2) (planeEncoding encode) encode
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.1 - p.2) (encPair encode encode) encode
+                  [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[]
+                  [Meta.Tactic.fun_prop] candidate local theorems for HSub.hSub #[hsub : ComputableTidilyInPolyTime (fun p => p.1 - p.2) (planeEncoding encode) encode]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hsub : ComputableTidilyInPolyTime (fun p => p.1 - p.2) (planeEncoding encode) encode
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlane K).rot (encPair (planeEncoding encode) encode)
+                  (encPair (planeEncoding encode) encode)
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                    (RotationMap.affinePlane K).rot (encPair (planeEncoding encode) encode)
+                    (encPair (planeEncoding encode) encode)
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlane K).rot (encPair (planeEncoding encode) encode)
+              (encPair (planeEncoding encode) encode)
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                (RotationMap.affinePlane K).rot (encPair (planeEncoding encode) encode)
+                (encPair (planeEncoding encode) encode)
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlane K).rot (encPair (planeEncoding encode) encode)
+          (encPair (planeEncoding encode) encode)
+      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+            (RotationMap.affinePlane K).rot (encPair (planeEncoding encode) encode)
+            (encPair (planeEncoding encode) encode)
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlaneTowerBase (ZMod 257)).rot
+      (encPair (baseEncoding encode) (planeEncoding encode)) (encPair (baseEncoding encode) (planeEncoding encode))
+  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlaneTowerBase (ZMod 257)).rot
+        (encPair (baseEncoding encode) (planeEncoding encode)) (encPair (baseEncoding encode) (planeEncoding encode))
+    [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+            (((RotationMap.affinePlane (ZMod 257)).tensor (RotationMap.affinePlane (ZMod 257))).zigzag
+                (RotationMap.affinePlane (ZMod 257))).rot
+            (encPair (encPair (encPair (planeEncoding encode) (planeEncoding encode)) (planeEncoding encode))
+              (planeEncoding encode))
+            (encPair (encPair (encPair (planeEncoding encode) (planeEncoding encode)) (planeEncoding encode))
+              (planeEncoding encode))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime ((RotationMap.affinePlane (ZMod 257)).tensor (RotationMap.affinePlane (ZMod 257))).rot
+                (encPair (encPair (planeEncoding encode) (planeEncoding encode)) (planeEncoding encode))
+                (encPair (encPair (planeEncoding encode) (planeEncoding encode)) (planeEncoding encode))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.tensorRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_tensor]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_tensor
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlane (ZMod 257)).rot (encPair (planeEncoding encode) encode)
+                    (encPair (planeEncoding encode) encode)
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.affinePlaneRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_affinePlane]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_affinePlane
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.1 * p.2) (encPair encode encode) encode
+                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[]
+                    [Meta.Tactic.fun_prop] candidate local theorems for HMul.hMul #[hmul : ComputableTidilyInPolyTime (fun p => p.1 * p.2) (planeEncoding encode) encode]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hmul : ComputableTidilyInPolyTime (fun p => p.1 * p.2) (planeEncoding encode) encode
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.1 - p.2) (encPair encode encode) encode
+                    [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[]
+                    [Meta.Tactic.fun_prop] candidate local theorems for HSub.hSub #[hsub : ComputableTidilyInPolyTime (fun p => p.1 - p.2) (planeEncoding encode) encode]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hsub : ComputableTidilyInPolyTime (fun p => p.1 - p.2) (planeEncoding encode) encode
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlane (ZMod 257)).rot (encPair (planeEncoding encode) encode)
+                    (encPair (planeEncoding encode) encode)
+                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                      (RotationMap.affinePlane (ZMod 257)).rot (encPair (planeEncoding encode) encode)
+                      (encPair (planeEncoding encode) encode)
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlane (ZMod 257)).rot (encPair (planeEncoding encode) encode)
+                (encPair (planeEncoding encode) encode)
+            [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                  (RotationMap.affinePlane (ZMod 257)).rot (encPair (planeEncoding encode) encode)
+                  (encPair (planeEncoding encode) encode)
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (RotationMap.affinePlane (ZMod 257)).rot (encPair (planeEncoding encode) encode)
+            (encPair (planeEncoding encode) encode)
+        [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+              (RotationMap.affinePlane (ZMod 257)).rot (encPair (planeEncoding encode) encode)
+              (encPair (planeEncoding encode) encode)
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p => ((G.zigzag H).rot p.1, !p.2))
+      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => (G.zigzag H).rot x.1)
+          (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+          (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag as:
+                             (fun x5 => RotationMap.zigzagRot G.rot H.rot x5) ∘ (fun x => x.1)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+              (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.rot #[]
+              [Meta.Tactic.fun_prop] candidate local theorems for Cslib.RotationMap.rot #[hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)]
+              [Meta.Tactic.fun_prop] ❌️ applying: hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+                [Meta.Tactic.fun_prop] failed to unify hH
+                    ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+                    with
+                    ComputableTidilyInPolyTime (fun a => G.rot a) (encPair vertex label) (encPair vertex label)
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.rot`
+                           now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: []
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.rotationMap_zigzag, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.zigzagRot`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+                (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                  (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair vertex label) (encPair small small))
+                  (encPair (encPair vertex label) (encPair small small))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+              (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+              [Meta.Tactic.fun_prop] skipping proof search, proving ComputableTidilyInPolyTime G.rot
+                    (encPair vertex label) (encPair vertex label) was tried already and failed
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.rotationMap_zigzag, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.zigzagRot`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+                (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.zigzagRot`
+                   trying again after decomposing function as: `(fun x5 => RotationMap.zigzagRot G.rot H.rot x5) ∘ (fun x => x.1)`
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+              (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+              [Meta.Tactic.fun_prop] skipping proof search, proving ComputableTidilyInPolyTime G.rot
+                    (encPair vertex label) (encPair vertex label) was tried already and failed
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.rotationMap_zigzag, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.zigzagRot`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+                (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                  (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair vertex label) (encPair small small))
+                  (encPair (encPair vertex label) (encPair small small))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+              (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] skipping proof search, proving ComputableTidilyInPolyTime
+                (fun x5 => RotationMap.zigzagRot G.rot H.rot x5) (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small)) was tried already and failed
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+                (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small))
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun x => (G.zigzag H).rot x.1)
+            (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+            (encPair (encPair vertex label) (encPair small small))
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: []
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p => ((G.zigzag H).rot p.1, !p.2))
+      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => (G.zigzag H).rot x.1)
+          (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+          (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag as:
+                             (fun x5 => RotationMap.zigzagRot G.rot H.rot x5) ∘ (fun x => x.1)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+              (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.rot #[]
+              [Meta.Tactic.fun_prop] candidate local theorems for Cslib.RotationMap.rot #[hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)]
+              [Meta.Tactic.fun_prop] ✅️ applying: hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.rot #[]
+              [Meta.Tactic.fun_prop] candidate local theorems for Cslib.RotationMap.rot #[hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)]
+              [Meta.Tactic.fun_prop] ❌️ applying: hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+                [Meta.Tactic.fun_prop] failed to unify hG
+                    ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+                    with
+                    ComputableTidilyInPolyTime (fun a => H.rot a) (encPair label small) (encPair label small)
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.rot`
+                           now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: []
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.rotationMap_zigzag, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.zigzagRot`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+                (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                  (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair vertex label) (encPair small small))
+                  (encPair (encPair vertex label) (encPair small small))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+              (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime G.rot
+                    (encPair vertex label) (encPair vertex label)
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+              [Meta.Tactic.fun_prop] skipping proof search, proving ComputableTidilyInPolyTime H.rot
+                    (encPair label small) (encPair label small) was tried already and failed
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.rotationMap_zigzag, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.zigzagRot`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+                (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.zigzagRot`
+                   trying again after decomposing function as: `(fun x5 => RotationMap.zigzagRot G.rot H.rot x5) ∘ (fun x => x.1)`
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+              (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime G.rot
+                    (encPair vertex label) (encPair vertex label)
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+              [Meta.Tactic.fun_prop] skipping proof search, proving ComputableTidilyInPolyTime H.rot
+                    (encPair label small) (encPair label small) was tried already and failed
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.rotationMap_zigzag, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.RotationMap.zigzagRot`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+                (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                  (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair vertex label) (encPair small small))
+                  (encPair (encPair vertex label) (encPair small small))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+              (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] skipping proof search, proving ComputableTidilyInPolyTime
+                (fun x5 => RotationMap.zigzagRot G.rot H.rot x5) (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small)) was tried already and failed
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+                (encPair (encPair vertex label) (encPair small small))
+                (encPair (encPair vertex label) (encPair small small))
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun x => (G.zigzag H).rot x.1)
+            (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+            (encPair (encPair vertex label) (encPair small small))
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: []
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => ((G.zigzag H).rot p.1, !p.2))
+      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (G.zigzag H).rot x.1)
+          (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+          (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag as:
+                             (fun x5 => RotationMap.zigzagRot G.rot H.rot x5) ∘ (fun x => x.1)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+              (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.rot #[]
+              [Meta.Tactic.fun_prop] candidate local theorems for Cslib.RotationMap.rot #[hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small), hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)]
+              [Meta.Tactic.fun_prop] ❌️ applying: hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+                [Meta.Tactic.fun_prop] failed to unify hH
+                    ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+                    with
+                    ComputableTidilyInPolyTime (fun a => G.rot a) (encPair vertex label) (encPair vertex label)
+              [Meta.Tactic.fun_prop] ✅️ applying: hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.rot #[]
+              [Meta.Tactic.fun_prop] candidate local theorems for Cslib.RotationMap.rot #[hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small), hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)]
+              [Meta.Tactic.fun_prop] ✅️ applying: hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                  (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair vertex label) (encPair small small))
+                  (encPair (encPair vertex label) (encPair small small))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => !x.2) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+          encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not as:
+                             (fun x0 => !x0) ∘ (fun x => x.2)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => !x0) encBool encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                  (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBool encBool
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun p =>
+        let next := (G.zigzag H).rot p.1;
+        (next, !p.2))
+      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun pnext => (pnext.2, !pnext.1.2))
+          (encPair ?encB (encPair (encPair vertex label) (encPair small small)))
+          (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime Prod.snd (encPair ?encB (encPair (encPair vertex label) (encPair small small)))
+              (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair vertex label) (encPair small small))
+                  (encPair (encPair vertex label) (encPair small small))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : ((V × D) ×
+                      E × E) ×
+                    Bool ↪
+                  List Bool)`
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : ((V × D) × E × E) × Bool ↪
+                  List Bool)`
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair (encPair vertex label) (encPair small small)))
+                  (encPair ?encB (encPair (encPair vertex label) (encPair small small)))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : ((V × D) × E × E) ×
+                    Bool ↪
+                  List Bool)`
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+              ComputableTidilyInPolyTime Prod.snd (encPair ?encB (encPair (encPair vertex label) (encPair small small)))
+                (encPair (encPair vertex label) (encPair small small))
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun pnext => (pnext.2, !pnext.1.2))
+            (encPair ?encB (encPair (encPair vertex label) (encPair small small)))
+            (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => (p, (G.zigzag H).rot p.1))
+          (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+          (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+            (encPair (encPair vertex label) (encPair small small)))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (G.zigzag H).rot x.1)
+              (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+              (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag as:
+                                 (fun x5 => RotationMap.zigzagRot G.rot H.rot x5) ∘ (fun x => x.1)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x5 => RotationMap.zigzagRot G.rot H.rot x5)
+                  (encPair (encPair vertex label) (encPair small small)) (encPair (encPair vertex label) (encPair small small))
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.zigzagRot #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.rotationMap_zigzag
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.rot #[]
+                  [Meta.Tactic.fun_prop] candidate local theorems for Cslib.RotationMap.rot #[hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small), hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)]
+                  [Meta.Tactic.fun_prop] ❌️ applying: hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+                    [Meta.Tactic.fun_prop] failed to unify hH
+                        ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+                        with
+                        ComputableTidilyInPolyTime (fun a => G.rot a) (encPair ?vertex ?label) (encPair ?vertex ?label)
+                  [Meta.Tactic.fun_prop] ✅️ applying: hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.RotationMap.rot #[]
+                  [Meta.Tactic.fun_prop] candidate local theorems for Cslib.RotationMap.rot #[hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small), hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label)]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                  (encPair (encPair vertex label) (encPair small small))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair vertex label) (encPair small small))
+                      (encPair (encPair vertex label) (encPair small small))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun pnext => (pnext.2, !pnext.1.2))
+          (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+            (encPair (encPair vertex label) (encPair small small)))
+          (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd
+              (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                (encPair (encPair vertex label) (encPair small small)))
+              (encPair (encPair vertex label) (encPair small small))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p)
+                  (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                    (encPair (encPair vertex label) (encPair small small)))
+                  (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                    (encPair (encPair vertex label) (encPair small small)))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair vertex label) (encPair small small))
+                  (encPair (encPair vertex label) (encPair small small))
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                    (encPair (encPair vertex label) (encPair small small))
+                    (encPair (encPair vertex label) (encPair small small))
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => !x.1.2)
+              (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                (encPair (encPair vertex label) (encPair small small)))
+              encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not as:
+                                 (fun x0 => !x0) ∘ (fun x => x.1.2)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => !x0) encBool encBool
+              [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1.2)
+                  (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                    (encPair (encPair vertex label) (encPair small small)))
+                  encBool
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst
+                      (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                        (encPair (encPair vertex label) (encPair small small)))
+                      (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p)
+                          (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                            (encPair (encPair vertex label) (encPair small small)))
+                          (encPair (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                            (encPair (encPair vertex label) (encPair small small)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                          (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBool encBool
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'

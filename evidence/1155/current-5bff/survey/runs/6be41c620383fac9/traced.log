@@ -1,0 +1,1048 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.2) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+      (encPair encUnary (encFinEnum Unit))
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+          (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encUnary (encFinEnum Unit)) (encPair encUnary (encFinEnum Unit))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.1) (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit)))
+          (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit)))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g) (Graph.encoding encBool)
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        hr :
+          ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+            (encPair encUnary (encFinEnum Unit))
+        he :
+          ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+            (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+        ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+            (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        hr :
+          ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+            (encPair encUnary (encFinEnum Unit))
+        he :
+          ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+            (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+        ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+            (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g) (Graph.encoding encBool)
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] hr :
+        ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+          (encPair encUnary (encFinEnum Unit))
+      he :
+        ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+          (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+      ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+          (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.7623):
+      [aesop] hr :
+            ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+              (encPair encUnary (encFinEnum Unit))
+          he :
+            ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+              (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+          ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+              (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g) (Graph.encoding encBool)
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        hr :
+          ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+            (encPair encUnary (encFinEnum Unit))
+        he :
+          ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+            (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+        ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+            (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        hr :
+          ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+            (encPair encUnary (encFinEnum Unit))
+        he :
+          ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+            (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+        ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+            (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          hr :
+            ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+              (encPair encUnary (encFinEnum Unit))
+          he :
+            ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+              (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+          ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+              (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-30/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g) (Graph.encoding encBool)
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] hr :
+        ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+          (encPair encUnary (encFinEnum Unit))
+      he :
+        ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+          (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+      knownCertificate✝¹ :
+        ComputableInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+          (encPair encUnary (encFinEnum Unit))
+      knownCertificate✝ :
+        ComputableInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+          (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+      ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+          (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.10124):
+      [aesop] hr :
+            ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+              (encPair encUnary (encFinEnum Unit))
+          he :
+            ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+              (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+          knownCertificate✝¹ :
+            ComputableInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+              (encPair encUnary (encFinEnum Unit))
+          knownCertificate✝ :
+            ComputableInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+              (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+          ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+              (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g) (Graph.encoding encBool)
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        hr :
+          ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+            (encPair encUnary (encFinEnum Unit))
+        he :
+          ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+            (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+        knownCertificate✝¹ :
+          ComputableInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+            (encPair encUnary (encFinEnum Unit))
+        knownCertificate✝ :
+          ComputableInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+            (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+        ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+            (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        hr :
+          ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+            (encPair encUnary (encFinEnum Unit))
+        he :
+          ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+            (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+        knownCertificate✝¹ :
+          ComputableInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+            (encPair encUnary (encFinEnum Unit))
+        knownCertificate✝ :
+          ComputableInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+            (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+        ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+            (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          hr :
+            ComputableTidilyInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+              (encPair encUnary (encFinEnum Unit))
+          he :
+            ComputableTidilyInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+              (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+          knownCertificate✝¹ :
+            ComputableInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+              (encPair encUnary (encFinEnum Unit))
+          knownCertificate✝ :
+            ComputableInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2)
+              (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool
+          ⊢ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g)
+              (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g) (Graph.encoding encBool)
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun g => Graph.amplifyEnumerated unitEval false rotateLoops 1 2 g) (Graph.encoding encBool)
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding encBool) (Graph.encoding encBool)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                  (encPair encUnary (encFinEnum Unit))
+              [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.PCPEncodedEnumeration.0.ComplexityTests.PCPEncodedEnumeration.rotateLoops #[]
+              [Meta.Tactic.fun_prop] candidate local theorems for _private.ComplexityTests.PCPEncodedEnumeration.0.ComplexityTests.PCPEncodedEnumeration.rotateLoops #[knownCertificate✝¹ : ComputableInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                    (encPair encUnary (encFinEnum Unit))]
+              [Meta.Tactic.fun_prop] ✅️ applying: knownCertificate✝¹ : ComputableInPolyTime rotateLoops (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                    (encPair encUnary (encFinEnum Unit))
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2) (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit)))
+                  encBool
+              [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.PCPEncodedEnumeration.0.ComplexityTests.PCPEncodedEnumeration.unitEval #[]
+              [Meta.Tactic.fun_prop] candidate local theorems for _private.ComplexityTests.PCPEncodedEnumeration.0.ComplexityTests.PCPEncodedEnumeration.unitEval #[knownCertificate✝ : ComputableInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2) (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit)))
+                    encBool]
+              [Meta.Tactic.fun_prop] ✅️ applying: knownCertificate✝ : ComputableInPolyTime (fun p => unitEval p.1 p.2.1 p.2.2) (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit)))
+                    encBool
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime graph input (Graph.encoding ?enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => graph a) input (Graph.encoding ?enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun a => graph a) input (Graph.encoding ?enc)
+    [Meta.Tactic.fun_prop] @Graph.isPolyTime_amplifyEnumerated, failed to discharge hypotheses
+          ComputableInPolyTime graph input (Graph.encoding ?enc)
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+               trying again after decomposing function as: `(fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) ∘ (fun x => graph x)`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => graph x) input ?encMid
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => graph x) input ?encMid
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x => graph x) input ?encMid
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x => graph x) input ?encMid
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding enc)
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding ?enc) (Graph.encoding ?enc)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+              [Meta.Tactic.fun_prop] candidate local theorems for rotate #[hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)]
+              [Meta.Tactic.fun_prop] ✅️ applying: hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for eval #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+              [Meta.Tactic.fun_prop] candidate local theorems for eval #[he : ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool]
+              [Meta.Tactic.fun_prop] ✅️ applying: he : ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => graph x) input (Graph.encoding enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => graph x) input (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x => graph x) input (Graph.encoding enc)
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x => graph x) input (Graph.encoding enc)
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (Graph.encoding enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => graph a) input (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)]
+          [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary ?labelEncoding)) (encPair encUnary ?labelEncoding)
+      [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary ?labelEncoding))
+              (encPair encUnary ?labelEncoding)
+          [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary ?labelEncoding))
+                (encPair encUnary ?labelEncoding)
+    [Meta.Tactic.fun_prop] @Graph.isPolyTime_amplifyEnumerated, failed to discharge hypotheses
+          ComputableInPolyTime rotate (encPair encUnary (encPair encUnary ?labelEncoding))
+            (encPair encUnary ?labelEncoding)
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+               trying again after decomposing function as: `(fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) ∘ (fun x => graph x)`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => graph x) input (Graph.encoding enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => graph x) input (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)]
+          [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding enc)
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding enc) (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary ?labelEncoding)) (encPair encUnary ?labelEncoding)
+          [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary ?labelEncoding))
+                  (encPair encUnary ?labelEncoding)
+              [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary ?labelEncoding))
+                    (encPair encUnary ?labelEncoding)
+        [Meta.Tactic.fun_prop] @Graph.isPolyTime_amplifyEnumerated, failed to discharge hypotheses
+              ComputableInPolyTime rotate (encPair encUnary (encPair encUnary ?labelEncoding))
+                (encPair encUnary ?labelEncoding)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding enc)
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11)
+                (Graph.encoding enc) (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding enc)
+            (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding ?enc)
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding ?enc) (Graph.encoding ?enc)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary ?labelEncoding)) (encPair encUnary ?labelEncoding)
+          [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary ?labelEncoding))
+                  (encPair encUnary ?labelEncoding)
+              [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary ?labelEncoding))
+                    (encPair encUnary ?labelEncoding)
+        [Meta.Tactic.fun_prop] @Graph.isPolyTime_amplifyEnumerated, failed to discharge hypotheses
+              ComputableInPolyTime rotate (encPair encUnary (encPair encUnary ?labelEncoding))
+                (encPair encUnary ?labelEncoding)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding ?enc)
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11)
+                (Graph.encoding ?enc) (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding ?enc)
+            (Graph.encoding (encPi (encPi encBool)))
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (Graph.encoding enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => graph a) input (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)]
+          [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+      [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          [Meta.Tactic.fun_prop] candidate local theorems for rotate #[hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)]
+          [Meta.Tactic.fun_prop] ✅️ applying: hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet)) encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for eval #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet)) encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for eval #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet))
+                encBool
+    [Meta.Tactic.fun_prop] @Graph.isPolyTime_amplifyEnumerated, failed to discharge hypotheses
+          ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet)) encBool
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+               trying again after decomposing function as: `(fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) ∘ (fun x => graph x)`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => graph x) input (Graph.encoding enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => graph x) input (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)]
+          [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding enc)
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding enc) (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+              [Meta.Tactic.fun_prop] candidate local theorems for rotate #[hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)]
+              [Meta.Tactic.fun_prop] ✅️ applying: hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet)) encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for eval #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet)) encBool
+              [Meta.Tactic.fun_prop] candidate local theorems for eval #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet))
+                    encBool
+        [Meta.Tactic.fun_prop] @Graph.isPolyTime_amplifyEnumerated, failed to discharge hypotheses
+              ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet)) encBool
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding enc)
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11)
+                (Graph.encoding enc) (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding enc)
+            (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding ?enc)
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding ?enc) (Graph.encoding ?enc)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+              [Meta.Tactic.fun_prop] candidate local theorems for rotate #[hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)]
+              [Meta.Tactic.fun_prop] ✅️ applying: hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair ?enc (encPair ?alphabet ?alphabet)) encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for eval #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair ?enc (encPair ?alphabet ?alphabet)) encBool
+              [Meta.Tactic.fun_prop] candidate local theorems for eval #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2)
+                    (encPair ?enc (encPair ?alphabet ?alphabet)) encBool
+        [Meta.Tactic.fun_prop] @Graph.isPolyTime_amplifyEnumerated, failed to discharge hypotheses
+              ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair ?enc (encPair ?alphabet ?alphabet)) encBool
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding ?enc)
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.amplifyEnumerated`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11)
+                (Graph.encoding ?enc) (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x11 => Graph.amplifyEnumerated eval fallback rotate T q x11) (Graph.encoding ?enc)
+            (Graph.encoding (encPi (encPi encBool)))
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (Graph.encoding enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => graph a) input (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)]
+          [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+      [Meta.Tactic.fun_prop] candidate local theorems for rotate #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => rotate a) (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          [Meta.Tactic.fun_prop] candidate local theorems for rotate #[hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)]
+          [Meta.Tactic.fun_prop] ✅️ applying: hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for eval #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for eval #[he : ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool]
+          [Meta.Tactic.fun_prop] ✅️ applying: he : ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let g := graph x;
+        Graph.amplifyEnumerated eval fallback rotate T q g)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        C α D Input : Type
+        inst✝² : FinEnum α
+        inst✝¹ : FinEnum D
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        alphabet : α ↪ List Bool
+        labels : D ↪ List Bool
+        graph : Input → Graph C
+        eval : C → α → α → Bool
+        rotate : ℕ × ℕ × D → ℕ × D
+        fallback : C
+        T q : ℕ
+        inst✝ : NeZero q
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+        hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        he :
+          ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let g := graph x;
+              Graph.amplifyEnumerated eval fallback rotate T q g)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        C α D Input : Type
+        inst✝² : FinEnum α
+        inst✝¹ : FinEnum D
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        alphabet : α ↪ List Bool
+        labels : D ↪ List Bool
+        graph : Input → Graph C
+        eval : C → α → α → Bool
+        rotate : ℕ × ℕ × D → ℕ × D
+        fallback : C
+        T q : ℕ
+        inst✝ : NeZero q
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+        hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        he :
+          ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let g := graph x;
+              Graph.amplifyEnumerated eval fallback rotate T q g)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let g := graph x;
+        Graph.amplifyEnumerated eval fallback rotate T q g)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] C α D Input : Type
+      inst : FinEnum α
+      inst_1 : FinEnum D
+      input : Input ↪ List Bool
+      enc : C ↪ List Bool
+      alphabet : α ↪ List Bool
+      labels : D ↪ List Bool
+      graph : Input → Graph C
+      eval : C → α → α → Bool
+      rotate : ℕ × ℕ × D → ℕ × D
+      fallback : C
+      T q : ℕ
+      inst_2 : NeZero q
+      hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+      hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+      he : ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+      ⊢ ComputableInPolyTime
+          (fun x =>
+            let g := graph x;
+            Graph.amplifyEnumerated eval fallback rotate T q g)
+          input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.19267):
+      [aesop] C α D Input : Type
+          inst : FinEnum α
+          inst_1 : FinEnum D
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          alphabet : α ↪ List Bool
+          labels : D ↪ List Bool
+          graph : Input → Graph C
+          eval : C → α → α → Bool
+          rotate : ℕ × ℕ × D → ℕ × D
+          fallback : C
+          T q : ℕ
+          inst_2 : NeZero q
+          hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+          hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          he :
+            ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+          ⊢ ComputableInPolyTime
+              (fun x =>
+                let g := graph x;
+                Graph.amplifyEnumerated eval fallback rotate T q g)
+              input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let g := graph x;
+        Graph.amplifyEnumerated eval fallback rotate T q g)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        C α D Input : Type
+        inst : FinEnum α
+        inst_1 : FinEnum D
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        alphabet : α ↪ List Bool
+        labels : D ↪ List Bool
+        graph : Input → Graph C
+        eval : C → α → α → Bool
+        rotate : ℕ × ℕ × D → ℕ × D
+        fallback : C
+        T q : ℕ
+        inst_2 : NeZero q
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+        hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        he :
+          ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let g := graph x;
+              Graph.amplifyEnumerated eval fallback rotate T q g)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] C α D Input : Type
+          inst : FinEnum α
+          inst_1 : FinEnum D
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          alphabet : α ↪ List Bool
+          labels : D ↪ List Bool
+          graph : Input → Graph C
+          eval : C → α → α → Bool
+          rotate : ℕ × ℕ × D → ℕ × D
+          fallback : C
+          T q : ℕ
+          inst_2 : NeZero q
+          hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+          hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          he :
+            ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+          ⊢ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        C α D Input : Type
+        inst : FinEnum α
+        inst_1 : FinEnum D
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        alphabet : α ↪ List Bool
+        labels : D ↪ List Bool
+        graph : Input → Graph C
+        eval : C → α → α → Bool
+        rotate : ℕ × ℕ × D → ℕ × D
+        fallback : C
+        T q : ℕ
+        inst_2 : NeZero q
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+        hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        he :
+          ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+        ⊢ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          C α D Input : Type
+          inst : FinEnum α
+          inst_1 : FinEnum D
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          alphabet : α ↪ List Bool
+          labels : D ↪ List Bool
+          graph : Input → Graph C
+          eval : C → α → α → Bool
+          rotate : ℕ × ℕ × D → ℕ × D
+          fallback : C
+          T q : ℕ
+          inst_2 : NeZero q
+          hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+          hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          he :
+            ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+          ⊢ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-30/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] C α D Input : Type
+      inst : FinEnum α
+      inst_1 : FinEnum D
+      input : Input ↪ List Bool
+      enc : C ↪ List Bool
+      alphabet : α ↪ List Bool
+      labels : D ↪ List Bool
+      graph : Input → Graph C
+      eval : C → α → α → Bool
+      rotate : ℕ × ℕ × D → ℕ × D
+      fallback : C
+      T q : ℕ
+      inst_2 : NeZero q
+      hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+      hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+      he : ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+      knownCertificate✝² : ComputableInPolyTime graph input (Graph.encoding enc)
+      knownCertificate✝¹ :
+        ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+      knownCertificate✝ :
+        ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+      ⊢ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+          (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.19701):
+      [aesop] C α D Input : Type
+          inst : FinEnum α
+          inst_1 : FinEnum D
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          alphabet : α ↪ List Bool
+          labels : D ↪ List Bool
+          graph : Input → Graph C
+          eval : C → α → α → Bool
+          rotate : ℕ × ℕ × D → ℕ × D
+          fallback : C
+          T q : ℕ
+          inst_2 : NeZero q
+          hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+          hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          he :
+            ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+          knownCertificate✝² : ComputableInPolyTime graph input (Graph.encoding enc)
+          knownCertificate✝¹ :
+            ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          knownCertificate✝ :
+            ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+          ⊢ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        C α D Input : Type
+        inst : FinEnum α
+        inst_1 : FinEnum D
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        alphabet : α ↪ List Bool
+        labels : D ↪ List Bool
+        graph : Input → Graph C
+        eval : C → α → α → Bool
+        rotate : ℕ × ℕ × D → ℕ × D
+        fallback : C
+        T q : ℕ
+        inst_2 : NeZero q
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+        hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        he :
+          ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+        knownCertificate✝² : ComputableInPolyTime graph input (Graph.encoding enc)
+        knownCertificate✝¹ :
+          ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        knownCertificate✝ :
+          ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+        ⊢ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        C α D Input : Type
+        inst : FinEnum α
+        inst_1 : FinEnum D
+        input : Input ↪ List Bool
+        enc : C ↪ List Bool
+        alphabet : α ↪ List Bool
+        labels : D ↪ List Bool
+        graph : Input → Graph C
+        eval : C → α → α → Bool
+        rotate : ℕ × ℕ × D → ℕ × D
+        fallback : C
+        T q : ℕ
+        inst_2 : NeZero q
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+        hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        he :
+          ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+        knownCertificate✝² : ComputableInPolyTime graph input (Graph.encoding enc)
+        knownCertificate✝¹ :
+          ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+        knownCertificate✝ :
+          ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+        ⊢ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          C α D Input : Type
+          inst : FinEnum α
+          inst_1 : FinEnum D
+          input : Input ↪ List Bool
+          enc : C ↪ List Bool
+          alphabet : α ↪ List Bool
+          labels : D ↪ List Bool
+          graph : Input → Graph C
+          eval : C → α → α → Bool
+          rotate : ℕ × ℕ × D → ℕ × D
+          fallback : C
+          T q : ℕ
+          inst_2 : NeZero q
+          hg : ComputableTidilyInPolyTime graph input (Graph.encoding enc)
+          hr : ComputableTidilyInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          he :
+            ComputableTidilyInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+          knownCertificate✝² : ComputableInPolyTime graph input (Graph.encoding enc)
+          knownCertificate✝¹ :
+            ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          knownCertificate✝ :
+            ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+          ⊢ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => Graph.amplifyEnumerated eval fallback rotate T q (graph x)) input
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplifyEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (Graph.encoding enc)
+            [Meta.Tactic.fun_prop] candidate local theorems for graph #[knownCertificate✝² : ComputableInPolyTime graph input (Graph.encoding enc)]
+            [Meta.Tactic.fun_prop] ✅️ applying: knownCertificate✝² : ComputableInPolyTime graph input (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+            [Meta.Tactic.fun_prop] candidate local theorems for rotate #[knownCertificate✝¹ : ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)]
+            [Meta.Tactic.fun_prop] ✅️ applying: knownCertificate✝¹ : ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labels)) (encPair encUnary labels)
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+            [Meta.Tactic.fun_prop] candidate local theorems for eval #[knownCertificate✝ : ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool]
+            [Meta.Tactic.fun_prop] ✅️ applying: knownCertificate✝ : ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

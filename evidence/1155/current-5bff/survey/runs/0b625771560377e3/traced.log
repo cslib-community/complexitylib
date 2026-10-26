@@ -1,0 +1,6 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun w => w.headD false) encBits encBool
+  [Meta.Tactic.fun_prop] candidate theorems for List.headD #[Turing.MultiTapeTM.ComputableInPolyTime.headD]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.headD
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime List.tail encBits encBits
+  [Meta.Tactic.fun_prop] candidate theorems for List.tail #[Turing.MultiTapeTM.ComputableInPolyTime.bitsTail]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsTail

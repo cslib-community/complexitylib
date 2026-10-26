@@ -1,0 +1,570 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+      (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+  [aesop] Initial goal:
+        w n : ℕ
+        h3 : Fits w 3
+        hn : InputFits w [n]
+        ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+            (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        w n : ℕ
+        h3 : Fits w 3
+        hn : InputFits w [n]
+        ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+            (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+      (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+  [aesop] w n : ℕ
+      h3 : Fits w 3
+      hn : InputFits w [n]
+      ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+          (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2313):
+      [aesop] w n : ℕ
+          h3 : Fits w 3
+          hn : InputFits w [n]
+          ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+              (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+      (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+  [aesop] Initial goal:
+        w n : ℕ
+        h3 : Fits w 3
+        hn : InputFits w [n]
+        ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+            (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] w n : ℕ
+          h3 : Fits w 3
+          hn : InputFits w [n]
+          ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+              (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        w n : ℕ
+        h3 : Fits w 3
+        hn : InputFits w [n]
+        ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+            (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          w n : ℕ
+          h3 : Fits w 3
+          hn : InputFits w [n]
+          ⊢ Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
+              (fun a s y => Rep w 2 1 s y ∧ y.regs out = a) (fun x x_1 => if n = 0 then 48 else 28) Controller.code
+    [aesop] ✅️ 🏁 safe|tactic|global|Cslib.Tactic.ramControllerCertificate
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|Cslib.Tactic.ramControllerCertificate
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-50/safe] safe|tactic|global|Cslib.Tactic.ramControllerCertificate
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] Initial goal:
+        ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3077):
+      [aesop] ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] Initial goal:
+        ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            fun x n => [n]
+          is not definitionally equal to the right-hand side
+            id
+          
+          ⊢ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ 🏁 Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Cslib.Tactic.ramFunctionCertificate
+      [aesop] expected an efficiency goal for Cslib.WordRAM.ComputableInPolyTime
+    [aesop] ✅️ 🏁 unsafe|tactic|global|Cslib.Tactic.ramUniformFunctionCertificate
+[aesop] ✅️ 🆕 🏁 R1 [99.0000%] unsafe|tactic|global|Cslib.Tactic.ramUniformFunctionCertificate
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [99.0000%] unsafe|tactic|global|Cslib.Tactic.ramUniformFunctionCertificate
+    [aesop] Success probability: 99.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ UniformComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.WordRAM.Stack.Controller.positive #[Cslib.WordRAM.Stack.Controller.positive_polytime]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.WordRAM.Stack.Controller.positive_polytime
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] Initial goal:
+        ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.8739):
+      [aesop] ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] Initial goal:
+        ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            fun x n => [n]
+          is not definitionally equal to the right-hand side
+            id
+          
+          ⊢ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ 🏁 Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ 🏁 unsafe|tactic|global|Cslib.Tactic.ramFunctionCertificate
+[aesop] ✅️ 🆕 🏁 R1 [99.0000%] unsafe|tactic|global|Cslib.Tactic.ramFunctionCertificate
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [99.0000%] unsafe|tactic|global|Cslib.Tactic.ramFunctionCertificate
+    [aesop] Success probability: 99.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Basis.standard Controller.positive (fun x n => [n]) id
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.WordRAM.Stack.Controller.positive #[_private.ComplexityTests.WordRAMController.0.ComplexityTests.WordRAMController.nonuniform_positive_polytime]
+  [Meta.Tactic.fun_prop] ✅️ applying: _private.ComplexityTests.WordRAMController.0.ComplexityTests.WordRAMController.nonuniform_positive_polytime
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+  [aesop] Initial goal:
+        _f : ℕ → ℕ
+        ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        _f : ℕ → ℕ
+        ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+  [aesop] _f : ℕ → ℕ
+      ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.15892):
+      [aesop] _f : ℕ → ℕ
+          ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G1) [100.0000%] ⋯ ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+  [aesop] Initial goal:
+        _f : ℕ → ℕ
+        ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        _f : ℕ → ℕ
+        ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          _f : ℕ → ℕ
+          ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            fun x n => [n]
+          is not definitionally equal to the right-hand side
+            id
+          
+          _f : ℕ → ℕ
+          ⊢ UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Cslib.Tactic.ramFunctionCertificate
+      [aesop] expected an efficiency goal for Cslib.WordRAM.ComputableInPolyTime
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Cslib.Tactic.ramUniformFunctionCertificate
+      [aesop] no certificate for `id` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] Expanding safe subtree of the root goal.
+[aesop] Skipping safe rule expansion of goal 0 since safe rules have already been applied.
+[aesop] Skipping safe rule expansion of goal 1 since safe rules have already been applied.
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat
+      Turing.MultiTapeTM.encNat
+  [aesop] Initial goal:
+        _f : ℕ → ℕ
+        _h : UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+        ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        _f : ℕ → ℕ
+        _h : UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+        ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat
+      Turing.MultiTapeTM.encNat
+  [aesop] _f : ℕ → ℕ
+      _h : UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+      ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.21570):
+      [aesop] _f : ℕ → ℕ
+          _h : UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+          ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G1) [100.0000%] ⋯ ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat
+      Turing.MultiTapeTM.encNat
+  [aesop] Initial goal:
+        _f : ℕ → ℕ
+        _h : UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+        ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        _f : ℕ → ℕ
+        _h : UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+        ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          _f : ℕ → ℕ
+          _h : UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+          ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat
+        [Meta.Tactic.fun_prop] candidate local theorems for _f #[]
+        [Meta.Tactic.fun_prop] candidate transition theorems: []
+      [aesop] `fun_prop` was unable to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat`
+          
+          Issues:
+            No theorems found for `_f` in order to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime (fun a => _f a) Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat`
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: No `[refl]` lemma registered for relation
+            Turing.MultiTapeTM.ComputableTidilyInPolyTime _f
+          
+          Hint: Add the `[refl]` attribute to reflexivity lemmas for
+            Turing.MultiTapeTM.ComputableTidilyInPolyTime _f
+          to use this tactic
+          
+          _f : ℕ → ℕ
+          _h : UniformComputableInPolyTime Basis.standard _f (fun x n => [n]) id
+          ⊢ Turing.MultiTapeTM.ComputableTidilyInPolyTime _f Turing.MultiTapeTM.encNat Turing.MultiTapeTM.encNat
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Cslib.Tactic.ramFunctionCertificate
+      [aesop] expected an efficiency goal for Cslib.WordRAM.ComputableInPolyTime
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Cslib.Tactic.ramUniformFunctionCertificate
+      [aesop] expected an efficiency goal for Cslib.WordRAM.UniformComputableInPolyTime
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] no indexed or locally supported plain construction for this raw goal
+[aesop] Expanding safe subtree of the root goal.
+[aesop] Skipping safe rule expansion of goal 0 since safe rules have already been applied.
+[aesop] Skipping safe rule expansion of goal 1 since safe rules have already been applied.
+'Cslib.WordRAM.Refines.bind' depends on axioms: [propext]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/df0ea3d832d6b4f1/traced/ComplexityTests/WordRAMController.lean:299:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.WordRAM.Refines.bind' depends on axioms: [propext]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.WordRAM.Refines.call' depends on axioms: [propext]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/df0ea3d832d6b4f1/traced/ComplexityTests/WordRAMController.lean:302:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.WordRAM.Refines.call' depends on axioms: [propext]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

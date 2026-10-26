@@ -1,0 +1,7 @@
+'Cslib.OracleComp.interpret_id_congr' does not depend on any axioms
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/0da5c4bccd5a7b78/import-only/ComplexityTests/Relativization.lean:228:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.OracleComp.interpret_id_congr' does not depend on any axioms
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

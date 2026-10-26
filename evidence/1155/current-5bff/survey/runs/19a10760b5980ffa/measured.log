@@ -1,0 +1,11 @@
+[(2, 1, 4, 2, 385, 8), (208, 7, 256, 128, 452984833, 32768), (350, 8, 512, 256, 3623878657, 131072),
+  (16, 4, 32, 16, 196609, 512)]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/19a10760b5980ffa/measured/ComplexityTests/RationalHitting/Parameters.lean:36:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: [(2, 1, 4, 2, 385, 8), (208, 7, 256, 128, 452984833, 32768),
+-  (350, 8, 512, 256, 3623878657, 131072), (16, 4, 32, 16, 196609, 512)]
++ info: [(2, 1, 4, 2, 385, 8), (208, 7, 256, 128, 452984833, 32768), (350, 8, 512, 256, 3623878657, 131072),
++   (16, 4, 32, 16, 196609, 512)]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]

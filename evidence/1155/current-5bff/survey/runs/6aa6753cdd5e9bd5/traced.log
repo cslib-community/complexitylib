@@ -1,0 +1,15 @@
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n ^ d + n + 1
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n ^ d + n
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n ^ d
+          [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.id
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => n
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const

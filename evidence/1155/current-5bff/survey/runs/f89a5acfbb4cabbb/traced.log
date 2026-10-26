@@ -1,0 +1,6 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.1 && p.2) (encPair encBool encBool) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Bool.and #[Turing.MultiTapeTM.ComputableInPolyTime.bool_and]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bool_and
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime not encBool encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableInPolyTime.bool_not]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bool_not

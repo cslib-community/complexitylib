@@ -1,0 +1,714 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+      (fun a =>
+        if p a = true then
+          if q a = true then if r a = true then if s a = true then left a else right a else right a else right a
+        else right a)
+      input encBool
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime p input encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for p #[hp : ComputableInPolyTime p input encBool]
+      [Meta.Tactic.fun_prop] ✅️ applying: hp : ComputableInPolyTime p input encBool
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+          (fun x => if q x = true then if r x = true then if s x = true then left x else right x else right x else right x)
+          input encBool
+      [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime q input encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for q #[hq : ComputableInPolyTime q input encBool]
+          [Meta.Tactic.fun_prop] ✅️ applying: hq : ComputableInPolyTime q input encBool
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => if r x = true then if s x = true then left x else right x else right x) input encBool
+          [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime r input encBool
+              [Meta.Tactic.fun_prop] candidate local theorems for r #[hr : ComputableInPolyTime r input encBool]
+              [Meta.Tactic.fun_prop] ✅️ applying: hr : ComputableInPolyTime r input encBool
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => if s x = true then left x else right x) input encBool
+              [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime s input encBool
+                  [Meta.Tactic.fun_prop] candidate local theorems for s #[hs : ComputableInPolyTime s input encBool]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hs : ComputableInPolyTime s input encBool
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime left input encBool
+                  [Meta.Tactic.fun_prop] candidate local theorems for left #[hleft : ComputableInPolyTime left input encBool]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hleft : ComputableInPolyTime left input encBool
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime right input encBool
+                  [Meta.Tactic.fun_prop] candidate local theorems for right #[hright : ComputableInPolyTime right input encBool]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hright : ComputableInPolyTime right input encBool
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime right input encBool
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime right input encBool
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime right input encBool
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime right input encBool
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime right input encBool
+      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime right input encBool
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime
+      (fun a =>
+        if p a = true then
+          if q a = true then if r a = true then if s a = true then left a else right a else right a else right a
+        else right a)
+      input encBool
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime p input encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for p #[_hp : ComputableInPolyTime p input encBool]
+      [Meta.Tactic.fun_prop] ✅️ applying: _hp : ComputableInPolyTime p input encBool
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime
+          (fun x => if q x = true then if r x = true then if s x = true then left x else right x else right x else right x)
+          input encBool
+      [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime q input encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for q #[_hq : ComputableInPolyTime q input encBool]
+          [Meta.Tactic.fun_prop] ✅️ applying: _hq : ComputableInPolyTime q input encBool
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => if r x = true then if s x = true then left x else right x else right x) input encBool
+          [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime r input encBool
+              [Meta.Tactic.fun_prop] candidate local theorems for r #[_hr : ComputableInPolyTime r input encBool]
+              [Meta.Tactic.fun_prop] ✅️ applying: _hr : ComputableInPolyTime r input encBool
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => if s x = true then left x else right x) input encBool
+              [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime s input encBool
+                  [Meta.Tactic.fun_prop] candidate local theorems for s #[_hs : ComputableInPolyTime s input encBool]
+                  [Meta.Tactic.fun_prop] ✅️ applying: _hs : ComputableInPolyTime s input encBool
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime left input encBool
+                  [Meta.Tactic.fun_prop] candidate local theorems for left #[]
+                  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => left a) input encBool
+                      [Meta.Tactic.fun_prop] candidate local theorems for left #[]
+                      [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                              if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                          ComputableTidilyInPolyTime (fun a => left a) input encBool
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite', failed to discharge hypotheses
+                      ComputableInPolyTime left input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime s input encBool
+                  [Meta.Tactic.fun_prop] candidate local theorems for s #[_hs : ComputableInPolyTime s input encBool]
+                  [Meta.Tactic.fun_prop] ✅️ applying: _hs : ComputableInPolyTime s input encBool
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime left input encBool
+                  [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime left input
+                        encBool was tried already and failed
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite, failed to discharge hypotheses
+                      ComputableInPolyTime left input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite_decide
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => decide (s a = true)) input encBool
+                  [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableInPolyTime.decide_not, Turing.MultiTapeTM.ComputableInPolyTime.decide_and, Turing.MultiTapeTM.ComputableInPolyTime.unary_le, Turing.MultiTapeTM.ComputableInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableInPolyTime.unary_le', Turing.MultiTapeTM.ComputableInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableInPolyTime.binary_lt, Turing.MultiTapeTM.ComputableInPolyTime.binary_le', Turing.MultiTapeTM.ComputableInPolyTime.decide_mem]
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_not
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.decide_not
+                        ComputableInPolyTime (fun x => decide ¬?p x) ?encIn encBool
+                        with
+                        ComputableInPolyTime (fun a => decide (s a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_and
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.decide_and
+                        ComputableInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                        with
+                        ComputableInPolyTime (fun a => decide (s a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le
+                    [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_le
+                        ComputableInPolyTime (fun p => decide (p.1 ≤ p.2)) (encPair encUnary encUnary) encBool
+                        with
+                        ComputableInPolyTime (fun a => decide (s a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_lt
+                    [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_lt
+                        ComputableInPolyTime (fun p => decide (p.1 < p.2)) (encPair encUnary encUnary) encBool
+                        with
+                        ComputableInPolyTime (fun a => decide (s a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le'
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.unary_le'
+                        ComputableInPolyTime (fun a => decide (?left a ≤ ?right a)) ?input encBool
+                        with
+                        ComputableInPolyTime (fun a => decide (s a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_lt'
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.unary_lt'
+                        ComputableInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+                        with
+                        ComputableInPolyTime (fun a => decide (s a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_eq'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime s input encBool
+                      [Meta.Tactic.fun_prop] candidate local theorems for s #[_hs : ComputableInPolyTime s input encBool]
+                      [Meta.Tactic.fun_prop] ✅️ applying: _hs : ComputableInPolyTime s input encBool
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => true) input encBool
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime left input encBool
+                  [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime left input
+                        encBool was tried already and failed
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite_decide, failed to discharge hypotheses
+                      ComputableInPolyTime left input encBool
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `ite`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => if s x = true then left x else right x) input encBool
+                  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide, Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite', Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond]
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide
+                    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not]
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_mem
+                            ComputableTidilyInPolyTime (fun x => decide (?value x ∈ ?list x)) ?encIn encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_and
+                            ComputableTidilyInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_or
+                            ComputableTidilyInPolyTime (fun a => decide (?left a ∨ ?right a)) ?encA encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_eq
+                            ComputableTidilyInPolyTime (fun p => decide (p.1 = p.2)) (encPair ?enc ?enc) encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq'
+                        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime s input ?encB
+                          [Meta.Tactic.fun_prop] candidate local theorems for s #[]
+                          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.decide_eq', failed to discharge hypotheses
+                              ComputableTidilyInPolyTime s input ?encB
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_ne
+                            ComputableTidilyInPolyTime (fun x => decide (?left x ≠ ?right x)) ?encA encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le
+                        [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_le
+                            ComputableTidilyInPolyTime (fun p => decide (p.1 ≤ p.2)) (encPair encUnary encUnary) encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt
+                        [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_lt
+                            ComputableTidilyInPolyTime (fun p => decide (p.1 < p.2)) (encPair encUnary encUnary) encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le'
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_le'
+                            ComputableTidilyInPolyTime (fun a => decide (?left a ≤ ?right a)) ?input encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt'
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_lt'
+                            ComputableTidilyInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_not
+                            ComputableTidilyInPolyTime (fun x => decide ¬?p x) ?encIn encBool
+                            with
+                            ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Decidable.decide`
+                                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                      [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                              if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.ite_decide, failed to discharge hypotheses
+                          ComputableTidilyInPolyTime (fun a => decide (s a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite'
+                    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime s input ?encC
+                      [Meta.Tactic.fun_prop] candidate local theorems for s #[]
+                      [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                              if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.ite', failed to discharge hypotheses
+                          ComputableTidilyInPolyTime s input ?encC
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond
+                    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime s input encBool
+                      [Meta.Tactic.fun_prop] candidate local theorems for s #[]
+                      [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                              if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.cond, failed to discharge hypotheses
+                          ComputableTidilyInPolyTime s input encBool
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `ite`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x => if s x = true then left x else right x) input encBool
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite', failed to discharge hypotheses
+                  ComputableInPolyTime (fun x => if s x = true then left x else right x) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime r input encBool
+              [Meta.Tactic.fun_prop] candidate local theorems for r #[_hr : ComputableInPolyTime r input encBool]
+              [Meta.Tactic.fun_prop] ✅️ applying: _hr : ComputableInPolyTime r input encBool
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => if s x = true then left x else right x) input encBool
+              [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime
+                    (fun x => if s x = true then left x else right x) input encBool was tried already and failed
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite, failed to discharge hypotheses
+                  ComputableInPolyTime (fun x => if s x = true then left x else right x) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite_decide
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => decide (r a = true)) input encBool
+              [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableInPolyTime.decide_not, Turing.MultiTapeTM.ComputableInPolyTime.decide_and, Turing.MultiTapeTM.ComputableInPolyTime.unary_le, Turing.MultiTapeTM.ComputableInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableInPolyTime.unary_le', Turing.MultiTapeTM.ComputableInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableInPolyTime.binary_lt, Turing.MultiTapeTM.ComputableInPolyTime.binary_le', Turing.MultiTapeTM.ComputableInPolyTime.decide_mem]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_not
+                [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.decide_not
+                    ComputableInPolyTime (fun x => decide ¬?p x) ?encIn encBool
+                    with
+                    ComputableInPolyTime (fun a => decide (r a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_and
+                [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.decide_and
+                    ComputableInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                    with
+                    ComputableInPolyTime (fun a => decide (r a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le
+                [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_le
+                    ComputableInPolyTime (fun p => decide (p.1 ≤ p.2)) (encPair encUnary encUnary) encBool
+                    with
+                    ComputableInPolyTime (fun a => decide (r a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_lt
+                [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_lt
+                    ComputableInPolyTime (fun p => decide (p.1 < p.2)) (encPair encUnary encUnary) encBool
+                    with
+                    ComputableInPolyTime (fun a => decide (r a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le'
+                [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.unary_le'
+                    ComputableInPolyTime (fun a => decide (?left a ≤ ?right a)) ?input encBool
+                    with
+                    ComputableInPolyTime (fun a => decide (r a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_lt'
+                [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.unary_lt'
+                    ComputableInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+                    with
+                    ComputableInPolyTime (fun a => decide (r a = true)) input encBool
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_eq'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime r input encBool
+                  [Meta.Tactic.fun_prop] candidate local theorems for r #[_hr : ComputableInPolyTime r input encBool]
+                  [Meta.Tactic.fun_prop] ✅️ applying: _hr : ComputableInPolyTime r input encBool
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => true) input encBool
+                  [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun x => true) input
+                        encBool
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => if s a = true then left a else right a) input encBool
+              [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime
+                    (fun a => if s a = true then left a else right a) input encBool was tried already and failed
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite_decide, failed to discharge hypotheses
+                  ComputableInPolyTime (fun a => if s a = true then left a else right a) input encBool
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `ite`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => if r x = true then if s x = true then left x else right x else right x) input
+                  encBool
+              [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide, Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite', Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not]
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_mem
+                        ComputableTidilyInPolyTime (fun x => decide (?value x ∈ ?list x)) ?encIn encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_and
+                        ComputableTidilyInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_or
+                        ComputableTidilyInPolyTime (fun a => decide (?left a ∨ ?right a)) ?encA encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_eq
+                        ComputableTidilyInPolyTime (fun p => decide (p.1 = p.2)) (encPair ?enc ?enc) encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq'
+                    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime r input ?encB
+                      [Meta.Tactic.fun_prop] candidate local theorems for r #[]
+                      [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                              if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.decide_eq', failed to discharge hypotheses
+                          ComputableTidilyInPolyTime r input ?encB
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_ne
+                        ComputableTidilyInPolyTime (fun x => decide (?left x ≠ ?right x)) ?encA encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le
+                    [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_le
+                        ComputableTidilyInPolyTime (fun p => decide (p.1 ≤ p.2)) (encPair encUnary encUnary) encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt
+                    [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_lt
+                        ComputableTidilyInPolyTime (fun p => decide (p.1 < p.2)) (encPair encUnary encUnary) encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le'
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_le'
+                        ComputableTidilyInPolyTime (fun a => decide (?left a ≤ ?right a)) ?input encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt'
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_lt'
+                        ComputableTidilyInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_not
+                        ComputableTidilyInPolyTime (fun x => decide ¬?p x) ?encIn encBool
+                        with
+                        ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Decidable.decide`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.ite_decide, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun a => decide (r a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite'
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime r input ?encC
+                  [Meta.Tactic.fun_prop] candidate local theorems for r #[]
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.ite', failed to discharge hypotheses
+                      ComputableTidilyInPolyTime r input ?encC
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime r input encBool
+                  [Meta.Tactic.fun_prop] candidate local theorems for r #[]
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.cond, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime r input encBool
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `ite`
+                           now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime
+                    (fun x => if r x = true then if s x = true then left x else right x else right x) input encBool
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite', failed to discharge hypotheses
+              ComputableInPolyTime (fun x => if r x = true then if s x = true then left x else right x else right x)
+                input encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime q input encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for q #[_hq : ComputableInPolyTime q input encBool]
+          [Meta.Tactic.fun_prop] ✅️ applying: _hq : ComputableInPolyTime q input encBool
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => if r x = true then if s x = true then left x else right x else right x) input encBool
+          [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime
+                (fun x => if r x = true then if s x = true then left x else right x else right x) input
+                encBool was tried already and failed
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite, failed to discharge hypotheses
+              ComputableInPolyTime (fun x => if r x = true then if s x = true then left x else right x else right x)
+                input encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite_decide
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => decide (q a = true)) input encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableInPolyTime.decide_not, Turing.MultiTapeTM.ComputableInPolyTime.decide_and, Turing.MultiTapeTM.ComputableInPolyTime.unary_le, Turing.MultiTapeTM.ComputableInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableInPolyTime.unary_le', Turing.MultiTapeTM.ComputableInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableInPolyTime.binary_lt, Turing.MultiTapeTM.ComputableInPolyTime.binary_le', Turing.MultiTapeTM.ComputableInPolyTime.decide_mem]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_not
+            [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.decide_not
+                ComputableInPolyTime (fun x => decide ¬?p x) ?encIn encBool
+                with
+                ComputableInPolyTime (fun a => decide (q a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_and
+            [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.decide_and
+                ComputableInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                with
+                ComputableInPolyTime (fun a => decide (q a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le
+            [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_le
+                ComputableInPolyTime (fun p => decide (p.1 ≤ p.2)) (encPair encUnary encUnary) encBool
+                with
+                ComputableInPolyTime (fun a => decide (q a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_lt
+            [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_lt
+                ComputableInPolyTime (fun p => decide (p.1 < p.2)) (encPair encUnary encUnary) encBool
+                with
+                ComputableInPolyTime (fun a => decide (q a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le'
+            [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.unary_le'
+                ComputableInPolyTime (fun a => decide (?left a ≤ ?right a)) ?input encBool
+                with
+                ComputableInPolyTime (fun a => decide (q a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_lt'
+            [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.unary_lt'
+                ComputableInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+                with
+                ComputableInPolyTime (fun a => decide (q a = true)) input encBool
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_eq'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime q input encBool
+              [Meta.Tactic.fun_prop] candidate local theorems for q #[_hq : ComputableInPolyTime q input encBool]
+              [Meta.Tactic.fun_prop] ✅️ applying: _hq : ComputableInPolyTime q input encBool
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => true) input encBool
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun x => true) input
+                    encBool
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => if r a = true then if s a = true then left a else right a else right a) input encBool
+          [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime
+                (fun a => if r a = true then if s a = true then left a else right a else right a) input
+                encBool was tried already and failed
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite_decide, failed to discharge hypotheses
+              ComputableInPolyTime (fun a => if r a = true then if s a = true then left a else right a else right a)
+                input encBool
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `ite`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime
+              (fun x => if q x = true then if r x = true then if s x = true then left x else right x else right x else right x)
+              input encBool
+          [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide, Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite', Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_mem
+                    ComputableTidilyInPolyTime (fun x => decide (?value x ∈ ?list x)) ?encIn encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_and
+                    ComputableTidilyInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_or
+                    ComputableTidilyInPolyTime (fun a => decide (?left a ∨ ?right a)) ?encA encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_eq
+                    ComputableTidilyInPolyTime (fun p => decide (p.1 = p.2)) (encPair ?enc ?enc) encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq'
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime q input ?encB
+                  [Meta.Tactic.fun_prop] candidate local theorems for q #[]
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.decide_eq', failed to discharge hypotheses
+                      ComputableTidilyInPolyTime q input ?encB
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_ne
+                    ComputableTidilyInPolyTime (fun x => decide (?left x ≠ ?right x)) ?encA encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le
+                [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_le
+                    ComputableTidilyInPolyTime (fun p => decide (p.1 ≤ p.2)) (encPair encUnary encUnary) encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt
+                [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_lt
+                    ComputableTidilyInPolyTime (fun p => decide (p.1 < p.2)) (encPair encUnary encUnary) encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le'
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_le'
+                    ComputableTidilyInPolyTime (fun a => decide (?left a ≤ ?right a)) ?input encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt'
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_lt'
+                    ComputableTidilyInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_not
+                    ComputableTidilyInPolyTime (fun x => decide ¬?p x) ?encIn encBool
+                    with
+                    ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Decidable.decide`
+                           now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.ite_decide, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun a => decide (q a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite'
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime q input ?encC
+              [Meta.Tactic.fun_prop] candidate local theorems for q #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.ite', failed to discharge hypotheses
+                  ComputableTidilyInPolyTime q input ?encC
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime q input encBool
+              [Meta.Tactic.fun_prop] candidate local theorems for q #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.cond, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime q input encBool
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `ite`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime
+                (fun x =>
+                  if q x = true then if r x = true then if s x = true then left x else right x else right x
+                  else right x)
+                input encBool
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite', failed to discharge hypotheses
+          ComputableInPolyTime
+            (fun x =>
+              if q x = true then if r x = true then if s x = true then left x else right x else right x else right x)
+            input encBool
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime p input encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for p #[_hp : ComputableInPolyTime p input encBool]
+      [Meta.Tactic.fun_prop] ✅️ applying: _hp : ComputableInPolyTime p input encBool
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime
+          (fun x => if q x = true then if r x = true then if s x = true then left x else right x else right x else right x)
+          input encBool
+      [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime
+            (fun x =>
+              if q x = true then if r x = true then if s x = true then left x else right x else right x else right x)
+            input encBool was tried already and failed
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite, failed to discharge hypotheses
+          ComputableInPolyTime
+            (fun x =>
+              if q x = true then if r x = true then if s x = true then left x else right x else right x else right x)
+            input encBool
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite_decide
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => decide (p a = true)) input encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableInPolyTime.decide_not, Turing.MultiTapeTM.ComputableInPolyTime.decide_and, Turing.MultiTapeTM.ComputableInPolyTime.unary_le, Turing.MultiTapeTM.ComputableInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableInPolyTime.unary_le', Turing.MultiTapeTM.ComputableInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableInPolyTime.binary_lt, Turing.MultiTapeTM.ComputableInPolyTime.binary_le', Turing.MultiTapeTM.ComputableInPolyTime.decide_mem]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_not
+        [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.decide_not
+            ComputableInPolyTime (fun x => decide ¬?p x) ?encIn encBool
+            with
+            ComputableInPolyTime (fun a => decide (p a = true)) input encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_and
+        [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.decide_and
+            ComputableInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+            with
+            ComputableInPolyTime (fun a => decide (p a = true)) input encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le
+        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_le
+            ComputableInPolyTime (fun p => decide (p.1 ≤ p.2)) (encPair encUnary encUnary) encBool
+            with
+            ComputableInPolyTime (fun a => decide (p a = true)) input encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_lt
+        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_lt
+            ComputableInPolyTime (fun p => decide (p.1 < p.2)) (encPair encUnary encUnary) encBool
+            with
+            ComputableInPolyTime (fun a => decide (p a = true)) input encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le'
+        [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.unary_le'
+            ComputableInPolyTime (fun a => decide (?left a ≤ ?right a)) ?input encBool
+            with
+            ComputableInPolyTime (fun a => decide (p a = true)) input encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_lt'
+        [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.unary_lt'
+            ComputableInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+            with
+            ComputableInPolyTime (fun a => decide (p a = true)) input encBool
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_eq'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime p input encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for p #[_hp : ComputableInPolyTime p input encBool]
+          [Meta.Tactic.fun_prop] ✅️ applying: _hp : ComputableInPolyTime p input encBool
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => true) input encBool
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun x => true) input encBool
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime
+          (fun a => if q a = true then if r a = true then if s a = true then left a else right a else right a else right a)
+          input encBool
+      [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime
+            (fun a =>
+              if q a = true then if r a = true then if s a = true then left a else right a else right a else right a)
+            input encBool was tried already and failed
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.ite_decide, failed to discharge hypotheses
+          ComputableInPolyTime
+            (fun a =>
+              if q a = true then if r a = true then if s a = true then left a else right a else right a else right a)
+            input encBool
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `ite`
+               now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime
+          (fun a =>
+            if p a = true then
+              if q a = true then if r a = true then if s a = true then left a else right a else right a else right a
+            else right a)
+          input encBool
+      [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide, Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite', Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_mem
+                ComputableTidilyInPolyTime (fun x => decide (?value x ∈ ?list x)) ?encIn encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_and
+                ComputableTidilyInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_or
+                ComputableTidilyInPolyTime (fun a => decide (?left a ∨ ?right a)) ?encA encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_eq
+                ComputableTidilyInPolyTime (fun p => decide (p.1 = p.2)) (encPair ?enc ?enc) encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq'
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime p input ?encB
+              [Meta.Tactic.fun_prop] candidate local theorems for p #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.decide_eq', failed to discharge hypotheses
+                  ComputableTidilyInPolyTime p input ?encB
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_ne
+                ComputableTidilyInPolyTime (fun x => decide (?left x ≠ ?right x)) ?encA encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le
+            [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_le
+                ComputableTidilyInPolyTime (fun p => decide (p.1 ≤ p.2)) (encPair encUnary encUnary) encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt
+            [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_lt
+                ComputableTidilyInPolyTime (fun p => decide (p.1 < p.2)) (encPair encUnary encUnary) encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le'
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_le'
+                ComputableTidilyInPolyTime (fun a => decide (?left a ≤ ?right a)) ?input encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt'
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_lt'
+                ComputableTidilyInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_not
+                ComputableTidilyInPolyTime (fun x => decide ¬?p x) ?encIn encBool
+                with
+                ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Decidable.decide`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.ite_decide, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun a => decide (p a = true)) input encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime p input ?encC
+          [Meta.Tactic.fun_prop] candidate local theorems for p #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.ite', failed to discharge hypotheses
+              ComputableTidilyInPolyTime p input ?encC
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime p input encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for p #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.cond, failed to discharge hypotheses
+              ComputableTidilyInPolyTime p input encBool
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `ite`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+              if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+          ComputableTidilyInPolyTime
+            (fun a =>
+              if p a = true then
+                if q a = true then if r a = true then if s a = true then left a else right a else right a else right a
+              else right a)
+            input encBool

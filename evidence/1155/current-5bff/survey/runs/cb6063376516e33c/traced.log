@@ -1,0 +1,54 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => padMajority p.1 (p.2 + 1)) (encPair encCNF encUnary) encCNF
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.padMajority #[Cslib.Complexity.computableInPolyTime_padMajority]
+  [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.computableInPolyTime_padMajority as:
+                         (fun p0p1 => padMajority p0p1.1 p0p1.2) ∘ (fun p => (p.1, p.2 + 1))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => (p.1, p.2 + 1)) (encPair encCNF encUnary) (encPair encCNF encUnary)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair encCNF encUnary) encCNF
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encCNF encUnary) (encPair encCNF encUnary)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encCNF encCNF
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.2 + 1) (encPair encCNF encUnary) encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_succ as:
+                                 (fun a4 => a4 + 1) ∘ (fun a => a.2)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.2) (encPair encCNF encUnary) encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encCNF encUnary) (encPair encCNF encUnary)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4 => a4 + 1) encUnary encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_succ
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p0p1 => padMajority p0p1.1 p0p1.2) (encPair encCNF encUnary) encCNF
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.padMajority #[Cslib.Complexity.computableInPolyTime_padMajority]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.computableInPolyTime_padMajority
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n => BipartitePermutationIndependentSet.searchBits (n + 1)) encUnary encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.BipartitePermutationIndependentSet.searchBits #[Cslib.Complexity.BipartitePermutationIndependentSet.computableInPolyTime_searchBits_length, Cslib.Complexity.BipartitePermutationIndependentSet.computableInPolyTime_searchBits]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Complexity.BipartitePermutationIndependentSet.computableInPolyTime_searchBits_length
+    [Meta.Tactic.fun_prop] failed to unify BipartitePermutationIndependentSet.computableInPolyTime_searchBits_length
+        ComputableInPolyTime (fun H => BipartitePermutationIndependentSet.searchBits H.1.length) encGraph encUnary
+        with
+        ComputableInPolyTime (fun n => BipartitePermutationIndependentSet.searchBits (n + 1)) encUnary encUnary
+  [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.BipartitePermutationIndependentSet.computableInPolyTime_searchBits as:
+                         (fun n0 => BipartitePermutationIndependentSet.searchBits n0) ∘ (fun n => n + 1)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_succ
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n0 => BipartitePermutationIndependentSet.searchBits n0) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.BipartitePermutationIndependentSet.searchBits #[Cslib.Complexity.BipartitePermutationIndependentSet.computableInPolyTime_searchBits_length, Cslib.Complexity.BipartitePermutationIndependentSet.computableInPolyTime_searchBits]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Complexity.BipartitePermutationIndependentSet.computableInPolyTime_searchBits_length
+        [Meta.Tactic.fun_prop] failed to unify BipartitePermutationIndependentSet.computableInPolyTime_searchBits_length
+            ComputableInPolyTime (fun H => BipartitePermutationIndependentSet.searchBits H.1.length) encGraph encUnary
+            with
+            ComputableInPolyTime (fun n0 => BipartitePermutationIndependentSet.searchBits n0) encUnary encUnary
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.BipartitePermutationIndependentSet.computableInPolyTime_searchBits

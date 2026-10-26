@@ -1,0 +1,200 @@
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.id
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace id enc enc
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolySpace.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace (fun a => g (f a)) encA encC
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolySpace.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace (fun a0 => g a0) encB encC
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableInPolySpace g encB encC]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableInPolySpace g encB encC
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace (fun a => f a) encA encB
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableInPolySpace f encA encB]
+      [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableInPolySpace f encA encB
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace (fun a => if c a = true then (f a, g a) else (f a, h a)) encA (encPair encB encC)
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolySpace.ite]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolySpace.ite
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace c encA encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for c #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolySpace.computableInPolySpace,
+           @ComputableInPolySpace.of_polyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolySpace.computableInPolySpace
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolySpace (fun a => c a) encA encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for c #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolySpace.computableInPolySpace, failed to discharge hypotheses
+              ComputableTidilyInPolySpace (fun a => c a) encA encBool
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolySpace.of_polyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => c a) encA encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for c #[hc : ComputableInPolyTime c encA encBool]
+          [Meta.Tactic.fun_prop] ✅️ applying: hc : ComputableInPolyTime c encA encBool
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace (fun a => (f a, g a)) encA (encPair encB encC)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolySpace.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolySpace.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace f encA encB
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableInPolySpace f encA encB]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableInPolySpace f encA encB
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace g encA encC
+          [Meta.Tactic.fun_prop] candidate local theorems for g #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolySpace.computableInPolySpace,
+               @ComputableInPolySpace.of_polyTime]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolySpace.computableInPolySpace
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolySpace (fun a => g a) encA encC
+              [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInPolySpace g encA encC]
+              [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInPolySpace g encA encC
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace (fun a => (f a, h a)) encA (encPair encB encC)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolySpace.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolySpace.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace f encA encB
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolySpace f encA encB
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace h encA encC
+          [Meta.Tactic.fun_prop] candidate local theorems for h #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolySpace.computableInPolySpace,
+               @ComputableInPolySpace.of_polyTime]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolySpace.computableInPolySpace
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolySpace (fun a => h a) encA encC
+              [Meta.Tactic.fun_prop] candidate local theorems for h #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolySpace.computableInPolySpace, failed to discharge hypotheses
+                  ComputableTidilyInPolySpace (fun a => h a) encA encC
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolySpace.of_polyTime
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => h a) encA encC
+              [Meta.Tactic.fun_prop] candidate local theorems for h #[hh : ComputableInPolyTime h encA encC]
+              [Meta.Tactic.fun_prop] ✅️ applying: hh : ComputableInPolyTime h encA encC
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolySpace f encBits encBool
+  [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolySpace.computableInPolySpace,
+       @ComputableInPolySpace.of_polyTime]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolySpace.computableInPolySpace
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolySpace (fun a => f a) encBits encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+      [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+              if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolySpace.computableInPolySpace, failed to discharge hypotheses
+          ComputableTidilyInPolySpace (fun a => f a) encBits encBool
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolySpace.of_polyTime
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => f a) encBits encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+      [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+              if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+    [Meta.Tactic.fun_prop] @ComputableInPolySpace.of_polyTime, failed to discharge hypotheses
+          ComputableInPolyTime (fun a => f a) encBits encBool
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun x => 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word) encBits encBits
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word) encBits
+            encBits
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word) encBits
+            encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word) encBits encBits
+  [aesop] ⊢ ComputableTidilyInPolyTime (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word) encBits
+          encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.26237):
+      [aesop] ⊢ ComputableTidilyInPolyTime (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word)
+              encBits encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word) encBits encBits
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word) encBits
+            encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] ⊢ ComputableTidilyInPolyTime (fun word => word.reverse) encBits encBits
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun word => word.reverse) encBits encBits
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime (fun word => word.reverse) encBits encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun word => word.reverse) encBits encBits
+        [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listReverseWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReverse, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReverseWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listReverse]
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listReverseWithInput
+          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.listReverseWithInput
+              ComputableTidilyInPolyTime (fun a => List.reverse (?list a)) ?encIn (encList ?encA)
+              with
+              ComputableTidilyInPolyTime (fun word => word.reverse) encBits encBits
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReverse
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace (fun a => dec (f a)) enc encBool
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolySpace.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace (fun a0 => dec a0) encQBF encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for dec #[hdec : ComputableInPolySpace dec encQBF encBool]
+      [Meta.Tactic.fun_prop] ✅️ applying: hdec : ComputableInPolySpace dec encQBF encBool
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolySpace (fun a => f a) enc encQBF
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolySpace.computableInPolySpace,
+           @ComputableInPolySpace.of_polyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolySpace.computableInPolySpace
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolySpace (fun a => f a) enc encQBF
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolySpace.computableInPolySpace, failed to discharge hypotheses
+              ComputableTidilyInPolySpace (fun a => f a) enc encQBF
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolySpace.of_polyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => f a) enc encQBF
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableInPolyTime f enc encQBF]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableInPolyTime f enc encQBF

@@ -1,0 +1,90 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => φ p.1.1 ++ List.map (fun x => [x]) p.1.2 ++ [[(p.2, true)]])
+      (encPair (encPair encIn (encList (encPair encNat encBool))) encNat) (encList (encList (encPair encNat encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => φ x.1.1 ++ List.map (fun x => [x]) x.1.2)
+          (encPair (encPair encIn (encList (encPair encNat encBool))) encNat) (encList (encList (encPair encNat encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => φ x.1.1) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+              (encList (encList (encPair encNat encBool)))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => φ x0) encIn (encList (encList (encPair encNat encBool)))
+              [Meta.Tactic.fun_prop] candidate local theorems for φ #[hφ : ComputableTidilyInPolyTime φ encIn encCNF]
+              [Meta.Tactic.fun_prop] ✅️ applying: hφ : ComputableTidilyInPolyTime φ encIn encCNF
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1.1) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat) encIn
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                      (encPair encIn (encList (encPair encNat encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                          (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encIn (encList (encPair encNat encBool)))
+                          (encPair encIn (encList (encPair encNat encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encIn encIn
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => List.map (fun x => [x]) x.1.2)
+              (encPair (encPair encIn (encList (encPair encNat encBool))) encNat) (encList (encList (encPair encNat encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for List.map #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.map, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsMapWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapFilterConst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapToBitsWithInput]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.map as:
+                                 (fun x3 => List.map (fun x => [x]) x3) ∘ (fun x => x.1.2)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x3 => List.map (fun x => [x]) x3) (encList (encPair encNat encBool))
+                  (encList (encList (encPair encNat encBool)))
+              [Meta.Tactic.fun_prop] candidate theorems for List.map #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.map, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsMapWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapFilterConst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapToBitsWithInput]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.map
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => [x]) (encPair encNat encBool) (encList (encPair encNat encBool))
+                  [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCons, Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encNat encBool) (encPair encNat encBool)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => []) (encPair encNat encBool) (encList (encPair encNat encBool))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1.2) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                  (encList (encPair encNat encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                      (encPair encIn (encList (encPair encNat encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                          (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encIn (encList (encPair encNat encBool)))
+                          (encPair encIn (encList (encPair encNat encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList (encPair encNat encBool)) (encList (encPair encNat encBool))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => [[(x.2, true)]])
+          (encPair (encPair encIn (encList (encPair encNat encBool))) encNat) (encList (encList (encPair encNat encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCons, Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => [(x.2, true)]) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+              (encList (encPair encNat encBool))
+          [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCons, Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.2, true)) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                  (encPair encNat encBool)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair (encPair encIn (encList (encPair encNat encBool))) encNat) encNat
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                          (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encNat encNat
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => true) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat) encBool
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => []) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+                  (encList (encPair encNat encBool))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => []) (encPair (encPair encIn (encList (encPair encNat encBool))) encNat)
+              (encList (encList (encPair encNat encBool)))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const

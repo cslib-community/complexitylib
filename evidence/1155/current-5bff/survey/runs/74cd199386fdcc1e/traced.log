@@ -1,0 +1,2 @@
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun x => 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const

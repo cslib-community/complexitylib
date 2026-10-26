@@ -1,0 +1,75 @@
+{
+  "pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "static_source": "5bc08fe7a82eb89dc744d443f190612f5d06e091",
+  "static_manifests": {
+    "files.json": "a55adb0942dd90aa95f21bc62f0a75f1ea97d39b8256afa035184f5dcafd1711",
+    "all-target-tokens.json": "047236872ff70fe45de8e59141bba08f0681df5a09bdad6425a3c96b23ca7f4f",
+    "commands.json": "de20a7069d4292c0b1d221bb093e7f88f435cbd31a98c270ea853a2a1c9710e0",
+    "options.json": "e42c746afc009ab6ac0277dc235cae6820b393ed01162943b6035570f748e99b"
+  },
+  "files": [
+    {
+      "file_id": "fe86bf0a8e5e8785",
+      "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+      "sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+      "bytes": 7851,
+      "static_module_hint": "Complexity.Computability.PCP.Encoded.Cloud",
+      "expected_native_module": "Complexity.Computability.PCP.Encoded.Cloud",
+      "source_root_prefix": "",
+      "project": ".",
+      "original_import_hints": [
+        "Complexity.Computability.PCP.Encoded.Basic",
+        "Complexity.Computability.PCP.DegreeReduction",
+        "Mathlib.Data.List.NodupEquivFin",
+        "Complexity.Tactic.PolyTime",
+        "Mathlib.Data.List.GetD",
+        "Mathlib.Data.List.ProdSigma"
+      ],
+      "options": {
+        "weak.linter.mathlibStandardSet": true,
+        "weak.linter.flexible": true,
+        "weak.linter.pythonStyle": false,
+        "weak.linter.checkInitImports": false,
+        "weak.linter.allScriptsDocumented": false,
+        "weak.linter.unicodeLinter": false,
+        "autoImplicit": false
+      },
+      "candidate_head_ids": [
+        "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3036-3044:polytime",
+        "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3504-3512:polytime",
+        "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418:Complexity/Computability/PCP/Encoded/Cloud.lean:3973-3981:polytime"
+      ]
+    },
+    {
+      "file_id": "d987691c1f379bd3",
+      "path": "ComplexityTests/CodeComposition.lean",
+      "sha256": "cfa2662a083565c3b2dc095e8e2420baeb897d4570f15367408aa40809bd8dba",
+      "bytes": 6603,
+      "static_module_hint": "ComplexityTests.CodeComposition",
+      "expected_native_module": "ComplexityTests.CodeComposition",
+      "source_root_prefix": "",
+      "project": ".",
+      "original_import_hints": [
+        "Complexity.Computability.Circuit.Boolean.CodeComposition",
+        "Complexity.Computability.Circuit.Boolean.CarrySave",
+        "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain"
+      ],
+      "options": {
+        "weak.linter.mathlibStandardSet": true,
+        "weak.linter.flexible": true,
+        "weak.linter.pythonStyle": false,
+        "weak.linter.checkInitImports": false,
+        "weak.linter.allScriptsDocumented": false,
+        "weak.linter.unicodeLinter": false,
+        "autoImplicit": false,
+        "weak.linter.style.header": false
+      },
+      "candidate_head_ids": [
+        "cfa2662a083565c3b2dc095e8e2420baeb897d4570f15367408aa40809bd8dba:ComplexityTests/CodeComposition.lean:4751-4759:fun_prop"
+      ]
+    }
+  ],
+  "candidates": 4,
+  "state": "PREPARED_NOT_EXECUTED_ORIGINAL_LAKE_OPTIONS",
+  "prior_strict_plan": "dae3a4b1:evidence/1155/current-5bff/survey/plan.json"
+}

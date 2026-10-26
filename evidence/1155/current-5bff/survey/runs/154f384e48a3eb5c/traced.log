@@ -1,0 +1,414 @@
+(136, 33, true)
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/154f384e48a3eb5c/traced/ComplexityTests/PCPEncodedCompositionEnumeration.lean:36:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: (136, 33, true)
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+false
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/154f384e48a3eb5c/traced/ComplexityTests/PCPEncodedCompositionEnumeration.lean:41:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: false
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated)
+      (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated)
+      (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated) (Graph.encoding (encPi (encPi encBool)))
+          (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.14684):
+      [aesop] ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated) (Graph.encoding (encPi (encPi encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated)
+      (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime (fun g => g.composeEnumerated) (Graph.encoding (encPi (encPi encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun g => g.composeEnumerated) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                     now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+        [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun g => g.composeEnumerated) (Graph.encoding (encPi (encPi encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => (graph x).composeEnumerated) input (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+               trying again after decomposing function as: `(fun x2 => x2.composeEnumerated) ∘ (fun x => graph x)`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated]
+          [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding ?constraintEncoding) (Graph.encoding ?constraintEncoding)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] @Graph.isPolyTime_composeEnumerated, failed to infer `(?constraintEncoding : (α →
+                    α → Bool) ↪
+                  List Bool)`
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+              ComputableInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+                (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+            (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => graph x) input ?encB
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => graph x) input ?encB
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+              ComputableInPolyTime (fun x => graph x) input ?encB
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun x => graph x) input ?encB
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (graph x).composeEnumerated) input (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+               trying again after decomposing function as: `(fun x2 => x2.composeEnumerated) ∘ (fun x => graph x)`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated]
+          [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding ?constraintEncoding) (Graph.encoding ?constraintEncoding)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] @Graph.isPolyTime_composeEnumerated, failed to infer `(?constraintEncoding : (α →
+                    α → Bool) ↪
+                  List Bool)`
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+              ComputableInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+                (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+            (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => graph x) input (Graph.encoding constraints)
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding constraints)
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding constraints)
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding constraints) (Graph.encoding constraints)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun x =>
+        let g := graph x;
+        g.composeEnumerated)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        α Input : Type
+        inst✝ : FinEnum α
+        input : Input ↪ List Bool
+        constraints : (α → α → Bool) ↪ List Bool
+        graph : Input → Graph (α → α → Bool)
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+        ⊢ ComputableTidilyInPolyTime
+            (fun x =>
+              let g := graph x;
+              g.composeEnumerated)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α Input : Type
+        inst✝ : FinEnum α
+        input : Input ↪ List Bool
+        constraints : (α → α → Bool) ↪ List Bool
+        graph : Input → Graph (α → α → Bool)
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+        ⊢ ComputableTidilyInPolyTime
+            (fun x =>
+              let g := graph x;
+              g.composeEnumerated)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun x =>
+        let g := graph x;
+        g.composeEnumerated)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] α Input : Type
+      inst : FinEnum α
+      input : Input ↪ List Bool
+      constraints : (α → α → Bool) ↪ List Bool
+      graph : Input → Graph (α → α → Bool)
+      hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+      ⊢ ComputableTidilyInPolyTime
+          (fun x =>
+            let g := graph x;
+            g.composeEnumerated)
+          input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.20989):
+      [aesop] α Input : Type
+          inst : FinEnum α
+          input : Input ↪ List Bool
+          constraints : (α → α → Bool) ↪ List Bool
+          graph : Input → Graph (α → α → Bool)
+          hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+          ⊢ ComputableTidilyInPolyTime
+              (fun x =>
+                let g := graph x;
+                g.composeEnumerated)
+              input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun x =>
+        let g := graph x;
+        g.composeEnumerated)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        α Input : Type
+        inst : FinEnum α
+        input : Input ↪ List Bool
+        constraints : (α → α → Bool) ↪ List Bool
+        graph : Input → Graph (α → α → Bool)
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+        ⊢ ComputableTidilyInPolyTime
+            (fun x =>
+              let g := graph x;
+              g.composeEnumerated)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] α Input : Type
+          inst : FinEnum α
+          input : Input ↪ List Bool
+          constraints : (α → α → Bool) ↪ List Bool
+          graph : Input → Graph (α → α → Bool)
+          hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+          ⊢ ComputableTidilyInPolyTime (fun x => (graph x).composeEnumerated) input
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α Input : Type
+        inst : FinEnum α
+        input : Input ↪ List Bool
+        constraints : (α → α → Bool) ↪ List Bool
+        graph : Input → Graph (α → α → Bool)
+        hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+        ⊢ ComputableTidilyInPolyTime (fun x => (graph x).composeEnumerated) input
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α Input : Type
+          inst : FinEnum α
+          input : Input ↪ List Bool
+          constraints : (α → α → Bool) ↪ List Bool
+          graph : Input → Graph (α → α → Bool)
+          hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+          ⊢ ComputableTidilyInPolyTime (fun x => (graph x).composeEnumerated) input
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (graph x).composeEnumerated) input (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                     trying again after decomposing function as: `(fun x2 => x2.composeEnumerated) ∘ (fun x => graph x)`
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+                    (Graph.encoding (encPi (encPi encBool)))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated]
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding ?constraintEncoding) (Graph.encoding ?constraintEncoding)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] @Graph.isPolyTime_composeEnumerated, failed to infer `(?constraintEncoding : (α →
+                          α → Bool) ↪
+                        List Bool)`
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                        if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                    ComputableInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+                      (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+                ComputableTidilyInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding ?constraintEncoding)
+                  (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => graph x) input (Graph.encoding constraints)
+            [Meta.Tactic.fun_prop] candidate local theorems for graph #[hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)]
+            [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInPolyTime graph input (Graph.encoding constraints)
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding constraints)
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.composeEnumerated`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x2 => x2.composeEnumerated) (Graph.encoding constraints)
+                    (Graph.encoding (encPi (encPi encBool)))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.composeEnumerated #[Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_composeEnumerated
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding constraints) (Graph.encoding constraints)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

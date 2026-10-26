@@ -1,0 +1,269 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime some enc (encOption enc)
+  [Meta.Tactic.fun_prop] candidate theorems for Option.some #[Turing.MultiTapeTM.ComputableInPolyTime.optionSome]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionSome
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (value x).isSome) a encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Option.isSome #[Turing.MultiTapeTM.ComputableInPolyTime.optionIsSome]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionIsSome
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime value a (encOption b)
+      [Meta.Tactic.fun_prop] candidate local theorems for value #[hvalue : ComputableInPolyTime value a (encOption b)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalue : ComputableInPolyTime value a (encOption b)
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.1.getD p.2) (encPair (encOption enc) enc) enc
+  [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput, Turing.MultiTapeTM.ComputableInPolyTime.optionGetD]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encOption enc) enc) (encOption enc)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encOption enc) enc) enc
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.1.getD p.2) (encPair (encOption enc) enc) enc
+  [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput, Turing.MultiTapeTM.ComputableInPolyTime.optionGetD]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encOption enc) enc) (encOption enc)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encOption enc) enc) enc
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (value x).isSome) a encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Option.isSome #[Turing.MultiTapeTM.ComputableInPolyTime.optionIsSome]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionIsSome
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime value a (encOption e)
+      [Meta.Tactic.fun_prop] candidate local theorems for value #[hvalue : ComputableInPolyTime value a (encOption e)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalue : ComputableInPolyTime value a (encOption e)
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (value x).getD (fallback x)) a b
+  [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput, Turing.MultiTapeTM.ComputableInPolyTime.optionGetD]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime value a (encOption b)
+      [Meta.Tactic.fun_prop] candidate local theorems for value #[hvalue : ComputableInPolyTime value a (encOption b)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalue : ComputableInPolyTime value a (encOption b)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime fallback a b
+      [Meta.Tactic.fun_prop] candidate local theorems for fallback #[hfallback : ComputableInPolyTime fallback a b]
+      [Meta.Tactic.fun_prop] ✅️ applying: hfallback : ComputableInPolyTime fallback a b
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (value x).elim (fallback x) (body x)) a c
+  [Meta.Tactic.fun_prop] candidate theorems for Option.elim #[Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime value a (encOption b)
+      [Meta.Tactic.fun_prop] candidate local theorems for value #[hvalue : ComputableInPolyTime value a (encOption b)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalue : ComputableInPolyTime value a (encOption b)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime fallback a c
+      [Meta.Tactic.fun_prop] candidate local theorems for fallback #[hfallback : ComputableInPolyTime fallback a c]
+      [Meta.Tactic.fun_prop] ✅️ applying: hfallback : ComputableInPolyTime fallback a c
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => body p.1 p.2) (encPair a b) c
+      [Meta.Tactic.fun_prop] candidate local theorems for body #[hbody : ComputableInPolyTime (fun p => body p.1 p.2) (encPair a b) c]
+      [Meta.Tactic.fun_prop] ✅️ applying: hbody : ComputableInPolyTime (fun p => body p.1 p.2) (encPair a b) c
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (value x).elim (fallback x) fun y => (x, y)) a (encPair a b)
+  [Meta.Tactic.fun_prop] candidate theorems for Option.elim #[Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime value a (encOption b)
+      [Meta.Tactic.fun_prop] candidate local theorems for value #[hvalue : ComputableInPolyTime value a (encOption b)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalue : ComputableInPolyTime value a (encOption b)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime fallback a (encPair a b)
+      [Meta.Tactic.fun_prop] candidate local theorems for fallback #[hfallback : ComputableInPolyTime fallback a (encPair a b)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hfallback : ComputableInPolyTime fallback a (encPair a b)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => (p.1, p.2)) (encPair a b) (encPair a b)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair a b) a
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair a b) b
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (value x).elim (fallback x) (body x)) a c
+  [Meta.Tactic.fun_prop] candidate theorems for Option.elim #[Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime value a (encOption e)
+      [Meta.Tactic.fun_prop] candidate local theorems for value #[hvalue : ComputableInPolyTime value a (encOption e)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalue : ComputableInPolyTime value a (encOption e)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime fallback a c
+      [Meta.Tactic.fun_prop] candidate local theorems for fallback #[hfallback : ComputableInPolyTime fallback a c]
+      [Meta.Tactic.fun_prop] ✅️ applying: hfallback : ComputableInPolyTime fallback a c
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => body p.1 p.2) (encPair a e) c
+      [Meta.Tactic.fun_prop] candidate local theorems for body #[hbody : ComputableInPolyTime (fun p => body p.1 p.2) (encPair a e) c]
+      [Meta.Tactic.fun_prop] ✅️ applying: hbody : ComputableInPolyTime (fun p => body p.1 p.2) (encPair a e) c
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (_value x).getD (_fallback x)) _a _b
+  [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput, Turing.MultiTapeTM.ComputableInPolyTime.optionGetD]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime _value _a (encOption _b)
+      [Meta.Tactic.fun_prop] candidate local theorems for _value #[_hvalue : ComputableInPolyTime _value _a (encOption _b)]
+      [Meta.Tactic.fun_prop] ✅️ applying: _hvalue : ComputableInPolyTime _value _a (encOption _b)
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime _fallback _a _b
+      [Meta.Tactic.fun_prop] candidate local theorems for _fallback #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.optionGetDWithInput, failed to discharge hypotheses
+          ComputableInPolyTime _fallback _a _b
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.optionGetD as:
+                         (fun x1x2 => x1x2.1.getD x1x2.2) ∘ (fun x => (_value x, _fallback x))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (_value x, _fallback x)) _a (encPair (encOption _b) ?enc₂✝)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime _value _a (encOption _b)
+          [Meta.Tactic.fun_prop] candidate local theorems for _value #[_hvalue : ComputableInPolyTime _value _a (encOption _b)]
+          [Meta.Tactic.fun_prop] ✅️ applying: _hvalue : ComputableInPolyTime _value _a (encOption _b)
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime _fallback _a ?enc₂
+          [Meta.Tactic.fun_prop] candidate local theorems for _fallback #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+              ComputableInPolyTime _fallback _a ?enc₂
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+              PairEncoding ?enc₁ ?enc₂ (encPair (encOption _b) ?enc₂✝)
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+              PairEncoding ?enc₁ ?enc₂ (encPair (encOption _b) ?enc₂✝)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x => (_value x, _fallback x)) _a (encPair (encOption _b) ?enc₂✝)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2) (encPair (encOption _b) _b) _b
+      [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput, Turing.MultiTapeTM.ComputableInPolyTime.optionGetD]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.fst (encPair (encOption _b) ?enc₂) (encOption _b)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst, failed to infer `(?enc₂ : β ↪ List Bool)`
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.fst`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.optionGetDWithInput, failed to discharge hypotheses
+              ComputableInPolyTime Prod.fst (encPair (encOption _b) ?enc₂) (encOption _b)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionGetD
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (_value x, _fallback x)) _a (encPair (encOption _b) _b)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime _value _a (encOption _b)
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime _value _a (encOption _b)
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime _fallback _a _b
+          [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime _fallback _a
+                _b was tried already and failed
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+              ComputableInPolyTime _fallback _a _b
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+              PairEncoding ?enc₁ ?enc₂ (encPair (encOption _b) _b)
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+              PairEncoding ?enc₁ ?enc₂ (encPair (encOption _b) _b)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x => (_value x, _fallback x)) _a (encPair (encOption _b) _b)
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Option.getD`
+               trying again after decomposing function as: `(fun x1x2 => x1x2.1.getD x1x2.2) ∘ (fun x => (_value x, _fallback x))`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (_value x, _fallback x)) _a (encPair (encOption _b) ?enc₂✝)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime _value _a (encOption _b)
+          [Meta.Tactic.fun_prop] candidate local theorems for _value #[_hvalue : ComputableInPolyTime _value _a (encOption _b)]
+          [Meta.Tactic.fun_prop] ✅️ applying: _hvalue : ComputableInPolyTime _value _a (encOption _b)
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime _fallback _a ?enc₂
+          [Meta.Tactic.fun_prop] candidate local theorems for _fallback #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+              ComputableInPolyTime _fallback _a ?enc₂
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+              PairEncoding ?enc₁ ?enc₂ (encPair (encOption _b) ?enc₂✝)
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+              PairEncoding ?enc₁ ?enc₂ (encPair (encOption _b) ?enc₂✝)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x => (_value x, _fallback x)) _a (encPair (encOption _b) ?enc₂✝)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2) (encPair (encOption _b) _b) _b
+      [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput, Turing.MultiTapeTM.ComputableInPolyTime.optionGetD]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.fst (encPair (encOption _b) ?enc₂) (encOption _b)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst, failed to infer `(?enc₂ : β ↪ List Bool)`
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.fst`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.optionGetDWithInput, failed to discharge hypotheses
+              ComputableInPolyTime Prod.fst (encPair (encOption _b) ?enc₂) (encOption _b)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionGetD
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (_value x, _fallback x)) _a (encPair (encOption _b) _b)
+      [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime (fun x => (_value x, _fallback x)) _a
+            (encPair (encOption _b) _b) was tried already and failed
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x => (_value x, _fallback x)) _a (encPair (encOption _b) _b)
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (_value x).elim (_fallback x) (_body x)) _a _c
+  [Meta.Tactic.fun_prop] candidate theorems for Option.elim #[Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime _value _a (encOption _b)
+      [Meta.Tactic.fun_prop] candidate local theorems for _value #[_hvalue : ComputableInPolyTime _value _a (encOption _b)]
+      [Meta.Tactic.fun_prop] ✅️ applying: _hvalue : ComputableInPolyTime _value _a (encOption _b)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime _fallback _a _c
+      [Meta.Tactic.fun_prop] candidate local theorems for _fallback #[_hfallback : ComputableInPolyTime _fallback _a _c]
+      [Meta.Tactic.fun_prop] ✅️ applying: _hfallback : ComputableInPolyTime _fallback _a _c
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun p => _body p.1 p.2) (encPair _a _b) _c
+      [Meta.Tactic.fun_prop] candidate local theorems for _body #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.optionElimWithInput, failed to discharge hypotheses
+          ComputableInPolyTime (fun p => _body p.1 p.2) (encPair _a _b) _c
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Option.elim`
+               trying again after decomposing function as: `(fun x2x3x4 => x2x3x4.1.elim x2x3x4.2.1 x2x3x4.2.2) ∘ (fun x => (_value x, _fallback x, _body x))`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (_value x, _fallback x, _body x)) _a (encPair (encOption _b) (encPair _c ?enc₂✝))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime _value _a (encOption _b)
+          [Meta.Tactic.fun_prop] candidate local theorems for _value #[_hvalue : ComputableInPolyTime _value _a (encOption _b)]
+          [Meta.Tactic.fun_prop] ✅️ applying: _hvalue : ComputableInPolyTime _value _a (encOption _b)
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (_fallback a, _body a)) _a (encPair _c ?enc₂✝)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime _fallback _a _c
+              [Meta.Tactic.fun_prop] candidate local theorems for _fallback #[_hfallback : ComputableInPolyTime _fallback _a _c]
+              [Meta.Tactic.fun_prop] ✅️ applying: _hfallback : ComputableInPolyTime _fallback _a _c
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime _body _a ?enc₂
+              [Meta.Tactic.fun_prop] candidate local theorems for _body #[]
+              [Meta.Tactic.fun_prop] candidate transition theorems: []
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                  ComputableInPolyTime _body _a ?enc₂
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                  PairEncoding ?enc₁ ?enc₂ (encPair _c ?enc₂✝)
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                  PairEncoding ?enc₁ ?enc₂ (encPair _c ?enc₂✝)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+              ComputableInPolyTime (fun a => (_fallback a, _body a)) _a (encPair _c ?enc₂✝)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+              PairEncoding ?enc₁ ?enc₂ (encPair (encOption _b) (encPair _c ?enc₂✝))
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+              PairEncoding ?enc₁ ?enc₂ (encPair (encOption _b) (encPair _c ?enc₂✝))
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x => (_value x, _fallback x, _body x)) _a
+            (encPair (encOption _b) (encPair _c ?enc₂✝))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2x3x4 => x2x3x4.1.elim x2x3x4.2.1 x2x3x4.2.2) (encPair (encOption ?encB) ?enc₂) _c
+      [Meta.Tactic.fun_prop] candidate theorems for Option.elim #[Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.fst (encPair (encOption ?encB) ?enc₂) (encOption ?encB)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst, failed to infer `(?enc₂ : γ × (β → γ) ↪ List Bool)`
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.fst`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.optionElimWithInput, failed to discharge hypotheses
+              ComputableInPolyTime Prod.fst (encPair (encOption ?encB) ?enc₂) (encOption ?encB)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Option.elim`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x2x3x4 => x2x3x4.1.elim x2x3x4.2.1 x2x3x4.2.2) (encPair (encOption ?encB) ?enc₂) _c

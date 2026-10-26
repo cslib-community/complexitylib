@@ -1,0 +1,14 @@
+'Cslib.Circuits.Boolean.Layered.eval_padTo' depends on axioms: [propext, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/25f965d827f03c6d/import-only/ComplexityTests/CircuitLayerPadding.lean:68:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Circuits.Boolean.Layered.eval_padTo' depends on axioms: [propext, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Circuits.Boolean.Layered.WellFormed.padTo' depends on axioms: [propext, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/25f965d827f03c6d/import-only/ComplexityTests/CircuitLayerPadding.lean:74:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Circuits.Boolean.Layered.WellFormed.padTo' depends on axioms: [propext, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

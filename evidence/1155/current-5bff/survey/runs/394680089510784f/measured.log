@@ -1,0 +1,18 @@
+'Turing.MultiTapeTM.ComputableInPolyTime.unary_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/394680089510784f/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeNatFrontends.lean:73:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Turing.MultiTapeTM.ComputableInPolyTime.unary_le' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Turing.MultiTapeTM.ComputableInPolyTime.unary_le' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInPolyTime.binary_testBit' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/394680089510784f/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeNatFrontends.lean:80:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Turing.MultiTapeTM.ComputableInPolyTime.binary_testBit' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Turing.MultiTapeTM.ComputableInPolyTime.binary_testBit' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

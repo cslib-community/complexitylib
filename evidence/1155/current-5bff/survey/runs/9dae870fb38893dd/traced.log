@@ -1,0 +1,2 @@
+[Meta.Tactic.fun_prop] ✅️ Probability.IsPPTOn MultiTapeTM.encBool MultiTapeTM.encBool fun x => ProbComp.uniform Bool
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.isPPTOn_uniform_bool

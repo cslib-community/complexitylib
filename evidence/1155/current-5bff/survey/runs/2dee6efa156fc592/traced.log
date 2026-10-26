@@ -1,0 +1,1382 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input
+      encUnary
+  [aesop] Initial goal:
+        case hcount
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hcount
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input
+      encUnary
+  [aesop] case hcount
+      α : Type
+      input : α ↪ List Bool
+      trial : α → ProbComp Bool
+      confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+      htrial : IsPPTOn input encBool trial
+      hconfidence : ComputableInPolyTime confidence input encUnary
+      htolerance : ComputableInPolyTime inverseTolerance input encUnary
+      hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+      hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+      hrateNum : ComputableInPolyTime rateNumerator input encUnary
+      hrateDen : ComputableInPolyTime rateDenominator input encUnary
+      ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.6897.41):
+      [aesop] case hcount
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          hrateNum : ComputableInPolyTime rateNumerator input encUnary
+          hrateDen : ComputableInPolyTime rateDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input
+      encUnary
+  [aesop] Initial goal:
+        case hcount
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hcount
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hcount
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          hrateNum : ComputableInPolyTime rateNumerator input encUnary
+          hrateDen : ComputableInPolyTime rateDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                               (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (confidence a + 1, inverseTolerance a ^ 2))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (confidence a + 1, inverseTolerance a ^ 2)) input (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => confidence a + 1) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_succ as:
+                                       (fun a4 => a4 + 1) ∘ (fun a => confidence a)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => confidence a) input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for confidence #[hconfidence : ComputableInPolyTime confidence input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hconfidence : ComputableInPolyTime confidence input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4 => a4 + 1) encUnary encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_succ
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => inverseTolerance a ^ 2) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableInPolyTime.unary_pow]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_pow as:
+                                       (fun a4 => a4 ^ 2) ∘ (fun a => inverseTolerance a)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => inverseTolerance a) input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for inverseTolerance #[htolerance : ComputableInPolyTime inverseTolerance input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: htolerance : ComputableInPolyTime inverseTolerance input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4 => a4 ^ 2) encUnary encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableInPolyTime.unary_pow]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_pow
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input encUnary
+  [aesop] Initial goal:
+        case hnumerator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hnumerator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input encUnary
+  [aesop] case hnumerator
+      α : Type
+      input : α ↪ List Bool
+      trial : α → ProbComp Bool
+      confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+      htrial : IsPPTOn input encBool trial
+      hconfidence : ComputableInPolyTime confidence input encUnary
+      htolerance : ComputableInPolyTime inverseTolerance input encUnary
+      hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+      hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+      hrateNum : ComputableInPolyTime rateNumerator input encUnary
+      hrateDen : ComputableInPolyTime rateDenominator input encUnary
+      ⊢ ComputableInPolyTime (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.6897.42):
+      [aesop] case hnumerator
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          hrateNum : ComputableInPolyTime rateNumerator input encUnary
+          hrateDen : ComputableInPolyTime rateDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input
+              encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input encUnary
+  [aesop] Initial goal:
+        case hnumerator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hnumerator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hnumerator
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          hrateNum : ComputableInPolyTime rateNumerator input encUnary
+          hrateDen : ComputableInPolyTime rateDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input
+              encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => densityNumerator a * (32 * rateDenominator a + rateNumerator a)) input encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                               (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (densityNumerator a, 32 * rateDenominator a + rateNumerator a))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (densityNumerator a, 32 * rateDenominator a + rateNumerator a)) input
+                (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime densityNumerator input encUnary
+                [Meta.Tactic.fun_prop] candidate local theorems for densityNumerator #[hdensityNum : ComputableInPolyTime densityNumerator input encUnary]
+                [Meta.Tactic.fun_prop] ✅️ applying: hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 32 * rateDenominator a + rateNumerator a) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_add as:
+                                       (fun a4a5 => a4a5.1 + a4a5.2) ∘ (fun a => (32 * rateDenominator a, rateNumerator a))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (32 * rateDenominator a, rateNumerator a)) input (encPair encUnary encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 32 * rateDenominator a) input encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                             (fun y => y.1 * y.2) ∘ (fun a => (32, rateDenominator a))
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (32, rateDenominator a)) input (encPair ?enc₁✝ ?enc₂✝)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 32) input ?enc₁
+                                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁ : ℕ ↪
+                                        List Bool)`
+                                [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                                [Meta.Tactic.fun_prop] candidate transition theorems: []
+                              [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                                    ComputableInPolyTime (fun a => 32) input ?enc₁
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                              [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                                    PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                              [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                                    PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                         trying again after decomposing function as: `(fun a3 => (32, a3)) ∘ (fun a => rateDenominator a)`
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => rateDenominator a) input encUnary
+                                [Meta.Tactic.fun_prop] candidate local theorems for rateDenominator #[hrateDen : ComputableInPolyTime rateDenominator input encUnary]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hrateDen : ComputableInPolyTime rateDenominator input encUnary
+                              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a3 => (32, a3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+                                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 32) encUnary ?enc₁✝
+                                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁✝ : ℕ ↪
+                                            List Bool)`
+                                    [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                                        ComputableInPolyTime (fun a => 32) encUnary ?enc₁✝
+                                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                                [Meta.Tactic.fun_prop] candidate transition theorems: []
+                              [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                                    ComputableInPolyTime (fun a3 => (32, a3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+                              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a3 => (32, a3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+                                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 32) ?encMid ?enc₁✝
+                                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?encMid : ℕ ↪
+                                            List Bool)`
+                                    [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                                        ComputableInPolyTime (fun a => 32) ?encMid ?enc₁✝
+                                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                                [Meta.Tactic.fun_prop] candidate transition theorems: []
+                              [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                                    ComputableInPolyTime (fun a3 => (32, a3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                                ComputableInPolyTime (fun a => (32, rateDenominator a)) input (encPair ?enc₁✝ ?enc₂✝)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (32, rateDenominator a)) input (encPair encUnary encUnary)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 32) input encUnary
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rateDenominator input encUnary
+                                [Meta.Tactic.fun_prop] candidate local theorems for rateDenominator #[hrateDen : ComputableInPolyTime rateDenominator input encUnary]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hrateDen : ComputableInPolyTime rateDenominator input encUnary
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rateNumerator input encUnary
+                        [Meta.Tactic.fun_prop] candidate local theorems for rateNumerator #[hrateNum : ComputableInPolyTime rateNumerator input encUnary]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hrateNum : ComputableInPolyTime rateNumerator input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 + a4a5.2) (encPair encUnary encUnary) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_add
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input
+      encUnary
+  [aesop] Initial goal:
+        case hdenominator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hdenominator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input
+      encUnary
+  [aesop] case hdenominator
+      α : Type
+      input : α ↪ List Bool
+      trial : α → ProbComp Bool
+      confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+      htrial : IsPPTOn input encBool trial
+      hconfidence : ComputableInPolyTime confidence input encUnary
+      htolerance : ComputableInPolyTime inverseTolerance input encUnary
+      hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+      hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+      hrateNum : ComputableInPolyTime rateNumerator input encUnary
+      hrateDen : ComputableInPolyTime rateDenominator input encUnary
+      ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.6897.43):
+      [aesop] case hdenominator
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          hrateNum : ComputableInPolyTime rateNumerator input encUnary
+          hrateDen : ComputableInPolyTime rateDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input
+      encUnary
+  [aesop] Initial goal:
+        case hdenominator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hdenominator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        hrateNum : ComputableInPolyTime rateNumerator input encUnary
+        hrateDen : ComputableInPolyTime rateDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hdenominator
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator rateNumerator rateDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          hrateNum : ComputableInPolyTime rateNumerator input encUnary
+          hrateDen : ComputableInPolyTime rateDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 32 * densityDenominator a * rateDenominator a) input encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                               (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (32 * densityDenominator a, rateDenominator a))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (32 * densityDenominator a, rateDenominator a)) input (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                     (fun y => y.1 * y.2) ∘ (fun a => (32, densityDenominator a))
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (32, densityDenominator a)) input (encPair ?enc₁✝ ?enc₂✝)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 32) input ?enc₁
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+                        [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                     now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                        [Meta.Tactic.fun_prop] candidate transition theorems: []
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                            ComputableInPolyTime (fun a => 32) input ?enc₁
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                            PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                            PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                 trying again after decomposing function as: `(fun a3 => (32, a3)) ∘ (fun a => densityDenominator a)`
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => densityDenominator a) input encUnary
+                        [Meta.Tactic.fun_prop] candidate local theorems for densityDenominator #[hdensityDen : ComputableInPolyTime densityDenominator input encUnary]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+                      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a3 => (32, a3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 32) encUnary ?enc₁✝
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                              [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁✝ : ℕ ↪
+                                    List Bool)`
+                            [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                         now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                            [Meta.Tactic.fun_prop] candidate transition theorems: []
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                                ComputableInPolyTime (fun a => 32) encUnary ?enc₁✝
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                                PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                                PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                     now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                        [Meta.Tactic.fun_prop] candidate transition theorems: []
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                            ComputableInPolyTime (fun a3 => (32, a3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+                      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a3 => (32, a3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 32) ?encMid ?enc₁✝
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                              [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?encMid : ℕ ↪
+                                    List Bool)`
+                            [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                         now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                            [Meta.Tactic.fun_prop] candidate transition theorems: []
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                                ComputableInPolyTime (fun a => 32) ?encMid ?enc₁✝
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                                PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                                PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                     now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                        [Meta.Tactic.fun_prop] candidate transition theorems: []
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                            ComputableInPolyTime (fun a3 => (32, a3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                        ComputableInPolyTime (fun a => (32, densityDenominator a)) input (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (32, densityDenominator a)) input (encPair encUnary encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 32) input encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime densityDenominator input encUnary
+                        [Meta.Tactic.fun_prop] candidate local theorems for densityDenominator #[hdensityDen : ComputableInPolyTime densityDenominator input encUnary]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rateDenominator input encUnary
+                [Meta.Tactic.fun_prop] candidate local theorems for rateDenominator #[hrateDen : ComputableInPolyTime rateDenominator input encUnary]
+                [Meta.Tactic.fun_prop] ✅️ applying: hrateDen : ComputableInPolyTime rateDenominator input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input
+      encUnary
+  [aesop] Initial goal:
+        case hcount
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hcount
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input
+      encUnary
+  [aesop] case hcount
+      α : Type
+      input : α ↪ List Bool
+      trial : α → ProbComp Bool
+      confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+      htrial : IsPPTOn input encBool trial
+      hconfidence : ComputableInPolyTime confidence input encUnary
+      htolerance : ComputableInPolyTime inverseTolerance input encUnary
+      hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+      hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+      ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.6988.37):
+      [aesop] case hcount
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input
+      encUnary
+  [aesop] Initial goal:
+        case hcount
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hcount
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hcount
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (confidence a + 1) * inverseTolerance a ^ 2) input encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                               (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (confidence a + 1, inverseTolerance a ^ 2))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (confidence a + 1, inverseTolerance a ^ 2)) input (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => confidence a + 1) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_succ as:
+                                       (fun a4 => a4 + 1) ∘ (fun a => confidence a)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => confidence a) input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for confidence #[hconfidence : ComputableInPolyTime confidence input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hconfidence : ComputableInPolyTime confidence input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4 => a4 + 1) encUnary encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_succ
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => inverseTolerance a ^ 2) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableInPolyTime.unary_pow]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_pow as:
+                                       (fun a4 => a4 ^ 2) ∘ (fun a => inverseTolerance a)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => inverseTolerance a) input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for inverseTolerance #[htolerance : ComputableInPolyTime inverseTolerance input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: htolerance : ComputableInPolyTime inverseTolerance input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4 => a4 ^ 2) encUnary encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableInPolyTime.unary_pow]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_pow
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+  [aesop] Initial goal:
+        case hnumerator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hnumerator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+  [aesop] case hnumerator
+      α : Type
+      input : α ↪ List Bool
+      trial : α → ProbComp Bool
+      confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+      htrial : IsPPTOn input encBool trial
+      hconfidence : ComputableInPolyTime confidence input encUnary
+      htolerance : ComputableInPolyTime inverseTolerance input encUnary
+      hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+      hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+      ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.6988.38):
+      [aesop] case hnumerator
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+  [aesop] Initial goal:
+        case hnumerator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hnumerator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hnumerator
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 13 * densityNumerator a) input encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                             (fun y => y.1 * y.2) ∘ (fun a => (13, densityNumerator a))
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (13, densityNumerator a)) input (encPair ?enc₁✝ ?enc₂✝)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 13) input ?enc₁
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+                [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                    ComputableInPolyTime (fun a => 13) input ?enc₁
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                    PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                    PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                         trying again after decomposing function as: `(fun a3 => (13, a3)) ∘ (fun a => densityNumerator a)`
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => densityNumerator a) input encUnary
+                [Meta.Tactic.fun_prop] candidate local theorems for densityNumerator #[hdensityNum : ComputableInPolyTime densityNumerator input encUnary]
+                [Meta.Tactic.fun_prop] ✅️ applying: hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a3 => (13, a3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 13) encUnary ?enc₁✝
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁✝ : ℕ ↪ List Bool)`
+                    [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                        ComputableInPolyTime (fun a => 13) encUnary ?enc₁✝
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                    ComputableInPolyTime (fun a3 => (13, a3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a3 => (13, a3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 13) ?encMid ?enc₁✝
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?encMid : ℕ ↪ List Bool)`
+                    [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                        ComputableInPolyTime (fun a => 13) ?encMid ?enc₁✝
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                    ComputableInPolyTime (fun a3 => (13, a3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+          [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                ComputableInPolyTime (fun a => (13, densityNumerator a)) input (encPair ?enc₁✝ ?enc₂✝)
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (13, densityNumerator a)) input (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 13) input encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime densityNumerator input encUnary
+                [Meta.Tactic.fun_prop] candidate local theorems for densityNumerator #[hdensityNum : ComputableInPolyTime densityNumerator input encUnary]
+                [Meta.Tactic.fun_prop] ✅️ applying: hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+  [aesop] Initial goal:
+        case hdenominator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hdenominator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+  [aesop] case hdenominator
+      α : Type
+      input : α ↪ List Bool
+      trial : α → ProbComp Bool
+      confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+      htrial : IsPPTOn input encBool trial
+      hconfidence : ComputableInPolyTime confidence input encUnary
+      htolerance : ComputableInPolyTime inverseTolerance input encUnary
+      hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+      hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+      ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.6988.39):
+      [aesop] case hdenominator
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+  [aesop] Initial goal:
+        case hdenominator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hdenominator
+        α : Type
+        input : α ↪ List Bool
+        trial : α → ProbComp Bool
+        confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+        htrial : IsPPTOn input encBool trial
+        hconfidence : ComputableInPolyTime confidence input encUnary
+        htolerance : ComputableInPolyTime inverseTolerance input encUnary
+        hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+        hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+        ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hdenominator
+          α : Type
+          input : α ↪ List Bool
+          trial : α → ProbComp Bool
+          confidence inverseTolerance densityNumerator densityDenominator : α → ℕ
+          htrial : IsPPTOn input encBool trial
+          hconfidence : ComputableInPolyTime confidence input encUnary
+          htolerance : ComputableInPolyTime inverseTolerance input encUnary
+          hdensityNum : ComputableInPolyTime densityNumerator input encUnary
+          hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+          ⊢ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 32 * densityDenominator a) input encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                             (fun y => y.1 * y.2) ∘ (fun a => (32, densityDenominator a))
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (32, densityDenominator a)) input (encPair ?enc₁✝ ?enc₂✝)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 32) input ?enc₁
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+                [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                    ComputableInPolyTime (fun a => 32) input ?enc₁
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                    PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                    PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                         trying again after decomposing function as: `(fun a3 => (32, a3)) ∘ (fun a => densityDenominator a)`
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => densityDenominator a) input encUnary
+                [Meta.Tactic.fun_prop] candidate local theorems for densityDenominator #[hdensityDen : ComputableInPolyTime densityDenominator input encUnary]
+                [Meta.Tactic.fun_prop] ✅️ applying: hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a3 => (32, a3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 32) encUnary ?enc₁✝
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁✝ : ℕ ↪ List Bool)`
+                    [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                        ComputableInPolyTime (fun a => 32) encUnary ?enc₁✝
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                    ComputableInPolyTime (fun a3 => (32, a3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a3 => (32, a3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 32) ?encMid ?enc₁✝
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?encMid : ℕ ↪ List Bool)`
+                    [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                        ComputableInPolyTime (fun a => 32) ?encMid ?enc₁✝
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                    ComputableInPolyTime (fun a3 => (32, a3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+          [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                ComputableInPolyTime (fun a => (32, densityDenominator a)) input (encPair ?enc₁✝ ?enc₂✝)
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (32, densityDenominator a)) input (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 32) input encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime densityDenominator input encUnary
+                [Meta.Tactic.fun_prop] candidate local theorems for densityDenominator #[hdensityDen : ComputableInPolyTime densityDenominator input encUnary]
+                [Meta.Tactic.fun_prop] ✅️ applying: hdensityDen : ComputableInPolyTime densityDenominator input encUnary
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

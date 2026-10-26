@@ -1,0 +1,65 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => padTo p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encUnary (encList (encList encNode)))) (encList (encList encNode))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Boolean.Layered.padTo #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Circuits.Boolean.Layered.padTo`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => padTo p.1 p.2.1 p.2.2) (encPair encUnary (encPair encUnary (encList (encList encNode))))
+          (encList (encList encNode))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Boolean.Layered.padTo #[Cslib.Circuits.Boolean.Layered.computableInPolyTime_padTo]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Circuits.Boolean.Layered.computableInPolyTime_padTo
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair encUnary (encPair encUnary (encList (encList encNode)))) encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary (encPair encUnary (encList (encList encNode))))
+                  (encPair encUnary (encPair encUnary (encList (encList encNode))))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.2.1) (encPair encUnary (encPair encUnary (encList (encList encNode)))) encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair encUnary (encPair encUnary (encList (encList encNode))))
+                  (encPair encUnary (encList (encList encNode)))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary (encPair encUnary (encList (encList encNode))))
+                      (encPair encUnary (encPair encUnary (encList (encList encNode))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary (encList (encList encNode)))
+                      (encPair encUnary (encList (encList encNode)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun a => a) encUnary
+                    encUnary
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.2.2) (encPair encUnary (encPair encUnary (encList (encList encNode))))
+              (encList (encList encNode))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair encUnary (encPair encUnary (encList (encList encNode))))
+                  (encPair encUnary (encList (encList encNode)))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary (encPair encUnary (encList (encList encNode))))
+                      (encPair encUnary (encPair encUnary (encList (encList encNode))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary (encList (encList encNode)))
+                      (encPair encUnary (encList (encList encNode)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encList encNode)) (encList (encList encNode))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+'Cslib.Circuits.Boolean.Layered.eval_padTo' depends on axioms: [propext, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/25f965d827f03c6d/traced/ComplexityTests/CircuitLayerPadding.lean:70:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Circuits.Boolean.Layered.eval_padTo' depends on axioms: [propext, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Circuits.Boolean.Layered.WellFormed.padTo' depends on axioms: [propext, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/25f965d827f03c6d/traced/ComplexityTests/CircuitLayerPadding.lean:76:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Circuits.Boolean.Layered.WellFormed.padTo' depends on axioms: [propext, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

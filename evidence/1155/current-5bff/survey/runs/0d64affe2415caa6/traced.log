@@ -1,0 +1,55 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun w => w.headD false) encBits encBool
+  [Meta.Tactic.fun_prop] candidate theorems for List.headD #[Turing.MultiTapeTM.ComputableInPolyTime.headD]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.headD
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime List.tail encBits encBits
+  [Meta.Tactic.fun_prop] candidate theorems for List.tail #[Turing.MultiTapeTM.ComputableInPolyTime.bitsTail]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsTail
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n => -2 ^ n) encUnary encIntBin
+  [Meta.Tactic.fun_prop] candidate theorems for Neg.neg #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_neg]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_neg as:
+                         (fun n2 => -n2) ∘ (fun n => 2 ^ n)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n2 => -n2) encIntBin encIntBin
+      [Meta.Tactic.fun_prop] candidate theorems for Neg.neg #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_neg]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_neg
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n => 2 ^ n) encUnary encIntBin
+      [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_two_pow, Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_pow', Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_pow, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_pow', Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_pow]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_two_pow
+        [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.binary_two_pow
+            ComputableTidilyInPolyTime (fun k => 2 ^ k) encUnary encNat
+            with
+            ComputableTidilyInPolyTime (fun n => 2 ^ n) encUnary encIntBin
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_pow'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => 2) encUnary encIntBin
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encUnary encUnary
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun w => if w.headD false = true then target w.length else 0) encBits encIntBin
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_signMagnitude, Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite', Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond, Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_signMagnitude
+    [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.intBin_signMagnitude
+        ComputableTidilyInPolyTime (fun p => if p.1 = true then -↑p.2 else ↑p.2) (encPair encBool encNat) encIntBin
+        with
+        ComputableTidilyInPolyTime (fun w => if w.headD false = true then target w.length else 0) encBits encIntBin
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.headD false) encBits encBool
+      [Meta.Tactic.fun_prop] candidate theorems for List.headD #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listHeadDWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.headD]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listHeadDWithInput
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits (encList encBool)
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.id'
+                ComputableTidilyInPolyTime (fun a => a) ?encIn ?encIn
+                with
+                ComputableTidilyInPolyTime (fun a => a) encBits (encList ?encC)
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_to_binary
+            [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_to_binary
+                ComputableTidilyInPolyTime (fun n => n) encUnary encNat
+                with
+                ComputableTidilyInPolyTime (fun a => a) encBits (encList ?encC)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToList
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => target x.length) encBits encIntBin
+      [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.ZooCountingHierarchy.0.ComplexityTests.ZooCountingHierarchy.target #[]
+      [Meta.Tactic.fun_prop] candidate local theorems for _private.ComplexityTests.ZooCountingHierarchy.0.ComplexityTests.ZooCountingHierarchy.target #[htarget : ComputableTidilyInPolyTime (fun w => target w.length) encBits encIntBin]
+      [Meta.Tactic.fun_prop] ✅️ applying: htarget : ComputableTidilyInPolyTime (fun w => target w.length) encBits encIntBin
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 0) encBits encIntBin
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const

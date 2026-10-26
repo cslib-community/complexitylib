@@ -1,0 +1,7 @@
+true
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/b0c137991fa86f4f/baseline/ComplexityTests/LinearHash.lean:92:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: true
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]

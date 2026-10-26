@@ -1,0 +1,88 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun security =>
+        (Parameters.dimension security, Parameters.noise security, Parameters.width security, Parameters.rows security,
+          Parameters.samples security, Parameters.modulus security))
+      encUnary (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary encUnary)))))
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Parameters.dimension encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.dimension #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Homomorphic.GSW.Parameters.dimension`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun security => Parameters.dimension security) encUnary encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.dimension #[Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_dimension]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_dimension
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+          (fun x => (Parameters.noise x, Parameters.width x, Parameters.rows x, Parameters.samples x, Parameters.modulus x))
+          encUnary (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary encUnary))))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Parameters.noise encUnary encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.noise #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Homomorphic.GSW.Parameters.noise`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun security => Parameters.noise security) encUnary encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.noise #[Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_noise]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_noise
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+              (fun x => (Parameters.width x, Parameters.rows x, Parameters.samples x, Parameters.modulus x)) encUnary
+              (encPair encUnary (encPair encUnary (encPair encUnary encUnary)))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Parameters.width encUnary encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.width #[]
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Homomorphic.GSW.Parameters.width`
+                           now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun security => Parameters.width security) encUnary encUnary
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.width #[Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_width]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_width
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (Parameters.rows x, Parameters.samples x, Parameters.modulus x)) encUnary
+                  (encPair encUnary (encPair encUnary encUnary))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Parameters.rows encUnary encUnary
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.rows #[]
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Homomorphic.GSW.Parameters.rows`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun security => Parameters.rows security) encUnary encUnary
+                      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.rows #[Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_rows]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_rows
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (Parameters.samples x, Parameters.modulus x)) encUnary (encPair encUnary encUnary)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Parameters.samples encUnary encUnary
+                      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.samples #[]
+                      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Homomorphic.GSW.Parameters.samples`
+                                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun security => Parameters.samples security) encUnary encUnary
+                          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.samples #[Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_samples]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_samples
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Parameters.modulus encUnary encUnary
+                      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.modulus #[]
+                      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Homomorphic.GSW.Parameters.modulus`
+                                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun security => Parameters.modulus security) encUnary encUnary
+                          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Homomorphic.GSW.Parameters.modulus #[Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_modulus]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_modulus
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (n + 1) ^ 2
+  [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + 1
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.id
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const

@@ -1,0 +1,14 @@
+'Turing.MultiTapeTM.ComputableInPolyTime.binary_add' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/b943bef3f0cd82ea/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/BinaryArithmetic.lean:118:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInPolyTime.binary_add' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInPolyTime.binary_lt' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/b943bef3f0cd82ea/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/BinaryArithmetic.lean:122:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInPolyTime.binary_lt' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

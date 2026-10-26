@@ -1,0 +1,8 @@
+{
+  "uncompressed": "trace-messages.json",
+  "uncompressed_sha256": "c3bdc9853374296dcdfb88a97cd4a7aabfe9ea13f6939ffc2699062d49048a8f",
+  "uncompressed_bytes": 147044310,
+  "gzip": "trace-messages.json.gz",
+  "gzip_sha256": "33a6adee89898b2e98b5d921797498c6befe4bf0829a445e96a0e02cd1c70f85",
+  "qualification": "Lossless gzip of derived JSON to satisfy individual GitHub blob size; all raw per-file events/logs retained unchanged."
+}

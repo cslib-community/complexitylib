@@ -1,0 +1,17 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat) (encPair encGraph encNat)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1.compl) (encPair encGraph encNat) encGraph
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.compl #[Cslib.Complexity.Graph.computableTidilyInPolyTime_compl]
+      [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.Graph.computableTidilyInPolyTime_compl as:
+                             (fun x0 => x0.compl) ∘ (fun x => x.1)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => x0.compl) encGraph encGraph
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.compl #[Cslib.Complexity.Graph.computableTidilyInPolyTime_compl]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.Graph.computableTidilyInPolyTime_compl
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair encGraph encNat) encGraph
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encGraph encNat) encNat
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd

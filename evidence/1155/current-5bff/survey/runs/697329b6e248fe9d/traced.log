@@ -1,0 +1,71 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+      (fun g =>
+        have reduced := degreeReduce fallback rotate labels g;
+        addLoops (some (false, truth))
+          (addTrivial (some (false, truth)) reduced (rotationEdges rotate labels reduced.vertices)))
+      (encoding enc) (encoding (encOption (encPair encBool enc)))
+  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+        (fun g =>
+          have reduced := degreeReduce fallback rotate labels g;
+          addLoops (some (false, truth))
+            (addTrivial (some (false, truth)) reduced (rotationEdges rotate labels reduced.vertices)))
+        (encoding enc) (encoding (encOption (encPair encBool enc)))
+    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun g => degreeReduce fallback rotate labels g) (encoding enc)
+            (encoding (encOption (encPair encBool enc)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.degreeReduce #[Cslib.PCP.Encoded.Graph.isPolyTime_degreeReduce]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_degreeReduce
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)
+            [Meta.Tactic.fun_prop] candidate local theorems for rotate #[hrotate : ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)]
+            [Meta.Tactic.fun_prop] ✅️ applying: hrotate : ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+            (fun reduced =>
+              addLoops (some (false, truth))
+                (addTrivial (some (false, truth)) reduced (rotationEdges rotate labels reduced.vertices)))
+            (encoding (encOption (encPair encBool enc))) (encoding (encOption (encPair encBool enc)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addLoops #[Cslib.PCP.Encoded.Graph.isPolyTime_addLoops]
+        [Meta.Tactic.fun_prop] decomposing to later use Cslib.PCP.Encoded.Graph.isPolyTime_addLoops as:
+                               (fun reduced2 => addLoops (some (false, truth)) reduced2) ∘ (fun reduced => addTrivial (some (false, truth)) reduced (rotationEdges rotate labels reduced.vertices))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+                (fun reduced => addTrivial (some (false, truth)) reduced (rotationEdges rotate labels reduced.vertices))
+                (encoding (encOption (encPair encBool enc))) (encoding (encOption (encPair encBool enc)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addTrivial #[Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial]
+            [Meta.Tactic.fun_prop] decomposing to later use Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial as:
+                                   (fun reduced2reduced3 => addTrivial (some (false, truth)) reduced2reduced3.1 reduced2reduced3.2) ∘ (fun reduced => (reduced, rotationEdges rotate labels reduced.vertices))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun reduced => (reduced, rotationEdges rotate labels reduced.vertices))
+                    (encoding (encOption (encPair encBool enc)))
+                    (encPair (encoding (encOption (encPair encBool enc))) (encList (encPair encUnary encUnary)))
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encoding (encOption (encPair encBool enc)))
+                        (encoding (encOption (encPair encBool enc)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => rotationEdges rotate labels a.vertices) (encoding (encOption (encPair encBool enc)))
+                        (encList (encPair encUnary encUnary))
+                    [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.rotationEdges #[Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges]
+                    [Meta.Tactic.fun_prop] decomposing to later use Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges as:
+                                           (fun a3 => rotationEdges rotate labels a3) ∘ (fun a => a.vertices)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.vertices) (encoding (encOption (encPair encBool enc))) encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.vertices #[Cslib.PCP.Encoded.Graph.isPolyTime_vertices]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_vertices
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (encoding (encOption (encPair encBool enc)))
+                                (encoding (encOption (encPair encBool enc)))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a3 => rotationEdges rotate labels a3) encUnary (encList (encPair encUnary encUnary))
+                        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.rotationEdges #[Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)
+                            [Meta.Tactic.fun_prop] candidate local theorems for rotate #[hrotate : ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)]
+                            [Meta.Tactic.fun_prop] ✅️ applying: hrotate : ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun reduced2reduced3 => addTrivial (some (false, truth)) reduced2reduced3.1 reduced2reduced3.2)
+                    (encPair (encoding (encOption (encPair encBool enc))) (encList (encPair encUnary encUnary)))
+                    (encoding (encOption (encPair encBool enc)))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addTrivial #[Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun reduced2 => addLoops (some (false, truth)) reduced2)
+                (encoding (encOption (encPair encBool enc))) (encoding (encOption (encPair encBool enc)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addLoops #[Cslib.PCP.Encoded.Graph.isPolyTime_addLoops]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_addLoops

@@ -1,0 +1,79 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => Nat.clog 2 (graph x).edges.length) input encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Nat.clog #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_clog_const]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_clog_const as:
+                         (fun x1 => Nat.clog 2 x1) ∘ (fun x => (graph x).edges.length)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x1 => Nat.clog 2 x1) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Nat.clog #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_clog_const]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_clog_const
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (graph x).edges.length) input encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+        [Meta.Tactic.fun_prop] failed to unify @length_bits_comp
+            ComputableTidilyInPolyTime (fun a => List.length (?word a)) ?input encUnary
+            with
+            ComputableTidilyInPolyTime (fun x => (graph x).edges.length) input encUnary
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list as:
+                             (fun x1 => x1.length) ∘ (fun x => (graph x).edges)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x1 => x1.length) (encList ?enc✝) encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+            [Meta.Tactic.fun_prop] failed to unify @length_bits_comp
+                ComputableTidilyInPolyTime (fun a => List.length (?word a)) ?input encUnary
+                with
+                ComputableTidilyInPolyTime (fun x1 => x1.length) ?encMid encUnary
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list
+            [Meta.Tactic.fun_prop] @length_list, failed to infer `(?enc : Edge
+                    (SelectedAlphabet → SelectedAlphabet → Bool) ↪
+                  List Bool)`
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits
+            [Meta.Tactic.fun_prop] failed to unify length_bits
+                ComputableTidilyInPolyTime (fun l => l.length) encBits encUnary
+                with
+                ComputableTidilyInPolyTime (fun x1 => x1.length) (encList ?enc) encUnary
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length
+            [Meta.Tactic.fun_prop] failed to unify @encoding_length
+                ComputableTidilyInPolyTime (fun a => (?enc a).length) ?enc encUnary
+                with
+                ComputableTidilyInPolyTime (fun x1 => x1.length) (encList ?enc✝) encUnary
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `List.length`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @comp', failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x1 => x1.length) (encList ?enc✝) encUnary
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (graph x).edges) input (encList (Edge.encoding (encPi (encPi encBool))))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.edges #[]
+          [Meta.Tactic.fun_prop] candidate local theorems for Cslib.PCP.Encoded.Graph.edges #[hedges : ComputableTidilyInPolyTime (fun x => x.edges) (encoding (encPi (encPi encBool)))
+                (encList (Edge.encoding (encPi (encPi encBool))))]
+          [Meta.Tactic.fun_prop] decomposing to later use hedges : ComputableTidilyInPolyTime (fun x => x.edges) (encoding (encPi (encPi encBool)))
+                (encList (Edge.encoding (encPi (encPi encBool)))) as:
+                                 (fun x1 => x1.edges) ∘ (fun x => graph x)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x1 => x1.edges) (encoding (encPi (encPi encBool)))
+                  (encList (Edge.encoding (encPi (encPi encBool))))
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.edges #[]
+              [Meta.Tactic.fun_prop] candidate local theorems for Cslib.PCP.Encoded.Graph.edges #[hedges : ComputableTidilyInPolyTime (fun x => x.edges) (encoding (encPi (encPi encBool)))
+                    (encList (Edge.encoding (encPi (encPi encBool))))]
+              [Meta.Tactic.fun_prop] ✅️ applying: hedges : ComputableTidilyInPolyTime (fun x => x.edges) (encoding (encPi (encPi encBool)))
+                    (encList (Edge.encoding (encPi (encPi encBool))))
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => graph x) input (encoding (encPi (encPi encBool)))
+              [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableTidilyInPolyTime graph input (encoding (encPi (encPi encBool)))]
+              [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableTidilyInPolyTime graph input (encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x1 => x1.length) (encList (Edge.encoding (encPi (encPi encBool)))) encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+            [Meta.Tactic.fun_prop] failed to unify @length_bits_comp
+                ComputableTidilyInPolyTime (fun a => List.length (?word a)) ?input encUnary
+                with
+                ComputableTidilyInPolyTime (fun x1 => x1.length) (encList (Edge.encoding (encPi (encPi encBool))))
+                  encUnary
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (amplify id fallback rotate T q walks number coins queries)
+      (encoding (encPi (encPi encBool))) (encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplify #[]
+  [Meta.Tactic.fun_prop] candidate local theorems for Cslib.PCP.Encoded.Graph.amplify #[hamplify : ComputableTidilyInPolyTime (fun x => amplify id fallback rotate T q walks number coins queries (id x))
+        (encoding (encPi (encPi encBool))) (encoding (encPi (encPi encBool)))]
+  [Meta.Tactic.fun_prop] ✅️ applying: hamplify : ComputableTidilyInPolyTime (fun x => amplify id fallback rotate T q walks number coins queries (id x))
+        (encoding (encPi (encPi encBool))) (encoding (encPi (encPi encBool)))

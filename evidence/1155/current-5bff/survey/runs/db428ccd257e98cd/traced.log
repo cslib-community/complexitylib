@@ -1,0 +1,997 @@
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => graph a) input (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun a => graph a) input (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+          ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+               trying again after decomposing function as: `(fun x0 => x0.arithmeticAmplify) ∘ (fun x => graph x)`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => graph x) input ?encMid
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => graph x) input ?encMid
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x => graph x) input ?encMid
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x => graph x) input ?encMid
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ discharging: ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+        [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+              ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => graph a) input (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))]
+          [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] ❌️ discharging: ∀ (x : Input), (graph x).WellFormed
+    [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+          ∀ (x : Input), (graph x).WellFormed
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+               trying again after decomposing function as: `(fun x0 => x0.arithmeticAmplify) ∘ (fun x => graph x)`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => graph x) input (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => graph x) input (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))]
+          [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ discharging: ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+        [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+              ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ discharging: ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+        [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+              ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => graph a) input (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))]
+          [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] ✅️ discharging: ∀ (x : Input), (graph x).WellFormed
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let initial := graph x;
+        initial.arithmeticAmplify)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let initial := graph x;
+              initial.arithmeticAmplify)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let initial := graph x;
+              initial.arithmeticAmplify)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let initial := graph x;
+        initial.arithmeticAmplify)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Input : Type
+      input : Input ↪ List Bool
+      graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+      hwellFormed : ∀ (x : Input), (graph x).WellFormed
+      ⊢ ComputableInPolyTime
+          (fun x =>
+            let initial := graph x;
+            initial.arithmeticAmplify)
+          input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3823):
+      [aesop] Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          ⊢ ComputableInPolyTime
+              (fun x =>
+                let initial := graph x;
+                initial.arithmeticAmplify)
+              input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let initial := graph x;
+        initial.arithmeticAmplify)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let initial := graph x;
+              initial.arithmeticAmplify)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+        [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+                ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                     trying again after decomposing function as: `(fun x0 => x0.arithmeticAmplify) ∘ (fun x => graph x)`
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => graph x) input ?encMid
+            [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                ComputableInPolyTime (fun x => graph x) input ?encMid
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+            [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ❌️ discharging: ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+              [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+                    ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                         now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+                  (Graph.encoding (encPi (encPi encBool)))
+      [aesop] no compositional plain certificate: [Failed to prove necessary assumption `∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed` when applying theorem `Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify`.,
+           No theorems found for `graph` in order to prove `ComputableInPolyTime (fun x => graph x) input ?encMid`,
+           No theorems found for `graph` in order to prove `ComputableInPolyTime (fun a => graph a) input (Graph.encoding (encPi (encPi encBool)))`]
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            input
+          is not definitionally equal to the right-hand side
+            Graph.encoding (encPi (encPi encBool))
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite Input
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a Boolean list scan
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] no certificate for `Cslib.PCP.Encoded.Graph.arithmeticAmplify` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).1) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : α ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encA output → ComputableInPolyTime (fun p => (f p).1) encC output
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).2) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : β ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encB output → ComputableInPolyTime (fun p => (f p).2) encC output
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'
+      [aesop] failed to synthesize
+            Fintype (Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool))
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|apply|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.plainPiApply
+      [aesop] failed to synthesize
+            Fintype (Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool))
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] Expanding safe subtree of the root goal.
+[aesop] Skipping safe rule expansion of goal 0 since safe rules have already been applied.
+[aesop] Skipping safe rule expansion of goal 1 since safe rules have already been applied.
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let initial := graph x;
+        initial.arithmeticAmplify)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let initial := graph x;
+              initial.arithmeticAmplify)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let initial := graph x;
+              initial.arithmeticAmplify)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let initial := graph x;
+        initial.arithmeticAmplify)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Input : Type
+      input : Input ↪ List Bool
+      graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+      hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+      ⊢ ComputableInPolyTime
+          (fun x =>
+            let initial := graph x;
+            initial.arithmeticAmplify)
+          input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.9888):
+      [aesop] Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime
+              (fun x =>
+                let initial := graph x;
+                initial.arithmeticAmplify)
+              input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let initial := graph x;
+        initial.arithmeticAmplify)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let initial := graph x;
+              initial.arithmeticAmplify)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-30/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Input : Type
+      input : Input ↪ List Bool
+      graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+      hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+      knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+      ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.12282):
+      [aesop] Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G2) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+        [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate local theorems for graph #[knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))]
+            [Meta.Tactic.fun_prop] ✅️ applying: knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] ❌️ discharging: ∀ (x : Input), (graph x).WellFormed
+          [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+                ∀ (x : Input), (graph x).WellFormed
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                     trying again after decomposing function as: `(fun x0 => x0.arithmeticAmplify) ∘ (fun x => graph x)`
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => graph x) input (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate local theorems for graph #[knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))]
+            [Meta.Tactic.fun_prop] ✅️ applying: knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+            [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ❌️ discharging: ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+              [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+                    ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                         now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+                  (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+            [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool)))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ❌️ discharging: ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+              [Meta.Tactic.fun_prop] @Graph.isPolyTime_arithmeticAmplify, failed to discharge hypotheses
+                    ∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.arithmeticAmplify`
+                         now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                ComputableInPolyTime (fun x0 => x0.arithmeticAmplify) (Graph.encoding (encPi (encPi encBool)))
+                  (Graph.encoding (encPi (encPi encBool)))
+      [aesop] no compositional plain certificate: [Failed to prove necessary assumption `∀ (x : Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)), x.WellFormed` when applying theorem `Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify`.,
+           Failed to prove necessary assumption `∀ (x : Input), (graph x).WellFormed` when applying theorem `Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify`.]
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            input
+          is not definitionally equal to the right-hand side
+            Graph.encoding (encPi (encPi encBool))
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite Input
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a Boolean list scan
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] no certificate for `Cslib.PCP.Encoded.Graph.arithmeticAmplify` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).1) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : α ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encA output → ComputableInPolyTime (fun p => (f p).1) encC output
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).2) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : β ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encB output → ComputableInPolyTime (fun p => (f p).2) encC output
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'
+      [aesop] failed to synthesize
+            Fintype (Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool))
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|apply|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.plainPiApply
+      [aesop] failed to synthesize
+            Fintype (Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool))
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] Expanding safe subtree of the root goal.
+[aesop] Skipping safe rule expansion of goal 0 since safe rules have already been applied.
+[aesop] Skipping safe rule expansion of goal 1 since safe rules have already been applied.
+[aesop] Skipping safe rule expansion of goal 2 since safe rules have already been applied.
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let initial := graph x;
+        initial.arithmeticAmplify)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let initial := graph x;
+              initial.arithmeticAmplify)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let initial := graph x;
+              initial.arithmeticAmplify)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let initial := graph x;
+        initial.arithmeticAmplify)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Input : Type
+      input : Input ↪ List Bool
+      graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+      hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+      hwellFormed : ∀ (x : Input), (graph x).WellFormed
+      ⊢ ComputableInPolyTime
+          (fun x =>
+            let initial := graph x;
+            initial.arithmeticAmplify)
+          input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3822):
+      [aesop] Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          ⊢ ComputableInPolyTime
+              (fun x =>
+                let initial := graph x;
+                initial.arithmeticAmplify)
+              input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun x =>
+        let initial := graph x;
+        initial.arithmeticAmplify)
+      input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        ⊢ ComputableInPolyTime
+            (fun x =>
+              let initial := graph x;
+              initial.arithmeticAmplify)
+            input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-30/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Input : Type
+      input : Input ↪ List Bool
+      graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+      hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+      hwellFormed : ∀ (x : Input), (graph x).WellFormed
+      knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+      ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.18754):
+      [aesop] Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        Input : Type
+        input : Input ↪ List Bool
+        graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+        hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        hwellFormed : ∀ (x : Input), (graph x).WellFormed
+        knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+        ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          Input : Type
+          input : Input ↪ List Bool
+          graph : Input → Graph (Bool × (Fin 6 → Bool) → Bool × (Fin 6 → Bool) → Bool)
+          hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          hwellFormed : ∀ (x : Input), (graph x).WellFormed
+          knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          ⊢ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (graph x).arithmeticAmplify) input (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.arithmeticAmplify #[Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_arithmeticAmplify
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate local theorems for graph #[knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))]
+            [Meta.Tactic.fun_prop] ✅️ applying: knownCertificate✝ : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] ✅️ discharging: ∀ (x : Input), (graph x).WellFormed
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

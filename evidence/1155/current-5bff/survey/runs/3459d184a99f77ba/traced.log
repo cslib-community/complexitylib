@@ -1,0 +1,25 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.2.reverse) (encPair encBits encBits) encBits
+  [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverseWithInput]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput
+    [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.listReverseWithInput
+        ComputableInPolyTime (fun a => List.reverse (?list a)) ?encIn (encList ?encA)
+        with
+        ComputableInPolyTime (fun p => p.2.reverse) (encPair encBits encBits) encBits
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse as:
+                         (fun p1 => p1.reverse) ∘ (fun p => p.2)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.2) (encPair encBits encBits) encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encBits encBits) (encPair encBits encBits)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p1 => p1.reverse) encBits encBits
+      [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverseWithInput]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput
+        [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.listReverseWithInput
+            ComputableInPolyTime (fun a => List.reverse (?list a)) ?encIn (encList ?encA)
+            with
+            ComputableInPolyTime (fun p1 => p1.reverse) encBits encBits
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse

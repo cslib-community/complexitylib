@@ -1,0 +1,125 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPT Turing.MultiTapeTM.encBits fun n x => BitString.sampleList n
+  [aesop] Initial goal:
+        f : List Bool → List Bool
+        hf : OneWay f
+        ⊢ IsPPT Turing.MultiTapeTM.encBits fun n x => BitString.sampleList n
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        f : List Bool → List Bool
+        hf : OneWay f
+        ⊢ IsPPT Turing.MultiTapeTM.encBits fun n x => BitString.sampleList n
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPT Turing.MultiTapeTM.encBits fun n x => BitString.sampleList n
+  [aesop] f : List Bool → List Bool
+      hf : OneWay f
+      ⊢ IsPPT Turing.MultiTapeTM.encBits fun n x => BitString.sampleList n
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.142.61):
+      [aesop] f : List Bool → List Bool
+          hf : OneWay f
+          ⊢ IsPPT Turing.MultiTapeTM.encBits fun n x => BitString.sampleList n
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPT Turing.MultiTapeTM.encBits fun n x => BitString.sampleList n
+  [aesop] Initial goal:
+        f : List Bool → List Bool
+        hf : OneWay f
+        ⊢ IsPPT Turing.MultiTapeTM.encBits fun n x => BitString.sampleList n
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ✅️ ✅️ <norm unfold>
+      [aesop] f : List Bool → List Bool
+          hf : OneWay f
+          ⊢ IsPPTOn (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)
+              Turing.MultiTapeTM.encBits fun input => (fun n x => BitString.sampleList n) input.1 input.2
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] f : List Bool → List Bool
+          hf : OneWay f
+          ⊢ IsPPTOn (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)
+              Turing.MultiTapeTM.encBits fun input => BitString.sampleList input.1
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        f : List Bool → List Bool
+        hf : OneWay f
+        ⊢ IsPPTOn (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)
+            Turing.MultiTapeTM.encBits fun input => BitString.sampleList input.1
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          f : List Bool → List Bool
+          hf : OneWay f
+          ⊢ IsPPTOn (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)
+              Turing.MultiTapeTM.encBits fun input => BitString.sampleList input.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits) Turing.MultiTapeTM.encBits
+            fun input => BitString.sampleList input.1
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.sampleList #[Cslib.Probability.isPPTOn_sampleList, Turing.MultiTapeTM.ComputableInPolyTime.sampleList]
+        [Meta.Tactic.fun_prop] decomposing to later use Cslib.Probability.isPPTOn_sampleList as:
+                               (fun input0 => BitString.sampleList input0) ∘ (fun input => input.1)
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits fun input0 => BitString.sampleList input0
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.sampleList #[Cslib.Probability.isPPTOn_sampleList, Turing.MultiTapeTM.ComputableInPolyTime.sampleList]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.isPPTOn_sampleList
+          [Meta.Tactic.fun_prop] ✅️ Turing.MultiTapeTM.ComputableInPolyTime (fun input => input.1)
+                (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits) Turing.MultiTapeTM.encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ Turing.MultiTapeTM.ComputableInPolyTime (fun p => p)
+                    (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)
+                    (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ Turing.MultiTapeTM.ComputableInPolyTime (fun a => a) Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

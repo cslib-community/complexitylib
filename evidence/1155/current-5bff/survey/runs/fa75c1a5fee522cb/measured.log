@@ -1,0 +1,27 @@
+[(0, 0), (0, 1), (0, 0), (0, 0), (0, 0), (0, 1), (0, 0), (0, 0), (1, 1), (1, 0), (1, 1), (1, 1), (1, 1), (1, 0), (1, 1),
+  (1, 1)]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/fa75c1a5fee522cb/measured/ComplexityTests/PCPEncodedAmplification.lean:85:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: [(0, 0), (0, 1), (0, 0), (0, 0), (0, 0), (0, 1), (0, 0), (0, 0), (1, 1), (1, 0), (1, 1),
+-  (1, 1), (1, 1), (1, 0), (1, 1), (1, 1)]
++ info: [(0, 0), (0, 1), (0, 0), (0, 0), (0, 0), (0, 1), (0, 0), (0, 0), (1, 1), (1, 0), (1, 1), (1, 1), (1, 1), (1, 0), (1, 1),
++   (1, 1)]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+[true, false, true, true, true, true, true, true, true, false, true, true, true, true, true, true]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/fa75c1a5fee522cb/measured/ComplexityTests/PCPEncodedAmplification.lean:91:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: [true, false, true, true, true, true, true, true, true, false, true, true, true, true, true,
+-  true]
++ info: [true, false, true, true, true, true, true, true, true, false, true, true, true, true, true, true]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+(96, true)
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/fa75c1a5fee522cb/measured/ComplexityTests/PCPEncodedAmplification.lean:243:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: (96, true)
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]

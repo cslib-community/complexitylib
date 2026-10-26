@@ -1,0 +1,18 @@
+[
+  {
+    "header_end_byte": 486,
+    "header_kind": "Lean.Parser.Module.header",
+    "install_byte": 1784,
+    "leading_module_doc": true,
+    "path": "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/originals/Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "reused_native_source_path": "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/originals/Complexity/Computability/PCP/Encoded/Cloud.lean"
+  },
+  {
+    "header_end_byte": 370,
+    "header_kind": "Lean.Parser.Module.header",
+    "install_byte": 534,
+    "leading_module_doc": true,
+    "path": "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/originals/ComplexityTests/CodeComposition.lean",
+    "reused_native_source_path": "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/originals/ComplexityTests/CodeComposition.lean"
+  }
+]

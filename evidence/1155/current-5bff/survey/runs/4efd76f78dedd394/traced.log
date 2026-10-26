@@ -1,0 +1,568 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p =>
+      process p.1 p.2 >>= adversary p.1
+  [aesop] Initial goal:
+        orig repl : ℕ → ProbComp (List Bool)
+        horig : IsPPTOn encUnary encBits orig
+        hrepl : IsPPTOn encUnary encBits repl
+        h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+        count : ℕ → ℕ
+        hcount✝ : ComputableInPolyTime count encUnary encUnary
+        process : ℕ → List (List Bool) → ProbComp (List Bool)
+        hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+        hcount : ComputableTidilyInPolyTime count encUnary encUnary
+        adversary : ℕ → List Bool → ProbComp Bool
+        hadversary : IsPPT encBool adversary
+        test : ℕ → List (List Bool) → ProbComp Bool := fun n xs => process n xs >>= adversary n
+        ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        orig repl : ℕ → ProbComp (List Bool)
+        horig : IsPPTOn encUnary encBits orig
+        hrepl : IsPPTOn encUnary encBits repl
+        h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+        count : ℕ → ℕ
+        hcount✝ : ComputableInPolyTime count encUnary encUnary
+        process : ℕ → List (List Bool) → ProbComp (List Bool)
+        hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+        hcount : ComputableTidilyInPolyTime count encUnary encUnary
+        adversary : ℕ → List Bool → ProbComp Bool
+        hadversary : IsPPT encBool adversary
+        test : ℕ → List (List Bool) → ProbComp Bool := fun n xs => process n xs >>= adversary n
+        ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p =>
+      process p.1 p.2 >>= adversary p.1
+  [aesop] orig repl : ℕ → ProbComp (List Bool)
+      horig : IsPPTOn encUnary encBits orig
+      hrepl : IsPPTOn encUnary encBits repl
+      h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+      count : ℕ → ℕ
+      hcount_1 : ComputableInPolyTime count encUnary encUnary
+      process : ℕ → List (List Bool) → ProbComp (List Bool)
+      hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+      hcount : ComputableTidilyInPolyTime count encUnary encUnary
+      adversary : ℕ → List Bool → ProbComp Bool
+      hadversary : IsPPT encBool adversary
+      test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+      ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3047.15020):
+      [aesop] orig repl : ℕ → ProbComp (List Bool)
+          horig : IsPPTOn encUnary encBits orig
+          hrepl : IsPPTOn encUnary encBits repl
+          h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+          count : ℕ → ℕ
+          hcount_1 : ComputableInPolyTime count encUnary encUnary
+          process : ℕ → List (List Bool) → ProbComp (List Bool)
+          hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+          hcount : ComputableTidilyInPolyTime count encUnary encUnary
+          adversary : ℕ → List Bool → ProbComp Bool
+          hadversary : IsPPT encBool adversary
+          test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+          ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p =>
+      process p.1 p.2 >>= adversary p.1
+  [aesop] Initial goal:
+        orig repl : ℕ → ProbComp (List Bool)
+        horig : IsPPTOn encUnary encBits orig
+        hrepl : IsPPTOn encUnary encBits repl
+        h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+        count : ℕ → ℕ
+        hcount_1 : ComputableInPolyTime count encUnary encUnary
+        process : ℕ → List (List Bool) → ProbComp (List Bool)
+        hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+        hcount : ComputableTidilyInPolyTime count encUnary encUnary
+        adversary : ℕ → List Bool → ProbComp Bool
+        hadversary : IsPPT encBool adversary
+        test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+        ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ✅️ ✅️ <norm unfold>
+      [aesop] orig repl : ℕ → ProbComp (List Bool)
+          horig : IsPPTOn encUnary encBits orig
+          hrepl : IsPPTOn encUnary encBits repl
+          h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+          count : ℕ → ℕ
+          hcount_1 : ComputableInPolyTime count encUnary encUnary
+          process : ℕ → List (List Bool) → ProbComp (List Bool)
+          hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+          hcount : ComputableTidilyInPolyTime count encUnary encUnary
+          adversary : ℕ → List Bool → ProbComp Bool
+          hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2
+          test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+          ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        orig repl : ℕ → ProbComp (List Bool)
+        horig : IsPPTOn encUnary encBits orig
+        hrepl : IsPPTOn encUnary encBits repl
+        h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+        count : ℕ → ℕ
+        hcount_1 : ComputableInPolyTime count encUnary encUnary
+        process : ℕ → List (List Bool) → ProbComp (List Bool)
+        hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+        hcount : ComputableTidilyInPolyTime count encUnary encUnary
+        adversary : ℕ → List Bool → ProbComp Bool
+        hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2
+        test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+        ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          orig repl : ℕ → ProbComp (List Bool)
+          horig : IsPPTOn encUnary encBits orig
+          hrepl : IsPPTOn encUnary encBits repl
+          h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+          count : ℕ → ℕ
+          hcount_1 : ComputableInPolyTime count encUnary encUnary
+          process : ℕ → List (List Bool) → ProbComp (List Bool)
+          hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+          hcount : ComputableTidilyInPolyTime count encUnary encUnary
+          adversary : ℕ → List Bool → ProbComp Bool
+          hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2
+          test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+          ⊢ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+        [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsPPTOn.bind_with]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.bind_with
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair encUnary (encList encBits)) encBits fun a => process a.1 a.2
+            [Meta.Tactic.fun_prop] candidate local theorems for process #[hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2]
+            [Meta.Tactic.fun_prop] ✅️ applying: hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair (encPair encUnary (encList encBits)) encBits) encBool fun pair => adversary pair.1.1 pair.2
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair encUnary encBits) encBool fun pair0pair1 => adversary pair0pair1.1 pair0pair1.2
+                [Meta.Tactic.fun_prop] candidate local theorems for adversary #[hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2]
+                [Meta.Tactic.fun_prop] ✅️ applying: hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => (pair.1.1, pair.2)) (encPair (encPair encUnary (encList encBits)) encBits)
+                    (encPair encUnary encBits)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair encUnary (encList encBits)) encBits) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair encUnary (encList encBits)) encBits)
+                            (encPair encUnary (encList encBits))
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary (encList encBits)) encBits)
+                                (encPair (encPair encUnary (encList encBits)) encBits)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary (encList encBits)) (encPair encUnary (encList encBits))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair encUnary (encList encBits)) encBits) encBits
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary (encList encBits)) encBits)
+                            (encPair (encPair encUnary (encList encBits)) encBits)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+      sequenceTest (repl p.1) (orig p.1) (count p.1) (test p.1) p.2
+  [aesop] Initial goal:
+        orig repl : ℕ → ProbComp (List Bool)
+        horig : IsPPTOn encUnary encBits orig
+        hrepl : IsPPTOn encUnary encBits repl
+        h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+        count : ℕ → ℕ
+        hcount✝ : ComputableInPolyTime count encUnary encUnary
+        process : ℕ → List (List Bool) → ProbComp (List Bool)
+        hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+        hcount : ComputableTidilyInPolyTime count encUnary encUnary
+        adversary : ℕ → List Bool → ProbComp Bool
+        hadversary : IsPPT encBool adversary
+        test : ℕ → List (List Bool) → ProbComp Bool := fun n xs => process n xs >>= adversary n
+        htest : IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => test p.1 p.2
+        red : Distinguisher := fun n challenge => sequenceTest (repl n) (orig n) (count n) (test n) challenge
+        ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+            sequenceTest (repl p.1) (orig p.1) (count p.1) (test p.1) p.2
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        orig repl : ℕ → ProbComp (List Bool)
+        horig : IsPPTOn encUnary encBits orig
+        hrepl : IsPPTOn encUnary encBits repl
+        h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+        count : ℕ → ℕ
+        hcount✝ : ComputableInPolyTime count encUnary encUnary
+        process : ℕ → List (List Bool) → ProbComp (List Bool)
+        hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+        hcount : ComputableTidilyInPolyTime count encUnary encUnary
+        adversary : ℕ → List Bool → ProbComp Bool
+        hadversary : IsPPT encBool adversary
+        test : ℕ → List (List Bool) → ProbComp Bool := fun n xs => process n xs >>= adversary n
+        htest : IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => test p.1 p.2
+        red : Distinguisher := fun n challenge => sequenceTest (repl n) (orig n) (count n) (test n) challenge
+        ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+            sequenceTest (repl p.1) (orig p.1) (count p.1) (test p.1) p.2
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+      sequenceTest (repl p.1) (orig p.1) (count p.1) (test p.1) p.2
+  [aesop] orig repl : ℕ → ProbComp (List Bool)
+      horig : IsPPTOn encUnary encBits orig
+      hrepl : IsPPTOn encUnary encBits repl
+      h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+      count : ℕ → ℕ
+      hcount_1 : ComputableInPolyTime count encUnary encUnary
+      process : ℕ → List (List Bool) → ProbComp (List Bool)
+      hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+      hcount : ComputableTidilyInPolyTime count encUnary encUnary
+      adversary : ℕ → List Bool → ProbComp Bool
+      hadversary : IsPPT encBool adversary
+      test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+      htest : IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => test p.1 p.2
+      red : Distinguisher := ⋯
+      ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+          sequenceTest (repl p.1) (orig p.1) (count p.1) (test p.1) p.2
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3047.30642):
+      [aesop] orig repl : ℕ → ProbComp (List Bool)
+          horig : IsPPTOn encUnary encBits orig
+          hrepl : IsPPTOn encUnary encBits repl
+          h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+          count : ℕ → ℕ
+          hcount_1 : ComputableInPolyTime count encUnary encUnary
+          process : ℕ → List (List Bool) → ProbComp (List Bool)
+          hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+          hcount : ComputableTidilyInPolyTime count encUnary encUnary
+          adversary : ℕ → List Bool → ProbComp Bool
+          hadversary : IsPPT encBool adversary
+          test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+          htest : IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => test p.1 p.2
+          red : Distinguisher := ⋯
+          ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+              sequenceTest (repl p.1) (orig p.1) (count p.1) (test p.1) p.2
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+      sequenceTest (repl p.1) (orig p.1) (count p.1) (test p.1) p.2
+  [aesop] Initial goal:
+        orig repl : ℕ → ProbComp (List Bool)
+        horig : IsPPTOn encUnary encBits orig
+        hrepl : IsPPTOn encUnary encBits repl
+        h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+        count : ℕ → ℕ
+        hcount_1 : ComputableInPolyTime count encUnary encUnary
+        process : ℕ → List (List Bool) → ProbComp (List Bool)
+        hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+        hcount : ComputableTidilyInPolyTime count encUnary encUnary
+        adversary : ℕ → List Bool → ProbComp Bool
+        hadversary : IsPPT encBool adversary
+        test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+        htest : IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => test p.1 p.2
+        red : Distinguisher := ⋯
+        ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+            sequenceTest (repl p.1) (orig p.1) (count p.1) (test p.1) p.2
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ✅️ ✅️ <norm unfold>
+      [aesop] orig repl : ℕ → ProbComp (List Bool)
+          horig : IsPPTOn encUnary encBits orig
+          hrepl : IsPPTOn encUnary encBits repl
+          h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+          count : ℕ → ℕ
+          hcount_1 : ComputableInPolyTime count encUnary encUnary
+          process : ℕ → List (List Bool) → ProbComp (List Bool)
+          hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+          hcount : ComputableTidilyInPolyTime count encUnary encUnary
+          adversary : ℕ → List Bool → ProbComp Bool
+          hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2
+          test : ℕ → List (List Bool) → ProbComp Bool := ⋯
+          htest : IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => test p.1 p.2
+          red : Distinguisher := ⋯
+          ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+              sequenceTest (repl p.1) (orig p.1) (count p.1) (test p.1) p.2
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] orig repl : ℕ → ProbComp (List Bool)
+          horig : IsPPTOn encUnary encBits orig
+          hrepl : IsPPTOn encUnary encBits repl
+          h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+          count : ℕ → ℕ
+          hcount_1 : ComputableInPolyTime count encUnary encUnary
+          process : ℕ → List (List Bool) → ProbComp (List Bool)
+          hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+          hcount : ComputableTidilyInPolyTime count encUnary encUnary
+          adversary : ℕ → List Bool → ProbComp Bool
+          hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2
+          test : ℕ → List (List Bool) → ProbComp Bool := fun n xs => process n xs >>= adversary n
+          red : Distinguisher := fun n challenge => sequenceTest (repl n) (orig n) (count n) (test n) challenge
+          htest : IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+          ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+              sequenceTest (repl p.1) (orig p.1) (count p.1) (fun xs => process p.1 xs >>= adversary p.1) p.2
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        orig repl : ℕ → ProbComp (List Bool)
+        horig : IsPPTOn encUnary encBits orig
+        hrepl : IsPPTOn encUnary encBits repl
+        h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+        count : ℕ → ℕ
+        hcount_1 : ComputableInPolyTime count encUnary encUnary
+        process : ℕ → List (List Bool) → ProbComp (List Bool)
+        hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+        hcount : ComputableTidilyInPolyTime count encUnary encUnary
+        adversary : ℕ → List Bool → ProbComp Bool
+        hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2
+        test : ℕ → List (List Bool) → ProbComp Bool := fun n xs => process n xs >>= adversary n
+        red : Distinguisher := fun n challenge => sequenceTest (repl n) (orig n) (count n) (test n) challenge
+        htest : IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+        ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+            sequenceTest (repl p.1) (orig p.1) (count p.1) (fun xs => process p.1 xs >>= adversary p.1) p.2
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          orig repl : ℕ → ProbComp (List Bool)
+          horig : IsPPTOn encUnary encBits orig
+          hrepl : IsPPTOn encUnary encBits repl
+          h : ComputationallyIndistinguishable (fun n => (orig n).eval) fun n => (repl n).eval
+          count : ℕ → ℕ
+          hcount_1 : ComputableInPolyTime count encUnary encUnary
+          process : ℕ → List (List Bool) → ProbComp (List Bool)
+          hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+          hcount : ComputableTidilyInPolyTime count encUnary encUnary
+          adversary : ℕ → List Bool → ProbComp Bool
+          hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2
+          test : ℕ → List (List Bool) → ProbComp Bool := fun n xs => process n xs >>= adversary n
+          red : Distinguisher := fun n challenge => sequenceTest (repl n) (orig n) (count n) (test n) challenge
+          htest : IsPPTOn (encPair encUnary (encList encBits)) encBool fun p => process p.1 p.2 >>= adversary p.1
+          ⊢ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+              sequenceTest (repl p.1) (orig p.1) (count p.1) (fun xs => process p.1 xs >>= adversary p.1) p.2
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair encUnary encBits) encBool fun p =>
+            sequenceTest (repl p.1) (orig p.1) (count p.1) (fun xs => process p.1 xs >>= adversary p.1) p.2
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.sequenceTest #[Cslib.Crypto.isPPTOn_sequenceTest]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.isPPTOn_sequenceTest
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair encUnary encBits) encBits fun a => repl a.1
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn encUnary encBits fun a0 => repl a0
+                [Meta.Tactic.fun_prop] candidate local theorems for repl #[hrepl : IsPPTOn encUnary encBits repl]
+                [Meta.Tactic.fun_prop] ✅️ applying: hrepl : IsPPTOn encUnary encBits repl
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair encUnary encBits) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary encBits) (encPair encUnary encBits)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair encUnary encBits) encBits fun a => orig a.1
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn encUnary encBits fun a0 => orig a0
+                [Meta.Tactic.fun_prop] candidate local theorems for orig #[horig : IsPPTOn encUnary encBits orig]
+                [Meta.Tactic.fun_prop] ✅️ applying: horig : IsPPTOn encUnary encBits orig
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair encUnary encBits) encUnary
+                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun a => a.1)
+                      (encPair encUnary encBits) encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a.1) (encPair encUnary encBits) encUnary
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair encUnary encBits) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary encBits) (encPair encUnary encBits)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => count a0) encUnary encUnary
+                [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount_1 : ComputableInPolyTime count encUnary encUnary]
+                [Meta.Tactic.fun_prop] ✅️ applying: hcount_1 : ComputableInPolyTime count encUnary encUnary
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair (encPair encUnary encBits) (encList encBits)) encBool fun pair =>
+                process pair.1.1 pair.2 >>= adversary pair.1.1
+            [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsPPTOn.bind_with]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.bind_with
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair (encPair encUnary encBits) (encList encBits)) encBits fun a => process a.1.1 a.2
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+                  [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair encUnary (encList encBits)) encBits fun a0a1 => process a0a1.1 a0a1.2
+                    [Meta.Tactic.fun_prop] candidate local theorems for process #[hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hprocess : IsPPTOn (encPair encUnary (encList encBits)) encBits fun p => process p.1 p.2
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (a.1.1, a.2)) (encPair (encPair encUnary encBits) (encList encBits))
+                        (encPair encUnary (encList encBits))
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair encUnary encBits) (encList encBits)) encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair encUnary encBits) (encList encBits)) (encPair encUnary encBits)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary encBits) (encList encBits))
+                                    (encPair (encPair encUnary encBits) (encList encBits))
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary encBits) (encPair encUnary encBits)
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                            [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun a => a)
+                                  encUnary encUnary
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair encUnary encBits) (encList encBits)) (encList encBits)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary encBits) (encList encBits))
+                                (encPair (encPair encUnary encBits) (encList encBits))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList encBits) (encList encBits)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits) encBool fun pair =>
+                    adversary pair.1.1.1 pair.2
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+                  [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair encUnary encBits) encBool fun pair0pair1 => adversary pair0pair1.1 pair0pair1.2
+                    [Meta.Tactic.fun_prop] candidate local theorems for adversary #[hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hadversary : IsPPTOn (encPair encUnary encBits) encBool fun input => adversary input.1 input.2
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => (pair.1.1.1, pair.2))
+                        (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits) (encPair encUnary encBits)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1.1) (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits)
+                            encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.1.1) (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits)
+                                (encPair encUnary encBits)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits)
+                                    (encPair (encPair encUnary encBits) (encList encBits))
+                                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits)
+                                        (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits)
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair (encPair encUnary encBits) (encList encBits))
+                                        (encPair (encPair encUnary encBits) (encList encBits))
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary encBits) (encPair encUnary encBits)
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                            [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun a => a)
+                                  encUnary encUnary
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits) encBits
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits)
+                                (encPair (encPair (encPair encUnary encBits) (encList encBits)) encBits)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair encUnary encBits) encBits
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary encBits) (encPair encUnary encBits)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun a => a) encBits
+                      encBits
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize (count n)
+  [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize (count n)
+    [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+    [Meta.Tactic.fun_prop] decomposing to later use Cslib.Probability.dyadicSize_polynomiallyBounded as:
+                           (fun n0 => dyadicSize n0) ∘ (fun n => count n)
+    [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.comp
+      [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n0 => dyadicSize n0
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.dyadicSize_polynomiallyBounded
+      [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => count n
+        [Meta.Tactic.fun_prop] candidate local theorems for count #[hc : PolynomiallyBounded count]
+        [Meta.Tactic.fun_prop] ✅️ applying: hc : PolynomiallyBounded count

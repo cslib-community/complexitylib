@@ -1,0 +1,2174 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+      extractMatrixLabels (count a) (outputBits a) id (samples a)
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        count outputBits : α → ℕ
+        samples : α → List (List Bool × Bool)
+        hcount : ComputableInPolyTime count input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))
+        ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a) (outputBits a) id (samples a)
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        count outputBits : α → ℕ
+        samples : α → List (List Bool × Bool)
+        hcount : ComputableInPolyTime count input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))
+        ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a) (outputBits a) id (samples a)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+      extractMatrixLabels (count a) (outputBits a) id (samples a)
+  [aesop] α : Type
+      input : α ↪ List Bool
+      count outputBits : α → ℕ
+      samples : α → List (List Bool × Bool)
+      hcount : ComputableInPolyTime count input encUnary
+      houtput : ComputableInPolyTime outputBits input encUnary
+      hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))
+      ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+          extractMatrixLabels (count a) (outputBits a) id (samples a)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.158.19):
+      [aesop] α : Type
+          input : α ↪ List Bool
+          count outputBits : α → ℕ
+          samples : α → List (List Bool × Bool)
+          hcount : ComputableInPolyTime count input encUnary
+          houtput : ComputableInPolyTime outputBits input encUnary
+          hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))
+          ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+              extractMatrixLabels (count a) (outputBits a) id (samples a)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+      extractMatrixLabels (count a) (outputBits a) id (samples a)
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        count outputBits : α → ℕ
+        samples : α → List (List Bool × Bool)
+        hcount : ComputableInPolyTime count input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))
+        ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a) (outputBits a) id (samples a)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        count outputBits : α → ℕ
+        samples : α → List (List Bool × Bool)
+        hcount : ComputableInPolyTime count input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))
+        ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a) (outputBits a) id (samples a)
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          input : α ↪ List Bool
+          count outputBits : α → ℕ
+          samples : α → List (List Bool × Bool)
+          hcount : ComputableInPolyTime count input encUnary
+          houtput : ComputableInPolyTime outputBits input encUnary
+          hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))
+          ⊢ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+              extractMatrixLabels (count a) (outputBits a) id (samples a)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair (encList encBits) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a) (outputBits a) id (samples a)
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.extractMatrixLabels #[Cslib.Crypto.Pseudoentropy.isPPTOn_extractMatrixLabels]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.isPPTOn_extractMatrixLabels
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime outputBits input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for outputBits #[houtput : ComputableInPolyTime outputBits input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: houtput : ComputableInPolyTime outputBits input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => id pair.2) (encPair input (encList encBool)) encBits
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input (encList ?label)) (encPair input (encList ?label))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList encBool) encBits
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.id'
+                      ComputableInPolyTime (fun a => a) ?encIn ?encIn
+                      with
+                      ComputableInPolyTime (fun a => a) (encList ?label) encBits
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_to_binary
+                  [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_to_binary
+                      ComputableInPolyTime (fun n => n) encUnary encNat
+                      with
+                      ComputableInPolyTime (fun a => a) (encList ?label) encBits
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listToBits
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime samples input (encList (encPair encBits encBool))
+            [Meta.Tactic.fun_prop] candidate local theorems for samples #[hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))]
+            [Meta.Tactic.fun_prop] ✅️ applying: hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+      extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        count outputBits : α → ℕ
+        test : α → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        hcount : ComputableInPolyTime count input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+            extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        count outputBits : α → ℕ
+        test : α → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        hcount : ComputableInPolyTime count input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+            extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+      extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+  [aesop] α : Type
+      input : α ↪ List Bool
+      count outputBits : α → ℕ
+      test : α → List (List Bool) × List Bool × List Bool → ProbComp Bool
+      htest :
+        IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+          test input.1 input.2
+      hcount : ComputableInPolyTime count input encUnary
+      houtput : ComputableInPolyTime outputBits input encUnary
+      ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+          extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1336.86):
+      [aesop] α : Type
+          input : α ↪ List Bool
+          count outputBits : α → ℕ
+          test : α → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          hcount : ComputableInPolyTime count input encUnary
+          houtput : ComputableInPolyTime outputBits input encUnary
+          ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+              extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+      extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        count outputBits : α → ℕ
+        test : α → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        hcount : ComputableInPolyTime count input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+            extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        count outputBits : α → ℕ
+        test : α → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        hcount : ComputableInPolyTime count input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+            extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          input : α ↪ List Bool
+          count outputBits : α → ℕ
+          test : α → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          hcount : ComputableInPolyTime count input encUnary
+          houtput : ComputableInPolyTime outputBits input encUnary
+          ⊢ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+              extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input (encList (encPair encBits encBool))) encBool fun input =>
+            extractWordLabels (count input.1) (outputBits input.1) input.2 >>= test input.1
+        [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsPPTOn.bind_with]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.bind_with
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits))
+                fun a => extractWordLabels (count a.1) (outputBits a.1) a.2
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.extractWordLabels #[Cslib.Crypto.Pseudoentropy.isPPTOn_extractWordLabels]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.isPPTOn_extractWordLabels
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a.1) (encPair input (encList (encPair encBits encBool))) encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair input (encList (encPair encBits encBool))) input
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input (encList (encPair encBits encBool)))
+                            (encPair input (encList (encPair encBits encBool)))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => count a0) input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => outputBits a.1) (encPair input (encList (encPair encBits encBool))) encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair input (encList (encPair encBits encBool))) input
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input (encList (encPair encBits encBool)))
+                            (encPair input (encList (encPair encBits encBool)))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => outputBits a0) input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for outputBits #[houtput : ComputableInPolyTime outputBits input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: houtput : ComputableInPolyTime outputBits input encUnary
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input (encList (encPair encBits encBool))) (encList (encPair encBits encBool))
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input (encList (encPair encBits encBool)))
+                        (encPair input (encList (encPair encBits encBool)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encPair encBits encBool)) (encList (encPair encBits encBool))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn
+                (encPair (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits)))
+                encBool fun pair => test pair.1.1 pair.2
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun pair0pair1 =>
+                    test pair0pair1.1 pair0pair1.2
+                [Meta.Tactic.fun_prop] candidate local theorems for test #[htest : IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun input => test input.1 input.2]
+                [Meta.Tactic.fun_prop] ✅️ applying: htest : IsPPTOn (encPair input (encPair (encList encBits) (encPair encBits encBits))) encBool fun input => test input.1 input.2
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => (pair.1.1, pair.2))
+                    (encPair (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits)))
+                    (encPair input (encPair (encList encBits) (encPair encBits encBits)))
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1)
+                        (encPair (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits)))
+                        input
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst
+                            (encPair (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits)))
+                            (encPair input (encList (encPair encBits encBool)))
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p)
+                                (encPair (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits)))
+                                (encPair (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits)))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input (encList (encPair encBits encBool)))
+                                (encPair input (encList (encPair encBits encBool)))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd
+                        (encPair (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits)))
+                        (encPair (encList encBits) (encPair encBits encBits))
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p)
+                            (encPair (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits)))
+                            (encPair (encPair input (encList (encPair encBits encBool))) (encPair (encList encBits) (encPair encBits encBits)))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair (encList encBits) (encPair encBits encBits))
+                            (encPair (encList encBits) (encPair encBits encBits))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n => n) encUnary encUnary
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun input => count input.1) (encPair encUnary encUnary) encUnary
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun input0 => count input0) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableTidilyInPolyTime count encUnary encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableTidilyInPolyTime count encUnary encUnary
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun input => input.1) (encPair encUnary encUnary) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary encUnary) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+  [aesop] Initial goal:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+  [aesop] pair : SamplablePair
+      gap : ℕ → ℝ
+      hpair : pair.HasGap gap
+      realization : pair.SeedRealization
+      outputBits inverseSlack numerator densityBound : ℕ → ℕ
+      houtput : ComputableInPolyTime outputBits encUnary encUnary
+      hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+      hnumerator : ComputableInPolyTime numerator encUnary encUnary
+      hdensity : ComputableInPolyTime densityBound encUnary encUnary
+      hvalid :
+        ∀ᶠ (n : ℕ) in atTop,
+          0 < numerator n ∧
+            numerator n ≤ dyadicSize (densityBound n) ∧
+              ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+      hbudget :
+        ∀ᶠ (n : ℕ) in atTop,
+          ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+            ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+              (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+      test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+      htest :
+        IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+          test input.1 input.2
+      ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3407.103):
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          hvalid :
+            ∀ᶠ (n : ℕ) in atTop,
+              0 < numerator n ∧
+                numerator n ≤ dyadicSize (densityBound n) ∧
+                  ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+          hbudget :
+            ∀ᶠ (n : ℕ) in atTop,
+              ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+                ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                  (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+  [aesop] Initial goal:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          hvalid :
+            ∃ a,
+              (∀ (x : ℕ), a ≤ x → 0 < numerator x) ∧
+                (∀ (x : ℕ), a ≤ x → numerator x ≤ dyadicSize (densityBound x)) ∧
+                  ∀ (x : ℕ),
+                    a ≤ x →
+                      ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          hbudget :
+            ∃ a,
+              ∀ (b : ℕ),
+                a ≤ b →
+                  ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                    ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                      (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+    [aesop] ✅️ ✅️ norm|tactic|global|Aesop.BuiltinRules.destructProducts
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        w w_1 : ℕ
+        h_1 :
+          ∀ (b : ℕ),
+            w_1 ≤ b →
+              ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                  (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+        left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+        left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+        right :
+          ∀ (x : ℕ),
+            w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+        ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime (fun x => 1) encUnary encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => 1) encUnary encUnary
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] Initial goal:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] pair : SamplablePair
+      gap : ℕ → ℝ
+      hpair : pair.HasGap gap
+      realization : pair.SeedRealization
+      outputBits inverseSlack numerator densityBound : ℕ → ℕ
+      houtput : ComputableInPolyTime outputBits encUnary encUnary
+      hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+      hnumerator : ComputableInPolyTime numerator encUnary encUnary
+      hdensity : ComputableInPolyTime densityBound encUnary encUnary
+      hvalid :
+        ∀ᶠ (n : ℕ) in atTop,
+          0 < numerator n ∧
+            numerator n ≤ dyadicSize (densityBound n) ∧
+              ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+      hbudget :
+        ∀ᶠ (n : ℕ) in atTop,
+          ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+            ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+              (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+      test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+      htest :
+        IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+          test input.1 input.2
+      ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3407.104):
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          hvalid :
+            ∀ᶠ (n : ℕ) in atTop,
+              0 < numerator n ∧
+                numerator n ≤ dyadicSize (densityBound n) ∧
+                  ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+          hbudget :
+            ∀ᶠ (n : ℕ) in atTop,
+              ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+                ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                  (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] Initial goal:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          hvalid :
+            ∃ a,
+              (∀ (x : ℕ), a ≤ x → 0 < numerator x) ∧
+                (∀ (x : ℕ), a ≤ x → numerator x ≤ dyadicSize (densityBound x)) ∧
+                  ∀ (x : ℕ),
+                    a ≤ x →
+                      ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          hbudget :
+            ∃ a,
+              ∀ (b : ℕ),
+                a ≤ b →
+                  ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                    ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                      (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+    [aesop] ✅️ ✅️ norm|tactic|global|Aesop.BuiltinRules.destructProducts
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        w w_1 : ℕ
+        h_1 :
+          ∀ (b : ℕ),
+            w_1 ≤ b →
+              ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                  (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+        left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+        left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+        right :
+          ∀ (x : ℕ),
+            w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+        ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair encUnary encUnary
+          is not definitionally equal to the right-hand side
+            encUnary
+          
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime (fun input => outputBits input.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (ℕ × ℕ)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] case hg
+      pair : SamplablePair
+      gap : ℕ → ℝ
+      hpair : pair.HasGap gap
+      realization : pair.SeedRealization
+      outputBits inverseSlack numerator densityBound : ℕ → ℕ
+      houtput : ComputableInPolyTime outputBits encUnary encUnary
+      hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+      hnumerator : ComputableInPolyTime numerator encUnary encUnary
+      hdensity : ComputableInPolyTime densityBound encUnary encUnary
+      test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+      htest :
+        IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+          test input.1 input.2
+      w w_1 : ℕ
+      h_1 :
+        ∀ (b : ℕ),
+          w_1 ≤ b →
+            ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+              ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+      left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+      left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+      right :
+        ∀ (x : ℕ),
+          w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+      ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3407.121478):
+      [aesop] case hg
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        case hg
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        w w_1 : ℕ
+        h_1 :
+          ∀ (b : ℕ),
+            w_1 ≤ b →
+              ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                  (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+        left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+        left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+        right :
+          ∀ (x : ℕ),
+            w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+        ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        w w_1 : ℕ
+        h_1 :
+          ∀ (b : ℕ),
+            w_1 ≤ b →
+              ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                  (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+        left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+        left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+        right :
+          ∀ (x : ℕ),
+            w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+        ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary encUnary) (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] Initial goal:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] pair : SamplablePair
+      gap : ℕ → ℝ
+      hpair : pair.HasGap gap
+      realization : pair.SeedRealization
+      outputBits inverseSlack numerator densityBound : ℕ → ℕ
+      houtput : ComputableInPolyTime outputBits encUnary encUnary
+      hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+      hnumerator : ComputableInPolyTime numerator encUnary encUnary
+      hdensity : ComputableInPolyTime densityBound encUnary encUnary
+      hvalid :
+        ∀ᶠ (n : ℕ) in atTop,
+          0 < numerator n ∧
+            numerator n ≤ dyadicSize (densityBound n) ∧
+              ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+      hbudget :
+        ∀ᶠ (n : ℕ) in atTop,
+          ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+            ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+              (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+      test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+      htest :
+        IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+          test input.1 input.2
+      ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3407.105):
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          hvalid :
+            ∀ᶠ (n : ℕ) in atTop,
+              0 < numerator n ∧
+                numerator n ≤ dyadicSize (densityBound n) ∧
+                  ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+          hbudget :
+            ∀ᶠ (n : ℕ) in atTop,
+              ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+                ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                  (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] Initial goal:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          hvalid :
+            ∃ a,
+              (∀ (x : ℕ), a ≤ x → 0 < numerator x) ∧
+                (∀ (x : ℕ), a ≤ x → numerator x ≤ dyadicSize (densityBound x)) ∧
+                  ∀ (x : ℕ),
+                    a ≤ x →
+                      ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          hbudget :
+            ∃ a,
+              ∀ (b : ℕ),
+                a ≤ b →
+                  ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                    ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                      (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+    [aesop] ✅️ ✅️ norm|tactic|global|Aesop.BuiltinRules.destructProducts
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        w w_1 : ℕ
+        h_1 :
+          ∀ (b : ℕ),
+            w_1 ≤ b →
+              ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                  (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+        left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+        left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+        right :
+          ∀ (x : ℕ),
+            w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+        ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair encUnary encUnary
+          is not definitionally equal to the right-hand side
+            encUnary
+          
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime (fun input => numerator input.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (ℕ × ℕ)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] case hg
+      pair : SamplablePair
+      gap : ℕ → ℝ
+      hpair : pair.HasGap gap
+      realization : pair.SeedRealization
+      outputBits inverseSlack numerator densityBound : ℕ → ℕ
+      houtput : ComputableInPolyTime outputBits encUnary encUnary
+      hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+      hnumerator : ComputableInPolyTime numerator encUnary encUnary
+      hdensity : ComputableInPolyTime densityBound encUnary encUnary
+      test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+      htest :
+        IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+          test input.1 input.2
+      w w_1 : ℕ
+      h_1 :
+        ∀ (b : ℕ),
+          w_1 ≤ b →
+            ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+              ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+      left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+      left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+      right :
+        ∀ (x : ℕ),
+          w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+      ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3407.187238):
+      [aesop] case hg
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        case hg
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        w w_1 : ℕ
+        h_1 :
+          ∀ (b : ℕ),
+            w_1 ≤ b →
+              ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                  (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+        left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+        left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+        right :
+          ∀ (x : ℕ),
+            w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+        ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        w w_1 : ℕ
+        h_1 :
+          ∀ (b : ℕ),
+            w_1 ≤ b →
+              ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                  (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+        left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+        left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+        right :
+          ∀ (x : ℕ),
+            w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+        ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary encUnary) (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn
+      (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+      test input.1.1 input.2
+  [aesop] Initial goal:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool
+            fun input => test input.1.1 input.2
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool
+            fun input => test input.1.1 input.2
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn
+      (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+      test input.1.1 input.2
+  [aesop] pair : SamplablePair
+      gap : ℕ → ℝ
+      hpair : pair.HasGap gap
+      realization : pair.SeedRealization
+      outputBits inverseSlack numerator densityBound : ℕ → ℕ
+      houtput : ComputableInPolyTime outputBits encUnary encUnary
+      hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+      hnumerator : ComputableInPolyTime numerator encUnary encUnary
+      hdensity : ComputableInPolyTime densityBound encUnary encUnary
+      hvalid :
+        ∀ᶠ (n : ℕ) in atTop,
+          0 < numerator n ∧
+            numerator n ≤ dyadicSize (densityBound n) ∧
+              ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+      hbudget :
+        ∀ᶠ (n : ℕ) in atTop,
+          ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+            ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+              (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+      test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+      htest :
+        IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+          test input.1 input.2
+      ⊢ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool
+          fun input => test input.1.1 input.2
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3407.127):
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          hvalid :
+            ∀ᶠ (n : ℕ) in atTop,
+              0 < numerator n ∧
+                numerator n ≤ dyadicSize (densityBound n) ∧
+                  ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+          hbudget :
+            ∀ᶠ (n : ℕ) in atTop,
+              ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+                ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                  (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          ⊢ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool
+              fun input => test input.1.1 input.2
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn
+      (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+      test input.1.1 input.2
+  [aesop] Initial goal:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        hvalid :
+          ∀ᶠ (n : ℕ) in atTop,
+            0 < numerator n ∧
+              numerator n ≤ dyadicSize (densityBound n) ∧
+                ↑(numerator n) / ↑(dyadicSize (densityBound n)) ≤ PMF.conditionalEntropy (pair.joint n) + gap n
+        hbudget :
+          ∀ᶠ (n : ℕ) in atTop,
+            ↑(outputBits n) + 2 * ↑(ExtractionSchedule.slack n (realization.length n) (inverseSlack n)) ≤
+              ↑(ExtractionSchedule.count n (realization.length n) (inverseSlack n)) *
+                (↑(numerator n) / ↑(dyadicSize (densityBound n)))
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        ⊢ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool
+            fun input => test input.1.1 input.2
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          hvalid :
+            ∃ a,
+              (∀ (x : ℕ), a ≤ x → 0 < numerator x) ∧
+                (∀ (x : ℕ), a ≤ x → numerator x ≤ dyadicSize (densityBound x)) ∧
+                  ∀ (x : ℕ),
+                    a ≤ x →
+                      ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          hbudget :
+            ∃ a,
+              ∀ (b : ℕ),
+                a ≤ b →
+                  ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                    ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                      (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          ⊢ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool
+              fun input => test input.1.1 input.2
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+    [aesop] ✅️ ✅️ norm|tactic|global|Aesop.BuiltinRules.destructProducts
+      [aesop] pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool
+              fun input => test input.1.1 input.2
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        pair : SamplablePair
+        gap : ℕ → ℝ
+        hpair : pair.HasGap gap
+        realization : pair.SeedRealization
+        outputBits inverseSlack numerator densityBound : ℕ → ℕ
+        houtput : ComputableInPolyTime outputBits encUnary encUnary
+        hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+        hnumerator : ComputableInPolyTime numerator encUnary encUnary
+        hdensity : ComputableInPolyTime densityBound encUnary encUnary
+        test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+        htest :
+          IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1 input.2
+        w w_1 : ℕ
+        h_1 :
+          ∀ (b : ℕ),
+            w_1 ≤ b →
+              ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                  (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+        left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+        left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+        right :
+          ∀ (x : ℕ),
+            w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+        ⊢ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool
+            fun input => test input.1.1 input.2
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          pair : SamplablePair
+          gap : ℕ → ℝ
+          hpair : pair.HasGap gap
+          realization : pair.SeedRealization
+          outputBits inverseSlack numerator densityBound : ℕ → ℕ
+          houtput : ComputableInPolyTime outputBits encUnary encUnary
+          hslack : ComputableInPolyTime inverseSlack encUnary encUnary
+          hnumerator : ComputableInPolyTime numerator encUnary encUnary
+          hdensity : ComputableInPolyTime densityBound encUnary encUnary
+          test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool
+          htest :
+            IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+              test input.1 input.2
+          w w_1 : ℕ
+          h_1 :
+            ∀ (b : ℕ),
+              w_1 ≤ b →
+                ↑(outputBits b) + 2 * ↑(ExtractionSchedule.slack b (realization.length b) (inverseSlack b)) ≤
+                  ↑(ExtractionSchedule.count b (realization.length b) (inverseSlack b)) *
+                    (↑(numerator b) / ↑(dyadicSize (densityBound b)))
+          left : ∀ (x : ℕ), w ≤ x → 0 < numerator x
+          left_1 : ∀ (x : ℕ), w ≤ x → numerator x ≤ dyadicSize (densityBound x)
+          right :
+            ∀ (x : ℕ),
+              w ≤ x → ↑(numerator x) / ↑(dyadicSize (densityBound x)) ≤ PMF.conditionalEntropy (pair.joint x) + gap x
+          ⊢ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool
+              fun input => test input.1.1 input.2
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+            test input.1.1 input.2
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input0input1 =>
+                test input0input1.1 input0input1.2
+            [Meta.Tactic.fun_prop] candidate local theorems for test #[htest : IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+                  test input.1 input.2]
+            [Meta.Tactic.fun_prop] ✅️ applying: htest : IsPPTOn (encPair encUnary (encPair (encList encBits) (encPair encBits encBits))) encBool fun input =>
+                  test input.1 input.2
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun input => (input.1.1, input.2))
+                (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits)))
+                (encPair encUnary (encPair (encList encBits) (encPair encBits encBits)))
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1)
+                    (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits))) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst
+                        (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits)))
+                        (encPair encUnary encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p)
+                            (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits)))
+                            (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits)))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary encUnary) (encPair encUnary encUnary)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd
+                    (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits)))
+                    (encPair (encList encBits) (encPair encBits encBits))
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p)
+                        (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits)))
+                        (encPair (encPair encUnary encUnary) (encPair (encList encBits) (encPair encBits encBits)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair (encList encBits) (encPair encBits encBits))
+                        (encPair (encList encBits) (encPair encBits encBits))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

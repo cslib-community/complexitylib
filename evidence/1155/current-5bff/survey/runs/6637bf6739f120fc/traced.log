@@ -1,0 +1,683 @@
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x0 => f x0) ∘ fun x => g x) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInDegree (fun x => g x) encBits ?encMid ?dg ?eg
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.comp_le, failed to discharge hypotheses
+          ComputableTidilyInDegree (fun x => g x) encBits ?encMid ?dg ?eg
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x0 => f x0) ∘ fun x => g x) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => g x) encBits encBits 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInDegree (fun x0 => f x0) encBits encBits ?df ?ef
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.comp_le, failed to discharge hypotheses
+          ComputableTidilyInDegree (fun x0 => f x0) encBits encBits ?df ?ef
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 0
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x0 => f x0) ∘ fun x => g x) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 0
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => g x) encBits encBits 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x0 => f x0) encBits encBits 3 1
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 3 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 3 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 2 (1 * 3) ≤ 3
+    [Meta.Tactic.fun_prop] ❌️ discharging: 1 * 1 ≤ 0
+    [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.comp_le, failed to discharge hypotheses
+          1 * 1 ≤ 0
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x0 => f x0) ∘ fun x => g x) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => g x) encBits encBits 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x0 => f x0) encBits encBits 3 1
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 3 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 3 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 2 (1 * 3) ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: 1 * 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (f ∘ g) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun a0 => f a0) ∘ fun a => g a) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun a => f (g a)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun a => g a) encBits encBits 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun a0 => f a0) encBits encBits 3 1
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 3 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 3 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 2 (1 * 3) ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: 1 * 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree
+      (fun x =>
+        let y := g x;
+        f y)
+      encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun y => f y) ∘ fun x => g x) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree
+          (fun x =>
+            let y := g x;
+            f y)
+          encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => g x) encBits (encFramed encBits) 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits (encFramed encBits) 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits (encFramed encBits) 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun y => f y) (encFramed encBits) encBits 3 1
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f (encFramed encBits) encBits 3 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f (encFramed encBits) encBits 3 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 2 (1 * 3) ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: 1 * 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x, g x)) encBits (encPair encBits encBits) 3 1
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le, Turing.MultiTapeTM.ComputableTidilyInDegree.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits encBits 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree g encBits encBits 3 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 3 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 3 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 2 3 ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 1 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => h (f x, g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x0 => h x0) ∘ fun x => (f x, g x)) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂))
+          (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => h (f x, g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x, g x)) encBits (encPair encBits encBits) (max 2 2) (max 1 1)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le, Turing.MultiTapeTM.ComputableTidilyInDegree.prod]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits encBits 2 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 2 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 2 1
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree g encBits encBits 2 1
+          [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+        [Meta.Tactic.fun_prop] ❌️ discharging: max 2 2 ≤ ?dg✝
+        [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.prod_le, failed to discharge hypotheses
+              max 2 2 ≤ ?dg✝
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits encBits 2 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 2 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 2 1
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree g encBits encBits 2 1
+          [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x0 => h x0) (encPair encBits encBits) encBits 3 1
+      [Meta.Tactic.fun_prop] candidate local theorems for h #[hh : ComputableTidilyInDegree h (encPair encBits encBits) encBits 3 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hh : ComputableTidilyInDegree h (encPair encBits encBits) encBits 3 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max 2 2) (max 1 1 * 3) ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 1 1 * 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree
+      (fun x =>
+        let y := g x;
+        (f y, y))
+      encBits (encPair encBits encBits) 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun y => (f y, y)) ∘ fun x => g x) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree
+          (fun x =>
+            let y := g x;
+            (f y, y))
+          encBits (encPair encBits encBits) 3 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => g x) encBits encBits 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun y => (f y, y)) encBits (encPair encBits encBits) (max 3 1) (max 1 1)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le, Turing.MultiTapeTM.ComputableTidilyInDegree.prod]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits encBits 3 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 3 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 3 1
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) encBits encBits 1 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+        [Meta.Tactic.fun_prop] ❌️ discharging: max 3 1 ≤ ?df✝
+        [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.prod_le, failed to discharge hypotheses
+              max 3 1 ≤ ?df✝
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits encBits 3 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 3 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 3 1
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) encBits encBits 1 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 2 (1 * max 3 1) ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: 1 * max 1 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f (g x), g x)) encBits (encPair encBits encBits) 3 1
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le, Turing.MultiTapeTM.ComputableTidilyInDegree.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => f (g x)) encBits encBits (max 2 (1 * 3)) (1 * 1)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x0 => f x0) encBits encBits 3 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 3 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 3 1
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => g x) encBits encBits 2 1
+          [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree g encBits encBits 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max 2 (1 * 3)) 2 ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (1 * 1) 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree
+      (fun x =>
+        let y := g x;
+        (f y, y))
+      encBits (encPair encBits (encFramed encBits)) 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun y => (f y, y)) ∘ fun x => g x) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree
+          (fun x =>
+            let y := g x;
+            (f y, y))
+          encBits (encPair encBits (encFramed encBits)) 3 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => g x) encBits (encFramed encBits) 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits (encFramed encBits) 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits (encFramed encBits) 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun y => (f y, y)) (encFramed encBits) (encPair encBits (encFramed encBits)) (max 3 1)
+          (max 1 1)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le, Turing.MultiTapeTM.ComputableTidilyInDegree.prod]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f (encFramed encBits) encBits 3 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f (encFramed encBits) encBits 3 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f (encFramed encBits) encBits 3 1
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encFramed encBits) (encFramed encBits) 1 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+        [Meta.Tactic.fun_prop] ❌️ discharging: max 3 1 ≤ ?df✝
+        [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.prod_le, failed to discharge hypotheses
+              max 3 1 ≤ ?df✝
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f (encFramed encBits) encBits 3 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f (encFramed encBits) encBits 3 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f (encFramed encBits) encBits 3 1
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encFramed encBits) (encFramed encBits) 1 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 2 (1 * max 3 1) ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: 1 * max 1 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun q => if q.1 = true then q.2.headD fallback :: q.2.tail else q.2)
+      (encPair encBool (encList enc)) (encList enc) 1 1
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInDegree.ite_le]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.ite_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree Prod.fst (encPair encBool (encList enc)) encBool (max 1 1) 1
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair encBool (encList enc)) (encPair encBool (encList enc)) 1 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2.headD fallback :: x.2.tail) (encPair encBool (encList enc)) (encList enc)
+          (max (max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))) (max (1 * 1) (1 * 1) * 1)) (max (1 * 1) (1 * 1) * 1)
+      [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInDegree.cons]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.cons as:
+                             (fun x1x2 => x1x2.1 :: x1x2.2) ∘ (fun x => (x.2.headD fallback, x.2.tail))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1x2 => x1x2.1 :: x1x2.2) (encPair enc (encList enc)) (encList enc) 1 1
+          [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInDegree.cons]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.cons
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (x.2.headD fallback, x.2.tail)) (encPair encBool (encList enc))
+              (encPair enc (encList enc)) (max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))) (max (1 * 1) (1 * 1))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le, Turing.MultiTapeTM.ComputableTidilyInDegree.prod]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2.headD fallback) (encPair encBool (encList enc)) enc (max (max 1 1) (1 * 1))
+                  (1 * 1)
+              [Meta.Tactic.fun_prop] candidate theorems for List.headD #[Turing.MultiTapeTM.ComputableTidilyInDegree.listHeadD]
+              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.listHeadD as:
+                                     (fun x1 => x1.headD fallback) ∘ (fun x => x.2)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.headD fallback) (encList enc) enc 1 1
+                  [Meta.Tactic.fun_prop] candidate theorems for List.headD #[Turing.MultiTapeTM.ComputableTidilyInDegree.listHeadD]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.listHeadD
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2) (encPair encBool (encList enc)) (encList enc) (max 1 1) 1
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair encBool (encList enc)) (encPair encBool (encList enc)) 1 1
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2.tail) (encPair encBool (encList enc)) (encList enc) (max (max 1 1) (1 * 1))
+                  (1 * 1)
+              [Meta.Tactic.fun_prop] candidate theorems for List.tail #[Turing.MultiTapeTM.ComputableTidilyInDegree.listTail]
+              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.listTail as:
+                                     (fun x1 => x1.tail) ∘ (fun x => x.2)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.tail) (encList enc) (encList enc) 1 1
+                  [Meta.Tactic.fun_prop] candidate theorems for List.tail #[Turing.MultiTapeTM.ComputableTidilyInDegree.listTail]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.listTail
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2) (encPair encBool (encList enc)) (encList enc) (max 1 1) 1
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair encBool (encList enc)) (encPair encBool (encList enc)) 1 1
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+            [Meta.Tactic.fun_prop] ✅️ discharging: max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1)) ≤ max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))
+            [Meta.Tactic.fun_prop] ✅️ discharging: max (1 * 1) (1 * 1) ≤ max (1 * 1) (1 * 1)
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree Prod.snd (encPair encBool (encList enc)) (encList enc) (max 1 1) 1
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair encBool (encList enc)) (encPair encBool (encList enc)) 1 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max 1 1) (max (max (max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))) (max (1 * 1) (1 * 1) * 1)) (max 1 1)) ≤ 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max (1 * 1) (1 * 1) * 1) 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree
+      (fun q =>
+        let word := q.2;
+        if q.1 = true then word.headD fallback :: word.tail else word)
+      (encPair encBool (encList enc)) (encList enc) 1 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree
+          ((fun qword => if qword.1.1 = true then qword.2.headD fallback :: qword.2.tail else qword.2) ∘ fun q =>
+            (q, q.2))
+          ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree
+          (fun q =>
+            let word := q.2;
+            if q.1 = true then word.headD fallback :: word.tail else word)
+          (encPair encBool (encList enc)) (encList enc) 1 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun q => (q, q.2)) (encPair encBool (encList enc))
+          (encPair (encPair encBool (encList enc)) (encList enc)) (max 1 (max 1 1)) (max 1 1)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le, Turing.MultiTapeTM.ComputableTidilyInDegree.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair encBool (encList enc)) (encPair encBool (encList enc)) 1 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree Prod.snd (encPair encBool (encList enc)) (encList enc) (max 1 1) 1
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair encBool (encList enc)) (encPair encBool (encList enc)) 1 1
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+        [Meta.Tactic.fun_prop] ✅️ discharging: max 1 (max 1 1) ≤ max 1 (max 1 1)
+        [Meta.Tactic.fun_prop] ✅️ discharging: max 1 1 ≤ max 1 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun qword => if qword.1.1 = true then qword.2.headD fallback :: qword.2.tail else qword.2)
+          (encPair (encPair encBool (encList enc)) (encList enc)) (encList enc)
+          (max (max (max 1 1) 1)
+            (max (max (max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))) (max (1 * 1) (1 * 1) * 1)) (max 1 1)))
+          (max (max (1 * 1) (1 * 1) * 1) 1)
+      [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInDegree.ite_le]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.ite_le
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.1.1) (encPair (encPair encBool (encList enc)) (encList enc)) encBool
+              (max (max 1 1) 1) 1
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree Prod.fst (encPair (encPair encBool (encList enc)) (encList enc))
+                  (encPair encBool (encList enc)) (max 1 1) 1
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair (encPair encBool (encList enc)) (encList enc))
+                      (encPair (encPair encBool (encList enc)) (encList enc)) 1 1
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2.headD fallback :: x.2.tail)
+              (encPair (encPair encBool (encList enc)) (encList enc)) (encList enc)
+              (max (max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))) (max (1 * 1) (1 * 1) * 1)) (max (1 * 1) (1 * 1) * 1)
+          [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInDegree.cons]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.cons as:
+                                 (fun x1x2 => x1x2.1 :: x1x2.2) ∘ (fun x => (x.2.headD fallback, x.2.tail))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1x2 => x1x2.1 :: x1x2.2) (encPair enc (encList enc)) (encList enc) 1 1
+              [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInDegree.cons]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.cons
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (x.2.headD fallback, x.2.tail))
+                  (encPair (encPair encBool (encList enc)) (encList enc)) (encPair enc (encList enc))
+                  (max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))) (max (1 * 1) (1 * 1))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le, Turing.MultiTapeTM.ComputableTidilyInDegree.prod]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2.headD fallback) (encPair (encPair encBool (encList enc)) (encList enc)) enc
+                      (max (max 1 1) (1 * 1)) (1 * 1)
+                  [Meta.Tactic.fun_prop] candidate theorems for List.headD #[Turing.MultiTapeTM.ComputableTidilyInDegree.listHeadD]
+                  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.listHeadD as:
+                                         (fun x1 => x1.headD fallback) ∘ (fun x => x.2)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.headD fallback) (encList enc) enc 1 1
+                      [Meta.Tactic.fun_prop] candidate theorems for List.headD #[Turing.MultiTapeTM.ComputableTidilyInDegree.listHeadD]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.listHeadD
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2) (encPair (encPair encBool (encList enc)) (encList enc)) (encList enc) (max 1 1)
+                          1
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair (encPair encBool (encList enc)) (encList enc))
+                              (encPair (encPair encBool (encList enc)) (encList enc)) 1 1
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2.tail) (encPair (encPair encBool (encList enc)) (encList enc)) (encList enc)
+                      (max (max 1 1) (1 * 1)) (1 * 1)
+                  [Meta.Tactic.fun_prop] candidate theorems for List.tail #[Turing.MultiTapeTM.ComputableTidilyInDegree.listTail]
+                  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.listTail as:
+                                         (fun x1 => x1.tail) ∘ (fun x => x.2)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.tail) (encList enc) (encList enc) 1 1
+                      [Meta.Tactic.fun_prop] candidate theorems for List.tail #[Turing.MultiTapeTM.ComputableTidilyInDegree.listTail]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.listTail
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.2) (encPair (encPair encBool (encList enc)) (encList enc)) (encList enc) (max 1 1)
+                          1
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair (encPair encBool (encList enc)) (encList enc))
+                              (encPair (encPair encBool (encList enc)) (encList enc)) 1 1
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+                [Meta.Tactic.fun_prop] ✅️ discharging: max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1)) ≤ max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))
+                [Meta.Tactic.fun_prop] ✅️ discharging: max (1 * 1) (1 * 1) ≤ max (1 * 1) (1 * 1)
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree Prod.snd (encPair (encPair encBool (encList enc)) (encList enc)) (encList enc) (max 1 1) 1
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair (encPair encBool (encList enc)) (encList enc))
+                  (encPair (encPair encBool (encList enc)) (encList enc)) 1 1
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+        [Meta.Tactic.fun_prop] ✅️ discharging: max (max (max 1 1) 1)
+                (max (max (max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))) (max (1 * 1) (1 * 1) * 1)) (max 1 1)) ≤
+              max (max (max 1 1) 1)
+                (max (max (max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))) (max (1 * 1) (1 * 1) * 1)) (max 1 1))
+        [Meta.Tactic.fun_prop] ✅️ discharging: max (max (1 * 1) (1 * 1) * 1) 1 ≤ max (max (1 * 1) (1 * 1) * 1) 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max 1 (max 1 1))
+            (max 1 1 *
+              max (max (max 1 1) 1)
+                (max (max (max (max (max 1 1) (1 * 1)) (max (max 1 1) (1 * 1))) (max (1 * 1) (1 * 1) * 1)) (max 1 1))) ≤
+          1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 1 1 * max (max (1 * 1) (1 * 1) * 1) 1 ≤ 1
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInDegree (fun x => if (f x).2.1.isSome = true then (f x).2.1.getD 0 else (f x).1) encBits encUnary 3 0
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInDegree.ite_le]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.ite_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2.1.isSome) encBits encBool (max (max (max 3 1) 1) (1 * 1)) (1 * 0)
+      [Meta.Tactic.fun_prop] candidate theorems for Option.isSome #[Turing.MultiTapeTM.ComputableTidilyInDegree.isSome]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.isSome as:
+                             (fun x1 => x1.isSome) ∘ (fun x => (f x).2.1)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInDegree (fun x1 => x1.isSome) (encOption ?enc) encBool 1 0
+          [Meta.Tactic.fun_prop] candidate theorems for Option.isSome #[Turing.MultiTapeTM.ComputableTidilyInDegree.isSome]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.isSome
+            [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.isSome, failed to infer `(?enc : ℕ ↪ List Bool)`
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInDegree` theorems for `Option.isSome`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInDegree` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.comp, failed to discharge hypotheses
+              ComputableTidilyInDegree (fun x1 => x1.isSome) (encOption ?enc) encBool 1 0
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2.1) encBits (encOption encUnary) (max (max 3 1) 1) 1
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2) encBits (encPair (encOption encUnary) encBool) (max 3 1) 1
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+                  [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.isSome) (encOption encUnary) encBool 1 0
+          [Meta.Tactic.fun_prop] candidate theorems for Option.isSome #[Turing.MultiTapeTM.ComputableTidilyInDegree.isSome]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.isSome
+        [Meta.Tactic.fun_prop] ✅️ discharging: max (max (max 3 1) 1) (1 * 1) ≤ max (max (max 3 1) 1) (1 * 1)
+        [Meta.Tactic.fun_prop] ✅️ discharging: 1 * 0 ≤ 1 * 0
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2.1.getD 0) encBits encUnary (max (max (max 3 1) 1) (1 * 1)) (1 * 1)
+      [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableTidilyInDegree.optionGetD]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.optionGetD as:
+                             (fun x1 => x1.getD 0) ∘ (fun x => (f x).2.1)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.getD 0) (encOption encUnary) encUnary 1 1
+          [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableTidilyInDegree.optionGetD]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.optionGetD
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2.1) encBits (encOption encUnary) (max (max 3 1) 1) 1
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2) encBits (encPair (encOption encUnary) encBool) (max 3 1) 1
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+                  [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).1) encBits encUnary (max 3 1) 1
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max (max (max 3 1) 1) (1 * 1)) (max (max (max (max 3 1) 1) (1 * 1)) (max 3 1)) ≤ 3
+    [Meta.Tactic.fun_prop] ❌️ discharging: max (1 * 1) 1 ≤ 0
+    [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.ite_le, failed to discharge hypotheses
+          max (1 * 1) 1 ≤ 0
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInDegree` theorems for `ite`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInDegree` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: []
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => if (f x).2.1.isSome = true then (f x).2.1.getD 0 else (f x).1) encBits encUnary 3 1
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInDegree.ite_le]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.ite_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2.1.isSome) encBits encBool (max (max (max 3 1) 1) (1 * 1)) (1 * 0)
+      [Meta.Tactic.fun_prop] candidate theorems for Option.isSome #[Turing.MultiTapeTM.ComputableTidilyInDegree.isSome]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.isSome as:
+                             (fun x1 => x1.isSome) ∘ (fun x => (f x).2.1)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInDegree (fun x1 => x1.isSome) (encOption ?enc) encBool 1 0
+          [Meta.Tactic.fun_prop] candidate theorems for Option.isSome #[Turing.MultiTapeTM.ComputableTidilyInDegree.isSome]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.isSome
+            [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.isSome, failed to infer `(?enc : ℕ ↪ List Bool)`
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInDegree` theorems for `Option.isSome`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInDegree` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.comp, failed to discharge hypotheses
+              ComputableTidilyInDegree (fun x1 => x1.isSome) (encOption ?enc) encBool 1 0
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2.1) encBits (encOption encUnary) (max (max 3 1) 1) 1
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2) encBits (encPair (encOption encUnary) encBool) (max 3 1) 1
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+                  [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.isSome) (encOption encUnary) encBool 1 0
+          [Meta.Tactic.fun_prop] candidate theorems for Option.isSome #[Turing.MultiTapeTM.ComputableTidilyInDegree.isSome]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.isSome
+        [Meta.Tactic.fun_prop] ✅️ discharging: max (max (max 3 1) 1) (1 * 1) ≤ max (max (max 3 1) 1) (1 * 1)
+        [Meta.Tactic.fun_prop] ✅️ discharging: 1 * 0 ≤ 1 * 0
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2.1.getD 0) encBits encUnary (max (max (max 3 1) 1) (1 * 1)) (1 * 1)
+      [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableTidilyInDegree.optionGetD]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.optionGetD as:
+                             (fun x1 => x1.getD 0) ∘ (fun x => (f x).2.1)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.getD 0) (encOption encUnary) encUnary 1 1
+          [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableTidilyInDegree.optionGetD]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.optionGetD
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2.1) encBits (encOption encUnary) (max (max 3 1) 1) 1
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).2) encBits (encPair (encOption encUnary) encBool) (max 3 1) 1
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+                  [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).1) encBits encUnary (max 3 1) 1
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits (encPair encUnary (encPair (encOption encUnary) encBool)) 3 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max (max (max 3 1) 1) (1 * 1)) (max (max (max (max 3 1) 1) (1 * 1)) (max 3 1)) ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (1 * 1) 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x0 => f x0) ∘ fun x => g x) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => g x) encBits encBits 2 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 2 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x0 => f x0) encBits encBits 3 1
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 3 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 3 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 2 (1 * 3) ≤ 3
+    [Meta.Tactic.fun_prop] ✅️ discharging: 1 * 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInO (fun l => List.foldl (fun x1 x2 => x1 ^^ x2) false l) encBits encBool List.length fun x => 0
+  [Meta.Tactic.fun_prop] candidate theorems for List.foldl #[Turing.MultiTapeTM.ComputableTidilyInO.foldl_bits_finite]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInO.foldl_bits_finite
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInO (List.foldl (fun state bit => state ^^ bit) false) encBits (encFramed encBool) (fun l => l.length)
+      fun x => 0
+  [Meta.Tactic.fun_prop] candidate theorems for List.foldl #[Turing.MultiTapeTM.ComputableTidilyInO.foldl_bits_finite]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInO.foldl_bits_finite
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInO (fun l => List.foldl step init l) encBits enc List.length fun x => 0
+  [Meta.Tactic.fun_prop] candidate theorems for List.foldl #[Turing.MultiTapeTM.ComputableTidilyInO.foldl_bits_finite]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInO.foldl_bits_finite
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInTimeAndSpace (fun l => List.map f l) encBits encBits (fun l => 4 * l.length + 8) fun x => 0
+  [Meta.Tactic.fun_prop] candidate theorems for List.map #[Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.map_bits]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.map_bits
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInTimeAndSpace List.reverse encBits encBits (fun l => 2 * l.length + 2) fun x => 0
+  [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.reverse_bits]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.reverse_bits
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInTimeAndSpace List.dropLast encBits encBits (fun l => 4 * l.length + 8) fun x => 0
+  [Meta.Tactic.fun_prop] candidate theorems for List.dropLast #[Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.dropLast_bits]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.dropLast_bits
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInTimeAndSpace (fun l => l.getLast?.toList) encBits encBits (fun l => 4 * l.length + 8) fun x => 0
+  [Meta.Tactic.fun_prop] candidate theorems for Option.toList #[Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.getLast?_toList_bits]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.getLast?_toList_bits
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInDegree (fun x => (f x).dropLast.reverse) encBits encBits 2 0
+  [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse as:
+                         (fun x1 => x1.reverse) ∘ (fun x => (f x).dropLast)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x1 => x1.reverse) ∘ fun x => (f x).dropLast) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂))
+          (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => (f x).dropLast.reverse) encBits encBits 2 0
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).dropLast) encBits encBits (max 2 (1 * 1)) (1 * 1)
+      [Meta.Tactic.fun_prop] candidate theorems for List.dropLast #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast as:
+                             (fun x1 => x1.dropLast) ∘ (fun x => f x)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.dropLast) encBits encBits 1 1
+          [Meta.Tactic.fun_prop] candidate theorems for List.dropLast #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => f x) encBits encBits 2 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 2 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.reverse) encBits encBits 1 1
+      [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max 2 (1 * 1)) (1 * 1 * 1) ≤ 2
+    [Meta.Tactic.fun_prop] ❌️ discharging: 1 * 1 * 1 ≤ 0
+    [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.comp_le, failed to discharge hypotheses
+          1 * 1 * 1 ≤ 0
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInDegree` theorems for `List.reverse`
+               trying again after decomposing function as: `(fun x1 => x1.reverse) ∘ (fun x => (f x).dropLast)`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x1 => x1.reverse) ∘ fun x => (f x).dropLast) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂))
+          (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => (f x).dropLast.reverse) encBits encBits 2 0
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).dropLast) encBits encBits (max 2 (1 * 1)) (1 * 1)
+      [Meta.Tactic.fun_prop] candidate theorems for List.dropLast #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast as:
+                             (fun x1 => x1.dropLast) ∘ (fun x => f x)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.dropLast) encBits encBits 1 1
+          [Meta.Tactic.fun_prop] candidate theorems for List.dropLast #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => f x) encBits encBits 2 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 2 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.reverse) encBits encBits 1 1
+      [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max 2 (1 * 1)) (1 * 1 * 1) ≤ 2
+    [Meta.Tactic.fun_prop] ❌️ discharging: 1 * 1 * 1 ≤ 0
+    [Meta.Tactic.fun_prop] @ComputableTidilyInDegree.comp_le, failed to discharge hypotheses
+          1 * 1 * 1 ≤ 0
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).dropLast.reverse) encBits encBits 2 1
+  [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse as:
+                         (fun x1 => x1.reverse) ∘ (fun x => (f x).dropLast)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x1 => x1.reverse) ∘ fun x => (f x).dropLast) ?encIn ?encOut (max ?d₁ (?e₁ * ?d₂))
+          (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => (f x).dropLast.reverse) encBits encBits 2 1
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).dropLast) encBits encBits (max 2 (1 * 1)) (1 * 1)
+      [Meta.Tactic.fun_prop] candidate theorems for List.dropLast #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast as:
+                             (fun x1 => x1.dropLast) ∘ (fun x => f x)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.dropLast) encBits encBits 1 1
+          [Meta.Tactic.fun_prop] candidate theorems for List.dropLast #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => f x) encBits encBits 2 1
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 2 1]
+          [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.reverse) encBits encBits 1 1
+      [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max 2 (1 * 1)) (1 * 1 * 1) ≤ 2
+    [Meta.Tactic.fun_prop] ✅️ discharging: 1 * 1 * 1 ≤ 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => g (f x).getLast?.toList) encBits encBits 2 0
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInDegree.comp
+        ComputableTidilyInDegree ((fun x0 => g x0) ∘ fun x => (f x).getLast?.toList) ?encIn ?encOut
+          (max ?d₁ (?e₁ * ?d₂)) (?e₁ * ?e₂)
+        with
+        ComputableTidilyInDegree (fun x => g (f x).getLast?.toList) encBits encBits 2 0
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).getLast?.toList) encBits encBits (max (max 2 (1 * 1)) (1 * 0 * 1)) (1 * 0 * 1)
+      [Meta.Tactic.fun_prop] candidate theorems for Option.toList #[Turing.MultiTapeTM.ComputableTidilyInDegree.optionBoolToList, Turing.MultiTapeTM.ComputableTidilyInDegree.bitsGetLast?ToList]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.optionBoolToList as:
+                             (fun x1 => x1.toList) ∘ (fun x => (f x).getLast?)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.toList) (encOption encBool) encBits 1 1
+          [Meta.Tactic.fun_prop] candidate theorems for Option.toList #[Turing.MultiTapeTM.ComputableTidilyInDegree.optionBoolToList, Turing.MultiTapeTM.ComputableTidilyInDegree.bitsGetLast?ToList]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.optionBoolToList
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => (f x).getLast?) encBits (encOption encBool) (max 2 (1 * 1)) (1 * 0)
+          [Meta.Tactic.fun_prop] candidate theorems for List.getLast? #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsGetLast?]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInDegree.bitsGetLast? as:
+                                 (fun x1 => x1.getLast?) ∘ (fun x => f x)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.comp
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x1 => x1.getLast?) encBits (encOption encBool) 1 0
+              [Meta.Tactic.fun_prop] candidate theorems for List.getLast? #[Turing.MultiTapeTM.ComputableTidilyInDegree.bitsGetLast?]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.bitsGetLast?
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => f x) encBits encBits 2 1
+              [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInDegree f encBits encBits 2 1]
+              [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInDegree f encBits encBits 2 1
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x0 => g x0) encBits encBits 5 1
+      [Meta.Tactic.fun_prop] candidate local theorems for g #[hg : ComputableTidilyInDegree g encBits encBits 5 1]
+      [Meta.Tactic.fun_prop] ✅️ applying: hg : ComputableTidilyInDegree g encBits encBits 5 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max (max 2 (1 * 1)) (1 * 0 * 1)) (1 * 0 * 1 * 5) ≤ 2
+    [Meta.Tactic.fun_prop] ✅️ discharging: 1 * 0 * 1 * 1 ≤ 0
+'Turing.MultiTapeTM.read_rawFrameReader' depends on axioms: [propext, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/6637bf6739f120fc/traced/ComplexityTests/Quantitative.lean:361:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.read_rawFrameReader' depends on axioms: [propext, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

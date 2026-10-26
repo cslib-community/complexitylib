@@ -1,0 +1,154 @@
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => values a (index a)) input enc
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (a, index a)) input (encPair input indexEncoding)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime index input indexEncoding
+          [Meta.Tactic.fun_prop] candidate local theorems for index #[hindex : ComputableInPolyTime index input indexEncoding]
+          [Meta.Tactic.fun_prop] ✅️ applying: hindex : ComputableInPolyTime index input indexEncoding
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) (encPair input indexEncoding) enc
+      [Meta.Tactic.fun_prop] candidate local theorems for values #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) (encPair input indexEncoding) enc
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) ?encMid enc
+      [Meta.Tactic.fun_prop] candidate local theorems for values #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) ?encMid enc
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => values a (index a)) input enc
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (a, index a)) input (encPair input ?enc₂✝)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime index input ?enc₂
+          [Meta.Tactic.fun_prop] candidate local theorems for index #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+              ComputableInPolyTime index input ?enc₂
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+              PairEncoding ?enc₁ ?enc₂ (encPair input ?enc₂✝)
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+              PairEncoding ?enc₁ ?enc₂ (encPair input ?enc₂✝)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun a => (a, index a)) input (encPair input ?enc₂✝)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) ?encMid enc
+      [Meta.Tactic.fun_prop] candidate local theorems for values #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) ?encMid enc
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => Function.update (values a) (index a) (value a)) input (encPi enc)
+  [Meta.Tactic.fun_prop] candidate theorems for Function.update #[Turing.MultiTapeTM.ComputableInPolyTime.pi_update']
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pi_update'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime values input (encPi enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for values #[hvalues : ComputableInPolyTime values input (encPi enc)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalues : ComputableInPolyTime values input (encPi enc)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime index input indexEncoding
+      [Meta.Tactic.fun_prop] candidate local theorems for index #[hindex : ComputableInPolyTime index input indexEncoding]
+      [Meta.Tactic.fun_prop] ✅️ applying: hindex : ComputableInPolyTime index input indexEncoding
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime value input enc
+      [Meta.Tactic.fun_prop] candidate local theorems for value #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.pi_update', failed to discharge hypotheses
+          ComputableInPolyTime value input enc
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Function.update`
+               trying again after decomposing function as: `(fun a3a4a5 => Function.update a3a4a5.1 a3a4a5.2.1 a3a4a5.2.2) ∘ (fun a => (values a, index a, value a))`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (values a, index a, value a)) input (encPair (encPi enc) (encPair indexEncoding ?enc₂✝))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime values input (encPi enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for values #[hvalues : ComputableInPolyTime values input (encPi enc)]
+          [Meta.Tactic.fun_prop] ✅️ applying: hvalues : ComputableInPolyTime values input (encPi enc)
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (index a, value a)) input (encPair indexEncoding ?enc₂✝)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime index input indexEncoding
+              [Meta.Tactic.fun_prop] candidate local theorems for index #[hindex : ComputableInPolyTime index input indexEncoding]
+              [Meta.Tactic.fun_prop] ✅️ applying: hindex : ComputableInPolyTime index input indexEncoding
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime value input ?enc₂
+              [Meta.Tactic.fun_prop] candidate local theorems for value #[]
+              [Meta.Tactic.fun_prop] candidate transition theorems: []
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                  ComputableInPolyTime value input ?enc₂
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                  PairEncoding ?enc₁ ?enc₂ (encPair indexEncoding ?enc₂✝)
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                  PairEncoding ?enc₁ ?enc₂ (encPair indexEncoding ?enc₂✝)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+              ComputableInPolyTime (fun a => (index a, value a)) input (encPair indexEncoding ?enc₂✝)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+              PairEncoding ?enc₁ ?enc₂ (encPair (encPi enc) (encPair indexEncoding ?enc₂✝))
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+              PairEncoding ?enc₁ ?enc₂ (encPair (encPi enc) (encPair indexEncoding ?enc₂✝))
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun a => (values a, index a, value a)) input
+            (encPair (encPi enc) (encPair indexEncoding ?enc₂✝))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a3a4a5 => Function.update a3a4a5.1 a3a4a5.2.1 a3a4a5.2.2) (encPair (encPi enc) ?enc₂)
+          (encPi enc)
+      [Meta.Tactic.fun_prop] candidate theorems for Function.update #[Turing.MultiTapeTM.ComputableInPolyTime.pi_update']
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pi_update'
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.fst (encPair (encPi enc) ?enc₂) (encPi enc)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst, failed to infer `(?enc₂ : Index × Value ↪ List Bool)`
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.fst`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pi_update', failed to discharge hypotheses
+              ComputableInPolyTime Prod.fst (encPair (encPi enc) ?enc₂) (encPi enc)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Function.update`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun a3a4a5 => Function.update a3a4a5.1 a3a4a5.2.1 a3a4a5.2.2)
+            (encPair (encPi enc) ?enc₂) (encPi enc)
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => Function.update (values a) (index a) (value a)) input (encPi enc)
+  [Meta.Tactic.fun_prop] candidate theorems for Function.update #[Turing.MultiTapeTM.ComputableInPolyTime.pi_update']
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pi_update'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime values input (encPi enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for values #[hvalues : ComputableInPolyTime values input (encPi enc)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalues : ComputableInPolyTime values input (encPi enc)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime index input indexEncoding
+      [Meta.Tactic.fun_prop] candidate local theorems for index #[hindex : ComputableInPolyTime index input indexEncoding]
+      [Meta.Tactic.fun_prop] ✅️ applying: hindex : ComputableInPolyTime index input indexEncoding
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime value input enc
+      [Meta.Tactic.fun_prop] candidate local theorems for value #[hvalue : ComputableInPolyTime value input enc]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalue : ComputableInPolyTime value input enc
+'Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/ef044460be03c38e/traced/ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimePiPrimitives.lean:72:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInPolyTime.pi_update'' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/ef044460be03c38e/traced/ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimePiPrimitives.lean:79:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Turing.MultiTapeTM.ComputableInPolyTime.pi_update'' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Turing.MultiTapeTM.ComputableInPolyTime.pi_update'' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

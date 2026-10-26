@@ -1,0 +1,135 @@
+[Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (fun p => writeForever.runClosedCoins (false :: p.2) p.1)
+      (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapePTM.runClosedCoins #[Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins as:
+                         (fun p4p5 => writeForever.runClosedCoins p4p5.1 p4p5.2) ∘ (fun p => (false :: p.2, p.1))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (fun p4p5 => writeForever.runClosedCoins p4p5.1 p4p5.2)
+          (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapePTM.runClosedCoins #[Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins
+    [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (fun p => (false :: p.2, p.1))
+          (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits)
+          (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (fun x => false :: x.2)
+              (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+          [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCons, Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons'
+            [Meta.Tactic.fun_prop] failed to unify @MultiTapeTM.ComputableTidilyInPolyTime.cons'
+                MultiTapeTM.ComputableTidilyInPolyTime (fun x => ?head x :: ?tail x) ?encIn (MultiTapeTM.encList ?encA)
+                with
+                MultiTapeTM.ComputableTidilyInPolyTime (fun x => false :: x.2)
+                  (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCons
+            [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (fun x => false) (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits)
+                  MultiTapeTM.encBool
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+            [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime Prod.snd (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits)
+                  MultiTapeTM.encBits
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (fun p => p) (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits)
+                      (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (fun a => a) MultiTapeTM.encBits MultiTapeTM.encBits
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime Prod.fst (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits)
+              MultiTapeTM.encBits
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (fun x => x) (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits)
+                  (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ MultiTapeTM.ComputableTidilyInPolyTime
+      (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+      (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+  [aesop] Initial goal:
+        ⊢ MultiTapeTM.ComputableTidilyInPolyTime (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+            (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ MultiTapeTM.ComputableTidilyInPolyTime (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+            (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ MultiTapeTM.ComputableTidilyInPolyTime
+      (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+      (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+  [aesop] ⊢ MultiTapeTM.ComputableTidilyInPolyTime (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+          (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.12382):
+      [aesop] ⊢ MultiTapeTM.ComputableTidilyInPolyTime (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+              (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ MultiTapeTM.ComputableTidilyInPolyTime
+      (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+      (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+  [aesop] Initial goal:
+        ⊢ MultiTapeTM.ComputableTidilyInPolyTime (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+            (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ MultiTapeTM.ComputableTidilyInPolyTime (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+            (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ MultiTapeTM.ComputableTidilyInPolyTime (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+              (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (fun p => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+            (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits
+        [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapePTM.runClosedCoins #[Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

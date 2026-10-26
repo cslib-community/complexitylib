@@ -1,0 +1,30 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => appendCodes p.1 p.2) (encPair encNat (encList encCode)) encCode
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Boolean.appendCodes #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Circuits.Boolean.appendCodes`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => appendCodes p.1 p.2) (encPair encNat (encList encCode)) encCode
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Boolean.appendCodes #[Cslib.Circuits.Boolean.computableInPolyTime_appendCodes]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Circuits.Boolean.computableInPolyTime_appendCodes
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair encNat (encList encCode)) encNat
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encNat (encList encCode)) (encPair encNat (encList encCode))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encNat encNat
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair encNat (encList encCode)) (encList encCode)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encNat (encList encCode)) (encPair encNat (encList encCode))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList encCode) (encList encCode)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+'Cslib.Circuits.Boolean.bundleCode_eq_foldl_appendCode' depends on axioms: [propext, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/d987691c1f379bd3/traced/ComplexityTests/CodeComposition.lean:140:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Circuits.Boolean.bundleCode_eq_foldl_appendCode' depends on axioms: [propext, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

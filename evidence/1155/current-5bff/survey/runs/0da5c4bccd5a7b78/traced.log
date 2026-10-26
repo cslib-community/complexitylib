@@ -1,0 +1,57 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTimeWithOracle A (fun x => x.reverse) encBits encBits
+  [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[]
+  [Meta.Tactic.fun_prop] failed applying `Cslib.Complexity.ComputableInPolyTimeWithOracle` theorems for `List.reverse`
+               now trying to prove `Cslib.Complexity.ComputableInPolyTimeWithOracle` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.computableInPolyTimeWithOracle]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.computableInPolyTimeWithOracle
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.reverse) encBits encBits
+      [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverseWithInput]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput
+        [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.listReverseWithInput
+            ComputableInPolyTime (fun a => List.reverse (?list a)) ?encIn (encList ?encA)
+            with
+            ComputableInPolyTime (fun x => x.reverse) encBits encBits
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime List.reverse encBits encBits
+  [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverseWithInput]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput
+    [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.listReverseWithInput
+        ComputableInPolyTime (fun a => List.reverse (?list a)) ?encIn (encList ?encA)
+        with
+        ComputableInPolyTime (fun as => as.reverse) encBits encBits
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (List.cons true) encBits encBits
+  [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableInPolyTime.cons', Turing.MultiTapeTM.ComputableInPolyTime.bitsCons]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.cons'
+    [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.cons'
+        ComputableInPolyTime (fun x => ?head x :: ?tail x) ?encIn (encList ?encA)
+        with
+        ComputableInPolyTime (fun tail => true :: tail) encBits encBits
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsCons
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => true) encBits encBool
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) encBits encBits
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime List.reverse encBits encBits
+  [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverseWithInput]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput
+    [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.listReverseWithInput
+        ComputableInPolyTime (fun a => List.reverse (?list a)) ?encIn (encList ?encA)
+        with
+        ComputableInPolyTime (fun as => as.reverse) encBits encBits
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime List.reverse encBits encBits
+  [Meta.Tactic.fun_prop] candidate theorems for List.reverse #[Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse, Turing.MultiTapeTM.ComputableInPolyTime.bitsReverseWithInput]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput
+    [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.listReverseWithInput
+        ComputableInPolyTime (fun a => List.reverse (?list a)) ?encIn (encList ?encA)
+        with
+        ComputableInPolyTime (fun as => as.reverse) encBits encBits
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse
+'Cslib.OracleComp.interpret_id_congr' does not depend on any axioms
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/0da5c4bccd5a7b78/traced/ComplexityTests/Relativization.lean:230:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.OracleComp.interpret_id_congr' does not depend on any axioms
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

@@ -1,0 +1,786 @@
+[
+  {
+    "external_warning_acceptance": true,
+    "diagnostic_severities": {},
+    "file_id": "d987691c1f379bd3",
+    "path": "ComplexityTests/CodeComposition.lean",
+    "mode": "baseline",
+    "run_id": "current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb",
+    "provenance": "6c1485b96aa77079f090d5a934cd6153d9138a87635d78b08667743275fcd807",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 1.8673925320035778,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "--json",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "-Dweak.linter.style.header=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/d987691c1f379bd3/baseline",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb/d987691c1f379bd3-baseline.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/d987691c1f379bd3/baseline/ComplexityTests/CodeComposition.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "cfa2662a083565c3b2dc095e8e2420baeb897d4570f15367408aa40809bd8dba",
+    "original_sha256": "cfa2662a083565c3b2dc095e8e2420baeb897d4570f15367408aa40809bd8dba",
+    "insertion_offset": 370,
+    "insertion_bytes": 0,
+    "insertions": [
+      {
+        "original_byte": 370,
+        "bytes": 0
+      },
+      {
+        "original_byte": 534,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "ComplexityTests.CodeComposition",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.CodeComposition",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.CarrySave",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "ComplexityTests.CodeComposition.bundler_polynomialTime",
+        "ComplexityTests.CodeComposition.constructor_polynomialTime",
+        "ComplexityTests.CodeComposition.varying_bundler_polynomialTime",
+        "_private.ComplexityTests.CodeComposition.0.ComplexityTests.CodeComposition.left",
+        "_private.ComplexityTests.CodeComposition.0.ComplexityTests.CodeComposition.right"
+      ],
+      "private_ilean_sha256": "64e558848f7af9b612e986ea406f3f847d1a94229a9e100accf06b8347fccfb7",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "external_warning_acceptance": true,
+    "diagnostic_severities": {},
+    "file_id": "fe86bf0a8e5e8785",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "baseline",
+    "run_id": "current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb",
+    "provenance": "6c1485b96aa77079f090d5a934cd6153d9138a87635d78b08667743275fcd807",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.318015146011021,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "--json",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/fe86bf0a8e5e8785/baseline",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb/fe86bf0a8e5e8785-baseline.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/fe86bf0a8e5e8785/baseline/Complexity/Computability/PCP/Encoded/Cloud.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "original_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "insertion_offset": 486,
+    "insertion_bytes": 0,
+    "insertions": [
+      {
+        "original_byte": 486,
+        "bytes": 0
+      },
+      {
+        "original_byte": 1784,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.PCP.Encoded.Cloud",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.DegreeReduction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.NodupEquivFin",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.ProdSigma",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.cloud",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_apply",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_symm_apply",
+        "Cslib.PCP.Encoded.Graph.endpoint",
+        "Cslib.PCP.Encoded.Graph.endpoint_eq",
+        "Cslib.PCP.Encoded.Graph.halfEdges",
+        "Cslib.PCP.Encoded.Graph.halfEdgesEnumeration",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_cloud",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_endpoint",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_halfEdges",
+        "Cslib.PCP.Encoded.Graph.length_cloud_le",
+        "Cslib.PCP.Encoded.Graph.length_halfEdges",
+        "Cslib.PCP.Encoded.Graph.mem_cloud_iff",
+        "Cslib.PCP.Encoded.Graph.mem_halfEdges_iff",
+        "Cslib.PCP.Encoded.Graph.nodup_cloud",
+        "Cslib.PCP.Encoded.Graph.nodup_halfEdges"
+      ],
+      "private_ilean_sha256": "03594323bff61048e297393fb0036336cf980a404af14b8ee81784e86a11344b",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "external_warning_acceptance": true,
+    "diagnostic_severities": {},
+    "file_id": "d987691c1f379bd3",
+    "path": "ComplexityTests/CodeComposition.lean",
+    "mode": "import-only",
+    "run_id": "current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb",
+    "provenance": "6c1485b96aa77079f090d5a934cd6153d9138a87635d78b08667743275fcd807",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 1.8169363400083967,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "--json",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "-Dweak.linter.style.header=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/d987691c1f379bd3/import-only",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb/d987691c1f379bd3-import-only.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/d987691c1f379bd3/import-only/ComplexityTests/CodeComposition.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "091cd123cdb1add1077833eae23b31dbb180fa2e89af8c818f861e3b1bf4aece",
+    "original_sha256": "cfa2662a083565c3b2dc095e8e2420baeb897d4570f15367408aa40809bd8dba",
+    "insertion_offset": 370,
+    "insertion_bytes": 25,
+    "insertions": [
+      {
+        "original_byte": 370,
+        "bytes": 25
+      },
+      {
+        "original_byte": 534,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "ComplexityTests.CodeComposition",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.CodeComposition",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.CarrySave",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          false,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "ComplexityTests.CodeComposition.bundler_polynomialTime",
+        "ComplexityTests.CodeComposition.constructor_polynomialTime",
+        "ComplexityTests.CodeComposition.varying_bundler_polynomialTime",
+        "_private.ComplexityTests.CodeComposition.0.ComplexityTests.CodeComposition.left",
+        "_private.ComplexityTests.CodeComposition.0.ComplexityTests.CodeComposition.right"
+      ],
+      "private_ilean_sha256": "6de7fe0e651bcc83105e81e6476b32c06f6f733549c23cec74c12a08f923fd4a",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "external_warning_acceptance": true,
+    "diagnostic_severities": {},
+    "file_id": "fe86bf0a8e5e8785",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "import-only",
+    "run_id": "current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb",
+    "provenance": "6c1485b96aa77079f090d5a934cd6153d9138a87635d78b08667743275fcd807",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.317657404986676,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "--json",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/fe86bf0a8e5e8785/import-only",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb/fe86bf0a8e5e8785-import-only.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/fe86bf0a8e5e8785/import-only/Complexity/Computability/PCP/Encoded/Cloud.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "782bf7b95f391a04647b7efeb7520c4edcd23f6e0c8926cdcdc4a610e8cde31d",
+    "original_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "insertion_offset": 486,
+    "insertion_bytes": 25,
+    "insertions": [
+      {
+        "original_byte": 486,
+        "bytes": 25
+      },
+      {
+        "original_byte": 1784,
+        "bytes": 0
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.PCP.Encoded.Cloud",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.DegreeReduction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.NodupEquivFin",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.ProdSigma",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.cloud",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_apply",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_symm_apply",
+        "Cslib.PCP.Encoded.Graph.endpoint",
+        "Cslib.PCP.Encoded.Graph.endpoint_eq",
+        "Cslib.PCP.Encoded.Graph.halfEdges",
+        "Cslib.PCP.Encoded.Graph.halfEdgesEnumeration",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_cloud",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_endpoint",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_halfEdges",
+        "Cslib.PCP.Encoded.Graph.length_cloud_le",
+        "Cslib.PCP.Encoded.Graph.length_halfEdges",
+        "Cslib.PCP.Encoded.Graph.mem_cloud_iff",
+        "Cslib.PCP.Encoded.Graph.mem_halfEdges_iff",
+        "Cslib.PCP.Encoded.Graph.nodup_cloud",
+        "Cslib.PCP.Encoded.Graph.nodup_halfEdges"
+      ],
+      "private_ilean_sha256": "9f8e0768486214c3342b16ea92a8b11c8eb96249d21d72a614562317cad8bb6c",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "external_warning_acceptance": true,
+    "diagnostic_severities": {},
+    "file_id": "d987691c1f379bd3",
+    "path": "ComplexityTests/CodeComposition.lean",
+    "mode": "measured",
+    "run_id": "current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb",
+    "provenance": "6c1485b96aa77079f090d5a934cd6153d9138a87635d78b08667743275fcd807",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 1.8674502169596963,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "--json",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "-Dweak.linter.style.header=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/d987691c1f379bd3/measured",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb/d987691c1f379bd3-measured.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/d987691c1f379bd3/measured/ComplexityTests/CodeComposition.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "019e67e1b36f11a697a48583404c7e2aac5274a83464d3c588035cab283f80d5",
+    "original_sha256": "cfa2662a083565c3b2dc095e8e2420baeb897d4570f15367408aa40809bd8dba",
+    "insertion_offset": 370,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 370,
+        "bytes": 25
+      },
+      {
+        "original_byte": 534,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "ComplexityTests.CodeComposition",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.CodeComposition",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.CarrySave",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          false,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "ComplexityTests.CodeComposition.bundler_polynomialTime",
+        "ComplexityTests.CodeComposition.constructor_polynomialTime",
+        "ComplexityTests.CodeComposition.varying_bundler_polynomialTime",
+        "_private.ComplexityTests.CodeComposition.0.ComplexityTests.CodeComposition.left",
+        "_private.ComplexityTests.CodeComposition.0.ComplexityTests.CodeComposition.right"
+      ],
+      "private_ilean_sha256": "7496a2b9508804345ef3dceaab54ec2e25e68efae40c6c3f31ecb8c61eabb50d",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "external_warning_acceptance": true,
+    "diagnostic_severities": {},
+    "file_id": "fe86bf0a8e5e8785",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "measured",
+    "run_id": "current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb",
+    "provenance": "6c1485b96aa77079f090d5a934cd6153d9138a87635d78b08667743275fcd807",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.3679135349811986,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "--json",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/fe86bf0a8e5e8785/measured",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb/fe86bf0a8e5e8785-measured.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/fe86bf0a8e5e8785/measured/Complexity/Computability/PCP/Encoded/Cloud.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "d76d090034fe5225aea8fabed001c31e9a6d119c9ab0ffd9c1d4d667a1ac2c3d",
+    "original_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "insertion_offset": 486,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 486,
+        "bytes": 25
+      },
+      {
+        "original_byte": 1784,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.PCP.Encoded.Cloud",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.DegreeReduction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.NodupEquivFin",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.ProdSigma",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.cloud",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_apply",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_symm_apply",
+        "Cslib.PCP.Encoded.Graph.endpoint",
+        "Cslib.PCP.Encoded.Graph.endpoint_eq",
+        "Cslib.PCP.Encoded.Graph.halfEdges",
+        "Cslib.PCP.Encoded.Graph.halfEdgesEnumeration",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_cloud",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_endpoint",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_halfEdges",
+        "Cslib.PCP.Encoded.Graph.length_cloud_le",
+        "Cslib.PCP.Encoded.Graph.length_halfEdges",
+        "Cslib.PCP.Encoded.Graph.mem_cloud_iff",
+        "Cslib.PCP.Encoded.Graph.mem_halfEdges_iff",
+        "Cslib.PCP.Encoded.Graph.nodup_cloud",
+        "Cslib.PCP.Encoded.Graph.nodup_halfEdges"
+      ],
+      "private_ilean_sha256": "ea8b7b21b01dc382b9ddd8be021cd4d32e951815dd8ac602e7cecfc4716750c7",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "external_warning_acceptance": true,
+    "diagnostic_severities": {
+      "information": 1
+    },
+    "file_id": "d987691c1f379bd3",
+    "path": "ComplexityTests/CodeComposition.lean",
+    "mode": "traced",
+    "run_id": "current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb",
+    "provenance": "6c1485b96aa77079f090d5a934cd6153d9138a87635d78b08667743275fcd807",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 1.867551454983186,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "--json",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "-Dweak.linter.style.header=false",
+      "-Dtrace.Meta.Tactic.fun_prop=true",
+      "-Dtrace.aesop=true",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/d987691c1f379bd3/traced",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb/d987691c1f379bd3-traced.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/d987691c1f379bd3/traced/ComplexityTests/CodeComposition.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "019e67e1b36f11a697a48583404c7e2aac5274a83464d3c588035cab283f80d5",
+    "original_sha256": "cfa2662a083565c3b2dc095e8e2420baeb897d4570f15367408aa40809bd8dba",
+    "insertion_offset": 370,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 370,
+        "bytes": 25
+      },
+      {
+        "original_byte": 534,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "ComplexityTests.CodeComposition",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.CodeComposition",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Boolean.CarrySave",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          false,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "ComplexityTests.CodeComposition.bundler_polynomialTime",
+        "ComplexityTests.CodeComposition.constructor_polynomialTime",
+        "ComplexityTests.CodeComposition.varying_bundler_polynomialTime",
+        "_private.ComplexityTests.CodeComposition.0.ComplexityTests.CodeComposition.left",
+        "_private.ComplexityTests.CodeComposition.0.ComplexityTests.CodeComposition.right"
+      ],
+      "private_ilean_sha256": "7496a2b9508804345ef3dceaab54ec2e25e68efae40c6c3f31ecb8c61eabb50d",
+      "outputs_published": false
+    },
+    "context_error": null
+  },
+  {
+    "external_warning_acceptance": true,
+    "diagnostic_severities": {
+      "information": 3
+    },
+    "file_id": "fe86bf0a8e5e8785",
+    "path": "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "mode": "traced",
+    "run_id": "current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb",
+    "provenance": "6c1485b96aa77079f090d5a934cd6153d9138a87635d78b08667743275fcd807",
+    "returncode": 0,
+    "external_timeout": false,
+    "process_wall_seconds": 2.468804166011978,
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "--json",
+      "-Dweak.linter.mathlibStandardSet=true",
+      "-Dweak.linter.flexible=true",
+      "-Dweak.linter.pythonStyle=false",
+      "-Dweak.linter.checkInitImports=false",
+      "-Dweak.linter.allScriptsDocumented=false",
+      "-Dweak.linter.unicodeLinter=false",
+      "-DautoImplicit=false",
+      "-Dtrace.Meta.Tactic.fun_prop=true",
+      "-Dtrace.aesop=true",
+      "--root=/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/fe86bf0a8e5e8785/traced",
+      "-i",
+      "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/diag1155/full/current-5bff-c6afe2f6-5186-40f2-a546-06717ac8c1cb/fe86bf0a8e5e8785-traced.ilean",
+      "/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/default-invocation-control/variants/fe86bf0a8e5e8785/traced/Complexity/Computability/PCP/Encoded/Cloud.lean"
+    ],
+    "cwd": "/home/samuel/Code/complexitylib-codex/automation-full-d7-1155",
+    "source_sha256": "d76d090034fe5225aea8fabed001c31e9a6d119c9ab0ffd9c1d4d667a1ac2c3d",
+    "original_sha256": "60726baa9f9781cdb21818c2adf34dc10b0a3393e66893db2bfbea839df88418",
+    "insertion_offset": 486,
+    "insertion_bytes": 43,
+    "insertions": [
+      {
+        "original_byte": 486,
+        "bytes": 25
+      },
+      {
+        "original_byte": 1784,
+        "bytes": 18
+      }
+    ],
+    "actual_context": {
+      "module": "Complexity.Computability.PCP.Encoded.Cloud",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.DegreeReduction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.NodupEquivFin",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.ProdSigma",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Measure",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.cloud",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_apply",
+        "Cslib.PCP.Encoded.Graph.cloudEquiv_symm_apply",
+        "Cslib.PCP.Encoded.Graph.endpoint",
+        "Cslib.PCP.Encoded.Graph.endpoint_eq",
+        "Cslib.PCP.Encoded.Graph.halfEdges",
+        "Cslib.PCP.Encoded.Graph.halfEdgesEnumeration",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_cloud",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_endpoint",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_halfEdges",
+        "Cslib.PCP.Encoded.Graph.length_cloud_le",
+        "Cslib.PCP.Encoded.Graph.length_halfEdges",
+        "Cslib.PCP.Encoded.Graph.mem_cloud_iff",
+        "Cslib.PCP.Encoded.Graph.mem_halfEdges_iff",
+        "Cslib.PCP.Encoded.Graph.nodup_cloud",
+        "Cslib.PCP.Encoded.Graph.nodup_halfEdges"
+      ],
+      "private_ilean_sha256": "ea8b7b21b01dc382b9ddd8be021cd4d32e951815dd8ac602e7cecfc4716750c7",
+      "outputs_published": false
+    },
+    "context_error": null
+  }
+]

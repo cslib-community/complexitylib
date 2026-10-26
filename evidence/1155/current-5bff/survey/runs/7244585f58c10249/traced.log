@@ -1,0 +1,10 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => if dec a = true then y else n) enc enc
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite', Turing.MultiTapeTM.ComputableInPolyTime.ite, Turing.MultiTapeTM.ComputableInPolyTime.ite_decide]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime dec enc encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for dec #[hdec : ComputableInPolyTime dec enc encBool]
+      [Meta.Tactic.fun_prop] ✅️ applying: hdec : ComputableInPolyTime dec enc encBool
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => y) enc enc
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => n) enc enc
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const

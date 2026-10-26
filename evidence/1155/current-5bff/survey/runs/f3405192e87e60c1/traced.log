@@ -1,0 +1,81 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun φ =>
+        if ThreeSATThree.syntaxCheck φ = true then
+          (SAT.PlanarCompile.formula φ, SAT.PlanarCompile.positions φ, SAT.PlanarCompile.routes φ)
+        else ([[]], [(0, 0)], []))
+      encCNF (encPair encCNF (encPair Orthogonal.encRoute (encList Orthogonal.encRoute)))
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide, Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite', Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => decide (ThreeSATThree.syntaxCheck a = true)) encCNF encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le']
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt'
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_lt'
+            ComputableTidilyInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+            with
+            ComputableTidilyInPolyTime (fun a => decide (ThreeSATThree.syntaxCheck a = true)) encCNF encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_and
+            ComputableTidilyInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+            with
+            ComputableTidilyInPolyTime (fun a => decide (ThreeSATThree.syntaxCheck a = true)) encCNF encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_or
+            ComputableTidilyInPolyTime (fun a => decide (?left a ∨ ?right a)) ?encA encBool
+            with
+            ComputableTidilyInPolyTime (fun a => decide (ThreeSATThree.syntaxCheck a = true)) encCNF encBool
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_eq
+            ComputableTidilyInPolyTime (fun p => decide (p.1 = p.2)) (encPair ?enc ?enc) encBool
+            with
+            ComputableTidilyInPolyTime (fun a => decide (ThreeSATThree.syntaxCheck a = true)) encCNF encBool
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime ThreeSATThree.syntaxCheck encCNF encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.ThreeSATThree.syntaxCheck #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.ThreeSATThree.syntaxCheck`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => ThreeSATThree.syntaxCheck φ) encCNF encBool
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.ThreeSATThree.syntaxCheck #[Cslib.Complexity.ThreeSATThree.computableInPolyTime_syntaxCheck]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.ThreeSATThree.computableInPolyTime_syntaxCheck
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => true) encCNF encBool
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+          (fun a => (SAT.PlanarCompile.formula a, SAT.PlanarCompile.positions a, SAT.PlanarCompile.routes a)) encCNF
+          (encPair encCNF (encPair Orthogonal.encRoute (encList Orthogonal.encRoute)))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime SAT.PlanarCompile.formula encCNF encCNF
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.PlanarCompile.formula #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.SAT.PlanarCompile.formula`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => SAT.PlanarCompile.formula φ) encCNF encCNF
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.PlanarCompile.formula #[Cslib.Complexity.SAT.PlanarCompile.computableInPolyTime_formula]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.PlanarCompile.computableInPolyTime_formula
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (SAT.PlanarCompile.positions x, SAT.PlanarCompile.routes x)) encCNF
+              (encPair Orthogonal.encRoute (encList Orthogonal.encRoute))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime SAT.PlanarCompile.positions encCNF Orthogonal.encRoute
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.PlanarCompile.positions #[]
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.SAT.PlanarCompile.positions`
+                           now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => SAT.PlanarCompile.positions φ) encCNF Orthogonal.encRoute
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.PlanarCompile.positions #[Cslib.Complexity.SAT.PlanarCompile.computableInPolyTime_positions]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.PlanarCompile.computableInPolyTime_positions
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime SAT.PlanarCompile.routes encCNF (encList Orthogonal.encRoute)
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.PlanarCompile.routes #[]
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.SAT.PlanarCompile.routes`
+                           now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => SAT.PlanarCompile.routes φ) encCNF (encList Orthogonal.encRoute)
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.PlanarCompile.routes #[Cslib.Complexity.SAT.PlanarCompile.computableInPolyTime_routes]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.PlanarCompile.computableInPolyTime_routes
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => ([[]], [(0, 0)], [])) encCNF
+          (encPair encCNF (encPair Orthogonal.encRoute (encList Orthogonal.encRoute)))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const

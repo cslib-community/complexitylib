@@ -1,0 +1,28 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun c => high (x c)) enc (encList encNat)
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.VertexCover.Buss.high #[Cslib.Complexity.VertexCover.Buss.computableInPolyTime_high]
+  [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.VertexCover.Buss.computableInPolyTime_high as:
+                         (fun c0 => high c0) ∘ (fun c => x c)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun c => x c) enc (encPair encGraph encNat)
+      [Meta.Tactic.fun_prop] candidate local theorems for x #[hx : ComputableInPolyTime x enc (encPair encGraph encNat)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hx : ComputableInPolyTime x enc (encPair encGraph encNat)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun c0 => high c0) (encPair encGraph encNat) (encList encNat)
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.VertexCover.Buss.high #[Cslib.Complexity.VertexCover.Buss.computableInPolyTime_high]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.VertexCover.Buss.computableInPolyTime_high
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun c => degree (G c) (v c)) enc encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.VertexCover.Buss.degree #[Cslib.Complexity.VertexCover.Buss.computableInPolyTime_degree]
+  [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.VertexCover.Buss.computableInPolyTime_degree as:
+                         (fun c0c1 => degree c0c1.1 c0c1.2) ∘ (fun c => (G c, v c))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun c => (G c, v c)) enc (encPair encGraph encNat)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime G enc encGraph
+          [Meta.Tactic.fun_prop] candidate local theorems for G #[hG : ComputableInPolyTime G enc encGraph]
+          [Meta.Tactic.fun_prop] ✅️ applying: hG : ComputableInPolyTime G enc encGraph
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime v enc encNat
+          [Meta.Tactic.fun_prop] candidate local theorems for v #[hv : ComputableInPolyTime v enc encNat]
+          [Meta.Tactic.fun_prop] ✅️ applying: hv : ComputableInPolyTime v enc encNat
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun c0c1 => degree c0c1.1 c0c1.2) (encPair encGraph encNat) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.VertexCover.Buss.degree #[Cslib.Complexity.VertexCover.Buss.computableInPolyTime_degree]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.VertexCover.Buss.computableInPolyTime_degree

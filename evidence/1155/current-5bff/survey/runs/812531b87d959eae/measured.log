@@ -1,0 +1,7 @@
+((4, true), [false, true, true, false], [1, 1, 1, 0])
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/812531b87d959eae/measured/ComplexityTests/RotationWalk.lean:87:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: ((4, true), [false, true, true, false], [1, 1, 1, 0])
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]

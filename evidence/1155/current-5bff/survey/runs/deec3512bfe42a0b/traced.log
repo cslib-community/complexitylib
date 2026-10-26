@@ -1,0 +1,915 @@
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => |p.1|
+  [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+               trying again after decomposing function as: `(fun p3 => |p3|) ∘ (fun p => p.1)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p3 => |p3|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              measurableSpace ≤ measurableSpace
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace ℝ
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun p3 => |p3|
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun p3 => |p3|
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun p3 => |p3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p => p.1
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Measurable.fst]
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fst
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+          [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => k * |p.2|
+  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Measurable.const_mul, Measurable.fun_mul, Measurable.mul']
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.const_mul
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun x => |x.2|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   trying again after decomposing function as: `(fun x3 => |x3|) ∘ (fun x => x.2)`
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun x3 => |x3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+          [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                       now trying to prove `Measurable` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+               @Measurable.of_discrete,
+               @measurable_of_subsingleton_codomain,
+               @MeasurableEmbedding.measurable,
+               @Continuous.measurable,
+               @measurable_of_continuousOn_compl_singleton,
+               @StronglyMeasurable.measurable,
+               @QuasiMeasurePreserving.measurable]
+          [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+            [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+            [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+                  measurableSpace ≤ measurableSpace
+          [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+            [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+                  DiscreteMeasurableSpace ℝ
+            [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+                  DiscreteMeasurableSpace ℝ
+          [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+            [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+                  Subsingleton ℝ
+            [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+                  Subsingleton ℝ
+          [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+            [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun x3 => |x3|
+            [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+                  MeasurableEmbedding fun x3 => |x3|
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x3 => |x3|
+              [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+              [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+                [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+                  [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun x => x.2
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Measurable.snd]
+          [Meta.Tactic.fun_prop] ✅️ applying: Measurable.snd
+            [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+              [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun θ => |cos θ|
+  [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+               trying again after decomposing function as: `(fun θ3 => |θ3|) ∘ (fun θ => cos θ)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun θ3 => |θ3|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              measurableSpace ≤ measurableSpace
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace ℝ
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun θ3 => |θ3|
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun θ3 => |θ3|
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun θ3 => |θ3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun θ => cos θ
+      [Meta.Tactic.fun_prop] candidate theorems for Real.cos #[Measurable.cos]
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.cos
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun x => x
+          [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun θ => k * |sin θ|
+  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Measurable.const_mul, Measurable.fun_mul, Measurable.mul']
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.const_mul
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun x => |sin x|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   trying again after decomposing function as: `(fun x3 => |x3|) ∘ (fun x => sin x)`
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun x3 => |x3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+          [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                       now trying to prove `Measurable` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+               @Measurable.of_discrete,
+               @measurable_of_subsingleton_codomain,
+               @MeasurableEmbedding.measurable,
+               @Continuous.measurable,
+               @measurable_of_continuousOn_compl_singleton,
+               @StronglyMeasurable.measurable,
+               @QuasiMeasurePreserving.measurable]
+          [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+            [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+            [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+                  measurableSpace ≤ measurableSpace
+          [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+            [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+                  DiscreteMeasurableSpace ℝ
+            [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+                  DiscreteMeasurableSpace ℝ
+          [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+            [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+                  Subsingleton ℝ
+            [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+                  Subsingleton ℝ
+          [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+            [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun x3 => |x3|
+            [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+                  MeasurableEmbedding fun x3 => |x3|
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x3 => |x3|
+              [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+              [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+                [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+                  [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun x => sin x
+          [Meta.Tactic.fun_prop] candidate theorems for Real.sin #[Measurable.sin]
+          [Meta.Tactic.fun_prop] ✅️ applying: Measurable.sin
+            [Meta.Tactic.fun_prop] ✅️ Measurable fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ AEMeasurable (fun r => ENNReal.ofReal ((2 * π)⁻¹ * (r * rexp (-2⁻¹ * r ^ 2)))) (ℙ.restrict (Ioi 0))
+  [Meta.Tactic.fun_prop] candidate theorems for ENNReal.ofReal #[AEMeasurable.ennreal_ofReal]
+  [Meta.Tactic.fun_prop] ✅️ applying: AEMeasurable.ennreal_ofReal
+    [Meta.Tactic.fun_prop] ✅️ AEMeasurable (fun x => (2 * π)⁻¹ * (x * rexp (-2⁻¹ * x ^ 2))) (ℙ.restrict (Ioi 0))
+      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[AEMeasurable.const_mul, AEMeasurable.fun_mul]
+      [Meta.Tactic.fun_prop] ✅️ applying: AEMeasurable.const_mul
+        [Meta.Tactic.fun_prop] ✅️ AEMeasurable (fun x => x * rexp (-2⁻¹ * x ^ 2)) (ℙ.restrict (Ioi 0))
+          [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[AEMeasurable.fun_mul]
+          [Meta.Tactic.fun_prop] ✅️ applying: AEMeasurable.fun_mul
+            [Meta.Tactic.fun_prop] ✅️ AEMeasurable (fun i => i) (ℙ.restrict (Ioi 0))
+              [Meta.Tactic.fun_prop] ✅️ applying: aemeasurable_id
+            [Meta.Tactic.fun_prop] ✅️ AEMeasurable (fun i => rexp (-2⁻¹ * i ^ 2)) (ℙ.restrict (Ioi 0))
+              [Meta.Tactic.fun_prop] candidate theorems for Real.exp #[AEMeasurable.exp]
+              [Meta.Tactic.fun_prop] ✅️ applying: AEMeasurable.exp
+                [Meta.Tactic.fun_prop] ✅️ AEMeasurable (fun x => -2⁻¹ * x ^ 2) (ℙ.restrict (Ioi 0))
+                  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[AEMeasurable.const_mul, AEMeasurable.fun_mul]
+                  [Meta.Tactic.fun_prop] ✅️ applying: AEMeasurable.const_mul
+                    [Meta.Tactic.fun_prop] ✅️ AEMeasurable (fun x => x ^ 2) (ℙ.restrict (Ioi 0))
+                      [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[AEMeasurable.pow_const, AEMeasurable.pow]
+                      [Meta.Tactic.fun_prop] ✅️ applying: AEMeasurable.pow_const
+                        [Meta.Tactic.fun_prop] ✅️ AEMeasurable (fun x => x) (ℙ.restrict (Ioi 0))
+                          [Meta.Tactic.fun_prop] reusing previously found proof for AEMeasurable (fun x => x)
+                                (ℙ.restrict (Ioi 0))
+[Meta.Tactic.fun_prop] ✅️ Measurable fun x => √↑s * x
+  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Measurable.const_mul, Measurable.fun_mul, Measurable.mul']
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.const_mul
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun x => x
+      [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun x => √↑r * x
+  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Measurable.const_mul, Measurable.fun_mul, Measurable.mul']
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.const_mul
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun x => x
+      [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable (Prod.map (fun x => √↑s * x) fun x => √↑r * x)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.map #[Measurable.prodMap]
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.prodMap
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun x => √↑s * x
+      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Measurable.const_mul, Measurable.fun_mul, Measurable.mul']
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.const_mul
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun x => x
+          [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun x => √↑r * x
+      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Measurable.const_mul, Measurable.fun_mul, Measurable.mul']
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.const_mul
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun x => x
+          [Meta.Tactic.fun_prop] reusing previously found proof for Measurable fun x => x
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => |p.1|
+  [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+               trying again after decomposing function as: `(fun p3 => |p3|) ∘ (fun p => p.1)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p3 => |p3|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              measurableSpace ≤ measurableSpace
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace ℝ
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun p3 => |p3|
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun p3 => |p3|
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun p3 => |p3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p => p.1
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Measurable.fst]
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fst
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+          [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => k * |p.2|
+  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Measurable.const_mul, Measurable.fun_mul, Measurable.mul']
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.const_mul
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun x => |x.2|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   trying again after decomposing function as: `(fun x3 => |x3|) ∘ (fun x => x.2)`
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun x3 => |x3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+          [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                       now trying to prove `Measurable` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+               @Measurable.of_discrete,
+               @measurable_of_subsingleton_codomain,
+               @MeasurableEmbedding.measurable,
+               @Continuous.measurable,
+               @measurable_of_continuousOn_compl_singleton,
+               @StronglyMeasurable.measurable,
+               @QuasiMeasurePreserving.measurable]
+          [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+            [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+            [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+                  measurableSpace ≤ measurableSpace
+          [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+            [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+                  DiscreteMeasurableSpace ℝ
+            [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+                  DiscreteMeasurableSpace ℝ
+          [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+            [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+                  Subsingleton ℝ
+            [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+                  Subsingleton ℝ
+          [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+            [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun x3 => |x3|
+            [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+                  MeasurableEmbedding fun x3 => |x3|
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x3 => |x3|
+              [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+              [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+                [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+                  [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun x => x.2
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Measurable.snd]
+          [Meta.Tactic.fun_prop] ✅️ applying: Measurable.snd
+            [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+              [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => |p.1 - c|
+  [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+               trying again after decomposing function as: `(fun p3 => |p3|) ∘ (fun p => p.1 - c)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p3 => |p3|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              measurableSpace ≤ measurableSpace
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace ℝ
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun p3 => |p3|
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun p3 => |p3|
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun p3 => |p3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p => p.1 - c
+      [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Measurable.sub_const, Measurable.fun_sub, Measurable.sub']
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.sub_const
+        [Meta.Tactic.fun_prop] ✅️ Measurable Prod.fst
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Measurable.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fst
+            [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+              [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => |p.2|
+  [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+               trying again after decomposing function as: `(fun p3 => |p3|) ∘ (fun p => p.2)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p3 => |p3|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              measurableSpace ≤ measurableSpace
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace ℝ
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun p3 => |p3|
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun p3 => |p3|
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun p3 => |p3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p => p.2
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Measurable.snd]
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.snd
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+          [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => |p.1|
+  [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+               trying again after decomposing function as: `(fun p3 => |p3|) ∘ (fun p => p.1)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p3 => |p3|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              measurableSpace ≤ measurableSpace
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace ℝ
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun p3 => |p3|
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun p3 => |p3|
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun p3 => |p3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p => p.1
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Measurable.fst]
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fst
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+          [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => |p.2|
+  [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+               trying again after decomposing function as: `(fun p3 => |p3|) ∘ (fun p => p.2)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p3 => |p3|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              measurableSpace ≤ measurableSpace
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace ℝ
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun p3 => |p3|
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun p3 => |p3|
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun p3 => |p3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p => p.2
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Measurable.snd]
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.snd
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+          [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => |p.1 - 2 * t|
+  [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+               trying again after decomposing function as: `(fun p3 => |p3|) ∘ (fun p => p.1 - 2 * t)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p3 => |p3|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              measurableSpace ≤ measurableSpace
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace ℝ
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun p3 => |p3|
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun p3 => |p3|
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun p3 => |p3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p => p.1 - 2 * t
+      [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Measurable.sub_const, Measurable.fun_sub, Measurable.sub']
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.sub_const
+        [Meta.Tactic.fun_prop] ✅️ Measurable Prod.fst
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Measurable.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fst
+            [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+              [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun p => |p.2|
+  [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+               trying again after decomposing function as: `(fun p3 => |p3|) ∘ (fun p => p.2)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p3 => |p3|
+      [Meta.Tactic.fun_prop] candidate theorems for abs #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `abs`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: measurableSpace ≤ measurableSpace
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              measurableSpace ≤ measurableSpace
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace ℝ
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun p3 => |p3|
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun p3 => |p3|
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun p3 => |p3|
+          [Meta.Tactic.fun_prop] candidate theorems for abs #[Continuous.abs]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.abs
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun p => p.2
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Measurable.snd]
+      [Meta.Tactic.fun_prop] ✅️ applying: Measurable.snd
+        [Meta.Tactic.fun_prop] ✅️ Measurable fun a => a
+          [Meta.Tactic.fun_prop] ✅️ applying: measurable_id'
+[Meta.Tactic.fun_prop] ✅️ Measurable fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Measurable.prodMk]
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.prodMk
+    [Meta.Tactic.fun_prop] ✅️ Measurable (inner ℝ (u + v))
+      [Meta.Tactic.fun_prop] candidate theorems for Inner.inner #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `Inner.inner`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: inst✝¹ ≤ inst✝¹
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              inst✝¹ ≤ inst✝¹
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace E
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace E
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun a => ⟪u + v, a⟫
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun a => ⟪u + v, a⟫
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun a => ⟪u + v, a⟫
+          [Meta.Tactic.fun_prop] candidate theorems for Inner.inner #[Continuous.inner]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.inner
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun t => u + v
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_const
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun t => t
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable (inner ℝ (v - u))
+      [Meta.Tactic.fun_prop] candidate theorems for Inner.inner #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `Inner.inner`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable,
+           @QuasiMeasurePreserving.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: inst✝¹ ≤ inst✝¹
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              inst✝¹ ≤ inst✝¹
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace E
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace E
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun a => ⟪v - u, a⟫
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun a => ⟪v - u, a⟫
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun a => ⟪v - u, a⟫
+          [Meta.Tactic.fun_prop] candidate theorems for Inner.inner #[Continuous.inner]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.inner
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun t => v - u
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_const
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun t => t
+              [Meta.Tactic.fun_prop] reusing previously found proof for Continuous fun t => t
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+  [aesop] Initial goal:
+        E : Type u_1
+        inst✝⁴ : NormedAddCommGroup E
+        inst✝³ : InnerProductSpace ℝ E
+        inst✝² : FiniteDimensional ℝ E
+        inst✝¹ : MeasurableSpace E
+        inst✝ : BorelSpace E
+        u v : E
+        huv : ‖u‖ = ‖v‖
+        hne : u + v ≠ 0
+        t : ℝ
+        hba : ⟪u + v, v - u⟫ = 0
+        S : Set (ℝ × ℝ) := {p | |p.1 - 2 * t| ≤ |p.2|}
+        hS : S = {p | |p.1 - 2 * t| ≤ |p.2|}
+        hSm : MeasurableSet S
+        hsub : {x | t ∈ Ι ⟪u, x⟫ ⟪v, x⟫} ⊆ (fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S
+        hpair : Measurable fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)
+        hs0 : ‖u + v‖₊ ^ 2 ≠ 0
+        hsqrt : ∀ (w : E), √↑(‖w‖₊ ^ 2) = ‖w‖
+        ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        E : Type u_1
+        inst✝⁴ : NormedAddCommGroup E
+        inst✝³ : InnerProductSpace ℝ E
+        inst✝² : FiniteDimensional ℝ E
+        inst✝¹ : MeasurableSpace E
+        inst✝ : BorelSpace E
+        u v : E
+        huv : ‖u‖ = ‖v‖
+        hne : u + v ≠ 0
+        t : ℝ
+        hba : ⟪u + v, v - u⟫ = 0
+        S : Set (ℝ × ℝ) := {p | |p.1 - 2 * t| ≤ |p.2|}
+        hS : S = {p | |p.1 - 2 * t| ≤ |p.2|}
+        hSm : MeasurableSet S
+        hsub : {x | t ∈ Ι ⟪u, x⟫ ⟪v, x⟫} ⊆ (fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S
+        hpair : Measurable fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)
+        hs0 : ‖u + v‖₊ ^ 2 ≠ 0
+        hsqrt : ∀ (w : E), √↑(‖w‖₊ ^ 2) = ‖w‖
+        ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+  [aesop] E : Type u_1
+      inst : NormedAddCommGroup E
+      inst_1 : InnerProductSpace ℝ E
+      inst_2 : FiniteDimensional ℝ E
+      inst_3 : MeasurableSpace E
+      inst_4 : BorelSpace E
+      u v : E
+      huv : ‖u‖ = ‖v‖
+      hne : u + v ≠ 0
+      t : ℝ
+      hba : ⟪u + v, v - u⟫ = 0
+      S : Set (ℝ × ℝ) := ⋯
+      hS : S = {p | |p.1 - 2 * t| ≤ |p.2|}
+      hSm : MeasurableSet S
+      hsub : {x | t ∈ Ι ⟪u, x⟫ ⟪v, x⟫} ⊆ (fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S
+      hpair : Measurable fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)
+      hs0 : ‖u + v‖₊ ^ 2 ≠ 0
+      hsqrt : ∀ (w : E), √↑(‖w‖₊ ^ 2) = ‖w‖
+      ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.8863.11644):
+      [aesop] E : Type u_1
+          inst : NormedAddCommGroup E
+          inst_1 : InnerProductSpace ℝ E
+          inst_2 : FiniteDimensional ℝ E
+          inst_3 : MeasurableSpace E
+          inst_4 : BorelSpace E
+          u v : E
+          huv : ‖u‖ = ‖v‖
+          hne : u + v ≠ 0
+          t : ℝ
+          hba : ⟪u + v, v - u⟫ = 0
+          S : Set (ℝ × ℝ) := ⋯
+          hS : S = {p | |p.1 - 2 * t| ≤ |p.2|}
+          hSm : MeasurableSet S
+          hsub : {x | t ∈ Ι ⟪u, x⟫ ⟪v, x⟫} ⊆ (fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S
+          hpair : Measurable fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)
+          hs0 : ‖u + v‖₊ ^ 2 ≠ 0
+          hsqrt : ∀ (w : E), √↑(‖w‖₊ ^ 2) = ‖w‖
+          ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+  [aesop] Initial goal:
+        E : Type u_1
+        inst : NormedAddCommGroup E
+        inst_1 : InnerProductSpace ℝ E
+        inst_2 : FiniteDimensional ℝ E
+        inst_3 : MeasurableSpace E
+        inst_4 : BorelSpace E
+        u v : E
+        huv : ‖u‖ = ‖v‖
+        hne : u + v ≠ 0
+        t : ℝ
+        hba : ⟪u + v, v - u⟫ = 0
+        S : Set (ℝ × ℝ) := ⋯
+        hS : S = {p | |p.1 - 2 * t| ≤ |p.2|}
+        hSm : MeasurableSet S
+        hsub : {x | t ∈ Ι ⟪u, x⟫ ⟪v, x⟫} ⊆ (fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S
+        hpair : Measurable fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)
+        hs0 : ‖u + v‖₊ ^ 2 ≠ 0
+        hsqrt : ∀ (w : E), √↑(‖w‖₊ ^ 2) = ‖w‖
+        ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] norm simp is disabled (simp_options := { ..., enabled := false })
+  [aesop] Goal after normalisation:
+        E : Type u_1
+        inst : NormedAddCommGroup E
+        inst_1 : InnerProductSpace ℝ E
+        inst_2 : FiniteDimensional ℝ E
+        inst_3 : MeasurableSpace E
+        inst_4 : BorelSpace E
+        u v : E
+        huv : ‖u‖ = ‖v‖
+        hne : u + v ≠ 0
+        t : ℝ
+        hba : ⟪u + v, v - u⟫ = 0
+        S : Set (ℝ × ℝ) := ⋯
+        hS : S = {p | |p.1 - 2 * t| ≤ |p.2|}
+        hSm : MeasurableSet S
+        hsub : {x | t ∈ Ι ⟪u, x⟫ ⟪v, x⟫} ⊆ (fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S
+        hpair : Measurable fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)
+        hs0 : ‖u + v‖₊ ^ 2 ≠ 0
+        hsqrt : ∀ (w : E), √↑(‖w‖₊ ^ 2) = ‖w‖
+        ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          E : Type u_1
+          inst : NormedAddCommGroup E
+          inst_1 : InnerProductSpace ℝ E
+          inst_2 : FiniteDimensional ℝ E
+          inst_3 : MeasurableSpace E
+          inst_4 : BorelSpace E
+          u v : E
+          huv : ‖u‖ = ‖v‖
+          hne : u + v ≠ 0
+          t : ℝ
+          hba : ⟪u + v, v - u⟫ = 0
+          S : Set (ℝ × ℝ) := ⋯
+          hS : S = {p | |p.1 - 2 * t| ≤ |p.2|}
+          hSm : MeasurableSet S
+          hsub : {x | t ∈ Ι ⟪u, x⟫ ⟪v, x⟫} ⊆ (fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S
+          hpair : Measurable fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)
+          hs0 : ‖u + v‖₊ ^ 2 ≠ 0
+          hsqrt : ∀ (w : E), √↑(‖w‖₊ ^ 2) = ‖w‖
+          ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ✅️ ❌️ safe|apply|global|ENNReal.ofNat_ne_top
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            OfNat.ofNat ?n ≠ ∞
+          with the goal
+            (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+          
+          Note: The full type of the term is
+            ∀ {n : ℕ} [inst : n.AtLeastTwo], OfNat.ofNat n ≠ ∞
+          
+          E : Type u_1
+          inst : NormedAddCommGroup E
+          inst_1 : InnerProductSpace ℝ E
+          inst_2 : FiniteDimensional ℝ E
+          inst_3 : MeasurableSpace E
+          inst_4 : BorelSpace E
+          u v : E
+          huv : ‖u‖ = ‖v‖
+          hne : u + v ≠ 0
+          t : ℝ
+          hba : ⟪u + v, v - u⟫ = 0
+          S : Set (ℝ × ℝ) := ⋯
+          hS : S = {p | |p.1 - 2 * t| ≤ |p.2|}
+          hSm : MeasurableSet S
+          hsub : {x | t ∈ Ι ⟪u, x⟫ ⟪v, x⟫} ⊆ (fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S
+          hpair : Measurable fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)
+          hs0 : ‖u + v‖₊ ^ 2 ≠ 0
+          hsqrt : ∀ (w : E), √↑(‖w‖₊ ^ 2) = ‖w‖
+          ⊢ (stdGaussian E) ((fun x => (⟪u + v, x⟫, ⟪v - u, x⟫)) ⁻¹' S) ≠ ∞
+    [aesop] ✅️ 🏁 safe|apply|global|MeasureTheory.measure_ne_top
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|apply|global|MeasureTheory.measure_ne_top
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [1/safe] safe|apply|global|MeasureTheory.measure_ne_top
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

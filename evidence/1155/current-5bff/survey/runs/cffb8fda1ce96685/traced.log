@@ -1,0 +1,23 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat) (encPair encGraph encNat)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.compl) (encPair encGraph encNat) encGraph
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.compl #[Cslib.Complexity.Graph.computableInPolyTime_compl]
+      [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.Graph.computableInPolyTime_compl as:
+                             (fun a0 => a0.compl) ∘ (fun a => a.1)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair encGraph encNat) encGraph
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst', Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Cslib.PCP.Encoded.Graph.isPolyTime_constraintTableEval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encGraph encNat) (encPair encGraph encNat)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => a0.compl) encGraph encGraph
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.compl #[Cslib.Complexity.Graph.computableInPolyTime_compl]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.Graph.computableInPolyTime_compl
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encGraph encNat) (encPair encGraph encNat)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encNat encNat
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'

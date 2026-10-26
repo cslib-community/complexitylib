@@ -1,0 +1,243 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => decide (p.2 ≤ p.1.2) || p.1.1.1.bits.getD p.2 false == p.1.1.2.bits.getD p.2 false)
+      (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Bool.or #[Turing.MultiTapeTM.ComputableInPolyTime.bool_or]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bool_or as:
+                         (fun p0p1 => p0p1.1 || p0p1.2) ∘ (fun p => (decide (p.2 ≤ p.1.2), p.1.1.1.bits.getD p.2 false == p.1.1.2.bits.getD p.2 false))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => (decide (p.2 ≤ p.1.2), p.1.1.1.bits.getD p.2 false == p.1.1.2.bits.getD p.2 false))
+          (encPair (encPair (encPair encNat encNat) encUnary) encUnary) (encPair encBool encBool)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => decide (a.2 ≤ a.1.2)) (encPair (encPair (encPair encNat encNat) encUnary) encUnary)
+              encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableInPolyTime.decide_and, Turing.MultiTapeTM.ComputableInPolyTime.unary_le, Turing.MultiTapeTM.ComputableInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableInPolyTime.unary_le', Turing.MultiTapeTM.ComputableInPolyTime.unary_lt']
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_eq'
+            [Meta.Tactic.fun_prop] failed to unify @decide_eq'
+                ComputableInPolyTime (fun x => decide (?left x = ?right x)) ?encA encBool
+                with
+                ComputableInPolyTime (fun a => decide (a.2 ≤ a.1.2))
+                  (encPair (encPair (encPair encNat encNat) encUnary) encUnary) ?enc₁
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_and
+            [Meta.Tactic.fun_prop] failed to unify @decide_and
+                ComputableInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                with
+                ComputableInPolyTime (fun a => decide (a.2 ≤ a.1.2))
+                  (encPair (encPair (encPair encNat encNat) encUnary) encUnary) ?enc₁
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le
+            [Meta.Tactic.fun_prop] failed to unify unary_le
+                ComputableInPolyTime (fun p => decide (p.1 ≤ p.2)) (encPair encUnary encUnary) encBool
+                with
+                ComputableInPolyTime (fun a => decide (a.2 ≤ a.1.2))
+                  (encPair (encPair (encPair encNat encNat) encUnary) encUnary) ?enc₁
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_lt
+            [Meta.Tactic.fun_prop] failed to unify unary_lt
+                ComputableInPolyTime (fun p => decide (p.1 < p.2)) (encPair encUnary encUnary) encBool
+                with
+                ComputableInPolyTime (fun a => decide (a.2 ≤ a.1.2))
+                  (encPair (encPair (encPair encNat encNat) encUnary) encUnary) ?enc₁
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_le'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.2) (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.snd as:
+                                     (fun a2 => a2.2) ∘ (fun a => a.1)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair (encPair (encPair encNat encNat) encUnary) encUnary)
+                      (encPair (encPair encNat encNat) encUnary)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a2 => a2.2) (encPair (encPair encNat encNat) encUnary) encUnary
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1.1.bits.getD a.2 false == a.1.1.2.bits.getD a.2 false)
+              (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encBool
+          [Meta.Tactic.fun_prop] candidate theorems for BEq.beq #[Turing.MultiTapeTM.ComputableInPolyTime.beq]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.beq
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1.1.1.bits.getD x.2 false)
+                  (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encBool
+              [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD]
+              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD as:
+                                     (fun x1x2 => x1x2.1.getD x1x2.2 false) ∘ (fun x => (x.1.1.1.bits, x.2))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (x.1.1.1.bits, x.2)) (encPair (encPair (encPair encNat encNat) encUnary) encUnary)
+                      (encPair encBits encUnary)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1.1.bits) (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encBits
+                      [Meta.Tactic.fun_prop] candidate theorems for Nat.bits #[]
+                      [Meta.Tactic.fun_prop] candidate local theorems for Nat.bits #[hbits : ComputableInPolyTime Nat.bits encNat encBits]
+                      [Meta.Tactic.fun_prop] decomposing to later use hbits : ComputableInPolyTime Nat.bits encNat encBits as:
+                                             (fun a0 => a0.bits) ∘ (fun a => a.1.1.1)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1.1) (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encNat
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.fst as:
+                                                 (fun a2 => a2.1) ∘ (fun a => a.1.1)
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair (encPair encNat encNat) encUnary) encUnary)
+                                  (encPair encNat encNat)
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.fst as:
+                                                     (fun a2 => a2.1) ∘ (fun a => a.1)
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair (encPair (encPair encNat encNat) encUnary) encUnary)
+                                      (encPair (encPair encNat encNat) encUnary)
+                                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a2 => a2.1) (encPair (encPair encNat encNat) encUnary) (encPair encNat encNat)
+                                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a2 => a2.1) (encPair encNat encNat) encNat
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => a0.bits) encNat encBits
+                          [Meta.Tactic.fun_prop] candidate theorems for Nat.bits #[]
+                          [Meta.Tactic.fun_prop] candidate local theorems for Nat.bits #[hbits : ComputableInPolyTime Nat.bits encNat encBits]
+                          [Meta.Tactic.fun_prop] ✅️ applying: hbits : ComputableInPolyTime Nat.bits encNat encBits
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encUnary
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 false) (encPair encBits encUnary) encBool
+                  [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1.1.2.bits.getD x.2 false)
+                  (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encBool
+              [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD]
+              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD as:
+                                     (fun x1x2 => x1x2.1.getD x1x2.2 false) ∘ (fun x => (x.1.1.2.bits, x.2))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (x.1.1.2.bits, x.2)) (encPair (encPair (encPair encNat encNat) encUnary) encUnary)
+                      (encPair encBits encUnary)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1.2.bits) (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encBits
+                      [Meta.Tactic.fun_prop] candidate theorems for Nat.bits #[]
+                      [Meta.Tactic.fun_prop] candidate local theorems for Nat.bits #[hbits : ComputableInPolyTime Nat.bits encNat encBits]
+                      [Meta.Tactic.fun_prop] decomposing to later use hbits : ComputableInPolyTime Nat.bits encNat encBits as:
+                                             (fun a0 => a0.bits) ∘ (fun a => a.1.1.2)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1.2) (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encNat
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+                          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.snd as:
+                                                 (fun a2 => a2.2) ∘ (fun a => a.1.1)
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair (encPair encNat encNat) encUnary) encUnary)
+                                  (encPair encNat encNat)
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.fst as:
+                                                     (fun a2 => a2.1) ∘ (fun a => a.1)
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair (encPair (encPair encNat encNat) encUnary) encUnary)
+                                      (encPair (encPair encNat encNat) encUnary)
+                                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a2 => a2.1) (encPair (encPair encNat encNat) encUnary) (encPair encNat encNat)
+                                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a2 => a2.2) (encPair encNat encNat) encNat
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => a0.bits) encNat encBits
+                          [Meta.Tactic.fun_prop] candidate theorems for Nat.bits #[]
+                          [Meta.Tactic.fun_prop] candidate local theorems for Nat.bits #[hbits : ComputableInPolyTime Nat.bits encNat encBits]
+                          [Meta.Tactic.fun_prop] ✅️ applying: hbits : ComputableInPolyTime Nat.bits encNat encBits
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair (encPair encNat encNat) encUnary) encUnary) encUnary
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 false) (encPair encBits encUnary) encBool
+                  [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p0p1 => p0p1.1 || p0p1.2) (encPair encBool encBool) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Bool.or #[Turing.MultiTapeTM.ComputableInPolyTime.bool_or]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bool_or
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => !p.1.1.bits.getD p.2 false && p.1.2.bits.getD p.2 false) input encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Bool.and #[Turing.MultiTapeTM.ComputableInPolyTime.bool_and]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bool_and as:
+                         (fun p0p1 => p0p1.1 && p0p1.2) ∘ (fun p => (!p.1.1.bits.getD p.2 false, p.1.2.bits.getD p.2 false))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => (!p.1.1.bits.getD p.2 false, p.1.2.bits.getD p.2 false)) input (encPair encBool encBool)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => !a.1.1.bits.getD a.2 false) input encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableInPolyTime.bool_not]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bool_not as:
+                                 (fun a0 => !a0) ∘ (fun a => a.1.1.bits.getD a.2 false)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1.bits.getD a.2 false) input encBool
+              [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD]
+              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD as:
+                                     (fun a1a2 => a1a2.1.getD a1a2.2 false) ∘ (fun a => (a.1.1.bits, a.2))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (a.1.1.bits, a.2)) input (encPair encBits encUnary)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1.bits) input encBits
+                      [Meta.Tactic.fun_prop] candidate theorems for Nat.bits #[]
+                      [Meta.Tactic.fun_prop] candidate local theorems for Nat.bits #[hbits : ComputableInPolyTime Nat.bits encNat encBits]
+                      [Meta.Tactic.fun_prop] decomposing to later use hbits : ComputableInPolyTime Nat.bits encNat encBits as:
+                                             (fun a0 => a0.bits) ∘ (fun a => a.1.1)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) input encNat
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.fst as:
+                                                 (fun a2 => a2.1) ∘ (fun a => a.1)
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) input (encPair encNat encNat)
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a2 => a2.1) (encPair encNat encNat) encNat
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => a0.bits) encNat encBits
+                          [Meta.Tactic.fun_prop] candidate theorems for Nat.bits #[]
+                          [Meta.Tactic.fun_prop] candidate local theorems for Nat.bits #[hbits : ComputableInPolyTime Nat.bits encNat encBits]
+                          [Meta.Tactic.fun_prop] ✅️ applying: hbits : ComputableInPolyTime Nat.bits encNat encBits
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd input encUnary
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a1a2 => a1a2.1.getD a1a2.2 false) (encPair encBits encUnary) encBool
+                  [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => !a0) encBool encBool
+              [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableInPolyTime.bool_not]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bool_not
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.2.bits.getD a.2 false) input encBool
+          [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD as:
+                                 (fun a1a2 => a1a2.1.getD a1a2.2 false) ∘ (fun a => (a.1.2.bits, a.2))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (a.1.2.bits, a.2)) input (encPair encBits encUnary)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.2.bits) input encBits
+                  [Meta.Tactic.fun_prop] candidate theorems for Nat.bits #[]
+                  [Meta.Tactic.fun_prop] candidate local theorems for Nat.bits #[hbits : ComputableInPolyTime Nat.bits encNat encBits]
+                  [Meta.Tactic.fun_prop] decomposing to later use hbits : ComputableInPolyTime Nat.bits encNat encBits as:
+                                         (fun a0 => a0.bits) ∘ (fun a => a.1.2)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.2) input encNat
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+                      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.snd as:
+                                             (fun a2 => a2.2) ∘ (fun a => a.1)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) input (encPair encNat encNat)
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fst]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a2 => a2.2) (encPair encNat encNat) encNat
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => a0.bits) encNat encBits
+                      [Meta.Tactic.fun_prop] candidate theorems for Nat.bits #[]
+                      [Meta.Tactic.fun_prop] candidate local theorems for Nat.bits #[hbits : ComputableInPolyTime Nat.bits encNat encBits]
+                      [Meta.Tactic.fun_prop] ✅️ applying: hbits : ComputableInPolyTime Nat.bits encNat encBits
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd input encUnary
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.snd]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a1a2 => a1a2.1.getD a1a2.2 false) (encPair encBits encUnary) encBool
+              [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p0p1 => p0p1.1 && p0p1.2) (encPair encBool encBool) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Bool.and #[Turing.MultiTapeTM.ComputableInPolyTime.bool_and]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bool_and

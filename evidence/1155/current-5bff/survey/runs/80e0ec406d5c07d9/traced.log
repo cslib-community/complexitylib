@@ -1,0 +1,1395 @@
+[Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair State.encoding encUnary) fun a =>
+      if (state a).stopped = true then pure (state a, 0)
+      else
+        (fun slope => (state a, slope)) <$>
+          selectSlope (params a).confidence (params a).predictionInverseTolerance (params a).predictionGridBound
+            (withVotes evaluate (source a) (state a))
+  [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair State.encoding encUnary) fun a =>
+        if (state a).stopped = true then pure (state a, 0)
+        else
+          (fun slope => (state a, slope)) <$>
+            selectSlope (params a).confidence (params a).predictionInverseTolerance (params a).predictionGridBound
+              (withVotes evaluate (source a) (state a))
+    [Meta.Tactic.fun_prop] candidate theorems for ite #[Cslib.Probability.IsPPTOn.ite, Cslib.Probability.IsPPTOn.cond]
+    [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.ite
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => decide ((state a).stopped = true)) input encBool
+        [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not]
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem
+          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_mem
+              ComputableTidilyInPolyTime (fun x => decide (?value x ∈ ?list x)) ?encIn encBool
+              with
+              ComputableTidilyInPolyTime (fun a => decide ((state a).stopped = true)) input encBool
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and
+          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_and
+              ComputableTidilyInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+              with
+              ComputableTidilyInPolyTime (fun a => decide ((state a).stopped = true)) input encBool
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or
+          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_or
+              ComputableTidilyInPolyTime (fun a => decide (?left a ∨ ?right a)) ?encA encBool
+              with
+              ComputableTidilyInPolyTime (fun a => decide ((state a).stopped = true)) input encBool
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq
+          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_eq
+              ComputableTidilyInPolyTime (fun p => decide (p.1 = p.2)) (encPair ?enc ?enc) encBool
+              with
+              ComputableTidilyInPolyTime (fun a => decide ((state a).stopped = true)) input encBool
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (state x).stopped) input encBool
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.State.stopped #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Pseudoentropy.Boosting.State.stopped`
+                         trying again after decomposing function as: `(fun x0 => x0.stopped) ∘ (fun x => state x)`
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => x0.stopped) State.encoding encBool
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.State.stopped #[]
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Pseudoentropy.Boosting.State.stopped`
+                             now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x0 => x0.stopped) State.encoding encBool
+                    [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.State.stopped #[Cslib.Crypto.Pseudoentropy.Boosting.State.isPolyTime_stopped]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.State.isPolyTime_stopped
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) State.encoding State.encoding
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => state x) input State.encoding
+                [Meta.Tactic.fun_prop] candidate local theorems for state #[hstate : ComputableTidilyInPolyTime state input State.encoding]
+                [Meta.Tactic.fun_prop] ✅️ applying: hstate : ComputableTidilyInPolyTime state input State.encoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => true) input encBool
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair State.encoding encUnary) fun a => pure (state a, 0)
+        [Meta.Tactic.fun_prop] candidate theorems for Pure.pure #[Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn, Turing.MultiTapeTM.ComputableTidilyInPolyTime.isPPTOn]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (state a, 0)) input (encPair State.encoding encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime state input State.encoding
+                [Meta.Tactic.fun_prop] candidate local theorems for state #[hstate✝ : ComputableInPolyTime state input State.encoding]
+                [Meta.Tactic.fun_prop] ✅️ applying: hstate✝ : ComputableInPolyTime state input State.encoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 0) input encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair State.encoding encUnary) fun a =>
+            (fun slope => (state a, slope)) <$>
+              selectSlope (params a).confidence (params a).predictionInverseTolerance (params a).predictionGridBound
+                (withVotes evaluate (source a) (state a))
+        [Meta.Tactic.fun_prop] candidate theorems for Functor.map #[Cslib.Probability.IsPPTOn.map_with, Cslib.Probability.IsPPTOn.pair]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.map_with
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encUnary fun a =>
+                selectSlope (params a).confidence (params a).predictionInverseTolerance (params a).predictionGridBound
+                  (withVotes evaluate (source a) (state a))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.selectSlope #[Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_selectSlope]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_selectSlope
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (params a).confidence) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.Parameters.confidence #[Cslib.Crypto.Pseudoentropy.Boosting.Parameters.isPolyTime_confidence]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.Parameters.isPolyTime_confidence
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime params input Parameters.encoding
+                    [Meta.Tactic.fun_prop] candidate local theorems for params #[hparams✝ : ComputableInPolyTime params input Parameters.encoding]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hparams✝ : ComputableInPolyTime params input Parameters.encoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (params a).predictionInverseTolerance) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.Parameters.predictionInverseTolerance #[Cslib.Crypto.Pseudoentropy.Boosting.Parameters.isPolyTime_predictionInverseTolerance]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.Parameters.isPolyTime_predictionInverseTolerance
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime params input Parameters.encoding
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime params input
+                          Parameters.encoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (params a).predictionGridBound) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.Parameters.predictionGridBound #[Cslib.Crypto.Pseudoentropy.Boosting.Parameters.isPolyTime_predictionGridBound]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.Parameters.isPolyTime_predictionGridBound
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime params input Parameters.encoding
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime params input
+                          Parameters.encoding
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair encBits encBool) fun a => withVotes evaluate (source a) (state a)
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.withVotes #[Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_withVotes]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_withVotes
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+                    [Meta.Tactic.fun_prop] candidate local theorems for evaluate #[hevaluate✝ : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hevaluate✝ : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+                  [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair encBits encBool) source
+                    [Meta.Tactic.fun_prop] candidate local theorems for source #[hsource : IsPPTOn input (encPair encBits encBool) source]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hsource : IsPPTOn input (encPair encBits encBool) source
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime state input State.encoding
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime state input
+                          State.encoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => (state pair.1, pair.2)) (encPair input encUnary) (encPair State.encoding encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => state a.1) (encPair input encUnary) State.encoding
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair input encUnary) input
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encUnary) (encPair input encUnary)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => state a0) input State.encoding
+                    [Meta.Tactic.fun_prop] candidate local theorems for state #[hstate✝ : ComputableInPolyTime state input State.encoding]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hstate✝ : ComputableInPolyTime state input State.encoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input encUnary) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encUnary) (encPair input encUnary)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+      let state ← run evaluate (source a) (learn a) (params a)
+      finish evaluate (source a) (params a) state
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        source : α → ProbComp (List Bool × Bool)
+        learn : α → State → ProbComp (List Bool)
+        params : α → Parameters
+        hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hsource : IsPPTOn input (encPair encBits encBool) source
+        hlearn : IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2
+        hparams : ComputableInPolyTime params input Parameters.encoding
+        ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+            let state ← run evaluate (source a) (learn a) (params a)
+            finish evaluate (source a) (params a) state
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        source : α → ProbComp (List Bool × Bool)
+        learn : α → State → ProbComp (List Bool)
+        params : α → Parameters
+        hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hsource : IsPPTOn input (encPair encBits encBool) source
+        hlearn : IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2
+        hparams : ComputableInPolyTime params input Parameters.encoding
+        ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+            let state ← run evaluate (source a) (learn a) (params a)
+            finish evaluate (source a) (params a) state
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+      let state ← run evaluate (source a) (learn a) (params a)
+      finish evaluate (source a) (params a) state
+  [aesop] α : Type
+      input : α ↪ List Bool
+      evaluate : List Bool → List Bool → Bool
+      source : α → ProbComp (List Bool × Bool)
+      learn : α → State → ProbComp (List Bool)
+      params : α → Parameters
+      hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hsource : IsPPTOn input (encPair encBits encBool) source
+      hlearn : IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2
+      hparams : ComputableInPolyTime params input Parameters.encoding
+      ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+          let state ← run evaluate (source a) (learn a) (params a)
+          finish evaluate (source a) (params a) state
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.844.23):
+      [aesop] α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          source : α → ProbComp (List Bool × Bool)
+          learn : α → State → ProbComp (List Bool)
+          params : α → Parameters
+          hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hsource : IsPPTOn input (encPair encBits encBool) source
+          hlearn : IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2
+          hparams : ComputableInPolyTime params input Parameters.encoding
+          ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+              let state ← run evaluate (source a) (learn a) (params a)
+              finish evaluate (source a) (params a) state
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+      let state ← run evaluate (source a) (learn a) (params a)
+      finish evaluate (source a) (params a) state
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        source : α → ProbComp (List Bool × Bool)
+        learn : α → State → ProbComp (List Bool)
+        params : α → Parameters
+        hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hsource : IsPPTOn input (encPair encBits encBool) source
+        hlearn : IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2
+        hparams : ComputableInPolyTime params input Parameters.encoding
+        ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+            let state ← run evaluate (source a) (learn a) (params a)
+            finish evaluate (source a) (params a) state
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        source : α → ProbComp (List Bool × Bool)
+        learn : α → State → ProbComp (List Bool)
+        params : α → Parameters
+        hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hsource : IsPPTOn input (encPair encBits encBool) source
+        hlearn : IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2
+        hparams : ComputableInPolyTime params input Parameters.encoding
+        ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+            let state ← run evaluate (source a) (learn a) (params a)
+            finish evaluate (source a) (params a) state
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          source : α → ProbComp (List Bool × Bool)
+          learn : α → State → ProbComp (List Bool)
+          params : α → Parameters
+          hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hsource : IsPPTOn input (encPair encBits encBool) source
+          hlearn : IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2
+          hparams : ComputableInPolyTime params input Parameters.encoding
+          ⊢ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+              let state ← run evaluate (source a) (learn a) (params a)
+              finish evaluate (source a) (params a) state
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair State.encoding encUnary) fun a => do
+            let state ← run evaluate (source a) (learn a) (params a)
+            finish evaluate (source a) (params a) state
+        [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsPPTOn.bind_with]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.bind_with
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn input State.encoding fun a => run evaluate (source a) (learn a) (params a)
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.run #[Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_run]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_run
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+                [Meta.Tactic.fun_prop] candidate local theorems for evaluate #[hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool]
+                [Meta.Tactic.fun_prop] ✅️ applying: hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair encBits encBool) source
+                [Meta.Tactic.fun_prop] candidate local theorems for source #[hsource : IsPPTOn input (encPair encBits encBool) source]
+                [Meta.Tactic.fun_prop] ✅️ applying: hsource : IsPPTOn input (encPair encBits encBool) source
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2
+                [Meta.Tactic.fun_prop] candidate local theorems for learn #[hlearn : IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2]
+                [Meta.Tactic.fun_prop] ✅️ applying: hlearn : IsPPTOn (encPair input State.encoding) encBits fun pair => learn pair.1 pair.2
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime params input Parameters.encoding
+                [Meta.Tactic.fun_prop] candidate local theorems for params #[hparams : ComputableInPolyTime params input Parameters.encoding]
+                [Meta.Tactic.fun_prop] ✅️ applying: hparams : ComputableInPolyTime params input Parameters.encoding
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input State.encoding) (encPair State.encoding encUnary) fun pair =>
+                finish evaluate (source pair.1) (params pair.1) pair.2
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.finish #[Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_finish]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_finish
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime
+                      (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input State.encoding) (encPair encBits encBool) fun a => source a.1
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+                  [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair encBits encBool) fun a0 => source a0
+                    [Meta.Tactic.fun_prop] candidate local theorems for source #[hsource : IsPPTOn input (encPair encBits encBool) source]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hsource : IsPPTOn input (encPair encBits encBool) source
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair input State.encoding) input
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input State.encoding) (encPair input State.encoding)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input State.encoding) State.encoding
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input State.encoding) (encPair input State.encoding)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) State.encoding State.encoding
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => params a.1) (encPair input State.encoding) Parameters.encoding
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair input State.encoding) input
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input State.encoding) (encPair input State.encoding)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => params a0) input Parameters.encoding
+                    [Meta.Tactic.fun_prop] candidate local theorems for params #[hparams : ComputableInPolyTime params input Parameters.encoding]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hparams : ComputableInPolyTime params input Parameters.encoding
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      if (model a).1.stopped = true then pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+      else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate✝ : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision✝ : ComputableInPolyTime precision input encUnary
+        hmodel✝ : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation✝ : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            if (model a).1.stopped = true then
+              pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+            else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate✝ : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision✝ : ComputableInPolyTime precision input encUnary
+        hmodel✝ : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation✝ : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            if (model a).1.stopped = true then
+              pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+            else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      if (model a).1.stopped = true then pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+      else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] α : Type
+      input : α ↪ List Bool
+      evaluate : List Bool → List Bool → Bool
+      precision : α → ℕ
+      model : α → State × ℕ
+      observation : α → List Bool
+      hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision_1 : ComputableInPolyTime precision input encUnary
+      hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+      hobservation_1 : ComputableInPolyTime observation input encBits
+      hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision : ComputableTidilyInPolyTime precision input encUnary
+      hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+      hobservation : ComputableTidilyInPolyTime observation input encBits
+      ⊢ IsPPTOn input encBool fun a =>
+          if (model a).1.stopped = true then
+            pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+          else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1084.15069):
+      [aesop] α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ IsPPTOn input encBool fun a =>
+              if (model a).1.stopped = true then
+                pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+              else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      if (model a).1.stopped = true then pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+      else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            if (model a).1.stopped = true then
+              pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+            else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            if (model a).1.stopped = true then
+              pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+            else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ IsPPTOn input encBool fun a =>
+              if (model a).1.stopped = true then
+                pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+              else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ❌️ IsPPTOn input encBool fun a =>
+            if (model a).1.stopped = true then pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+            else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+        [Meta.Tactic.fun_prop] ❌️ IsPPTOn input encBool fun a =>
+              if (model a).1.stopped = true then pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+              else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+          [Meta.Tactic.fun_prop] candidate theorems for ite #[]
+          [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `ite`
+                       now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: []
+      [aesop] no compositional plain certificate: [No theorems found for `ite` in order to prove `IsPPTOn input encBool fun a =>
+             if (model a).1.stopped = true then pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+             else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))`]
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encBool
+          is not definitionally equal to the right-hand side
+            fun a =>
+              if (model a).1.stopped = true then
+                pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+              else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+          
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ IsPPTOn input encBool fun a =>
+              if (model a).1.stopped = true then
+                pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+              else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] no certificate for `ite` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+      [aesop] expected probabilistic sequencing
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+[aesop] ✅️ 🆕 ❓️ R1 [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+    [aesop] Success probability: 80.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2, 3, 4]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [80.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => (model a).1.stopped) input encBool
+  [aesop] case hcondition
+      α : Type
+      input : α ↪ List Bool
+      evaluate : List Bool → List Bool → Bool
+      precision : α → ℕ
+      model : α → State × ℕ
+      observation : α → List Bool
+      hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision_1 : ComputableInPolyTime precision input encUnary
+      hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+      hobservation_1 : ComputableInPolyTime observation input encBits
+      hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision : ComputableTidilyInPolyTime precision input encUnary
+      hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+      hobservation : ComputableTidilyInPolyTime observation input encBits
+      ⊢ ComputableTidilyInPolyTime (fun a => (model a).1.stopped) input encBool
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1084.17047):
+      [aesop] case hcondition
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ ComputableTidilyInPolyTime (fun a => (model a).1.stopped) input encBool
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G3 [80.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+  [aesop] case hyes
+      α : Type
+      input : α ↪ List Bool
+      evaluate : List Bool → List Bool → Bool
+      precision : α → ℕ
+      model : α → State × ℕ
+      observation : α → List Bool
+      hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision_1 : ComputableInPolyTime precision input encUnary
+      hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+      hobservation_1 : ComputableInPolyTime observation input encBits
+      hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision : ComputableTidilyInPolyTime precision input encUnary
+      hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+      hobservation : ComputableTidilyInPolyTime observation input encBits
+      ⊢ IsPPTOn input encBool fun a => pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1084.17048):
+      [aesop] case hyes
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ IsPPTOn input encBool fun a => pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G4 [80.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] case hno
+      α : Type
+      input : α ↪ List Bool
+      evaluate : List Bool → List Bool → Bool
+      precision : α → ℕ
+      model : α → State × ℕ
+      observation : α → List Bool
+      hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision_1 : ComputableInPolyTime precision input encUnary
+      hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+      hobservation_1 : ComputableInPolyTime observation input encBits
+      hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision : ComputableTidilyInPolyTime precision input encUnary
+      hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+      hobservation : ComputableTidilyInPolyTime observation input encBits
+      ⊢ IsPPTOn input encBool fun a =>
+          clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 4
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1084.17049):
+      [aesop] case hno
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ IsPPTOn input encBool fun a =>
+              clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      if (model a).1.stopped = true then pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+      else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            if (model a).1.stopped = true then
+              pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+            else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            if (model a).1.stopped = true then
+              pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+            else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+[aesop] ✅️ 🆕 ❓️ R2 [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+    [aesop] Success probability: 80.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [5, 6, 7]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G5 [80.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => decide ((model a).1.stopped = true)) input
+      encBool
+  [aesop] case hcondition
+      α : Type
+      input : α ↪ List Bool
+      evaluate : List Bool → List Bool → Bool
+      precision : α → ℕ
+      model : α → State × ℕ
+      observation : α → List Bool
+      hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision_1 : ComputableInPolyTime precision input encUnary
+      hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+      hobservation_1 : ComputableInPolyTime observation input encBits
+      hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision : ComputableTidilyInPolyTime precision input encUnary
+      hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+      hobservation : ComputableTidilyInPolyTime observation input encBits
+      ⊢ ComputableTidilyInPolyTime (fun a => decide ((model a).1.stopped = true)) input encBool
+  [aesop] ✅️ Metadata
+    [aesop] ID: 5
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1084.17082):
+      [aesop] case hcondition
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ ComputableTidilyInPolyTime (fun a => decide ((model a).1.stopped = true)) input encBool
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (2)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 3
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G6 [80.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+  [aesop] case hyes
+      α : Type
+      input : α ↪ List Bool
+      evaluate : List Bool → List Bool → Bool
+      precision : α → ℕ
+      model : α → State × ℕ
+      observation : α → List Bool
+      hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision_1 : ComputableInPolyTime precision input encUnary
+      hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+      hobservation_1 : ComputableInPolyTime observation input encBits
+      hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision : ComputableTidilyInPolyTime precision input encUnary
+      hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+      hobservation : ComputableTidilyInPolyTime observation input encBits
+      ⊢ IsPPTOn input encBool fun a => pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 6
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1084.17083):
+      [aesop] case hyes
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ IsPPTOn input encBool fun a => pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (2)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 3
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G7 [80.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] case hno
+      α : Type
+      input : α ↪ List Bool
+      evaluate : List Bool → List Bool → Bool
+      precision : α → ℕ
+      model : α → State × ℕ
+      observation : α → List Bool
+      hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision_1 : ComputableInPolyTime precision input encUnary
+      hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+      hobservation_1 : ComputableInPolyTime observation input encBits
+      hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+      hprecision : ComputableTidilyInPolyTime precision input encUnary
+      hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+      hobservation : ComputableTidilyInPolyTime observation input encBits
+      ⊢ IsPPTOn input encBool fun a =>
+          clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 7
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1084.17084):
+      [aesop] case hno
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ IsPPTOn input encBool fun a =>
+              clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (2)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 3
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G1) [100.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      if (model a).1.stopped = true then pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+      else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            if (model a).1.stopped = true then
+              pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+            else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            if (model a).1.stopped = true then
+              pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+            else clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ 🏁 (G7) [80.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] Initial goal:
+        case hno
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hno
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a =>
+            clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hno
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ IsPPTOn input encBool fun a =>
+              clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a =>
+            clippedPredict (precision a) (model a).2 (State.votes evaluate (model a).1 (observation a))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.clippedPredict #[Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_clippedPredict]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_clippedPredict
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime precision input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for precision #[hprecision_1 : ComputableInPolyTime precision input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: hprecision_1 : ComputableInPolyTime precision input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (model a).2) input encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime model input (encPair State.encoding encUnary)
+                [Meta.Tactic.fun_prop] candidate local theorems for model #[hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)]
+                [Meta.Tactic.fun_prop] ✅️ applying: hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => State.votes evaluate (model a).1 (observation a)) input encBits
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.State.votes #[Cslib.Crypto.Pseudoentropy.Boosting.State.isPolyTime_votes]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.State.isPolyTime_votes
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+                [Meta.Tactic.fun_prop] candidate local theorems for evaluate #[hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool]
+                [Meta.Tactic.fun_prop] ✅️ applying: hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (model a).1) input State.encoding
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime model input (encPair State.encoding encUnary)
+                    [Meta.Tactic.fun_prop] candidate local theorems for model #[hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) State.encoding State.encoding
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime observation input encBits
+                [Meta.Tactic.fun_prop] candidate local theorems for observation #[hobservation_1 : ComputableInPolyTime observation input encBits]
+                [Meta.Tactic.fun_prop] ✅️ applying: hobservation_1 : ComputableInPolyTime observation input encBits
+[aesop] ✅️ 🆕 🏁 R3 [80.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 80.0000%
+    [aesop] Parent goal: 7
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G6) [80.0000%] ⋯ ⊢ IsPPTOn input encBool fun a =>
+      pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+  [aesop] Initial goal:
+        case hyes
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a => pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hyes
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ IsPPTOn input encBool fun a => pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hyes
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ IsPPTOn input encBool fun a => pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a => pure (listStrictMajority (State.votes evaluate (model a).1 (observation a)))
+        [Meta.Tactic.fun_prop] candidate theorems for Pure.pure #[Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => listStrictMajority (State.votes evaluate (model a).1 (observation a))) input encBool
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.listStrictMajority #[Turing.MultiTapeTM.ComputableInPolyTime.bitsStrictMajorityWithInput, Turing.MultiTapeTM.ComputableInPolyTime.bitsStrictMajority]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsStrictMajorityWithInput
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => State.votes evaluate (model a).1 (observation a)) input encBits
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.State.votes #[Cslib.Crypto.Pseudoentropy.Boosting.State.isPolyTime_votes]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.State.isPolyTime_votes
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+                    [Meta.Tactic.fun_prop] candidate local theorems for evaluate #[hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (model a).1) input State.encoding
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime model input (encPair State.encoding encUnary)
+                        [Meta.Tactic.fun_prop] candidate local theorems for model #[hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) State.encoding State.encoding
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime observation input encBits
+                    [Meta.Tactic.fun_prop] candidate local theorems for observation #[hobservation_1 : ComputableInPolyTime observation input encBits]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hobservation_1 : ComputableInPolyTime observation input encBits
+[aesop] ✅️ 🆕 🏁 R4 [80.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 4
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 80.0000%
+    [aesop] Parent goal: 6
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G5) [80.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => decide ((model a).1.stopped = true)) input encBool
+  [aesop] Initial goal:
+        case hcondition
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ ComputableTidilyInPolyTime (fun a => decide ((model a).1.stopped = true)) input encBool
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] case hcondition
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ ComputableTidilyInPolyTime (fun a => (model a).1.stopped) input encBool
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hcondition
+        α : Type
+        input : α ↪ List Bool
+        evaluate : List Bool → List Bool → Bool
+        precision : α → ℕ
+        model : α → State × ℕ
+        observation : α → List Bool
+        hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision_1 : ComputableInPolyTime precision input encUnary
+        hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+        hobservation_1 : ComputableInPolyTime observation input encBits
+        hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+        hprecision : ComputableTidilyInPolyTime precision input encUnary
+        hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+        hobservation : ComputableTidilyInPolyTime observation input encBits
+        ⊢ ComputableTidilyInPolyTime (fun a => (model a).1.stopped) input encBool
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hcondition
+          α : Type
+          input : α ↪ List Bool
+          evaluate : List Bool → List Bool → Bool
+          precision : α → ℕ
+          model : α → State × ℕ
+          observation : α → List Bool
+          hevaluate_1 : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision_1 : ComputableInPolyTime precision input encUnary
+          hmodel_1 : ComputableInPolyTime model input (encPair State.encoding encUnary)
+          hobservation_1 : ComputableInPolyTime observation input encBits
+          hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2) (encPair encBits encBits) encBool
+          hprecision : ComputableTidilyInPolyTime precision input encUnary
+          hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+          hobservation : ComputableTidilyInPolyTime observation input encBits
+          ⊢ ComputableTidilyInPolyTime (fun a => (model a).1.stopped) input encBool
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (model a).1.stopped) input encBool
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.State.stopped #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Pseudoentropy.Boosting.State.stopped`
+                     trying again after decomposing function as: `(fun a0 => a0.stopped) ∘ (fun a => (model a).1)`
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => a0.stopped) State.encoding encBool
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.State.stopped #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Crypto.Pseudoentropy.Boosting.State.stopped`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => a0.stopped) State.encoding encBool
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.Boosting.State.stopped #[Cslib.Crypto.Pseudoentropy.Boosting.State.isPolyTime_stopped]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.Boosting.State.isPolyTime_stopped
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) State.encoding State.encoding
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (model a).1) input State.encoding
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+                [Meta.Tactic.fun_prop] candidate local theorems for model #[hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)]
+                [Meta.Tactic.fun_prop] ✅️ applying: hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary)
+[aesop] ✅️ 🆕 🏁 R5 [80.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 5
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 80.0000%
+    [aesop] Parent goal: 5
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

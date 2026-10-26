@@ -1,0 +1,28 @@
+'Turing.MultiTapeTM.ComputableInDegree.comp' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8608ef72ac45b43b/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/PlainCore.lean:85:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInDegree.comp' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInO.comp' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8608ef72ac45b43b/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/PlainCore.lean:88:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInO.comp' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInO.ite' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8608ef72ac45b43b/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/PlainCore.lean:91:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInO.ite' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInPolyTime.exists_degree' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8608ef72ac45b43b/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/PlainCore.lean:95:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInPolyTime.exists_degree' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

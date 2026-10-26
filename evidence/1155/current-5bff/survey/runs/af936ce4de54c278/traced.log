@@ -1,0 +1,424 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun pair =>
+        let next := FiniteConfig.receive pair.1 0 1 pair.2;
+        ((next.step action (fun x => none) fun x => SignType.pos).tapes.output, (next.channels 0).2.head))
+      (encPair encFiniteConfig encBits) (encPair encBits (encOption encBool))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+          (fun next => ((next.step action (fun x => none) fun x => SignType.pos).tapes.output, (next.channels 0).2.head))
+          encFiniteConfig (encPair encBits (encOption encBool))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.step action (fun x => none) fun x => SignType.pos).tapes.output) encFiniteConfig
+              encBits
+          [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend'
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.listAppend'
+                ComputableTidilyInPolyTime (fun x => ?left x ++ ?right x) ?encIn (encList ?encA)
+                with
+                ComputableTidilyInPolyTime (fun x => x.tapes.output ++ action.output.toList) ?encMid encBits
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes.output) encFiniteConfig encBits
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.output #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output]
+              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output as:
+                                     (fun x3 => x3.output) ∘ (fun x => x.tapes)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x3 => x3.output) encFiniteCfg encBits
+                  [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.output #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes) encFiniteConfig encFiniteCfg
+                  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.tapes #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => action.output.toList) encFiniteConfig encBits
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.channels 0).2.head) encFiniteConfig (encOption encBool)
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Turing.BiTape.head #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.biTape_head]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.biTape_head as:
+                                 (fun x1 => x1.head) ∘ (fun x => (x.channels 0).2)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x1 => x1.head) (encBiTape encBool) (encOption encBool)
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Turing.BiTape.head #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.biTape_head]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.biTape_head
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.channels 0).2) encFiniteConfig (encBiTape encBool)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.channels 0) encFiniteConfig (encPair encBits (encBiTape encBool))
+                  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.channels #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_channels]
+                  [Meta.Tactic.fun_prop] removing argument to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_channels
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun f => f 0) (encPi (encPair ?encA ?encB)) (encPair ?encA ?encB)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_apply
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.channels) encFiniteConfig (encPi (encPair encBits (encBiTape encBool)))
+                      [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.channels #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_channels]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_channels
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encBiTape encBool) (encBiTape encBool)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun pair => FiniteConfig.receive pair.1 0 1 pair.2) (encPair encFiniteConfig encBits)
+          encFiniteConfig
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.receive #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_receive]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_receive
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair encFiniteConfig encBits) encFiniteConfig
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encFiniteConfig encBits) (encPair encFiniteConfig encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encFiniteConfig encBits) encBits
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encFiniteConfig encBits) (encPair encFiniteConfig encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun cfg =>
+        { input := cfg.input, state := cfg.state, inputPos := cfg.inputPos, workTapes := cfg.workTapes,
+          output := cfg.output ++ cfg.input })
+      encFiniteCfg encFiniteCfg
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_mk]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_mk
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime FiniteCfg.input encFiniteCfg encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.input #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_input]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_input
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime FiniteCfg.state encFiniteCfg (encFinite (Option (Fin 2)))
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.state #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => ↑a.inputPos) encFiniteCfg encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Fin.val #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.moveInputPos, Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputPos]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.moveInputPos
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.moveInputPos
+            ComputableTidilyInPolyTime (fun a => ↑(moveInputPos (?position a) ?move)) ?input encUnary
+            with
+            ComputableTidilyInPolyTime (fun a => ↑a.inputPos) encFiniteCfg encUnary
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputPos
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime FiniteCfg.workTapes encFiniteCfg (encPi (encBiTape encBool))
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.workTapes #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_workTapes]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_workTapes
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.output ++ a.input) encFiniteCfg encBits
+      [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend'
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.listAppend'
+            ComputableTidilyInPolyTime (fun x => ?left x ++ ?right x) ?encIn (encList ?encA)
+            with
+            ComputableTidilyInPolyTime (fun a => a.output ++ a.input) encFiniteCfg encBits
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime FiniteCfg.output encFiniteCfg encBits
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.output #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime FiniteCfg.input encFiniteCfg encBits
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime FiniteCfg.input
+                encFiniteCfg encBits
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input) encFiniteConfig encBits
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input)
+            encFiniteConfig encBits
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input)
+            encFiniteConfig encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input) encFiniteConfig encBits
+  [aesop] ⊢ ComputableTidilyInPolyTime (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input)
+          encFiniteConfig encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.7536):
+      [aesop] ⊢ ComputableTidilyInPolyTime
+              (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input) encFiniteConfig encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input) encFiniteConfig encBits
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input)
+            encFiniteConfig encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input)
+            encFiniteConfig encBits
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input)
+              encFiniteConfig encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun cfg => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input)
+            encFiniteConfig encBits
+        [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide, Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite', Turing.MultiTapeTM.ComputableTidilyInPolyTime.cond]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.ite_decide
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => decide (a.tapes.state = none)) encFiniteConfig encBool
+            [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_lt, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_le, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_lt', Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_le', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem
+              [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_mem
+                  ComputableTidilyInPolyTime (fun x => decide (?value x ∈ ?list x)) ?encIn encBool
+                  with
+                  ComputableTidilyInPolyTime (fun a => decide (a.tapes.state = none)) encFiniteConfig encBool
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and
+              [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_and
+                  ComputableTidilyInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                  with
+                  ComputableTidilyInPolyTime (fun a => decide (a.tapes.state = none)) encFiniteConfig encBool
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or
+              [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_or
+                  ComputableTidilyInPolyTime (fun a => decide (?left a ∨ ?right a)) ?encA encBool
+                  with
+                  ComputableTidilyInPolyTime (fun a => decide (a.tapes.state = none)) encFiniteConfig encBool
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq
+              [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_eq
+                  ComputableTidilyInPolyTime (fun p => decide (p.1 = p.2)) (encPair ?enc ?enc) encBool
+                  with
+                  ComputableTidilyInPolyTime (fun a => decide (a.tapes.state = none)) encFiniteConfig encBool
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes.state) encFiniteConfig (encFinite (Option (Fin 2)))
+                [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.state #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state as:
+                                       (fun x3 => x3.state) ∘ (fun x => x.tapes)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x3 => x3.state) encFiniteCfg (encFinite (Option (Fin 2)))
+                    [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.state #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes) encFiniteConfig encFiniteCfg
+                    [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.tapes #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => none) encFiniteConfig (encFinite (Option (Fin 2)))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.tapes.output) encFiniteConfig encBits
+            [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.output #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output]
+            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output as:
+                                   (fun a3 => a3.output) ∘ (fun a => a.tapes)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a3 => a3.output) encFiniteCfg encBits
+                [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.output #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.tapes) encFiniteConfig encFiniteCfg
+                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a.tapes)
+                      encFiniteConfig encFiniteCfg
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.tapes.input) encFiniteConfig encBits
+            [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.input #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_input]
+            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_input as:
+                                   (fun a3 => a3.input) ∘ (fun a => a.tapes)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a3 => a3.input) encFiniteCfg encBits
+                [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.input #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_input]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_input
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.tapes) encFiniteConfig encFiniteCfg
+                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a.tapes)
+                      encFiniteConfig encFiniteCfg
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (cfg a).tapes.inputSymbol) input (encFinEnum (Option Bool))
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.inputSymbol #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputSymbol]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputSymbol as:
+                         (fun a3 => a3.inputSymbol) ∘ (fun a => (cfg a).tapes)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a3 => a3.inputSymbol) encFiniteCfg (encFinEnum (Option Bool))
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.inputSymbol #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputSymbol]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputSymbol
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (cfg a).tapes) input encFiniteCfg
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.tapes #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes as:
+                             (fun a4 => a4.tapes) ∘ (fun a => cfg a)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a4 => a4.tapes) encFiniteConfig encFiniteCfg
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.tapes #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => cfg a) input encFiniteConfig
+          [Meta.Tactic.fun_prop] candidate local theorems for cfg #[hcfg : ComputableTidilyInPolyTime cfg input encFiniteConfig]
+          [Meta.Tactic.fun_prop] ✅️ applying: hcfg : ComputableTidilyInPolyTime cfg input encFiniteConfig
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (FiniteConfig.init 0) (encList encBool) encFiniteConfig
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.init #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_init]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_init
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList encBool) encBits
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.id'
+            ComputableTidilyInPolyTime (fun a => a) ?encIn ?encIn
+            with
+            ComputableTidilyInPolyTime (fun a => a) (encList encBool) encBits
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_to_binary
+        [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_to_binary
+            ComputableTidilyInPolyTime (fun n => n) encUnary encNat
+            with
+            ComputableTidilyInPolyTime (fun a => a) (encList encBool) encBits
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToList
+        [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.bitsToList
+            ComputableTidilyInPolyTime (fun l => l) encBits (encList encBool)
+            with
+            ComputableTidilyInPolyTime (fun a => a) (encList encBool) encBits
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listToBits
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun cfg => ↑(cfg.step action).inputPos) encFiniteCfg encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Fin.val #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.moveInputPos, Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputPos]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.moveInputPos
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime FiniteCfg.input encFiniteCfg encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.input #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_input]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_input
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => ↑a.inputPos) encFiniteCfg encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Fin.val #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.moveInputPos, Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputPos]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.moveInputPos
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.moveInputPos
+            ComputableTidilyInPolyTime (fun a => ↑(moveInputPos (?position a) ?move)) ?input encUnary
+            with
+            ComputableTidilyInPolyTime (fun a => ↑a.inputPos) encFiniteCfg encUnary
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputPos
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (FiniteConfig.init ()) encBits encFiniteConfig
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.init #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_init]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_init
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2)) (encPair encFiniteConfig encBits) encFiniteConfig
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2))
+            (encPair encFiniteConfig encBits) encFiniteConfig
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2))
+            (encPair encFiniteConfig encBits) encFiniteConfig
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2)) (encPair encFiniteConfig encBits) encFiniteConfig
+  [aesop] ⊢ ComputableTidilyInPolyTime (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2))
+          (encPair encFiniteConfig encBits) encFiniteConfig
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.30136):
+      [aesop] ⊢ ComputableTidilyInPolyTime (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2))
+              (encPair encFiniteConfig encBits) encFiniteConfig
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2)) (encPair encFiniteConfig encBits) encFiniteConfig
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2))
+            (encPair encFiniteConfig encBits) encFiniteConfig
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2))
+            (encPair encFiniteConfig encBits) encFiniteConfig
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2))
+              (encPair encFiniteConfig encBits) encFiniteConfig
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun pair => FiniteConfig.receive pair.1 1 0 (pair.2 ++ pair.2))
+            (encPair encFiniteConfig encBits) encFiniteConfig
+        [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.receive #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_receive]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_receive
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair encFiniteConfig encBits) encFiniteConfig
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encFiniteConfig encBits) (encPair encFiniteConfig encBits)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.2 ++ a.2) (encPair encFiniteConfig encBits) encBits
+            [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend'
+              [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.listAppend'
+                  ComputableTidilyInPolyTime (fun x => ?left x ++ ?right x) ?encIn (encList ?encA)
+                  with
+                  ComputableTidilyInPolyTime (fun a => a.2 ++ a.2) (encPair encFiniteConfig encBits) encBits
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encFiniteConfig encBits) encBits
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encFiniteConfig encBits) (encPair encFiniteConfig encBits)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encFiniteConfig encBits) encBits
+                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime Prod.snd
+                      (encPair encFiniteConfig encBits) encBits
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

@@ -1,0 +1,265 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun cfg => (cfg.tapes.state, cfg.tapes.inputSymbol, cfg.tapes.workTapeSymbols, cfg.answerSymbols)) encFiniteConfig
+      (encPair (encFinite (Option Control))
+        (encPair (encFinEnum (Option Bool))
+          (encPair (encFinEnum (Fin k → Option Bool)) (encFinite (Operation → Option Bool)))))
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes.state) encFiniteConfig (encFinite (Option Control))
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.state #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state as:
+                             (fun x3 => x3.state) ∘ (fun x => x.tapes)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x3 => x3.state) encFiniteCfg (encFinite (Option Control))
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.state #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_state
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes) encFiniteConfig encFiniteCfg
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.tapes #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.tapes.inputSymbol, x.tapes.workTapeSymbols, x.answerSymbols)) encFiniteConfig
+          (encPair (encFinEnum (Option Bool))
+            (encPair (encFinEnum (Fin k → Option Bool)) (encFinite (Operation → Option Bool))))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes.inputSymbol) encFiniteConfig (encFinEnum (Option Bool))
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.inputSymbol #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputSymbol]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputSymbol as:
+                                 (fun x3 => x3.inputSymbol) ∘ (fun x => x.tapes)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x3 => x3.inputSymbol) encFiniteCfg (encFinEnum (Option Bool))
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.inputSymbol #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputSymbol]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_inputSymbol
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes) encFiniteConfig encFiniteCfg
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun x => x.tapes)
+                    encFiniteConfig encFiniteCfg
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.tapes.workTapeSymbols, x.answerSymbols)) encFiniteConfig
+              (encPair (encFinEnum (Fin k → Option Bool)) (encFinite (Operation → Option Bool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes.workTapeSymbols) encFiniteConfig (encFinEnum (Fin k → Option Bool))
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.workTapeSymbols #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_workTapeSymbols]
+              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_workTapeSymbols as:
+                                     (fun x3 => x3.workTapeSymbols) ∘ (fun x => x.tapes)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x3 => x3.workTapeSymbols) encFiniteCfg (encFinEnum (Fin k → Option Bool))
+                  [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.workTapeSymbols #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_workTapeSymbols]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_workTapeSymbols
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.tapes) encFiniteConfig encFiniteCfg
+                  [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                        (fun x => x.tapes) encFiniteConfig encFiniteCfg
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime FiniteConfig.answerSymbols encFiniteConfig (encFinite (Operation → Option Bool))
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.answerSymbols #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_answerSymbols]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_answerSymbols
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun cfg =>
+        match some (Action.step action✝ querySymbol✝ answerMove✝) with
+        | some (Action.step action symbol move) => cfg.step action symbol move
+        | x => cfg)
+      encFiniteConfig encFiniteConfig
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.step #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_step]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_step
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun cfg =>
+        match some (op, snd✝) with
+        | some (op, snd) => (cfg.channels op).1
+        | none => [])
+      encFiniteConfig encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.channels op) encFiniteConfig (encPair encBits (encBiTape encBool))
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.channels #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_channels]
+      [Meta.Tactic.fun_prop] removing argument to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_channels
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun f => f op) (encPi (encPair encBits ?encD)) (encPair encBits ?encD)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_apply
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.channels) encFiniteConfig (encPi (encPair encBits (encBiTape encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.channels #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_channels]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_channels
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (input a).length) input encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (⇑input) input encBits
+      [Meta.Tactic.fun_prop] candidate local theorems for input #[]
+      [Meta.Tactic.fun_prop] candidate morphism theorems: [@ComputableTidilyInPolyTime.encode,
+           @ComputableTidilyInPolyTime.encoded]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.encode
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (⇑input) input encBits
+  [Meta.Tactic.fun_prop] candidate local theorems for input #[]
+  [Meta.Tactic.fun_prop] candidate morphism theorems: [@ComputableTidilyInPolyTime.encode,
+       @ComputableTidilyInPolyTime.encoded]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.encode
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun cfg => cfg.tapes.output) encFiniteConfig encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.output #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output as:
+                         (fun cfg3 => cfg3.output) ∘ (fun cfg => cfg.tapes)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun cfg3 => cfg3.output) encFiniteCfg encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.output #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun cfg => cfg.tapes) encFiniteConfig encFiniteCfg
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.tapes #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun L =>
+      (L + 1) ^ dn + (L + 1) ^ di + ((cf * (L + c * (L + 1) ^ d + 1 + 1) + 1) ^ e + cg * (c * (L + 1) ^ d + 1) ^ dg) +
+            cf * (L + c * (L + 1) ^ d + 1 + 1) +
+          (c * (L + 1) ^ d + 1) +
+        (cf * (L + c * (L + 1) ^ d + 1 + 1) + 1) ^ do'
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+          (n + 1) ^ dn + (n + 1) ^ di + ((cf * (n + c * (n + 1) ^ d + 1 + 1) + 1) ^ e + cg * (c * (n + 1) ^ d + 1) ^ dg) +
+              cf * (n + c * (n + 1) ^ d + 1 + 1) +
+            (c * (n + 1) ^ d + 1)
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+              (n + 1) ^ dn + (n + 1) ^ di + ((cf * (n + c * (n + 1) ^ d + 1 + 1) + 1) ^ e + cg * (c * (n + 1) ^ d + 1) ^ dg) +
+                cf * (n + c * (n + 1) ^ d + 1 + 1)
+          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+                  (n + 1) ^ dn + (n + 1) ^ di + ((cf * (n + c * (n + 1) ^ d + 1 + 1) + 1) ^ e + cg * (c * (n + 1) ^ d + 1) ^ dg)
+              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (n + 1) ^ dn + (n + 1) ^ di
+                  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (n + 1) ^ dn
+                      [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + 1
+                          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.id
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (n + 1) ^ di
+                      [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + 1
+                          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => n + 1
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (cf * (n + c * (n + 1) ^ d + 1 + 1) + 1) ^ e + cg * (c * (n + 1) ^ d + 1) ^ dg
+                  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (cf * (n + c * (n + 1) ^ d + 1 + 1) + 1) ^ e
+                      [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cf * (n + c * (n + 1) ^ d + 1 + 1) + 1
+                          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cf * (n + c * (n + 1) ^ d + 1 + 1)
+                              [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cf
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + c * (n + 1) ^ d + 1 + 1
+                                  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + c * (n + 1) ^ d + 1
+                                      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + c * (n + 1) ^ d
+                                          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+                                              [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded
+                                                    fun n => n
+                                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => c * (n + 1) ^ d
+                                              [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => c
+                                                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (n + 1) ^ d
+                                                  [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+                                                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+                                                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + 1
+                                                      [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded
+                                                            fun n => n + 1
+                                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                                          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded
+                                                fun n => 1
+                                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                                      [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded
+                                            fun n => 1
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                              [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 1
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cg * (c * (n + 1) ^ d + 1) ^ dg
+                      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cg
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (c * (n + 1) ^ d + 1) ^ dg
+                          [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => c * (n + 1) ^ d + 1
+                              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => c * (n + 1) ^ d
+                                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                                        c * (n + 1) ^ d
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                                        1
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cf * (n + c * (n + 1) ^ d + 1 + 1)
+              [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                    cf * (n + c * (n + 1) ^ d + 1 + 1)
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => c * (n + 1) ^ d + 1
+          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => c * (n + 1) ^ d + 1
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (cf * (n + c * (n + 1) ^ d + 1 + 1) + 1) ^ do'
+      [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cf * (n + c * (n + 1) ^ d + 1 + 1) + 1
+          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                cf * (n + c * (n + 1) ^ d + 1 + 1) + 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (⇑input) input encBits
+  [Meta.Tactic.fun_prop] candidate local theorems for input #[]
+  [Meta.Tactic.fun_prop] candidate morphism theorems: [@ComputableTidilyInPolyTime.encode,
+       @ComputableTidilyInPolyTime.encoded]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.encode
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun L => cf * (L + c * (L + 1) ^ d + 1 + 1)
+  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cf
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + c * (n + 1) ^ d + 1 + 1
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + c * (n + 1) ^ d + 1
+          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + c * (n + 1) ^ d
+              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.id
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => c * (n + 1) ^ d
+                  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => c
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (n + 1) ^ d
+                      [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + 1
+                          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+                              [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => n
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+              [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 1
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 1
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun cfg => cfg.tapes.output) encFiniteConfig encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.output #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output as:
+                         (fun cfg3 => cfg3.output) ∘ (fun cfg => cfg.tapes)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun cfg3 => cfg3.output) encFiniteCfg encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.FiniteCfg.output #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_output
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun cfg => cfg.tapes) encFiniteConfig encFiniteCfg
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeMachine.FiniteConfig.tapes #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteConfig_tapes

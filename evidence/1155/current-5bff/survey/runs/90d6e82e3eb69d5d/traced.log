@@ -1,0 +1,17 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (decodeDesc x, List.map (⇑eBit) x)) encBits (encPair eDesc (encList encUnary))
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime decodeDesc encBits eDesc
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.Universal.decodeDesc #[Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_decodeDesc]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_decodeDesc
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (List.map ⇑eBit) encBits (encList encUnary)
+      [Meta.Tactic.fun_prop] candidate theorems for List.map #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.map, Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_map_eBit, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapFilterConst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapToBitsWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsMapWithInput]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.map
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.map
+            ComputableTidilyInPolyTime (List.map ?f) (encList ?encA) (encList ?encB)
+            with
+            ComputableTidilyInPolyTime (fun l => List.map (⇑eBit) l) encBits (encList encUnary)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_map_eBit
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun b => eBit b) encBool encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.Universal.eBit #[Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_eBit]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_eBit

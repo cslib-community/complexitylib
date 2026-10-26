@@ -1,0 +1,7 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => machine.replayOutput p.1 p.2) (encPair encBits encBits) encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapePTM.replayOutput #[Turing.MultiTapePTM.replayOutput_pt]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapePTM.replayOutput_pt
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => machine.pendingRequest (machine.replayPrefix p.1.1 p.1.2 p.2))
+      (encPair (encPair encBits encBits) encUnary) encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapePTM.pendingRequest #[Turing.MultiTapePTM.replayPrefix_pendingRequest_pt]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapePTM.replayPrefix_pendingRequest_pt

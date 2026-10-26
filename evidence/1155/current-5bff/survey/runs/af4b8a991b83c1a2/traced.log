@@ -1,0 +1,1572 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] Initial goal:
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] α β γ : Type
+      input : α ↪ List Bool
+      sample : β ↪ List Bool
+      output : γ ↪ List Bool
+      program : α → ProbComp β
+      callback : α → β → γ
+      hp : IsPPTOn input sample program
+      ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.172):
+      [aesop] α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ IsPPTOn input output fun a => callback a <$> program a
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] Initial goal:
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ IsPPTOn input output fun a => callback a <$> program a
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ❌️ IsPPTOn input output fun a => callback a <$> program a
+        [Meta.Tactic.fun_prop] candidate theorems for Functor.map #[Cslib.Probability.IsPPTOn.map_with]
+        [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.map_with
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn input sample program
+            [Meta.Tactic.fun_prop] candidate local theorems for program #[hp : IsPPTOn input sample program]
+            [Meta.Tactic.fun_prop] ✅️ applying: hp : IsPPTOn input sample program
+          [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+            [Meta.Tactic.fun_prop] candidate local theorems for callback #[]
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @IsPPTOn.map_with, failed to discharge hypotheses
+                ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+        [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Functor.map`
+                     trying again after decomposing function as: `(fun a4a5 => a4a5.1 <$> a4a5.2) ∘ (fun a => (callback a, program a))`
+        [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.preprocess
+          [Meta.Tactic.fun_prop] ❌️ IsPPTOn ?middle output fun a4a5 => a4a5.1 <$> a4a5.2
+            [Meta.Tactic.fun_prop] candidate theorems for Functor.map #[Cslib.Probability.IsPPTOn.map_with]
+            [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.map_with
+              [Meta.Tactic.fun_prop] ❌️ IsPPTOn ?middle ?left Prod.snd
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[]
+                [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Prod.snd`
+                             now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @IsPPTOn.map_with, failed to discharge hypotheses
+                    IsPPTOn ?middle ?left Prod.snd
+            [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Functor.map`
+                         now trying to prove `Cslib.Probability.IsPPTOn` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: []
+          [Meta.Tactic.fun_prop] @IsPPTOn.preprocess, failed to discharge hypotheses
+                IsPPTOn ?middle output fun a4a5 => a4a5.1 <$> a4a5.2
+      [aesop] no compositional plain certificate: [No theorems found for `Prod.snd` in order to prove `IsPPTOn ?middle ?left fun self => self.2`,
+           No theorems found for `callback` in order to prove `ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output`]
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            output
+          is not definitionally equal to the right-hand side
+            fun a => callback a <$> program a
+          
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ IsPPTOn input output fun a => callback a <$> program a
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] no certificate for `Functor.map` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+[aesop] ✅️ 🆕 ❓️ R1 [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [80.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+    [aesop] Success probability: 80.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2, 3]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: [_uniq.2687]
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [64.0000%] ⋯ ⊢ IsPPTOn input ?left program
+  [aesop] case hprogram
+      α β γ : Type
+      input : α ↪ List Bool
+      sample : β ↪ List Bool
+      output : γ ↪ List Bool
+      program : α → ProbComp β
+      callback : α → β → γ
+      hp : IsPPTOn input sample program
+      ⊢ IsPPTOn input ?left program
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2691):
+      [aesop] case hprogram
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ IsPPTOn input ?left program
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: [_uniq.2687]
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G3 [64.0000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+  [aesop] case hf
+      α β γ : Type
+      input : α ↪ List Bool
+      sample : β ↪ List Bool
+      output : γ ↪ List Bool
+      program : α → ProbComp β
+      callback : α → β → γ
+      hp : IsPPTOn input sample program
+      ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2692):
+      [aesop] case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: [_uniq.2687]
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G1) [100.0000%] ⋯ ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] Initial goal:
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input output fun a => callback a <$> program a
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ ❌️ (G3) [64.0000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+  [aesop] Initial goal:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+        [Meta.Tactic.fun_prop] candidate local theorems for callback #[]
+        [Meta.Tactic.fun_prop] candidate transition theorems: []
+      [aesop] no compositional plain certificate: [No theorems found for `callback` in order to prove `ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output`]
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair input ?left
+          is not definitionally equal to the right-hand side
+            output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (α × β)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).1) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : α ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encA output → ComputableInPolyTime (fun p => (f p).1) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).2) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : β ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encB output → ComputableInPolyTime (fun p => (f p).2) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input ?left) output
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|apply|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.plainPiApply
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ ✅️ (G2) [64.0000%] ⋯ ⊢ IsPPTOn input ?left program
+  [aesop] Initial goal:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ⏳️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Safe rule assigned metavariables, so we postpone it
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ⏳️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input sample program
+        [Meta.Tactic.fun_prop] candidate local theorems for program #[hp : IsPPTOn input sample program]
+        [Meta.Tactic.fun_prop] ✅️ applying: hp : IsPPTOn input sample program
+      [aesop] Safe rule assigned metavariables, so we postpone it
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            ?left
+          is not definitionally equal to the right-hand side
+            program
+          
+          case hprogram
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ IsPPTOn input ?left program
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+[aesop] ✅️ 🆕 ❓️ R2 [79.2000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [99.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+    [aesop] Success probability: 79.2000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: [4]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: [_uniq.2687]
+[aesop] ✅️ 🆕 ❓️ G4 [79.2000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample)
+      output
+  [aesop] case hf
+      α β γ : Type
+      input : α ↪ List Bool
+      sample : β ↪ List Bool
+      output : γ ↪ List Bool
+      program : α → ProbComp β
+      callback : α → β → γ
+      hp : IsPPTOn input sample program
+      ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ✅️ Metadata
+    [aesop] ID: 4
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2692):
+      [aesop] case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (2)
+    [aesop] Child rapps:  []
+    [aesop] Origin: copy of 3, originally 3
+    [aesop] Depth: 3
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 5
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G4) [79.2000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample)
+      output
+  [aesop] Initial goal:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+        [Meta.Tactic.fun_prop] candidate local theorems for callback #[]
+        [Meta.Tactic.fun_prop] candidate transition theorems: []
+      [aesop] no compositional plain certificate: [No theorems found for `callback` in order to prove `ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output`]
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair input sample
+          is not definitionally equal to the right-hand side
+            output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (α × β)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).1) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : α ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encA output → ComputableInPolyTime (fun p => (f p).1) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).2) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : β ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encB output → ComputableInPolyTime (fun p => (f p).2) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|apply|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.plainPiApply
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ ✅️ (G2) [64.0000%] ⋯ ⊢ IsPPTOn input ?left program
+  [aesop] Initial goal:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRules.assumption (postponed)
+[aesop] ✅️ 🆕 ❓️ R3 [72.0000%] safe|tactic|global|Aesop.BuiltinRules.assumption
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] Rule: [90.0000%] safe|tactic|global|Aesop.BuiltinRules.assumption
+    [aesop] Success probability: 72.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: [5]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: [_uniq.2687]
+[aesop] ✅️ 🆕 ❓️ G5 [72.0000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample)
+      output
+  [aesop] case hf
+      α β γ : Type
+      input : α ↪ List Bool
+      sample : β ↪ List Bool
+      output : γ ↪ List Bool
+      program : α → ProbComp β
+      callback : α → β → γ
+      hp : IsPPTOn input sample program
+      ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ✅️ Metadata
+    [aesop] ID: 5
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2692):
+      [aesop] case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (3)
+    [aesop] Child rapps:  []
+    [aesop] Origin: copy of 3, originally 3
+    [aesop] Depth: 3
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 7
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G5) [72.0000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample)
+      output
+  [aesop] Initial goal:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+        [Meta.Tactic.fun_prop] candidate local theorems for callback #[]
+        [Meta.Tactic.fun_prop] candidate transition theorems: []
+      [aesop] no compositional plain certificate: [No theorems found for `callback` in order to prove `ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output`]
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair input sample
+          is not definitionally equal to the right-hand side
+            output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (α × β)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).1) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : α ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encA output → ComputableInPolyTime (fun p => (f p).1) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).2) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : β ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encB output → ComputableInPolyTime (fun p => (f p).2) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|apply|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.plainPiApply
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ ✅️ (G2) [64.0000%] ⋯ ⊢ IsPPTOn input ?left program
+  [aesop] Initial goal:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp (postponed)
+[aesop] ✅️ 🆕 ❓️ R4 [72.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 4
+    [aesop] Rule: [90.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 72.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: [6]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: [_uniq.2687]
+[aesop] ✅️ 🆕 ❓️ G6 [72.0000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample)
+      output
+  [aesop] case hf
+      α β γ : Type
+      input : α ↪ List Bool
+      sample : β ↪ List Bool
+      output : γ ↪ List Bool
+      program : α → ProbComp β
+      callback : α → β → γ
+      hp : IsPPTOn input sample program
+      ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ✅️ Metadata
+    [aesop] ID: 6
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2692):
+      [aesop] case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (4)
+    [aesop] Child rapps:  []
+    [aesop] Origin: copy of 3, originally 3
+    [aesop] Depth: 3
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 9
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G6) [72.0000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample)
+      output
+  [aesop] Initial goal:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+        [Meta.Tactic.fun_prop] candidate local theorems for callback #[]
+        [Meta.Tactic.fun_prop] candidate transition theorems: []
+      [aesop] no compositional plain certificate: [No theorems found for `callback` in order to prove `ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output`]
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair input sample
+          is not definitionally equal to the right-hand side
+            output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (α × β)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).1) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : α ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encA output → ComputableInPolyTime (fun p => (f p).1) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).2) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : β ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encB output → ComputableInPolyTime (fun p => (f p).2) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|apply|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.plainPiApply
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ ✅️ (G2) [64.0000%] ⋯ ⊢ IsPPTOn input ?left program
+  [aesop] Initial goal:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+      [aesop] expected probabilistic sequencing
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected a conditional program
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected a probabilistic iteration
+    [aesop] ✅️ ✅️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+[aesop] ✅️ 🆕 ❓️ R5 [60.0000%] unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+  [aesop] ✅️ Metadata
+    [aesop] ID: 5
+    [aesop] Rule: [75.0000%] unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+    [aesop] Success probability: 60.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: [7]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: [_uniq.2687]
+[aesop] ✅️ 🆕 ❓️ G7 [60.0000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample)
+      output
+  [aesop] case hf
+      α β γ : Type
+      input : α ↪ List Bool
+      sample : β ↪ List Bool
+      output : γ ↪ List Bool
+      program : α → ProbComp β
+      callback : α → β → γ
+      hp : IsPPTOn input sample program
+      ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ✅️ Metadata
+    [aesop] ID: 7
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2692):
+      [aesop] case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (5)
+    [aesop] Child rapps:  []
+    [aesop] Origin: copy of 3, originally 3
+    [aesop] Depth: 3
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 11
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G2) [64.0000%] ⋯ ⊢ IsPPTOn input ?left program
+  [aesop] Initial goal:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        case hprogram
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ IsPPTOn input ?left program
+  [aesop] ✅️ ⏩️ Safe rules
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] ✅️ ❌️ (G7) [60.0000%] ⋯ ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample)
+      output
+  [aesop] Initial goal:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hf
+        α β γ : Type
+        input : α ↪ List Bool
+        sample : β ↪ List Bool
+        output : γ ↪ List Bool
+        program : α → ProbComp β
+        callback : α → β → γ
+        hp : IsPPTOn input sample program
+        ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+        [Meta.Tactic.fun_prop] candidate local theorems for callback #[]
+        [Meta.Tactic.fun_prop] candidate transition theorems: []
+      [aesop] no compositional plain certificate: [No theorems found for `callback` in order to prove `ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output`]
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair input sample
+          is not definitionally equal to the right-hand side
+            output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (α × β)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCertificate
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptKnownCall
+      [aesop] expected an efficiency goal for Cslib.Probability.IsPPTOn
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] the program body is not an application of a constant
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).1) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : α ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encA output → ComputableInPolyTime (fun p => (f p).1) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun p => (?f p).2) ?encC ?output
+          with the goal
+            ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+          
+          Note: The full type of the term is
+            ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+              {output : β ↪ List Bool} {f : γ → α × β},
+              ComputableInPolyTime f encC (encPair encA encB) →
+                ComputableInPolyTime (fun a => a) encB output → ComputableInPolyTime (fun p => (f p).2) encC output
+          
+          case hf
+          α β γ : Type
+          input : α ↪ List Bool
+          sample : β ↪ List Bool
+          output : γ ↪ List Bool
+          program : α → ProbComp β
+          callback : α → β → γ
+          hp : IsPPTOn input sample program
+          ⊢ ComputableInPolyTime (fun pair => callback pair.1 pair.2) (encPair input sample) output
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptCond
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIte
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateCaptured
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateGrowth
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptIterateLength
+      [aesop] expected an encoded-input PPT goal
+    [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|apply|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.plainPiApply
+      [aesop] failed to synthesize
+            Fintype β
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] expected an explicit raw polynomial-time goal
+[aesop] Expanding safe subtree of the root goal.
+[aesop] Skipping safe rule expansion of goal 0 since safe rules have already been applied.
+[aesop] Skipping safe rule expansion of goal 1 since safe rules have already been applied.
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => pair.1.2 ++ pair.2) (encPair (encPair encUnary encBits) encBits) encBits
+  [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableInPolyTime.snoc, Turing.MultiTapeTM.ComputableInPolyTime.listAppend']
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsAppend
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1.2) (encPair (encPair encUnary encBits) encBits) encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair encUnary encBits) encBits) (encPair encUnary encBits)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary encBits) encBits)
+                  (encPair (encPair encUnary encBits) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary encBits) (encPair encUnary encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair encUnary encBits) encBits) encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary encBits) encBits)
+              (encPair (encPair encUnary encBits) encBits)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun a => a) encBits encBits

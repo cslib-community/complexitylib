@@ -1,0 +1,92 @@
+'Turing.MultiTapeTM.computableTidilyInPolyTime_iff_exists_computableInTimeAndSpaceOfLength' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c9323b23b2d0a4e2/import-only/ComplexityTests/PolyTimePlain.lean:237:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Turing.MultiTapeTM.computableTidilyInPolyTime_iff_exists_computableInTimeAndSpaceOfLength'
+- depends on axioms: [propext, Classical.choice, Quot.sound]
++ info: 'Turing.MultiTapeTM.computableTidilyInPolyTime_iff_exists_computableInTimeAndSpaceOfLength' depends on axioms: [propext,
++  Classical.choice,
++  Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInTimeAndSpace.computableTidilyInPolyTime' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c9323b23b2d0a4e2/import-only/ComplexityTests/PolyTimePlain.lean:244:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Turing.MultiTapeTM.ComputableInTimeAndSpace.computableTidilyInPolyTime' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Turing.MultiTapeTM.ComputableInTimeAndSpace.computableTidilyInPolyTime' depends on axioms: [propext,
++  Classical.choice,
++  Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.decidableInTimeAndSpace_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c9323b23b2d0a4e2/import-only/ComplexityTests/PolyTimePlain.lean:251:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Turing.MultiTapeTM.decidableInTimeAndSpace_iff' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Turing.MultiTapeTM.decidableInTimeAndSpace_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.mem_P_iff_exists_decidableInTimeAndSpace' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c9323b23b2d0a4e2/import-only/ComplexityTests/PolyTimePlain.lean:258:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Cslib.Complexity.mem_P_iff_exists_decidableInTimeAndSpace' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Cslib.Complexity.mem_P_iff_exists_decidableInTimeAndSpace' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.mem_P_of_decidableInTimeAndSpace' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c9323b23b2d0a4e2/import-only/ComplexityTests/PolyTimePlain.lean:265:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Cslib.Complexity.mem_P_of_decidableInTimeAndSpace' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Cslib.Complexity.mem_P_of_decidableInTimeAndSpace' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.mem_NP_iff_exists_computableInTimeAndSpaceOfLength' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c9323b23b2d0a4e2/import-only/ComplexityTests/PolyTimePlain.lean:272:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Cslib.Complexity.mem_NP_iff_exists_computableInTimeAndSpaceOfLength' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Cslib.Complexity.mem_NP_iff_exists_computableInTimeAndSpaceOfLength' depends on axioms: [propext,
++  Classical.choice,
++  Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c9323b23b2d0a4e2/import-only/ComplexityTests/PolyTimePlain.lean:279:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime' depends on axioms: [propext,
++  Classical.choice,
++  Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInTimeAndSpace.computableInPolyTime' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/c9323b23b2d0a4e2/import-only/ComplexityTests/PolyTimePlain.lean:286:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Turing.MultiTapeTM.ComputableInTimeAndSpace.computableInPolyTime' depends on axioms:
+- [propext, Classical.choice, Quot.sound]
++ info: 'Turing.MultiTapeTM.ComputableInTimeAndSpace.computableInPolyTime' depends on axioms: [propext,
++  Classical.choice,
++  Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

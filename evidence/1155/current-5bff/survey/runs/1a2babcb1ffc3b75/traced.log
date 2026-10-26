@@ -1,0 +1,3 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime D.decode encBits a
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.Decoder.decode #[Turing.MultiTapeTM.Decoder.computableInPolyTime]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.Decoder.computableInPolyTime

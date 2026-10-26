@@ -1,0 +1,246 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1))
+      (encPair encBool encUnary) (TowerTable.encoding (encFinEnum (Fin 2)))
+  [aesop] Initial goal:
+        h :
+          ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+        ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1)) (encPair encBool encUnary)
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        h :
+          ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+        ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1)) (encPair encBool encUnary)
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1))
+      (encPair encBool encUnary) (TowerTable.encoding (encFinEnum (Fin 2)))
+  [aesop] h :
+        ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+          (TowerTable.encoding (encFinEnum (Fin 2)))
+      ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1)) (encPair encBool encUnary)
+          (TowerTable.encoding (encFinEnum (Fin 2)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1036):
+      [aesop] h :
+            ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+              (TowerTable.encoding (encFinEnum (Fin 2)))
+          ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1))
+              (encPair encBool encUnary) (TowerTable.encoding (encFinEnum (Fin 2)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1))
+      (encPair encBool encUnary) (TowerTable.encoding (encFinEnum (Fin 2)))
+  [aesop] Initial goal:
+        h :
+          ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+        ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1)) (encPair encBool encUnary)
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        h :
+          ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+        ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1)) (encPair encBool encUnary)
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          h :
+            ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+              (TowerTable.encoding (encFinEnum (Fin 2)))
+          ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1))
+              (encPair encBool encUnary) (TowerTable.encoding (encFinEnum (Fin 2)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair encBool encUnary
+          is not definitionally equal to the right-hand side
+            TowerTable.encoding (encFinEnum (Fin 2))
+          
+          h :
+            ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+              (TowerTable.encoding (encFinEnum (Fin 2)))
+          ⊢ ComputableTidilyInPolyTime (fun p => TowerTable.build base coordinates ⋯ (p.2 + 1))
+              (encPair encBool encUnary) (TowerTable.encoding (encFinEnum (Fin 2)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun input => input.2 + 1) (encPair encBool encUnary)
+      encUnary
+  [aesop] case hg
+      h :
+        ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+          (TowerTable.encoding (encFinEnum (Fin 2)))
+      ⊢ ComputableTidilyInPolyTime (fun input => input.2 + 1) (encPair encBool encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.3584):
+      [aesop] case hg
+          h :
+            ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+              (TowerTable.encoding (encFinEnum (Fin 2)))
+          ⊢ ComputableTidilyInPolyTime (fun input => input.2 + 1) (encPair encBool encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun input => input.2 + 1) (encPair encBool encUnary)
+      encUnary
+  [aesop] Initial goal:
+        case hg
+        h :
+          ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+        ⊢ ComputableTidilyInPolyTime (fun input => input.2 + 1) (encPair encBool encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg
+        h :
+          ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+            (TowerTable.encoding (encFinEnum (Fin 2)))
+        ⊢ ComputableTidilyInPolyTime (fun input => input.2 + 1) (encPair encBool encUnary) encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg
+          h :
+            ComputableTidilyInPolyTime (TowerTable.build base coordinates ⋯) encUnary
+              (TowerTable.encoding (encFinEnum (Fin 2)))
+          ⊢ ComputableTidilyInPolyTime (fun input => input.2 + 1) (encPair encBool encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun input => input.2 + 1) (encPair encBool encUnary) encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.computableTidilyInPolyTime_succ, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.computableTidilyInPolyTime_succ as:
+                               (fun input4 => input4 + 1) ∘ (fun input => input.2)
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun input4 => input4 + 1) encUnary encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.computableTidilyInPolyTime_succ, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.computableTidilyInPolyTime_succ
+              [Meta.Tactic.fun_prop] failed to unify computableTidilyInPolyTime_succ
+                  ComputableTidilyInPolyTime (fun x => x + 1) encNat encNat
+                  with
+                  ComputableTidilyInPolyTime (fun input4 => input4 + 1) ?encMid encUnary
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+              [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                  ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                  with
+                  ComputableTidilyInPolyTime (fun input4 => input4 + 1) ?encMid encUnary
+            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                                 (fun y => y.1 + y.2) ∘ (fun input4 => (input4, 1))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 + y.2) (encPair encUnary encUnary) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                  [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                      ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                      with
+                      ComputableTidilyInPolyTime (fun y => y.1 + y.2) ?encMid encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun input4 => (input4, 1)) encUnary (encPair encUnary encUnary)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) encUnary encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 1) encUnary encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun input => input.2) (encPair encBool encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encBool encUnary) (encPair encBool encUnary)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encUnary encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

@@ -1,0 +1,1358 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+      hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+      hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+      hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+      hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+      ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.201.441):
+      [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary encUnary) (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+      hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+      hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+      hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+      hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+      ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.201.25832):
+      [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair encUnary encUnary
+          is not definitionally equal to the right-hand side
+            encUnary
+          
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime (fun a => sourceBits a.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] case hg
+      sourceBits observationBound densityBound : ℕ → ℕ
+      hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+      hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+      hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+      hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+      ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.201.51293):
+      [aesop] case hg
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        case hg
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary encUnary) (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1)
+      (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1)
+      (encPair encUnary encUnary) encUnary
+  [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+      hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+      hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+      hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+      hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+      ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.201.51409):
+      [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1) (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1)
+      (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair encUnary encUnary
+          is not definitionally equal to the right-hand side
+            encUnary
+          
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime (fun a => observationBound a.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] case hg
+      sourceBits observationBound densityBound : ℕ → ℕ
+      hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+      hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+      hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+      hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+      ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.201.76875):
+      [aesop] case hg
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        case hg
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary encUnary) (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+      hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+      hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+      hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+      hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+      ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.201.76990):
+      [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary)
+      encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair encUnary encUnary
+          is not definitionally equal to the right-hand side
+            encUnary
+          
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] case hg
+      sourceBits observationBound densityBound : ℕ → ℕ
+      hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+      hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+      hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+      hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+      ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.201.102455):
+      [aesop] case hg
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        case hg
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary encUnary) (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+  [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+      hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+      hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+      hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+      hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+      ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.201.102566):
+      [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          ⊢ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encUnary encUnary) (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encUnary encUnary
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        hseed :
+          ComputableTidilyInPolyTime
+            (fun input =>
+              seedLength input.1 (sourceBits input.1) (observationBound input.1) (densityBound input.1) input.2)
+            (encPair encUnary encUnary) encUnary
+        c d : ℕ
+        hbound :
+          ∀ (n i : ℕ),
+            i < size (sourceBits n) (densityBound n) →
+              seedLength n (sourceBits n) (observationBound n) (densityBound n) i ≤ c * (n + 1) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        hseed :
+          ComputableTidilyInPolyTime
+            (fun input =>
+              seedLength input.1 (sourceBits input.1) (observationBound input.1) (densityBound input.1) input.2)
+            (encPair encUnary encUnary) encUnary
+        c d : ℕ
+        hbound :
+          ∀ (n i : ℕ),
+            i < size (sourceBits n) (densityBound n) →
+              seedLength n (sourceBits n) (observationBound n) (densityBound n) i ≤ c * (n + 1) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+  [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+      hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+      hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+      hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+      hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+      hseed :
+        ComputableTidilyInPolyTime
+          (fun input =>
+            seedLength input.1 (sourceBits input.1) (observationBound input.1) (densityBound input.1) input.2)
+          (encPair encUnary encUnary) encUnary
+      c d : ℕ
+      hbound :
+        ∀ (n i : ℕ),
+          i < size (sourceBits n) (densityBound n) →
+            seedLength n (sourceBits n) (observationBound n) (densityBound n) i ≤ c * (n + 1) ^ d
+      ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.201.128275):
+      [aesop] sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          hseed :
+            ComputableTidilyInPolyTime
+              (fun input =>
+                seedLength input.1 (sourceBits input.1) (observationBound input.1) (densityBound input.1) input.2)
+              (encPair encUnary encUnary) encUnary
+          c d : ℕ
+          hbound :
+            ∀ (n i : ℕ),
+              i < size (sourceBits n) (densityBound n) →
+                seedLength n (sourceBits n) (observationBound n) (densityBound n) i ≤ c * (n + 1) ^ d
+          ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+  [aesop] Initial goal:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        hseed :
+          ComputableTidilyInPolyTime
+            (fun input =>
+              seedLength input.1 (sourceBits input.1) (observationBound input.1) (densityBound input.1) input.2)
+            (encPair encUnary encUnary) encUnary
+        c d : ℕ
+        hbound :
+          ∀ (n i : ℕ),
+            i < size (sourceBits n) (densityBound n) →
+              seedLength n (sourceBits n) (observationBound n) (densityBound n) i ≤ c * (n + 1) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        sourceBits observationBound densityBound : ℕ → ℕ
+        hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+        hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+        hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+        hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+        hseed :
+          ComputableTidilyInPolyTime
+            (fun input =>
+              seedLength input.1 (sourceBits input.1) (observationBound input.1) (densityBound input.1) input.2)
+            (encPair encUnary encUnary) encUnary
+        c d : ℕ
+        hbound :
+          ∀ (n i : ℕ),
+            i < size (sourceBits n) (densityBound n) →
+              seedLength n (sourceBits n) (observationBound n) (densityBound n) i ≤ c * (n + 1) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          sourceBits observationBound densityBound : ℕ → ℕ
+          hsource : ComputableTidilyInPolyTime sourceBits encUnary encUnary
+          hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+          hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+          hsize : PolynomiallyBounded fun a => size (sourceBits a) (densityBound a)
+          hseed :
+            ComputableTidilyInPolyTime
+              (fun input =>
+                seedLength input.1 (sourceBits input.1) (observationBound input.1) (densityBound input.1) input.2)
+              (encPair encUnary encUnary) encUnary
+          c d : ℕ
+          hbound :
+            ∀ (n i : ℕ),
+              i < size (sourceBits n) (densityBound n) →
+                seedLength n (sourceBits n) (observationBound n) (densityBound n) i ≤ c * (n + 1) ^ d
+          ⊢ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n => n + 1 + c * (n + 1) ^ d) encUnary encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                               (fun n4n5 => n4n5.1 + n4n5.2) ∘ (fun n => (n + 1, c * (n + 1) ^ d))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n4n5 => n4n5.1 + n4n5.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n => (n + 1, c * (n + 1) ^ d)) encUnary (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x + 1) encUnary encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.computableTidilyInPolyTime_succ, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.computableTidilyInPolyTime_succ
+                  [Meta.Tactic.fun_prop] failed to unify computableTidilyInPolyTime_succ
+                      ComputableTidilyInPolyTime (fun x => x + 1) encNat encNat
+                      with
+                      ComputableTidilyInPolyTime (fun x => x + 1) encUnary encUnary
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                                     (fun y => y.1 + y.2) ∘ (fun x => (x, 1))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 + y.2) (encPair encUnary encUnary) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x, 1)) encUnary (encPair encUnary encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) encUnary encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 1) encUnary encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => c * (x + 1) ^ d) encUnary encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul as:
+                                     (fun y => y.1 * y.2) ∘ (fun x => (c, (x + 1) ^ d))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (c, (x + 1) ^ d)) encUnary (encPair encUnary encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => c) encUnary encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x + 1) ^ d) encUnary encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow]
+                        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow as:
+                                               (fun x4 => x4 ^ d) ∘ (fun x => x + 1)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4 => x4 ^ d) encUnary encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x + 1) encUnary encUnary
+                            [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                  (fun x => x + 1) encUnary encUnary
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair encUnary encUnary) encBits) (encPair encUnary encUnary)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair encUnary encUnary) encBits)
+              (encPair (encPair encUnary encUnary) encBits)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => saved.length a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.length #[]
+  [Meta.Tactic.fun_prop] candidate local theorems for Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.length #[hlength : ComputableTidilyInPolyTime saved.length encUnary encUnary]
+  [Meta.Tactic.fun_prop] decomposing to later use hlength : ComputableTidilyInPolyTime saved.length encUnary encUnary as:
+                         (fun a2 => saved.length a2) ∘ (fun a => a.1.1)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a2 => saved.length a2) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.length #[]
+      [Meta.Tactic.fun_prop] candidate local theorems for Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.length #[hlength : ComputableTidilyInPolyTime saved.length encUnary encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hlength : ComputableTidilyInPolyTime saved.length encUnary encUnary
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair encUnary encUnary) encBits) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair encUnary encUnary) encBits)
+                  (encPair (encPair encUnary encUnary) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => observationBound a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => observationBound a0) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for observationBound #[hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair encUnary encUnary) encBits) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair encUnary encUnary) encBits)
+                  (encPair (encPair encUnary encUnary) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => densityBound a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => densityBound a0) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for densityBound #[hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair encUnary encUnary) encBits) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair encUnary encUnary) encBits)
+                  (encPair (encPair encUnary encUnary) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1.2) (encPair (encPair encUnary encUnary) encBits) encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair encUnary encUnary) encBits) (encPair encUnary encUnary)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair encUnary encUnary) encBits)
+              (encPair (encPair encUnary encUnary) encBits)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encUnary encUnary
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => common a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => common a0) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for common #[hcommon : ComputableTidilyInPolyTime common encUnary encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hcommon : ComputableTidilyInPolyTime common encUnary encUnary
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair encUnary encUnary) encBits) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair encUnary encUnary) encBits)
+                  (encPair (encPair encUnary encUnary) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => (p.1.1, p.2)) (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+      (encPair (encPair encUnary encUnary) encBits)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1.1) (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+          (encPair encUnary encUnary)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+              (encPair (encPair encUnary encUnary) encBits)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+                  (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair (encPair (encPair encUnary encUnary) encBits) encBits) encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+              (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair (encPair encUnary encUnary) encBits) encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair encUnary encUnary) encBits)
+          (encPair (encPair encUnary encUnary) encBits)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair encUnary encUnary) encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary encUnary) (encPair encUnary encUnary)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => saved.length a.1) (encPair encUnary encUnary) encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.length #[]
+  [Meta.Tactic.fun_prop] candidate local theorems for Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.length #[hlength : ComputableTidilyInPolyTime saved.length encUnary encUnary]
+  [Meta.Tactic.fun_prop] decomposing to later use hlength : ComputableTidilyInPolyTime saved.length encUnary encUnary as:
+                         (fun a2 => saved.length a2) ∘ (fun a => a.1)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a2 => saved.length a2) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.length #[]
+      [Meta.Tactic.fun_prop] candidate local theorems for Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.length #[hlength : ComputableTidilyInPolyTime saved.length encUnary encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hlength : ComputableTidilyInPolyTime saved.length encUnary encUnary
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1) (encPair encUnary encUnary) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary encUnary) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => observationBound a.1) (encPair encUnary encUnary) encUnary
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => observationBound a0) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for observationBound #[hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hobservation : ComputableTidilyInPolyTime observationBound encUnary encUnary
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1) (encPair encUnary encUnary) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary encUnary) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => densityBound a.1) (encPair encUnary encUnary) encUnary
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => densityBound a0) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for densityBound #[hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1) (encPair encUnary encUnary) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary encUnary) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encUnary encUnary) encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encUnary encUnary) (encPair encUnary encUnary)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encUnary encUnary
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair encUnary encUnary) encBits) (encPair encUnary encUnary)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair encUnary encUnary) encBits)
+          (encPair (encPair encUnary encUnary) encBits)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => common a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair encUnary encUnary) encBits) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair encUnary encUnary) encBits) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary encUnary) encBits)
+                  (encPair (encPair encUnary encUnary) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary encUnary) (encPair encUnary encUnary)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => common a0) encUnary encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for common #[hcommonPlain : ComputableInPolyTime common encUnary encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hcommonPlain : ComputableInPolyTime common encUnary encUnary
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => (p.1.1, p.2)) (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+      (encPair (encPair encUnary encUnary) encBits)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+          (encPair encUnary encUnary)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+              (encPair (encPair encUnary encUnary) encBits)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+                  (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair (encPair encUnary encUnary) encBits)
+                  (encPair (encPair encUnary encUnary) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary encUnary) (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair (encPair encUnary encUnary) encBits) encBits) encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+              (encPair (encPair (encPair encUnary encUnary) encBits) encBits)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair encUnary encUnary) encBits) encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary encUnary) encBits)
+          (encPair (encPair encUnary encUnary) encBits)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'

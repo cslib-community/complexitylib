@@ -1,0 +1,24 @@
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 128 * dyadicSize (16 * hashCount n) ^ 2
+  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 128
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize (16 * hashCount n) ^ 2
+      [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize (16 * hashCount n)
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+          [Meta.Tactic.fun_prop] decomposing to later use Cslib.Probability.dyadicSize_polynomiallyBounded as:
+                                 (fun n0 => dyadicSize n0) ∘ (fun n => 16 * hashCount n)
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.comp
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n0 => dyadicSize n0
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.dyadicSize_polynomiallyBounded
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 16 * hashCount n
+              [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 16
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded hashCount
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.HashPair.hashCount #[Cslib.Crypto.Pseudoentropy.HashPair.hashCount_polynomiallyBounded]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.HashPair.hashCount_polynomiallyBounded

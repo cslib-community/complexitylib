@@ -1,0 +1,14 @@
+[5, -2, 24, 0, 1, -6, 1]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/133aed862d5b786c/measured/ComplexityTests/RationalHitting/Determinant.lean:41:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: [5, -2, 24, 0, 1, -6, 1]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+([[24, 0, 0], [0, 0, 0], [0, 0, 0]], [[6, 1, 1], [1, 1, 1], [1, 1, 1]])
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/133aed862d5b786c/measured/ComplexityTests/RationalHitting/Determinant.lean:77:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: ([[24, 0, 0], [0, 0, 0], [0, 0, 0]], [[6, 1, 1], [1, 1, 1], [1, 1, 1]])
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]

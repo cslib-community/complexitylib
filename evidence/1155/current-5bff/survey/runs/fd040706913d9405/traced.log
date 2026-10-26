@@ -1,0 +1,22 @@
+[Meta.Tactic.fun_prop] ✅️ Negligible fun n => ↑(loss n) * (source1 (reduce adversary) n).advantage (source2 (reduce adversary) n) + error n
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.Crypto.Negligible.add_fun]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Negligible.add_fun
+    [Meta.Tactic.fun_prop] ✅️ Negligible fun n => ↑(loss n) * (source1 (reduce adversary) n).advantage (source2 (reduce adversary) n)
+      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.Crypto.Negligible.mul_fun, Cslib.Crypto.Negligible.polynomiallyBounded_mul]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Crypto.Negligible.mul_fun
+        [Meta.Tactic.fun_prop] ❌️ Negligible fun n => ↑(loss n)
+          [Meta.Tactic.fun_prop] candidate theorems for NatCast.natCast #[]
+          [Meta.Tactic.fun_prop] failed applying `Cslib.Crypto.Negligible` theorems for `NatCast.natCast`
+                       trying again after decomposing function as: `(fun n2 => ↑n2) ∘ (fun n => loss n)`
+          [Meta.Tactic.fun_prop] missing composition rule to prove `Negligible fun n => ↑(loss n)`
+        [Meta.Tactic.fun_prop] @Negligible.mul_fun, failed to discharge hypotheses
+              Negligible fun n => ↑(loss n)
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Negligible.polynomiallyBounded_mul
+        [Meta.Tactic.fun_prop] ✅️ Negligible fun n => (source1 (reduce adversary) n).advantage (source2 (reduce adversary) n)
+          [Meta.Tactic.fun_prop] candidate theorems for NNDist.nndist #[]
+          [Meta.Tactic.fun_prop] candidate local theorems for NNDist.nndist #[hsource : Negligible fun n => (source1 (reduce adversary) n).advantage (source2 (reduce adversary) n)]
+          [Meta.Tactic.fun_prop] ✅️ applying: hsource : Negligible fun n => (source1 (reduce adversary) n).advantage (source2 (reduce adversary) n)
+        [Meta.Tactic.fun_prop] ✅️ discharging: PolynomiallyBounded loss
+    [Meta.Tactic.fun_prop] ✅️ Negligible error
+      [Meta.Tactic.fun_prop] candidate local theorems for error #[herror : Negligible error]
+      [Meta.Tactic.fun_prop] ✅️ applying: herror : Negligible error

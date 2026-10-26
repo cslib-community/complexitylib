@@ -1,0 +1,37 @@
+[Meta.Tactic.fun_prop] ❌️ Negligible fun n => NNReal.sqrt (ε n)
+  [Meta.Tactic.fun_prop] candidate theorems for NNReal.sqrt #[Cslib.Crypto.Negligible.sqrt]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Crypto.Negligible.sqrt
+    [Meta.Tactic.fun_prop] ❌️ Negligible ε
+      [Meta.Tactic.fun_prop] candidate local theorems for ε #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @Negligible.sqrt, failed to discharge hypotheses
+          Negligible ε
+  [Meta.Tactic.fun_prop] candidate morphism theorems: []
+  [Meta.Tactic.fun_prop] failed applying `Cslib.Crypto.Negligible` theorems for `NNReal.sqrt`
+               trying again after decomposing function as: `(fun n0 => NNReal.sqrt n0) ∘ (fun n => ε n)`
+  [Meta.Tactic.fun_prop] missing composition rule to prove `Negligible fun n => NNReal.sqrt (ε n)`
+[Meta.Tactic.fun_prop] ✅️ Negligible fun n => NNReal.sqrt (ε n)
+  [Meta.Tactic.fun_prop] candidate theorems for NNReal.sqrt #[Cslib.Crypto.Negligible.sqrt]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Negligible.sqrt
+    [Meta.Tactic.fun_prop] ✅️ Negligible ε
+      [Meta.Tactic.fun_prop] candidate local theorems for ε #[hε : Negligible ε]
+      [Meta.Tactic.fun_prop] ✅️ applying: hε : Negligible ε
+[Meta.Tactic.fun_prop] ✅️ Negligible fun n => NNReal.sqrt (ε n + δ n)
+  [Meta.Tactic.fun_prop] candidate theorems for NNReal.sqrt #[Cslib.Crypto.Negligible.sqrt]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Negligible.sqrt
+    [Meta.Tactic.fun_prop] ✅️ Negligible fun n => ε n + δ n
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.Crypto.Negligible.add_fun]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Negligible.add_fun
+        [Meta.Tactic.fun_prop] ✅️ Negligible ε
+          [Meta.Tactic.fun_prop] candidate local theorems for ε #[hε : Negligible ε]
+          [Meta.Tactic.fun_prop] ✅️ applying: hε : Negligible ε
+        [Meta.Tactic.fun_prop] ✅️ Negligible δ
+          [Meta.Tactic.fun_prop] candidate local theorems for δ #[hδ : Negligible δ]
+          [Meta.Tactic.fun_prop] ✅️ applying: hδ : Negligible δ
+[Meta.Tactic.fun_prop] ✅️ Cslib.PolynomiallyBounded fun n => n + 1
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+    [Meta.Tactic.fun_prop] ✅️ Cslib.PolynomiallyBounded fun n => n
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.id
+    [Meta.Tactic.fun_prop] ✅️ Cslib.PolynomiallyBounded fun n => 1
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const

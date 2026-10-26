@@ -1,0 +1,16 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun q => SparseMemory.read q.2 q.1.1 q.1.2) (readEncoding encNat encBool) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.GenericRAM.SparseMemory.read #[Cslib.GenericRAM.SparseMemory.read_polytime]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.GenericRAM.SparseMemory.read_polytime
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun q => AList.insert q.1.1 q.1.2 q.2) (writeEncoding encNat encBool)
+      (encoding encNat encBool)
+  [Meta.Tactic.fun_prop] candidate theorems for AList.insert #[Cslib.GenericRAM.SparseMemory.insert_polytime]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.GenericRAM.SparseMemory.insert_polytime
+'Cslib.GenericRAM.SparseMemory.read_insert' depends on axioms: [propext, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/9be82930a2841be4/traced/ComplexityTests/SparseMemory.lean:101:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Cslib.GenericRAM.SparseMemory.read_insert' depends on axioms:
+- [propext, Quot.sound]
++ info: 'Cslib.GenericRAM.SparseMemory.read_insert' depends on axioms: [propext, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

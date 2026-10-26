@@ -1,0 +1,7 @@
+[(false, 7), (true, 121), (false, 0), (false, 1000)]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/95a2efada834840e/baseline/ComplexityTests/RationalHitting/IntBinary.lean:45:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: [(false, 7), (true, 121), (false, 0), (false, 1000)]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]

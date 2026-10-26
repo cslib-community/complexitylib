@@ -1,0 +1,55 @@
+[Meta.Tactic.fun_prop] ✅️ Measurable fun ω => ⟪edgeVector G q R e, WithLp.toLp 2 ω⟫
+  [Meta.Tactic.fun_prop] candidate theorems for Inner.inner #[]
+  [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `Inner.inner`
+               trying again after decomposing function as: `(fun ω4 => ⟪edgeVector G q R e, ω4⟫) ∘ (fun ω => WithLp.toLp 2 ω)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Measurable.fun_comp
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun ω4 => ⟪edgeVector G q R e, ω4⟫
+      [Meta.Tactic.fun_prop] candidate theorems for Inner.inner #[]
+      [Meta.Tactic.fun_prop] failed applying `Measurable` theorems for `Inner.inner`
+                   now trying to prove `Measurable` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@Measurable.le,
+           @Measurable.of_discrete,
+           @measurable_of_subsingleton_codomain,
+           @MeasurableEmbedding.measurable,
+           @QuasiMeasurePreserving.measurable,
+           @Continuous.measurable,
+           @measurable_of_continuousOn_compl_singleton,
+           @StronglyMeasurable.measurable]
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.le
+        [Meta.Tactic.fun_prop] ❌️ discharging: WithLp.measurableSpace 2 ((i : V) → (fun x => ℝ) i) ≤ WithLp.measurableSpace 2 ((i : V) → (fun x => ℝ) i)
+        [Meta.Tactic.fun_prop] @Measurable.le, failed to discharge hypotheses
+              WithLp.measurableSpace 2 ((i : V) → (fun x => ℝ) i) ≤ WithLp.measurableSpace 2 ((i : V) → (fun x => ℝ) i)
+      [Meta.Tactic.fun_prop] ❌️ applying: Measurable.of_discrete
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to synthesize instance
+              DiscreteMeasurableSpace (WithLp 2 ((i : V) → (fun x => ℝ) i))
+        [Meta.Tactic.fun_prop] @Measurable.of_discrete, failed to discharge hypotheses
+              DiscreteMeasurableSpace (WithLp 2 ((i : V) → (fun x => ℝ) i))
+      [Meta.Tactic.fun_prop] ❌️ applying: measurable_of_subsingleton_codomain
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to synthesize instance
+              Subsingleton ℝ
+        [Meta.Tactic.fun_prop] @measurable_of_subsingleton_codomain, failed to discharge hypotheses
+              Subsingleton ℝ
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasurableEmbedding.measurable
+        [Meta.Tactic.fun_prop] ❌️ discharging: MeasurableEmbedding fun ω4 => ⟪edgeVector G q R e, ω4⟫
+        [Meta.Tactic.fun_prop] @MeasurableEmbedding.measurable, failed to discharge hypotheses
+              MeasurableEmbedding fun ω4 => ⟪edgeVector G q R e, ω4⟫
+      [Meta.Tactic.fun_prop] ❌️ applying: MeasureTheory.QuasiMeasurePreserving.measurable
+        [Meta.Tactic.fun_prop] ❌️ QuasiMeasurePreserving (fun ω4 => ⟪edgeVector G q R e, ω4⟫) ?μa ?μb
+          [Meta.Tactic.fun_prop] candidate theorems for Inner.inner #[]
+          [Meta.Tactic.fun_prop] failed applying `MeasureTheory.QuasiMeasurePreserving` theorems for `Inner.inner`
+                       now trying to prove `MeasureTheory.QuasiMeasurePreserving` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @QuasiMeasurePreserving.measurable, failed to discharge hypotheses
+              QuasiMeasurePreserving (fun ω4 => ⟪edgeVector G q R e, ω4⟫) ?μa ?μb
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.measurable
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun ω4 => ⟪edgeVector G q R e, ω4⟫
+          [Meta.Tactic.fun_prop] candidate theorems for Inner.inner #[Continuous.inner]
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.inner
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun t => edgeVector G q R e
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_const
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun t => t
+              [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Measurable fun ω => WithLp.toLp 2 ω
+      [Meta.Tactic.fun_prop] candidate theorems for WithLp.toLp #[WithLp.measurable_toLp]
+      [Meta.Tactic.fun_prop] ✅️ applying: WithLp.measurable_toLp

@@ -1,0 +1,830 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+      (encPair enc encUnary) encBits
+  [aesop] Initial goal:
+        α : Type
+        enc : α ↪ List Bool
+        m : α → ℕ
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hframe : ComputableTidilyInPolyTime frame encBits encBits
+        ⊢ ComputableTidilyInPolyTime
+            (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+            (encPair enc encUnary) encBits
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        enc : α ↪ List Bool
+        m : α → ℕ
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hframe : ComputableTidilyInPolyTime frame encBits encBits
+        ⊢ ComputableTidilyInPolyTime
+            (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+            (encPair enc encUnary) encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+      (encPair enc encUnary) encBits
+  [aesop] α : Type
+      enc : α ↪ List Bool
+      m : α → ℕ
+      hm : ComputableTidilyInPolyTime m enc encUnary
+      hframe : ComputableTidilyInPolyTime frame encBits encBits
+      ⊢ ComputableTidilyInPolyTime
+          (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+          (encPair enc encUnary) encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.630.48):
+      [aesop] α : Type
+          enc : α ↪ List Bool
+          m : α → ℕ
+          hm : ComputableTidilyInPolyTime m enc encUnary
+          hframe : ComputableTidilyInPolyTime frame encBits encBits
+          ⊢ ComputableTidilyInPolyTime
+              (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+              (encPair enc encUnary) encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+      (encPair enc encUnary) encBits
+  [aesop] Initial goal:
+        α : Type
+        enc : α ↪ List Bool
+        m : α → ℕ
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hframe : ComputableTidilyInPolyTime frame encBits encBits
+        ⊢ ComputableTidilyInPolyTime
+            (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+            (encPair enc encUnary) encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        enc : α ↪ List Bool
+        m : α → ℕ
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hframe : ComputableTidilyInPolyTime frame encBits encBits
+        ⊢ ComputableTidilyInPolyTime
+            (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+            (encPair enc encUnary) encBits
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          enc : α ↪ List Bool
+          m : α → ℕ
+          hm : ComputableTidilyInPolyTime m enc encUnary
+          hframe : ComputableTidilyInPolyTime frame encBits encBits
+          ⊢ ComputableTidilyInPolyTime
+              (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+              (encPair enc encUnary) encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+            (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+            (encPair enc encUnary) encBits
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+              (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+              (encPair enc encUnary) encBits
+          [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend'
+            [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.listAppend'
+                ComputableTidilyInPolyTime (fun x => ?left x ++ ?right x) ?encIn (encList ?encA)
+                with
+                ComputableTidilyInPolyTime
+                  (fun p => frame (enc p.1) ++ frame (List.replicate p.2 true ++ List.replicate (m p.1 - p.2) false))
+                  (encPair enc encUnary) encBits
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => frame (enc x.1)) (encPair enc encUnary) encBits
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.frame #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsFrame]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsFrame
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.bitsFrame
+                    ComputableTidilyInPolyTime (fun a => frame (?enc a)) ?enc encBits
+                    with
+                    ComputableTidilyInPolyTime (fun x => frame (enc x.1)) (encPair enc encUnary) encBits
+              [Meta.Tactic.fun_prop] candidate local theorems for Turing.MultiTapeTM.frame #[hframe : ComputableTidilyInPolyTime frame encBits encBits]
+              [Meta.Tactic.fun_prop] decomposing to later use hframe : ComputableTidilyInPolyTime frame encBits encBits as:
+                                     (fun x0 => frame x0) ∘ (fun x => enc x.1)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => frame x0) encBits encBits
+                  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.frame #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsFrame]
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsFrame
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.bitsFrame
+                        ComputableTidilyInPolyTime (fun a => frame (?enc a)) ?enc encBits
+                        with
+                        ComputableTidilyInPolyTime (fun x0 => frame x0) ?encMid encBits
+                  [Meta.Tactic.fun_prop] candidate local theorems for Turing.MultiTapeTM.frame #[hframe : ComputableTidilyInPolyTime frame encBits encBits]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hframe : ComputableTidilyInPolyTime frame encBits encBits
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => enc x.1) (encPair enc encUnary) encBits
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => enc x0) enc encBits
+                      [Meta.Tactic.fun_prop] candidate local theorems for enc #[]
+                      [Meta.Tactic.fun_prop] candidate morphism theorems: [@ComputableTidilyInPolyTime.encoded]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoded
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) enc enc
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair enc encUnary) enc
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair enc encUnary) (encPair enc encUnary)
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => frame (List.replicate x.2 true ++ List.replicate (m x.1 - x.2) false))
+                  (encPair enc encUnary) encBits
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.frame #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsFrame]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsFrame
+                [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.bitsFrame
+                    ComputableTidilyInPolyTime (fun a => frame (?enc a)) ?enc encBits
+                    with
+                    ComputableTidilyInPolyTime
+                      (fun x => frame (List.replicate x.2 true ++ List.replicate (m x.1 - x.2) false))
+                      (encPair enc encUnary) encBits
+              [Meta.Tactic.fun_prop] candidate local theorems for Turing.MultiTapeTM.frame #[hframe : ComputableTidilyInPolyTime frame encBits encBits]
+              [Meta.Tactic.fun_prop] decomposing to later use hframe : ComputableTidilyInPolyTime frame encBits encBits as:
+                                     (fun x0 => frame x0) ∘ (fun x => List.replicate x.2 true ++ List.replicate (m x.1 - x.2) false)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => frame x0) encBits encBits
+                  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.frame #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsFrame]
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsFrame
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.bitsFrame
+                        ComputableTidilyInPolyTime (fun a => frame (?enc a)) ?enc encBits
+                        with
+                        ComputableTidilyInPolyTime (fun x0 => frame x0) ?encMid encBits
+                  [Meta.Tactic.fun_prop] candidate local theorems for Turing.MultiTapeTM.frame #[hframe : ComputableTidilyInPolyTime frame encBits encBits]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hframe : ComputableTidilyInPolyTime frame encBits encBits
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => List.replicate x.2 true ++ List.replicate (m x.1 - x.2) false)
+                      (encPair enc encUnary) encBits
+                  [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend]
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend'
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.listAppend'
+                        ComputableTidilyInPolyTime (fun x => ?left x ++ ?right x) ?encIn (encList ?encA)
+                        with
+                        ComputableTidilyInPolyTime
+                          (fun x => List.replicate x.2 true ++ List.replicate (m x.1 - x.2) false)
+                          (encPair enc encUnary) encBits
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => List.replicate x.2 true) (encPair enc encUnary) encBits
+                      [Meta.Tactic.fun_prop] candidate theorems for List.replicate #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate, Turing.MultiTapeTM.ComputableTidilyInPolyTime.replicate]
+                      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate as:
+                                             (fun x1 => List.replicate x1 true) ∘ (fun x => x.2)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x1 => List.replicate x1 true) encUnary encBits
+                          [Meta.Tactic.fun_prop] candidate theorems for List.replicate #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate, Turing.MultiTapeTM.ComputableTidilyInPolyTime.replicate]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2) (encPair enc encUnary) encUnary
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair enc encUnary) (encPair enc encUnary)
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encUnary encUnary
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => List.replicate (m x.1 - x.2) false) (encPair enc encUnary) encBits
+                      [Meta.Tactic.fun_prop] candidate theorems for List.replicate #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate, Turing.MultiTapeTM.ComputableTidilyInPolyTime.replicate]
+                      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate as:
+                                             (fun x1 => List.replicate x1 false) ∘ (fun x => m x.1 - x.2)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x1 => List.replicate x1 false) encUnary encBits
+                          [Meta.Tactic.fun_prop] candidate theorems for List.replicate #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate, Turing.MultiTapeTM.ComputableTidilyInPolyTime.replicate]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => m x.1 - x.2) (encPair enc encUnary) encUnary
+                          [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub]
+                          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub as:
+                                                 (fun x4x5 => x4x5.1 - x4x5.2) ∘ (fun x => (m x.1, x.2))
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 - x4x5.2) (encPair encUnary encUnary) encUnary
+                              [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (m x.1, x.2)) (encPair enc encUnary) (encPair encUnary encUnary)
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => m x.1) (encPair enc encUnary) encUnary
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => m x0) enc encUnary
+                                      [Meta.Tactic.fun_prop] candidate local theorems for m #[hm : ComputableTidilyInPolyTime m enc encUnary]
+                                      [Meta.Tactic.fun_prop] ✅️ applying: hm : ComputableTidilyInPolyTime m enc encUnary
+                                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair enc encUnary) enc
+                                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                            (fun x => x.1) (encPair enc encUnary) enc
+                                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair enc encUnary) encUnary
+                                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair enc encUnary) (encPair enc encUnary)
+                                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encUnary encUnary
+                                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                            (fun a => a) encUnary encUnary
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p => (F (p.1, p.2.2)).getD (List.count true p.2.1) false) (encPair enc (encPair encBits encBits)) encBool
+  [aesop] Initial goal:
+        α : Type
+        enc : α ↪ List Bool
+        F : α × List Bool → List Bool
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        ⊢ ComputableTidilyInPolyTime (fun p => (F (p.1, p.2.2)).getD (List.count true p.2.1) false)
+            (encPair enc (encPair encBits encBits)) encBool
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        enc : α ↪ List Bool
+        F : α × List Bool → List Bool
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        ⊢ ComputableTidilyInPolyTime (fun p => (F (p.1, p.2.2)).getD (List.count true p.2.1) false)
+            (encPair enc (encPair encBits encBits)) encBool
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p => (F (p.1, p.2.2)).getD (List.count true p.2.1) false) (encPair enc (encPair encBits encBits)) encBool
+  [aesop] α : Type
+      enc : α ↪ List Bool
+      F : α × List Bool → List Bool
+      hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+      ⊢ ComputableTidilyInPolyTime (fun p => (F (p.1, p.2.2)).getD (List.count true p.2.1) false)
+          (encPair enc (encPair encBits encBits)) encBool
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.771.10):
+      [aesop] α : Type
+          enc : α ↪ List Bool
+          F : α × List Bool → List Bool
+          hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+          ⊢ ComputableTidilyInPolyTime (fun p => (F (p.1, p.2.2)).getD (List.count true p.2.1) false)
+              (encPair enc (encPair encBits encBits)) encBool
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p => (F (p.1, p.2.2)).getD (List.count true p.2.1) false) (encPair enc (encPair encBits encBits)) encBool
+  [aesop] Initial goal:
+        α : Type
+        enc : α ↪ List Bool
+        F : α × List Bool → List Bool
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        ⊢ ComputableTidilyInPolyTime (fun p => (F (p.1, p.2.2)).getD (List.count true p.2.1) false)
+            (encPair enc (encPair encBits encBits)) encBool
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] α : Type
+          enc : α ↪ List Bool
+          F : α × List Bool → List Bool
+          hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+          ⊢ ComputableTidilyInPolyTime (fun p => (F (p.1, p.2.2))[List.count true p.2.1]?.getD false)
+              (encPair enc (encPair encBits encBits)) encBool
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        enc : α ↪ List Bool
+        F : α × List Bool → List Bool
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        ⊢ ComputableTidilyInPolyTime (fun p => (F (p.1, p.2.2))[List.count true p.2.1]?.getD false)
+            (encPair enc (encPair encBits encBits)) encBool
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          enc : α ↪ List Bool
+          F : α × List Bool → List Bool
+          hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+          ⊢ ComputableTidilyInPolyTime (fun p => (F (p.1, p.2.2))[List.count true p.2.1]?.getD false)
+              (encPair enc (encPair encBits encBits)) encBool
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => (F (p.1, p.2.2))[List.count true p.2.1]?.getD false)
+            (encPair enc (encPair encBits encBits)) encBool
+        [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetDWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetD]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetDWithInput
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (F (a.1, a.2.2))[List.count true a.2.1]?) (encPair enc (encPair encBits encBits))
+                (encOption encBool)
+            [Meta.Tactic.fun_prop] candidate theorems for GetElem?.getElem? #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsGetElem?, Turing.MultiTapeTM.ComputableTidilyInPolyTime.getElem?]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsGetElem?
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => F (x.1, x.2.2)) (encPair enc (encPair encBits encBits)) encBits
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => F x0) (encPair enc encBits) encBits
+                    [Meta.Tactic.fun_prop] candidate local theorems for F #[hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.1, x.2.2)) (encPair enc (encPair encBits encBits)) (encPair enc encBits)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair enc (encPair encBits encBits)) enc
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair enc (encPair encBits encBits)) (encPair enc (encPair encBits encBits))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.2) (encPair enc (encPair encBits encBits)) encBits
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair enc (encPair encBits encBits)) (encPair encBits encBits)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair enc (encPair encBits encBits)) (encPair enc (encPair encBits encBits))
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encBits encBits) (encPair encBits encBits)
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => List.count true x.2.1) (encPair enc (encPair encBits encBits)) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for List.count #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCountWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.countWithInput]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCountWithInput
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.1) (encPair enc (encPair encBits encBits)) encBits
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair enc (encPair encBits encBits)) (encPair encBits encBits)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair enc (encPair encBits encBits)) (encPair enc (encPair encBits encBits))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encBits encBits) (encPair encBits encBits)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => true) (encPair enc (encPair encBits encBits)) encBool
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => false) (encPair enc (encPair encBits encBits)) encBool
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1)
+      (encPair enc encUnary) encUnary
+  [aesop] Initial goal:
+        α : Type
+        enc : α ↪ List Bool
+        n m : α → ℕ
+        F : α × List Bool → List Bool
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        circuits : (n : ℕ) → Circuit signature n 1
+        hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+        hcorrect :
+          ∀ (a : α × List Bool × List Bool),
+            (circuits ((encPair enc (encPair encBits encBits)) a).length).eval interpretation
+                (fun i => ((encPair enc (encPair encBits encBits)) a)[i]) 0 =
+              (F (a.1, a.2.2)).getD (List.count true a.2.1) false
+        cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+          fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+        hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+        ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        enc : α ↪ List Bool
+        n m : α → ℕ
+        F : α × List Bool → List Bool
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        circuits : (n : ℕ) → Circuit signature n 1
+        hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+        hcorrect :
+          ∀ (a : α × List Bool × List Bool),
+            (circuits ((encPair enc (encPair encBits encBits)) a).length).eval interpretation
+                (fun i => ((encPair enc (encPair encBits encBits)) a)[i]) 0 =
+              (F (a.1, a.2.2)).getD (List.count true a.2.1) false
+        cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+          fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+        hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+        ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary) encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1)
+      (encPair enc encUnary) encUnary
+  [aesop] α : Type
+      enc : α ↪ List Bool
+      n m : α → ℕ
+      F : α × List Bool → List Bool
+      hn : ComputableTidilyInPolyTime n enc encUnary
+      hm : ComputableTidilyInPolyTime m enc encUnary
+      hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+      circuits : (n : ℕ) → Circuit signature n 1
+      hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+      hcorrect :
+        ∀ (a : α × List Bool × List Bool),
+          (circuits ((encPair enc (encPair encBits encBits)) a).length).eval interpretation
+              (fun i => ((encPair enc (encPair encBits encBits)) a)[i]) 0 =
+            (F (a.1, a.2.2)).getD (List.count true a.2.1) false
+      cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+        fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+      hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+      ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.984.224):
+      [aesop] α : Type
+          enc : α ↪ List Bool
+          n m : α → ℕ
+          F : α × List Bool → List Bool
+          hn : ComputableTidilyInPolyTime n enc encUnary
+          hm : ComputableTidilyInPolyTime m enc encUnary
+          hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+          circuits : (n : ℕ) → Circuit signature n 1
+          hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+          hcorrect :
+            ∀ (a : α × List Bool × List Bool),
+              (circuits ((encPair enc (encPair encBits encBits)) a).length).eval interpretation
+                  (fun i => ((encPair enc (encPair encBits encBits)) a)[i]) 0 =
+                (F (a.1, a.2.2)).getD (List.count true a.2.1) false
+          cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+            fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+          hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+          ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary)
+              encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1)
+      (encPair enc encUnary) encUnary
+  [aesop] Initial goal:
+        α : Type
+        enc : α ↪ List Bool
+        n m : α → ℕ
+        F : α × List Bool → List Bool
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        circuits : (n : ℕ) → Circuit signature n 1
+        hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+        hcorrect :
+          ∀ (a : α × List Bool × List Bool),
+            (circuits ((encPair enc (encPair encBits encBits)) a).length).eval interpretation
+                (fun i => ((encPair enc (encPair encBits encBits)) a)[i]) 0 =
+              (F (a.1, a.2.2)).getD (List.count true a.2.1) false
+        cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+          fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+        hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+        ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] α : Type
+          enc : α ↪ List Bool
+          n m : α → ℕ
+          F : α × List Bool → List Bool
+          hn : ComputableTidilyInPolyTime n enc encUnary
+          hm : ComputableTidilyInPolyTime m enc encUnary
+          hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+          circuits : (n : ℕ) → Circuit signature n 1
+          cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+            fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+          hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+          hcorrect :
+            ∀ (a : α) (a_1 b : List Bool),
+              (circuits (frame (enc a) ++ (frame a_1 ++ b)).length).eval interpretation
+                  (fun i => (frame (enc a) ++ (frame a_1 ++ b))[↑i]) 0 =
+                (F (a, b))[List.count true a_1]?.getD false
+          hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+          ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary)
+              encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        enc : α ↪ List Bool
+        n m : α → ℕ
+        F : α × List Bool → List Bool
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        circuits : (n : ℕ) → Circuit signature n 1
+        cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+          fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+        hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+        hcorrect :
+          ∀ (a : α) (a_1 b : List Bool),
+            (circuits (frame (enc a) ++ (frame a_1 ++ b)).length).eval interpretation
+                (fun i => (frame (enc a) ++ (frame a_1 ++ b))[↑i]) 0 =
+              (F (a, b))[List.count true a_1]?.getD false
+        hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+        ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary) encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          enc : α ↪ List Bool
+          n m : α → ℕ
+          F : α × List Bool → List Bool
+          hn : ComputableTidilyInPolyTime n enc encUnary
+          hm : ComputableTidilyInPolyTime m enc encUnary
+          hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+          circuits : (n : ℕ) → Circuit signature n 1
+          cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+            fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+          hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+          hcorrect :
+            ∀ (a : α) (a_1 b : List Bool),
+              (circuits (frame (enc a) ++ (frame a_1 ++ b)).length).eval interpretation
+                  (fun i => (frame (enc a) ++ (frame a_1 ++ b))[↑i]) 0 =
+                (F (a, b))[List.count true a_1]?.getD false
+          hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+          ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary)
+              encUnary
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-30/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1)
+      (encPair enc encUnary) encUnary
+  [aesop] α : Type
+      enc : α ↪ List Bool
+      n m : α → ℕ
+      F : α × List Bool → List Bool
+      hn : ComputableTidilyInPolyTime n enc encUnary
+      hm : ComputableTidilyInPolyTime m enc encUnary
+      hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+      circuits : (n : ℕ) → Circuit signature n 1
+      cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+        fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+      hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+      hcorrect :
+        ∀ (a : α) (a_1 b : List Bool),
+          (circuits (frame (enc a) ++ (frame a_1 ++ b)).length).eval interpretation
+              (fun i => (frame (enc a) ++ (frame a_1 ++ b))[↑i]) 0 =
+            (F (a, b))[List.count true a_1]?.getD false
+      hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+      knownCertificate✝ : ComputableTidilyInPolyTime (fun n => (circuits n).code) encUnary encCode
+      ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary) encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.984.35762):
+      [aesop] α : Type
+          enc : α ↪ List Bool
+          n m : α → ℕ
+          F : α × List Bool → List Bool
+          hn : ComputableTidilyInPolyTime n enc encUnary
+          hm : ComputableTidilyInPolyTime m enc encUnary
+          hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+          circuits : (n : ℕ) → Circuit signature n 1
+          cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+            fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+          hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+          hcorrect :
+            ∀ (a : α) (a_1 b : List Bool),
+              (circuits (frame (enc a) ++ (frame a_1 ++ b)).length).eval interpretation
+                  (fun i => (frame (enc a) ++ (frame a_1 ++ b))[↑i]) 0 =
+                (F (a, b))[List.count true a_1]?.getD false
+          hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+          knownCertificate✝ : ComputableTidilyInPolyTime (fun n => (circuits n).code) encUnary encCode
+          ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary)
+              encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1)
+      (encPair enc encUnary) encUnary
+  [aesop] Initial goal:
+        α : Type
+        enc : α ↪ List Bool
+        n m : α → ℕ
+        F : α × List Bool → List Bool
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        circuits : (n : ℕ) → Circuit signature n 1
+        cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+          fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+        hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+        hcorrect :
+          ∀ (a : α) (a_1 b : List Bool),
+            (circuits (frame (enc a) ++ (frame a_1 ++ b)).length).eval interpretation
+                (fun i => (frame (enc a) ++ (frame a_1 ++ b))[↑i]) 0 =
+              (F (a, b))[List.count true a_1]?.getD false
+        hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+        knownCertificate✝ : ComputableTidilyInPolyTime (fun n => (circuits n).code) encUnary encCode
+        ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary) encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        enc : α ↪ List Bool
+        n m : α → ℕ
+        F : α × List Bool → List Bool
+        hn : ComputableTidilyInPolyTime n enc encUnary
+        hm : ComputableTidilyInPolyTime m enc encUnary
+        hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+        circuits : (n : ℕ) → Circuit signature n 1
+        cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+          fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+        hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+        hcorrect :
+          ∀ (a : α) (a_1 b : List Bool),
+            (circuits (frame (enc a) ++ (frame a_1 ++ b)).length).eval interpretation
+                (fun i => (frame (enc a) ++ (frame a_1 ++ b))[↑i]) 0 =
+              (F (a, b))[List.count true a_1]?.getD false
+        hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+        knownCertificate✝ : ComputableTidilyInPolyTime (fun n => (circuits n).code) encUnary encCode
+        ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary) encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          enc : α ↪ List Bool
+          n m : α → ℕ
+          F : α × List Bool → List Bool
+          hn : ComputableTidilyInPolyTime n enc encUnary
+          hm : ComputableTidilyInPolyTime m enc encUnary
+          hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits
+          circuits : (n : ℕ) → Circuit signature n 1
+          cs : (a : α) → ℕ → Circuit signature (n a) 1 :=
+            fun a j => prefixCircuit (bitPrefix enc m a j) (circuits ((bitPrefix enc m a j).length + n a))
+          hcode : ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode
+          hcorrect :
+            ∀ (a : α) (a_1 b : List Bool),
+              (circuits (frame (enc a) ++ (frame a_1 ++ b)).length).eval interpretation
+                  (fun i => (frame (enc a) ++ (frame a_1 ++ b))[↑i]) 0 =
+                (F (a, b))[List.count true a_1]?.getD false
+          hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+          knownCertificate✝ : ComputableTidilyInPolyTime (fun n => (circuits n).code) encUnary encCode
+          ⊢ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary)
+              encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => (bitPrefix enc m p.1 p.2).length + n p.1) (encPair enc encUnary) encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                               (fun p4p5 => p4p5.1 + p4p5.2) ∘ (fun p => ((bitPrefix enc m p.1 p.2).length, n p.1))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p4p5 => p4p5.1 + p4p5.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => ((bitPrefix enc m p.1 p.2).length, n p.1)) (encPair enc encUnary)
+                (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (bitPrefix enc m x.1 x.2).length) (encPair enc encUnary) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => bitPrefix enc m a.1 a.2) (encPair enc encUnary) encBits
+                    [Meta.Tactic.fun_prop] candidate theorems for _private.Complexity.Computability.Complexity.Problems.CircuitValue.Compilation.0.Cslib.Complexity.CircuitValue.bitPrefix #[]
+                    [Meta.Tactic.fun_prop] candidate local theorems for _private.Complexity.Computability.Complexity.Problems.CircuitValue.Compilation.0.Cslib.Complexity.CircuitValue.bitPrefix #[hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hprefix : ComputableTidilyInPolyTime (fun p => bitPrefix enc m p.1 p.2) (encPair enc encUnary) encBits
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => n x.1) (encPair enc encUnary) encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => n x0) enc encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for n #[hn : ComputableTidilyInPolyTime n enc encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hn : ComputableTidilyInPolyTime n enc encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair enc encUnary) enc
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair enc encUnary) (encPair enc encUnary)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

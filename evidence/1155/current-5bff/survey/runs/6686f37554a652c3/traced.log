@@ -1,0 +1,28 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => LinearHash.wordHash (k x) (seed x) (w x) == listRow (k x) (w x).length (seed x)) input
+      encBool
+  [Meta.Tactic.fun_prop] candidate theorems for BEq.beq #[Turing.MultiTapeTM.ComputableInPolyTime.beq]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.beq
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => LinearHash.wordHash (k x) (seed x) (w x)) input encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.LinearHash.wordHash #[Cslib.BitString.LinearHash.computableInPolyTime_wordHash]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.BitString.LinearHash.computableInPolyTime_wordHash
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime k input encUnary
+          [Meta.Tactic.fun_prop] candidate local theorems for k #[hk : ComputableInPolyTime k input encUnary]
+          [Meta.Tactic.fun_prop] ✅️ applying: hk : ComputableInPolyTime k input encUnary
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seed input encBits
+          [Meta.Tactic.fun_prop] candidate local theorems for seed #[hseed : ComputableInPolyTime seed input encBits]
+          [Meta.Tactic.fun_prop] ✅️ applying: hseed : ComputableInPolyTime seed input encBits
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime w input encBits
+          [Meta.Tactic.fun_prop] candidate local theorems for w #[hw : ComputableInPolyTime w input encBits]
+          [Meta.Tactic.fun_prop] ✅️ applying: hw : ComputableInPolyTime w input encBits
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => listRow (k x) (w x).length (seed x)) input encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.listRow #[Turing.MultiTapeTM.ComputableInPolyTime.bitsRowWithInput]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsRowWithInput
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime k input encUnary
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime k input encUnary
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (w a).length) input encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableInPolyTime.encoding_length, Turing.MultiTapeTM.ComputableInPolyTime.length_list, Turing.MultiTapeTM.ComputableInPolyTime.length_bits]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.length_bits_comp
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime w input encBits
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime w input encBits
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seed input encBits
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime seed input encBits

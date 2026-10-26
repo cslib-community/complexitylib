@@ -1,0 +1,66 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => target a - (layers a).length) input encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub as:
+                         (fun a4a5 => a4a5.1 - a4a5.2) ∘ (fun a => (target a, (layers a).length))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a4a5 => a4a5.1 - a4a5.2) (encPair encUnary encUnary) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (target a, (layers a).length)) input (encPair encUnary encUnary)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime target input encUnary
+          [Meta.Tactic.fun_prop] candidate local theorems for target #[htarget : ComputableTidilyInPolyTime target input encUnary]
+          [Meta.Tactic.fun_prop] ✅️ applying: htarget : ComputableTidilyInPolyTime target input encUnary
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (layers x).length) input encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+            [Meta.Tactic.fun_prop] failed to unify @length_bits_comp
+                ComputableTidilyInPolyTime (fun a => List.length (?word a)) ?input encUnary
+                with
+                ComputableTidilyInPolyTime (fun x => (layers x).length) input encUnary
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list as:
+                                 (fun x1 => x1.length) ∘ (fun x => layers x)
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x1 => x1.length) (encList ?enc✝) encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+                [Meta.Tactic.fun_prop] failed to unify @length_bits_comp
+                    ComputableTidilyInPolyTime (fun a => List.length (?word a)) ?input encUnary
+                    with
+                    ComputableTidilyInPolyTime (fun x1 => x1.length) ?encMid encUnary
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list
+                [Meta.Tactic.fun_prop] @length_list, failed to infer `(?enc : List Node ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits
+                [Meta.Tactic.fun_prop] failed to unify length_bits
+                    ComputableTidilyInPolyTime (fun l => l.length) encBits encUnary
+                    with
+                    ComputableTidilyInPolyTime (fun x1 => x1.length) (encList ?enc) encUnary
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length
+                [Meta.Tactic.fun_prop] failed to unify @encoding_length
+                    ComputableTidilyInPolyTime (fun a => (?enc a).length) ?enc encUnary
+                    with
+                    ComputableTidilyInPolyTime (fun x1 => x1.length) (encList ?enc✝) encUnary
+              [Meta.Tactic.fun_prop] candidate local theorems for List.length #[hlength : ComputableTidilyInPolyTime ((fun l => l.length) ∘ layers) input encUnary]
+              [Meta.Tactic.fun_prop] ❌️ applying: hlength : ComputableTidilyInPolyTime ((fun l => l.length) ∘ layers) input encUnary
+                [Meta.Tactic.fun_prop] failed to unify hlength
+                    ComputableTidilyInPolyTime ((fun l => l.length) ∘ layers) input encUnary
+                    with
+                    ComputableTidilyInPolyTime (fun x1 => x1.length) (encList ?enc✝) encUnary
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `List.length`
+                           now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: []
+            [Meta.Tactic.fun_prop] @comp', failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun x1 => x1.length) (encList ?enc✝) encUnary
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => layers x) input (encList (encList encNode))
+              [Meta.Tactic.fun_prop] candidate local theorems for layers #[hlayers : ComputableTidilyInPolyTime layers input (encList (encList encNode))]
+              [Meta.Tactic.fun_prop] ✅️ applying: hlayers : ComputableTidilyInPolyTime layers input (encList (encList encNode))
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x1 => x1.length) (encList (encList encNode)) encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+                [Meta.Tactic.fun_prop] failed to unify @length_bits_comp
+                    ComputableTidilyInPolyTime (fun a => List.length (?word a)) ?input encUnary
+                    with
+                    ComputableTidilyInPolyTime (fun x1 => x1.length) (encList (encList encNode)) encUnary
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list

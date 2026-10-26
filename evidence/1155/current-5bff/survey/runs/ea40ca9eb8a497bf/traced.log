@@ -1,0 +1,52 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => CNF.exactlyOne p.1 ++ [Clause.imp p.1 p.2]) (encPair (encList enc) enc)
+      (encList (encList (encPair enc encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => CNF.exactlyOne x.1) (encPair (encList enc) enc)
+          (encList (encList (encPair enc encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.CNF.exactlyOne #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Logic.PL.CNF.exactlyOne`
+                   trying again after decomposing function as: `(fun x2 => CNF.exactlyOne x2) ∘ (fun x => x.1)`
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x2 => CNF.exactlyOne x2) (encList enc) (encList (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.CNF.exactlyOne #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Logic.PL.CNF.exactlyOne`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x2 => CNF.exactlyOne x2) (encList enc) (encList (encList (encPair enc encBool)))
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.CNF.exactlyOne #[Cslib.Logic.PL.CNF.computableInPolyTime_exactlyOne]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.CNF.computableInPolyTime_exactlyOne
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair (encList enc) enc) (encList enc)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encList enc) enc) (encPair (encList enc) enc)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList enc) (encList enc)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => [Clause.imp x.1 x.2]) (encPair (encList enc) enc)
+          (encList (encList (encPair enc encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCons, Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => Clause.imp x.1 x.2) (encPair (encList enc) enc) (encList (encPair enc encBool))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.imp #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Logic.PL.Clause.imp`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => Clause.imp x.1 x.2) (encPair (encList enc) enc) (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.imp #[Cslib.Logic.PL.Clause.computableInPolyTime_imp]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.Clause.computableInPolyTime_imp
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => []) (encPair (encList enc) enc) (encList (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (CNF.relabel fun x => 0) encCNF encCNF
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.CNF.relabel #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Logic.PL.CNF.relabel`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => CNF.relabel (fun x => 0) φ) encCNF encCNF
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.CNF.relabel #[Cslib.Logic.PL.CNF.computableInPolyTime_relabel]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.CNF.computableInPolyTime_relabel
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => 0) encNat encNat
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const

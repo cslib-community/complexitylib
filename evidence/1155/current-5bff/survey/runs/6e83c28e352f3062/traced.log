@@ -1,0 +1,25 @@
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize (depth n) * dyadicSize (capacity n)
+  [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize (depth n) * dyadicSize (capacity n)
+    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+    [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+      [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize (depth n)
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+        [Meta.Tactic.fun_prop] decomposing to later use Cslib.Probability.dyadicSize_polynomiallyBounded as:
+                               (fun n0 => dyadicSize n0) ∘ (fun n => depth n)
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.comp
+          [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n0 => dyadicSize n0
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.dyadicSize_polynomiallyBounded
+          [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => depth n
+            [Meta.Tactic.fun_prop] candidate local theorems for depth #[hd : PolynomiallyBounded depth]
+            [Meta.Tactic.fun_prop] ✅️ applying: hd : PolynomiallyBounded depth
+      [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize (capacity n)
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+        [Meta.Tactic.fun_prop] decomposing to later use Cslib.Probability.dyadicSize_polynomiallyBounded as:
+                               (fun n0 => dyadicSize n0) ∘ (fun n => capacity n)
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.comp
+          [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n0 => dyadicSize n0
+            [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n0 => dyadicSize n0
+          [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => capacity n
+            [Meta.Tactic.fun_prop] candidate local theorems for capacity #[hc : PolynomiallyBounded capacity]
+            [Meta.Tactic.fun_prop] ✅️ applying: hc : PolynomiallyBounded capacity

@@ -1,0 +1,30 @@
+[Meta.Tactic.fun_prop] ❌️ IsPPTOn input output fun a => pure (f a)
+  [Meta.Tactic.fun_prop] candidate theorems for Pure.pure #[Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn, Turing.MultiTapeTM.ComputableTidilyInPolyTime.isPPTOn]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime f input output
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => f a) input output
+          [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun a => f a) input output
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.isPPTOn, failed to discharge hypotheses
+          ComputableInPolyTime f input output
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.isPPTOn
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime f input output
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.isPPTOn, failed to discharge hypotheses
+          ComputableTidilyInPolyTime f input output
+  [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsPPTOn` theorems for `Pure.pure`
+               trying again after decomposing function as: `(fun a3 => pure a3) ∘ (fun a => f a)`
+  [Meta.Tactic.fun_prop] missing composition rule to prove `IsPPTOn input output fun a => pure (f a)`
+[Meta.Tactic.fun_prop] ✅️ IsPPTOn input output fun a => pure (f a)
+  [Meta.Tactic.fun_prop] candidate theorems for Pure.pure #[Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn, Turing.MultiTapeTM.ComputableTidilyInPolyTime.isPPTOn]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime f input output
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[h : ComputableInPolyTime f input output]
+      [Meta.Tactic.fun_prop] ✅️ applying: h : ComputableInPolyTime f input output

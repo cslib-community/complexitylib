@@ -1,0 +1,7 @@
+'Cslib.Circuits.Boolean.bundleCode_eq_foldl_appendCode' depends on axioms: [propext, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/d987691c1f379bd3/import-only/ComplexityTests/CodeComposition.lean:138:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Circuits.Boolean.bundleCode_eq_foldl_appendCode' depends on axioms: [propext, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

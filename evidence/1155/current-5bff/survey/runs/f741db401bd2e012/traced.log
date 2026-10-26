@@ -1,0 +1,32 @@
+[Meta.Tactic.fun_prop] ❌️ IsPPTOn input output fun a => program (prepare a)
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.preprocess
+    [Meta.Tactic.fun_prop] ✅️ IsPPTOn middle output fun a0 => program a0
+      [Meta.Tactic.fun_prop] candidate local theorems for program #[hprogram : IsPPTOn middle output program]
+      [Meta.Tactic.fun_prop] ✅️ applying: hprogram : IsPPTOn middle output program
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => prepare a) input middle
+      [Meta.Tactic.fun_prop] candidate local theorems for prepare #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => prepare a) input middle
+          [Meta.Tactic.fun_prop] candidate local theorems for prepare #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun a => prepare a) input middle
+    [Meta.Tactic.fun_prop] @IsPPTOn.preprocess, failed to discharge hypotheses
+          ComputableInPolyTime (fun a => prepare a) input middle
+[Meta.Tactic.fun_prop] ❌️ IsPPTOn input output fun a => program (prepare a)
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsPPTOn.preprocess
+    [Meta.Tactic.fun_prop] ❌️ IsPPTOn ?middle output fun a0 => program a0
+      [Meta.Tactic.fun_prop] candidate local theorems for program #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @IsPPTOn.preprocess, failed to discharge hypotheses
+          IsPPTOn ?middle output fun a0 => program a0
+[Meta.Tactic.fun_prop] ✅️ IsPPTOn input output fun a => program (prepare a)
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+    [Meta.Tactic.fun_prop] ✅️ IsPPTOn middle output fun a0 => program a0
+      [Meta.Tactic.fun_prop] candidate local theorems for program #[hprogram : IsPPTOn middle output program]
+      [Meta.Tactic.fun_prop] ✅️ applying: hprogram : IsPPTOn middle output program
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => prepare a) input middle
+      [Meta.Tactic.fun_prop] candidate local theorems for prepare #[hprepare : ComputableInPolyTime prepare input middle]
+      [Meta.Tactic.fun_prop] ✅️ applying: hprepare : ComputableInPolyTime prepare input middle

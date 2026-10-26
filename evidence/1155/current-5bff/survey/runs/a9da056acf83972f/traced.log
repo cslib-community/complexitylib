@@ -1,0 +1,290 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+      (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+            (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+            (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+      (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+  [aesop] ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+          (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.228.3):
+      [aesop] ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+              (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+      (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+            (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+            (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2))
+              (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encPair encUnary (encFinEnum Unit))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => (p.1 - 1 - p.2.1, p.2.2)) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+            (encPair encUnary (encFinEnum Unit))
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1 - 1 - x.2.1) (encPair encUnary (encPair encUnary (encFinEnum Unit))) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub'
+              [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_sub'
+                  ComputableTidilyInPolyTime (fun a => ?left a - ?right a) ?input encNat
+                  with
+                  ComputableTidilyInPolyTime (fun x => x.1 - 1 - x.2.1)
+                    (encPair encUnary (encPair encUnary (encFinEnum Unit))) encUnary
+            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub as:
+                                   (fun x4x5 => x4x5.1 - x4x5.2) ∘ (fun x => (x.1 - 1, x.2.1))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 - x4x5.2) (encPair encUnary encUnary) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub'
+                  [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_sub'
+                      ComputableTidilyInPolyTime (fun a => ?left a - ?right a) ?input encNat
+                      with
+                      ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 - x4x5.2) ?encMid encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.1 - 1, x.2.1)) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                    (encPair encUnary encUnary)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1 - 1) (encPair encUnary (encPair encUnary (encFinEnum Unit))) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub'
+                      [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_sub'
+                          ComputableTidilyInPolyTime (fun a => ?left a - ?right a) ?input encNat
+                          with
+                          ComputableTidilyInPolyTime (fun x => x.1 - 1)
+                            (encPair encUnary (encPair encUnary (encFinEnum Unit))) encUnary
+                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub as:
+                                         (fun y => y.1 - y.2) ∘ (fun x => (x.1, 1))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 - y.2) (encPair encUnary encUnary) encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub'
+                          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_sub'
+                              ComputableTidilyInPolyTime (fun a => ?left a - ?right a) ?input encNat
+                              with
+                              ComputableTidilyInPolyTime (fun y => y.1 - y.2) ?encMid encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_sub
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.1, 1)) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                            (encPair encUnary encUnary)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair encUnary (encPair encUnary (encFinEnum Unit))) encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                                    (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 1) (encPair encUnary (encPair encUnary (encFinEnum Unit))) encUnary
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.1) (encPair encUnary (encPair encUnary (encFinEnum Unit))) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                            (encPair encUnary (encFinEnum Unit))
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                                (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encUnary (encFinEnum Unit)) (encPair encUnary (encFinEnum Unit))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.2) (encPair encUnary (encPair encUnary (encFinEnum Unit))) (encFinEnum Unit)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                    (encPair encUnary (encFinEnum Unit))
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                        (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encUnary (encFinEnum Unit)) (encPair encUnary (encFinEnum Unit))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encFinEnum Unit) (encFinEnum Unit)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+      (fun g =>
+        let reduced := Graph.degreeReduce false rotateReflection [()] g;
+        Graph.addLoops (some (false, true))
+          (Graph.addTrivial (some (false, true)) reduced (Graph.rotationEdges rotateReflection [()] reduced.vertices)))
+      (Graph.encoding encBool) (Graph.encoding (encOption (encPair encBool encBool)))
+  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+        (fun g =>
+          let reduced := Graph.degreeReduce false rotateReflection [()] g;
+          Graph.addLoops (some (false, true))
+            (Graph.addTrivial (some (false, true)) reduced (Graph.rotationEdges rotateReflection [()] reduced.vertices)))
+        (Graph.encoding encBool) (Graph.encoding (encOption (encPair encBool encBool)))
+    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun g => Graph.degreeReduce false rotateReflection [()] g) (Graph.encoding encBool)
+            (Graph.encoding (encOption (encPair encBool encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.degreeReduce #[Cslib.PCP.Encoded.Graph.isPolyTime_degreeReduce]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_degreeReduce
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotateReflection (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                (encPair encUnary (encFinEnum Unit))
+            [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.rotateReflection #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `_private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.rotateReflection`
+                         now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => rotateReflection p) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                    (encPair encUnary (encFinEnum Unit))
+                [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.rotateReflection #[]
+                [Meta.Tactic.fun_prop] candidate local theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.rotateReflection #[hrotate : ComputableTidilyInPolyTime rotateReflection (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                      (encPair encUnary (encFinEnum Unit))]
+                [Meta.Tactic.fun_prop] ✅️ applying: hrotate : ComputableTidilyInPolyTime rotateReflection (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                      (encPair encUnary (encFinEnum Unit))
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+            (fun reduced =>
+              Graph.addLoops (some (false, true))
+                (Graph.addTrivial (some (false, true)) reduced (Graph.rotationEdges rotateReflection [()] reduced.vertices)))
+            (Graph.encoding (encOption (encPair encBool encBool))) (Graph.encoding (encOption (encPair encBool encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addLoops #[Cslib.PCP.Encoded.Graph.isPolyTime_addLoops]
+        [Meta.Tactic.fun_prop] decomposing to later use Cslib.PCP.Encoded.Graph.isPolyTime_addLoops as:
+                               (fun reduced2 => Graph.addLoops (some (false, true)) reduced2) ∘ (fun reduced =>
+              Graph.addTrivial (some (false, true)) reduced (Graph.rotationEdges rotateReflection [()] reduced.vertices))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+                (fun reduced =>
+                  Graph.addTrivial (some (false, true)) reduced (Graph.rotationEdges rotateReflection [()] reduced.vertices))
+                (Graph.encoding (encOption (encPair encBool encBool))) (Graph.encoding (encOption (encPair encBool encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addTrivial #[Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial]
+            [Meta.Tactic.fun_prop] decomposing to later use Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial as:
+                                   (fun reduced2reduced3 => Graph.addTrivial (some (false, true)) reduced2reduced3.1 reduced2reduced3.2) ∘ (fun reduced => (reduced, Graph.rotationEdges rotateReflection [()] reduced.vertices))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun reduced => (reduced, Graph.rotationEdges rotateReflection [()] reduced.vertices))
+                    (Graph.encoding (encOption (encPair encBool encBool)))
+                    (encPair (Graph.encoding (encOption (encPair encBool encBool))) (encList (encPair encUnary encUnary)))
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding (encOption (encPair encBool encBool)))
+                        (Graph.encoding (encOption (encPair encBool encBool)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => Graph.rotationEdges rotateReflection [()] a.vertices)
+                        (Graph.encoding (encOption (encPair encBool encBool))) (encList (encPair encUnary encUnary))
+                    [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.rotationEdges #[Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges]
+                    [Meta.Tactic.fun_prop] decomposing to later use Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges as:
+                                           (fun a3 => Graph.rotationEdges rotateReflection [()] a3) ∘ (fun a => a.vertices)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.vertices) (Graph.encoding (encOption (encPair encBool encBool))) encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.vertices #[Cslib.PCP.Encoded.Graph.isPolyTime_vertices]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_vertices
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (Graph.encoding (encOption (encPair encBool encBool)))
+                                (Graph.encoding (encOption (encPair encBool encBool)))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a3 => Graph.rotationEdges rotateReflection [()] a3) encUnary
+                            (encList (encPair encUnary encUnary))
+                        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.rotationEdges #[Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotateReflection (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                                (encPair encUnary (encFinEnum Unit))
+                            [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.rotateReflection #[]
+                            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `_private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.rotateReflection`
+                                         now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => rotateReflection p) (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                                    (encPair encUnary (encFinEnum Unit))
+                                [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.rotateReflection #[]
+                                [Meta.Tactic.fun_prop] candidate local theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.rotateReflection #[hrotate : ComputableTidilyInPolyTime rotateReflection (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                                      (encPair encUnary (encFinEnum Unit))]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hrotate : ComputableTidilyInPolyTime rotateReflection (encPair encUnary (encPair encUnary (encFinEnum Unit)))
+                                      (encPair encUnary (encFinEnum Unit))
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+                    (fun reduced2reduced3 => Graph.addTrivial (some (false, true)) reduced2reduced3.1 reduced2reduced3.2)
+                    (encPair (Graph.encoding (encOption (encPair encBool encBool))) (encList (encPair encUnary encUnary)))
+                    (Graph.encoding (encOption (encPair encBool encBool)))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addTrivial #[Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun reduced2 => Graph.addLoops (some (false, true)) reduced2)
+                (Graph.encoding (encOption (encPair encBool encBool))) (Graph.encoding (encOption (encPair encBool encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addLoops #[Cslib.PCP.Encoded.Graph.isPolyTime_addLoops]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_addLoops
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun g => tablePreprocess (tablePreprocess g)) (Graph.encoding (encPi (encPi encBool)))
+      (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun g => tablePreprocess (tablePreprocess g)) (Graph.encoding (encPi (encPi encBool)))
+        (Graph.encoding (encPi (encPi encBool)))
+    [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.tablePreprocess #[]
+    [Meta.Tactic.fun_prop] candidate local theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.tablePreprocess #[h : ComputableTidilyInPolyTime tablePreprocess (Graph.encoding (encPi (encPi encBool)))
+          (Graph.encoding (encPi (encPi encBool)))]
+    [Meta.Tactic.fun_prop] decomposing to later use h : ComputableTidilyInPolyTime tablePreprocess (Graph.encoding (encPi (encPi encBool)))
+          (Graph.encoding (encPi (encPi encBool))) as:
+                           (fun g0 => tablePreprocess g0) ∘ (fun g => tablePreprocess g)
+    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun g0 => tablePreprocess g0) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.tablePreprocess #[]
+        [Meta.Tactic.fun_prop] candidate local theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.tablePreprocess #[h : ComputableTidilyInPolyTime tablePreprocess (Graph.encoding (encPi (encPi encBool)))
+              (Graph.encoding (encPi (encPi encBool)))]
+        [Meta.Tactic.fun_prop] ✅️ applying: h : ComputableTidilyInPolyTime tablePreprocess (Graph.encoding (encPi (encPi encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun g => tablePreprocess g) (Graph.encoding (encPi (encPi encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.tablePreprocess #[]
+        [Meta.Tactic.fun_prop] candidate local theorems for _private.ComplexityTests.PCPEncodedPreprocess.0.ComplexityTests.PCPEncodedPreprocess.tablePreprocess #[h : ComputableTidilyInPolyTime tablePreprocess (Graph.encoding (encPi (encPi encBool)))
+              (Graph.encoding (encPi (encPi encBool)))]
+        [Meta.Tactic.fun_prop] ✅️ applying: h : ComputableTidilyInPolyTime tablePreprocess (Graph.encoding (encPi (encPi encBool)))
+              (Graph.encoding (encPi (encPi encBool)))

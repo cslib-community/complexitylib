@@ -1,0 +1,129 @@
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+      Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1) + k * (2 * T n + 1) * 3 + 4 +
+        T n *
+          (k * 3 * ((2 * T n + 1) * 2 + 1) + 3 * ((n + 2) * 3 + 1) + Fintype.card (Situation k State) * (k + 3) +
+            (Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1) + k * (2 * T n + 1) * 3 + 4) *
+              ((4 * Fintype.card (Situation k State) + 2) * (2 * 3 + 2) + 1))
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1) + k * (2 * T n + 1) * 3 + 4
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1) + k * (2 * T n + 1) * 3
+          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1)
+              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => Fintype.card State + 1 + (n + 2)
+                  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => Fintype.card State + 1
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + 2
+                      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.id
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => k * (2 * T n + 1)
+                  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => k
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2 * T n + 1
+                      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2 * T n
+                          [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2
+                              [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 2
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded T
+                              [Meta.Tactic.fun_prop] candidate local theorems for T #[hT : PolynomiallyBounded T]
+                              [Meta.Tactic.fun_prop] ✅️ applying: hT : PolynomiallyBounded T
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => k * (2 * T n + 1) * 3
+              [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => k * (2 * T n + 1)
+                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                        k * (2 * T n + 1)
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 3
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 4
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+          T n *
+            (k * 3 * ((2 * T n + 1) * 2 + 1) + 3 * ((n + 2) * 3 + 1) + Fintype.card (Situation k State) * (k + 3) +
+              (Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1) + k * (2 * T n + 1) * 3 + 4) *
+                ((4 * Fintype.card (Situation k State) + 2) * (2 * 3 + 2) + 1))
+      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded T
+          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded T
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+              k * 3 * ((2 * T n + 1) * 2 + 1) + 3 * ((n + 2) * 3 + 1) + Fintype.card (Situation k State) * (k + 3) +
+                (Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1) + k * (2 * T n + 1) * 3 + 4) *
+                  ((4 * Fintype.card (Situation k State) + 2) * (2 * 3 + 2) + 1)
+          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+                  k * 3 * ((2 * T n + 1) * 2 + 1) + 3 * ((n + 2) * 3 + 1) + Fintype.card (Situation k State) * (k + 3)
+              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => k * 3 * ((2 * T n + 1) * 2 + 1) + 3 * ((n + 2) * 3 + 1)
+                  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => k * 3 * ((2 * T n + 1) * 2 + 1)
+                      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => k * 3
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (2 * T n + 1) * 2 + 1
+                          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (2 * T n + 1) * 2
+                              [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2 * T n + 1
+                                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                                        2 * T n + 1
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2
+                                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                                        2
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                              [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 1
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 3 * ((n + 2) * 3 + 1)
+                      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 3
+                          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 3
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (n + 2) * 3 + 1
+                          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (n + 2) * 3
+                              [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n + 2
+                                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                                        n + 2
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 3
+                                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                                        3
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                              [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 1
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => Fintype.card (Situation k State) * (k + 3)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+                  (Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1) + k * (2 * T n + 1) * 3 + 4) *
+                    ((4 * Fintype.card (Situation k State) + 2) * (2 * 3 + 2) + 1)
+              [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1) + k * (2 * T n + 1) * 3 + 4
+                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                        Fintype.card State + 1 + (n + 2) + k * (2 * T n + 1) + k * (2 * T n + 1) * 3 + 4
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (4 * Fintype.card (Situation k State) + 2) * (2 * 3 + 2) + 1
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const

@@ -1,0 +1,27 @@
+[Meta.Tactic.fun_prop] ✅️ AEStronglyMeasurable (fun x => Real.exp (t * X x)) ν
+  [Meta.Tactic.fun_prop] candidate theorems for Real.exp #[]
+  [Meta.Tactic.fun_prop] failed applying `MeasureTheory.AEStronglyMeasurable` theorems for `Real.exp`
+               trying again after decomposing function as: `(fun x0 => Real.exp x0) ∘ (fun x => t * X x)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Continuous.comp_aestronglyMeasurable
+    [Meta.Tactic.fun_prop] ✅️ Continuous fun x0 => Real.exp x0
+      [Meta.Tactic.fun_prop] candidate theorems for Real.exp #[Continuous.rexp, Real.continuous_exp]
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.rexp
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun y => y
+          [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ AEStronglyMeasurable (fun x => t * X x) ν
+      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[MeasureTheory.AEStronglyMeasurable.const_mul, MeasureTheory.AEStronglyMeasurable.fun_mul]
+      [Meta.Tactic.fun_prop] ✅️ applying: MeasureTheory.AEStronglyMeasurable.const_mul
+        [Meta.Tactic.fun_prop] ✅️ AEStronglyMeasurable X ν
+          [Meta.Tactic.fun_prop] candidate local theorems for X #[]
+          [Meta.Tactic.fun_prop] ✅️ AEStronglyMeasurable (fun a => s.indicator (fun x => 1) a) ν
+            [Meta.Tactic.fun_prop] candidate theorems for Set.indicator #[MeasureTheory.AEStronglyMeasurable.indicator₀, MeasureTheory.AEStronglyMeasurable.indicator]
+            [Meta.Tactic.fun_prop] ❌️ applying: MeasureTheory.AEStronglyMeasurable.indicator₀
+              [Meta.Tactic.fun_prop] ✅️ AEStronglyMeasurable (fun x => 1) ν
+                [Meta.Tactic.fun_prop] ✅️ applying: MeasureTheory.aestronglyMeasurable_const
+              [Meta.Tactic.fun_prop] ❌️ discharging: NullMeasurableSet s ν
+              [Meta.Tactic.fun_prop] @AEStronglyMeasurable.indicator₀, failed to discharge hypotheses
+                    NullMeasurableSet s ν
+            [Meta.Tactic.fun_prop] ✅️ applying: MeasureTheory.AEStronglyMeasurable.indicator
+              [Meta.Tactic.fun_prop] ✅️ AEStronglyMeasurable (fun x => 1) ν
+                [Meta.Tactic.fun_prop] reusing previously found proof for AEStronglyMeasurable (fun x => 1) ν
+              [Meta.Tactic.fun_prop] ✅️ discharging: MeasurableSet s

@@ -1,0 +1,14 @@
+[true, true]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/4fb1ae76decb8168/baseline/ComplexityTests/FiniteControl.lean:58:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: [true, true]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+[true]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/4fb1ae76decb8168/baseline/ComplexityTests/FiniteControl.lean:62:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: [true]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]

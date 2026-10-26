@@ -1,0 +1,23 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolySpace (fun w => BitString.increment (BitString.increment w)) encBits encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.increment #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolySpace` theorems for `Cslib.BitString.increment`
+               trying again after decomposing function as: `(fun w0 => BitString.increment w0) ∘ (fun w => BitString.increment w)`
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolySpace.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolySpace (fun w0 => BitString.increment w0) encBits encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.increment #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolySpace` theorems for `Cslib.BitString.increment`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolySpace` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolySpace.of_polyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolySpace.of_polyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun w0 => BitString.increment w0) encBits encBits
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.increment #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.increment]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.increment
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolySpace (fun w => BitString.increment w) encBits encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.increment #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolySpace` theorems for `Cslib.BitString.increment`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolySpace` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolySpace.of_polyTime]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolySpace.of_polyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun w => BitString.increment w) encBits encBits
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.increment #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.increment]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.increment

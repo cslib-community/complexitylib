@@ -1,0 +1,224 @@
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => Sum.inl (f x)) input (encSum left right)
+  [Meta.Tactic.fun_prop] candidate theorems for Sum.inl #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl as:
+                         (fun x2 => Sum.inl x2) ∘ (fun x => f x)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x2 => Sum.inl x2) left (encSum left right)
+      [Meta.Tactic.fun_prop] candidate theorems for Sum.inl #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => f x) input left
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun x => f x) input left
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => f x) input ?encB
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun x => f x) input ?encB
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Sum.inl`
+               trying again after decomposing function as: `(fun x2 => Sum.inl x2) ∘ (fun x => f x)`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x2 => Sum.inl x2) left (encSum left right)
+      [Meta.Tactic.fun_prop] candidate theorems for Sum.inl #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => f x) input left
+      [Meta.Tactic.fun_prop] skipping proof search, proving ComputableTidilyInPolyTime (fun x => f x) input
+            left was tried already and failed
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun x => f x) input left
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => f x) input ?encB
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun x => f x) input ?encB
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => Sum.inl (f x)) input (encSum left right)
+  [Meta.Tactic.fun_prop] candidate theorems for Sum.inl #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl as:
+                         (fun x2 => Sum.inl x2) ∘ (fun x => f x)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x2 => Sum.inl x2) left (encSum left right)
+      [Meta.Tactic.fun_prop] candidate theorems for Sum.inl #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => f x) input left
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInPolyTime f input left]
+      [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInPolyTime f input left
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun x =>
+        let value := f x;
+        Sum.inr value)
+      input (encSum left right)
+  [aesop] Initial goal:
+        α β Input : Type
+        left : α ↪ List Bool
+        right : β ↪ List Bool
+        input : Input ↪ List Bool
+        f : Input → β
+        hf : ComputableTidilyInPolyTime f input right
+        ⊢ ComputableTidilyInPolyTime
+            (fun x =>
+              let value := f x;
+              Sum.inr value)
+            input (encSum left right)
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α β Input : Type
+        left : α ↪ List Bool
+        right : β ↪ List Bool
+        input : Input ↪ List Bool
+        f : Input → β
+        hf : ComputableTidilyInPolyTime f input right
+        ⊢ ComputableTidilyInPolyTime
+            (fun x =>
+              let value := f x;
+              Sum.inr value)
+            input (encSum left right)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun x =>
+        let value := f x;
+        Sum.inr value)
+      input (encSum left right)
+  [aesop] α β Input : Type
+      left : α ↪ List Bool
+      right : β ↪ List Bool
+      input : Input ↪ List Bool
+      f : Input → β
+      hf : ComputableTidilyInPolyTime f input right
+      ⊢ ComputableTidilyInPolyTime
+          (fun x =>
+            let value := f x;
+            Sum.inr value)
+          input (encSum left right)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.645):
+      [aesop] α β Input : Type
+          left : α ↪ List Bool
+          right : β ↪ List Bool
+          input : Input ↪ List Bool
+          f : Input → β
+          hf : ComputableTidilyInPolyTime f input right
+          ⊢ ComputableTidilyInPolyTime
+              (fun x =>
+                let value := f x;
+                Sum.inr value)
+              input (encSum left right)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun x =>
+        let value := f x;
+        Sum.inr value)
+      input (encSum left right)
+  [aesop] Initial goal:
+        α β Input : Type
+        left : α ↪ List Bool
+        right : β ↪ List Bool
+        input : Input ↪ List Bool
+        f : Input → β
+        hf : ComputableTidilyInPolyTime f input right
+        ⊢ ComputableTidilyInPolyTime
+            (fun x =>
+              let value := f x;
+              Sum.inr value)
+            input (encSum left right)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] α β Input : Type
+          left : α ↪ List Bool
+          right : β ↪ List Bool
+          input : Input ↪ List Bool
+          f : Input → β
+          hf : ComputableTidilyInPolyTime f input right
+          ⊢ ComputableTidilyInPolyTime (fun x => Sum.inr (f x)) input (encSum left right)
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α β Input : Type
+        left : α ↪ List Bool
+        right : β ↪ List Bool
+        input : Input ↪ List Bool
+        f : Input → β
+        hf : ComputableTidilyInPolyTime f input right
+        ⊢ ComputableTidilyInPolyTime (fun x => Sum.inr (f x)) input (encSum left right)
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α β Input : Type
+          left : α ↪ List Bool
+          right : β ↪ List Bool
+          input : Input ↪ List Bool
+          f : Input → β
+          hf : ComputableTidilyInPolyTime f input right
+          ⊢ ComputableTidilyInPolyTime (fun x => Sum.inr (f x)) input (encSum left right)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => Sum.inr (f x)) input (encSum left right)
+        [Meta.Tactic.fun_prop] candidate theorems for Sum.inr #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInr]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInr as:
+                               (fun x2 => Sum.inr x2) ∘ (fun x => f x)
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x2 => Sum.inr x2) right (encSum left right)
+            [Meta.Tactic.fun_prop] candidate theorems for Sum.inr #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInr]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInr
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => f x) input right
+            [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableTidilyInPolyTime f input right]
+            [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableTidilyInPolyTime f input right
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Sum.inr encUnary (encSum empty encUnary)
+  [Meta.Tactic.fun_prop] candidate theorems for Sum.inr #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInr]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInr
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Sum.inl encUnary (encSum encUnary empty)
+  [Meta.Tactic.fun_prop] candidate theorems for Sum.inl #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sumInl

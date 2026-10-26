@@ -1,0 +1,58 @@
+'Cslib.Complexity.ManyOneReducibleBy.refl' does not depend on any axioms
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/a10b364ce9e662fd/import-only/ComplexityTests/ManyOne.lean:233:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Complexity.ManyOneReducibleBy.refl' does not depend on any axioms
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.ManyOneReducibleBy.trans' does not depend on any axioms
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/a10b364ce9e662fd/import-only/ComplexityTests/ManyOne.lean:239:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Complexity.ManyOneReducibleBy.trans' does not depend on any axioms
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.ManyOneReducibleBy.mono' does not depend on any axioms
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/a10b364ce9e662fd/import-only/ComplexityTests/ManyOne.lean:245:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Complexity.ManyOneReducibleBy.mono' does not depend on any axioms
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.ManyOneReducibleBy.compl' does not depend on any axioms
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/a10b364ce9e662fd/import-only/ComplexityTests/ManyOne.lean:251:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Complexity.ManyOneReducibleBy.compl' does not depend on any axioms
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.ManyOneReducibleBy.lift' depends on axioms: [propext, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/a10b364ce9e662fd/import-only/ComplexityTests/ManyOne.lean:258:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+- info: 'Cslib.Complexity.ManyOneReducibleBy.lift' depends on axioms:
+-   [propext, Quot.sound]
++ info: 'Cslib.Complexity.ManyOneReducibleBy.lift' depends on axioms: [propext, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.HardUnder.mono' does not depend on any axioms
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/a10b364ce9e662fd/import-only/ComplexityTests/ManyOne.lean:264:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Complexity.HardUnder.mono' does not depend on any axioms
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.HardUnder.trans' does not depend on any axioms
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/a10b364ce9e662fd/import-only/ComplexityTests/ManyOne.lean:270:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Complexity.HardUnder.trans' does not depend on any axioms
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.Complexity.CompleteUnder.mono' does not depend on any axioms
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/a10b364ce9e662fd/import-only/ComplexityTests/ManyOne.lean:276:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.Complexity.CompleteUnder.mono' does not depend on any axioms
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

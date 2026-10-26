@@ -1,0 +1,460 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.query p.1 p.2.1 p.2.2)
+      (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.HadamardTester.query #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.HadamardTester.query`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => Encoded.HadamardTester.query p.1 p.2.1 p.2.2)
+          (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.HadamardTester.query #[Cslib.PCP.Encoded.HadamardTester.isPolyTime_query]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.HadamardTester.isPolyTime_query
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+      (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+      (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+  [aesop] ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+          (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.20018):
+      [aesop] ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+              (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+      (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+              (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.HadamardTester.accepts #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.HadamardTester.accepts`
+                     now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+        [Meta.Tactic.fun_prop] candidate transition theorems: []
+      [aesop] `fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool`
+          
+          Issues:
+            No theorems found for `Cslib.PCP.Encoded.HadamardTester.accepts` in order to prove `ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool`
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))
+          is not definitionally equal to the right-hand side
+            encBool
+          
+          ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+              (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ 🏁 Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] no certificate for `Cslib.PCP.Encoded.HadamardTester.accepts` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|apply|global|Cslib.Tactic.PolyTime.bool_not_rule
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableTidilyInPolyTime (fun a => !?guard a) ?input encBool
+          with the goal
+            ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+              (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+          
+          Note: The full type of the term is
+            ∀ {α : Type} {input : α ↪ List Bool} {guard : α → Bool},
+              ComputableTidilyInPolyTime guard input encBool →
+                ComputableTidilyInPolyTime (fun a => !guard a) input encBool
+          
+          ⊢ ComputableTidilyInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+              (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ 🏁 unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+        [aesop] Initial goal:
+              ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+                  (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+        [aesop] ❌️ ✅️ Normalisation
+        [aesop] Goal after normalisation:
+              ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+                  (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+        [aesop] ✅️ ✅️ Safe rules
+          [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+      [aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+        [aesop] ✅️ Metadata
+          [aesop] ID: 0
+          [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+          [aesop] Success probability: 100.0000%
+          [aesop] Parent goal: 0
+          [aesop] Child goals: [1]
+          [aesop] State: unknown
+          [aesop] Irrelevant: false
+          [aesop] Introduced metavariables: []
+          [aesop] Assigned   metavariables: []
+      [aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+        [aesop] ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+                (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+        [aesop] ✅️ Metadata
+          [aesop] ID: 1
+          [aesop] ✅️ Pre-normalisation goal (_uniq.23023):
+            [aesop] ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+                    (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+          [aesop] Post-normalisation goal: <goal not normalised>
+          [aesop] Metavariables: []
+          [aesop] Parent rapp:  some (0)
+          [aesop] Child rapps:  []
+          [aesop] Origin: subgoal
+          [aesop] Depth: 1
+          [aesop] State: ❓️ unknown
+          [aesop] Forward rule matches: 0
+          [aesop] Irrelevant: no
+          [aesop] Forced unprovable: no
+          [aesop] Added in iteration: 1
+          [aesop] Last expanded in iteration: never
+          [aesop] ✅️ Forward state
+            [aesop] 
+          [aesop] Unsafe rule queue: <not selected>
+          [aesop] Failed rules: <none>
+      [aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+            (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+        [aesop] Initial goal:
+              ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+                  (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+        [aesop] ❌️ ✅️ Normalisation
+          [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+            [aesop] nothing to introduce
+          [aesop] ❌️ ❌️ <norm unfold>
+            [aesop] nothing to unfold
+          [aesop] ❌️ ❌️ <norm simp>
+            [aesop] norm simp left the goal unchanged
+        [aesop] Goal after normalisation:
+              ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+                  (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+        [aesop] ✅️ 🏁 Safe rules
+          [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+            [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+                
+                ⊢ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+                    (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+          [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+            [aesop] no new known certificate
+          [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+            [aesop] expected a constructor
+          [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
+                  (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool))) encBool
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.HadamardTester.accepts #[Cslib.PCP.Encoded.HadamardTester.isPolyTime_accepts]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.HadamardTester.isPolyTime_accepts
+      [aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+        [aesop] ✅️ Metadata
+          [aesop] ID: 1
+          [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+          [aesop] Success probability: 100.0000%
+          [aesop] Parent goal: 1
+          [aesop] Child goals: []
+          [aesop] State: proven
+          [aesop] Irrelevant: true
+          [aesop] Introduced metavariables: []
+          [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 🏁 R1 [70.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [70.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+    [aesop] Success probability: 70.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p => Encoded.HadamardTester.query (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
+      (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime
+            (fun p => Encoded.HadamardTester.query (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
+            (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime
+            (fun p => Encoded.HadamardTester.query (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
+            (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p => Encoded.HadamardTester.query (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
+      (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+  [aesop] ⊢ ComputableTidilyInPolyTime
+          (fun p => Encoded.HadamardTester.query (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
+          (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.24245):
+      [aesop] ⊢ ComputableTidilyInPolyTime
+              (fun p => Encoded.HadamardTester.query (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
+              (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p => Encoded.HadamardTester.query (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
+      (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime
+            (fun p => Encoded.HadamardTester.query (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
+            (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] ⊢ ComputableTidilyInPolyTime
+              (fun p => Encoded.HadamardTester.query (fun a b => p.1[a.toNat + 2 * b.toNat]?.getD false) p.2.1 p.2.2)
+              (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime
+            (fun p => Encoded.HadamardTester.query (fun a b => p.1[a.toNat + 2 * b.toNat]?.getD false) p.2.1 p.2.2)
+            (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime
+              (fun p => Encoded.HadamardTester.query (fun a b => p.1[a.toNat + 2 * b.toNat]?.getD false) p.2.1 p.2.2)
+              (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+            (fun p => Encoded.HadamardTester.query (fun a b => p.1[a.toNat + 2 * b.toNat]?.getD false) p.2.1 p.2.2)
+            (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.HadamardTester.query #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.HadamardTester.query`
+                     trying again after decomposing function as: `(fun p3p4p5 => Encoded.HadamardTester.query p3p4p5.1 p3p4p5.2.1 p3p4p5.2.2) ∘ (fun p => (fun a b => p.1[a.toNat + 2 * b.toNat]?.getD false, p.2.1, p.2.2))`
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p3p4p5 => Encoded.HadamardTester.query p3p4p5.1 p3p4p5.2.1 p3p4p5.2.2)
+                (encPair (encPi (encPi encBool)) (encPair ?coinsEncoding ?queryEncoding)) (encFinEnum (Pos Bool))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.HadamardTester.query #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.HadamardTester.query`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun p3p4p5 => Encoded.HadamardTester.query p3p4p5.1 p3p4p5.2.1 p3p4p5.2.2)
+                    (encPair (encPi (encPi encBool)) (encPair ?coinsEncoding ?queryEncoding)) (encFinEnum (Pos Bool))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.HadamardTester.query #[Cslib.PCP.Encoded.HadamardTester.isPolyTime_query]
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.HadamardTester.isPolyTime_query
+                  [Meta.Tactic.fun_prop] @Encoded.HadamardTester.isPolyTime_query, failed to infer `(?coinsEncoding : Rand
+                          Bool ↪
+                        List Bool)`
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.HadamardTester.query`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                        if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                    ComputableInPolyTime (fun p3p4p5 => Encoded.HadamardTester.query p3p4p5.1 p3p4p5.2.1 p3p4p5.2.2)
+                      (encPair (encPi (encPi encBool)) (encPair ?coinsEncoding ?queryEncoding)) (encFinEnum (Pos Bool))
+          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+                ComputableTidilyInPolyTime (fun p3p4p5 => Encoded.HadamardTester.query p3p4p5.1 p3p4p5.2.1 p3p4p5.2.2)
+                  (encPair (encPi (encPi encBool)) (encPair ?coinsEncoding ?queryEncoding)) (encFinEnum (Pos Bool))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => (fun a b => p.1[a.toNat + 2 * b.toNat]?.getD false, p.2.1, p.2.2))
+                (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x a b => x.1[a.toNat + 2 * b.toNat]?.getD false)
+                    (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encPi (encPi encBool))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi
+                  [Meta.Tactic.fun_prop] ✅️ ∀ (i : Bool),
+                        ComputableTidilyInPolyTime (fun a b => a.1[i.toNat + 2 * b.toNat]?.getD false)
+                          (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encPi encBool)
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a b => a.1[i.toNat + 2 * b.toNat]?.getD false)
+                          (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encPi encBool)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi
+                        [Meta.Tactic.fun_prop] ✅️ ∀ (i_1 : Bool),
+                              ComputableTidilyInPolyTime (fun a => a.1[i.toNat + 2 * i_1.toNat]?.getD false)
+                                (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) encBool
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1[i✝.toNat + 2 * i.toNat]?.getD false)
+                                (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) encBool
+                            [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetDWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetD]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetDWithInput
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1[i✝.toNat + 2 * i.toNat]?)
+                                    (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encOption encBool)
+                                [Meta.Tactic.fun_prop] candidate theorems for GetElem?.getElem? #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsGetElem?, Turing.MultiTapeTM.ComputableTidilyInPolyTime.getElem?]
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsGetElem?
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) encBits
+                                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                                            (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => i✝.toNat + 2 * i.toNat)
+                                        (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query))) encUnary
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => false) (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                                    encBool
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x.2.1, x.2.2))
+                    (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                    (encPair (encFinite (Rand Bool)) (encFinEnum Query))
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.1) (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                        (encFinite (Rand Bool))
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                            (encPair (encFinite (Rand Bool)) (encFinEnum Query))
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                                (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encFinite (Rand Bool)) (encFinEnum Query))
+                                (encPair (encFinite (Rand Bool)) (encFinEnum Query))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.2) (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                        (encFinEnum Query)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                            (encPair (encFinite (Rand Bool)) (encFinEnum Query))
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                                (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encFinite (Rand Bool)) (encFinEnum Query))
+                                (encPair (encFinite (Rand Bool)) (encFinEnum Query))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encFinEnum Query) (encFinEnum Query)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p3p4p5 => Encoded.HadamardTester.query p3p4p5.1 p3p4p5.2.1 p3p4p5.2.2)
+                (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.HadamardTester.query #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.HadamardTester.query`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p3p4p5 => Encoded.HadamardTester.query p3p4p5.1 p3p4p5.2.1 p3p4p5.2.2)
+                    (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encFinEnum Query))) (encFinEnum (Pos Bool))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.HadamardTester.query #[Cslib.PCP.Encoded.HadamardTester.isPolyTime_query]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.HadamardTester.isPolyTime_query
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

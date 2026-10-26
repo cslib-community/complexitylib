@@ -1,0 +1,11 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => !V x) (encPair (encPair enc encBits) encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableInPolyTime.bool_not]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bool_not as:
+                         (fun x0 => !x0) ∘ (fun x => V x)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => V x) (encPair (encPair enc encBits) encBits) encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for V #[hV : ComputableInPolyTime V (encPair (encPair enc encBits) encBits) encBool]
+      [Meta.Tactic.fun_prop] ✅️ applying: hV : ComputableInPolyTime V (encPair (encPair enc encBits) encBits) encBool
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x0 => !x0) encBool encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableInPolyTime.bool_not]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bool_not

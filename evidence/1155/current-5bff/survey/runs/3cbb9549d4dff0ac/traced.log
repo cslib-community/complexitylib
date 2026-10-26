@@ -1,0 +1,54 @@
+[Meta.Tactic.fun_prop] ✅️ Continuous fun p => ∑ i, ∑ j, p.1 i * p.2 j * M i j
+  [Meta.Tactic.fun_prop] candidate theorems for Finset.sum #[continuous_finsetSum]
+  [Meta.Tactic.fun_prop] ✅️ applying: continuous_finsetSum
+    [Meta.Tactic.fun_prop] ✅️ ∀ i ∈ Finset.univ, Continuous fun a => ∑ j, a.1 i * a.2 j * M i j
+      [Meta.Tactic.fun_prop] ✅️ Continuous fun a => ∑ j, a.1 i * a.2 j * M i j
+        [Meta.Tactic.fun_prop] candidate theorems for Finset.sum #[continuous_finsetSum]
+        [Meta.Tactic.fun_prop] ✅️ applying: continuous_finsetSum
+          [Meta.Tactic.fun_prop] ✅️ ∀ i_1 ∈ Finset.univ, Continuous fun a => a.1 i * a.2 i_1 * M i i_1
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun a => a.1 i✝ * a.2 i * M i✝ i
+              [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Continuous.mul_const, IsTopologicalGroup.continuous_conj, continuous_mul_const, ENNReal.continuous_mul_const, Continuous.matrix_mul, continuous_mul, IsTopologicalGroup.continuous_conj', Continuous.fun_mul, IsModuleTopology.continuous_mul_of_finite]
+              [Meta.Tactic.fun_prop] ✅️ applying: Continuous.mul_const
+                [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x.1 i✝ * x.2 i
+                  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Continuous.matrix_mul, continuous_mul, Continuous.fun_mul, IsTopologicalGroup.continuous_conj', IsModuleTopology.continuous_mul_of_finite]
+                  [Meta.Tactic.fun_prop] ❌️ applying: Continuous.matrix_mul
+                    [Meta.Tactic.fun_prop] failed to unify @Continuous.matrix_mul
+                        Continuous fun x => ?A x * ?B x
+                        with
+                        Continuous fun x => x.1 i✝ * x.2 i
+                  [Meta.Tactic.fun_prop] decomposing to later use continuous_mul as:
+                                         (fun x4x5 => x4x5.1 * x4x5.2) ∘ (fun x => (x.1 i✝, x.2 i))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Continuous.comp'
+                    [Meta.Tactic.fun_prop] ✅️ Continuous fun x4x5 => x4x5.1 * x4x5.2
+                      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Continuous.matrix_mul, continuous_mul, Continuous.fun_mul, IsTopologicalGroup.continuous_conj', IsModuleTopology.continuous_mul_of_finite]
+                      [Meta.Tactic.fun_prop] ❌️ applying: Continuous.matrix_mul
+                        [Meta.Tactic.fun_prop] failed to unify @Continuous.matrix_mul
+                            Continuous fun x => ?A x * ?B x
+                            with
+                            Continuous fun x4x5 => x4x5.1 * x4x5.2
+                      [Meta.Tactic.fun_prop] ✅️ applying: continuous_mul
+                    [Meta.Tactic.fun_prop] ✅️ Continuous fun x => (x.1 i✝, x.2 i)
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Continuous.prodMk]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.prodMk
+                        [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x.1 i✝
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Continuous.fst]
+                          [Meta.Tactic.fun_prop] removing argument to later use Continuous.fst
+                          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.comp'
+                            [Meta.Tactic.fun_prop] ✅️ Continuous fun f => f i✝
+                              [Meta.Tactic.fun_prop] ✅️ applying: continuous_apply
+                            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x.1
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Continuous.fst]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Continuous.fst
+                                [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+                                  [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+                        [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x.2 i
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Continuous.snd]
+                          [Meta.Tactic.fun_prop] removing argument to later use Continuous.snd
+                          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.comp'
+                            [Meta.Tactic.fun_prop] ✅️ Continuous fun f => f i
+                              [Meta.Tactic.fun_prop] ✅️ applying: continuous_apply
+                            [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x.2
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Continuous.snd]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Continuous.snd
+                                [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+                                  [Meta.Tactic.fun_prop] reusing previously found proof for Continuous fun x => x

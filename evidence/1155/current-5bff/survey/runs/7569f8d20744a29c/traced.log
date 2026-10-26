@@ -1,0 +1,1039 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+      (encOption (Edge.encoding encBool))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+          (encOption (Edge.encoding encBool))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding encBool) encBits) (encPair (Graph.encoding encBool) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding encBool) (Graph.encoding encBool)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (Graph.encoding encBool) encBits) encBits
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding encBool) encBits) (encPair (Graph.encoding encBool) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p =>
+        let graph := p.1;
+        graph.sampleEdge p.2)
+      (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime
+            (fun p =>
+              let graph := p.1;
+              graph.sampleEdge p.2)
+            (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime
+            (fun p =>
+              let graph := p.1;
+              graph.sampleEdge p.2)
+            (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p =>
+        let graph := p.1;
+        graph.sampleEdge p.2)
+      (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] ⊢ ComputableTidilyInPolyTime
+          (fun p =>
+            let graph := p.1;
+            graph.sampleEdge p.2)
+          (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.32716):
+      [aesop] ⊢ ComputableTidilyInPolyTime
+              (fun p =>
+                let graph := p.1;
+                graph.sampleEdge p.2)
+              (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun p =>
+        let graph := p.1;
+        graph.sampleEdge p.2)
+      (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime
+            (fun p =>
+              let graph := p.1;
+              graph.sampleEdge p.2)
+            (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+              (encOption (Edge.encoding encBool))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+            (encOption (Edge.encoding encBool))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+              (encOption (Edge.encoding encBool))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+            (encOption (Edge.encoding encBool))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                     now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+        [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+                (encOption (Edge.encoding encBool))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding encBool) encBits) (encPair (Graph.encoding encBool) encBits)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding encBool) (Graph.encoding encBool)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (Graph.encoding encBool) encBits) encBits
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding encBool) encBits) (encPair (Graph.encoding encBool) encBits)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2)
+      (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+            (encOption (Edge.encoding encBool))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+            (encOption (Edge.encoding encBool))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2)
+      (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+          (encOption (Edge.encoding encBool))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.34866):
+      [aesop] ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+              (encOption (Edge.encoding encBool))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2)
+      (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+            (encOption (Edge.encoding encBool))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+            (encOption (Edge.encoding encBool))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+              (encOption (Edge.encoding encBool))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+            (encOption (Edge.encoding encBool))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                     now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+        [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.1.sampleEdge p.2) (encPair (Graph.encoding encBool) encBits)
+                (encOption (Edge.encoding encBool))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding encBool) encBits) (encPair (Graph.encoding encBool) encBits)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding encBool) (Graph.encoding encBool)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (Graph.encoding encBool) encBits) encBits
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding encBool) encBits) (encPair (Graph.encoding encBool) encBits)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun p =>
+        let graph := p.1;
+        graph.sampleEdge p.2)
+      (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun pgraph => pgraph.2.sampleEdge pgraph.1.2) (encPair ?enc₁✝ ?encB)
+          (encOption (Edge.encoding encBool))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                   trying again after decomposing function as: `(fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2) ∘ (fun pgraph => (pgraph.2, pgraph.1.2))`
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+              (encPair (Graph.encoding encBool) ?enc₂) (encOption (Edge.encoding encBool))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+                  (encPair (Graph.encoding encBool) ?enc₂) (encOption (Edge.encoding encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge]
+              [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.fst (encPair (Graph.encoding encBool) ?enc₂) (Graph.encoding encBool)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding encBool) (Graph.encoding encBool)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.fstWithEncoding, failed to infer `(?encB : List Bool ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst, failed to infer `(?encB : List Bool ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair (Graph.encoding encBool) ?enc₂) (encPair (Graph.encoding encBool) ?enc₂)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst', failed to infer `(?enc₂ : List Bool ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.fst`
+                               now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @Graph.isPolyTime_sampleEdge, failed to discharge hypotheses
+                      ComputableInPolyTime Prod.fst (encPair (Graph.encoding encBool) ?enc₂) (Graph.encoding encBool)
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                  ComputableInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+                    (encPair (Graph.encoding encBool) ?enc₂) (encOption (Edge.encoding encBool))
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+                (encPair (Graph.encoding encBool) ?enc₂) (encOption (Edge.encoding encBool))
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun pgraph => (pgraph.2, pgraph.1.2)) (encPair ?enc₁✝ ?encB) (encPair ?encB ?enc₂✝)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime Prod.snd (encPair ?enc₁ ?encB) ?encB
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => a) ?enc₁ ?enc₁
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.id', failed to infer `(?enc₁ : Graph Bool ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_to_binary
+                    [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.unary_to_binary
+                        ComputableTidilyInPolyTime (fun n => n) encUnary encNat
+                        with
+                        ComputableTidilyInPolyTime (fun a => a) ?enc₁ ?enc₁
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToList
+                    [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.bitsToList
+                        ComputableTidilyInPolyTime (fun l => l) encBits (encList encBool)
+                        with
+                        ComputableTidilyInPolyTime (fun a => a) ?enc₁ ?enc₁
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listToBits
+                    [Meta.Tactic.fun_prop] failed to unify ComputableTidilyInPolyTime.listToBits
+                        ComputableTidilyInPolyTime (fun l => l) (encList encBool) encBits
+                        with
+                        ComputableTidilyInPolyTime (fun a => a) ?enc₁ ?enc₁
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_apply
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.pi_apply
+                        ComputableTidilyInPolyTime (fun values => values ?i) (encPi ?enc) ?enc
+                        with
+                        ComputableTidilyInPolyTime (fun a => a) ?enc₁ ?enc₁
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun a => a) ?enc₁ ?enc₁
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : Graph Bool ×
+                        List Bool ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB ?enc₁✝) (encPair ?encB ?enc₁✝)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : Graph Bool ×
+                        List Bool ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun self => self.2) (encPair ?enc₁ ?encB) ?encB
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => a) ?encB ?encB
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                        [Meta.Tactic.fun_prop] @ComputableInPolyTime.id', failed to infer `(?encB : Graph Bool ↪
+                              List Bool)`
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_to_binary
+                        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_to_binary
+                            ComputableInPolyTime (fun n => n) encUnary encNat
+                            with
+                            ComputableInPolyTime (fun a => a) ?encB ?encB
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listToBits
+                        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.listToBits
+                            ComputableInPolyTime (fun l => l) (encList encBool) encBits
+                            with
+                            ComputableInPolyTime (fun a => a) ?encB ?encB
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsToList
+                        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.bitsToList
+                            ComputableInPolyTime (fun l => l) encBits (encList encBool)
+                            with
+                            ComputableInPolyTime (fun a => a) ?encB ?encB
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pi_apply
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.pi_apply
+                            ComputableInPolyTime (fun values => values ?i) (encPi ?enc) ?enc
+                            with
+                            ComputableInPolyTime (fun a => a) ?encB ?encB
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to discharge hypotheses
+                          ComputableInPolyTime (fun a => a) ?encB ?encB
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : Graph Bool × List Bool ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ ?encB) (encPair ?enc₁ ?encB)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : Graph Bool ×
+                            List Bool ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                      ComputableInPolyTime (fun self => self.2) (encPair ?enc₁ ?encB) ?encB
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime Prod.snd (encPair ?enc₁ ?encB) ?encB
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun pgraph => (pgraph.2, pgraph.1.2)) (encPair ?enc₁✝ ?encB) (encPair ?encB ?enc₂✝)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.snd (encPair ?enc₁ ?encB) ?encB
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => a) ?encB ?encB
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                        [Meta.Tactic.fun_prop] @ComputableInPolyTime.id', failed to infer `(?encB : Graph Bool ↪
+                              List Bool)`
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_to_binary
+                        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.unary_to_binary
+                            ComputableInPolyTime (fun n => n) encUnary encNat
+                            with
+                            ComputableInPolyTime (fun a => a) ?encB ?encB
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listToBits
+                        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.listToBits
+                            ComputableInPolyTime (fun l => l) (encList encBool) encBits
+                            with
+                            ComputableInPolyTime (fun a => a) ?encB ?encB
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsToList
+                        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.bitsToList
+                            ComputableInPolyTime (fun l => l) encBits (encList encBool)
+                            with
+                            ComputableInPolyTime (fun a => a) ?encB ?encB
+                      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pi_apply
+                        [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.pi_apply
+                            ComputableInPolyTime (fun values => values ?i) (encPi ?enc) ?enc
+                            with
+                            ComputableInPolyTime (fun a => a) ?encB ?encB
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to discharge hypotheses
+                          ComputableInPolyTime (fun a => a) ?encB ?encB
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : Graph Bool × List Bool ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ ?encB) (encPair ?enc₁ ?encB)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : Graph Bool ×
+                            List Bool ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                      ComputableInPolyTime Prod.snd (encPair ?enc₁ ?encB) ?encB
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                      PairEncoding ?enc₁ ?enc₂ (encPair ?encB ?enc₂✝)
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                      PairEncoding ?enc₁ ?enc₂ (encPair ?encB ?enc₂✝)
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                  ComputableInPolyTime (fun pgraph => (pgraph.2, pgraph.1.2)) (encPair ?enc₁✝ ?encB)
+                    (encPair ?encB ?enc₂✝)
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun pgraph => (pgraph.2, pgraph.1.2)) (encPair ?enc₁✝ ?encB)
+                (encPair ?encB ?enc₂✝)
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun pgraph => pgraph.2.sampleEdge pgraph.1.2) (encPair ?enc₁✝ ?encB)
+            (encOption (Edge.encoding encBool))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => (p, p.1)) (encPair (Graph.encoding encBool) encBits)
+          (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (Graph.encoding encBool) encBits)
+              (encPair (Graph.encoding encBool) encBits)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (Graph.encoding encBool) encBits)
+                  (encPair (Graph.encoding encBool) encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun pgraph => pgraph.2.sampleEdge pgraph.1.2)
+          (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool)) (encOption (Edge.encoding encBool))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                   trying again after decomposing function as: `(fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2) ∘ (fun pgraph => (pgraph.2, pgraph.1.2))`
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+              (encPair (Graph.encoding encBool) ?enc₂) (encOption (Edge.encoding encBool))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+                  (encPair (Graph.encoding encBool) ?enc₂) (encOption (Edge.encoding encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge]
+              [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.fst (encPair (Graph.encoding encBool) ?enc₂) (Graph.encoding encBool)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding encBool) (Graph.encoding encBool)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.fstWithEncoding, failed to infer `(?encB : List Bool ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst, failed to infer `(?encB : List Bool ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair (Graph.encoding encBool) ?enc₂) (encPair (Graph.encoding encBool) ?enc₂)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst', failed to infer `(?enc₂ : List Bool ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.fst`
+                               now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @Graph.isPolyTime_sampleEdge, failed to discharge hypotheses
+                      ComputableInPolyTime Prod.fst (encPair (Graph.encoding encBool) ?enc₂) (Graph.encoding encBool)
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                  ComputableInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+                    (encPair (Graph.encoding encBool) ?enc₂) (encOption (Edge.encoding encBool))
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+                (encPair (Graph.encoding encBool) ?enc₂) (encOption (Edge.encoding encBool))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun pgraph => (pgraph.2, pgraph.1.2))
+              (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool))
+              (encPair (Graph.encoding encBool) encBits)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool))
+                  (Graph.encoding encBool)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool))
+                      (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (Graph.encoding encBool) (Graph.encoding encBool)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1.2)
+                  (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool)) encBits
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool))
+                      (encPair (Graph.encoding encBool) encBits)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool))
+                          (encPair (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+              (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pgraph1pgraph2 => pgraph1pgraph2.1.sampleEdge pgraph1pgraph2.2)
+                  (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (Graph.encoding encBool) encBits) (Graph.encoding encBool)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding encBool) encBits) (encPair (Graph.encoding encBool) encBits)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding encBool) (Graph.encoding encBool)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (Graph.encoding encBool) encBits) encBits
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding encBool) encBits) (encPair (Graph.encoding encBool) encBits)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (Graph.encoding encBool) (encList encBool)) (Graph.encoding encBool)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (Graph.encoding encBool) (encList encBool))
+          (encPair (Graph.encoding encBool) (encList encBool))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair (Graph.encoding encBool) (encList encBool)) (encList encBool)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (Graph.encoding encBool) (encList encBool))
+          (encPair (Graph.encoding encBool) (encList encBool))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList encBool) (encList encBool)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun p => Edge.proofVerdict 2 decoder evaluator p.1 p.2) (encPair (Edge.encoding enc) encBits)
+      encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Edge.proofVerdict #[Cslib.PCP.Encoded.Edge.isPolyTime_proofVerdict]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Edge.isPolyTime_proofVerdict
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun p => evaluator p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet)) encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for evaluator #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p => evaluator p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet)) encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for evaluator #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun p => evaluator p.1 p.2.1 p.2.2)
+                (encPair enc (encPair ?alphabet ?alphabet)) encBool
+    [Meta.Tactic.fun_prop] @Edge.isPolyTime_proofVerdict, failed to discharge hypotheses
+          ComputableInPolyTime (fun p => evaluator p.1 p.2.1 p.2.2) (encPair enc (encPair ?alphabet ?alphabet)) encBool
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Edge.proofVerdict`
+               now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p => Edge.proofVerdict 2 decoder evaluator p.1 p.2)
+          (encPair (Edge.encoding enc) encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Edge.proofVerdict #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Edge.proofVerdict`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+              if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun p => Edge.proofVerdict 2 decoder evaluator p.1 p.2)
+            (encPair (Edge.encoding enc) encBits) encBool
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => Edge.proofVerdict 2 decoder evaluator p.1 p.2) (encPair (Edge.encoding enc) encBits)
+      encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Edge.proofVerdict #[Cslib.PCP.Encoded.Edge.isPolyTime_proofVerdict]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Edge.isPolyTime_proofVerdict
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => evaluator p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for evaluator #[heval : ComputableInPolyTime (fun p => evaluator p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool]
+      [Meta.Tactic.fun_prop] ✅️ applying: heval : ComputableInPolyTime (fun p => evaluator p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+[Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary
+      (encOption (Edge.encoding enc))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+               trying again after decomposing function as: `(fun n1n2 => n1n2.1.sampleEdge n1n2.2) ∘ (fun n => (graph (n + 1), List.replicate n true))`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) ?enc₂)
+          (encOption (Edge.encoding enc))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) ?enc₂)
+              (encOption (Edge.encoding enc))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge]
+          [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.fst (encPair (Graph.encoding enc) ?enc₂) (Graph.encoding enc)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding enc) (Graph.encoding enc)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.fstWithEncoding, failed to infer `(?encB : List Bool ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst, failed to infer `(?encB : List Bool ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair (Graph.encoding enc) ?enc₂) (encPair (Graph.encoding enc) ?enc₂)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst', failed to infer `(?enc₂ : List Bool ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.fst`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @Graph.isPolyTime_sampleEdge, failed to discharge hypotheses
+                  ComputableInPolyTime Prod.fst (encPair (Graph.encoding enc) ?enc₂) (Graph.encoding enc)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+              ComputableInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) ?enc₂)
+                (encOption (Edge.encoding enc))
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) ?enc₂)
+            (encOption (Edge.encoding enc))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun n => (graph (n + 1), List.replicate n true)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => graph (x + 1)) encUnary ?enc₁
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x0 => graph x0) ?encMid ?enc₁
+              [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x0 => graph x0) ?encMid ?enc₁
+                  [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                      ComputableInPolyTime (fun x0 => graph x0) ?encMid ?enc₁
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun x0 => graph x0) ?encMid ?enc₁
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x + 1) encUnary encNat
+              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.computableTidilyInPolyTime_succ, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.computableTidilyInPolyTime_succ
+                [Meta.Tactic.fun_prop] failed to unify computableTidilyInPolyTime_succ
+                    ComputableTidilyInPolyTime (fun x => x + 1) encNat encNat
+                    with
+                    ComputableTidilyInPolyTime (fun x => x + 1) encUnary ?encB
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encUnary encNat
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.id'
+                        ComputableTidilyInPolyTime (fun a => a) ?encIn ?encIn
+                        with
+                        ComputableTidilyInPolyTime (fun a => a) encUnary encNat
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_to_binary
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => 1) encUnary encNat
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x0 => graph x0) encNat ?enc₁
+              [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x0 => graph x0) encNat ?enc₁
+                  [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                      ComputableInPolyTime (fun x0 => graph x0) encNat ?enc₁
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun x0 => graph x0) encNat ?enc₁
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x => graph (x + 1)) encUnary ?enc₁
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun n => (graph (n + 1), List.replicate n true)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => graph (a + 1)) encUnary ?enc₁✝
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a + 1) encUnary encUnary
+                  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_succ
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a0 => graph a0) encUnary ?enc₁✝
+                  [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                      ComputableInPolyTime (fun a0 => graph a0) encUnary ?enc₁✝
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a0 => graph a0) ?encMid ?enc₁✝
+                  [Meta.Tactic.fun_prop] candidate local theorems for graph #[]
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                      ComputableInPolyTime (fun a0 => graph a0) ?encMid ?enc₁✝
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                  ComputableInPolyTime (fun a => graph (a + 1)) encUnary ?enc₁✝
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                  PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                  PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                       now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+              ComputableInPolyTime (fun n => (graph (n + 1), List.replicate n true)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun n => (graph (n + 1), List.replicate n true)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary (encOption (Edge.encoding enc))
+  [aesop] Initial goal:
+        C : Type
+        enc : C ↪ List Bool
+        graph : ℕ → Graph C
+        hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)
+        ⊢ ComputableTidilyInPolyTime (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary
+            (encOption (Edge.encoding enc))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        C : Type
+        enc : C ↪ List Bool
+        graph : ℕ → Graph C
+        hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)
+        ⊢ ComputableTidilyInPolyTime (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary
+            (encOption (Edge.encoding enc))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary (encOption (Edge.encoding enc))
+  [aesop] C : Type
+      enc : C ↪ List Bool
+      graph : ℕ → Graph C
+      hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)
+      ⊢ ComputableTidilyInPolyTime (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary
+          (encOption (Edge.encoding enc))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.39368):
+      [aesop] C : Type
+          enc : C ↪ List Bool
+          graph : ℕ → Graph C
+          hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)
+          ⊢ ComputableTidilyInPolyTime (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary
+              (encOption (Edge.encoding enc))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime
+      (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary (encOption (Edge.encoding enc))
+  [aesop] Initial goal:
+        C : Type
+        enc : C ↪ List Bool
+        graph : ℕ → Graph C
+        hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)
+        ⊢ ComputableTidilyInPolyTime (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary
+            (encOption (Edge.encoding enc))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        C : Type
+        enc : C ↪ List Bool
+        graph : ℕ → Graph C
+        hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)
+        ⊢ ComputableTidilyInPolyTime (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary
+            (encOption (Edge.encoding enc))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          C : Type
+          enc : C ↪ List Bool
+          graph : ℕ → Graph C
+          hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)
+          ⊢ ComputableTidilyInPolyTime (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary
+              (encOption (Edge.encoding enc))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n => (graph (n + 1)).sampleEdge (List.replicate n true)) encUnary
+            (encOption (Edge.encoding enc))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                     trying again after decomposing function as: `(fun n1n2 => n1n2.1.sampleEdge n1n2.2) ∘ (fun n => (graph (n + 1), List.replicate n true))`
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) ?enc₂)
+                (encOption (Edge.encoding enc))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) ?enc₂)
+                    (encOption (Edge.encoding enc))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge]
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.fst (encPair (Graph.encoding enc) ?enc₂) (Graph.encoding enc)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding enc) (Graph.encoding enc)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.fstWithEncoding, failed to infer `(?encB : List
+                              Bool ↪
+                            List Bool)`
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst, failed to infer `(?encB : List Bool ↪
+                            List Bool)`
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fst'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair (Graph.encoding enc) ?enc₂) (encPair (Graph.encoding enc) ?enc₂)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.fst', failed to infer `(?enc₂ : List Bool ↪
+                            List Bool)`
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.fst`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                            if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                  [Meta.Tactic.fun_prop] @Graph.isPolyTime_sampleEdge, failed to discharge hypotheses
+                        ComputableInPolyTime Prod.fst (encPair (Graph.encoding enc) ?enc₂) (Graph.encoding enc)
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                        if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                    ComputableInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) ?enc₂)
+                      (encOption (Edge.encoding enc))
+          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+                ComputableTidilyInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) ?enc₂)
+                  (encOption (Edge.encoding enc))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n => (graph (n + 1), List.replicate n true)) encUnary
+                (encPair (Graph.encoding enc) encBits)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => graph (x + 1)) encUnary (Graph.encoding enc)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => graph x0) encUnary (Graph.encoding enc)
+                    [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableTidilyInPolyTime graph encUnary (Graph.encoding enc)
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x + 1) encUnary encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.computableTidilyInPolyTime_succ, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.computableTidilyInPolyTime_succ
+                      [Meta.Tactic.fun_prop] failed to unify computableTidilyInPolyTime_succ
+                          ComputableTidilyInPolyTime (fun x => x + 1) encNat encNat
+                          with
+                          ComputableTidilyInPolyTime (fun x => x + 1) encUnary encUnary
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                      [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                          ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                          with
+                          ComputableTidilyInPolyTime (fun x => x + 1) encUnary encUnary
+                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                                         (fun y => y.1 + y.2) ∘ (fun x => (x, 1))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 + y.2) (encPair encUnary encUnary) encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                              ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                              with
+                              ComputableTidilyInPolyTime (fun y => y.1 + y.2) ?encMid encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x, 1)) encUnary (encPair encUnary encUnary)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) encUnary encUnary
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 1) encUnary encUnary
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => List.replicate x true) encUnary encBits
+                [Meta.Tactic.fun_prop] candidate theorems for List.replicate #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate, Turing.MultiTapeTM.ComputableTidilyInPolyTime.replicate]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsReplicate
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) encBits)
+                (encOption (Edge.encoding enc))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.sampleEdge`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n1n2 => n1n2.1.sampleEdge n1n2.2) (encPair (Graph.encoding enc) encBits)
+                    (encOption (Edge.encoding enc))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.sampleEdge #[Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_sampleEdge
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (Graph.encoding enc) encBits) (Graph.encoding enc)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding enc) encBits) (encPair (Graph.encoding enc) encBits)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (Graph.encoding enc) (Graph.encoding enc)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (Graph.encoding enc) encBits) encBits
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (Graph.encoding enc) encBits) (encPair (Graph.encoding enc) encBits)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+27
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/7569f8d20744a29c/traced/ComplexityTests/PCPEncodedVerifier.lean:194:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 27
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]

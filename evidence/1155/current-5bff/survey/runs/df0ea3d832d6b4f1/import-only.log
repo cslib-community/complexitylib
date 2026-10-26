@@ -1,0 +1,14 @@
+'Cslib.WordRAM.Refines.bind' depends on axioms: [propext]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/df0ea3d832d6b4f1/import-only/ComplexityTests/WordRAMController.lean:297:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.WordRAM.Refines.bind' depends on axioms: [propext]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Cslib.WordRAM.Refines.call' depends on axioms: [propext]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/df0ea3d832d6b4f1/import-only/ComplexityTests/WordRAMController.lean:300:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Cslib.WordRAM.Refines.call' depends on axioms: [propext]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

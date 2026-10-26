@@ -1,0 +1,899 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun x =>
+        (((List.range 5).all fun i =>
+              R
+                (x.1,
+                  BitString.listRow (Polynomial.eval (enc x.1).length N) i
+                      (List.take (5 * Polynomial.eval (enc x.1).length N)
+                        (List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                          (List.drop
+                            (Polynomial.eval (enc x.1).length m *
+                                (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                              Polynomial.eval (enc x.1).length m)
+                            x.2))) ++
+                    BitString.listRow (Polynomial.eval (enc x.1).length c) i
+                      (List.drop
+                        (Polynomial.eval (enc x.1).length m *
+                              (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                            Polynomial.eval (enc x.1).length m +
+                          (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                        x.2))) &&
+            !(List.take (ℓ x.1)
+                    (List.drop (5 * Polynomial.eval (enc x.1).length N)
+                      (List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                        (List.drop
+                          (Polynomial.eval (enc x.1).length m *
+                              (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                            Polynomial.eval (enc x.1).length m)
+                          x.2)))).any
+                fun b => b) &&
+          !(List.zipWith xor
+                  (BitString.LinearHash.wordHash (Polynomial.eval (enc x.1).length m)
+                    (List.take
+                      (Polynomial.eval (enc x.1).length m *
+                          (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                        Polynomial.eval (enc x.1).length m)
+                      x.2)
+                    (List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                      (List.drop
+                        (Polynomial.eval (enc x.1).length m *
+                            (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                          Polynomial.eval (enc x.1).length m)
+                        x.2)))
+                  (BitString.listRow (Polynomial.eval (enc x.1).length m)
+                    (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                    (List.take
+                      (Polynomial.eval (enc x.1).length m *
+                          (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                        Polynomial.eval (enc x.1).length m)
+                      x.2))).any
+              fun b => b)
+      (encPair enc encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Bool.and #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_and', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_and]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_and'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+          (fun a =>
+            ((List.range 5).all fun i =>
+                R
+                  (a.1,
+                    BitString.listRow (Polynomial.eval (enc a.1).length N) i
+                        (List.take (5 * Polynomial.eval (enc a.1).length N)
+                          (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                            (List.drop
+                              (Polynomial.eval (enc a.1).length m *
+                                  (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                Polynomial.eval (enc a.1).length m)
+                              a.2))) ++
+                      BitString.listRow (Polynomial.eval (enc a.1).length c) i
+                        (List.drop
+                          (Polynomial.eval (enc a.1).length m *
+                                (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                              Polynomial.eval (enc a.1).length m +
+                            (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T))
+                          a.2))) &&
+              !(List.take (ℓ a.1)
+                      (List.drop (5 * Polynomial.eval (enc a.1).length N)
+                        (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                          (List.drop
+                            (Polynomial.eval (enc a.1).length m *
+                                (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                              Polynomial.eval (enc a.1).length m)
+                            a.2)))).any
+                  fun b => b)
+          (encPair enc encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Bool.and #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_and', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_and]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_and'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+              (fun a =>
+                (List.range 5).all fun i =>
+                  R
+                    (a.1,
+                      BitString.listRow (Polynomial.eval (enc a.1).length N) i
+                          (List.take (5 * Polynomial.eval (enc a.1).length N)
+                            (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                              (List.drop
+                                (Polynomial.eval (enc a.1).length m *
+                                    (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                  Polynomial.eval (enc a.1).length m)
+                                a.2))) ++
+                        BitString.listRow (Polynomial.eval (enc a.1).length c) i
+                          (List.drop
+                            (Polynomial.eval (enc a.1).length m *
+                                  (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                Polynomial.eval (enc a.1).length m +
+                              (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T))
+                            a.2)))
+              (encPair enc encBits) encBool
+          [Meta.Tactic.fun_prop] candidate theorems for List.all #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.allConst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAllWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.allWithInput]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.allConst
+            [Meta.Tactic.fun_prop] ✅️ ∀ i ∈ List.range 5,
+                  ComputableTidilyInPolyTime
+                    (fun x =>
+                      R
+                        (x.1,
+                          BitString.listRow (Polynomial.eval (enc x.1).length N) i
+                              (List.take (5 * Polynomial.eval (enc x.1).length N)
+                                (List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                  (List.drop
+                                    (Polynomial.eval (enc x.1).length m *
+                                        (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                      Polynomial.eval (enc x.1).length m)
+                                    x.2))) ++
+                            BitString.listRow (Polynomial.eval (enc x.1).length c) i
+                              (List.drop
+                                (Polynomial.eval (enc x.1).length m *
+                                      (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                    Polynomial.eval (enc x.1).length m +
+                                  (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                x.2)))
+                    (encPair enc encBits) encBool
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                    (fun x =>
+                      R
+                        (x.1,
+                          BitString.listRow (Polynomial.eval (enc x.1).length N) i
+                              (List.take (5 * Polynomial.eval (enc x.1).length N)
+                                (List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                  (List.drop
+                                    (Polynomial.eval (enc x.1).length m *
+                                        (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                      Polynomial.eval (enc x.1).length m)
+                                    x.2))) ++
+                            BitString.listRow (Polynomial.eval (enc x.1).length c) i
+                              (List.drop
+                                (Polynomial.eval (enc x.1).length m *
+                                      (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                    Polynomial.eval (enc x.1).length m +
+                                  (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                x.2)))
+                    (encPair enc encBits) encBool
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => R x0) (encPair enc encBits) encBool
+                    [Meta.Tactic.fun_prop] candidate local theorems for R #[hR : ComputableTidilyInPolyTime R (encPair enc encBits) encBool]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hR : ComputableTidilyInPolyTime R (encPair enc encBits) encBool
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                        (fun x =>
+                          (x.1,
+                            BitString.listRow (Polynomial.eval (enc x.1).length N) i
+                                (List.take (5 * Polynomial.eval (enc x.1).length N)
+                                  (List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                    (List.drop
+                                      (Polynomial.eval (enc x.1).length m *
+                                          (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                        Polynomial.eval (enc x.1).length m)
+                                      x.2))) ++
+                              BitString.listRow (Polynomial.eval (enc x.1).length c) i
+                                (List.drop
+                                  (Polynomial.eval (enc x.1).length m *
+                                        (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                      Polynomial.eval (enc x.1).length m +
+                                    (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                  x.2)))
+                        (encPair enc encBits) (encPair enc encBits)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair enc encBits) enc
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair enc encBits) (encPair enc encBits)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) enc enc
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                            (fun x =>
+                              BitString.listRow (Polynomial.eval (enc x.1).length N) i
+                                  (List.take (5 * Polynomial.eval (enc x.1).length N)
+                                    (List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                      (List.drop
+                                        (Polynomial.eval (enc x.1).length m *
+                                            (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                          Polynomial.eval (enc x.1).length m)
+                                        x.2))) ++
+                                BitString.listRow (Polynomial.eval (enc x.1).length c) i
+                                  (List.drop
+                                    (Polynomial.eval (enc x.1).length m *
+                                          (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                        Polynomial.eval (enc x.1).length m +
+                                      (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                    x.2))
+                            (encPair enc encBits) encBits
+                        [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listAppend'
+                          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.listAppend'
+                              ComputableTidilyInPolyTime (fun x => ?left x ++ ?right x) ?encIn (encList ?encA)
+                              with
+                              ComputableTidilyInPolyTime
+                                (fun x =>
+                                  BitString.listRow (Polynomial.eval (enc x.1).length N) i
+                                      (List.take (5 * Polynomial.eval (enc x.1).length N)
+                                        (List.take
+                                          (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                          (List.drop
+                                            (Polynomial.eval (enc x.1).length m *
+                                                (5 * Polynomial.eval (enc x.1).length N +
+                                                  Polynomial.eval (enc x.1).length T) +
+                                              Polynomial.eval (enc x.1).length m)
+                                            x.2))) ++
+                                    BitString.listRow (Polynomial.eval (enc x.1).length c) i
+                                      (List.drop
+                                        (Polynomial.eval (enc x.1).length m *
+                                              (5 * Polynomial.eval (enc x.1).length N +
+                                                Polynomial.eval (enc x.1).length T) +
+                                            Polynomial.eval (enc x.1).length m +
+                                          (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                        x.2))
+                                (encPair enc encBits) encBits
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAppend
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                (fun x =>
+                                  BitString.listRow (Polynomial.eval (enc x.1).length N) i
+                                    (List.take (5 * Polynomial.eval (enc x.1).length N)
+                                      (List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                        (List.drop
+                                          (Polynomial.eval (enc x.1).length m *
+                                              (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                            Polynomial.eval (enc x.1).length m)
+                                          x.2))))
+                                (encPair enc encBits) encBits
+                            [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.listRow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsRowWithInput]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsRowWithInput
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => Polynomial.eval (enc a.1).length N) (encPair enc encBits) encUnary
+                                [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval]
+                                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval as:
+                                                       (fun a2 => Polynomial.eval a2 N) ∘ (fun a => (enc a.1).length)
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a2 => Polynomial.eval a2 N) encUnary encUnary
+                                    [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (enc a.1).length) (encPair enc encBits) encUnary
+                                    [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => enc a.1) (encPair enc encBits) encBits
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => enc a0) enc encBits
+                                            [Meta.Tactic.fun_prop] candidate local theorems for enc #[]
+                                            [Meta.Tactic.fun_prop] candidate morphism theorems: [@ComputableTidilyInPolyTime.encoded]
+                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoded
+                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) enc enc
+                                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1) (encPair enc encBits) enc
+                                            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair enc encBits) (encPair enc encBits)
+                                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) enc enc
+                                                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                                      (fun a => a) enc enc
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => i) (encPair enc encBits) encUnary
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                    (fun a =>
+                                      List.take (5 * Polynomial.eval (enc a.1).length N)
+                                        (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                                          (List.drop
+                                            (Polynomial.eval (enc a.1).length m *
+                                                (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                              Polynomial.eval (enc a.1).length m)
+                                            a.2)))
+                                    (encPair enc encBits) encBits
+                                [Meta.Tactic.fun_prop] candidate theorems for List.take #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.takeUnary, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTake]
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                        (fun x =>
+                                          List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                            (List.drop
+                                              (Polynomial.eval (enc x.1).length m *
+                                                  (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                                Polynomial.eval (enc x.1).length m)
+                                              x.2))
+                                        (encPair enc encBits) encBits
+                                    [Meta.Tactic.fun_prop] candidate theorems for List.take #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.takeUnary, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTake]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                            (fun x =>
+                                              List.drop
+                                                (Polynomial.eval (enc x.1).length m *
+                                                    (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                                  Polynomial.eval (enc x.1).length m)
+                                                x.2)
+                                            (encPair enc encBits) encBits
+                                        [Meta.Tactic.fun_prop] candidate theorems for List.drop #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsDropWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listDropWithInput]
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsDropWithInput
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair enc encBits) encBits
+                                            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair enc encBits) (encPair enc encBits)
+                                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+                                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                                (fun x =>
+                                                  Polynomial.eval (enc x.1).length m * (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                                    Polynomial.eval (enc x.1).length m)
+                                                (encPair enc encBits) encUnary
+                                            [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                                              [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                                                  ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                                                  with
+                                                  ComputableTidilyInPolyTime
+                                                    (fun x =>
+                                                      Polynomial.eval (enc x.1).length m *
+                                                          (5 * Polynomial.eval (enc x.1).length N +
+                                                            Polynomial.eval (enc x.1).length T) +
+                                                        Polynomial.eval (enc x.1).length m)
+                                                    (encPair enc encBits) encUnary
+                                            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                                                                   (fun x4x5 => x4x5.1 + x4x5.2) ∘ (fun x =>
+                                                  (Polynomial.eval (enc x.1).length m * (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T),
+                                                    Polynomial.eval (enc x.1).length m))
+                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 + x4x5.2) (encPair encUnary encUnary) encUnary
+                                                [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                                                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                                                  [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                                                      ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input
+                                                        encNat
+                                                      with
+                                                      ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 + x4x5.2) ?encMid
+                                                        encUnary
+                                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                                    (fun x =>
+                                                      (Polynomial.eval (enc x.1).length m * (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T),
+                                                        Polynomial.eval (enc x.1).length m))
+                                                    (encPair enc encBits) (encPair encUnary encUnary)
+                                                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                                        (fun x =>
+                                                          Polynomial.eval (enc x.1).length m * (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                                        (encPair enc encBits) encUnary
+                                                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul]
+                                                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul'
+                                                      [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_mul'
+                                                          ComputableTidilyInPolyTime (fun a => ?left a * ?right a)
+                                                            ?input encNat
+                                                          with
+                                                          ComputableTidilyInPolyTime
+                                                            (fun x =>
+                                                              Polynomial.eval (enc x.1).length m *
+                                                                (5 * Polynomial.eval (enc x.1).length N +
+                                                                  Polynomial.eval (enc x.1).length T))
+                                                            (encPair enc encBits) encUnary
+                                                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul as:
+                                                                           (fun x4x5 => x4x5.1 * x4x5.2) ∘ (fun x =>
+                                                          (Polynomial.eval (enc x.1).length m, 5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 * x4x5.2) (encPair encUnary encUnary) encUnary
+                                                        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul]
+                                                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul'
+                                                          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_mul'
+                                                              ComputableTidilyInPolyTime (fun a => ?left a * ?right a)
+                                                                ?input encNat
+                                                              with
+                                                              ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 * x4x5.2)
+                                                                ?encMid encUnary
+                                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul
+                                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                                            (fun x =>
+                                                              (Polynomial.eval (enc x.1).length m, 5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                                            (encPair enc encBits) (encPair encUnary encUnary)
+                                                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => Polynomial.eval (enc x.1).length m) (encPair enc encBits) encUnary
+                                                            [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval]
+                                                            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval as:
+                                                                                   (fun x2 => Polynomial.eval x2 m) ∘ (fun x => (enc x.1).length)
+                                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x2 => Polynomial.eval x2 m) encUnary encUnary
+                                                                [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval]
+                                                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval
+                                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (enc x.1).length) (encPair enc encBits) encUnary
+                                                                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                                                      (fun x => (enc x.1).length) (encPair enc encBits)
+                                                                      encUnary
+                                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                                                (encPair enc encBits) encUnary
+                                                            [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                                                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                                                              [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                                                                  ComputableTidilyInPolyTime
+                                                                    (fun a => ?left a + ?right a) ?input encNat
+                                                                  with
+                                                                  ComputableTidilyInPolyTime
+                                                                    (fun x =>
+                                                                      5 * Polynomial.eval (enc x.1).length N +
+                                                                        Polynomial.eval (enc x.1).length T)
+                                                                    (encPair enc encBits) encUnary
+                                                            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                                                                                   (fun x4x5 => x4x5.1 + x4x5.2) ∘ (fun x => (5 * Polynomial.eval (enc x.1).length N, Polynomial.eval (enc x.1).length T))
+                                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 + x4x5.2) (encPair encUnary encUnary) encUnary
+                                                                [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                                                                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                                                                  [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                                                                      ComputableTidilyInPolyTime
+                                                                        (fun a => ?left a + ?right a) ?input encNat
+                                                                      with
+                                                                      ComputableTidilyInPolyTime
+                                                                        (fun x4x5 => x4x5.1 + x4x5.2) ?encMid encUnary
+                                                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+                                                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (5 * Polynomial.eval (enc x.1).length N, Polynomial.eval (enc x.1).length T))
+                                                                    (encPair enc encBits) (encPair encUnary encUnary)
+                                                                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                                                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                                                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 5 * Polynomial.eval (enc x.1).length N) (encPair enc encBits) encUnary
+                                                                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul]
+                                                                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul'
+                                                                      [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_mul'
+                                                                          ComputableTidilyInPolyTime
+                                                                            (fun a => ?left a * ?right a) ?input encNat
+                                                                          with
+                                                                          ComputableTidilyInPolyTime
+                                                                            (fun x =>
+                                                                              5 * Polynomial.eval (enc x.1).length N)
+                                                                            (encPair enc encBits) encUnary
+                                                                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul as:
+                                                                                         (fun y => y.1 * y.2) ∘ (fun x => (5, Polynomial.eval (enc x.1).length N))
+                                                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+                                                                        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul]
+                                                                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul'
+                                                                          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_mul'
+                                                                              ComputableTidilyInPolyTime
+                                                                                (fun a => ?left a * ?right a) ?input
+                                                                                encNat
+                                                                              with
+                                                                              ComputableTidilyInPolyTime
+                                                                                (fun y => y.1 * y.2) ?encMid encUnary
+                                                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul
+                                                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (5, Polynomial.eval (enc x.1).length N)) (encPair enc encBits)
+                                                                            (encPair encUnary encUnary)
+                                                                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                                                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                                                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 5) (encPair enc encBits) encUnary
+                                                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                                                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => Polynomial.eval (enc x.1).length N) (encPair enc encBits) encUnary
+                                                                            [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                                                                  (fun x =>
+                                                                                    Polynomial.eval (enc x.1).length N)
+                                                                                  (encPair enc encBits) encUnary
+                                                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => Polynomial.eval (enc x.1).length T) (encPair enc encBits) encUnary
+                                                                    [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval]
+                                                                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval as:
+                                                                                           (fun x2 => Polynomial.eval x2 T) ∘ (fun x => (enc x.1).length)
+                                                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x2 => Polynomial.eval x2 T) encUnary encUnary
+                                                                        [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval]
+                                                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval
+                                                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (enc x.1).length) (encPair enc encBits) encUnary
+                                                                        [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                                                              (fun x => (enc x.1).length)
+                                                                              (encPair enc encBits) encUnary
+                                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => Polynomial.eval (enc x.1).length m) (encPair enc encBits) encUnary
+                                                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                                          (fun x => Polynomial.eval (enc x.1).length m)
+                                                          (encPair enc encBits) encUnary
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                            (encPair enc encBits) encUnary
+                                        [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                              (fun x =>
+                                                5 * Polynomial.eval (enc x.1).length N +
+                                                  Polynomial.eval (enc x.1).length T)
+                                              (encPair enc encBits) encUnary
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 5 * Polynomial.eval (enc x.1).length N) (encPair enc encBits) encUnary
+                                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                          (fun x => 5 * Polynomial.eval (enc x.1).length N) (encPair enc encBits)
+                                          encUnary
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                (fun x =>
+                                  BitString.listRow (Polynomial.eval (enc x.1).length c) i
+                                    (List.drop
+                                      (Polynomial.eval (enc x.1).length m *
+                                            (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                          Polynomial.eval (enc x.1).length m +
+                                        (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                      x.2))
+                                (encPair enc encBits) encBits
+                            [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.listRow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsRowWithInput]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsRowWithInput
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => Polynomial.eval (enc a.1).length c) (encPair enc encBits) encUnary
+                                [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval]
+                                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval as:
+                                                       (fun a2 => Polynomial.eval a2 c) ∘ (fun a => (enc a.1).length)
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a2 => Polynomial.eval a2 c) encUnary encUnary
+                                    [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_eval
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => (enc a.1).length) (encPair enc encBits) encUnary
+                                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                          (fun a => (enc a.1).length) (encPair enc encBits) encUnary
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => i) (encPair enc encBits) encUnary
+                                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                      (fun a => i) (encPair enc encBits) encUnary
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                    (fun a =>
+                                      List.drop
+                                        (Polynomial.eval (enc a.1).length m *
+                                              (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                            Polynomial.eval (enc a.1).length m +
+                                          (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T))
+                                        a.2)
+                                    (encPair enc encBits) encBits
+                                [Meta.Tactic.fun_prop] candidate theorems for List.drop #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsDropWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listDropWithInput]
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsDropWithInput
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair enc encBits) encBits
+                                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                          Prod.snd (encPair enc encBits) encBits
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                        (fun x =>
+                                          Polynomial.eval (enc x.1).length m * (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                              Polynomial.eval (enc x.1).length m +
+                                            (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                        (encPair enc encBits) encUnary
+                                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                                      [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                                          ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                                          with
+                                          ComputableTidilyInPolyTime
+                                            (fun x =>
+                                              Polynomial.eval (enc x.1).length m *
+                                                    (5 * Polynomial.eval (enc x.1).length N +
+                                                      Polynomial.eval (enc x.1).length T) +
+                                                  Polynomial.eval (enc x.1).length m +
+                                                (5 * Polynomial.eval (enc x.1).length N +
+                                                  Polynomial.eval (enc x.1).length T))
+                                            (encPair enc encBits) encUnary
+                                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                                                           (fun x4x5 => x4x5.1 + x4x5.2) ∘ (fun x =>
+                                          (Polynomial.eval (enc x.1).length m * (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                              Polynomial.eval (enc x.1).length m,
+                                            5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 + x4x5.2) (encPair encUnary encUnary) encUnary
+                                        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+                                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+                                          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.binary_add'
+                                              ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+                                              with
+                                              ComputableTidilyInPolyTime (fun x4x5 => x4x5.1 + x4x5.2) ?encMid encUnary
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                            (fun x =>
+                                              (Polynomial.eval (enc x.1).length m *
+                                                    (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                                  Polynomial.eval (enc x.1).length m,
+                                                5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T))
+                                            (encPair enc encBits) (encPair encUnary encUnary)
+                                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                                                (fun x =>
+                                                  Polynomial.eval (enc x.1).length m * (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                                    Polynomial.eval (enc x.1).length m)
+                                                (encPair enc encBits) encUnary
+                                            [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                                  (fun x =>
+                                                    Polynomial.eval (enc x.1).length m *
+                                                        (5 * Polynomial.eval (enc x.1).length N +
+                                                          Polynomial.eval (enc x.1).length T) +
+                                                      Polynomial.eval (enc x.1).length m)
+                                                  (encPair enc encBits) encUnary
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                                (encPair enc encBits) encUnary
+                                            [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                                  (fun x =>
+                                                    5 * Polynomial.eval (enc x.1).length N +
+                                                      Polynomial.eval (enc x.1).length T)
+                                                  (encPair enc encBits) encUnary
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+              (fun a =>
+                !(List.take (ℓ a.1)
+                        (List.drop (5 * Polynomial.eval (enc a.1).length N)
+                          (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                            (List.drop
+                              (Polynomial.eval (enc a.1).length m *
+                                  (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                Polynomial.eval (enc a.1).length m)
+                              a.2)))).any
+                    fun b => b)
+              (encPair enc encBits) encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not as:
+                                 (fun a0 => !a0) ∘ (fun a =>
+                (List.take (ℓ a.1)
+                      (List.drop (5 * Polynomial.eval (enc a.1).length N)
+                        (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                          (List.drop
+                            (Polynomial.eval (enc a.1).length m *
+                                (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                              Polynomial.eval (enc a.1).length m)
+                            a.2)))).any
+                  fun b => b)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => !a0) encBool encBool
+              [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                  (fun a =>
+                    (List.take (ℓ a.1)
+                          (List.drop (5 * Polynomial.eval (enc a.1).length N)
+                            (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                              (List.drop
+                                (Polynomial.eval (enc a.1).length m *
+                                    (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                  Polynomial.eval (enc a.1).length m)
+                                a.2)))).any
+                      fun b => b)
+                  (encPair enc encBits) encBool
+              [Meta.Tactic.fun_prop] candidate theorems for List.any #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAnyWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.anyWithInput]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAnyWithInput
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                      (fun a =>
+                        List.take (ℓ a.1)
+                          (List.drop (5 * Polynomial.eval (enc a.1).length N)
+                            (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                              (List.drop
+                                (Polynomial.eval (enc a.1).length m *
+                                    (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                  Polynomial.eval (enc a.1).length m)
+                                a.2))))
+                      (encPair enc encBits) encBits
+                  [Meta.Tactic.fun_prop] candidate theorems for List.take #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.takeUnary, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTake]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                          (fun x =>
+                            List.drop (5 * Polynomial.eval (enc x.1).length N)
+                              (List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                (List.drop
+                                  (Polynomial.eval (enc x.1).length m *
+                                      (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                    Polynomial.eval (enc x.1).length m)
+                                  x.2)))
+                          (encPair enc encBits) encBits
+                      [Meta.Tactic.fun_prop] candidate theorems for List.drop #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsDropWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listDropWithInput]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsDropWithInput
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                              (fun x =>
+                                List.take (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                  (List.drop
+                                    (Polynomial.eval (enc x.1).length m *
+                                        (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                      Polynomial.eval (enc x.1).length m)
+                                    x.2))
+                              (encPair enc encBits) encBits
+                          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                (fun x =>
+                                  List.take
+                                    (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T)
+                                    (List.drop
+                                      (Polynomial.eval (enc x.1).length m *
+                                          (5 * Polynomial.eval (enc x.1).length N +
+                                            Polynomial.eval (enc x.1).length T) +
+                                        Polynomial.eval (enc x.1).length m)
+                                      x.2))
+                                (encPair enc encBits) encBits
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 5 * Polynomial.eval (enc x.1).length N) (encPair enc encBits) encUnary
+                          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                (fun x => 5 * Polynomial.eval (enc x.1).length N) (encPair enc encBits) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => ℓ x.1) (encPair enc encBits) encUnary
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => ℓ x0) enc encUnary
+                          [Meta.Tactic.fun_prop] candidate local theorems for ℓ #[hℓ : ComputableTidilyInPolyTime ℓ enc encUnary]
+                          [Meta.Tactic.fun_prop] ✅️ applying: hℓ : ComputableTidilyInPolyTime ℓ enc encUnary
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1) (encPair enc encBits) enc
+                          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                (fun x => x.1) (encPair enc encBits) enc
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.2) (encPair (encPair enc encBits) encBool) encBool
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair enc encBits) encBool) (encPair (encPair enc encBits) encBool)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBool encBool
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+          (fun a =>
+            !(List.zipWith xor
+                    (BitString.LinearHash.wordHash (Polynomial.eval (enc a.1).length m)
+                      (List.take
+                        (Polynomial.eval (enc a.1).length m *
+                            (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                          Polynomial.eval (enc a.1).length m)
+                        a.2)
+                      (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                        (List.drop
+                          (Polynomial.eval (enc a.1).length m *
+                              (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                            Polynomial.eval (enc a.1).length m)
+                          a.2)))
+                    (BitString.listRow (Polynomial.eval (enc a.1).length m)
+                      (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                      (List.take
+                        (Polynomial.eval (enc a.1).length m *
+                            (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                          Polynomial.eval (enc a.1).length m)
+                        a.2))).any
+                fun b => b)
+          (encPair enc encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not as:
+                             (fun a0 => !a0) ∘ (fun a =>
+            (List.zipWith xor
+                  (BitString.LinearHash.wordHash (Polynomial.eval (enc a.1).length m)
+                    (List.take
+                      (Polynomial.eval (enc a.1).length m *
+                          (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                        Polynomial.eval (enc a.1).length m)
+                      a.2)
+                    (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                      (List.drop
+                        (Polynomial.eval (enc a.1).length m *
+                            (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                          Polynomial.eval (enc a.1).length m)
+                        a.2)))
+                  (BitString.listRow (Polynomial.eval (enc a.1).length m)
+                    (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                    (List.take
+                      (Polynomial.eval (enc a.1).length m *
+                          (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                        Polynomial.eval (enc a.1).length m)
+                      a.2))).any
+              fun b => b)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => !a0) encBool encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+              (fun a =>
+                (List.zipWith xor
+                      (BitString.LinearHash.wordHash (Polynomial.eval (enc a.1).length m)
+                        (List.take
+                          (Polynomial.eval (enc a.1).length m *
+                              (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                            Polynomial.eval (enc a.1).length m)
+                          a.2)
+                        (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                          (List.drop
+                            (Polynomial.eval (enc a.1).length m *
+                                (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                              Polynomial.eval (enc a.1).length m)
+                            a.2)))
+                      (BitString.listRow (Polynomial.eval (enc a.1).length m)
+                        (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                        (List.take
+                          (Polynomial.eval (enc a.1).length m *
+                              (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                            Polynomial.eval (enc a.1).length m)
+                          a.2))).any
+                  fun b => b)
+              (encPair enc encBits) encBool
+          [Meta.Tactic.fun_prop] candidate theorems for List.any #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAnyWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.anyWithInput]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsAnyWithInput
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                  (fun a =>
+                    List.zipWith xor
+                      (BitString.LinearHash.wordHash (Polynomial.eval (enc a.1).length m)
+                        (List.take
+                          (Polynomial.eval (enc a.1).length m *
+                              (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                            Polynomial.eval (enc a.1).length m)
+                          a.2)
+                        (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                          (List.drop
+                            (Polynomial.eval (enc a.1).length m *
+                                (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                              Polynomial.eval (enc a.1).length m)
+                            a.2)))
+                      (BitString.listRow (Polynomial.eval (enc a.1).length m)
+                        (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                        (List.take
+                          (Polynomial.eval (enc a.1).length m *
+                              (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                            Polynomial.eval (enc a.1).length m)
+                          a.2)))
+                  (encPair enc encBits) encBits
+              [Meta.Tactic.fun_prop] candidate theorems for List.zipWith #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsZipWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsZipWith]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsZipWithInput
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                      (fun a =>
+                        BitString.LinearHash.wordHash (Polynomial.eval (enc a.1).length m)
+                          (List.take
+                            (Polynomial.eval (enc a.1).length m *
+                                (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                              Polynomial.eval (enc a.1).length m)
+                            a.2)
+                          (List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                            (List.drop
+                              (Polynomial.eval (enc a.1).length m *
+                                  (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                Polynomial.eval (enc a.1).length m)
+                              a.2)))
+                      (encPair enc encBits) encBits
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.LinearHash.wordHash #[Cslib.BitString.LinearHash.computableTidilyInPolyTime_wordHash]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.BitString.LinearHash.computableTidilyInPolyTime_wordHash
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => Polynomial.eval (enc a.1).length m) (encPair enc encBits) encUnary
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                            (fun a => Polynomial.eval (enc a.1).length m) (encPair enc encBits) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                          (fun a =>
+                            List.take
+                              (Polynomial.eval (enc a.1).length m *
+                                  (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                Polynomial.eval (enc a.1).length m)
+                              a.2)
+                          (encPair enc encBits) encBits
+                      [Meta.Tactic.fun_prop] candidate theorems for List.take #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.takeUnary, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTake]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair enc encBits) encBits
+                          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime Prod.snd
+                                (encPair enc encBits) encBits
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                              (fun x =>
+                                Polynomial.eval (enc x.1).length m * (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                  Polynomial.eval (enc x.1).length m)
+                              (encPair enc encBits) encUnary
+                          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                                (fun x =>
+                                  Polynomial.eval (enc x.1).length m *
+                                      (5 * Polynomial.eval (enc x.1).length N + Polynomial.eval (enc x.1).length T) +
+                                    Polynomial.eval (enc x.1).length m)
+                                (encPair enc encBits) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                          (fun a =>
+                            List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                              (List.drop
+                                (Polynomial.eval (enc a.1).length m *
+                                    (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                  Polynomial.eval (enc a.1).length m)
+                                a.2))
+                          (encPair enc encBits) encBits
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                            (fun a =>
+                              List.take (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                                (List.drop
+                                  (Polynomial.eval (enc a.1).length m *
+                                      (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                    Polynomial.eval (enc a.1).length m)
+                                  a.2))
+                            (encPair enc encBits) encBits
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                      (fun a =>
+                        BitString.listRow (Polynomial.eval (enc a.1).length m)
+                          (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                          (List.take
+                            (Polynomial.eval (enc a.1).length m *
+                                (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                              Polynomial.eval (enc a.1).length m)
+                            a.2))
+                      (encPair enc encBits) encBits
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.listRow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsRowWithInput]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsRowWithInput
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => Polynomial.eval (enc a.1).length m) (encPair enc encBits) encUnary
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                            (fun a => Polynomial.eval (enc a.1).length m) (encPair enc encBits) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => 5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                          (encPair enc encBits) encUnary
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                            (fun a => 5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T)
+                            (encPair enc encBits) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+                          (fun a =>
+                            List.take
+                              (Polynomial.eval (enc a.1).length m *
+                                  (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                Polynomial.eval (enc a.1).length m)
+                              a.2)
+                          (encPair enc encBits) encBits
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime
+                            (fun a =>
+                              List.take
+                                (Polynomial.eval (enc a.1).length m *
+                                    (5 * Polynomial.eval (enc a.1).length N + Polynomial.eval (enc a.1).length T) +
+                                  Polynomial.eval (enc a.1).length m)
+                                a.2)
+                            (encPair enc encBits) encBits
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.2) (encPair (encPair enc encBits) encBool) encBool
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun p => p.2)
+                    (encPair (encPair enc encBits) encBool) encBool

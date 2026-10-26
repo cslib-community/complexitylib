@@ -1,0 +1,250 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun w => w.headD false) encBits encBool
+  [Meta.Tactic.fun_prop] candidate theorems for List.headD #[Turing.MultiTapeTM.ComputableInPolyTime.headD]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.headD
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Clique.verifier (encPair (encPair encGraph encNat) encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Clique.verifier #[Cslib.Complexity.Clique.computableInPolyTime_verifier]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.Clique.computableInPolyTime_verifier
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat)
+      (encPair encGraph encNat)
+  [aesop] Initial goal:
+        ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat) (encPair encGraph encNat)
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat) (encPair encGraph encNat)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat)
+      (encPair encGraph encNat)
+  [aesop] ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat) (encPair encGraph encNat)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.344.3):
+      [aesop] ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat) (encPair encGraph encNat)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat)
+      (encPair encGraph encNat)
+  [aesop] Initial goal:
+        ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat) (encPair encGraph encNat)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat) (encPair encGraph encNat)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableInPolyTime (fun x => (x.1.compl, x.2)) (encPair encGraph encNat) (encPair encGraph encNat)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-25/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2, 3]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => a.1.compl) (encPair encGraph encNat) encGraph
+  [aesop] case hf
+      ⊢ ComputableInPolyTime (fun a => a.1.compl) (encPair encGraph encNat) encGraph
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.344.2017):
+      [aesop] case hf
+          ⊢ ComputableInPolyTime (fun a => a.1.compl) (encPair encGraph encNat) encGraph
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G3 [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+  [aesop] case hg
+      ⊢ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] ✅️ Pre-normalisation goal (_uniq.344.2018):
+      [aesop] case hg
+          ⊢ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G3) [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+  [aesop] Initial goal:
+        case hg
+        ⊢ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg
+        ⊢ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg
+          ⊢ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary'
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun a => List.length (?list a)) ?input encNat
+          with the goal
+            ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+          
+          Note: The full type of the term is
+            ∀ {α β : Type} {input : α ↪ List Bool} {enc : β ↪ List Bool} {list : α → List β},
+              ComputableInPolyTime list input (encList enc) →
+                ComputableInPolyTime (fun a => (list a).length) input encNat
+          
+          case hg
+          ⊢ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair encGraph encNat) encNat
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encGraph encNat) (encPair encGraph encNat)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encNat encNat
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 3
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => a.1.compl) (encPair encGraph encNat) encGraph
+  [aesop] Initial goal:
+        case hf
+        ⊢ ComputableInPolyTime (fun a => a.1.compl) (encPair encGraph encNat) encGraph
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hf
+        ⊢ ComputableInPolyTime (fun a => a.1.compl) (encPair encGraph encNat) encGraph
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hf
+          ⊢ ComputableInPolyTime (fun a => a.1.compl) (encPair encGraph encNat) encGraph
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.compl) (encPair encGraph encNat) encGraph
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.compl #[Cslib.Complexity.Graph.computableInPolyTime_compl]
+        [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.Graph.computableInPolyTime_compl as:
+                               (fun a0 => a0.compl) ∘ (fun a => a.1)
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair encGraph encNat) encGraph
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encGraph encNat) (encPair encGraph encNat)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encGraph encGraph
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => a0.compl) encGraph encGraph
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.compl #[Cslib.Complexity.Graph.computableInPolyTime_compl]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.Graph.computableInPolyTime_compl
+[aesop] ✅️ 🆕 🏁 R3 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime complementInstance (encPair encGraph encNat) (encPair encGraph encNat)
+  [Meta.Tactic.fun_prop] candidate theorems for ComplexityTests.NPCompleteness.complementInstance #[ComplexityTests.NPCompleteness.complementInstance_polyTime]
+  [Meta.Tactic.fun_prop] ✅️ applying: ComplexityTests.NPCompleteness.complementInstance_polyTime
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun c => Clique.verifier (f c)) enc encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Clique.verifier #[Cslib.Complexity.Clique.computableInPolyTime_verifier]
+  [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.Clique.computableInPolyTime_verifier as:
+                         (fun c0 => Clique.verifier c0) ∘ (fun c => f c)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun c => f c) enc (encPair (encPair encGraph encNat) encBits)
+      [Meta.Tactic.fun_prop] candidate local theorems for f #[hf : ComputableInPolyTime f enc (encPair (encPair encGraph encNat) encBits)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hf : ComputableInPolyTime f enc (encPair (encPair encGraph encNat) encBits)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun c0 => Clique.verifier c0) (encPair (encPair encGraph encNat) encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Clique.verifier #[Cslib.Complexity.Clique.computableInPolyTime_verifier]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.Clique.computableInPolyTime_verifier

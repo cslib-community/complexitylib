@@ -1,0 +1,177 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits))
+      fun a => extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        count seedBits outputBits : α → ℕ
+        samples : α → List ((List Bool × Bool) × List Bool)
+        hcount : ComputableInPolyTime count input encUnary
+        hseed : ComputableInPolyTime seedBits input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hsamples : ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))
+        ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        count seedBits outputBits : α → ℕ
+        samples : α → List ((List Bool × Bool) × List Bool)
+        hcount : ComputableInPolyTime count input encUnary
+        hseed : ComputableInPolyTime seedBits input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hsamples : ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))
+        ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits))
+      fun a => extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+  [aesop] α : Type
+      input : α ↪ List Bool
+      count seedBits outputBits : α → ℕ
+      samples : α → List ((List Bool × Bool) × List Bool)
+      hcount : ComputableInPolyTime count input encUnary
+      hseed : ComputableInPolyTime seedBits input encUnary
+      houtput : ComputableInPolyTime outputBits input encUnary
+      hsamples : ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))
+      ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits)) fun a =>
+          extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.2164.23):
+      [aesop] α : Type
+          input : α ↪ List Bool
+          count seedBits outputBits : α → ℕ
+          samples : α → List ((List Bool × Bool) × List Bool)
+          hcount : ComputableInPolyTime count input encUnary
+          hseed : ComputableInPolyTime seedBits input encUnary
+          houtput : ComputableInPolyTime outputBits input encUnary
+          hsamples : ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))
+          ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits)) fun a =>
+              extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits))
+      fun a => extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        count seedBits outputBits : α → ℕ
+        samples : α → List ((List Bool × Bool) × List Bool)
+        hcount : ComputableInPolyTime count input encUnary
+        hseed : ComputableInPolyTime seedBits input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hsamples : ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))
+        ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        count seedBits outputBits : α → ℕ
+        samples : α → List ((List Bool × Bool) × List Bool)
+        hcount : ComputableInPolyTime count input encUnary
+        hseed : ComputableInPolyTime seedBits input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hsamples : ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))
+        ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          input : α ↪ List Bool
+          count seedBits outputBits : α → ℕ
+          samples : α → List ((List Bool × Bool) × List Bool)
+          hcount : ComputableInPolyTime count input encUnary
+          hseed : ComputableInPolyTime seedBits input encUnary
+          houtput : ComputableInPolyTime outputBits input encUnary
+          hsamples : ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))
+          ⊢ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits)) fun a =>
+              extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits)) fun a =>
+            extractMatrixLabels (count a * seedBits a) (outputBits a) List.flatten (samples a)
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.extractMatrixLabels #[Cslib.Crypto.Pseudoentropy.isPPTOn_extractMatrixLabels]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.isPPTOn_extractMatrixLabels
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a) input encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                   (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (count a, seedBits a))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (count a, seedBits a)) input (encPair encUnary encUnary)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seedBits input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for seedBits #[hseed : ComputableInPolyTime seedBits input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hseed : ComputableInPolyTime seedBits input encUnary
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime outputBits input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for outputBits #[houtput : ComputableInPolyTime outputBits input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: houtput : ComputableInPolyTime outputBits input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun pair => pair.2.flatten) (encPair input (encList encBits)) encBits
+            [Meta.Tactic.fun_prop] candidate theorems for List.flatten #[Turing.MultiTapeTM.ComputableInPolyTime.bitsFlatten]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsFlatten
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input (encList encBits)) (encList encBits)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input (encList ?label)) (encPair input (encList ?label))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList encBits) (encList encBits)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))
+            [Meta.Tactic.fun_prop] candidate local theorems for samples #[hsamples : ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))]
+            [Meta.Tactic.fun_prop] ✅️ applying: hsamples : ComputableInPolyTime samples input (encList (encPair (encPair encBits encBool) encBits))
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

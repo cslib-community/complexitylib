@@ -1,0 +1,79 @@
+[5, -2, 24, 0, 1, -6, 1]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/133aed862d5b786c/traced/ComplexityTests/RationalHitting/Determinant.lean:41:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: [5, -2, 24, 0, 1, -6, 1]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+([[24, 0, 0], [0, 0, 0], [0, 0, 0]], [[6, 1, 1], [1, 1, 1], [1, 1, 1]])
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/133aed862d5b786c/traced/ComplexityTests/RationalHitting/Determinant.lean:77:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: ([[24, 0, 0], [0, 0, 0], [0, 0, 0]], [[6, 1, 1], [1, 1, 1], [1, 1, 1]])
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => detRows p.1 * detRows p.2)
+      (encPair (encList (encList encIntBin)) (encList (encList encIntBin))) encIntBin
+  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul', Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_mul]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_mul'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => detRows a.1) (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
+          encIntBin
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Rational.detRows #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Circuits.Rational.detRows`
+                   trying again after decomposing function as: `(fun a0 => detRows a0) ∘ (fun a => a.1)`
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => detRows a0) (encList (encList encIntBin)) encIntBin
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Rational.detRows #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Circuits.Rational.detRows`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => detRows a0) (encList (encList encIntBin)) encIntBin
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Rational.detRows #[Cslib.Circuits.Rational.detRows_polytime]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Circuits.Rational.detRows_polytime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1) (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
+              (encList (encList encIntBin))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
+                  (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList (encList encIntBin)) (encList (encList encIntBin))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => detRows a.2) (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
+          encIntBin
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Rational.detRows #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Circuits.Rational.detRows`
+                   trying again after decomposing function as: `(fun a0 => detRows a0) ∘ (fun a => a.2)`
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => detRows a0) (encList (encList encIntBin)) encIntBin
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Rational.detRows #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Circuits.Rational.detRows`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => detRows a0) (encList (encList encIntBin)) encIntBin
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Rational.detRows #[Cslib.Circuits.Rational.detRows_polytime]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Circuits.Rational.detRows_polytime
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.2) (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
+              (encList (encList encIntBin))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
+                  (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList (encList encIntBin)) (encList (encList encIntBin))
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                    (encList (encList encIntBin)) (encList (encList encIntBin))
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (List.map detRows) (encList (encList (encList encIntBin))) (encList encIntBin)
+  [Meta.Tactic.fun_prop] candidate theorems for List.map #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.map, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapFilterConst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapWithInput]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.map
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime detRows (encList (encList encIntBin)) encIntBin
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Rational.detRows #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Circuits.Rational.detRows`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun A => detRows A) (encList (encList encIntBin)) encIntBin
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Circuits.Rational.detRows #[Cslib.Circuits.Rational.detRows_polytime]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Circuits.Rational.detRows_polytime

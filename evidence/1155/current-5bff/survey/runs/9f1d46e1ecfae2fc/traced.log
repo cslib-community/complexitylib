@@ -1,0 +1,17 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun w => w.headD false) encBits encBool
+  [Meta.Tactic.fun_prop] candidate theorems for List.headD #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.listHeadDWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.headD]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.listHeadDWithInput
+    [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => a) encBits (encList encBool)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.id'
+            ComputableTidilyInPolyTime (fun a => a) ?encIn ?encIn
+            with
+            ComputableTidilyInPolyTime (fun a => a) encBits (encList encBool)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_apply
+        [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.pi_apply
+            ComputableTidilyInPolyTime (fun values => values ?i) (encPi ?enc) ?enc
+            with
+            ComputableTidilyInPolyTime (fun a => a) encBits (encList encBool)
+    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.listHeadDWithInput, failed to discharge hypotheses
+          ComputableTidilyInPolyTime (fun a => a) encBits (encList encBool)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.headD

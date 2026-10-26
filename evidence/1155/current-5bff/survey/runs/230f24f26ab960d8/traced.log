@@ -1,0 +1,39 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime SAT.verifier (encPair encCNF encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.verifier #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.SAT.verifier`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => SAT.verifier x) (encPair encCNF encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.verifier #[Cslib.Complexity.SAT.computableInPolyTime_verifier]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.computableInPolyTime_verifier
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => (SAT.verifier p, !SAT.verifier p)) (encPair encCNF encBits)
+      (encPair encBool encBool)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime SAT.verifier (encPair encCNF encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.verifier #[]
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.SAT.verifier`
+                   now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => SAT.verifier x) (encPair encCNF encBits) encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.verifier #[Cslib.Complexity.SAT.computableInPolyTime_verifier]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.computableInPolyTime_verifier
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => !SAT.verifier x) (encPair encCNF encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not as:
+                             (fun x0 => !x0) ∘ (fun x => SAT.verifier x)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x0 => !x0) encBool encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_not
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => SAT.verifier x) (encPair encCNF encBits) encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.verifier #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.SAT.verifier`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => SAT.verifier x) (encPair encCNF encBits) encBool
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun x => SAT.verifier x)
+                    (encPair encCNF encBits) encBool

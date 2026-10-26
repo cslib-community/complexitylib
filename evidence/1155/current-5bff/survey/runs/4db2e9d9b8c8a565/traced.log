@@ -1,0 +1,51 @@
+[Meta.Tactic.fun_prop] ✅️ Continuous fun x => (√(2 * π * ↑v))⁻¹ * rexp (-(x - 0) ^ 2 / (2 * ↑v))
+  [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[continuous_const_mul, Continuous.const_mul, ENNReal.continuous_const_mul, Continuous.matrix_mul, continuous_mul, IsTopologicalGroup.continuous_conj', Continuous.fun_mul, IsModuleTopology.continuous_mul_of_finite]
+  [Meta.Tactic.fun_prop] decomposing to later use continuous_const_mul as:
+                         (fun x5 => (√(2 * π * ↑v))⁻¹ * x5) ∘ (fun x => rexp (-(x - 0) ^ 2 / (2 * ↑v)))
+  [Meta.Tactic.fun_prop] ✅️ applying: Continuous.comp'
+    [Meta.Tactic.fun_prop] ✅️ Continuous fun x5 => (√(2 * π * ↑v))⁻¹ * x5
+      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[continuous_const_mul, Continuous.const_mul, ENNReal.continuous_const_mul, Continuous.matrix_mul, continuous_mul, IsTopologicalGroup.continuous_conj', Continuous.fun_mul, IsModuleTopology.continuous_mul_of_finite]
+      [Meta.Tactic.fun_prop] ✅️ applying: continuous_const_mul
+    [Meta.Tactic.fun_prop] ✅️ Continuous fun x => rexp (-(x - 0) ^ 2 / (2 * ↑v))
+      [Meta.Tactic.fun_prop] candidate theorems for Real.exp #[Continuous.rexp, Real.continuous_exp]
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.rexp
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun y => -(y - 0) ^ 2 / (2 * ↑v)
+          [Meta.Tactic.fun_prop] candidate theorems for HDiv.hDiv #[ENNReal.continuous_div_const, Continuous.div_const, Continuous.fun_div', Continuous.div₀]
+          [Meta.Tactic.fun_prop] decomposing to later use ENNReal.continuous_div_const as:
+                                 (fun y4 => y4 / (2 * ↑v)) ∘ (fun y => -(y - 0) ^ 2)
+          [Meta.Tactic.fun_prop] ✅️ applying: Continuous.comp'
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun y4 => y4 / (2 * ↑v)
+              [Meta.Tactic.fun_prop] candidate theorems for HDiv.hDiv #[ENNReal.continuous_div_const, Continuous.div_const, Continuous.fun_div', Continuous.div₀]
+              [Meta.Tactic.fun_prop] ❌️ applying: ENNReal.continuous_div_const
+                [Meta.Tactic.fun_prop] failed to unify ENNReal.continuous_div_const
+                    Continuous fun x => x / ?c
+                    with
+                    Continuous fun y4 => y4 / (2 * ↑v)
+              [Meta.Tactic.fun_prop] ✅️ applying: Continuous.div_const
+                [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+                  [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+            [Meta.Tactic.fun_prop] ✅️ Continuous fun y => -(y - 0) ^ 2
+              [Meta.Tactic.fun_prop] candidate theorems for Neg.neg #[Continuous.fun_neg, ContinuousNeg.continuous_neg]
+              [Meta.Tactic.fun_prop] ✅️ applying: Continuous.fun_neg
+                [Meta.Tactic.fun_prop] ✅️ Continuous fun i => (i - 0) ^ 2
+                  [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[ENNReal.continuous_rpow_const, Continuous.fun_pow, continuous_zpow, Continuous.fun_zpow, Continuous.zpow₀, ENNReal.continuous_pow, ENNReal.continuous_zpow, Real.continuous_rpow_const, NNReal.continuous_rpow_const]
+                  [Meta.Tactic.fun_prop] decomposing to later use ENNReal.continuous_rpow_const as:
+                                         (fun i4 => i4 ^ 2) ∘ (fun i => i - 0)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Continuous.comp'
+                    [Meta.Tactic.fun_prop] ✅️ Continuous fun i4 => i4 ^ 2
+                      [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[ENNReal.continuous_rpow_const, Continuous.fun_pow, continuous_zpow, Continuous.fun_zpow, Continuous.zpow₀, ENNReal.continuous_pow, ENNReal.continuous_zpow, Real.continuous_rpow_const, NNReal.continuous_rpow_const]
+                      [Meta.Tactic.fun_prop] ❌️ applying: ENNReal.continuous_rpow_const
+                        [Meta.Tactic.fun_prop] failed to unify @ENNReal.continuous_rpow_const
+                            Continuous fun a => a ^ ?y
+                            with
+                            Continuous fun i4 => i4 ^ 2
+                      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.fun_pow
+                        [Meta.Tactic.fun_prop] ✅️ Continuous fun i => i
+                          [Meta.Tactic.fun_prop] reusing previously found proof for Continuous fun i => i
+                    [Meta.Tactic.fun_prop] ✅️ Continuous fun i => i - 0
+                      [Meta.Tactic.fun_prop] candidate theorems for HSub.hSub #[Continuous.fun_sub]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.fun_sub
+                        [Meta.Tactic.fun_prop] ✅️ Continuous fun i => i
+                          [Meta.Tactic.fun_prop] reusing previously found proof for Continuous fun i => i
+                        [Meta.Tactic.fun_prop] ✅️ Continuous fun i => 0
+                          [Meta.Tactic.fun_prop] ✅️ applying: continuous_const

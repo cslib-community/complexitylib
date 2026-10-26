@@ -1,0 +1,18 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Graph.split encGraph encGraph
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.split #[Cslib.Complexity.Graph.computableInPolyTime_split]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.Graph.computableInPolyTime_split
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime DirHamPath.toHamPath (encPair encGraph (encPair encNat encNat))
+      (encPair encGraph (encPair encNat encNat))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.DirHamPath.toHamPath #[Cslib.Complexity.DirHamPath.computableInPolyTime_toHamPath]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.DirHamPath.computableInPolyTime_toHamPath
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun G => G.split.split) encGraph encGraph
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.split #[Cslib.Complexity.Graph.computableInPolyTime_split]
+  [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.Graph.computableInPolyTime_split as:
+                         (fun G0 => G0.split) ∘ (fun G => G.split)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun G => G.split) encGraph encGraph
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.split #[Cslib.Complexity.Graph.computableInPolyTime_split]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.Graph.computableInPolyTime_split
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun G0 => G0.split) encGraph encGraph
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.split #[Cslib.Complexity.Graph.computableInPolyTime_split]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.Graph.computableInPolyTime_split

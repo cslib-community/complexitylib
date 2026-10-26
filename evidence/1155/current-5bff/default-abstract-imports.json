@@ -1,0 +1,11 @@
+{
+  "pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "targets": [
+    "ComplexityAbstracts.CookLevinBridge",
+    "ComplexityAbstracts.CryptographyBridge",
+    "ComplexityAbstracts.GSWFHEAbstract",
+    "ComplexityAbstracts.Randomized",
+    "ComplexityAbstracts.SipserLautemannAbstract"
+  ],
+  "reason": "Configured srcDir=abstracts direct import preparation omitted from warning-strict diagnostic arm; required before authoritative original-options arm."
+}

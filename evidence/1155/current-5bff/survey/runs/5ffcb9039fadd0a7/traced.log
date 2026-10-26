@@ -1,0 +1,46 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime DirHamPath.verifier (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.DirHamPath.verifier #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.DirHamPath.verifier`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => DirHamPath.verifier a) (encPair (encPair encGraph (encPair encNat encNat)) encBits)
+          encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.DirHamPath.verifier #[Cslib.Complexity.DirHamPath.computableInPolyTime_verifier]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.DirHamPath.computableInPolyTime_verifier
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime DirHamCycle.verifier (encPair encGraph encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.DirHamCycle.verifier #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.DirHamCycle.verifier`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => DirHamCycle.verifier a) (encPair encGraph encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.DirHamCycle.verifier #[Cslib.Complexity.DirHamCycle.computableInPolyTime_verifier]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.DirHamCycle.computableInPolyTime_verifier
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime HamPath.verifier (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.HamPath.verifier #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.HamPath.verifier`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => HamPath.verifier a) (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.HamPath.verifier #[Cslib.Complexity.HamPath.computableInPolyTime_verifier]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.HamPath.computableInPolyTime_verifier
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime HamCycle.verifier (encPair encGraph encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.HamCycle.verifier #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.HamCycle.verifier`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => HamCycle.verifier a) (encPair encGraph encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.HamCycle.verifier #[Cslib.Complexity.HamCycle.computableInPolyTime_verifier]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.HamCycle.computableInPolyTime_verifier
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => Graph.decodeVertexList x.1 x.2) (encPair (encList encNat) encBits) (encList encNat)
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.decodeVertexList #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Complexity.Graph.decodeVertexList`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => Graph.decodeVertexList x.1 x.2) (encPair (encList encNat) encBits) (encList encNat)
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.Graph.decodeVertexList #[Cslib.Complexity.Graph.computableInPolyTime_decodeVertexList]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.Graph.computableInPolyTime_decodeVertexList

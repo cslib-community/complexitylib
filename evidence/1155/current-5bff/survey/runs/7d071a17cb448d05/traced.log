@@ -1,0 +1,82 @@
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+      (c + 1) *
+          (2 * ((v.count + 1) * (2 * n ^ v.maxArity + 1)) + 1 + cp * ((v.count + 1) * (2 * n ^ v.maxArity + 1) + 1) ^ dp +
+              1) ^
+            (d + 1) +
+        1
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+          (c + 1) *
+            (2 * ((v.count + 1) * (2 * n ^ v.maxArity + 1)) + 1 + cp * ((v.count + 1) * (2 * n ^ v.maxArity + 1) + 1) ^ dp +
+                1) ^
+              (d + 1)
+      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => c + 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+              (2 * ((v.count + 1) * (2 * n ^ v.maxArity + 1)) + 1 + cp * ((v.count + 1) * (2 * n ^ v.maxArity + 1) + 1) ^ dp + 1) ^
+                (d + 1)
+          [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+                  2 * ((v.count + 1) * (2 * n ^ v.maxArity + 1)) + 1 + cp * ((v.count + 1) * (2 * n ^ v.maxArity + 1) + 1) ^ dp + 1
+              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n =>
+                      2 * ((v.count + 1) * (2 * n ^ v.maxArity + 1)) + 1 + cp * ((v.count + 1) * (2 * n ^ v.maxArity + 1) + 1) ^ dp
+                  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2 * ((v.count + 1) * (2 * n ^ v.maxArity + 1)) + 1
+                      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2 * ((v.count + 1) * (2 * n ^ v.maxArity + 1))
+                          [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (v.count + 1) * (2 * n ^ v.maxArity + 1)
+                              [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => v.count + 1
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2 * n ^ v.maxArity + 1
+                                  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2 * n ^ v.maxArity
+                                      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 2
+                                          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded
+                                                fun n => 2
+                                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n ^ v.maxArity
+                                          [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+                                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+                                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+                                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.id
+                                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                          [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 1
+                    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cp * ((v.count + 1) * (2 * n ^ v.maxArity + 1) + 1) ^ dp
+                      [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => cp
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+                        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => ((v.count + 1) * (2 * n ^ v.maxArity + 1) + 1) ^ dp
+                          [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Cslib.PolynomiallyBounded.pow]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.pow
+                            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (v.count + 1) * (2 * n ^ v.maxArity + 1) + 1
+                              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+                              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => (v.count + 1) * (2 * n ^ v.maxArity + 1)
+                                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                                        (v.count + 1) * (2 * n ^ v.maxArity + 1)
+                                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n =>
+                                        1
+                [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+                  [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 1
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 1
+      [Meta.Tactic.fun_prop] reusing previously found proof for PolynomiallyBounded fun n => 1

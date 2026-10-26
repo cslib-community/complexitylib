@@ -1,0 +1,883 @@
+[16, 32, 32]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/1a17b1d9dfb36b35/traced/ComplexityTests/PCPEncodedThreeSAT.lean:57:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: [16, 32, 32]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+[24, 24, 48]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/1a17b1d9dfb36b35/traced/ComplexityTests/PCPEncodedThreeSAT.lean:61:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: [24, 24, 48]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF
+      (encList (encList (encPair encNat encBool))) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encNat encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encNat encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF
+      (encList (encList (encPair encNat encBool))) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encNat encBool)))
+          (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.20781):
+      [aesop] ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encNat encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF
+      (encList (encList (encPair encNat encBool))) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encNat encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encNat encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encNat encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encNat encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                     now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+        [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => Graph.ofCompactCNF φ) (encList (encList (encPair encNat encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (encList (encList (encPair encNat encBool)))
+                    (encList (encList (encPair encNat encBool)))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF
+      (encList (encList (encPair encBits encBool))) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encBits encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encBits encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF
+      (encList (encList (encPair encBits encBool))) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encBits encBool)))
+          (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.23136):
+      [aesop] ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encBits encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF
+      (encList (encList (encPair encBits encBool))) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encBits encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encBits encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encBits encBool)))
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair encBits encBool)))
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                     now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+        [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => Graph.ofCompactCNF φ) (encList (encList (encPair encBits encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (encList (encList (encPair encBits encBool)))
+                    (encList (encList (encPair encBits encBool)))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Graph.ofCompactCNF (encList (encList (encPair (encList encBool) encBool)))
+      (Graph.encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[]
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+  [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => Graph.ofCompactCNF φ) (encList (encList (encPair (encList encBool) encBool)))
+          (Graph.encoding (encPi (encPi encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (encList (encList (encPair (encList encBool) encBool)))
+              (encList (encList (encPair (encList encBool) encBool)))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun names =>
+        let formula := List.map (fun n => [(n, true)]) names;
+        Graph.ofCompactCNF formula)
+      (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        ⊢ ComputableInPolyTime
+            (fun names =>
+              let formula := List.map (fun n => [(n, true)]) names;
+              Graph.ofCompactCNF formula)
+            (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        ⊢ ComputableInPolyTime
+            (fun names =>
+              let formula := List.map (fun n => [(n, true)]) names;
+              Graph.ofCompactCNF formula)
+            (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun names =>
+        let formula := List.map (fun n => [(n, true)]) names;
+        Graph.ofCompactCNF formula)
+      (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ⊢ ComputableInPolyTime
+          (fun names =>
+            let formula := List.map (fun n => [(n, true)]) names;
+            Graph.ofCompactCNF formula)
+          (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.26177):
+      [aesop] ⊢ ComputableInPolyTime
+              (fun names =>
+                let formula := List.map (fun n => [(n, true)]) names;
+                Graph.ofCompactCNF formula)
+              (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun names =>
+        let formula := List.map (fun n => [(n, true)]) names;
+        Graph.ofCompactCNF formula)
+      (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        ⊢ ComputableInPolyTime
+            (fun names =>
+              let formula := List.map (fun n => [(n, true)]) names;
+              Graph.ofCompactCNF formula)
+            (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] ⊢ ComputableInPolyTime (fun names => Graph.ofCompactCNF (List.map (fun n => [(n, true)]) names))
+              (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        ⊢ ComputableInPolyTime (fun names => Graph.ofCompactCNF (List.map (fun n => [(n, true)]) names))
+            (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          ⊢ ComputableInPolyTime (fun names => Graph.ofCompactCNF (List.map (fun n => [(n, true)]) names))
+              (encList encNat) (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun names => Graph.ofCompactCNF (List.map (fun n => [(n, true)]) names)) (encList encNat)
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (List.map fun n => [(n, true)]) (encList encNat) (encList (encList (encPair encNat encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for List.map #[Turing.MultiTapeTM.ComputableInPolyTime.map, Turing.MultiTapeTM.ComputableInPolyTime.bitsMapWithInput, Turing.MultiTapeTM.ComputableInPolyTime.mapWithInput, Turing.MultiTapeTM.ComputableInPolyTime.mapToBitsWithInput]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.map
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n => [(n, true)]) encNat (encList (encPair encNat encBool))
+                [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableInPolyTime.cons', Turing.MultiTapeTM.ComputableInPolyTime.bitsCons]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.cons'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (x, true)) encNat (encPair encNat encBool)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encNat encNat
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => true) encNat encBool
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => []) encNat (encList (encPair encNat encBool))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        algorithm : List Bool → CNF ℕ
+        ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        algorithm : List Bool → CNF ℕ
+        ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] algorithm : List Bool → CNF ℕ
+      ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+          (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.28784):
+      [aesop] algorithm : List Bool → CNF ℕ
+          ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ❌️ (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        algorithm : List Bool → CNF ℕ
+        ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        algorithm : List Bool → CNF ℕ
+        ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          algorithm : List Bool → CNF ℕ
+          ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                     trying again after decomposing function as: `(fun word2 => Graph.ofCompactCNF word2) ∘ (fun word => algorithm word)`
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun word2 => Graph.ofCompactCNF word2) (encList (encList (encPair ?enc encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun word2 => Graph.ofCompactCNF word2) (encList (encList (encPair ?enc encBool)))
+                    (Graph.encoding (encPi (encPi encBool)))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF]
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (encList (encList (encPair ?enc encBool))) (encList (encList (encPair ?enc encBool)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] @Graph.isPolyTime_ofCompactCNF, failed to infer `(?enc : ℕ ↪ List Bool)`
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                        if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                    ComputableInPolyTime (fun word2 => Graph.ofCompactCNF word2)
+                      (encList (encList (encPair ?enc encBool))) (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+                ComputableTidilyInPolyTime (fun word2 => Graph.ofCompactCNF word2)
+                  (encList (encList (encPair ?enc encBool))) (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun word => algorithm word) encBits ?encB
+            [Meta.Tactic.fun_prop] candidate local theorems for algorithm #[]
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun word => algorithm word) encBits ?encB
+                [Meta.Tactic.fun_prop] candidate local theorems for algorithm #[]
+                [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                        if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                    ComputableInPolyTime (fun word => algorithm word) encBits ?encB
+          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.trans, failed to discharge hypotheses
+                ComputableTidilyInPolyTime (fun word => algorithm word) encBits ?encB
+      [aesop] `fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))`
+          
+          Issues:
+            No theorems found for `algorithm` in order to prove `ComputableTidilyInPolyTime (fun word => algorithm word) encBits ?encB`
+            No theorems found for `Cslib.PCP.Encoded.Graph.ofCompactCNF` in order to prove `ComputableTidilyInPolyTime (fun word2 => Graph.ofCompactCNF word2) ?encMid (Graph.encoding (encPi (encPi encBool)))`
+            No theorems found for `Cslib.PCP.Encoded.Graph.ofCompactCNF` in order to prove `ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))`
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encBits
+          is not definitionally equal to the right-hand side
+            Graph.encoding (encPi (encPi encBool))
+          
+          algorithm : List Bool → CNF ℕ
+          ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ❌️ Unsafe rules
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+      [aesop] no applicable local routine certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+      [aesop] expected a plain scan goal
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+      [aesop] no certificate for `Cslib.PCP.Encoded.Graph.ofCompactCNF` applies
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+      [aesop] no competing local certificate
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+      [aesop] Rule returned no rule applications
+    [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+      [aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+        [aesop] Initial goal:
+              algorithm : List Bool → CNF ℕ
+              ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                  (Graph.encoding (encPi (encPi encBool)))
+        [aesop] ❌️ ✅️ Normalisation
+        [aesop] Goal after normalisation:
+              algorithm : List Bool → CNF ℕ
+              ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                  (Graph.encoding (encPi (encPi encBool)))
+        [aesop] ✅️ ✅️ Safe rules
+          [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+      [aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+        [aesop] ✅️ Metadata
+          [aesop] ID: 0
+          [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+          [aesop] Success probability: 100.0000%
+          [aesop] Parent goal: 0
+          [aesop] Child goals: [1]
+          [aesop] State: unknown
+          [aesop] Irrelevant: false
+          [aesop] Introduced metavariables: []
+          [aesop] Assigned   metavariables: []
+      [aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+        [aesop] algorithm : List Bool → CNF ℕ
+            ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                (Graph.encoding (encPi (encPi encBool)))
+        [aesop] ✅️ Metadata
+          [aesop] ID: 1
+          [aesop] ✅️ Pre-normalisation goal (_uniq.44635):
+            [aesop] algorithm : List Bool → CNF ℕ
+                ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                    (Graph.encoding (encPi (encPi encBool)))
+          [aesop] Post-normalisation goal: <goal not normalised>
+          [aesop] Metavariables: []
+          [aesop] Parent rapp:  some (0)
+          [aesop] Child rapps:  []
+          [aesop] Origin: subgoal
+          [aesop] Depth: 1
+          [aesop] State: ❓️ unknown
+          [aesop] Forward rule matches: 0
+          [aesop] Irrelevant: no
+          [aesop] Forced unprovable: no
+          [aesop] Added in iteration: 1
+          [aesop] Last expanded in iteration: never
+          [aesop] ✅️ Forward state
+            [aesop] 
+          [aesop] Unsafe rule queue: <not selected>
+          [aesop] Failed rules: <none>
+      [aesop] ✅️ ❌️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+        [aesop] Initial goal:
+              algorithm : List Bool → CNF ℕ
+              ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                  (Graph.encoding (encPi (encPi encBool)))
+        [aesop] ❌️ ✅️ Normalisation
+          [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+            [aesop] nothing to introduce
+          [aesop] ❌️ ❌️ <norm unfold>
+            [aesop] nothing to unfold
+          [aesop] ❌️ ❌️ <norm simp>
+            [aesop] norm simp left the goal unchanged
+        [aesop] Goal after normalisation:
+              algorithm : List Bool → CNF ℕ
+              ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                  (Graph.encoding (encPi (encPi encBool)))
+        [aesop] ✅️ ❌️ Safe rules
+          [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+            [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+                
+                algorithm : List Bool → CNF ℕ
+                ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                    (Graph.encoding (encPi (encPi encBool)))
+          [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+            [aesop] no new known certificate
+          [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+            [aesop] expected a constructor
+          [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits (Graph.encoding (encPi (encPi encBool)))
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF]
+              [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime algorithm encBits (encList (encList (encPair ?enc encBool)))
+                  [Meta.Tactic.fun_prop] candidate local theorems for algorithm #[]
+                  [Meta.Tactic.fun_prop] candidate transition theorems: []
+                [Meta.Tactic.fun_prop] @Graph.isPolyTime_ofCompactCNF, failed to discharge hypotheses
+                      ComputableInPolyTime algorithm encBits (encList (encList (encPair ?enc encBool)))
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                           trying again after decomposing function as: `(fun word2 => Graph.ofCompactCNF word2) ∘ (fun word => algorithm word)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun word => algorithm word) encBits ?encMid
+                  [Meta.Tactic.fun_prop] candidate local theorems for algorithm #[]
+                  [Meta.Tactic.fun_prop] candidate transition theorems: []
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                      ComputableInPolyTime (fun word => algorithm word) encBits ?encMid
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+                [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun word2 => Graph.ofCompactCNF word2) (encList (encList (encPair ?enc encBool)))
+                      (Graph.encoding (encPi (encPi encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF]
+                  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (encList (encList (encPair ?enc encBool))) (encList (encList (encPair ?enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @Graph.isPolyTime_ofCompactCNF, failed to infer `(?enc : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                               now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] candidate transition theorems: []
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                      ComputableInPolyTime (fun word2 => Graph.ofCompactCNF word2)
+                        (encList (encList (encPair ?enc encBool))) (Graph.encoding (encPi (encPi encBool)))
+            [aesop] no compositional plain certificate: [Failed to infer `(?enc : ℕ ↪ List Bool)` when applying theorem `Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF`.,
+                 No theorems found for `algorithm` in order to prove `ComputableInPolyTime (fun word => algorithm word) encBits ?encMid`,
+                 No theorems found for `algorithm` in order to prove `ComputableInPolyTime (fun a => algorithm a) encBits (encList (encList (encPair ?enc encBool)))`]
+          [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+            [aesop] Tactic `rfl` failed: The left-hand side
+                  encBits
+                is not definitionally equal to the right-hand side
+                  Graph.encoding (encPi (encPi encBool))
+                
+                algorithm : List Bool → CNF ℕ
+                ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                    (Graph.encoding (encPi (encPi encBool)))
+          [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+            [aesop] failed to synthesize
+                  Finite (List Bool)
+                
+                Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+          [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+            [aesop] expected an iteration
+          [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+            [aesop] expected a list fold
+          [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+            [aesop] nothing to split in target
+          [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+            [aesop] no splittable hypothesis found
+        [aesop] ✅️ ❌️ Unsafe rules
+          [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+            [aesop] no applicable local routine certificate
+          [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeScanKnownCallback
+            [aesop] expected a Boolean list scan
+          [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeCertificate
+            [aesop] no certificate for `Cslib.PCP.Encoded.Graph.ofCompactCNF` applies
+          [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructAlternative
+            [aesop] expected a constructor
+          [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropAlternative
+            [aesop] no competing local certificate
+          [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldAlternative
+            [aesop] expected a list fold
+          [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateAlternative
+            [aesop] expected an iteration
+          [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+            [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+                  ComputableInPolyTime (fun p => (?f p).1) ?encC ?output
+                with the goal
+                  ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                    (Graph.encoding (encPi (encPi encBool)))
+                
+                Note: The full type of the term is
+                  ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+                    {output : α ↪ List Bool} {f : γ → α × β},
+                    ComputableInPolyTime f encC (encPair encA encB) →
+                      ComputableInPolyTime (fun a => a) encA output →
+                        ComputableInPolyTime (fun p => (f p).1) encC output
+                
+                algorithm : List Bool → CNF ℕ
+                ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                    (Graph.encoding (encPi (encPi encBool)))
+          [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+            [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+                  ComputableInPolyTime (fun p => (?f p).2) ?encC ?output
+                with the goal
+                  ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                    (Graph.encoding (encPi (encPi encBool)))
+                
+                Note: The full type of the term is
+                  ∀ {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+                    {output : β ↪ List Bool} {f : γ → α × β},
+                    ComputableInPolyTime f encC (encPair encA encB) →
+                      ComputableInPolyTime (fun a => a) encB output →
+                        ComputableInPolyTime (fun p => (f p).2) encC output
+                
+                algorithm : List Bool → CNF ℕ
+                ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                    (Graph.encoding (encPi (encPi encBool)))
+          [aesop] ✅️ ❌️ unsafe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'
+            [aesop] failed to synthesize
+                  Fintype (CNF ℕ)
+                
+                Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+          [aesop] ✅️ ❌️ unsafe|apply|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.plainPiApply
+            [aesop] failed to synthesize
+                  Fintype (CNF ℕ)
+                
+                Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+          [aesop] ✅️ ❌️ unsafe|tactic|global|Aesop.BuiltinRules.applyHyps
+            [aesop] Rule returned no rule applications
+          [aesop] ✅️ ❌️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeRawFromPlain
+            [aesop] expected an explicit raw polynomial-time goal
+      [aesop] Expanding safe subtree of the root goal.
+      [aesop] Skipping safe rule expansion of goal 0 since safe rules have already been applied.
+      [aesop] Skipping safe rule expansion of goal 1 since safe rules have already been applied.
+      [aesop] Tactic `aesop` failed, failed to prove the goal after exhaustive search.
+          Initial goal:
+            algorithm : List Bool → CNF ℕ
+            ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                (Graph.encoding (encPi (encPi encBool)))
+          Remaining goals after safe rules:
+            algorithm : List Bool → CNF ℕ
+            ⊢ ComputableInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+                (Graph.encoding (encPi (encPi encBool)))
+[aesop] Expanding safe subtree of the root goal.
+[aesop] Skipping safe rule expansion of goal 0 since safe rules have already been applied.
+[aesop] Skipping safe rule expansion of goal 1 since safe rules have already been applied.
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        algorithm : List Bool → CNF ℕ
+        h : ComputableTidilyInPolyTime algorithm encBits (encList (encList (encPair encNat encBool)))
+        ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        algorithm : List Bool → CNF ℕ
+        h : ComputableTidilyInPolyTime algorithm encBits (encList (encList (encPair encNat encBool)))
+        ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] algorithm : List Bool → CNF ℕ
+      h : ComputableTidilyInPolyTime algorithm encBits (encList (encList (encPair encNat encBool)))
+      ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+          (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.28783):
+      [aesop] algorithm : List Bool → CNF ℕ
+          h : ComputableTidilyInPolyTime algorithm encBits (encList (encList (encPair encNat encBool)))
+          ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+      (Graph.encoding (encPi (encPi encBool)))
+  [aesop] Initial goal:
+        algorithm : List Bool → CNF ℕ
+        h : ComputableTidilyInPolyTime algorithm encBits (encList (encList (encPair encNat encBool)))
+        ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        algorithm : List Bool → CNF ℕ
+        h : ComputableTidilyInPolyTime algorithm encBits (encList (encList (encPair encNat encBool)))
+        ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          algorithm : List Bool → CNF ℕ
+          h : ComputableTidilyInPolyTime algorithm encBits (encList (encList (encPair encNat encBool)))
+          ⊢ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+              (Graph.encoding (encPi (encPi encBool)))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun word => Graph.ofCompactCNF (algorithm word)) encBits
+            (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[]
+        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                     trying again after decomposing function as: `(fun word2 => Graph.ofCompactCNF word2) ∘ (fun word => algorithm word)`
+        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun word2 => Graph.ofCompactCNF word2) (encList (encList (encPair ?enc encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun word2 => Graph.ofCompactCNF word2) (encList (encList (encPair ?enc encBool)))
+                    (Graph.encoding (encPi (encPi encBool)))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF]
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (encList (encList (encPair ?enc encBool))) (encList (encList (encPair ?enc encBool)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] @Graph.isPolyTime_ofCompactCNF, failed to infer `(?enc : ℕ ↪ List Bool)`
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                        if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.tidy, failed to discharge hypotheses
+                    ComputableInPolyTime (fun word2 => Graph.ofCompactCNF word2)
+                      (encList (encList (encPair ?enc encBool))) (Graph.encoding (encPi (encPi encBool)))
+          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.comp', failed to discharge hypotheses
+                ComputableTidilyInPolyTime (fun word2 => Graph.ofCompactCNF word2)
+                  (encList (encList (encPair ?enc encBool))) (Graph.encoding (encPi (encPi encBool)))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun word => algorithm word) encBits (encList (encList (encPair encNat encBool)))
+            [Meta.Tactic.fun_prop] candidate local theorems for algorithm #[h : ComputableTidilyInPolyTime algorithm encBits (encList (encList (encPair encNat encBool)))]
+            [Meta.Tactic.fun_prop] ✅️ applying: h : ComputableTidilyInPolyTime algorithm encBits (encList (encList (encPair encNat encBool)))
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun word2 => Graph.ofCompactCNF word2) (encList (encList (encPair encNat encBool)))
+                (Graph.encoding (encPi (encPi encBool)))
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[]
+            [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.PCP.Encoded.Graph.ofCompactCNF`
+                         now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+            [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableInPolyTime.tidy]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.tidy
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun word2 => Graph.ofCompactCNF word2) (encList (encList (encPair encNat encBool)))
+                    (Graph.encoding (encPi (encPi encBool)))
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.ofCompactCNF #[Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_ofCompactCNF
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (encList (encList (encPair encNat encBool)))
+                        (encList (encList (encPair encNat encBool)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

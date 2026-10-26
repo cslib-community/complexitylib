@@ -1,0 +1,28 @@
+{
+  "commands": 8,
+  "all_modes_pass": true,
+  "native_contexts_match": true,
+  "explicit_nonoriginal_warningAsError_override": false,
+  "expected_original_maxHeartbeats_preserved": true,
+  "source_code_or_producer_changes": false,
+  "external_warning_acceptance_controls": [
+    {
+      "synthetic_severity": "information",
+      "accept": true
+    },
+    {
+      "synthetic_severity": "warning",
+      "accept": false
+    },
+    {
+      "synthetic_severity": "error",
+      "accept": false
+    },
+    {
+      "synthetic_severity": "warning",
+      "isSilent": true,
+      "accept": true
+    }
+  ],
+  "qualification": "Synthetic acceptance controls are data-only, not measurements. Native info messages/goal options verified on unchanged whole Cloud and CodeComposition; no default dataset costs borrowed from strict arm."
+}

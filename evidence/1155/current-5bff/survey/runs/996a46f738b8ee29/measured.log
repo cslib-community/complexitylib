@@ -1,0 +1,21 @@
+'Turing.MultiTapeTM.ComputableInPolyTime.listGetD' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/996a46f738b8ee29/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/ListLookup.lean:56:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInPolyTime.listGetD' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInPolyTime.idxOf' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/996a46f738b8ee29/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/ListLookup.lean:59:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInPolyTime.idxOf' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+'Turing.MultiTapeTM.ComputableInPolyTime.getElem?' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/996a46f738b8ee29/measured/ComplexityTests/Machines/Turing/MultiTape/Internal/ListLookup.lean:84:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInPolyTime.getElem?' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

@@ -1,0 +1,86 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+      (selectVerifier
+        (fun x => !andVerifier (fun a => Polynomial.eval (enc a).length p + 1) allFalseVerifier (fun x => true) x)
+        (andVerifier (fun a => Polynomial.eval (enc a).length p) V (selectVerifier allFalseVerifier allFalseVerifier)))
+      (encPair enc encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.selectVerifier #[Cslib.Complexity.computableInPolyTime_selectVerifier]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.computableInPolyTime_selectVerifier
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+          (fun x => !andVerifier (fun a => Polynomial.eval (enc a).length p + 1) allFalseVerifier (fun x => true) x)
+          (encPair enc encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableInPolyTime.bool_not]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bool_not as:
+                             (fun x0 => !x0) ∘ (fun x => andVerifier (fun a => Polynomial.eval (enc a).length p + 1) allFalseVerifier (fun x => true) x)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+              (fun x => andVerifier (fun a => Polynomial.eval (enc a).length p + 1) allFalseVerifier (fun x => true) x)
+              (encPair enc encBits) encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.andVerifier #[Cslib.Complexity.computableInPolyTime_andVerifier]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.computableInPolyTime_andVerifier
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => Polynomial.eval (enc a).length p + 1) enc encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+              [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_succ as:
+                                     (fun a4 => a4 + 1) ∘ (fun a => Polynomial.eval (enc a).length p)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => Polynomial.eval (enc a).length p) enc encUnary
+                  [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableInPolyTime.unary_eval]
+                  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_eval as:
+                                         (fun a2 => Polynomial.eval a2 p) ∘ (fun a => (enc a).length)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (enc a).length) enc encUnary
+                      [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableInPolyTime.encoding_length, Turing.MultiTapeTM.ComputableInPolyTime.length_list, Turing.MultiTapeTM.ComputableInPolyTime.length_bits]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.length_bits_comp
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (⇑enc) enc encBits
+                          [Meta.Tactic.fun_prop] candidate local theorems for enc #[]
+                          [Meta.Tactic.fun_prop] candidate morphism theorems: [@ComputableInPolyTime.encoding_comp]
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.encoding_comp
+                            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) enc enc
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a2 => Polynomial.eval a2 p) encUnary encUnary
+                      [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableInPolyTime.unary_eval]
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_eval
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4 => a4 + 1) encUnary encUnary
+                  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_succ
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime allFalseVerifier (encPair enc encBits) encBool
+              [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.allFalseVerifier #[Cslib.Complexity.computableInPolyTime_allFalseVerifier]
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.computableInPolyTime_allFalseVerifier
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => true) (encPair enc encBits) encBool
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x0 => !x0) encBool encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Bool.not #[Turing.MultiTapeTM.ComputableInPolyTime.bool_not]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bool_not
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+          (andVerifier (fun a => Polynomial.eval (enc a).length p) V (selectVerifier allFalseVerifier allFalseVerifier))
+          (encPair enc encBits) encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.andVerifier #[Cslib.Complexity.computableInPolyTime_andVerifier]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.computableInPolyTime_andVerifier
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => Polynomial.eval (enc a).length p) enc encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableInPolyTime.unary_eval]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_eval as:
+                                 (fun a2 => Polynomial.eval a2 p) ∘ (fun a => (enc a).length)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (enc a).length) enc encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableInPolyTime.encoding_length, Turing.MultiTapeTM.ComputableInPolyTime.length_list, Turing.MultiTapeTM.ComputableInPolyTime.length_bits]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.length_bits_comp
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (⇑enc) enc encBits
+                  [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (⇑enc) enc encBits
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a2 => Polynomial.eval a2 p) encUnary encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for Polynomial.eval #[Turing.MultiTapeTM.ComputableInPolyTime.unary_eval]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_eval
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime V (encPair enc encBits) encBool
+          [Meta.Tactic.fun_prop] candidate local theorems for V #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => V a) (encPair enc encBits) encBool
+              [Meta.Tactic.fun_prop] candidate local theorems for V #[hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool]
+              [Meta.Tactic.fun_prop] ✅️ applying: hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (selectVerifier allFalseVerifier allFalseVerifier) (encPair enc encBits) encBool
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.selectVerifier #[Cslib.Complexity.computableInPolyTime_selectVerifier]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.computableInPolyTime_selectVerifier
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime allFalseVerifier (encPair enc encBits) encBool
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime allFalseVerifier
+                    (encPair enc encBits) encBool
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime allFalseVerifier (encPair enc encBits) encBool
+              [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime allFalseVerifier
+                    (encPair enc encBits) encBool

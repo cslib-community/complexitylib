@@ -1,0 +1,2 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => 0) encBits encNat
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const

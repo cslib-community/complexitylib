@@ -1,0 +1,119 @@
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (l x).getD (i x) d) encIn encA
+  [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD, Turing.MultiTapeTM.ComputableInPolyTime.listGetD]
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD as:
+                         (fun x1x2 => x1x2.1.getD x1x2.2 d) ∘ (fun x => (l x, i x))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (l x, i x)) encIn (encPair encL encNat)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime l encIn encL
+          [Meta.Tactic.fun_prop] candidate local theorems for l #[hl : ComputableInPolyTime l encIn encL]
+          [Meta.Tactic.fun_prop] ✅️ applying: hl : ComputableInPolyTime l encIn encL
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime i encIn encNat
+          [Meta.Tactic.fun_prop] candidate local theorems for i #[hi : ComputableInPolyTime i encIn encNat]
+          [Meta.Tactic.fun_prop] ✅️ applying: hi : ComputableInPolyTime i encIn encNat
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair encL encNat) encA
+      [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD, Turing.MultiTapeTM.ComputableInPolyTime.listGetD]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD
+        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.bitsGetD
+            ComputableInPolyTime (fun p => p.1.getD p.2 ?fallback) (encPair encBits encUnary) encBool
+            with
+            ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair encL encNat) encA
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listGetD
+        [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.listGetD
+            ComputableInPolyTime (fun p => p.1.getD p.2 ?d) (encPair ?encL encUnary) ?encA
+            with
+            ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair encL encNat) encA
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `List.getD`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair encL encNat) encA
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair ?encL encUnary) encA
+      [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD, Turing.MultiTapeTM.ComputableInPolyTime.listGetD]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD
+        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.bitsGetD
+            ComputableInPolyTime (fun p => p.1.getD p.2 ?fallback) (encPair encBits encUnary) encBool
+            with
+            ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) ?encMid encA
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listGetD
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.listGetD, failed to synthesize instance
+              ListEncoding encA ?encL
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.listGetD, failed to discharge hypotheses
+              ListEncoding encA ?encL
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `List.getD`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair ?encL encUnary) encA
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.listGetD as:
+                         (fun x1x2 => x1x2.1.getD x1x2.2 d) ∘ (fun x => (l x, i x))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (l x, i x)) encIn (encPair encL encNat)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime l encIn encL
+          [Meta.Tactic.fun_prop] candidate local theorems for l #[hl : ComputableInPolyTime l encIn encL]
+          [Meta.Tactic.fun_prop] ✅️ applying: hl : ComputableInPolyTime l encIn encL
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime i encIn encNat
+          [Meta.Tactic.fun_prop] candidate local theorems for i #[hi : ComputableInPolyTime i encIn encNat]
+          [Meta.Tactic.fun_prop] ✅️ applying: hi : ComputableInPolyTime i encIn encNat
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair encL encNat) encA
+      [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d)
+            (encPair encL encNat) encA was tried already and failed
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair encL encNat) encA
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair ?encL encUnary) encA
+      [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD, Turing.MultiTapeTM.ComputableInPolyTime.listGetD]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD
+        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.bitsGetD
+            ComputableInPolyTime (fun p => p.1.getD p.2 ?fallback) (encPair encBits encUnary) encBool
+            with
+            ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) ?encMid encA
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listGetD
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.listGetD, failed to synthesize instance
+              ListEncoding encA ?encL
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.listGetD, failed to discharge hypotheses
+              ListEncoding encA ?encL
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `List.getD`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair ?encL encUnary) encA
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `List.getD`
+               trying again after decomposing function as: `(fun x1x2 => x1x2.1.getD x1x2.2 d) ∘ (fun x => (l x, i x))`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (l x, i x)) encIn (encPair encL encNat)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime l encIn encL
+          [Meta.Tactic.fun_prop] candidate local theorems for l #[hl : ComputableInPolyTime l encIn encL]
+          [Meta.Tactic.fun_prop] ✅️ applying: hl : ComputableInPolyTime l encIn encL
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime i encIn encNat
+          [Meta.Tactic.fun_prop] candidate local theorems for i #[hi : ComputableInPolyTime i encIn encNat]
+          [Meta.Tactic.fun_prop] ✅️ applying: hi : ComputableInPolyTime i encIn encNat
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair encL encNat) encA
+      [Meta.Tactic.fun_prop] skipping proof search, proving ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d)
+            (encPair encL encNat) encA was tried already and failed
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair encL encNat) encA
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair ?encL encUnary) encA
+      [Meta.Tactic.fun_prop] candidate theorems for List.getD #[Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD, Turing.MultiTapeTM.ComputableInPolyTime.listGetD]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsGetD
+        [Meta.Tactic.fun_prop] failed to unify ComputableInPolyTime.bitsGetD
+            ComputableInPolyTime (fun p => p.1.getD p.2 ?fallback) (encPair encBits encUnary) encBool
+            with
+            ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) ?encMid encA
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listGetD
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.listGetD, failed to synthesize instance
+              ListEncoding encA ?encL
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.listGetD, failed to discharge hypotheses
+              ListEncoding encA ?encL
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `List.getD`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: []
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x1x2 => x1x2.1.getD x1x2.2 d) (encPair ?encL encUnary) encA

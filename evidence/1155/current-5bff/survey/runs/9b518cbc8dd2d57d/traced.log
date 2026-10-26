@@ -1,0 +1,21 @@
+[Meta.Tactic.fun_prop] ✅️ Continuous fun ρ => (1 + 3 * ρ) / 4
+  [Meta.Tactic.fun_prop] candidate theorems for HDiv.hDiv #[ENNReal.continuous_div_const, Continuous.div_const, Continuous.fun_div', Continuous.div₀]
+  [Meta.Tactic.fun_prop] decomposing to later use ENNReal.continuous_div_const as:
+                         (fun ρ4 => ρ4 / 4) ∘ (fun ρ => 1 + 3 * ρ)
+  [Meta.Tactic.fun_prop] ✅️ applying: Continuous.comp'
+    [Meta.Tactic.fun_prop] ✅️ Continuous fun ρ4 => ρ4 / 4
+      [Meta.Tactic.fun_prop] candidate theorems for HDiv.hDiv #[ENNReal.continuous_div_const, Continuous.div_const, Continuous.fun_div', Continuous.div₀]
+      [Meta.Tactic.fun_prop] ❌️ applying: ENNReal.continuous_div_const
+        [Meta.Tactic.fun_prop] failed to unify ENNReal.continuous_div_const
+            Continuous fun x => x / ?c
+            with
+            Continuous fun ρ4 => ρ4 / 4
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.div_const
+        [Meta.Tactic.fun_prop] ✅️ Continuous fun x => x
+          [Meta.Tactic.fun_prop] ✅️ applying: continuous_id'
+    [Meta.Tactic.fun_prop] ✅️ Continuous fun ρ => 1 + 3 * ρ
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Continuous.const_add, continuous_const_add, IsTopologicalAddGroup.continuous_addConj', continuous_add, Continuous.fun_add]
+      [Meta.Tactic.fun_prop] ✅️ applying: Continuous.const_add
+        [Meta.Tactic.fun_prop] ✅️ Continuous (HMul.hMul 3)
+          [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[continuous_const_mul, Continuous.const_mul, ENNReal.continuous_const_mul, Continuous.matrix_mul, continuous_mul, IsTopologicalGroup.continuous_conj', Continuous.fun_mul, IsModuleTopology.continuous_mul_of_finite]
+          [Meta.Tactic.fun_prop] ✅️ applying: continuous_const_mul

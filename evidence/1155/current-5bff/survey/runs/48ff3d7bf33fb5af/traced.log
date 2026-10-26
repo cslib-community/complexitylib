@@ -1,0 +1,308 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+      extractLabels (sampleList (outputBits a * inputBits a))
+        (fun seed labels => LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+        (samples a)
+  [aesop] Initial goal:
+        α Observation Label : Type
+        input : α ↪ List Bool
+        observation : Observation ↪ List Bool
+        label : Label ↪ List Bool
+        inputBits outputBits : α → ℕ
+        prepare : α → List Label → List Bool
+        samples : α → List (Observation × Label)
+        hinput : ComputableInPolyTime inputBits input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2) (encPair input (encList label)) encBits
+        hsamples : ComputableInPolyTime samples input (encList (encPair observation label))
+        ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+            extractLabels (sampleList (outputBits a * inputBits a))
+              (fun seed labels => LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+              (samples a)
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α Observation Label : Type
+        input : α ↪ List Bool
+        observation : Observation ↪ List Bool
+        label : Label ↪ List Bool
+        inputBits outputBits : α → ℕ
+        prepare : α → List Label → List Bool
+        samples : α → List (Observation × Label)
+        hinput : ComputableInPolyTime inputBits input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2) (encPair input (encList label)) encBits
+        hsamples : ComputableInPolyTime samples input (encList (encPair observation label))
+        ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+            extractLabels (sampleList (outputBits a * inputBits a))
+              (fun seed labels => LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+              (samples a)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+      extractLabels (sampleList (outputBits a * inputBits a))
+        (fun seed labels => LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+        (samples a)
+  [aesop] α Observation Label : Type
+      input : α ↪ List Bool
+      observation : Observation ↪ List Bool
+      label : Label ↪ List Bool
+      inputBits outputBits : α → ℕ
+      prepare : α → List Label → List Bool
+      samples : α → List (Observation × Label)
+      hinput : ComputableInPolyTime inputBits input encUnary
+      houtput : ComputableInPolyTime outputBits input encUnary
+      hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2) (encPair input (encList label)) encBits
+      hsamples : ComputableInPolyTime samples input (encList (encPair observation label))
+      ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+          extractLabels (sampleList (outputBits a * inputBits a))
+            (fun seed labels => LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+            (samples a)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.606.31):
+      [aesop] α Observation Label : Type
+          input : α ↪ List Bool
+          observation : Observation ↪ List Bool
+          label : Label ↪ List Bool
+          inputBits outputBits : α → ℕ
+          prepare : α → List Label → List Bool
+          samples : α → List (Observation × Label)
+          hinput : ComputableInPolyTime inputBits input encUnary
+          houtput : ComputableInPolyTime outputBits input encUnary
+          hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2) (encPair input (encList label)) encBits
+          hsamples : ComputableInPolyTime samples input (encList (encPair observation label))
+          ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+              extractLabels (sampleList (outputBits a * inputBits a))
+                (fun seed labels =>
+                  LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+                (samples a)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+      extractLabels (sampleList (outputBits a * inputBits a))
+        (fun seed labels => LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+        (samples a)
+  [aesop] Initial goal:
+        α Observation Label : Type
+        input : α ↪ List Bool
+        observation : Observation ↪ List Bool
+        label : Label ↪ List Bool
+        inputBits outputBits : α → ℕ
+        prepare : α → List Label → List Bool
+        samples : α → List (Observation × Label)
+        hinput : ComputableInPolyTime inputBits input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2) (encPair input (encList label)) encBits
+        hsamples : ComputableInPolyTime samples input (encList (encPair observation label))
+        ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+            extractLabels (sampleList (outputBits a * inputBits a))
+              (fun seed labels => LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+              (samples a)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α Observation Label : Type
+        input : α ↪ List Bool
+        observation : Observation ↪ List Bool
+        label : Label ↪ List Bool
+        inputBits outputBits : α → ℕ
+        prepare : α → List Label → List Bool
+        samples : α → List (Observation × Label)
+        hinput : ComputableInPolyTime inputBits input encUnary
+        houtput : ComputableInPolyTime outputBits input encUnary
+        hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2) (encPair input (encList label)) encBits
+        hsamples : ComputableInPolyTime samples input (encList (encPair observation label))
+        ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+            extractLabels (sampleList (outputBits a * inputBits a))
+              (fun seed labels => LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+              (samples a)
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α Observation Label : Type
+          input : α ↪ List Bool
+          observation : Observation ↪ List Bool
+          label : Label ↪ List Bool
+          inputBits outputBits : α → ℕ
+          prepare : α → List Label → List Bool
+          samples : α → List (Observation × Label)
+          hinput : ComputableInPolyTime inputBits input encUnary
+          houtput : ComputableInPolyTime outputBits input encUnary
+          hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2) (encPair input (encList label)) encBits
+          hsamples : ComputableInPolyTime samples input (encList (encPair observation label))
+          ⊢ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+              extractLabels (sampleList (outputBits a * inputBits a))
+                (fun seed labels =>
+                  LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+                (samples a)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a polynomial-time goal
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+      [Meta.Tactic.fun_prop] ✅️ IsPPTOn input (encPair (encList observation) (encPair encBits encBits)) fun a =>
+            extractLabels (sampleList (outputBits a * inputBits a))
+              (fun seed labels => LinearHash.wordHash (outputBits a) seed (listRow (inputBits a) 0 (prepare a labels)))
+              (samples a)
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.extractLabels #[Cslib.Crypto.Pseudoentropy.isPPTOn_extractLabels_list, Cslib.Crypto.Pseudoentropy.isPPTOn_extractLabels]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.isPPTOn_extractLabels_list
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBits fun a => sampleList (outputBits a * inputBits a)
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.sampleList #[Cslib.Probability.isPPTOn_sampleList, Turing.MultiTapeTM.ComputableInPolyTime.sampleList]
+            [Meta.Tactic.fun_prop] decomposing to later use Cslib.Probability.isPPTOn_sampleList as:
+                                   (fun a0 => sampleList a0) ∘ (fun a => outputBits a * inputBits a)
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.preprocess
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn encUnary encBits fun a0 => sampleList a0
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.sampleList #[Cslib.Probability.isPPTOn_sampleList, Turing.MultiTapeTM.ComputableInPolyTime.sampleList]
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.isPPTOn_sampleList
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => outputBits a * inputBits a) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                       (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (outputBits a, inputBits a))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (outputBits a, inputBits a)) input (encPair encUnary encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime outputBits input encUnary
+                        [Meta.Tactic.fun_prop] candidate local theorems for outputBits #[houtput : ComputableInPolyTime outputBits input encUnary]
+                        [Meta.Tactic.fun_prop] ✅️ applying: houtput : ComputableInPolyTime outputBits input encUnary
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime inputBits input encUnary
+                        [Meta.Tactic.fun_prop] candidate local theorems for inputBits #[hinput : ComputableInPolyTime inputBits input encUnary]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hinput : ComputableInPolyTime inputBits input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+                (fun pair =>
+                  LinearHash.wordHash (outputBits pair.1.1) pair.1.2 (listRow (inputBits pair.1.1) 0 (prepare pair.1.1 pair.2)))
+                (encPair (encPair input encBits) (encList label)) encBits
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.LinearHash.wordHash #[Cslib.BitString.LinearHash.computableInPolyTime_wordHash]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.BitString.LinearHash.computableInPolyTime_wordHash
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => outputBits a.1.1) (encPair (encPair input encBits) (encList ?label)) encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair input encBits) (encList ?label)) input
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair input encBits) (encList ?label)) (encPair input encBits)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input encBits) (encList ?label))
+                                (encPair (encPair input encBits) (encList ?label))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input encBits) (encPair input encBits)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => outputBits a0) input encUnary
+                    [Meta.Tactic.fun_prop] candidate local theorems for outputBits #[houtput : ComputableInPolyTime outputBits input encUnary]
+                    [Meta.Tactic.fun_prop] ✅️ applying: houtput : ComputableInPolyTime outputBits input encUnary
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.2) (encPair (encPair input encBits) (encList ?label)) encBits
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair input encBits) (encList ?label)) (encPair input encBits)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input encBits) (encList ?label))
+                            (encPair (encPair input encBits) (encList ?label))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input encBits) (encPair input encBits)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => listRow (inputBits a.1.1) 0 (prepare a.1.1 a.2))
+                    (encPair (encPair input encBits) (encList label)) encBits
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.listRow #[Turing.MultiTapeTM.ComputableInPolyTime.bitsRowWithInput]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsRowWithInput
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => inputBits a.1.1) (encPair (encPair input encBits) (encList ?label)) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair input encBits) (encList ?label)) input
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair input encBits) (encList ?label)) (encPair input encBits)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input encBits) (encList ?label))
+                                    (encPair (encPair input encBits) (encList ?label))
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input encBits) (encPair input encBits)
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => inputBits a0) input encUnary
+                        [Meta.Tactic.fun_prop] candidate local theorems for inputBits #[hinput : ComputableInPolyTime inputBits input encUnary]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hinput : ComputableInPolyTime inputBits input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 0) (encPair (encPair input encBits) (encList ?label)) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => prepare a.1.1 a.2) (encPair (encPair input encBits) (encList label)) encBits
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (a.1.1, a.2)) (encPair (encPair input encBits) (encList ?label))
+                            (encPair input (encList ?label))
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair input encBits) (encList ?label)) input
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair input encBits) (encList ?label)) (encPair input encBits)
+                                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input encBits) (encList ?label))
+                                        (encPair (encPair input encBits) (encList ?label))
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input encBits) (encPair input encBits)
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair input encBits) (encList ?label)) (encList ?label)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input encBits) (encList ?label))
+                                    (encPair (encPair input encBits) (encList ?label))
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList ?label) (encList ?label)
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0a1 => prepare a0a1.1 a0a1.2) (encPair input (encList label)) encBits
+                        [Meta.Tactic.fun_prop] candidate local theorems for prepare #[hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2) (encPair input (encList label)) encBits]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hprepare : ComputableInPolyTime (fun pair => prepare pair.1 pair.2) (encPair input (encList label)) encBits
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime samples input (encList (encPair observation label))
+            [Meta.Tactic.fun_prop] candidate local theorems for samples #[hsamples : ComputableInPolyTime samples input (encList (encPair observation label))]
+            [Meta.Tactic.fun_prop] ✅️ applying: hsamples : ComputableInPolyTime samples input (encList (encPair observation label))
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PPT.0.Cslib.Tactic.PPT.pptFunProp
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

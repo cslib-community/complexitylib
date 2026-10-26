@@ -1,0 +1,30 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInO (fun v => v 0) (encPi empty) empty (fun v => ((encPi empty) v).length) fun v =>
+      ((encPi empty) v).length
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInO.pi_apply
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInO (fun p => Function.update p.1 1 p.2) (encPair (encPi encUnary) encUnary) (encPi encUnary)
+      (fun p => ((encPair (encPi encUnary) encUnary) p).length) fun p => ((encPair (encPi encUnary) encUnary) p).length
+  [Meta.Tactic.fun_prop] candidate theorems for Function.update #[Turing.MultiTapeTM.ComputableTidilyInO.pi_update]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInO.pi_update
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun p => (p.1.1, p.2)) (encPair (encPair encUnary (encOption encUnary)) encUnary)
+      (encPair encUnary encUnary) 1 1
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le, Turing.MultiTapeTM.ComputableTidilyInDegree.prod]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x.1.1) (encPair (encPair encUnary (encOption encUnary)) encUnary) encUnary
+          (max (max 1 1) 1) 1
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree Prod.fst (encPair (encPair encUnary (encOption encUnary)) encUnary)
+              (encPair encUnary (encOption encUnary)) (max 1 1) 1
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInDegree.fst', Turing.MultiTapeTM.ComputableTidilyInDegree.fst]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair (encPair encUnary (encOption encUnary)) encUnary)
+                  (encPair (encPair encUnary (encOption encUnary)) encUnary) 1 1
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree Prod.snd (encPair (encPair encUnary (encOption encUnary)) encUnary) encUnary (max 1 1) 1
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInDegree.snd', Turing.MultiTapeTM.ComputableTidilyInDegree.snd]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.snd'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInDegree (fun x => x) (encPair (encPair encUnary (encOption encUnary)) encUnary)
+              (encPair (encPair encUnary (encOption encUnary)) encUnary) 1 1
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInDegree.id'
+    [Meta.Tactic.fun_prop] ✅️ discharging: max (max (max 1 1) 1) (max 1 1) ≤ 1
+    [Meta.Tactic.fun_prop] ✅️ discharging: max 1 1 ≤ 1

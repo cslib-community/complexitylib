@@ -1,0 +1,73 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime D.option.decode encBits (encOption a)
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite_decide, Turing.MultiTapeTM.ComputableInPolyTime.ite]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite_decide
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => decide (a.isEmpty = true)) encBits encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableInPolyTime.decide_and]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_eq'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime List.isEmpty encBits encBool
+          [Meta.Tactic.fun_prop] candidate theorems for List.isEmpty #[Turing.MultiTapeTM.ComputableInPolyTime.bitsIsEmpty]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsIsEmpty
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => true) encBits encBool
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => none) encBits (encOption a)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a_1 => some (D.decode a_1.tail)) encBits (encOption a)
+      [Meta.Tactic.fun_prop] candidate theorems for Option.some #[Turing.MultiTapeTM.ComputableInPolyTime.optionSome]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.optionSome as:
+                             (fun a1 => some a1) ∘ (fun a_1 => D.decode a_1.tail)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a_1 => D.decode a_1.tail) encBits a
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.Decoder.decode #[Turing.MultiTapeTM.Decoder.computableInPolyTime]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.Decoder.computableInPolyTime as:
+                                 (fun a3 => D.decode a3) ∘ (fun a => a.tail)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.tail) encBits encBits
+              [Meta.Tactic.fun_prop] candidate theorems for List.tail #[Turing.MultiTapeTM.ComputableInPolyTime.bitsTail]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsTail
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a3 => D.decode a3) encBits a
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.Decoder.decode #[Turing.MultiTapeTM.Decoder.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.Decoder.computableInPolyTime
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a1 => some a1) a (encOption a)
+          [Meta.Tactic.fun_prop] candidate theorems for Option.some #[Turing.MultiTapeTM.ComputableInPolyTime.optionSome]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionSome
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (value x).getD (fallback x)) a b
+  [Meta.Tactic.fun_prop] candidate theorems for Option.getD #[Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput, Turing.MultiTapeTM.ComputableInPolyTime.optionGetD]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime value a (encOption b)
+      [Meta.Tactic.fun_prop] candidate local theorems for value #[hvalue : ComputableInPolyTime value a (encOption b)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hvalue : ComputableInPolyTime value a (encOption b)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime fallback a b
+      [Meta.Tactic.fun_prop] candidate local theorems for fallback #[hfallback : ComputableInPolyTime fallback a b]
+      [Meta.Tactic.fun_prop] ✅️ applying: hfallback : ComputableInPolyTime fallback a b
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Decoder.nat.option.decode encBits (encOption encNat)
+  [Meta.Tactic.fun_prop] candidate theorems for ite #[Turing.MultiTapeTM.ComputableInPolyTime.ite_decide, Turing.MultiTapeTM.ComputableInPolyTime.ite]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.ite_decide
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => decide (a.isEmpty = true)) encBits encBool
+      [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableInPolyTime.decide_and]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.decide_eq'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime List.isEmpty encBits encBool
+          [Meta.Tactic.fun_prop] candidate theorems for List.isEmpty #[Turing.MultiTapeTM.ComputableInPolyTime.bitsIsEmpty]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsIsEmpty
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => true) encBits encBool
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => none) encBits (encOption encNat)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => some (Decoder.nat.decode a.tail)) encBits (encOption encNat)
+      [Meta.Tactic.fun_prop] candidate theorems for Option.some #[Turing.MultiTapeTM.ComputableInPolyTime.optionSome]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.optionSome as:
+                             (fun a1 => some a1) ∘ (fun a => Decoder.nat.decode a.tail)
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => Decoder.nat.decode a.tail) encBits encNat
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableInPolyTime.bitsToNat]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.bitsToNat as:
+                                 (fun a0 => ofBits a0) ∘ (fun a => a.tail)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.tail) encBits encBits
+              [Meta.Tactic.fun_prop] candidate theorems for List.tail #[Turing.MultiTapeTM.ComputableInPolyTime.bitsTail]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsTail
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => ofBits a0) encBits encNat
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableInPolyTime.bitsToNat]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsToNat
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a1 => some a1) encNat (encOption encNat)
+          [Meta.Tactic.fun_prop] candidate theorems for Option.some #[Turing.MultiTapeTM.ComputableInPolyTime.optionSome]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.optionSome

@@ -1,0 +1,82 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => n p.1 + p.2) (encPair enc encNat) encNat
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => n a.1) (encPair enc encNat) encNat
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => n a0) enc encNat
+          [Meta.Tactic.fun_prop] candidate local theorems for n #[hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat, hn : ComputableTidilyInPolyTime n enc encUnary]
+          [Meta.Tactic.fun_prop] ✅️ applying: hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1) (encPair enc encNat) enc
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair enc encNat) (encPair enc encNat)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) enc enc
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair enc encNat) encNat
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair enc encNat) (encPair enc encNat)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encNat encNat
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => n a + n a) enc encNat
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime n enc encNat
+      [Meta.Tactic.fun_prop] candidate local theorems for n #[hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat, hn : ComputableTidilyInPolyTime n enc encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime n enc encNat
+      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime n enc encNat
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => n a + n a) enc encNat
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime n enc encNat
+      [Meta.Tactic.fun_prop] candidate local theorems for n #[hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat, hn : ComputableTidilyInPolyTime n enc encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime n enc encNat
+      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime n enc encNat
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => n a + n a) enc encNat
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime n enc encNat
+      [Meta.Tactic.fun_prop] candidate local theorems for n #[hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat, hn : ComputableTidilyInPolyTime n enc encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime n enc encNat
+      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime n enc encNat
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => n a + n a) enc encNat
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime n enc encNat
+      [Meta.Tactic.fun_prop] candidate local theorems for n #[hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat, hn : ComputableTidilyInPolyTime n enc encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hnBinary : ComputableTidilyInPolyTime ((fun n => n) ∘ n) enc encNat
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime n enc encNat
+      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime n enc encNat
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun D => D.fst + D.fst) (encCircuit 1) encUnary
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+    [Meta.Tactic.fun_prop] failed to unify @binary_add'
+        ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+        with
+        ComputableTidilyInPolyTime (fun D => D.fst + D.fst) (encCircuit 1) encUnary
+  [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                         (fun D4D5 => D4D5.1 + D4D5.2) ∘ (fun D => (D.fst, D.fst))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun D4D5 => D4D5.1 + D4D5.2) (encPair encUnary encUnary) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add', Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add, Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add'
+        [Meta.Tactic.fun_prop] failed to unify @binary_add'
+            ComputableTidilyInPolyTime (fun a => ?left a + ?right a) ?input encNat
+            with
+            ComputableTidilyInPolyTime (fun D4D5 => D4D5.1 + D4D5.2) ?encMid encUnary
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun D => (D.fst, D.fst)) (encCircuit 1) (encPair encUnary encUnary)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Sigma.fst (encCircuit 1) encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for Sigma.fst #[]
+          [Meta.Tactic.fun_prop] candidate local theorems for Sigma.fst #[hn : ComputableTidilyInPolyTime (fun x => (x.fst, x.snd.code).1) (encCircuit 1) encUnary]
+          [Meta.Tactic.fun_prop] ✅️ applying: hn : ComputableTidilyInPolyTime (fun x => (x.fst, x.snd.code).1) (encCircuit 1) encUnary
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Sigma.fst (encCircuit 1) encUnary
+          [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime Sigma.fst (encCircuit 1)
+                encUnary

@@ -1,0 +1,2482 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input =>
+        F.add
+          (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+            F.smul (input.1, input.2.2.2, input.2.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] Initial goal:
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun input =>
+              F.add
+                (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                  F.smul (input.1, input.2.2.2, input.2.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun input =>
+              F.add
+                (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                  F.smul (input.1, input.2.2.2, input.2.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input =>
+        F.add
+          (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+            F.smul (input.1, input.2.2.2, input.2.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime
+          (fun input =>
+            F.add
+              (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                F.smul (input.1, input.2.2.2, input.2.1)))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.64):
+      [aesop] F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun input =>
+                F.add
+                  (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                    F.smul (input.1, input.2.2.2, input.2.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input =>
+        F.add
+          (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+            F.smul (input.1, input.2.2.2, input.2.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] Initial goal:
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun input =>
+              F.add
+                (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                  F.smul (input.1, input.2.2.2, input.2.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun input =>
+              F.add
+                (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                  F.smul (input.1, input.2.2.2, input.2.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun input =>
+                F.add
+                  (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                    F.smul (input.1, input.2.2.2, input.2.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-30/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input =>
+        F.add
+          (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+            F.smul (input.1, input.2.2.2, input.2.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime
+          (fun input =>
+            F.add
+              (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                F.smul (input.1, input.2.2.2, input.2.1)))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.15507):
+      [aesop] F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun input =>
+                F.add
+                  (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                    F.smul (input.1, input.2.2.2, input.2.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G2) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input =>
+        F.add
+          (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+            F.smul (input.1, input.2.2.2, input.2.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] Initial goal:
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun input =>
+              F.add
+                (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                  F.smul (input.1, input.2.2.2, input.2.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun input =>
+              F.add
+                (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                  F.smul (input.1, input.2.2.2, input.2.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun input =>
+                F.add
+                  (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                    F.smul (input.1, input.2.2.2, input.2.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair F.encDesc (encPair encBits (encPair encNat encNat))
+          is not definitionally equal to the right-hand side
+            encBits
+          
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun input =>
+                F.add
+                  (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                    F.smul (input.1, input.2.2.2, input.2.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (F.Desc × List Bool × ℕ × ℕ)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R2 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: [3]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G3 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input =>
+        (input.1,
+          (fun input =>
+              (F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                F.smul (input.1, input.2.2.2, input.2.1)))
+            input))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encBits encBits))
+  [aesop] case hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime
+          (fun input =>
+            (input.1,
+              (fun input =>
+                  (F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                    F.smul (input.1, input.2.2.2, input.2.1)))
+                input))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encBits encBits))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.16037):
+      [aesop] case hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun input =>
+                (input.1,
+                  (fun input =>
+                      (F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                        F.smul (input.1, input.2.2.2, input.2.1)))
+                    input))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+              (encPair F.encDesc (encPair encBits encBits))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (2)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 3
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 3
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G3) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input =>
+        (input.1,
+          (fun input =>
+              (F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                F.smul (input.1, input.2.2.2, input.2.1)))
+            input))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encBits encBits))
+  [aesop] Initial goal:
+        case hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun input =>
+              (input.1,
+                (fun input =>
+                    (F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                      F.smul (input.1, input.2.2.2, input.2.1)))
+                  input))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encBits encBits))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] case hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun input =>
+                (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                  F.smul (input.1, input.2.2.2, input.2.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+              (encPair F.encDesc (encPair encBits encBits))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun input =>
+              (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                F.smul (input.1, input.2.2.2, input.2.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encBits encBits))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun input =>
+                (input.1, F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
+                  F.smul (input.1, input.2.2.2, input.2.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+              (encPair F.encDesc (encPair encBits encBits))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+[aesop] ✅️ 🆕 ❓️ R3 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 3
+    [aesop] Rule: [-25/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 3
+    [aesop] Child goals: [4, 5]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G4 [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] case hg.hf
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ✅️ Metadata
+    [aesop] ID: 4
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.16660):
+      [aesop] case hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (3)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 4
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 4
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G5 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun a => (F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)), F.smul (a.1, a.2.2.2, a.2.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encBits encBits)
+  [aesop] case hg.hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime
+          (fun a => (F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)), F.smul (a.1, a.2.2.2, a.2.1)))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encBits encBits)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 5
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.16661):
+      [aesop] case hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun a => (F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)), F.smul (a.1, a.2.2.2, a.2.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encBits encBits)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (3)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 4
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 4
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G5) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun a => (F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)), F.smul (a.1, a.2.2.2, a.2.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encBits encBits)
+  [aesop] Initial goal:
+        case hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun a => (F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)), F.smul (a.1, a.2.2.2, a.2.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encBits encBits)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun a => (F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)), F.smul (a.1, a.2.2.2, a.2.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encBits encBits)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun a => (F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)), F.smul (a.1, a.2.2.2, a.2.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encBits encBits)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+[aesop] ✅️ 🆕 ❓️ R4 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 4
+    [aesop] Rule: [-25/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 5
+    [aesop] Child goals: [6, 7]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G6 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] case hg.hg.hf
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 6
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.16908):
+      [aesop] case hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (4)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 5
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 5
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G7 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.2, a.2.1))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] case hg.hg.hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.2, a.2.1))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 7
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.16909):
+      [aesop] case hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.2, a.2.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (4)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 5
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 5
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G7) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.2, a.2.1))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] Initial goal:
+        case hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.2, a.2.1))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.2, a.2.1))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.2, a.2.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair F.encDesc (encPair encBits (encPair encNat encNat))
+          is not definitionally equal to the right-hand side
+            encBits
+          
+          case hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.2, a.2.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (F.Desc × List Bool × ℕ × ℕ)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R5 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 5
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 7
+    [aesop] Child goals: [8]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G8 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input => (input.1, (fun input => (input.2.2.2, input.2.1)) input))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] case hg.hg.hg.hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime (fun input => (input.1, (fun input => (input.2.2.2, input.2.1)) input))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 8
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.17282):
+      [aesop] case hg.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun input => (input.1, (fun input => (input.2.2.2, input.2.1)) input))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (5)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 6
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 6
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G8) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input => (input.1, (fun input => (input.2.2.2, input.2.1)) input))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] Initial goal:
+        case hg.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun input => (input.1, (fun input => (input.2.2.2, input.2.1)) input))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] case hg.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun input => (input.1, input.2.2.2, input.2.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun input => (input.1, input.2.2.2, input.2.1))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun input => (input.1, input.2.2.2, input.2.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+[aesop] ✅️ 🆕 ❓️ R6 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 6
+    [aesop] Rule: [-25/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 8
+    [aesop] Child goals: [9, 10]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G9 [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] case hg.hg.hg.hg.hf
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ✅️ Metadata
+    [aesop] ID: 9
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.17795):
+      [aesop] case hg.hg.hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (6)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 7
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 7
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G10 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (a.2.2.2, a.2.1))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+  [aesop] case hg.hg.hg.hg.hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime (fun a => (a.2.2.2, a.2.1)) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+          (encPair encNat encBits)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 10
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.17796):
+      [aesop] case hg.hg.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => (a.2.2.2, a.2.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (6)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 7
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 7
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G10) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (a.2.2.2, a.2.1))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+  [aesop] Initial goal:
+        case hg.hg.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => (a.2.2.2, a.2.1)) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+            (encPair encNat encBits)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => (a.2.2.2, a.2.1)) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+            (encPair encNat encBits)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => (a.2.2.2, a.2.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+[aesop] ✅️ 🆕 ❓️ R7 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 7
+    [aesop] Rule: [-25/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 10
+    [aesop] Child goals: [11, 12]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G11 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => a.2.2.2)
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] case hg.hg.hg.hg.hg.hf
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime (fun a => a.2.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] ✅️ Metadata
+    [aesop] ID: 11
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.18001):
+      [aesop] case hg.hg.hg.hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => a.2.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (7)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 8
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 8
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G12 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => a.2.1)
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] case hg.hg.hg.hg.hg.hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime (fun a => a.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 12
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.18002):
+      [aesop] case hg.hg.hg.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => a.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (7)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 8
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 8
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G12) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => a.2.1)
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] Initial goal:
+        case hg.hg.hg.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => a.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hg.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => a.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hg.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => a.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                (encPair encBits (encPair encNat encNat))
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                    (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encBits (encPair encNat encNat)) (encPair encBits (encPair encNat encNat))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R8 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 8
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 12
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G11) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => a.2.2.2)
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] Initial goal:
+        case hg.hg.hg.hg.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => a.2.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hg.hg.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => a.2.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hg.hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => a.2.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary'
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun a => List.length (?list a)) ?input encNat
+          with the goal
+            ComputableInPolyTime (fun a => a.2.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+          
+          Note: The full type of the term is
+            ∀ {α β : Type} {input : α ↪ List Bool} {enc : β ↪ List Bool} {list : α → List β},
+              ComputableInPolyTime list input (encList enc) →
+                ComputableInPolyTime (fun a => (list a).length) input encNat
+          
+          case hg.hg.hg.hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => a.2.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.2.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                (encPair encNat encNat)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                    (encPair encBits (encPair encNat encNat))
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                        (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encBits (encPair encNat encNat)) (encPair encBits (encPair encNat encNat))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encNat encNat) (encPair encNat encNat)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encNat encNat
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R9 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 9
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 11
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G9) [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] Initial goal:
+        case hg.hg.hg.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hg.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) F.encDesc F.encDesc
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R10 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 10
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 9
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G4) [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] Initial goal:
+        case hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) F.encDesc F.encDesc
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R11 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 11
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 4
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G6) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] Initial goal:
+        case hg.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair F.encDesc (encPair encBits (encPair encNat encNat))
+          is not definitionally equal to the right-hand side
+            encBits
+          
+          case hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => F.smul (a.1, a.2.2.1, F.encode a.1 (F.generator a.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (F.Desc × List Bool × ℕ × ℕ)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R12 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 12
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 6
+    [aesop] Child goals: [13]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G13 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input => (input.1, (fun input => (input.2.2.1, F.encode input.1 (F.generator input.1))) input))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] case hg.hg.hf.hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime
+          (fun input => (input.1, (fun input => (input.2.2.1, F.encode input.1 (F.generator input.1))) input))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] ✅️ Metadata
+    [aesop] ID: 13
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.26529):
+      [aesop] case hg.hg.hf.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime
+              (fun input => (input.1, (fun input => (input.2.2.1, F.encode input.1 (F.generator input.1))) input))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (12)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 6
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 13
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G13) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun input => (input.1, (fun input => (input.2.2.1, F.encode input.1 (F.generator input.1))) input))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] Initial goal:
+        case hg.hg.hf.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime
+            (fun input => (input.1, (fun input => (input.2.2.1, F.encode input.1 (F.generator input.1))) input))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] case hg.hg.hf.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun input => (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hf.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun input => (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hf.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun input => (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair F.encDesc (encPair encNat encBits))
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+[aesop] ✅️ 🆕 ❓️ R13 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 13
+    [aesop] Rule: [-25/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 13
+    [aesop] Child goals: [14, 15]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G14 [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] case hg.hg.hf.hg.hf
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ✅️ Metadata
+    [aesop] ID: 14
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.27042):
+      [aesop] case hg.hg.hf.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (13)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 7
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 14
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G15 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (a.2.2.1, F.encode a.1 (F.generator a.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+  [aesop] case hg.hg.hf.hg.hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime (fun a => (a.2.2.1, F.encode a.1 (F.generator a.1)))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 15
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.27043):
+      [aesop] case hg.hg.hf.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => (a.2.2.1, F.encode a.1 (F.generator a.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (13)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 7
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 14
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G15) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => (a.2.2.1, F.encode a.1 (F.generator a.1)))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+  [aesop] Initial goal:
+        case hg.hg.hf.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => (a.2.2.1, F.encode a.1 (F.generator a.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hf.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => (a.2.2.1, F.encode a.1 (F.generator a.1)))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hf.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => (a.2.2.1, F.encode a.1 (F.generator a.1)))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) (encPair encNat encBits)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+[aesop] ✅️ 🆕 ❓️ R14 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 14
+    [aesop] Rule: [-25/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 15
+    [aesop] Child goals: [16, 17]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G16 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => a.2.2.1)
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] case hg.hg.hf.hg.hg.hf
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime (fun a => a.2.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] ✅️ Metadata
+    [aesop] ID: 16
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.27248):
+      [aesop] case hg.hg.hf.hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => a.2.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (14)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 8
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 15
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🆕 ❓️ G17 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => F.encode a.1 (F.generator a.1))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] case hg.hg.hf.hg.hg.hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime (fun a => F.encode a.1 (F.generator a.1))
+          (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 17
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.27249):
+      [aesop] case hg.hg.hf.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => F.encode a.1 (F.generator a.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (14)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 8
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 15
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G17) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => F.encode a.1 (F.generator a.1))
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] Initial goal:
+        case hg.hg.hf.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => F.encode a.1 (F.generator a.1))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hf.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => F.encode a.1 (F.generator a.1))
+            (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+  [aesop] ✅️ ❌️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hf.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => F.encode a.1 (F.generator a.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [aesop] a local certificate is an alternative to decomposition
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.rfl
+      [aesop] Tactic `rfl` failed: The left-hand side
+            encPair F.encDesc (encPair encBits (encPair encNat encNat))
+          is not definitionally equal to the right-hand side
+            encBits
+          
+          case hg.hg.hf.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => F.encode a.1 (F.generator a.1))
+              (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encBits
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.of_finite
+      [aesop] failed to synthesize
+            Finite (F.Desc × List Bool × ℕ × ℕ)
+          
+          Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeIterateFast
+      [aesop] expected an iteration
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFoldFast
+      [aesop] expected a list fold
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitTarget
+      [aesop] nothing to split in target
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.splitHypotheses
+      [aesop] no splittable hypothesis found
+  [aesop] ✅️ ✅️ Unsafe rules
+    [aesop] ✅️ ✅️ unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+[aesop] ✅️ 🆕 ❓️ R15 [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+  [aesop] ✅️ Metadata
+    [aesop] ID: 15
+    [aesop] Rule: [100.0000%] unsafe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownCall
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 17
+    [aesop] Child goals: [18]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G18 [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] case hg.hg.hf.hg.hg.hg.hg
+      F : PrimeOrderGroupFamily
+      hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+      knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+      knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+      ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ✅️ Metadata
+    [aesop] ID: 18
+    [aesop] ✅️ Pre-normalisation goal (_uniq.4759.27498):
+      [aesop] case hg.hg.hf.hg.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (15)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 9
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 16
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G18) [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] Initial goal:
+        case hg.hg.hf.hg.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hf.hg.hg.hg.hg
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hf.hg.hg.hg.hg
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) F.encDesc F.encDesc
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R16 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 16
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 18
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G16) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun a => a.2.2.1)
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] Initial goal:
+        case hg.hg.hf.hg.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => a.2.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hf.hg.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime (fun a => a.2.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hf.hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => a.2.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+    [aesop] ✅️ ❌️ safe|apply|global|Turing.MultiTapeTM.ComputableInPolyTime.length_list_binary'
+      [aesop] Tactic `apply` failed: could not unify the conclusion of the term
+            ComputableInPolyTime (fun a => List.length (?list a)) ?input encNat
+          with the goal
+            ComputableInPolyTime (fun a => a.2.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+          
+          Note: The full type of the term is
+            ∀ {α β : Type} {input : α ↪ List Bool} {enc : β ↪ List Bool} {list : α → List β},
+              ComputableInPolyTime list input (encList enc) →
+                ComputableInPolyTime (fun a => (list a).length) input encNat
+          
+          case hg.hg.hf.hg.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime (fun a => a.2.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.2.2.1) (encPair F.encDesc (encPair encBits (encPair encNat encNat))) encNat
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.2.2) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                (encPair encNat encNat)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                    (encPair encBits (encPair encNat encNat))
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                        (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encBits (encPair encNat encNat)) (encPair encBits (encPair encNat encNat))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encNat encNat) (encPair encNat encNat)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encNat encNat
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R17 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 17
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 16
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🏁 (G14) [100.0000%] ⋯ ⊢ ComputableInPolyTime Prod.fst
+      (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] Initial goal:
+        case hg.hg.hf.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        case hg.hg.hf.hg.hf
+        F : PrimeOrderGroupFamily
+        hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+        knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+        knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+        ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          case hg.hg.hf.hg.hf
+          F : PrimeOrderGroupFamily
+          hgen : ComputableTidilyInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          hsmul : ComputableTidilyInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          hadd : ComputableTidilyInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          knownCertificate✝² : ComputableInPolyTime (fun d => F.encode d (F.generator d)) F.encDesc encBits
+          knownCertificate✝¹ : ComputableInPolyTime F.smul (encPair F.encDesc (encPair encNat encBits)) encBits
+          knownCertificate✝ : ComputableInPolyTime F.add (encPair F.encDesc (encPair encBits encBits)) encBits
+          ⊢ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair F.encDesc (encPair encBits (encPair encNat encNat))) F.encDesc
+        [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+                (encPair F.encDesc (encPair encBits (encPair encNat encNat)))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) F.encDesc F.encDesc
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R18 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 18
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 14
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun input => (input.1, (encPair F.encDesc encBits) input.2))
+      (encPair encUnary (encPair F.encDesc encBits)) (encPair encUnary encBits)
+  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair encUnary (encPair F.encDesc encBits)) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary (encPair F.encDesc encBits))
+              (encPair encUnary (encPair F.encDesc encBits))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (encPair F.encDesc encBits) a.2) (encPair encUnary (encPair F.encDesc encBits)) encBits
+      [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.encPair #[]
+      [Meta.Tactic.fun_prop] candidate morphism theorems: [@ComputableInPolyTime.encoding_comp]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.encoding_comp
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair encUnary (encPair F.encDesc encBits)) (encPair F.encDesc encBits)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary (encPair F.encDesc encBits))
+                  (encPair encUnary (encPair F.encDesc encBits))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair F.encDesc encBits) (encPair F.encDesc encBits)
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+      (fun p =>
+        encNat
+          (pedersenExtractNat (F.order p.1.2.1) (ofBits p.2.2.1.1) (ofBits p.2.2.1.2) (ofBits p.2.2.2.1)
+            (ofBits p.2.2.2.2)))
+      (encPair (encPair encUnary (encPair F.encDesc encBits))
+        (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+      encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.encNat #[]
+  [Meta.Tactic.fun_prop] candidate morphism theorems: [@ComputableTidilyInPolyTime.encoded]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoded
+    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime
+          (fun a =>
+            pedersenExtractNat (F.order a.1.2.1) (ofBits a.2.2.1.1) (ofBits a.2.2.1.2) (ofBits a.2.2.2.1) (ofBits a.2.2.2.2))
+          (encPair (encPair encUnary (encPair F.encDesc encBits))
+            (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+          encNat
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.PrimeOrderGroupFamily.pedersenExtractNat #[_private.Complexity.Crypto.Computational.PedersenCommitment.0.Cslib.Crypto.PrimeOrderGroupFamily.computableTidilyInPolyTime_pedersenExtractNat]
+      [Meta.Tactic.fun_prop] ✅️ applying: _private.Complexity.Crypto.Computational.PedersenCommitment.0.Cslib.Crypto.PrimeOrderGroupFamily.computableTidilyInPolyTime_pedersenExtractNat
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.1.2.1)
+              (encPair (encPair encUnary (encPair F.encDesc encBits))
+                (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+              F.encDesc
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1.2)
+                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                  (encPair F.encDesc encBits)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst
+                      (encPair (encPair encUnary (encPair F.encDesc encBits))
+                        (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                      (encPair encUnary (encPair F.encDesc encBits))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x)
+                          (encPair (encPair encUnary (encPair F.encDesc encBits))
+                            (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                          (encPair (encPair encUnary (encPair F.encDesc encBits))
+                            (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair F.encDesc encBits) (encPair F.encDesc encBits)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => ofBits a.2.2.1.1)
+              (encPair (encPair encUnary (encPair F.encDesc encBits))
+                (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+              encNat
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat as:
+                                 (fun a0 => ofBits a0) ∘ (fun a => a.2.2.1.1)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => ofBits a0) encBits encNat
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.2.2.1.1)
+                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                  encBits
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.2.1)
+                      (encPair (encPair encUnary (encPair F.encDesc encBits))
+                        (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                      (encPair encBits encBits)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.2)
+                          (encPair (encPair encUnary (encPair F.encDesc encBits))
+                            (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                          (encPair (encPair encBits encBits) (encPair encBits encBits))
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd
+                              (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                              (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p)
+                                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                                  (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair encBits encBits) (encPair encBits encBits))
+                              (encPair (encPair encBits encBits) (encPair encBits encBits))
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => ofBits a.2.2.1.2)
+              (encPair (encPair encUnary (encPair F.encDesc encBits))
+                (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+              encNat
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat as:
+                                 (fun a0 => ofBits a0) ∘ (fun a => a.2.2.1.2)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => ofBits a0) encBits encNat
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.2.2.1.2)
+                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                  encBits
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.2.2.1)
+                      (encPair (encPair encUnary (encPair F.encDesc encBits))
+                        (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                      (encPair encBits encBits)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.2)
+                          (encPair (encPair encUnary (encPair F.encDesc encBits))
+                            (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                          (encPair (encPair encBits encBits) (encPair encBits encBits))
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd
+                              (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                              (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p)
+                                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                                  (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair encBits encBits) (encPair encBits encBits))
+                              (encPair (encPair encBits encBits) (encPair encBits encBits))
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => ofBits a.2.2.2.1)
+              (encPair (encPair encUnary (encPair F.encDesc encBits))
+                (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+              encNat
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat as:
+                                 (fun a0 => ofBits a0) ∘ (fun a => a.2.2.2.1)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => ofBits a0) encBits encNat
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.2.2.2.1)
+                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                  encBits
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.2.2.2)
+                      (encPair (encPair encUnary (encPair F.encDesc encBits))
+                        (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                      (encPair encBits encBits)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.2.2)
+                          (encPair (encPair encUnary (encPair F.encDesc encBits))
+                            (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                          (encPair (encPair encBits encBits) (encPair encBits encBits))
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd
+                              (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                              (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p)
+                                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                                  (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair encBits encBits) (encPair encBits encBits))
+                              (encPair (encPair encBits encBits) (encPair encBits encBits))
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encBits encBits) (encPair encBits encBits)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => ofBits a.2.2.2.2)
+              (encPair (encPair encUnary (encPair F.encDesc encBits))
+                (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+              encNat
+          [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat]
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat as:
+                                 (fun a0 => ofBits a0) ∘ (fun a => a.2.2.2.2)
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a0 => ofBits a0) encBits encNat
+              [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.ofBits #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat]
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat
+            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a.2.2.2.2)
+                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                  encBits
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.2.2.2)
+                      (encPair (encPair encUnary (encPair F.encDesc encBits))
+                        (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                      (encPair encBits encBits)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.2.2)
+                          (encPair (encPair encUnary (encPair F.encDesc encBits))
+                            (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                          (encPair (encPair encBits encBits) (encPair encBits encBits))
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd
+                              (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                              (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p)
+                                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                                  (encPair (encPair encUnary (encPair F.encDesc encBits))
+                                    (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                            [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                                  (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits)))
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair (encPair encBits encBits) (encPair encBits encBits))
+                              (encPair (encPair encBits encBits) (encPair encBits encBits))
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair encBits encBits) (encPair encBits encBits)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+                  [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                        encBits encBits

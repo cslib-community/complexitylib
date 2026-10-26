@@ -1,0 +1,1015 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        hgenerator✝ : ComputableInPolyTime generator encBits encBits
+        hlength : ∀ (seed : List Bool), (generator seed).length = 2 * seed.length
+        hsecure : ComputationallyIndistinguishable (generatorEnsemble generator) fun n => BitString.uniformList (2 * n)
+        hgenerator : ComputableTidilyInPolyTime generator encBits encBits
+        adversary : OracleDistinguisher
+        hadversary : IsOraclePPT encBool adversary
+        c d : ℕ
+        hqueries :
+          ∀ (n : ℕ) (input : List Bool),
+            ProbOracleComp.IsQueryBounded (adversary n input) (c * (n + input.length + 2) ^ d) ∧
+              ProbOracleComp.QueriesSatisfy (fun request => request.2.length ≤ c * (n + input.length + 2) ^ d)
+                (adversary n input)
+        count : ℕ → ℕ := fun n => c * (n + 2) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        hgenerator✝ : ComputableInPolyTime generator encBits encBits
+        hlength : ∀ (seed : List Bool), (generator seed).length = 2 * seed.length
+        hsecure : ComputationallyIndistinguishable (generatorEnsemble generator) fun n => BitString.uniformList (2 * n)
+        hgenerator : ComputableTidilyInPolyTime generator encBits encBits
+        adversary : OracleDistinguisher
+        hadversary : IsOraclePPT encBool adversary
+        c d : ℕ
+        hqueries :
+          ∀ (n : ℕ) (input : List Bool),
+            ProbOracleComp.IsQueryBounded (adversary n input) (c * (n + input.length + 2) ^ d) ∧
+              ProbOracleComp.QueriesSatisfy (fun request => request.2.length ≤ c * (n + input.length + 2) ^ d)
+                (adversary n input)
+        count : ℕ → ℕ := fun n => c * (n + 2) ^ d
+        ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+  [aesop] generator : List Bool → List Bool
+      hgenerator_1 : ComputableInPolyTime generator encBits encBits
+      hlength : ∀ (seed : List Bool), (generator seed).length = 2 * seed.length
+      hsecure : ComputationallyIndistinguishable (generatorEnsemble generator) fun n => BitString.uniformList (2 * n)
+      hgenerator : ComputableTidilyInPolyTime generator encBits encBits
+      adversary : OracleDistinguisher
+      hadversary : IsOraclePPT encBool adversary
+      c d : ℕ
+      hqueries :
+        ∀ (n : ℕ) (input : List Bool),
+          ProbOracleComp.IsQueryBounded (adversary n input) (c * (n + input.length + 2) ^ d) ∧
+            ProbOracleComp.QueriesSatisfy (fun request => request.2.length ≤ c * (n + input.length + 2) ^ d)
+              (adversary n input)
+      count : ℕ → ℕ := ⋯
+      ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.181.15885):
+      [aesop] generator : List Bool → List Bool
+          hgenerator_1 : ComputableInPolyTime generator encBits encBits
+          hlength : ∀ (seed : List Bool), (generator seed).length = 2 * seed.length
+          hsecure :
+            ComputationallyIndistinguishable (generatorEnsemble generator) fun n => BitString.uniformList (2 * n)
+          hgenerator : ComputableTidilyInPolyTime generator encBits encBits
+          adversary : OracleDistinguisher
+          hadversary : IsOraclePPT encBool adversary
+          c d : ℕ
+          hqueries :
+            ∀ (n : ℕ) (input : List Bool),
+              ProbOracleComp.IsQueryBounded (adversary n input) (c * (n + input.length + 2) ^ d) ∧
+                ProbOracleComp.QueriesSatisfy (fun request => request.2.length ≤ c * (n + input.length + 2) ^ d)
+                  (adversary n input)
+          count : ℕ → ℕ := ⋯
+          ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        hgenerator_1 : ComputableInPolyTime generator encBits encBits
+        hlength : ∀ (seed : List Bool), (generator seed).length = 2 * seed.length
+        hsecure : ComputationallyIndistinguishable (generatorEnsemble generator) fun n => BitString.uniformList (2 * n)
+        hgenerator : ComputableTidilyInPolyTime generator encBits encBits
+        adversary : OracleDistinguisher
+        hadversary : IsOraclePPT encBool adversary
+        c d : ℕ
+        hqueries :
+          ∀ (n : ℕ) (input : List Bool),
+            ProbOracleComp.IsQueryBounded (adversary n input) (c * (n + input.length + 2) ^ d) ∧
+              ProbOracleComp.QueriesSatisfy (fun request => request.2.length ≤ c * (n + input.length + 2) ^ d)
+                (adversary n input)
+        count : ℕ → ℕ := ⋯
+        ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] generator : List Bool → List Bool
+          hgenerator_1 : ComputableInPolyTime generator encBits encBits
+          hlength : ∀ (seed : List Bool), (generator seed).length = 2 * seed.length
+          hsecure :
+            ComputationallyIndistinguishable (generatorEnsemble generator) fun n => BitString.uniformList (2 * n)
+          hgenerator : ComputableTidilyInPolyTime generator encBits encBits
+          adversary : OracleDistinguisher
+          hadversary : IsOraclePPT encBool adversary
+          c d : ℕ
+          count : ℕ → ℕ := fun n => c * (n + 2) ^ d
+          hqueries :
+            (∀ (x : ℕ) (x_1 : List Bool),
+                ProbOracleComp.IsQueryBounded (adversary x x_1) (c * (x + x_1.length + 2) ^ d)) ∧
+              ∀ (x : ℕ) (x_1 : List Bool),
+                ProbOracleComp.QueriesSatisfy (fun request => request.2.length ≤ c * (x + x_1.length + 2) ^ d)
+                  (adversary x x_1)
+          ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+    [aesop] ✅️ ✅️ norm|tactic|global|Aesop.BuiltinRules.destructProducts
+      [aesop] generator : List Bool → List Bool
+          hgenerator_1 : ComputableInPolyTime generator encBits encBits
+          hlength : ∀ (seed : List Bool), (generator seed).length = 2 * seed.length
+          hsecure :
+            ComputationallyIndistinguishable (generatorEnsemble generator) fun n => BitString.uniformList (2 * n)
+          hgenerator : ComputableTidilyInPolyTime generator encBits encBits
+          adversary : OracleDistinguisher
+          hadversary : IsOraclePPT encBool adversary
+          c d : ℕ
+          count : ℕ → ℕ := fun n => c * (n + 2) ^ d
+          left :
+            ∀ (x : ℕ) (x_1 : List Bool), ProbOracleComp.IsQueryBounded (adversary x x_1) (c * (x + x_1.length + 2) ^ d)
+          right :
+            ∀ (x : ℕ) (x_1 : List Bool),
+              ProbOracleComp.QueriesSatisfy (fun request => request.2.length ≤ c * (x + x_1.length + 2) ^ d)
+                (adversary x x_1)
+          ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        hgenerator_1 : ComputableInPolyTime generator encBits encBits
+        hlength : ∀ (seed : List Bool), (generator seed).length = 2 * seed.length
+        hsecure : ComputationallyIndistinguishable (generatorEnsemble generator) fun n => BitString.uniformList (2 * n)
+        hgenerator : ComputableTidilyInPolyTime generator encBits encBits
+        adversary : OracleDistinguisher
+        hadversary : IsOraclePPT encBool adversary
+        c d : ℕ
+        count : ℕ → ℕ := fun n => c * (n + 2) ^ d
+        left :
+          ∀ (x : ℕ) (x_1 : List Bool), ProbOracleComp.IsQueryBounded (adversary x x_1) (c * (x + x_1.length + 2) ^ d)
+        right :
+          ∀ (x : ℕ) (x_1 : List Bool),
+            ProbOracleComp.QueriesSatisfy (fun request => request.2.length ≤ c * (x + x_1.length + 2) ^ d)
+              (adversary x x_1)
+        ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          generator : List Bool → List Bool
+          hgenerator_1 : ComputableInPolyTime generator encBits encBits
+          hlength : ∀ (seed : List Bool), (generator seed).length = 2 * seed.length
+          hsecure :
+            ComputationallyIndistinguishable (generatorEnsemble generator) fun n => BitString.uniformList (2 * n)
+          hgenerator : ComputableTidilyInPolyTime generator encBits encBits
+          adversary : OracleDistinguisher
+          hadversary : IsOraclePPT encBool adversary
+          c d : ℕ
+          count : ℕ → ℕ := fun n => c * (n + 2) ^ d
+          left :
+            ∀ (x : ℕ) (x_1 : List Bool), ProbOracleComp.IsQueryBounded (adversary x x_1) (c * (x + x_1.length + 2) ^ d)
+          right :
+            ∀ (x : ℕ) (x_1 : List Bool),
+              ProbOracleComp.QueriesSatisfy (fun request => request.2.length ≤ c * (x + x_1.length + 2) ^ d)
+                (adversary x x_1)
+          ⊢ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n => c * (n + 2) ^ d) encUnary encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul as:
+                             (fun y => y.1 * y.2) ∘ (fun n => (c, (n + 2) ^ d))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun n => (c, (n + 2) ^ d)) encUnary (encPair encUnary encUnary)
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => c) encUnary encUnary
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x + 2) ^ d) encUnary encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow as:
+                                       (fun x4 => x4 ^ d) ∘ (fun x => x + 2)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x4 => x4 ^ d) encUnary encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HPow.hPow #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x + 2) encUnary encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.computableTidilyInPolyTime_succ, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.computableTidilyInPolyTime_succ
+                      [Meta.Tactic.fun_prop] failed to unify computableTidilyInPolyTime_succ
+                          ComputableTidilyInPolyTime (fun x => x + 1) encNat encNat
+                          with
+                          ComputableTidilyInPolyTime (fun x => x + 2) encUnary encUnary
+                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add as:
+                                         (fun y => y.1 + y.2) ∘ (fun x => (x, 2))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 + y.2) (encPair encUnary encUnary) encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (x, 2)) encUnary (encPair encUnary encUnary)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) encUnary encUnary
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 2) encUnary encUnary
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize n * dyadicSize (count n)
+  [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize n * dyadicSize (count n)
+    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+    [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+      [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded dyadicSize
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.dyadicSize_polynomiallyBounded
+      [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => dyadicSize (count n)
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+        [Meta.Tactic.fun_prop] decomposing to later use Cslib.Probability.dyadicSize_polynomiallyBounded as:
+                               (fun n0 => dyadicSize n0) ∘ (fun n => count n)
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.comp
+          [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n0 => dyadicSize n0
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.Probability.dyadicSize #[Cslib.Probability.dyadicSize_polynomiallyBounded]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.dyadicSize_polynomiallyBounded
+          [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => count n
+            [Meta.Tactic.fun_prop] candidate local theorems for count #[this : PolynomiallyBounded count]
+            [Meta.Tactic.fun_prop] ✅️ applying: this : PolynomiallyBounded count
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits)
+      encBits
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits)
+      encBits
+  [aesop] generator : List Bool → List Bool
+      length : ℕ → ℕ
+      hgenerator : PseudorandomGenerator generator length
+      hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+      hpoly : ComputableTidilyInPolyTime generator encBits encBits
+      ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.289.146):
+      [aesop] generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+          hpoly : ComputableTidilyInPolyTime generator encBits encBits
+          ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ ✅️ (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits)
+      encBits
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+          hpoly : ComputableTidilyInPolyTime generator encBits encBits
+          ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+    [aesop] ✅️ ✅️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+[aesop] ✅️ 🆕 ❓️ R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-30/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: [2]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G2 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits)
+      encBits
+  [aesop] generator : List Bool → List Bool
+      length : ℕ → ℕ
+      hgenerator : PseudorandomGenerator generator length
+      hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+      hpoly : ComputableTidilyInPolyTime generator encBits encBits
+      knownCertificate✝ : ComputableInPolyTime generator encBits encBits
+      ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] ✅️ Pre-normalisation goal (_uniq.289.16354):
+      [aesop] generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+          hpoly : ComputableTidilyInPolyTime generator encBits encBits
+          knownCertificate✝ : ComputableInPolyTime generator encBits encBits
+          ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (1)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 2
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 2
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G2) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits)
+      encBits
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        knownCertificate✝ : ComputableInPolyTime generator encBits encBits
+        ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        knownCertificate✝ : ComputableInPolyTime generator encBits encBits
+        ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+          hpoly : ComputableTidilyInPolyTime generator encBits encBits
+          knownCertificate✝ : ComputableInPolyTime generator encBits encBits
+          ⊢ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => List.take (2 * p.1) p.2) (encPair encUnary encBits) encBits
+        [Meta.Tactic.fun_prop] candidate theorems for List.take #[Turing.MultiTapeTM.ComputableInPolyTime.bitsTakeWithInput]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsTakeWithInput
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair encUnary encBits) encBits
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary encBits) (encPair encUnary encBits)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => 2 * x.1) (encPair encUnary encBits) encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                 (fun y => y.1 * y.2) ∘ (fun x => (2, x.1))
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (2, x.1)) (encPair encUnary encBits) (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 2) (encPair encUnary encBits) ?enc₁
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+                    [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                        ComputableInPolyTime (fun a => 2) (encPair encUnary encBits) ?enc₁
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                             trying again after decomposing function as: `(fun x3 => (2, x3)) ∘ (fun x => x.1)`
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1) (encPair encUnary encBits) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary encBits) (encPair encUnary encBits)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x3 => (2, x3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 2) encUnary ?enc₁✝
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁✝ : ℕ ↪ List Bool)`
+                        [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                     now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                        [Meta.Tactic.fun_prop] candidate transition theorems: []
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                            ComputableInPolyTime (fun a => 2) encUnary ?enc₁✝
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                            PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                            PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                        ComputableInPolyTime (fun x3 => (2, x3)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x3 => (2, x3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 2) ?encMid ?enc₁✝
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?encMid : ℕ ↪
+                                List Bool)`
+                        [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                     now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                        [Meta.Tactic.fun_prop] candidate transition theorems: []
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                            ComputableInPolyTime (fun a => 2) ?encMid ?enc₁✝
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                            PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                            PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                        ComputableInPolyTime (fun x3 => (2, x3)) ?encMid (encPair ?enc₁✝ ?enc₂✝)
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                    ComputableInPolyTime (fun x => (2, x.1)) (encPair encUnary encBits) (encPair ?enc₁✝ ?enc₂✝)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (2, x.1)) (encPair encUnary encBits) (encPair encUnary encUnary)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 2) (encPair encUnary encBits) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair encUnary encBits) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary encBits) (encPair encUnary encBits)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R2 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 2
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 2
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed))
+      encBits encBits
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        hsecure :
+          ComputationallyIndistinguishable
+            (fun n => PMF.map (fun word => List.take (2 * n) word) (generatorEnsemble generator n)) fun n =>
+            PMF.map (fun word => List.take (2 * n) word) (BitString.uniformList (length n))
+        htruncated :
+          ComputationallyIndistinguishable (generatorEnsemble fun seed => List.take (2 * seed.length) (generator seed))
+            fun n => BitString.uniformList (2 * n)
+        ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed)) encBits encBits
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        hsecure :
+          ComputationallyIndistinguishable
+            (fun n => PMF.map (fun word => List.take (2 * n) word) (generatorEnsemble generator n)) fun n =>
+            PMF.map (fun word => List.take (2 * n) word) (BitString.uniformList (length n))
+        htruncated :
+          ComputationallyIndistinguishable (generatorEnsemble fun seed => List.take (2 * seed.length) (generator seed))
+            fun n => BitString.uniformList (2 * n)
+        ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed)) encBits encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed))
+      encBits encBits
+  [aesop] generator : List Bool → List Bool
+      length : ℕ → ℕ
+      hgenerator : PseudorandomGenerator generator length
+      hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+      hpoly : ComputableTidilyInPolyTime generator encBits encBits
+      hsecure :
+        ComputationallyIndistinguishable
+          (fun n => PMF.map (fun word => List.take (2 * n) word) (generatorEnsemble generator n)) fun n =>
+          PMF.map (fun word => List.take (2 * n) word) (BitString.uniformList (length n))
+      htruncated :
+        ComputationallyIndistinguishable (generatorEnsemble fun seed => List.take (2 * seed.length) (generator seed))
+          fun n => BitString.uniformList (2 * n)
+      ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed)) encBits encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.289.17942):
+      [aesop] generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+          hpoly : ComputableTidilyInPolyTime generator encBits encBits
+          hsecure :
+            ComputationallyIndistinguishable
+              (fun n => PMF.map (fun word => List.take (2 * n) word) (generatorEnsemble generator n)) fun n =>
+              PMF.map (fun word => List.take (2 * n) word) (BitString.uniformList (length n))
+          htruncated :
+            ComputationallyIndistinguishable
+              (generatorEnsemble fun seed => List.take (2 * seed.length) (generator seed)) fun n =>
+              BitString.uniformList (2 * n)
+          ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed)) encBits encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed))
+      encBits encBits
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        hsecure :
+          ComputationallyIndistinguishable
+            (fun n => PMF.map (fun word => List.take (2 * n) word) (generatorEnsemble generator n)) fun n =>
+            PMF.map (fun word => List.take (2 * n) word) (BitString.uniformList (length n))
+        htruncated :
+          ComputationallyIndistinguishable (generatorEnsemble fun seed => List.take (2 * seed.length) (generator seed))
+            fun n => BitString.uniformList (2 * n)
+        ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed)) encBits encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+        hpoly : ComputableTidilyInPolyTime generator encBits encBits
+        hsecure :
+          ComputationallyIndistinguishable
+            (fun n => PMF.map (fun word => List.take (2 * n) word) (generatorEnsemble generator n)) fun n =>
+            PMF.map (fun word => List.take (2 * n) word) (BitString.uniformList (length n))
+        htruncated :
+          ComputationallyIndistinguishable (generatorEnsemble fun seed => List.take (2 * seed.length) (generator seed))
+            fun n => BitString.uniformList (2 * n)
+        ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed)) encBits encBits
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          hdouble : ∀ (n : ℕ), 2 * n ≤ length n
+          hpoly : ComputableTidilyInPolyTime generator encBits encBits
+          hsecure :
+            ComputationallyIndistinguishable
+              (fun n => PMF.map (fun word => List.take (2 * n) word) (generatorEnsemble generator n)) fun n =>
+              PMF.map (fun word => List.take (2 * n) word) (BitString.uniformList (length n))
+          htruncated :
+            ComputationallyIndistinguishable
+              (generatorEnsemble fun seed => List.take (2 * seed.length) (generator seed)) fun n =>
+              BitString.uniformList (2 * n)
+          ⊢ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed)) encBits encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] raw construction retains compositional alternatives
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun seed => List.take (2 * seed.length) (generator seed)) encBits encBits
+        [Meta.Tactic.fun_prop] candidate theorems for List.take #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.takeUnary, Turing.MultiTapeTM.ComputableTidilyInPolyTime.listTakeWithInput, Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTake]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime generator encBits encBits
+            [Meta.Tactic.fun_prop] candidate local theorems for generator #[hpoly : ComputableTidilyInPolyTime generator encBits encBits]
+            [Meta.Tactic.fun_prop] ✅️ applying: hpoly : ComputableTidilyInPolyTime generator encBits encBits
+          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 2 * x.length) encBits encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul as:
+                                 (fun y => y.1 * y.2) ∘ (fun x => (2, x.length))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_mul
+              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => (2, x.length)) encBits (encPair encUnary encUnary)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => 2) encBits encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime List.length encBits encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for List.length #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_list, Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits, Turing.MultiTapeTM.ComputableTidilyInPolyTime.encoding_length]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.length_bits_comp
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+  [aesop] generator : List Bool → List Bool
+      length : ℕ → ℕ
+      hgenerator : PseudorandomGenerator generator length
+      ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.333.95):
+      [aesop] generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          ⊢ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n => n + 1) encUnary encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_succ
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hone : PseudorandomGenerator (fun seed => List.take (seed.length + 1) (generator seed)) fun n => n + 1
+        ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hone : PseudorandomGenerator (fun seed => List.take (seed.length + 1) (generator seed)) fun n => n + 1
+        ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+  [aesop] generator : List Bool → List Bool
+      length : ℕ → ℕ
+      hgenerator : PseudorandomGenerator generator length
+      hone : PseudorandomGenerator (fun seed => List.take (seed.length + 1) (generator seed)) fun n => n + 1
+      ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.333.15829):
+      [aesop] generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          hone : PseudorandomGenerator (fun seed => List.take (seed.length + 1) (generator seed)) fun n => n + 1
+          ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+  [aesop] Initial goal:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hone : PseudorandomGenerator (fun seed => List.take (seed.length + 1) (generator seed)) fun n => n + 1
+        ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        generator : List Bool → List Bool
+        length : ℕ → ℕ
+        hgenerator : PseudorandomGenerator generator length
+        hone : PseudorandomGenerator (fun seed => List.take (seed.length + 1) (generator seed)) fun n => n + 1
+        ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          generator : List Bool → List Bool
+          length : ℕ → ℕ
+          hgenerator : PseudorandomGenerator generator length
+          hone : PseudorandomGenerator (fun seed => List.take (seed.length + 1) (generator seed)) fun n => n + 1
+          ⊢ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n => 2 * n + 1) encUnary encUnary
+        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_succ as:
+                               (fun n4 => n4 + 1) ∘ (fun n => 2 * n)
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n => 2 * n) encUnary encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                 (fun y => y.1 * y.2) ∘ (fun n => (2, n))
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+              [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun n => (2, n)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => 2) encUnary ?enc₁
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+                    [Meta.Tactic.fun_prop] candidate theorems for OfNat.ofNat #[]
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `OfNat.ofNat`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: []
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                        ComputableInPolyTime (fun a => 2) encUnary ?enc₁
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                        PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+                [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                             now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                [Meta.Tactic.fun_prop] candidate transition theorems: []
+              [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                    ComputableInPolyTime (fun n => (2, n)) encUnary (encPair ?enc₁✝ ?enc₂✝)
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun y => y.1 * y.2) (encPair encUnary encUnary) encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n => (2, n)) encUnary (encPair encUnary encUnary)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => 2) encUnary encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun n4 => n4 + 1) encUnary encUnary
+            [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_succ, Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_succ
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

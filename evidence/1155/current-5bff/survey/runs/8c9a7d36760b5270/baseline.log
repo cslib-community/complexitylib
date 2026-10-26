@@ -1,0 +1,42 @@
+([8, 12, 6, 1], [1, -4, 6, -4, 1], 270)
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8c9a7d36760b5270/baseline/ComplexityTests/RationalHitting/Lift.lean:32:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: ([8, 12, 6, 1], [1, -4, 6, -4, 1], 270)
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+(true, true)
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8c9a7d36760b5270/baseline/ComplexityTests/RationalHitting/Lift.lean:42:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: (true, true)
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+[[-1, 1, 0, 0], [3, -1, 0, 0], [-3, -1, 0, 0], [1, 1, 0, 0]]
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8c9a7d36760b5270/baseline/ComplexityTests/RationalHitting/Lift.lean:52:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: [[-1, 1, 0, 0], [3, -1, 0, 0], [-3, -1, 0, 0], [1, 1, 0, 0]]
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+true
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8c9a7d36760b5270/baseline/ComplexityTests/RationalHitting/Lift.lean:62:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: true
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+10
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8c9a7d36760b5270/baseline/ComplexityTests/RationalHitting/Lift.lean:131:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 10
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+(53, 4654)
+`#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/8c9a7d36760b5270/baseline/ComplexityTests/RationalHitting/Lift.lean:142:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: (53, 4654)
++ ---
++ info: `#`-commands, such as '#eval', are not allowed in 'Mathlib' [linter.hashCommand]

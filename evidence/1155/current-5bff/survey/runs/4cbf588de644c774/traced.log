@@ -1,0 +1,16 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+      (fun x =>
+        amplify eval fallback rotate T q (FinEnum.toList (PowerLabel D T q)) FinEnum.equiv
+          (FinEnum.toList (Fin 5 × Rand (PowerAlphabet D α T))) (FinEnum.toList (Fin 6)) (graph x))
+      input (encoding (encPi (encPi encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.amplify #[Cslib.PCP.Encoded.Graph.isPolyTime_amplify]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_amplify
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime graph input (encoding enc)
+      [Meta.Tactic.fun_prop] candidate local theorems for graph #[hgraph : ComputableInPolyTime graph input (encoding enc)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hgraph : ComputableInPolyTime graph input (encoding enc)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)
+      [Meta.Tactic.fun_prop] candidate local theorems for rotate #[hrotate : ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)]
+      [Meta.Tactic.fun_prop] ✅️ applying: hrotate : ComputableInPolyTime rotate (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool
+      [Meta.Tactic.fun_prop] candidate local theorems for eval #[heval : ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool]
+      [Meta.Tactic.fun_prop] ✅️ applying: heval : ComputableInPolyTime (fun p => eval p.1 p.2.1 p.2.2) (encPair enc (encPair alphabet alphabet)) encBool

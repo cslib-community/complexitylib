@@ -1,0 +1,19 @@
+[Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => S.numChunks n + 3 * n + 5
+  [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => S.numChunks n + 3 * n
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Cslib.PolynomiallyBounded.add]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.add
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded S.numChunks
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.CircuitValue.WriterSpec.numChunks #[]
+          [Meta.Tactic.fun_prop] candidate local theorems for Cslib.Complexity.CircuitValue.WriterSpec.numChunks #[hpoly : PolynomiallyBounded S.numChunks]
+          [Meta.Tactic.fun_prop] ✅️ applying: hpoly : PolynomiallyBounded S.numChunks
+        [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded (HMul.hMul 3)
+          [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Cslib.PolynomiallyBounded.mul]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.mul
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 3
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const
+            [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => n
+              [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.id
+    [Meta.Tactic.fun_prop] ✅️ PolynomiallyBounded fun n => 5
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PolynomiallyBounded.const

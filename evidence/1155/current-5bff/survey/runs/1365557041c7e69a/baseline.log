@@ -1,0 +1,7 @@
+'Turing.MultiTapeTM.ComputableInPolyTime.mapWithInput' depends on axioms: [propext, Classical.choice, Quot.sound]
+`#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/1365557041c7e69a/baseline/ComplexityTests/Machines/Turing/MultiTape/Internal/ListMap.lean:44:0: error: ❌️ Docstring on `#guard_msgs` does not match generated message:
+
+  info: 'Turing.MultiTapeTM.ComputableInPolyTime.mapWithInput' depends on axioms: [propext, Classical.choice, Quot.sound]
++ ---
++ info: `#`-commands, such as '#print', are not allowed in 'Mathlib' [linter.hashCommand]

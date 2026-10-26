@@ -1,0 +1,32 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime IndependentSet.toVertexCover (encPair encGraph encNat) (encPair encGraph encNat)
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.IndependentSet.toVertexCover #[Cslib.Complexity.IndependentSet.computableInPolyTime_toVertexCover]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.IndependentSet.computableInPolyTime_toVertexCover
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime VertexCover.verifier (encPair (encPair encGraph encNat) encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.VertexCover.verifier #[Cslib.Complexity.VertexCover.computableInPolyTime_verifier]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.VertexCover.computableInPolyTime_verifier
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (KColoring.verifier 3) (encPair encGraph encBits) encBool
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.KColoring.verifier #[Cslib.Complexity.KColoring.computableInPolyTime_verifier]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.KColoring.computableInPolyTime_verifier
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime SAT.toThreeColoring encCNF encGraph
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.toThreeColoring #[Cslib.Complexity.SAT.computableInPolyTime_toThreeColoring]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.computableInPolyTime_toThreeColoring
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (SAT.toKColoring 2) encCNF encGraph
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.toKColoring #[Cslib.Complexity.SAT.computableInPolyTime_toKColoring]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.computableInPolyTime_toKColoring
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime SAT.toDirHamPath encCNF (encPair encGraph (encPair encNat encNat))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.toDirHamPath #[Cslib.Complexity.SAT.computableInPolyTime_toDirHamPath]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.computableInPolyTime_toDirHamPath
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime SAT.toDirHamCycle encCNF encGraph
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.toDirHamCycle #[Cslib.Complexity.SAT.computableInPolyTime_toDirHamCycle]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.computableInPolyTime_toDirHamCycle
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => IndependentSet.toVertexCover (SAT.toIndependentSet φ)) encCNF (encPair encGraph encNat)
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.IndependentSet.toVertexCover #[Cslib.Complexity.IndependentSet.computableInPolyTime_toVertexCover]
+  [Meta.Tactic.fun_prop] decomposing to later use Cslib.Complexity.IndependentSet.computableInPolyTime_toVertexCover as:
+                         (fun φ0 => IndependentSet.toVertexCover φ0) ∘ (fun φ => SAT.toIndependentSet φ)
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => SAT.toIndependentSet φ) encCNF (encPair encGraph encNat)
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.SAT.toIndependentSet #[Cslib.Complexity.SAT.computableInPolyTime_toIndependentSet]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.SAT.computableInPolyTime_toIndependentSet
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ0 => IndependentSet.toVertexCover φ0) (encPair encGraph encNat) (encPair encGraph encNat)
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Complexity.IndependentSet.toVertexCover #[Cslib.Complexity.IndependentSet.computableInPolyTime_toVertexCover]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Complexity.IndependentSet.computableInPolyTime_toVertexCover

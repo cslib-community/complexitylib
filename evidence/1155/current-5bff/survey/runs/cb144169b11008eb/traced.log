@@ -1,0 +1,153 @@
+[Meta.Tactic.fun_prop] ✅️ IsOraclePPTOn input encBool fun a => do
+      let b ← ProbOracleComp.sample (ProbComp.uniform Bool)
+      let m ← ProbOracleComp.sample (message a b)
+      let reply ← List.take 1 <$> ProbOracleComp.query ((), m)
+      pure (decide (reply = [b]))
+  [Meta.Tactic.fun_prop] ✅️ IsOraclePPTOn input encBool fun a => do
+        let b ← ProbOracleComp.sample (ProbComp.uniform Bool)
+        let m ← ProbOracleComp.sample (message a b)
+        let reply ← List.take 1 <$> ProbOracleComp.query ((), m)
+        pure (decide (reply = [b]))
+    [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsOraclePPTOn.bind_with]
+    [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsOraclePPTOn.bind_with
+      [Meta.Tactic.fun_prop] ✅️ IsOraclePPTOn input encBool fun a => ProbOracleComp.sample (ProbComp.uniform Bool)
+        [Meta.Tactic.fun_prop] missing constant rule to prove `IsOraclePPTOn input ?middle fun a => ProbOracleComp.sample (ProbComp.uniform Bool)`
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.ProbOracleComp.sample #[Cslib.Probability.IsPPTOn.isOraclePPTOn]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.isOraclePPTOn
+          [Meta.Tactic.fun_prop] ✅️ IsPPTOn input encBool fun a => ProbComp.uniform Bool
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.isPPTOn_uniform_bool
+      [Meta.Tactic.fun_prop] ✅️ IsOraclePPTOn (encPair input encBool) encBool fun pair => do
+            let m ← ProbOracleComp.sample (message pair.1 pair.2)
+            let reply ← List.take 1 <$> ProbOracleComp.query ((), m)
+            pure (decide (reply = [pair.2]))
+        [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsOraclePPTOn.bind_with]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsOraclePPTOn.bind_with
+          [Meta.Tactic.fun_prop] ✅️ IsOraclePPTOn (encPair input encBool) encBits fun a => ProbOracleComp.sample (message a.1 a.2)
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.ProbOracleComp.sample #[Cslib.Probability.IsPPTOn.isOraclePPTOn]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsPPTOn.isOraclePPTOn
+              [Meta.Tactic.fun_prop] ✅️ IsPPTOn (encPair input encBool) encBits fun a => message a.1 a.2
+                [Meta.Tactic.fun_prop] candidate local theorems for message #[h : IsPPTOn (encPair input encBool) encBits fun p => message p.1 p.2]
+                [Meta.Tactic.fun_prop] ✅️ applying: h : IsPPTOn (encPair input encBool) encBits fun p => message p.1 p.2
+          [Meta.Tactic.fun_prop] ✅️ IsOraclePPTOn (encPair (encPair input encBool) encBits) encBool fun pair => do
+                let reply ← List.take 1 <$> ProbOracleComp.query ((), pair.2)
+                pure (decide (reply = [pair.1.2]))
+            [Meta.Tactic.fun_prop] candidate theorems for Bind.bind #[Cslib.Probability.IsOraclePPTOn.bind_with]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsOraclePPTOn.bind_with
+              [Meta.Tactic.fun_prop] ✅️ IsOraclePPTOn (encPair (encPair input encBool) encBits) encBits fun a => List.take 1 <$> ProbOracleComp.query ((), a.2)
+                [Meta.Tactic.fun_prop] candidate theorems for Functor.map #[Cslib.Probability.IsOraclePPTOn.map, Cslib.Probability.IsOraclePPTOn.map_with, Cslib.Probability.IsOraclePPTOn.pair, Cslib.Probability.IsOraclePPTOn.query_take]
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsOraclePPTOn.map
+                  [Meta.Tactic.fun_prop] ❌️ IsOraclePPTOn (encPair (encPair input encBool) encBits) ?middle✝ fun a => ProbOracleComp.query ((), a.2)
+                    [Meta.Tactic.fun_prop] candidate theorems for Cslib.ProbOracleComp.query #[]
+                    [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsOraclePPTOn` theorems for `Cslib.ProbOracleComp.query`
+                                 trying again after decomposing function as: `(fun a2 => ProbOracleComp.query a2) ∘ (fun a => ((), a.2))`
+                    [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsOraclePPTOn.preprocess
+                      [Meta.Tactic.fun_prop] ❌️ IsOraclePPTOn ?middle ?middle✝ fun a2 => ProbOracleComp.query a2
+                        [Meta.Tactic.fun_prop] candidate theorems for Cslib.ProbOracleComp.query #[]
+                        [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsOraclePPTOn` theorems for `Cslib.ProbOracleComp.query`
+                                     now trying to prove `Cslib.Probability.IsOraclePPTOn` from another function property
+                        [Meta.Tactic.fun_prop] candidate transition theorems: []
+                      [Meta.Tactic.fun_prop] @IsOraclePPTOn.preprocess, failed to discharge hypotheses
+                            IsOraclePPTOn ?middle ?middle✝ fun a2 => ProbOracleComp.query a2
+                  [Meta.Tactic.fun_prop] @IsOraclePPTOn.map, failed to discharge hypotheses
+                        IsOraclePPTOn (encPair (encPair input encBool) encBits) ?middle✝ fun a =>
+                          ProbOracleComp.query ((), a.2)
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsOraclePPTOn.map_with
+                  [Meta.Tactic.fun_prop] ❌️ IsOraclePPTOn (encPair (encPair input encBool) encBits) ?middle✝ fun a => ProbOracleComp.query ((), a.2)
+                    [Meta.Tactic.fun_prop] candidate theorems for Cslib.ProbOracleComp.query #[]
+                    [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsOraclePPTOn` theorems for `Cslib.ProbOracleComp.query`
+                                 trying again after decomposing function as: `(fun a2 => ProbOracleComp.query a2) ∘ (fun a => ((), a.2))`
+                    [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsOraclePPTOn.preprocess
+                      [Meta.Tactic.fun_prop] ❌️ IsOraclePPTOn ?middle ?middle✝ fun a2 => ProbOracleComp.query a2
+                        [Meta.Tactic.fun_prop] candidate theorems for Cslib.ProbOracleComp.query #[]
+                        [Meta.Tactic.fun_prop] failed applying `Cslib.Probability.IsOraclePPTOn` theorems for `Cslib.ProbOracleComp.query`
+                                     now trying to prove `Cslib.Probability.IsOraclePPTOn` from another function property
+                        [Meta.Tactic.fun_prop] candidate transition theorems: []
+                      [Meta.Tactic.fun_prop] @IsOraclePPTOn.preprocess, failed to discharge hypotheses
+                            IsOraclePPTOn ?middle ?middle✝ fun a2 => ProbOracleComp.query a2
+                  [Meta.Tactic.fun_prop] @IsOraclePPTOn.map_with, failed to discharge hypotheses
+                        IsOraclePPTOn (encPair (encPair input encBool) encBits) ?middle✝ fun a =>
+                          ProbOracleComp.query ((), a.2)
+                [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Probability.IsOraclePPTOn.pair
+                  [Meta.Tactic.fun_prop] failed to unify @IsOraclePPTOn.pair
+                      IsOraclePPTOn ?input (encPair ?middle ?output) fun a => (fun b => (?f a, b)) <$> ?program a
+                      with
+                      IsOraclePPTOn (encPair (encPair input encBool) encBits) ?middle✝ fun a =>
+                        List.take 1 <$> ProbOracleComp.query ((), a.2)
+                [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Probability.IsOraclePPTOn.query_take
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair (encPair input encBool) encBits) encBits
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair input encBool) encBits)
+                            (encPair (encPair input encBool) encBits)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => 1) (encPair (encPair input encBool) encBits) encUnary
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+              [Meta.Tactic.fun_prop] ✅️ IsOraclePPTOn (encPair (encPair (encPair input encBool) encBits) encBits) encBool fun pair =>
+                    pure (decide (pair.2 = [pair.1.1.2]))
+                [Meta.Tactic.fun_prop] candidate theorems for Pure.pure #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.isOraclePPTOn]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.isOraclePPTOn
+                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => decide (a.2 = [a.1.1.2]))
+                        (encPair (encPair (encPair input encBool) encBits) encBits) encBool
+                    [Meta.Tactic.fun_prop] candidate theorems for Decidable.decide #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq, Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq', Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_ne, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt, Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_le']
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_lt'
+                      [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.unary_lt'
+                          ComputableTidilyInPolyTime (fun a => decide (?left a < ?right a)) ?input encBool
+                          with
+                          ComputableTidilyInPolyTime (fun a => decide (a.2 = [a.1.1.2]))
+                            (encPair (encPair (encPair input encBool) encBits) encBits) encBool
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_and
+                      [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_and
+                          ComputableTidilyInPolyTime (fun a => decide (?left a ∧ ?right a)) ?encA encBool
+                          with
+                          ComputableTidilyInPolyTime (fun a => decide (a.2 = [a.1.1.2]))
+                            (encPair (encPair (encPair input encBool) encBits) encBits) encBool
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or
+                      [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_or
+                          ComputableTidilyInPolyTime (fun a => decide (?left a ∨ ?right a)) ?encA encBool
+                          with
+                          ComputableTidilyInPolyTime (fun a => decide (a.2 = [a.1.1.2]))
+                            (encPair (encPair (encPair input encBool) encBits) encBits) encBool
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq
+                      [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.decide_eq
+                          ComputableTidilyInPolyTime (fun p => decide (p.1 = p.2)) (encPair ?enc ?enc) encBool
+                          with
+                          ComputableTidilyInPolyTime (fun a => decide (a.2 = [a.1.1.2]))
+                            (encPair (encPair (encPair input encBool) encBits) encBits) encBool
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.snd (encPair (encPair (encPair input encBool) encBits) encBits) encBits
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair (encPair (encPair input encBool) encBits) encBits)
+                                (encPair (encPair (encPair input encBool) encBits) encBits)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBits encBits
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => [x.1.1.2]) (encPair (encPair (encPair input encBool) encBits) encBits) encBits
+                        [Meta.Tactic.fun_prop] candidate theorems for List.cons #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons', Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCons, Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.cons'
+                          [Meta.Tactic.fun_prop] failed to unify @ComputableTidilyInPolyTime.cons'
+                              ComputableTidilyInPolyTime (fun x => ?head x :: ?tail x) ?encIn (encList ?encA)
+                              with
+                              ComputableTidilyInPolyTime (fun x => [x.1.1.2])
+                                (encPair (encPair (encPair input encBool) encBits) encBits) encBits
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCons
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x.1.1.2) (encPair (encPair (encPair input encBool) encBits) encBits) encBool
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p.1.1) (encPair (encPair (encPair input encBool) encBits) encBits)
+                                    (encPair input encBool)
+                                [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime Prod.fst (encPair (encPair (encPair input encBool) encBits) encBits)
+                                        (encPair (encPair input encBool) encBits)
+                                    [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst', Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst, Turing.MultiTapeTM.ComputableTidilyInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.fst'
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair (encPair (encPair input encBool) encBits) encBits)
+                                            (encPair (encPair (encPair input encBool) encBits) encBits)
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                              [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) encBool encBool
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => []) (encPair (encPair (encPair input encBool) encBits) encBits) encBits
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const

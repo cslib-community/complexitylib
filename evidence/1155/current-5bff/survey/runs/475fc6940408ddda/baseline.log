@@ -1,0 +1,16 @@
+/home/samuel/Code/complexitylib-codex/automation-census-1155/evidence/1155/current-5bff/survey/variants/475fc6940408ddda/baseline/ComplexityTests/Abstracts/SipserLautemannTests.lean:9:0: error: unknown module prefix 'ComplexityAbstracts'
+
+No directory 'ComplexityAbstracts' or file 'ComplexityAbstracts.olean' in the search path entries:
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/Cli/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/batteries/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/Qq/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/aesop/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/proofwidgets/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/importGraph/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/LeanSearchClient/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/plausible/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/mathlib/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/packages/cslib/.lake/build/lib/lean
+/home/samuel/Code/complexitylib-codex/automation-full-d7-1155/.lake/build/lib/lean
+/home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lib/lean
+/home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lib/lean

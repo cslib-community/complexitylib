@@ -1,0 +1,6 @@
+[Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (MultiTapeTM.PolynomialClock.budget 0 7) MultiTapeTM.encBits MultiTapeTM.encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.PolynomialClock.budget #[Turing.MultiTapeTM.PolynomialClock.computableTidilyInPolyTime_budget]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.PolynomialClock.computableTidilyInPolyTime_budget
+[Meta.Tactic.fun_prop] ✅️ MultiTapeTM.ComputableTidilyInPolyTime (MultiTapeTM.PolynomialClock.budget 5 0) MultiTapeTM.encBits MultiTapeTM.encBits
+  [Meta.Tactic.fun_prop] candidate theorems for Turing.MultiTapeTM.PolynomialClock.budget #[Turing.MultiTapeTM.PolynomialClock.computableTidilyInPolyTime_budget]
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.PolynomialClock.computableTidilyInPolyTime_budget

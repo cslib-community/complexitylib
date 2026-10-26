@@ -1,0 +1,1611 @@
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => Clause.split3 (fun i => p.1 + i) p.1 p.2)
+      (encPair encUnary (encList (encPair encUnary encBool))) (encList (encList (encPair encUnary encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[Cslib.Logic.PL.Clause.isPolyTime_split3]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.Clause.isPolyTime_split3
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair encUnary (encList (encPair encUnary encBool)))
+          (encList (encPair encUnary encBool))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary (encList (encPair encUnary encBool)))
+              (encPair encUnary (encList (encPair encUnary encBool)))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encPair encUnary encBool)) (encList (encPair encUnary encBool))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair encUnary (encList (encPair encUnary encBool))) encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair encUnary (encList (encPair encUnary encBool)))
+              (encPair encUnary (encList (encPair encUnary encBool)))
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.1.1 + p.2) (encPair (encPair encUnary (encList (encPair encUnary encBool))) encUnary)
+          encUnary
+      [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+      [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_add as:
+                             (fun p4p5 => p4p5.1 + p4p5.2) ∘ (fun p => (p.1.1, p.2))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => (p.1.1, p.2)) (encPair (encPair encUnary (encList (encPair encUnary encBool))) encUnary)
+              (encPair encUnary encUnary)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1) (encPair (encPair encUnary (encList (encPair encUnary encBool))) encUnary)
+                  encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair encUnary (encList (encPair encUnary encBool))) encUnary)
+                      (encPair encUnary (encList (encPair encUnary encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary (encList (encPair encUnary encBool))) encUnary)
+                          (encPair (encPair encUnary (encList (encPair encUnary encBool))) encUnary)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair encUnary (encList (encPair encUnary encBool)))
+                          (encPair encUnary (encList (encPair encUnary encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair encUnary (encList (encPair encUnary encBool))) encUnary) encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair encUnary (encList (encPair encUnary encBool))) encUnary)
+                      (encPair (encPair encUnary (encList (encPair encUnary encBool))) encUnary)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p4p5 => p4p5.1 + p4p5.2) (encPair encUnary encUnary) encUnary
+          [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_add
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime CNF.to3CNF (encList (encList (encPair encNat encBool)))
+      (encList (encList (encPair (encSum encNat (encPair encUnary encUnary)) encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.CNF.to3CNF #[Cslib.Logic.PL.CNF.isPolyTime_to3CNF]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.CNF.isPolyTime_to3CNF
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime CNF.to3CNF (encList (encList (encPair empty encBool)))
+      (encList (encList (encPair (encSum empty (encPair encUnary encUnary)) encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.CNF.to3CNF #[Cslib.Logic.PL.CNF.isPolyTime_to3CNF]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.CNF.isPolyTime_to3CNF
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => Clause.split3 (fresh x) (index x) (clause x)) input
+      (encList (encList (encPair enc encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[Cslib.Logic.PL.Clause.isPolyTime_split3]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Logic.PL.Clause.isPolyTime_split3
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime clause input (encList (encPair enc encBool))
+      [Meta.Tactic.fun_prop] candidate local theorems for clause #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => clause a) input (encList (encPair enc encBool))
+          [Meta.Tactic.fun_prop] candidate local theorems for clause #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun a => clause a) input (encList (encPair enc encBool))
+    [Meta.Tactic.fun_prop] @Clause.isPolyTime_split3, failed to discharge hypotheses
+          ComputableInPolyTime clause input (encList (encPair enc encBool))
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.Logic.PL.Clause.split3`
+               trying again after decomposing function as: `(fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2) ∘ (fun x => (fresh x, index x, clause x))`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair (encPi enc) ?enc₂✝)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime fresh input (encPi enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for fresh #[hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc]
+          [Meta.Tactic.fun_prop] adding argument to later use hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pi
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pi, failed to synthesize instance
+                  Fintype ℕ
+            [Meta.Tactic.fun_prop] ✅️ ∀ (i : ℕ), ComputableInPolyTime (fun a => fresh a i) input enc
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => fresh a i) input enc
+                [Meta.Tactic.fun_prop] candidate local theorems for fresh #[hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc]
+                [Meta.Tactic.fun_prop] decomposing to later use hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc as:
+                                     (fun y => fresh y.1 y.2) ∘ (fun a => (a, i))
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (a, i)) input (encPair input ?enc₂✝)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => i) input ?enc₂
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₂ : ℕ ↪ List Bool)`
+                        [Meta.Tactic.fun_prop] candidate local theorems for i #[]
+                        [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => i) input ?enc₂
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                              [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.const, failed to infer `(?enc₂ : ℕ ↪
+                                    List Bool)`
+                            [Meta.Tactic.fun_prop] candidate local theorems for i #[]
+                            [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                                    if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                                ComputableTidilyInPolyTime (fun a => i) input ?enc₂
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                            ComputableInPolyTime (fun a => i) input ?enc₂
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                            PairEncoding ?enc₁ ?enc₂ (encPair input ?enc₂✝)
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                            PairEncoding ?enc₁ ?enc₂ (encPair input ?enc₂✝)
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                      [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => (a, i)) input (encPair input ?enc₂✝)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) input input
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => i) input ?enc₂✝
+                            [Meta.Tactic.fun_prop] skipping proof search, proving ComputableTidilyInPolyTime
+                                  (fun x => i) input ?enc₂✝ was tried already and failed
+                          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+                                ComputableTidilyInPolyTime (fun x => i) input ?enc₂✝
+                        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+                                     now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                        [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                                if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                      [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                            ComputableTidilyInPolyTime (fun a => (a, i)) input (encPair input ?enc₂✝)
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                        ComputableInPolyTime (fun a => (a, i)) input (encPair input ?enc₂✝)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun y => fresh y.1 y.2) (encPair input encUnary) enc
+                    [Meta.Tactic.fun_prop] candidate local theorems for fresh #[hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (a, i)) input (encPair input encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => i) input encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pi, failed to infer `(?inst✝ : Fintype ℕ)`
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => fresh a) input (encPi enc)
+              [Meta.Tactic.fun_prop] candidate local theorems for fresh #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun a => fresh a) input (encPi enc)
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+              ComputableInPolyTime fresh input (encPi enc)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+              PairEncoding ?enc₁ ?enc₂ (encPair (encPi enc) ?enc₂✝)
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+              PairEncoding ?enc₁ ?enc₂ (encPair (encPi enc) ?enc₂✝)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair (encPi enc) ?enc₂✝)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime fresh input (encPi enc)
+              [Meta.Tactic.fun_prop] candidate local theorems for fresh #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime fresh input (encPi enc)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair (encPi enc) ?enc₂✝)
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair (encPi enc) ?enc₂✝)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+          (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool)))) (encList (encList (encPair enc encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[Cslib.Logic.PL.Clause.isPolyTime_split3]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Logic.PL.Clause.isPolyTime_split3
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => x.2.2) (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+              (encList (encPair enc encBool))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?encA✝ ?encB✝)) (encPair ?enc₁ (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun self => self.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun self => self.2) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                        (encPair ?encA✝ ?encB✝)
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to discharge hypotheses
+                  ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.snd as:
+                                 (fun x2 => x2.2) ∘ (fun x => x.2)
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?encA✝ ?encB✝)) (encPair ?enc₁ (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                            (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                        (encPair ?encA✝ ?encB✝)
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                  ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool))) (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encList (encPair enc encBool)))
+                      (encPair ?enc₁ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                      (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encList (encPair enc encBool)))
+                          (encPair ?encA (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encList (encPair enc encBool)))
+                          (encPair ?encB (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                        (encList (encPair enc encBool))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                  ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                    (encList (encPair enc encBool))
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  (encPair ?enc₁✝ (encList (encPair enc encBool)))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encList (encPair enc encBool)))
+                      (encPair ?enc₁ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun self => self.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                          (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun self => self.2)
+                        (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                        (encPair ?enc₁✝ (encList (encPair enc encBool)))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to discharge hypotheses
+                  ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                    (encPair ?enc₁✝ (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                       trying again after decomposing function as: `(fun x2 => x2.2) ∘ (fun x => x.2)`
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  (encPair ?enc₁✝ (encList (encPair enc encBool)))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                      (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => x.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                          (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                            (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                            (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x => x.2)
+                        (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                        (encPair ?enc₁✝ (encList (encPair enc encBool)))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                  ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                    (encPair ?enc₁✝ (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool))) (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encList (encPair enc encBool)))
+                      (encPair ?enc₁ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                      (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encList (encPair enc encBool)))
+                          (encPair ?encA (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                            (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encList (encPair enc encBool)))
+                          (encPair ?encB (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                        (encList (encPair enc encBool))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                  ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                    (encList (encPair enc encBool))
+        [Meta.Tactic.fun_prop] @Clause.isPolyTime_split3, failed to discharge hypotheses
+              ComputableInPolyTime (fun x => x.2.2) (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                (encList (encPair enc encBool))
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.Logic.PL.Clause.split3`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+              (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool)))) (encList (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Logic.PL.Clause.split3`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+                (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                (encList (encList (encPair enc encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+            (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool)))) (encList (encList (encPair enc encBool)))
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => Clause.split3 (fresh x) (index x) (clause x)) input
+      (encList (encList (encPair enc encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[Cslib.Logic.PL.Clause.isPolyTime_split3]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Logic.PL.Clause.isPolyTime_split3
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime clause input (encList (encPair enc encBool))
+      [Meta.Tactic.fun_prop] candidate local theorems for clause #[hclause : ComputableInPolyTime clause input (encList (encPair enc encBool))]
+      [Meta.Tactic.fun_prop] ✅️ applying: hclause : ComputableInPolyTime clause input (encList (encPair enc encBool))
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime index input encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for index #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => index a) input encUnary
+          [Meta.Tactic.fun_prop] candidate local theorems for index #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun a => index a) input encUnary
+    [Meta.Tactic.fun_prop] @Clause.isPolyTime_split3, failed to discharge hypotheses
+          ComputableInPolyTime index input encUnary
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.Logic.PL.Clause.split3`
+               trying again after decomposing function as: `(fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2) ∘ (fun x => (fresh x, index x, clause x))`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair (encPi enc) ?enc₂✝)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime fresh input (encPi enc)
+          [Meta.Tactic.fun_prop] candidate local theorems for fresh #[hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc]
+          [Meta.Tactic.fun_prop] adding argument to later use hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pi
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pi, failed to synthesize instance
+                  Fintype ℕ
+            [Meta.Tactic.fun_prop] ✅️ ∀ (i : ℕ), ComputableInPolyTime (fun a => fresh a i) input enc
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => fresh a i) input enc
+                [Meta.Tactic.fun_prop] candidate local theorems for fresh #[hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc]
+                [Meta.Tactic.fun_prop] decomposing to later use hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc as:
+                                     (fun y => fresh y.1 y.2) ∘ (fun a => (a, i))
+                [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => (a, i)) input (encPair input ?enc₂✝)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun a => i) input ?enc₂
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+                          [Meta.Tactic.fun_prop] @ComputableInPolyTime.const, failed to infer `(?enc₂ : ℕ ↪ List Bool)`
+                        [Meta.Tactic.fun_prop] candidate local theorems for i #[]
+                        [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => i) input ?enc₂
+                            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.const
+                              [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.const, failed to infer `(?enc₂ : ℕ ↪
+                                    List Bool)`
+                            [Meta.Tactic.fun_prop] candidate local theorems for i #[]
+                            [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                                    if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                                ComputableTidilyInPolyTime (fun a => i) input ?enc₂
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+                            ComputableInPolyTime (fun a => i) input ?enc₂
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+                            PairEncoding ?enc₁ ?enc₂ (encPair input ?enc₂✝)
+                      [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+                            PairEncoding ?enc₁ ?enc₂ (encPair input ?enc₂✝)
+                    [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                                 now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+                    [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+                    [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                      [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => (a, i)) input (encPair input ?enc₂✝)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+                        [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) input input
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => i) input ?enc₂✝
+                            [Meta.Tactic.fun_prop] skipping proof search, proving ComputableTidilyInPolyTime
+                                  (fun x => i) input ?enc₂✝ was tried already and failed
+                          [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+                                ComputableTidilyInPolyTime (fun x => i) input ?enc₂✝
+                        [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+                                     now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                        [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                                if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                      [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                            ComputableTidilyInPolyTime (fun a => (a, i)) input (encPair input ?enc₂✝)
+                  [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                        ComputableInPolyTime (fun a => (a, i)) input (encPair input ?enc₂✝)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun y => fresh y.1 y.2) (encPair input encUnary) enc
+                    [Meta.Tactic.fun_prop] candidate local theorems for fresh #[hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (a, i)) input (encPair input encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => i) input encUnary
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.const
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.pi, failed to infer `(?inst✝ : Fintype ℕ)`
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => fresh a) input (encPi enc)
+              [Meta.Tactic.fun_prop] candidate local theorems for fresh #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun a => fresh a) input (encPi enc)
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+              ComputableInPolyTime fresh input (encPi enc)
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+              PairEncoding ?enc₁ ?enc₂ (encPair (encPi enc) ?enc₂✝)
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+              PairEncoding ?enc₁ ?enc₂ (encPair (encPi enc) ?enc₂✝)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair (encPi enc) ?enc₂✝)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime fresh input (encPi enc)
+              [Meta.Tactic.fun_prop] candidate local theorems for fresh #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime fresh input (encPi enc)
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair (encPi enc) ?enc₂✝)
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair (encPi enc) ?enc₂✝)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+          (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool)))) (encList (encList (encPair enc encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[Cslib.Logic.PL.Clause.isPolyTime_split3]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Logic.PL.Clause.isPolyTime_split3
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => x.2.2) (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+              (encList (encPair enc encBool))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?encA✝ ?encB✝)) (encPair ?enc₁ (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun self => self.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun self => self.2) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                        (encPair ?encA✝ ?encB✝)
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to discharge hypotheses
+                  ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.snd as:
+                                 (fun x2 => x2.2) ∘ (fun x => x.2)
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?encA✝ ?encB✝)) (encPair ?enc₁ (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                            (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                        (encPair ?encA✝ ?encB✝)
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                  ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool))) (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encList (encPair enc encBool)))
+                      (encPair ?enc₁ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                      (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encList (encPair enc encBool)))
+                          (encPair ?encA (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encList (encPair enc encBool)))
+                          (encPair ?encB (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                        (encList (encPair enc encBool))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                  ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                    (encList (encPair enc encBool))
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  (encPair ?enc₁✝ (encList (encPair enc encBool)))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encList (encPair enc encBool)))
+                      (encPair ?enc₁ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun self => self.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                          (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun self => self.2)
+                        (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                        (encPair ?enc₁✝ (encList (encPair enc encBool)))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to discharge hypotheses
+                  ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                    (encPair ?enc₁✝ (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                       trying again after decomposing function as: `(fun x2 => x2.2) ∘ (fun x => x.2)`
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  (encPair ?enc₁✝ (encList (encPair enc encBool)))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                      (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => x.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                          (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                            (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                            (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x => x.2)
+                        (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                        (encPair ?enc₁✝ (encList (encPair enc encBool)))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                  ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                    (encPair ?enc₁✝ (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool))) (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encList (encPair enc encBool)))
+                      (encPair ?enc₁ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                      (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encList (encPair enc encBool)))
+                          (encPair ?encA (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                            (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encList (encPair enc encBool)))
+                          (encPair ?encB (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                        (encList (encPair enc encBool))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                  ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                    (encList (encPair enc encBool))
+        [Meta.Tactic.fun_prop] @Clause.isPolyTime_split3, failed to discharge hypotheses
+              ComputableInPolyTime (fun x => x.2.2) (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                (encList (encPair enc encBool))
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.Logic.PL.Clause.split3`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+              (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool)))) (encList (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Logic.PL.Clause.split3`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+                (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                (encList (encList (encPair enc encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+            (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool)))) (encList (encList (encPair enc encBool)))
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => Clause.split3 (fresh x) (index x) (clause x)) input
+      (encList (encList (encPair enc encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[Cslib.Logic.PL.Clause.isPolyTime_split3]
+  [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Logic.PL.Clause.isPolyTime_split3
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime clause input (encList (encPair enc encBool))
+      [Meta.Tactic.fun_prop] candidate local theorems for clause #[hclause : ComputableInPolyTime clause input (encList (encPair enc encBool))]
+      [Meta.Tactic.fun_prop] ✅️ applying: hclause : ComputableInPolyTime clause input (encList (encPair enc encBool))
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime index input encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for index #[hindex : ComputableInPolyTime index input encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hindex : ComputableInPolyTime index input encUnary
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+      [Meta.Tactic.fun_prop] candidate local theorems for fresh #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+          [Meta.Tactic.fun_prop] candidate local theorems for fresh #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+    [Meta.Tactic.fun_prop] @Clause.isPolyTime_split3, failed to discharge hypotheses
+          ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.Logic.PL.Clause.split3`
+               trying again after decomposing function as: `(fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2) ∘ (fun x => (fresh x, index x, clause x))`
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair ?enc₁✝ ?enc₂✝)
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime fresh input ?enc₁
+          [Meta.Tactic.fun_prop] candidate local theorems for fresh #[]
+          [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun a => fresh a) input ?enc₁
+              [Meta.Tactic.fun_prop] candidate local theorems for fresh #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime (fun a => fresh a) input ?enc₁
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.prod, failed to discharge hypotheses
+              ComputableInPolyTime fresh input ?enc₁
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.pair
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to synthesize instance
+              PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+        [Meta.Tactic.fun_prop] @ComputableInPolyTime.pair, failed to discharge hypotheses
+              PairEncoding ?enc₁ ?enc₂ (encPair ?enc₁✝ ?enc₂✝)
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.mk`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair ?enc₁✝ ?enc₂✝)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod]
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.prod
+            [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime fresh input ?enc₁✝
+              [Meta.Tactic.fun_prop] candidate local theorems for fresh #[]
+              [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                      if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+            [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.prod, failed to discharge hypotheses
+                  ComputableTidilyInPolyTime fresh input ?enc₁✝
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.mk`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair ?enc₁✝ ?enc₂✝)
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x => (fresh x, index x, clause x)) input (encPair ?enc₁✝ ?enc₂✝)
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+          (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool)))) (encList (encList (encPair enc encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[Cslib.Logic.PL.Clause.isPolyTime_split3]
+      [Meta.Tactic.fun_prop] ❌️ applying: Cslib.Logic.PL.Clause.isPolyTime_split3
+        [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => x.2.2) (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+              (encList (encPair enc encBool))
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?encA✝ ?encB✝)) (encPair ?enc₁ (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun self => self.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun self => self.2) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                        (encPair ?encA✝ ?encB✝)
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to discharge hypotheses
+                  ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+          [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.snd as:
+                                 (fun x2 => x2.2) ∘ (fun x => x.2)
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?encA✝ ?encB✝)) (encPair ?enc₁ (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                            (encPair ?encA✝ ?encB✝) (encPair ?encA✝ ?encB✝)
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝))
+                        (encPair ?encA✝ ?encB✝)
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                  ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?encA✝ ?encB✝)) (encPair ?encA✝ ?encB✝)
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool))) (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encList (encPair enc encBool)))
+                      (encPair ?enc₁ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                      (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encList (encPair enc encBool)))
+                          (encPair ?encA (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encList (encPair enc encBool)))
+                          (encPair ?encB (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                        (encList (encPair enc encBool))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                  ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                    (encList (encPair enc encBool))
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  (encPair ?enc₁✝ (encList (encPair enc encBool)))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA (encPair ?encA✝ ?encB✝)) (encPair ?encA (encPair ?encA✝ ?encB✝))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encList (encPair enc encBool)))
+                      (encPair ?enc₁ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun self => self.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                          (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun self => self.2)
+                        (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                        (encPair ?enc₁✝ (encList (encPair enc encBool)))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to discharge hypotheses
+                  ComputableInPolyTime Prod.snd (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                    (encPair ?enc₁✝ (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                       trying again after decomposing function as: `(fun x2 => x2.2) ∘ (fun x => x.2)`
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  (encPair ?enc₁✝ (encList (encPair enc encBool)))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                      (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ → W) ↪
+                      List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : (ℕ → W) ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => x.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encA (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                          (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                            (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                            (encPair ?enc₁✝ (encList (encPair enc encBool)))
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : (ℕ →
+                            W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                          (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : (ℕ → W) ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x => x.2)
+                        (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                        (encPair ?enc₁✝ (encList (encPair enc encBool)))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+                  ComputableInPolyTime (fun x => x.2) (encPair ?encB (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                    (encPair ?enc₁✝ (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+            [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool))) (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair ?encA ?encB) (encPair ?encA ?encB)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snd'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair ?enc₁ (encList (encPair enc encBool)))
+                      (encPair ?enc₁ (encList (encPair enc encBool)))
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] @ComputableInPolyTime.snd', failed to infer `(?enc₁ : ℕ ↪ List Bool)`
+              [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Prod.snd`
+                           now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+              [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+                [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                      (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd, Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun p => p) (encPair ?encA (encList (encPair enc encBool)))
+                          (encPair ?encA (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                      [Meta.Tactic.fun_prop] reusing previously found proof for ComputableTidilyInPolyTime (fun a => a)
+                            (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.sndWithEncoding, failed to infer `(?encA : ℕ ↪
+                          List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd, failed to infer `(?encA : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableTidilyInPolyTime (fun x => x) (encPair ?encB (encList (encPair enc encBool)))
+                          (encPair ?encB (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.id'
+                    [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.snd', failed to infer `(?encB : ℕ ↪ List Bool)`
+                  [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Prod.snd`
+                               now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+                  [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                          if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+                [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+                      ComputableTidilyInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                        (encList (encPair enc encBool))
+            [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+                  ComputableInPolyTime (fun x2 => x2.2) (encPair ?encB (encList (encPair enc encBool)))
+                    (encList (encPair enc encBool))
+        [Meta.Tactic.fun_prop] @Clause.isPolyTime_split3, failed to discharge hypotheses
+              ComputableInPolyTime (fun x => x.2.2) (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                (encList (encPair enc encBool))
+      [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableInPolyTime` theorems for `Cslib.Logic.PL.Clause.split3`
+                   now trying to prove `Turing.MultiTapeTM.ComputableInPolyTime` from another function property
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+              (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool)))) (encList (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[]
+          [Meta.Tactic.fun_prop] failed applying `Turing.MultiTapeTM.ComputableTidilyInPolyTime` theorems for `Cslib.Logic.PL.Clause.split3`
+                       now trying to prove `Turing.MultiTapeTM.ComputableTidilyInPolyTime` from another function property
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+                (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool))))
+                (encList (encList (encPair enc encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x1x2x3 => Clause.split3 x1x2x3.1 x1x2x3.2.1 x1x2x3.2.2)
+            (encPair ?encB✝ (encPair ?enc₁✝ (encList (encPair enc encBool)))) (encList (encList (encPair enc encBool)))
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => Clause.split3 (fresh x) (index x) (clause x)) input
+      (encList (encList (encPair enc encBool)))
+  [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[Cslib.Logic.PL.Clause.isPolyTime_split3]
+  [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.Clause.isPolyTime_split3
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime clause input (encList (encPair enc encBool))
+      [Meta.Tactic.fun_prop] candidate local theorems for clause #[hclause : ComputableInPolyTime clause input (encList (encPair enc encBool))]
+      [Meta.Tactic.fun_prop] ✅️ applying: hclause : ComputableInPolyTime clause input (encList (encPair enc encBool))
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime index input encUnary
+      [Meta.Tactic.fun_prop] candidate local theorems for index #[hindex : ComputableInPolyTime index input encUnary]
+      [Meta.Tactic.fun_prop] ✅️ applying: hindex : ComputableInPolyTime index input encUnary
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+      [Meta.Tactic.fun_prop] candidate local theorems for fresh #[hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc]
+      [Meta.Tactic.fun_prop] ✅️ applying: hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+      (fun x =>
+        let c := clause x;
+        let start := index x;
+        Clause.split3 (fresh x) start (c ++ c))
+      input (encList (encList (encPair enc encBool)))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (x, clause x)) input (encPair input (encList (encPair enc encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime clause input (encList (encPair enc encBool))
+          [Meta.Tactic.fun_prop] candidate local theorems for clause #[hclause : ComputableInPolyTime clause input (encList (encPair enc encBool))]
+          [Meta.Tactic.fun_prop] ✅️ applying: hclause : ComputableInPolyTime clause input (encList (encPair enc encBool))
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+          (fun xc =>
+            let start := index xc.1;
+            Clause.split3 (fresh xc.1) start (xc.2 ++ xc.2))
+          (encPair input (encList (encPair enc encBool))) (encList (encList (encPair enc encBool)))
+      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun xc => (xc, index xc.1)) (encPair input (encList (encPair enc encBool)))
+              (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+          [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input (encList (encPair enc encBool)))
+                  (encPair input (encList (encPair enc encBool)))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => index a.1) (encPair input (encList (encPair enc encBool))) encUnary
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1) (encPair input (encList (encPair enc encBool))) input
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input (encList (encPair enc encBool)))
+                          (encPair input (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => index a0) input encUnary
+                  [Meta.Tactic.fun_prop] candidate local theorems for index #[hindex : ComputableInPolyTime index input encUnary]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hindex : ComputableInPolyTime index input encUnary
+        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun xcstart => Clause.split3 (fresh xcstart.1.1) xcstart.2 (xcstart.1.2 ++ xcstart.1.2))
+              (encPair (encPair input (encList (encPair enc encBool))) encUnary) (encList (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.Clause.split3 #[Cslib.Logic.PL.Clause.isPolyTime_split3]
+          [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.Clause.isPolyTime_split3
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1.2 ++ x.1.2) (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                  (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] candidate theorems for HAppend.hAppend #[Turing.MultiTapeTM.ComputableInPolyTime.bitsAppend, Turing.MultiTapeTM.ComputableInPolyTime.snoc, Turing.MultiTapeTM.ComputableInPolyTime.listAppend']
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsAppend
+                [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.bitsAppend
+                    ComputableInPolyTime (fun x => ?left x ++ ?right x) ?encIn encBits
+                    with
+                    ComputableInPolyTime (fun x => x.1.2 ++ x.1.2)
+                      (encPair (encPair input (encList (encPair enc encBool))) encUnary) (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.snoc
+                [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.snoc
+                    ComputableInPolyTime (fun p => p.1 ++ [p.2]) (encPair (encList ?enc) ?enc) (encList ?enc)
+                    with
+                    ComputableInPolyTime (fun x => x.1.2 ++ x.1.2)
+                      (encPair (encPair input (encList (encPair enc encBool))) encUnary) (encList (encPair enc encBool))
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.listAppend'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1.2) (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                      (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                          (encPair input (encList (encPair enc encBool)))
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                              (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input (encList (encPair enc encBool)))
+                              (encPair input (encList (encPair enc encBool)))
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encList (encPair enc encBool)) (encList (encPair enc encBool))
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x.1.2) (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                      (encList (encPair enc encBool))
+                  [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime (fun x => x.1.2)
+                        (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                        (encList (encPair enc encBool))
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary
+              [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                      (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => fresh p.1.1.1 p.2)
+                  (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary) enc
+              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => (p.1.1.1, p.2))
+                      (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary) (encPair input encUnary)
+                  [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.1.1.1)
+                          (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary) input
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p.1.1)
+                              (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary)
+                              (encPair input (encList (encPair enc encBool)))
+                          [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.fst (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary)
+                                  (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                              [Meta.Tactic.fun_prop] candidate theorems for Prod.fst #[Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.fst, Turing.MultiTapeTM.ComputableInPolyTime.fst']
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.fstWithEncoding
+                                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary)
+                                      (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary)
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                                      (encPair (encPair input (encList (encPair enc encBool))) encUnary)
+                                  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                            [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encPair input (encList (encPair enc encBool)))
+                                  (encPair input (encList (encPair enc encBool)))
+                              [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) input input
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary)
+                          encUnary
+                      [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                      [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary)
+                              (encPair (encPair (encPair input (encList (encPair enc encBool))) encUnary) encUnary)
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                        [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                          [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p0p1 => fresh p0p1.1 p0p1.2) (encPair input encUnary) enc
+                  [Meta.Tactic.fun_prop] candidate local theorems for fresh #[hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc]
+                  [Meta.Tactic.fun_prop] ✅️ applying: hfresh : ComputableInPolyTime (fun p => fresh p.1 p.2) (encPair input encUnary) enc
+[Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime
+      (fun x =>
+        let φ := formula x;
+        φ.to3CNF)
+      input (encList (encList (encPair (encSum enc (encPair encUnary encUnary)) encBool)))
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => formula x) input ?encMid
+      [Meta.Tactic.fun_prop] candidate local theorems for formula #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => formula x) input ?encMid
+          [Meta.Tactic.fun_prop] candidate local theorems for formula #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x => formula x) input ?encMid
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.trans, failed to discharge hypotheses
+          ComputableInPolyTime (fun x => formula x) input ?encMid
+  [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.comp'
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => φ.to3CNF) (encList (encList (encPair enc encBool)))
+          (encList (encList (encPair (encSum enc (encPair encUnary encUnary)) encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.CNF.to3CNF #[Cslib.Logic.PL.CNF.isPolyTime_to3CNF]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.CNF.isPolyTime_to3CNF
+    [Meta.Tactic.fun_prop] ❌️ ComputableInPolyTime (fun x => formula x) input (encList (encList (encPair enc encBool)))
+      [Meta.Tactic.fun_prop] candidate local theorems for formula #[]
+      [Meta.Tactic.fun_prop] candidate transition theorems: [@ComputableTidilyInPolyTime.computableInPolyTime]
+      [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableTidilyInPolyTime.computableInPolyTime
+        [Meta.Tactic.fun_prop] ❌️ ComputableTidilyInPolyTime (fun x => formula x) input (encList (encList (encPair enc encBool)))
+          [Meta.Tactic.fun_prop] candidate local theorems for formula #[]
+          [Meta.Tactic.fun_prop] maximum transition depth (1) reached
+                  if you want `fun_prop` to continue then increase the maximum depth with `fun_prop (maxTransitionDepth := 2)`
+        [Meta.Tactic.fun_prop] @ComputableTidilyInPolyTime.computableInPolyTime, failed to discharge hypotheses
+              ComputableTidilyInPolyTime (fun x => formula x) input (encList (encList (encPair enc encBool)))
+    [Meta.Tactic.fun_prop] @ComputableInPolyTime.comp', failed to discharge hypotheses
+          ComputableInPolyTime (fun x => formula x) input (encList (encList (encPair enc encBool)))
+[Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+      (fun x =>
+        let φ := formula x;
+        φ.to3CNF)
+      input (encList (encList (encPair (encSum enc (encPair encUnary encUnary)) encBool)))
+  [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => formula x) input (encList (encList (encPair enc encBool)))
+      [Meta.Tactic.fun_prop] candidate local theorems for formula #[hformula : ComputableInPolyTime formula input (encList (encList (encPair enc encBool)))]
+      [Meta.Tactic.fun_prop] ✅️ applying: hformula : ComputableInPolyTime formula input (encList (encList (encPair enc encBool)))
+    [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun φ => φ.to3CNF) (encList (encList (encPair enc encBool)))
+          (encList (encList (encPair (encSum enc (encPair encUnary encUnary)) encBool)))
+      [Meta.Tactic.fun_prop] candidate theorems for Cslib.Logic.PL.CNF.to3CNF #[Cslib.Logic.PL.CNF.isPolyTime_to3CNF]
+      [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Logic.PL.CNF.isPolyTime_to3CNF

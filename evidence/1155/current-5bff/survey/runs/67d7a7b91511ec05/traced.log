@@ -1,0 +1,150 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices))) (encoding enc) (encoding enc)
+  [aesop] Initial goal:
+        C : Type
+        enc : C ↪ List Bool
+        truth : C
+        ⊢ ComputableInPolyTime (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices)))
+            (encoding enc) (encoding enc)
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        C : Type
+        enc : C ↪ List Bool
+        truth : C
+        ⊢ ComputableInPolyTime (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices)))
+            (encoding enc) (encoding enc)
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices))) (encoding enc) (encoding enc)
+  [aesop] C : Type
+      enc : C ↪ List Bool
+      truth : C
+      ⊢ ComputableInPolyTime (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices)))
+          (encoding enc) (encoding enc)
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.304.7):
+      [aesop] C : Type
+          enc : C ↪ List Bool
+          truth : C
+          ⊢ ComputableInPolyTime (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices)))
+              (encoding enc) (encoding enc)
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices))) (encoding enc) (encoding enc)
+  [aesop] Initial goal:
+        C : Type
+        enc : C ↪ List Bool
+        truth : C
+        ⊢ ComputableInPolyTime (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices)))
+            (encoding enc) (encoding enc)
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        C : Type
+        enc : C ↪ List Bool
+        truth : C
+        ⊢ ComputableInPolyTime (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices)))
+            (encoding enc) (encoding enc)
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          C : Type
+          enc : C ↪ List Bool
+          truth : C
+          ⊢ ComputableInPolyTime (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices)))
+              (encoding enc) (encoding enc)
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun g => addTrivial truth g (List.map (fun v => (v, v)) (List.range g.vertices))) (encoding enc)
+            (encoding enc)
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addTrivial #[Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial]
+        [Meta.Tactic.fun_prop] decomposing to later use Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial as:
+                               (fun g2g3 => addTrivial truth g2g3.1 g2g3.2) ∘ (fun g => (g, List.map (fun v => (v, v)) (List.range g.vertices)))
+        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun g => (g, List.map (fun v => (v, v)) (List.range g.vertices))) (encoding enc)
+                (encPair (encoding enc) (encList (encPair encUnary encUnary)))
+            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) (encoding enc) (encoding enc)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => List.map (fun v => (v, v)) (List.range a.vertices)) (encoding enc)
+                    (encList (encPair encUnary encUnary))
+                [Meta.Tactic.fun_prop] candidate theorems for List.map #[Turing.MultiTapeTM.ComputableInPolyTime.map, Turing.MultiTapeTM.ComputableInPolyTime.bitsMapWithInput, Turing.MultiTapeTM.ComputableInPolyTime.mapWithInput, Turing.MultiTapeTM.ComputableInPolyTime.mapToBitsWithInput]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.map as:
+                                       (fun a3 => List.map (fun v => (v, v)) a3) ∘ (fun a => List.range a.vertices)
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => List.range a.vertices) (encoding enc) (encList encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for List.range #[Turing.MultiTapeTM.ComputableInPolyTime.range]
+                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.range as:
+                                           (fun a0 => List.range a0) ∘ (fun a => a.vertices)
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a.vertices) (encoding enc) encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.vertices #[Cslib.PCP.Encoded.Graph.isPolyTime_vertices]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_vertices
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => x) (encoding enc) (encoding enc)
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a0 => List.range a0) encUnary (encList encUnary)
+                        [Meta.Tactic.fun_prop] candidate theorems for List.range #[Turing.MultiTapeTM.ComputableInPolyTime.range]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.range
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a3 => List.map (fun v => (v, v)) a3) (encList encUnary) (encList (encPair encUnary encUnary))
+                    [Meta.Tactic.fun_prop] candidate theorems for List.map #[Turing.MultiTapeTM.ComputableInPolyTime.map, Turing.MultiTapeTM.ComputableInPolyTime.bitsMapWithInput, Turing.MultiTapeTM.ComputableInPolyTime.mapWithInput, Turing.MultiTapeTM.ComputableInPolyTime.mapToBitsWithInput]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.map
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun v => (v, v)) encUnary (encPair encUnary encUnary)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encUnary encUnary
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun g2g3 => addTrivial truth g2g3.1 g2g3.2)
+                (encPair (encoding enc) (encList (encPair encUnary encUnary))) (encoding enc)
+            [Meta.Tactic.fun_prop] candidate theorems for Cslib.PCP.Encoded.Graph.addTrivial #[Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial]
+            [Meta.Tactic.fun_prop] ✅️ applying: Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []

@@ -1,0 +1,626 @@
+[aesop] ✅️ ✅️ (G0) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun a =>
+        have coins := List.take (count a * seedBits a) (tape a);
+        have tape := List.drop (count a * seedBits a) (tape a);
+        have lastKey := List.take (remainingBits a * (count a * seedBits a)) tape;
+        have tape := List.drop (remainingBits a * (count a * seedBits a)) tape;
+        have middleKey := List.take (labelBits a * count a) tape;
+        have firstKey := List.drop (labelBits a * count a) tape;
+        have samples := List.map (fun seed => (evaluate a seed, seed)) (listRows (count a) (seedBits a) coins);
+        hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a) samples
+          firstKey middleKey lastKey)
+      input encBits
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        count seedBits bound observationBits labelBits remainingBits : α → ℕ
+        evaluate : α → List Bool → List Bool × Bool
+        tape : α → List Bool
+        hcount : ComputableInPolyTime count input encUnary
+        hseed : ComputableInPolyTime seedBits input encUnary
+        hbound : ComputableInPolyTime bound input encUnary
+        hobservation : ComputableInPolyTime observationBits input encUnary
+        hlabel : ComputableInPolyTime labelBits input encUnary
+        hremaining : ComputableInPolyTime remainingBits input encUnary
+        hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+        htape : ComputableInPolyTime tape input encBits
+        ⊢ ComputableInPolyTime
+            (fun a =>
+              have coins := List.take (count a * seedBits a) (tape a);
+              have tape := List.drop (count a * seedBits a) (tape a);
+              have lastKey := List.take (remainingBits a * (count a * seedBits a)) tape;
+              have tape := List.drop (remainingBits a * (count a * seedBits a)) tape;
+              have middleKey := List.take (labelBits a * count a) tape;
+              have firstKey := List.drop (labelBits a * count a) tape;
+              have samples := List.map (fun seed => (evaluate a seed, seed)) (listRows (count a) (seedBits a) coins);
+              hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a) samples
+                firstKey middleKey lastKey)
+            input encBits
+  [aesop] ❌️ ✅️ Normalisation
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        count seedBits bound observationBits labelBits remainingBits : α → ℕ
+        evaluate : α → List Bool → List Bool × Bool
+        tape : α → List Bool
+        hcount : ComputableInPolyTime count input encUnary
+        hseed : ComputableInPolyTime seedBits input encUnary
+        hbound : ComputableInPolyTime bound input encUnary
+        hobservation : ComputableInPolyTime observationBits input encUnary
+        hlabel : ComputableInPolyTime labelBits input encUnary
+        hremaining : ComputableInPolyTime remainingBits input encUnary
+        hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+        htape : ComputableInPolyTime tape input encBits
+        ⊢ ComputableInPolyTime
+            (fun a =>
+              have coins := List.take (count a * seedBits a) (tape a);
+              have tape := List.drop (count a * seedBits a) (tape a);
+              have lastKey := List.take (remainingBits a * (count a * seedBits a)) tape;
+              have tape := List.drop (remainingBits a * (count a * seedBits a)) tape;
+              have middleKey := List.take (labelBits a * count a) tape;
+              have firstKey := List.drop (labelBits a * count a) tape;
+              have samples := List.map (fun seed => (evaluate a seed, seed)) (listRows (count a) (seedBits a) coins);
+              hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a) samples
+                firstKey middleKey lastKey)
+            input encBits
+  [aesop] ✅️ ✅️ Safe rules
+    [aesop] ✅️ ✅️ safe|tactic|global|Aesop.BuiltinRule.preprocess
+[aesop] ✅️ 🆕 ❓️ R0 [100.0000%] safe|tactic|global|Aesop.BuiltinRule.preprocess
+  [aesop] ✅️ Metadata
+    [aesop] ID: 0
+    [aesop] Rule: [0/safe] safe|tactic|global|Aesop.BuiltinRule.preprocess
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 0
+    [aesop] Child goals: [1]
+    [aesop] State: unknown
+    [aesop] Irrelevant: false
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
+[aesop] ✅️ 🆕 ❓️ G1 [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun a =>
+        have coins := List.take (count a * seedBits a) (tape a);
+        have tape := List.drop (count a * seedBits a) (tape a);
+        have lastKey := List.take (remainingBits a * (count a * seedBits a)) tape;
+        have tape := List.drop (remainingBits a * (count a * seedBits a)) tape;
+        have middleKey := List.take (labelBits a * count a) tape;
+        have firstKey := List.drop (labelBits a * count a) tape;
+        have samples := List.map (fun seed => (evaluate a seed, seed)) (listRows (count a) (seedBits a) coins);
+        hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a) samples
+          firstKey middleKey lastKey)
+      input encBits
+  [aesop] α : Type
+      input : α ↪ List Bool
+      count seedBits bound observationBits labelBits remainingBits : α → ℕ
+      evaluate : α → List Bool → List Bool × Bool
+      tape : α → List Bool
+      hcount : ComputableInPolyTime count input encUnary
+      hseed : ComputableInPolyTime seedBits input encUnary
+      hbound : ComputableInPolyTime bound input encUnary
+      hobservation : ComputableInPolyTime observationBits input encUnary
+      hlabel : ComputableInPolyTime labelBits input encUnary
+      hremaining : ComputableInPolyTime remainingBits input encUnary
+      hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+      htape : ComputableInPolyTime tape input encBits
+      ⊢ ComputableInPolyTime
+          (fun a =>
+            have coins := List.take (count a * seedBits a) (tape a);
+            have tape := List.drop (count a * seedBits a) (tape a);
+            have lastKey := List.take (remainingBits a * (count a * seedBits a)) tape;
+            have tape := List.drop (remainingBits a * (count a * seedBits a)) tape;
+            have middleKey := List.take (labelBits a * count a) tape;
+            have firstKey := List.drop (labelBits a * count a) tape;
+            have samples := List.map (fun seed => (evaluate a seed, seed)) (listRows (count a) (seedBits a) coins);
+            hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a) samples
+              firstKey middleKey lastKey)
+          input encBits
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] ✅️ Pre-normalisation goal (_uniq.1446.39):
+      [aesop] α : Type
+          input : α ↪ List Bool
+          count seedBits bound observationBits labelBits remainingBits : α → ℕ
+          evaluate : α → List Bool → List Bool × Bool
+          tape : α → List Bool
+          hcount : ComputableInPolyTime count input encUnary
+          hseed : ComputableInPolyTime seedBits input encUnary
+          hbound : ComputableInPolyTime bound input encUnary
+          hobservation : ComputableInPolyTime observationBits input encUnary
+          hlabel : ComputableInPolyTime labelBits input encUnary
+          hremaining : ComputableInPolyTime remainingBits input encUnary
+          hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+          htape : ComputableInPolyTime tape input encBits
+          ⊢ ComputableInPolyTime
+              (fun a =>
+                have coins := List.take (count a * seedBits a) (tape a);
+                have tape := List.drop (count a * seedBits a) (tape a);
+                have lastKey := List.take (remainingBits a * (count a * seedBits a)) tape;
+                have tape := List.drop (remainingBits a * (count a * seedBits a)) tape;
+                have middleKey := List.take (labelBits a * count a) tape;
+                have firstKey := List.drop (labelBits a * count a) tape;
+                have samples := List.map (fun seed => (evaluate a seed, seed)) (listRows (count a) (seedBits a) coins);
+                hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a) samples
+                  firstKey middleKey lastKey)
+              input encBits
+    [aesop] Post-normalisation goal: <goal not normalised>
+    [aesop] Metavariables: []
+    [aesop] Parent rapp:  some (0)
+    [aesop] Child rapps:  []
+    [aesop] Origin: subgoal
+    [aesop] Depth: 1
+    [aesop] State: ❓️ unknown
+    [aesop] Forward rule matches: 0
+    [aesop] Irrelevant: no
+    [aesop] Forced unprovable: no
+    [aesop] Added in iteration: 1
+    [aesop] Last expanded in iteration: never
+    [aesop] ✅️ Forward state
+      [aesop] 
+    [aesop] Unsafe rule queue: <not selected>
+    [aesop] Failed rules: <none>
+[aesop] ✅️ 🏁 (G1) [100.0000%] ⋯ ⊢ ComputableInPolyTime
+      (fun a =>
+        have coins := List.take (count a * seedBits a) (tape a);
+        have tape := List.drop (count a * seedBits a) (tape a);
+        have lastKey := List.take (remainingBits a * (count a * seedBits a)) tape;
+        have tape := List.drop (remainingBits a * (count a * seedBits a)) tape;
+        have middleKey := List.take (labelBits a * count a) tape;
+        have firstKey := List.drop (labelBits a * count a) tape;
+        have samples := List.map (fun seed => (evaluate a seed, seed)) (listRows (count a) (seedBits a) coins);
+        hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a) samples
+          firstKey middleKey lastKey)
+      input encBits
+  [aesop] Initial goal:
+        α : Type
+        input : α ↪ List Bool
+        count seedBits bound observationBits labelBits remainingBits : α → ℕ
+        evaluate : α → List Bool → List Bool × Bool
+        tape : α → List Bool
+        hcount : ComputableInPolyTime count input encUnary
+        hseed : ComputableInPolyTime seedBits input encUnary
+        hbound : ComputableInPolyTime bound input encUnary
+        hobservation : ComputableInPolyTime observationBits input encUnary
+        hlabel : ComputableInPolyTime labelBits input encUnary
+        hremaining : ComputableInPolyTime remainingBits input encUnary
+        hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+        htape : ComputableInPolyTime tape input encBits
+        ⊢ ComputableInPolyTime
+            (fun a =>
+              have coins := List.take (count a * seedBits a) (tape a);
+              have tape := List.drop (count a * seedBits a) (tape a);
+              have lastKey := List.take (remainingBits a * (count a * seedBits a)) tape;
+              have tape := List.drop (remainingBits a * (count a * seedBits a)) tape;
+              have middleKey := List.take (labelBits a * count a) tape;
+              have firstKey := List.drop (labelBits a * count a) tape;
+              have samples := List.map (fun seed => (evaluate a seed, seed)) (listRows (count a) (seedBits a) coins);
+              hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a) samples
+                firstKey middleKey lastKey)
+            input encBits
+  [aesop] ❌️ ✅️ Normalisation
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ✅️ ✅️ <norm simp>
+      [aesop] α : Type
+          input : α ↪ List Bool
+          count seedBits bound observationBits labelBits remainingBits : α → ℕ
+          evaluate : α → List Bool → List Bool × Bool
+          tape : α → List Bool
+          hcount : ComputableInPolyTime count input encUnary
+          hseed : ComputableInPolyTime seedBits input encUnary
+          hbound : ComputableInPolyTime bound input encUnary
+          hobservation : ComputableInPolyTime observationBits input encUnary
+          hlabel : ComputableInPolyTime labelBits input encUnary
+          hremaining : ComputableInPolyTime remainingBits input encUnary
+          hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+          htape : ComputableInPolyTime tape input encBits
+          ⊢ ComputableInPolyTime
+              (fun a =>
+                hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a)
+                  (List.map (fun seed => (evaluate a seed, seed))
+                    (listRows (count a) (seedBits a) (List.take (count a * seedBits a) (tape a))))
+                  (List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a) + labelBits a * count a)
+                    (tape a))
+                  (List.take (labelBits a * count a)
+                    (List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a)) (tape a)))
+                  (List.take (remainingBits a * (count a * seedBits a)) (List.drop (count a * seedBits a) (tape a))))
+              input encBits
+    [aesop] ❌️ ❌️ norm|tactic|global|Aesop.BuiltinRules.intros
+      [aesop] nothing to introduce
+    [aesop] ❌️ ❌️ <norm unfold>
+      [aesop] nothing to unfold
+    [aesop] ❌️ ❌️ <norm simp>
+      [aesop] norm simp left the goal unchanged
+  [aesop] Goal after normalisation:
+        α : Type
+        input : α ↪ List Bool
+        count seedBits bound observationBits labelBits remainingBits : α → ℕ
+        evaluate : α → List Bool → List Bool × Bool
+        tape : α → List Bool
+        hcount : ComputableInPolyTime count input encUnary
+        hseed : ComputableInPolyTime seedBits input encUnary
+        hbound : ComputableInPolyTime bound input encUnary
+        hobservation : ComputableInPolyTime observationBits input encUnary
+        hlabel : ComputableInPolyTime labelBits input encUnary
+        hremaining : ComputableInPolyTime remainingBits input encUnary
+        hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+        htape : ComputableInPolyTime tape input encBits
+        ⊢ ComputableInPolyTime
+            (fun a =>
+              hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a)
+                (List.map (fun seed => (evaluate a seed, seed))
+                  (listRows (count a) (seedBits a) (List.take (count a * seedBits a) (tape a))))
+                (List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a) + labelBits a * count a)
+                  (tape a))
+                (List.take (labelBits a * count a)
+                  (List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a)) (tape a)))
+                (List.take (remainingBits a * (count a * seedBits a)) (List.drop (count a * seedBits a) (tape a))))
+            input encBits
+  [aesop] ✅️ 🏁 Safe rules
+    [aesop] ✅️ ❌️ safe|tactic|global|Aesop.BuiltinRules.assumption
+      [aesop] Tactic `Aesop.BuiltinRules.assumption` failed: no matching assumption found
+          
+          α : Type
+          input : α ↪ List Bool
+          count seedBits bound observationBits labelBits remainingBits : α → ℕ
+          evaluate : α → List Bool → List Bool × Bool
+          tape : α → List Bool
+          hcount : ComputableInPolyTime count input encUnary
+          hseed : ComputableInPolyTime seedBits input encUnary
+          hbound : ComputableInPolyTime bound input encUnary
+          hobservation : ComputableInPolyTime observationBits input encUnary
+          hlabel : ComputableInPolyTime labelBits input encUnary
+          hremaining : ComputableInPolyTime remainingBits input encUnary
+          hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+          htape : ComputableInPolyTime tape input encBits
+          ⊢ ComputableInPolyTime
+              (fun a =>
+                hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a)
+                  (List.map (fun seed => (evaluate a seed, seed))
+                    (listRows (count a) (seedBits a) (List.take (count a * seedBits a) (tape a))))
+                  (List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a) + labelBits a * count a)
+                    (tape a))
+                  (List.take (labelBits a * count a)
+                    (List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a)) (tape a)))
+                  (List.take (remainingBits a * (count a * seedBits a)) (List.drop (count a * seedBits a) (tape a))))
+              input encBits
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeKnownFacts
+      [aesop] no new known certificate
+    [aesop] ✅️ ❌️ safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeConstructFast
+      [aesop] expected a constructor
+    [aesop] ✅️ 🏁 safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+            (fun a =>
+              hashSamples (count a) (seedBits a) (bound a) (observationBits a) (labelBits a) (remainingBits a)
+                (List.map (fun seed => (evaluate a seed, seed))
+                  (listRows (count a) (seedBits a) (List.take (count a * seedBits a) (tape a))))
+                (List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a) + labelBits a * count a) (tape a))
+                (List.take (labelBits a * count a)
+                  (List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a)) (tape a)))
+                (List.take (remainingBits a * (count a * seedBits a)) (List.drop (count a * seedBits a) (tape a))))
+            input encBits
+        [Meta.Tactic.fun_prop] candidate theorems for Cslib.Crypto.Pseudoentropy.ThreeSource.hashSamples #[Cslib.Crypto.Pseudoentropy.ThreeSource.isPolyTime_hashSamples]
+        [Meta.Tactic.fun_prop] ✅️ applying: Cslib.Crypto.Pseudoentropy.ThreeSource.isPolyTime_hashSamples
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seedBits input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for seedBits #[hseed : ComputableInPolyTime seedBits input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: hseed : ComputableInPolyTime seedBits input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime bound input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for bound #[hbound : ComputableInPolyTime bound input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: hbound : ComputableInPolyTime bound input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime observationBits input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for observationBits #[hobservation : ComputableInPolyTime observationBits input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: hobservation : ComputableInPolyTime observationBits input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime labelBits input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for labelBits #[hlabel : ComputableInPolyTime labelBits input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: hlabel : ComputableInPolyTime labelBits input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime remainingBits input encUnary
+            [Meta.Tactic.fun_prop] candidate local theorems for remainingBits #[hremaining : ComputableInPolyTime remainingBits input encUnary]
+            [Meta.Tactic.fun_prop] ✅️ applying: hremaining : ComputableInPolyTime remainingBits input encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+                (fun a =>
+                  List.map (fun seed => (evaluate a seed, seed))
+                    (listRows (count a) (seedBits a) (List.take (count a * seedBits a) (tape a))))
+                input (encList (encPair (encPair encBits encBool) encBits))
+            [Meta.Tactic.fun_prop] candidate theorems for List.map #[Turing.MultiTapeTM.ComputableInPolyTime.bitsMapWithInput, Turing.MultiTapeTM.ComputableInPolyTime.mapWithInput, Turing.MultiTapeTM.ComputableInPolyTime.mapToBitsWithInput]
+            [Meta.Tactic.fun_prop] ❌️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsMapWithInput
+              [Meta.Tactic.fun_prop] failed to unify @ComputableInPolyTime.bitsMapWithInput
+                  ComputableInPolyTime (fun a => List.map (?f a) (?list a)) ?input encBits
+                  with
+                  ComputableInPolyTime
+                    (fun a =>
+                      List.map (fun seed => (evaluate a seed, seed))
+                        (listRows (count a) (seedBits a) (List.take (count a * seedBits a) (tape a))))
+                    input (encList (encPair (encPair encBits encBool) encBits))
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.mapWithInput
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => listRows (count x) (seedBits x) (List.take (count x * seedBits x) (tape x))) input
+                    (encList encBits)
+                [Meta.Tactic.fun_prop] candidate theorems for Cslib.BitString.listRows #[Turing.MultiTapeTM.ComputableInPolyTime.bitsRowsWithInput]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsRowsWithInput
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime count input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seedBits input encUnary
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime seedBits input
+                          encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => List.take (count a * seedBits a) (tape a)) input encBits
+                    [Meta.Tactic.fun_prop] candidate theorems for List.take #[Turing.MultiTapeTM.ComputableInPolyTime.bitsTakeWithInput]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsTakeWithInput
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime tape input encBits
+                        [Meta.Tactic.fun_prop] candidate local theorems for tape #[htape : ComputableInPolyTime tape input encBits]
+                        [Meta.Tactic.fun_prop] ✅️ applying: htape : ComputableInPolyTime tape input encBits
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => count x * seedBits x) input encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                               (fun x4x5 => x4x5.1 * x4x5.2) ∘ (fun x => (count x, seedBits x))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (count x, seedBits x)) input (encPair encUnary encUnary)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                                [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seedBits input encUnary
+                                [Meta.Tactic.fun_prop] candidate local theorems for seedBits #[hseed : ComputableInPolyTime seedBits input encUnary]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hseed : ComputableInPolyTime seedBits input encUnary
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x4x5 => x4x5.1 * x4x5.2) (encPair encUnary encUnary) encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => (evaluate p.1 p.2, p.2)) (encPair input encBits)
+                    (encPair (encPair encBits encBool) encBits)
+                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+                    [Meta.Tactic.fun_prop] candidate local theorems for evaluate #[hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)]
+                    [Meta.Tactic.fun_prop] ✅️ applying: hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2) (encPair input encBits) (encPair encBits encBool)
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime Prod.snd (encPair input encBits) encBits
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.snd #[Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding, Turing.MultiTapeTM.ComputableInPolyTime.snd, Turing.MultiTapeTM.ComputableInPolyTime.snd']
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.sndWithEncoding
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun p => p) (encPair input encBits) (encPair input encBits)
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => a) encBits encBits
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.id'
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+                (fun a =>
+                  List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a) + labelBits a * count a) (tape a))
+                input encBits
+            [Meta.Tactic.fun_prop] candidate theorems for List.drop #[Turing.MultiTapeTM.ComputableInPolyTime.bitsDropWithInput]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsDropWithInput
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime tape input encBits
+                [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime tape input encBits
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a + remainingBits a * (count a * seedBits a) + labelBits a * count a)
+                    input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_add as:
+                                       (fun a4a5 => a4a5.1 + a4a5.2) ∘ (fun a => (count a * seedBits a + remainingBits a * (count a * seedBits a), labelBits a * count a))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (count a * seedBits a + remainingBits a * (count a * seedBits a), labelBits a * count a))
+                        input (encPair encUnary encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a + remainingBits a * (count a * seedBits a)) input encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_add as:
+                                               (fun a4a5 => a4a5.1 + a4a5.2) ∘ (fun a => (count a * seedBits a, remainingBits a * (count a * seedBits a)))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (count a * seedBits a, remainingBits a * (count a * seedBits a))) input
+                                (encPair encUnary encUnary)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a) input encUnary
+                                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                                       (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (count a, seedBits a))
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (count a, seedBits a)) input (encPair encUnary encUnary)
+                                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                                        [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                                        [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seedBits input encUnary
+                                        [Meta.Tactic.fun_prop] candidate local theorems for seedBits #[hseed : ComputableInPolyTime seedBits input encUnary]
+                                        [Meta.Tactic.fun_prop] ✅️ applying: hseed : ComputableInPolyTime seedBits input encUnary
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => remainingBits a * (count a * seedBits a)) input encUnary
+                                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                                       (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (remainingBits a, count a * seedBits a))
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (remainingBits a, count a * seedBits a)) input (encPair encUnary encUnary)
+                                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime remainingBits input encUnary
+                                        [Meta.Tactic.fun_prop] candidate local theorems for remainingBits #[hremaining : ComputableInPolyTime remainingBits input encUnary]
+                                        [Meta.Tactic.fun_prop] ✅️ applying: hremaining : ComputableInPolyTime remainingBits input encUnary
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a) input encUnary
+                                        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                                               (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (count a, seedBits a))
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (count a, seedBits a)) input (encPair encUnary encUnary)
+                                            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                                                [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                                                [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+                                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seedBits input encUnary
+                                                [Meta.Tactic.fun_prop] candidate local theorems for seedBits #[hseed : ComputableInPolyTime seedBits input encUnary]
+                                                [Meta.Tactic.fun_prop] ✅️ applying: hseed : ComputableInPolyTime seedBits input encUnary
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                                            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 + a4a5.2) (encPair encUnary encUnary) encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_add
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => labelBits a * count a) input encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                               (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (labelBits a, count a))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (labelBits a, count a)) input (encPair encUnary encUnary)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime labelBits input encUnary
+                                [Meta.Tactic.fun_prop] candidate local theorems for labelBits #[hlabel : ComputableInPolyTime labelBits input encUnary]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hlabel : ComputableInPolyTime labelBits input encUnary
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                                [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 + a4a5.2) (encPair encUnary encUnary) encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_add
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+                (fun a =>
+                  List.take (labelBits a * count a)
+                    (List.drop (count a * seedBits a + remainingBits a * (count a * seedBits a)) (tape a)))
+                input encBits
+            [Meta.Tactic.fun_prop] candidate theorems for List.take #[Turing.MultiTapeTM.ComputableInPolyTime.bitsTakeWithInput]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsTakeWithInput
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => List.drop (count x * seedBits x + remainingBits x * (count x * seedBits x)) (tape x))
+                    input encBits
+                [Meta.Tactic.fun_prop] candidate theorems for List.drop #[Turing.MultiTapeTM.ComputableInPolyTime.bitsDropWithInput]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsDropWithInput
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime tape input encBits
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime tape input encBits
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a + remainingBits a * (count a * seedBits a)) input encUnary
+                    [Meta.Tactic.fun_prop] candidate theorems for HAdd.hAdd #[Turing.MultiTapeTM.ComputableInPolyTime.unary_add]
+                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_add as:
+                                           (fun a4a5 => a4a5.1 + a4a5.2) ∘ (fun a => (count a * seedBits a, remainingBits a * (count a * seedBits a)))
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (count a * seedBits a, remainingBits a * (count a * seedBits a))) input
+                            (encPair encUnary encUnary)
+                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a) input encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                                   (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (count a, seedBits a))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (count a, seedBits a)) input (encPair encUnary encUnary)
+                                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                                    [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seedBits input encUnary
+                                    [Meta.Tactic.fun_prop] candidate local theorems for seedBits #[hseed : ComputableInPolyTime seedBits input encUnary]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: hseed : ComputableInPolyTime seedBits input encUnary
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => remainingBits a * (count a * seedBits a)) input encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                            [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                                   (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (remainingBits a, count a * seedBits a))
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (remainingBits a, count a * seedBits a)) input (encPair encUnary encUnary)
+                                [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime remainingBits input encUnary
+                                    [Meta.Tactic.fun_prop] candidate local theorems for remainingBits #[hremaining : ComputableInPolyTime remainingBits input encUnary]
+                                    [Meta.Tactic.fun_prop] ✅️ applying: hremaining : ComputableInPolyTime remainingBits input encUnary
+                                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a) input encUnary
+                                    [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                    [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                                           (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (count a, seedBits a))
+                                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (count a, seedBits a)) input (encPair encUnary encUnary)
+                                        [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                                            [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                                            [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+                                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seedBits input encUnary
+                                            [Meta.Tactic.fun_prop] candidate local theorems for seedBits #[hseed : ComputableInPolyTime seedBits input encUnary]
+                                            [Meta.Tactic.fun_prop] ✅️ applying: hseed : ComputableInPolyTime seedBits input encUnary
+                                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                                        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 + a4a5.2) (encPair encUnary encUnary) encUnary
+                        [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime
+                              (fun a4a5 => a4a5.1 + a4a5.2) (encPair encUnary encUnary) encUnary
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => labelBits x * count x) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                       (fun x4x5 => x4x5.1 * x4x5.2) ∘ (fun x => (labelBits x, count x))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (labelBits x, count x)) input (encPair encUnary encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime labelBits input encUnary
+                        [Meta.Tactic.fun_prop] candidate local theorems for labelBits #[hlabel : ComputableInPolyTime labelBits input encUnary]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hlabel : ComputableInPolyTime labelBits input encUnary
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                        [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x4x5 => x4x5.1 * x4x5.2) (encPair encUnary encUnary) encUnary
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime
+                          (fun x4x5 => x4x5.1 * x4x5.2) (encPair encUnary encUnary) encUnary
+          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime
+                (fun a => List.take (remainingBits a * (count a * seedBits a)) (List.drop (count a * seedBits a) (tape a))) input
+                encBits
+            [Meta.Tactic.fun_prop] candidate theorems for List.take #[Turing.MultiTapeTM.ComputableInPolyTime.bitsTakeWithInput]
+            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsTakeWithInput
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => List.drop (count x * seedBits x) (tape x)) input encBits
+                [Meta.Tactic.fun_prop] candidate theorems for List.drop #[Turing.MultiTapeTM.ComputableInPolyTime.bitsDropWithInput]
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.bitsDropWithInput
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime tape input encBits
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime tape input encBits
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a) input encUnary
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime
+                          (fun a => count a * seedBits a) input encUnary
+              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => remainingBits x * (count x * seedBits x)) input encUnary
+                [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                       (fun x4x5 => x4x5.1 * x4x5.2) ∘ (fun x => (remainingBits x, count x * seedBits x))
+                [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x => (remainingBits x, count x * seedBits x)) input (encPair encUnary encUnary)
+                    [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                    [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime remainingBits input encUnary
+                        [Meta.Tactic.fun_prop] candidate local theorems for remainingBits #[hremaining : ComputableInPolyTime remainingBits input encUnary]
+                        [Meta.Tactic.fun_prop] ✅️ applying: hremaining : ComputableInPolyTime remainingBits input encUnary
+                      [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => count a * seedBits a) input encUnary
+                        [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                        [Meta.Tactic.fun_prop] decomposing to later use Turing.MultiTapeTM.ComputableInPolyTime.unary_mul as:
+                                               (fun a4a5 => a4a5.1 * a4a5.2) ∘ (fun a => (count a, seedBits a))
+                        [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.trans
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a => (count a, seedBits a)) input (encPair encUnary encUnary)
+                            [Meta.Tactic.fun_prop] candidate theorems for Prod.mk #[Turing.MultiTapeTM.ComputableInPolyTime.prod, Turing.MultiTapeTM.ComputableInPolyTime.pair]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.prod
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime count input encUnary
+                                [Meta.Tactic.fun_prop] candidate local theorems for count #[hcount : ComputableInPolyTime count input encUnary]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hcount : ComputableInPolyTime count input encUnary
+                              [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime seedBits input encUnary
+                                [Meta.Tactic.fun_prop] candidate local theorems for seedBits #[hseed : ComputableInPolyTime seedBits input encUnary]
+                                [Meta.Tactic.fun_prop] ✅️ applying: hseed : ComputableInPolyTime seedBits input encUnary
+                          [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun a4a5 => a4a5.1 * a4a5.2) (encPair encUnary encUnary) encUnary
+                            [Meta.Tactic.fun_prop] candidate theorems for HMul.hMul #[Turing.MultiTapeTM.ComputableInPolyTime.unary_mul]
+                            [Meta.Tactic.fun_prop] ✅️ applying: Turing.MultiTapeTM.ComputableInPolyTime.unary_mul
+                  [Meta.Tactic.fun_prop] ✅️ ComputableInPolyTime (fun x4x5 => x4x5.1 * x4x5.2) (encPair encUnary encUnary) encUnary
+                    [Meta.Tactic.fun_prop] reusing previously found proof for ComputableInPolyTime
+                          (fun x4x5 => x4x5.1 * x4x5.2) (encPair encUnary encUnary) encUnary
+[aesop] ✅️ 🆕 🏁 R1 [100.0000%] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+  [aesop] ✅️ Metadata
+    [aesop] ID: 1
+    [aesop] Rule: [-20/safe] safe|tactic|global|_private.Complexity.Tactic.PolyTime.0.Cslib.Tactic.PolyTime.polytimeFunPropFast
+    [aesop] Success probability: 100.0000%
+    [aesop] Parent goal: 1
+    [aesop] Child goals: []
+    [aesop] State: proven
+    [aesop] Irrelevant: true
+    [aesop] Introduced metavariables: []
+    [aesop] Assigned   metavariables: []
