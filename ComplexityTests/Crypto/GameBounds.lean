@@ -71,14 +71,17 @@ example :
   simp [Game.succProbability]
 
 open Cslib.Probability in
--- Hidden-bit XOR mixture bound `advantage_le_two_mul_uniform_bool_xor`.
-example (g₀ g₁ : Bool → Game) :
+-- Concrete application of `advantage_le_two_mul_uniform_bool_xor` on `g₀ bit = PMF.pure (!bit)` and
+-- `g₁ _ = PMF.pure false` (where the inequality holds with equality `1 ≤ 2 * (1 / 2) + 0`).
+example :
+    let g₀ : Bool → Game := fun bit => PMF.pure (!bit)
+    let g₁ : Bool → Game := fun _ => PMF.pure false
     Game.advantage (g₀ false) (g₀ true) ≤
       2 * Game.advantage
         ((PMF.uniformOfFintype Bool).bind fun bit => (g₀ bit).map (fun guess => guess ^^ bit))
         ((PMF.uniformOfFintype Bool).bind fun bit => (g₁ bit).map (fun guess => guess ^^ bit)) +
       Game.advantage (g₁ false) (g₁ true) :=
-  Game.advantage_le_two_mul_uniform_bool_xor g₀ g₁
+  Game.advantage_le_two_mul_uniform_bool_xor (fun bit => PMF.pure (!bit)) (fun _ => PMF.pure false)
 
 open Cslib.Probability in
 -- Tightness / refutation test: the factor `2` in `advantage_le_two_mul_uniform_bool_xor` cannot be
