@@ -329,29 +329,14 @@ def test (N : Polynomial ℕ) (x : (Graph × Graph) × List Bool) : Bool :=
       (x.2.take (N.eval (encPair encGraph encGraph x.1).length))
       (x.2.drop (N.eval (encPair encGraph encGraph x.1).length))
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_adjIndex
-    {γ : Type} {input : γ ↪ List Bool} {G : γ → Graph}
-    {i j : γ → ℕ} (hG : ComputableTidilyInPolyTime G input encGraph)
-    (hi : ComputableTidilyInPolyTime i input encUnary)
-    (hj : ComputableTidilyInPolyTime j input encUnary) :
-    ComputableTidilyInPolyTime (fun x => (G x).adjIndex (i x) (j x)) input encBool :=
-  (ComputableInPolyTime.tidy (Graph.computableInPolyTime_adjIndex (.of_tidy hG) (.of_tidy hi)
-      (.of_tidy hj)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_distinctVertices :
-    ComputableTidilyInPolyTime Graph.distinctVertices encGraph (encList encNat) :=
-  (ComputableInPolyTime.tidy (Graph.computableInPolyTime_distinctVertices))
-
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The test is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_test (N : Polynomial ℕ) :
     ComputableInPolyTime (test N) (encPair (encPair encGraph encGraph) encBits) encBool := by
-  refine .of_tidy ?_
   unfold test check
   dsimp only
-  fun_prop
+  exact .of_tidy (by fun_prop)
 
 /-! ### Counting the certified pairs -/
 

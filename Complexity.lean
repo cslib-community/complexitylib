@@ -812,6 +812,18 @@ public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverL
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Geometry
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Occurrence
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.OrdinaryRing
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCompile
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCorrectness
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCounting
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCrossoverLayout
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCrossoverLayoutChecks
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCrossoverLayoutData
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedSemantics
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathAssignments
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathBounds
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathData
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathGeometry
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathPolyTime
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths.Occupancy
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PolyTime
@@ -1496,6 +1508,7 @@ public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
 public import Complexity.Crypto.Computational.Commitment
 public import Complexity.Crypto.Computational.CramerShoup.ProjectiveHash
+public import Complexity.Crypto.Computational.CramerShoup.Scheme
 public import Complexity.Crypto.Computational.DiffieHellman
 public import Complexity.Crypto.Computational.DiffieHellman.MultiDDH
 public import Complexity.Crypto.Computational.DiscreteLog

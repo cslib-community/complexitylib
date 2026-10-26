@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathAssignments
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Compile
 public import Complexity.Logics.Propositional.CNF.Planar.DirectedWire
 import Mathlib.Data.List.GetD
@@ -38,17 +39,6 @@ The finite assembly and its logical composition proofs are original.
 namespace Cslib.Complexity.SAT.PlanarCompile
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
-
-/-- A path contributes one signal cell for each point before its final clause vertex. -/
-theorem length_wire (sites : List Point) (r : Route) :
-    (wire sites r).length = r.length - 1 := by simp [wire]
-
-/-- Every path of at least two points yields a nonempty cell wire. -/
-theorem wire_ne_nil (sites : List Point) (r : Route) (h : 2 ≤ r.length) : wire sites r ≠ [] := by
-  intro he
-  have hl := length_wire sites r
-  rw [he, List.length_nil] at hl
-  omega
 
 /-- Forgetting geometric data gives exactly the renamed fixed crossover clauses. -/
 theorem map_fst_crossingClauses (p : Point) :
@@ -90,13 +80,6 @@ theorem crossing_boundary_eq {φ : CNF ℕ} {σ : Variable → Bool}
     σ (p, some .aLeft) = σ (p, some .aRight) ∧
       σ (p, some .bTop) = σ (p, some .bBottom) :=
   Crossover.split_boundary_eq_of_holds (((eval_rawFormula_iff φ σ).1 h).2.1 p hp)
-
-/-- Exact indexed cell signals in the executable wire list. -/
-theorem getElem_wire (sites : List Point) (r : Route) (i : ℕ) (hi : i < r.length - 1) :
-    (wire sites r)[i]'(by simpa [wire] using hi) =
-      (signal sites r[i] (r.getD (i - 1) r[i]),
-        signal sites r[i] (r.getD (i + 1) r[i])) := by
-  simp only [wire, List.getElem_map, List.getElem_zipIdx, Nat.zero_add, List.getElem_dropLast]
 
 /-- The placed intercell clauses are exactly the generic polarity-directed wire clauses. -/
 theorem map_fst_links (sites : List Point) (b : Bool) (r : Route) :

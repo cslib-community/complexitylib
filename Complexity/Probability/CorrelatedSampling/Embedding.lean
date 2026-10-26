@@ -91,21 +91,11 @@ theorem dist_localSample_le (KX : X → PMF S) (KY : Y → PMF S) (K : X × Y �
     exact hl (Prod.ext h.1 h.2)
   have hA := disagree_le (P := F) (.inl x) (.inr (.inr (x, y)))
   have hB := disagree_le (P := F) (.inr (.inl y)) (.inr (.inr (x, y)))
-  calc ((shared F).toOuterMeasure {l | (sA l, sB l) ≠ (sAB l, sAB l)}).toReal
-      ≤ ((shared F).toOuterMeasure
-          ({l | sample F (.inl x) l ≠ sample F (.inr (.inr (x, y))) l} ∪
-            {l | sample F (.inr (.inl y)) l ≠ sample F (.inr (.inr (x, y))) l})).toReal :=
-        ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
-          (MeasureTheory.measure_mono (μ := (shared F).toOuterMeasure) hsub)
-    _ ≤ ((shared F).toOuterMeasure
-          {l | sample F (.inl x) l ≠ sample F (.inr (.inr (x, y))) l}).toReal +
-        ((shared F).toOuterMeasure
-          {l | sample F (.inr (.inl y)) l ≠ sample F (.inr (.inr (x, y))) l}).toReal := by
-        rw [← ENNReal.toReal_add (PMF.toOuterMeasure_ne_top _ _) (PMF.toOuterMeasure_ne_top _ _)]
-        exact ENNReal.toReal_mono (ENNReal.add_ne_top.mpr
-          ⟨PMF.toOuterMeasure_ne_top _ _, PMF.toOuterMeasure_ne_top _ _⟩)
-          (MeasureTheory.measure_union_le (μ := (shared F).toOuterMeasure) _ _)
-    _ ≤ 2 * dist (KX x) (K (x, y)) + 2 * dist (KY y) (K (x, y)) := add_le_add hA hB
+  exact (ENNReal.toReal_le_add
+    ((MeasureTheory.measure_mono (μ := (shared F).toOuterMeasure) hsub).trans
+      (MeasureTheory.measure_union_le _ _))
+    (PMF.toOuterMeasure_ne_top _ _) (PMF.toOuterMeasure_ne_top _ _)).trans
+      (add_le_add hA hB)
 
 /-- **Holenstein's embedding lemma** [Holenstein, Lemma 8][Holenstein2009]. Draw `(x, y)` from `P`.
 If Alice and Bob sample from their own kernels with shared randomness, the result `(x, y, s_A, s_B)`

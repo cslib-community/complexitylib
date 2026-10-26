@@ -147,9 +147,11 @@ private theorem clockedBounds_aux (cA cD cO C₂ : ℕ) : ∃ K, ∀ {n A D N J 
       (Nat.pow_le_pow_right hY1 (show 2 ≤ 3 by omega))
     rwa [one_mul] at this
   -- the pieces
-  have hU' : 100000 * (P * (n + 1)) ^ 5 * (J + 1) ^ 3 = 100000 * P ^ 5 * W := by rw [hW]; ring
+  have hU' : 100000 * (P * (n + 1)) ^ 5 * (J + 1) ^ 3 = 100000 * P ^ 5 * W := by
+    simp only [hW, mul_pow, Nat.mul_assoc]
   have hrunZ : runBound D N J ≤ 200 * P ^ 2 * Z := by
-    have : 200 * (P * (n + 1)) ^ 2 * (J + 1) = 200 * P ^ 2 * Z := by rw [hZ]; ring
+    have : 200 * (P * (n + 1)) ^ 2 * (J + 1) = 200 * P ^ 2 * Z := by
+      simp only [hZ, mul_pow, Nat.mul_assoc]
     omega
   have hLY : L ≤ C₂ * (J + 1) := (Nat.le_succ L).trans ((Nat.le_self_pow two_ne_zero _).trans hL)
   have hI1 : I + 1 ≤ R * ((n + 1) * (J + 1)) := by
@@ -193,23 +195,26 @@ private theorem clockedBounds_aux (cA cD cO C₂ : ℕ) : ∃ K, ∀ {n A D N J 
     omega
   have hI2 : (I + 1) ^ 2 ≤ R ^ 2 * W := by
     calc (I + 1) ^ 2 ≤ (R * ((n + 1) * (J + 1))) ^ 2 := Nat.pow_le_pow_left hI1 2
-      _ = R ^ 2 * ((n + 1) ^ 2 * (J + 1) ^ 2) := by ring
+      _ = R ^ 2 * ((n + 1) ^ 2 * (J + 1) ^ 2) := by simp only [mul_pow]
       _ ≤ R ^ 2 * W := Nat.mul_le_mul_left _ hX2Y2
   have hE2 : (E + 1) ^ 2 ≤ (cO * Q + 1) ^ 2 * W := by
     calc (E + 1) ^ 2 ≤ ((cO * Q + 1) * Z) ^ 2 := Nat.pow_le_pow_left hE1 2
-      _ = (cO * Q + 1) ^ 2 * ((n + 1) ^ 4 * (J + 1) ^ 2) := by rw [hZ]; ring
+      _ = (cO * Q + 1) ^ 2 * ((n + 1) ^ 4 * (J + 1) ^ 2) := by
+        simp only [hZ, mul_pow, ← pow_mul]
       _ ≤ (cO * Q + 1) ^ 2 * W := Nat.mul_le_mul_left _ hX4Y2
   have hpreW : n + A + (n + J) ≤ (cA + 3) * W := hpre.trans (Nat.mul_le_mul_left _ hXY)
   have hrunW : runBound D N J ≤ 200 * P ^ 2 * W := hrunZ.trans (Nat.mul_le_mul_left _ hZW)
-  have hIW : I ≤ R * W := by
-    have := hI1.trans (Nat.mul_le_mul_left R hXY)
-    omega
+  have hIW : I ≤ R * W := (Nat.le_succ I).trans (hI1.trans (Nat.mul_le_mul_left R hXY))
   have hEW : E ≤ cO * Q * W := hEZ.trans (Nat.mul_le_mul_left _ hZW)
   have e : (cA + 3 + 100000 * P ^ 5 + C₂ + R ^ 2 + (cO * Q + 1) ^ 2 + 200 * P ^ 2 + R + cO * Q) *
       W = (cA + 3) * W + 100000 * P ^ 5 * W + C₂ * W + R ^ 2 * W + (cO * Q + 1) ^ 2 * W +
         200 * P ^ 2 * W + R * W + cO * Q * W := by ring
   rw [e]
-  constructor <;> omega
+  constructor
+  · clear * - hpreW hT₁ hI2 hE2
+    omega
+  · clear * - hpreW hrunW hIW hEW
+    omega
 
 end Diagonal
 
