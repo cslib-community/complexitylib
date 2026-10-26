@@ -34,8 +34,8 @@ example {budget : ℕ → ℕ} (hbudget : ComputableInPolyTime budget encUnary e
     IsPPT encBool
       (lweDistinguisher dimension samples width
         (Leveled.leveledAdversary scheme (fun k => 2 * budget k) secretWidth adversary)) :=
-  GSW.isPPT_lweDistinguisher Parameters.computableTidilyInPolyTime_dimension
-    computableTidilyInPolyTime_samples computableTidilyInPolyTime_width
+  GSW.isPPT_lweDistinguisher Parameters.computableInPolyTime_dimension
+    computableInPolyTime_samples computableInPolyTime_width
     (isPPT_leveledAdversary hbudget hadversary)
 
 /-- Under decision LWE alone, one leveled scheme evaluates the compiled NAND circuit, whose

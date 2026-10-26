@@ -78,10 +78,10 @@ open scoped NNReal
 @[fun_prop]
 theorem computableInPolyTime_secretWidth :
     ComputableInPolyTime secretWidth encUnary encUnary := by
-  have hd := Parameters.computableTidilyInPolyTime_dimension
-  have hw := computableTidilyInPolyTime_width
-  exact (show ComputableTidilyInPolyTime secretWidth encUnary encUnary by
-    unfold secretWidth; fun_prop).computableInPolyTime
+  have hd := Parameters.computableInPolyTime_dimension
+  have hw := computableInPolyTime_width
+  unfold secretWidth
+  fun_prop
 
 /-- For any polynomial-time unary budget family, the unified base reduction `leveledAdversary`
 for the leveled GSW scheme is native strict PPT. -/
@@ -90,9 +90,7 @@ theorem isPPT_leveledAdversary {budget : ℕ → ℕ}
     {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT) :
     (Leveled.leveledAdversary scheme (fun k => 2 * budget k) secretWidth adversary).IsPPT := by
   have hdepth : ComputableInPolyTime (fun k => 2 * budget k) encUnary encUnary := by
-    have hb := hbudget.tidy
-    exact (show ComputableTidilyInPolyTime (fun k => 2 * budget k) encUnary encUnary by
-      fun_prop).computableInPolyTime
+    fun_prop
   exact Leveled.isPPT_leveledAdversary isPPTOn_encrypt hadversary isPPTOn_keyGen
     hdepth computableInPolyTime_secretWidth
 
