@@ -1,0 +1,477 @@
+{
+  "basis": "26-file explicit shortlist from OLD census, inspected against actual3a6; no global recount",
+  "source_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+  "selected_files": 12,
+  "selected_calls": 20,
+  "deliberately_fewer_than_limits": true,
+  "remaining_not_claimed_ineligible": true,
+  "files": [
+    {
+      "path": "Complexity/Computability/PCP/Encoded/AddTrivial.lean",
+      "lines": 185,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          84
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 1
+    },
+    {
+      "path": "Complexity/Computability/PCP/Encoded/Amplification.lean",
+      "lines": 178,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          77
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 1
+    },
+    {
+      "path": "Complexity/Computability/PCP/Encoded/Amplification/Enumeration.lean",
+      "lines": 165,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          71
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 1
+    },
+    {
+      "path": "Complexity/Computability/PCP/Encoded/Basic.lean",
+      "lines": 299,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "existing scoped/local fun_prop attribute context; not an extra tactic call; conservatively deferred for this batch",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion"
+      ],
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          196
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Computability/PCP/Encoded/Constraints.lean",
+      "lines": 196,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          114
+        ],
+        [
+          "polytime",
+          147
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Computability/PCP/Encoded/DegreeReduction.lean",
+      "lines": 342,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "existing scoped/local fun_prop attribute context; not an extra tactic call; conservatively deferred for this batch",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion"
+      ],
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          59
+        ],
+        [
+          "polytime",
+          136
+        ],
+        [
+          "fun_prop",
+          150
+        ],
+        [
+          "polytime",
+          163
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 5
+    },
+    {
+      "path": "Complexity/Computability/PCP/Encoded/Iteration.lean",
+      "lines": 100,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "existing scoped/local fun_prop attribute context; not an extra tactic call; conservatively deferred for this batch",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion"
+      ],
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          68
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Computability/PCP/Encoded/Preprocess.lean",
+      "lines": 398,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          103
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 1
+    },
+    {
+      "path": "Complexity/Computability/Complexity/CookLevin/PolyTime.lean",
+      "lines": 62,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "existing scoped/local fun_prop attribute context; not an extra tactic call; conservatively deferred for this batch",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion"
+      ],
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          52
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/CircuitValue/Compilation.lean",
+      "lines": 181,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "one or more target calls indented inside nested proof context; entire file deferred rather than partial instrumentation",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion"
+      ],
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          72
+        ],
+        [
+          "polytime",
+          80
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 3
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/ExactThreeSAT.lean",
+      "lines": 179,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          108
+        ],
+        [
+          "fun_prop",
+          129
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/Knapsack.lean",
+      "lines": 149,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "quote-like text is documentation, not an established Lean quotation; conservative raw-screen deferral, not a false unsupported-syntax claim",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "quote/custom-syntax source"
+      ],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          97
+        ],
+        [
+          "fun_prop",
+          130
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/Partition.lean",
+      "lines": 159,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          95
+        ],
+        [
+          "fun_prop",
+          141
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/PlanarThreeSATThree.lean",
+      "lines": 300,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "existing scoped/local fun_prop attribute context; not an extra tactic call; conservatively deferred for this batch",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion"
+      ],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          102
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/ThreeSATThree/Syntax.lean",
+      "lines": 70,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "existing scoped/local fun_prop attribute context; not an extra tactic call; conservatively deferred for this batch",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion"
+      ],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          68
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Crypto/Computational/GeneratorPadding.lean",
+      "lines": 157,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          76
+        ],
+        [
+          "ppt",
+          137
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Prediction.lean",
+      "lines": 156,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "ppt",
+          106
+        ],
+        [
+          "ppt",
+          115
+        ],
+        [
+          "ppt",
+          154
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 3
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Pseudoentropy/ExtractionSchedule.lean",
+      "lines": 166,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          69
+        ],
+        [
+          "polytime",
+          79
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Pseudoentropy/RepeatedExtraction.lean",
+      "lines": 364,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "ppt",
+          137
+        ],
+        [
+          "ppt",
+          152
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Pseudoentropy/WordSeedExtraction.lean",
+      "lines": 220,
+      "disposition": "selected",
+      "not_a_global_eligibility_claim": true,
+      "manual_context_verification": "standalone top-level theorem-body target lines; no target option/quote/customsyntax; full context preserved",
+      "raw_screen_flags_not_a_grammar_verdict": [],
+      "standalone_line_candidates": [
+        [
+          "ppt",
+          181
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 1
+    },
+    {
+      "path": "Complexity/Crypto/Computational/GoldreichLevin/Parameters.lean",
+      "lines": 209,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "one or more target calls indented inside nested proof context; entire file deferred rather than partial instrumentation",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion",
+        "quote/custom-syntax source"
+      ],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          166
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 2
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Homomorphic/KeyChain/Security.lean",
+      "lines": 81,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "one or more target calls indented inside nested proof context; entire file deferred rather than partial instrumentation",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion",
+        "no eligible target"
+      ],
+      "standalone_line_candidates": [],
+      "raw_word_occurrences_after_simple_attribute_strip": 1
+    },
+    {
+      "path": "Complexity/Crypto/Computational/OneWay/NP.lean",
+      "lines": 301,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "quote-like text is documentation, not an established Lean quotation; conservative raw-screen deferral, not a false unsupported-syntax claim",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "quote/custom-syntax source"
+      ],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          135
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 1
+    },
+    {
+      "path": "Complexity/Foundations/Probability/Gaussian/Real.lean",
+      "lines": 140,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "one or more target calls indented inside nested proof context; entire file deferred rather than partial instrumentation",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion",
+        "no eligible target"
+      ],
+      "standalone_line_candidates": [],
+      "raw_word_occurrences_after_simple_attribute_strip": 1
+    },
+    {
+      "path": "Complexity/Probability/Minimax.lean",
+      "lines": 341,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "one or more target calls indented inside nested proof context; entire file deferred rather than partial instrumentation",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion",
+        "no eligible target"
+      ],
+      "standalone_line_candidates": [],
+      "raw_word_occurrences_after_simple_attribute_strip": 1
+    },
+    {
+      "path": "Complexity/Logics/Propositional/CNF/ThreeOccurrence/PolyTime.lean",
+      "lines": 86,
+      "disposition": "deferred_unmeasured",
+      "not_a_global_eligibility_claim": true,
+      "actual_deferral": "existing scoped/local fun_prop attribute context; not an extra tactic call; conservatively deferred for this batch",
+      "raw_screen_flags_not_a_grammar_verdict": [
+        "non-standalone/literal target occurrence needs exclusion"
+      ],
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          63
+        ],
+        [
+          "fun_prop",
+          73
+        ],
+        [
+          "fun_prop",
+          84
+        ]
+      ],
+      "raw_word_occurrences_after_simple_attribute_strip": 4
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "state": "PREPARATION_ONLY_DO_NOT_EXECUTE",
+  "required_explicit_builder_handoff": true,
+  "driver_and_parser_source_reference": "06e25085131e26992e1ef85791825e977429b668",
+  "source_copies": [
+    {
+      "path": "run_after_handoff.py",
+      "sha256": "6f10de528e7fd840005f6c46fdb14a31d8de1914ed5d115a4f7a0fa3fef805c7"
+    },
+    {
+      "path": "parse_after_handoff.py",
+      "sha256": "6f7e80414a80f5ac27511f07370fe3594e9af9f415f79be9035d29c495b1b711"
+    }
+  ],
+  "expected_whole_file_commands": 36,
+  "expected_authored_calls": 20,
+  "expected_begin_end_records": 40,
+  "new_collector_implementation": false,
+  "compiler_outputs_must_stay_private": true
+}

@@ -1,0 +1,9 @@
+{
+  "reference_evidence_head": "06e25085131e26992e1ef85791825e977429b668",
+  "all_prior_artifacts_byte_identical": true,
+  "actual_Lean_elaborations": 0,
+  "bootstrap_cache_build_operations": 0,
+  "real_measurement_rows_created": false,
+  "all_jobs_terminal": true,
+  "explicit_builder_handoff_required": true
+}
