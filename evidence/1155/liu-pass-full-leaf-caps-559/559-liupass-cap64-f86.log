@@ -1,0 +1,25 @@
+/tmp/559-LiuPassFullLeaf64.lean:46:2: error: fun_prop failed, maximum number(64) of steps exceeded
+/tmp/559-LiuPassFullLeaf64.lean:50:9: error: Variable name `γ` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _γ
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/tmp/559-LiuPassFullLeaf64.lean:50:11: error: Variable name `d` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _d
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/tmp/559-LiuPassFullLeaf64.lean:50:13: error: Variable name `c` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _c
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/tmp/559-LiuPassFullLeaf64.lean:50:21: error: Variable name `leaf` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _leaf
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`

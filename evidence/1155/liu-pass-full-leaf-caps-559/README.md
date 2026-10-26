@@ -1,0 +1,11 @@
+# Full arbitrary-leaf matched-cap diagnostics
+
+Source pin: `f86ebad93c3c28e8c4b039e0703242b7c1154cce` (landed #1215 unary frontends). This archive contains existing files only: no Lean execution was performed to create it. The original imports, complete captured telescope and arithmetic expression are preserved. Both positive and missing-leaf controls have the original 200000 heartbeat budget and the same explicit search cap within each pair.
+
+**Neither pair passes:** the supplied-leaf positive exceeds maxSteps64 and maxSteps128 respectively. The corresponding missing-leaf controls complete. The first64 run additionally reported unused negative binders; the final64 source only alpha-renames those binders. Both complete logs are retained, including the initial log alias. The rejected128 `--wfail` invocation did not elaborate Lean and is excluded; the corrected command uses `-DwarningAsError=true`. These are warning-strict diagnostic probes, not original-Lake default measurements.
+
+No default-negative parity, minimum-heartbeat result, cost transfer, mathematical non-computability or successful configured CI pair follows. The existing full-default bare positive is separate evidence. Full arbitrary-leaf rejection remains OPEN for #1155 synthesis; no known-timeout test is added to CI and no engine, registration or library change is proposed.
+
+`manifest.json` records exact commands, original paths and SHA256/byte counts. Sources retain their original `/tmp` diagnostic filenames in logs; first64 was executed at the same path subsequently holding the alpha-renamed final64 source, with its original bytes preserved as `-first.lean`. Bootstrap/import-freshness logs are contextual preparation, not proof timings. Reproduction requires checking out the source pin with its pinned toolchain/dependencies and restoring imports normally, then placing the selected archived source at its recorded path (or accepting changed diagnostic filename text). No compiled artifacts are archived or independently reconstructed.
+
+Public result: https://github.com/cslib-community/complexitylib/issues/1155#issuecomment-6427514713 . No broader instrumentation framework, performance survey or general automation approval is claimed.

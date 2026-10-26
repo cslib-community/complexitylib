@@ -1,0 +1,101 @@
+{
+  "source_pin": "f86ebad93c3c28e8c4b039e0703242b7c1154cce",
+  "original_heartbeat_budget": 200000,
+  "classification": "warning-strict diagnostic probes, not original-Lake default measurements",
+  "commands": [
+    {
+      "source": "559-LiuPassFullLeaf64-first.lean",
+      "executed_source_path": "/tmp/559-LiuPassFullLeaf64.lean",
+      "command": "LEAN_NUM_THREADS=2 lake env lean -DwarningAsError=true /tmp/559-LiuPassFullLeaf64.lean",
+      "logs": [
+        "559-liupass-cap64-f86.log",
+        "559-liupass-cap64-f86-first.log"
+      ],
+      "exit": 1,
+      "qualification": "first log and preserved first alias contain same run; positive64 failure plus unused-binder diagnostics"
+    },
+    {
+      "source": "559-LiuPassFullLeaf64.lean",
+      "command": "LEAN_NUM_THREADS=2 lake env lean -DwarningAsError=true /tmp/559-LiuPassFullLeaf64.lean",
+      "log": "559-liupass-cap64-f86-final.log",
+      "exit": 1,
+      "qualification": "only unused negative binders alpha-renamed; positive64 failure"
+    },
+    {
+      "source": "559-LiuPassFullLeaf128.lean",
+      "command": "LEAN_NUM_THREADS=2 lake env lean --wfail /tmp/559-LiuPassFullLeaf128.lean",
+      "log": "559-liupass-cap128-f86-invalid-cli.log",
+      "exit": 1,
+      "qualification": "REJECTED CLI; Lean did not elaborate probe; excluded from proof evidence"
+    },
+    {
+      "source": "559-LiuPassFullLeaf128.lean",
+      "command": "LEAN_NUM_THREADS=2 lake env lean -DwarningAsError=true /tmp/559-LiuPassFullLeaf128.lean",
+      "log": "559-liupass-cap128-f86.log",
+      "exit": 1,
+      "qualification": "positive128 failure; negative completes"
+    }
+  ],
+  "files": [
+    {
+      "path": "559-LiuPassFullLeaf128.lean",
+      "original_path": "/tmp/559-LiuPassFullLeaf128.lean",
+      "sha256": "9822109da173b54e7187e34a03a124e1be0edf4fc679a6ad99ba81b606d9a526",
+      "bytes": 2423
+    },
+    {
+      "path": "559-LiuPassFullLeaf64-first.lean",
+      "original_path": "/tmp/559-LiuPassFullLeaf64-first.lean",
+      "sha256": "f0f33da4e50219ea306987b2201ed3e117e016d84879cd51b4d1c229acb8f93f",
+      "bytes": 2410
+    },
+    {
+      "path": "559-LiuPassFullLeaf64.lean",
+      "original_path": "/tmp/559-LiuPassFullLeaf64.lean",
+      "sha256": "345f00b2f5e1b0f8884a2b7a744bb66f14856e05fc1194a13dbc94de1f03029e",
+      "bytes": 2420
+    },
+    {
+      "path": "559-liupass-cap128-f86-invalid-cli.log",
+      "original_path": "/tmp/559-liupass-cap128-f86-invalid-cli.log",
+      "sha256": "c583b4528edb98de802e8edb25be7afc31ec446906a120119d143c65a8ad44aa",
+      "bytes": 3062
+    },
+    {
+      "path": "559-liupass-cap128-f86.log",
+      "original_path": "/tmp/559-liupass-cap128-f86.log",
+      "sha256": "5f22f6ef7c04fcc6ea7553566c9e8c8f350a78284a1fe75257d686d530910673",
+      "bytes": 101
+    },
+    {
+      "path": "559-liupass-cap64-f86-bootstrap.log",
+      "original_path": "/tmp/559-liupass-cap64-f86-bootstrap.log",
+      "sha256": "69e401641f9dd8211a7ca1e02cbbb997a3ecfac003456c556d6153f5b6a0f17c",
+      "bytes": 36505
+    },
+    {
+      "path": "559-liupass-cap64-f86-final.log",
+      "original_path": "/tmp/559-liupass-cap64-f86-final.log",
+      "sha256": "9f9f18f1b0e6ff571539058fbf5fc7aeef048e1078e21c62bb60885ab3598a83",
+      "bytes": 99
+    },
+    {
+      "path": "559-liupass-cap64-f86-first.log",
+      "original_path": "/tmp/559-liupass-cap64-f86-first.log",
+      "sha256": "6ecc7d9c7c07b03cb4558e2f7b566c9bdf0c26fda1e4bb6759fdfb3cd186dae3",
+      "bytes": 1446
+    },
+    {
+      "path": "559-liupass-cap64-f86-import-freshness.log",
+      "original_path": "/tmp/559-liupass-cap64-f86-import-freshness.log",
+      "sha256": "2711d97aaafb4d4ab814afbd112e4c523490881fa7e94f29925d86542d4c2809",
+      "bytes": 183
+    },
+    {
+      "path": "559-liupass-cap64-f86.log",
+      "original_path": "/tmp/559-liupass-cap64-f86.log",
+      "sha256": "6ecc7d9c7c07b03cb4558e2f7b566c9bdf0c26fda1e4bb6759fdfb3cd186dae3",
+      "bytes": 1446
+    }
+  ]
+}

@@ -1,0 +1,347 @@
+Current branch: HEAD
+Using cache from origin: (some leanprover-community/mathlib4)
+No files to download
+Already decompressed 9047 file(s)
+warning: configuring the cache service via environment variables is deprecated; use --service instead
+info: complexitylib: downloading build outputs for revision f86ebad93c3c28e8c4b039e0703242b7c1154cce
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/revisions/complexitylib/f86ebad93c3c28e8c4b039e0703242b7c1154cce.jsonl
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/r0/cslib-community/complexitylib/tc/leanprover--lean4---v4.36.0-rc1/f86ebad93c3c28e8c4b039e0703242b7c1154cce.jsonl
+info: cslib-community/complexitylib: downloaded artifact 61a98ae303e65801
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/61a98ae303e65801.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/61a98ae303e65801.art
+info: cslib-community/complexitylib: downloaded artifact 5dae6f3af9ec0aac
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/5dae6f3af9ec0aac.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/5dae6f3af9ec0aac.art
+info: cslib-community/complexitylib: downloaded artifact cc01f18a3c7bd593
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/cc01f18a3c7bd593.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/cc01f18a3c7bd593.art
+info: cslib-community/complexitylib: downloaded artifact d7f4fa76280fe8da
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/d7f4fa76280fe8da.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/d7f4fa76280fe8da.art
+info: cslib-community/complexitylib: downloaded artifact c231d64ef6911f1d
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/c231d64ef6911f1d.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/c231d64ef6911f1d.art
+info: cslib-community/complexitylib: downloaded artifact 6859841cd270c569
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/6859841cd270c569.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/6859841cd270c569.art
+info: cslib-community/complexitylib: downloaded artifact a1227d4c4bcaa74a
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/a1227d4c4bcaa74a.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/a1227d4c4bcaa74a.art
+info: cslib-community/complexitylib: downloaded artifact e00b6bb64017ac81
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/e00b6bb64017ac81.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/e00b6bb64017ac81.art
+info: cslib-community/complexitylib: downloaded artifact 998c107e521e01b7
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/998c107e521e01b7.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/998c107e521e01b7.art
+info: cslib-community/complexitylib: downloaded artifact 09cd57d3fa7fc983
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/09cd57d3fa7fc983.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/09cd57d3fa7fc983.art
+info: cslib-community/complexitylib: downloaded artifact 8db3a83be85ce3bf
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/8db3a83be85ce3bf.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/8db3a83be85ce3bf.art
+info: cslib-community/complexitylib: downloaded artifact eebc52f954777e8b
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/eebc52f954777e8b.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/eebc52f954777e8b.art
+info: cslib-community/complexitylib: downloaded artifact b3c97377c985aa69
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/b3c97377c985aa69.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/b3c97377c985aa69.art
+info: cslib-community/complexitylib: downloaded artifact aa0b70b59bb66180
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/aa0b70b59bb66180.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/aa0b70b59bb66180.art
+info: cslib-community/complexitylib: downloaded artifact bbefc9ae2e91ee76
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/bbefc9ae2e91ee76.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/bbefc9ae2e91ee76.art
+info: cslib-community/complexitylib: downloaded artifact 7fdcf0d0739836bf
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/7fdcf0d0739836bf.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/7fdcf0d0739836bf.art
+info: cslib-community/complexitylib: downloaded artifact 427ee9679d3955a0
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/427ee9679d3955a0.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/427ee9679d3955a0.art
+info: cslib-community/complexitylib: downloaded artifact d25ad0f4697fbaac
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/d25ad0f4697fbaac.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/d25ad0f4697fbaac.art
+info: cslib-community/complexitylib: downloaded artifact af397a67aa47130e
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/af397a67aa47130e.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/af397a67aa47130e.art
+info: cslib-community/complexitylib: downloaded artifact d2aa2b81086d2e26
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/d2aa2b81086d2e26.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/d2aa2b81086d2e26.art
+info: cslib-community/complexitylib: downloaded artifact 069a9b2e39dae359
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/069a9b2e39dae359.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/069a9b2e39dae359.art
+info: cslib-community/complexitylib: downloaded artifact 2f2ba093744e3681
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/2f2ba093744e3681.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/2f2ba093744e3681.art
+info: cslib-community/complexitylib: downloaded artifact ca4eb241c5d6a1ea
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/ca4eb241c5d6a1ea.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/ca4eb241c5d6a1ea.art
+info: cslib-community/complexitylib: downloaded artifact adc78248b8364f82
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/adc78248b8364f82.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/adc78248b8364f82.art
+info: cslib-community/complexitylib: downloaded artifact 1dbc18737c6b119d
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/1dbc18737c6b119d.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/1dbc18737c6b119d.art
+info: cslib-community/complexitylib: downloaded artifact 7a54ebaa61cf208c
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/7a54ebaa61cf208c.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/7a54ebaa61cf208c.art
+info: cslib-community/complexitylib: downloaded artifact 5202417e7615a502
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/5202417e7615a502.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/5202417e7615a502.art
+info: cslib-community/complexitylib: downloaded artifact 1c0725f3963b2039
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/1c0725f3963b2039.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/1c0725f3963b2039.art
+info: cslib-community/complexitylib: downloaded artifact 20a9644b34e83355
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/20a9644b34e83355.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/20a9644b34e83355.art
+info: cslib-community/complexitylib: downloaded artifact d1a3ea254b3ddd7e
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/d1a3ea254b3ddd7e.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/d1a3ea254b3ddd7e.art
+info: cslib-community/complexitylib: downloaded artifact f3bd254d926dfc30
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/f3bd254d926dfc30.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/f3bd254d926dfc30.art
+info: cslib-community/complexitylib: downloaded artifact 269b0f61aedd9bab
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/269b0f61aedd9bab.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/269b0f61aedd9bab.art
+info: cslib-community/complexitylib: downloaded artifact d219e6a45dc9ebd4
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/d219e6a45dc9ebd4.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/d219e6a45dc9ebd4.art
+info: cslib-community/complexitylib: downloaded artifact 53558e66b0618311
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/53558e66b0618311.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/53558e66b0618311.art
+info: cslib-community/complexitylib: downloaded artifact 18caa6333ad3b7a7
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/18caa6333ad3b7a7.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/18caa6333ad3b7a7.art
+info: cslib-community/complexitylib: downloaded artifact c09f07f770ad6442
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/c09f07f770ad6442.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/c09f07f770ad6442.art
+info: cslib-community/complexitylib: downloaded artifact 361d3e2ba278e03b
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/361d3e2ba278e03b.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/361d3e2ba278e03b.art
+info: cslib-community/complexitylib: downloaded artifact 5eaac50adc334397
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/5eaac50adc334397.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/5eaac50adc334397.art
+info: cslib-community/complexitylib: downloaded artifact 7e164ef12d2b0fc7
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/7e164ef12d2b0fc7.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/7e164ef12d2b0fc7.art
+info: cslib-community/complexitylib: downloaded artifact d6ead07b6f9039ab
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/d6ead07b6f9039ab.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/d6ead07b6f9039ab.art
+info: cslib-community/complexitylib: downloaded artifact 01b4ad34ad757a98
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/01b4ad34ad757a98.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/01b4ad34ad757a98.art
+info: cslib-community/complexitylib: downloaded artifact 1e57a02d3471cc8b
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/1e57a02d3471cc8b.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/1e57a02d3471cc8b.art
+info: cslib-community/complexitylib: downloaded artifact 864ef5bdf241300a
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/864ef5bdf241300a.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/864ef5bdf241300a.art
+info: cslib-community/complexitylib: downloaded artifact a891a071e385f40a
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/a891a071e385f40a.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/a891a071e385f40a.art
+info: cslib-community/complexitylib: downloaded artifact 89455d0d490b8c2e
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/89455d0d490b8c2e.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/89455d0d490b8c2e.art
+info: cslib-community/complexitylib: downloaded artifact 520075c5ec1f116f
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/520075c5ec1f116f.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/520075c5ec1f116f.art
+info: cslib-community/complexitylib: downloaded artifact d6eda0fb161f1fd0
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/d6eda0fb161f1fd0.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/d6eda0fb161f1fd0.art
+info: cslib-community/complexitylib: downloaded artifact 33450ca3c5287b04
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/33450ca3c5287b04.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/33450ca3c5287b04.art
+info: cslib-community/complexitylib: downloaded artifact bc4f70dc48734ad7
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/bc4f70dc48734ad7.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/bc4f70dc48734ad7.art
+info: cslib-community/complexitylib: downloaded artifact ca9e3fb0830054a3
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/ca9e3fb0830054a3.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/ca9e3fb0830054a3.art
+info: cslib-community/complexitylib: downloaded artifact 3b02061dd9445825
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/3b02061dd9445825.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/3b02061dd9445825.art
+info: cslib-community/complexitylib: downloaded artifact 5ed3ac0d3aec0417
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/5ed3ac0d3aec0417.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/5ed3ac0d3aec0417.art
+info: cslib-community/complexitylib: downloaded artifact 34fc083930b076b7
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/34fc083930b076b7.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/34fc083930b076b7.art
+info: cslib-community/complexitylib: downloaded artifact 0aa95dc69093f5c1
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/0aa95dc69093f5c1.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/0aa95dc69093f5c1.art
+info: cslib-community/complexitylib: downloaded artifact 9d40c06217ea7aa3
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/9d40c06217ea7aa3.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/9d40c06217ea7aa3.art
+info: cslib-community/complexitylib: downloaded artifact 7b88c74a869e0dea
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/7b88c74a869e0dea.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/7b88c74a869e0dea.art
+info: cslib-community/complexitylib: downloaded artifact 3546497fdcdcbda5
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/3546497fdcdcbda5.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/3546497fdcdcbda5.art
+info: cslib-community/complexitylib: downloaded artifact 1d5716ad9100c619
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/1d5716ad9100c619.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/1d5716ad9100c619.art
+info: cslib-community/complexitylib: downloaded artifact 3aea98d74936ea1b
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/3aea98d74936ea1b.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/3aea98d74936ea1b.art
+info: cslib-community/complexitylib: downloaded artifact fd06d53596778269
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/fd06d53596778269.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/fd06d53596778269.art
+info: cslib-community/complexitylib: downloaded artifact 40853a8127782c4a
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/40853a8127782c4a.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/40853a8127782c4a.art
+info: cslib-community/complexitylib: downloaded artifact 3120958c3ddaefc1
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/3120958c3ddaefc1.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/3120958c3ddaefc1.art
+info: cslib-community/complexitylib: downloaded artifact 97f55b1835f2cff6
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/97f55b1835f2cff6.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/97f55b1835f2cff6.art
+info: cslib-community/complexitylib: downloaded artifact 064dc6d449be902c
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/064dc6d449be902c.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/064dc6d449be902c.art
+info: cslib-community/complexitylib: downloaded artifact 6db63f50e5f8a8bb
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/6db63f50e5f8a8bb.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/6db63f50e5f8a8bb.art
+info: cslib-community/complexitylib: downloaded artifact ac6140973caf4f75
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/ac6140973caf4f75.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/ac6140973caf4f75.art
+info: cslib-community/complexitylib: downloaded artifact e4f8325faac77480
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/e4f8325faac77480.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/e4f8325faac77480.art
+info: cslib-community/complexitylib: downloaded artifact 9e311c673694f9b0
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/9e311c673694f9b0.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/9e311c673694f9b0.art
+info: cslib-community/complexitylib: downloaded artifact 42955a3334003510
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/42955a3334003510.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/42955a3334003510.art
+info: cslib-community/complexitylib: downloaded artifact 15f2118ecc5147ed
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/15f2118ecc5147ed.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/15f2118ecc5147ed.art
+info: cslib-community/complexitylib: downloaded artifact 16f4410d41de8af6
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/16f4410d41de8af6.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/16f4410d41de8af6.art
+info: cslib-community/complexitylib: downloaded artifact 72a989ca3dd5199c
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/72a989ca3dd5199c.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/72a989ca3dd5199c.art
+info: cslib-community/complexitylib: downloaded artifact d4dc03844dc9ccee
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/d4dc03844dc9ccee.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/d4dc03844dc9ccee.art
+info: cslib-community/complexitylib: downloaded artifact 8c62fb09b3954e46
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/8c62fb09b3954e46.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/8c62fb09b3954e46.art
+info: cslib-community/complexitylib: downloaded artifact e3047e4e75f8ceb9
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/e3047e4e75f8ceb9.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/e3047e4e75f8ceb9.art
+info: cslib-community/complexitylib: downloaded artifact cd0b05c1cc1eadc0
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/cd0b05c1cc1eadc0.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/cd0b05c1cc1eadc0.art
+info: cslib-community/complexitylib: downloaded artifact 283a610dc0644df7
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/283a610dc0644df7.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/283a610dc0644df7.art
+info: cslib-community/complexitylib: downloaded artifact 6ddcf13c25f1bc45
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/6ddcf13c25f1bc45.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/6ddcf13c25f1bc45.art
+info: cslib-community/complexitylib: downloaded artifact 1e3970ea477c8e7c
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/1e3970ea477c8e7c.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/1e3970ea477c8e7c.art
+info: cslib-community/complexitylib: downloaded artifact 4df1b708f4ae2c83
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/4df1b708f4ae2c83.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/4df1b708f4ae2c83.art
+info: cslib-community/complexitylib: downloaded artifact aab93acb0f3bdafc
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/aab93acb0f3bdafc.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/aab93acb0f3bdafc.art
+info: cslib-community/complexitylib: downloaded artifact 32e5af9eba8dd0bf
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/32e5af9eba8dd0bf.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/32e5af9eba8dd0bf.art
+info: cslib-community/complexitylib: downloaded artifact 94d0559453fc19b4
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/94d0559453fc19b4.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/94d0559453fc19b4.art
+info: cslib-community/complexitylib: downloaded artifact 3b7e3a9be7da0b93
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/3b7e3a9be7da0b93.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/3b7e3a9be7da0b93.art
+info: cslib-community/complexitylib: downloaded artifact 3d97bfa7f2ff839f
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/3d97bfa7f2ff839f.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/3d97bfa7f2ff839f.art
+info: cslib-community/complexitylib: downloaded artifact 78db71337e13b4a2
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/78db71337e13b4a2.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/78db71337e13b4a2.art
+info: cslib-community/complexitylib: downloaded artifact 74fd99876125c377
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/74fd99876125c377.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/74fd99876125c377.art
+info: cslib-community/complexitylib: downloaded artifact 0468cd969678db94
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/0468cd969678db94.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/0468cd969678db94.art
+info: cslib-community/complexitylib: downloaded artifact fc591b8eb467c1db
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/fc591b8eb467c1db.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/fc591b8eb467c1db.art
+info: cslib-community/complexitylib: downloaded artifact 4321e60b953e878d
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/4321e60b953e878d.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/4321e60b953e878d.art
+info: cslib-community/complexitylib: downloaded artifact 02b66edb64997367
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/02b66edb64997367.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/02b66edb64997367.art
+info: cslib-community/complexitylib: downloaded artifact 9a8e23e93da039b1
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/9a8e23e93da039b1.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/9a8e23e93da039b1.art
+info: cslib-community/complexitylib: downloaded artifact f25188c793c43122
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/f25188c793c43122.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/f25188c793c43122.art
+info: cslib-community/complexitylib: downloaded artifact e3f73542859c9c9b
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/e3f73542859c9c9b.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/e3f73542859c9c9b.art
+info: cslib-community/complexitylib: downloaded artifact 5af27c0312350fee
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/5af27c0312350fee.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/5af27c0312350fee.art
+info: cslib-community/complexitylib: downloaded artifact 11ec690b9380e39d
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/11ec690b9380e39d.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/11ec690b9380e39d.art
+info: cslib-community/complexitylib: downloaded artifact 7ed301c26231c79f
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/7ed301c26231c79f.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/7ed301c26231c79f.art
+info: cslib-community/complexitylib: downloaded artifact 5208d4070607c18b
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/5208d4070607c18b.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/5208d4070607c18b.art
+info: cslib-community/complexitylib: downloaded artifact 3a68689ea18c6583
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/3a68689ea18c6583.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/3a68689ea18c6583.art
+info: cslib-community/complexitylib: downloaded artifact a5e7a958e4bbb65f
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/a5e7a958e4bbb65f.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/a5e7a958e4bbb65f.art
+info: cslib-community/complexitylib: downloaded artifact e1248a8beaeccf97
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/e1248a8beaeccf97.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/e1248a8beaeccf97.art
+info: cslib-community/complexitylib: downloaded artifact e03a2709bf90a6d5
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/e03a2709bf90a6d5.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/e03a2709bf90a6d5.art
+info: cslib-community/complexitylib: downloaded artifact 32475ee399da25c4
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/32475ee399da25c4.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/32475ee399da25c4.art
+info: cslib-community/complexitylib: downloaded artifact a4b4f4e41db3711d
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/a4b4f4e41db3711d.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/a4b4f4e41db3711d.art
+info: cslib-community/complexitylib: downloaded artifact c8748792aed15a8f
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/c8748792aed15a8f.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/c8748792aed15a8f.art
+info: cslib-community/complexitylib: downloaded artifact 4f9804e9e76fba0e
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/4f9804e9e76fba0e.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/4f9804e9e76fba0e.art
+info: cslib-community/complexitylib: downloaded artifact 96bb55d4f0179074
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/96bb55d4f0179074.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/96bb55d4f0179074.art
+info: cslib-community/complexitylib: downloaded artifact a204147f599bed5d
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/a204147f599bed5d.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/a204147f599bed5d.art
+info: cslib-community/complexitylib: downloaded artifact 170bbc47f7ca01a7
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/170bbc47f7ca01a7.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/170bbc47f7ca01a7.art
+info: cslib-community/complexitylib: downloaded artifact 9fbd236d1732ca5b
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/9fbd236d1732ca5b.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/9fbd236d1732ca5b.art
+info: cslib-community/complexitylib: downloaded artifact 4264772023a3ccb0
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/4264772023a3ccb0.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/4264772023a3ccb0.art
+info: cslib-community/complexitylib: downloaded artifact 2092c5a353e6e1ba
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/2092c5a353e6e1ba.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/2092c5a353e6e1ba.art
+info: cslib-community/complexitylib: downloaded artifact de46a3c43340d1f3
+  local path: /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/lake/cache/artifacts/de46a3c43340d1f3.ltar
+  remote URL: https://storage.googleapis.com/complexitylib-lake-cache/a0/cslib-community/complexitylib/de46a3c43340d1f3.art
