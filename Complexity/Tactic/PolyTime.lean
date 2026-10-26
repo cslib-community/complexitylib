@@ -140,6 +140,47 @@ private meta def polytimePredicate (target : Expr) : MetaM Name := do
   if target.isAppOf ``ComputableTidilyInPolyTime then return ``ComputableTidilyInPolyTime
   throwError "expected a polynomial-time goal"
 
+open Lean Meta in
+/-- Choose only the order of existing plain conditional recipes. Boolean guards retain their
+arbitrary encoding; proposition guards use the decision encoding of `ite_decide`. Inspection
+does not retain metavariable assignments, and both recipes remain available. -/
+private meta def plainConditionalRules? (target : Expr) : MetaM (Option (Array Name)) := do
+  let saved ← saveState
+  try
+    let target := (← instantiateMVars target).consumeMData
+    unless target.isAppOf ``ComputableInPolyTime do return none
+    Cslib.Tactic.withConditionalBody? target.getAppArgs[2]! fun body => do
+      let condition ← whnfR body.getAppArgs[1]!
+      let boolean := condition.isAppOfArity ``Eq 3 &&
+        condition.getAppArgs[0]!.isConstOf ``Bool &&
+        condition.getAppArgs[2]!.isConstOf ``Bool.true
+      return if boolean then #[``ComputableInPolyTime.ite, ``ComputableInPolyTime.ite_decide]
+        else #[``ComputableInPolyTime.ite_decide, ``ComputableInPolyTime.ite]
+  finally saved.restore
+
+open Lean Meta in
+/-- Keep conditional guards and branches in joint search. Local/named certificates have higher
+priority; each recipe has its own state, so a later premise failure retains the other recipe. -/
+@[aesop unsafe 98% tactic (rule_sets := [PolyTime])]
+private meta def polytimeConditional : Aesop.RuleTac := fun input => input.goal.withContext do
+  let some rules ← plainConditionalRules? (← input.goal.getType)
+    | throwError "expected a plain conditional program"
+  let initial ← saveState
+  let mut applications := #[]
+  for i in [:rules.size] do
+    try
+      let goals ← input.goal.applyConst rules[i]!
+      let goals ← goals.toArray.mapM (Aesop.mvarIdToSubgoal input.goal)
+      applications := applications.push {
+        goals
+        postState := ← saveState
+        scriptSteps? := none
+        successProbability? := some ⟨if i == 0 then 0.98 else 0.97⟩ }
+    catch _ => pure ()
+    finally initial.restore
+  if applications.isEmpty then throwError "no conditional recipe applies"
+  return ⟨applications⟩
+
 /-- Expose local routine certificates and their argument obligations as search alternatives. -/
 -- Equal priority lets argument goals run before expensive alternatives at the parent goal.
 @[aesop unsafe 100% tactic (rule_sets := [PolyTime])]
@@ -748,7 +789,10 @@ private meta def polytimeConstructFast : Lean.Elab.Tactic.TacticM Unit :=
 
 @[aesop safe -20 tactic (rule_sets := [PolyTime])]
 private meta def polytimeFunPropFast : Lean.Elab.Tactic.TacticM Unit :=
-  withoutLocalCall polytimeFunProp
+  Lean.Elab.Tactic.withMainContext do
+    if (← plainConditionalRules? (← Lean.Elab.Tactic.getMainTarget)).isSome then
+      throwError "conditional alternatives precede generic composition"
+    withoutLocalCall polytimeFunProp
 
 @[aesop safe 50 tactic (rule_sets := [PolyTime])]
 private meta def polytimeFoldFast : Lean.Elab.Tactic.TacticM Unit :=
@@ -769,7 +813,11 @@ private meta def polytimeConstructAlternative : Lean.Elab.Tactic.TacticM Unit :=
 
 @[aesop unsafe 90% tactic (rule_sets := [PolyTime])]
 private meta def polytimeFunPropAlternative : Lean.Elab.Tactic.TacticM Unit :=
-  withLocalCall polytimeFunProp
+  Lean.Elab.Tactic.withMainContext do
+    if (← plainConditionalRules? (← Lean.Elab.Tactic.getMainTarget)).isSome then
+      polytimeFunProp
+    else
+      withLocalCall polytimeFunProp
 
 @[aesop unsafe 85% tactic (rule_sets := [PolyTime])]
 private meta def polytimeFoldAlternative : Lean.Elab.Tactic.TacticM Unit :=
