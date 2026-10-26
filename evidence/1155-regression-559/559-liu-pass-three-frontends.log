@@ -1,0 +1,23 @@
+/tmp/559-LiuPassUnaryFrontends.lean:40:2: error: Type mismatch
+  comp unary_add (prod ?m.28 ?m.29)
+has type
+  ComputableInPolyTime.{0, 0} ((fun p => p.1 + p.2) ∘ fun a => (?m.26 a, ?m.27 a)) ?m.23 encUnary
+but is expected to have type
+  ComputableInPolyTime.{u_1, 0} (fun a => left a + right a) input encUnary
+/tmp/559-LiuPassUnaryFrontends.lean:47:2: error: Type mismatch
+  comp unary_sub (prod ?m.28 ?m.29)
+has type
+  ComputableInPolyTime.{0, 0} ((fun p => p.1 - p.2) ∘ fun a => (?m.26 a, ?m.27 a)) ?m.23 encUnary
+but is expected to have type
+  ComputableInPolyTime.{u_1, 0} (fun a => left a - right a) input encUnary
+/tmp/559-LiuPassUnaryFrontends.lean:54:2: error: Type mismatch
+  comp unary_mul (prod ?m.28 ?m.29)
+has type
+  ComputableInPolyTime.{0, 0} ((fun p => p.1 * p.2) ∘ fun a => (?m.26 a, ?m.27 a)) ?m.23 encUnary
+but is expected to have type
+  ComputableInPolyTime.{u_1, 0} (fun a => left a * right a) input encUnary
+/tmp/559-LiuPassUnaryFrontends.lean:81:45: error: (deterministic) timeout at `whnf`, maximum number of heartbeats (200000) has been reached
+
+Note: Use `set_option maxHeartbeats <num>` to set the limit.
+
+Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.

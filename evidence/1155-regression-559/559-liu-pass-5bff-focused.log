@@ -1,0 +1,25 @@
+✖ [7113/7114] Building ComplexityTests.AutomationLiuPass (35s)
+trace: .> LEAN_PATH=/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/Cli/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/batteries/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/Qq/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/aesop/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/proofwidgets/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/importGraph/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/LeanSearchClient/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/plausible/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/mathlib/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/packages/cslib/.lake/build/lib/lean:/home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/build/lib/lean /home/samuel/.elan/toolchains/leanprover--lean4---v4.36.0-rc1/bin/lean /home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/ComplexityTests/AutomationLiuPass.lean -o /home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/build/lib/lean/ComplexityTests/AutomationLiuPass.olean -i /home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/build/lib/lean/ComplexityTests/AutomationLiuPass.ilean -c /home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/build/ir/ComplexityTests/AutomationLiuPass.c --setup /home/samuel/Code/complexitylib-codex/liu-pass-automation-1155/.lake/build/ir/ComplexityTests/AutomationLiuPass.setup.json --json
+error: ComplexityTests/AutomationLiuPass.lean:43:2: (deterministic) timeout at `whnf`, maximum number of heartbeats (200000) has been reached
+
+Note: Use `set_option maxHeartbeats <num>` to set the limit.
+
+Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+error: ComplexityTests/AutomationLiuPass.lean:51:2: (deterministic) timeout at `whnf`, maximum number of heartbeats (200000) has been reached
+
+Note: Use `set_option maxHeartbeats <num>` to set the limit.
+
+Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+error: ComplexityTests/AutomationLiuPass.lean:54:45: (deterministic) timeout at `whnf`, maximum number of heartbeats (200000) has been reached
+
+Note: Use `set_option maxHeartbeats <num>` to set the limit.
+
+Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+warning: ComplexityTests/AutomationLiuPass.lean:1:0: The current module only contains private declarations.
+
+Consider adding `public section` at the beginning of the module, or selectively marking declarations as `public`. Mark a `def` with `@[expose]` if downstream code needs it to be definitionally equal to its body (e.g. for `unfold`). Alternatively, add `@[expose] public section` to mark every definition as exposed.
+
+Note: This linter can be disabled with `set_option linter.privateModule false`
+Some required targets logged failures:
+- ComplexityTests.AutomationLiuPass
+error: build failed
