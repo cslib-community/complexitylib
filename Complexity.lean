@@ -943,6 +943,7 @@ public import Complexity.Computability.Machines.ReadMachine.Tidy
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Append
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Comp
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.CopyWord

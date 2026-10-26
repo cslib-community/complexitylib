@@ -69,12 +69,15 @@ noncomputable def blockStart (cfg : Cfg k Symbol State input) (width index : ℕ
 and gives an empty block; later aligned-block geometry requires positive width separately. -/
 def blockDuration (horizon width index : ℕ) : ℕ := min width (horizon - index * width)
 
+/-- Block zero starts at the supplied configuration, even at width zero. -/
 @[simp] theorem blockStart_zero (cfg : Cfg k Symbol State input) (width : ℕ) :
     tm.blockStart cfg width 0 = cfg := by simp [blockStart, runFrom]
 
+/-- Zero-width blocks contain no steps at any horizon. -/
 @[simp] theorem blockDuration_zero_width (horizon index : ℕ) :
     blockDuration horizon 0 index = 0 := by simp [blockDuration]
 
+/-- Clipping never increases the chosen block width. -/
 theorem blockDuration_le_width (horizon width index : ℕ) :
     blockDuration horizon width index ≤ width := Nat.min_le_left _ _
 
@@ -142,7 +145,7 @@ theorem exists_output_suffix (cfg : Cfg k Symbol State input) (duration : ℕ) :
         (tm.runFrom cfg duration).workTapeSymbols
       refine ⟨emitted ++ action.output.toList, ?_, ?_⟩
       · rw [step_of_state hstate, Action.apply_output, heq, List.append_assoc]
-      · have h := Option.length_toList_le action.output
+      · have h := Option.length_toList_le (o := action.output)
         simp only [List.length_append]
         omega
 
@@ -150,11 +153,13 @@ theorem exists_output_suffix (cfg : Cfg k Symbol State input) (duration : ℕ) :
 noncomputable def blockEmitted (cfg : Cfg k Symbol State input) (duration : ℕ) : List Symbol :=
   (tm.runFrom cfg duration).output.drop cfg.output.length
 
+/-- Reconstruct the native output from its existing prefix and the segment-only suffix. -/
 theorem output_eq_append_blockEmitted (cfg : Cfg k Symbol State input) (duration : ℕ) :
     (tm.runFrom cfg duration).output = cfg.output ++ tm.blockEmitted cfg duration := by
   obtain ⟨emitted, heq, _⟩ := tm.exists_output_suffix cfg duration
   simp only [blockEmitted, heq, List.drop_left]
 
+/-- The suffix payload is at most the segment duration, regardless of the old prefix length. -/
 theorem length_blockEmitted_le (cfg : Cfg k Symbol State input) (duration : ℕ) :
     (tm.blockEmitted cfg duration).length ≤ duration := by
   have h := tm.length_output_runFrom_le cfg duration

@@ -7,6 +7,7 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
+import Mathlib.Tactic.NormNum
 
 /-! # Native time-block boundary tests
 
@@ -15,16 +16,20 @@ emits one zero after an existing output prefix, and halts. The symbolic controls
 zero work tapes, arbitrary nonhalting prefixes and clipped final blocks.
 -/
 
+public section
+
 open Turing
 namespace BlockTraceTests
 
-private def writeZero : MultiTapeTM 1 Bool Unit := MultiTapeTM.ofTr () fun _ _ _ =>
+/-- A one-step native machine that writes and emits zero, then halts. -/
+@[expose] def writeZero : MultiTapeTM 1 Bool Unit := MultiTapeTM.ofTr () fun _ _ _ =>
   { inputTape := 0
     workTapes := fun _ => (some (some false), -1)
     output := some false
     state := none }
 
-private def start : Cfg 1 Bool Unit [] :=
+/-- A blank native tape with negative head position and an existing output prefix. -/
+@[expose] def start : Cfg 1 Bool Unit [] :=
   { state := some ()
     inputPos := 0
     workTapes := fun _ _ => none
@@ -35,8 +40,8 @@ private def start : Cfg 1 Bool Unit [] :=
 example : start.workWindow 0 0 0 = none := rfl
 example : start.workWindow 0 0 0 ≠ some false := by decide
 
--- The native write changes only the scanned negative cell, independently of the move.
-example : (writeZero.runFrom start 1).workTapes 0 (-2) = some false := by
+/-- The native write changes the scanned negative cell into a written zero. -/
+theorem writtenZero : (writeZero.runFrom start 1).workTapes 0 (-2) = some false := by
   rw [MultiTapeTM.runFrom_one, MultiTapeTM.step_of_state (show start.state = some () from rfl)]
   simp [writeZero, Action.apply, start]
 
