@@ -136,17 +136,71 @@ example :
     schnorrGroups.isCramerShoupCollision (fun _ => []) d23 ct₁ ct₂ = true := by
   decide
 
-#check @PrimeOrderGroupFamily.cramerShoupDecrypt_cramerShoupEncrypt
-#check @PrimeOrderGroupFamily.decodeCramerShoup_encode
-#check @PrimeOrderGroupFamily.decodeCramerShoup_cramerShoupEncrypt
-#check @PrimeOrderGroupFamily.computableInPolyTime_encodeCramerShoupPublicKey
-#check @PrimeOrderGroupFamily.computableInPolyTime_encodeCramerShoupEncrypt
-#check @PrimeOrderGroupFamily.computableInPolyTime_encodeCramerShoupChallenge
-#check @PrimeOrderGroupFamily.computableInPolyTime_decodeCramerShoup
-#check @PrimeOrderGroupFamily.advantage_cramerShoupGame3_game3Half_le
-#check @PrimeOrderGroupFamily.advantage_cramerShoupGame3Half_game4_le
-#check @PrimeOrderGroupFamily.advantage_cramerShoupGame3_game4_le
-#check @PrimeOrderGroupFamily.cramerShoupGame5_false_eq_true
-#check @PrimeOrderGroupFamily.advantage_cramerShoupGame4_game5_le
+open scoped NNReal
+
+/-- Polynomial-time computability certificates for `encodeCramerShoupPublicKey`,
+`encodeCramerShoupEncrypt`, `encodeCramerShoupChallenge`, and `decodeCramerShoup` instantiated on
+`schnorrGroups`. -/
+example {H : schnorrGroups.Desc × List Bool → List Bool}
+    {isElem : schnorrGroups.Desc × List Bool → Bool}
+    (hH : ComputableInPolyTime H (encPair schnorrGroups.encDesc encBits) encBits)
+    (hisElem : ComputableInPolyTime isElem (encPair schnorrGroups.encDesc encBits) encBool) :
+    ComputableInPolyTime
+      (fun p : schnorrGroups.Desc × List Bool × ((ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) =>
+        schnorrGroups.encodeCramerShoupPublicKey p.1 p.2.1 p.2.2)
+      (encPair schnorrGroups.encDesc (encPair encBits encCramerShoupSK)) encBits ∧
+    ComputableInPolyTime
+      (fun p : schnorrGroups.Desc × (List Bool × List Bool × List Bool × List Bool) ×
+          List Bool × ℕ =>
+        schnorrGroups.encodeCramerShoupEncrypt H p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (encPair schnorrGroups.encDesc (encPair encBits4 (encPair encBits encNat))) encBits ∧
+    ComputableInPolyTime
+      (fun p : schnorrGroups.Desc × ((ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) ×
+          List Bool × List Bool × List Bool =>
+        schnorrGroups.encodeCramerShoupChallenge H p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2)
+      (encPair schnorrGroups.encDesc
+        (encPair encCramerShoupSK (encPair encBits (encPair encBits encBits)))) encBits ∧
+    ComputableInPolyTime
+      (fun p : schnorrGroups.Desc × ((ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) × List Bool =>
+        schnorrGroups.decodeCramerShoup H isElem p.1 p.2.1 p.2.2)
+      (encPair schnorrGroups.encDesc (encPair encCramerShoupSK encBits)) (encOption encBits) :=
+  ⟨schnorrGroups.computableInPolyTime_encodeCramerShoupPublicKey,
+   schnorrGroups.computableInPolyTime_encodeCramerShoupEncrypt hH,
+   schnorrGroups.computableInPolyTime_encodeCramerShoupChallenge hH,
+   schnorrGroups.computableInPolyTime_decodeCramerShoup hH hisElem⟩
+
+/-- Concrete instantiation of the adaptive Lemma 12.8 (`advantage_cramerShoupGame3_game4_le`) and
+Lemma 12.6 (`advantage_cramerShoupGame4_game5_le` and `cramerShoupGame5_false_eq_true`) consumers
+on `schnorrGroups` at `d23` (`q = 11`). -/
+example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
+      isSchnorrElem (d, x) = true ↔ x ∈ Set.range (schnorrGroups.encode d))
+    (adversary : Encryption.CCA2AdversaryOf (List Bool)) (bit : Bool) (n Q₁ Q₂ : ℕ)
+    (hq1 : schnorrGroups.HonestPhase1QueryBound (fun _ => PMF.pure d23) adversary n Q₁)
+    (hq2 : schnorrGroups.HonestPhase2QueryBound (fun _ => PMF.pure d23) testHash isSchnorrElem
+      adversary n Q₂) :
+    (schnorrGroups.cramerShoupGame3 (fun p => p.2) (fun _ => PMF.pure d23) testHash isSchnorrElem
+      adversary bit n).advantage
+      (schnorrGroups.cramerShoupGame4 (fun p => p.2) (fun _ => PMF.pure d23) testHash isSchnorrElem
+        adversary bit n) ≤ ((Q₁ + Q₂ : ℕ) : ℝ≥0) / (11 : ℕ) ∧
+    (schnorrGroups.cramerShoupGame4 (fun p => p.2) (fun _ => PMF.pure d23) testHash isSchnorrElem
+      adversary bit n).advantage
+      (schnorrGroups.cramerShoupGame5 (fun p => p.2) (fun _ => PMF.pure d23) testHash isSchnorrElem
+        adversary bit n) ≤ 1 / (11 : ℕ) ∧
+    schnorrGroups.cramerShoupGame5 (fun p => p.2) (fun _ => PMF.pure d23) testHash isSchnorrElem
+      adversary false n =
+      schnorrGroups.cramerShoupGame5 (fun p => p.2) (fun _ => PMF.pure d23) testHash isSchnorrElem
+        adversary true n := by
+  have hm : ∀ d ∈ (PMF.pure d23).support, 11 ≤ schnorrGroups.order d := by
+    intro d hd
+    simp only [PMF.support_pure, Set.mem_singleton_iff] at hd
+    subst hd
+    decide
+  refine ⟨?_, ?_, schnorrGroups.cramerShoupGame5_false_eq_true _ _ _ _ _ _⟩
+  · exact schnorrGroups.advantage_cramerShoupGame3_game4_le (fun p => p.2)
+      (fun _ => PMF.pure d23) testHash isSchnorrElem hmem adversary bit n Q₁ Q₂ 11
+      (by decide) hm hq1 hq2
+  · exact schnorrGroups.advantage_cramerShoupGame4_game5_le (fun p => p.2)
+      (fun _ => PMF.pure d23) testHash isSchnorrElem hmem adversary bit n 11
+      (by decide) hm
 
 end ComplexityTests.Crypto.CramerShoup
