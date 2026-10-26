@@ -1,0 +1,102 @@
+{
+  "state": "PREPARATION_ONLY",
+  "actual_Lean_runs": 0,
+  "bootstrap_build_cache_operations": 0,
+  "source_mapping_verified": true,
+  "selected_files": 13,
+  "selected_calls": 16,
+  "synthetic_complete_smoke_pass": true,
+  "synthetic_rejections": [
+    {
+      "name": "partial_event_pairs",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "partial/censored/repeated events"
+    },
+    {
+      "name": "no_observed_calls",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "partial/censored/repeated events"
+    },
+    {
+      "name": "censored_not_success",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "unexpected/partial outcome"
+    },
+    {
+      "name": "duplicate_record",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "duplicate/repeated event"
+    },
+    {
+      "name": "both_threads_missing",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "thread ID"
+    },
+    {
+      "name": "both_threads_null",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "thread ID"
+    },
+    {
+      "name": "bool_thread_invalid",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "thread ID"
+    },
+    {
+      "name": "global_cross_call_event_reuse",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "cross-call event ID reuse"
+    },
+    {
+      "name": "unmatched_attempt",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "attempt ownership"
+    },
+    {
+      "name": "sidecar_mismatch",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "event provenance"
+    },
+    {
+      "name": "wrong_tactic_kind",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "original parsed child kind"
+    },
+    {
+      "name": "failed_whole_file_command",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "whole-file command failure"
+    },
+    {
+      "name": "missing_mode",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "partial command ledger"
+    },
+    {
+      "name": "duplicate_command",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "duplicate/unknown command"
+    },
+    {
+      "name": "module_context_mismatch",
+      "synthetic": true,
+      "rejected": true,
+      "reason": "module context"
+    }
+  ],
+  "actual_runtime_results": "NOT_RUN; explicit builder handoff required"
+}

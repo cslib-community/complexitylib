@@ -1,0 +1,10 @@
+{
+  "reference_evidence_head": "7381d9127983145b4fd0e258665b5b2acbf505d0",
+  "prior_manifest_entries_verified": 313,
+  "all_prior_artifacts_byte_identical": true,
+  "actual_Lean_elaborations": 0,
+  "bootstrap_cache_build_operations": 0,
+  "real_measurement_rows_created": false,
+  "all_jobs_terminal": true,
+  "explicit_builder_handoff_required": true
+}

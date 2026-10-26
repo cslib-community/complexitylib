@@ -1,0 +1,12 @@
+{
+  "state": "PREPARATION_ONLY_DO_NOT_EXECUTE",
+  "explicit_builder_handoff_required": true,
+  "unchanged_wrapper_reference": "b83da912f9c0230bd9047e5f473ad9a27cff28b3",
+  "unchanged_driver_parser_reference": "bd31613255320dde3caa718e651720d7caec1ac6",
+  "driver_parser_hashes": {
+    "run_after_handoff.py": "6f10de528e7fd840005f6c46fdb14a31d8de1914ed5d115a4f7a0fa3fef805c7",
+    "parse_after_handoff.py": "6f7e80414a80f5ac27511f07370fe3594e9af9f415f79be9035d29c495b1b711"
+  },
+  "scope_config_only_changes": "explicit case whitelist/cardinalities13files16calls39commands32records; strict logic unchanged",
+  "no_runtime_results": true
+}

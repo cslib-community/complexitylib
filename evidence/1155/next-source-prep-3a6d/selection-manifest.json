@@ -1,0 +1,1139 @@
+{
+  "state": "PREPARATION_ONLY",
+  "explicit_old_census_shortlist_files": 45,
+  "source_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+  "selected_files": 13,
+  "selected_calls": 16,
+  "already_measured_files_excluded": [
+    "Complexity/Computability/Complexity/CookLevin/Parameters.lean",
+    "Complexity/Computability/Complexity/Problems/ExactThreeSAT.lean",
+    "Complexity/Computability/Complexity/Problems/Partition.lean",
+    "Complexity/Computability/MCSP/HardnessConsequences.lean",
+    "Complexity/Computability/PCP/Encoded/AddTrivial.lean",
+    "Complexity/Computability/PCP/Encoded/Amplification.lean",
+    "Complexity/Computability/PCP/Encoded/Amplification/Enumeration.lean",
+    "Complexity/Computability/PCP/Encoded/Cloud.lean",
+    "Complexity/Computability/PCP/Encoded/Constraints.lean",
+    "Complexity/Computability/PCP/Encoded/Preprocess.lean",
+    "Complexity/Crypto/Computational/GeneratorPadding.lean",
+    "Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean",
+    "Complexity/Crypto/Computational/OneWay/LiuPass.lean",
+    "Complexity/Crypto/Computational/Prediction.lean",
+    "Complexity/Crypto/Computational/Pseudoentropy/ExtractionSchedule.lean",
+    "Complexity/Crypto/Computational/Pseudoentropy/MatrixExtraction.lean",
+    "Complexity/Crypto/Computational/Pseudoentropy/RepeatedExtraction.lean",
+    "Complexity/Crypto/Computational/Pseudoentropy/WordSeedExtraction.lean",
+    "ComplexityTests/GuideFilterPolyTime.lean",
+    "guide/ComplexityGuide/NPCompleteness.lean"
+  ],
+  "no_global_recount_or_percentage": true,
+  "no_claim_remaining_ineligible": true,
+  "files": [
+    {
+      "path": "Complexity/Computability/Circuit/Boolean/FirstOrder/Parity.lean",
+      "source_lines": 243,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 209,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Circuit/Boolean/MachineSimulation.lean",
+      "source_lines": 440,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          412
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Circuit/Frontier/Layouts/Gaussian/EdgeScores.lean",
+      "source_lines": 178,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          109
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Circuit/Frontier/Layouts/VertexGaussian.lean",
+      "source_lines": 152,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          89
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean",
+      "source_lines": 645,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          124
+        ],
+        [
+          "fun_prop",
+          243
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 49,
+          "text": "The swap behind `MA \u2286 AM` also works for an Arthur\u2013Merlin verifier on pairs `(a, w)`: reduce its"
+        },
+        {
+          "line": 599,
+          "text": "/-- **`AM` is closed under existential quantification** [Babai][Babai1985]: if the pairs `(a, w)`"
+        },
+        {
+          "line": 601,
+          "text": "which some word `w` of length `p(n)`, `n` the length of the encoded instance, makes `(a, w)` a"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/GraphNonIsomorphism.lean",
+      "source_lines": 596,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          239
+        ],
+        [
+          "fun_prop",
+          354
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "non-standalone/local-attribute/documentation target word",
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 30,
+          "text": "relabel matrices by `Matrix.reindex \u03c4 \u03c4`, and the pairs `(M, \u03c3)` of a relabelling `M` of `A\u2080` or"
+        },
+        {
+          "line": 44,
+          "text": "row by row with entry `(i, j)` at `finProdFinEquiv (i, j)`, and `false` bits. When the graphs"
+        },
+        {
+          "line": 157,
+          "text": "/-- Entry `(i, j)` of a matrix of size `n`, read row by row, is at position `i * n + j`, the value"
+        },
+        {
+          "line": 188,
+          "text": "/-- Bit `p` of the code of a pair `(M, \u03c3)`: the entries of `M`, then the entries of the matrix of"
+        },
+        {
+          "line": 194,
+          "text": "/-- The code of a pair `(M, \u03c3)` of a matrix and a permutation, in `E` bits. -/"
+        },
+        {
+          "line": 241,
+          "text": "attribute [local fun_prop] computableTidilyInPolyTime_image"
+        },
+        {
+          "line": 332,
+          "text": "@[local fun_prop]"
+        },
+        {
+          "line": 342,
+          "text": "@[local fun_prop]"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean",
+      "source_lines": 318,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          102
+        ],
+        [
+          "fun_prop",
+          194
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/SetLowerBound.lean",
+      "source_lines": 369,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          173
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/IP.lean",
+      "source_lines": 309,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          231
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "non-standalone/local-attribute/documentation target word",
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 77,
+          "text": "`(op, word)` of the verifier with a reply word, possibly at random, updating a private state. -/"
+        },
+        {
+          "line": 271,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/IP/Guessing.lean",
+      "source_lines": 183,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          181
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 26,
+          "text": "most `(1 + \u03b4) / 2` (`acceptProb_guessingRound_le`); identical distributions give soundness `1 / 2`"
+        },
+        {
+          "line": 107,
+          "text": "prover is accepted with probability at most `(1 + \u03b4) / 2`. -/"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/NP/SelfReduction.lean",
+      "source_lines": 287,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 251,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/NP/Witness.lean",
+      "source_lines": 318,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          206
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 55,
+          "text": "pairs `(a, u)` admitting an accepted suffix of length `q (enc a).length` in `NP`. This is the"
+        },
+        {
+          "line": 295,
+          "text": "`(a, u)` for which `V` accepts `(a, u ++ v)` for some `v` of length `q (enc a).length` form a"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/PH/SipserLautemann.lean",
+      "source_lines": 474,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          355
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 32,
+          "text": "the error fraction to at most `(8 / 9) ^ R` (`Cslib.card_filter_card_filter_le_le`). The amplified"
+        },
+        {
+          "line": 40,
+          "text": "  most `(8 / 9) ^ R` of the seed space, and `T * 8 ^ R < 9 ^ R`, so their union cannot cover all"
+        },
+        {
+          "line": 185,
+          "text": "`(8 / 9) ^ halfRuns m` fraction of the amplified seeds have at most `halfRuns m` blocks in `G`:"
+        },
+        {
+          "line": 336,
+          "text": "/-- The Sipser\u2013Lautemann `\u03a3\u2082` matrix verifier: given `(a, w)` where `w = u ++ r` consists of an"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/SBP/Amplification.lean",
+      "source_lines": 86,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 76,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/SharpP/Combinators.lean",
+      "source_lines": 207,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          82
+        ],
+        [
+          "fun_prop",
+          124
+        ],
+        [
+          "fun_prop",
+          161
+        ],
+        [
+          "fun_prop",
+          196
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 24,
+          "text": "(registered with `fun_prop`) and the number of strings it accepts."
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean",
+      "source_lines": 249,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 174,
+          "text": "    polytime"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Classes/Toda/Isolation.lean",
+      "source_lines": 384,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          94
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 48,
+          "text": "`(13 / 16) ^ (4 (E + 1)) \u2264 2 ^ (-(E + 1))`, so the result is wrong with probability at most"
+        },
+        {
+          "line": 248,
+          "text": "every trial is at most `(13 / 16) ^ t` of all seed tuples. -/"
+        },
+        {
+          "line": 255,
+          "text": "  -- no isolation in any round has probability at most `(13 / 16) ^ t`"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Fagin/Converse.lean",
+      "source_lines": 319,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word",
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 40,
+          "text": "`v.npPowerSentence tm : ESO.Sentence v.powerLanguage`. Pulling this sentence back to `(M, <)` along"
+        },
+        {
+          "line": 57,
+          "text": "  cardinality `n \u2265 1` is at most `(v.count + 1) * (2 * n ^ v.maxArity + 1)`."
+        },
+        {
+          "line": 109,
+          "text": "most `(m + 1) * (2 * a.1 ^ v.maxArity + 1)`. -/"
+        },
+        {
+          "line": 135,
+          "text": "/-- For a well-formed input `a` with `1 \u2264 a.1`, `(encStructure a).length` is bounded by"
+        },
+        {
+          "line": 136,
+          "text": "`(v.count + 1) * (2 * a.1 ^ v.maxArity + 1)`. -/"
+        },
+        {
+          "line": 159,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 215,
+          "text": "/-- **Correctness of `v.npPowerSentence` on `Fin B`.** On `(Fin B, v.powerStructure a B)` for a"
+        },
+        {
+          "line": 216,
+          "text": "well-formed input `a` with `(frame (encStructure a)).length + 1 < B`, `(v.npPowerSentence tm)`"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Fagin/StrictVerifier.lean",
+      "source_lines": 164,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          107
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 115,
+          "text": "bound on `(a, w)`: once halted, a deterministic configuration does not change. -/"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/CircuitValue.lean",
+      "source_lines": 113,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 88,
+          "text": "attribute [local fun_prop] ComputableInPolyTime.tidy in"
+        },
+        {
+          "line": 102,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/CircuitValue/Completeness.lean",
+      "source_lines": 366,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          252
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 232,
+          "text": "attribute [local fun_prop] ComputableInPolySpace.tidy in"
+        },
+        {
+          "line": 233,
+          "text": "attribute [local fun_prop] ComputableInPolyTime.tidy in"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/Hamiltonian/Sparse.lean",
+      "source_lines": 372,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          318
+        ],
+        [
+          "fun_prop",
+          329
+        ],
+        [
+          "fun_prop",
+          355
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 28,
+          "text": "variable and no other. The occurrence at position `p` of `\u03c6.vars`, a literal `(x, b)` of clause"
+        },
+        {
+          "line": 36,
+          "text": "(`Cslib.Complexity.SAT.length_sparseDiamondGraph_le_length_vars`), so at most `(23 k + 1) m + 1` on"
+        },
+        {
+          "line": 90,
+          "text": "/-- The detours: the occurrence at position `p` of `\u03c6.vars`, a literal `(x, b)` of clause `j`,"
+        },
+        {
+          "line": 261,
+          "text": "literals, it has at most `(23 k + 1) m + 1` vertices and arcs in total, counted as listed. -/"
+        },
+        {
+          "line": 279,
+          "text": "literals, the graph of `toSparseHamCycle` has at most `(115 k + 5) m + 10` vertices and edges in"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/MonotoneCircuitValue/Completeness.lean",
+      "source_lines": 344,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          291
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/SAT/Incidence.lean",
+      "source_lines": 123,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 111,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/SubsetSum/Mask.lean",
+      "source_lines": 131,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          129
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Complexity/Problems/ThreeSATThree.lean",
+      "source_lines": 202,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          80
+        ],
+        [
+          "fun_prop",
+          126
+        ],
+        [
+          "fun_prop",
+          160
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 117,
+          "text": "attribute [local fun_prop] ComputableInPolyTime.tidy in"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Kolmogorov/Conditional.lean",
+      "source_lines": 568,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          171
+        ],
+        [
+          "fun_prop",
+          181
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 135,
+          "text": "/-- `((condUniversalTM y).run p).runFor t` is `condUniversalTMRunFor p y t`. -/"
+        },
+        {
+          "line": 153,
+          "text": "/-- At `0` steps, `(condUniversalTM y).etimeBoundedComplexity 0 x = \u22a4`. -/"
+        },
+        {
+          "line": 173,
+          "text": "/-- Evaluating `condUniversalTMRunFor` on `(p, (y, t))` is computable in polynomial time when `t` is"
+        },
+        {
+          "line": 557,
+          "text": "`(n - c : \u2115) \u2264 condTimeBounded t x y`. -/"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/BinaryDiv.lean",
+      "source_lines": 186,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word",
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 24,
+          "text": "After consuming any prefix `word` of the reversed digits, the state `(q, r)` is the quotient and"
+        },
+        {
+          "line": 38,
+          "text": "  `(a / b, a % b)`."
+        },
+        {
+          "line": 44,
+          "text": "  for `fun_prop` and `polytime`."
+        },
+        {
+          "line": 55,
+          "text": "/-- One shift-and-subtract step of binary long division with divisor `b`, state `(q, r)`, and next"
+        },
+        {
+          "line": 109,
+          "text": "`(p.1 / p.2, p.1 % p.2)`. -/"
+        },
+        {
+          "line": 135,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 141,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 159,
+          "text": "@[fun_prop, program_certificate]"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Gcd.lean",
+      "source_lines": 219,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word",
+        "raw quote-like source; defer without AST inference"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 18,
+          "text": "`Turing.MultiTapeTM.BinaryGcd.gcdStep` replaces `(a, b)` by `(b, a % b)` when `b \u2260 0` and fixes"
+        },
+        {
+          "line": 19,
+          "text": "`(a, 0)`. After the first step the state satisfies `b \u2264 a`, and every subsequent step with `0 < b`"
+        },
+        {
+          "line": 22,
+          "text": "`BinaryGcd.gcdCount (a, b) = a.bits.length + b.bits.length + 1` steps reaches `(Nat.gcd a b, 0)`"
+        },
+        {
+          "line": 36,
+          "text": "  produces `(Nat.gcd p.1 p.2, 0)`."
+        },
+        {
+          "line": 62,
+          "text": "/-- One step of Euclid's algorithm: replace `(a, b)` by `(b, a % b)` while `b \u2260 0`. -/"
+        },
+        {
+          "line": 66,
+          "text": "/-- Number of Euclidean steps sufficient to reduce `(p.1, p.2)` to `(Nat.gcd p.1 p.2, 0)`. -/"
+        },
+        {
+          "line": 159,
+          "text": "/-- Iterating `gcdStep` for `gcdCount p` steps reaches `(Nat.gcd p.1 p.2, 0)`. -/"
+        },
+        {
+          "line": 188,
+          "text": "@[fun_prop, program_certificate]"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/PowMod.lean",
+      "source_lines": 120,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 73,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 76,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 79,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 84,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Prime.lean",
+      "source_lines": 52,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          50
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean",
+      "source_lines": 347,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          80
+        ],
+        [
+          "fun_prop",
+          88
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean",
+      "source_lines": 161,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          123
+        ],
+        [
+          "fun_prop",
+          132
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Halting/SMN.lean",
+      "source_lines": 206,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          184
+        ],
+        [
+          "fun_prop",
+          190
+        ],
+        [
+          "fun_prop",
+          204
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 25,
+          "text": "`fun_prop` assembles from the fields of keys, actions and descriptions, using the shared bit"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Internal/PolyTimeBinaryPrimitives.lean",
+      "source_lines": 164,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 131,
+          "text": "      fun_prop"
+        },
+        {
+          "line": 134,
+          "text": "      fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/PCP/Approximation/MaxThreeSAT.lean",
+      "source_lines": 379,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 268,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 274,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/PCP/Encoded/Power.lean",
+      "source_lines": 305,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 200,
+          "text": "attribute [local fun_prop] ComputableInPolyTime.tidy in"
+        },
+        {
+          "line": 238,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 247,
+          "text": "attribute [local fun_prop] ComputableInPolyTime.tidy in"
+        },
+        {
+          "line": 266,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 270,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/PCP/Encoded/Verifier/Repetition.lean",
+      "source_lines": 183,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 135,
+          "text": "attribute [local fun_prop] ComputableInPolyTime.tidy in"
+        },
+        {
+          "line": 150,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 153,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 156,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Computability/Probabilistic/LinearHash.lean",
+      "source_lines": 89,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          55
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 30,
+          "text": "  tidy `fun_prop` variant."
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Encryption/PublicKeyReplacement.lean",
+      "source_lines": 198,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 95,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 102,
+          "text": "    fun_prop"
+        },
+        {
+          "line": 114,
+          "text": "      fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Hybrid/Sequence.lean",
+      "source_lines": 303,
+      "standalone_line_candidates": [],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "no standalone candidates",
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 270,
+          "text": "    ppt"
+        },
+        {
+          "line": 276,
+          "text": "    ppt"
+        },
+        {
+          "line": 279,
+          "text": "    fun_prop"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Pseudoentropy/Boosting/Sampling.lean",
+      "source_lines": 181,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          122
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Pseudoentropy/HashPair.lean",
+      "source_lines": 232,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          76
+        ],
+        [
+          "fun_prop",
+          84
+        ],
+        [
+          "polytime",
+          152
+        ],
+        [
+          "fun_prop",
+          193
+        ]
+      ],
+      "disposition": "deferred_unmeasured",
+      "screen_flags_not_semantic_grammar_verdict": [
+        "non-standalone/local-attribute/documentation target word"
+      ],
+      "illustrative_unselected_raw_lines": [
+        {
+          "line": 185,
+          "text": "attribute [local fun_prop] ComputableInPolyTime.tidy in"
+        }
+      ],
+      "caution": "raw quote-like/doc/local-attribute flags are conservative deferrals, not assertions that all are unsupported Lean syntax; no partial instrumentation"
+    },
+    {
+      "path": "Complexity/Crypto/Computational/Pseudoentropy/ThreeSource/Seeded.lean",
+      "source_lines": 277,
+      "standalone_line_candidates": [
+        [
+          "polytime",
+          143
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    },
+    {
+      "path": "Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean",
+      "source_lines": 193,
+      "standalone_line_candidates": [
+        [
+          "fun_prop",
+          115
+        ]
+      ],
+      "disposition": "selected",
+      "screen_flags_not_semantic_grammar_verdict": [],
+      "verified_context": "manually checked standalone theorem-body target; full module/variable/private/omit context preserved"
+    }
+  ]
+}

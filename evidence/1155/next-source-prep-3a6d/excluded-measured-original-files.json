@@ -1,0 +1,22 @@
+[
+  "Complexity/Computability/Complexity/CookLevin/Parameters.lean",
+  "Complexity/Computability/Complexity/Problems/ExactThreeSAT.lean",
+  "Complexity/Computability/Complexity/Problems/Partition.lean",
+  "Complexity/Computability/MCSP/HardnessConsequences.lean",
+  "Complexity/Computability/PCP/Encoded/AddTrivial.lean",
+  "Complexity/Computability/PCP/Encoded/Amplification.lean",
+  "Complexity/Computability/PCP/Encoded/Amplification/Enumeration.lean",
+  "Complexity/Computability/PCP/Encoded/Cloud.lean",
+  "Complexity/Computability/PCP/Encoded/Constraints.lean",
+  "Complexity/Computability/PCP/Encoded/Preprocess.lean",
+  "Complexity/Crypto/Computational/GeneratorPadding.lean",
+  "Complexity/Crypto/Computational/GoldreichLevin/HardCore.lean",
+  "Complexity/Crypto/Computational/OneWay/LiuPass.lean",
+  "Complexity/Crypto/Computational/Prediction.lean",
+  "Complexity/Crypto/Computational/Pseudoentropy/ExtractionSchedule.lean",
+  "Complexity/Crypto/Computational/Pseudoentropy/MatrixExtraction.lean",
+  "Complexity/Crypto/Computational/Pseudoentropy/RepeatedExtraction.lean",
+  "Complexity/Crypto/Computational/Pseudoentropy/WordSeedExtraction.lean",
+  "ComplexityTests/GuideFilterPolyTime.lean",
+  "guide/ComplexityGuide/NPCompleteness.lean"
+]

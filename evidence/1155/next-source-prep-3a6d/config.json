@@ -1,0 +1,2048 @@
+{
+  "state": "PREPARED_NOT_EXECUTED",
+  "source_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+  "mapping_sha256": "4d6d98ce2ae6003a1430a3f57c990bc65a9d8966e7090f8f53fe18ae7b1e9ee9",
+  "implementation_sha256": "90b3179209d69590434a542dd538e2175c81338ceb9ca6518ab55975c8f6f26f",
+  "required_modes": [
+    "baseline",
+    "import-only",
+    "wrapped"
+  ],
+  "package_options": {
+    "autoImplicit": false,
+    "weak.linter.mathlibStandardSet": true,
+    "weak.linter.flexible": true,
+    "weak.linter.pythonStyle": false,
+    "weak.linter.checkInitImports": false,
+    "weak.linter.allScriptsDocumented": false,
+    "weak.linter.unicodeLinter": false
+  },
+  "user_limit": 200000,
+  "files": [
+    {
+      "case": "machine-simulation",
+      "path": "Complexity/Computability/Circuit/Boolean/MachineSimulation.lean",
+      "module_name": "Complexity.Computability.Circuit.Boolean.MachineSimulation",
+      "source_sha256": "5d04a6f95d2a682b78e837543ecbe6448b2f3c916f1f37954941d5b9e4f72c0e",
+      "calls": [
+        {
+          "case": "polynomiallyBounded_simulationCost",
+          "call_id": "5d04a6f95d2a682b78e837543ecbe6448b2f3c916f1f37954941d5b9e4f72c0e:Complexity/Computability/Circuit/Boolean/MachineSimulation.lean:20734-20742:fun_prop",
+          "call_token": "c16b0d62b00f96344",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Circuit/Boolean/MachineSimulation.lean",
+          "original_sha256": "5d04a6f95d2a682b78e837543ecbe6448b2f3c916f1f37954941d5b9e4f72c0e",
+          "original_byte_start": 20734,
+          "original_byte_end": 20742,
+          "original_line": 412,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Circuit.Boolean.PPoly",
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Feature"
+      ],
+      "variant_sha256": {
+        "baseline": "5d04a6f95d2a682b78e837543ecbe6448b2f3c916f1f37954941d5b9e4f72c0e",
+        "import-only": "889671e2ad54adc13b48bc6c2e044cedf7f7d84568976b90ada4f6f4c13675bb",
+        "wrapped": "f7173fe3c9b5fd74d91969818e3c0235af61e528f60e67bfef36dad14cbcb4fb"
+      },
+      "explicit_private_declarations": 15,
+      "private_declaration_lines": [
+        81,
+        93,
+        96,
+        119,
+        194,
+        217,
+        233,
+        250,
+        265,
+        283,
+        301,
+        341,
+        372,
+        404,
+        409
+      ],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 65,
+          "text": "namespace Cslib.Circuits.Boolean.MachineSimulation"
+        },
+        {
+          "line": 69,
+          "text": "variable {k : \u2115} {State : Type} (tm : MultiTapeTM k Bool State) {n : \u2115}"
+        },
+        {
+          "line": 85,
+          "text": "variable [DecidableEq State]"
+        },
+        {
+          "line": 91,
+          "text": "omit [DecidableEq State] in"
+        },
+        {
+          "line": 107,
+          "text": "section Sets"
+        },
+        {
+          "line": 109,
+          "text": "variable [Fintype State]"
+        },
+        {
+          "line": 123,
+          "text": "variable {T : \u2115}"
+        },
+        {
+          "line": 184,
+          "text": "end Sets"
+        },
+        {
+          "line": 188,
+          "text": "section Step"
+        },
+        {
+          "line": 190,
+          "text": "variable [Fintype State] {T t : \u2115}"
+        },
+        {
+          "line": 192,
+          "text": "omit [DecidableEq State] [Fintype State] in"
+        },
+        {
+          "line": 363,
+          "text": "end Step"
+        },
+        {
+          "line": 367,
+          "text": "section Run"
+        },
+        {
+          "line": 369,
+          "text": "variable [Fintype State] {T : \u2115}"
+        },
+        {
+          "line": 407,
+          "text": "omit [DecidableEq State] in"
+        },
+        {
+          "line": 414,
+          "text": "end Run"
+        },
+        {
+          "line": 440,
+          "text": "end Cslib.Circuits.Boolean.MachineSimulation"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 72,
+          "text": "noncomputable def cfgAt (t : \u2115) (x : Fin n \u2192 Bool) : Cfg k Bool State (List.ofFn x) :="
+        },
+        {
+          "line": 77,
+          "text": "theorem cfgAt_succ (t : \u2115) (x : Fin n \u2192 Bool) : cfgAt tm (t + 1) x = tm.step (cfgAt tm t x) :="
+        },
+        {
+          "line": 81,
+          "text": "private theorem abs_workTapePos_cfgAt_le (t : \u2115) (x : Fin n \u2192 Bool) (i : Fin k) :"
+        },
+        {
+          "line": 88,
+          "text": "noncomputable def featureFn (t : \u2115) (\u03c6 : Feature k State) : BooleanFunction n :="
+        },
+        {
+          "line": 93,
+          "text": "private def inputIs (j : \u2115) (s : Option Bool) : BooleanFunction n :="
+        },
+        {
+          "line": 96,
+          "text": "private theorem featureFn_eq_true {t : \u2115} {\u03c6 : Feature k State} {x : Fin n \u2192 Bool} :"
+        },
+        {
+          "line": 101,
+          "text": "theorem featureFn_eq_false {t : \u2115} {\u03c6 : Feature k State} {x : Fin n \u2192 Bool} :"
+        },
+        {
+          "line": 113,
+          "text": "noncomputable def basicFeatures (n T : \u2115) : Finset (Feature k State) := (Feature.basic n T).toFinset"
+        },
+        {
+          "line": 116,
+          "text": "def featureCount (n T k : \u2115) (State : Type) [Fintype State] : \u2115 :="
+        },
+        {
+          "line": 119,
+          "text": "private theorem card_basicFeatures_le (n T : \u2115) :"
+        },
+        {
+          "line": 126,
+          "text": "theorem state_mem_basicFeatures (q : Option State) :"
+        },
+        {
+          "line": 131,
+          "text": "theorem inPos_mem_basicFeatures {j : \u2115} (hj : j < n + 2) :"
+        },
+        {
+          "line": 136,
+          "text": "theorem head_mem_basicFeatures (i : Fin k) {z : \u2124} (hz : |z| \u2264 T) :"
+        },
+        {
+          "line": 141,
+          "text": "theorem cell_mem_basicFeatures (i : Fin k) {z : \u2124} (hz : |z| \u2264 T) (s : Option Bool) :"
+        },
+        {
+          "line": 146,
+          "text": "theorem out_mem_basicFeatures (o : OutView) :"
+        },
+        {
+          "line": 151,
+          "text": "noncomputable def basicAt (T t : \u2115) : Set (BooleanFunction n) :="
+        },
+        {
+          "line": 155,
+          "text": "noncomputable def readsAt (t : \u2115) : Set (BooleanFunction n) :="
+        },
+        {
+          "line": 159,
+          "text": "noncomputable def sitsAt (t : \u2115) : Set (BooleanFunction n) :="
+        },
+        {
+          "line": 164,
+          "text": "noncomputable def stepSources (T t : \u2115) : Set (BooleanFunction n) :="
+        },
+        {
+          "line": 169,
+          "text": "theorem featureFn_mem_basicAt {t : \u2115} {\u03c6 : Feature k State} (h : \u03c6 \u2208 basicFeatures n T) :"
+        },
+        {
+          "line": 175,
+          "text": "theorem featureFn_mem_stepSources {t : \u2115} {\u03c6 : Feature k State} (h : \u03c6 \u2208 basicFeatures n T) :"
+        },
+        {
+          "line": 180,
+          "text": "theorem sit_mem_stepSources {t : \u2115} (y : Situation k State) :"
+        },
+        {
+          "line": 194,
+          "text": "private theorem synthesis_inputIs (j : \u2115) (b : Option Bool) :"
+        },
+        {
+          "line": 217,
+          "text": "private theorem synthesis_read (ht : t \u2264 T) (i : Fin k) (s : Option Bool) :"
+        },
+        {
+          "line": 233,
+          "text": "private theorem synthesis_inRead (s : Option Bool) :"
+        },
+        {
+          "line": 247,
+          "text": "def readsCost (n k T : \u2115) : \u2115 := k * 3 * ((2 * T + 1) * 2 + 1) + 3 * ((n + 2) * 3 + 1)"
+        },
+        {
+          "line": 250,
+          "text": "private theorem synthesis_reads (ht : t \u2264 T) :"
+        },
+        {
+          "line": 265,
+          "text": "private theorem synthesis_sit (y : Situation k State) :"
+        },
+        {
+          "line": 283,
+          "text": "private theorem synthesis_sits :"
+        },
+        {
+          "line": 297,
+          "text": "def featureCost (k : \u2115) (State : Type) [Fintype State] : \u2115 :="
+        },
+        {
+          "line": 301,
+          "text": "private theorem synthesis_next (ht : t \u2264 T) {\u03c6 : Feature k State} (h\u03c6 : \u03c6 \u2208 basicFeatures n T) :"
+        },
+        {
+          "line": 341,
+          "text": "private theorem synthesis_nexts (ht : t \u2264 T) :"
+        },
+        {
+          "line": 353,
+          "text": "def stepCost (n T k : \u2115) (State : Type) [Fintype State] : \u2115 :="
+        },
+        {
+          "line": 358,
+          "text": "theorem synthesis_step (ht : t \u2264 T) :"
+        },
+        {
+          "line": 372,
+          "text": "private theorem synthesis_basic_zero :"
+        },
+        {
+          "line": 395,
+          "text": "theorem synthesis_basic : \u2200 t \u2264 T,"
+        },
+        {
+          "line": 404,
+          "text": "private def simulationCost (n T k : \u2115) (State : Type) [Fintype State] : \u2115 :="
+        },
+        {
+          "line": 409,
+          "text": "private theorem polynomiallyBounded_simulationCost {T : \u2115 \u2192 \u2115} (hT : PolynomiallyBounded T) :"
+        },
+        {
+          "line": 417,
+          "text": "noncomputable def acceptedWithin (T : \u2115 \u2192 \u2115) : Language Bool :="
+        },
+        {
+          "line": 421,
+          "text": "theorem mem_acceptedWithin_iff (T : \u2115 \u2192 \u2115) (w : List Bool) :"
+        },
+        {
+          "line": 431,
+          "text": "theorem acceptedWithin_mem_PPoly [Finite State] {T : \u2115 \u2192 \u2115} (hT : PolynomiallyBounded T) :"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 440,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "gaussian-edge-scores",
+      "path": "Complexity/Computability/Circuit/Frontier/Layouts/Gaussian/EdgeScores.lean",
+      "module_name": "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores",
+      "source_sha256": "88126f7b929b107629c3c249a92379a3fb4d7bf6408180bc54f67d5c3c250841",
+      "calls": [
+        {
+          "case": "measurable_edgeScore",
+          "call_id": "88126f7b929b107629c3c249a92379a3fb4d7bf6408180bc54f67d5c3c250841:Complexity/Computability/Circuit/Frontier/Layouts/Gaussian/EdgeScores.lean:4756-4764:fun_prop",
+          "call_token": "cde70424752a21064",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Circuit/Frontier/Layouts/Gaussian/EdgeScores.lean",
+          "original_sha256": "88126f7b929b107629c3c249a92379a3fb4d7bf6408180bc54f67d5c3c250841",
+          "original_byte_start": 4756,
+          "original_byte_end": 4764,
+          "original_line": 109,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.Basic",
+        "import Complexity.Foundations.Combinatorics.SimpleGraph.Metric"
+      ],
+      "variant_sha256": {
+        "baseline": "88126f7b929b107629c3c249a92379a3fb4d7bf6408180bc54f67d5c3c250841",
+        "import-only": "cce81f42de0e892ec185945108e7cb5738c35ea13d26ae70b9fe8e5def5c080a",
+        "wrapped": "10272c958d81c825a3aac86bf0108d0e825eb401bbc3e46923c6599ee3d90a7b"
+      },
+      "explicit_private_declarations": 5,
+      "private_declaration_lines": [
+        54,
+        62,
+        73,
+        79,
+        115
+      ],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 45,
+          "text": "namespace Cslib.Circuits.Frontier.Gaussian"
+        },
+        {
+          "line": 49,
+          "text": "section Normalize"
+        },
+        {
+          "line": 51,
+          "text": "variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace \u211d F]"
+        },
+        {
+          "line": 86,
+          "text": "end Normalize"
+        },
+        {
+          "line": 90,
+          "text": "variable {V E : Type*} [Fintype V] (G : Multigraph V E)"
+        },
+        {
+          "line": 103,
+          "text": "variable {G}"
+        },
+        {
+          "line": 111,
+          "text": "variable {q : \u211d} {R : \u2115} {\u03c1\u2080 : \u211d}"
+        },
+        {
+          "line": 134,
+          "text": "end. -/"
+        },
+        {
+          "line": 178,
+          "text": "end Cslib.Circuits.Frontier.Gaussian"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 54,
+          "text": "private theorem norm_add_eq {a b : F} (ha : \u2016a\u2016 = 1) (hb : \u2016b\u2016 = 1) (hab : -1 \u2264 \u27eaa, b\u27eb) :"
+        },
+        {
+          "line": 62,
+          "text": "private theorem inner_smul_add_right {a b : F} (ha : \u2016a\u2016 = 1) (hb : \u2016b\u2016 = 1)"
+        },
+        {
+          "line": 73,
+          "text": "private theorem inner_smul_add_left {a b : F} (ha : \u2016a\u2016 = 1) (hb : \u2016b\u2016 = 1)"
+        },
+        {
+          "line": 79,
+          "text": "private theorem norm_smul_add {a b : F} (ha : \u2016a\u2016 = 1) (hb : \u2016b\u2016 = 1) (hab : -1 < \u27eaa, b\u27eb) :"
+        },
+        {
+          "line": 94,
+          "text": "noncomputable def edgeVector (q : \u211d) (R : \u2115) (e : E) : EuclideanSpace \u211d V :="
+        },
+        {
+          "line": 100,
+          "text": "noncomputable def edgeScore (q : \u211d) (R : \u2115) (\u03c9 : V \u2192 \u211d) (e : E) : \u211d :="
+        },
+        {
+          "line": 106,
+          "text": "theorem measurable_edgeScore (q : \u211d) (R : \u2115) (e : E) :"
+        },
+        {
+          "line": 115,
+          "text": "private theorem le_inner_unitKernelRow_src_tgt_three [Finite E] (hloop : G.Loopless)"
+        },
+        {
+          "line": 126,
+          "text": "theorem norm_edgeVector [Finite E] (hloop : G.Loopless) (hdeg : G.MaxDegreeLE 3) (hq : 0 \u2264 q)"
+        },
+        {
+          "line": 135,
+          "text": "theorem le_inner_edgeVector [Finite E] (hloop : G.Loopless) (hdeg : G.MaxDegreeLE 3)"
+        },
+        {
+          "line": 151,
+          "text": "theorem edgeVector_apply_eq_zero {v : V} {e : E} (he : e \u2208 G.incidenceSet v) {z : V}"
+        },
+        {
+          "line": 173,
+          "text": "theorem edgeScore_congr {v : V} {e : E} (he : e \u2208 G.incidenceSet v) {\u03c9 \u03c9' : V \u2192 \u211d}"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 178,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "vertex-gaussian",
+      "path": "Complexity/Computability/Circuit/Frontier/Layouts/VertexGaussian.lean",
+      "module_name": "Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian",
+      "source_sha256": "1a339c482892c054a8656df6146013e84973d36ed89fe60feeb830505f491883",
+      "calls": [
+        {
+          "case": "measurable_vertexScore",
+          "call_id": "1a339c482892c054a8656df6146013e84973d36ed89fe60feeb830505f491883:Complexity/Computability/Circuit/Frontier/Layouts/VertexGaussian.lean:4026-4034:fun_prop",
+          "call_token": "c1e03ef28b232b93a",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Circuit/Frontier/Layouts/VertexGaussian.lean",
+          "original_sha256": "1a339c482892c054a8656df6146013e84973d36ed89fe60feeb830505f491883",
+          "original_byte_start": 4026,
+          "original_byte_end": 4034,
+          "original_line": 89,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.Basic",
+        "import Complexity.Foundations.Geometry.Euclidean.Angle.Cap",
+        "import Complexity.Foundations.Probability.Gaussian.Sheppard"
+      ],
+      "variant_sha256": {
+        "baseline": "1a339c482892c054a8656df6146013e84973d36ed89fe60feeb830505f491883",
+        "import-only": "f933fe0a0ee0ec25779f01a115e164436d5d2f022f7e9744b7bfded1d6ded528",
+        "wrapped": "976a5ba4abbf44148e642a27d096f5e14433ddd7b7c2ef9c0dfc67eba70e7330"
+      },
+      "explicit_private_declarations": 2,
+      "private_declaration_lines": [
+        86,
+        110
+      ],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 67,
+          "text": "namespace Cslib.Circuits.Frontier.Gaussian"
+        },
+        {
+          "line": 69,
+          "text": "variable {V E : Type*} [Fintype V] (G : Multigraph V E)"
+        },
+        {
+          "line": 84,
+          "text": "variable {G} {q : \u211d} {R : \u2115}"
+        },
+        {
+          "line": 108,
+          "text": "omit [Fintype V] in"
+        },
+        {
+          "line": 152,
+          "text": "end Cslib.Circuits.Frontier.Gaussian"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 73,
+          "text": "noncomputable def vertexScore (q : \u211d) (R : \u2115) (\u03c9 : V \u2192 \u211d) (v : V) : \u211d :="
+        },
+        {
+          "line": 77,
+          "text": "def vertexEvent (q : \u211d) (R : \u2115) (p : \u211d \u2192 Prop) (v : V) : Set (V \u2192 \u211d) :="
+        },
+        {
+          "line": 81,
+          "text": "def crossingEvent (q : \u211d) (R : \u2115) (t : \u211d) (e : E) : Set (V \u2192 \u211d) :="
+        },
+        {
+          "line": 86,
+          "text": "private theorem measurable_vertexScore (q : \u211d) (R : \u2115) (v : V) :"
+        },
+        {
+          "line": 92,
+          "text": "theorem measurableSet_vertexEvent (q : \u211d) (R : \u2115) {p : \u211d \u2192 Prop}"
+        },
+        {
+          "line": 97,
+          "text": "theorem measurableSet_crossingEvent (q : \u211d) (R : \u2115) (t : \u211d) (e : E) :"
+        },
+        {
+          "line": 103,
+          "text": "theorem vertexScore_congr {v : V} {\u03c9 \u03c9' : V \u2192 \u211d}"
+        },
+        {
+          "line": 110,
+          "text": "private theorem closedBall_subset_succ (v : V) (R : \u2115) :"
+        },
+        {
+          "line": 118,
+          "text": "theorem dependsOn_vertexEvent (q : \u211d) (R : \u2115) (p : \u211d \u2192 Prop) (v : V) :"
+        },
+        {
+          "line": 126,
+          "text": "theorem dependsOn_crossingEvent (q : \u211d) (R : \u2115) (t : \u211d) (e : E) :"
+        },
+        {
+          "line": 136,
+          "text": "theorem measureReal_crossingEvent_le [Finite E] (hloop : G.Loopless) {d : \u2115} (hd : 2 \u2264 d)"
+        },
+        {
+          "line": 149,
+          "text": "noncomputable def vertexCoefficient (d : \u2115) : \u211d :="
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 152,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "arthur-merlin-ph",
+      "path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean",
+      "module_name": "Complexity.Computability.Complexity.Classes.ArthurMerlin.PH",
+      "source_sha256": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b",
+      "calls": [
+        {
+          "case": "computableInPolyTime_sigmaTwoVerifier",
+          "call_id": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b:Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean:5051-5059:fun_prop",
+          "call_token": "cdc8b795e1eadd2f5",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean",
+          "original_sha256": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b",
+          "original_byte_start": 5051,
+          "original_byte_end": 5059,
+          "original_line": 102,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        },
+        {
+          "case": "computableInPolyTime_piTwoVerifier",
+          "call_id": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b:Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean:10517-10525:fun_prop",
+          "call_token": "cc99be2c14e7704be",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean",
+          "original_sha256": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b",
+          "original_byte_start": 10517,
+          "original_byte_end": 10525,
+          "original_line": 194,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification",
+        "public import Complexity.Computability.Complexity.Classes.PH",
+        "public import Complexity.Foundations.Data.BitString.Basic",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+        "import Complexity.Foundations.Combinatorics.Lautemann",
+        "import Complexity.Foundations.Data.BitString.List.Operations",
+        "import Mathlib.Data.List.GetD"
+      ],
+      "variant_sha256": {
+        "baseline": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b",
+        "import-only": "23426008cd3e3637dba525fc5ffd9f3c5d41e060d6b6e7886cfad476f78cc0eb",
+        "wrapped": "5e49f2b14c5d8b407d54325c052532de34d726273d7d1c26098d12c09aed6453"
+      },
+      "explicit_private_declarations": 3,
+      "private_declaration_lines": [
+        106,
+        199,
+        272
+      ],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 72,
+          "text": "namespace Cslib.Complexity"
+        },
+        {
+          "line": 76,
+          "text": "variable {\u03b1 : Type} {enc : \u03b1 \u21aa List Bool} {A : Set \u03b1}"
+        },
+        {
+          "line": 78,
+          "text": "namespace ArthurMerlin"
+        },
+        {
+          "line": 278,
+          "text": "end ArthurMerlin"
+        },
+        {
+          "line": 318,
+          "text": "end Cslib.Complexity"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 87,
+          "text": "def sigmaTwoVerifier (enc : \u03b1 \u21aa List Bool) (q k p : Polynomial \u2115) (W : \u03b1 \u00d7 List Bool \u2192 Bool)"
+        },
+        {
+          "line": 98,
+          "text": "theorem computableInPolyTime_sigmaTwoVerifier {W : \u03b1 \u00d7 List Bool \u2192 Bool}"
+        },
+        {
+          "line": 106,
+          "text": "private theorem sigmaTwoVerifier_append_ofFn {q k p : Polynomial \u2115} {W : \u03b1 \u00d7 List Bool \u2192 Bool}"
+        },
+        {
+          "line": 135,
+          "text": "theorem isAlternatingVerifier_sigmaTwoVerifier {e q k p : Polynomial \u2115} {W : \u03b1 \u00d7 List Bool \u2192 Bool}"
+        },
+        {
+          "line": 177,
+          "text": "def piTwoVerifier (enc : \u03b1 \u21aa List Bool) (k p q : Polynomial \u2115) (W : \u03b1 \u00d7 List Bool \u2192 Bool)"
+        },
+        {
+          "line": 188,
+          "text": "theorem computableInPolyTime_piTwoVerifier {W : \u03b1 \u00d7 List Bool \u2192 Bool}"
+        },
+        {
+          "line": 199,
+          "text": "private theorem piTwoVerifier_append {k p q : Polynomial \u2115} {W : \u03b1 \u00d7 List Bool \u2192 Bool} {a : \u03b1}"
+        },
+        {
+          "line": 228,
+          "text": "theorem isAlternatingVerifier_piTwoVerifier {e k p q : Polynomial \u2115} {W : \u03b1 \u00d7 List Bool \u2192 Bool}"
+        },
+        {
+          "line": 272,
+          "text": "private theorem eval_lt_mul (p : Polynomial \u2115) (n : \u2115) :"
+        },
+        {
+          "line": 284,
+          "text": "theorem MA_subset_SigmaP_two : MA enc \u2286 SigmaP 2 enc := by"
+        },
+        {
+          "line": 297,
+          "text": "theorem AM_subset_PiP_two : AM enc \u2286 PiP 2 enc := by"
+        },
+        {
+          "line": 309,
+          "text": "theorem MA_subset_PiP_two : MA enc \u2286 PiP 2 enc := MA_subset_AM.trans AM_subset_PiP_two"
+        },
+        {
+          "line": 312,
+          "text": "theorem MA_subset_SigmaP_two_inter_PiP_two : MA enc \u2286 SigmaP 2 enc \u2229 PiP 2 enc :="
+        },
+        {
+          "line": 316,
+          "text": "theorem AM_subset_PH : AM enc \u2286 PH enc := AM_subset_PiP_two.trans (PiP_subset_PH 2)"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 318,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "set-lower-bound",
+      "path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/SetLowerBound.lean",
+      "module_name": "Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound",
+      "source_sha256": "c15180b2b545bc690b240a62ac0ac30a1b4a131ec5f74be5f9347c3f0f16dc4e",
+      "calls": [
+        {
+          "case": "computableInPolyTime_verifier",
+          "call_id": "c15180b2b545bc690b240a62ac0ac30a1b4a131ec5f74be5f9347c3f0f16dc4e:Complexity/Computability/Complexity/Classes/ArthurMerlin/SetLowerBound.lean:8937-8945:fun_prop",
+          "call_token": "c5894a2a6c0eaef4c",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/SetLowerBound.lean",
+          "original_sha256": "c15180b2b545bc690b240a62ac0ac30a1b4a131ec5f74be5f9347c3f0f16dc4e",
+          "original_byte_start": 8937,
+          "original_byte_end": 8945,
+          "original_line": 173,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Complexity.Classes.ArthurMerlin",
+        "public import Complexity.Computability.Complexity.Classes.SBP",
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives",
+        "public import Complexity.Probability.BitString.AffineHash",
+        "import Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification",
+        "import Complexity.Computability.Complexity.Classes.SharpP.Closure",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log",
+        "import Complexity.Computability.Probabilistic.LinearHash",
+        "import Complexity.Foundations.Data.BitString.List.Operations",
+        "import Complexity.Foundations.Data.BitString.WordCount"
+      ],
+      "variant_sha256": {
+        "baseline": "c15180b2b545bc690b240a62ac0ac30a1b4a131ec5f74be5f9347c3f0f16dc4e",
+        "import-only": "5e3ba8aa9bab35b8c819b4f71f72123c757ea19219a210708a1e509e6ca61d58",
+        "wrapped": "691f1a98accd0a7cd248b418488528ca9c32cc0a50637d07e1bd31e6c847b5cd"
+      },
+      "explicit_private_declarations": 4,
+      "private_declaration_lines": [
+        99,
+        178,
+        251,
+        265
+      ],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 81,
+          "text": "namespace Cslib.Complexity"
+        },
+        {
+          "line": 85,
+          "text": "variable {\u03b1 : Type} {enc : \u03b1 \u21aa List Bool} {A : Set \u03b1}"
+        },
+        {
+          "line": 94,
+          "text": "namespace SetLowerBound"
+        },
+        {
+          "line": 294,
+          "text": "end SetLowerBound"
+        },
+        {
+          "line": 369,
+          "text": "end Cslib.Complexity"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 89,
+          "text": "def certifiedSet (enc : \u03b1 \u21aa List Bool) (N c : Polynomial \u2115) (R : \u03b1 \u00d7 List Bool \u2192 Bool) (a : \u03b1) :"
+        },
+        {
+          "line": 99,
+          "text": "private theorem not_any_ofFn_eq_true_iff {k : \u2115} (v : BitString k) :"
+        },
+        {
+          "line": 108,
+          "text": "def amplifiedSet {N : \u2115} (S : Finset (BitString N)) (T \u2113 : \u2115) :"
+        },
+        {
+          "line": 115,
+          "text": "theorem card_amplifiedSet {N : \u2115} (S : Finset (BitString N)) {T \u2113 : \u2115} (h : \u2113 \u2264 T) :"
+        },
+        {
+          "line": 140,
+          "text": "def seedEquiv (m M : \u2115) : BitString (m * M + m) \u2243 (Fin m \u2192 BitString M) \u00d7 BitString m :="
+        },
+        {
+          "line": 150,
+          "text": "def verifier (enc : \u03b1 \u21aa List Bool) (N c m T : Polynomial \u2115) (\u2113 : \u03b1 \u2192 \u2115)"
+        },
+        {
+          "line": 164,
+          "text": "theorem computableInPolyTime_verifier {N c m T : Polynomial \u2115} {\u2113 : \u03b1 \u2192 \u2115}"
+        },
+        {
+          "line": 178,
+          "text": "private theorem verifier_ofFn_append {N c m T : Polynomial \u2115} {\u2113 : \u03b1 \u2192 \u2115} {R : \u03b1 \u00d7 List Bool \u2192 Bool}"
+        },
+        {
+          "line": 224,
+          "text": "theorem exists_verifier_iff {N c m T : Polynomial \u2115} {\u2113 : \u03b1 \u2192 \u2115} {R : \u03b1 \u00d7 List Bool \u2192 Bool}"
+        },
+        {
+          "line": 251,
+          "text": "private theorem forall_verifier_eq_false_iff (N c m T : Polynomial \u2115) (\u2113 : \u03b1 \u2192 \u2115)"
+        },
+        {
+          "line": 265,
+          "text": "private theorem card_amplifiedSet_bounds {N m T K : \u2115} (S : Finset (BitString N)) (hKpos : 0 < K)"
+        },
+        {
+          "line": 303,
+          "text": "theorem mem_AM_of_card_certifiedSet {N c : Polynomial \u2115} {R : \u03b1 \u00d7 List Bool \u2192 Bool} {K : \u03b1 \u2192 \u2115}"
+        },
+        {
+          "line": 347,
+          "text": "theorem SBP_subset_AM : SBP enc \u2286 AM enc := by"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 369,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "monotone-circuit-completeness",
+      "path": "Complexity/Computability/Complexity/Problems/MonotoneCircuitValue/Completeness.lean",
+      "module_name": "Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness",
+      "source_sha256": "8e58f6e1a4f16b7cc13977aebdd4f65ae4c4f4763d1857625240ca12798c5e57",
+      "calls": [
+        {
+          "case": "computableInLogSpace_dualTableauInstance",
+          "call_id": "8e58f6e1a4f16b7cc13977aebdd4f65ae4c4f4763d1857625240ca12798c5e57:Complexity/Computability/Complexity/Problems/MonotoneCircuitValue/Completeness.lean:15109-15117:fun_prop",
+          "call_token": "c687803b1d60e61a3",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Complexity/Problems/MonotoneCircuitValue/Completeness.lean",
+          "original_sha256": "8e58f6e1a4f16b7cc13977aebdd4f65ae4c4f4763d1857625240ca12798c5e57",
+          "original_byte_start": 15109,
+          "original_byte_end": 15117,
+          "original_line": 291,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue",
+        "public import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness",
+        "public import Complexity.Computability.Circuit.Monotone.DualRail",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run"
+      ],
+      "variant_sha256": {
+        "baseline": "8e58f6e1a4f16b7cc13977aebdd4f65ae4c4f4763d1857625240ca12798c5e57",
+        "import-only": "50f0f7d87d57df3cc249d58b0dd68e91aa6c23271efad26bd5b31230b7f923c7",
+        "wrapped": "7fcfd7c71d369e424d8e7155a5ee360ff7f86bf028b08b3e48d0895dd5dd9b65"
+      },
+      "explicit_private_declarations": 6,
+      "private_declaration_lines": [
+        85,
+        95,
+        172,
+        183,
+        225,
+        241
+      ],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 64,
+          "text": "namespace Cslib.Complexity.MonotoneCircuitValue"
+        },
+        {
+          "line": 90,
+          "text": "section"
+        },
+        {
+          "line": 92,
+          "text": "variable {\u03b1 : Type} {encIn : \u03b1 \u21aa List Bool} {Bs : \u03b1 \u2192 \u2115}"
+        },
+        {
+          "line": 128,
+          "text": "end"
+        },
+        {
+          "line": 132,
+          "text": "section Instance"
+        },
+        {
+          "line": 134,
+          "text": "variable {k : \u2115} {State : Type} [Fintype State] [DecidableEq State]"
+        },
+        {
+          "line": 219,
+          "text": "section Space"
+        },
+        {
+          "line": 221,
+          "text": "variable {\u03b1 : Type} {encIn : \u03b1 \u21aa List Bool} {Bs : \u03b1 \u2192 \u2115}"
+        },
+        {
+          "line": 223,
+          "text": "include hin"
+        },
+        {
+          "line": 268,
+          "text": "end Space"
+        },
+        {
+          "line": 293,
+          "text": "end Instance"
+        },
+        {
+          "line": 344,
+          "text": "end Cslib.Complexity.MonotoneCircuitValue"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 72,
+          "text": "def dualOp (b : Bool) : Boolean.Op \u2192 Boolean.Op"
+        },
+        {
+          "line": 80,
+          "text": "def dualGateDM (b : Bool) (g : Boolean.Op \u00d7 List \u2115) : Boolean.Op \u00d7 List \u2115 :="
+        },
+        {
+          "line": 85,
+          "text": "private theorem map_dualGates (g : Boolean.Op \u00d7 List \u2115) :"
+        },
+        {
+          "line": 95,
+          "text": "private theorem dualGateDM_inSpace (b : Bool) {g : \u03b1 \u2192 Boolean.Op \u00d7 List \u2115}"
+        },
+        {
+          "line": 140,
+          "text": "noncomputable def dualTableauInstance (w : List Bool) :"
+        },
+        {
+          "line": 146,
+          "text": "theorem mem_dualTableauInstance_iff (w : List Bool) :"
+        },
+        {
+          "line": 154,
+          "text": "noncomputable def dualChunk (n j : \u2115) : List Bool :="
+        },
+        {
+          "line": 161,
+          "text": "noncomputable def dualSpec : WriterSpec where"
+        },
+        {
+          "line": 172,
+          "text": "private theorem flatten_replicate_two_mul_add_one {\u03b2 : Type*} (a : List \u03b2) (n : \u2115) :"
+        },
+        {
+          "line": 183,
+          "text": "private theorem encMonotoneCircuitValue_dualTableauInstance (w : List Bool) :"
+        },
+        {
+          "line": 225,
+          "text": "private theorem dualChunk_inSpace {n j : \u03b1 \u2192 \u2115}"
+        },
+        {
+          "line": 241,
+          "text": "private theorem dualTrailer_inSpace {n : \u03b1 \u2192 \u2115}"
+        },
+        {
+          "line": 271,
+          "text": "theorem computableInLogSpace_dualTableauInstance :"
+        },
+        {
+          "line": 297,
+          "text": "theorem logSpaceReducible_of_mem_P {\u03b1 : Type} {enc : \u03b1 \u21aa List Bool} {A : Set \u03b1}"
+        },
+        {
+          "line": 320,
+          "text": "theorem logSpaceHard : LogSpaceHard @P encMonotoneCircuitValue MonotoneCircuitValue :="
+        },
+        {
+          "line": 324,
+          "text": "theorem logSpaceComplete : LogSpaceComplete @P encMonotoneCircuitValue MonotoneCircuitValue :="
+        },
+        {
+          "line": 328,
+          "text": "theorem circuitValue_logSpaceReducible :"
+        },
+        {
+          "line": 333,
+          "text": "theorem mem_L_iff_forall_P_eq_L :"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 344,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "subset-sum-mask",
+      "path": "Complexity/Computability/Complexity/Problems/SubsetSum/Mask.lean",
+      "module_name": "Complexity.Computability.Complexity.Problems.SubsetSum.Mask",
+      "source_sha256": "b6933aa9aaeaf6c117ab61d33b0086a61140f5d89012add22b653d33eade6108",
+      "calls": [
+        {
+          "case": "computableInPolyTime_maskSelect",
+          "call_id": "b6933aa9aaeaf6c117ab61d33b0086a61140f5d89012add22b653d33eade6108:Complexity/Computability/Complexity/Problems/SubsetSum/Mask.lean:5380-5388:fun_prop",
+          "call_token": "c8ebd4d3ffac9458f",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Complexity/Problems/SubsetSum/Mask.lean",
+          "original_sha256": "b6933aa9aaeaf6c117ab61d33b0086a61140f5d89012add22b653d33eade6108",
+          "original_byte_start": 5380,
+          "original_byte_end": 5388,
+          "original_line": 129,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+        "public import Mathlib.Data.Multiset.AddSub",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain"
+      ],
+      "variant_sha256": {
+        "baseline": "b6933aa9aaeaf6c117ab61d33b0086a61140f5d89012add22b653d33eade6108",
+        "import-only": "b0262372908c07d9ea0787443a48e988606b93cbf5ce0e7e4b025a21f0af38e4",
+        "wrapped": "5ff248ee7fff22f592d7bcd312c367dc6cc1b1456ec36139337bb3307cce51cd"
+      },
+      "explicit_private_declarations": 0,
+      "private_declaration_lines": [],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 39,
+          "text": "namespace Cslib.Complexity"
+        },
+        {
+          "line": 44,
+          "text": "variable {\u03b1 : Type}"
+        },
+        {
+          "line": 131,
+          "text": "end Cslib.Complexity"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 49,
+          "text": "def maskSelect (l : List \u03b1) (w : List Bool) : List \u03b1 :="
+        },
+        {
+          "line": 53,
+          "text": "theorem maskSelect_nil (w : List Bool) : maskSelect ([] : List \u03b1) w = [] := rfl"
+        },
+        {
+          "line": 55,
+          "text": "theorem maskSelect_cons (a : \u03b1) (l : List \u03b1) (w : List Bool) :"
+        },
+        {
+          "line": 67,
+          "text": "theorem maskSelect_sublist (l : List \u03b1) (w : List Bool) : maskSelect l w <+ l := by"
+        },
+        {
+          "line": 72,
+          "text": "theorem exists_maskSelect_eq {s l : List \u03b1} (h : s <+ l) :"
+        },
+        {
+          "line": 84,
+          "text": "theorem maskSelect_append_replicate_false (l : List \u03b1) (w : List Bool) (k : \u2115) :"
+        },
+        {
+          "line": 96,
+          "text": "theorem exists_le_coe_iff_exists_sublist {l : List \u03b1} (P : Multiset \u03b1 \u2192 Prop) :"
+        },
+        {
+          "line": 109,
+          "text": "theorem exists_le_iff_exists_maskSelect {l : List \u03b1} {n : \u2115} (hn : l.length \u2264 n)"
+        },
+        {
+          "line": 124,
+          "text": "theorem computableInPolyTime_maskSelect (enc : \u03b1 \u21aa List Bool) :"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 131,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "unary-prime",
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Prime.lean",
+      "module_name": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime",
+      "source_sha256": "6c6df6c3cba810a49d2a9f41ff55b81cf8da8934c835073af19d60b108632ed8",
+      "calls": [
+        {
+          "case": "unary_decide_prime",
+          "call_id": "6c6df6c3cba810a49d2a9f41ff55b81cf8da8934c835073af19d60b108632ed8:Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Prime.lean:1980-1988:fun_prop",
+          "call_token": "cfabbfceadd13b8d5",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Prime.lean",
+          "original_sha256": "6c6df6c3cba810a49d2a9f41ff55b81cf8da8934c835073af19d60b108632ed8",
+          "original_byte_start": 1980,
+          "original_byte_end": 1988,
+          "original_line": 50,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+        "public import Mathlib.Data.Nat.Prime.Defs",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div"
+      ],
+      "variant_sha256": {
+        "baseline": "6c6df6c3cba810a49d2a9f41ff55b81cf8da8934c835073af19d60b108632ed8",
+        "import-only": "242a7f76c2f8af8aa23d29e309d890f841b0f8605f0ce888c4e105426a2e9746",
+        "wrapped": "99d8cb9c8967bc330ee605ab568f90a18bb5fa1bd652033ec953ec8e27b4df2e"
+      },
+      "explicit_private_declarations": 0,
+      "private_declaration_lines": [],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 31,
+          "text": "namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+        },
+        {
+          "line": 52,
+          "text": "end Turing.MultiTapeTM.ComputableTidilyInPolyTime"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 34,
+          "text": "theorem decide_prime_eq (p : \u2115) : decide p.Prime ="
+        },
+        {
+          "line": 47,
+          "text": "theorem unary_decide_prime :"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 52,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "space",
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean",
+      "module_name": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space",
+      "source_sha256": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de",
+      "calls": [
+        {
+          "case": "outputClass",
+          "call_id": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean:3827-3835:fun_prop",
+          "call_token": "cacc2ec56c78d5f0e",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean",
+          "original_sha256": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de",
+          "original_byte_start": 3827,
+          "original_byte_end": 3835,
+          "original_line": 80,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        },
+        {
+          "case": "finiteCfg_summarizeOutput",
+          "call_id": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean:4154-4162:fun_prop",
+          "call_token": "c68d8c0ea782eb26e",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean",
+          "original_sha256": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de",
+          "original_byte_start": 4154,
+          "original_byte_end": 4162,
+          "original_line": 88,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Space",
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Machine.ChoiceTable",
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration",
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite",
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Decode",
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat"
+      ],
+      "variant_sha256": {
+        "baseline": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de",
+        "import-only": "996cb199ce97e3e6329a0fb91c3bd0b8d5cca4b8b30b0855e3e7c2ae3109db6e",
+        "wrapped": "34dad2ca905f895333fb68f177df3fa6f0a2636f12ed65b2f592e0237e89a04f"
+      },
+      "explicit_private_declarations": 0,
+      "private_declaration_lines": [],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 64,
+          "text": "namespace Turing"
+        },
+        {
+          "line": 68,
+          "text": "namespace MultiTapeTM.ComputableTidilyInPolyTime"
+        },
+        {
+          "line": 90,
+          "text": "end MultiTapeTM.ComputableTidilyInPolyTime"
+        },
+        {
+          "line": 92,
+          "text": "namespace MultiTapeNTM"
+        },
+        {
+          "line": 94,
+          "text": "variable {k : \u2115} {State : Type} [Finite State] (ntm : MultiTapeNTM k Bool State)"
+        },
+        {
+          "line": 177,
+          "text": "variable {ntm}"
+        },
+        {
+          "line": 270,
+          "text": "section Certificate"
+        },
+        {
+          "line": 272,
+          "text": "variable {\u03b1 : Type} {encA : \u03b1 \u21aa List Bool}"
+        },
+        {
+          "line": 343,
+          "text": "end Certificate"
+        },
+        {
+          "line": 345,
+          "text": "end MultiTapeNTM"
+        },
+        {
+          "line": 347,
+          "text": "end Turing"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 72,
+          "text": "theorem outputClass :"
+        },
+        {
+          "line": 84,
+          "text": "theorem finiteCfg_summarizeOutput {k : \u2115} {State : Type} [Finite State] :"
+        },
+        {
+          "line": 98,
+          "text": "noncomputable def viewStepB (views : FiniteCfg k Bool State \u00d7 FiniteCfg k Bool State) : Bool :="
+        },
+        {
+          "line": 105,
+          "text": "theorem viewStepB_iff {finite next : FiniteCfg k Bool State} :"
+        },
+        {
+          "line": 113,
+          "text": "theorem computableTidilyInPolyTime_viewStepB :"
+        },
+        {
+          "line": 150,
+          "text": "noncomputable def viewCode (width : \u2115) (finite : FiniteCfg k Bool State) : List Bool :="
+        },
+        {
+          "line": 154,
+          "text": "def acceptCode (width : \u2115) : List Bool := List.replicate (2 * width + 2) true"
+        },
+        {
+          "line": 158,
+          "text": "noncomputable def decodeView : List Bool \u2192 Option (FiniteCfg k Bool State)"
+        },
+        {
+          "line": 165,
+          "text": "noncomputable def codeEdge (code next : List Bool) : Bool :="
+        },
+        {
+          "line": 174,
+          "text": "def CodeStep (width : \u2115) (code next : List Bool) : Prop :="
+        },
+        {
+          "line": 180,
+          "text": "theorem decodeView_viewCode (width : \u2115) (finite : FiniteCfg k Bool State) :"
+        },
+        {
+          "line": 186,
+          "text": "theorem length_viewCode {width : \u2115} {finite : FiniteCfg k Bool State}"
+        },
+        {
+          "line": 192,
+          "text": "theorem codeEdge_viewCode {width : \u2115} {finite next : FiniteCfg k Bool State} :"
+        },
+        {
+          "line": 201,
+          "text": "theorem codeEdge_acceptCode {width : \u2115} {finite : FiniteCfg k Bool State} :"
+        },
+        {
+          "line": 209,
+          "text": "theorem accepts_iff_reflTransGen_codeStep {input : List Bool} {width : \u2115}"
+        },
+        {
+          "line": 265,
+          "text": "theorem decodeView_eq (code : List Bool) :"
+        },
+        {
+          "line": 275,
+          "text": "theorem computableTidilyInPolyTime_decodeView {code : \u03b1 \u2192 List Bool}"
+        },
+        {
+          "line": 286,
+          "text": "theorem codeEdge_eq (code next : List Bool) : ntm.codeEdge code next ="
+        },
+        {
+          "line": 301,
+          "text": "theorem computableTidilyInPolyTime_codeEdge"
+        },
+        {
+          "line": 323,
+          "text": "theorem computableTidilyInPolyTime_viewCode_initView {width : \u03b1 \u2192 \u2115} {word : \u03b1 \u2192 List Bool}"
+        },
+        {
+          "line": 333,
+          "text": "theorem computableTidilyInPolyTime_acceptCode {width : \u03b1 \u2192 \u2115}"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 347,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "savitch",
+      "path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean",
+      "module_name": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Savitch",
+      "source_sha256": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d",
+      "calls": [
+        {
+          "case": "computableTidilyInPolyTime_codeWidth",
+          "call_id": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean:6592-6600:fun_prop",
+          "call_token": "c5bc90d18648ead33",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean",
+          "original_sha256": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d",
+          "original_byte_start": 6592,
+          "original_byte_end": 6600,
+          "original_line": 123,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        },
+        {
+          "case": "computableInPolyTime_viewCodeWidth",
+          "call_id": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean:6948-6956:fun_prop",
+          "call_token": "cc5885e602823dc65",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean",
+          "original_sha256": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d",
+          "original_byte_start": 6948,
+          "original_byte_end": 6956,
+          "original_line": 132,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space",
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+        "public import Complexity.Algorithms.Reachability.Savitch",
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability",
+        "import Complexity.Foundations.Data.BitString.ShortWords",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat"
+      ],
+      "variant_sha256": {
+        "baseline": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d",
+        "import-only": "837bdfbf49ab81f216e64674d88090729809aea22339e0237a712609406a7375",
+        "wrapped": "c6b0112e9129a768aba4536663099d52c0126c699808527a79f900fb2470986b"
+      },
+      "explicit_private_declarations": 0,
+      "private_declaration_lines": [],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 62,
+          "text": "namespace Turing.MultiTapeNTM"
+        },
+        {
+          "line": 66,
+          "text": "variable {k : \u2115} {State : Type} [Finite State] (ntm : MultiTapeNTM k Bool State)"
+        },
+        {
+          "line": 89,
+          "text": "variable {ntm}"
+        },
+        {
+          "line": 134,
+          "text": "variable (ntm) in"
+        },
+        {
+          "line": 161,
+          "text": "end Turing.MultiTapeNTM"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 71,
+          "text": "noncomputable def codeWidth (c d : \u2115) (input : List Bool) : \u2115 :="
+        },
+        {
+          "line": 78,
+          "text": "noncomputable def viewCodeWidth (c d : \u2115) (input : List Bool) : \u2115 :="
+        },
+        {
+          "line": 84,
+          "text": "noncomputable def savitchDecide (c d : \u2115) (input : List Bool) : Bool :="
+        },
+        {
+          "line": 93,
+          "text": "theorem savitchDecide_eq_true_iff {c d s : \u2115} {input : List Bool} (hs : ntm.RunsInSpace input s)"
+        },
+        {
+          "line": 117,
+          "text": "theorem computableTidilyInPolyTime_codeWidth {\u03b1 : Type} {enc : \u03b1 \u21aa List Bool} (c d : \u2115) :"
+        },
+        {
+          "line": 127,
+          "text": "theorem computableInPolyTime_viewCodeWidth (c d : \u2115) :"
+        },
+        {
+          "line": 137,
+          "text": "theorem exists_polyBounded_space_savitchDecide {\u03b1 : Type} (enc : \u03b1 \u21aa List Bool) (c d : \u2115) :"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 161,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "boosting-sampling",
+      "path": "Complexity/Crypto/Computational/Pseudoentropy/Boosting/Sampling.lean",
+      "module_name": "Complexity.Crypto.Computational.Pseudoentropy.Boosting.Sampling",
+      "source_sha256": "37f3950e78d23b3abf4ee432c40a8d33d35713280e0853450bb4b585727509bd",
+      "calls": [
+        {
+          "case": "weightNumerator_div",
+          "call_id": "37f3950e78d23b3abf4ee432c40a8d33d35713280e0853450bb4b585727509bd:Complexity/Crypto/Computational/Pseudoentropy/Boosting/Sampling.lean:6050-6058:fun_prop",
+          "call_token": "c92ccdea3a91bfb6a",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Crypto/Computational/Pseudoentropy/Boosting/Sampling.lean",
+          "original_sha256": "37f3950e78d23b3abf4ee432c40a8d33d35713280e0853450bb4b585727509bd",
+          "original_byte_start": 6050,
+          "original_byte_end": 6058,
+          "original_line": 122,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Probabilistic.UniformNat",
+        "public import Complexity.Crypto.Computational.Pseudoentropy.Boosting.Progress",
+        "public import Complexity.Foundations.Data.BitString.List.Vote",
+        "public import Complexity.Languages.Probabilistic.Repeat",
+        "public import Mathlib.Analysis.SpecialFunctions.Exp",
+        "import Complexity.Languages.Probabilistic.Concentration",
+        "import Complexity.Tactic.PPT"
+      ],
+      "variant_sha256": {
+        "baseline": "37f3950e78d23b3abf4ee432c40a8d33d35713280e0853450bb4b585727509bd",
+        "import-only": "86778dbf975b37a7e082ef076be1a78b5e7b29d974b89ffab04a602cef9ff01b",
+        "wrapped": "67ca05fdc5b1cfe44b1a72207d06cb6a040752ce40f9dcb0c499878df377e081"
+      },
+      "explicit_private_declarations": 0,
+      "private_declaration_lines": [],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 53,
+          "text": "namespace Cslib.Crypto.Pseudoentropy.Boosting"
+        },
+        {
+          "line": 179,
+          "text": "attribute [program_certificate] isPPTOn_sampleWeight"
+        },
+        {
+          "line": 181,
+          "text": "end Cslib.Crypto.Pseudoentropy.Boosting"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 60,
+          "text": "def weightNumerator (denominator rateNumerator threshold : \u2115)"
+        },
+        {
+          "line": 65,
+          "text": "theorem weightNumerator_le (denominator rateNumerator threshold : \u2115)"
+        },
+        {
+          "line": 71,
+          "text": "theorem weightNumerator_div (denominator rateNumerator threshold : \u2115)"
+        },
+        {
+          "line": 125,
+          "text": "noncomputable def sampleWeight (bound rateNumerator threshold : \u2115)"
+        },
+        {
+          "line": 131,
+          "text": "theorem eval_sampleWeight_true (bound rateNumerator threshold : \u2115)"
+        },
+        {
+          "line": 140,
+          "text": "theorem sampleWeight_density {\u03b1 : Type*} [Fintype \u03b1] (source : PMF \u03b1)"
+        },
+        {
+          "line": 151,
+          "text": "theorem sampleWeight_density_deviation {\u03b1 : Type} [Fintype \u03b1] (source : ProbComp \u03b1)"
+        },
+        {
+          "line": 165,
+          "text": "theorem isPPTOn_sampleWeight {\u03b1 : Type} {input : \u03b1 \u21aa List Bool}"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 181,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "threesource-seeded",
+      "path": "Complexity/Crypto/Computational/Pseudoentropy/ThreeSource/Seeded.lean",
+      "module_name": "Complexity.Crypto.Computational.Pseudoentropy.ThreeSource.Seeded",
+      "source_sha256": "4bbdbe264c68ea97717c12d75a27d3bf31e15ecf59279ee852315a16a6ee1b0c",
+      "calls": [
+        {
+          "case": "isPolyTime_generate",
+          "call_id": "4bbdbe264c68ea97717c12d75a27d3bf31e15ecf59279ee852315a16a6ee1b0c:Complexity/Crypto/Computational/Pseudoentropy/ThreeSource/Seeded.lean:7807-7815:polytime",
+          "call_token": "c2bea16980720d334",
+          "tactic": "polytime",
+          "expected_kind": "Cslib.Tactic.PolyTime.tacticPolytime",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Crypto/Computational/Pseudoentropy/ThreeSource/Seeded.lean",
+          "original_sha256": "4bbdbe264c68ea97717c12d75a27d3bf31e15ecf59279ee852315a16a6ee1b0c",
+          "original_byte_start": 7807,
+          "original_byte_end": 7815,
+          "original_line": 143,
+          "original_text": "polytime",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Crypto.Computational.Pseudoentropy.ThreeSource",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+        "import Complexity.Computability.Probabilistic.LinearHash",
+        "import Complexity.Tactic.PolyTime"
+      ],
+      "variant_sha256": {
+        "baseline": "4bbdbe264c68ea97717c12d75a27d3bf31e15ecf59279ee852315a16a6ee1b0c",
+        "import-only": "0ce445ada2c8bb2fc0cb840ede88cde7ad3a3d03797a3f2140f3dd9aa991f5d3",
+        "wrapped": "7697694bfaec5a39e2d890dc92022e29b63eea8fd17021cd47970bc26fb35673"
+      },
+      "explicit_private_declarations": 0,
+      "private_declaration_lines": [],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 48,
+          "text": "namespace Cslib.Crypto.Pseudoentropy.ThreeSource"
+        },
+        {
+          "line": 110,
+          "text": "attribute [program_certificate] isPolyTime_hashSamples"
+        },
+        {
+          "line": 145,
+          "text": "attribute [program_certificate] isPolyTime_generate"
+        },
+        {
+          "line": 277,
+          "text": "end Cslib.Crypto.Pseudoentropy.ThreeSource"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 53,
+          "text": "def hashSamples (count seedBits bound observationBits labelBits remainingBits : \u2115)"
+        },
+        {
+          "line": 64,
+          "text": "theorem isPolyTime_hashSamples {\u03b1 : Type} {input : \u03b1 \u21aa List Bool}"
+        },
+        {
+          "line": 114,
+          "text": "def generate (count seedBits bound observationBits labelBits remainingBits : \u2115)"
+        },
+        {
+          "line": 128,
+          "text": "theorem isPolyTime_generate {\u03b1 : Type} {input : \u03b1 \u21aa List Bool}"
+        },
+        {
+          "line": 149,
+          "text": "theorem generate_distribution (count seedBits bound observationBits labelBits remainingBits : \u2115)"
+        },
+        {
+          "line": 189,
+          "text": "theorem eval_hashSamples (count seedBits bound observationBits labelBits remainingBits : \u2115)"
+        },
+        {
+          "line": 218,
+          "text": "theorem eval_generate (count seedBits bound observationBits labelBits remainingBits : \u2115)"
+        },
+        {
+          "line": 240,
+          "text": "theorem length_generate (count seedBits bound observationBits labelBits remainingBits : \u2115)"
+        },
+        {
+          "line": 264,
+          "text": "theorem eval_generate_of_realization {pair : SamplablePair} (saved : pair.SeedRealization)"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 277,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    },
+    {
+      "case": "native-extract",
+      "path": "Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean",
+      "module_name": "Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract",
+      "source_sha256": "d8dc46d307b4b8ffbf1b1526e4e24459a48588d5405c570b3762608ec8cf7704",
+      "calls": [
+        {
+          "case": "computableInPolyTime_lyubashevskyExtractList",
+          "call_id": "d8dc46d307b4b8ffbf1b1526e4e24459a48588d5405c570b3762608ec8cf7704:Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean:5538-5546:fun_prop",
+          "call_token": "c4a5148403a0413c1",
+          "tactic": "fun_prop",
+          "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+          "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+          "original_path": "Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean",
+          "original_sha256": "d8dc46d307b4b8ffbf1b1526e4e24459a48588d5405c570b3762608ec8cf7704",
+          "original_byte_start": 5538,
+          "original_byte_end": 5546,
+          "original_line": 115,
+          "original_text": "fun_prop",
+          "expected": "returned",
+          "authored_selection": "manually inspected standalone theorem-body line"
+        }
+      ],
+      "original_imports": [
+        "public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode",
+        "public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky",
+        "import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary",
+        "import Complexity.Tactic.PolyTime"
+      ],
+      "variant_sha256": {
+        "baseline": "d8dc46d307b4b8ffbf1b1526e4e24459a48588d5405c570b3762608ec8cf7704",
+        "import-only": "c6ef1ba1987143eb60936a27d04ba0c5e30a130d1bb4f10035602367a7d8e888",
+        "wrapped": "edfb44f485d1d2c398fc874b7eae0e5f106c645e95f04d36db60c62d343196ce"
+      },
+      "explicit_private_declarations": 3,
+      "private_declaration_lines": [
+        69,
+        117,
+        121
+      ],
+      "original_option_directives": [],
+      "namespace_section_lines": [
+        {
+          "line": 44,
+          "text": "namespace Cslib.Crypto.Protocols.SigmaProtocol"
+        },
+        {
+          "line": 193,
+          "text": "end Cslib.Crypto.Protocols.SigmaProtocol"
+        }
+      ],
+      "source_declaration_header_lines": [
+        {
+          "line": 49,
+          "text": "abbrev LyubashevskyExtractInput :="
+        },
+        {
+          "line": 53,
+          "text": "def encLyubashevskyExtractInput : LyubashevskyExtractInput \u21aa List Bool :="
+        },
+        {
+          "line": 60,
+          "text": "def decodeLyubashevskyExtractInput (word : List Bool) : LyubashevskyExtractInput :="
+        },
+        {
+          "line": 69,
+          "text": "private theorem extractInput_decoder :"
+        },
+        {
+          "line": 88,
+          "text": "theorem computableInPolyTime_decodeLyubashevskyExtractInput :"
+        },
+        {
+          "line": 96,
+          "text": "def lyubashevskyExtractList (input : LyubashevskyExtractInput) : List \u2124 :="
+        },
+        {
+          "line": 110,
+          "text": "theorem computableInPolyTime_lyubashevskyExtractList :"
+        },
+        {
+          "line": 117,
+          "text": "private theorem getD_optional_ofFn {m : \u2115} (z : Option (Fin m \u2192 \u2124)) (i : Fin m) :"
+        },
+        {
+          "line": 121,
+          "text": "private theorem map_range_eq_ofFn {\u03b1 : Type} (n : \u2115) (f : \u2115 \u2192 \u03b1) (g : Fin n \u2192 \u03b1)"
+        },
+        {
+          "line": 129,
+          "text": "theorem lyubashevskyExtractList_ofFn {m k : \u2115} (c : Fin k \u2192 Bool) (z : Option (Fin m \u2192 \u2124))"
+        },
+        {
+          "line": 147,
+          "text": "def lyubashevskyExtractWord (word : List Bool) : List Bool :="
+        },
+        {
+          "line": 153,
+          "text": "theorem computableInPolyTime_lyubashevskyExtractWord :"
+        },
+        {
+          "line": 168,
+          "text": "theorem lyubashevskyExtractList_eq_extract (n m k q : \u2115)"
+        },
+        {
+          "line": 183,
+          "text": "theorem lyubashevskyExtractWord_eq_extract (n m k q : \u2115)"
+        }
+      ],
+      "declaration_expectation": "exact source headers/bodies preserved; future actual native declaration set must match baseline across modes; no pre-elaboration native inventory claim",
+      "default_user_heartbeat_limit": 200000,
+      "source_lines": 193,
+      "all_non_target_code": "byte preserved and individually unmeasured"
+    }
+  ],
+  "expected_calls": [
+    {
+      "case": "polynomiallyBounded_simulationCost",
+      "call_id": "5d04a6f95d2a682b78e837543ecbe6448b2f3c916f1f37954941d5b9e4f72c0e:Complexity/Computability/Circuit/Boolean/MachineSimulation.lean:20734-20742:fun_prop",
+      "call_token": "c16b0d62b00f96344",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Circuit/Boolean/MachineSimulation.lean",
+      "original_sha256": "5d04a6f95d2a682b78e837543ecbe6448b2f3c916f1f37954941d5b9e4f72c0e",
+      "original_byte_start": 20734,
+      "original_byte_end": 20742,
+      "original_line": 412,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "measurable_edgeScore",
+      "call_id": "88126f7b929b107629c3c249a92379a3fb4d7bf6408180bc54f67d5c3c250841:Complexity/Computability/Circuit/Frontier/Layouts/Gaussian/EdgeScores.lean:4756-4764:fun_prop",
+      "call_token": "cde70424752a21064",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Circuit/Frontier/Layouts/Gaussian/EdgeScores.lean",
+      "original_sha256": "88126f7b929b107629c3c249a92379a3fb4d7bf6408180bc54f67d5c3c250841",
+      "original_byte_start": 4756,
+      "original_byte_end": 4764,
+      "original_line": 109,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "measurable_vertexScore",
+      "call_id": "1a339c482892c054a8656df6146013e84973d36ed89fe60feeb830505f491883:Complexity/Computability/Circuit/Frontier/Layouts/VertexGaussian.lean:4026-4034:fun_prop",
+      "call_token": "c1e03ef28b232b93a",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Circuit/Frontier/Layouts/VertexGaussian.lean",
+      "original_sha256": "1a339c482892c054a8656df6146013e84973d36ed89fe60feeb830505f491883",
+      "original_byte_start": 4026,
+      "original_byte_end": 4034,
+      "original_line": 89,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "computableInPolyTime_sigmaTwoVerifier",
+      "call_id": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b:Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean:5051-5059:fun_prop",
+      "call_token": "cdc8b795e1eadd2f5",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean",
+      "original_sha256": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b",
+      "original_byte_start": 5051,
+      "original_byte_end": 5059,
+      "original_line": 102,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "computableInPolyTime_piTwoVerifier",
+      "call_id": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b:Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean:10517-10525:fun_prop",
+      "call_token": "cc99be2c14e7704be",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/PH.lean",
+      "original_sha256": "54b4bfb0166900c20ecf00c65b5dcd6895c07b087f9f057ea22da604e2795c9b",
+      "original_byte_start": 10517,
+      "original_byte_end": 10525,
+      "original_line": 194,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "computableInPolyTime_verifier",
+      "call_id": "c15180b2b545bc690b240a62ac0ac30a1b4a131ec5f74be5f9347c3f0f16dc4e:Complexity/Computability/Complexity/Classes/ArthurMerlin/SetLowerBound.lean:8937-8945:fun_prop",
+      "call_token": "c5894a2a6c0eaef4c",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Complexity/Classes/ArthurMerlin/SetLowerBound.lean",
+      "original_sha256": "c15180b2b545bc690b240a62ac0ac30a1b4a131ec5f74be5f9347c3f0f16dc4e",
+      "original_byte_start": 8937,
+      "original_byte_end": 8945,
+      "original_line": 173,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "computableInLogSpace_dualTableauInstance",
+      "call_id": "8e58f6e1a4f16b7cc13977aebdd4f65ae4c4f4763d1857625240ca12798c5e57:Complexity/Computability/Complexity/Problems/MonotoneCircuitValue/Completeness.lean:15109-15117:fun_prop",
+      "call_token": "c687803b1d60e61a3",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Complexity/Problems/MonotoneCircuitValue/Completeness.lean",
+      "original_sha256": "8e58f6e1a4f16b7cc13977aebdd4f65ae4c4f4763d1857625240ca12798c5e57",
+      "original_byte_start": 15109,
+      "original_byte_end": 15117,
+      "original_line": 291,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "computableInPolyTime_maskSelect",
+      "call_id": "b6933aa9aaeaf6c117ab61d33b0086a61140f5d89012add22b653d33eade6108:Complexity/Computability/Complexity/Problems/SubsetSum/Mask.lean:5380-5388:fun_prop",
+      "call_token": "c8ebd4d3ffac9458f",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Complexity/Problems/SubsetSum/Mask.lean",
+      "original_sha256": "b6933aa9aaeaf6c117ab61d33b0086a61140f5d89012add22b653d33eade6108",
+      "original_byte_start": 5380,
+      "original_byte_end": 5388,
+      "original_line": 129,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "unary_decide_prime",
+      "call_id": "6c6df6c3cba810a49d2a9f41ff55b81cf8da8934c835073af19d60b108632ed8:Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Prime.lean:1980-1988:fun_prop",
+      "call_token": "cfabbfceadd13b8d5",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Prime.lean",
+      "original_sha256": "6c6df6c3cba810a49d2a9f41ff55b81cf8da8934c835073af19d60b108632ed8",
+      "original_byte_start": 1980,
+      "original_byte_end": 1988,
+      "original_line": 50,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "outputClass",
+      "call_id": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean:3827-3835:fun_prop",
+      "call_token": "cacc2ec56c78d5f0e",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean",
+      "original_sha256": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de",
+      "original_byte_start": 3827,
+      "original_byte_end": 3835,
+      "original_line": 80,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "finiteCfg_summarizeOutput",
+      "call_id": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean:4154-4162:fun_prop",
+      "call_token": "c68d8c0ea782eb26e",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space.lean",
+      "original_sha256": "21c199106f3dad823f090f612b56b679e6ec4e9bb01ff6171bdbac1496abf2de",
+      "original_byte_start": 4154,
+      "original_byte_end": 4162,
+      "original_line": 88,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "computableTidilyInPolyTime_codeWidth",
+      "call_id": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean:6592-6600:fun_prop",
+      "call_token": "c5bc90d18648ead33",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean",
+      "original_sha256": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d",
+      "original_byte_start": 6592,
+      "original_byte_end": 6600,
+      "original_line": 123,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "computableInPolyTime_viewCodeWidth",
+      "call_id": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d:Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean:6948-6956:fun_prop",
+      "call_token": "cc5885e602823dc65",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Space/Savitch.lean",
+      "original_sha256": "d94e12e09666b57c5032b4d7f2b2909eff94548d0170ce5a2655b2ea8033cc1d",
+      "original_byte_start": 6948,
+      "original_byte_end": 6956,
+      "original_line": 132,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "weightNumerator_div",
+      "call_id": "37f3950e78d23b3abf4ee432c40a8d33d35713280e0853450bb4b585727509bd:Complexity/Crypto/Computational/Pseudoentropy/Boosting/Sampling.lean:6050-6058:fun_prop",
+      "call_token": "c92ccdea3a91bfb6a",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Crypto/Computational/Pseudoentropy/Boosting/Sampling.lean",
+      "original_sha256": "37f3950e78d23b3abf4ee432c40a8d33d35713280e0853450bb4b585727509bd",
+      "original_byte_start": 6050,
+      "original_byte_end": 6058,
+      "original_line": 122,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "isPolyTime_generate",
+      "call_id": "4bbdbe264c68ea97717c12d75a27d3bf31e15ecf59279ee852315a16a6ee1b0c:Complexity/Crypto/Computational/Pseudoentropy/ThreeSource/Seeded.lean:7807-7815:polytime",
+      "call_token": "c2bea16980720d334",
+      "tactic": "polytime",
+      "expected_kind": "Cslib.Tactic.PolyTime.tacticPolytime",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Crypto/Computational/Pseudoentropy/ThreeSource/Seeded.lean",
+      "original_sha256": "4bbdbe264c68ea97717c12d75a27d3bf31e15ecf59279ee852315a16a6ee1b0c",
+      "original_byte_start": 7807,
+      "original_byte_end": 7815,
+      "original_line": 143,
+      "original_text": "polytime",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    },
+    {
+      "case": "computableInPolyTime_lyubashevskyExtractList",
+      "call_id": "d8dc46d307b4b8ffbf1b1526e4e24459a48588d5405c570b3762608ec8cf7704:Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean:5538-5546:fun_prop",
+      "call_token": "c4a5148403a0413c1",
+      "tactic": "fun_prop",
+      "expected_kind": "Mathlib.Meta.FunProp.funPropTacStx",
+      "pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+      "original_path": "Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean",
+      "original_sha256": "d8dc46d307b4b8ffbf1b1526e4e24459a48588d5405c570b3762608ec8cf7704",
+      "original_byte_start": 5538,
+      "original_byte_end": 5546,
+      "original_line": 115,
+      "original_text": "fun_prop",
+      "expected": "returned",
+      "authored_selection": "manually inspected standalone theorem-body line"
+    }
+  ],
+  "expected_commands": 39,
+  "expected_events": 32
+}
