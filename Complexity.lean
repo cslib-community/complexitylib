@@ -819,9 +819,6 @@ public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCros
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCrossoverLayoutChecks
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCrossoverLayoutData
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedSemantics
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCrossoverLayout
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCrossoverLayoutChecks
-public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCrossoverLayoutData
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathAssignments
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathBounds
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathData
