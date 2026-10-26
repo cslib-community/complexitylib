@@ -1499,6 +1499,7 @@ public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
 public import Complexity.Crypto.Computational.Commitment
 public import Complexity.Crypto.Computational.CramerShoup.ProjectiveHash
+public import Complexity.Crypto.Computational.CramerShoup.Reductions
 public import Complexity.Crypto.Computational.CramerShoup.Scheme
 public import Complexity.Crypto.Computational.DiffieHellman
 public import Complexity.Crypto.Computational.DiffieHellman.MultiDDH
