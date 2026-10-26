@@ -118,7 +118,7 @@ private theorem eval_tagLeveledChoice_false_false (E : Scheme) (depth capacity :
       (leveledAdversary E depth capacity adversary).guess n choice.2 ciphertext) =
     ProbComp.eval (Encryption.game E.keyGen E.encrypt
       (E.linkAdversary depth capacity (publicKeyGame E adversary false)) bit n) := by
-  simp [Encryption.game, leveledAdversary, tagLeveledChoice,
+  simp [Encryption.game, Encryption.gameOn, leveledAdversary, tagLeveledChoice,
     ProbComp.eval_bind, Function.comp_def]
 
 private theorem eval_tagLeveledChoice_false_true (E : Scheme) (depth capacity : ℕ → ℕ)
@@ -131,7 +131,7 @@ private theorem eval_tagLeveledChoice_false_true (E : Scheme) (depth capacity : 
       (leveledAdversary E depth capacity adversary).guess n choice.2 ciphertext) =
     ProbComp.eval (Encryption.game E.keyGen E.encrypt
       (E.linkAdversary depth capacity (publicKeyGame E adversary true)) (!bit) n) := by
-  cases bit <;> simp [Encryption.game, leveledAdversary, tagLeveledChoice, swapLeveledChoice,
+  cases bit <;> simp [Encryption.game, Encryption.gameOn, leveledAdversary, tagLeveledChoice, swapLeveledChoice,
     ProbComp.eval_bind, Function.comp_def]
 
 private theorem eval_tagLeveledChoice_true_false (E : Scheme) (depth capacity : ℕ → ℕ)
@@ -144,7 +144,7 @@ private theorem eval_tagLeveledChoice_true_false (E : Scheme) (depth capacity : 
       (leveledAdversary E depth capacity adversary).guess n choice.2 ciphertext) =
     ProbComp.eval (Encryption.game E.keyGen E.encrypt
       (zeroLinkAdversary E depth adversary) bit n) := by
-  simp [Encryption.game, leveledAdversary, tagLeveledChoice,
+  simp [Encryption.game, Encryption.gameOn, leveledAdversary, tagLeveledChoice,
     ProbComp.eval_bind, Function.comp_def]
 
 private theorem eval_rejectLeveledChoice (E : Scheme) (depth capacity : ℕ → ℕ)
@@ -216,7 +216,7 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
           else
             ProbComp.eval (Encryption.game E.keyGen E.encrypt
               (E.linkAdversary depth capacity (publicKeyGame E adversary false)) bit n) := by
-  dsimp only [Encryption.game]
+  dsimp only [Encryption.game, Encryption.gameOn]
   simp only [leveledAdversary_choose, bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
   rw [PMF.bind_comm]
   congr 1

@@ -152,7 +152,7 @@ theorem isPPT_leveledAdversary
     (hdepth : ComputableInPolyTime depth encUnary encUnary)
     (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
     (leveledAdversary E depth capacity adversary).IsPPT := by
-  have hzero := isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen hdepth.tidy
+  have hzero := isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen hdepth
   have hlinkFalse := Scheme.isPPT_linkAdversary hkeyGen hencrypt
     (isPPTOn_publicKeyGame hencrypt hadversary false) hdepth.tidy hcapacity.tidy
   have hlinkTrue := Scheme.isPPT_linkAdversary hkeyGen hencrypt
