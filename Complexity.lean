@@ -1524,6 +1524,7 @@ public import Complexity.Crypto.Computational.DiffieHellman.MultiDDH
 public import Complexity.Crypto.Computational.DiscreteLog
 public import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 public import Complexity.Crypto.Computational.ElGamal
+public import Complexity.Crypto.Computational.ElGamal.GeneralCipher
 public import Complexity.Crypto.Computational.ElGamal.KDF
 public import Complexity.Crypto.Computational.ElGamal.ProbComp
 public import Complexity.Crypto.Computational.Encryption.Authenticated
