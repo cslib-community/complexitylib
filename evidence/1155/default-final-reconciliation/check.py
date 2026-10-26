@@ -16,12 +16,20 @@ def main():
  issues=[]
  def need(ok,message):
   if not ok:issues.append(message)
- def obj(path,rev=None):return subprocess.check_output(['git','show',(rev or a.revision)+':'+path],cwd=HERE)
- tracked=set(subprocess.check_output(['git','ls-tree','-r','--name-only',a.revision,a.dataset],cwd=HERE,text=True).splitlines())
+ def obj(path,rev=None):return subprocess.check_output(['git','show',(rev or a.revision)+':'+path],cwd=HERE.parents[2])
+ tracked=set(subprocess.check_output(['git','ls-tree','-r','--name-only',a.revision,a.dataset],cwd=HERE.parents[2],text=True).splitlines())
  def raw(rel):return obj(a.dataset+'/'+rel)
  def load(rel):
   path=a.dataset+'/'+rel
   return json.loads(obj(path) if path in tracked else gzip.decompress(obj(path+'.gz')))
+ artifact=load('artifact-sha256.json')
+ manifested={a.dataset+'/'+f['path'] for f in artifact['files']}
+ need(manifested==tracked-{a.dataset+'/artifact-sha256.json'},'artifact manifest file membership')
+ for f in artifact['files']:
+  content=raw(f['path']);need(len(content)==f['bytes'] and sha(content)==f['sha256'],'artifact hash/size '+f['path'])
+ compression=load('compressed-derived-artifact.json');packed=raw(compression['gzip']);unpacked=gzip.decompress(packed)
+ need(sha(packed)==compression['gzip_sha256'] and len(unpacked)==compression['uncompressed_bytes'] and sha(unpacked)==compression['uncompressed_sha256'],'lossless derived gzip identity')
+ del packed,unpacked
  sidebytes=raw('run-sidecar.json');side=json.loads(sidebytes);digest=sha(sidebytes)
  plan=load('plan.json');commands=load('commands.json');terminal=load('terminal.json');headers=load('headers.json')
  need(side['source_pin']==plan['pin']==PIN,'source pin mismatch')
@@ -128,6 +136,6 @@ def main():
    rawcost=e['raw_body_thread_heartbeats'];need(r['body_user_heartbeat_units']==(None if rawcost is None else rawcost/1000),'HB unit conversion '+eid)
   else:need(r['status']=='censored_unknown' and r['body_user_heartbeat_units'] is None and not r['accepted_whole_file_cost'],'censored treatment '+eid)
  failed=[r for r in file_outcomes if not r['accepted']]
- result={'revision':a.revision,'source_pin':PIN,'method':METHOD,'runner':RUNNER,'issues':issues,'consistency_status':'PASS' if not issues else 'FINDINGS','prepared_files':len(files),'commands':len(commands),'accepted_commands':accepted_commands,'nonaccepted_commands':failed,'raw_attempt_records':len(all_event_ids),'raw_status_counts':dict(status),'synthetic_source_info_attempts':synthetic,'retained_trace_records':traces_total,'pending_censored':pending_total,'unpositioned_attempts':unpositioned,'local_filemap_attempts':localmaps,'parsed_attempt_rows':len(attempts),'raw_syntactic_goal_heads':dict(scope_heads),'excluded':'Own static census/classifications/joins; no final rule-proof attribution; no new Lean execution. Data consistency PASS does not waive corpus failures or claim all survey goals complete.'}
+ result={'revision':a.revision,'source_pin':PIN,'method':METHOD,'runner':RUNNER,'issues':issues,'consistency_status':'PASS' if not issues else 'FINDINGS','manifested_files':len(artifact['files']),'prepared_files':len(files),'commands':len(commands),'accepted_commands':accepted_commands,'nonaccepted_commands':failed,'raw_attempt_records':len(all_event_ids),'raw_status_counts':dict(status),'synthetic_source_info_attempts':synthetic,'retained_trace_records':traces_total,'pending_censored':pending_total,'unpositioned_attempts':unpositioned,'local_filemap_attempts':localmaps,'parsed_attempt_rows':len(attempts),'raw_syntactic_goal_heads':dict(scope_heads),'excluded':'Own static census/classifications/joins; no final rule-proof attribution; no new Lean execution. Data consistency PASS does not waive corpus failures or claim all survey goals complete.'}
  a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n');print(json.dumps({k:v for k,v in result.items() if k not in ('nonaccepted_commands','raw_syntactic_goal_heads')},indent=2));return bool(issues)
 if __name__=='__main__':raise SystemExit(main())

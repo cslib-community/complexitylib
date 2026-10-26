@@ -1,0 +1,16 @@
+{
+  "revision": "c41194730ceb87aeb52641c7a5f90846a140187d",
+  "status": "PASS",
+  "raw_derived_event_pairs_exact": 9822,
+  "raw_derived_trace_record_multiset_exact": 12779,
+  "rule_top_rows": 80,
+  "category_line_occurrences": {
+    "fun_prop_applying_line": 149666,
+    "aesop_rule_key_mention": 44290
+  },
+  "all_bounded_examples_point_to_exact_raw_native_lines": true,
+  "csv_rows_consistent_with_raw_status_units_heads_and_per_mode_acceptance": 9822,
+  "traced_or_failed_mode_primary_costs": 0,
+  "static_selection_joins_and_mapping_correctness": "EXCLUDED",
+  "interpretation": "Retained line occurrences/mentions and owner attempts, not unique engine applications or final-proof dependencies. Native source/head/CSV metadata remains unnormalized; censored exceptions are not successful costs."
+}

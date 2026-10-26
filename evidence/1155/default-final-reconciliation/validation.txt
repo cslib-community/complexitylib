@@ -1,0 +1,25 @@
+{
+  "revision": "c41194730ceb87aeb52641c7a5f90846a140187d",
+  "source_pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "method": "e443c8e5112e2a733e065e006fe0164c17e0293d",
+  "runner": "31123fbdb047f2fdb8ca31ecec5454434d327133",
+  "issues": [],
+  "consistency_status": "PASS",
+  "manifested_files": 7136,
+  "prepared_files": 647,
+  "commands": 2588,
+  "accepted_commands": 2585,
+  "raw_attempt_records": 9822,
+  "raw_status_counts": {
+    "returned": 9126,
+    "exception": 694,
+    "censored_unknown": 2
+  },
+  "synthetic_source_info_attempts": 857,
+  "retained_trace_records": 12779,
+  "pending_censored": 2,
+  "unpositioned_attempts": 0,
+  "local_filemap_attempts": 0,
+  "parsed_attempt_rows": 9822,
+  "excluded": "Own static census/classifications/joins; no final rule-proof attribution; no new Lean execution. Data consistency PASS does not waive corpus failures or claim all survey goals complete."
+}
