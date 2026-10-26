@@ -18,9 +18,13 @@ its values on subsets of at most `q` coordinates. Summing this identity permits 
 to depend on the original assignment. Coefficients may lie in any commutative ring.
 
 The proof uses the existing Boolean low-degree span; it introduces no multilinear polynomial
-representation. It follows Lemma 3.3, equation (3.10), p24 of OpenAI's *The Exponential Time
-Hypothesis is False*, October 25, 2026 revision (`openai/math` at
-`7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a`).
+representation. It follows Lemma 3.3, equation (3.10), p24 of
+[OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH].
+
+## Main results
+
+* `Cslib.BitString.lowDegree_reconstruction`: pointwise reconstruction in the existing span.
+* `Cslib.BitString.sum_eval_eq_restricted_subsets`: the assignment-dependent polynomial sum.
 -/
 
 open scoped BigOperators

@@ -1765,6 +1765,7 @@ public import Complexity.Foundations.BooleanAnalysis.LowDegree
 public import Complexity.Foundations.BooleanAnalysis.LowDegreeParity
 public import Complexity.Foundations.BooleanAnalysis.MaximalSupport
 public import Complexity.Foundations.BooleanAnalysis.MirrorSets
+public import Complexity.Foundations.BooleanAnalysis.Mobius
 public import Complexity.Foundations.BooleanAnalysis.Monotone
 public import Complexity.Foundations.BooleanAnalysis.MultilinearExtension
 public import Complexity.Foundations.BooleanAnalysis.Noise
