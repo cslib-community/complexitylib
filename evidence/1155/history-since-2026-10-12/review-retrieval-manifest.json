@@ -1,0 +1,19 @@
+{
+  "start_inclusive": "2026-10-12T00:00:00Z",
+  "collection_began": "2026-10-26T18:56:24.902297+00:00",
+  "collection_finished": "2026-10-26T18:58:03.139346+00:00",
+  "searched_PR_count": 417,
+  "retrieved_reviews": 278,
+  "repository_wide_inline_comments": 191,
+  "errors": [],
+  "limits": "Review bodies limited to PRs selected by explicit search; inline comments enumerate repository-wide updated-since endpoint. Deleted/inaccessible/pending private reviews are not exposed.",
+  "recovered_errors": [
+    {
+      "number": 240,
+      "initial_error": "temporary no route to host",
+      "retry": "single targeted retry succeeded",
+      "reviews_added": 0
+    }
+  ],
+  "targeted_retry_finished": "2026-10-26T19:00:33.509242+00:00"
+}

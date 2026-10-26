@@ -1,0 +1,22 @@
+{
+  "retrieved_records_before_dedup": 6057,
+  "distinct_URL_body_snapshots": 5923,
+  "distinct_URLs": 5923,
+  "matching_keyword_snapshots": 2388,
+  "lexical_triage_counts": {
+    "other keyword/context candidate": 1161,
+    "retrieved context without target keywords": 3535,
+    "performance/budget-wording candidate": 343,
+    "reported-failure/regression-wording candidate": 696,
+    "cleanup/routine-composition-wording candidate": 476
+  },
+  "curated_case_groups": 29,
+  "case_group_count_is_regression_count": false,
+  "unresolved_examples": [
+    "global automatic binary addition",
+    "original LiuPass full missing-leaf default and256-step rejection",
+    "Type* captured arithmetic universe coverage",
+    "current all-call runtime and rules/reachability collection"
+  ],
+  "no_Lean_or_new_timing": true
+}

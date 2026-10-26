@@ -1,0 +1,392 @@
+[
+  {
+    "case_id": "addtrivial",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902@0e70a40ee3ceed28540de184666637258ddf559d9b87a000c8863fd823111329"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "addtrivial",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400732408",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400732408@b4e062804f2836e03f71a41485cdae86532ef642725526741911df4484f88a39"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "cloud-endpoint",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902@0e70a40ee3ceed28540de184666637258ddf559d9b87a000c8863fd823111329"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "cloud-controls",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902@0e70a40ee3ceed28540de184666637258ddf559d9b87a000c8863fd823111329"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "extraction",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400307034",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400307034@277b81e64c848a54c570961b63090c75745c0e2ddf7fb9fae5f94596aa657cf5"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "extraction",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400425510",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400425510@cb8559ceee5cc9d127f598af86b82a9721430e84893c09a24ad77834ebff5272"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "extraction",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400732408",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400732408@b4e062804f2836e03f71a41485cdae86532ef642725526741911df4484f88a39"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "liupass",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400732408",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400732408@b4e062804f2836e03f71a41485cdae86532ef642725526741911df4484f88a39"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "hardness",
+    "url": "https://github.com/cslib-community/complexitylib/pull/1063#issuecomment-6403509003",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/1063#issuecomment-6403509003@f71db84681949cd6238923616dda2f0e18d4162e37d241c18ff03f9b2c14c0c2"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "hardness",
+    "url": "https://github.com/cslib-community/complexitylib/pull/1063#issuecomment-6404882875",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/1063#issuecomment-6404882875@0e2b07f36562918d1f5872addb91629e262a8c46f02adce524a5aa018b22762d"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "hardness",
+    "url": "https://github.com/cslib-community/complexitylib/issues/733#issuecomment-6403782631",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/733#issuecomment-6403782631@391bb91c7e62f85b75f1886ecda778fc069296fe3abae96abbed469c6f637869"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "bool-conditionals",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6403982121",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6403982121@330e64e8e3d594a8b077e512a5942869ae399e2fa6df56788fb1615c7ef0306a"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "ppt114-preparation",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6392036946",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6392036946@a4d8eab616cd22349baf5cbf7cbd8540c87b2370e5d8647f7491725cffc97e41"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "ppt114-apply",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6392560858",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6392560858@4f814aaf55a37f9c520715b42b45a2eb074543ec1f43a9744087a91e7eb3a403"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "ppt59-shared",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6393958663",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6393958663@41841a42218bba1a11e84611c7dbc2a3121a09964473324faddb200fd3184028"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "basic-facade",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6399594564",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6399594564@c8d6f7274285424b5aa549099b6865352e04abe81ffa38dc7a6b9acd2acf35ca"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "basic-facade",
+    "url": "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6400324902@0e70a40ee3ceed28540de184666637258ddf559d9b87a000c8863fd823111329"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "guide-filter",
+    "url": "https://github.com/cslib-community/complexitylib/issues/1148",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/1148@4548e582da47790edcf6d093f1be3232fc650a0cc15b3fb7d633b0fedf937f70"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "guide-filter",
+    "url": "https://github.com/cslib-community/complexitylib/issues/1148#issuecomment-6411747338",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/1148#issuecomment-6411747338@ca38593c32f504a13146e0e9a5381ebb982d4c62513fa1784f88f4c0bfbd0605"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "program-request",
+    "url": "https://github.com/cslib-community/complexitylib/issues/1155",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/1155@b20ecab6d71cbda28273a47bb69c3e1314e2bd34153b35b1eeac9bb63ddd364c"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "program-request",
+    "url": "https://github.com/cslib-community/complexitylib/issues/1155#issuecomment-6411747610",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/1155#issuecomment-6411747610@35c4258d3962fc60ea6af660cf9b787e29f124a2982d14dcd2f453c322ef0da7"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "binary-add-global-auto",
+    "url": "https://github.com/cslib-community/complexitylib/pull/1137",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/1137@e8fdf7a8c56b38816cec4c1fa05fa2627d18685c0e4ac932eae0b4674405d63c"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "binary-add-global-auto",
+    "url": "https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6406129844",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6406129844@bd2767b5feafc06ddfd43485ebe90d49efb3b6784e2839f9ffe8a2fc13d17438"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "binary-mul-attribute-location",
+    "url": "https://github.com/cslib-community/complexitylib/pull/1184",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/1184@aa9d517e5146afbec2f447efb3e6d4e4e911714a668de21c9b434aefa46590d3"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "binary-mul-attribute-location",
+    "url": "https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6416198065",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6416198065@02cefa00d173fd016f92a83db227c8b1bf8414f6102e3db55b914875d675f5e2"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "private-property-registry",
+    "url": "https://github.com/cslib-community/complexitylib/pull/1205",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/1205@d87b06257d09f69761fbb3e0fb93251145ee03737a5e8e755528a2a40b7fdd1a"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "routine-counting-composition",
+    "url": "https://github.com/cslib-community/complexitylib/issues/71",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/71@197640a9d4e6b928b3f13c2da8c41e5c3ff30f737bba75b4a64b2dcb3155f946"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "routine-counting-composition",
+    "url": "https://github.com/cslib-community/complexitylib/pull/74",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/74@93cf59bf28de92b4006291dac71c1e2567d8f885b159d795a90177ca8adbd0b6"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "local-call-matcher-cost",
+    "url": "https://github.com/cslib-community/complexitylib/issues/267",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/267@dcd323349b881cc0b68ed265c662834da5cf50bde03b2d60044a1e8e81078cc7"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "local-call-matcher-cost",
+    "url": "https://github.com/cslib-community/complexitylib/pull/287",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/287@92ca60458dc69c0a1f917416960cbe5e61689c51075b1fcbf0fd284605aa151d"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "plain-tidy-mixed-failure",
+    "url": "https://github.com/cslib-community/complexitylib/issues/558",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/558@b93bae7912c2c3674e430a49b1aa00428511888daaefc7ff3726b55b6fdde771"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "plain-tidy-mixed-failure",
+    "url": "https://github.com/cslib-community/complexitylib/pull/567",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/567@18635a3d972b18cb694d8cbef9a6b9e8157c59fa084151731f97a67a311608c3"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "zero-knowledge-map-search",
+    "url": "https://github.com/cslib-community/complexitylib/pull/648",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/648@3b9216c414b413b0eaf91fca746c647b241a62860ce7dddd61b653324efb698e"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "graph-complement-membership",
+    "url": "https://github.com/cslib-community/complexitylib/pull/612",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/612@710c2fb29690ba5ba22eb2eb05eafbf34d3922ba617f73b6e8aacb5ecb1e87ca"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "binary-entry-import",
+    "url": "https://github.com/cslib-community/complexitylib/issues/627",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/627@6bb709af9f980d220033521630a50c5fe81698ed80656abc206d2acb2e1c5e8d"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "binary-entry-import",
+    "url": "https://github.com/cslib-community/complexitylib/pull/685",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/685@cfb31f1b18130db1c45f6bcc8865f8c633524e4cfe07de84a0e6cab0dfa0faef"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "plain-driver-selection",
+    "url": "https://github.com/cslib-community/complexitylib/pull/728",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/728@3ce2d0a3ca399f190bb190ec4f7848e6172624d8043a94b90a13b241fa6c6985"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "certificate-predicate-diagnostic",
+    "url": "https://github.com/cslib-community/complexitylib/issues/756",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/756@3c156aee8e61d5c0dbdbcf3d7b902014999a1a0c6fe1dd40c140c7428706f23d"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "certificate-predicate-diagnostic",
+    "url": "https://github.com/cslib-community/complexitylib/pull/766",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/766@3cee59c18a193bc207b1d6a2ba7daab32b4d401db441355b7753db6c3dbd1305"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "plain-pure-provider-context",
+    "url": "https://github.com/cslib-community/complexitylib/pull/813",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/813@f6d3ec70721ae2a439330eec8c0a786532b619e8eeb5f6e0bf96f90c467f4dc0"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "plain-pure-provider-context",
+    "url": "https://github.com/cslib-community/complexitylib/pull/813#issuecomment-6386870517",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/813#issuecomment-6386870517@3fef32306ef1da1f9459dcd75547a6dd3cb54b4a16232b479ebbffd544931244"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "private-registry-recurrence",
+    "url": "https://github.com/cslib-community/complexitylib/pull/1037",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/1037@b4dff7895300c3cf947e51853c5f58702a6cf4f7dca6592e72a5aea4f3b1cdab"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "private-registry-recurrence",
+    "url": "https://github.com/cslib-community/complexitylib/pull/1205",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/1205@d87b06257d09f69761fbb3e0fb93251145ee03737a5e8e755528a2a40b7fdd1a"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "bitonic-budget-override",
+    "url": "https://github.com/cslib-community/complexitylib/issues/337",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/337@dac03668bba2f7b1e1363395e244afa6bf8aa1080211143802f410a9b4765e8f"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "bitonic-budget-override",
+    "url": "https://github.com/cslib-community/complexitylib/pull/349",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/349@9451c801d81a3795dbbdbe5a09e35a72461de4410b5566e72282f90b6da54b9e"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "routines-budget-override",
+    "url": "https://github.com/cslib-community/complexitylib/pull/911",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/911@746ebf4763a99730c3d15807e34b9ab5bc1001ed7c8b630a6840da34e23ab4f0"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "liupass-current-negative",
+    "url": "https://github.com/cslib-community/complexitylib/issues/1155#issuecomment-6424349736",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/issues/1155#issuecomment-6424349736@cb6de9e05f0b20eb08712b8723d7c9a0005e02428923360da5111c99b127068e"
+    ],
+    "status": "body-pinned"
+  },
+  {
+    "case_id": "liupass-current-negative",
+    "url": "https://github.com/cslib-community/complexitylib/issues/1155#issuecomment-6424639637",
+    "retrieved_snapshots": [],
+    "status": "immutable/external/reference-only; not silently treated as fetched"
+  },
+  {
+    "case_id": "liupass-current-negative",
+    "url": "https://github.com/cslib-community/complexitylib/pull/1215",
+    "retrieved_snapshots": [
+      "https://github.com/cslib-community/complexitylib/pull/1215@337364633813a714524112e8254d81d6e231eda625a7d06252648d9767292111"
+    ],
+    "status": "body-pinned"
+  }
+]

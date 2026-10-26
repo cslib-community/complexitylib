@@ -1,0 +1,7 @@
+{
+  "url": "https://github.com/cslib-community/complexitylib/pull/1215#issuecomment-6424639637",
+  "created_at": "2026-10-26T18:53:03Z",
+  "updated_at": "2026-10-26T18:53:03Z",
+  "body": "Focused source/fixture check at `a9e2b3fe62dbe262549c72b526dbdfcb4ff4cf11`: `LEAN_NUM_THREADS=2 lake build --wfail --iofail +ComplexityTests.AutomationLiuPass +ComplexityTests.UnaryArithmeticFrontends` passed. This validates the unchanged bare threshold positive, supplied-leaf positive and explicitly configured per-operation controls; it does not turn the recorded full negative timeout into a passing control. Full validation and hosted CI remain pending.",
+  "body_sha256": "e5c17e0b44ca1d9966c299ae3cbfb53ea66bdae0c044e7795e0c64d2123f151c"
+}

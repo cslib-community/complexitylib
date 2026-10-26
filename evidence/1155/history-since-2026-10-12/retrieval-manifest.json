@@ -1,0 +1,39 @@
+{
+  "source_pin": "5bffdf2f248bbbfddea6039ee25a953616dff15b",
+  "start_inclusive": "2026-10-12T00:00:00Z",
+  "search_date_end_inclusive": "2026-10-26",
+  "collection_began": "2026-10-26T18:53:24.292943+00:00",
+  "collection_finished": "2026-10-26T18:57:45.661115+00:00",
+  "repository": "cslib-community/complexitylib",
+  "terms": [
+    "polytime",
+    "fun_prop",
+    "ppt",
+    "aesop",
+    "heartbeat",
+    "heartbeats",
+    "maxHeartbeats",
+    "maxSteps",
+    "timeout",
+    "encoding",
+    "\"rule order\"",
+    "\"rule-order\"",
+    "\"manual composition\"",
+    "\"explicit composition\"",
+    "\"proof replacement\"",
+    "regression"
+  ],
+  "github_search_surfaces": "issue/PR title,body,comments; updated date; all pages through1000 API ceiling",
+  "issues_or_prs_retrieved": 648,
+  "retrieval_errors": [],
+  "full_body_records": 5454,
+  "keyword_records": 2200,
+  "main_first_parent_commits_in_range": 1344,
+  "main_title_keyword_commits": 62,
+  "limits": [
+    "GitHub search indexing/tokenization/incomplete_results and1000 ceiling are explicit; known historical surfaces included regardless.",
+    "Comment API does not expose review inline comments/review bodies; those need separate PR-review retrieval.",
+    "Main history is pinned5bff; retrieved GitHub text can postdate this source, with individual timestamps.",
+    "No keyword match alone is a verified regression, cause, necessary workaround, or current unresolved defect."
+  ]
+}
