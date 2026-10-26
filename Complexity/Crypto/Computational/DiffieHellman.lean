@@ -11,10 +11,14 @@ public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Crypto.Computational.DiscreteLog
 public import Complexity.Crypto.Game.Statistical
 public import Complexity.Languages.Probabilistic.BitString
+public import Complexity.Languages.Probabilistic.Repeat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.Nat.Bits
+import Complexity.Languages.Probabilistic.Concentration
+import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF
 import Complexity.Tactic.PPT
 import Mathlib.FieldTheory.Finite.Basic
@@ -36,14 +40,18 @@ rerandomisation lemma underlying the random self-reducibility of DDH ([BonehShou
 Section 10.11, Exercises 10.8–10.9, pp. 425–426; `ddhRerandomizeLaw_real` and
 `ddhRerandomizeLaw_ideal`), its word-level and game-level consequences
 (`encodeDDHRerandomize`, `ddhRerandomizeGame`, `ddhRerandomizeGame_real`,
-`ddhRerandomizeGame_ideal`, `advantage_ddhRerandomizeGame_eq`, `DDH.ddhRerandomizeGame`), and an
+`ddhRerandomizeGame_ideal`, `advantage_ddhRerandomizeGame_eq`, `DDH.ddhRerandomizeGame`), an
 original single-invocation worst-case-to-average-case DDH distinguishing reduction using
 `ProbComp.sampleModNat` (`ddhSampleModExponents`, `ddhSelfReduceDistinguisher`,
 `ddhWorstCaseGame`, `advantage_ddhRerandomizeGame_ddhWorstCaseGame_le`,
-`advantage_ddhRealGame_le_ddhWorstCaseGame`, `ddh_of_worstCase`). That reduction makes one call
-to the distinguisher and does not amplify it: the worst-case decider of Exercise 10.10 (p. 426),
-which amplifies an average-case distinguisher with a Chernoff bound, is not formalized. The
-Diffie–Hellman assumptions are hypotheses, not theorems.
+`advantage_ddhRealGame_le_ddhWorstCaseGame`, `ddh_of_worstCase`), and the worst-case DDH decider
+of [BonehShoup2023], Section 10.11, Exercise 10.10 (p. 426; `ddhRealRefTuple`, `ddhIdealRefTuple`,
+`ddhAmplifiedDecider`, `isPPTOn_ddhAmplifiedDecider`, `ddhAmplifiedDecider_error_le_pow`,
+`negligible_ddhAmplifiedDecider_error`), which amplifies an average-case distinguisher with
+inverse-polynomial advantage via repeated random self-reduction trials and a Chernoff/Hoeffding
+tail bound (`ProbComp.countTrue_average_deviation_pow`) so that it correctly decides every input
+tuple `(α • g, β • g, γ • g)` except with negligible error probability. The Diffie–Hellman
+assumptions are hypotheses, not theorems.
 
 ## Main definitions
 
@@ -65,6 +73,10 @@ Diffie–Hellman assumptions are hypotheses, not theorems.
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhSelfReduceDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhWorstCaseGame`: original single-invocation
   worst-case-to-average-case DDH distinguishing reduction.
+* `Cslib.Crypto.PrimeOrderGroupFamily.ddhRealRefTuple`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.ddhIdealRefTuple`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.ddhAmplifiedDecider`: reference DDH / non-DDH tuples and
+  the Chernoff-amplified worst-case DDH decider ([BonehShoup2023], Exercise 10.10, p. 426).
 
 ## Main results
 
@@ -92,12 +104,18 @@ Diffie–Hellman assumptions are hypotheses, not theorems.
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhRealGame_le_ddhWorstCaseGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddh_of_worstCase`: original single-invocation
   worst-case-to-average-case DDH distinguishing reduction.
+* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_ddhAmplifiedDecider`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.ddhAmplifiedDecider_error_le_pow`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.ddhAmplifiedDecider_correct_ge_one_sub_pow`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_ddhAmplifiedDecider_error`: worst-case DDH
+  decision with negligible error from an average-case distinguisher with inverse-polynomial
+  advantage ([BonehShoup2023], Exercise 10.10, p. 426).
 
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
   Version 0.6][BonehShoup2023], Section 10.5 (Attack Games 10.5–10.6, pp. 409–410) and
-  Section 10.11 (Exercises 10.7–10.9, pp. 425–426).
+  Section 10.11 (Exercises 10.7–10.10, pp. 425–426).
 -/
 
 @[expose] public section
@@ -971,5 +989,459 @@ theorem ddh_of_worstCase {setup : ℕ → PMF F.Desc}
       (F.isPPTOn_ddhSelfReduceDistinguisher hD)).add hgeom)
     (hγ'.mono fun n hn =>
       F.advantage_ddhRealGame_le_ddhWorstCaseGame setup α β α' β' γ' distinguisher n hn)
+
+/-! ### Worst-case DDH decider via Chernoff amplification ([BonehShoup2023], Exercise 10.10) -/
+
+/-- Canonical encoded real DDH tuple `(0 • g, 0 • g, (0 * 0) • g)` for group description `d`,
+computed in polynomial time via `F.smul (d, 0, F.encode d (F.generator d))`
+([BonehShoup2023], Section 10.11, Exercise 10.10, p. 426). -/
+def ddhRealRefTuple (d : F.Desc) : List Bool × List Bool × List Bool :=
+  let g := F.encode d (F.generator d)
+  let z := F.smul (d, 0, g)
+  (z, z, z)
+
+/-- Canonical encoded non-DDH tuple `(0 • g, 0 • g, 1 • g)` for group description `d`
+(since `1 ≠ 0 * 0` in `ZMod (F.order d)` for prime `F.order d`;
+[BonehShoup2023], Section 10.11, Exercise 10.10, p. 426). -/
+def ddhIdealRefTuple (d : F.Desc) : List Bool × List Bool × List Bool :=
+  let g := F.encode d (F.generator d)
+  let z := F.smul (d, 0, g)
+  (z, z, g)
+
+/-- `ddhRealRefTuple` equals the encoded tuple `((0 : ZMod q) • g, (0 : ZMod q) • g,
+((0 : ZMod q) * 0) • g)`. -/
+@[simp] theorem ddhRealRefTuple_eq_encode (d : F.Desc) :
+    F.ddhRealRefTuple d =
+      (F.encode d ((0 : ZMod (F.order d)) • F.generator d),
+        F.encode d ((0 : ZMod (F.order d)) • F.generator d),
+        F.encode d (((0 : ZMod (F.order d)) * 0) • F.generator d)) := by
+  simp [ddhRealRefTuple, F.smul_encode]
+
+/-- `ddhIdealRefTuple` equals the encoded tuple `((0 : ZMod q) • g, (0 : ZMod q) • g,
+(1 : ZMod q) • g)`. -/
+@[simp] theorem ddhIdealRefTuple_eq_encode (d : F.Desc) :
+    F.ddhIdealRefTuple d =
+      (F.encode d ((0 : ZMod (F.order d)) • F.generator d),
+        F.encode d ((0 : ZMod (F.order d)) • F.generator d),
+        F.encode d ((1 : ZMod (F.order d)) • F.generator d)) := by
+  simp [ddhIdealRefTuple, F.smul_encode]
+
+/-- `ddhRealRefTuple` is computable in polynomial time. -/
+theorem computableInPolyTime_ddhRealRefTuple :
+    ComputableInPolyTime F.ddhRealRefTuple F.encDesc
+      (encPair encBits (encPair encBits encBits)) := by
+  have hg := F.computableInPolyTime_generator
+  have hzero : ComputableInPolyTime (fun _ : F.Desc => (0 : ℕ)) F.encDesc encNat := by fun_prop
+  have hz := F.computableInPolyTime_smul.comp
+    (ComputableInPolyTime.id'.prod (hzero.prod hg))
+  exact hz.prod (hz.prod hz)
+
+/-- `ddhIdealRefTuple` is computable in polynomial time. -/
+theorem computableInPolyTime_ddhIdealRefTuple :
+    ComputableInPolyTime F.ddhIdealRefTuple F.encDesc
+      (encPair encBits (encPair encBits encBits)) := by
+  have hg := F.computableInPolyTime_generator
+  have hzero : ComputableInPolyTime (fun _ : F.Desc => (0 : ℕ)) F.encDesc encNat := by fun_prop
+  have hz := F.computableInPolyTime_smul.comp
+    (ComputableInPolyTime.id'.prod (hzero.prod hg))
+  exact hz.prod (hz.prod hg)
+
+/-- On a deterministic group setup `fun _ => PMF.pure d`, `ddhWorstCaseGame` evaluates
+`distinguisher` directly on `(d, encode (tuple d))`. -/
+@[simp] theorem ddhWorstCaseGame_pure (d : F.Desc)
+    (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
+    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool) (n : ℕ) :
+    F.ddhWorstCaseGame (fun _ => PMF.pure d) tuple distinguisher n =
+      ProbComp.eval (distinguisher n
+        (d, F.encode d (tuple d).1, F.encode d (tuple d).2.1, F.encode d (tuple d).2.2)) := by
+  simp [ddhWorstCaseGame]
+
+/-- **Single-trial real DDH proximity**: on any fixed group `d` and any real DDH triple
+`(α • g, β • g, (α * β) • g)`, the acceptance probability of `ddhSelfReduceDistinguisher` differs
+from the average-case `ddhRealGame (fun _ => PMF.pure d)` acceptance probability by at most
+`3 / 2 ^ n`. -/
+theorem advantage_ddhRealGame_pure_ddhSelfReduceDistinguisher_le (d : F.Desc)
+    (α β : ZMod (F.order d))
+    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool) (n : ℕ) :
+    Game.advantage (F.ddhRealGame (fun _ => PMF.pure d) distinguisher n)
+      (ProbComp.eval (F.ddhSelfReduceDistinguisher distinguisher n
+        (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+          F.encode d ((α * β) • F.generator d)))) ≤ 3 / 2 ^ n := by
+  have h := F.advantage_ddhRerandomizeGame_ddhWorstCaseGame_le (fun _ => PMF.pure d)
+    (fun d' => ((α.val : ZMod (F.order d')) • F.generator d',
+      (β.val : ZMod (F.order d')) • F.generator d',
+      ((α.val : ZMod (F.order d')) * (β.val : ZMod (F.order d'))) • F.generator d'))
+    distinguisher n
+  simpa only [ddhRerandomizeGame_real, ddhWorstCaseGame_pure, ZMod.natCast_zmod_val] using h
+
+/-- **Single-trial non-DDH proximity**: on any fixed group `d` and any non-DDH triple
+`(α • g, β • g, γ • g)` with `γ ≠ α * β`, the acceptance probability of
+`ddhSelfReduceDistinguisher` differs from the average-case `ddhIdealGame (fun _ => PMF.pure d)`
+acceptance probability by at most `3 / 2 ^ n`. -/
+theorem advantage_ddhIdealGame_pure_ddhSelfReduceDistinguisher_le (d : F.Desc)
+    {α β γ : ZMod (F.order d)} (hγ : γ ≠ α * β)
+    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool) (n : ℕ) :
+    Game.advantage (F.ddhIdealGame (fun _ => PMF.pure d) distinguisher n)
+      (ProbComp.eval (F.ddhSelfReduceDistinguisher distinguisher n
+        (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+          F.encode d (γ • F.generator d)))) ≤ 3 / 2 ^ n := by
+  classical
+  let α' : ∀ d' : F.Desc, ZMod (F.order d') := fun d' =>
+    if h : d' = d then h ▸ α else 0
+  let β' : ∀ d' : F.Desc, ZMod (F.order d') := fun d' =>
+    if h : d' = d then h ▸ β else 0
+  let γ' : ∀ d' : F.Desc, ZMod (F.order d') := fun d' =>
+    if h : d' = d then h ▸ γ else 1
+  have hγ' : ∀ d' ∈ (PMF.pure d).support, γ' d' ≠ α' d' * β' d' := by
+    intro d' hd'
+    have hd_eq : d' = d := by simpa using hd'
+    subst hd_eq
+    simpa [α', β', γ'] using hγ
+  have h := F.advantage_ddhRerandomizeGame_ddhWorstCaseGame_le (fun _ => PMF.pure d)
+    (fun d' => (α' d' • F.generator d', β' d' • F.generator d', γ' d' • F.generator d'))
+    distinguisher n
+  rw [F.ddhRerandomizeGame_ideal (fun _ => PMF.pure d) α' β' γ' distinguisher n hγ'] at h
+  simpa only [ddhWorstCaseGame_pure, α', β', γ', ↓reduceDIte] using h
+
+/-- **Chernoff-amplified worst-case DDH decider** ([BonehShoup2023], Section 10.11, Exercise 10.10,
+p. 426): given an average-case DDH distinguisher `distinguisher` and an inverse-advantage bound
+`invEps : ℕ → ℕ`, perform `N = (n + 3) * (7 * invEps n) ^ 2` independent trials of
+`ddhSelfReduceDistinguisher` on the input tuple `(d, u, v, w)`, on the reference DH tuple
+`ddhRealRefTuple d`, and on the reference non-DH tuple `ddhIdealRefTuple d`, and accept iff the
+empirical count `cIn` is at least as close to `cReal` as to `cIdeal`. -/
+noncomputable def ddhAmplifiedDecider
+    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
+    (invEps : ℕ → ℕ) (n : ℕ)
+    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
+  let d := input.1
+  let N := (n + 3) * (7 * invEps n) ^ 2
+  let cIn ← OracleComp.countTrue N
+    (F.ddhSelfReduceDistinguisher distinguisher n (d, input.2))
+  let cReal ← OracleComp.countTrue N
+    (F.ddhSelfReduceDistinguisher distinguisher n (d, F.ddhRealRefTuple d))
+  let cIdeal ← OracleComp.countTrue N
+    (F.ddhSelfReduceDistinguisher distinguisher n (d, F.ddhIdealRefTuple d))
+  return decide ((cIn - cReal) + (cReal - cIn) ≤ (cIn - cIdeal) + (cIdeal - cIn))
+
+/-- `ddhAmplifiedDecider` is uniform strict PPT whenever `distinguisher` is uniform strict PPT and
+`invEps` is computable in polynomial time in unary ([BonehShoup2023], Exercise 10.10, p. 426). -/
+theorem isPPTOn_ddhAmplifiedDecider
+    {distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool}
+    (hD : IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+      encBool (fun input => distinguisher input.1 input.2))
+    {invEps : ℕ → ℕ} (hinvEps : ComputableInPolyTime invEps encUnary encUnary) :
+    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+      encBool (fun input => F.ddhAmplifiedDecider distinguisher invEps input.1 input.2) := by
+  have hself := F.isPPTOn_ddhSelfReduceDistinguisher hD
+  have hN_unary : ComputableInPolyTime
+      (fun n : ℕ => (n + 3) * (7 * invEps n) ^ 2) encUnary encUnary := by
+    have hinv_t := hinvEps.tidy
+    exact ComputableInPolyTime.of_tidy (by fun_prop)
+  have hN : ComputableInPolyTime
+      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
+        (input.1 + 3) * (7 * invEps input.1) ^ 2)
+      (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+      encUnary :=
+    hN_unary.comp (ComputableInPolyTime.fst _ _)
+  have hd : ComputableInPolyTime
+      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool => input.2.1)
+      (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+      F.encDesc :=
+    (ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)
+  have hcIn : IsPPTOn
+      (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))) encUnary
+      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
+        OracleComp.countTrue ((input.1 + 3) * (7 * invEps input.1) ^ 2)
+          (F.ddhSelfReduceDistinguisher distinguisher input.1 (input.2.1, input.2.2))) :=
+    hself.countTrue hN
+  have hrealTrial : IsPPTOn
+      (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))) encBool
+      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
+        F.ddhSelfReduceDistinguisher distinguisher input.1
+          (input.2.1, F.ddhRealRefTuple input.2.1)) :=
+    hself.preprocess
+      (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
+        (input.1, input.2.1, F.ddhRealRefTuple input.2.1))
+      ((ComputableInPolyTime.fst _ _).prod
+        (hd.prod (F.computableInPolyTime_ddhRealRefTuple.comp hd)))
+  have hcReal : IsPPTOn
+      (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))) encUnary
+      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
+        OracleComp.countTrue ((input.1 + 3) * (7 * invEps input.1) ^ 2)
+          (F.ddhSelfReduceDistinguisher distinguisher input.1
+            (input.2.1, F.ddhRealRefTuple input.2.1))) :=
+    hrealTrial.countTrue hN
+  have hidealTrial : IsPPTOn
+      (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))) encBool
+      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
+        F.ddhSelfReduceDistinguisher distinguisher input.1
+          (input.2.1, F.ddhIdealRefTuple input.2.1)) :=
+    hself.preprocess
+      (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
+        (input.1, input.2.1, F.ddhIdealRefTuple input.2.1))
+      ((ComputableInPolyTime.fst _ _).prod
+        (hd.prod (F.computableInPolyTime_ddhIdealRefTuple.comp hd)))
+  have hcIdeal : IsPPTOn
+      (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))) encUnary
+      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
+        OracleComp.countTrue ((input.1 + 3) * (7 * invEps input.1) ^ 2)
+          (F.ddhSelfReduceDistinguisher distinguisher input.1
+            (input.2.1, F.ddhIdealRefTuple input.2.1))) :=
+    hidealTrial.countTrue hN
+  have hcmp : ComputableInPolyTime
+      (fun q : ℕ × ℕ × ℕ =>
+        decide ((q.1 - q.2.1) + (q.2.1 - q.1) ≤ (q.1 - q.2.2) + (q.2.2 - q.1)))
+      (encPair encUnary (encPair encUnary encUnary)) encBool :=
+    ComputableInPolyTime.of_tidy (by polytime)
+  have hproj : ComputableInPolyTime
+      (fun p : (((ℕ × F.Desc × List Bool × List Bool × List Bool) × ℕ) × ℕ) × ℕ =>
+        (p.1.1.2, p.1.2, p.2))
+      (encPair
+        (encPair
+          (encPair
+            (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+            encUnary)
+          encUnary)
+        encUnary)
+      (encPair encUnary (encPair encUnary encUnary)) :=
+    ((ComputableInPolyTime.snd _ _).comp
+      ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _))).prod
+      (((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.fst _ _)).prod
+        (ComputableInPolyTime.snd _ _))
+  unfold ddhAmplifiedDecider
+  refine hcIn.bind_with ?_
+  refine (hcReal.preprocess (prepare := Prod.fst) (ComputableInPolyTime.fst _ _)).bind_with ?_
+  refine (hcIdeal.preprocess
+    (prepare := fun p : ((ℕ × F.Desc × List Bool × List Bool × List Bool) × ℕ) × ℕ => p.1.1)
+    ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _))).bind_with ?_
+  exact (hcmp.comp hproj).isPPTOn
+
+private theorem cast_sub_add_sub_eq_abs (a b : ℕ) :
+    (((a - b) + (b - a) : ℕ) : ℝ) = |(a : ℝ) - (b : ℝ)| := by
+  rcases le_total a b with h | h
+  · have hR : (a : ℝ) ≤ (b : ℝ) := by exact_mod_cast h
+    rw [Nat.sub_eq_zero_of_le h, zero_add, Nat.cast_sub h, abs_of_nonpos (sub_nonpos.mpr hR),
+      neg_sub]
+  · have hR : (b : ℝ) ≤ (a : ℝ) := by exact_mod_cast h
+    rw [Nat.sub_eq_zero_of_le h, add_zero, Nat.cast_sub h, abs_of_nonneg (sub_nonneg.mpr hR)]
+
+private theorem abs_succProbability_sub_le_of_advantage_le {g₁ g₂ : Game} {ε : ℝ}
+    (h : (Game.advantage g₁ g₂ : ℝ) ≤ ε) :
+    |(g₁ true).toReal - (g₂ true).toReal| ≤ ε := by
+  simpa only [Game.coe_advantage, Game.succProbability, ENNReal.coe_toNNReal_eq_toReal] using h
+
+/-- **Quantitative worst-case DDH decision bound** ([BonehShoup2023], Section 10.11, Exercise 10.10,
+p. 426): if `distinguisher n` has average-case DDH advantage at least `1 / invEps n` on group `d`
+and the modular-sampling bias satisfies `3 / 2 ^ n ≤ 1 / (12 * invEps n)`, then for *every*
+triple `(α • g, β • g, γ • g)` over `d`, `ddhAmplifiedDecider` outputs an answer different from
+`decide (γ = α * β)` with probability at most `(1 / 2) ^ n`. -/
+theorem ddhAmplifiedDecider_error_le_pow
+    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
+    (invEps : ℕ → ℕ) (n : ℕ) (d : F.Desc) (α β γ : ZMod (F.order d))
+    (hpos : 0 < invEps n)
+    (hadv : 1 / (invEps n : ℝ) ≤
+      Game.advantage (F.ddhRealGame (fun _ => PMF.pure d) distinguisher n)
+        (F.ddhIdealGame (fun _ => PMF.pure d) distinguisher n))
+    (hmod : 3 / (2 ^ n : ℝ) ≤ 1 / (12 * (invEps n : ℝ))) :
+    ((ProbComp.eval (F.ddhAmplifiedDecider distinguisher invEps n
+      (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+        F.encode d (γ • F.generator d)))).toOuterMeasure
+      {b | b ≠ decide (γ = α * β)}).toReal ≤ (1 / 2 : ℝ) ^ n := by
+  have : Fact (Nat.Prime (F.order d)) := ⟨F.prime_order d⟩
+  let N := (n + 3) * (7 * invEps n) ^ 2
+  have h7pos : 0 < 7 * invEps n := by positivity
+  have hNpos : (0 : ℝ) < N := by exact_mod_cast (by positivity : 0 < N)
+  let tIn := F.ddhSelfReduceDistinguisher distinguisher n
+    (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+      F.encode d (γ • F.generator d))
+  let tReal := F.ddhSelfReduceDistinguisher distinguisher n (d, F.ddhRealRefTuple d)
+  let tIdeal := F.ddhSelfReduceDistinguisher distinguisher n (d, F.ddhIdealRefTuple d)
+  let pReal := (F.ddhRealGame (fun _ => PMF.pure d) distinguisher n true).toReal
+  let pIdeal := (F.ddhIdealGame (fun _ => PMF.pure d) distinguisher n true).toReal
+  let ε : ℝ := 1 / (invEps n : ℝ)
+  have h12eq : 1 / (12 * (invEps n : ℝ)) = ε / 12 := by dsimp [ε]; ring
+  have h7eq' : 1 / ((7 * invEps n : ℕ) : ℝ) = ε / 7 := by dsimp [ε]; push_cast; ring
+  have hadv' : ε ≤ |pReal - pIdeal| := by
+    simpa only [Game.coe_advantage, Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
+      pReal, pIdeal, ε] using hadv
+  have hmod' : 3 / (2 ^ n : ℝ) ≤ ε / 12 := h12eq ▸ hmod
+  have hRealRef : |(ProbComp.eval tReal true).toReal - pReal| ≤ ε / 12 := by
+    rw [abs_sub_comm]
+    refine (abs_succProbability_sub_le_of_advantage_le ?_).trans hmod'
+    simpa only [tReal, ddhRealRefTuple_eq_encode, NNReal.coe_div, NNReal.coe_ofNat,
+      NNReal.coe_pow] using
+      NNReal.coe_le_coe.mpr
+        (F.advantage_ddhRealGame_pure_ddhSelfReduceDistinguisher_le d 0 0 distinguisher n)
+  have hIdealRef : |(ProbComp.eval tIdeal true).toReal - pIdeal| ≤ ε / 12 := by
+    rw [abs_sub_comm]
+    refine (abs_succProbability_sub_le_of_advantage_le ?_).trans hmod'
+    have h10 : (1 : ZMod (F.order d)) ≠ 0 * 0 := by simp
+    simpa only [tIdeal, ddhIdealRefTuple_eq_encode, NNReal.coe_div, NNReal.coe_ofNat,
+      NNReal.coe_pow] using
+      NNReal.coe_le_coe.mpr
+        (F.advantage_ddhIdealGame_pure_ddhSelfReduceDistinguisher_le d h10 distinguisher n)
+  let good (t : ProbComp Bool) : Set ℕ :=
+    {c | |(c : ℝ) / N - (ProbComp.eval t true).toReal| < 1 / (7 * invEps n : ℕ)}
+  have hconc (t : ProbComp Bool) :
+      (((ProbComp.eval (OracleComp.countTrue N t)).toOuterMeasure (good t)ᶜ).toReal) ≤
+        (1 / 2 : ℝ) ^ (n + 2) := by
+    simpa only [good, N, Set.compl_ofPred, not_lt, show n + 3 = (n + 2) + 1 by omega] using
+      ProbComp.countTrue_average_deviation_pow (n + 2) (7 * invEps n) h7pos t
+  have hdet {cIn cReal cIdeal : ℕ} (hcIn : cIn ∈ good tIn) (hcReal : cReal ∈ good tReal)
+      (hcIdeal : cIdeal ∈ good tIdeal) :
+      decide ((cIn - cReal) + (cReal - cIn) ≤ (cIn - cIdeal) + (cIdeal - cIn)) =
+        decide (γ = α * β) := by
+    have hcIn' : |(cIn : ℝ) / N - (ProbComp.eval tIn true).toReal| < ε / 7 := by
+      simpa only [good, Set.mem_ofPred_eq, h7eq'] using hcIn
+    have hcReal' : |(cReal : ℝ) / N - (ProbComp.eval tReal true).toReal| < ε / 7 := by
+      simpa only [good, Set.mem_ofPred_eq, h7eq'] using hcReal
+    have hcIdeal' : |(cIdeal : ℝ) / N - (ProbComp.eval tIdeal true).toReal| < ε / 7 := by
+      simpa only [good, Set.mem_ofPred_eq, h7eq'] using hcIdeal
+    have hcmp_iff :
+        ((cIn - cReal) + (cReal - cIn) ≤ (cIn - cIdeal) + (cIdeal - cIn)) ↔
+          |(cIn : ℝ) / N - (cReal : ℝ) / N| ≤ |(cIn : ℝ) / N - (cIdeal : ℝ) / N| := by
+      rw [← @Nat.cast_le ℝ, cast_sub_add_sub_eq_abs, cast_sub_add_sub_eq_abs,
+        ← div_le_div_iff_of_pos_right hNpos, ← abs_of_pos hNpos, ← abs_div, ← abs_div,
+        abs_of_pos hNpos, sub_div, sub_div]
+    by_cases hγ : γ = α * β
+    · have hInRef : |(ProbComp.eval tIn true).toReal - pReal| ≤ ε / 12 := by
+        subst hγ
+        rw [abs_sub_comm]
+        refine (abs_succProbability_sub_le_of_advantage_le ?_).trans hmod'
+        simpa only [tIn, NNReal.coe_div, NNReal.coe_ofNat, NNReal.coe_pow] using
+          NNReal.coe_le_coe.mpr
+            (F.advantage_ddhRealGame_pure_ddhSelfReduceDistinguisher_le d α β distinguisher n)
+      rw [abs_le] at hRealRef hIdealRef hInRef
+      rw [abs_lt] at hcIn' hcReal' hcIdeal'
+      have hdReal : |(cIn : ℝ) / N - (cReal : ℝ) / N| ≤ ε / 2 :=
+        abs_le.mpr ⟨by linarith, by linarith⟩
+      have hdIdeal : ε / 2 ≤ |(cIn : ℝ) / N - (cIdeal : ℝ) / N| := by
+        rcases le_abs.mp hadv' with hgap | hgap
+        · exact (by linarith : ε / 2 ≤ (cIn : ℝ) / N - (cIdeal : ℝ) / N).trans (le_abs_self _)
+        · exact (by linarith : ε / 2 ≤ -((cIn : ℝ) / N - (cIdeal : ℝ) / N)).trans (neg_le_abs _)
+      simp [hγ, hcmp_iff.mpr (hdReal.trans hdIdeal)]
+    · have hInRef : |(ProbComp.eval tIn true).toReal - pIdeal| ≤ ε / 12 := by
+        rw [abs_sub_comm]
+        refine (abs_succProbability_sub_le_of_advantage_le ?_).trans hmod'
+        simpa only [tIn, NNReal.coe_div, NNReal.coe_ofNat, NNReal.coe_pow] using
+          NNReal.coe_le_coe.mpr
+            (F.advantage_ddhIdealGame_pure_ddhSelfReduceDistinguisher_le d hγ distinguisher n)
+      rw [abs_le] at hRealRef hIdealRef hInRef
+      rw [abs_lt] at hcIn' hcReal' hcIdeal'
+      have hdIdeal : |(cIn : ℝ) / N - (cIdeal : ℝ) / N| < ε / 2 :=
+        abs_lt.mpr ⟨by linarith, by linarith⟩
+      have hdReal : ε / 2 < |(cIn : ℝ) / N - (cReal : ℝ) / N| := by
+        rcases le_abs.mp hadv' with hgap | hgap
+        · exact (by linarith : ε / 2 < -((cIn : ℝ) / N - (cReal : ℝ) / N)).trans_le (neg_le_abs _)
+        · exact (by linarith : ε / 2 < (cIn : ℝ) / N - (cReal : ℝ) / N).trans_le (le_abs_self _)
+      simp [hγ, hcmp_iff.not.mpr (not_le.mpr (hdIdeal.trans hdReal))]
+  simp only [ddhAmplifiedDecider, ProbComp.eval_bind, ProbComp.eval_pure]
+  have hstep1 := PMF.toOuterMeasure_bind_failure_toReal_le
+    (ProbComp.eval (OracleComp.countTrue N tIn))
+    (fun cIn => (ProbComp.eval (OracleComp.countTrue N tReal)).bind fun cReal =>
+      (ProbComp.eval (OracleComp.countTrue N tIdeal)).bind fun cIdeal =>
+        PMF.pure (decide ((cIn - cReal) + (cReal - cIn) ≤ (cIn - cIdeal) + (cIdeal - cIn))))
+    (good tIn) {b | b ≠ decide (γ = α * β)}
+    (error := (1 / 2 : ℝ) ^ (n + 2) + (1 / 2 : ℝ) ^ (n + 2)) (by positivity)
+    fun cIn _ hcIn => by
+      refine (PMF.toOuterMeasure_bind_failure_toReal_le
+        (ProbComp.eval (OracleComp.countTrue N tReal))
+        (fun cReal => (ProbComp.eval (OracleComp.countTrue N tIdeal)).bind fun cIdeal =>
+          PMF.pure (decide ((cIn - cReal) + (cReal - cIn) ≤ (cIn - cIdeal) + (cIdeal - cIn))))
+        (good tReal) {b | b ≠ decide (γ = α * β)}
+        (error := (1 / 2 : ℝ) ^ (n + 2)) (by positivity)
+        fun cReal _ hcReal => ?_).trans (by linarith [hconc tReal])
+      refine (PMF.toOuterMeasure_bind_failure_toReal_le
+        (ProbComp.eval (OracleComp.countTrue N tIdeal))
+        (fun cIdeal =>
+          PMF.pure (decide ((cIn - cReal) + (cReal - cIn) ≤ (cIn - cIdeal) + (cIdeal - cIn))))
+        (good tIdeal) {b | b ≠ decide (γ = α * β)}
+        (error := 0) le_rfl
+        fun cIdeal _ hcIdeal => ?_).trans (by linarith [hconc tIdeal])
+      rw [hdet hcIn hcReal hcIdeal, PMF.toOuterMeasure_pure_apply]
+      simp
+  have hInConc := hconc tIn
+  have hpow0 := pow_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 2) n
+  rw [pow_add, pow_two] at hstep1 hInConc
+  linarith
+
+/-- **Directional correctness of `ddhAmplifiedDecider`** ([BonehShoup2023], Section 10.11,
+Exercise 10.10, p. 426): under the hypotheses of `ddhAmplifiedDecider_error_le_pow`, on every
+triple `(α • g, β • g, γ • g)` over `d`, `ddhAmplifiedDecider` outputs the correct decision
+`decide (γ = α * β)` with probability at least `1 - (1 / 2) ^ n`. -/
+theorem ddhAmplifiedDecider_correct_ge_one_sub_pow
+    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
+    (invEps : ℕ → ℕ) (n : ℕ) (d : F.Desc) (α β γ : ZMod (F.order d))
+    (hpos : 0 < invEps n)
+    (hadv : 1 / (invEps n : ℝ) ≤
+      Game.advantage (F.ddhRealGame (fun _ => PMF.pure d) distinguisher n)
+        (F.ddhIdealGame (fun _ => PMF.pure d) distinguisher n))
+    (hmod : 3 / (2 ^ n : ℝ) ≤ 1 / (12 * (invEps n : ℝ))) :
+    1 - (1 / 2 : ℝ) ^ n ≤
+      (ProbComp.eval (F.ddhAmplifiedDecider distinguisher invEps n
+        (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+          F.encode d (γ • F.generator d))) (decide (γ = α * β))).toReal := by
+  let p := ProbComp.eval (F.ddhAmplifiedDecider distinguisher invEps n
+    (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+      F.encode d (γ • F.generator d)))
+  have herr := F.ddhAmplifiedDecider_error_le_pow distinguisher invEps n d α β γ hpos hadv hmod
+  have hsum := PMF.sum_toReal p
+  rw [Fintype.sum_bool] at hsum
+  have hne : (p.toOuterMeasure {b | b ≠ decide (γ = α * β)}).toReal =
+      1 - (p (decide (γ = α * β))).toReal := by
+    rw [PMF.toOuterMeasure_apply_toReal, Fintype.sum_bool]
+    cases hdec : decide (γ = α * β) <;> simp <;> linarith
+  linarith [herr, hne]
+
+/-- **Boneh–Shoup Exercise 10.10 (Worst-case DDH decider with negligible error, p. 426)**:
+if `invEps` is computable in polynomial time in unary and `distinguisher` has average-case DDH
+advantage at least `1 / invEps n` on `d n` eventually, then for *every* worst-case sequence of
+input tuples `(d n, α n, β n, γ n)`, `ddhAmplifiedDecider` decides whether `γ n = α n * β n` with
+negligible error probability. -/
+theorem negligible_ddhAmplifiedDecider_error
+    {distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool}
+    {invEps : ℕ → ℕ} (hinvEps : ComputableInPolyTime invEps encUnary encUnary)
+    (d : ℕ → F.Desc) (α β γ : ∀ n, ZMod (F.order (d n)))
+    (hpos : ∀ᶠ n in Filter.atTop, 0 < invEps n)
+    (hadv : ∀ᶠ n in Filter.atTop, 1 / (invEps n : ℝ) ≤
+      Game.advantage (F.ddhRealGame (fun _ => PMF.pure (d n)) distinguisher n)
+        (F.ddhIdealGame (fun _ => PMF.pure (d n)) distinguisher n)) :
+    Negligible fun n =>
+      ((ProbComp.eval (F.ddhAmplifiedDecider distinguisher invEps n
+        (d n, F.encode (d n) (α n • F.generator (d n)),
+          F.encode (d n) (β n • F.generator (d n)),
+          F.encode (d n) (γ n • F.generator (d n))))).toOuterMeasure
+        {b | b ≠ decide (γ n = α n * β n)}).toNNReal := by
+  have hgeom : Negligible fun n => ((2⁻¹ : ℝ≥0) ^ n) :=
+    negligible_geometric (ratio := 2⁻¹) (by norm_num)
+  have hpoly : PolynomiallyBounded fun n => 36 * invEps n + 1 := by
+    obtain ⟨c, k, hck⟩ := hinvEps.tidy.polyBounded_length.exists_le
+    refine PolynomiallyBounded.of_forall_le (36 * c + 1) k fun n => ?_
+    have hn := hck n
+    simp only [encUnary_apply, List.length_replicate] at hn
+    have hpow : 1 ≤ (n + 1) ^ k := Nat.one_le_pow k (n + 1) (Nat.succ_pos n)
+    nlinarith
+  have hmod_ev : ∀ᶠ n in Filter.atTop, 3 / (2 ^ n : ℝ) ≤ 1 / (12 * (invEps n : ℝ)) := by
+    filter_upwards [hpos, hgeom.eventually_le_inv_polynomial hpoly (fun _ => Nat.succ_pos _)]
+      with n hn hlt
+    have hinv_pos : (0 : ℝ) < invEps n := by exact_mod_cast hn
+    have hlt' : (1 : ℝ) / 2 ^ n ≤ 1 / (36 * (invEps n : ℝ) + 1) := by
+      simpa only [NNReal.coe_pow, NNReal.coe_inv, NNReal.coe_ofNat, inv_pow, one_div,
+        Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat, Nat.cast_one] using hlt
+    have hle1 : (1 : ℝ) / (36 * (invEps n : ℝ) + 1) ≤ 1 / (36 * (invEps n : ℝ)) :=
+      one_div_le_one_div_of_le (by positivity) (by linarith)
+    have hle2 := hlt'.trans hle1
+    have h36 : (1 : ℝ) / (36 * (invEps n : ℝ)) = (1 / 3) * (1 / (12 * (invEps n : ℝ))) := by ring
+    have h3pow : (3 : ℝ) / 2 ^ n = 3 * ((1 : ℝ) / 2 ^ n) := by ring
+    rw [h36] at hle2
+    rw [h3pow]
+    linarith
+  refine negligible_of_eventually_le hgeom ?_
+  filter_upwards [hpos, hadv, hmod_ev] with n hn hadv_n hmod_n
+  have herr := F.ddhAmplifiedDecider_error_le_pow distinguisher invEps n (d n)
+    (α n) (β n) (γ n) hn hadv_n hmod_n
+  rw [← NNReal.coe_le_coe]
+  simpa only [ENNReal.coe_toNNReal_eq_toReal, NNReal.coe_pow, NNReal.coe_inv, NNReal.coe_ofNat,
+    one_div] using herr
 
 end Cslib.Crypto.PrimeOrderGroupFamily
