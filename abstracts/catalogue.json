@@ -244,7 +244,7 @@
         "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP",
         "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP_encBinary"
       ],
-      "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions requires at least quasi-polynomial time in the truth-table size. Note (October 2026): OpenAI's manuscript \"The Exponential Time Hypothesis is False\" claims, with a Lean formalization, a deterministic subexponential-time algorithm for k-SAT. If it holds, ETH is false and this conditional theorem, while still valid, is vacuous; a native port into complexitylib is in progress.",
+      "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions requires at least quasi-polynomial time in the truth-table size. Note (October 2026): OpenAI's manuscript “The Exponential Time Hypothesis is False” claims, with a Lean formalization, a deterministic subexponential-time algorithm for k-SAT. If it holds, ETH is false and this conditional theorem, while still valid, is vacuous; a native port into complexitylib is in progress.",
       "scope": "Explicit 3SAT and PartialMCSP encodings (both unary and binary size thresholds), De Morgan all-gates and binary-gate cost measures, and deterministic multi-tape subexponential-time lower bounds 2^o(m log m) = N^o(log log N).",
       "foundations": [
         "ComplexityAbstracts.Encoding",
