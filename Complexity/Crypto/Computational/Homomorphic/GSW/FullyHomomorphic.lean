@@ -97,7 +97,8 @@ theorem isPPT_leveledAdversary {budget : ℕ → ℕ}
     hdepth computableInPolyTime_secretWidth
 
 /-- Exact concrete-security reduction loss of the leveled GSW scheme to the base GSW scheme
-([Gentry2009], Section 2, Theorem 4, p. 171). -/
+([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in the loss;
+the running-time clause is not formalized). -/
 theorem advantage_leveled_eq (budget : ℕ → ℕ) (adversary : Encryption.Adversary)
     (security : ℕ) :
     Game.advantage
@@ -153,7 +154,8 @@ theorem advantage_scheme_le (adversary : Encryption.Adversary) (security : ℕ) 
   exact hfg.trans_le h
 
 /-- Concrete-security bound for the leveled GSW scheme in terms of the decision-LWE distinguisher
-advantage and `hidingError` ([Gentry2009], Section 2, Theorem 4, p. 171). -/
+advantage and `hidingError` ([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in the loss;
+the running-time clause is not formalized). -/
 theorem advantage_leveled_le (budget : ℕ → ℕ) (adversary : Encryption.Adversary)
     (security : ℕ) :
     Game.advantage

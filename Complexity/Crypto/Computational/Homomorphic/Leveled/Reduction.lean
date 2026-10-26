@@ -83,7 +83,8 @@ def rejectLeveledChoice : (Bool × Bool) × List Bool :=
   ((false, false), [true, true])
 
 /-- Unified two-stage base IND-CPA reduction for the acyclic leveled construction
-([Gentry2009], Section 2, Theorem 4, p. 171). Two fair selector bits choose between:
+([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in the loss;
+the running-time clause is not formalized). Two fair selector bits choose between:
 * `(false, false)`: the `false`-world encrypted-link reduction `E.linkAdversary`,
 * `(false, true)`: the message-swapped `true`-world encrypted-link reduction `E.linkAdversary`,
 * `(true, false)`: the zero-link reduction `zeroLinkAdversary`, weighted by the inverse dyadic

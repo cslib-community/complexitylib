@@ -57,7 +57,8 @@ open scoped NNReal
 
 /-- Exact chosen-message advantage of the depth-budgeted scheme `scheme D budget` in terms of
 the unified two-stage base reduction `leveledAdversary` ([Gentry2009], Section 2, Theorem 4,
-p. 171). -/
+p. 171, up to a constant factor in the loss;
+the running-time clause is not formalized). -/
 theorem advantage_scheme_eq_leveledAdversary {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -79,7 +80,8 @@ theorem advantage_scheme_eq_leveledAdversary {E : Scheme}
 
 /-- Polynomial concrete-security bound for the depth-budgeted scheme `scheme D budget` with
 explicit factor `16 * (2 * budget n + 1) * (capacity n + 1)` ([Gentry2009], Section 2,
-Theorem 4, p. 171). -/
+Theorem 4, p. 171, up to a constant factor in the loss;
+the running-time clause is not formalized). -/
 theorem advantage_scheme_le_mul_leveledAdversary {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
