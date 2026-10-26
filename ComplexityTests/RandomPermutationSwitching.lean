@@ -10,7 +10,7 @@ import Complexity.Languages.Probabilistic.RandomPermutation
 
 /-! Direct clients of the shared reverse switching and cache-support inequalities. -/
 
-open Cslib Cslib.RandomPermutation
+open Cslib Cslib.Probability Cslib.RandomPermutation
 open scoped ENNReal
 
 example {α β γ : Type} [DecidableEq α] [Fintype α] [Nonempty α]
