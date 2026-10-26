@@ -7,6 +7,8 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathData
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathAssignments
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalLayout
 public import Complexity.Foundations.Geometry.Orthogonal.Subdivision
@@ -44,56 +46,8 @@ namespace Cslib.Complexity.SAT.PlanarCompile
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
 
-/-- A cell's ordinary signal, or a local variable of its crossover. -/
-abbrev Variable := Point × Option Crossover.SplitVariable
-
 /-- A clause, its position, and one route per literal in literal order. -/
 abbrev PlacedClause := Clause Variable × Point × List Route
-
-/-- The explicit linear per-route expansion budget. -/
-def budget (φ : CNF ℕ) : ℕ :=
-  80 * (SAT.incidenceGraph φ).1.length + 10 * (SAT.incidenceGraph φ).2.length
-
-/-- Unit paths in the order of the original literal occurrences. -/
-def paths (φ : CNF ℕ) : List Route :=
-  let G := SAT.incidenceGraph φ
-  (G.orthogonalRoutes G.canonicalPorts).map (subdivideWithin (budget φ))
-
-/-- The path of a particular original literal occurrence. -/
-def occurrencePath (φ : CNF ℕ) (o : Occurrence ℕ) : Route :=
-  (paths φ).getD ((Cslib.Logic.PL.occurrences φ).idxOf o) []
-
-/-- Actual occupied crossing candidates, excluding every declared graph vertex center.
-First-occurrence selection ensures exactly one local gadget per selected square. -/
-def crossingSites (φ : CNF ℕ) : List Point :=
-  let G := SAT.incidenceGraph φ
-  let occupied := (G.crossingCandidates G.canonicalPorts).filter fun p =>
-    !(G.orthogonalPositions.contains p) &&
-      decide (2 ≤ ((paths φ).filter fun r => r.contains p).length)
-  Cslib.Complexity.selectDistinct occupied (List.replicate occupied.length true)
-
-/-- The selected cells are exactly occupied nonvertex candidates. -/
-theorem mem_crossingSites (φ : CNF ℕ) (p : Point) :
-    p ∈ crossingSites φ ↔
-      p ∈ (SAT.incidenceGraph φ).crossingCandidates (SAT.incidenceGraph φ).canonicalPorts ∧
-        p ∉ (SAT.incidenceGraph φ).orthogonalPositions ∧
-          2 ≤ ((paths φ).filter fun r => r.contains p).length := by
-  simp [crossingSites, mem_selectDistinct_replicate, Bool.and_eq_true]
-
-/-- Every selected square receives exactly one template. -/
-theorem crossingSites_nodup (φ : CNF ℕ) : (crossingSites φ).Nodup := nodup_selectDistinct _ _
-
-/-- Side facing a neighboring square, in left/right/bottom/top order.
-Only unit neighbors are used by the correctness theorem. -/
-def side (p q : Point) : Fin 4 :=
-  if q.1 < p.1 then 0 else if p.1 < q.1 then 1 else if q.2 < p.2 then 2 else 3
-
-/-- The center of a square of side 240 indexed by an integer grid point. -/
-def center (p : Point) : Point := cellOrigin 120 p + (120, 120)
-
-/-- The signal presented by a cell toward a neighboring cell. -/
-def signal (sites : List Point) (p q : Point) : Variable :=
-  (p, if p ∈ sites then some (Crossover.splitTerminal (side p q)) else none)
 
 /-- Geometric position of a structured output variable. -/
 def variablePosition (v : Variable) : Point :=
@@ -103,12 +57,6 @@ def variablePosition (v : Variable) : Point :=
 def access (sites : List Point) (p q : Point) : Route :=
   if p ∈ sites then translate (cellOrigin 120 p) (Crossover.accessRoute (side p q))
   else [cellPort 120 p (side p q), center p]
-
-/-- Every cell before the original clause vertex contributes an entry/exit signal pair.
-At the source endpoint the unused entry defaults to the source's own ordinary signal. -/
-def wire (sites : List Point) (r : Route) : List (Variable × Variable) :=
-  r.dropLast.zipIdx.map fun (p, i) =>
-    (signal sites p (r.getD (i - 1) p), signal sites p (r.getD (i + 1) p))
 
 /-- One implication at the common side midpoint of adjacent occupied cells.
 Positive literals propagate toward the source, negative literals toward the clause. -/

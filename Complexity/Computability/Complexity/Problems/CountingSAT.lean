@@ -260,14 +260,14 @@ def padMajority (φ : CNF ℕ) (Q : ℕ) : CNF ℕ :=
     dummyClauses Q ++
     [(0, false) :: (shiftOdd φ).vars.map (·, true)]
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_shiftOdd :
     ComputableTidilyInPolyTime shiftOdd encCNF encCNF := by
   unfold shiftOdd encCNF
   exact (CNF.computableInPolyTime_relabel (f := fun v : ℕ => v + v + 1)
     (.of_tidy (by fun_prop))).tidy
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_dummyClauses :
     ComputableTidilyInPolyTime dummyClauses encUnary encCNF := by
   have hj : ComputableTidilyInPolyTime (fun j : ℕ => j + j + 2) encUnary encNat :=

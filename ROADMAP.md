@@ -21,11 +21,14 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Metacomplexity: time-bounded Kolmogorov complexity, partial MCSP, hardness magnification | [#798], audit [#884] |
 | Plain computability: delete the tidy calculus, keeping a machine-level kernel | [#862], from [#456] |
 | Consolidation: duplicates, accurate statements and docs, less churn | [#949], [#939] |
-| A concrete LWE-based fully homomorphic scheme | [#486]; follow-ups [#1104] |
+| Fully homomorphic encryption: follow-ups to the instantiated bootstrapping theorem, then modern schemes | [#1104] |
 | Boneh–Shoup cryptography tracks; zero-knowledge architecture | [#640], [#643] |
 | Crypto frontier tracks: Kilian's succinct arguments, chosen-ciphertext security, signatures from one-way functions | [#999], [#1000], [#1001] |
 | OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002] |
 | A Verso guide with a chapter per area | [#585] |
+| Planar SAT and geometric hardness: orthogonal planar 3SAT-3 with explicit grid bounds, parsimonious compilers | [#1079] |
+| Randomized Word RAM: a `rand` instruction, expected running time, randomized algorithms | [#1124] |
+| Proof automation: predictable polynomial-time certificate search | [#1155] |
 
 ### Landmark theorems, in priority order
 
@@ -33,14 +36,14 @@ Priorities live in this list and in the tiers of [#897].
 
 1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks)
 2. [Rompel's signature theorem](#cryptographic-landmarks) ([#1001])
-3. [Gentry's bootstrapping, instantiated](#cryptographic-landmarks) ([#486]; follow-ups [#1104])
-4. [Completeness of oblivious transfer](#cryptographic-landmarks)
-5. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
-6. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-7. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
-8. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
-9. [MIP = NEXP](#interactive-proofs) ([#892])
-10. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
+3. [Completeness of oblivious transfer](#cryptographic-landmarks)
+4. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
+5. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
+6. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
+7. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
+8. [MIP = NEXP](#interactive-proofs) ([#892])
+9. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
+10. [The Immerman–Vardi theorem](#descriptive-complexity-and-first-order-reductions)
 
 ## Cryptography
 
@@ -60,13 +63,6 @@ Priorities live in this list and in the tiers of [#897].
   polynomial-length messages. Authentication trees from one-time signatures and
   collision-resistant hashing are an intermediate development step; for the theorem itself,
   universal one-way hash functions replace the collision-resistance assumption.
-- **Gentry's bootstrapping, instantiated** ([#486]). GSW at its logarithmic-depth parameter
-  family instantiates the generic theorem: leveled FHE under decision LWE with quasi-polynomial
-  modulus for exactly that family, and FHE under the additional one-key circular-security
-  assumption. The checked formal abstract `gsw-fhe` states both endpoints with GSW's algorithms
-  written out. Open in [#1104]: a uniform generator for the leveled scheme's wrapper decryption
-  circuits (uniform compactness), reuse of evaluated ciphertexts as fresh inputs (multi-hop
-  evaluation), and Gentry's exact concrete-security loss.
 - **Completeness of oblivious transfer.** In the ideal OT-hybrid model, every polynomial-time
   multiparty functionality admits a protocol secure against static malicious corruptions, with
   real/ideal simulation and abort, under the standard communication assumptions.
@@ -81,9 +77,13 @@ Priorities live in this list and in the tiers of [#897].
 
 ### Modern fully homomorphic encryption
 
-After [#486], develop these in reviewable milestones, reusing the finite sampling, gadget
-algebra, native certificates and game reductions where their hypotheses match. The
-[pre-rewrite FHE section][archive-fhe] maps the schemes to current libraries and workloads.
+Gentry's bootstrapping is instantiated with GSW ([#486]; formal abstract `gsw-fhe`). Its
+follow-ups ([#1104]) are a uniform generator for the leveled scheme's wrapper decryption circuits
+(uniform compactness), multi-hop evaluation, and Gentry's exact concrete-security loss together
+with the `poly(ℓ, d)` running-time clause of his Theorem 4. Then develop these in reviewable
+milestones, reusing the finite sampling, gadget algebra, native certificates and game reductions
+where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
+current libraries and workloads.
 
 1. **Ring arithmetic and RLWE.** Polynomial-ring operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
    conversions, rounding and modulus-switching error bounds, and negacyclic NTTs implementing
@@ -233,8 +233,13 @@ universe size, not supplied as unverified input tables. In dependency order:
 - The ordered ESO-to-NP direction of Fagin's theorem.
 - Order-free: SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded
   problems.
-- Logical characterizations of further resource classes, fixed-point and order-invariant
-  queries, and uniform translations between syntax, structures and algorithms.
+- **The Immerman–Vardi theorem:** on ordered finite structures, first-order logic with least
+  fixed points defines exactly the polynomial-time properties, with the machine side proved for
+  actual native algorithms in both directions.
+- Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
+  SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
+  then order-invariant and fixed-point queries and uniform translations between syntax,
+  structures and algorithms.
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
 
@@ -298,8 +303,10 @@ certified DPLL solver runtimes.
   Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the
   permanent has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the
   permanent over fields of characteristic other than two; formula and branching-program models,
-  identity testing, hitting sets, and tensor and rank methods, with uniform construction costs
-  certified separately from gate counts.
+  identity testing, hitting sets, and tensor and rank methods, including partial-derivative
+  measures (Nisan–Wigderson depth-3 bounds and shifted partials) and the depth-reduction chasms
+  at depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
+  construction costs certified separately from gate counts.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
@@ -367,7 +374,9 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
   abstract bridges to the shared predicate.
-- **Certificate APIs and automation.** Infer encodings for ordinary functional expressions
+- **Certificate APIs and automation** ([#1155]): predictable search, with fixed heartbeat budgets
+  on regression goals, failures that name the subterm lacking a certificate, and cheap
+  syntax-directed composition for glue code. Infer encodings for ordinary functional expressions
   through constructor, projection, lookup and composition rules; generalize list, bounded-table,
   cache and nested-loop invariants where clients need them; keep separate time, workspace and
   output-size bounds through composition; apply cumulative streaming contracts to captured
@@ -382,8 +391,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time reasoning,
-  random-tape equivalence, and BPP/RP/ZPP simulation bridges for the randomized word RAM; transfer
-  of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
+  random-tape equivalence, and BPP/RP/ZPP simulation bridges for the randomized word RAM
+  ([#1124]), with randomized quicksort and selection as first clients; transfer of cell-probe
+  lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -489,5 +499,8 @@ not planned, not as proved.
 [#1001]: https://github.com/cslib-community/complexitylib/issues/1001
 [#1002]: https://github.com/cslib-community/complexitylib/issues/1002
 [#1047]: https://github.com/cslib-community/complexitylib/issues/1047
+[#1079]: https://github.com/cslib-community/complexitylib/issues/1079
 [#1093]: https://github.com/cslib-community/complexitylib/issues/1093
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
+[#1124]: https://github.com/cslib-community/complexitylib/issues/1124
+[#1155]: https://github.com/cslib-community/complexitylib/issues/1155

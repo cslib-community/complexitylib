@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathGeometry
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Geometry
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths.Occupancy
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence.Degree

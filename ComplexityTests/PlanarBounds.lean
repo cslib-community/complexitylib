@@ -4,11 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Computability.Complexity.Problems.SAT.Planar.Bounds
+import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedBounds
 
 namespace ComplexityTests.PlanarBounds
 
-open Cslib.Complexity Cslib.Complexity.SAT.PlanarCompile
+open Cslib.Complexity Cslib.Complexity.SAT.ParsimoniousPlanar
 
 -- The same linear grid bounds apply to an ordinary name and a succinct large binary name.
 example : gridWidth [[(7, true)]] = 4080 := by decide +kernel
@@ -24,13 +24,13 @@ example : Graph.drawingFits (positions [[(7, true)]], routes [[(7, true)]]) 4080
 example : positions [[]] = [(1080, 1080)] := by decide +kernel
 example : Graph.drawingFits (positions [[]], routes [[]]) 2160 2160 := drawing_fits [[]]
 
--- Exact costs for the actual nonempty unit-clause output, including its final two-segment route.
-example : (routes [[(7, true)]]).length = 63 := by decide +kernel
-example : Graph.drawingSegmentCount (positions [[(7, true)]], routes [[(7, true)]]) = 64 :=
+-- Exact costs for the actual nonempty unit-clause output, including its final three-segment route.
+example : (routes [[(7, true)]]).length = 637 := by decide +kernel
+example : Graph.drawingSegmentCount (positions [[(7, true)]], routes [[(7, true)]]) = 639 :=
   by decide +kernel
-example : Graph.drawingWireLength (positions [[(7, true)]], routes [[(7, true)]]) = 7680 :=
+example : Graph.drawingWireLength (positions [[(7, true)]], routes [[(7, true)]]) = 28230 :=
   by decide +kernel
-example : Graph.drawingWireLength (positions [[(7, false)]], routes [[(7, false)]]) = 7680 :=
+example : Graph.drawingWireLength (positions [[(7, false)]], routes [[(7, false)]]) = 28230 :=
   by decide +kernel
 
 end ComplexityTests.PlanarBounds
