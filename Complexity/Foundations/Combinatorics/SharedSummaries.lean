@@ -16,7 +16,7 @@ import Mathlib.Tactic.Abel
 /-!
 # Finite factorization through shared summaries
 
-This is the finite-sum identity underlying Lemma 3.2 (pp. 22–23) of OpenAI,
+This is the finite-sum identity underlying Lemma 3.2 (pp. 22–23) of [OpenAI2026ETH],
 *The Exponential Time Hypothesis is False*, manuscript revised October 25, 2026,
 source `openai/math@7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a`.
 
