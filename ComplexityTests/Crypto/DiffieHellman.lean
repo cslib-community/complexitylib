@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 import Complexity.Crypto.Computational.DiffieHellman
+import Complexity.Crypto.Computational.DiffieHellman.EncodingBounds
 import Complexity.Crypto.Computational.ElGamal
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Tactic.PPT
@@ -273,5 +274,12 @@ example (d : schnorrGroups.Desc) {α β γ : ZMod (schnorrGroups.order d)} (hγ 
       (β • schnorrGroups.generator d) (γ • schnorrGroups.generator d) =
         schnorrGroups.ddhIdealTupleLaw d :=
   schnorrGroups.ddhRerandomizeLaw_ideal d hγ
+
+/-- Encoded elements of any Schnorr group have bit-length polynomially bounded in the description
+bit-length. -/
+example :
+    ∃ c k : ℕ, ∀ d : schnorrGroups.Desc, ∀ x : schnorrGroups.Carrier d,
+      (schnorrGroups.encode d x).length ≤ c * ((schnorrGroups.encDesc d).length + 1) ^ k :=
+  schnorrGroups.exists_length_encode_le
 
 end ComplexityTests.Crypto.DiffieHellman
