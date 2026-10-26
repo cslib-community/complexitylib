@@ -202,13 +202,13 @@ theorem isPPTOn_evaluateHop
     fun_prop
   have htail : ComputableInPolyTime (List.tail (α := List Bool))
       (encList encBits) (encList encBits) := by
-    simpa only [List.drop_one] using
-      (ComputableInPolyTime.dropUnary (encA := encBits)).comp
+    simpa only [Function.comp_def, List.drop_one] using
+      (ComputableInPolyTime.dropUnary (encA := encBits) (encL := encList encBits)).comp
         (ComputableInPolyTime.id'.prod (ComputableInPolyTime.const 1))
-  have hpks := (ComputableInPolyTime.dropUnary (encA := encBits)).comp
+  have hpks := (ComputableInPolyTime.dropUnary (encA := encBits) (encL := encList encBits)).comp
     ((htail.comp hpublic.fst').prod hdrop)
-  have hlinks := (ComputableInPolyTime.dropUnary (encA := encList encBits)).comp
-    (hpublic.snd'.prod hdrop)
+  have hlinks := (ComputableInPolyTime.dropUnary (encA := encList encBits)
+    (encL := encList (encList encBits))).comp (hpublic.snd'.prod hdrop)
   apply (isPPTOn_evaluateCircuit hencrypt D hcircuits hevaluate hn hstep hpks hlinks
     (ComputableInPolyTime.bitsTail.map.comp hinputs) hparts.fst' hparts.snd').map
   exact ComputableInPolyTime.bitsCons (by fun_prop)
