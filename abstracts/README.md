@@ -1,6 +1,6 @@
 # Selected formal abstracts
 
-The catalogue promotes nineteen major result groups. Each has a checked Lean abstract with the
+The catalogue promotes twenty major result groups. Each has a checked Lean abstract with the
 definitions needed to understand its statement, a bridge to the library proof, and an audited
 dependency boundary. Some abstracts also allowlist a few library modules for foundational models
 (for example circuit signatures or oracle runs); each such abstract names them in its docstring, and
@@ -51,6 +51,7 @@ former paper/TeX index is retired; Git history retains its sources.
 | [Chor–Goldreich: the inner product extracts from two weak sources](ComplexityAbstracts/ChorGoldreichAbstract.lean) · [PDF](https://www.cslib.io/complexitylib/abstracts/chor-goldreich.pdf) | Arbitrary sources with real min-entropy bounds, the exact bias bound and its strong form, sharpness at k1 + k2 = n; information-theoretic. |
 | [Ilango: Partial MCSP is hard under the Exponential Time Hypothesis](ComplexityAbstracts/PartialMCSPAbstract.lean) · [PDF](https://www.cslib.io/complexitylib/abstracts/partial-mcsp.pdf) | Explicit 3SAT and PartialMCSP encodings (unary and binary thresholds), De Morgan all-gates and binary-gate costs, and deterministic multi-tape lower bounds 2^o(m log m) = N^o(log log N) plus NP membership. |
 | [McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P from NP](ComplexityAbstracts/MagnificationAbstract.lean) · [PDF](https://www.cslib.io/complexitylib/abstracts/magnification.pdf) | Plain De Morgan circuits counting all operation gates, decision MCSP[n^k] on N = 2^n-bit truth tables in standard binary order, and native multi-tape P and NP; conditional magnification from a size lower bound at some arity per exponent. |
+| [Randomized word RAM: in-place quicksort](ComplexityAbstracts/RandomizedWordRAMAbstract.lean) · [PDF](https://www.cslib.io/complexitylib/abstracts/randomized-word-ram.pdf) | Exact ten-operation ALU basis plus uniform bounded random sampling (one step and one call per draw, faulting above word size); in-place sorted permutation on every branch within 20n² + 8n + 32 steps and n − 1 random calls, with expected time at most 120n(floor(log₂ n) + 1) + 32 including duplicate keys. |
 
 ## Generate and review PDFs
 

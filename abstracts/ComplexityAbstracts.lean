@@ -30,6 +30,8 @@ import ComplexityAbstracts.PCPBridge
 import ComplexityAbstracts.PartialMCSPAbstract
 import ComplexityAbstracts.PartialMCSPBridge
 import ComplexityAbstracts.Randomized
+import ComplexityAbstracts.RandomizedWordRAMAbstract
+import ComplexityAbstracts.RandomizedWordRAMBridge
 import ComplexityAbstracts.ResolutionAbstract
 import ComplexityAbstracts.ResolutionBridge
 import ComplexityAbstracts.SavitchAbstract
