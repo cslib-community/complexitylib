@@ -515,8 +515,10 @@ theorem computableInTimeAndSpace_stretch
     simp only [encUnary_apply, List.length_replicate]
     omega)
   obtain ⟨c₁, hcnt_seed⟩ := hcountClean.comp ComputableTidilyInTimeAndSpace.length_bits
-  obtain ⟨c₂, hpair⟩ := PairEncoding.pair_mono
-    (enc := encPair encBits encUnary) computableTidilyInTimeAndSpace_id hcnt_seed
+  obtain ⟨c₂, hpair⟩ := Internal.NormalForm.bigO
+    (PairEncoding.pair_mono (enc := encPair encBits encUnary)
+      (computableTidilyInTimeAndSpace_id (enc := encBits)).computableInTimeAndSpace
+      hcnt_seed.computableInTimeAndSpace)
   obtain ⟨c₃, hiter⟩ := computableInTimeAndSpace_iterate_pair hlen hgen
     (Q := fun p => Finset.sup (Finset.range p.2) (fun i => sGen (seedAt generator p.1 i)))
     (fun p i hi => Finset.le_sup (f := fun j => sGen (seedAt generator p.1 j))
@@ -711,10 +713,15 @@ theorem computableInTimeAndSpace_forwardIterate_captured {α : Type}
               (encParam x.1.1).length + x.1.2.length + 1)) + 1))
         (fun x => c * (Q x + (encParam x.1.1).length + x.1.2.length + 1)) := by
     let encS := encPair encParam encBits
-    obtain ⟨cpar, hpar⟩ := PairEncoding.fst (enc₁ := encParam) (enc₂ := encBits) (enc := encS)
-    obtain ⟨csnd, hsnd⟩ := PairEncoding.snd (enc₁ := encParam) (enc₂ := encBits) (enc := encS)
+    obtain ⟨cpar, hpar⟩ := Internal.NormalForm.linear
+      (PairEncoding.fst (enc₁ := encParam) (enc₂ := encBits) (enc := encS))
+    obtain ⟨csnd, hsnd⟩ := Internal.NormalForm.linear
+      (PairEncoding.snd (enc₁ := encParam) (enc₂ := encBits) (enc := encS))
     obtain ⟨c₁, hdrop⟩ := ComputableTidilyInTimeAndSpace.dropLast_bits.comp hgen
-    obtain ⟨cpair, hnext₀⟩ := PairEncoding.pair_mono (enc := encS) hpar hdrop
+    obtain ⟨cpair, hnext₀⟩ := Internal.NormalForm.bigO
+      (PairEncoding.pair_mono (enc := encS)
+        (ComputableTidilyInTimeAndSpace.computableInTimeAndSpace hpar)
+        hdrop.computableInTimeAndSpace)
     obtain ⟨c₂, hemit₀⟩ := ComputableTidilyInTimeAndSpace.getLast?_toList_bits.comp hgen
     obtain ⟨c₃, hfin₀⟩ := ComputableTidilyInTimeAndSpace.reverse_bits.comp hsnd
     obtain ⟨K, hK⟩ : ∃ K, K = cpair * (cpar + c₁ + 30) + c₂ + c₃ + csnd + 30 := ⟨_, rfl⟩
@@ -725,7 +732,7 @@ theorem computableInTimeAndSpace_forwardIterate_captured {α : Type}
         (fun q : α × List Bool => (q.1, seedStep (generator q.1) q.2)) encS encS
         (fun q => cpair * tGen q + K * ((encS q).length + 1))
         (fun q => cpair * sGen q + K * ((encS q).length + 1)) := by
-      refine hnext₀.mono (fun q => ?_) (fun q => ?_) <;>
+      refine ComputableTidilyInTimeAndSpace.mono hnext₀ (fun q => ?_) (fun q => ?_) <;>
       · have hd : (encS (q.1, (generator q.1 q.2).dropLast)).length = (encS q).length := by
           simp only [encS, length_encPair, encBits_apply, List.length_dropLast, hlen,
             Nat.add_sub_cancel]

@@ -7,16 +7,15 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Init
+public import Complexity.Foundations.Quantum.Measurement
 public import Mathlib.Analysis.CStarAlgebra.Matrix
 public import Mathlib.LinearAlgebra.Matrix.Permutation
-public import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 /-!
 # Quantum circuits
 
 The state of an `n`-qubit register is a vector of `ℂ^{{0,1}^n}` (`Cslib.Quantum.Qubits`), with
-computational basis `|x⟩` for bit strings `x : Fin n → Bool` (`Cslib.Quantum.ket`). A *gate* is a
+computational basis `|x⟩` (`Cslib.Quantum.ket`) for bit strings `x : Fin n → Bool`. A *gate* is a
 unitary matrix on `k` qubits (`Cslib.Quantum.Gate`). Applied to an ordered list `A` of `k` distinct
 qubits of the register, written `U[A]` in [Shi][Shi2003], it acts on those qubits and leaves the
 others alone (`Cslib.Quantum.PlacedGate`):
@@ -26,15 +25,16 @@ others alone (`Cslib.Quantum.PlacedGate`):
 acting first (`Cslib.Quantum.Circuit.matrix`), and it acts on states as a linear isometric
 equivalence (`Cslib.Quantum.Circuit.eval`).
 
-At the end of a computation the whole register is measured in the computational basis: a unit
-state `ψ` gives outcome `y` with probability `|ψ_y|²` (`Cslib.Quantum.measure`,
-`Cslib.Quantum.measureProb`). This is the model of [Arora, Barak][AroraBarak09], Chapter 10:
-pure states, gates on a bounded number of qubits, and a single final measurement in the
-computational basis. Mixed states and intermediate measurements are not modelled; Arora and Barak
-note that they add no power. A gate set is a set of gates of any arities
-(`Cslib.Quantum.Circuit.IsOver`). This file provides the Hadamard gate and the classical reversible
-gates (`Cslib.Quantum.Gate.hadamard`, `Cslib.Quantum.Gate.ofPerm`, `Cslib.Quantum.Gate.not`,
-`Cslib.Quantum.Gate.cnot`, `Cslib.Quantum.Gate.toffoli`); no particular gate set is fixed here.
+At the end of a computation the whole register is measured in the computational basis: a unit state
+`ψ` gives outcome `y` with probability `|ψ_y|²` (`Cslib.Quantum.measure` and
+`Cslib.Quantum.measureProb`, from `Complexity/Foundations/Quantum/Measurement.lean`). This is the
+model of [Arora, Barak][AroraBarak09], Chapter 10: pure states, gates on a bounded number of qubits,
+and a single final measurement in the computational basis. Mixed states and intermediate
+measurements are not modelled; Arora and Barak note that they add no power. A gate set is a set of
+gates of any arities (`Cslib.Quantum.Circuit.IsOver`). This file provides the Hadamard gate and the
+classical reversible gates (`Cslib.Quantum.Gate.hadamard`, `Cslib.Quantum.Gate.ofPerm`,
+`Cslib.Quantum.Gate.not`, `Cslib.Quantum.Gate.cnot`, `Cslib.Quantum.Gate.toffoli`); no particular
+gate set is fixed here.
 
 As in the quantum query model (`Complexity/Computability/QueryComplexity/Quantum/Search.lean`),
 states are vectors of a Euclidean space over `ℂ`. Gates and circuit unitaries are elements of
@@ -44,8 +44,7 @@ qubits `A` is a monoid homomorphism (`Cslib.Quantum.place`).
 
 ## Main definitions
 
-* `Cslib.Quantum.Qubits`, `Cslib.Quantum.ket`: the `n`-qubit state space and its basis states.
-* `Cslib.Quantum.measure`, `Cslib.Quantum.measureProb`: measurement in the computational basis.
+* `Cslib.Quantum.Qubits`: the `n`-qubit state space.
 * `Cslib.Quantum.unitaryEquiv`: a unitary matrix as a linear isometric equivalence.
 * `Cslib.Quantum.Gate`, `Cslib.Quantum.PlacedGate`: gates, and gates applied to chosen qubits.
 * `Cslib.Quantum.splitEquiv`, `Cslib.Quantum.place`: splitting the register along chosen qubits,
@@ -67,8 +66,6 @@ qubits `A` is a monoid homomorphism (`Cslib.Quantum.place`).
 * `Cslib.Quantum.Circuit.matrix_append`, `Cslib.Quantum.Circuit.eval_append`: running two circuits
   in sequence.
 * `Cslib.Quantum.Circuit.norm_eval`: circuits preserve norms.
-* `Cslib.Quantum.measureProb_univ`: the outcome probabilities sum to `‖ψ‖²`.
-* `Cslib.Quantum.measure_toOuterMeasure_apply`: the measurement probabilities are `measureProb`.
 * `Cslib.Quantum.PlacedGate.eval_ofPerm_ket`: a classical reversible gate permutes basis states.
 * `Cslib.Quantum.Gate.hadamard_mul_self`: the Hadamard gate is its own inverse.
 
@@ -93,50 +90,6 @@ variable {n k : ℕ}
 /-- The state space `ℂ^{{0,1}^n}` of an `n`-qubit register, whose computational basis is indexed by
 bit strings `Fin n → Bool`. -/
 abbrev Qubits (n : ℕ) := EuclideanSpace ℂ (Fin n → Bool)
-
-/-- The computational basis state `|x⟩`. -/
-noncomputable def ket (x : Fin n → Bool) : Qubits n := EuclideanSpace.single x 1
-
-@[simp] theorem ket_apply (x y : Fin n → Bool) : (ket x).ofLp y = if y = x then 1 else 0 := by
-  simp [ket]
-
-@[simp] theorem norm_ket (x : Fin n → Bool) : ‖ket x‖ = 1 := by
-  simp [ket, PiLp.norm_single]
-
-/-- The probability `∑_{y ∈ S} |ψ_y|²` that measuring `ψ` in the computational basis gives an
-outcome in `S`. -/
-noncomputable def measureProb (ψ : Qubits n) (S : Finset (Fin n → Bool)) : ℝ :=
-  ∑ y ∈ S, ‖ψ.ofLp y‖ ^ 2
-
-theorem measureProb_nonneg (ψ : Qubits n) (S : Finset (Fin n → Bool)) : 0 ≤ measureProb ψ S :=
-  sum_nonneg fun _ _ => by positivity
-
-/-- The outcome probabilities of a state sum to its squared norm. -/
-theorem measureProb_univ (ψ : Qubits n) : measureProb ψ univ = ‖ψ‖ ^ 2 :=
-  (EuclideanSpace.norm_sq_eq ψ).symm
-
-theorem measureProb_le_measureProb_univ (ψ : Qubits n) (S : Finset (Fin n → Bool)) :
-    measureProb ψ S ≤ measureProb ψ univ :=
-  sum_le_sum_of_subset_of_nonneg (subset_univ S) fun _ _ _ => by positivity
-
-/-- **Measurement in the computational basis**: a unit state `ψ` gives outcome `y` with
-probability `|ψ_y|²`. -/
-noncomputable def measure (ψ : Qubits n) (hψ : ‖ψ‖ = 1) : PMF (Fin n → Bool) :=
-  PMF.ofFintype (fun y => ENNReal.ofReal (‖ψ.ofLp y‖ ^ 2)) <| by
-    rw [← ENNReal.ofReal_sum_of_nonneg fun _ _ => by positivity, ← EuclideanSpace.norm_sq_eq, hψ,
-      one_pow, ENNReal.ofReal_one]
-
-@[simp] theorem measure_apply (ψ : Qubits n) (hψ : ‖ψ‖ = 1) (y : Fin n → Bool) :
-    measure ψ hψ y = ENNReal.ofReal (‖ψ.ofLp y‖ ^ 2) :=
-  rfl
-
-/-- The measurement gives an outcome in `S` with probability `measureProb ψ S`. -/
-theorem measure_toOuterMeasure_apply (ψ : Qubits n) (hψ : ‖ψ‖ = 1) (S : Finset (Fin n → Bool)) :
-    (measure ψ hψ).toOuterMeasure ↑S = ENNReal.ofReal (measureProb ψ S) := by
-  rw [PMF.toOuterMeasure_apply_fintype, measureProb,
-    ENNReal.ofReal_sum_of_nonneg fun _ _ => by positivity, ← sum_indicator_subset _ (subset_univ S)]
-  refine sum_congr rfl fun y _ => ?_
-  by_cases hy : y ∈ S <;> simp [Set.indicator, hy]
 
 /-- A unitary matrix, as a linear isometric equivalence of Euclidean space. -/
 noncomputable def unitaryEquiv {ι : Type*} [Fintype ι] [DecidableEq ι]

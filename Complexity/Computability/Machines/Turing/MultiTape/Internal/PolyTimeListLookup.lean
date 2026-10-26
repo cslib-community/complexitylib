@@ -29,13 +29,13 @@ private theorem tailPlain {encL : List α ↪ List Bool} [ListEncoding encA encL
     ComputableInPolyTime List.tail encL encL := by
   obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.tail (enc₁ := encA) (enc := encL)
   exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfin, tm, fun l => (htm l).computesInTimeAndSpace⟩
+    k, Q, hfin, tm, fun l => htm l⟩
 
 private theorem headPlain {encL : List α ↪ List Bool} [ListEncoding encA encL] (d : α) :
     ComputableInPolyTime (fun l : List α => l.headD d) encL encA := by
   obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.headD (enc₁ := encA) (enc := encL) d
   exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfin, tm, fun l => (htm l).computesInTimeAndSpace⟩
+    k, Q, hfin, tm, fun l => htm l⟩
 
 /-- Drop a unary number of elements, retaining arbitrary sized list encodings. -/
 theorem dropUnary {encL : List α ↪ List Bool} [ListEncoding encA encL]
@@ -67,7 +67,7 @@ theorem head? (enc : α ↪ List Bool) {encL : List α ↪ List Bool}
     have hempty : ComputableInPolyTime List.isEmpty encL encBool := by
       obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.isEmpty (enc₁ := enc) (enc := encL)
       exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-        k, Q, hfin, tm, fun l => (htm l).computesInTimeAndSpace⟩
+        k, Q, hfin, tm, fun l => htm l⟩
     have hread := hempty.ite (const none) ((optionSome enc).comp (headPlain fallback))
     convert hread using 1
     funext values

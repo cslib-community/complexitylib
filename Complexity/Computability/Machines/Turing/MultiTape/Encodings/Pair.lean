@@ -7,8 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Append
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearCodecPrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Words
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -65,14 +65,41 @@ public instance : PairEncoding enc₁ enc₂ (encPair enc₁ enc₂) where
   fst := .of_unframe fun p => by simp
   snd := .of_dropFrame fun p => by simp
   pair := fun {_ encIn f g t s} hf hg => by
-    obtain ⟨c₀, hframe⟩ := ComputableTidilyInLinearTimeAndSpace.of_frame (f := id)
-      (encIn := enc₁) (encOut := encFramed enc₁) fun _ => rfl
-    -- vendored: crei's `comp` is `comp_linear` here, as cslib #1111 restates `comp`
-    obtain ⟨c₁, hf'⟩ := ComputableTidilyInTimeAndSpace.comp_linear hframe hf
-    obtain ⟨k, h⟩ := hf'.append hg (encOut := encPair enc₁ enc₂) (g := fun x => (f x, g x))
-      fun _ => rfl
-    refine ⟨2 + c₀ + c₁ + k, h.mono (fun x => ?_) (fun x => ?_)⟩
-    · nlinarith [hf.length_le x]
-    · nlinarith [length_encPair (enc₁ := enc₁) (enc₂ := enc₂) (f x, g x)]
+    obtain ⟨c₁, k₁, Q₁, _, tm₁, h₁⟩ := Internal.NormalForm.bigO
+      (show ComputableInBigO f encIn enc₁ t s from
+        ⟨1, hf.mono (fun _ => by omega) (fun _ => by omega)⟩)
+    obtain ⟨c₂, k₂, Q₂, _, tm₂, h₂⟩ := Internal.NormalForm.bigO
+      (show ComputableInBigO g encIn enc₂ t s from
+        ⟨1, hg.mono (fun _ => by omega) (fun _ => by omega)⟩)
+    obtain ⟨c₀, k₀, Q₀, _, tm₀, h₀⟩ := Internal.NormalForm.linear
+      (ComputableInLinearTimeAndSpace.of_frame (f := id)
+        (encIn := enc₁) (encMid := encFramed enc₁) fun _ => rfl)
+    let overhead := 6 * max k₁ k₀ + 20 + 2 * max (max k₁ k₀ + 2) k₂
+    let ct := c₁ + c₂ + (c₀ + 4) * c₁ + c₀ + 9
+    let cs := c₁ + c₂ + c₀ + 5 + overhead
+    refine ⟨ct + cs, _, _, inferInstance, appendTM (tm₀.comp tm₁ true) tm₂, fun x => ?_⟩
+    have h := ((h₁ x).comp (h₀ (f x)) true).append (h₂ x)
+    change (appendTM (tm₀.comp tm₁ true) tm₂).ComputesInTimeAndSpace _ _ _ _
+    have hl := (h₁ x).length_output_le
+    have hp := length_le_encPair_left enc₁ enc₂ (f x, g x)
+    have htime : c₀ * ((enc₁ (f x)).length + 1) + 4 * (enc₁ (f x)).length ≤
+        (c₀ + 4) * c₁ * (t x + 1) + c₀ := by nlinarith
+    have hspace : c₀ * ((enc₁ (f x)).length + 1) + 5 * (enc₁ (f x)).length ≤
+        (c₀ + 5) * (encPair enc₁ enc₂ (f x, g x)).length + c₀ := by nlinarith
+    have hct : ct * (t x + 1) ≤ (ct + cs) * (t x + 1) :=
+      Nat.mul_le_mul_right _ (Nat.le_add_right _ _)
+    have hcs : cs * (s x + (encPair enc₁ enc₂ (f x, g x)).length + 1) ≤
+        (ct + cs) * (s x + (encPair enc₁ enc₂ (f x, g x)).length + 1) :=
+      Nat.mul_le_mul_right _ (Nat.le_add_left _ _)
+    have hm := h.mono (t' := ct * (t x + 1))
+      (s' := cs * (s x + (encPair enc₁ enc₂ (f x, g x)).length + 1))
+      (by dsimp [ct]; nlinarith)
+      (by
+        have ho := Nat.le_mul_of_pos_right overhead
+          (Nat.succ_pos (s x + (encPair enc₁ enc₂ (f x, g x)).length))
+        simp only [Nat.succ_eq_add_one] at ho
+        dsimp [cs, overhead] at *
+        nlinarith)
+    exact (hm.mono hct hcs).computesInTimeAndSpace
 
 end Turing.MultiTapeTM

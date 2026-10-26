@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Comp
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Ite
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelComp
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.ConditionalMachine
 
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -82,13 +82,12 @@ theorem ite {encC : Bool ↪ List Bool} {c : α → Bool} {f g : α → β}
   obtain ⟨c₀, ⟨k₀, Q₀, _, tm₀, h₀⟩, -⟩ := Internal.NormalForm.inO hc
   obtain ⟨c₁, ⟨k₁, Q₁, _, tm₁, h₁⟩, l₁⟩ := Internal.NormalForm.inO hf
   obtain ⟨c₂, ⟨k₂, Q₂, _, tm₂, h₂⟩, l₂⟩ := Internal.NormalForm.inO hg
-  obtain ⟨k, K, Q, _, tm, h⟩ := ComputableTidilyInTimeAndSpace.ite (encOut := encMid)
+  obtain ⟨k, K, Q, _, tm, h⟩ := Internal.conditional (encOut := encMid)
     (f := f) (g := g)
     (tc := fun a => c₀ * (Tc a + 1)) (sc := fun a => c₀ * (Sc a + 1))
     (tf := fun a => c₁ * (Tf a + 1)) (sf := fun a => c₁ * (Sf a + 1))
     (tg := fun a => c₂ * (Tg a + 1)) (sg := fun a => c₂ * (Sg a + 1))
-    ⟨k₀, Q₀, inferInstance, tm₀, h₀⟩ ⟨k₁, Q₁, inferInstance, tm₁, fun x => h₁ x.1⟩
-    ⟨k₂, Q₂, inferInstance, tm₂, fun x => h₂ x.1⟩
+    h₀ (fun x => h₁ x.1) (fun x => h₂ x.1)
   -- each bound is a sum of two terms, each at most a constant times their sum plus one
   have key (c' d' X Y : ℕ) (u : ℕ) (hu : u ≤ c₀ * (X + 1) + c' * (Y + 1) + d')
       (hc' : c' + d' ≤ c₁ + c₂ + k) : u ≤ (c₀ + c₁ + c₂ + k) * (X + Y + 1) := by

@@ -120,9 +120,11 @@ families and full-input native runtime.
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers; eavesdropping security in the strict-PPT model, with the
   statistical-distance term from sampling `ZMod q`.
-- **Diffie–Hellman and ElGamal:** group-element messages, efficient key generation and
-  encryption, the efficient DDH random self-reduction (Boneh–Shoup Ex. 10.10), hashed ElGamal,
-  and Cramer–Shoup CCA security ([#1000]).
+- **Diffie–Hellman and ElGamal:** efficient key generation and encryption, the worst-case DDH
+  decider of Boneh–Shoup Ex. 10.10 (amplifying an average-case distinguisher with a Chernoff
+  bound), Hashed ElGamal with a general semantically secure symmetric cipher `E_s` (Boneh–Shoup
+  Theorem 11.5) and a nondegenerate `SecureKDF` instantiation ([#1047]), and Cramer–Shoup CCA
+  security ([#1000]).
 - **Chosen-ciphertext security** ([#1000]): authenticated encryption by encrypt-then-MAC and
   Cramer–Shoup from DDH, with KEM–DEM hybrid encryption ([#881]) as the chosen-plaintext
   starting point (Boneh–Shoup Exercise 11.9).
@@ -132,7 +134,9 @@ families and full-input native runtime.
   general moduli; module SIS and module LWE toward Dilithium-style schemes, as theory.
 - **Symmetric:** Carter–Wegman word-level `IsOraclePPT` PRF reduction wrappers, `MACScheme`
   packaging for randomized Carter–Wegman, and a computational nonce-MAC interface ([#736]); the
-  4-round strong Feistel bound ([#748]); the Naor–Reingold PRF from DDH.
+  4-round strong Feistel bound ([#748]); the Naor–Reingold PRF from DDH (efficient lazy-sampling
+  reduction and `PseudorandomFunction` bridge; algebraic/tree evaluation and distributional
+  prefix-hybrid bound landed) ([#1093]).
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -187,6 +191,8 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Counting and modular classes
 
+- The Another Solution Problem (ASP) framework: solution-preserving reductions with explicit
+  polynomial-time solution bijections, and applications to SAT and planar SAT.
 - Counting reductions and further oracle results preserving exact multiplicities; permanent
   #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's
   approximate counting.
@@ -343,11 +349,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
   multi-tape steps for a constant `c < 1`; prefix-free complexity,
   resource-bounded MCSP variants and connections to learning, cryptography and lower bounds; the
-  circuitized anti-checker with an efficient generator, hardness magnification (packaging
-  `MCSP/FormulaMagnification.lean` Lemma 16 into Oliveira–Santhanam Theorem 1 / Theorem 17
-  `NP ⊄ Formula[poly]` separations and Theorem 5 / Theorem 27 zero-error average-case formula
-  magnification), and hardness results for `MINKT` and `MINcKT` (whose definitions, conditional
-  `K^t` measure, and `NP` memberships are in `Kolmogorov/MINKT.lean`,
+  circuitized anti-checker with an efficient generator; the subexponential-formula consequence
+  Theorem 17(ii) and asymptotic parameter instantiations of Theorem 17(iii) and Theorem 5 in
+  `MCSP/FormulaMagnification.lean`; and hardness results for `MINKT` and `MINcKT` (whose
+  definitions, conditional `K^t` measure, and `NP` memberships are in `Kolmogorov/MINKT.lean`,
   `Kolmogorov/Conditional.lean`, and `Kolmogorov/MINcKT.lean`), as independently scoped
   developments; the reverse
   multi-tape-to-single-tape simulation and machine-backed Nisan–Wigderson decoding.
@@ -376,8 +381,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations; size-based width
-  selection with an input-fit guarantee and explicit overhead; transfer of cell-probe lower
-  bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
+  selection with an input-fit guarantee and explicit overhead; expected-time reasoning,
+  random-tape equivalence, and BPP/RP/ZPP simulation bridges for the randomized word RAM; transfer
+  of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -482,4 +488,6 @@ not planned, not as proved.
 [#1000]: https://github.com/cslib-community/complexitylib/issues/1000
 [#1001]: https://github.com/cslib-community/complexitylib/issues/1001
 [#1002]: https://github.com/cslib-community/complexitylib/issues/1002
+[#1047]: https://github.com/cslib-community/complexitylib/issues/1047
+[#1093]: https://github.com/cslib-community/complexitylib/issues/1093
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104

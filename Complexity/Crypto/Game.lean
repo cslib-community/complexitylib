@@ -38,6 +38,8 @@ directly, and computational definitions over infinite sample spaces can reuse th
 * `Cslib.Crypto.Game.advantage_le_of_apply_le`, `Cslib.Crypto.Game.advantage_bind_le`: bound
   real-valued distinguishing advantage from mutual acceptance-probability bounds or across a common
   first-stage distribution.
+* `Cslib.Crypto.Game.advantage_bind_uniformOfFintype_of_ne_le`: exceptional-point loss under a
+  uniform finite first-stage choice, extracted from the reviewed support in PR #1103.
 
 ## References
 
@@ -50,7 +52,7 @@ Copied from cslib PR #1069 at `1d14c55a10cfe3fe4463cffa61a7f02f0d56f502`.
 
 namespace Cslib.Crypto
 
-open scoped NNReal
+open scoped ENNReal NNReal
 
 /-- The distribution of the Boolean output of a security experiment. -/
 abbrev Game := PMF Bool
@@ -297,6 +299,45 @@ theorem advantage_bind_le {α : Type*} (d : PMF α) (game1 game2 : α → Game) 
   have hadv := advantage_le_of_apply_le ENNReal.ofReal_ne_top hsum1 hsum2
   rwa [ENNReal.toReal_ofReal hε0] at hadv
 
+
+open Probability in
+/-- If a family of games `g : α → Game` agrees with `p : Game` on every `a ≠ a₀`, then averaging
+`g` over `PMF.uniformOfFintype α` is within `(Fintype.card α)⁻¹` of `p`. -/
+theorem advantage_bind_uniformOfFintype_of_ne_le {α : Type*} [Fintype α] [Nonempty α]
+    (a₀ : α) (g : α → Game) (p : Game) (hne : ∀ a, a ≠ a₀ → g a = p) :
+    Game.advantage ((PMF.uniformOfFintype α).bind g) p ≤ (Fintype.card α : ℝ≥0)⁻¹ := by
+  classical
+  have hsingle :
+      ((PMF.uniformOfFintype α).bind fun a => PMF.pure (decide (a = a₀))) true =
+        (Fintype.card α : ℝ≥0∞)⁻¹ := by
+    rw [PMF.bind_apply, tsum_fintype]
+    simp [PMF.uniformOfFintype_apply, PMF.pure_apply, eq_comm (a := true)]
+  have hle₁ :
+      ((PMF.uniformOfFintype α).bind g) true ≤ p true + (Fintype.card α : ℝ≥0∞)⁻¹ := by
+    rw [← PMF.bind_const (PMF.uniformOfFintype α) p, ← hsingle, PMF.bind_apply, PMF.bind_apply,
+      PMF.bind_apply, ← ENNReal.tsum_add]
+    refine ENNReal.tsum_le_tsum fun a => ?_
+    rw [← mul_add]
+    refine mul_le_mul_of_nonneg_left ?_ zero_le
+    by_cases ha : a = a₀
+    · simp only [ha, decide_true, PMF.pure_apply, ↓reduceIte]
+      exact (PMF.coe_le_one _ _).trans le_add_self
+    · simp [hne a ha, ha]
+  have hle₂ :
+      p true ≤ ((PMF.uniformOfFintype α).bind g) true + (Fintype.card α : ℝ≥0∞)⁻¹ := by
+    nth_rw 1 [← PMF.bind_const (PMF.uniformOfFintype α) p]
+    rw [← hsingle, PMF.bind_apply, PMF.bind_apply, PMF.bind_apply, ← ENNReal.tsum_add]
+    refine ENNReal.tsum_le_tsum fun a => ?_
+    rw [← mul_add]
+    refine mul_le_mul_of_nonneg_left ?_ zero_le
+    by_cases ha : a = a₀
+    · simp only [ha, decide_true, PMF.pure_apply, ↓reduceIte]
+      exact (PMF.coe_le_one _ _).trans le_add_self
+    · simp [hne a ha, ha]
+  have hinv_ne_top : (Fintype.card α : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
+  have hadv := Game.advantage_le_of_apply_le hinv_ne_top hle₁ hle₂
+  rw [ENNReal.toReal_inv, ENNReal.toReal_natCast, ← NNReal.coe_natCast, ← NNReal.coe_inv] at hadv
+  exact NNReal.coe_le_coe.mp hadv
 
 end Game
 end Cslib.Crypto

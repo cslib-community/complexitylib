@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.OnWords
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelOnWords
 
 /-! # Encoded function witnesses run on selected work tapes
 

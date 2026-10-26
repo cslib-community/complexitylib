@@ -8,9 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.FrameMachines
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Transducer
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Comp
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelComp
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.Id
 import Mathlib.Tactic.Linarith

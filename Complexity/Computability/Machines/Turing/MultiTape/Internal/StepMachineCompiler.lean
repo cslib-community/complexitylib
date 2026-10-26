@@ -551,7 +551,8 @@ public theorem ResourceCertificate.computableInBigO_of_init {σ γ ω : Type} {e
     (fun x i hi => (Nat.add_le_add (hmax x i hi).1 (hmax x i hi).1).trans_eq (two_mul _).symm)
     (fun x i hi => (Nat.add_le_add (hmax x i hi).2 (hmax x i hi).2).trans_eq (two_mul _).symm)
     hlen
-  refine .of_bounds hc.computableInTimeAndSpace ?_
+  obtain ⟨k, State, hfinite, tm, htm⟩ := hc
+  refine .of_bounds ⟨k, State, hfinite, tm, fun x => (htm x).computesInTimeAndSpace⟩ ?_
     (.const_mul c (.of_le_linear (cS + cI + 3) (cS + cI + 1) fun x => by nlinarith))
   have hR := BigOLe.mul_left (fun x => rounds x + 1)
     (v := fun x => 2 * tMax x + (cS * (sMax x + 1) + cI * (SI x + 1)) + 1)

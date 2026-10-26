@@ -29,7 +29,7 @@ theorem optionSome {enc : Option β ↪ List Bool} [OptionEncoding enc₁ enc] :
     ComputableInDegree some enc₁ enc 1 1 := by
   obtain ⟨c, k, Q, hfin, tm, htm⟩ := OptionEncoding.some (enc₁ := enc₁) (enc := enc)
   refine ⟨⟨_, _, ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, Q, hfin, tm, fun a => (htm a).computesInTimeAndSpace⟩,
+    k, Q, hfin, tm, fun a => htm a⟩,
     ⟨c, fun a => ?_⟩⟩
   simpa using (htm a).length_output_le
 
@@ -38,7 +38,7 @@ theorem getD {enc : Option β ↪ List Bool} [OptionEncoding enc₁ enc] (d : β
     ComputableInDegree (fun o => o.getD d) enc enc₁ 1 1 := by
   obtain ⟨c, k, Q, hfin, tm, htm⟩ := OptionEncoding.getD (enc₁ := enc₁) (enc := enc) d
   refine ⟨⟨_, _, ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, Q, hfin, tm, fun a => (htm a).computesInTimeAndSpace⟩,
+    k, Q, hfin, tm, fun a => htm a⟩,
     ⟨c, fun a => ?_⟩⟩
   simpa using (htm a).length_output_le
 
