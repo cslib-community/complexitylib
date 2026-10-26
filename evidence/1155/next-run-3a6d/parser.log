@@ -1,0 +1,114 @@
+[
+  {
+    "declaration": "polynomiallyBounded_simulationCost",
+    "tactic": "fun_prop",
+    "user_heartbeats": 53.84,
+    "forwarded_wall_nanoseconds": 11656870,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "measurable_edgeScore",
+    "tactic": "fun_prop",
+    "user_heartbeats": 302.425,
+    "forwarded_wall_nanoseconds": 49592888,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "measurable_vertexScore",
+    "tactic": "fun_prop",
+    "user_heartbeats": 307.19,
+    "forwarded_wall_nanoseconds": 30998375,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "computableInPolyTime_sigmaTwoVerifier",
+    "tactic": "fun_prop",
+    "user_heartbeats": 493.206,
+    "forwarded_wall_nanoseconds": 46863244,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "computableInPolyTime_piTwoVerifier",
+    "tactic": "fun_prop",
+    "user_heartbeats": 22545.836,
+    "forwarded_wall_nanoseconds": 2193037878,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "computableInPolyTime_verifier",
+    "tactic": "fun_prop",
+    "user_heartbeats": 1347.085,
+    "forwarded_wall_nanoseconds": 105792403,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "computableInLogSpace_dualTableauInstance",
+    "tactic": "fun_prop",
+    "user_heartbeats": 37.6,
+    "forwarded_wall_nanoseconds": 4427562,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "computableInPolyTime_maskSelect",
+    "tactic": "fun_prop",
+    "user_heartbeats": 430.005,
+    "forwarded_wall_nanoseconds": 37487171,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "unary_decide_prime",
+    "tactic": "fun_prop",
+    "user_heartbeats": 679.134,
+    "forwarded_wall_nanoseconds": 39397512,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "outputClass",
+    "tactic": "fun_prop",
+    "user_heartbeats": 1071.594,
+    "forwarded_wall_nanoseconds": 56658692,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "finiteCfg_summarizeOutput",
+    "tactic": "fun_prop",
+    "user_heartbeats": 657.755,
+    "forwarded_wall_nanoseconds": 117551264,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "computableTidilyInPolyTime_codeWidth",
+    "tactic": "fun_prop",
+    "user_heartbeats": 323.596,
+    "forwarded_wall_nanoseconds": 31596335,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "computableInPolyTime_viewCodeWidth",
+    "tactic": "fun_prop",
+    "user_heartbeats": 111.019,
+    "forwarded_wall_nanoseconds": 10002843,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "weightNumerator_div",
+    "tactic": "fun_prop",
+    "user_heartbeats": 2864.16,
+    "forwarded_wall_nanoseconds": 182250478,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  },
+  {
+    "declaration": "isPolyTime_generate",
+    "tactic": "polytime",
+    "user_heartbeats": 14963.993,
+    "forwarded_wall_nanoseconds": 1080309282,
+    "observed_child_kind": "Cslib.Tactic.PolyTime.tacticPolytime"
+  },
+  {
+    "declaration": "computableInPolyTime_lyubashevskyExtractList",
+    "tactic": "fun_prop",
+    "user_heartbeats": 855.367,
+    "forwarded_wall_nanoseconds": 65515407,
+    "observed_child_kind": "Mathlib.Meta.FunProp.funPropTacStx"
+  }
+]

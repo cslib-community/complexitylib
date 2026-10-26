@@ -1,0 +1,9 @@
+{
+  "source_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+  "preparation_reference": "d5ad74ff8addac88834110e4b0d02849033b33c5",
+  "wrapper_driver_parser_unchanged": true,
+  "bootstrap": "no rerun; same accepted owned pinned checkout",
+  "freshness": "56 selected direct-import targets only; PASS7812 jobs mostly cached",
+  "no_compiled_outputs_published": true,
+  "all_jobs_terminal": true
+}

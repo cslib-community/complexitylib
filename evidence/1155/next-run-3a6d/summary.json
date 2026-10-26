@@ -1,0 +1,81 @@
+{
+  "source_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+  "prep": "d5ad74ff8addac88834110e4b0d02849033b33c5",
+  "files": 13,
+  "commands": 39,
+  "commands_passed": 39,
+  "records": 32,
+  "calls": 16,
+  "strict_acceptance": "PASS",
+  "all_contexts_verified": true,
+  "tactic_counts": {
+    "fun_prop": 15,
+    "polytime": 1
+  },
+  "single_observed_user_hb_by_tactic": {
+    "fun_prop": {
+      "min": 37.6,
+      "max": 22545.836
+    },
+    "polytime": {
+      "min": 14963.993,
+      "max": 14963.993
+    }
+  },
+  "source_decl_private_counts": {
+    "machine-simulation": {
+      "declarations": 41,
+      "private": 15
+    },
+    "gaussian-edge-scores": {
+      "declarations": 12,
+      "private": 5
+    },
+    "vertex-gaussian": {
+      "declarations": 12,
+      "private": 2
+    },
+    "arthur-merlin-ph": {
+      "declarations": 14,
+      "private": 3
+    },
+    "set-lower-bound": {
+      "declarations": 13,
+      "private": 4
+    },
+    "monotone-circuit-completeness": {
+      "declarations": 18,
+      "private": 6
+    },
+    "subset-sum-mask": {
+      "declarations": 9,
+      "private": 0
+    },
+    "unary-prime": {
+      "declarations": 2,
+      "private": 0
+    },
+    "space": {
+      "declarations": 21,
+      "private": 0
+    },
+    "savitch": {
+      "declarations": 7,
+      "private": 0
+    },
+    "boosting-sampling": {
+      "declarations": 9,
+      "private": 0
+    },
+    "threesource-seeded": {
+      "declarations": 9,
+      "private": 0
+    },
+    "native-extract": {
+      "declarations": 17,
+      "private": 3
+    }
+  },
+  "all_jobs_terminal": true,
+  "postrun_review_pending": true
+}

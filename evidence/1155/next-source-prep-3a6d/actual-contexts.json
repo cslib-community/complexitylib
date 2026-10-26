@@ -1,0 +1,2419 @@
+{
+  "machine-simulation": {
+    "baseline": {
+      "module": "Complexity.Computability.Circuit.Boolean.MachineSimulation",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.PPoly",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Feature",
+          false,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Boolean.MachineSimulation.acceptedWithin",
+        "Cslib.Circuits.Boolean.MachineSimulation.acceptedWithin_mem_PPoly",
+        "Cslib.Circuits.Boolean.MachineSimulation.basicAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.cell_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.cfgAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.cfgAt_succ",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureCost",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureCount",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn_eq_false",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn_mem_basicAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn_mem_stepSources",
+        "Cslib.Circuits.Boolean.MachineSimulation.head_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.inPos_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.mem_acceptedWithin_iff",
+        "Cslib.Circuits.Boolean.MachineSimulation.out_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.readsAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.readsCost",
+        "Cslib.Circuits.Boolean.MachineSimulation.sit_mem_stepSources",
+        "Cslib.Circuits.Boolean.MachineSimulation.sitsAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.state_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.stepCost",
+        "Cslib.Circuits.Boolean.MachineSimulation.stepSources",
+        "Cslib.Circuits.Boolean.MachineSimulation.synthesis_basic",
+        "Cslib.Circuits.Boolean.MachineSimulation.synthesis_step",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.abs_workTapePos_cfgAt_le",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.card_basicFeatures_le",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.featureFn_eq_true",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.inputIs",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.polynomiallyBounded_simulationCost",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.simulationCost",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_basic_zero",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_inRead",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_inputIs",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_next",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_nexts",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_read",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_reads",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_sit",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_sits"
+      ],
+      "private_ilean_sha256": "e739daf1fbba8b967fb9f647f13721229ed5d9a3cbb51f8fe2eb320581b11307",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Circuit.Boolean.MachineSimulation",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.PPoly",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Feature",
+          false,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Boolean.MachineSimulation.acceptedWithin",
+        "Cslib.Circuits.Boolean.MachineSimulation.acceptedWithin_mem_PPoly",
+        "Cslib.Circuits.Boolean.MachineSimulation.basicAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.cell_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.cfgAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.cfgAt_succ",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureCost",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureCount",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn_eq_false",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn_mem_basicAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn_mem_stepSources",
+        "Cslib.Circuits.Boolean.MachineSimulation.head_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.inPos_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.mem_acceptedWithin_iff",
+        "Cslib.Circuits.Boolean.MachineSimulation.out_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.readsAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.readsCost",
+        "Cslib.Circuits.Boolean.MachineSimulation.sit_mem_stepSources",
+        "Cslib.Circuits.Boolean.MachineSimulation.sitsAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.state_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.stepCost",
+        "Cslib.Circuits.Boolean.MachineSimulation.stepSources",
+        "Cslib.Circuits.Boolean.MachineSimulation.synthesis_basic",
+        "Cslib.Circuits.Boolean.MachineSimulation.synthesis_step",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.abs_workTapePos_cfgAt_le",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.card_basicFeatures_le",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.featureFn_eq_true",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.inputIs",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.polynomiallyBounded_simulationCost",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.simulationCost",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_basic_zero",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_inRead",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_inputIs",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_next",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_nexts",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_read",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_reads",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_sit",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_sits"
+      ],
+      "private_ilean_sha256": "49744f1c79a26471f3eb833a9040cc774b1c2bf17b5a85a248bb18552a12dc50",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Circuit.Boolean.MachineSimulation",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Boolean.PPoly",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Feature",
+          false,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Boolean.MachineSimulation.acceptedWithin",
+        "Cslib.Circuits.Boolean.MachineSimulation.acceptedWithin_mem_PPoly",
+        "Cslib.Circuits.Boolean.MachineSimulation.basicAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.cell_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.cfgAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.cfgAt_succ",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureCost",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureCount",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn_eq_false",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn_mem_basicAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.featureFn_mem_stepSources",
+        "Cslib.Circuits.Boolean.MachineSimulation.head_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.inPos_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.mem_acceptedWithin_iff",
+        "Cslib.Circuits.Boolean.MachineSimulation.out_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.readsAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.readsCost",
+        "Cslib.Circuits.Boolean.MachineSimulation.sit_mem_stepSources",
+        "Cslib.Circuits.Boolean.MachineSimulation.sitsAt",
+        "Cslib.Circuits.Boolean.MachineSimulation.state_mem_basicFeatures",
+        "Cslib.Circuits.Boolean.MachineSimulation.stepCost",
+        "Cslib.Circuits.Boolean.MachineSimulation.stepSources",
+        "Cslib.Circuits.Boolean.MachineSimulation.synthesis_basic",
+        "Cslib.Circuits.Boolean.MachineSimulation.synthesis_step",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.abs_workTapePos_cfgAt_le",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.card_basicFeatures_le",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.featureFn_eq_true",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.inputIs",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.polynomiallyBounded_simulationCost",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.simulationCost",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_basic_zero",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_inRead",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_inputIs",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_next",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_nexts",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_read",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_reads",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_sit",
+        "_private.Complexity.Computability.Circuit.Boolean.MachineSimulation.0.Cslib.Circuits.Boolean.MachineSimulation.synthesis_sits"
+      ],
+      "private_ilean_sha256": "c3e9618ee2403d53078bcee6aa35b0507221cb629f4a4c20689dafe5529d8c92",
+      "compiled_output_published": false
+    }
+  },
+  "gaussian-edge-scores": {
+    "baseline": {
+      "module": "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Combinatorics.SimpleGraph.Metric",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Frontier.Gaussian.edgeScore",
+        "Cslib.Circuits.Frontier.Gaussian.edgeScore_congr",
+        "Cslib.Circuits.Frontier.Gaussian.edgeVector",
+        "Cslib.Circuits.Frontier.Gaussian.edgeVector_apply_eq_zero",
+        "Cslib.Circuits.Frontier.Gaussian.le_inner_edgeVector",
+        "Cslib.Circuits.Frontier.Gaussian.measurable_edgeScore",
+        "Cslib.Circuits.Frontier.Gaussian.norm_edgeVector",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.inner_smul_add_left",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.inner_smul_add_right",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.le_inner_unitKernelRow_src_tgt_three",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.norm_add_eq",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.norm_smul_add"
+      ],
+      "private_ilean_sha256": "e617bb3378f2ab3a104f058a9de168e5e2ee7981e0cde9531cb2a541d5d91cfa",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Combinatorics.SimpleGraph.Metric",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Frontier.Gaussian.edgeScore",
+        "Cslib.Circuits.Frontier.Gaussian.edgeScore_congr",
+        "Cslib.Circuits.Frontier.Gaussian.edgeVector",
+        "Cslib.Circuits.Frontier.Gaussian.edgeVector_apply_eq_zero",
+        "Cslib.Circuits.Frontier.Gaussian.le_inner_edgeVector",
+        "Cslib.Circuits.Frontier.Gaussian.measurable_edgeScore",
+        "Cslib.Circuits.Frontier.Gaussian.norm_edgeVector",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.inner_smul_add_left",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.inner_smul_add_right",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.le_inner_unitKernelRow_src_tgt_three",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.norm_add_eq",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.norm_smul_add"
+      ],
+      "private_ilean_sha256": "ee5ae4f9acde3b0245f1be003d3f022df85010ca868a82a8c2443ffdd379b18b",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Combinatorics.SimpleGraph.Metric",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Frontier.Gaussian.edgeScore",
+        "Cslib.Circuits.Frontier.Gaussian.edgeScore_congr",
+        "Cslib.Circuits.Frontier.Gaussian.edgeVector",
+        "Cslib.Circuits.Frontier.Gaussian.edgeVector_apply_eq_zero",
+        "Cslib.Circuits.Frontier.Gaussian.le_inner_edgeVector",
+        "Cslib.Circuits.Frontier.Gaussian.measurable_edgeScore",
+        "Cslib.Circuits.Frontier.Gaussian.norm_edgeVector",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.inner_smul_add_left",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.inner_smul_add_right",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.le_inner_unitKernelRow_src_tgt_three",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.norm_add_eq",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.EdgeScores.0.Cslib.Circuits.Frontier.Gaussian.norm_smul_add"
+      ],
+      "private_ilean_sha256": "80b6f76fa6e7c145dfc3b8cac061d5f5fc5d41fc43633835f3a0f326f7a12869",
+      "compiled_output_published": false
+    }
+  },
+  "vertex-gaussian": {
+    "baseline": {
+      "module": "Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Geometry.Euclidean.Angle.Cap",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Probability.Gaussian.Sheppard",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Frontier.Gaussian.crossingEvent",
+        "Cslib.Circuits.Frontier.Gaussian.dependsOn_crossingEvent",
+        "Cslib.Circuits.Frontier.Gaussian.dependsOn_vertexEvent",
+        "Cslib.Circuits.Frontier.Gaussian.measurableSet_crossingEvent",
+        "Cslib.Circuits.Frontier.Gaussian.measurableSet_vertexEvent",
+        "Cslib.Circuits.Frontier.Gaussian.measureReal_crossingEvent_le",
+        "Cslib.Circuits.Frontier.Gaussian.vertexCoefficient",
+        "Cslib.Circuits.Frontier.Gaussian.vertexEvent",
+        "Cslib.Circuits.Frontier.Gaussian.vertexScore",
+        "Cslib.Circuits.Frontier.Gaussian.vertexScore_congr",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian.0.Cslib.Circuits.Frontier.Gaussian.closedBall_subset_succ",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian.0.Cslib.Circuits.Frontier.Gaussian.measurable_vertexScore"
+      ],
+      "private_ilean_sha256": "5b9951e276b27be9710cfca4a4f5289cc556fadbc64ec3c371e2443cb36a4ace",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Geometry.Euclidean.Angle.Cap",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Probability.Gaussian.Sheppard",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Frontier.Gaussian.crossingEvent",
+        "Cslib.Circuits.Frontier.Gaussian.dependsOn_crossingEvent",
+        "Cslib.Circuits.Frontier.Gaussian.dependsOn_vertexEvent",
+        "Cslib.Circuits.Frontier.Gaussian.measurableSet_crossingEvent",
+        "Cslib.Circuits.Frontier.Gaussian.measurableSet_vertexEvent",
+        "Cslib.Circuits.Frontier.Gaussian.measureReal_crossingEvent_le",
+        "Cslib.Circuits.Frontier.Gaussian.vertexCoefficient",
+        "Cslib.Circuits.Frontier.Gaussian.vertexEvent",
+        "Cslib.Circuits.Frontier.Gaussian.vertexScore",
+        "Cslib.Circuits.Frontier.Gaussian.vertexScore_congr",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian.0.Cslib.Circuits.Frontier.Gaussian.closedBall_subset_succ",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian.0.Cslib.Circuits.Frontier.Gaussian.measurable_vertexScore"
+      ],
+      "private_ilean_sha256": "c8cc844f650aa9a013d4b8c131cef98f799cce654b721ce929b866171fc4285a",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian",
+      "directImports": [
+        [
+          "Complexity.Computability.Circuit.Frontier.Layouts.Gaussian.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Geometry.Euclidean.Angle.Cap",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Probability.Gaussian.Sheppard",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Circuits.Frontier.Gaussian.crossingEvent",
+        "Cslib.Circuits.Frontier.Gaussian.dependsOn_crossingEvent",
+        "Cslib.Circuits.Frontier.Gaussian.dependsOn_vertexEvent",
+        "Cslib.Circuits.Frontier.Gaussian.measurableSet_crossingEvent",
+        "Cslib.Circuits.Frontier.Gaussian.measurableSet_vertexEvent",
+        "Cslib.Circuits.Frontier.Gaussian.measureReal_crossingEvent_le",
+        "Cslib.Circuits.Frontier.Gaussian.vertexCoefficient",
+        "Cslib.Circuits.Frontier.Gaussian.vertexEvent",
+        "Cslib.Circuits.Frontier.Gaussian.vertexScore",
+        "Cslib.Circuits.Frontier.Gaussian.vertexScore_congr",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian.0.Cslib.Circuits.Frontier.Gaussian.closedBall_subset_succ",
+        "_private.Complexity.Computability.Circuit.Frontier.Layouts.VertexGaussian.0.Cslib.Circuits.Frontier.Gaussian.measurable_vertexScore"
+      ],
+      "private_ilean_sha256": "d830654d48fbf35729d331efaf6c88ba01622e7f4f077670b98c3363f257570a",
+      "compiled_output_published": false
+    }
+  },
+  "arthur-merlin-ph": {
+    "baseline": {
+      "module": "Complexity.Computability.Complexity.Classes.ArthurMerlin.PH",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.PH",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Combinatorics.Lautemann",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.List.Operations",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.AM_subset_PH",
+        "Cslib.Complexity.AM_subset_PiP_two",
+        "Cslib.Complexity.ArthurMerlin.computableInPolyTime_piTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.computableInPolyTime_sigmaTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.isAlternatingVerifier_piTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.isAlternatingVerifier_sigmaTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.piTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.sigmaTwoVerifier",
+        "Cslib.Complexity.MA_subset_PiP_two",
+        "Cslib.Complexity.MA_subset_SigmaP_two",
+        "Cslib.Complexity.MA_subset_SigmaP_two_inter_PiP_two",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.PH.0.Cslib.Complexity.ArthurMerlin.eval_lt_mul",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.PH.0.Cslib.Complexity.ArthurMerlin.piTwoVerifier_append",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.PH.0.Cslib.Complexity.ArthurMerlin.sigmaTwoVerifier_append_ofFn"
+      ],
+      "private_ilean_sha256": "924c16d653beddb65c1fa2b98d445b7e39559667ad5c2768dff668a34a9c0fbd",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Complexity.Classes.ArthurMerlin.PH",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.PH",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Combinatorics.Lautemann",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.List.Operations",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.AM_subset_PH",
+        "Cslib.Complexity.AM_subset_PiP_two",
+        "Cslib.Complexity.ArthurMerlin.computableInPolyTime_piTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.computableInPolyTime_sigmaTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.isAlternatingVerifier_piTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.isAlternatingVerifier_sigmaTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.piTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.sigmaTwoVerifier",
+        "Cslib.Complexity.MA_subset_PiP_two",
+        "Cslib.Complexity.MA_subset_SigmaP_two",
+        "Cslib.Complexity.MA_subset_SigmaP_two_inter_PiP_two",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.PH.0.Cslib.Complexity.ArthurMerlin.eval_lt_mul",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.PH.0.Cslib.Complexity.ArthurMerlin.piTwoVerifier_append",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.PH.0.Cslib.Complexity.ArthurMerlin.sigmaTwoVerifier_append_ofFn"
+      ],
+      "private_ilean_sha256": "0e492a6be07420dc475c35ed9faa63da10067b6c8c3f2ca84e12311f636ba02f",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Complexity.Classes.ArthurMerlin.PH",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.PH",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Combinatorics.Lautemann",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.List.Operations",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.GetD",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.AM_subset_PH",
+        "Cslib.Complexity.AM_subset_PiP_two",
+        "Cslib.Complexity.ArthurMerlin.computableInPolyTime_piTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.computableInPolyTime_sigmaTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.isAlternatingVerifier_piTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.isAlternatingVerifier_sigmaTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.piTwoVerifier",
+        "Cslib.Complexity.ArthurMerlin.sigmaTwoVerifier",
+        "Cslib.Complexity.MA_subset_PiP_two",
+        "Cslib.Complexity.MA_subset_SigmaP_two",
+        "Cslib.Complexity.MA_subset_SigmaP_two_inter_PiP_two",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.PH.0.Cslib.Complexity.ArthurMerlin.eval_lt_mul",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.PH.0.Cslib.Complexity.ArthurMerlin.piTwoVerifier_append",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.PH.0.Cslib.Complexity.ArthurMerlin.sigmaTwoVerifier_append_ofFn"
+      ],
+      "private_ilean_sha256": "9cf909f597d87a8796b58db67ac0c2fe83a16bfba66a2091a6f318a9db48664e",
+      "compiled_output_published": false
+    }
+  },
+  "set-lower-bound": {
+    "baseline": {
+      "module": "Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.ArthurMerlin",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.SBP",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.BitString.AffineHash",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.SharpP.Closure",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.LinearHash",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.List.Operations",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.WordCount",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.SBP_subset_AM",
+        "Cslib.Complexity.SetLowerBound.amplifiedSet",
+        "Cslib.Complexity.SetLowerBound.card_amplifiedSet",
+        "Cslib.Complexity.SetLowerBound.computableInPolyTime_verifier",
+        "Cslib.Complexity.SetLowerBound.exists_verifier_iff",
+        "Cslib.Complexity.SetLowerBound.seedEquiv",
+        "Cslib.Complexity.SetLowerBound.verifier",
+        "Cslib.Complexity.certifiedSet",
+        "Cslib.Complexity.mem_AM_of_card_certifiedSet",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.card_amplifiedSet_bounds",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.forall_verifier_eq_false_iff",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.not_any_ofFn_eq_true_iff",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.verifier_ofFn_append"
+      ],
+      "private_ilean_sha256": "83c44c84259d1ad37aa5a1e54af2211b763329add55d612c6295901134b04060",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.ArthurMerlin",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.SBP",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.BitString.AffineHash",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.SharpP.Closure",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.LinearHash",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.List.Operations",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.WordCount",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.SBP_subset_AM",
+        "Cslib.Complexity.SetLowerBound.amplifiedSet",
+        "Cslib.Complexity.SetLowerBound.card_amplifiedSet",
+        "Cslib.Complexity.SetLowerBound.computableInPolyTime_verifier",
+        "Cslib.Complexity.SetLowerBound.exists_verifier_iff",
+        "Cslib.Complexity.SetLowerBound.seedEquiv",
+        "Cslib.Complexity.SetLowerBound.verifier",
+        "Cslib.Complexity.certifiedSet",
+        "Cslib.Complexity.mem_AM_of_card_certifiedSet",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.card_amplifiedSet_bounds",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.forall_verifier_eq_false_iff",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.not_any_ofFn_eq_true_iff",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.verifier_ofFn_append"
+      ],
+      "private_ilean_sha256": "ad548aa2dc0630681538fe124838aa1d35ac1ee7c6bd8dc8aadd7ed4861276fa",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Classes.ArthurMerlin",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.SBP",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.BitString.AffineHash",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Classes.SharpP.Closure",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.LinearHash",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.List.Operations",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.WordCount",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.SBP_subset_AM",
+        "Cslib.Complexity.SetLowerBound.amplifiedSet",
+        "Cslib.Complexity.SetLowerBound.card_amplifiedSet",
+        "Cslib.Complexity.SetLowerBound.computableInPolyTime_verifier",
+        "Cslib.Complexity.SetLowerBound.exists_verifier_iff",
+        "Cslib.Complexity.SetLowerBound.seedEquiv",
+        "Cslib.Complexity.SetLowerBound.verifier",
+        "Cslib.Complexity.certifiedSet",
+        "Cslib.Complexity.mem_AM_of_card_certifiedSet",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.card_amplifiedSet_bounds",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.forall_verifier_eq_false_iff",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.not_any_ofFn_eq_true_iff",
+        "_private.Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound.0.Cslib.Complexity.SetLowerBound.verifier_ofFn_append"
+      ],
+      "private_ilean_sha256": "ee6bc1971cc0930402a4457a50e644d8436d8bf6ae0fca0a3ef03e1a361e19c5",
+      "compiled_output_published": false
+    }
+  },
+  "monotone-circuit-completeness": {
+    "baseline": {
+      "module": "Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Problems.MonotoneCircuitValue",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.CircuitValue.Completeness",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Monotone.DualRail",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.MonotoneCircuitValue.circuitValue_logSpaceReducible",
+        "Cslib.Complexity.MonotoneCircuitValue.computableInLogSpace_dualTableauInstance",
+        "Cslib.Complexity.MonotoneCircuitValue.dualChunk",
+        "Cslib.Complexity.MonotoneCircuitValue.dualGateDM",
+        "Cslib.Complexity.MonotoneCircuitValue.dualOp",
+        "Cslib.Complexity.MonotoneCircuitValue.dualSpec",
+        "Cslib.Complexity.MonotoneCircuitValue.dualTableauInstance",
+        "Cslib.Complexity.MonotoneCircuitValue.logSpaceComplete",
+        "Cslib.Complexity.MonotoneCircuitValue.logSpaceHard",
+        "Cslib.Complexity.MonotoneCircuitValue.logSpaceReducible_of_mem_P",
+        "Cslib.Complexity.MonotoneCircuitValue.mem_L_iff_forall_P_eq_L",
+        "Cslib.Complexity.MonotoneCircuitValue.mem_dualTableauInstance_iff",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.dualChunk_inSpace",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.dualGateDM_inSpace",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.dualTrailer_inSpace",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.encMonotoneCircuitValue_dualTableauInstance",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.flatten_replicate_two_mul_add_one",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.map_dualGates"
+      ],
+      "private_ilean_sha256": "440eb1c5cabdb11b4b251fa8121aa12358b6e9252c8192c301ea7bab04daf4b6",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Problems.MonotoneCircuitValue",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.CircuitValue.Completeness",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Monotone.DualRail",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.MonotoneCircuitValue.circuitValue_logSpaceReducible",
+        "Cslib.Complexity.MonotoneCircuitValue.computableInLogSpace_dualTableauInstance",
+        "Cslib.Complexity.MonotoneCircuitValue.dualChunk",
+        "Cslib.Complexity.MonotoneCircuitValue.dualGateDM",
+        "Cslib.Complexity.MonotoneCircuitValue.dualOp",
+        "Cslib.Complexity.MonotoneCircuitValue.dualSpec",
+        "Cslib.Complexity.MonotoneCircuitValue.dualTableauInstance",
+        "Cslib.Complexity.MonotoneCircuitValue.logSpaceComplete",
+        "Cslib.Complexity.MonotoneCircuitValue.logSpaceHard",
+        "Cslib.Complexity.MonotoneCircuitValue.logSpaceReducible_of_mem_P",
+        "Cslib.Complexity.MonotoneCircuitValue.mem_L_iff_forall_P_eq_L",
+        "Cslib.Complexity.MonotoneCircuitValue.mem_dualTableauInstance_iff",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.dualChunk_inSpace",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.dualGateDM_inSpace",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.dualTrailer_inSpace",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.encMonotoneCircuitValue_dualTableauInstance",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.flatten_replicate_two_mul_add_one",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.map_dualGates"
+      ],
+      "private_ilean_sha256": "8956824c007076a23e3147d802c2a2659162c07ed1d4f7a2cbceff8c26fb8a4c",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Problems.MonotoneCircuitValue",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.CircuitValue.Completeness",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Circuit.Monotone.DualRail",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.MonotoneCircuitValue.circuitValue_logSpaceReducible",
+        "Cslib.Complexity.MonotoneCircuitValue.computableInLogSpace_dualTableauInstance",
+        "Cslib.Complexity.MonotoneCircuitValue.dualChunk",
+        "Cslib.Complexity.MonotoneCircuitValue.dualGateDM",
+        "Cslib.Complexity.MonotoneCircuitValue.dualOp",
+        "Cslib.Complexity.MonotoneCircuitValue.dualSpec",
+        "Cslib.Complexity.MonotoneCircuitValue.dualTableauInstance",
+        "Cslib.Complexity.MonotoneCircuitValue.logSpaceComplete",
+        "Cslib.Complexity.MonotoneCircuitValue.logSpaceHard",
+        "Cslib.Complexity.MonotoneCircuitValue.logSpaceReducible_of_mem_P",
+        "Cslib.Complexity.MonotoneCircuitValue.mem_L_iff_forall_P_eq_L",
+        "Cslib.Complexity.MonotoneCircuitValue.mem_dualTableauInstance_iff",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.dualChunk_inSpace",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.dualGateDM_inSpace",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.dualTrailer_inSpace",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.encMonotoneCircuitValue_dualTableauInstance",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.flatten_replicate_two_mul_add_one",
+        "_private.Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness.0.Cslib.Complexity.MonotoneCircuitValue.map_dualGates"
+      ],
+      "private_ilean_sha256": "786d7364fcdca6828dd3047dd42f246e7519af95e687dba1cba9a310ccedafcc",
+      "compiled_output_published": false
+    }
+  },
+  "subset-sum-mask": {
+    "baseline": {
+      "module": "Complexity.Computability.Complexity.Problems.SubsetSum.Mask",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.Multiset.AddSub",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.computableInPolyTime_maskSelect",
+        "Cslib.Complexity.exists_le_coe_iff_exists_sublist",
+        "Cslib.Complexity.exists_le_iff_exists_maskSelect",
+        "Cslib.Complexity.exists_maskSelect_eq",
+        "Cslib.Complexity.maskSelect",
+        "Cslib.Complexity.maskSelect_append_replicate_false",
+        "Cslib.Complexity.maskSelect_cons",
+        "Cslib.Complexity.maskSelect_nil",
+        "Cslib.Complexity.maskSelect_sublist"
+      ],
+      "private_ilean_sha256": "81fe5d14b8e850414525122262f2c8396b267fa115eb7ca2120c95771d4acf14",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Complexity.Problems.SubsetSum.Mask",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.Multiset.AddSub",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.computableInPolyTime_maskSelect",
+        "Cslib.Complexity.exists_le_coe_iff_exists_sublist",
+        "Cslib.Complexity.exists_le_iff_exists_maskSelect",
+        "Cslib.Complexity.exists_maskSelect_eq",
+        "Cslib.Complexity.maskSelect",
+        "Cslib.Complexity.maskSelect_append_replicate_false",
+        "Cslib.Complexity.maskSelect_cons",
+        "Cslib.Complexity.maskSelect_nil",
+        "Cslib.Complexity.maskSelect_sublist"
+      ],
+      "private_ilean_sha256": "a9dc97e2f28443b18afc260ff08b28321ffa70fb401ce1d05fc1fc9ca15b4271",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Complexity.Problems.SubsetSum.Mask",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.Multiset.AddSub",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.computableInPolyTime_maskSelect",
+        "Cslib.Complexity.exists_le_coe_iff_exists_sublist",
+        "Cslib.Complexity.exists_le_iff_exists_maskSelect",
+        "Cslib.Complexity.exists_maskSelect_eq",
+        "Cslib.Complexity.maskSelect",
+        "Cslib.Complexity.maskSelect_append_replicate_false",
+        "Cslib.Complexity.maskSelect_cons",
+        "Cslib.Complexity.maskSelect_nil",
+        "Cslib.Complexity.maskSelect_sublist"
+      ],
+      "private_ilean_sha256": "9293f87680b799836c9cf0d592f77c0d6c026a3bdb0c51d56a8ea313e3d9ae05",
+      "compiled_output_published": false
+    }
+  },
+  "unary-prime": {
+    "baseline": {
+      "module": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.Nat.Prime.Defs",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_prime_eq",
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_decide_prime"
+      ],
+      "private_ilean_sha256": "ce45de40770b091c23240e07412e2a41a362a60dda71276a3e77cec6baf6d79e",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.Nat.Prime.Defs",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_prime_eq",
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_decide_prime"
+      ],
+      "private_ilean_sha256": "65e918ac84409addc2ce559686e5bea89a84f2d9231ea7e8e1ee92243ac0c63b",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.Nat.Prime.Defs",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_prime_eq",
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_decide_prime"
+      ],
+      "private_ilean_sha256": "a2108514e1202012cb0b5cb162fa38736539e5d122b36119e142dccf32714820",
+      "compiled_output_published": false
+    }
+  },
+  "space": {
+    "baseline": {
+      "module": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Machine.Space",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Machine.ChoiceTable",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Decode",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Turing.MultiTapeNTM.CodeStep",
+        "Turing.MultiTapeNTM.acceptCode",
+        "Turing.MultiTapeNTM.accepts_iff_reflTransGen_codeStep",
+        "Turing.MultiTapeNTM.codeEdge",
+        "Turing.MultiTapeNTM.codeEdge_acceptCode",
+        "Turing.MultiTapeNTM.codeEdge_eq",
+        "Turing.MultiTapeNTM.codeEdge_viewCode",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_acceptCode",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_codeEdge",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_decodeView",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_viewCode_initView",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_viewStepB",
+        "Turing.MultiTapeNTM.decodeView",
+        "Turing.MultiTapeNTM.decodeView_eq",
+        "Turing.MultiTapeNTM.decodeView_viewCode",
+        "Turing.MultiTapeNTM.length_viewCode",
+        "Turing.MultiTapeNTM.viewCode",
+        "Turing.MultiTapeNTM.viewStepB",
+        "Turing.MultiTapeNTM.viewStepB_iff",
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_summarizeOutput",
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.outputClass"
+      ],
+      "private_ilean_sha256": "7167bb9a6ac8fe3250f6576f1a6ce25be58c47720c9193afdc42eeba51c59085",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Machine.Space",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Machine.ChoiceTable",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Decode",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Turing.MultiTapeNTM.CodeStep",
+        "Turing.MultiTapeNTM.acceptCode",
+        "Turing.MultiTapeNTM.accepts_iff_reflTransGen_codeStep",
+        "Turing.MultiTapeNTM.codeEdge",
+        "Turing.MultiTapeNTM.codeEdge_acceptCode",
+        "Turing.MultiTapeNTM.codeEdge_eq",
+        "Turing.MultiTapeNTM.codeEdge_viewCode",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_acceptCode",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_codeEdge",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_decodeView",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_viewCode_initView",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_viewStepB",
+        "Turing.MultiTapeNTM.decodeView",
+        "Turing.MultiTapeNTM.decodeView_eq",
+        "Turing.MultiTapeNTM.decodeView_viewCode",
+        "Turing.MultiTapeNTM.length_viewCode",
+        "Turing.MultiTapeNTM.viewCode",
+        "Turing.MultiTapeNTM.viewStepB",
+        "Turing.MultiTapeNTM.viewStepB_iff",
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_summarizeOutput",
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.outputClass"
+      ],
+      "private_ilean_sha256": "56d4109c71add2cd08d03359dc9cbfbcf1b991cf1807700077dc48d260469e1a",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Machine.Space",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Machine.ChoiceTable",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Decode",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Turing.MultiTapeNTM.CodeStep",
+        "Turing.MultiTapeNTM.acceptCode",
+        "Turing.MultiTapeNTM.accepts_iff_reflTransGen_codeStep",
+        "Turing.MultiTapeNTM.codeEdge",
+        "Turing.MultiTapeNTM.codeEdge_acceptCode",
+        "Turing.MultiTapeNTM.codeEdge_eq",
+        "Turing.MultiTapeNTM.codeEdge_viewCode",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_acceptCode",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_codeEdge",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_decodeView",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_viewCode_initView",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_viewStepB",
+        "Turing.MultiTapeNTM.decodeView",
+        "Turing.MultiTapeNTM.decodeView_eq",
+        "Turing.MultiTapeNTM.decodeView_viewCode",
+        "Turing.MultiTapeNTM.length_viewCode",
+        "Turing.MultiTapeNTM.viewCode",
+        "Turing.MultiTapeNTM.viewStepB",
+        "Turing.MultiTapeNTM.viewStepB_iff",
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.finiteCfg_summarizeOutput",
+        "Turing.MultiTapeTM.ComputableTidilyInPolyTime.outputClass"
+      ],
+      "private_ilean_sha256": "9404ce13bd8ee7551ff753f8d7d467fd643b78413284c91c44ce20d8924b8acf",
+      "compiled_output_published": false
+    }
+  },
+  "savitch": {
+    "baseline": {
+      "module": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Savitch",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Algorithms.Reachability.Savitch",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.ShortWords",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Turing.MultiTapeNTM.codeWidth",
+        "Turing.MultiTapeNTM.computableInPolyTime_viewCodeWidth",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_codeWidth",
+        "Turing.MultiTapeNTM.exists_polyBounded_space_savitchDecide",
+        "Turing.MultiTapeNTM.savitchDecide",
+        "Turing.MultiTapeNTM.savitchDecide_eq_true_iff",
+        "Turing.MultiTapeNTM.viewCodeWidth"
+      ],
+      "private_ilean_sha256": "2910f1e0e2c0cc1cba6bd4685799fb2fa22ecb6d15dbb94710f11b5dd0ff1427",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Savitch",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Algorithms.Reachability.Savitch",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.ShortWords",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Turing.MultiTapeNTM.codeWidth",
+        "Turing.MultiTapeNTM.computableInPolyTime_viewCodeWidth",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_codeWidth",
+        "Turing.MultiTapeNTM.exists_polyBounded_space_savitchDecide",
+        "Turing.MultiTapeNTM.savitchDecide",
+        "Turing.MultiTapeNTM.savitchDecide_eq_true_iff",
+        "Turing.MultiTapeNTM.viewCodeWidth"
+      ],
+      "private_ilean_sha256": "ec1941126daa235e88faec0696bc74b0b32b2b1a65fee377c59f2fffb7abd62c",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Savitch",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Algorithms.Reachability.Savitch",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.ShortWords",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Turing.MultiTapeNTM.codeWidth",
+        "Turing.MultiTapeNTM.computableInPolyTime_viewCodeWidth",
+        "Turing.MultiTapeNTM.computableTidilyInPolyTime_codeWidth",
+        "Turing.MultiTapeNTM.exists_polyBounded_space_savitchDecide",
+        "Turing.MultiTapeNTM.savitchDecide",
+        "Turing.MultiTapeNTM.savitchDecide_eq_true_iff",
+        "Turing.MultiTapeNTM.viewCodeWidth"
+      ],
+      "private_ilean_sha256": "9f2b7b724a5d1954b473427d6d09d274218446f208d16637d7963a0413db2ba0",
+      "compiled_output_published": false
+    }
+  },
+  "boosting-sampling": {
+    "baseline": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.Boosting.Sampling",
+      "directImports": [
+        [
+          "Complexity.Computability.Probabilistic.UniformNat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.Boosting.Progress",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.List.Vote",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.Repeat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Analysis.SpecialFunctions.Exp",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.Concentration",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.Boosting.eval_sampleWeight_true",
+        "Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_sampleWeight",
+        "Cslib.Crypto.Pseudoentropy.Boosting.isPolyTime_weightNumerator",
+        "Cslib.Crypto.Pseudoentropy.Boosting.sampleWeight",
+        "Cslib.Crypto.Pseudoentropy.Boosting.sampleWeight_density",
+        "Cslib.Crypto.Pseudoentropy.Boosting.sampleWeight_density_deviation",
+        "Cslib.Crypto.Pseudoentropy.Boosting.weightNumerator",
+        "Cslib.Crypto.Pseudoentropy.Boosting.weightNumerator_div",
+        "Cslib.Crypto.Pseudoentropy.Boosting.weightNumerator_le"
+      ],
+      "private_ilean_sha256": "7d1b1c908f922bf3758f762ee88cb082c8615a7652963d119ba059ba5d55c45a",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.Boosting.Sampling",
+      "directImports": [
+        [
+          "Complexity.Computability.Probabilistic.UniformNat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.Boosting.Progress",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.List.Vote",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.Repeat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Analysis.SpecialFunctions.Exp",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.Concentration",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.Boosting.eval_sampleWeight_true",
+        "Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_sampleWeight",
+        "Cslib.Crypto.Pseudoentropy.Boosting.isPolyTime_weightNumerator",
+        "Cslib.Crypto.Pseudoentropy.Boosting.sampleWeight",
+        "Cslib.Crypto.Pseudoentropy.Boosting.sampleWeight_density",
+        "Cslib.Crypto.Pseudoentropy.Boosting.sampleWeight_density_deviation",
+        "Cslib.Crypto.Pseudoentropy.Boosting.weightNumerator",
+        "Cslib.Crypto.Pseudoentropy.Boosting.weightNumerator_div",
+        "Cslib.Crypto.Pseudoentropy.Boosting.weightNumerator_le"
+      ],
+      "private_ilean_sha256": "3fbe9cb9a28aa782fca472c180474ef604776d706bb36d1126f43d23243b239f",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.Boosting.Sampling",
+      "directImports": [
+        [
+          "Complexity.Computability.Probabilistic.UniformNat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.Boosting.Progress",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Foundations.Data.BitString.List.Vote",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.Repeat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Analysis.SpecialFunctions.Exp",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.Concentration",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.Boosting.eval_sampleWeight_true",
+        "Cslib.Crypto.Pseudoentropy.Boosting.isPPTOn_sampleWeight",
+        "Cslib.Crypto.Pseudoentropy.Boosting.isPolyTime_weightNumerator",
+        "Cslib.Crypto.Pseudoentropy.Boosting.sampleWeight",
+        "Cslib.Crypto.Pseudoentropy.Boosting.sampleWeight_density",
+        "Cslib.Crypto.Pseudoentropy.Boosting.sampleWeight_density_deviation",
+        "Cslib.Crypto.Pseudoentropy.Boosting.weightNumerator",
+        "Cslib.Crypto.Pseudoentropy.Boosting.weightNumerator_div",
+        "Cslib.Crypto.Pseudoentropy.Boosting.weightNumerator_le"
+      ],
+      "private_ilean_sha256": "f333671109f71ade3282b3e3c370b2741365027938044f19746e784b6bf548ee",
+      "compiled_output_published": false
+    }
+  },
+  "threesource-seeded": {
+    "baseline": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.ThreeSource.Seeded",
+      "directImports": [
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.ThreeSource",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.LinearHash",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.eval_generate",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.eval_generate_of_realization",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.eval_hashSamples",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.generate",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.generate_distribution",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.hashSamples",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.isPolyTime_generate",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.isPolyTime_hashSamples",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.length_generate"
+      ],
+      "private_ilean_sha256": "66972a5ae333a099175a0d33b8531f5da1a84ae43b81bc08f80b338573ea9a23",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.ThreeSource.Seeded",
+      "directImports": [
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.ThreeSource",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.LinearHash",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.eval_generate",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.eval_generate_of_realization",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.eval_hashSamples",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.generate",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.generate_distribution",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.hashSamples",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.isPolyTime_generate",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.isPolyTime_hashSamples",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.length_generate"
+      ],
+      "private_ilean_sha256": "d0a7e6f5f81ae362f3df27a14492c86dd8f6844a52c8a9b919ec38af5d7beebb",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.ThreeSource.Seeded",
+      "directImports": [
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.ThreeSource",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.LinearHash",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.eval_generate",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.eval_generate_of_realization",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.eval_hashSamples",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.generate",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.generate_distribution",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.hashSamples",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.isPolyTime_generate",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.isPolyTime_hashSamples",
+        "Cslib.Crypto.Pseudoentropy.ThreeSource.length_generate"
+      ],
+      "private_ilean_sha256": "86b0532b338dcab8b9f8f3acfd3d2097bcb9d212fd4e5082d8dcebaec6346865",
+      "compiled_output_published": false
+    }
+  },
+  "native-extract": {
+    "baseline": {
+      "module": "Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Protocols.SigmaProtocol.LyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_decodeLyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_lyubashevskyExtractList",
+        "Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_lyubashevskyExtractWord",
+        "Cslib.Crypto.Protocols.SigmaProtocol.decodeLyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.decodeLyubashevskyExtractInput_enc",
+        "Cslib.Crypto.Protocols.SigmaProtocol.encLyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.length_lyubashevskyExtractList",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractList",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractList_eq_extract",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractList_ofFn",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractWord",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractWord_enc",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractWord_eq_extract",
+        "_private.Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract.0.Cslib.Crypto.Protocols.SigmaProtocol.extractInput_decoder",
+        "_private.Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract.0.Cslib.Crypto.Protocols.SigmaProtocol.getD_optional_ofFn",
+        "_private.Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract.0.Cslib.Crypto.Protocols.SigmaProtocol.map_range_eq_ofFn"
+      ],
+      "private_ilean_sha256": "0ddd5766612ba5d55117480ee5301d176225a0776f178c977083f392e363ab78",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Protocols.SigmaProtocol.LyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_decodeLyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_lyubashevskyExtractList",
+        "Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_lyubashevskyExtractWord",
+        "Cslib.Crypto.Protocols.SigmaProtocol.decodeLyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.decodeLyubashevskyExtractInput_enc",
+        "Cslib.Crypto.Protocols.SigmaProtocol.encLyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.length_lyubashevskyExtractList",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractList",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractList_eq_extract",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractList_ofFn",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractWord",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractWord_enc",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractWord_eq_extract",
+        "_private.Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract.0.Cslib.Crypto.Protocols.SigmaProtocol.extractInput_decoder",
+        "_private.Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract.0.Cslib.Crypto.Protocols.SigmaProtocol.getD_optional_ofFn",
+        "_private.Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract.0.Cslib.Crypto.Protocols.SigmaProtocol.map_range_eq_ofFn"
+      ],
+      "private_ilean_sha256": "cdf810ee81b4438dbc6e8ee0bb633c8f023a7b17e0f3aab492ff6b0beda59b18",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract",
+      "directImports": [
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Protocols.SigmaProtocol.LyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_decodeLyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_lyubashevskyExtractList",
+        "Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_lyubashevskyExtractWord",
+        "Cslib.Crypto.Protocols.SigmaProtocol.decodeLyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.decodeLyubashevskyExtractInput_enc",
+        "Cslib.Crypto.Protocols.SigmaProtocol.encLyubashevskyExtractInput",
+        "Cslib.Crypto.Protocols.SigmaProtocol.length_lyubashevskyExtractList",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractList",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractList_eq_extract",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractList_ofFn",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractWord",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractWord_enc",
+        "Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyExtractWord_eq_extract",
+        "_private.Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract.0.Cslib.Crypto.Protocols.SigmaProtocol.extractInput_decoder",
+        "_private.Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract.0.Cslib.Crypto.Protocols.SigmaProtocol.getD_optional_ofFn",
+        "_private.Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract.0.Cslib.Crypto.Protocols.SigmaProtocol.map_range_eq_ofFn"
+      ],
+      "private_ilean_sha256": "2b03e8df4d056ef63114bf1b4a6cc341988414c5290230e3c094fbb898652b3a",
+      "compiled_output_published": false
+    }
+  }
+}

@@ -1,0 +1,236 @@
+[
+  {
+    "case": "machine-simulation",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "machine-simulation",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "machine-simulation",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "gaussian-edge-scores",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "gaussian-edge-scores",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "gaussian-edge-scores",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "vertex-gaussian",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "vertex-gaussian",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "vertex-gaussian",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "arthur-merlin-ph",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "arthur-merlin-ph",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "arthur-merlin-ph",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "set-lower-bound",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "set-lower-bound",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "set-lower-bound",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "monotone-circuit-completeness",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "monotone-circuit-completeness",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "monotone-circuit-completeness",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "subset-sum-mask",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "subset-sum-mask",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "subset-sum-mask",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "unary-prime",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "unary-prime",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "unary-prime",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "space",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "space",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "space",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "savitch",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "savitch",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "savitch",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "boosting-sampling",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "boosting-sampling",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "boosting-sampling",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "threesource-seeded",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "threesource-seeded",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "threesource-seeded",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "native-extract",
+    "mode": "baseline",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "native-extract",
+    "mode": "import-only",
+    "exit": 0,
+    "context": true
+  },
+  {
+    "case": "native-extract",
+    "mode": "wrapped",
+    "exit": 0,
+    "context": true
+  }
+]
