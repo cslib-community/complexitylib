@@ -120,9 +120,8 @@ families and full-input native runtime.
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers; eavesdropping security in the strict-PPT model, with the
   statistical-distance term from sampling `ZMod q`.
-- **Diffie–Hellman and ElGamal:** efficient key generation and encryption, Hashed ElGamal with a
-  general semantically secure symmetric cipher `E_s` (Boneh–Shoup Theorem 11.5) and a
-  nondegenerate `SecureKDF` instantiation ([#1047]), and Cramer–Shoup CCA security ([#1000]).
+- **Diffie–Hellman and ElGamal:** Hashed ElGamal with a general semantically secure symmetric
+  cipher `E_s` (Boneh–Shoup Theorem 11.5) ([#1047]).
 - **Chosen-ciphertext security** ([#1000]): authenticated encryption by encrypt-then-MAC and
   Cramer–Shoup from DDH, with KEM–DEM hybrid encryption ([#881]) as the chosen-plaintext
   starting point (Boneh–Shoup Exercise 11.9).

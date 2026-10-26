@@ -8,7 +8,10 @@ import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 import Complexity.Crypto.Computational.DiffieHellman
 import Complexity.Crypto.Computational.DiffieHellman.EncodingBounds
 import Complexity.Crypto.Computational.ElGamal
+import Complexity.Crypto.Computational.ElGamal.KDF
+import Complexity.Crypto.Computational.ElGamal.ProbComp
 import Complexity.Crypto.Negligible.Basic
+import Complexity.Tactic.PolyTime
 import Complexity.Tactic.PPT
 import Mathlib.Tactic.NormNum.Prime
 
@@ -450,5 +453,146 @@ example (α β γ : ℕ → ZMod (schnorrGroups.order d23)) :
     (fun _ => d23) α β γ
     (Filter.Eventually.of_forall fun _ => by decide)
     (Filter.Eventually.of_forall one_half_le_advantage_exactDDHDistinguisher)
+
+/-! ### Non-degenerate `SecureKDF` (`linearHashKDF`) and strict-PPT ElGamal tests -/
+
+/-- Concrete evaluation of `linearHashSeedLen` and `linearHashKDF` on `d23` with non-degenerate
+output length `k = 4 > 0` and encoding bound `B = 6`: at `n = 3`, the block-matrix seed length is
+`4 * (2 * 6 + 1) = 52`, and `linearHashKDF` produces a 4-bit key. -/
+example : schnorrGroups.linearHashSeedLen (fun _ => 4) (fun _ => 6) 3 d23 = 52 := by decide
+example :
+    (schnorrGroups.linearHashKDF (fun _ => 4) (fun _ => 6)
+      ((d23, List.replicate 52 true), Nat.bits 16)).length = 4 := by decide
+
+/-- Positive-side non-degenerate `SecureKDF` instantiation (`k = 4 > 0`): for any setup law whose
+supported descriptions have group order at least `2 ^ n` and encoded group elements of length at
+most `6`, `linearHashKDF (fun _ => 4) (fun _ => 6)` is a `SecureKDF` for `schnorrGroups.withSeed`
+with output key length `4 > 0`. -/
+example (setup : ℕ → PMF schnorrGroups.Desc)
+    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d)
+    (hbound : ∀ n, ∀ d ∈ (setup n).support, ∀ x : schnorrGroups.Carrier d,
+      (schnorrGroups.encode d x).length ≤ 6) :
+    schnorrGroups.withSeed.SecureKDF
+      (schnorrGroups.seededSetup setup
+        (schnorrGroups.linearHashSeedLen (fun _ => 4) (fun _ => 6)))
+      (schnorrGroups.linearHashKDF (fun _ => 4) (fun _ => 6))
+      (fun _ => 4) :=
+  schnorrGroups.secureKDF_linearHashKDF_const setup (fun _ => 6) 4
+    Nat.two_pow_pos hbound hsize negligible_inv_two_pow
+
+/-- Negative-side KDF counterexample: a constant 1-bit KDF `constZeroKDF := fun _ => [false]`
+always outputs `[false]` instead of a uniform 1-bit key. -/
+def constZeroKDF : schnorrGroups.Desc × List Bool → List Bool :=
+  fun _ => [false]
+
+/-- A uniform strict-PPT KDF distinguisher that inspects the first bit of the candidate key
+`input.2.2.2`. -/
+noncomputable def firstBitKDFDistinguisher (_ : ℕ)
+    (input : schnorrGroups.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
+  pure (input.2.2.2.headD false)
+
+/-- `firstBitKDFDistinguisher` is uniform strict PPT. -/
+theorem isPPTOn_firstBitKDFDistinguisher :
+    IsPPTOn
+      (encPair encUnary
+        (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
+      encBool (fun input => firstBitKDFDistinguisher input.1 input.2) := by
+  have hhead : ComputableTidilyInPolyTime (fun s : List Bool => s.headD false) encBits encBool := by
+    fun_prop
+  have hproj : ComputableTidilyInPolyTime
+      (fun input : ℕ × schnorrGroups.Desc × List Bool × List Bool × List Bool => input.2.2.2.2)
+      (encPair encUnary
+        (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
+      encBits := by fun_prop
+  exact (hhead.comp hproj).isPPTOn
+
+/-- `firstBitKDFDistinguisher` achieves KDF advantage `1 / 2` against `constZeroKDF` for
+1-bit keys (`msgLen = fun _ => 1`) at every security parameter `n`. -/
+theorem advantage_firstBitKDFDistinguisher_constZeroKDF (n : ℕ) :
+    Game.advantage
+      (schnorrGroups.kdfRealGame (fun _ => PMF.pure d23) constZeroKDF firstBitKDFDistinguisher n)
+      (schnorrGroups.kdfIdealGame (fun _ => PMF.pure d23) (fun _ => 1) firstBitKDFDistinguisher n) =
+      1 / 2 := by
+  have hreal :
+      schnorrGroups.kdfRealGame (fun _ => PMF.pure d23) constZeroKDF firstBitKDFDistinguisher n =
+        PMF.pure false := by
+    simp [PrimeOrderGroupFamily.kdfRealGame, constZeroKDF, firstBitKDFDistinguisher]
+  have hideal :
+      schnorrGroups.kdfIdealGame (fun _ => PMF.pure d23) (fun _ => 1) firstBitKDFDistinguisher n =
+        (BitString.uniformList 1).bind (fun k => PMF.pure (k.headD false)) := by
+    simp [PrimeOrderGroupFamily.kdfIdealGame, firstBitKDFDistinguisher]
+  have hunif :
+      ((BitString.uniformList 1).bind (fun k => PMF.pure (k.headD false))) true = 1 / 2 := by
+    rw [BitString.uniformList_succ]
+    simp [BitString.uniformList_zero]
+  rw [hreal, hideal, Game.advantage, Game.succProbability, Game.succProbability]
+  have hreal_true : (PMF.pure false : Game) true = 0 := by simp
+  rw [hreal_true, hunif]
+  simp [one_div, ENNReal.toNNReal_ofNat]
+
+/-- Refutation test: `constZeroKDF` is not a `SecureKDF` for 1-bit keys (`msgLen = fun _ => 1`),
+confirming that `SecureKDF` is non-vacuous and refutable on bad KDF candidates. -/
+theorem not_secureKDF_constZeroKDF :
+    ¬ schnorrGroups.SecureKDF (fun _ => PMF.pure d23) constZeroKDF (fun _ => 1) := by
+  intro hsec
+  have hneg := hsec firstBitKDFDistinguisher isPPTOn_firstBitKDFDistinguisher
+  simp only [advantage_firstBitKDFDistinguisher_constZeroKDF] at hneg
+  have h0 := hneg 0
+  simp only [pow_zero, one_mul] at h0
+  exact absurd (tendsto_nhds_unique h0 tendsto_const_nhds) (by norm_num)
+
+/-- The constant group description family `fun _ : ℕ => d23` is computable in polynomial time. -/
+theorem computableInPolyTime_const_d23 :
+    ComputableInPolyTime (fun _ : ℕ => d23) encUnary schnorrGroups.encDesc :=
+  ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.const d23)
+
+/-- Support-level round-trip correctness of `elGamalKeyGenProb`, `hashedElGamalEncapsProb`, and
+`hashedElGamalDecaps` on `d23`. -/
+example (n : ℕ) {keys : List Bool × List Bool}
+    (hkeys : keys ∈ (ProbComp.eval (schnorrGroups.elGamalKeyGenProb (fun _ => d23) n)).support)
+    {encapsulated : List Bool × List Bool}
+    (hencaps : encapsulated ∈
+      (ProbComp.eval
+        (schnorrGroups.hashedElGamalEncapsProb Prod.snd (fun _ => d23) n keys.1)).support) :
+    schnorrGroups.hashedElGamalDecaps Prod.snd (fun _ => d23) n keys.2 encapsulated.2 =
+      encapsulated.1 :=
+  schnorrGroups.hashedElGamalDecaps_hashedElGamalEncapsProb Prod.snd (fun _ => d23) n hkeys hencaps
+
+/-- Support-level round-trip correctness of `elGamalKeyGenProb`, `elGamalEncryptProb`, and
+`elGamalDecryptDet` on `d23`. -/
+example (n : ℕ) {keys : List Bool × List Bool}
+    (hkeys : keys ∈ (ProbComp.eval (schnorrGroups.elGamalKeyGenProb (fun _ => d23) n)).support)
+    (m : schnorrGroups.Carrier d23) {ct : List Bool}
+    (hct : ct ∈
+      (ProbComp.eval
+        (schnorrGroups.elGamalEncryptProb (fun _ x => x) (fun _ => d23) n keys.1
+          (schnorrGroups.encode d23 m))).support) :
+    schnorrGroups.elGamalDecryptDet (fun _ => d23) n keys.2 ct = schnorrGroups.encode d23 m :=
+  schnorrGroups.elGamalDecryptDet_elGamalEncryptProb (fun _ => d23) n hkeys m hct
+
+/-- Concrete instantiation of `DDH.kemINDCPA_hashedElGamalEncapsProb`,
+`DDH.wordINDCPA_hybrid_hashedElGamal` (with `otpWordEncrypt`),
+`DDH.indcpaOn_elGamalEncryptProb`, and `DDH.indcpa_elGamalBitEncryptProb`. -/
+example (d : ℕ → schnorrGroups.Desc)
+    (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
+    (hDDH : schnorrGroups.DDH (fun n => PMF.pure (d n)))
+    (H : schnorrGroups.Desc × List Bool → List Bool)
+    (hKDF : schnorrGroups.SecureKDF (fun n => PMF.pure (d n)) H (fun n => n))
+    (hH : ComputableInPolyTime H (encPair schnorrGroups.encDesc encBits) encBits) :
+    Encryption.KEMINDCPA (schnorrGroups.elGamalKeyGenProb d)
+      (schnorrGroups.hashedElGamalEncapsProb H d) ∧
+    Encryption.WordINDCPA (schnorrGroups.elGamalKeyGenProb d)
+      (Encryption.hybridEncrypt (schnorrGroups.hashedElGamalEncapsProb H d)
+        Encryption.otpWordEncrypt) ∧
+    Encryption.INDCPAOn twoElements encBits (schnorrGroups.elGamalKeyGenProb d)
+      (schnorrGroups.elGamalEncryptProb (fun _ x => x) d) ∧
+    Encryption.INDCPA (schnorrGroups.elGamalKeyGenProb d)
+      (schnorrGroups.elGamalEncryptProb schnorrGroups.encodeBit d) :=
+  ⟨hDDH.kemINDCPA_hashedElGamalEncapsProb hKDF hH,
+    hDDH.wordINDCPA_hybrid_hashedElGamal hKDF Encryption.demOneTimeWordINDCPA_otpWordEncrypt
+      hH hd Encryption.isPPTOn_otpWordEncrypt,
+    hDDH.indcpaOn_elGamalEncryptProb computableInPolyTime_twoElements
+      admitsGroupElements_twoElements (by fun_prop),
+    hDDH.indcpa_elGamalBitEncryptProb⟩
 
 end ComplexityTests.Crypto.DiffieHellman
