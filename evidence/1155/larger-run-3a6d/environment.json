@@ -1,0 +1,12 @@
+{
+  "source_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+  "preparation_reference": "bd31613255320dde3caa718e651720d7caec1ac6",
+  "driver_unchanged_sha256": "6f10de528e7fd840005f6c46fdb14a31d8de1914ed5d115a4f7a0fa3fef805c7",
+  "parser_unchanged_sha256": "6f7e80414a80f5ac27511f07370fe3594e9af9f415f79be9035d29c495b1b711",
+  "wrapper_source_unchanged": true,
+  "bootstrap": "no rerun, same accepted private pinnedcheckout",
+  "freshness": "exact selected directimport closure only",
+  "no_foreign_setup_importArts_used": true,
+  "no_compiled_outputs_published": true,
+  "all_jobs_terminal": true
+}

@@ -1,0 +1,1955 @@
+{
+  "addtrivial": {
+    "baseline": {
+      "module": "Complexity.Computability.PCP.Encoded.AddTrivial",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Logic.Equiv.Fin.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.WellFormed.addLoops",
+        "Cslib.PCP.Encoded.Graph.WellFormed.addTrivial",
+        "Cslib.PCP.Encoded.Graph.addLoops",
+        "Cslib.PCP.Encoded.Graph.addTrivial",
+        "Cslib.PCP.Encoded.Graph.appendEdgeEquiv",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_addLoops",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial",
+        "Cslib.PCP.Encoded.Graph.length_edges_addLoops",
+        "Cslib.PCP.Encoded.Graph.length_edges_addTrivial",
+        "Cslib.PCP.Encoded.Graph.satisfiable_addLoops_iff",
+        "Cslib.PCP.Encoded.Graph.satisfiable_addTrivial_iff",
+        "Cslib.PCP.Encoded.Graph.toGraph_append",
+        "Cslib.PCP.Encoded.Graph.unsatVal_addLoops",
+        "Cslib.PCP.Encoded.Graph.unsatVal_addTrivial"
+      ],
+      "private_ilean_sha256": "b211c675a3d6980f6e51052a972f3623af8b1e43323b3bb33b350cb2d3bc6b4c",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.PCP.Encoded.AddTrivial",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Logic.Equiv.Fin.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.WellFormed.addLoops",
+        "Cslib.PCP.Encoded.Graph.WellFormed.addTrivial",
+        "Cslib.PCP.Encoded.Graph.addLoops",
+        "Cslib.PCP.Encoded.Graph.addTrivial",
+        "Cslib.PCP.Encoded.Graph.appendEdgeEquiv",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_addLoops",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial",
+        "Cslib.PCP.Encoded.Graph.length_edges_addLoops",
+        "Cslib.PCP.Encoded.Graph.length_edges_addTrivial",
+        "Cslib.PCP.Encoded.Graph.satisfiable_addLoops_iff",
+        "Cslib.PCP.Encoded.Graph.satisfiable_addTrivial_iff",
+        "Cslib.PCP.Encoded.Graph.toGraph_append",
+        "Cslib.PCP.Encoded.Graph.unsatVal_addLoops",
+        "Cslib.PCP.Encoded.Graph.unsatVal_addTrivial"
+      ],
+      "private_ilean_sha256": "a75705d573084fda9581ae372680eb8b22ee44b74a8bd1d38158a9ddce215627",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.PCP.Encoded.AddTrivial",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Logic.Equiv.Fin.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.WellFormed.addLoops",
+        "Cslib.PCP.Encoded.Graph.WellFormed.addTrivial",
+        "Cslib.PCP.Encoded.Graph.addLoops",
+        "Cslib.PCP.Encoded.Graph.addTrivial",
+        "Cslib.PCP.Encoded.Graph.appendEdgeEquiv",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_addLoops",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_addTrivial",
+        "Cslib.PCP.Encoded.Graph.length_edges_addLoops",
+        "Cslib.PCP.Encoded.Graph.length_edges_addTrivial",
+        "Cslib.PCP.Encoded.Graph.satisfiable_addLoops_iff",
+        "Cslib.PCP.Encoded.Graph.satisfiable_addTrivial_iff",
+        "Cslib.PCP.Encoded.Graph.toGraph_append",
+        "Cslib.PCP.Encoded.Graph.unsatVal_addLoops",
+        "Cslib.PCP.Encoded.Graph.unsatVal_addTrivial"
+      ],
+      "private_ilean_sha256": "0a6460eb3ab30bb4a3180945357da246484589363cafcde1dbf0515441ceae41",
+      "compiled_output_published": false
+    }
+  },
+  "amplification": {
+    "baseline": {
+      "module": "Complexity.Computability.PCP.Encoded.Amplification",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Power",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Encoded.SelectedComposition",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Amplification.Family",
+          false,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.amplify",
+        "Cslib.PCP.Encoded.Graph.div_le_unsatVal_amplify",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_amplify",
+        "Cslib.PCP.Encoded.Graph.le_unsatVal_amplify",
+        "Cslib.PCP.Encoded.Graph.length_edges_amplify",
+        "Cslib.PCP.Encoded.Graph.min_le_unsatVal_amplify",
+        "Cslib.PCP.Encoded.Graph.satisfiable_amplify_iff",
+        "Cslib.PCP.Encoded.Graph.vertices_amplify",
+        "Cslib.PCP.Encoded.Graph.wellFormed_amplify"
+      ],
+      "private_ilean_sha256": "aae0c16e2e77483d282a8c32d6b5ff91b93470ad9727cb9b6d8128d93fdc9a6d",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.PCP.Encoded.Amplification",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Power",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Encoded.SelectedComposition",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Amplification.Family",
+          false,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.amplify",
+        "Cslib.PCP.Encoded.Graph.div_le_unsatVal_amplify",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_amplify",
+        "Cslib.PCP.Encoded.Graph.le_unsatVal_amplify",
+        "Cslib.PCP.Encoded.Graph.length_edges_amplify",
+        "Cslib.PCP.Encoded.Graph.min_le_unsatVal_amplify",
+        "Cslib.PCP.Encoded.Graph.satisfiable_amplify_iff",
+        "Cslib.PCP.Encoded.Graph.vertices_amplify",
+        "Cslib.PCP.Encoded.Graph.wellFormed_amplify"
+      ],
+      "private_ilean_sha256": "e11415c0c35d4bc1d47328a32987b209ddd52babf2fcbb9cc790ffcccdedc2c9",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.PCP.Encoded.Amplification",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Power",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Encoded.SelectedComposition",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Amplification.Family",
+          false,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.amplify",
+        "Cslib.PCP.Encoded.Graph.div_le_unsatVal_amplify",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_amplify",
+        "Cslib.PCP.Encoded.Graph.le_unsatVal_amplify",
+        "Cslib.PCP.Encoded.Graph.length_edges_amplify",
+        "Cslib.PCP.Encoded.Graph.min_le_unsatVal_amplify",
+        "Cslib.PCP.Encoded.Graph.satisfiable_amplify_iff",
+        "Cslib.PCP.Encoded.Graph.vertices_amplify",
+        "Cslib.PCP.Encoded.Graph.wellFormed_amplify"
+      ],
+      "private_ilean_sha256": "e4ef3759f4c896c0b8e01fe456598d31ae419848f1e8ef3a0a98880403fba8c9",
+      "compiled_output_published": false
+    }
+  },
+  "amplification-enumeration": {
+    "baseline": {
+      "module": "Complexity.Computability.PCP.Encoded.Amplification.Enumeration",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Amplification",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Encoded.SelectedComposition.Enumeration",
+          false,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.div_le_unsatVal_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.le_unsatVal_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.length_edges_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.min_le_unsatVal_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.satisfiable_amplifyEnumerated_iff",
+        "Cslib.PCP.Encoded.Graph.vertices_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.wellFormed_amplifyEnumerated"
+      ],
+      "private_ilean_sha256": "92acd336492617f47762a2f5a1c5251c8f6318235a0f29f4de41b051701c2ec2",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.PCP.Encoded.Amplification.Enumeration",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Amplification",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Encoded.SelectedComposition.Enumeration",
+          false,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.div_le_unsatVal_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.le_unsatVal_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.length_edges_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.min_le_unsatVal_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.satisfiable_amplifyEnumerated_iff",
+        "Cslib.PCP.Encoded.Graph.vertices_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.wellFormed_amplifyEnumerated"
+      ],
+      "private_ilean_sha256": "71d6b321033ad78312553d332ad1b430766ec7958ccee0435745837c70b2c858",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.PCP.Encoded.Amplification.Enumeration",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Amplification",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Encoded.SelectedComposition.Enumeration",
+          false,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.div_le_unsatVal_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.le_unsatVal_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.length_edges_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.min_le_unsatVal_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.satisfiable_amplifyEnumerated_iff",
+        "Cslib.PCP.Encoded.Graph.vertices_amplifyEnumerated",
+        "Cslib.PCP.Encoded.Graph.wellFormed_amplifyEnumerated"
+      ],
+      "private_ilean_sha256": "127a5b9aebf3cb8f59917f80912c96300b1a8f92f42e596e45e6a39bb72df73d",
+      "compiled_output_published": false
+    }
+  },
+  "constraints": {
+    "baseline": {
+      "module": "Complexity.Computability.PCP.Encoded.Constraints",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.isPolyTime_constraintTable",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_constraintTableEval",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_tabulateConstraints",
+        "Cslib.PCP.Encoded.Graph.length_constraintTable_le",
+        "Cslib.PCP.Encoded.Graph.length_edges_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.length_encoding_mapConstraints_le",
+        "Cslib.PCP.Encoded.Graph.length_encoding_tabulateConstraints_le",
+        "Cslib.PCP.Encoded.Graph.mapConstraints",
+        "Cslib.PCP.Encoded.Graph.mapConstraints_comp",
+        "Cslib.PCP.Encoded.Graph.mapConstraints_id",
+        "Cslib.PCP.Encoded.Graph.satisfiable_mapConstraints_iff",
+        "Cslib.PCP.Encoded.Graph.toGraph_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.unsatVal_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.vertices_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.wellFormed_mapConstraints_iff"
+      ],
+      "private_ilean_sha256": "e8ba0252ccfd37bf5ca0002edad3c86b7c4e68d0aaf9d88cf1828adc82b51405",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.PCP.Encoded.Constraints",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.isPolyTime_constraintTable",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_constraintTableEval",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_tabulateConstraints",
+        "Cslib.PCP.Encoded.Graph.length_constraintTable_le",
+        "Cslib.PCP.Encoded.Graph.length_edges_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.length_encoding_mapConstraints_le",
+        "Cslib.PCP.Encoded.Graph.length_encoding_tabulateConstraints_le",
+        "Cslib.PCP.Encoded.Graph.mapConstraints",
+        "Cslib.PCP.Encoded.Graph.mapConstraints_comp",
+        "Cslib.PCP.Encoded.Graph.mapConstraints_id",
+        "Cslib.PCP.Encoded.Graph.satisfiable_mapConstraints_iff",
+        "Cslib.PCP.Encoded.Graph.toGraph_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.unsatVal_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.vertices_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.wellFormed_mapConstraints_iff"
+      ],
+      "private_ilean_sha256": "28309dc0e94588c2c44e89a857d57dacf8f4a0d4005530bbb7e9eb83d2619fb5",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.PCP.Encoded.Constraints",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.isPolyTime_constraintTable",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_constraintTableEval",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_tabulateConstraints",
+        "Cslib.PCP.Encoded.Graph.length_constraintTable_le",
+        "Cslib.PCP.Encoded.Graph.length_edges_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.length_encoding_mapConstraints_le",
+        "Cslib.PCP.Encoded.Graph.length_encoding_tabulateConstraints_le",
+        "Cslib.PCP.Encoded.Graph.mapConstraints",
+        "Cslib.PCP.Encoded.Graph.mapConstraints_comp",
+        "Cslib.PCP.Encoded.Graph.mapConstraints_id",
+        "Cslib.PCP.Encoded.Graph.satisfiable_mapConstraints_iff",
+        "Cslib.PCP.Encoded.Graph.toGraph_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.unsatVal_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.vertices_mapConstraints",
+        "Cslib.PCP.Encoded.Graph.wellFormed_mapConstraints_iff"
+      ],
+      "private_ilean_sha256": "2fbdc7a746d42a364a0756203c148e97f3cf6e6fd670f75cee09c6294318fea2",
+      "compiled_output_published": false
+    }
+  },
+  "preprocess": {
+    "baseline": {
+      "module": "Complexity.Computability.PCP.Encoded.Preprocess",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.DegreeReduction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Encoded.AddTrivial",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Preprocess",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.halfEdgeEquiv",
+        "Cslib.PCP.Encoded.Graph.halfEdgeEquiv_val",
+        "Cslib.PCP.Encoded.Graph.halfEdgeFamily",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_preprocess",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges",
+        "Cslib.PCP.Encoded.Graph.le_unsatVal_preprocess",
+        "Cslib.PCP.Encoded.Graph.length_edges_preprocess",
+        "Cslib.PCP.Encoded.Graph.length_rotationEdges",
+        "Cslib.PCP.Encoded.Graph.preprocess",
+        "Cslib.PCP.Encoded.Graph.preprocessExpanders",
+        "Cslib.PCP.Encoded.Graph.regularPreprocess",
+        "Cslib.PCP.Encoded.Graph.rotationEdges",
+        "Cslib.PCP.Encoded.Graph.satisfiable_preprocess_iff",
+        "Cslib.PCP.Encoded.Graph.spectralExpansion_regularPreprocess_le",
+        "Cslib.PCP.Encoded.Graph.toGraph_preprocess",
+        "Cslib.PCP.Encoded.Graph.unsatVal_preprocess",
+        "Cslib.PCP.Encoded.Graph.unsatVal_preprocess_eq",
+        "Cslib.PCP.Encoded.Graph.vertices_preprocess",
+        "Cslib.PCP.Encoded.Graph.wellFormed_preprocess",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.addTrivial_represents",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.endpoints_rotationEdges",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.rotationEdges_product",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.rotationEdges_represents",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.toGraph_append_inverse"
+      ],
+      "private_ilean_sha256": "5c5b57279800d55085992d3e6d5c64d13ef366f9678168cfe4e3a7c73910a362",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.PCP.Encoded.Preprocess",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.DegreeReduction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Encoded.AddTrivial",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Preprocess",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.halfEdgeEquiv",
+        "Cslib.PCP.Encoded.Graph.halfEdgeEquiv_val",
+        "Cslib.PCP.Encoded.Graph.halfEdgeFamily",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_preprocess",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges",
+        "Cslib.PCP.Encoded.Graph.le_unsatVal_preprocess",
+        "Cslib.PCP.Encoded.Graph.length_edges_preprocess",
+        "Cslib.PCP.Encoded.Graph.length_rotationEdges",
+        "Cslib.PCP.Encoded.Graph.preprocess",
+        "Cslib.PCP.Encoded.Graph.preprocessExpanders",
+        "Cslib.PCP.Encoded.Graph.regularPreprocess",
+        "Cslib.PCP.Encoded.Graph.rotationEdges",
+        "Cslib.PCP.Encoded.Graph.satisfiable_preprocess_iff",
+        "Cslib.PCP.Encoded.Graph.spectralExpansion_regularPreprocess_le",
+        "Cslib.PCP.Encoded.Graph.toGraph_preprocess",
+        "Cslib.PCP.Encoded.Graph.unsatVal_preprocess",
+        "Cslib.PCP.Encoded.Graph.unsatVal_preprocess_eq",
+        "Cslib.PCP.Encoded.Graph.vertices_preprocess",
+        "Cslib.PCP.Encoded.Graph.wellFormed_preprocess",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.addTrivial_represents",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.endpoints_rotationEdges",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.rotationEdges_product",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.rotationEdges_represents",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.toGraph_append_inverse"
+      ],
+      "private_ilean_sha256": "3a401cd2ee99f3b9fcd037c5a52840d1388f321364bdc221dc4dec35fc49201b",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.PCP.Encoded.Preprocess",
+      "directImports": [
+        [
+          "Complexity.Computability.PCP.Encoded.DegreeReduction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Encoded.AddTrivial",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.PCP.Preprocess",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.PCP.Encoded.Graph.halfEdgeEquiv",
+        "Cslib.PCP.Encoded.Graph.halfEdgeEquiv_val",
+        "Cslib.PCP.Encoded.Graph.halfEdgeFamily",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_preprocess",
+        "Cslib.PCP.Encoded.Graph.isPolyTime_rotationEdges",
+        "Cslib.PCP.Encoded.Graph.le_unsatVal_preprocess",
+        "Cslib.PCP.Encoded.Graph.length_edges_preprocess",
+        "Cslib.PCP.Encoded.Graph.length_rotationEdges",
+        "Cslib.PCP.Encoded.Graph.preprocess",
+        "Cslib.PCP.Encoded.Graph.preprocessExpanders",
+        "Cslib.PCP.Encoded.Graph.regularPreprocess",
+        "Cslib.PCP.Encoded.Graph.rotationEdges",
+        "Cslib.PCP.Encoded.Graph.satisfiable_preprocess_iff",
+        "Cslib.PCP.Encoded.Graph.spectralExpansion_regularPreprocess_le",
+        "Cslib.PCP.Encoded.Graph.toGraph_preprocess",
+        "Cslib.PCP.Encoded.Graph.unsatVal_preprocess",
+        "Cslib.PCP.Encoded.Graph.unsatVal_preprocess_eq",
+        "Cslib.PCP.Encoded.Graph.vertices_preprocess",
+        "Cslib.PCP.Encoded.Graph.wellFormed_preprocess",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.addTrivial_represents",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.endpoints_rotationEdges",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.rotationEdges_product",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.rotationEdges_represents",
+        "_private.Complexity.Computability.PCP.Encoded.Preprocess.0.Cslib.PCP.Encoded.Graph.toGraph_append_inverse"
+      ],
+      "private_ilean_sha256": "218e849b08f3ebea98a2d3f05af1dd1ae84aa81389955872e050128e8c6664d9",
+      "compiled_output_published": false
+    }
+  },
+  "exact-three-sat": {
+    "baseline": {
+      "module": "Complexity.Computability.Complexity.Problems.ExactThreeSAT",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Problems.ThreeSAT",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.SAT.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.ExactThreeSAT",
+        "Cslib.Complexity.ExactThreeSAT.computableInPolyTime_padClause",
+        "Cslib.Complexity.ExactThreeSAT.computableInPolyTime_verifier",
+        "Cslib.Complexity.ExactThreeSAT.eval_padClause",
+        "Cslib.Complexity.ExactThreeSAT.isVerifier",
+        "Cslib.Complexity.ExactThreeSAT.length_padClause",
+        "Cslib.Complexity.ExactThreeSAT.mem_NP",
+        "Cslib.Complexity.ExactThreeSAT.padClause",
+        "Cslib.Complexity.ExactThreeSAT.verifier",
+        "Cslib.Complexity.ExactThreeSAT_npComplete",
+        "Cslib.Complexity.ExactThreeSAT_npHard",
+        "Cslib.Complexity.computableInPolyTime_toExactThreeSAT",
+        "Cslib.Complexity.mem_ExactThreeSAT_toExactThreeSAT_iff",
+        "Cslib.Complexity.polyTimeReducible_ThreeSAT_ExactThreeSAT",
+        "Cslib.Complexity.toExactThreeSAT",
+        "_private.Complexity.Computability.Complexity.Problems.ExactThreeSAT.0.Cslib.Complexity.ExactThreeSAT.length_le_length_padClause",
+        "_private.Complexity.Computability.Complexity.Problems.ExactThreeSAT.0.Cslib.Complexity.ExactThreeSAT.mem_padClause"
+      ],
+      "private_ilean_sha256": "326572c87d7a3475df6036542d9b5be2c2f4f50237720f582decfff0710a0afa",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Complexity.Problems.ExactThreeSAT",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Problems.ThreeSAT",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.SAT.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.ExactThreeSAT",
+        "Cslib.Complexity.ExactThreeSAT.computableInPolyTime_padClause",
+        "Cslib.Complexity.ExactThreeSAT.computableInPolyTime_verifier",
+        "Cslib.Complexity.ExactThreeSAT.eval_padClause",
+        "Cslib.Complexity.ExactThreeSAT.isVerifier",
+        "Cslib.Complexity.ExactThreeSAT.length_padClause",
+        "Cslib.Complexity.ExactThreeSAT.mem_NP",
+        "Cslib.Complexity.ExactThreeSAT.padClause",
+        "Cslib.Complexity.ExactThreeSAT.verifier",
+        "Cslib.Complexity.ExactThreeSAT_npComplete",
+        "Cslib.Complexity.ExactThreeSAT_npHard",
+        "Cslib.Complexity.computableInPolyTime_toExactThreeSAT",
+        "Cslib.Complexity.mem_ExactThreeSAT_toExactThreeSAT_iff",
+        "Cslib.Complexity.polyTimeReducible_ThreeSAT_ExactThreeSAT",
+        "Cslib.Complexity.toExactThreeSAT",
+        "_private.Complexity.Computability.Complexity.Problems.ExactThreeSAT.0.Cslib.Complexity.ExactThreeSAT.length_le_length_padClause",
+        "_private.Complexity.Computability.Complexity.Problems.ExactThreeSAT.0.Cslib.Complexity.ExactThreeSAT.mem_padClause"
+      ],
+      "private_ilean_sha256": "f126aaf07c04492dd2d4ae6bca41a694c14bd1baba4e15d0717e34bd60ab9c73",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Complexity.Problems.ExactThreeSAT",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Problems.ThreeSAT",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Complexity.Problems.SAT.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.ExactThreeSAT",
+        "Cslib.Complexity.ExactThreeSAT.computableInPolyTime_padClause",
+        "Cslib.Complexity.ExactThreeSAT.computableInPolyTime_verifier",
+        "Cslib.Complexity.ExactThreeSAT.eval_padClause",
+        "Cslib.Complexity.ExactThreeSAT.isVerifier",
+        "Cslib.Complexity.ExactThreeSAT.length_padClause",
+        "Cslib.Complexity.ExactThreeSAT.mem_NP",
+        "Cslib.Complexity.ExactThreeSAT.padClause",
+        "Cslib.Complexity.ExactThreeSAT.verifier",
+        "Cslib.Complexity.ExactThreeSAT_npComplete",
+        "Cslib.Complexity.ExactThreeSAT_npHard",
+        "Cslib.Complexity.computableInPolyTime_toExactThreeSAT",
+        "Cslib.Complexity.mem_ExactThreeSAT_toExactThreeSAT_iff",
+        "Cslib.Complexity.polyTimeReducible_ThreeSAT_ExactThreeSAT",
+        "Cslib.Complexity.toExactThreeSAT",
+        "_private.Complexity.Computability.Complexity.Problems.ExactThreeSAT.0.Cslib.Complexity.ExactThreeSAT.length_le_length_padClause",
+        "_private.Complexity.Computability.Complexity.Problems.ExactThreeSAT.0.Cslib.Complexity.ExactThreeSAT.mem_padClause"
+      ],
+      "private_ilean_sha256": "278ae51a27831028ad8bba18c7d86bc44e13bd748dce46966165d516cf78ef6e",
+      "compiled_output_published": false
+    }
+  },
+  "partition": {
+    "baseline": {
+      "module": "Complexity.Computability.Complexity.Problems.Partition",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Problems.SubsetSum",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.Sublists",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.Partition",
+        "Cslib.Complexity.Partition.computableInPolyTime_verifier",
+        "Cslib.Complexity.Partition.isVerifier",
+        "Cslib.Complexity.Partition.mem_NP",
+        "Cslib.Complexity.Partition.verifier",
+        "Cslib.Complexity.Partition_npComplete",
+        "Cslib.Complexity.Partition_npHard",
+        "Cslib.Complexity.SubsetSum.computableInPolyTime_toPartition",
+        "Cslib.Complexity.SubsetSum.toPartition",
+        "Cslib.Complexity.SubsetSum.toPartition_mem_iff",
+        "Cslib.Complexity.mem_Partition_iff",
+        "Cslib.Complexity.mem_Partition_iff_sublist",
+        "Cslib.Complexity.polyTimeReducible_SubsetSum_Partition"
+      ],
+      "private_ilean_sha256": "172c896f1a1a13a76b0cee6f1cce753c6cfcc7476cbd898684e87a804f2d5b65",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Computability.Complexity.Problems.Partition",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Problems.SubsetSum",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.Sublists",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.Partition",
+        "Cslib.Complexity.Partition.computableInPolyTime_verifier",
+        "Cslib.Complexity.Partition.isVerifier",
+        "Cslib.Complexity.Partition.mem_NP",
+        "Cslib.Complexity.Partition.verifier",
+        "Cslib.Complexity.Partition_npComplete",
+        "Cslib.Complexity.Partition_npHard",
+        "Cslib.Complexity.SubsetSum.computableInPolyTime_toPartition",
+        "Cslib.Complexity.SubsetSum.toPartition",
+        "Cslib.Complexity.SubsetSum.toPartition_mem_iff",
+        "Cslib.Complexity.mem_Partition_iff",
+        "Cslib.Complexity.mem_Partition_iff_sublist",
+        "Cslib.Complexity.polyTimeReducible_SubsetSum_Partition"
+      ],
+      "private_ilean_sha256": "fec870f3a1dccada5c66c83c978f66ce8c2e7287bf23ee6b4c7af0d01ee2b45f",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Computability.Complexity.Problems.Partition",
+      "directImports": [
+        [
+          "Complexity.Computability.Complexity.Problems.SubsetSum",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary",
+          true,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Data.List.Sublists",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Complexity.Partition",
+        "Cslib.Complexity.Partition.computableInPolyTime_verifier",
+        "Cslib.Complexity.Partition.isVerifier",
+        "Cslib.Complexity.Partition.mem_NP",
+        "Cslib.Complexity.Partition.verifier",
+        "Cslib.Complexity.Partition_npComplete",
+        "Cslib.Complexity.Partition_npHard",
+        "Cslib.Complexity.SubsetSum.computableInPolyTime_toPartition",
+        "Cslib.Complexity.SubsetSum.toPartition",
+        "Cslib.Complexity.SubsetSum.toPartition_mem_iff",
+        "Cslib.Complexity.mem_Partition_iff",
+        "Cslib.Complexity.mem_Partition_iff_sublist",
+        "Cslib.Complexity.polyTimeReducible_SubsetSum_Partition"
+      ],
+      "private_ilean_sha256": "4af4619e9f54d55f7dd42566512cfd4723ddf6ca964b6aed2e268129f3871b3e",
+      "compiled_output_published": false
+    }
+  },
+  "generator-padding": {
+    "baseline": {
+      "module": "Complexity.Crypto.Computational.GeneratorPadding",
+      "directImports": [
+        [
+          "Complexity.Crypto.Game",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.PPT",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.BitString",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.BitString",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.GeneratorPadding.advantage_eq",
+        "Cslib.Crypto.GeneratorPadding.generate",
+        "Cslib.Crypto.GeneratorPadding.generate_distribution",
+        "Cslib.Crypto.GeneratorPadding.ideal_distribution",
+        "Cslib.Crypto.GeneratorPadding.isPPTOn_test",
+        "Cslib.Crypto.GeneratorPadding.isPolyTime_generate",
+        "Cslib.Crypto.GeneratorPadding.length_generate",
+        "Cslib.Crypto.GeneratorPadding.test"
+      ],
+      "private_ilean_sha256": "954b02395c3aa173f5f0f52daccdb882fa33ea9cf08b17f1e2a921c947973ee8",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Crypto.Computational.GeneratorPadding",
+      "directImports": [
+        [
+          "Complexity.Crypto.Game",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.PPT",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.BitString",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.BitString",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.GeneratorPadding.advantage_eq",
+        "Cslib.Crypto.GeneratorPadding.generate",
+        "Cslib.Crypto.GeneratorPadding.generate_distribution",
+        "Cslib.Crypto.GeneratorPadding.ideal_distribution",
+        "Cslib.Crypto.GeneratorPadding.isPPTOn_test",
+        "Cslib.Crypto.GeneratorPadding.isPolyTime_generate",
+        "Cslib.Crypto.GeneratorPadding.length_generate",
+        "Cslib.Crypto.GeneratorPadding.test"
+      ],
+      "private_ilean_sha256": "0ca323b98a9a19102a57b701555b37aabae6459fc34869c2402d770cfd3dbb4a",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Crypto.Computational.GeneratorPadding",
+      "directImports": [
+        [
+          "Complexity.Crypto.Game",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.PPT",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.BitString",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.BitString",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.GeneratorPadding.advantage_eq",
+        "Cslib.Crypto.GeneratorPadding.generate",
+        "Cslib.Crypto.GeneratorPadding.generate_distribution",
+        "Cslib.Crypto.GeneratorPadding.ideal_distribution",
+        "Cslib.Crypto.GeneratorPadding.isPPTOn_test",
+        "Cslib.Crypto.GeneratorPadding.isPolyTime_generate",
+        "Cslib.Crypto.GeneratorPadding.length_generate",
+        "Cslib.Crypto.GeneratorPadding.test"
+      ],
+      "private_ilean_sha256": "7dd8041468adc68b3d07afd48f957e40db301008b29396fb6413ebbe97eb3903",
+      "compiled_output_published": false
+    }
+  },
+  "prediction": {
+    "baseline": {
+      "module": "Complexity.Crypto.Computational.Prediction",
+      "directImports": [
+        [
+          "Complexity.Crypto.Computational.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF.Event",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.Notation",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.bitPredictor",
+        "Cslib.Crypto.bitPredictor_bias",
+        "Cslib.Crypto.calibratedTest",
+        "Cslib.Crypto.calibratedTest_gap",
+        "Cslib.Crypto.isPPTOn_bitPredictor",
+        "Cslib.Crypto.isPPTOn_calibratedTest",
+        "Cslib.Crypto.isPPTOn_trialPredictor",
+        "Cslib.Crypto.probability_bitPredictor",
+        "Cslib.Crypto.probability_calibratedTest",
+        "Cslib.Crypto.trialPredictor",
+        "Cslib.Crypto.trialPredictor_gap"
+      ],
+      "private_ilean_sha256": "46634645146320a30a0db1c0262472a71a176e18b3012de05f96ed3dd46c4208",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Crypto.Computational.Prediction",
+      "directImports": [
+        [
+          "Complexity.Crypto.Computational.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF.Event",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.Notation",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.bitPredictor",
+        "Cslib.Crypto.bitPredictor_bias",
+        "Cslib.Crypto.calibratedTest",
+        "Cslib.Crypto.calibratedTest_gap",
+        "Cslib.Crypto.isPPTOn_bitPredictor",
+        "Cslib.Crypto.isPPTOn_calibratedTest",
+        "Cslib.Crypto.isPPTOn_trialPredictor",
+        "Cslib.Crypto.probability_bitPredictor",
+        "Cslib.Crypto.probability_calibratedTest",
+        "Cslib.Crypto.trialPredictor",
+        "Cslib.Crypto.trialPredictor_gap"
+      ],
+      "private_ilean_sha256": "6152e4b3f64ff82952da46ba941c3fad7d4be1a2e35004e0640d97ebce40e3b8",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Crypto.Computational.Prediction",
+      "directImports": [
+        [
+          "Complexity.Crypto.Computational.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF.Event",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Languages.Probabilistic.Notation",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.PMF",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.bitPredictor",
+        "Cslib.Crypto.bitPredictor_bias",
+        "Cslib.Crypto.calibratedTest",
+        "Cslib.Crypto.calibratedTest_gap",
+        "Cslib.Crypto.isPPTOn_bitPredictor",
+        "Cslib.Crypto.isPPTOn_calibratedTest",
+        "Cslib.Crypto.isPPTOn_trialPredictor",
+        "Cslib.Crypto.probability_bitPredictor",
+        "Cslib.Crypto.probability_calibratedTest",
+        "Cslib.Crypto.trialPredictor",
+        "Cslib.Crypto.trialPredictor_gap"
+      ],
+      "private_ilean_sha256": "23ddcac8210a25a0a75c37ec9049baf6a30e830223574b92f34e6d8507cbff75",
+      "compiled_output_published": false
+    }
+  },
+  "extraction-schedule": {
+    "baseline": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule",
+      "directImports": [
+        [
+          "Complexity.Crypto.Negligible.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Analysis.SpecialFunctions.Pow.Real",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.PolyTime",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.count",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.error",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.error_le",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.error_negligible",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.isPolyTime_count",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.isPolyTime_slack",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.slack",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.two_slack_eq",
+        "_private.Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule.0.Cslib.Crypto.Pseudoentropy.ExtractionSchedule.slack_ge"
+      ],
+      "private_ilean_sha256": "b9c45f03fc90fdb150f4dcefdca4f4acca7d67319ecc0402e8ceeca80794c52c",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule",
+      "directImports": [
+        [
+          "Complexity.Crypto.Negligible.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Analysis.SpecialFunctions.Pow.Real",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.PolyTime",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.count",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.error",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.error_le",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.error_negligible",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.isPolyTime_count",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.isPolyTime_slack",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.slack",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.two_slack_eq",
+        "_private.Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule.0.Cslib.Crypto.Pseudoentropy.ExtractionSchedule.slack_ge"
+      ],
+      "private_ilean_sha256": "2c82cd29edbbf10c66db3da2923398289e0f83b38e706d24ff0ba7d53ea9215a",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule",
+      "directImports": [
+        [
+          "Complexity.Crypto.Negligible.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Mathlib.Analysis.SpecialFunctions.Pow.Real",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.PolyTime",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PolyTime",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.count",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.error",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.error_le",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.error_negligible",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.isPolyTime_count",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.isPolyTime_slack",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.slack",
+        "Cslib.Crypto.Pseudoentropy.ExtractionSchedule.two_slack_eq",
+        "_private.Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule.0.Cslib.Crypto.Pseudoentropy.ExtractionSchedule.slack_ge"
+      ],
+      "private_ilean_sha256": "89021e695a2c9235089957f73ba78d2345fd4a7f7e42c4a853a82a0aaf1b88cd",
+      "compiled_output_published": false
+    }
+  },
+  "repeated-extraction": {
+    "baseline": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.RepeatedExtraction",
+      "directImports": [
+        [
+          "Complexity.Languages.Probabilistic.Repeat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule",
+          false,
+          false,
+          false
+        ],
+        [
+          "Cslib.Foundations.Data.BitString",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.Entropy",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.UniversalHash",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.EntropyExtraction",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Game.Statistical",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.eval_extractLabels_of_subsingleton",
+        "Cslib.Crypto.Pseudoentropy.eval_replicate_extractLabels",
+        "Cslib.Crypto.Pseudoentropy.eval_replicate_extractLabels_map_pair",
+        "Cslib.Crypto.Pseudoentropy.extractLabels",
+        "Cslib.Crypto.Pseudoentropy.extractLabelsIdeal",
+        "Cslib.Crypto.Pseudoentropy.extractLabelsIdeal_map_observation",
+        "Cslib.Crypto.Pseudoentropy.extractLabelsIdeal_map_snd",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_dist_bind_le",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_indistinguishable",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_map_pair",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_sequence_gap",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractLabels",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractLabels_list",
+        "Cslib.Crypto.Pseudoentropy.seededHash_replicate_indistinguishable"
+      ],
+      "private_ilean_sha256": "82ba5983dc2fcbbe3a795972e929f991d9402663e9d6ab912c33ec1ccbb747a3",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.RepeatedExtraction",
+      "directImports": [
+        [
+          "Complexity.Languages.Probabilistic.Repeat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule",
+          false,
+          false,
+          false
+        ],
+        [
+          "Cslib.Foundations.Data.BitString",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.Entropy",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.UniversalHash",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.EntropyExtraction",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Game.Statistical",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.eval_extractLabels_of_subsingleton",
+        "Cslib.Crypto.Pseudoentropy.eval_replicate_extractLabels",
+        "Cslib.Crypto.Pseudoentropy.eval_replicate_extractLabels_map_pair",
+        "Cslib.Crypto.Pseudoentropy.extractLabels",
+        "Cslib.Crypto.Pseudoentropy.extractLabelsIdeal",
+        "Cslib.Crypto.Pseudoentropy.extractLabelsIdeal_map_observation",
+        "Cslib.Crypto.Pseudoentropy.extractLabelsIdeal_map_snd",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_dist_bind_le",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_indistinguishable",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_map_pair",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_sequence_gap",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractLabels",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractLabels_list",
+        "Cslib.Crypto.Pseudoentropy.seededHash_replicate_indistinguishable"
+      ],
+      "private_ilean_sha256": "5133f4deeb9232495a8391f5e7c4334b2543da729904a49adcb47fce3a7d2fe6",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.RepeatedExtraction",
+      "directImports": [
+        [
+          "Complexity.Languages.Probabilistic.Repeat",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Basic",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule",
+          false,
+          false,
+          false
+        ],
+        [
+          "Cslib.Foundations.Data.BitString",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.Entropy",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.UniversalHash",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Probability.EntropyExtraction",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Game.Statistical",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.eval_extractLabels_of_subsingleton",
+        "Cslib.Crypto.Pseudoentropy.eval_replicate_extractLabels",
+        "Cslib.Crypto.Pseudoentropy.eval_replicate_extractLabels_map_pair",
+        "Cslib.Crypto.Pseudoentropy.extractLabels",
+        "Cslib.Crypto.Pseudoentropy.extractLabelsIdeal",
+        "Cslib.Crypto.Pseudoentropy.extractLabelsIdeal_map_observation",
+        "Cslib.Crypto.Pseudoentropy.extractLabelsIdeal_map_snd",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_dist_bind_le",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_indistinguishable",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_map_pair",
+        "Cslib.Crypto.Pseudoentropy.extractLabels_sequence_gap",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractLabels",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractLabels_list",
+        "Cslib.Crypto.Pseudoentropy.seededHash_replicate_indistinguishable"
+      ],
+      "private_ilean_sha256": "2c164052d9a04284314f6e8f6dcec50751daf95c57ecf4f3d90d61fa966e7857",
+      "compiled_output_published": false
+    }
+  },
+  "word-seed-extraction": {
+    "baseline": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.WordSeedExtraction",
+      "directImports": [
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.MatrixExtraction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.Seed",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.SeedExtraction",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.LinearHash",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.extract_word_observations",
+        "Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.extract_word_seeds",
+        "Cslib.Crypto.Pseudoentropy.extractWordObservations",
+        "Cslib.Crypto.Pseudoentropy.extractWordSeeds",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractWordObservations",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractWordSeeds",
+        "Cslib.Crypto.Pseudoentropy.length_extractWordObservations"
+      ],
+      "private_ilean_sha256": "3252a20de3cc51768b6863e950eae454c95964459145ad87da555532ab3f6ada",
+      "compiled_output_published": false
+    },
+    "import-only": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.WordSeedExtraction",
+      "directImports": [
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.MatrixExtraction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.Seed",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.SeedExtraction",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.LinearHash",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.extract_word_observations",
+        "Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.extract_word_seeds",
+        "Cslib.Crypto.Pseudoentropy.extractWordObservations",
+        "Cslib.Crypto.Pseudoentropy.extractWordSeeds",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractWordObservations",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractWordSeeds",
+        "Cslib.Crypto.Pseudoentropy.length_extractWordObservations"
+      ],
+      "private_ilean_sha256": "55fbc03b42cafcffb239dcf47e21263d6fe650a6f08a9e66a380098a90a9e1c8",
+      "compiled_output_published": false
+    },
+    "wrapped": {
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.WordSeedExtraction",
+      "directImports": [
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.MatrixExtraction",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.Seed",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding",
+          false,
+          false,
+          false
+        ],
+        [
+          "Complexity.Crypto.Computational.Pseudoentropy.SeedExtraction",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Computability.Probabilistic.LinearHash",
+          true,
+          false,
+          false
+        ],
+        [
+          "Complexity.Tactic.PPT",
+          true,
+          false,
+          false
+        ],
+        [
+          "Diag1155.Wrapper",
+          true,
+          false,
+          false
+        ]
+      ],
+      "source_declaration_names": [
+        "Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.extract_word_observations",
+        "Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization.extract_word_seeds",
+        "Cslib.Crypto.Pseudoentropy.extractWordObservations",
+        "Cslib.Crypto.Pseudoentropy.extractWordSeeds",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractWordObservations",
+        "Cslib.Crypto.Pseudoentropy.isPPTOn_extractWordSeeds",
+        "Cslib.Crypto.Pseudoentropy.length_extractWordObservations"
+      ],
+      "private_ilean_sha256": "7c3f1ad53f01d3a070987fb95664d372c1de09b1eb6275838a796009c89f6a6a",
+      "compiled_output_published": false
+    }
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "source_pin": "3a6d770645c1217689da774f519cd785c253d8a2",
+  "exact_preparation_head": "bd31613255320dde3caa718e651720d7caec1ac6",
+  "files": 12,
+  "authored_calls": 20,
+  "whole_file_commands_passed": 36,
+  "observed_records": 40,
+  "returned_zero_goal_calls": 20,
+  "tactic_counts": {
+    "polytime": 6,
+    "fun_prop": 7,
+    "ppt": 7
+  },
+  "raw_unit_conversion": "raw current-thread allocation counter /1000 = user heartbeat",
+  "async_options": [
+    true
+  ],
+  "per_tactic_diagnostic_only": {
+    "polytime": {
+      "calls": 6,
+      "min_observed_user_HB": 3705.01,
+      "max_observed_user_HB": 7161.456,
+      "not_a_minimum_budget": true
+    },
+    "fun_prop": {
+      "calls": 7,
+      "min_observed_user_HB": 29.634,
+      "max_observed_user_HB": 1214.339,
+      "not_a_minimum_budget": true
+    },
+    "ppt": {
+      "calls": 7,
+      "min_observed_user_HB": 7218.626,
+      "max_observed_user_HB": 21072.676,
+      "not_a_minimum_budget": true
+    }
+  },
+  "native_contexts": {
+    "addtrivial": {
+      "source_declaration_count": 14,
+      "module": "Complexity.Computability.PCP.Encoded.AddTrivial",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "amplification": {
+      "source_declaration_count": 9,
+      "module": "Complexity.Computability.PCP.Encoded.Amplification",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "amplification-enumeration": {
+      "source_declaration_count": 9,
+      "module": "Complexity.Computability.PCP.Encoded.Amplification.Enumeration",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "constraints": {
+      "source_declaration_count": 16,
+      "module": "Complexity.Computability.PCP.Encoded.Constraints",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "preprocess": {
+      "source_declaration_count": 24,
+      "module": "Complexity.Computability.PCP.Encoded.Preprocess",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "exact-three-sat": {
+      "source_declaration_count": 17,
+      "module": "Complexity.Computability.Complexity.Problems.ExactThreeSAT",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "partition": {
+      "source_declaration_count": 13,
+      "module": "Complexity.Computability.Complexity.Problems.Partition",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "generator-padding": {
+      "source_declaration_count": 8,
+      "module": "Complexity.Crypto.Computational.GeneratorPadding",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "prediction": {
+      "source_declaration_count": 11,
+      "module": "Complexity.Crypto.Computational.Prediction",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "extraction-schedule": {
+      "source_declaration_count": 9,
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "repeated-extraction": {
+      "source_declaration_count": 14,
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.RepeatedExtraction",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    },
+    "word-seed-extraction": {
+      "source_declaration_count": 7,
+      "module": "Complexity.Crypto.Computational.Pseudoentropy.WordSeedExtraction",
+      "all_modes_match": true,
+      "private_name_context_checked_same_way": true,
+      "compiled_data_identity_claim": false
+    }
+  },
+  "methodology_approved": false,
+  "all_jobs_terminal": true,
+  "claim_limits": "no full survey,coveragepercentage,programruntime,minbudget,overheadcausality,finalproof attribution or futureconcurrency guarantee"
+}
