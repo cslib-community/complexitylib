@@ -154,6 +154,30 @@ private theorem natDegree_shiftEval_le {d D : ℕ} {Q : F[X][Y]}
   have := hQ _ b (leadingCoeff_ne_zero.2 hQb)
   omega
 
+omit [Fintype F] [DecidableEq F] in
+/-- The degree-`(k + 1)` coefficient of
+`(Q.map (taylorAlgHom τ)).derivative.eval A * (X ^ (k + 1) * R)` is `∂Q/∂Y (τ, P(τ))` times the
+degree-`(k + 1)` coefficient of `P(X + τ)`. -/
+private theorem coeff_derivative_eval_mul_X_pow_mul (Q : F[X][Y]) {P A R : F[X]} {τ : F} {k : ℕ}
+    (hA : A.natDegree ≤ k) (hAP0 : A.coeff 0 = (taylor τ P).coeff 0)
+    (hPA : taylor τ P = A + X ^ (k + 1) * R) :
+    (((Q.map (taylorAlgHom τ : F[X] →+* F[X])).derivative.eval A) *
+        (X ^ (k + 1) * R)).coeff (k + 1) =
+      (derivative Q).evalEval τ (P.eval τ) * (taylor τ P).coeff (k + 1) := by
+  set φ := (taylorAlgHom τ : F[X] →+* F[X])
+  set G := Q.map φ
+  rw [show G.derivative.eval A * (X ^ (k + 1) * R) = X ^ (k + 1) * (G.derivative.eval A * R) by
+    ring, coeff_X_pow_mul', ite_eq_left le_rfl, Nat.sub_self, mul_coeff_zero,
+    coeff_zero_eq_eval_zero]
+  have h1 : (G.derivative.eval A).eval 0 = (derivative Q).evalEval τ (P.eval τ) := by
+    rw [derivative_map, show (Q.derivative.map φ).eval A = shiftEval Q.derivative τ A from rfl,
+      eval_shiftEval, zero_add, ← coeff_zero_eq_eval_zero, hAP0, taylor_coeff_zero]
+  have h2 : R.coeff 0 = (taylor τ P).coeff (k + 1) := by
+    have := congrArg (coeff · (k + 1)) hPA
+    simp only [coeff_add, coeff_X_pow_mul', ite_eq_left le_rfl, Nat.sub_self] at this
+    rw [this, coeff_eq_zero_of_natDegree_lt (p := A) (by omega), zero_add]
+  rw [h1, h2]
+
 /-- **One Newton step.** Let `Q(X, P(X)) = 0` with `P` of degree at most `d`, let `Q` have
 `(1, d)`-weighted degree at most `D < |F|`, and let `λ = ∂Q/∂Y (τ, P(τ)) ≠ 0`. If `A` has
 degree at most `k < d` and agrees with `P(X + τ)` below degree `k + 1`, then the Newton step
@@ -185,20 +209,7 @@ theorem henselCoeff_eq {d D : ℕ} {Q : F[X][Y]}
       coeff_X_pow_mul', ite_eq_right]
     omega
   -- the linear term
-  have hlin : (G.derivative.eval A * (X ^ (k + 1) * R)).coeff (k + 1) =
-      lam * (taylor τ P).coeff (k + 1) := by
-    rw [show G.derivative.eval A * (X ^ (k + 1) * R) = X ^ (k + 1) * (G.derivative.eval A * R) by
-      ring, coeff_X_pow_mul', ite_eq_left le_rfl, Nat.sub_self, mul_coeff_zero,
-      coeff_zero_eq_eval_zero]
-    have h1 : (G.derivative.eval A).eval 0 = lam := by
-      rw [derivative_map, show (Q.derivative.map φ).eval A = shiftEval Q.derivative τ A from rfl,
-        eval_shiftEval, zero_add, ← coeff_zero_eq_eval_zero, hAP 0 (Nat.zero_le _),
-        taylor_coeff_zero]
-    have h2 : R.coeff 0 = (taylor τ P).coeff (k + 1) := by
-      have := congrArg (coeff · (k + 1)) hPA
-      simp only [coeff_add, coeff_X_pow_mul', ite_eq_left le_rfl, Nat.sub_self] at this
-      rw [this, coeff_eq_zero_of_natDegree_lt (p := A) (by omega), zero_add]
-    rw [h1, h2]
+  have hlin := coeff_derivative_eval_mul_X_pow_mul Q hA (hAP 0 (Nat.zero_le _)) hPA
   -- the constant term, from values
   have hconst : (G.eval A).coeff (k + 1) =
       ∑ s, coeffWeight (k + 1) s * Q.evalEval (s + τ) (A.eval s) := by

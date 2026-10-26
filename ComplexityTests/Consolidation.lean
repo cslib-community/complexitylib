@@ -10,6 +10,7 @@ import Complexity.Computability.Complexity.Classes.LogSpace
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import Complexity.Foundations.Data.BitString.Parity
+import Complexity.Foundations.Data.Nat.Asymptotics
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
 import Mathlib.Tactic.FinCases
@@ -131,5 +132,13 @@ example (c : ℕ) : PolynomiallyBounded fun n => c * (Nat.log2 n + 1) :=
 example (c : ℕ) : PolyBounded (fun w : List Bool => w.length)
     fun w => c * (Nat.log2 w.length + 1) :=
   polyBounded_log _ c
+
+/-- Adding one increases `⌊log_b n⌋` by at most one, and equality holds at `n = b ^ k - 1`. -/
+example : Nat.log 2 (7 + 1) ≤ Nat.log 2 7 + 1 ∧ Nat.log 2 (7 + 1) = Nat.log 2 7 + 1 :=
+  ⟨Nat.log_add_one_le 2 7, by decide⟩
+
+/-- `Nat.log_add_one_le` also holds for degenerate bases `b ≤ 1` and at `n = 0`. -/
+example : Nat.log 0 (5 + 1) ≤ Nat.log 0 5 + 1 ∧ Nat.log 2 (0 + 1) ≤ Nat.log 2 0 + 1 :=
+  ⟨Nat.log_add_one_le 0 5, Nat.log_add_one_le 2 0⟩
 
 end ComplexityTests.Consolidation

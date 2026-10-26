@@ -49,11 +49,12 @@ open Probability Turing.MultiTapeTM
 /-- The GGM tree of an efficient pseudorandom two-child expansion is secure against every
 uniform strict polynomial-time adaptive oracle adversary with independent private randomness. -/
 theorem GGM.pseudorandomFunction_of_indistinguishable {generator : List Bool → List Bool}
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits)
+    (hgenerator : ComputableInPolyTime generator encBits encBits)
     (hlength : ∀ seed, (generator seed).length = 2 * seed.length)
     (hsecure : ComputationallyIndistinguishable (generatorEnsemble generator)
       (fun n => BitString.uniformList (2 * n))) : PseudorandomFunction (GGM.eval generator) := by
-  refine ⟨.of_tidy (computableTidilyInPolyTime_eval hgenerator), fun key query _ =>
+  have hgenerator := hgenerator.tidy
+  refine ⟨(Crypto.GGM.computableInPolyTime_eval (.of_tidy hgenerator)), fun key query _ =>
     length_eval (fun seed => by rw [hlength]) key query, ?_⟩
   intro adversary hadversary
   obtain ⟨c, d, hqueries⟩ := hadversary.query_bounds
@@ -62,7 +63,7 @@ theorem GGM.pseudorandomFunction_of_indistinguishable {generator : List Bool →
     unfold count
     polytime
   have hreduce := hsecure (reduction generator adversary count)
-    (isPPT_reduction hgenerator hadversary hcount)
+    (isPPT_reduction (.of_tidy hgenerator) hadversary (.of_tidy hcount))
   have hloss : PolynomiallyBounded (fun n => dyadicSize n * dyadicSize (count n)) := by
     have := hcount.polynomiallyBounded
     fun_prop
@@ -89,7 +90,7 @@ theorem PseudorandomGenerator.ggm {generator : List Bool → List Bool} {length 
     simpa only [← generatorEnsemble_postprocess generator (fun n word => word.take (2 * n)),
       BitString.uniformList_take (hdouble _)] using hsecure
   have h := GGM.pseudorandomFunction_of_indistinguishable
-    (generator := fun seed => (generator seed).take (2 * seed.length)) (by polytime)
+    (generator := fun seed => (generator seed).take (2 * seed.length)) (.of_tidy (by polytime))
     (fun seed => by simp [hgenerator.length_eq, Nat.min_eq_left (hdouble _)]) htruncated
   simpa only [GGM.eval_truncate] using h
 

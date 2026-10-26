@@ -250,17 +250,15 @@ private theorem expect_mul_walk_zigzag_le_one_sub [Nonempty D] [Nonempty E] (h :
   rw [hf] at hf₁
   rw [expect_mul_walk_zigzag_eq, hhh, hff]
   -- `B̃ h = (1 - λ(H)) h₁ + u` with `‖u‖ ≤ λ(H) ‖h‖`, and the same for `f`
+  set u : V × D → ℝ := fun p ↦ H.spectralExpansion * h₁ p.1 + ((loops V Unit).tensor H).walk h₂ p
+  set w : V × D → ℝ := fun p ↦ H.spectralExpansion * f₁ p.1 + ((loops V Unit).tensor H).walk f₂ p
   have hsplit (p : V × D) :
       (h₁ p.1 + ((loops V Unit).tensor H).walk h₂ p) *
           (f₁ (G.rot p).1 + ((loops V Unit).tensor H).walk f₂ (G.rot p)) =
         (1 - H.spectralExpansion) ^ 2 * (h₁ p.1 * f₁ (G.rot p).1) +
-          (1 - H.spectralExpansion) * (h₁ p.1 * (H.spectralExpansion * f₁ (G.rot p).1 +
-            ((loops V Unit).tensor H).walk f₂ (G.rot p))) +
-          (1 - H.spectralExpansion) * ((H.spectralExpansion * h₁ p.1 +
-            ((loops V Unit).tensor H).walk h₂ p) * f₁ (G.rot p).1) +
-          (H.spectralExpansion * h₁ p.1 + ((loops V Unit).tensor H).walk h₂ p) *
-            (H.spectralExpansion * f₁ (G.rot p).1 +
-              ((loops V Unit).tensor H).walk f₂ (G.rot p)) := by
+          (1 - H.spectralExpansion) * (h₁ p.1 * w (G.rot p)) +
+          (1 - H.spectralExpansion) * (u p * f₁ (G.rot p).1) + u p * w (G.rot p) := by
+    simp only [u, w]
     ring
   simp only [hsplit, expect_add_distrib, ← mul_expect]
   have hu := H.sqrt_expect_mul_add_walk_loops_tensor_sq_le h₁ hh₂
@@ -274,15 +272,13 @@ private theorem expect_mul_walk_zigzag_le_one_sub [Nonempty D] [Nonempty E] (h :
   gcongr _ * ?_ + _ * ?_ + _ * ?_ + ?_
   · exact G.expect_mul_comp_rot_le h₁ hf₁
   · refine (expect_mul_le_sqrt_mul_sqrt univ _ _).trans ?_
-    rw [expect_comp_fst (fun v ↦ h₁ v ^ 2), expect_comp_rot G (fun p ↦
-      (H.spectralExpansion * f₁ p.1 + ((loops V Unit).tensor H).walk f₂ p) ^ 2)]
+    rw [expect_comp_fst (fun v ↦ h₁ v ^ 2), expect_comp_rot G (fun p ↦ w p ^ 2)]
     exact mul_le_mul_of_nonneg_left hu' (by positivity)
   · refine (expect_mul_le_sqrt_mul_sqrt univ _ _).trans ?_
     rw [expect_comp_rot G (fun p ↦ f₁ p.1 ^ 2), expect_comp_fst (fun v ↦ f₁ v ^ 2)]
     exact mul_le_mul_of_nonneg_right hu (by positivity)
   · refine (expect_mul_le_sqrt_mul_sqrt univ _ _).trans ?_
-    rw [expect_comp_rot G (fun p ↦
-      (H.spectralExpansion * f₁ p.1 + ((loops V Unit).tensor H).walk f₂ p) ^ 2)]
+    rw [expect_comp_rot G (fun p ↦ w p ^ 2)]
     exact mul_le_mul hu hu' (by positivity) (by positivity)
 
 /-- To bound `λ(G ⓩ H)` by `c ≥ 0`, it suffices to bound `𝔼 h · W f` by `c ‖h‖ ‖f‖` for every `h`

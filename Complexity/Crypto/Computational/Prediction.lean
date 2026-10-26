@@ -100,7 +100,7 @@ theorem bitPredictor_bias (test : Bool → ProbComp Bool) (truth : Bool) :
 theorem isPPTOn_trialPredictor {α : Type} {input : α ↪ List Bool}
     {test : α → Bool → ProbComp Bool} {trial : α → Bool}
     (htest : IsPPTOn (encPair input encBool) encBool (fun pair => test pair.1 pair.2))
-    (htrial : ComputableTidilyInPolyTime trial input encBool) :
+    (htrial : ComputableInPolyTime trial input encBool) :
     IsPPTOn input encBool (fun a => trialPredictor (test a) (trial a)) := by
   unfold trialPredictor
   ppt

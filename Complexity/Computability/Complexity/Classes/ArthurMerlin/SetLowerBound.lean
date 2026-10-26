@@ -246,6 +246,51 @@ theorem exists_verifier_iff {N c m T : Polynomial ℕ} {ℓ : α → ℕ} {R : �
     rw [BitString.block_blocksEquiv_symm]
     exact hz i
 
+/-- All certificates are rejected by `verifier` on `r` if and only if `0` is not in the image of
+`amplifiedSet` under the affine hash seeded by `r`. -/
+private theorem forall_verifier_eq_false_iff (N c m T : Polynomial ℕ) (ℓ : α → ℕ)
+    (R : α × List Bool → Bool) (a : α)
+    (r : BitString (m.eval (enc a).length * (5 * N.eval (enc a).length +
+      T.eval (enc a).length) + m.eval (enc a).length)) :
+    (∀ y : BitString (5 * N.eval (enc a).length + T.eval (enc a).length +
+      5 * c.eval (enc a).length), verifier enc N c m T ℓ R (a, List.ofFn r ++ List.ofFn y) =
+        false) ↔
+      0 ∉ (amplifiedSet (certifiedSet enc N c R a) (T.eval (enc a).length) (ℓ a)).image
+        (BitString.LinearHash.affineHash (seedEquiv _ _ r)) := by
+  rw [← exists_verifier_iff]
+  simp
+
+/-- Lower and upper bounds on `#(amplifiedSet S T (Nat.log 2 (K ^ 5)))` for a positive threshold `K`
+when `T = m + 2` and `Nat.log 2 (K ^ 5) ≤ T`. -/
+private theorem card_amplifiedSet_bounds {N m T K : ℕ} (S : Finset (BitString N)) (hKpos : 0 < K)
+    (hTm : T = m + 2) (hℓT : Nat.log 2 (K ^ 5) ≤ T) :
+    (K ≤ #S → 4 * Fintype.card (BitString m) ≤ #(amplifiedSet S T (Nat.log 2 (K ^ 5)))) ∧
+      (2 * #S ≤ K → 4 * #(amplifiedSet S T (Nat.log 2 (K ^ 5))) ≤ Fintype.card (BitString m)) := by
+  set ℓ := Nat.log 2 (K ^ 5)
+  have hcard := card_amplifiedSet S hℓT
+  have hY : Fintype.card (BitString m) = 2 ^ m := BitString.card
+  have hKℓ : 2 ^ ℓ ≤ K ^ 5 := Nat.pow_log_le_self 2 (pow_ne_zero 5 hKpos.ne')
+  have hKℓ' : K ^ 5 < 2 ^ (ℓ + 1) := Nat.lt_pow_succ_log_self (by norm_num) _
+  have hsplit : 2 ^ T = 2 ^ ℓ * 2 ^ (T - ℓ) := by
+    rw [← pow_add, Nat.add_sub_cancel' hℓT]
+  have h4 : 2 ^ T = 4 * 2 ^ m := by
+    rw [hTm, pow_add]
+    ring
+  refine ⟨fun hmem => ?_, fun hnot => ?_⟩
+  · rw [hY, hcard, ← h4, hsplit]
+    exact Nat.mul_le_mul_right _ (hKℓ.trans (Nat.pow_le_pow_left hmem 5))
+  · have h32 : 32 * #S ^ 5 ≤ K ^ 5 := by
+      have := Nat.pow_le_pow_left hnot 5
+      rw [mul_pow] at this
+      simpa using this
+    have h16 : 16 * #S ^ 5 < 2 ^ ℓ := by
+      have h2 : 2 ^ (ℓ + 1) = 2 ^ ℓ * 2 := pow_succ 2 ℓ
+      omega
+    rw [hY, hcard]
+    have := Nat.mul_le_mul_right (2 ^ (T - ℓ)) h16.le
+    rw [← hsplit, h4] at this
+    nlinarith
+
 end SetLowerBound
 
 open SetLowerBound
@@ -277,60 +322,24 @@ theorem mem_AM_of_card_certifiedSet {N c : Polynomial ℕ} {R : α × List Bool 
   have hQ : (5 * N + T + 5 * c).eval (enc a).length = 5 * N.eval (enc a).length +
       T.eval (enc a).length + 5 * c.eval (enc a).length := by simp
   rw [hP, hQ]
-  have hall (r : BitString (m.eval (enc a).length * (5 * N.eval (enc a).length +
-      T.eval (enc a).length) + m.eval (enc a).length)) :
-      (∀ y : BitString (5 * N.eval (enc a).length + T.eval (enc a).length +
-        5 * c.eval (enc a).length), verifier enc N c m T ℓ R (a, List.ofFn r ++ List.ofFn y) =
-          false) ↔
-        0 ∉ (amplifiedSet (certifiedSet enc N c R a) (T.eval (enc a).length) (ℓ a)).image
-          (BitString.LinearHash.affineHash (seedEquiv _ _ r)) := by
-    rw [← exists_verifier_iff]
-    simp
-  simp only [hall, exists_verifier_iff]
+  simp only [forall_verifier_eq_false_iff, exists_verifier_iff]
   set n := (enc a).length
-  have hTm : T.eval n = m.eval n + 2 := by simp [hT, hm]
-  set S := certifiedSet enc N c R a
-  have hcard := card_amplifiedSet S (show ℓ a ≤ T.eval n by
-    simp only [hT, Polynomial.eval_add, Polynomial.eval_ofNat]; linarith [hB a])
   have hh := (BitString.LinearHash.isPairwiseIndependentHash_affineHash
     (m.eval n) (5 * N.eval n + T.eval n)).comp_seedEquiv (seedEquiv _ _)
-  have hY : Fintype.card (BitString (m.eval n)) = 2 ^ m.eval n := BitString.card
-  have hKℓ : 2 ^ ℓ a ≤ K a ^ 5 := Nat.pow_log_le_self 2 (pow_ne_zero 5 (hKpos a).ne')
-  have hKℓ' : K a ^ 5 < 2 ^ (ℓ a + 1) := Nat.lt_pow_succ_log_self (by norm_num) _
-  have hsplit : 2 ^ T.eval n = 2 ^ ℓ a * 2 ^ (T.eval n - ℓ a) := by
-    rw [← pow_add, Nat.add_sub_cancel' (by
-      simp only [hT, Polynomial.eval_add, Polynomial.eval_ofNat]; linarith [hB a])]
-  have h4 : 2 ^ T.eval n = 4 * 2 ^ m.eval n := by rw [hTm, pow_add]; ring
+  have hbnds := card_amplifiedSet_bounds (certifiedSet enc N c R a) (hKpos a)
+    (show T.eval n = m.eval n + 2 by simp [hT, hm])
+    (by simp only [hT, Polynomial.eval_add, Polynomial.eval_ofNat]; linarith [hB a])
   constructor
   · -- members: the amplified set has at least `4 ⬝ 2 ^ m(n)` elements
     intro ha
     refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_
-    have hbig : 4 * Fintype.card (BitString (m.eval n)) ≤
-        #(amplifiedSet S (T.eval n) (ℓ a)) := by
-      rw [hY, hcard, ← h4, hsplit]
-      refine Nat.mul_le_mul_right _ (hKℓ.trans (Nat.pow_le_pow_left (hmem a ha) 5))
-    have := hh.four_mul_card_filter_notMem_image_le hbig 0
-    simp only [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] at this
-    exact this
+    simpa only [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] using
+      hh.four_mul_card_filter_notMem_image_le (hbnds.1 (hmem a ha)) 0
   · -- non-members: the amplified set has at most `2 ^ m(n) / 4` elements
     intro ha
     refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_
-    have hsmall : 4 * #(amplifiedSet S (T.eval n) (ℓ a)) ≤
-        Fintype.card (BitString (m.eval n)) := by
-      have h32 : 32 * #S ^ 5 ≤ K a ^ 5 := by
-        have := Nat.pow_le_pow_left (hnot a ha) 5
-        rw [mul_pow] at this
-        simpa using this
-      have h16 : 16 * #S ^ 5 < 2 ^ ℓ a := by
-        have h2 : 2 ^ (ℓ a + 1) = 2 ^ ℓ a * 2 := pow_succ 2 (ℓ a)
-        omega
-      rw [hY, hcard]
-      have := Nat.mul_le_mul_right (2 ^ (T.eval n - ℓ a)) h16.le
-      rw [← hsplit, h4] at this
-      nlinarith
-    have := hh.four_mul_card_filter_mem_image_le hsmall 0
-    simp only [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] at this
-    simpa only [not_not] using this
+    simpa only [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, not_not] using
+      hh.four_mul_card_filter_mem_image_le (hbnds.2 (hnot a ha)) 0
 
 /-- **`SBP ⊆ AM`** [Böhler, Glaßer and Meister][BoehlerGlasserMeister2006]: the set counted by the
 `#P` function of an `SBP` problem needs no certificates, and the set lower bound protocol applies

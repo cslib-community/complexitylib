@@ -35,10 +35,10 @@ private theorem isPolyTime_rotateReflection :
 private def exampleGraph : Graph Bool :=
   ⟨3, [⟨0, 1, false⟩, ⟨1, 1, false⟩, ⟨0, 1, true⟩]⟩
 
-private def original : Graph.PreprocessLabel Bool := .inl (.inl (.inl ()))
-private def cloud (d : Bool) : Graph.PreprocessLabel Bool := .inl (.inl (.inr d))
-private def whole (d : Bool) : Graph.PreprocessLabel Bool := .inl (.inr d)
-private def loop : Graph.PreprocessLabel Bool := .inr ()
+private def original : ConstraintGraph.PreprocessLabel Bool := .inl (.inl (.inl ()))
+private def cloud (d : Bool) : ConstraintGraph.PreprocessLabel Bool := .inl (.inl (.inr d))
+private def whole (d : Bool) : ConstraintGraph.PreprocessLabel Bool := .inl (.inr d)
+private def loop : ConstraintGraph.PreprocessLabel Bool := .inr ()
 
 example : exampleGraph.preprocessRotation false rotateReflection ((0, false), original) =
     ((0, true), original) := by decide
@@ -56,12 +56,13 @@ example : (Graph.mk 0 ([] : List (Edge Bool))).preprocessRotation false rotateRe
     ((7, true), cloud false) = ((7, true), cloud true) := by decide
 
 example : RotationMap.powRotWithInput
-    (fun p : Graph Bool × ((ℕ × Bool) × Graph.PreprocessLabel Bool) =>
+    (fun p : Graph Bool × ((ℕ × Bool) × ConstraintGraph.PreprocessLabel Bool) =>
       p.1.preprocessRotation false rotateReflection p.2) 3
     (exampleGraph, (0, false), ![original, cloud false, whole false]) =
     ((0, false), ![whole true, cloud true, original]) := by decide
 
-example (g : Graph Bool) (v : Fin g.edges.length × Bool) (d : Graph.PreprocessLabel Bool) :
+example (g : Graph Bool) (v : Fin g.edges.length × Bool)
+    (d : ConstraintGraph.PreprocessLabel Bool) :
     g.preprocessRotation false rotateReflection ((v.1.val, v.2), d) =
       let next := (g.regularPreprocess (fun c (_ _ : Bool) => c) false reflection).graph.rot (v, d)
       ((next.1.1.val, next.1.2), next.2) :=
@@ -83,11 +84,11 @@ example : exampleGraph.preprocessRelation constraintEval false
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableInPolyTime
-    (fun p : Graph Bool × ((ℕ × Bool) × Graph.PreprocessLabel Bool) =>
+    (fun p : Graph Bool × ((ℕ × Bool) × ConstraintGraph.PreprocessLabel Bool) =>
       p.1.preprocessRotation false rotateReflection p.2)
     (encPair (Graph.encoding encBool)
-      (encPair (encPair encUnary encBool) (encFinEnum (Graph.PreprocessLabel Bool))))
-    (encPair (encPair encUnary encBool) (encFinEnum (Graph.PreprocessLabel Bool))) := by
+      (encPair (encPair encUnary encBool) (encFinEnum (ConstraintGraph.PreprocessLabel Bool))))
+    (encPair (encPair encUnary encBool) (encFinEnum (ConstraintGraph.PreprocessLabel Bool))) := by
   have h := isPolyTime_rotateReflection
   fun_prop
 
@@ -96,27 +97,29 @@ example : ComputableInPolyTime
     (fun g : Graph Bool => g.preprocessRotation false rotateReflection ((g.edges.length, false),
       cloud false))
     (Graph.encoding encBool)
-    (encPair (encPair encUnary encBool) (encFinEnum (Graph.PreprocessLabel Bool))) := by
+    (encPair (encPair encUnary encBool) (encFinEnum (ConstraintGraph.PreprocessLabel Bool))) := by
   have h := isPolyTime_rotateReflection
   fun_prop
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 private theorem isPolyTime_preprocessRotation_finEnum : ComputableInPolyTime
-    (fun p : Graph Bool × ((ℕ × Bool) × Graph.PreprocessLabel Bool) =>
+    (fun p : Graph Bool × ((ℕ × Bool) × ConstraintGraph.PreprocessLabel Bool) =>
       p.1.preprocessRotation false rotateReflection p.2)
     (encPair (Graph.encoding encBool)
-      (encPair (encPair encUnary encBool) (encFinEnum (Graph.PreprocessLabel Bool))))
-    (encPair (encPair encUnary encBool) (encFinEnum (Graph.PreprocessLabel Bool))) := by
+      (encPair (encPair encUnary encBool) (encFinEnum (ConstraintGraph.PreprocessLabel Bool))))
+    (encPair (encPair encUnary encBool) (encFinEnum (ConstraintGraph.PreprocessLabel Bool))) := by
   have h := isPolyTime_rotateReflection
   fun_prop
 
 example (T : ℕ) : ComputableInPolyTime
     (RotationMap.powRotWithInput
-      (fun p : Graph Bool × ((ℕ × Bool) × Graph.PreprocessLabel Bool) =>
+      (fun p : Graph Bool × ((ℕ × Bool) × ConstraintGraph.PreprocessLabel Bool) =>
         p.1.preprocessRotation false rotateReflection p.2) T)
     (encPair (Graph.encoding encBool)
-      (encPair (encPair encUnary encBool) (encPi (encFinEnum (Graph.PreprocessLabel Bool)))))
-    (encPair (encPair encUnary encBool) (encPi (encFinEnum (Graph.PreprocessLabel Bool)))) := by
+      (encPair (encPair encUnary encBool)
+        (encPi (encFinEnum (ConstraintGraph.PreprocessLabel Bool)))))
+    (encPair (encPair encUnary encBool)
+      (encPi (encFinEnum (ConstraintGraph.PreprocessLabel Bool)))) := by
   have hrot := isPolyTime_preprocessRotation_finEnum.tidy
   refine .of_tidy ?_
   fun_prop

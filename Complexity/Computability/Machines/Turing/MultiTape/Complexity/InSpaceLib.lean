@@ -182,9 +182,6 @@ theorem iterate_divStep_self (d r : ℕ) : divStep^[r] (d, 0, r) = (d, r / d, r 
   have : r / d ≤ r := Nat.div_le_self r d
   rw [Nat.min_eq_right this, Nat.mod_eq_sub_mul_div]
 
-/-- The encoding of triples of naturals. -/
-abbrev encNat3 : ℕ × ℕ × ℕ ↪ List Bool := encPair encNat (encPair encNat encNat)
-
 theorem divStep_inSpace :
     ComputableTidilyInSpace divStep encNat3 encNat3 fun s => (encNat3 s).length + 1 := by
   have hl : (fun s => (encNat3 s).length) ≼ fun s => (encNat3 s).length + 1 := .of_le fun _ => by
@@ -301,7 +298,9 @@ theorem getD :
       (encPair (encList encNat) encNat) encNat
       fun p => 8 * ((encPair (encList encNat) encNat p).length + 1) := by
   have htail : ComputableTidilyInSpace List.tail (encList encNat) (encList encNat)
-      fun l => (encList encNat l).length := of_inO (.of_linear (ListEncoding.tail encNat))
+      fun l => (encList encNat l).length :=
+    of_inO (.of_linear (Internal.NormalForm.linear
+      (ListEncoding.tail encNat)))
   have hlen (p : List ℕ × ℕ) (k : ℕ) :
       (encList encNat (List.tail^[k] p.1)).length ≤ (encList encNat p.1).length := by
     rw [List.tail_iterate, ← p.1.take_append_drop k, encList_append, List.length_append]; simp
@@ -309,7 +308,9 @@ theorem getD :
     (Q := fun p => (encList encNat p.1).length) (B := fun p => (encList encNat p.1).length)
     (fun p k _ => hlen p k) (fun p k _ => hlen p k)
   have hhead : ComputableTidilyInSpace (fun l : List ℕ => l.headD 0) (encList encNat) encNat
-      fun l => (encList encNat l).length := of_inO (.of_linear (ListEncoding.headD 0))
+      fun l => (encList encNat l).length :=
+    of_inO (.of_linear (Internal.NormalForm.linear
+      (ListEncoding.headD 0)))
   refine (budget_comp_linear hhead h).mono_le (fun p => ?_) |>.of_enc_eq fun p => ?_
   · simp only [length_encPair]; omega
   · rw [List.tail_iterate]
@@ -545,17 +546,20 @@ theorem budget_cons {a : α → ε} {l : α → List ε} (ha : ComputableTidilyI
 theorem budget_headD (d : ε) {l : α → List ε}
     (hl : ComputableTidilyInSpace l encIn (encList enc) Bs) :
     ComputableTidilyInSpace (fun x => (l x).headD d) encIn enc Bs :=
-  budget_comp_linear (of_inO (.of_linear (ListEncoding.headD (enc := encList enc) d))) hl
+  budget_comp_linear (of_inO (.of_linear (Internal.NormalForm.linear
+      (ListEncoding.headD (enc := encList enc) d)))) hl
 
 /-- The tail of a list, within the budget. -/
 theorem budget_tail {l : α → List ε} (hl : ComputableTidilyInSpace l encIn (encList enc) Bs) :
     ComputableTidilyInSpace (fun x => (l x).tail) encIn (encList enc) Bs :=
-  budget_comp_linear (of_inO (.of_linear (ListEncoding.tail (enc₁ := enc)))) hl
+  budget_comp_linear (of_inO (.of_linear (Internal.NormalForm.linear
+      (ListEncoding.tail (enc₁ := enc))))) hl
 
 /-- Whether a list is empty, within the budget. -/
 theorem budget_isEmpty {l : α → List ε} (hl : ComputableTidilyInSpace l encIn (encList enc) Bs) :
     ComputableTidilyInSpace (fun x => (l x).isEmpty) encIn encBool Bs :=
-  budget_comp_linear (of_inO (.of_linear (ListEncoding.isEmpty (enc₁ := enc)))) hl
+  budget_comp_linear (of_inO (.of_linear (Internal.NormalForm.linear
+      (ListEncoding.isEmpty (enc₁ := enc))))) hl
 
 /-- The length of a list, within the budget. -/
 theorem budget_length {l : α → List ε} (hl : ComputableTidilyInSpace l encIn (encList enc) Bs) :

@@ -92,7 +92,8 @@ theorem IsPPTOn.mapM {α β : Type} {input : α ↪ List Bool} {output : β ↪ 
           (p.2.1, BitString.listRow (budget p.1.1) p.2.2 p.1.2))
         (encPair (encPair (encList input) encBits) (encPair input encUnary))
         (encPair input encBits) by fun_prop)
-  have hcoins := (ComputableTidilyInPolyTime.unary_mul.comp (hcount.prod hbudget)).sampleList
+  have hcoins := (ComputableInPolyTime.of_tidy
+    (ComputableTidilyInPolyTime.unary_mul.comp (hcount.prod hbudget))).sampleList
   apply (hcoins.map_with (f := fun list tape => list.zipIdx.map
     (fun q => evaluate q.1 (BitString.listRow (budget list) q.2 tape))) (.of_tidy hrun)).congr
   intro list

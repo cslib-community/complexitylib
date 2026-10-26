@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Words
 
 /-!
 # Encodings of lists

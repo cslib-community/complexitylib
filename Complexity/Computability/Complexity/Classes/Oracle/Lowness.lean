@@ -17,7 +17,7 @@ import Complexity.Computability.Complexity.Classes.SharpP.PolyTime
 import Complexity.Computability.Complexity.Classes.SharpP.Products
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import Complexity.Foundations.Data.List.Lookup
+import Mathlib.Data.List.OfFn
 
 /-!
 # Oracle lowness of `NP ∩ coNP` and `UP ∩ coUP`
@@ -306,7 +306,10 @@ private theorem replayAcceptCount_pos_iff (machine : MultiTapePTM k Bool Control
   · intro hP
     have hlen : (machine.oracleReplies g (T a) (input a)).length = T a :=
       machine.length_oracleReplies g (T a) (input a)
-    have hw₀ := List.ofFn_getElem_of_length_eq (machine.oracleReplies g (T a) (input a)) hlen
+    have hw₀ : List.ofFn (fun i : Fin (T a) =>
+        (machine.oracleReplies g (T a) (input a))[i.val]'(by omega)) =
+        machine.oracleReplies g (T a) (input a) :=
+      (List.ofFn_congr hlen.symm _).trans List.ofFn_getElem
     refine ⟨fun i => (machine.oracleReplies g (T a) (input a))[i.val]'(by omega), hw₀, ?_⟩
     rw [hw₀, hP]
     decide
@@ -342,7 +345,7 @@ private theorem replayAcceptCount_eq_ite_of_le_one
   let w₀ : Fin (T a) → Bool :=
     fun i => (machine.oracleReplies g (T a) (input a))[i.val]'(by omega)
   have hw₀ : List.ofFn w₀ = machine.oracleReplies g (T a) (input a) :=
-    List.ofFn_getElem_of_length_eq (machine.oracleReplies g (T a) (input a)) hlen
+    (List.ofFn_congr hlen.symm _).trans List.ofFn_getElem
   unfold replayAcceptCount
   rw [Finset.sum_eq_single w₀]
   · have hpos : 0 < replayPathCount machine input fYes fNo (a, List.ofFn w₀) := by
@@ -476,7 +479,8 @@ theorem NPWithOracle_subset_NP_of_PWithOracle_subset_NP
   simp only [mem_univ, true_and, hFV']
   constructor
   · rintro ⟨w, hlen, hVw⟩
-    have hw := List.ofFn_getElem_of_length_eq w hlen
+    have hw : List.ofFn (fun i : Fin (p.eval (enc a).length) => w[i.val]'(by omega)) = w :=
+      (List.ofFn_congr hlen.symm _).trans List.ofFn_getElem
     refine ⟨fun i => w[i.val]'(by omega), ?_⟩
     simpa only [hw] using hVw
   · rintro ⟨w, hVw⟩

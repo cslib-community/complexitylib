@@ -280,6 +280,27 @@ theorem le_card_interedges_compl_of_two_mul_card_le {S : Finset V}
 
 end Sets
 
+open Classical in
+/-- The number of darts `(v, i)` whose endpoints have different `f`-labels, sorted by the label of
+their first end, equals the sum over `a ∈ univ.image f` of the number of edges leaving
+`{v | f v = a}`. -/
+private theorem card_filter_ne_neighbor_eq_sum_card_interedges {α : Type*} [DecidableEq α]
+    (f : V → α) :
+    (#{p : V × D | f p.1 ≠ f (G.neighbor p.1 p.2)} : ℝ) =
+      ∑ a ∈ univ.image f, (#(G.interedges {v | f v = a} ({v | f v = a} : Finset V)ᶜ) : ℝ) := by
+  rw [card_eq_sum_card_fiberwise (f := fun p : V × D ↦ f p.1) (t := univ.image f)
+    fun p _ ↦ mem_image_of_mem f (mem_univ _)]
+  push_cast
+  refine sum_congr rfl fun a _ ↦ ?_
+  congr 2
+  ext p
+  simp only [mem_filter, mem_univ, true_and, mem_interedges, mem_compl]
+  constructor
+  · rintro ⟨h, rfl⟩
+    exact ⟨rfl, fun h' ↦ h h'.symm⟩
+  · rintro ⟨rfl, h⟩
+    exact ⟨fun h' ↦ h h'.symm, rfl⟩
+
 /-- **Disagreement across an expander, for a most frequent label**: if no label is taken by more
 vertices than `c`, at least `(1 - λ(G)) d |{f ≠ c}|` darts join two differently labelled vertices,
 whatever the number of labels. The darts leaving the set of the vertices labelled `a` number at
@@ -307,28 +328,13 @@ theorem mul_card_filter_ne_le_card_filter_ne_neighbor {α : Type*} [DecidableEq 
     congr 2
     ext v
     simp
-  -- the darts across, sorted by the label of their first end
-  have hsplit : (#{p : V × D | f p.1 ≠ f (G.neighbor p.1 p.2)} : ℝ) =
-      ∑ a ∈ T, (#(G.interedges {v | f v = a} ({v | f v = a} : Finset V)ᶜ) : ℝ) := by
-    rw [card_eq_sum_card_fiberwise (f := fun p : V × D ↦ f p.1) (t := T)
-      fun p _ ↦ mem_image_of_mem f (mem_univ _)]
-    push_cast
-    refine sum_congr rfl fun a _ ↦ ?_
-    congr 2
-    ext p
-    simp only [mem_filter, mem_univ, true_and, mem_interedges, mem_compl]
-    constructor
-    · rintro ⟨h, rfl⟩
-      exact ⟨rfl, fun h' ↦ h h'.symm⟩
-    · rintro ⟨rfl, h⟩
-      exact ⟨fun h' ↦ h h'.symm, rfl⟩
   have hterm (a : α) : (1 - G.spectralExpansion) * Fintype.card D * s a *
       (Fintype.card V - s a) / Fintype.card V ≤
         #(G.interedges {v | f v = a} ({v | f v = a} : Finset V)ᶜ) := by
     have h := G.le_card_interedges_compl {v | f v = a}
     rwa [card_compl_eq] at h
   have hsc (a : α) : s a ≤ s c := by simp only [s]; exact_mod_cast hc a
-  rw [hne, hsplit]
+  rw [hne, G.card_filter_ne_neighbor_eq_sum_card_interedges f]
   calc (1 - G.spectralExpansion) * Fintype.card D * (Fintype.card V - s c)
       = ∑ a ∈ T, (1 - G.spectralExpansion) * Fintype.card D * s a * (Fintype.card V - s c) /
           Fintype.card V := by

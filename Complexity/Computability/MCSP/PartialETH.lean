@@ -2091,155 +2091,6 @@ theorem arity_mul_log_ilangoReduction_le (G : BipartitePermutationGraph) :
         ≤ 6 * G.1 * (4 * Nat.log 2 G.1) := Nat.mul_le_mul_left _ hlog_le
       _ ≤ 24 * (G.1 * Nat.log 2 G.1) + 2 := by ring_nf; omega
 
-private theorem mul_le_pow_add_mul_log (C : ℕ) {ε : ℝ} (hε : 0 < ε) (n : ℕ) :
-    (C : ℝ) * n ≤ C * ((2 ^ (⌈(2 * C : ℝ) / ε⌉₊ + 1) : ℕ) : ℝ) +
-      (ε / 2) * (n * Nat.log 2 n : ℝ) := by
-  set M : ℕ := ⌈(2 * C : ℝ) / ε⌉₊ + 1
-  have hnonneg : 0 ≤ (ε / 2) * (n * Nat.log 2 n : ℝ) := by positivity
-  have hpow_nonneg : 0 ≤ (C : ℝ) * ((2 ^ M : ℕ) : ℝ) := by positivity
-  by_cases hn : n < 2 ^ M
-  · have hn_le : (n : ℝ) ≤ ((2 ^ M : ℕ) : ℝ) := by exact_mod_cast hn.le
-    have h1 : (C : ℝ) * n ≤ C * ((2 ^ M : ℕ) : ℝ) :=
-      mul_le_mul_of_nonneg_left hn_le (Nat.cast_nonneg C)
-    linarith
-  · have hn' : 2 ^ M ≤ n := not_lt.mp hn
-    have hlog : M ≤ Nat.log 2 n := Nat.le_log_of_pow_le Nat.one_lt_two hn'
-    have hM_ge : (2 * C : ℝ) / ε ≤ M :=
-      (Nat.le_ceil ((2 * C : ℝ) / ε)).trans (by simp [M])
-    have hlog_ge : (2 * C : ℝ) / ε ≤ (Nat.log 2 n : ℝ) :=
-      hM_ge.trans (by exact_mod_cast hlog)
-    have hC_le : (C : ℝ) ≤ (ε / 2) * (Nat.log 2 n : ℝ) := by
-      rw [div_le_iff₀ hε] at hlog_ge
-      linarith
-    have hmul := mul_le_mul_of_nonneg_right hC_le (Nat.cast_nonneg n)
-    linarith [show (ε / 2) * (Nat.log 2 n : ℝ) * n = (ε / 2) * (n * Nat.log 2 n : ℝ) by ring]
-
-private theorem decidableInSubexpTime_bpis_of_ilangoReduction_aux
-    {B : Set Instance} {encB : Instance ↪ List Bool}
-    (hred : ∃ C D : ℕ, ComputableInO ilangoReduction
-      encBipartitePermutationGraph encB
-      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D)
-      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D))
-    (hiff : ∀ G, G ∈ BipartitePermutationIndependentSet ↔ ilangoReduction G ∈ B)
-    (hsub : DecidableInSubexpTime B encB fun I => I.arity * Nat.log 2 I.arity) :
-    DecidableInSubexpTime BipartitePermutationIndependentSet encBipartitePermutationGraph
-      fun G => G.1 * Nat.log 2 G.1 := by
-  intro ε hε
-  obtain ⟨C, D, hfO⟩ := hred
-  have hfO := hfO.tidy
-  obtain ⟨l, hl⟩ := hfO.length_le_time
-  set δ : ℝ := ε / 48
-  have hδ : 0 < δ := by positivity
-  obtain ⟨e, hdec⟩ := hsub δ hδ
-  obtain ⟨g, t, k, hg, hgB, ht⟩ := hdec.exists_computableInO
-  have hg := hg.tidy
-  set C' : ℕ := C * (e + 1)
-  set E : ℕ := D * (e + 1)
-  set M : ℕ := ⌈(2 * C' : ℝ) / ε⌉₊ + 1
-  set K₀ : ℝ := 2 ^ ((C' : ℝ) * ((2 ^ M : ℕ) : ℝ))
-  set K₁ : ℝ := 1 + k * 2 ^ (2 * δ) * (2 * l + 1) ^ e + k
-  set K : ℝ := K₁ * K₀
-  refine DecidableInExpTime.of_computableInO (.of_tidy (hg.comp hfO))
-    (fun G => (hiff G).trans (hgB (ilangoReduction G)))
-    ⌈K⌉₊ E fun G => ?_
-  show _ ≤ _
-  set L : ℕ := (encBipartitePermutationGraph G).length
-  set P_exp : ℝ := 2 ^ ((C : ℝ) * G.1)
-  set P_poly : ℝ := ((L : ℝ) + 1) ^ D
-  set P : ℝ := P_exp * P_poly
-  set X₁ : ℝ := 2 ^ ((ε / 2) * (G.1 * Nat.log 2 G.1 : ℕ))
-  set X : ℝ := 2 ^ (ε * (G.1 * Nat.log 2 G.1 : ℕ))
-  have hP_exp1 : 1 ≤ P_exp := Real.one_le_rpow (by norm_num) (by positivity)
-  have hP_poly1 : 1 ≤ P_poly :=
-    one_le_pow₀ (by linarith [(Nat.cast_nonneg L : (0 : ℝ) ≤ L)])
-  have hP : 1 ≤ P := one_le_mul_of_one_le_of_one_le hP_exp1 hP_poly1
-  have hX₁ : 1 ≤ X₁ := Real.one_le_rpow (by norm_num) (by positivity)
-  have hk : (0 : ℝ) ≤ k := Nat.cast_nonneg k
-  have hP_nat : ((2 ^ (C * G.1) * (L + 1) ^ D : ℕ) : ℝ) = P := by
-    simp only [P, P_exp, P_poly]
-    rw [Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast]
-    push_cast
-    rfl
-  have hlen : ((encB (ilangoReduction G)).length : ℝ) + 1 ≤ (2 * l + 1) * P := by
-    have h1 : ((encB (ilangoReduction G)).length : ℝ) ≤ l * (P + 1) := by
-      have := hl G
-      rw [← hP_nat]
-      exact_mod_cast this
-    nlinarith
-  have hexp : (2 : ℝ) ^ (δ * ((ilangoReduction G).arity *
-      Nat.log 2 (ilangoReduction G).arity : ℕ)) ≤ 2 ^ (2 * δ) * X₁ := by
-    rw [← Real.rpow_add (by norm_num)]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    have hμ : (((ilangoReduction G).arity * Nat.log 2 (ilangoReduction G).arity : ℕ) : ℝ) ≤
-        24 * (G.1 * Nat.log 2 G.1 : ℕ) + 2 := by
-      exact_mod_cast arity_mul_log_ilangoReduction_le G
-    simp only [δ] at hμ ⊢
-    nlinarith
-  have hpow : (((encB (ilangoReduction G)).length : ℝ) + 1) ^ e ≤ (2 * l + 1) ^ e * P ^ e := by
-    rw [← mul_pow]
-    exact pow_le_pow_left₀ (by positivity) hlen e
-  have ht' : (t (ilangoReduction G) : ℝ) ≤
-      k * (2 ^ (2 * δ) * (2 * l + 1) ^ e) * (X₁ * P ^ e) + k := by
-    refine (ht (ilangoReduction G)).trans ?_
-    have := mul_le_mul hexp hpow (by positivity) (by positivity)
-    nlinarith
-  have hPe : P ^ e ≤ P ^ (e + 1) := pow_le_pow_right₀ hP (Nat.le_succ e)
-  have hP1 : P ≤ P ^ (e + 1) := le_self_pow₀ hP (Nat.succ_ne_zero e)
-  have hX₁P : 1 ≤ X₁ * P ^ (e + 1) := one_le_mul_of_one_le_of_one_le hX₁ (one_le_pow₀ hP)
-  have hstep1 : P + (t (ilangoReduction G) : ℝ) ≤ K₁ * (X₁ * P ^ (e + 1)) := by
-    have h₁ : P ≤ X₁ * P ^ (e + 1) := hP1.trans (le_mul_of_one_le_left (by positivity) hX₁)
-    have h₂ : X₁ * P ^ e ≤ X₁ * P ^ (e + 1) := mul_le_mul_of_nonneg_left hPe (by positivity)
-    have h₃ := mul_le_mul_of_nonneg_left h₂
-      (by positivity : (0 : ℝ) ≤ k * (2 ^ (2 * δ) * (2 * l + 1) ^ e))
-    have h₄ := mul_le_mul_of_nonneg_left hX₁P hk
-    simp only [K₁]
-    nlinarith
-  have hP_exp_pow : P_exp ^ (e + 1) ≤ K₀ * X₁ := by
-    have hrpow : P_exp ^ (e + 1) = 2 ^ ((C' : ℝ) * G.1) := by
-      simp only [P_exp, C', ← Real.rpow_natCast]
-      rw [← Real.rpow_mul (by norm_num)]
-      congr 1
-      push_cast
-      ring
-    rw [hrpow]
-    have hK₀X₁ : K₀ * X₁ =
-        2 ^ ((C' : ℝ) * ((2 ^ M : ℕ) : ℝ) + (ε / 2) * (G.1 * Nat.log 2 G.1 : ℕ)) := by
-      simp only [K₀, X₁]
-      rw [← Real.rpow_add (by norm_num)]
-    rw [hK₀X₁]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    simpa only [Nat.cast_mul] using mul_le_pow_add_mul_log C' hε G.1
-  have hP_poly_pow : P_poly ^ (e + 1) = ((L : ℝ) + 1) ^ E := by
-    simp only [P_poly, E, ← pow_mul]
-  have hX₁_sq : X₁ * X₁ = X := by
-    simp only [X₁, X]
-    rw [← Real.rpow_add (by norm_num)]
-    congr 1
-    ring
-  have hstep2 : X₁ * P ^ (e + 1) ≤ K₀ * (X * ((L : ℝ) + 1) ^ E) := by
-    have hsplit : X₁ * P ^ (e + 1) = X₁ * P_exp ^ (e + 1) * P_poly ^ (e + 1) := by
-      simp only [P, mul_pow]
-      ring
-    rw [hsplit, hP_poly_pow]
-    have hmul1 := mul_le_mul_of_nonneg_left hP_exp_pow (by positivity : (0 : ℝ) ≤ X₁)
-    have hmul2 := mul_le_mul_of_nonneg_right hmul1 (by positivity : (0 : ℝ) ≤ ((L : ℝ) + 1) ^ E)
-    calc X₁ * P_exp ^ (e + 1) * ((L : ℝ) + 1) ^ E
-        ≤ X₁ * (K₀ * X₁) * ((L : ℝ) + 1) ^ E := hmul2
-      _ = K₀ * ((X₁ * X₁) * ((L : ℝ) + 1) ^ E) := by ring
-      _ = K₀ * (X * ((L : ℝ) + 1) ^ E) := by rw [hX₁_sq]
-  have hK_ceil : K ≤ ⌈K⌉₊ := Nat.le_ceil K
-  have hLHS : (((2 ^ (C * G.1) * (L + 1) ^ D + t (ilangoReduction G) : ℕ) : ℝ)) =
-      P + (t (ilangoReduction G) : ℝ) := by
-    rw [Nat.cast_add, hP_nat]
-  calc (((2 ^ (C * G.1) * (L + 1) ^ D + t (ilangoReduction G) : ℕ) : ℝ))
-      = P + (t (ilangoReduction G) : ℝ) := hLHS
-    _ ≤ K₁ * (X₁ * P ^ (e + 1)) := hstep1
-    _ ≤ K₁ * (K₀ * (X * ((L : ℝ) + 1) ^ E)) :=
-        mul_le_mul_of_nonneg_left hstep2 (by positivity)
-    _ = K * (X * ((L : ℝ) + 1) ^ E) := by simp only [K, mul_assoc]
-    _ ≤ ⌈K⌉₊ * (X * ((L : ℝ) + 1) ^ E) :=
-        mul_le_mul_of_nonneg_right hK_ceil (by positivity)
-
 /-- **Subexponential-time transfer along Ilango's $2^{O(n)}$-time reduction** (unary threshold
 encoding `PartialMCSP.enc`): if a target problem `B` on `PartialMCSP.Instance` is decidable in time
 $2^{o(m \log m)}$ and `ilangoReduction` reduces `BipartitePermutationIndependentSet` to `B`, then
@@ -2250,8 +2101,8 @@ theorem decidableInSubexpTime_bpis_of_ilangoReduction
     (hsub : DecidableInSubexpTime B PartialMCSP.enc fun I => I.arity * Nat.log 2 I.arity) :
     DecidableInSubexpTime BipartitePermutationIndependentSet encBipartitePermutationGraph
       fun G => G.1 * Nat.log 2 G.1 :=
-  decidableInSubexpTime_bpis_of_ilangoReduction_aux
-    exists_computableInO_ilangoReduction hiff hsub
+  hsub.of_expReduction exists_computableInO_ilangoReduction hiff
+    (c := 24) fun G => (arity_mul_log_ilangoReduction_le G).trans (by omega)
 
 /-- **Subexponential-time transfer along Ilango's $2^{O(n)}$-time reduction** (binary threshold
 encoding `PartialMCSP.encBinary`): if a target problem `B` on `PartialMCSP.Instance` is decidable in
@@ -2263,8 +2114,8 @@ theorem decidableInSubexpTime_bpis_of_ilangoReduction_encBinary
     (hsub : DecidableInSubexpTime B PartialMCSP.encBinary fun I => I.arity * Nat.log 2 I.arity) :
     DecidableInSubexpTime BipartitePermutationIndependentSet encBipartitePermutationGraph
       fun G => G.1 * Nat.log 2 G.1 :=
-  decidableInSubexpTime_bpis_of_ilangoReduction_aux
-    exists_computableInO_ilangoReduction_encBinary hiff hsub
+  hsub.of_expReduction exists_computableInO_ilangoReduction_encBinary hiff
+    (c := 24) fun G => (arity_mul_log_ilangoReduction_le G).trans (by omega)
 
 end PartialMCSP
 

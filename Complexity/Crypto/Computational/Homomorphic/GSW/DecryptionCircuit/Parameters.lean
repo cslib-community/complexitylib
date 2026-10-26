@@ -15,14 +15,16 @@ public import Complexity.Computability.Circuit.Boolean.Layered.Compile
 /-!
 # Concrete depth fit for GSW decryption
 
-The complete raw-input decryptor and its two-copy NAND augmentation compile to fewer layers than
-`DepthParameters.depthBudget`, for every security parameter. This is an arithmetic budget result;
-it does not assume or establish LWE hardness or circular security.
+The complete raw-input decryptor and its two-copy NAND augmentation each compile to at most
+`DepthParameters.depthBudget` layers, for every security parameter. This is an arithmetic budget
+result; it does not assume or establish LWE hardness or circular security.
 
 ## Main results
 
+* `Cslib.Crypto.Homomorphic.GSW.DecryptionCircuit.layers_le_depthBudget`: the actual decryptor's
+  layer count fits the existing GSW parameter family.
 * `Cslib.Crypto.Homomorphic.GSW.DecryptionCircuit.layers_augment_le_depthBudget`: the actual
-  augmented circuit's layer count fits the existing GSW parameter family.
+  augmented circuit's layer count fits the same family.
 -/
 
 public section
@@ -44,6 +46,25 @@ private theorem clog_width_le (security : ℕ) :
     norm_num
   rw [he]
   have hp : 0 < (2 ^ t) ^ 2 := by positivity
+  omega
+
+private theorem clog_dimension_le (security : ℕ) :
+    Nat.clog 2 (Parameters.dimension security) ≤ DepthParameters.logSize security := by
+  have hm := Nat.clog_mono_right (b := 2) (show security + 1 ≤ security + 2 by omega)
+  unfold Parameters.dimension DepthParameters.logSize
+  omega
+
+/-- Two microlevels per De Morgan level of the complete raw decryptor fit the budget. -/
+theorem layers_le_depthBudget (security : ℕ) :
+    (Layered.compile (inputWidth (Parameters.dimension security) (DepthParameters.width security))
+      (circuit (Parameters.dimension security) (DepthParameters.width security)).code).1.length ≤
+      DepthParameters.depthBudget security := by
+  rw [Layered.length_compile]
+  have hd := depth_circuit_le (Parameters.dimension security) (DepthParameters.width security)
+  have hw := clog_width_le security
+  have hn := clog_dimension_le security
+  have ht := DepthParameters.two_le_logSize security
+  unfold DepthParameters.depthBudget
   omega
 
 /-- The NAND extension adds at most two De Morgan levels to the complete raw decryptor. -/
@@ -71,10 +92,7 @@ theorem layers_augment_le_depthBudget (security : ℕ) :
   rw [Layered.length_compile]
   have hd := depth_augment_le (Parameters.dimension security) (DepthParameters.width security)
   have hw := clog_width_le security
-  have hn : Nat.clog 2 (Parameters.dimension security) ≤ DepthParameters.logSize security := by
-    have hm := Nat.clog_mono_right (b := 2) (show security + 1 ≤ security + 2 by omega)
-    unfold Parameters.dimension DepthParameters.logSize
-    omega
+  have hn := clog_dimension_le security
   have ht := DepthParameters.two_le_logSize security
   unfold DepthParameters.depthBudget
   omega

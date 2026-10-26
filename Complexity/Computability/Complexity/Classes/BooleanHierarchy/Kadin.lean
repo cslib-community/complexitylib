@@ -460,11 +460,12 @@ private def kadinHardBranch (enc : α ↪ List Bool) (p₁ p₂ m : Polynomial �
     kadinIsHard enc m E r d D₁ a s ∧
     kadinMain enc p₁ p₂ m E d B a s}
 
-private theorem kadinHardBranch_mem_SigmaP_three {p₁ p₂ m : Polynomial ℕ}
-    {E : Set (α × List Bool)} (hE : E ∈ NP (encPair enc encBits)) (r d : ℕ)
-    {D₁ B : Set (α × List Bool)} (hD₁ : D₁ ∈ BH (encPair enc encBits) r)
-    (hB : B ∈ NP (encPair enc encBits)) :
-    kadinHardBranch enc p₁ p₂ m E r d D₁ B ∈ SigmaP 3 enc := by
+/-- `kadinIsHard` is an `OnSliceAlt enc false 2 (r • m)` slice predicate. -/
+private theorem onSliceAlt_kadinIsHard {m : Polynomial ℕ} {E : Set (α × List Bool)}
+    (hE : E ∈ NP (encPair enc encBits)) (r d : ℕ) {D₁ : Set (α × List Bool)}
+    (hD₁ : D₁ ∈ BH (encPair enc encBits) r) :
+    OnSliceAlt enc false 2 (r • m) (kadinIsHard enc m E r d D₁) := by
+  -- `kadinIsHard` is `OnSliceAlt enc false 2 (r • m)`
   have hLr_compl : (kadinChain enc m E r)ᶜ ∈ PiP 2 (encPair enc encBits) :=
     (BooleanHierarchy_subset_SigmaP_two_inter_PiP_two
       (compl_mem_BooleanHierarchy
@@ -474,9 +475,6 @@ private theorem kadinHardBranch_mem_SigmaP_three {p₁ p₂ m : Polynomial ℕ}
       (compl_mem_BooleanHierarchy (BH_subset_BooleanHierarchy r hD₁))).2
   have hAll : allWordsIn enc m E d ∈ SigmaP 1 (encPair enc encBits) :=
     SigmaP_one (enc := encPair enc encBits) ▸ allWordsIn_mem_NP hE d
-  have hB' : B ∈ SigmaP 1 (encPair enc encBits) :=
-    SigmaP_one (enc := encPair enc encBits) ▸ hB
-  -- `kadinIsHard` is `OnSliceAlt enc false 2 (r • m)`
   have hHard1 : OnSliceAlt enc false 2 (r • m) (fun a s => (a, s) ∉ kadinChain enc m E r) :=
     OnSliceAlt.of_mem_PiP hLr_compl (r • m)
   have hAll_drop1 : OnSliceAlt enc true 2 ((r • m + m) + d • m)
@@ -487,26 +485,27 @@ private theorem kadinHardBranch_mem_SigmaP_three {p₁ p₂ m : Polynomial ℕ}
     hAll_drop1.congr_poly fun n => by simp [add_smul, one_smul, add_assoc]
   have hD₁_slice : OnSliceAlt enc false 2 (r • m + (1 + d) • m) (fun a sw => (a, sw) ∉ D₁) :=
     OnSliceAlt.of_mem_PiP hD₁_compl (r • m + (1 + d) • m)
-  have hHard2_body : OnSliceAlt enc false 2 (r • m + (1 + d) • m)
-      (fun a sw =>
-        (a, sw.drop ((r • m + m).eval (enc a).length)) ∈ allWordsIn enc m E d →
-          (a, sw) ∉ D₁) :=
-    hAll_drop1'.imp hD₁_slice
   have hHard2 : OnSliceAlt enc false 2 (r • m)
       (fun a s => ∀ w : List Bool, w.length = ((1 + d) • m).eval (enc a).length →
         (a, w.drop (m.eval (enc a).length)) ∈ allWordsIn enc m E d →
         (a, s ++ w) ∉ D₁) := by
-    refine (hHard2_body.forall_append_same ((1 + d) • m)).congr fun a s hs => ?_
+    refine ((hAll_drop1'.imp hD₁_slice).forall_append_same ((1 + d) • m)).congr fun a s hs => ?_
     refine forall_congr' fun w => imp_congr_right fun _ => ?_
     have hlen : (r • m + m).eval (enc a).length = s.length + m.eval (enc a).length := by
       rw [Polynomial.eval_add, hs]
-    have hdrop : (s ++ w).drop ((r • m + m).eval (enc a).length) =
-        w.drop (m.eval (enc a).length) := by
-      rw [hlen, ← List.drop_drop, List.drop_left]
-    rw [hdrop]
-  have hIsHard : OnSliceAlt enc false 2 (r • m) (kadinIsHard enc m E r d D₁) :=
-    hHard1.and hHard2
+    rw [hlen, ← List.drop_drop, List.drop_left]
+  exact hHard1.and hHard2
+
+/-- `kadinMain` is an `OnSliceAlt enc false 2 (r • m)` slice predicate. -/
+private theorem onSliceAlt_kadinMain {p₁ p₂ m : Polynomial ℕ} {E : Set (α × List Bool)}
+    (hE : E ∈ NP (encPair enc encBits)) (r d : ℕ) {B : Set (α × List Bool)}
+    (hB : B ∈ NP (encPair enc encBits)) :
+    OnSliceAlt enc false 2 (r • m) (kadinMain enc p₁ p₂ m E d B) := by
   -- `kadinMain` is `OnSliceAlt enc false 2 (r • m)`
+  have hAll : allWordsIn enc m E d ∈ SigmaP 1 (encPair enc encBits) :=
+    SigmaP_one (enc := encPair enc encBits) ▸ allWordsIn_mem_NP hE d
+  have hB' : B ∈ SigmaP 1 (encPair enc encBits) :=
+    SigmaP_one (enc := encPair enc encBits) ▸ hB
   have hAll_drop2 : OnSliceAlt enc true 1 ((r • m + p₁ + p₂) + d • m)
       (fun a suw =>
         (a, suw.drop ((r • m + p₁ + p₂).eval (enc a).length)) ∈ allWordsIn enc m E d) :=
@@ -523,17 +522,22 @@ private theorem kadinHardBranch_mem_SigmaP_three {p₁ p₂ m : Polynomial ℕ}
         (a, (su₁ ++ w).drop ((r • m + p₁ + p₂).eval (enc a).length)) ∈ allWordsIn enc m E d ∧
         (a, su₁ ++ w) ∈ B) :=
     (hAll_drop2'.and hB_slice).exists_append_same (p₂ + d • m)
-  have hMain : OnSliceAlt enc false 2 (r • m) (kadinMain enc p₁ p₂ m E d B) := by
-    refine (hMain_exists.forall_append_flip p₁).congr fun a s hs => ?_
-    refine forall_congr' fun u₁ => imp_congr_right fun hu₁ => ?_
-    refine exists_congr fun w => and_congr_right fun _ => ?_
-    have hsu₁ : (r • m + p₁ + p₂).eval (enc a).length =
-        (s ++ u₁).length + p₂.eval (enc a).length := by
-      simp [hs, hu₁]
-    have hdrop : (s ++ u₁ ++ w).drop ((r • m + p₁ + p₂).eval (enc a).length) =
-        w.drop (p₂.eval (enc a).length) := by
-      rw [hsu₁, ← List.drop_drop, List.drop_left]
-    rw [hdrop]
+  refine (hMain_exists.forall_append_flip p₁).congr fun a s hs => ?_
+  refine forall_congr' fun u₁ => imp_congr_right fun hu₁ => ?_
+  refine exists_congr fun w => and_congr_right fun _ => ?_
+  have hsu₁ : (r • m + p₁ + p₂).eval (enc a).length =
+      (s ++ u₁).length + p₂.eval (enc a).length := by
+    simp [hs, hu₁]
+  rw [hsu₁, ← List.drop_drop, List.drop_left]
+
+private theorem kadinHardBranch_mem_SigmaP_three {p₁ p₂ m : Polynomial ℕ}
+    {E : Set (α × List Bool)} (hE : E ∈ NP (encPair enc encBits)) (r d : ℕ)
+    {D₁ B : Set (α × List Bool)} (hD₁ : D₁ ∈ BH (encPair enc encBits) r)
+    (hB : B ∈ NP (encPair enc encBits)) :
+    kadinHardBranch enc p₁ p₂ m E r d D₁ B ∈ SigmaP 3 enc := by
+  -- `kadinIsHard` is `OnSliceAlt enc false 2 (r • m)`
+  have hIsHard := onSliceAlt_kadinIsHard (m := m) hE r d hD₁
+  have hMain := onSliceAlt_kadinMain (p₁ := p₁) (p₂ := p₂) (m := m) hE r d hB
   -- Combine `kadinIsHard` and `kadinMain`, then existentially quantify over `s`
   have hBoth : OnSliceAlt enc false 2 (0 + r • m)
       (fun a s => kadinIsHard enc m E r d D₁ a s ∧ kadinMain enc p₁ p₂ m E d B a s) :=
@@ -579,6 +583,118 @@ private def kadinComp (r d : ℕ) (D : Set (α × List Bool)) (a : α) : Prop :=
       (a, z) ∈ allWordsIn enc m E d ∧
       (a, s ++ z) ∈ D
 
+/-- Strong soundness of `D₁`: `(a, s ++ (y ++ z)) ∈ D₁` implies
+`(a, y) ∈ E ∧ (a, s) ∉ kadinChain enc m E r`. -/
+private theorem kadinStrongSoundD₁ {r d : ℕ} {U D D₁ : Set (α × List Bool)}
+    (hD₁UD : D₁ ⊆ U \ D) (hSoundDiff : kadinSoundDiff enc m E (r + 1) d U D)
+    (a : α) (s y z : List Bool) (hs : s.length = (r • m).eval (enc a).length)
+    (hy : y.length = m.eval (enc a).length) (hz : z.length = (d • m).eval (enc a).length)
+    (hzE : (a, z) ∈ allWordsIn enc m E d) (hmem : (a, s ++ (y ++ z)) ∈ D₁) :
+    (a, y) ∈ E ∧ (a, s) ∉ kadinChain enc m E r := by
+  -- Strong soundness of `D₁`: `(a, s ++ y ++ z) ∈ D₁` implies `(a, y) ∈ E ∧ (a, s) ∉ L r`
+  have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
+    simp [hs, hy, add_smul, one_smul]
+  have hmem' : (a, (s ++ y) ++ z) ∈ U \ D := by
+    rw [List.append_assoc]
+    exact hD₁UD hmem
+  have hL : (a, s ++ y) ∈ kadinChain enc m E (r + 1) :=
+    hSoundDiff a (s ++ y) z hsy_len hz hzE hmem'
+  exact (mem_kadinChain_succ_append hs).1 hL
+
+/-- `kadinSoundD` steps down from `(r + 1, d, U \ D)` to `(r, d + 1, D₁)`. -/
+private theorem kadinSoundD_succ {r d : ℕ} {U D D₁ : Set (α × List Bool)}
+    (hD₁UD : D₁ ⊆ U \ D) (hSoundDiff : kadinSoundDiff enc m E (r + 1) d U D) :
+    kadinSoundD enc m E r (d + 1) D₁ := by
+  intro a s w hs hw hwE hmem
+  have hw' : w.length = m.eval (enc a).length + (d • m).eval (enc a).length := by
+    simpa [add_smul, one_smul, Nat.add_comm] using hw
+  let y := w.take (m.eval (enc a).length)
+  let z := w.drop (m.eval (enc a).length)
+  have hy : y.length = m.eval (enc a).length := by simp [y, hw']
+  have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw']
+  have hsplit : y ++ z = w := List.take_append_drop _ _
+  rw [← hsplit] at hwE hmem
+  obtain ⟨_, hzE⟩ := (mem_allWordsIn_succ_append hy).1 hwE
+  exact (kadinStrongSoundD₁ enc m E hD₁UD hSoundDiff a s y z hs hy hz hzE hmem).2
+
+/-- `kadinSoundDiff` steps down from `(r + 1, d, D)` to `(r, d + 1, B, D₁)` when `D = B \ D₁`. -/
+private theorem kadinSoundDiff_succ {r d : ℕ} {D B D₁ : Set (α × List Bool)}
+    (hDB : D = B \ D₁) (hSoundD : kadinSoundD enc m E (r + 1) d D) :
+    kadinSoundDiff enc m E r (d + 1) B D₁ := by
+  intro a s w hs hw hwE hmem
+  have hw' : w.length = m.eval (enc a).length + (d • m).eval (enc a).length := by
+    simpa [add_smul, one_smul, Nat.add_comm] using hw
+  let y := w.take (m.eval (enc a).length)
+  let z := w.drop (m.eval (enc a).length)
+  have hy : y.length = m.eval (enc a).length := by simp [y, hw']
+  have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw']
+  have hsplit : y ++ z = w := List.take_append_drop _ _
+  rw [← hsplit] at hwE hmem
+  obtain ⟨hyE, hzE⟩ := (mem_allWordsIn_succ_append hy).1 hwE
+  have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
+    simp [hs, hy, add_smul, one_smul]
+  have hmemD : (a, (s ++ y) ++ z) ∈ D := by
+    rw [List.append_assoc, hDB]
+    exact hmem
+  have hnotL : (a, s ++ y) ∉ kadinChain enc m E (r + 1) :=
+    hSoundD a (s ++ y) z hsy_len hz hzE hmemD
+  rw [mem_kadinChain_succ_append hs, not_and, not_not] at hnotL
+  exact hnotL hyE
+
+/-- Soundness of the hard-prefix branch: every instance in `kadinHardBranch` is in
+`kadinTarget`. -/
+private theorem kadinHardBranch_subset_kadinTarget (hm : m = p₁ + p₂) {r d : ℕ}
+    {D B D₁ : Set (α × List Bool)} (hDB : D = B \ D₁)
+    (hSoundD : kadinSoundD enc m E (r + 1) d D) :
+    kadinHardBranch enc p₁ p₂ m E r d D₁ B ⊆ kadinTarget enc p₁ p₂ E := by
+  rintro a ⟨s, hs, ⟨hs_notL, hs_hard⟩, hmain⟩ u₁ hu₁
+  obtain ⟨w, hw, hwE, hBw⟩ := hmain u₁ hu₁
+  let u₂ := w.take (p₂.eval (enc a).length)
+  let z := w.drop (p₂.eval (enc a).length)
+  have hu₂ : u₂.length = p₂.eval (enc a).length := by simp [u₂, hw]
+  have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw]
+  have hw_eq : u₂ ++ z = w := List.take_append_drop _ _
+  let y := u₁ ++ u₂
+  have hy : y.length = m.eval (enc a).length := by simp [y, hm, hu₁, hu₂]
+  have hyz_len : (y ++ z).length = ((1 + d) • m).eval (enc a).length := by
+    simp [hy, hz, add_smul, one_smul]
+  have hyz_drop : (y ++ z).drop (m.eval (enc a).length) = z := by simp [← hy]
+  have hnotD₁ : (a, s ++ (y ++ z)) ∉ D₁ := hs_hard (y ++ z) hyz_len (by rwa [hyz_drop])
+  have hsuw_eq : s ++ u₁ ++ w = (s ++ y) ++ z := by simp [y, ← hw_eq, List.append_assoc]
+  have hmemD : (a, (s ++ y) ++ z) ∈ D := by
+    rw [hDB]
+    exact ⟨by rwa [← hsuw_eq], by simpa [List.append_assoc] using hnotD₁⟩
+  have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
+    simp [hs, hy, add_smul, one_smul]
+  have hnotL_succ : (a, s ++ y) ∉ kadinChain enc m E (r + 1) :=
+    hSoundD a (s ++ y) z hsy_len hz hwE hmemD
+  rw [mem_kadinChain_succ_append hs] at hnotL_succ
+  exact ⟨u₂, hu₂, fun hyE => hnotL_succ ⟨hyE, hs_notL⟩⟩
+
+/-- When no hard prefix exists at level `r`, `kadinComp` holds at `(r, d + 1, D₁)`. -/
+private theorem kadinComp_of_not_exists_kadinIsHard {r d : ℕ} {U D D₁ : Set (α × List Bool)}
+    (hD₁UD : D₁ ⊆ U \ D) (hSoundDiff : kadinSoundDiff enc m E (r + 1) d U D) {a : α}
+    (hEx : ¬∃ s : List Bool, s.length = (r • m).eval (enc a).length ∧
+      kadinIsHard enc m E r d D₁ a s) :
+    kadinComp enc m E r (d + 1) D₁ a := by
+  intro s hs hs_notL
+  have hnotHard : ¬kadinIsHard enc m E r d D₁ a s := fun h => hEx ⟨s, hs, h⟩
+  simp only [kadinIsHard, hs_notL, not_false_eq_true, true_and, not_forall, not_not] at hnotHard
+  obtain ⟨w, hw, hwE, hmemD₁⟩ := hnotHard
+  have hw' : w.length = m.eval (enc a).length + (d • m).eval (enc a).length := by
+    simpa [add_smul, one_smul] using hw
+  let y := w.take (m.eval (enc a).length)
+  let z := w.drop (m.eval (enc a).length)
+  have hy : y.length = m.eval (enc a).length := by simp [y, hw']
+  have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw']
+  have hsplit : y ++ z = w := List.take_append_drop _ _
+  rw [← hsplit] at hmemD₁
+  have hyE : (a, y) ∈ E := (kadinStrongSoundD₁ enc m E hD₁UD hSoundDiff a s y z hs hy hz hwE
+    hmemD₁).1
+  refine ⟨w, by simpa [add_smul, one_smul, Nat.add_comm] using hw, ?_, by rwa [← hsplit]⟩
+  rw [← hsplit, mem_allWordsIn_succ_append hy]
+  exact ⟨hyE, hwE⟩
+
 private theorem exists_kadin_sigmaP_three (hm : m = p₁ + p₂)
     (hE : E ∈ NP (encPair enc encBits)) :
     ∀ (r d : ℕ) {U D : Set (α × List Bool)},
@@ -601,132 +717,32 @@ private theorem exists_kadin_sigmaP_three (hm : m = p₁ + p₂)
     exact hz
   | r + 1, d, U, D, hU, hD, hDU, hSoundD, hSoundDiff => by
     obtain ⟨B, hB, D₁, hD₁, hBU, hD₁B, hDB, hD₁UD⟩ := mem_BH_succ_subset hU hD hDU
-    -- Strong soundness of `D₁`: `(a, s ++ y ++ z) ∈ D₁` implies `(a, y) ∈ E ∧ (a, s) ∉ L r`
-    have hStrongD₁ : ∀ (a : α) (s y z : List Bool),
-        s.length = (r • m).eval (enc a).length →
-        y.length = m.eval (enc a).length →
-        z.length = (d • m).eval (enc a).length →
-        (a, z) ∈ allWordsIn enc m E d →
-        (a, s ++ (y ++ z)) ∈ D₁ →
-        (a, y) ∈ E ∧ (a, s) ∉ kadinChain enc m E r := by
-      intro a s y z hs hy hz hzE hmem
-      have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
-        simp [hs, hy, add_smul, one_smul]
-      have hmem' : (a, (s ++ y) ++ z) ∈ U \ D := by
-        rw [List.append_assoc]
-        exact hD₁UD hmem
-      have hL : (a, s ++ y) ∈ kadinChain enc m E (r + 1) :=
-        hSoundDiff a (s ++ y) z hsy_len hz hzE hmem'
-      exact (mem_kadinChain_succ_append hs).1 hL
-    have hSoundD₁ : kadinSoundD enc m E r (d + 1) D₁ := by
-      intro a s w hs hw hwE hmem
-      have hw' : w.length = m.eval (enc a).length + (d • m).eval (enc a).length := by
-        simpa [add_smul, one_smul, Nat.add_comm] using hw
-      let y := w.take (m.eval (enc a).length)
-      let z := w.drop (m.eval (enc a).length)
-      have hy : y.length = m.eval (enc a).length := by simp [y, hw']
-      have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw']
-      have hsplit : y ++ z = w := List.take_append_drop _ _
-      rw [← hsplit] at hwE hmem
-      obtain ⟨_, hzE⟩ := (mem_allWordsIn_succ_append hy).1 hwE
-      exact (hStrongD₁ a s y z hs hy hz hzE hmem).2
-    have hSoundDiff₁ : kadinSoundDiff enc m E r (d + 1) B D₁ := by
-      intro a s w hs hw hwE hmem
-      have hw' : w.length = m.eval (enc a).length + (d • m).eval (enc a).length := by
-        simpa [add_smul, one_smul, Nat.add_comm] using hw
-      let y := w.take (m.eval (enc a).length)
-      let z := w.drop (m.eval (enc a).length)
-      have hy : y.length = m.eval (enc a).length := by simp [y, hw']
-      have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw']
-      have hsplit : y ++ z = w := List.take_append_drop _ _
-      rw [← hsplit] at hwE hmem
-      obtain ⟨hyE, hzE⟩ := (mem_allWordsIn_succ_append hy).1 hwE
-      have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
-        simp [hs, hy, add_smul, one_smul]
-      have hmemD : (a, (s ++ y) ++ z) ∈ D := by
-        rw [List.append_assoc, hDB]
-        exact hmem
-      have hnotL : (a, s ++ y) ∉ kadinChain enc m E (r + 1) :=
-        hSoundD a (s ++ y) z hsy_len hz hzE hmemD
-      rw [mem_kadinChain_succ_append hs, not_and, not_not] at hnotL
-      exact hnotL hyE
     obtain ⟨H_r, hH_r_mem, hH_r_sub, hH_r_comp⟩ :=
-      exists_kadin_sigmaP_three hm hE r (d + 1) hB hD₁ hD₁B hSoundD₁ hSoundDiff₁
+      exists_kadin_sigmaP_three hm hE r (d + 1) hB hD₁ hD₁B
+        (kadinSoundD_succ enc m E hD₁UD hSoundDiff) (kadinSoundDiff_succ enc m E hDB hSoundD)
     let Hard := kadinHardBranch enc p₁ p₂ m E r d D₁ B
-    have hHard_mem : Hard ∈ SigmaP 3 enc :=
-      kadinHardBranch_mem_SigmaP_three hE r d hD₁ hB
-    refine ⟨Hard ∪ H_r, union_mem_SigmaP hHard_mem hH_r_mem, ?_, ?_⟩
-    · rintro a (ha | ha)
-      · obtain ⟨s, hs, ⟨hs_notL, hs_hard⟩, hmain⟩ := ha
-        intro u₁ hu₁
-        obtain ⟨w, hw, hwE, hBw⟩ := hmain u₁ hu₁
-        let u₂ := w.take (p₂.eval (enc a).length)
-        let z := w.drop (p₂.eval (enc a).length)
-        have hu₂ : u₂.length = p₂.eval (enc a).length := by simp [u₂, hw]
-        have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw]
-        have hw_eq : u₂ ++ z = w := List.take_append_drop _ _
-        let y := u₁ ++ u₂
-        have hy : y.length = m.eval (enc a).length := by simp [y, hm, hu₁, hu₂]
-        have hyz_len : (y ++ z).length = ((1 + d) • m).eval (enc a).length := by
-          simp [hy, hz, add_smul, one_smul]
-        have hyz_drop : (y ++ z).drop (m.eval (enc a).length) = z := by
-          simp [← hy]
-        have hnotD₁ : (a, s ++ (y ++ z)) ∉ D₁ := by
-          refine hs_hard (y ++ z) hyz_len ?_
-          rwa [hyz_drop]
-        have hsuw_eq : s ++ u₁ ++ w = (s ++ y) ++ z := by
-          simp [y, ← hw_eq, List.append_assoc]
-        have hmemD : (a, (s ++ y) ++ z) ∈ D := by
-          rw [hDB]
-          refine ⟨?_, ?_⟩
-          · rwa [← hsuw_eq]
-          · simpa [List.append_assoc] using hnotD₁
-        have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
-          simp [hs, hy, add_smul, one_smul]
-        have hnotL_succ : (a, s ++ y) ∉ kadinChain enc m E (r + 1) :=
-          hSoundD a (s ++ y) z hsy_len hz hwE hmemD
-        rw [mem_kadinChain_succ_append hs] at hnotL_succ
-        exact ⟨u₂, hu₂, fun hyE => hnotL_succ ⟨hyE, hs_notL⟩⟩
-      · exact hH_r_sub ha
-    · intro a ha hComp
-      by_cases hEx : ∃ s : List Bool, s.length = (r • m).eval (enc a).length ∧
-          kadinIsHard enc m E r d D₁ a s
-      · left
-        obtain ⟨s, hs, hHard_s⟩ := hEx
-        refine ⟨s, hs, hHard_s, fun u₁ hu₁ => ?_⟩
-        obtain ⟨u₂, hu₂, hnotE⟩ := ha u₁ hu₁
-        let y := u₁ ++ u₂
-        have hy : y.length = m.eval (enc a).length := by simp [y, hm, hu₁, hu₂]
-        have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
-          simp [hs, hy, add_smul, one_smul]
-        have hnotL_succ : (a, s ++ y) ∉ kadinChain enc m E (r + 1) := by
-          rw [mem_kadinChain_succ_append hs]
-          exact fun ⟨hyE, _⟩ => hnotE hyE
-        obtain ⟨z, hz, hzE, hmemD⟩ := hComp (s ++ y) hsy_len hnotL_succ
-        have hmemB : (a, (s ++ y) ++ z) ∈ B := by
-          rw [hDB] at hmemD
-          exact hmemD.1
-        refine ⟨u₂ ++ z, by simp [hu₂, hz], ?_, ?_⟩
-        · simpa [← hu₂] using hzE
-        · simpa [y, List.append_assoc] using hmemB
-      · right
-        refine hH_r_comp a ha fun s hs hs_notL => ?_
-        have hnotHard : ¬kadinIsHard enc m E r d D₁ a s := fun h => hEx ⟨s, hs, h⟩
-        simp only [kadinIsHard, hs_notL, not_false_eq_true, true_and, not_forall,
-          not_not] at hnotHard
-        obtain ⟨w, hw, hwE, hmemD₁⟩ := hnotHard
-        have hw' : w.length = m.eval (enc a).length + (d • m).eval (enc a).length := by
-          simpa [add_smul, one_smul] using hw
-        let y := w.take (m.eval (enc a).length)
-        let z := w.drop (m.eval (enc a).length)
-        have hy : y.length = m.eval (enc a).length := by simp [y, hw']
-        have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw']
-        have hsplit : y ++ z = w := List.take_append_drop _ _
-        rw [← hsplit] at hmemD₁
-        have hyE : (a, y) ∈ E := (hStrongD₁ a s y z hs hy hz hwE hmemD₁).1
-        refine ⟨w, by simpa [add_smul, one_smul, Nat.add_comm] using hw, ?_, by rwa [← hsplit]⟩
-        rw [← hsplit, mem_allWordsIn_succ_append hy]
-        exact ⟨hyE, hwE⟩
+    refine ⟨Hard ∪ H_r, union_mem_SigmaP (kadinHardBranch_mem_SigmaP_three hE r d hD₁ hB)
+      hH_r_mem, Set.union_subset (kadinHardBranch_subset_kadinTarget enc p₁ p₂ m E hm hDB hSoundD)
+        hH_r_sub, fun a ha hComp => ?_⟩
+    by_cases hEx : ∃ s : List Bool, s.length = (r • m).eval (enc a).length ∧
+        kadinIsHard enc m E r d D₁ a s
+    · left
+      obtain ⟨s, hs, hHard_s⟩ := hEx
+      refine ⟨s, hs, hHard_s, fun u₁ hu₁ => ?_⟩
+      obtain ⟨u₂, hu₂, hnotE⟩ := ha u₁ hu₁
+      let y := u₁ ++ u₂
+      have hy : y.length = m.eval (enc a).length := by simp [y, hm, hu₁, hu₂]
+      have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
+        simp [hs, hy, add_smul, one_smul]
+      have hnotL_succ : (a, s ++ y) ∉ kadinChain enc m E (r + 1) := by
+        rw [mem_kadinChain_succ_append hs]
+        exact fun ⟨hyE, _⟩ => hnotE hyE
+      obtain ⟨z, hz, hzE, hmemD⟩ := hComp (s ++ y) hsy_len hnotL_succ
+      rw [hDB] at hmemD
+      refine ⟨u₂ ++ z, by simp [hu₂, hz], by simpa [← hu₂] using hzE,
+        by simpa [y, List.append_assoc] using hmemD.1⟩
+    · exact Or.inr (hH_r_comp a ha (kadinComp_of_not_exists_kadinIsHard enc m E hD₁UD hSoundDiff
+        hEx))
 
 end KadinInduction
 
@@ -748,7 +764,7 @@ theorem exists_mem_BH_encBits_and_polyTimeReducible {r : ℕ} {A : Set α} (hA :
     let B₀ : Set (List Bool) := {w | cnfDecoder.decode w ∈ SAT}
     have hB₀ : B₀ ∈ NP encBits :=
       PolyTimeReducible.mem_NP
-        ⟨cnfDecoder.decode, .of_tidy cnfDecoder.computableTidilyInPolyTime, fun _ => Iff.rfl⟩
+        ⟨cnfDecoder.decode, cnfDecoder.computableInPolyTime, fun _ => Iff.rfl⟩
         SAT.mem_NP
     have hunframe : PolyTimeReducible encBits encBits {w | unframe w ∈ B₀} B₀ :=
       ⟨unframe, .of_tidy ComputableTidilyInPolyTime.unframe, fun _ => Iff.rfl⟩

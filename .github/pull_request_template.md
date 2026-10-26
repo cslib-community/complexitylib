@@ -5,6 +5,11 @@
 <!-- What result or behavior does this add or fix? Link the source and relevant issue.
 For mathematical changes, state the public claim and its important assumptions. -->
 
+<!-- For each new public `def`, `structure`, `class`, `abbrev` or `inductive`: the existing notions
+considered and why none could be used, extended or generalized (e.g. a language is
+`PromiseProblem.ofSet A`). CI's advisory parallel-definition notice suggests candidates. -->
+- Existing notions considered:
+
 ## Validation and review
 
 <!-- Record commands/outcomes and the tested revision. Mention representative clients,

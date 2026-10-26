@@ -85,7 +85,7 @@ example (q : Polynomial ℕ) :
 /-- Error at most `1 / 4` is bounded error. -/
 example {α : Type} {enc : α ↪ List Bool} {p : Polynomial ℕ} {V : α × List Bool → Bool}
     {A : Set α} (h : DecidesWithErrorExponent enc 2 p V A) : DecidesWithBoundedError enc p V A :=
-  h.decidesWithBoundedError fun _ => by simp
+  h.solvesWithBoundedError fun _ => by simp
 
 /-! ### Class-level error reduction -/
 

@@ -200,4 +200,35 @@ theorem succProbability_eufCma_lt_sufCma_sameMessageNewTagForger (n : ℕ) :
     eval_sufCmaGame_randomizedTagMACScheme_sameMessageNewTagForger]
   simp [Game.succProbability]
 
+/-! ### Schedule reindexing (`MACScheme.reindex`) -/
+
+/-- Doubling schedule `2 * n` is computable in plain polynomial time in unary. -/
+theorem computableInPolyTime_double :
+    ComputableInPolyTime (fun n : ℕ => 2 * n) encUnary encUnary :=
+  .of_tidy (by polytime)
+
+/-- Doubling schedule `2 * n` is strictly monotone on `ℕ`. -/
+theorem strictMono_double : StrictMono (fun n : ℕ => 2 * n) :=
+  fun _ _ h => Nat.mul_lt_mul_of_pos_left h (by decide)
+
+/-- Reindexed `echoPrfMAC` authenticating `2 * n`-bit messages at parameter `n`. -/
+noncomputable def doubleEchoPrfMAC : MACScheme :=
+  echoPrfMAC.reindex (fun n => 2 * n) computableInPolyTime_double
+
+example (n : ℕ) : doubleEchoPrfMAC.msgLen n = 2 * n := rfl
+
+example : doubleEchoPrfMAC.verify [false, true] [true, false] [true, false] = true := by
+  decide
+
+example (n : ℕ) : GeneratorReindex.parameter (fun k => 2 * k) (2 * n) = n :=
+  GeneratorReindex.parameter_apply_of_strictMono strictMono_double n
+
+example (M : MACScheme) (h : M.SUFCMA) :
+    (M.reindex (fun n => 2 * n) computableInPolyTime_double).SUFCMA :=
+  h.reindex computableInPolyTime_double strictMono_double
+
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    ((prfMAC family hprf.polyTime).reindex (fun n => 2 * n) computableInPolyTime_double).SUFCMA :=
+  hprf.sufCma_prfMAC.reindex computableInPolyTime_double strictMono_double
+
 end ComplexityTests.Crypto.MAC

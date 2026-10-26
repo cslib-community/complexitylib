@@ -99,14 +99,8 @@ theorem exists_SharpP_testBit_of_mem_BPOp_ParityP {L : Set α}
   have hpos : 1 ≤ 2 ^ R := Nat.one_le_two_pow
   change a ∈ L ↔ 2 ^ R < 2 * (univ.filter fun r : Fin R → Bool =>
     Odd (acceptCount V (a, List.ofFn r) Z)).card
-  constructor
-  · intro ha
-    have := hyes ha
-    omega
-  · intro hlt
-    by_contra ha
-    have := hno ha
-    omega
+  exact ⟨fun ha => by have := hyes ha; omega,
+    fun hlt => by by_contra ha; have := hno ha; omega⟩
 
 /-- **`BP·⊕P ⊆ P^#P`**: a problem decided with bounded error by a problem in `⊕P` about pairs of
 an instance and a random string is in `P^#P`, decided by a program asking for one bit of a

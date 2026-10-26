@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Finite
+import Complexity.Foundations.Data.Finset.SubsetSum
 import Mathlib.Combinatorics.SimpleGraph.Acyclic
 import Mathlib.SetTheory.Cardinal.Finite
 
@@ -26,7 +27,7 @@ coordinate-split and median-cut rectangle lemmas in `Cut.lean`:
 * **C6 (`lt_of_blocks`, `circuit_lt_of_blocks`)**: given a set `F` of freely-read inputs and a
   pairwise disjoint block partition `𝓑` of `Fᶜ` such that every gate's residual support outside
   `F` lies in a single block of `𝓑` and every block has excess `|b| - e_b ≤ M`, a subset-sum split
-  (`exists_subset_sum_ge`) and `exists_rectangle_of_cut_with_fixed` yield
+  (`Finset.exists_subset_sum_ge`) and `exists_rectangle_of_cut_with_fixed` yield
   `n < F.card + (inputGates p).card + M + 2 * k`.
 
 ## Main definitions
@@ -50,8 +51,6 @@ coordinate-split and median-cut rectangle lemmas in `Cut.lean`:
 * `Cslib.Circuits.Boolean.WeightedThreshold.lt_of_inputSupport_card_le_two`,
   `Cslib.Circuits.Boolean.WeightedThreshold.circuit_lt_of_inputSupport_card_le_two`: the C5
   fan-in-two component lower bound.
-* `Cslib.Circuits.Boolean.WeightedThreshold.exists_subset_sum_ge`: balanced subset-sum partition
-  for bounded weights.
 * `Cslib.Circuits.Boolean.WeightedThreshold.lt_of_blocks`,
   `Cslib.Circuits.Boolean.WeightedThreshold.circuit_lt_of_blocks`: the C6 block-excess lower bound.
 
@@ -364,36 +363,6 @@ theorem circuit_lt_of_inputSupport_card_le_two (c : Circuit signature n 1)
 
 /-! ### C6: Block-excess restriction and lower bound -/
 
-/-- **Subset sum.** Items of weight at most `M` with total weight at least `2 * k + M` can be
-partitioned into `𝒢 ⊆ 𝓑` and `𝓑 \ 𝒢` each of weight at least `k`. -/
-theorem exists_subset_sum_ge {ι : Type*} [DecidableEq ι] (𝓑 : Finset ι) (φ : ι → ℕ)
-    (M k : ℕ) (hφ : ∀ b ∈ 𝓑, φ b ≤ M) (htot : 2 * k + M ≤ ∑ b ∈ 𝓑, φ b) :
-    ∃ 𝒢 ⊆ 𝓑, k ≤ ∑ b ∈ 𝒢, φ b ∧ k ≤ ∑ b ∈ 𝓑 \ 𝒢, φ b := by
-  have key : ∀ 𝓑 : Finset ι, (∀ b ∈ 𝓑, φ b ≤ M) → k ≤ ∑ b ∈ 𝓑, φ b →
-      ∃ 𝒢 ⊆ 𝓑, k ≤ ∑ b ∈ 𝒢, φ b ∧ ∑ b ∈ 𝒢, φ b ≤ k + M - 1 := by
-    intro 𝓑
-    induction 𝓑 using Finset.induction_on with
-    | empty =>
-      intro _ hk
-      rw [sum_empty] at hk
-      exact ⟨∅, Subset.refl _, by simpa using hk, by simp⟩
-    | insert a t ha ih =>
-      intro hφ hk
-      rw [sum_insert ha] at hk
-      by_cases hkt : k ≤ ∑ b ∈ t, φ b
-      · obtain ⟨𝒢, h𝒢, h1, h2⟩ := ih (fun b hb => hφ b (mem_insert_of_mem hb)) hkt
-        exact ⟨𝒢, h𝒢.trans (subset_insert _ _), h1, h2⟩
-      · refine ⟨insert a t, Subset.refl _, ?_, ?_⟩
-        · rw [sum_insert ha]
-          exact hk
-        · rw [sum_insert ha]
-          have := hφ a (mem_insert_self _ _)
-          omega
-  obtain ⟨𝒢, h𝒢, h1, h2⟩ := key 𝓑 hφ (by omega)
-  refine ⟨𝒢, h𝒢, h1, ?_⟩
-  have := sum_sdiff (f := φ) h𝒢
-  omega
-
 private theorem sum_eq_sum_filter_add_sum_tsub_add_sum {ι : Type*} (𝓗 : Finset ι)
     (c e : ι → ℕ) :
     ∑ b ∈ 𝓗, c b = ∑ b ∈ 𝓗.filter (fun b => c b ≤ e b), c b + ∑ b ∈ 𝓗, (c b - e b) +
@@ -518,7 +487,7 @@ theorem lt_of_blocks (p : Program signature n g)
       sum_le_sum fun b _ => le_tsub_add
     rw [sum_add_distrib] at h1
     omega
-  obtain ⟨𝒢, h𝒢, hk1, hk2⟩ := exists_subset_sum_ge 𝓑
+  obtain ⟨𝒢, h𝒢, hk1, hk2⟩ := Finset.exists_subset_sum_ge 𝓑
     (fun b => b.card - (residualGates p F b).card) M k
     (fun b hb => by
       have := hM b hb

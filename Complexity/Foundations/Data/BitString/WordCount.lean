@@ -14,6 +14,7 @@ public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Data.ZMod.Basic
 public import Mathlib.Order.PiLex
 import Complexity.Foundations.Combinatorics.MajorityVote
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Data.Finset.Sort
@@ -265,8 +266,6 @@ def wordLt (x y : List Bool) : Bool :=
 /-- On bit strings, `wordLt` is the lexicographic order. -/
 theorem wordLt_ofFn_iff {n : ℕ} (x y : Fin n → Bool) :
     wordLt (List.ofFn x) (List.ofFn y) = true ↔ toLex x < toLex y := by
-  have hget (z : Fin n → Bool) (j : ℕ) (hj : j < n) : (List.ofFn z).getD j false = z ⟨j, hj⟩ := by
-    rw [List.getD_eq_getElem _ _ (by simpa using hj), List.getElem_ofFn]
   change _ ↔ ∃ i, (∀ j, j < i → x j = y j) ∧ x i < y i
   simp only [wordLt, List.any_eq_true, List.mem_range, List.length_ofFn, Bool.and_eq_true,
     List.all_eq_true, beq_iff_eq, Bool.not_eq_true']
@@ -274,19 +273,19 @@ theorem wordLt_ofFn_iff {n : ℕ} (x y : Fin n → Bool) :
   · rintro ⟨i, hi, hall, hx, hy⟩
     refine ⟨⟨i, hi⟩, fun j hj => ?_, ?_⟩
     · have := hall j hj
-      rwa [hget x j (by omega), hget y j (by omega)] at this
-    · rw [hget x i hi] at hx
-      rw [hget y i hi] at hy
+      rwa [List.getD_ofFn_of_lt x (by omega) false, List.getD_ofFn_of_lt y (by omega) false] at this
+    · rw [List.getD_ofFn_of_lt x hi false] at hx
+      rw [List.getD_ofFn_of_lt y hi false] at hy
       rw [hx, hy]
       decide
   · rintro ⟨i, hall, hlt⟩
     refine ⟨i, i.2, fun j hj => ?_, ?_, ?_⟩
-    · rw [hget x j (by omega), hget y j (by omega)]
+    · rw [List.getD_ofFn_of_lt x (by omega) false, List.getD_ofFn_of_lt y (by omega) false]
       exact hall ⟨j, by omega⟩ hj
-    · rw [hget x i i.2]
+    · rw [List.getD_ofFn x i false]
       revert hlt
       cases x i <;> cases y i <;> decide
-    · rw [hget y i i.2]
+    · rw [List.getD_ofFn y i false]
       revert hlt
       cases x i <;> cases y i <;> decide
 

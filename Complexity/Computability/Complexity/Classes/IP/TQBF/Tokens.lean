@@ -234,6 +234,81 @@ def verifyAt : ArithQBF ℕ → List (ArithQBF.Kind × ℕ) → (ℕ → F) → 
 
 /-! ### Soundness -/
 
+private theorem acceptProb_verifyAt_bin_le {ε : ℝ≥0∞} {S : Type}
+    (respond : QueryAt F → StateT S PMF (List F)) (o : ArithQBF.Connective) (e₁ e₂ : ArithQBF ℕ)
+    {rest : List (ArithQBF.Kind × ℕ)} {r : ℕ → F} {c : F}
+    (hc : (ArithQBF.bin o e₁ e₂).eval r ≠ c)
+    (ih₁ : ∀ {rest r c}, e₁.eval r ≠ c → ∀ s,
+      acceptProbWith respond (verifyAt sampler D e₁ rest r c) s ≤ (e₁.ops * D : ℕ) * ε)
+    (ih₂ : ∀ {rest r c}, e₂.eval r ≠ c → ∀ s,
+      acceptProbWith respond (verifyAt sampler D e₂ rest r c) s ≤ (e₂.ops * D : ℕ) * ε)
+    (s : S) :
+    acceptProbWith respond (verifyAt sampler D (.bin o e₁ e₂) rest r c) s ≤
+      ((ArithQBF.bin o e₁ e₂).ops * D : ℕ) * ε := by
+  rw [verifyAt, ProbOracleComp.acceptProbWith_query_bind]
+  refine Probability.PMF.tsum_mul_le_of_forall_le _ fun x => ?_
+  split_ifs with hcheck
+  · by_cases h₁ : e₁.eval r = x.1.getD 0 0
+    · have h₂ : e₂.eval r ≠ x.1.getD 1 0 := fun h₂ =>
+        hc (by rw [ArithQBF.eval_bin, h₁, h₂, hcheck])
+      rw [ProbOracleComp.acceptProbWith_bind]
+      refine (Probability.PMF.tsum_mul_le_of_forall_le (B := ((e₂.ops * D : ℕ) : ℝ≥0∞) * ε) _
+        fun y => ?_).trans ?_
+      · cases y.1
+        · simp only [Bool.false_eq_true, ↓reduceIte, ProbOracleComp.acceptProbWith_pure]
+          exact zero_le
+        · simp only [↓reduceIte]
+          exact ih₂ h₂ _
+      · rw [ArithQBF.ops, Nat.add_mul, Nat.cast_add, add_mul]
+        exact le_add_self
+    · refine (ProbOracleComp.acceptProbWith_bind_ite_le respond _ _ _).trans ((ih₁ h₁ _).trans ?_)
+      rw [ArithQBF.ops, Nat.add_mul, Nat.cast_add, add_mul]
+      exact le_self_add
+  · rw [ProbOracleComp.acceptProbWith_pure]
+    exact zero_le
+
+private theorem acceptProb_verifyAt_op_le [IsDomain F] {ε : ℝ≥0∞}
+    (hsampler : ∀ z, ProbComp.eval sampler z ≤ ε) {S : Type}
+    (respond : QueryAt F → StateT S PMF (List F)) (o : ArithQBF.Operator) (v : ℕ) (e : ArithQBF ℕ)
+    (hdeg_e : e.degBound v ≤ D)
+    {rest : List (ArithQBF.Kind × ℕ)} {r : ℕ → F} {c : F}
+    (hc : (ArithQBF.op o v e).eval r ≠ c)
+    (ih : ∀ {rest r c}, e.eval r ≠ c → ∀ s,
+      acceptProbWith respond (verifyAt sampler D e rest r c) s ≤ (e.ops * D : ℕ) * ε)
+    (s : S) :
+    acceptProbWith respond (verifyAt sampler D (.op o v e) rest r c) s ≤
+      ((ArithQBF.op o v e).ops * D : ℕ) * ε := by
+  rw [verifyAt, ProbOracleComp.acceptProbWith_query_bind]
+  refine Probability.PMF.tsum_mul_le_of_forall_le _ fun x => ?_
+  dsimp only
+  split_ifs with hcheck
+  · rw [ProbOracleComp.acceptProbWith_sample_bind]
+    set g := e.restrict r v
+    set p := ofCoeffList (x.1.take (D + 1))
+    have hp (z : F) : evalCoeffList z (x.1.take (D + 1)) = p.eval z := (eval_ofCoeffList z _).symm
+    have hg (z : F) : g.eval z = e.eval (Function.update r v z) := e.eval_restrict r v z
+    have hne : p - g ≠ 0 := fun h =>
+      hc (by rw [ArithQBF.eval_op, ← hg, ← hg, ← sub_eq_zero.1 h, ← hp, ← hp, hcheck])
+    have hdeg : (p - g).natDegree ≤ D :=
+      (natDegree_sub_le _ _).trans (max_le ((natDegree_ofCoeffList_le _).trans (by
+        rw [List.length_take]; omega)) ((e.natDegree_restrict_le r v).trans hdeg_e))
+    classical
+    have hcard : ((p - g).roots.toFinset.card : ℝ≥0∞) ≤ D := by
+      exact_mod_cast (Multiset.toFinset_card_le _).trans ((card_roots' _).trans hdeg)
+    refine (Probability.PMF.tsum_mul_le_card_mul_add _ hsampler (p - g).roots.toFinset
+      (B := ((e.ops * D : ℕ) : ℝ≥0∞) * ε) fun z => ?_).trans ?_
+    · by_cases hz : p.eval z = g.eval z
+      · have : z ∈ (p - g).roots.toFinset := by
+          rw [Multiset.mem_toFinset, mem_roots hne, IsRoot, eval_sub, hz, sub_self]
+        simp only [this, ↓reduceIte]
+        exact (ProbOracleComp.acceptProbWith_le_one _ _ _).trans le_self_add
+      · rw [hp]
+        exact (ih (fun h => hz (by rw [hg, h])) _).trans le_add_self
+    · rw [ArithQBF.ops, Nat.add_mul, Nat.one_mul, Nat.cast_add, add_mul, add_comm]
+      gcongr
+  · rw [ProbOracleComp.acceptProbWith_pure]
+    exact zero_le
+
 /-- **Soundness of the verifier on a stream of tokens**: if the sampler gives every element
 probability at most `ε` and the body of every operator of `e` has degree at most `D` in its
 variable, every prover is accepted on a false claim with probability at most `ops e * D * ε`. -/
@@ -257,64 +332,10 @@ theorem acceptProb_verifyAt_le [IsDomain F] {ε : ℝ≥0∞}
     exact ih hD (fun h => hc (by rw [ArithQBF.eval_not, h, sub_sub_cancel])) s
   | bin o e₁ e₂ ih₁ ih₂ =>
     rw [ArithQBF.maxRoundDegree, max_le_iff] at hD
-    rw [verifyAt, ProbOracleComp.acceptProbWith_query_bind]
-    refine Probability.PMF.tsum_mul_le_of_forall_le _ fun x => ?_
-    split_ifs with hcheck
-    · by_cases h₁ : e₁.eval r = x.1.getD 0 0
-      · have h₂ : e₂.eval r ≠ x.1.getD 1 0 := fun h₂ =>
-          hc (by rw [ArithQBF.eval_bin, h₁, h₂, hcheck])
-        rw [ProbOracleComp.acceptProbWith_bind]
-        refine (Probability.PMF.tsum_mul_le_of_forall_le (B := ((e₂.ops * D : ℕ) : ℝ≥0∞) * ε) _
-          fun y => ?_).trans ?_
-        · cases y.1
-          · simp only [Bool.false_eq_true, ↓reduceIte, ProbOracleComp.acceptProbWith_pure]
-            exact zero_le
-          · simp only [↓reduceIte]
-            exact ih₂ hD.2 h₂ _
-        · rw [ArithQBF.ops, Nat.add_mul, Nat.cast_add, add_mul]
-          exact le_add_self
-      · refine (ProbOracleComp.acceptProbWith_bind_ite_le respond _ _ _).trans
-          ((ih₁ hD.1 h₁ _).trans ?_)
-        rw [ArithQBF.ops, Nat.add_mul, Nat.cast_add, add_mul]
-        exact le_self_add
-    · rw [ProbOracleComp.acceptProbWith_pure]
-      exact zero_le
+    exact acceptProb_verifyAt_bin_le sampler D respond o e₁ e₂ hc (ih₁ hD.1) (ih₂ hD.2) s
   | op o v e ih =>
     rw [ArithQBF.maxRoundDegree, max_le_iff] at hD
-    rw [verifyAt, ProbOracleComp.acceptProbWith_query_bind]
-    refine Probability.PMF.tsum_mul_le_of_forall_le _ fun x => ?_
-    dsimp only
-    split_ifs with hcheck
-    · rw [ProbOracleComp.acceptProbWith_sample_bind]
-      set g := e.restrict r v
-      set p := ofCoeffList (x.1.take (D + 1))
-      have hp (z : F) : evalCoeffList z (x.1.take (D + 1)) = p.eval z := (eval_ofCoeffList z _).symm
-      have hg (z : F) : g.eval z = e.eval (Function.update r v z) := e.eval_restrict r v z
-      have hne : p - g ≠ 0 := by
-        intro h
-        rw [sub_eq_zero] at h
-        apply hc
-        rw [ArithQBF.eval_op, ← hg, ← hg, ← h, ← hp, ← hp, hcheck]
-      have hdeg : (p - g).natDegree ≤ D :=
-        (natDegree_sub_le _ _).trans (max_le ((natDegree_ofCoeffList_le _).trans (by
-          rw [List.length_take]; omega)) ((e.natDegree_restrict_le r v).trans hD.1))
-      classical
-      have hcard : ((p - g).roots.toFinset.card : ℝ≥0∞) ≤ D := by
-        exact_mod_cast (Multiset.toFinset_card_le _).trans ((card_roots' _).trans hdeg)
-      refine (Probability.PMF.tsum_mul_le_card_mul_add _ hsampler (p - g).roots.toFinset
-        (B := ((e.ops * D : ℕ) : ℝ≥0∞) * ε) fun z => ?_).trans ?_
-      · by_cases hz : p.eval z = g.eval z
-        · have : z ∈ (p - g).roots.toFinset := by
-            rw [Multiset.mem_toFinset, mem_roots hne, IsRoot, eval_sub, hz, sub_self]
-          simp only [this, ↓reduceIte]
-          exact (ProbOracleComp.acceptProbWith_le_one _ _ _).trans le_self_add
-        · rw [hp]
-          refine (ih hD.2 (fun h => hz ?_) _).trans le_add_self
-          rw [hg, h]
-      · rw [ArithQBF.ops, Nat.add_mul, Nat.one_mul, Nat.cast_add, add_mul, add_comm]
-        gcongr
-    · rw [ProbOracleComp.acceptProbWith_pure]
-      exact zero_le
+    exact acceptProb_verifyAt_op_le sampler D hsampler respond o v e hD.1 hc (ih hD.2) s
 
 /-! ### Completeness -/
 

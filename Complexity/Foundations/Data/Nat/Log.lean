@@ -27,6 +27,7 @@ stays polynomial after logarithmically many rounds. Similarly `2 ^ (⌊log₂ n�
   `n ≠ 0`.
 * `Nat.two_pow_log2_succ_le`: `2 ^ (⌊log₂ n⌋ + 1) ≤ 2 (n + 1)`.
 * `Nat.two_pow_clog_two_le`: `2 ^ ⌈log₂ n⌉ ≤ 2 (n + 1)`, also for `n = 0`.
+* `Nat.log_add_one_le`: `⌊log_b (n + 1)⌋ ≤ ⌊log_b n⌋ + 1`.
 -/
 
 @[expose] public section
@@ -64,5 +65,19 @@ theorem two_pow_clog_two_le (n : ℕ) : 2 ^ clog 2 n ≤ 2 * (n + 1) := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · simp
   · exact (pow_clog_le_mul Nat.one_lt_two hn.ne').trans (by omega)
+
+/-- Adding one increases the base-`b` logarithm by at most one:
+`⌊log_b (n + 1)⌋ ≤ ⌊log_b n⌋ + 1`. -/
+theorem log_add_one_le (b n : ℕ) : log b (n + 1) ≤ log b n + 1 := by
+  rcases le_or_gt b 1 with hb | hb
+  · rw [log_of_left_le_one hb]
+    exact zero_le _
+  · have hlt : n < b ^ (log b n + 1) := lt_pow_succ_log_self hb n
+    have hpow : 1 * b ^ (log b n + 1) < b * b ^ (log b n + 1) :=
+      Nat.mul_lt_mul_of_pos_right hb (Nat.pow_pos (by omega))
+    have hlt' : n + 1 < b ^ (log b n + 2) := by
+      rw [pow_succ']
+      omega
+    exact le_of_lt_succ (log_lt_of_lt_pow (Nat.succ_ne_zero n) hlt')
 
 end Nat

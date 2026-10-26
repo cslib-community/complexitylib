@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Tactic.PolyTime
 
 /-!
@@ -33,7 +34,7 @@ The functional construction is ported from the cslib `crypto` branch at
 ## Main results
 
 * `Cslib.Crypto.GGM.length_eval`: evaluation preserves the seed width for full expansions.
-* `Cslib.Crypto.GGM.computableTidilyInPolyTime_eval`: a uniform machine certificate without
+* `Cslib.Crypto.GGM.computableInPolyTime_eval`: a uniform machine certificate without
   a cryptographic security hypothesis or an output-length hypothesis on the generator.
 
 ## References
@@ -132,32 +133,32 @@ theorem length_eval {generator : List Bool → List Bool}
 
 /-- Select a child using a computed unary width and ordinary bit-string slicing. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_selectChild {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_selectChild {α : Type} {input : α ↪ List Bool}
     {width : α → ℕ} {expansion : α → List Bool} {bit : α → Bool}
-    (hwidth : ComputableTidilyInPolyTime width input encUnary)
-    (hexpansion : ComputableTidilyInPolyTime expansion input encBits)
-    (hbit : ComputableTidilyInPolyTime bit input encBool) :
-    ComputableTidilyInPolyTime (fun a => selectChild (width a) (expansion a) (bit a))
+    (hwidth : ComputableInPolyTime width input encUnary)
+    (hexpansion : ComputableInPolyTime expansion input encBits)
+    (hbit : ComputableInPolyTime bit input encBool) :
+    ComputableInPolyTime (fun a => selectChild (width a) (expansion a) (bit a))
       input encBits := by
   unfold selectChild
   polytime
 
 /-- Computing one child invokes the certified generator and slices its output. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_child {generator : List Bool → List Bool}
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits) :
-    ComputableTidilyInPolyTime (fun pair : List Bool × Bool => child generator pair.1 pair.2)
+theorem computableInPolyTime_child {generator : List Bool → List Bool}
+    (hgenerator : ComputableInPolyTime generator encBits encBits) :
+    ComputableInPolyTime (fun pair : List Bool × Bool => child generator pair.1 pair.2)
       (encPair encBits encBool) encBits := by
   fun_prop [child]
 
 /-- The GGM evaluator is polynomial time whenever its generator is. Its fold has no state growth,
 so this certificate needs no security or output-length assumption. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_eval {generator : List Bool → List Bool}
-    (hgenerator : ComputableTidilyInPolyTime generator encBits encBits) :
-    ComputableTidilyInPolyTime (fun pair : List Bool × List Bool => eval generator pair.1 pair.2)
+theorem computableInPolyTime_eval {generator : List Bool → List Bool}
+    (hgenerator : ComputableInPolyTime generator encBits encBits) :
+    ComputableInPolyTime (fun pair : List Bool × List Bool => eval generator pair.1 pair.2)
       (encPair encBits encBits) encBits := by
-  have hstep := computableTidilyInPolyTime_child hgenerator
+  have hstep := computableInPolyTime_child hgenerator
   have hgrowth := length_child_le generator
   unfold eval
   polytime

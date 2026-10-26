@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Boolean.Layered
 public import Complexity.Crypto.Computational.Homomorphic.Refresh
 public import Complexity.Languages.Probabilistic.Traverse
 public import Complexity.Languages.Probabilistic.Iteration
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
 /-!
@@ -62,11 +63,8 @@ def EncryptedWires (E : Scheme) (ciphertextWidth : ℕ → ℕ) (n : ℕ) (sk : 
 theorem EncryptedWires.getD {n : ℕ} {sk bits : List Bool} {inputs : List (List Bool)}
     (h : E.EncryptedWires ciphertextWidth n sk bits inputs) {i : ℕ} (hi : i < bits.length) :
     (inputs.getD i []).length = ciphertextWidth n ∧
-      E.decrypt n sk (inputs.getD i []) = bits.getD i false := by
-  have hi' : i < inputs.length := hi.trans_eq h.length_eq
-  simpa only [List.getD_eq_getElem _ _ hi, List.getD_eq_getElem _ _ hi',
-    List.get_eq_getElem] using
-    h.get hi hi'
+      E.decrypt n sk (inputs.getD i []) = bits.getD i false :=
+  List.Forall₂.getD h hi false []
 
 /-- Selecting valid ciphertext wires preserves their width and plaintexts, with no key change.
 Output order and repetitions are exactly those of the index list. -/

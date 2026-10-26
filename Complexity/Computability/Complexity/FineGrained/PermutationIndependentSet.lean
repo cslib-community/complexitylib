@@ -8,17 +8,15 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
-public import Complexity.Foundations.Data.BitString.List
-public import Complexity.Foundations.Data.BitString.List.Binary
-public import Mathlib.Data.Fin.Tuple.Sort
-import Complexity.Computability.Complexity.FineGrained.Assignment
-import Complexity.Computability.Complexity.FineGrained.BruteForce
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
+import Complexity.Foundations.Data.BitString.List
+import Complexity.Foundations.Data.BitString.List.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import Mathlib.Data.Fin.Tuple.Sort
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Bitwise
 
@@ -59,12 +57,13 @@ To prove [LokshtanovMarxSaurabh2018, Theorem 2.11], this library gives a direct 
 from `ThreeColoring` on $N$-vertex graphs (which has no $2^{o(N)}$-time algorithm under `ETH` by
 `ETH.not_decidableInSubexpTime_ThreeColoring_vertices`) to subexponentially many instances of
 `BipartitePermutationIndependentSet` of parameter $n = \Theta(N / \log N)$, for which
-$n \log_2 n \le 10 N + 5$ (`numBlocks_mul_log_le`), using a library proof based on monotone
-threshold enumeration (`Tuple.sort` and `Tuple.lt_card_le_iff_apply_le_of_monotone`):
+$n \log_2 n \le 10 N + 5$ (`BipartitePermutationIndependentSet.fst_bpisOfColoring_mul_log_le`),
+using a library proof based on monotone threshold enumeration (`Tuple.sort` and
+`Tuple.lt_card_le_iff_apply_le_of_monotone`):
 
 * Partition the $N$ vertices into $n = \lfloor N / b \rfloor + 1$ blocks of size
   $b = \lfloor (\log_2 N) / 4 \rfloor + 1$, so that $n \log_2 n \le 10 N + 5$
-  (`numBlocks_mul_log_le`).
+  (`BipartitePermutationIndependentSet.fst_bpisOfColoring_mul_log_le`).
 * A 3-coloring of a block is encoded by $2b$ bits as a number below $B = 2^{2b} = 4^b$, so a
   3-coloring of the graph induces a tuple $a : \mathrm{Fin}\, n \to \mathrm{Fin}\, B$.
 * By `Tuple.sort`, any tuple $a : \mathrm{Fin}\, n \to \mathrm{Fin}\, B$ factors as
@@ -89,6 +88,9 @@ threshold enumeration (`Tuple.sort` and `Tuple.lt_card_le_iff_apply_le_of_monoto
   `Cslib.Complexity.BipartitePermutationGraph.SatisfiesUndirected`: Lokshtanov–Marx–Saurabh's
   block-preserving single-permutation predicate on $\mathrm{Fin}\,(2n)$.
 * `Cslib.Complexity.BipartitePermutationIndependentSet`: the language of satisfiable instances.
+* `Cslib.Complexity.BipartitePermutationIndependentSet.searchBits`,
+  `Cslib.Complexity.BipartitePermutationIndependentSet.bpisOfColoring`: threshold-table bit length
+  and the block-sorting reduction from `ThreeColoring`.
 
 ## Main results
 
@@ -97,6 +99,9 @@ threshold enumeration (`Tuple.sort` and `Tuple.lt_card_le_iff_apply_le_of_monoto
   equivalence of Ilango's and Lokshtanov–Marx–Saurabh's formulations.
 * `Cslib.Complexity.ETH.not_decidableInSubexpTime_ThreeColoring_vertices`: under `ETH`,
   `ThreeColoring` is not decidable in time $2^{o(|V|)}$.
+* `Cslib.Complexity.BipartitePermutationIndependentSet.mem_ThreeColoring_iff_exists_bpisOfColoring`:
+  correctness of the block-sorting reduction from `ThreeColoring` to
+  `BipartitePermutationIndependentSet`.
 * `Cslib.Complexity.ETH.not_decidableInSubexpTime_BipartitePermutationIndependentSet`: under `ETH`,
   `BipartitePermutationIndependentSet` is not decidable in time $2^{o(n \log n)}$
   ([LokshtanovMarxSaurabh2018, Theorem 2.11]; [Ilango2020FOCS, Section III.B, p. 427; ECCC
@@ -117,11 +122,11 @@ threshold enumeration (`Tuple.sort` and `Tuple.lt_card_le_iff_apply_le_of_monoto
   Problems*][LokshtanovMarxSaurabh2018]
 -/
 
-@[expose] public section
-
 namespace Cslib.Complexity
 
 open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+
+public section
 
 /-! ### Problem definitions and equivalence of formulations -/
 
@@ -134,11 +139,11 @@ abbrev BipartitePermutationGraph : Type := ℕ × List ((ℕ × ℕ) × (ℕ × 
 /-- Unary encoding of a `BipartitePermutationGraph`, matching Ilango's presentation in which the
 graph has $O(n^2)$ vertices and coordinates are bounded by $n$
 [Ilango2020FOCS, Section III.B, p. 427; ECCC TR20-183, Section 3, p. 20]. -/
-def encBipartitePermutationGraph : BipartitePermutationGraph ↪ List Bool :=
+@[expose] def encBipartitePermutationGraph : BipartitePermutationGraph ↪ List Bool :=
   encPair encUnary (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary)))
 
 /-- Binary encoding of a `BipartitePermutationGraph`. -/
-def encBipartitePermutationGraphBinary : BipartitePermutationGraph ↪ List Bool :=
+@[expose] def encBipartitePermutationGraphBinary : BipartitePermutationGraph ↪ List Bool :=
   encPair encNat (encList (encPair (encPair encNat encNat) (encPair encNat encNat)))
 
 namespace BipartitePermutationGraph
@@ -147,14 +152,14 @@ namespace BipartitePermutationGraph
 TR20-183, Section 3, Theorem 10, p. 20]: two permutations $\pi_1, \pi_2 \in S_n$ satisfy $G$ when
 for no edge $((u_1, u_2), (v_1, v_2)) \in G.2$ with coordinates below $n = G.1$ do we have both
 $\pi_1(u_1) = u_2$ and $\pi_2(v_1) = v_2$. -/
-def Satisfies (G : BipartitePermutationGraph) (π₁ π₂ : Equiv.Perm (Fin G.1)) : Prop :=
+@[expose] def Satisfies (G : BipartitePermutationGraph) (π₁ π₂ : Equiv.Perm (Fin G.1)) : Prop :=
   ∀ e ∈ G.2, ∀ (hu₁ : e.1.1 < G.1) (hu₂ : e.1.2 < G.1) (hv₁ : e.2.1 < G.1) (hv₂ : e.2.2 < G.1),
     π₁ ⟨e.1.1, hu₁⟩ = ⟨e.1.2, hu₂⟩ → π₂ ⟨e.2.1, hv₁⟩ ≠ ⟨e.2.2, hv₂⟩
 
 /-- A permutation of $\mathrm{Fin}\,(2n)$ is **block-preserving** when it maps the first half
 $[0, n)$ to $[0, n)$ (and hence the second half $[n, 2n)$ to $[n, 2n)$)
 [LokshtanovMarxSaurabh2018, Theorem 2.11]. -/
-def IsBlockPreserving {n : ℕ} (π : Equiv.Perm (Fin (2 * n))) : Prop :=
+@[expose] def IsBlockPreserving {n : ℕ} (π : Equiv.Perm (Fin (2 * n))) : Prop :=
   ∀ i : Fin (2 * n), i.val < n ↔ (π i).val < n
 
 /-- **Lokshtanov–Marx–Saurabh's undirected bipartite satisfaction predicate**
@@ -162,7 +167,8 @@ def IsBlockPreserving {n : ℕ} (π : Equiv.Perm (Fin (2 * n))) : Prop :=
 $\pi \in S_{2n}$ preserves the two blocks $[0, n)$ and $[n, 2n)$ and for no conflict edge
 $((u_1, u_2), (v_1, v_2)) \in G.2$ between the two blocks do we have both $\pi(u_1) = u_2$ and
 $\pi(n + v_1) = n + v_2$. -/
-def SatisfiesUndirected (G : BipartitePermutationGraph) (π : Equiv.Perm (Fin (2 * G.1))) : Prop :=
+@[expose] def SatisfiesUndirected (G : BipartitePermutationGraph)
+    (π : Equiv.Perm (Fin (2 * G.1))) : Prop :=
   IsBlockPreserving π ∧
     ∀ e ∈ G.2, ∀ (hu₁ : e.1.1 < G.1) (_hu₂ : e.1.2 < G.1) (hv₁ : e.2.1 < G.1) (_hv₂ : e.2.2 < G.1),
       (π ⟨e.1.1, by omega⟩).val = e.1.2 → (π ⟨G.1 + e.2.1, by omega⟩).val ≠ G.1 + e.2.2
@@ -172,59 +178,42 @@ theorem IsBlockPreserving.symm {n : ℕ} {π : Equiv.Perm (Fin (2 * n))}
   intro i
   simpa only [π.apply_symm_apply] using (hπ (π.symm i)).symm
 
+/-- The block-splitting equivalence $\mathrm{Fin}\, n \oplus \mathrm{Fin}\, n \simeq
+\mathrm{Fin}\,(2n)$. -/
+private def blockEquiv (n : ℕ) : Fin n ⊕ Fin n ≃ Fin (2 * n) :=
+  finSumFinEquiv.trans (finCongr (two_mul n).symm)
+
 /-- Combining two permutations $\pi_1, \pi_2 \in S_n$ on the two halves of $\mathrm{Fin}\,(2n)$. -/
-def combinePerm {n : ℕ} (π₁ π₂ : Equiv.Perm (Fin n)) : Equiv.Perm (Fin (2 * n)) where
-  toFun i :=
-    if h : i.val < n then
-      ⟨(π₁ ⟨i.val, h⟩).val, by have := (π₁ ⟨i.val, h⟩).isLt; omega⟩
-    else
-      ⟨n + (π₂ ⟨i.val - n, by omega⟩).val, by have := (π₂ ⟨i.val - n, by omega⟩).isLt; omega⟩
-  invFun i :=
-    if h : i.val < n then
-      ⟨(π₁.symm ⟨i.val, h⟩).val, by have := (π₁.symm ⟨i.val, h⟩).isLt; omega⟩
-    else
-      ⟨n + (π₂.symm ⟨i.val - n, by omega⟩).val,
-        by have := (π₂.symm ⟨i.val - n, by omega⟩).isLt; omega⟩
-  left_inv i := by
-    ext
-    dsimp only
-    split_ifs with h₁ h₂ h₃
-    · simp [Fin.eta]
-    · exfalso
-      dsimp only at h₂
-      exact h₂ (π₁ ⟨i.val, h₁⟩).isLt
-    · exfalso
-      dsimp only at h₃
-      omega
-    · have hsub : n + (π₂ ⟨i.val - n, by omega⟩).val - n = (π₂ ⟨i.val - n, by omega⟩).val := by
-        omega
-      simp only [hsub, Fin.eta, Equiv.symm_apply_apply]
-      omega
-  right_inv i := by
-    ext
-    dsimp only
-    split_ifs with h₁ h₂ h₃
-    · simp [Fin.eta]
-    · exfalso
-      dsimp only at h₂
-      exact h₂ (π₁.symm ⟨i.val, h₁⟩).isLt
-    · exfalso
-      dsimp only at h₃
-      omega
-    · have hsub : n + (π₂.symm ⟨i.val - n, by omega⟩).val - n =
-          (π₂.symm ⟨i.val - n, by omega⟩).val := by
-        omega
-      simp only [hsub, Fin.eta, Equiv.apply_symm_apply]
-      omega
+def combinePerm {n : ℕ} (π₁ π₂ : Equiv.Perm (Fin n)) : Equiv.Perm (Fin (2 * n)) :=
+  (blockEquiv n).permCongr (Equiv.Perm.sumCongr π₁ π₂)
+
+@[simp] theorem combinePerm_inl {n : ℕ} (π₁ π₂ : Equiv.Perm (Fin n)) (i : Fin n) :
+    (combinePerm π₁ π₂ ⟨i.val, by omega⟩).val = (π₁ i).val := by
+  have h : (⟨i.val, by omega⟩ : Fin (2 * n)) = blockEquiv n (Sum.inl i) := by
+    ext; simp [blockEquiv]
+  rw [h, combinePerm, Equiv.permCongr_apply, Equiv.symm_apply_apply]
+  simp [blockEquiv]
+
+@[simp] theorem combinePerm_inr {n : ℕ} (π₁ π₂ : Equiv.Perm (Fin n)) (i : Fin n) :
+    (combinePerm π₁ π₂ ⟨n + i.val, by omega⟩).val = n + (π₂ i).val := by
+  have h : (⟨n + i.val, by omega⟩ : Fin (2 * n)) = blockEquiv n (Sum.inr i) := by
+    ext; simp only [blockEquiv, Equiv.trans_apply, finCongr_apply, Fin.val_cast,
+      finSumFinEquiv_apply_right, Fin.val_natAdd]
+  rw [h, combinePerm, Equiv.permCongr_apply, Equiv.symm_apply_apply]
+  simp only [Equiv.Perm.sumCongr_apply, Sum.map_inr, blockEquiv, Equiv.trans_apply,
+    finCongr_apply, Fin.val_cast, finSumFinEquiv_apply_right, Fin.val_natAdd]
 
 theorem isBlockPreserving_combinePerm {n : ℕ} (π₁ π₂ : Equiv.Perm (Fin n)) :
     IsBlockPreserving (combinePerm π₁ π₂) := by
   intro i
-  simp only [combinePerm, Equiv.coe_fn_mk]
-  split_ifs with h
-  · have := (π₁ ⟨i.val, h⟩).isLt
-    simp [h, this]
-  · simp [h, show ¬n + (π₂ ⟨i.val - n, by omega⟩).val < n by omega]
+  by_cases h : i.val < n
+  · have hi : i = ⟨(⟨i.val, h⟩ : Fin n).val, by omega⟩ := rfl
+    rw [hi, combinePerm_inl]
+    exact ⟨fun _ => (π₁ ⟨i.val, h⟩).isLt, fun _ => h⟩
+  · let j : Fin n := ⟨i.val - n, by omega⟩
+    have hi : i = ⟨n + j.val, by omega⟩ := by ext; dsimp only [j]; omega
+    rw [hi, combinePerm_inr]
+    exact ⟨fun hlt => absurd (hi ▸ hlt) h, fun hlt => by omega⟩
 
 /-- Extracting the first-half permutation on $\mathrm{Fin}\, n$ from a block-preserving permutation
 of $\mathrm{Fin}\,(2n)$. -/
@@ -232,57 +221,37 @@ def fstPerm {n : ℕ} (π : Equiv.Perm (Fin (2 * n))) (hπ : IsBlockPreserving �
     Equiv.Perm (Fin n) where
   toFun i := ⟨(π ⟨i.val, by omega⟩).val, (hπ ⟨i.val, by omega⟩).mp i.isLt⟩
   invFun i := ⟨(π.symm ⟨i.val, by omega⟩).val, (hπ.symm ⟨i.val, by omega⟩).mp i.isLt⟩
-  left_inv i := by
-    ext
-    simp [Fin.eta]
-  right_inv i := by
-    ext
-    simp [Fin.eta]
+  left_inv i := by ext; simp [Fin.eta]
+  right_inv i := by ext; simp [Fin.eta]
+
+private def sndPermFun {n : ℕ} (π : Equiv.Perm (Fin (2 * n))) (hπ : IsBlockPreserving π)
+    (i : Fin n) : Fin n :=
+  ⟨(π ⟨n + i.val, by omega⟩).val - n, by
+    have := mt (hπ ⟨n + i.val, by omega⟩).mpr (by simp)
+    have := (π ⟨n + i.val, by omega⟩).isLt
+    omega⟩
+
+private theorem sndPermFun_left_inv {n : ℕ} {π : Equiv.Perm (Fin (2 * n))}
+    (hπ : IsBlockPreserving π) (i : Fin n) :
+    sndPermFun π.symm hπ.symm (sndPermFun π hπ i) = i := by
+  ext
+  dsimp only [sndPermFun]
+  have hge : n ≤ (π ⟨n + i.val, by omega⟩).val :=
+    Nat.le_of_not_lt (mt (hπ ⟨n + i.val, by omega⟩).mpr (by simp))
+  have heq : (⟨n + ((π ⟨n + i.val, by omega⟩).val - n), by omega⟩ : Fin (2 * n)) =
+      π ⟨n + i.val, by omega⟩ := by ext; dsimp only; omega
+  rw [heq, π.symm_apply_apply]
+  dsimp only
+  omega
 
 /-- Extracting the second-half permutation on $\mathrm{Fin}\, n$ from a block-preserving permutation
 of $\mathrm{Fin}\,(2n)$. -/
 def sndPerm {n : ℕ} (π : Equiv.Perm (Fin (2 * n))) (hπ : IsBlockPreserving π) :
     Equiv.Perm (Fin n) where
-  toFun i :=
-    ⟨(π ⟨n + i.val, by omega⟩).val - n, by
-      have h1 : ¬(⟨n + i.val, by omega⟩ : Fin (2 * n)).val < n := by simp
-      have h2 := mt (hπ ⟨n + i.val, by omega⟩).mpr h1
-      have h3 := (π ⟨n + i.val, by omega⟩).isLt
-      omega⟩
-  invFun i :=
-    ⟨(π.symm ⟨n + i.val, by omega⟩).val - n, by
-      have h1 : ¬(⟨n + i.val, by omega⟩ : Fin (2 * n)).val < n := by simp
-      have h2 := mt (hπ.symm ⟨n + i.val, by omega⟩).mpr h1
-      have h3 := (π.symm ⟨n + i.val, by omega⟩).isLt
-      omega⟩
-  left_inv i := by
-    ext
-    dsimp only
-    have h1 : ¬(⟨n + i.val, by omega⟩ : Fin (2 * n)).val < n := by simp
-    have h2 : n ≤ (π ⟨n + i.val, by omega⟩).val :=
-      Nat.le_of_not_lt (mt (hπ ⟨n + i.val, by omega⟩).mpr h1)
-    have h3 : (⟨n + ((π ⟨n + i.val, by omega⟩).val - n), by omega⟩ : Fin (2 * n)) =
-        π ⟨n + i.val, by omega⟩ := by
-      ext
-      dsimp only
-      omega
-    rw [h3, π.symm_apply_apply]
-    dsimp only
-    omega
-  right_inv i := by
-    ext
-    dsimp only
-    have h1 : ¬(⟨n + i.val, by omega⟩ : Fin (2 * n)).val < n := by simp
-    have h2 : n ≤ (π.symm ⟨n + i.val, by omega⟩).val :=
-      Nat.le_of_not_lt (mt (hπ.symm ⟨n + i.val, by omega⟩).mpr h1)
-    have h3 : (⟨n + ((π.symm ⟨n + i.val, by omega⟩).val - n), by omega⟩ : Fin (2 * n)) =
-        π.symm ⟨n + i.val, by omega⟩ := by
-      ext
-      dsimp only
-      omega
-    rw [h3, π.apply_symm_apply]
-    dsimp only
-    omega
+  toFun := sndPermFun π hπ
+  invFun := sndPermFun π.symm hπ.symm
+  left_inv := sndPermFun_left_inv hπ
+  right_inv := sndPermFun_left_inv hπ.symm
 
 /-- **Equivalence of Ilango's and Lokshtanov–Marx–Saurabh's formulations**: an instance $G$ is
 satisfied by a pair of permutations $\pi_1, \pi_2 \in S_n$ if and only if it is satisfied by a
@@ -294,16 +263,9 @@ theorem exists_satisfies_iff_exists_satisfiesUndirected (G : BipartitePermutatio
   · rintro ⟨π₁, π₂, hG⟩
     refine ⟨combinePerm π₁ π₂, isBlockPreserving_combinePerm π₁ π₂,
       fun e he hu₁ hu₂ hv₁ hv₂ h1 h2 => ?_⟩
-    simp only [combinePerm, Equiv.coe_fn_mk, hu₁, ↓reduceDIte] at h1
-    have hnot : ¬G.1 + e.2.1 < G.1 := by omega
-    simp only [combinePerm, Equiv.coe_fn_mk, hnot, ↓reduceDIte] at h2
-    have hsub : G.1 + e.2.1 - G.1 = e.2.1 := by omega
-    have hπ₁ : π₁ ⟨e.1.1, hu₁⟩ = ⟨e.1.2, hu₂⟩ := Fin.ext h1
-    have hπ₂ : π₂ ⟨e.2.1, hv₁⟩ = ⟨e.2.2, hv₂⟩ := by
-      ext
-      have h2' : (π₂ ⟨G.1 + e.2.1 - G.1, by omega⟩).val = e.2.2 := by omega
-      simpa only [hsub] using h2'
-    exact hG e he hu₁ hu₂ hv₁ hv₂ hπ₁ hπ₂
+    rw [combinePerm_inl π₁ π₂ ⟨e.1.1, hu₁⟩] at h1
+    rw [combinePerm_inr π₁ π₂ ⟨e.2.1, hv₁⟩] at h2
+    exact hG e he hu₁ hu₂ hv₁ hv₂ (Fin.ext h1) (Fin.ext (Nat.add_left_cancel h2))
   · rintro ⟨π, hblock, hG⟩
     refine ⟨fstPerm π hblock, sndPerm π hblock, fun e he hu₁ hu₂ hv₁ hv₂ h1 h2 => ?_⟩
     have h1' : (π ⟨e.1.1, by omega⟩).val = e.1.2 := congrArg Fin.val h1
@@ -320,7 +282,7 @@ end BipartitePermutationGraph
 [LokshtanovMarxSaurabh2018, Section 2.2, Theorem 2.11]:
 the set of instances $G = (n, E)$ admitting permutations $\pi_1, \pi_2 \in S_n$ that avoid all
 conflict edges in $E$. -/
-def BipartitePermutationIndependentSet : Set BipartitePermutationGraph :=
+@[expose] def BipartitePermutationIndependentSet : Set BipartitePermutationGraph :=
   {G | ∃ π₁ π₂ : Equiv.Perm (Fin G.1), G.Satisfies π₁ π₂}
 
 /-- Equivalence between the two-permutation bipartite formulation of the Bipartite Permutation
@@ -378,44 +340,44 @@ theorem ETH.not_decidableInSubexpTime_ThreeColoring_vertices (h : ETH) :
 namespace BipartitePermutationIndependentSet
 
 /-- Block size $b = \lfloor (\log_2 N) / 4 \rfloor + 1$ for grouping $N$ vertices. -/
-def blockSize (N : ℕ) : ℕ := Nat.log 2 N / 4 + 1
+private def blockSize (N : ℕ) : ℕ := Nat.log 2 N / 4 + 1
 
 /-- Number of $2b$-bit block-coloring assignments $B = 2^{2b} = 4^b$. -/
-def numAssignments (N : ℕ) : ℕ := 2 ^ (2 * blockSize N)
+private def numAssignments (N : ℕ) : ℕ := 2 ^ (2 * blockSize N)
 
 /-- Number of vertex blocks $n = \lfloor N / b \rfloor + 1$. -/
-def numBlocks (N : ℕ) : ℕ := N / blockSize N + 1
+private def numBlocks (N : ℕ) : ℕ := N / blockSize N + 1
 
 /-- Bit-width $L = \lfloor \log_2 n \rfloor + 1$ of each threshold count in $\{0, \ldots, n\}$. -/
-def wordLen (N : ℕ) : ℕ := Nat.log 2 (numBlocks N) + 1
+private def wordLen (N : ℕ) : ℕ := Nat.log 2 (numBlocks N) + 1
 
 /-- Total number of bits $K = B \cdot L$ in a threshold table. -/
 def searchBits (N : ℕ) : ℕ := numAssignments N * wordLen N
 
-theorem blockSize_pos (N : ℕ) : 0 < blockSize N := Nat.succ_pos _
+private theorem blockSize_pos (N : ℕ) : 0 < blockSize N := Nat.succ_pos _
 
-theorem numBlocks_pos (N : ℕ) : 0 < numBlocks N := Nat.succ_pos _
+private theorem numBlocks_pos (N : ℕ) : 0 < numBlocks N := Nat.succ_pos _
 
-theorem div_blockSize_lt_numBlocks {N p : ℕ} (hp : p < N) :
+private theorem div_blockSize_lt_numBlocks {N p : ℕ} (hp : p < N) :
     p / blockSize N < numBlocks N := by
   have := Nat.div_le_div_right hp.le (c := blockSize N)
   unfold numBlocks
   omega
 
-theorem numBlocks_lt_two_pow_wordLen (N : ℕ) : numBlocks N < 2 ^ wordLen N :=
+private theorem numBlocks_lt_two_pow_wordLen (N : ℕ) : numBlocks N < 2 ^ wordLen N :=
   Nat.lt_pow_succ_log_self Nat.one_lt_two (numBlocks N)
 
-theorem blockSize_le (N : ℕ) : blockSize N ≤ N + 1 := by
+private theorem blockSize_le (N : ℕ) : blockSize N ≤ N + 1 := by
   have := Nat.log_le_self 2 N
   unfold blockSize
   omega
 
-theorem numBlocks_le (N : ℕ) : numBlocks N ≤ N + 1 := by
+private theorem numBlocks_le (N : ℕ) : numBlocks N ≤ N + 1 := by
   have := Nat.div_le_self N (blockSize N)
   unfold numBlocks
   omega
 
-theorem log_numBlocks_le (N : ℕ) : Nat.log 2 (numBlocks N) ≤ 5 * blockSize N := by
+private theorem log_numBlocks_le (N : ℕ) : Nat.log 2 (numBlocks N) ≤ 5 * blockSize N := by
   have hlog : Nat.log 2 N + 1 ≤ 4 * blockSize N := by
     unfold blockSize
     omega
@@ -429,9 +391,7 @@ theorem log_numBlocks_le (N : ℕ) : Nat.log 2 (numBlocks N) ≤ 5 * blockSize N
     omega
   exact (Nat.log_lt_of_lt_pow (numBlocks_pos N).ne' hnb).le
 
-/-- **Parameter bound**: the output parameter $n = \mathrm{numBlocks}\, N$ satisfies
-$n \log_2 n \le 10 N + 5$. -/
-theorem numBlocks_mul_log_le (N : ℕ) :
+private theorem numBlocks_mul_log_le (N : ℕ) :
     numBlocks N * Nat.log 2 (numBlocks N) ≤ 10 * N + 5 := by
   have hlog := log_numBlocks_le N
   have hdiv : N / blockSize N * blockSize N ≤ N := Nat.div_mul_le_self N (blockSize N)
@@ -442,7 +402,7 @@ theorem numBlocks_mul_log_le (N : ℕ) :
     _ ≤ 5 * N + 5 * (N + 1) := by omega
     _ = 10 * N + 5 := by ring
 
-theorem numAssignments_le (N : ℕ) : numAssignments N ≤ 4 * N + 4 := by
+private theorem numAssignments_le (N : ℕ) : numAssignments N ≤ 4 * N + 4 := by
   set k := Nat.log 2 N / 4
   have h2k : 2 * k ≤ Nat.log 2 N := by omega
   have hpow : 2 ^ (2 * k) ≤ N + 1 := by
@@ -456,24 +416,11 @@ theorem numAssignments_le (N : ℕ) : numAssignments N ≤ 4 * N + 4 := by
     ring
   omega
 
-theorem wordLen_le (N : ℕ) : wordLen N ≤ 6 * blockSize N := by
+private theorem wordLen_le (N : ℕ) : wordLen N ≤ 6 * blockSize N := by
   have hlog := log_numBlocks_le N
   have hbs := blockSize_pos N
   unfold wordLen
   omega
-
-theorem wordLen_le_two_mul (N : ℕ) : wordLen N ≤ 2 * (N + 1) := by
-  have h1 : Nat.log 2 (numBlocks N) ≤ numBlocks N := Nat.log_le_self 2 (numBlocks N)
-  have h2 := numBlocks_le N
-  unfold wordLen
-  omega
-
-theorem searchBits_le_quad (N : ℕ) : searchBits N ≤ 8 * (N + 1) ^ 2 := by
-  have hA := numAssignments_le N
-  have hW := wordLen_le_two_mul N
-  calc searchBits N = numAssignments N * wordLen N := rfl
-    _ ≤ (4 * N + 4) * (2 * (N + 1)) := Nat.mul_le_mul hA hW
-    _ = 8 * (N + 1) ^ 2 := by ring
 
 /-- **Sublinear search-exponent bound**: for every $M \ge 1$, the number of threshold bits is at
 most $N / M + 48 \cdot (48 M)^3$. -/
@@ -519,37 +466,37 @@ theorem searchBits_le_div_add (N : ℕ) {M : ℕ} (hM : 0 < M) :
 
 /-- Extract the 2-bit color in $\{0, 1, 2, 3\}$ of local vertex offset $u$ from a block assignment
 number $c$. -/
-def extractColor (c u : ℕ) : ℕ :=
+private def extractColor (c u : ℕ) : ℕ :=
   (c.testBit (2 * u)).toNat + 2 * (c.testBit (2 * u + 1)).toNat
 
 /-- Check whether a block assignment number $c$ assigns a valid color in $\{0, 1, 2\}$ to every
 offset $u < b$. -/
-def validAssignment (b c : ℕ) : Bool :=
+private def validAssignment (b c : ℕ) : Bool :=
   (List.range b).all fun u => decide (extractColor c u < 3)
 
 /-- Decode the $v$-th threshold count from the binary digits of $r$, as an $L$-bit word capped at
 $n$. -/
-def thresholdOf (n L r v : ℕ) : ℕ :=
+private def thresholdOf (n L r v : ℕ) : ℕ :=
   Cslib.BitString.boundedBinaryValue n (Cslib.BitString.listRow L v r.bits)
 
 /-- Reconstruct the sorted block assignment $\beta(j) \in \{0, \ldots, B - 1\}$ at sorted position
 $j$ from the decoded thresholds: $\beta(j)$ is the number of values $v < B - 1$ whose threshold
 $t_v = |\{k < n \mid \beta(k) \le v\}|$ is at most $j$. -/
-def bucketOf (B n L r j : ℕ) : ℕ :=
+private def bucketOf (B n L r j : ℕ) : ℕ :=
   (List.range (B - 1)).countP fun v => decide (thresholdOf n L r v ≤ j)
 
 /-- The color assigned to local offset $u$ by the $j$-th sorted bucket under threshold table $r$. -/
-def colorAt (N r j u : ℕ) : ℕ :=
+private def colorAt (N r j u : ℕ) : ℕ :=
   extractColor (bucketOf (numAssignments N) (numBlocks N) (wordLen N) r j) u
 
 /-- Edges enforcing $\pi_1(i) = \pi_2(i)$ for all $i < n$. -/
-def consistencyEdges (n : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
+private def consistencyEdges (n : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
   (List.range n).flatMap fun i =>
     (List.range n).flatMap fun j₁ =>
       ((List.range n).filter fun j₂ => !decide (j₁ = j₂)).map fun j₂ => ((i, j₁), (i, j₂))
 
 /-- Self-edges forbidding $\pi_1(i) = j$ when bucket $j$ is not a valid 3-coloring of a block. -/
-def invalidBucketEdges (N r : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
+private def invalidBucketEdges (N r : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
   let b := blockSize N
   let B := numAssignments N
   let n := numBlocks N
@@ -559,7 +506,7 @@ def invalidBucketEdges (N r : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
       ((i, j), (i, j))
 
 /-- Test whether bucket pair $(j_1, j_2)$ creates a color conflict for vertex pair $(p, q)$. -/
-def innerConflictTest (N r p q j₁ j₂ : ℕ) : Bool :=
+private def innerConflictTest (N r p q j₁ j₂ : ℕ) : Bool :=
   let b := blockSize N
   let i₁ := p / b
   let u₁ := p % b
@@ -569,11 +516,11 @@ def innerConflictTest (N r p q j₁ j₂ : ℕ) : Bool :=
     decide (colorAt N r j₁ u₁ = colorAt N r j₂ u₂)
 
 /-- Filtered second-bucket indices $j_2 < n$ that conflict with $(p, q, j_1)$. -/
-def innerConflictBuckets (N r p q j₁ : ℕ) : List ℕ :=
+private def innerConflictBuckets (N r p q j₁ : ℕ) : List ℕ :=
   (List.range (numBlocks N)).filter (innerConflictTest N r p q j₁)
 
 /-- Conflict edges for a fixed vertex pair $(p, q)$ and first bucket index $j_1$. -/
-def innerConflictEdges (N r p q j₁ : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
+private def innerConflictEdges (N r p q j₁ : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
   let b := blockSize N
   let i₁ := p / b
   let i₂ := q / b
@@ -581,18 +528,18 @@ def innerConflictEdges (N r p q j₁ : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)
     ((i₁, j₁), (i₂, j₂))
 
 /-- Conflict edges for a fixed vertex pair $(p, q)$ across all bucket pairs $(j_1, j_2)$. -/
-def pairConflictEdges (N r p q : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
+private def pairConflictEdges (N r p q : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
   (List.range (numBlocks N)).flatMap fun j₁ => innerConflictEdges N r p q j₁
 
 /-- Conflict edges incident to vertex position $p$ across all adjacent vertex positions $q$. -/
-def vertexConflictEdges (H : Graph) (r p : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
+private def vertexConflictEdges (H : Graph) (r p : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
   let N := H.1.length
   ((List.range N).filter fun q => H.adjBool (H.1.getD p 0) (H.1.getD q 0)).flatMap fun q =>
     pairConflictEdges N r p q
 
 /-- Edges forbidding adjacent vertices $p, q < N$ of $H$ from receiving the same color under the
 block assignments selected by $\pi_1(p / b) = j_1$ and $\pi_2(q / b) = j_2$. -/
-def conflictEdges (H : Graph) (r : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
+private def conflictEdges (H : Graph) (r : ℕ) : List ((ℕ × ℕ) × (ℕ × ℕ)) :=
   (List.range H.1.length).flatMap fun p => vertexConflictEdges H r p
 
 /-- The instance of `BipartitePermutationIndependentSet` corresponding to a graph $H$ and a
@@ -600,6 +547,16 @@ threshold-table number $r$. -/
 def bpisOfColoring (x : Graph × ℕ) : BipartitePermutationGraph :=
   let N := x.1.1.length
   (numBlocks N, consistencyEdges (numBlocks N) ++ invalidBucketEdges N x.2 ++ conflictEdges x.1 x.2)
+
+/-- **Parameter bound**: the output parameter $n = (\mathrm{bpisOfColoring}\,(H, r)).1$ satisfies
+$n \log_2 n \le 10 |V| + 5$. -/
+theorem fst_bpisOfColoring_mul_log_le (H : Graph) (r : ℕ) :
+    (bpisOfColoring (H, r)).1 * Nat.log 2 (bpisOfColoring (H, r)).1 ≤ 10 * H.1.length + 5 :=
+  numBlocks_mul_log_le H.1.length
+
+@[simp] theorem bpisOfColoring_empty_zero :
+    bpisOfColoring (([], []), 0) = (1, [((0, 0), (0, 0))]) := by
+  decide
 
 /-! ### Correctness of the reduction -/
 
@@ -619,7 +576,8 @@ open Finset in
 /-- Every tuple $a : \mathrm{Fin}\, n \to \mathrm{Fin}\, B$ has a threshold number
 $r < 2^{\mathrm{searchBits}\, N}$ from which `bucketOf` recovers the sorted tuple
 $a \circ \mathrm{Tuple.sort}\, a$. -/
-theorem exists_bucketOf_eq_sort (N : ℕ) (a : Fin (numBlocks N) → Fin (numAssignments N)) :
+private theorem exists_bucketOf_eq_sort (N : ℕ)
+    (a : Fin (numBlocks N) → Fin (numAssignments N)) :
     ∃ r < 2 ^ searchBits N, ∀ j : Fin (numBlocks N),
       bucketOf (numAssignments N) (numBlocks N) (wordLen N) r j.val =
         (a (Tuple.sort a j)).val := by
@@ -676,7 +634,7 @@ theorem exists_bucketOf_eq_sort (N : ℕ) (a : Fin (numBlocks N) → Fin (numAss
 
 /-- Packing a vertex coloring $f : \mathrm{Fin}\, N \to \mathrm{Fin}\, 3$ into block assignment
 numbers below $\mathrm{numAssignments}\, N$. -/
-theorem exists_block_assignments_of_coloring {N : ℕ} (f : Fin N → Fin 3) :
+private theorem exists_block_assignments_of_coloring {N : ℕ} (f : Fin N → Fin 3) :
     ∃ a : Fin (numBlocks N) → Fin (numAssignments N),
       (∀ i : Fin (numBlocks N), validAssignment (blockSize N) (a i).val = true) ∧
       ∀ p : Fin N,
@@ -703,11 +661,11 @@ theorem exists_block_assignments_of_coloring {N : ℕ} (f : Fin N → Fin 3) :
   have hextract (i : Fin n) (u : ℕ) (hu : u < b) : extractColor (a i).val u = col i.val u := by
     have h0 : (a i).val.testBit (2 * u) = decide (col i.val u % 2 = 1) := by
       rw [BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD,
-        List.getElem?_eq_getElem (by simp [word]; omega)]
+        List.getElem?_eq_getElem (by simp only [word, List.length_map, List.length_range]; omega)]
       simp [word, bitFn, Nat.mul_div_right _ two_pos]
     have h1 : (a i).val.testBit (2 * u + 1) = decide (col i.val u / 2 = 1) := by
       rw [BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD,
-        List.getElem?_eq_getElem (by simp [word]; omega)]
+        List.getElem?_eq_getElem (by simp only [word, List.length_map, List.length_range]; omega)]
       have hdiv : (2 * u + 1) / 2 = u := by omega
       have hmod : (2 * u + 1) % 2 = 1 := by omega
       simp [word, bitFn, hdiv, hmod]
@@ -847,7 +805,7 @@ theorem mem_ThreeColoring_iff_exists_bpisOfColoring (H : Graph) :
 
 /-! ### Polynomial-time computability of the reduction -/
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_listGetDWithInput
     {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
     {list : γ → List α} {index : γ → ℕ} (d : α)
@@ -856,7 +814,7 @@ private theorem computableTidilyInPolyTime_listGetDWithInput
     ComputableTidilyInPolyTime (fun x => (list x).getD (index x) d) encIn encA :=
   (listGetD d).comp (hlist.prod hindex)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_unary_div'
     {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
     (ha : ComputableTidilyInPolyTime a encIn encUnary)
@@ -864,7 +822,7 @@ private theorem computableTidilyInPolyTime_unary_div'
     ComputableTidilyInPolyTime (fun x => a x / b x) encIn encUnary :=
   unary_div.comp (ha.prod hb)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_unary_mod'
     {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
     (ha : ComputableTidilyInPolyTime a encIn encUnary)
@@ -872,13 +830,13 @@ private theorem computableTidilyInPolyTime_unary_mod'
     ComputableTidilyInPolyTime (fun x => a x % b x) encIn encUnary :=
   unary_mod.comp (ha.prod hb)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_blockSize :
     ComputableTidilyInPolyTime blockSize encUnary encUnary := by
   unfold blockSize
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_numAssignments :
     ComputableTidilyInPolyTime numAssignments encUnary encUnary := by
   obtain ⟨hefficient, hspec⟩ := iterate_spec (count := fun n => 2 * blockSize n)
@@ -894,25 +852,25 @@ private theorem computableTidilyInPolyTime_numAssignments :
   funext n
   exact (hspec n).symm
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_numBlocks :
     ComputableTidilyInPolyTime numBlocks encUnary encUnary := by
   unfold numBlocks
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_wordLen :
     ComputableTidilyInPolyTime wordLen encUnary encUnary := by
   unfold wordLen
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_searchBits :
     ComputableTidilyInPolyTime searchBits encUnary encUnary := by
   unfold searchBits
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_extractColor
     {γ : Type} {encIn : γ ↪ List Bool} {c u : γ → ℕ}
     (hc : ComputableTidilyInPolyTime c encIn encUnary)
@@ -922,7 +880,7 @@ private theorem computableTidilyInPolyTime_extractColor
   unfold extractColor
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_validAssignment
     {γ : Type} {encIn : γ ↪ List Bool} {b c : γ → ℕ}
     (_hb : ComputableTidilyInPolyTime b encIn encUnary)
@@ -931,7 +889,7 @@ private theorem computableTidilyInPolyTime_validAssignment
   unfold validAssignment
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_thresholdOf
     {γ : Type} {encIn : γ ↪ List Bool} {n L r v : γ → ℕ}
     (_hn : ComputableTidilyInPolyTime n encIn encUnary)
@@ -942,7 +900,7 @@ private theorem computableTidilyInPolyTime_thresholdOf
   unfold thresholdOf
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_bucketOf
     {γ : Type} {encIn : γ ↪ List Bool} {B n L r j : γ → ℕ}
     (_hB : ComputableTidilyInPolyTime B encIn encUnary)
@@ -955,7 +913,7 @@ private theorem computableTidilyInPolyTime_bucketOf
   unfold bucketOf
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_colorAt
     {γ : Type} {encIn : γ ↪ List Bool} {N r j u : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -966,14 +924,14 @@ private theorem computableTidilyInPolyTime_colorAt
   unfold colorAt
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_consistencyEdges :
     ComputableTidilyInPolyTime consistencyEdges encUnary
       (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
   unfold consistencyEdges
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_invalidBucketEdges :
     ComputableTidilyInPolyTime (fun p : ℕ × ℕ => invalidBucketEdges p.1 p.2)
       (encPair encUnary encNat)
@@ -988,7 +946,7 @@ private theorem computableTidilyInPolyTime_bool_or'
     ComputableTidilyInPolyTime (fun a => left a || right a) encA encBool :=
   bool_or.comp (hleft.prod hright)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_innerConflictTest
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ j₂ : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -1003,7 +961,7 @@ private theorem computableTidilyInPolyTime_innerConflictTest
   unfold innerConflictTest
   exact bool_and' (computableTidilyInPolyTime_bool_or' (by fun_prop) (by fun_prop)) (by fun_prop)
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_innerConflictBuckets
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -1017,7 +975,7 @@ private theorem computableTidilyInPolyTime_innerConflictBuckets
   unfold innerConflictBuckets
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_innerConflictEdges
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -1031,7 +989,7 @@ private theorem computableTidilyInPolyTime_innerConflictEdges
   unfold innerConflictEdges
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_pairConflictEdges
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q : γ → ℕ}
     (_hN : ComputableTidilyInPolyTime N encIn encUnary)
@@ -1045,7 +1003,7 @@ private theorem computableTidilyInPolyTime_pairConflictEdges
   fun_prop
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_vertexConflictEdges
     {γ : Type} {encIn : γ ↪ List Bool} {H : γ → Graph} {r p : γ → ℕ}
     (hH : ComputableTidilyInPolyTime H encIn encGraph)
@@ -1061,7 +1019,7 @@ private theorem computableTidilyInPolyTime_vertexConflictEdges
   unfold vertexConflictEdges
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_conflictEdges :
     ComputableTidilyInPolyTime (fun p : Graph × ℕ => conflictEdges p.1 p.2)
       (encPair encGraph encNat)
@@ -1076,7 +1034,7 @@ private theorem computableTidilyInPolyTime_conflictEdges :
   unfold conflictEdges
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_bpisOfColoring :
     ComputableTidilyInPolyTime bpisOfColoring (encPair encGraph encNat)
       encBipartitePermutationGraph := by
@@ -1124,131 +1082,22 @@ theorem computableInPolyTime_bpisOfColoring_binary :
       encBipartitePermutationGraphBinary :=
   .of_tidy (computableTidilyInPolyTime_toBinary.comp computableTidilyInPolyTime_bpisOfColoring)
 
+/-- Computing `searchBits` is polynomial-time in the plain machine model. -/
+@[fun_prop]
+theorem computableInPolyTime_searchBits :
+    ComputableInPolyTime searchBits encUnary encUnary :=
+  .of_tidy computableTidilyInPolyTime_searchBits
+
+/-- Computing `searchBits H.1.length` from a graph `H` is polynomial-time in the plain machine
+model. -/
+@[fun_prop]
+theorem computableInPolyTime_searchBits_length :
+    ComputableInPolyTime (fun H : Graph => searchBits H.1.length) encGraph encUnary := by
+  refine .of_tidy (computableTidilyInPolyTime_searchBits.comp ?_)
+  unfold encGraph
+  fun_prop
+
 /-! ### Exhaustive search over threshold tables and the ETH lower bound -/
-
-private abbrev State : Type := (Graph × ℕ) × Bool
-
-private def encState : State ↪ List Bool :=
-  encPair (encPair encGraph encNat) encBool
-
-private def init (H : Graph) : State := ((H, 0), false)
-
-private def step (g : BipartitePermutationGraph → Bool) (s : State) : State :=
-  ((s.1.1, s.1.2 + 1), s.2 || g (bpisOfColoring s.1))
-
-private def rounds (H : Graph) : ℕ := 2 ^ searchBits H.1.length
-
-private def search (g : BipartitePermutationGraph → Bool) (H : Graph) : Bool :=
-  ((step g)^[rounds H] (init H)).2
-
-private theorem iterate_step_init (g : BipartitePermutationGraph → Bool) (H : Graph) (k : ℕ) :
-    (step g)^[k] (init H) =
-      ((H, k), (List.range k).any fun r => g (bpisOfColoring (H, r))) := by
-  induction k with
-  | zero => rfl
-  | succ k ih =>
-    rw [Function.iterate_succ_apply', ih, step, List.range_succ, List.any_append,
-      List.any_cons, List.any_nil, Bool.or_false]
-
-private theorem search_eq_true_iff {g : BipartitePermutationGraph → Bool}
-    (hg : ∀ G, g G = true ↔ G ∈ BipartitePermutationIndependentSet) (H : Graph) :
-    search g H = true ↔ H ∈ ThreeColoring := by
-  rw [search, iterate_step_init, List.any_eq_true, mem_ThreeColoring_iff_exists_bpisOfColoring]
-  simp only [List.mem_range, hg, rounds]
-
-private theorem computableTidilyInPolyTime_init :
-    ComputableTidilyInPolyTime init encGraph encState := by
-  unfold init encState
-  fun_prop
-
-private theorem computableTidilyInPolyTime_rounds :
-    ComputableTidilyInPolyTime rounds encGraph encNat := by
-  have hlen : ComputableTidilyInPolyTime (fun H : Graph => H.1.length) encGraph encUnary := by
-    unfold encGraph
-    fun_prop
-  unfold rounds
-  fun_prop
-
-private theorem exists_computableTidilyInO_step {g : BipartitePermutationGraph → Bool}
-    {t : BipartitePermutationGraph → ℕ}
-    (hg : ComputableTidilyInO g encBipartitePermutationGraph encBool t t) :
-    ∃ d, ComputableTidilyInO (step g) encState encState
-      (fun s => ((encState s).length + 1) ^ d + t (bpisOfColoring s.1))
-      (fun s => ((encState s).length + 1) ^ d + t (bpisOfColoring s.1)) := by
-  obtain ⟨dN, eN, hN⟩ := (show ComputableTidilyInPolyTime (fun s : State => (s.1.1, s.1.2 + 1))
-    encState (encPair encGraph encNat) by unfold encState; fun_prop).exists_degree
-  obtain ⟨dB, eB, hB⟩ := (show ComputableTidilyInPolyTime (fun s : State => s.2)
-    encState encBool by unfold encState; fun_prop).exists_degree
-  obtain ⟨dR, eR, hR⟩ := (show ComputableTidilyInPolyTime (fun s : State => bpisOfColoring s.1)
-    encState encBipartitePermutationGraph by unfold encState; fun_prop).exists_degree
-  obtain ⟨dO, eO, hO⟩ := bool_or.exists_degree
-  set D := dN + dB + dR
-  have hN' := (hN.mono (d' := D) (e' := eN) (by omega) le_rfl).inO
-  have hB' := (hB.mono (d' := D) (e' := eB) (by omega) le_rfl).inO
-  have hR' := (hR.mono (d' := D) (e' := eR) (by omega) le_rfl).inO
-  have h := hN'.prod (hO.inO.comp (hB'.prod (hg.comp hR')))
-  have h4 (p : Bool × Bool) : (encPair encBool encBool p).length = 4 := by simp
-  refine ⟨D, (h.mono (5 ^ dO + 4) (fun s => ?_) (fun s => ?_)).of_enc_eq fun _ => rfl⟩ <;>
-  · simp only [Function.comp_apply, h4]
-    generalize ((encState s).length + 1) ^ D = P
-    generalize t (bpisOfColoring s.1) = T
-    have hF : 1 ≤ (4 + 1) ^ dO := Nat.one_le_pow _ _ (by norm_num)
-    generalize (4 + 1) ^ dO = F at hF ⊢
-    nlinarith
-
-private theorem length_encPair_le_of_le_rounds (H : Graph) {k : ℕ} (hk : k ≤ rounds H) :
-    (encPair encGraph encNat (H, k)).length ≤ 11 * ((encGraph H).length + 1) ^ 2 := by
-  have hK := ComputableTidilyInO.length_encNat_mono hk
-  rw [rounds, encNat_two_pow] at hK
-  simp only [List.length_append, List.length_replicate, List.length_singleton] at hK
-  have hSB := searchBits_le_quad H.1.length
-  have hNL := H.length_vertices_le_encGraph
-  have hsq : (H.1.length + 1) ^ 2 ≤ ((encGraph H).length + 1) ^ 2 :=
-    Nat.pow_le_pow_left (by omega) 2
-  simp only [length_encPair]
-  nlinarith
-
-private theorem exists_state_and_node_bounds :
-    ∃ (c_st c_nd d_nd : ℕ),
-      (∀ (g : BipartitePermutationGraph → Bool) (H : Graph) (k : ℕ),
-        k ≤ rounds H →
-        (encState ((step g)^[k] (init H))).length ≤ c_st * ((encGraph H).length + 1) ^ 2) ∧
-      (∀ (H : Graph),
-        (encNat (rounds H)).length + 1 ≤ c_st * ((encGraph H).length + 1) ^ 2) ∧
-      (∀ (H : Graph) (k : ℕ),
-        k ≤ rounds H →
-        (encBipartitePermutationGraph (bpisOfColoring (H, k))).length ≤
-          c_nd * ((encGraph H).length + 1) ^ d_nd) := by
-  obtain ⟨cb, db, hbpis⟩ := computableTidilyInPolyTime_bpisOfColoring.polyBounded_length.exists_le
-  refine ⟨24, cb * 12 ^ db, 2 * db, fun g H k hk => ?_, fun H => ?_, fun H k hk => ?_⟩
-  · rw [iterate_step_init, encState, length_encPair]
-    have hp := length_encPair_le_of_le_rounds H hk
-    have h1 : 1 ≤ ((encGraph H).length + 1) ^ 2 := Nat.one_le_pow _ _ (Nat.succ_pos _)
-    simp only [encBool_apply, List.length_singleton]
-    omega
-  · rw [rounds, encNat_two_pow, List.length_append, List.length_replicate, List.length_singleton]
-    have hSB := searchBits_le_quad H.1.length
-    have hNL := H.length_vertices_le_encGraph
-    have hsq : (H.1.length + 1) ^ 2 ≤ ((encGraph H).length + 1) ^ 2 :=
-      Nat.pow_le_pow_left (by omega) 2
-    have h1 : 1 ≤ ((encGraph H).length + 1) ^ 2 := Nat.one_le_pow _ _ (Nat.succ_pos _)
-    omega
-  · have h1 := hbpis (H, k)
-    have h2 := length_encPair_le_of_le_rounds H hk
-    have h3 : (encPair encGraph encNat (H, k)).length + 1 ≤
-        12 * ((encGraph H).length + 1) ^ 2 := by
-      have : 1 ≤ ((encGraph H).length + 1) ^ 2 := Nat.one_le_pow _ _ (Nat.succ_pos _)
-      omega
-    calc (encBipartitePermutationGraph (bpisOfColoring (H, k))).length
-        ≤ cb * ((encPair encGraph encNat (H, k)).length + 1) ^ db := h1
-      _ ≤ cb * (12 * ((encGraph H).length + 1) ^ 2) ^ db :=
-          Nat.mul_le_mul_left cb (Nat.pow_le_pow_left h3 db)
-      _ = cb * 12 ^ db * ((encGraph H).length + 1) ^ (2 * db) := by
-          rw [mul_pow, ← pow_mul, ← mul_assoc]
-
-private noncomputable def leafTime (c_nd d_nd : ℕ) (δ : ℝ) (c e : ℕ) (H : Graph) : ℕ :=
-  ⌈(c : ℝ) * (2 ^ (δ * ((10 * H.1.length + 5 : ℕ) : ℝ)) *
-    ((c_nd * ((encGraph H).length + 1) ^ d_nd : ℕ) + 1 : ℝ) ^ e) + c⌉₊
 
 /-- **Transfer of exponential-time deciders along the block-sorting reduction**: for every
 $M \ge 1$ and $\delta \ge 0$, a decider for `BipartitePermutationIndependentSet` within time
@@ -1258,202 +1107,10 @@ theorem decidableInExpTime_ThreeColoring_of_bpis {M : ℕ} (hM : 0 < M) {δ : �
     (h : DecidableInExpTime BipartitePermutationIndependentSet encBipartitePermutationGraph
       (fun G => G.1 * Nat.log 2 G.1) δ) :
     DecidableInExpTime ThreeColoring encGraph (fun H => H.1.length) (1 / M + 10 * δ) := by
-  obtain ⟨e, h⟩ := h
-  obtain ⟨g, t, c, hg, hgB, ht⟩ := h.exists_computableInO
-  have hg := hg.tidy
-  obtain ⟨d, hstep⟩ := exists_computableTidilyInO_step hg
-  obtain ⟨dn, _, hn⟩ := computableTidilyInPolyTime_rounds.exists_degree
-  obtain ⟨di, _, hi⟩ := computableTidilyInPolyTime_init.exists_degree
-  obtain ⟨da, _, ha⟩ := (show ComputableTidilyInPolyTime (fun s : State => s.2) encState encBool
-    by unfold encState; fun_prop).exists_degree
-  obtain ⟨c_st, c_nd, d_nd, hst_bound, hrounds_len, hnd_bound⟩ := exists_state_and_node_bounds
-  obtain ⟨K_M, hK_M⟩ : ∃ K_M : ℕ, ∀ N, searchBits N ≤ N / M + K_M :=
-    ⟨48 * (48 * M) ^ 3, fun N => searchBits_le_div_add N hM⟩
-  set stBound : Graph → ℕ := fun H => c_st * ((encGraph H).length + 1) ^ 2
-  set ndBound : Graph → ℕ := fun H => c_nd * ((encGraph H).length + 1) ^ d_nd
-  have hround (H : Graph) (k : ℕ) (hk : k ≤ rounds H) :
-      ((encState ((step g)^[k] (init H))).length + 1) ^ d +
-        t (bpisOfColoring ((step g)^[k] (init H)).1) ≤
-        (stBound H + 1) ^ d + leafTime c_nd d_nd δ c e H := by
-    have hS : (encState ((step g)^[k] (init H))).length ≤ stBound H := hst_bound g H k hk
-    refine Nat.add_le_add (Nat.pow_le_pow_left (by omega) d) ?_
-    rw [iterate_step_init]
-    dsimp only
-    set G := bpisOfColoring (H, k)
-    have hG1 : G.1 * Nat.log 2 G.1 ≤ 10 * H.1.length + 5 :=
-      numBlocks_mul_log_le H.1.length
-    have hGenc : (encBipartitePermutationGraph G).length ≤ ndBound H := hnd_bound H k hk
-    have h₁ : (2 : ℝ) ^ (δ * (G.1 * Nat.log 2 G.1 : ℕ)) ≤
-        2 ^ (δ * ((10 * H.1.length + 5 : ℕ) : ℝ)) :=
-      Real.rpow_le_rpow_of_exponent_le (by norm_num)
-        (mul_le_mul_of_nonneg_left (by exact_mod_cast hG1) hδ)
-    have h₂ : (((encBipartitePermutationGraph G).length : ℝ) + 1) ^ e ≤
-        ((ndBound H : ℝ) + 1) ^ e :=
-      pow_le_pow_left₀ (by positivity) (by exact_mod_cast Nat.add_le_add_right hGenc 1) e
-    have h₃ := mul_le_mul h₁ h₂ (by positivity) (by positivity)
-    have h₄ := mul_le_mul_of_nonneg_left h₃ (Nat.cast_nonneg c : (0 : ℝ) ≤ c)
-    have h₅ := (ht G).trans (add_le_add h₄ le_rfl)
-    exact Nat.cast_le.mp (h₅.trans (Nat.le_ceil _))
-  have hstate (H : Graph) (k : ℕ) (hk : k ≤ rounds H) :
-      (encState ((step g)^[k] (init H))).length ≤ stBound H :=
-    hst_bound g H k hk
-  have hiter := ComputableTidilyInO.iterate hn.inO hi.inO hstep hround hround hstate
-  have hsearch := ha.inO.comp hiter
-  set C₁ := (c_st + 1) ^ d + c_st + c_st ^ 2
-  set C₃ := (c_st + 1) ^ da
-  set E := dn + di + 2 * d + 2 * da + d_nd * e + 4
-  set C₂ : ℝ := c * 2 ^ (5 * δ) * ((c_nd : ℝ) + 1) ^ e + c + 1
-  set C₀ : ℝ := 3 + C₃ + (2 ^ K_M + 1 : ℝ) * (C₁ + C₂)
-  refine DecidableInExpTime.of_computableInO (.of_tidy hsearch)
-    (fun H => (search_eq_true_iff (fun G => (hgB G).symm) H).symm) ⌈C₀⌉₊ E fun H => ?_
-  set L := (encGraph H).length
-  set N := H.1.length
-  set P := (L + 1) ^ E
-  have hP (a : ℕ) (ha : a ≤ E) : (L + 1) ^ a ≤ P := Nat.pow_le_pow_right (Nat.succ_pos L) ha
-  have hsb : stBound H = c_st * (L + 1) ^ 2 := rfl
-  have hr : rounds H + 1 ≤ (2 ^ K_M + 1) * 2 ^ (N / M) := by
-    have h1 := hK_M N
-    have h2 : rounds H ≤ 2 ^ K_M * 2 ^ (N / M) := by
-      calc rounds H = 2 ^ searchBits N := rfl
-        _ ≤ 2 ^ (N / M + K_M) := Nat.pow_le_pow_right two_pos h1
-        _ = 2 ^ K_M * 2 ^ (N / M) := by rw [pow_add, Nat.mul_comm]
-    have h3 : 1 ≤ 2 ^ (N / M) := Nat.one_le_two_pow
-    nlinarith
-  have hpoly : (L + 1) ^ dn + (L + 1) ^ di ≤ 2 * P := by
-    have := hP dn (by omega)
-    have := hP di (by omega)
-    omega
-  have hans_le : ((encState ((step g)^[rounds H] (init H))).length + 1) ^ da ≤ C₃ * P := by
-    have h1 := hstate H (rounds H) le_rfl
-    have h2 : stBound H + 1 ≤ (c_st + 1) * (L + 1) ^ 2 := by
-      have : 1 ≤ (L + 1) ^ 2 := Nat.one_le_pow _ _ (Nat.succ_pos L)
-      rw [hsb]
-      nlinarith
-    calc ((encState ((step g)^[rounds H] (init H))).length + 1) ^ da
-        ≤ (stBound H + 1) ^ da := Nat.pow_le_pow_left (by omega) da
-      _ ≤ ((c_st + 1) * (L + 1) ^ 2) ^ da := Nat.pow_le_pow_left h2 da
-      _ = C₃ * (L + 1) ^ (2 * da) := by simp only [C₃, mul_pow, ← pow_mul]
-      _ ≤ C₃ * P := Nat.mul_le_mul_left C₃ (hP (2 * da) (by omega))
-  have hrnd : (stBound H + 1) ^ d + stBound H +
-      ((encNat (rounds H)).length + 1) ^ 2 ≤ C₁ * P := by
-    have h1 : (stBound H + 1) ^ d ≤ (c_st + 1) ^ d * (L + 1) ^ (2 * d) := by
-      have hst1 : stBound H + 1 ≤ (c_st + 1) * (L + 1) ^ 2 := by
-        have : 1 ≤ (L + 1) ^ 2 := Nat.one_le_pow _ _ (Nat.succ_pos L)
-        rw [hsb]
-        nlinarith
-      calc (stBound H + 1) ^ d ≤ ((c_st + 1) * (L + 1) ^ 2) ^ d := Nat.pow_le_pow_left hst1 d
-        _ = (c_st + 1) ^ d * (L + 1) ^ (2 * d) := by rw [mul_pow, ← pow_mul]
-    have h2 : ((encNat (rounds H)).length + 1) ^ 2 ≤ c_st ^ 2 * (L + 1) ^ 4 := by
-      have hr_len := hrounds_len H
-      calc ((encNat (rounds H)).length + 1) ^ 2
-          ≤ (c_st * (L + 1) ^ 2) ^ 2 := Nat.pow_le_pow_left hr_len 2
-        _ = c_st ^ 2 * (L + 1) ^ 4 := by rw [mul_pow, ← pow_mul]
-    have h3 := hP (2 * d) (by omega)
-    have h4 := hP 2 (by omega)
-    have h5 := hP 4 (by omega)
-    calc (stBound H + 1) ^ d + stBound H + ((encNat (rounds H)).length + 1) ^ 2
-        ≤ (c_st + 1) ^ d * P + c_st * P + c_st ^ 2 * P := by
-          have := h1.trans (Nat.mul_le_mul_left ((c_st + 1) ^ d) h3)
-          have := (le_of_eq hsb).trans (Nat.mul_le_mul_left c_st h4)
-          have := h2.trans (Nat.mul_le_mul_left (c_st ^ 2) h5)
-          omega
-      _ = C₁ * P := by simp only [C₁]; ring
-  set Y : ℝ := 2 ^ ((10 * δ) * N)
-  have hY : 1 ≤ Y := Real.one_le_rpow (by norm_num) (by positivity)
-  have hP1 : (1 : ℝ) ≤ P := by exact_mod_cast Nat.one_le_pow _ _ (Nat.succ_pos L)
-  have hleaf : (leafTime c_nd d_nd δ c e H : ℝ) ≤ C₂ * Y * P := by
-    have h₁ : (2 : ℝ) ^ (δ * ((10 * N + 5 : ℕ) : ℝ)) = 2 ^ (5 * δ) * Y := by
-      rw [← Real.rpow_add (by norm_num)]
-      congr 1
-      push_cast
-      ring
-    have h₂ : ((ndBound H : ℝ) + 1) ^ e ≤ ((c_nd : ℝ) + 1) ^ e * P := by
-      have hnb_le : (ndBound H : ℝ) + 1 ≤ ((c_nd : ℝ) + 1) * ((L : ℝ) + 1) ^ d_nd := by
-        have hnb_eq : (ndBound H : ℝ) = c_nd * ((L : ℝ) + 1) ^ d_nd := by
-          simp only [ndBound]
-          push_cast
-          ring
-        have hpow1 : (1 : ℝ) ≤ ((L : ℝ) + 1) ^ d_nd :=
-          one_le_pow₀ (by linarith [(L.cast_nonneg : (0 : ℝ) ≤ L)])
-        nlinarith
-      calc ((ndBound H : ℝ) + 1) ^ e ≤ (((c_nd : ℝ) + 1) * ((L : ℝ) + 1) ^ d_nd) ^ e :=
-            pow_le_pow_left₀ (by positivity) hnb_le e
-        _ = ((c_nd : ℝ) + 1) ^ e * ((L : ℝ) + 1) ^ (d_nd * e) := by rw [mul_pow, ← pow_mul]
-        _ ≤ ((c_nd : ℝ) + 1) ^ e * P := by
-            refine mul_le_mul_of_nonneg_left ?_ (by positivity)
-            exact_mod_cast hP (d_nd * e) (by omega)
-    have h₃ := Nat.ceil_lt_add_one (show (0 : ℝ) ≤ (c : ℝ) * (2 ^ (δ * ((10 * N + 5 : ℕ) : ℝ)) *
-      ((ndBound H : ℝ) + 1) ^ e) + c by positivity)
-    unfold leafTime
-    change (⌈(c : ℝ) * (2 ^ (δ * ((10 * N + 5 : ℕ) : ℝ)) *
-      ((ndBound H : ℝ) + 1) ^ e) + c⌉₊ : ℝ) ≤ _
-    rw [h₁] at h₃ ⊢
-    have h₄ : (c : ℝ) * (2 ^ (5 * δ) * Y * ((ndBound H : ℝ) + 1) ^ e) ≤
-        c * 2 ^ (5 * δ) * ((c_nd : ℝ) + 1) ^ e * Y * P := by
-      have := mul_le_mul_of_nonneg_left h₂ (by positivity : (0 : ℝ) ≤ c * 2 ^ (5 * δ) * Y)
-      nlinarith
-    have h₅ : (c : ℝ) + 1 ≤ ((c : ℝ) + 1) * Y * P := by
-      have : (1 : ℝ) ≤ Y * P := one_le_mul_of_one_le_of_one_le hY hP1
-      nlinarith
-    calc (⌈(c : ℝ) * (2 ^ (5 * δ) * Y * ((ndBound H : ℝ) + 1) ^ e) + c⌉₊ : ℝ)
-        ≤ (c : ℝ) * (2 ^ (5 * δ) * Y * ((ndBound H : ℝ) + 1) ^ e) + c + 1 := h₃.le
-      _ ≤ C₂ * Y * P := by simp only [C₂]; nlinarith
-  set X : ℝ := 2 ^ ((1 / M : ℝ) * N)
-  have hX : ((2 ^ (N / M) : ℕ) : ℝ) ≤ X := by
-    rw [Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    rw [one_div_mul_eq_div]
-    exact Nat.cast_div_le
-  have hX1 : 1 ≤ X := Real.one_le_rpow (by norm_num) (by positivity)
-  have hXY : X * Y = 2 ^ ((1 / M + 10 * δ) * N) := by
-    rw [← Real.rpow_add (by norm_num)]
-    ring_nf
-  have hT : ((L + 1) ^ dn + (L + 1) ^ di +
-      (rounds H + 1) * ((stBound H + 1) ^ d + leafTime c_nd d_nd δ c e H +
-        stBound H + ((encNat (rounds H)).length + 1) ^ 2) +
-      ((encState ((step g)^[rounds H] (init H))).length + 1) ^ da : ℝ) ≤
-      (2 + C₃ : ℝ) * P + (2 ^ K_M + 1 : ℝ) * X * (C₁ * P + C₂ * Y * P) := by
-    have h₁ : ((L + 1) ^ dn + (L + 1) ^ di : ℝ) ≤ 2 * P := by exact_mod_cast hpoly
-    have h₁' : (((encState ((step g)^[rounds H] (init H))).length + 1) ^ da : ℝ) ≤ C₃ * P := by
-      exact_mod_cast hans_le
-    have h₂ : ((rounds H + 1 : ℕ) : ℝ) ≤ (2 ^ K_M + 1 : ℝ) * X := by
-      have : ((rounds H + 1 : ℕ) : ℝ) ≤ (((2 ^ K_M + 1) * 2 ^ (N / M) : ℕ) : ℝ) := by
-        exact_mod_cast hr
-      rw [Nat.cast_mul] at this
-      have hKM : (0 : ℝ) ≤ (2 ^ K_M + 1 : ℕ) := Nat.cast_nonneg _
-      have hmul := mul_le_mul_of_nonneg_left hX hKM
-      push_cast at this hmul ⊢
-      linarith
-    have h₃ : (((stBound H + 1) ^ d + stBound H +
-        ((encNat (rounds H)).length + 1) ^ 2 : ℕ) : ℝ) ≤ C₁ * P := by exact_mod_cast hrnd
-    have h₄ : (((stBound H + 1) ^ d + leafTime c_nd d_nd δ c e H + stBound H +
-        ((encNat (rounds H)).length + 1) ^ 2 : ℕ) : ℝ) ≤ C₁ * P + C₂ * Y * P := by
-      push_cast at h₃ ⊢
-      linarith
-    have h₅ := mul_le_mul h₂ h₄ (by positivity) (by positivity)
-    push_cast at h₁ h₁' h₅ ⊢
-    linarith
-  calc _ ≤ (2 + C₃ : ℝ) * P + (2 ^ K_M + 1 : ℝ) * X * (C₁ * P + C₂ * Y * P) := by
-          exact_mod_cast hT
-    _ ≤ C₀ * (X * Y * P) := by
-        have hXY1 : 1 ≤ X * Y := one_le_mul_of_one_le_of_one_le hX1 hY
-        have hC₂ : 0 ≤ C₂ := by positivity
-        have hC₁ : (0 : ℝ) ≤ C₁ := by positivity
-        have hC₃ : (0 : ℝ) ≤ C₃ := by positivity
-        have hKM : (0 : ℝ) ≤ 2 ^ K_M + 1 := by positivity
-        have hP0 : (0 : ℝ) ≤ P := by positivity
-        have a₁ : (P : ℝ) ≤ X * Y * P := le_mul_of_one_le_left hP0 hXY1
-        have a₂ : X * P ≤ X * Y * P := by
-          have := mul_le_mul_of_nonneg_left hY (by positivity : (0 : ℝ) ≤ X * P)
-          linarith [show X * P * Y = X * Y * P by ring]
-        have a₃ := mul_le_mul_of_nonneg_left a₂ (mul_nonneg hKM hC₁)
-        have a₄ := mul_le_mul_of_nonneg_left a₁ hC₃
-        simp only [C₀]
-        nlinarith
-    _ ≤ ⌈C₀⌉₊ * (2 ^ ((1 / M + 10 * δ) * N) * ((L : ℝ) + 1) ^ E) := by
-        rw [← hXY]
-        push_cast [P]
-        exact mul_le_mul_of_nonneg_right (Nat.le_ceil C₀) (by positivity)
+  simpa using h.of_exhaustiveSearch computableInPolyTime_bpisOfColoring
+    computableInPolyTime_searchBits_length mem_ThreeColoring_iff_exists_bpisOfColoring (c := 10)
+    (fun H r => by have := fst_bpisOfColoring_mul_log_le H r; omega)
+    (fun H => searchBits_le_div_add H.1.length hM) hδ
 
 end BipartitePermutationIndependentSet
 
@@ -1464,20 +1121,11 @@ if `BipartitePermutationIndependentSet` is decidable in time $2^{o(n \log n)}$, 
 theorem DecidableInSubexpTime.threeColoring_of_bipartitePermutationIndependentSet
     (h : DecidableInSubexpTime BipartitePermutationIndependentSet encBipartitePermutationGraph
       fun G => G.1 * Nat.log 2 G.1) :
-    DecidableInSubexpTime ThreeColoring encGraph fun H => H.1.length := by
-  intro ε hε
-  obtain ⟨M, hM⟩ := exists_nat_gt (2 / ε)
-  have hMpos : (0 : ℝ) < M := lt_trans (by positivity) hM
-  have hM_nat : 0 < M := Nat.cast_pos.mp hMpos
-  have hMε : 1 / (M : ℝ) < ε / 2 := by
-    rw [div_lt_iff₀ hMpos]
-    rw [div_lt_iff₀ hε] at hM
-    linarith
-  set δ := ε / 20
-  have hδ : 0 < δ := by positivity
-  refine (decidableInExpTime_ThreeColoring_of_bpis hM_nat hδ.le (h δ hδ)).mono ?_
-  simp only [δ]
-  linarith
+    DecidableInSubexpTime ThreeColoring encGraph fun H => H.1.length :=
+  h.of_exhaustiveSearch computableInPolyTime_bpisOfColoring computableInPolyTime_searchBits_length
+    mem_ThreeColoring_iff_exists_bpisOfColoring (c := 10)
+    (fun H r => by have := fst_bpisOfColoring_mul_log_le H r; omega)
+    (fun M hM => ⟨48 * (48 * M) ^ 3, fun H => searchBits_le_div_add H.1.length hM⟩)
 
 /-- **Lokshtanov–Marx–Saurabh ETH Lower Bound for $2n \times 2n$ Bipartite Permutation Independent
 Set** [LokshtanovMarxSaurabh2018, Theorem 2.11] [Ilango2020FOCS, Section III.B, p. 427; ECCC
@@ -1546,4 +1194,5 @@ theorem ETH.not_decidableInSubexpTime_BipartitePermutationIndependentSet_two_mul
         ≤ (2 * G.1) * (2 * Nat.log 2 G.1) := Nat.mul_le_mul_left _ hlog
       _ ≤ 4 * (G.1 * Nat.log 2 G.1) + 4 := by ring_nf; omega
 
+end
 end Cslib.Complexity

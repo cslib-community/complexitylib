@@ -356,27 +356,20 @@ section Reduction
 variable {α : Type} {enc : α ↪ List Bool} {k : ℕ} {State : Type} [Finite State]
   {ntm : MultiTapeNTM k Bool State} {c d : ℕ}
 
-/-- The width of the words of the reduction, in unary. -/
-@[fun_prop]
-theorem computableInPolyTime_width :
-    Turing.MultiTapeTM.ComputableInPolyTime (width enc ntm c d) enc encUnary := by
-  refine .of_tidy ?_
-  have := MultiTapeNTM.computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
-  unfold width
-  fun_prop
-
 /-- **The test of one step or none between codes is polynomial-time**, on the instance and the
 concatenation of the two codes. -/
 theorem computableInPolyTime_edgeTest :
     Turing.MultiTapeTM.ComputableInPolyTime (edgeTest enc ntm c d) (encPair enc encBits) encBool :=
       by
   refine .of_tidy ?_
-  have hw : ComputableTidilyInPolyTime (fun p : α × List Bool => width enc ntm c d p.1)
+  have hw : ComputableTidilyInPolyTime (fun p : α × List Bool => ntm.viewCodeWidth c d (enc p.1))
       (encPair enc encBits) encUnary :=
-    computableInPolyTime_width.tidy.comp (fst _ _)
-  have hx : ComputableTidilyInPolyTime (fun p : α × List Bool => p.2.take (width enc ntm c d p.1))
+    (ntm.computableInPolyTime_viewCodeWidth c d).tidy.comp ((encode enc).comp (fst _ _))
+  have hx : ComputableTidilyInPolyTime
+      (fun p : α × List Bool => p.2.take (ntm.viewCodeWidth c d (enc p.1)))
       (encPair enc encBits) encBits := by fun_prop
-  have hy : ComputableTidilyInPolyTime (fun p : α × List Bool => p.2.drop (width enc ntm c d p.1))
+  have hy : ComputableTidilyInPolyTime
+      (fun p : α × List Bool => p.2.drop (ntm.viewCodeWidth c d (enc p.1)))
       (encPair enc encBits) encBits := by fun_prop
   have he := ntm.computableTidilyInPolyTime_codeEdge hx hy
   unfold edgeTest

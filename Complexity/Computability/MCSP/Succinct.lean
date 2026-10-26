@@ -34,7 +34,12 @@ yes-instance at every threshold of at least `(1 + ε) 2 ^ p / p`, for large `p`
 
 ## Main results
 
-* `Cslib.SuccinctMCSP.ofFunction_mem_iff`: samples of a function, as complexity on a support.
+* `Cslib.SuccinctMCSP.card_samples_ofFunction`: the sample count of `Instance.ofFunction f S s` is
+  `S.card`.
+* `Cslib.SuccinctMCSP.ofFunction_mem_iff`,
+  `Cslib.SuccinctMCSP.ofFunction_mem_iff_exists_mem_computableFunctions`,
+  `Cslib.SuccinctMCSP.ofFunction_mem_of_complexity_le`: samples of a function, as complexity on a
+  support or agreement with `computableFunctions`.
 * `Cslib.SuccinctMCSP.ofFunction_univ_mem_iff`: all samples of a function, as MCSP.
 * `Cslib.SuccinctMCSP.eventually_ofFunction_mem`: few samples always have small circuits.
 
@@ -69,6 +74,12 @@ def Instance.ofFunction {n : ℕ} (f : BooleanFunction n) (S : Finset (BitString
     Instance :=
   ⟨n, S.image fun x => (x, f x), s⟩
 
+/-- The sample set of `Instance.ofFunction f S s` has the same cardinality as `S`. -/
+@[simp] theorem card_samples_ofFunction {n : ℕ} (f : BooleanFunction n)
+    (S : Finset (BitString n)) (s : ℕ) :
+    (Instance.ofFunction f S s).samples.card = S.card :=
+  Finset.card_image_of_injective S fun _ _ h => (Prod.mk.inj h).1
+
 end SuccinctMCSP
 
 /-- **Succinct MCSP** [OliveiraPichSanthanam2019]: the instances some De Morgan circuit with at
@@ -98,6 +109,25 @@ theorem ofFunction_mem_iff {f : BooleanFunction n} {S : Finset (BitString n)} :
     Finset.mem_coe]
   exact exists_congr fun c => ⟨fun ⟨hc, hp⟩ => ⟨fun x hx => hp x (f x) x hx rfl rfl, hc⟩,
     fun ⟨hc, hs⟩ => ⟨hs, by rintro _ _ y hy rfl rfl; exact hc y hy⟩⟩
+
+/-- For `Instance.ofFunction f S s`, membership in `SuccinctMCSP` is equivalent to the existence of
+some function `g ∈ computableFunctions n s` agreeing with `f` on `S`. -/
+theorem ofFunction_mem_iff_exists_mem_computableFunctions {f : BooleanFunction n}
+    {S : Finset (BitString n)} :
+    Instance.ofFunction f S s ∈ SuccinctMCSP ↔
+      ∃ g ∈ computableFunctions n s, ∀ x ∈ S, g x = f x := by
+  rw [mem_iff_exists_mem_computableFunctions]
+  exact exists_congr fun g => and_congr_right fun _ =>
+    ⟨fun h x hx => h (x, f x) (Finset.mem_image_of_mem _ hx), fun h p hp => by
+      obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
+      exact h x hx⟩
+
+/-- Any subset of samples from a function of circuit complexity at most `s` forms a yes-instance of
+`SuccinctMCSP` at threshold `s`. -/
+theorem ofFunction_mem_of_complexity_le {f : BooleanFunction n}
+    (hf : complexity interpretation (single f) ≤ s) (S : Finset (BitString n)) :
+    Instance.ofFunction f S s ∈ SuccinctMCSP :=
+  ofFunction_mem_iff.mpr (complexityOn_le_complexity.trans hf)
 
 /-- With every input as a sample, Succinct MCSP is MCSP. -/
 theorem ofFunction_univ_mem_iff {f : BooleanFunction n} :

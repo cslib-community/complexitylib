@@ -257,7 +257,7 @@ private theorem decisionLWE_iff : DecisionLWE ↔
       (fun security => Crypto.Homomorphic.GSW.noiseLaw
         (Crypto.Homomorphic.GSW.Parameters.width security)
         (Crypto.Homomorphic.GSW.Parameters.noise security)) := by
-  change CryptographyBridge.Indistinguishable _ _ ↔ _
+  change Randomized.Indistinguishable _ _ ↔ _
   rw [CryptographyBridge.indistinguishable_iff]
   change Crypto.ComputationallyIndistinguishable _ _ ↔
     Crypto.ComputationallyIndistinguishable _ _
@@ -277,25 +277,28 @@ theorem native_algorithms :
     StrictPPT (pairEncoding unaryEncoding (pairEncoding bitsEncoding boolEncoding)) bitsEncoding
       (fun p => encryption p.1 p.2.1 p.2.2) := by
   constructor
-  · change CryptographyBridge.StrictPPT _ _ _
+  · change Randomized.StrictPPT _ _ _
     apply CryptographyBridge.strictPPT_iff.mpr
     refine ⟨fun security => Crypto.Homomorphic.GSW.keyGenSerialized (dimension security)
       (sampleCount security) (digitWidth security) (dimension security), ?_, ?_⟩
     · exact Crypto.Homomorphic.GSW.isPPTOn_keyGenSerialized
-        Crypto.Homomorphic.GSW.Parameters.computableTidilyInPolyTime_dimension
-        Crypto.Homomorphic.GSW.Parameters.computableTidilyInPolyTime_samples
-        Crypto.Homomorphic.GSW.Parameters.computableTidilyInPolyTime_width
-        Crypto.Homomorphic.GSW.Parameters.computableTidilyInPolyTime_noise
+        Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_dimension
+        Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_samples
+        Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_width
+        Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_noise
     · exact fun security => (keyGeneration_eq security).symm
-  · change CryptographyBridge.StrictPPT _ _ _
+  · change Randomized.StrictPPT _ _ _
     apply CryptographyBridge.strictPPT_iff.mpr
     refine ⟨fun p => Crypto.Homomorphic.GSW.encryptSerialized (dimension p.1)
       (sampleCount p.1) (digitWidth p.1) p.2.1 p.2.2, ?_, ?_⟩
     · exact Crypto.Homomorphic.GSW.isPPTOn_encryptSerialized
-        (Crypto.Homomorphic.GSW.Parameters.computableTidilyInPolyTime_dimension.comp (by fun_prop))
-        (Crypto.Homomorphic.GSW.Parameters.computableTidilyInPolyTime_samples.comp (by fun_prop))
-        (Crypto.Homomorphic.GSW.Parameters.computableTidilyInPolyTime_width.comp (by fun_prop))
-        (by fun_prop) (by fun_prop)
+        (.of_tidy (Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_dimension.tidy.comp (by
+          fun_prop)))
+        (.of_tidy (Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_samples.tidy.comp (by
+          fun_prop)))
+        (.of_tidy (Crypto.Homomorphic.GSW.Parameters.computableInPolyTime_width.tidy.comp (by
+          fun_prop)))
+        (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
     · exact fun p => (encryption_eq p.1 p.2.1 p.2.2).symm
 
 /-- Transfer the actual generated-key theorem to the inspectable probability-law presentation. -/
@@ -310,7 +313,8 @@ theorem indCPA (hLWE : DecisionLWE) : ChosenMessageSecure := by
       fun security state ciphertext => guessProgram (security, state, ciphertext)⟩
   have h := Crypto.Homomorphic.GSW.Parameters.indCPA (decisionLWE_iff.mp hLWE)
     adversary ⟨hchooseProgram, hguessProgram⟩
-  simpa only [Crypto.Encryption.game, adversary, ProbComp.eval_bind, keyGeneration_eq,
+  simpa only [Crypto.Encryption.game, Crypto.Encryption.gameOn, ↓reduceIte,
+    adversary, ProbComp.eval_bind, keyGeneration_eq,
     encryption_eq, hchooseLaw, hguessLaw, chosenMessageGame, PMF.monad_bind_eq_bind,
     Negligible, Crypto.Negligible, Asymptotics.SuperpolynomialDecay,
     Crypto.Game.advantage, Crypto.Game.succProbability, probability,

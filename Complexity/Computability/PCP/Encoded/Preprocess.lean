@@ -74,8 +74,20 @@ theorem isPolyTime_rotationEdges (rotate : ℕ × (ℕ × D) → ℕ × D) (labe
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)) :
     ComputableInPolyTime (rotationEdges rotate labels) encUnary
       (encList (encPair encUnary encUnary)) := by
-  unfold rotationEdges
-  polytime
+  have houter := ComputableInPolyTime.fst (encPair encUnary encUnary) labelEncoding
+  have hlabel := ComputableInPolyTime.snd (encPair encUnary encUnary) labelEncoding
+  have harg := houter.fst'.prod (houter.snd'.prod hlabel)
+  have hbody := ComputableInPolyTime.mapWithInput
+    (f := fun p : ℕ × ℕ => fun d : D => (p.2, (rotate (p.1, p.2, d)).1))
+    (ComputableInPolyTime.const (encOut := encList labelEncoding) labels)
+    (houter.snd'.prod (hrotate.comp harg).fst')
+  have h := ComputableInPolyTime.flatMapWithInput
+    (f := fun n v => labels.map fun d => (v, (rotate (n, v, d)).1))
+    ComputableInPolyTime.range hbody
+  change ComputableInPolyTime (fun n => (List.range n).flatMap
+    (fun v => labels.map fun d => (v, (rotate (n, v, d)).1))) encUnary
+      (encList (encPair encUnary encUnary))
+  exact h
 
 /-- The full preprocessing program is polynomial-time, including enumeration, copying,
 all edge checks used by cloud search, and materializing every intermediate graph. -/

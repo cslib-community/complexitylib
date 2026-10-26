@@ -64,9 +64,9 @@ noncomputable def extractWordLabelsIdeal (source : ProbComp (List Bool)) (count 
 /-- Runtime dimensions and sample lists compose into a strict PPT extractor. -/
 theorem isPPTOn_extractWordLabels {α : Type} {input : α ↪ List Bool} {count outputBits : α → ℕ}
     {samples : α → List (List Bool × Bool)}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (houtput : ComputableTidilyInPolyTime outputBits input encUnary)
-    (hsamples : ComputableTidilyInPolyTime samples input (encList (encPair encBits encBool))) :
+    (hcount : ComputableInPolyTime count input encUnary)
+    (houtput : ComputableInPolyTime outputBits input encUnary)
+    (hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))) :
     IsPPTOn input
       (encPair (encList encBits) (encPair encBits encBits))
       (fun a => extractWordLabels (count a) (outputBits a) (samples a)) := by
@@ -99,8 +99,8 @@ theorem isPPTOn_extractedWordTest {α : Type} {input : α ↪ List Bool} {count 
     (test : α → List (List Bool) × List Bool × List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair input (encPair (encList encBits)
       (encPair encBits encBits))) encBool (fun input => test input.1 input.2))
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (houtput : ComputableTidilyInPolyTime outputBits input encUnary) :
+    (hcount : ComputableInPolyTime count input encUnary)
+    (houtput : ComputableInPolyTime outputBits input encUnary) :
     IsPPTOn (encPair input
       (encList (encPair encBits encBool))) encBool
       (fun input => do
@@ -125,13 +125,13 @@ efficient; the reduction certifies the whole family of tests. -/
 theorem SamplablePair.HasGap.extract_indexed_word_labels {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (realization : pair.SeedRealization) (choose : ℕ → ℕ)
     {candidates inverseSlack densityBound : ℕ → ℕ} {outputBits numerator : ℕ → ℕ → ℕ}
-    (hcandidates : ComputableTidilyInPolyTime candidates encUnary encUnary)
-    (houtput : ComputableTidilyInPolyTime (fun input => outputBits input.1 input.2)
+    (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
+    (houtput : ComputableInPolyTime (fun input => outputBits input.1 input.2)
       (encPair encUnary encUnary) encUnary)
-    (hslack : ComputableTidilyInPolyTime inverseSlack encUnary encUnary)
-    (hnumerator : ComputableTidilyInPolyTime (fun input => numerator input.1 input.2)
+    (hslack : ComputableInPolyTime inverseSlack encUnary encUnary)
+    (hnumerator : ComputableInPolyTime (fun input => numerator input.1 input.2)
       (encPair encUnary encUnary) encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
     (hchoose : ∀ᶠ n in atTop, choose n < candidates n)
     (hvalid : ∀ᶠ n in atTop, 0 < numerator n (choose n) ∧
       numerator n (choose n) ≤ dyadicSize (densityBound n) ∧
@@ -154,10 +154,15 @@ theorem SamplablePair.HasGap.extract_indexed_word_labels {pair : SamplablePair} 
         test n (choose n) result))
       (ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> pair.sample n) (count n)
         (outputBits n (choose n)) >>= test n (choose n)))) := by
+  have hcandidates := hcandidates.tidy
+  have houtput := houtput.tidy
+  have hslack := hslack.tidy
+  have hnumerator := hnumerator.tidy
+  have hdensity := hdensity.tidy
   let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
   have hcount : ComputableTidilyInPolyTime count encUnary encUnary :=
-    ExtractionSchedule.isPolyTime_count (by fun_prop)
-      realization.length_isPolyTime.tidy hslack
+    (ExtractionSchedule.isPolyTime_count (.of_tidy (by fun_prop))
+      realization.length_isPolyTime (.of_tidy hslack)).tidy
   have h := hpair.extract_indexed_labels realization choose
     (inverseSlack := inverseSlack)
     (fun n i => ProbComp.uniform (BitString (outputBits n i * count n)))
@@ -167,8 +172,9 @@ theorem SamplablePair.HasGap.extract_indexed_word_labels {pair : SamplablePair} 
     (isPPTOn_extractedWordTest (count := fun input : ℕ × ℕ => count input.1)
       (outputBits := fun input : ℕ × ℕ => outputBits input.1 input.2)
       (fun input : ℕ × ℕ => test input.1 input.2) htest
-      (by fun_prop) houtput)
-    hcandidates hslack hnumerator hdensity hchoose hvalid
+      (.of_tidy (by fun_prop)) (.of_tidy houtput))
+    (.of_tidy hcandidates) (.of_tidy hslack) (.of_tidy hnumerator) (.of_tidy hdensity) hchoose
+      hvalid
     (fun n i => by simpa only [ProbComp.eval_uniform, ofList_ofFn] using
       LinearHash.isTwoUniversal_flat (count n) (outputBits n i)) hbudget
   apply h.congr
@@ -189,10 +195,10 @@ prediction reduction are discharged by the library. -/
 theorem SamplablePair.HasGap.extract_word_labels {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (realization : pair.SeedRealization)
     {outputBits inverseSlack numerator densityBound : ℕ → ℕ}
-    (houtput : ComputableTidilyInPolyTime outputBits encUnary encUnary)
-    (hslack : ComputableTidilyInPolyTime inverseSlack encUnary encUnary)
-    (hnumerator : ComputableTidilyInPolyTime numerator encUnary encUnary)
-    (hdensity : ComputableTidilyInPolyTime densityBound encUnary encUnary)
+    (houtput : ComputableInPolyTime outputBits encUnary encUnary)
+    (hslack : ComputableInPolyTime inverseSlack encUnary encUnary)
+    (hnumerator : ComputableInPolyTime numerator encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
     (hvalid : ∀ᶠ n in atTop, 0 < numerator n ∧ numerator n ≤ dyadicSize (densityBound n) ∧
       (numerator n : ℝ) / dyadicSize (densityBound n) ≤
         PMF.conditionalEntropy (pair.joint n) + gap n)

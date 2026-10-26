@@ -47,20 +47,48 @@ include hencrypt hadversary
 theorem isPPTOn_publicKeyGame (bit : Bool) :
     IsPPTOn (encPair encUnary encPublicKey) encBool
       (fun p => publicKeyGame E adversary bit p.1 p.2) := by
-  have hchoose := hadversary.choose
-  have hguess := hadversary.guess
+  let baseEncoding := encPair encUnary encPublicKey
+  let choiceEncoding := encPair (encPair encBool encBool) encBits
+  have hn := ComputableInPolyTime.fst encUnary encPublicKey
+  have hartifact := ComputableInPolyTime.snd encUnary encPublicKey
   have hpublic := ComputableInPolyTime.of_tidy
     (ComputableTidilyInPolyTime.snd encUnary encPublicKey).encoded
-  unfold publicKeyGame
-  dsimp only [encPublicKey] at hpublic ⊢
-  ppt
+  have hchoose := hadversary.choose.on.preprocess (hn.prod hpublic)
+  have hfirst := (ComputableInPolyTime.listGetD (encA := encBits) []).comp
+    (hartifact.fst'.prod (ComputableInPolyTime.const 0))
+  have hencryptArg : ComputableInPolyTime
+      (fun p : (ℕ × (List (List Bool) × List (List (List Bool)))) ×
+        ((Bool × Bool) × List Bool) =>
+        (p.1.1, p.1.2.1.getD 0 [], if bit then p.2.1.2 else p.2.1.1))
+      (encPair baseEncoding choiceEncoding) (encPair encUnary (encPair encBits encBool)) := by
+    have houter := ComputableInPolyTime.fst baseEncoding choiceEncoding
+    apply ComputableInPolyTime.prod (hn.comp houter)
+    apply ComputableInPolyTime.prod (hfirst.comp houter)
+    cases bit <;> dsimp only [baseEncoding, choiceEncoding, encPublicKey] <;> fun_prop
+  have hcipher := hencrypt.preprocess hencryptArg
+  have hguessArg : ComputableInPolyTime
+      (fun p : ((ℕ × (List (List Bool) × List (List (List Bool)))) ×
+        ((Bool × Bool) × List Bool)) × List Bool =>
+        (p.1.1.1, p.1.2.2, false :: p.2)) (encPair (encPair baseEncoding choiceEncoding) encBits)
+      (encPair encUnary (encPair encBits encBits)) := by
+    dsimp only [baseEncoding, choiceEncoding, encPublicKey]
+    fun_prop
+  have hlast := hadversary.guess.preprocess hguessArg
+  have hbody := hcipher.bind_with
+    (second := fun p ciphertext => adversary.guess p.1.1 p.2.2 (false :: ciphertext)) hlast
+  simpa only [publicKeyGame, baseEncoding, choiceEncoding, Function.comp_def] using
+    hchoose.bind_with (second := fun p choice => do
+      let ciphertext ← E.encrypt p.1 (p.2.1.getD 0 [])
+        (if bit then choice.1.2 else choice.1.1)
+      adversary.guess p.1 choice.2 (false :: ciphertext)) hbody
 
 /-- The all-zero simulation is strict PPT with the parameter, complete input public key and
 saved state charged. The supported-width hypothesis is needed only for the semantic proof. -/
 theorem isPPT_zeroLinkAdversary
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    {depth : ℕ → ℕ} (hdepth : ComputableTidilyInPolyTime depth encUnary encUnary) :
+    {depth : ℕ → ℕ} (hdepth : ComputableInPolyTime depth encUnary encUnary) :
     (zeroLinkAdversary E depth adversary).IsPPT := by
+  have hdepth := hdepth.tidy
   have hchoose := hadversary.choose
   have hguess := hadversary.guess
   constructor
@@ -69,7 +97,7 @@ theorem isPPT_zeroLinkAdversary
     dsimp only [zeroLinkAdversary]
     have hrest := (hkeyGen.preprocess
       (ComputableInPolyTime.fst encUnary encBits)).replicate
-        (hdepth.comp (ComputableTidilyInPolyTime.fst encUnary encBits))
+        (.of_tidy (hdepth.comp (ComputableTidilyInPolyTime.fst encUnary encBits)))
     apply hrest.bind_with
     have hlinks : IsPPTOn
         (encPair (encPair encUnary encBits) (encList (encPair encBits encBits)))

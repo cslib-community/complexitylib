@@ -91,7 +91,7 @@ theorem union_mem_RP {A B : Set α} (hA : A ∈ RP enc) (hB : B ∈ RP enc) : A 
   obtain ⟨p₁, V₁, hV₁, h₁⟩ := mem_RP.mp hA
   obtain ⟨p₂, V₂, hV₂, h₂⟩ := mem_RP.mp hB
   refine ⟨p₁ + p₂, orVerifier (fun a => p₁.eval (enc a).length) V₁ V₂, by fun_prop,
-    fun a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
+    fun a => ⟨fun ha => ?_, fun (ha : a ∉ A ∪ B) r => ?_⟩⟩
   · change 2 ^ (p₁ + p₂).eval (enc a).length ≤
       2 * acceptCount _ a ((p₁ + p₂).eval (enc a).length)
     rw [Polynomial.eval_add]
@@ -142,8 +142,8 @@ theorem inter_mem_RP {A B : Set α} (hA : A ∈ RP enc) (hB : B ∈ RP enc) : A 
       2 * acceptCount _ a ((p₁ + p₂).eval (enc a).length)
     rw [Polynomial.eval_add, acceptCount_andVerifier, pow_add]
     nlinarith [Nat.mul_le_mul f₁ f₂]
-  · have hA' := (h₁.decidesWithOneSidedError fun _ => by simp).isVerifier a
-    have hB' := (h₂.decidesWithOneSidedError fun _ => by simp).isVerifier a
+  · have hA' := DecidesWithOneSidedError.isVerifier (h₁.solvesWithOneSidedError fun _ => by simp) a
+    have hB' := DecidesWithOneSidedError.isVerifier (h₂.solvesWithOneSidedError fun _ => by simp) a
     simp only [andVerifier, Bool.and_eq_false_iff]
     by_contra hc
     simp only [not_or, Bool.not_eq_false] at hc

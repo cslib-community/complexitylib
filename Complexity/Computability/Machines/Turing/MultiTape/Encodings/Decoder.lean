@@ -7,20 +7,14 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option
-public import Mathlib.Data.List.DropRight
-import Complexity.Foundations.Data.Nat.Bits
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import Mathlib.Data.Nat.Size
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Nat
 
 /-!
 # Total decoders
 
 A decoder for an encoding `enc : α ↪ List Bool` (`Turing.MultiTapeTM.Decoder`) is a function on
-all words that inverts `enc` on its image and is tidily computable within bounds of fixed degrees.
+all words that inverts `enc` on its image and is computable within independent fixed degrees.
 On a malformed word it still returns a value, whose encoding has polynomial length.
 
 Decoders are built along the structure of an encoding: unary numbers by their length, binary
@@ -36,7 +30,7 @@ elements.
 
 * `Turing.MultiTapeTM.frames`: the framed words one after another in a word.
 * `Turing.MultiTapeTM.ofBits`: binary digits, least significant first, read as a number.
-* `Turing.MultiTapeTM.Decoder`: total decoders with tidy certificates of fixed degrees.
+* `Turing.MultiTapeTM.Decoder`: total decoders with plain certificates of independent fixed degrees.
 * `Turing.MultiTapeTM.Decoder.bits`, `.unary`, `.nat`, `.bool`, `.option`, `.pair`, `.list`, `.map`:
   decoders of bit strings, unary and binary numbers, Booleans, options, pairs and lists, and
   transport along an equivalence of encodings.
@@ -45,7 +39,7 @@ elements.
 
 * `Turing.MultiTapeTM.frames_encList`: the framed words of an encoded list are its encoded
   elements.
-* `Turing.MultiTapeTM.computableTidilyInDegree_frames`: splitting into framed words is linear.
+* `Turing.MultiTapeTM.computableInDegree_frames`: splitting into framed words is linear.
 * `Turing.MultiTapeTM.bits_ofBits`: the binary digits of a word read as a number are the word up
   to its last `true`.
 -/
@@ -155,150 +149,25 @@ theorem framesT_run (w : List Bool) :
           unframe, dropFrame, frame_cons, List.cons_append, encBits, Function.Embedding.refl_apply]
 
 /-- **Splitting a word into framed words is linear.** -/
-theorem computableTidilyInDegree_frames :
-    ComputableTidilyInDegree frames encBits (encList encBits) 1 1 :=
-  .of_linear (framesT.computableTidilyInLinearTimeAndSpace fun w => (framesT_run w).symm)
-
-/-! ### Binary digits -/
-
-private theorem rdropWhile_append {α : Type*} (p : α → Bool) (l₁ l₂ : List α) :
-    (l₁ ++ l₂).rdropWhile p =
-      if l₂.rdropWhile p = [] then l₁.rdropWhile p else l₁ ++ l₂.rdropWhile p := by
-  simp only [List.rdropWhile, List.reverse_append, List.dropWhile_append]
-  by_cases h : l₂.reverse.dropWhile p = []
-  · simp [h]
-  · simp [h]
-
-private theorem bits_eq_nil_iff {n : ℕ} : n.bits = [] ↔ n = 0 := by
-  rw [← List.length_eq_zero_iff, Nat.size_eq_bits_len, Nat.size_eq_zero]
-
-/-- Binary digits, least significant first, read as a number. -/
-def ofBits (w : List Bool) : ℕ := w.foldr Nat.bit 0
-
-/-- The binary digits of a word read as a number are the word up to its last `true`. -/
-theorem bits_ofBits (w : List Bool) : (ofBits w).bits = w.rdropWhile (!·) := by
-  induction w with
-  | nil => simp [ofBits]
-  | cons b w ih =>
-    rw [ofBits, List.foldr_cons, ← ofBits, ← List.singleton_append, rdropWhile_append, ← ih]
-    by_cases h : ofBits w = 0 ∧ b = false
-    · obtain ⟨h₀, rfl⟩ := h
-      simp [h₀]
-    · rw [Nat.bits_append_bit _ _ fun h₀ => by simpa [h₀] using h]
-      by_cases h₀ : ofBits w = 0
-      · obtain rfl : b = true := by simpa [h₀] using h
-        simp [h₀, List.rdropWhile_singleton]
-      · simp only [bits_eq_nil_iff, h₀, ↓reduceIte]
-        rfl
-
-/-- Drops the `false`s at the start of a word. -/
-def dropFalsesT : Transducer Bool Bool where
-  q₀ := false
-  step
-    | false, false => (false, [])
-    | _, b => (true, [b])
-  final _ := []
-  length_step_le q b := by cases q <;> cases b <;> simp
-  length_final_le _ := by simp
-
-theorem dropFalsesT_run_true (w : List Bool) : dropFalsesT.run true w = w := by
-  induction w with
-  | nil => rfl
-  | cons b w ih => exact congrArg (b :: ·) ih
-
-theorem dropFalsesT_run (w : List Bool) : dropFalsesT.run false w = w.dropWhile (!·) := by
-  induction w with
-  | nil => rfl
-  | cons b w ih =>
-    cases b
-    · exact ih
-    · exact congrArg (true :: ·) (dropFalsesT_run_true w)
+theorem computableInDegree_frames :
+    ComputableInDegree frames encBits (encList encBits) 1 1 := by
+  have htm (w : List Bool) := framesT.computesInTimeAndSpace_toTM w
+  refine ⟨⟨fun w => 2 * w.length + 3, fun _ => 0,
+    ⟨3, fun _ => by simp only [pow_one, encBits, Function.Embedding.refl_apply]; omega⟩,
+    DegreeBounded.const 0, 0, _, inferInstance, framesT.toTM, fun w => ?_⟩,
+    ⟨3, fun w => ?_⟩⟩
+  · simpa only [show framesT.q₀ = .between from rfl, framesT_run, encBits,
+      Function.Embedding.refl_apply] using htm w
+  · have hlen := (htm w).length_output_le
+    simpa only [show framesT.q₀ = .between from rfl, framesT_run, encBits,
+      Function.Embedding.refl_apply, pow_one] using hlen.trans
+        (by omega : 2 * w.length + 3 ≤ 3 * (w.length + 1))
 
 /-! ### Decoders -/
-
-/-- A **total decoder** for the encoding `enc`: a function on all words that inverts `enc` and is
-tidily computable within time, space and output length of fixed degrees in the length of the
-word. -/
-structure Decoder {α : Type} (enc : α ↪ List Bool) where
-  /-- The decoded value of any word. -/
-  decode : List Bool → α
-  /-- Decoding inverts the encoding. -/
-  decode_enc (a : α) : decode (enc a) = a
-  /-- Decoding is tidily computable within bounds of fixed degrees. -/
-  computable : ∃ d e, ComputableTidilyInDegree decode encBits enc d e
 
 namespace Decoder
 
 variable {α β : Type} {enc : α ↪ List Bool} {enc' : β ↪ List Bool}
-
-/-- Every total decoder has a native polynomial-time certificate. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime (D : Decoder enc) :
-    ComputableTidilyInPolyTime D.decode encBits enc := by
-  obtain ⟨_, _, h⟩ := D.computable
-  exact h.computableTidilyInPolyTime
-
-/-- Bit strings are their own encoding. -/
-def bits : Decoder encBits where
-  decode := id
-  decode_enc _ := rfl
-  computable := ⟨1, 1, .of_eq fun _ => rfl⟩
-
-/-- Unary numbers are decoded by the length of the word. -/
-def unary : Decoder encUnary where
-  decode w := w.length
-  decode_enc n := by simp
-  computable := ⟨1, 1, .of_linear (Transducer.computableTidilyInLinearTimeAndSpace
-    (τ := ⟨(), fun _ _ => ((), [true]), fun _ => [], fun _ _ => by simp, fun _ => by simp⟩)
-    fun w => by induction w <;> simp_all [List.replicate_succ])⟩
-
-/-- Binary numbers are decoded from their digits up to the last `true`. -/
-def nat : Decoder encNat where
-  decode := ofBits
-  -- A tactic proof keeps the foundational binary-digit lemma a proof-only dependency.
-  decode_enc n := by exact Nat.foldr_bit_bits n
-  computable := by
-    have hd : ComputableTidilyInPolyTime (fun w : List Bool => w.dropWhile (!·)) encBits encBits :=
-      .of_linear (dropFalsesT.computableTidilyInLinearTimeAndSpace fun w =>
-        (dropFalsesT_run w).symm)
-    have h : ComputableTidilyInPolyTime (fun w : List Bool => (w.reverse.dropWhile (!·)).reverse)
-        encBits encBits := by
-      fun_prop
-    exact (h.of_enc_eq fun w => by rw [encNat_apply, bits_ofBits]; rfl).exists_degree
-
-/-- Booleans are decoded from the first symbol. -/
-def bool : Decoder encBool where
-  decode w := w.headD false
-  decode_enc _ := rfl
-  computable := ⟨1, 1, ComputableTidilyInDegree.headD (enc₁ := encBool) (enc := encBits) false⟩
-
-/-- Options are decoded as `none` from the empty word, and otherwise from the tail. -/
-def option (D : Decoder enc) : Decoder (encOption enc) where
-  decode w := if w.isEmpty then none else some (D.decode w.tail)
-  decode_enc o := by cases o <;> simp [encOption, D.decode_enc]
-  computable := by
-    obtain ⟨d, e, hD⟩ := D.computable
-    have hsome := (ComputableTidilyInDegree.optionSome (enc₁ := enc)
-      (enc := encOption enc)).comp (hD.comp (ComputableTidilyInDegree.tail
-        (enc₁ := encBool) (enc := encBits)))
-    exact ⟨_, _, ComputableTidilyInDegree.ite (encC := encBool)
-      (ComputableTidilyInDegree.isEmpty (enc₁ := encBool) (enc := encBits))
-      ((ComputableTidilyInDegree.const none).restrict _) (hsome.restrict _)⟩
-
-/-- Pairs are decoded from the framed first component and what follows it. -/
-def pair {β₁ β₂ : Type} {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool} (D₁ : Decoder enc₁)
-    (D₂ : Decoder enc₂) : Decoder (encPair enc₁ enc₂) where
-  decode w := (D₁.decode (unframe w), D₂.decode (dropFrame w))
-  decode_enc p := by
-    simp [unframe_frame_append, dropFrame_frame_append, D₁.decode_enc, D₂.decode_enc]
-  computable := by
-    obtain ⟨d₁, e₁, h₁⟩ := D₁.computable
-    obtain ⟨d₂, e₂, h₂⟩ := D₂.computable
-    have hu : ComputableTidilyInDegree unframe encBits encBits 1 1 :=
-      .of_linear (.of_unframe fun _ => rfl)
-    have hd : ComputableTidilyInDegree dropFrame encBits encBits 1 1 :=
-      .of_linear (.of_dropFrame fun _ => rfl)
-    exact ⟨_, _, (h₁.comp hu).prod (h₂.comp hd)⟩
 
 /-- Lists are decoded element by element from the framed words of a word. -/
 def list (D : Decoder enc) : Decoder (encList enc) where
@@ -309,23 +178,9 @@ def list (D : Decoder enc) : Decoder (encList enc) where
     exact List.map_congr_left fun a _ => D.decode_enc a
   computable := by
     obtain ⟨d, e, h⟩ := D.computable
-    exact ⟨_, _, ComputableTidilyInDegree.mapWith (encP := encBool) (par := fun _ => false)
-      (f := fun p : Bool × List Bool => D.decode p.2)
-      (h.comp (ComputableTidilyInDegree.snd encBool encBits))
-      ((ComputableTidilyInDegree.const false).mono le_rfl (Nat.zero_le 1))
-      computableTidilyInDegree_frames⟩
+    exact ((ComputableInPolyTime.map h.computableInPolyTime).comp
+      computableInDegree_frames.computableInPolyTime).exists_degree
 
-/-- Transport a decoder to an encoding `enc'` agreeing with `enc` along `f`, where `g` is a right
-inverse of `f`. -/
-def map (D : Decoder enc) (f : α → β) (g : β → α) (hfg : ∀ b, f (g b) = b)
-    (henc : ∀ a, enc' (f a) = enc a) : Decoder enc' where
-  decode w := f (D.decode w)
-  decode_enc b := by
-    conv_lhs => rw [← hfg b, henc, D.decode_enc]
-    exact hfg b
-  computable :=
-    let ⟨d, e, h⟩ := D.computable
-    ⟨d, e, h.of_enc_eq fun w => henc _⟩
 
 end Decoder
 

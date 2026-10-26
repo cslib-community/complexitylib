@@ -65,7 +65,7 @@ local notation "glue" => fun (U : Finset (Fin n)) (p : U → Bool)
     Equiv.symm (Equiv.piEquivPiSubtypeProd (· ∈ U) fun _ => Bool) (p, q)
 
 /-- The weighted sum `∑ i, w i * (x i).toNat` of a Boolean input `x` with real weights `w`. -/
-@[simp] abbrev weightedSum (w : Fin n → ℝ) (x : Fin n → Bool) : ℝ :=
+abbrev weightedSum (w : Fin n → ℝ) (x : Fin n → Bool) : ℝ :=
   ∑ i, w i * Bool.toNat (x i)
 
 /-- The kind of a block in a block decomposition. -/

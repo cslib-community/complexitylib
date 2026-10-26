@@ -50,10 +50,9 @@ def signOf (q : Bool × Bool) : SignType := if q.1 then 0 else if q.2 then 1 els
 def signDecoder : Decoder encSign where
   decode w := signOf (w.isEmpty, w.headD false)
   decode_enc m := by cases m <;> rfl
-  computable := ⟨_, _, (ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool)
+  computable := ⟨_, _, (ComputableInDegree.of_finite (encIn := encPair encBool encBool)
     (encMid := encSign) signOf).comp
-      ((ComputableTidilyInDegree.isEmpty (enc₁ := encBool) (enc := encBits)).prod
-        (ComputableTidilyInDegree.headD (enc₁ := encBool) (enc := encBits) false))⟩
+      (Internal.DecoderWords.empty_degree.prod Internal.DecoderWords.bool_degree)⟩
 
 /-- Symbols and blanks. -/
 def symDecoder : Decoder eSym := .option .unary
@@ -95,8 +94,10 @@ theorem decodeDesc_unframe_frame_append (d : Desc) (pad : List Bool) :
 /-- **Decoding is efficient.** It is tidily computable, and the decoded descriptions have
 encoded length polynomial in the length of the word, within bounds of fixed degrees. -/
 theorem exists_computableTidilyInDegree_decodeDesc :
-    ∃ d e, ComputableTidilyInDegree decodeDesc encBits eDesc d e :=
-  descDecoder.computable
+    ∃ d e, ComputableTidilyInDegree decodeDesc encBits eDesc d e := by
+  obtain ⟨d, e, h⟩ := descDecoder.computable
+  obtain ⟨t, s, ht, hs, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.degree h
+  exact ⟨d, e, ⟨t, s, ht, hs, k, Q, hfin, tm, htm⟩, h.2⟩
 
 end Universal
 

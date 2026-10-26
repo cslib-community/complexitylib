@@ -82,13 +82,14 @@ theorem exists_isScheduler {K : Type*} [Field K] [Fintype K] [DecidableEq K] {�
       IsScheduler bits scalar sched := by
   choose directions hdirections using h
   let decode : BitString (t * (ℓ * b)) → Fin t → Fin ℓ → K :=
-    fun y i => (pointEquiv bits).symm fun k => y (finProdFinEquiv (i, k))
+    fun y i => (pointEquiv bits.toEquiv).symm fun k => y (finProdFinEquiv (i, k))
   have hdecode (targets : Fin t → Fin ℓ → K) : decode (targetBits bits targets) = targets := by
     funext i
-    apply (pointEquiv bits).symm_apply_eq.mpr
+    apply (pointEquiv bits.toEquiv).symm_apply_eq.mpr
     funext k
     simp only [targetBits, blocksEquiv_symm_apply, Function.comp_apply, Equiv.symm_apply_apply,
       pointEquiv_apply]
+    rfl
   obtain ⟨sched, hsched⟩ := Interpretation.IsComplete.exists_computes (I := interpretation)
     fun y => lineBits bits (fun j => (scalar j : K)) (decode y) (directions (decode y))
   refine ⟨sched, fun targets => ⟨directions targets, (hdirections targets).1,

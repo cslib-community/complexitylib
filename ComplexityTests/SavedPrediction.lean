@@ -21,19 +21,19 @@ open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Pseudoentropy
 
 -- Exposing computed encodings works inside larger expressions, including captured inputs.
 example {α : Type} (encoding : α ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun pair : α × List Bool =>
+    ComputableInPolyTime (fun pair : α × List Bool =>
       pair.2 ++ encPair encoding encBits (pair.1, pair.2.reverse))
       (encPair encoding encBits) encBits := by fun_prop
 
-example : ComputableTidilyInPolyTime (fun pair : List Bool × Bool =>
+example : ComputableInPolyTime (fun pair : List Bool × Bool =>
     let word := encPair encBits encBool (pair.1.reverse, !pair.2)
     (unframe word, (dropFrame word).headD false))
     (encPair (encList encBool) encBool) (encPair encBits encBool) := by fun_prop
 
 -- An arbitrary encoding is not automatically an efficient transformation of raw words.
 example (encoding : List Bool ↪ List Bool)
-    (hencoding : ComputableTidilyInPolyTime encoding encBits encBits) :
-    ComputableTidilyInPolyTime (fun word => encoding word.reverse) encBits encBits := by
+    (hencoding : ComputableInPolyTime encoding encBits encBits) :
+    ComputableInPolyTime (fun word => encoding word.reverse) encBits encBits := by
   fail_if_success (clear hencoding; fun_prop)
   fun_prop
 
@@ -46,9 +46,9 @@ example (raw : List Bool → List Bool → List Bool) (trial : Bool) (observatio
   simp [SavedPrediction.evaluate]
 
 example (raw : List Bool → List Bool → List Bool)
-    (hraw : ComputableTidilyInPolyTime (fun pair => raw pair.1 pair.2)
+    (hraw : ComputableInPolyTime (fun pair => raw pair.1 pair.2)
       (encPair encBits encBits) encBits) :
-    ComputableTidilyInPolyTime (fun pair : List Bool × List Bool =>
+    ComputableInPolyTime (fun pair : List Bool × List Bool =>
       SavedPrediction.evaluate raw (pair.1.take pair.2.length) pair.2.reverse)
       (encPair (encList encBool) encBits) encBool := by
   fail_if_success (clear hraw; fun_prop)
@@ -150,7 +150,7 @@ example (confidence c d : ℕ) :
 -- The parameter encoding is arbitrary; this construction never asks for its inverse.
 example {Param : Type} (input : Param ↪ List Bool) :
     ∃ (c d : ℕ) (evaluate : List Bool → List Bool → Bool),
-      ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+      ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
         (encPair encBits encBits) encBool ∧
       ∀ a (params : Parameters) (state : State) (observation : List Bool),
         ProbComp.eval ((fun code => evaluate code observation) <$>

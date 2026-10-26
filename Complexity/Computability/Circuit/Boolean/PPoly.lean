@@ -44,8 +44,9 @@ language in `PPoly`.
   polynomial budget are in `P/poly`.
 * `Cslib.Circuits.Boolean.PPoly.compl`, `PPoly.sup`, `PPoly.inf`: closure under the Boolean
   operations.
-* `Cslib.Circuits.Boolean.mem_PPolyOn_encBits_iff`, `Cslib.Circuits.Boolean.PPolyOn.compl`:
-  agreement with `PPoly` on `encBits` and closure of `PPolyOn` under complement.
+* `Cslib.Circuits.Boolean.mem_PPolyOn_encBits_iff`, `Cslib.Circuits.Boolean.PPolyOn.compl`,
+  `Cslib.Circuits.Boolean.PPolyOn.sup`, `Cslib.Circuits.Boolean.PPolyOn.inf`: agreement with
+  `PPoly` on `encBits` and closure of `PPolyOn` under the Boolean operations.
 
 ## References
 
@@ -175,5 +176,19 @@ theorem PPolyOn.compl {α : Type*} {enc : α ↪ List Bool} {A : Set α}
 theorem compl_mem_PPolyOn_iff {α : Type*} {enc : α ↪ List Bool} {A : Set α} :
     Aᶜ ∈ PPolyOn enc ↔ A ∈ PPolyOn enc :=
   ⟨fun h => by simpa using PPolyOn.compl h, PPolyOn.compl⟩
+
+/-- `PPolyOn` is closed under union. -/
+theorem PPolyOn.sup {α : Type*} {enc : α ↪ List Bool} {A B : Set α}
+    (hA : A ∈ PPolyOn enc) (hB : B ∈ PPolyOn enc) : (A ∪ B : Set α) ∈ PPolyOn enc := by
+  obtain ⟨LA, hLA, hA⟩ := hA
+  obtain ⟨LB, hLB, hB⟩ := hB
+  exact ⟨LA ⊔ LB, PPoly.sup hLA hLB, fun a => by rw [Set.mem_union, hA a, hB a]; rfl⟩
+
+/-- `PPolyOn` is closed under intersection. -/
+theorem PPolyOn.inf {α : Type*} {enc : α ↪ List Bool} {A B : Set α}
+    (hA : A ∈ PPolyOn enc) (hB : B ∈ PPolyOn enc) : (A ∩ B : Set α) ∈ PPolyOn enc := by
+  obtain ⟨LA, hLA, hA⟩ := hA
+  obtain ⟨LB, hLB, hB⟩ := hB
+  exact ⟨LA ⊓ LB, PPoly.inf hLA hLB, fun a => by rw [Set.mem_inter_iff, hA a, hB a]; rfl⟩
 
 end Cslib.Circuits.Boolean

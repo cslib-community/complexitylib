@@ -35,12 +35,13 @@ private theorem isPolyTime_rotateReflection :
   unfold rotateReflection
   fun_prop
 
-private def original : Graph.PreprocessLabel Unit := .inl (.inl (.inl ()))
-private def cloud : Graph.PreprocessLabel Unit := .inl (.inl (.inr ()))
-private def whole : Graph.PreprocessLabel Unit := .inl (.inr ())
-private def loop : Graph.PreprocessLabel Unit := .inr ()
+private def original : ConstraintGraph.PreprocessLabel Unit := .inl (.inl (.inl ()))
+private def cloud : ConstraintGraph.PreprocessLabel Unit := .inl (.inl (.inr ()))
+private def whole : ConstraintGraph.PreprocessLabel Unit := .inl (.inr ())
+private def loop : ConstraintGraph.PreprocessLabel Unit := .inr ()
 
-private def allLabels : List (Graph.PreprocessLabel Unit) := [original, cloud, whole, loop]
+private def allLabels : List (ConstraintGraph.PreprocessLabel Unit) :=
+  [original, cloud, whole, loop]
 
 private def walks : List (Graph.PowerLabel Unit 1 2) :=
   allLabels.flatMap fun d => [(fun _ => d, fun _ => 0), (fun _ => d, fun _ => 1)]
@@ -268,7 +269,7 @@ private def arithmeticLabels : Numbering ArithmeticLabel :=
   let half := numberProd ⟨257 ^ 8, Equiv.refl _⟩ (numberProd pair pair)
   numberSum half half
 
-private def preprocessedLabels : Numbering (Graph.PreprocessLabel ArithmeticLabel) :=
+private def preprocessedLabels : Numbering (ConstraintGraph.PreprocessLabel ArithmeticLabel) :=
   let unit : Numbering Unit := ⟨1, Equiv.ofUnique _ _⟩
   numberSum (numberSum (numberSum unit arithmeticLabels) arithmeticLabels) unit
 

@@ -7,9 +7,11 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.Data.BitString.Flip
 public import Complexity.Logics.Propositional.CNF
 public import Mathlib.InformationTheory.Hamming
 public import Complexity.Probability.PMF
+import Complexity.Foundations.Data.BitString.Hamming
 import Complexity.Probability.PMF.Event
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.Linarith
@@ -75,14 +77,11 @@ product over the coordinates (`sum_pow_hammingDist`).
 
 namespace Cslib.Complexity.Schoening
 
-open Cslib.Logic.PL Finset
+open Cslib.BitString Cslib.Logic.PL Finset
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
 /-! ### The algorithm -/
-
-/-- Flip the value of the variable `v`. -/
-def flip (σ : V → Bool) (v : V) : V → Bool := Function.update σ v (!σ v)
 
 /-- The first clause of `φ` that `σ` falsifies, if any. -/
 def firstUnsat (φ : CNF V) (σ : V → Bool) : Option (Clause V) :=
@@ -93,7 +92,7 @@ assignment satisfies, leaves the assignment unchanged. -/
 noncomputable def flipStep (c : Clause V) (σ : V → Bool) : PMF (V → Bool) :=
   if h : c.length = 0 then PMF.pure σ else
     haveI : NeZero c.length := ⟨h⟩
-    (Probability.PMF.uniformOfFintype (Fin c.length)).map fun i => flip σ (c.get i).1
+    (Probability.PMF.uniformOfFintype (Fin c.length)).map fun i => flipOn {(c.get i).1} σ
 
 /-- **Schöning's local search**: `t` steps from `σ`. Each step stops if `φ` is satisfied, and
 otherwise flips a uniformly chosen variable of the first unsatisfied clause. -/
@@ -428,30 +427,6 @@ theorem inv_le_hit (hk : 3 ≤ k) (d : ℕ) :
 
 /-! ### The local search dominates the biased walk -/
 
-/-- Flipping one variable changes the Hamming distance to `τ` by one: it grows if the variable
-agreed with `τ` and shrinks otherwise. -/
-theorem hammingDist_flip (σ τ : V → Bool) (v : V) :
-    hammingDist (flip σ v) τ =
-      if σ v = τ v then hammingDist σ τ + 1 else hammingDist σ τ - 1 := by
-  unfold hammingDist
-  split_ifs with h
-  · have hset : (univ.filter fun i => flip σ v i ≠ τ i) =
-        insert v (univ.filter fun i => σ i ≠ τ i) := by
-      ext i
-      by_cases hi : i = v
-      · subst hi
-        cases hσ : σ i <;> cases hτ : τ i <;> simp_all [flip]
-      · simp [flip, Function.update_apply, hi]
-    rw [hset, card_insert_of_notMem (by simp [h])]
-  · have hset : (univ.filter fun i => flip σ v i ≠ τ i) =
-        (univ.filter fun i => σ i ≠ τ i).erase v := by
-      ext i
-      by_cases hi : i = v
-      · subst hi
-        cases hσ : σ i <;> cases hτ : τ i <;> simp_all [flip]
-      · simp [flip, Function.update_apply, hi]
-    rw [hset, card_erase_of_mem (by simp [h])]
-
 omit [Fintype V] [DecidableEq V] in
 theorem succeedProb_pure (φ : CNF V) (σ : V → Bool) :
     succeedProb φ (PMF.pure σ) = if φ.eval σ = true then 1 else 0 := by
@@ -469,7 +444,7 @@ private theorem succeedProb_flipStep_bind (φ : CNF V) {c : Clause V} (hc : c.le
     (σ : V → Bool) (μ : (V → Bool) → PMF (V → Bool)) :
     haveI : NeZero c.length := ⟨hc⟩
     succeedProb φ ((flipStep c σ).bind μ) =
-      ∑ i : Fin c.length, (c.length : ℝ)⁻¹ * succeedProb φ (μ (flip σ (c.get i).1)) := by
+      ∑ i : Fin c.length, (c.length : ℝ)⁻¹ * succeedProb φ (μ (flipOn {(c.get i).1} σ)) := by
   have : NeZero c.length := ⟨hc⟩
   simp only [flipStep, hc, ↓reduceDIte]
   rw [PMF.bind_map, succeedProb, Cslib.Probability.PMF.toOuterMeasure_bind_toReal]
@@ -519,7 +494,7 @@ theorem hit_le_succeedProb (hk : 1 ≤ k) {φ : CNF V} {σs : V → Bool} (hs : 
       have hlen : c.length ≠ 0 := (List.length_pos_of_mem hl).ne'
       have : NeZero c.length := ⟨hlen⟩
       rw [hd, hit_succ_succ, succeedProb_flipStep_bind φ hlen]
-      set f : Fin c.length → ℝ := fun i => succeedProb φ (walk φ t (flip σ (c.get i).1))
+      set f : Fin c.length → ℝ := fun i => succeedProb φ (walk φ t (flipOn {(c.get i).1} σ))
       obtain ⟨i₀, hi₀⟩ := List.get_of_mem hl
       have hterm : ∀ i, hit k t (d + 2) ≤ f i := by
         intro i

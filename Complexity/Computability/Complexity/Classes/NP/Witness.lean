@@ -149,9 +149,13 @@ theorem computableInPolyTime_witnessVerifier (D : Decoder encW) {check : α × �
   have hcheck := hcheck.tidy
   refine .of_tidy ?_
   obtain ⟨_, _, hD⟩ := D.computable
+  have hdecoder : ComputableTidilyInPolyTime D.decode encBits encW := by
+    obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hD.computableInPolyTime
+    exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
+      .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
   have hdecode : ComputableTidilyInPolyTime (fun x : α × List Bool => D.decode (unframe x.2))
       (encPair enc encBits) encW :=
-    hD.computableTidilyInPolyTime.comp (unframe.comp (snd enc encBits))
+    hdecoder.comp (unframe.comp (snd enc encBits))
   exact bool_and' (decide_eq' (bitsAppend ((bitsFrame encW).comp hdecode)
     (dropFrame.comp (snd enc encBits))) (snd enc encBits))
     (hcheck.comp ((fst enc encBits).prod hdecode))

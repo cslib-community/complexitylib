@@ -396,14 +396,20 @@ and [API review with explicit nonblocking nits](https://github.com/leanprover/cs
 
 When a declaration claims to formalize a cited result, the PR quotes the source statement with its
 exact locator and maps the source's notation to the Lean statement: quantifiers, models, encodings
-and resource conventions. Reviewers check that mapping rather than an impression. New mathematics
-and new proof ideas need no source; label them as original.
+and resource conventions. Reviewers check that mapping rather than an impression. Text presented as
+a quotation is copied from the pinned source version, with its locator checked there rather than
+taken from an issue, a PR or other library text; anything else is labeled as a paraphrase. Reviewers
+check quotations against the source, and a quoted passage that is not in the source blocks approval.
+New mathematics and new proof ideas need no source; label them as original.
 
 Whether a new definition needs checked examples on both sides (an instance where it holds and one
 where it fails) is for the author and reviewers to judge; reviewers may ask for them when a
 definition could be vacuous or trivially satisfied.
 
 Reuse existing definitions rather than adding parallel notions; extend or generalize them instead.
+A PR that adds a public definition states in its description the existing notions it considered
+and why none could be reused or generalized, and reviewers treat a definition whose body matches an
+existing one up to its carrier or argument types as a finding.
 
 ## Curated formal abstracts
 

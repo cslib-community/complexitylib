@@ -68,6 +68,40 @@ private theorem exists_eq_off_card_filter_eq (S : Finset ι) (a : ι → Bool) {
       exact mem_filter.2 ⟨hTS hj, by simp [hTS hj, hj]⟩
   rw [this, hT]
 
+/-- Inputs agreeing with `Function.update a i b` off `S.erase i` agree with `a` off `S`, have bit
+`i` equal to `b`, and shift the count of true bits in `S` by `if b then 1 else 0`. -/
+private theorem eq_off_and_card_filter_of_eq_off_erase [DecidableEq ι] {S : Finset ι} {i : ι}
+    (hi : i ∈ S) (a : ι → Bool) (b : Bool) (x : ι → Bool)
+    (hx : ∀ j ∉ S.erase i, x j = Function.update a i b j) :
+    (∀ j ∉ S, x j = a j) ∧ x i = b ∧
+      #(S.filter fun j => x j = true) =
+        #((S.erase i).filter fun j => x j = true) + (if b then 1 else 0) := by
+  have hxi : x i = b := by simpa using hx i (by simp)
+  refine ⟨fun j hj => ?_, hxi, ?_⟩
+  · have hji : j ≠ i := fun h => hj (h ▸ hi)
+    simpa [Function.update_of_ne hji] using hx j fun h => hj (mem_of_mem_erase h)
+  · rw [← insert_erase hi, filter_insert, erase_insert (notMem_erase i S)]
+    cases b with
+    | false => simp [hxi]
+    | true =>
+      simp only [hxi, ite_true]
+      rw [card_insert_of_notMem (by simp)]
+
+/-- A leaf tree cannot agree with a profile `g` that takes two distinct values at counts
+`m, m + 1 ≤ #S`. -/
+private theorem false_of_leaf_eval_eq_comp_card_filter (b : β) (S : Finset ι) (a : ι → Bool)
+    (g : ℕ → β) (m : ℕ)
+    (ht : ∀ x : ι → Bool, (∀ j ∉ S, x j = a j) →
+      (DecisionTree.leaf b : DecisionTree ι β).eval x = g #(S.filter fun j => x j = true))
+    (hm : m + 1 ≤ #S) (hg : g m ≠ g (m + 1)) : False := by
+  obtain ⟨x, hx, hxc⟩ := exists_eq_off_card_filter_eq S a (m := m) (by omega)
+  obtain ⟨y, hy, hyc⟩ := exists_eq_off_card_filter_eq S a (m := m + 1) hm
+  have h1 := ht x hx
+  have h2 := ht y hy
+  rw [hxc, eval_leaf] at h1
+  rw [hyc, eval_leaf] at h2
+  exact hg (h1.symm.trans h2)
+
 /-- **Adversary argument for symmetric functions.** If, on the inputs agreeing with `a` off a set
 `S` of free coordinates, a tree's output depends only on the number of true free bits, through a
 profile `g` that changes between two consecutive counts `m, m + 1 ≤ #S`, then the tree has depth
@@ -78,42 +112,18 @@ theorem card_le_depth_of_eval_eq_comp_card_filter (t : DecisionTree ι β) (S : 
     (hm : m + 1 ≤ #S) (hg : g m ≠ g (m + 1)) : #S ≤ t.depth := by
   classical
   induction t generalizing S a g m with
-  | leaf b =>
-    obtain ⟨x, hx, hxc⟩ := exists_eq_off_card_filter_eq S a (m := m) (by omega)
-    obtain ⟨y, hy, hyc⟩ := exists_eq_off_card_filter_eq S a (m := m + 1) hm
-    have h1 := ht x hx
-    have h2 := ht y hy
-    rw [hxc, eval_leaf] at h1
-    rw [hyc, eval_leaf] at h2
-    exact absurd (h1.symm.trans h2) hg
+  | leaf b => exact (false_of_leaf_eval_eq_comp_card_filter b S a g m ht hm hg).elim
   | node i t₀ t₁ ih₀ ih₁ =>
     rw [depth_node]
     by_cases hi : i ∈ S
     · -- the queried bit is free: the adversary fixes it and recurses on `S.erase i`
       have hcard : #(S.erase i) + 1 = #S := card_erase_add_one hi
-      -- inputs agreeing with `update a i b` off `S.erase i` agree with `a` off `S`, and have bit
-      -- `i` equal to `b`
-      have hcomp (b : Bool) (x : ι → Bool)
-          (hx : ∀ j ∉ S.erase i, x j = Function.update a i b j) :
-          (∀ j ∉ S, x j = a j) ∧ x i = b ∧
-            #(S.filter fun j => x j = true) =
-              #((S.erase i).filter fun j => x j = true) + (if b then 1 else 0) := by
-        have hxi : x i = b := by simpa using hx i (by simp)
-        refine ⟨fun j hj => ?_, hxi, ?_⟩
-        · have hji : j ≠ i := fun h => hj (h ▸ hi)
-          simpa [Function.update_of_ne hji] using hx j fun h => hj (mem_of_mem_erase h)
-        · rw [← insert_erase hi, filter_insert, erase_insert (notMem_erase i S)]
-          cases b with
-          | false => simp [hxi]
-          | true =>
-            simp only [hxi, ite_true]
-            rw [card_insert_of_notMem (by simp)]
       rcases Nat.lt_or_ge #S 2 with hS | hS
       · omega
       by_cases hm' : m + 1 ≤ #(S.erase i)
       · -- answer `false`: the count is unchanged
         have := ih₀ (S.erase i) (Function.update a i false) g m (fun x hx => by
-          obtain ⟨hx', hxi, hc⟩ := hcomp false x hx
+          obtain ⟨hx', hxi, hc⟩ := eq_off_and_card_filter_of_eq_off_erase hi a false x hx
           have := ht x hx'
           rw [eval_node, hxi] at this
           simpa [hc] using this) hm' hg
@@ -122,23 +132,22 @@ theorem card_le_depth_of_eval_eq_comp_card_filter (t : DecisionTree ι β) (S : 
         have hm1 : 1 ≤ m := by omega
         have := ih₁ (S.erase i) (Function.update a i true) (fun k => g (k + 1)) (m - 1)
           (fun x hx => by
-            obtain ⟨hx', hxi, hc⟩ := hcomp true x hx
+            obtain ⟨hx', hxi, hc⟩ := eq_off_and_card_filter_of_eq_off_erase hi a true x hx
             have := ht x hx'
             rw [eval_node, hxi] at this
             simpa [hc] using this) (by omega) (by rwa [Nat.sub_add_cancel hm1])
         omega
     · -- the queried bit is fixed: follow the branch of `a i`
-      have hxi (x : ι → Bool) (hx : ∀ j ∉ S, x j = a j) : x i = a i := hx i hi
       cases hai : a i with
       | false =>
         have := ih₀ S a g m (fun x hx => by
           have := ht x hx
-          rwa [eval_node, hxi x hx, hai] at this) hm hg
+          rwa [eval_node, hx i hi, hai] at this) hm hg
         omega
       | true =>
         have := ih₁ S a g m (fun x hx => by
           have := ht x hx
-          rwa [eval_node, hxi x hx, hai] at this) hm hg
+          rwa [eval_node, hx i hi, hai] at this) hm hg
         omega
 
 /-- A function `g : ℕ → Bool` taking different values at two points `≤ n` changes between two

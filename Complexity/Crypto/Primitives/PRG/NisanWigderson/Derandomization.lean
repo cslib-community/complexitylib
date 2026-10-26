@@ -12,6 +12,7 @@ public import Complexity.Computability.Circuit.Boolean.HardnessAmplification
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Circuit
 public import Complexity.Foundations.Data.BitString.Enumeration
 import Complexity.Crypto.Primitives.PRG.NisanWigderson.Sampling
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Nat.Choose.Bounds
 import Mathlib.Tactic.Linarith
@@ -185,15 +186,13 @@ theorem ofFn_restrict_ofMasks (masks : Fin m → List Bool)
     List.ofFn ((Design.ofMasks masks length_masks count_masks overlapCount_masks).restrict i z) =
       restrictMask (masks i) (List.ofFn z) := by
   set D := Design.ofMasks masks length_masks count_masks overlapCount_masks
-  have hz (k : Fin ℓ) : (List.ofFn z).getD k false = z k := by
-    simp [List.getD_eq_getElem?_getD]
   calc List.ofFn (D.restrict i z)
       = ((List.finRange n).map ((D.block i).orderEmbOfFin (D.card_block i))).map z := by
         rw [List.map_map, ← List.ofFn_eq_map]
         rfl
     _ = ((maskBlock ℓ (masks i)).sort.map Fin.val).map fun k => (List.ofFn z).getD k false := by
         rw [listMap_orderEmbOfFin_finRange, List.map_map]
-        exact List.map_congr_left fun k _ => (hz k).symm
+        exact List.map_congr_left fun k _ => (List.getD_ofFn z k false).symm
     _ = restrictMask (masks i) (List.ofFn z) := by
         rw [map_val_sort_maskBlock (length_masks i), restrictMask]
 

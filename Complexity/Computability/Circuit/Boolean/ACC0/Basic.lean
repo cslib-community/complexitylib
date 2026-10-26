@@ -78,11 +78,6 @@ theorem modGate_zero (m : ℕ) (x : Fin m → Bool) :
     modGate 1 m x = false := by
   simp [modGate, Nat.mod_one]
 
-/-- For `q = 2`, `modGate 2 m` is the `m`-bit parity function `parity m`. -/
-theorem modGate_two_eq_parity (m : ℕ) : modGate 2 m = parity m := by
-  funext x
-  simp only [modGate, parity, parityOn, ne_eq, Nat.mod_two_ne_zero]
-
 /-- A circuit over the `AC⁰` basis simulating an operation of `AC⁰[0]`. -/
 def modZeroCircuit : (op : ExtOp) → Circuit Unbounded.signature (extSignature.Arity op) 1
   | .ac op => Circuit.oneGate (σ := Unbounded.signature) op id

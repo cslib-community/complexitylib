@@ -44,9 +44,10 @@ injectively chosen registers of a larger register file and leaves the others unt
 
 ## Main definitions
 
-* `Cslib.WordRAM.Code`, `Cslib.WordRAM.Code.size`, `Cslib.WordRAM.Code.ReadsWidth`: structured
-  programs over a basis, the length of the flat program they compile to, and whether a program
-  reads the word size.
+* `Cslib.WordRAM.Code`, `Cslib.WordRAM.Code.size`, `Cslib.WordRAM.Code.ReadsWidth`,
+  `Cslib.WordRAM.Code.IsRandFree`: structured programs over a basis, the length of the flat
+  program they compile to, whether a program reads the word size, and whether it avoids
+  `Code.rand`.
 * `Cslib.WordRAM.Exec`, `Cslib.WordRAM.ExecWithin`: executions with an exact instruction count,
   and within a time bound.
 * `Cslib.WordRAM.Code.evalLoop`, `Cslib.WordRAM.Code.eval`: an interpreter with a budget of loop
@@ -83,7 +84,8 @@ variable {B : Basis} {r r' : ℕ}
 
 /-! ## Structured programs -/
 
-/-- Structured programs: data instructions combined by sequencing, conditionals and loops. -/
+/-- Structured programs: data and random-sampling instructions combined by sequencing,
+conditionals and loops. -/
 inductive Code (B : Basis) (r : ℕ) where
   /-- A data instruction. -/
   | op (o : Op B r)
@@ -93,6 +95,8 @@ inductive Code (B : Basis) (r : ℕ) where
   | branch (c : Cond r) (pos neg : Code B r)
   /-- Run `body` while `c` holds. -/
   | loop (c : Cond r) (body : Code B r)
+  /-- Sample uniformly from `[0, regs src]` into `dst` under randomized execution. -/
+  | rand (dst src : Fin r)
   deriving DecidableEq
 
 namespace Code
@@ -104,6 +108,7 @@ def size : Code B r → ℕ
   | .seq c₁ c₂ => c₁.size + c₂.size
   | .branch _ pos neg => neg.size + pos.size + 2
   | .loop _ body => body.size + 3
+  | .rand _ _ => 1
 
 /-- A structured program reads the word size if one of its instructions does. -/
 def ReadsWidth : Code B r → Prop
@@ -111,6 +116,7 @@ def ReadsWidth : Code B r → Prop
   | .seq c₁ c₂ => c₁.ReadsWidth ∨ c₂.ReadsWidth
   | .branch _ pos neg => pos.ReadsWidth ∨ neg.ReadsWidth
   | .loop _ body => body.ReadsWidth
+  | .rand _ _ => False
 
 /-- Decidability of whether a structured program reads the word size. -/
 instance decidableReadsWidth : (c : Code B r) → Decidable c.ReadsWidth
@@ -124,6 +130,29 @@ instance decidableReadsWidth : (c : Code B r) → Decidable c.ReadsWidth
     have := neg.decidableReadsWidth
     inferInstanceAs (Decidable (_ ∨ _))
   | .loop _ body => body.decidableReadsWidth
+  | .rand _ _ => isFalse id
+
+/-- A structured program is `rand`-free if it contains no `Code.rand` node. -/
+def IsRandFree : Code B r → Prop
+  | .op _ => True
+  | .seq c₁ c₂ => c₁.IsRandFree ∧ c₂.IsRandFree
+  | .branch _ pos neg => pos.IsRandFree ∧ neg.IsRandFree
+  | .loop _ body => body.IsRandFree
+  | .rand _ _ => False
+
+/-- Decidability of whether a structured program is `rand`-free. -/
+instance decidableIsRandFree : (c : Code B r) → Decidable c.IsRandFree
+  | .op _ => isTrue trivial
+  | .seq c₁ c₂ =>
+    have := c₁.decidableIsRandFree
+    have := c₂.decidableIsRandFree
+    inferInstanceAs (Decidable (_ ∧ _))
+  | .branch _ pos neg =>
+    have := pos.decidableIsRandFree
+    have := neg.decidableIsRandFree
+    inferInstanceAs (Decidable (_ ∧ _))
+  | .loop _ body => body.decidableIsRandFree
+  | .rand _ _ => isFalse id
 
 end Code
 
@@ -442,6 +471,7 @@ def Code.eval (w fuel : ℕ) : Code B r → Data r → Option (Data r × ℕ)
     if c.Holds x then (pos.eval w fuel x).map fun yn => (yn.1, yn.2 + 1)
     else (neg.eval w fuel x).map fun yn => (yn.1, yn.2 + 2)
   | .loop c body, x => evalLoop c (fun y => body.eval w fuel y) fuel x
+  | .rand _ _, _ => none
 
 private theorem Exec.of_evalLoop {w : ℕ} {c : Cond r} {body : Code B r}
     {f : Data r → Option (Data r × ℕ)}
@@ -493,6 +523,7 @@ theorem Exec.of_eval {w fuel : ℕ} {c : Code B r} {x y : Data r} {n : ℕ}
       obtain ⟨rfl, rfl⟩ := he
       exact .branch_neg hc (ihn h₁)
   | loop c body ih => exact Exec.of_evalLoop ih h
+  | rand _ _ => cases h
 
 /-- If the bounded-fuel interpreter returns `(y, n)` with `n ≤ T`, then `c` executes within `T`
 instructions. -/
@@ -521,6 +552,7 @@ def Code.Preserves (i : Fin r) : Code B r → Prop
   | .seq c₁ c₂ => c₁.Preserves i ∧ c₂.Preserves i
   | .branch _ pos neg => pos.Preserves i ∧ neg.Preserves i
   | .loop _ body => body.Preserves i
+  | .rand dst _ => dst ≠ i
 
 /-- Decidability of whether a structured program preserves register `i`. -/
 instance Code.decidablePreserves (i : Fin r) : (c : Code B r) → Decidable (c.Preserves i)
@@ -534,6 +566,7 @@ instance Code.decidablePreserves (i : Fin r) : (c : Code B r) → Decidable (c.P
     have := neg.decidablePreserves i
     inferInstanceAs (Decidable (_ ∧ _))
   | .loop _ body => body.decidablePreserves i
+  | .rand dst _ => inferInstanceAs (Decidable (dst ≠ i))
 
 private theorem Op.regs_eq {w : ℕ} {o : Op B r} {x y : Data r} {i : Fin r} (hi : o.dest ≠ some i)
     (h : o.eval w x = some y) : y.regs i = x.regs i := by
@@ -618,6 +651,7 @@ def Code.rename (f : Fin r → Fin r') : Code B r → Code B r'
   | .seq c₁ c₂ => .seq (c₁.rename f) (c₂.rename f)
   | .branch c pos neg => .branch (c.rename f) (pos.rename f) (neg.rename f)
   | .loop c body => .loop (c.rename f) (body.rename f)
+  | .rand dst src => .rand (f dst) (f src)
 
 /-- Register renaming preserves the compiled program size. -/
 @[simp]

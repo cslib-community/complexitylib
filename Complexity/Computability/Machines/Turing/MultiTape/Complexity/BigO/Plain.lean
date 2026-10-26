@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate (after crei/tidy-universal lands)
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm

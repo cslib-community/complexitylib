@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Homomorphic.GSW.Decoding
 public import Complexity.Crypto.Computational.Homomorphic.GSW.Noise
+public import Complexity.Crypto.Computational.LWE.Basic
 import Mathlib.LinearAlgebra.Matrix.Notation
 
 /-!
@@ -53,8 +54,8 @@ probability of excessive noise.
 
 namespace Cslib.Crypto.Homomorphic.GSW
 
-open Matrix
-open scoped Matrix
+open _root_.Matrix
+open scoped _root_.Matrix
 
 /-- A square Boolean ciphertext with `(n + 1) * w` rows and columns. -/
 abbrev Ciphertext (n w : ℕ) := Matrix (Fin (n + 1) × Fin w) (Fin (n + 1) × Fin w) Bool
@@ -67,7 +68,7 @@ def secretVector {n w : ℕ} (t : Fin n → ZMod (2 ^ w)) : Fin (n + 1) → ZMod
 def publicMatrix {n m w : ℕ} (B : Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))
     (t : Fin n → ZMod (2 ^ w)) (error : Fin m → ℤ) :
     Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)) :=
-  fun i => Fin.cons ((B *ᵥ t) i + (error i : ZMod (2 ^ w))) (B i)
+  LWE.publicMatrix B t fun i => (error i : ZMod (2 ^ w))
 
 /-- The constructed public matrix has exactly the chosen error against the secret vector. -/
 theorem publicMatrix_mulVec_secretVector {n m w : ℕ}
@@ -75,7 +76,7 @@ theorem publicMatrix_mulVec_secretVector {n m w : ℕ}
     (t : Fin n → ZMod (2 ^ w)) (error : Fin m → ℤ) :
     publicMatrix B t error *ᵥ secretVector t = fun i => (error i : ZMod (2 ^ w)) := by
   ext i
-  simp [publicMatrix, secretVector, Matrix.mulVec, dotProduct, Fin.sum_univ_succ]
+  simp [publicMatrix, LWE.publicMatrix, secretVector, Matrix.mulVec, dotProduct, Fin.sum_univ_succ]
 
 /-- The public gadget matrix obtained by recomposing the identity. -/
 def gadgetMatrix (n w : ℕ) : Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w)) :=

@@ -432,7 +432,8 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
     have hcount : ComputableTidilyInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
       (ComputableTidilyInPolyTime.unary_eval p).comp
         (ComputableTidilyInPolyTime.encoding_length enc)
-    have hprogram : IsPPTOn enc encBool program := hcount.sampleList.map_with hV
+    have hprogram : IsPPTOn enc encBool program :=
+      (ComputableInPolyTime.of_tidy hcount).sampleList.map_with hV
     obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ := hprogram.exists_halting_machine
     refine ⟨d, c * 2 ^ d, c, k, State, hfinite, machine,
       MultiTapePTM.DecidesWithBoundedErrorInTime.mono (t := fun a => c * ((enc a).length + 1) ^ d)
@@ -460,9 +461,9 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
       two_thirds_le_div_iff] at hprob
     rw [heval]
     constructor
-    · intro ha
+    · intro (ha : a ∈ A)
       simpa [MultiTapeTM.indicator, ha] using hprob
-    · intro ha
+    · intro (ha : a ∉ A)
       refine hprob.trans (Nat.mul_le_mul_left 3 (Finset.card_le_card fun r => ?_))
       simp only [MultiTapeTM.indicator, ha, Finset.mem_filter, Finset.mem_univ, true_and,
         decide_eq_false_iff_not]

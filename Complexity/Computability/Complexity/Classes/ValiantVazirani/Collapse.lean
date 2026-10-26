@@ -74,7 +74,7 @@ theorem exists_mem_P_solvedBy_of_mem_PromiseP {Q : PromiseProblem β} {encQ : β
     ∃ A ∈ P encBits, Q.SolvedBy fun b => decide (encQ b ∈ A) := by
   obtain ⟨f, hf, hsolve⟩ := mem_PromiseP_iff.1 hQ
   obtain ⟨_, _, hD⟩ := D.computable
-  refine ⟨{w | f (D.decode w) = true}, ⟨_, hf.comp (.of_tidy hD.computableTidilyInPolyTime),
+  refine ⟨{w | f (D.decode w) = true}, ⟨_, hf.comp hD.computableInPolyTime,
     fun _ => Iff.rfl⟩, ?_⟩
   simpa [D.decode_enc] using hsolve
 

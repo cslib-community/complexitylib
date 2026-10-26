@@ -146,7 +146,8 @@ example : IsPPTOn
       (encPair (encList encBits) (encList (encList encNode)))))) (encList encBits)
     (fun p => Scheme.evaluateLayers decryptionCircuits p.1 p.2.1 p.2.2.1
       p.2.2.2.1 p.2.2.2.2) := by
-  apply Scheme.isPPTOn_evaluateLayers decryptionCircuits encrypt_ppt evaluate_ppt circuits_poly
+  apply Scheme.isPPTOn_evaluateLayers decryptionCircuits encrypt_ppt evaluate_ppt
+    (.of_tidy circuits_poly)
   all_goals fun_prop
 
 end ComplexityTests.HomomorphicLayered

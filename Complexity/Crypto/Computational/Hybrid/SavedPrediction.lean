@@ -125,9 +125,9 @@ def evaluate (test : List Bool → List Bool → List Bool) (code observation : 
 /-- Evaluation is deterministic polynomial time on every code, including truncated codes. -/
 @[fun_prop]
 theorem isPolyTime_evaluate {test : List Bool → List Bool → List Bool}
-    (htest : ComputableTidilyInPolyTime (fun pair => test pair.1 pair.2)
+    (htest : ComputableInPolyTime (fun pair => test pair.1 pair.2)
       (encPair encBits encBits) encBits) :
-    ComputableTidilyInPolyTime (fun pair => evaluate test pair.1 pair.2)
+    ComputableInPolyTime (fun pair => evaluate test pair.1 pair.2)
       (encPair encBits encBits) encBool := by
   dsimp only [evaluate, Description.decode, Description.input]
   fun_prop
@@ -145,10 +145,10 @@ noncomputable def save (c d width : ℕ) (trial : Bool) (front back : List Bool)
 /-- Drawing and saving the common tape has a strict PPT certificate. -/
 theorem isPPTOn_save {Param : Type} {input : Param ↪ List Bool}
     {front back : Param → List Bool} {width : Param → ℕ} {trial : Param → Bool} (c d : ℕ)
-    (hfront : ComputableTidilyInPolyTime front input encBits)
-    (hback : ComputableTidilyInPolyTime back input encBits)
-    (hwidth : ComputableTidilyInPolyTime width input encUnary)
-    (htrial : ComputableTidilyInPolyTime trial input encBool) :
+    (hfront : ComputableInPolyTime front input encBits)
+    (hback : ComputableInPolyTime back input encBits)
+    (hwidth : ComputableInPolyTime width input encUnary)
+    (htrial : ComputableInPolyTime trial input encBool) :
     IsPPTOn input encBits (fun a => save c d (width a) (trial a) (front a) (back a)) := by
   simp only [save, coinBudget, Description.encoding, Function.Embedding.coeFn_mk]
   ppt
@@ -270,10 +270,10 @@ The clock coefficients belong to the fixed test, so the exponent is constant. -/
 @[program_certificate]
 theorem isPolyTime_codeBound {Param : Type} {input : Param ↪ List Bool}
     {baseSize count width : Param → ℕ} (c d : ℕ)
-    (hbase : ComputableTidilyInPolyTime baseSize input encUnary)
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hwidth : ComputableTidilyInPolyTime width input encUnary) :
-    ComputableTidilyInPolyTime (fun a => codeBound (baseSize a) (count a) c d (width a))
+    (hbase : ComputableInPolyTime baseSize input encUnary)
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hwidth : ComputableInPolyTime width input encUnary) :
+    ComputableInPolyTime (fun a => codeBound (baseSize a) (count a) c d (width a))
       input encUnary := by
   unfold codeBound contextBound
   polytime
@@ -370,15 +370,16 @@ theorem exists_evaluator {Param : Type} {input : Param ↪ List Bool} {output : 
     (htest : IsPPTOn (encPair input (encList (encPair output encBool)))
       encBool (fun pair => test pair.1 pair.2)) :
     ∃ (c d : ℕ) (predict : List Bool → List Bool → Bool),
-      ComputableTidilyInPolyTime (fun pair => predict pair.1 pair.2)
+      ComputableInPolyTime (fun pair => predict pair.1 pair.2)
         (encPair encBits encBits) encBool ∧
       ∀ a replacement original count width observation, (output observation).length ≤ width →
         ProbComp.eval ((fun code => predict code (output observation)) <$>
           sample output (input a) replacement original count c d width) =
           ProbComp.eval (bitPredictor (fun trial =>
             sequenceTest replacement original count (test a) (observation, trial))) := by
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
   obtain ⟨c, d, raw, hefficient, hrealize⟩ := htest.exists_padded_bool_coin_evaluator
-  refine ⟨c, d, evaluate raw, isPolyTime_evaluate hefficient, ?_⟩
+  refine ⟨c, d, evaluate raw, (isPolyTime_evaluate (.of_tidy hefficient)).tidy, ?_⟩
   intro a replacement original count width observation hwidth
   apply eval_sample output (input a) replacement original count c d width (test a) raw
     (fun values budget hbudget => hrealize (a, values) budget hbudget) observation hwidth
@@ -387,32 +388,46 @@ theorem exists_evaluator {Param : Type} {input : Param ↪ List Bool} {output : 
 theorem isPPTOn_splice {Param : Type} {input : Param ↪ List Bool} {output : α ↪ List Bool}
     {base : Param → List Bool} {replacement original : Param → ProbComp (α × Bool)}
     {before after width : Param → ℕ} {trial : Param → Bool} (c d : ℕ)
-    (hbase : ComputableTidilyInPolyTime base input encBits)
+    (hbase : ComputableInPolyTime base input encBits)
     (hreplacement : IsPPTOn input (encPair output encBool) replacement)
     (horiginal : IsPPTOn input (encPair output encBool) original)
-    (hbefore : ComputableTidilyInPolyTime before input encUnary)
-    (hafter : ComputableTidilyInPolyTime after input encUnary)
-    (hwidth : ComputableTidilyInPolyTime width input encUnary)
-    (htrial : ComputableTidilyInPolyTime trial input encBool) :
+    (hbefore : ComputableInPolyTime before input encUnary)
+    (hafter : ComputableInPolyTime after input encUnary)
+    (hwidth : ComputableInPolyTime width input encUnary)
+    (htrial : ComputableInPolyTime trial input encBool) :
     IsPPTOn input encBits (fun a =>
       splice output (base a) (replacement a) (original a) (before a) (after a) c d (width a)
         (trial a)) := by
+  have hbase := hbase.tidy
+  have hbefore := hbefore.tidy
+  have hafter := hafter.tidy
+  have hwidth := hwidth.tidy
+  have htrial := htrial.tidy
   unfold splice
-  ppt
+  apply (hreplacement.replicate (.of_tidy hbefore)).bind_with
+  apply ((horiginal.preprocess
+    (ComputableInPolyTime.fst input (encList (encPair output encBool)))).replicate
+      (.of_tidy (hafter.comp (ComputableTidilyInPolyTime.fst input
+        (encList (encPair output encBool)))))).bind_with
+  apply isPPTOn_save c d <;> exact .of_tidy (by fun_prop)
 
 attribute [program_certificate] isPPTOn_splice
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The random-coordinate description sampler is a uniform strict PPT program. -/
 theorem isPPTOn_sample {Param : Type} {input : Param ↪ List Bool} {output : α ↪ List Bool}
     {base : Param → List Bool} {replacement original : Param → ProbComp (α × Bool)}
     {count width : Param → ℕ} (c d : ℕ)
-    (hbase : ComputableTidilyInPolyTime base input encBits)
+    (hbase : ComputableInPolyTime base input encBits)
     (hreplacement : IsPPTOn input (encPair output encBool) replacement)
     (horiginal : IsPPTOn input (encPair output encBool) original)
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hwidth : ComputableTidilyInPolyTime width input encUnary) :
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hwidth : ComputableInPolyTime width input encUnary) :
     IsPPTOn input encBits (fun a =>
       sample output (base a) (replacement a) (original a) (count a) c d (width a)) := by
+  have hbase := hbase.tidy
+  have hcount := hcount.tidy
+  have hwidth := hwidth.tidy
   unfold sample Description.encoding
   ppt
 

@@ -29,7 +29,6 @@ arguments (`Unbounded.modMultCircuit`). Replacing every gate of a polynomial-siz
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.modCircuitOfMajority`: `MOD_q` from a circuit for majority.
 * `Cslib.Circuits.Boolean.Unbounded.modCount`, `Unbounded.modMult`, `Unbounded.expandIndex`:
   modulus-`q` count predicate, reduced wire multiplicity, and expansion index map.
 * `Cslib.Circuits.Boolean.Unbounded.modMultCircuit`: a circuit with majority gates for every
@@ -37,7 +36,6 @@ arguments (`Unbounded.modMultCircuit`). Replacing every gate of a polynomial-siz
 
 ## Main results
 
-* `Cslib.Circuits.Boolean.computes_modCircuitOfMajority`: the circuit computes `MOD_q`.
 * `Cslib.Circuits.Boolean.Unbounded.exists_majority_simulation_modGate`: a circuit with `MOD_q`
   gates of `n` inputs, `s` gates and depth `d` has an equivalent circuit with majority gates of at
   most `s (9 + 8 max q 1 · (n + s))` gates and depth at most `5 d`.
@@ -56,70 +54,6 @@ arguments (`Unbounded.modMultCircuit`). Replacing every gate of a polynomial-siz
 namespace Cslib.Circuits.Boolean
 
 open Finset Unbounded
-
-section ModCircuit
-
-variable {n : ℕ} {σ : Signature} (φ : Unbounded.signature.Hom σ) {I : Interpretation σ Bool}
-
-/-- **`MOD_q` from majority**: the disjunction, over `k ≤ n` not divisible by `q`, of "exactly `k`
-bits are true". -/
-def modCircuitOfMajority (q : ℕ) (M : Circuit σ (n + (n + 2)) 1) : Circuit σ n 1 :=
-  ((Circuit.oneGate (Unbounded.Op.or (n + 1) : Unbounded.signature.Op) id).mapOp φ).comp
-    (Circuit.pi fun k : Fin (n + 1) =>
-      if k.val % q ≠ 0 then exactlyCircuitOfMajority φ M k else constCircuit φ false)
-
-variable {φ} {M : Circuit σ (n + (n + 2)) 1}
-
-/-- `MOD_q` costs `n + 1` circuits for "exactly `k`" and one disjunction. -/
-theorem size_modCircuitOfMajority_le (q : ℕ) :
-    (modCircuitOfMajority φ q M).size ≤ 1 + (n + 1) * (2 * (2 + M.size) + 2) := by
-  rw [modCircuitOfMajority, Circuit.size_comp, Circuit.size_pi, Circuit.size_mapOp,
-    Circuit.size_oneGate, add_comm]
-  refine Nat.add_le_add_left ((sum_le_card_nsmul univ _ (2 * (2 + M.size) + 2)
-    fun k _ => ?_).trans_eq (by rw [card_univ, Fintype.card_fin, smul_eq_mul])) _
-  split_ifs
-  · exact (size_exactlyCircuitOfMajority _).le
-  · rw [size_constCircuit]
-    omega
-
-/-- `MOD_q` is four deeper than the majority circuit. -/
-theorem depth_modCircuitOfMajority_le (q : ℕ) :
-    (modCircuitOfMajority φ q M).depth ≤ M.depth + 4 :=
-  (Circuit.depth_comp_le _ _).trans (by
-    have := Circuit.depth_pi_le (fun k : Fin (n + 1) =>
-      if k.val % q ≠ 0 then exactlyCircuitOfMajority φ M k else constCircuit φ false)
-      (D := M.depth + 3) fun k => by
-        split_ifs
-        · exact depth_exactlyCircuitOfMajority_le _
-        · exact (depth_constCircuit_le _).trans (by omega)
-    rw [Circuit.depth_mapOp, Circuit.depth_oneGate]
-    omega)
-
-/-- The circuit computes `MOD_q`. -/
-theorem computes_modCircuitOfMajority [φ.Preserves Unbounded.interpretation I]
-    (hM : M.Computes I (single (majority (n + (n + 2))))) (q : ℕ) :
-    (modCircuitOfMajority φ q M).Computes I (single (modGate q n)) := by
-  intro x
-  funext j
-  rw [modCircuitOfMajority, Circuit.eval_comp,
-    Circuit.eval_mapOp (I := Unbounded.interpretation), Circuit.eval_oneGate, Circuit.eval_pi]
-  simp only [single, interpretation_or, id]
-  set c := BitString.weight x
-  have hc : c ≤ n := BitString.weight_le_length x
-  rw [modGate, Bool.eq_iff_iff, decide_eq_true_iff, decide_eq_true_iff]
-  change _ ↔ c % q ≠ 0
-  constructor
-  · rintro ⟨k, hk⟩
-    split_ifs at hk with hq
-    · rw [eval_exactlyCircuitOfMajority hM (by omega)] at hk
-      simpa [c, ← of_decide_eq_true hk] using hq
-    · simp at hk
-  · intro hq
-    refine ⟨⟨c, by omega⟩, ?_⟩
-    rw [ite_eq_left hq, eval_exactlyCircuitOfMajority hM hc]
-    simp [c]
-
-end ModCircuit
 
 namespace Unbounded
 

@@ -70,14 +70,19 @@ def git(root: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=root, capture_output=True, text=True)
 
 
-def changed_files(root: Path, ref: str) -> tuple[list[str], list[str]]:
-    """The added and the modified files (repository-relative paths) between the merge base of
-    `ref` and `HEAD`, or `ref` itself when there is none, and the working tree."""
+def comparison_base(root: Path, ref: str) -> str:
+    """The merge base of `ref` and `HEAD`, or `ref` itself when there is none."""
     resolved = git(root, "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}")
     if resolved.returncode:
         sys.exit(f"cannot resolve the comparison base {ref}: {resolved.stderr.strip()}")
     base = git(root, "merge-base", resolved.stdout.strip(), "HEAD").stdout.strip()
-    base = base or resolved.stdout.strip()
+    return base or resolved.stdout.strip()
+
+
+def changed_files(root: Path, ref: str) -> tuple[list[str], list[str]]:
+    """The added and the modified files (repository-relative paths) between the merge base of
+    `ref` and `HEAD`, or `ref` itself when there is none, and the working tree."""
+    base = comparison_base(root, ref)
     diff = git(root, "diff", "--no-ext-diff", "--no-renames", "--name-status", "-z", base, "--")
     if diff.returncode:
         sys.exit(f"git diff failed: {diff.stderr.strip()}")

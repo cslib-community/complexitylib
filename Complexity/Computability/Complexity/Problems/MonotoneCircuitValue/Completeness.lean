@@ -71,7 +71,7 @@ open Turing MultiTapeTM Circuits Circuits.Boolean ComputableTidilyInSpace Circui
 negatively, read in the De Morgan basis. -/
 def dualOp (b : Bool) : Boolean.Op → Boolean.Op
   | .const c => .const (if b then c else !c)
-  | .not => .and
+  | .not => .or
   | .and => if b then .and else .or
   | .or => if b then .or else .and
 
@@ -79,7 +79,8 @@ def dualOp (b : Bool) : Boolean.Op → Boolean.Op
 (`Cslib.Circuits.Monotone.dualGates`), read in the De Morgan basis. -/
 def dualGateDM (b : Bool) (g : Boolean.Op × List ℕ) : Boolean.Op × List ℕ :=
   (dualOp b g.1, if decide (Boolean.signature.Arity g.1 = 0) then []
-    else if decide (g.1 = .not) then [Monotone.railWire (!b) (g.2.getD 0 0), 0]
+    else if decide (g.1 = .not) then
+      [Monotone.railWire (!b) (g.2.getD 0 0), Monotone.railWire (!b) (g.2.getD 0 0)]
     else [Monotone.railWire b (g.2.getD 0 0), Monotone.railWire b (g.2.getD 1 0)])
 
 private theorem map_dualGates (g : Boolean.Op × List ℕ) :
@@ -98,9 +99,11 @@ private theorem dualGateDM_inSpace (b : Bool) {g : α → Boolean.Op × List ℕ
   have hop := fst' hg
   have hargs := snd' hg
   have hhead : ComputableTidilyInSpace (fun l : List ℕ => l.headD 0) (encList encNat) encNat
-      fun l => (encList encNat l).length := of_inO (.of_linear (ListEncoding.headD 0))
+      fun l => (encList encNat l).length :=
+    of_inO (.of_linear (Internal.NormalForm.linear (ListEncoding.headD 0)))
   have htail : ComputableTidilyInSpace List.tail (encList encNat) (encList encNat)
-      fun l => (encList encNat l).length := of_inO (.of_linear (ListEncoding.tail encNat))
+      fun l => (encList encNat l).length :=
+    of_inO (.of_linear (Internal.NormalForm.linear (ListEncoding.tail encNat)))
   have ha := budget_comp_linear hhead hargs
   have hb := budget_comp_linear hhead (budget_comp_linear htail hargs)
   have hrail (c : Bool) {w : α → ℕ} (hw : ComputableTidilyInSpace w encIn encNat Bs) :
@@ -111,11 +114,10 @@ private theorem dualGateDM_inSpace (b : Bool) {g : α → Boolean.Op × List ℕ
   have hcons {a : α → ℕ} {L : α → List ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)
       (hL : ComputableTidilyInSpace L encIn (encList encNat) Bs) :=
     budget_cons ha hL
-  have hzero := budget_const (encB := encNat) 0 hin
   have hargs' := budget_ite
     (budget_finite (encC := encBool) (fun op => decide (Boolean.signature.Arity op = 0)) hop) hnil
     (budget_ite (budget_finite (encC := encBool) (fun op : Boolean.Op => decide (op = .not)) hop)
-      (hcons (hrail (!b) ha) (hcons hzero hnil))
+      (hcons (hrail (!b) ha) (hcons (hrail (!b) ha) hnil))
       (hcons (hrail b ha) (hcons (hrail b hb) hnil)))
   refine (budget_prod (budget_finite (encC := encOp) (dualOp b) hop) hargs').of_enc_eq
     fun x => ?_
@@ -275,7 +277,7 @@ theorem computableInLogSpace_dualTableauInstance :
       simp only [encNat_apply, List.length_cons, List.length_nil, zero_add, add_zero,
         Order.add_one_le_iff]
       omega
-  have hs := (ComputableTidilyInSpace.fst encWState encBool).weaken hin
+  have hs := (ComputableTidilyInSpace.fst encNat3 encBool).weaken hin
   have hn := fst' (snd' hs)
   have hi := snd' (snd' hs)
   refine (dualSpec tm C d).computableInLogSpace

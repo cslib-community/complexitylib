@@ -71,17 +71,21 @@ section Efficiency
 
 variable {α : Type} {input : α ↪ List Bool} {evaluate : List Bool → List Bool → Bool}
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Final selection composes the evaluator, source, stored state, and encoded parameters. -/
 @[program_certificate]
 theorem isPPTOn_finish {source : α → ProbComp (List Bool × Bool)} {params : α → Parameters}
     {state : α → State}
-    (hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+    (hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
       (encPair encBits encBits) encBool)
     (hsource : IsPPTOn input (encPair encBits encBool) source)
-    (hstate : ComputableTidilyInPolyTime state input State.encoding)
-    (hparams : ComputableTidilyInPolyTime params input Parameters.encoding) :
+    (hstate : ComputableInPolyTime state input State.encoding)
+    (hparams : ComputableInPolyTime params input Parameters.encoding) :
     IsPPTOn input (encPair State.encoding encUnary)
       (fun a => finish evaluate (source a) (params a) (state a)) := by
+  have hevaluate := hevaluate.tidy
+  have hstate := hstate.tidy
+  have hparams := hparams.tidy
   unfold finish
   fun_prop
 
@@ -89,27 +93,32 @@ theorem isPPTOn_finish {source : α → ProbComp (List Bool × Bool)} {params : 
 @[program_certificate]
 theorem isPPTOn_train {source : α → ProbComp (List Bool × Bool)}
     {learn : α → State → ProbComp (List Bool)} {params : α → Parameters}
-    (hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+    (hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
       (encPair encBits encBits) encBool)
     (hsource : IsPPTOn input (encPair encBits encBool) source)
     (hlearn : IsPPTOn (encPair input State.encoding) encBits (fun pair => learn pair.1 pair.2))
-    (hparams : ComputableTidilyInPolyTime params input Parameters.encoding) :
+    (hparams : ComputableInPolyTime params input Parameters.encoding) :
     IsPPTOn input (encPair State.encoding encUnary)
       (fun a => train evaluate (source a) (learn a) (params a)) := by
   unfold train
   ppt
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Applying a trained predictor requires only efficient observations and the stored description. -/
 @[program_certificate]
 theorem isPPTOn_predict {precision : α → ℕ} {model : α → State × ℕ}
     {observation : α → List Bool}
-    (hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+    (hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
       (encPair encBits encBits) encBool)
-    (hprecision : ComputableTidilyInPolyTime precision input encUnary)
-    (hmodel : ComputableTidilyInPolyTime model input (encPair State.encoding encUnary))
-    (hobservation : ComputableTidilyInPolyTime observation input encBits) :
+    (hprecision : ComputableInPolyTime precision input encUnary)
+    (hmodel : ComputableInPolyTime model input (encPair State.encoding encUnary))
+    (hobservation : ComputableInPolyTime observation input encBits) :
     IsPPTOn input encBool
       (fun a => predict evaluate (precision a) (model a) (observation a)) := by
+  have hevaluate := hevaluate.tidy
+  have hprecision := hprecision.tidy
+  have hmodel := hmodel.tidy
+  have hobservation := hobservation.tidy
   unfold predict
   ppt
 

@@ -23,6 +23,7 @@ import Complexity.Crypto.Primitives.PRG.NextBit
 import Complexity.Crypto.Game.Statistical
 import Complexity.Probability.PMF.Uniform
 import Complexity.Crypto.Negligible.Basic
+import Complexity.Foundations.Data.Nat.Asymptotics
 import Complexity.Tactic.PPT
 import Complexity.Tactic.PolyTime
 
@@ -198,54 +199,6 @@ theorem exists_regularity_bucket {n : ℕ} {Image : Type*} (f : BitString n → 
     omega
   exact ⟨r, hne, hr, fun x hx => card_fiber_of_mem_regularityBucket f r hx⟩
 
-/-! ### Logarithmic growth helpers -/
-
-/-- For every `n : ℕ`, `Nat.log 2 (n + 1) ≤ Nat.log 2 n + 1`. -/
-theorem log_two_succ_le (n : ℕ) : Nat.log 2 (n + 1) ≤ Nat.log 2 n + 1 := by
-  rcases n.eq_zero_or_pos with rfl | hn
-  · simp
-  · have hlt : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self Nat.one_lt_two n
-    have hlt' : n + 1 < 2 ^ (Nat.log 2 n + 2) := by
-      rw [pow_succ']
-      omega
-    exact Nat.le_of_lt_succ (Nat.log_lt_of_lt_pow (by omega) hlt')
-
-/-- For any constants `A K : ℕ` and all `n ≥ 2 ^ (2 * (2 * A + K + 2))`,
-`A * Nat.log 2 n + K ≤ n`. -/
-theorem mul_log_two_add_le (A K : ℕ) {n : ℕ}
-    (hn : 2 ^ (2 * (2 * A + K + 2)) ≤ n) :
-    A * Nat.log 2 n + K ≤ n := by
-  set M := 2 * A + K + 2 with hM_def
-  set ℓ := Nat.log 2 n
-  have hn_pos : 0 < n := lt_of_lt_of_le (by positivity) hn
-  have hMℓ : 2 * M ≤ ℓ := Nat.le_log_of_pow_le Nat.one_lt_two hn
-  have hpowℓ : 2 ^ ℓ ≤ n := Nat.pow_log_le_self 2 hn_pos.ne'
-  set D := ℓ - M
-  have hMD : M + D = ℓ := by omega
-  have hM_le_D : M ≤ D := by omega
-  have h1 : M ≤ 2 ^ M := Nat.lt_two_pow_self.le
-  have h2 : D ≤ 2 ^ D := Nat.lt_two_pow_self.le
-  have h3 : M * D ≤ 2 ^ ℓ := by
-    calc
-      M * D ≤ 2 ^ M * 2 ^ D := Nat.mul_le_mul h1 h2
-      _ = 2 ^ (M + D) := (pow_add 2 M D).symm
-      _ = 2 ^ ℓ := by rw [hMD]
-  have h4 : A * ℓ + K ≤ M * D := by
-    rw [← hMD]
-    nlinarith [hM_def]
-  exact h4.trans (h3.trans hpowℓ)
-
-/-- Eventually in `n`, `B ≤ Nat.log 2 n`. -/
-theorem eventually_log_two_ge (B : ℕ) : ∀ᶠ n : ℕ in atTop, B ≤ Nat.log 2 n := by
-  filter_upwards [eventually_ge_atTop (2 ^ B)] with n hn
-  exact Nat.le_log_of_pow_le Nat.one_lt_two hn
-
-/-- Eventually in `n`, `A * Nat.log 2 n + K ≤ n`. -/
-theorem eventually_mul_log_two_add_le (A K : ℕ) :
-    ∀ᶠ n : ℕ in atTop, A * Nat.log 2 n + K ≤ n := by
-  filter_upwards [eventually_ge_atTop (2 ^ (2 * (2 * A + K + 2)))] with n hn
-  exact mul_log_two_add_le A K hn
-
 /-! ### Fiber resampling and regularity bucket mass bounds -/
 
 private theorem uniformOfFintype_fiber_map_val_apply {n : ℕ} {Image : Type*} [DecidableEq Image]
@@ -404,7 +357,7 @@ private theorem sum_uniformOfFinset_le_mul_uniformOfFintype {n : ℕ}
 /-- The trivial inverter that ignores the challenge image and samples a uniform $k$-bit string. -/
 private noncomputable def trivialInverter : Inverter := fun k _ => BitString.sampleList k
 
-@[program_certificate]
+@[local program_certificate]
 private theorem isPPT_trivialInverter : IsPPT encBits trivialInverter := by
   unfold trivialInverter
   ppt
@@ -737,7 +690,7 @@ private theorem computableTidilyInPolyTime_rawGen {g : List Bool → List Bool} 
     (z.drop (wFn z + kFn z + kFn z * imgLen (kFn z))).take (h2Rows d γ_core (kFn z) * kFn z)
   let padFn (z : List Bool) := z.drop (coreSeedLen imgLen d γ_core (kFn z))
   have hk : ComputableTidilyInPolyTime kFn encBits encUnary :=
-    GeneratorReindex.isPolyTime_parameter (by fun_prop) (by fun_prop)
+    (GeneratorReindex.isPolyTime_parameter (by fun_prop) (by fun_prop)).tidy
   have hw : ComputableTidilyInPolyTime wFn encBits encUnary := by unfold wFn; fun_prop
   have hr : ComputableTidilyInPolyTime rFn encBits encUnary := by unfold rFn; fun_prop
   have hx : ComputableTidilyInPolyTime xFn encBits encBits := by unfold xFn; fun_prop
@@ -3390,7 +3343,7 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
   have hS (k : ℕ) : (S k).Nonempty := (hbucket k).choose_spec.1
   have hdense (k : ℕ) : 2 ^ k ≤ (k + 1) * (S k).card := (hbucket k).choose_spec.2.1
   refine ⟨fullGen g imgLen d γ_core γ, α,
-    computableInPolyTime_fullGen hg.polyTime.tidy himgLen_poly d γ_core γ,
+    computableInPolyTime_fullGen hg.polyTime.tidy himgLen_poly.tidy d γ_core γ,
     length_fullGen g imgLen d γ_core γ,
     condSeedSet imgLen d γ_core S r, condSeedSet_nonempty imgLen d γ_core S hS r, ?_, ?_⟩
   · intro adversary hadv
@@ -3398,14 +3351,14 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
     let D_inv := (2 * d + γ_core + 2) + 3 + (E + 1) + 2 + 2 + E * δ
     have hinv_ppt : IsPPT encBits
         (condInverter g imgLen evaluate d γ_core γ c_eval d_eval deg) :=
-      isPPT_condInverter hg.polyTime.tidy himgLen_poly hevaluate d γ_core γ c_eval d_eval deg
+      isPPT_condInverter hg.polyTime.tidy himgLen_poly.tidy hevaluate d γ_core γ c_eval d_eval deg
     have hinv_neg :=
       (hg.inversion_negligible _ hinv_ppt).eventually_le_inv_polynomial
         (p := fun k => (k + 1) ^ D_inv) (by fun_prop) (fun k => by positivity)
     have hparam_tendsto := GeneratorReindex.parameter_tendsto (coreSeedLen imgLen d γ_core)
     have hev_k : ∀ᶠ k : ℕ in atTop,
         (2 * d + γ_core + γ + 8 ≤ k) ∧
-        (2 * d * Nat.log 2 k + 0 ≤ k) ∧
+        (0 + 2 * d * Nat.log 2 k ≤ k) ∧
         ((r k).val + d * Nat.log 2 k ≤ k) ∧
         (coreSeedLen imgLen d γ_core (k + 1) ≤ k ^ E) ∧
         ((Game.succProbability (ProbComp.eval
@@ -3413,7 +3366,7 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
             (condInverter g imgLen evaluate d γ_core γ c_eval d_eval deg) k)) : ℝ) ≤
           1 / ((k + 1 : ℝ) ^ D_inv)) := by
       filter_upwards [eventually_ge_atTop (2 * d + γ_core + γ + 8),
-        eventually_mul_log_two_add_le (2 * d) 0,
+        Nat.eventually_add_mul_log_le 0 (2 * d) Nat.one_lt_two,
         eventually_regularity_gap hg himgLen r hdense d,
         eventually_coreSeedLen_succ_le_pow himg_le d γ_core,
         hinv_neg] with k hk1 hk2 hk3 hk4 hk5
@@ -3500,16 +3453,16 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
   · have hparam_tendsto := GeneratorReindex.parameter_tendsto (coreSeedLen imgLen d γ_core)
     have hev_k : ∀ᶠ k : ℕ in atTop,
         (8 ≤ k) ∧
-        (2 * d * Nat.log 2 k + 0 ≤ k) ∧
+        (0 + 2 * d * Nat.log 2 k ≤ k) ∧
         ((r k).val + d * Nat.log 2 k ≤ k) ∧
         (coreSeedLen imgLen d γ_core (k + 1) ≤ k ^ E) := by
       filter_upwards [eventually_ge_atTop 8,
-        eventually_mul_log_two_add_le (2 * d) 0,
+        Nat.eventually_add_mul_log_le 0 (2 * d) Nat.one_lt_two,
         eventually_regularity_gap hg himgLen r hdense d,
         eventually_coreSeedLen_succ_le_pow himg_le d γ_core] with k hk1 hk2 hk3 hk4
       exact ⟨hk1, hk2, hk3, hk4⟩
     filter_upwards [eventually_ge_atTop (coreSeedLen imgLen d γ_core 0),
-      eventually_log_two_ge 1,
+      Nat.eventually_le_log 1 Nat.one_lt_two,
       hparam_tendsto.eventually hev_k] with n hn0 hlog_n1 ⟨hk8, hk_2d', hgap, hcs_pow⟩
     set k := GeneratorReindex.parameter (coreSeedLen imgLen d γ_core) n
     have hfits : coreSeedLen imgLen d γ_core k ≤ n := GeneratorReindex.parameter_fits hn0

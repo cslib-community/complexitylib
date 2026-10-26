@@ -117,9 +117,6 @@ theorem acceptCount_verifier (φ : CNF ℕ) :
     acceptCount verifier φ (encCNF φ).length = SharpSAT φ := by
   have hlt {v : ℕ} (hv : v ∈ φ.vars) : φ.vars.idxOf v < (encCNF φ).length :=
     (List.idxOf_lt_length_iff.2 hv).trans_le (SAT.length_vars_le φ)
-  have hofFn (w : Fin (encCNF φ).length → Bool) (i : Fin (encCNF φ).length) :
-      (List.ofFn w).getD i false = w i := by
-    rw [List.getD_eq_getElem _ _ (by simp), List.getElem_ofFn]
   symm
   refine CNF.modelCount_eq_card_filter
     (fun σ (i : Fin (encCNF φ).length) => isFirst φ i && σ (φ.vars.getD i 0))
@@ -139,21 +136,20 @@ theorem acceptCount_verifier (φ : CNF ℕ) :
     · rw [Bool.false_and]
       cases hwi : w i
       · rfl
-      · have := canonical_eq_true_iff.1 hcan i (by simp) (by rw [hofFn, hwi])
+      · have := canonical_eq_true_iff.1 hcan i (by simp) (by rw [List.getD_ofFn, hwi])
         rw [hi] at this
         exact absurd this Bool.false_ne_true
-    · rw [Bool.true_and, SAT.assignment, (getD_mem_of_isFirst hi).2, hofFn]
+    · rw [Bool.true_and, SAT.assignment, (getD_mem_of_isFirst hi).2, List.getD_ofFn]
   · rintro ⟨σ, hσ, rfl⟩
     simp only [verifier, Bool.and_eq_true]
     refine ⟨?_, canonical_eq_true_iff.2 fun i hi h => ?_⟩
     · change φ.eval (SAT.assignment φ _) = true
       refine (CNF.eval_congr fun v hv => ?_).trans hσ
-      rw [SAT.assignment, List.getD_eq_getElem _ _ (by simpa using hlt hv), List.getElem_ofFn]
+      rw [SAT.assignment, List.getD_ofFn_of_lt _ (hlt hv) false]
       dsimp only
       rw [isFirst_idxOf hv, List.getD_idxOf hv 0, Bool.true_and]
     · rw [List.length_ofFn] at hi
-      rw [List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_ofFn,
-        Bool.and_eq_true] at h
+      rw [List.getD_ofFn_of_lt _ hi false, Bool.and_eq_true] at h
       exact h.1
 
 /-! ### Polynomial time -/

@@ -193,16 +193,12 @@ private theorem exists_abs_eq_sqrt_two_pow_le_two_mul_finrank {S : Finset ι} (h
   · exact ⟨-√(#S : ℝ), by rw [abs_neg, abs_of_nonneg (Real.sqrt_nonneg _)],
       h.trans (by rw [two_mul]; exact Nat.add_le_add_right (le_of_not_ge hle) _)⟩
 
-/-- Huang's induced subgraph theorem along `S`, for linearly ordered coordinates. -/
-private theorem exists_mem_sqrt_card_le_card_update_mem_of_linearOrder {V : Finset (ι → Bool)}
-    (hV : 2 ^ Fintype.card ι < 2 * #V) (S : Finset ι) :
-    ∃ x ∈ V, √(#S : ℝ) ≤ #{i ∈ S | update x i (!x i) ∈ V} := by
-  rcases S.eq_empty_or_nonempty with rfl | hS
-  · obtain ⟨x, hx⟩ := card_pos.1 (Nat.pos_of_ne_zero fun h => by
-      rw [h, mul_zero] at hV
-      exact Nat.not_lt_zero _ hV)
-    exact ⟨x, hx, by simp⟩
-  obtain ⟨μ, hμ, hdim⟩ := exists_abs_eq_sqrt_two_pow_le_two_mul_finrank hS
+/-- Any eigenspace of `signedAdjacency S` of dimension at least `2 ^ |ι| / 2` contains a nonzero
+eigenfunction vanishing outside `V` whenever `2 ^ |ι| < 2 * #V`. -/
+private theorem exists_ne_zero_mem_eigenspace_and_eq_zero_of_notMem {V : Finset (ι → Bool)}
+    (hV : 2 ^ Fintype.card ι < 2 * #V) (S : Finset ι) (μ : ℝ)
+    (hdim : 2 ^ Fintype.card ι ≤ 2 * finrank ℝ ((signedAdjacency S).eigenspace μ)) :
+    ∃ v ∈ (signedAdjacency S).eigenspace μ, v ≠ 0 ∧ ∀ y ∉ V, v y = 0 := by
   set E := (signedAdjacency S).eigenspace μ
   -- an eigenfunction vanishing outside `V`
   let r : E →ₗ[ℝ] ((Vᶜ : Finset (ι → Bool)) → ℝ) :=
@@ -213,11 +209,21 @@ private theorem exists_mem_sqrt_card_le_card_update_mem_of_linearOrder {V : Fins
     rw [Module.finrank_pi, Fintype.card_coe, card_compl, Fintype.card_fun, Fintype.card_bool]
     omega
   obtain ⟨w, hw, hw0⟩ := (Submodule.ne_bot_iff _).1 (LinearMap.ker_ne_bot_of_finrank_lt (f := r) hr)
-  set v : (ι → Bool) → ℝ := w.1
-  have hv0 : v ≠ 0 := fun h => hw0 (Subtype.ext h)
-  have hvV (y : ι → Bool) (hy : y ∉ V) : v y = 0 :=
-    congrFun (LinearMap.mem_ker.1 hw) ⟨y, mem_compl.2 hy⟩
-  have hAv : signedAdjacency S v = μ • v := Module.End.mem_eigenspace_iff.1 w.2
+  exact ⟨w.1, w.2, fun h => hw0 (Subtype.ext h), fun y hy =>
+    congrFun (LinearMap.mem_ker.1 hw) ⟨y, mem_compl.2 hy⟩⟩
+
+/-- Huang's induced subgraph theorem along `S`, for linearly ordered coordinates. -/
+private theorem exists_mem_sqrt_card_le_card_update_mem_of_linearOrder {V : Finset (ι → Bool)}
+    (hV : 2 ^ Fintype.card ι < 2 * #V) (S : Finset ι) :
+    ∃ x ∈ V, √(#S : ℝ) ≤ #{i ∈ S | update x i (!x i) ∈ V} := by
+  rcases S.eq_empty_or_nonempty with rfl | hS
+  · obtain ⟨x, hx⟩ := card_pos.1 (Nat.pos_of_ne_zero fun h => by
+      rw [h, mul_zero] at hV
+      exact Nat.not_lt_zero _ hV)
+    exact ⟨x, hx, by simp⟩
+  obtain ⟨μ, hμ, hdim⟩ := exists_abs_eq_sqrt_two_pow_le_two_mul_finrank hS
+  obtain ⟨v, hvE, hv0, hvV⟩ := exists_ne_zero_mem_eigenspace_and_eq_zero_of_notMem hV S μ hdim
+  have hAv : signedAdjacency S v = μ • v := Module.End.mem_eigenspace_iff.1 hvE
   -- a point where `|v|` is largest
   obtain ⟨x, -, hx⟩ := exists_max_image univ (fun x => |v x|) univ_nonempty
   have hpos : 0 < |v x| := by

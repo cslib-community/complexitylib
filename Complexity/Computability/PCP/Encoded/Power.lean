@@ -41,7 +41,7 @@ killing rate, degree and alphabet are fixed parameters of this transformation.
 
 namespace Cslib.PCP.Encoded.Graph
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableTidilyInPolyTime ConstraintGraph
 
 variable {C α D : Type}
 

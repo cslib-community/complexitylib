@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Homomorphic.KeyChain
 public import Complexity.Crypto.Computational.Homomorphic.Efficiency
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -51,20 +52,24 @@ include hkeyGen in
 /-- Generate an efficiently computed unary number of keys using bounded repetition. -/
 @[fun_prop]
 theorem isPPTOn_generateKeys
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hdepth : ComputableTidilyInPolyTime depth input encUnary) :
+    (hn : ComputableInPolyTime n input encUnary)
+    (hdepth : ComputableInPolyTime depth input encUnary) :
     IsPPTOn input (encList (encPair encBits encBits))
       (fun a => E.generateKeys (n a) (depth a)) := by
+  have hn := hn.tidy
+  have hdepth := hdepth.tidy
   exact (hkeyGen.preprocess (.of_tidy hn)).replicate (by fun_prop)
 
 include hencrypt in
 /-- Encrypt every adjacent secret-key link, including all copied public keys and key bits. -/
 @[fun_prop]
 theorem isPPTOn_encryptKeyLinks
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hkeys : ComputableTidilyInPolyTime keys input (encList (encPair encBits encBits))) :
+    (hn : ComputableInPolyTime n input encUnary)
+    (hkeys : ComputableInPolyTime keys input (encList (encPair encBits encBits))) :
     IsPPTOn input (encList (encList encBits))
       (fun a => E.encryptKeyLinks (n a) (keys a)) := by
+  have hn := hn.tidy
+  have hkeys := hkeys.tidy
   apply IsPPTOn.mapMWith
     (element := encPair (encPair encBits encBits) (encPair encBits encBits))
   · apply isPPTOn_encryptBits hencrypt <;> fun_prop
@@ -78,16 +83,18 @@ include hkeyGen hencrypt in
 encoded input. No correctness or output-width premise is used to bound the sampled keys. -/
 @[fun_prop]
 theorem isPPTOn_generateKeyChain
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hdepth : ComputableTidilyInPolyTime depth input encUnary) :
+    (hn : ComputableInPolyTime n input encUnary)
+    (hdepth : ComputableInPolyTime depth input encUnary) :
     IsPPTOn input
       (encPair (encList (encPair encBits encBits)) (encList (encList encBits)))
       (fun a => E.generateKeyChain (n a) (depth a)) := by
-  apply (isPPTOn_generateKeys hkeyGen hn hdepth).bind_with
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hdepth
+  apply (isPPTOn_generateKeys hkeyGen (.of_tidy hn) (.of_tidy hdepth)).bind_with
   simpa only [bind_pure_comp] using (isPPTOn_encryptKeyLinks hencrypt
-    (show ComputableTidilyInPolyTime
+    (.of_tidy (show ComputableTidilyInPolyTime
       (fun p : α × List (List Bool × List Bool) => n p.1)
-      (encPair input (encList (encPair encBits encBits))) encUnary by fun_prop)
-    (ComputableTidilyInPolyTime.snd _ _)).pair (ComputableTidilyInPolyTime.snd _ _)
+      (encPair input (encList (encPair encBits encBits))) encUnary by fun_prop))
+    (.of_tidy (ComputableTidilyInPolyTime.snd _ _))).pair (ComputableTidilyInPolyTime.snd _ _)
 
 end Cslib.Crypto.Homomorphic.Scheme

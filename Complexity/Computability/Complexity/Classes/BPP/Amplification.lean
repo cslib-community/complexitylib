@@ -30,24 +30,30 @@ right, which happens on at most an `(8 / 9) ^ r(n)` fraction of the random strin
 (`Cslib.card_filter_card_filter_le_le`, an exponential-moment bound). Since `2 * 8 ^ 6 < 9 ^ 6`,
 `r = 6 q` runs make the error at most `2 ^ (-q(n))`.
 
-The condition `Cslib.Complexity.DecidesWithErrorExponent enc q p V A` says that `V` errs on at most
-a `2 ^ (-q(n))` fraction of the random strings. A problem is in `BPP` exactly when it is decided
-in polynomial time with error at most `2 ^ (-q(n))` for every polynomial `q`
-(`Cslib.Complexity.mem_BPP_iff_forall_decidesWithErrorExponent`). The one-sided version for `RP`
-is `Cslib.Complexity.mem_RP_iff_forall_decidesWithOneSidedErrorExponent`.
+The condition `Cslib.Complexity.PromiseProblem.SolvesWithErrorExponent enc q p V Q` says that `V`
+errs on at most a `2 ^ (-q(n))` fraction of the random strings on every instance in the promise of
+`Q`; for a decision problem it is `Cslib.Complexity.DecidesWithErrorExponent`. Error reduction is
+proved once, for promise problems: a promise problem is in `PromiseBPP` exactly when it is solved in
+polynomial time with error at most `2 ^ (-q(n))` for every polynomial `q`
+(`Cslib.Complexity.mem_PromiseBPP_iff_forall_solvesWithErrorExponent`), and the statement for
+`BPP` is its instance at `PromiseProblem.ofSet A`. The one-sided version for `RP` is
+`Cslib.Complexity.mem_PromiseRP_iff_forall_solvesWithOneSidedErrorExponent`.
 
 ## Main definitions
 
-* `Cslib.Complexity.DecidesWithErrorExponent`: error at most `2 ^ (-q(n))`.
+* `Cslib.Complexity.PromiseProblem.SolvesWithErrorExponent`: error at most `2 ^ (-q(n))`.
+* `Cslib.Complexity.DecidesWithErrorExponent`: its specialization to a decision problem.
 * `Cslib.Complexity.BPP.booleanSubalgebra`: `BPP` as a Boolean subalgebra of `Set α`.
 
 ## Main results
 
-* `Cslib.Complexity.DecidesWithBoundedError.repeatMajority`: `12 q(n)` majority votes reduce the
-  error to `2 ^ (-q(n))`.
-* `Cslib.Complexity.DecidesWithErrorExponent.decidesWithBoundedError`: error at most
+* `Cslib.Complexity.PromiseProblem.SolvesWithBoundedError.repeatMajority`: `12 q(n)` majority
+  votes reduce the error to `2 ^ (-q(n))`.
+* `Cslib.Complexity.PromiseProblem.SolvesWithErrorExponent.solvesWithBoundedError`: error at most
   `2 ^ (-q(n)) ≤ 1 / 4` is bounded error.
-* `Cslib.Complexity.mem_BPP_iff_forall_decidesWithErrorExponent`: error reduction for `BPP`.
+* `Cslib.Complexity.mem_PromiseBPP_iff_forall_solvesWithErrorExponent`,
+  `Cslib.Complexity.mem_BPP_iff_forall_decidesWithErrorExponent`: error reduction for `PromiseBPP`
+  and `BPP`.
 * `Cslib.Complexity.inter_mem_BPP`, `Cslib.Complexity.union_mem_BPP`,
   `Cslib.Complexity.diff_mem_BPP`, `Cslib.Complexity.symmDiff_mem_BPP`: Boolean closure of `BPP`.
 
@@ -64,27 +70,30 @@ open Finset Turing.MultiTapeTM
 
 variable {α : Type}
 
-/-- `V` decides `A` with error at most `2 ^ (-q(n))`, using random strings whose length is `p`
-evaluated at the length `n` of the encoded instance: for every instance `a`, the random strings `r`
-giving the wrong answer, `V (a, r) = false` for members of `A` and `V (a, r) = true` for the
-others, make up at most a `2 ^ (-q(n))` fraction. -/
-def DecidesWithErrorExponent (enc : α ↪ List Bool) (q p : Polynomial ℕ)
-    (V : α × List Bool → Bool) (A : Set α) : Prop :=
-  ∀ a, (a ∈ A → 2 ^ q.eval (enc a).length *
+namespace PromiseProblem
+
+/-- `V` solves the promise problem `Q` with error at most `2 ^ (-q(n))`, using random strings whose
+length is `p` evaluated at the length `n` of the encoded instance: for every yes-instance the
+rejected random strings, and for every no-instance the accepted ones, make up at most a
+`2 ^ (-q(n))` fraction. Nothing is required on instances outside the promise. -/
+def SolvesWithErrorExponent (enc : α ↪ List Bool) (q p : Polynomial ℕ)
+    (V : α × List Bool → Bool) (Q : PromiseProblem α) : Prop :=
+  ∀ a, (a ∈ Q.yes → 2 ^ q.eval (enc a).length *
       (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
         V (a, List.ofFn r) = false).card ≤ 2 ^ p.eval (enc a).length) ∧
-    (a ∉ A → 2 ^ q.eval (enc a).length *
+    (a ∈ Q.no → 2 ^ q.eval (enc a).length *
       (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
         V (a, List.ofFn r) = true).card ≤ 2 ^ p.eval (enc a).length)
 
-variable {enc : α ↪ List Bool}
+variable {enc : α ↪ List Bool} {Q : PromiseProblem α}
 
-/-- **Error reduction for `BPP`** [Arora and Barak, Section 7.4.1][AroraBarak09]. The strict
-majority of `12 q(n)` runs of a bounded-error decider, on independent blocks of random bits, errs on
-at most a `2 ^ (-q(n))` fraction of the random strings. -/
-theorem DecidesWithBoundedError.repeatMajority {p : Polynomial ℕ} {V : α × List Bool → Bool}
-    {A : Set α} (h : DecidesWithBoundedError enc p V A) (q : Polynomial ℕ) :
-    DecidesWithErrorExponent enc q (12 * q * p) (Complexity.repeatMajority enc (6 * q) p V) A := by
+/-- **Error reduction for bounded error**: the majority-vote argument of
+[Arora and Barak, Section 7.4.1][AroraBarak09], which the book states for languages, applied to
+promise problems. The strict majority of `12 q(n)` runs of a bounded-error solver, on independent
+blocks of random bits, errs on at most a `2 ^ (-q(n))` fraction of the random strings. -/
+theorem SolvesWithBoundedError.repeatMajority {p : Polynomial ℕ} {V : α × List Bool → Bool}
+    (h : Q.SolvesWithBoundedError enc p V) (q : Polynomial ℕ) :
+    Q.SolvesWithErrorExponent enc q (12 * q * p) (Complexity.repeatMajority enc (6 * q) p V) := by
   intro a
   have hlen : (12 * q * p).eval (enc a).length =
       2 * (6 * q).eval (enc a).length * p.eval (enc a).length := by
@@ -93,14 +102,14 @@ theorem DecidesWithBoundedError.repeatMajority {p : Polynomial ℕ} {V : α × L
   have hR : (6 * q).eval (enc a).length = 6 * q.eval (enc a).length := by simp
   rw [hlen]
   constructor
-  · -- on a member, the majority rejects only when at most `R` runs accept
+  · -- on a yes-instance, the majority rejects only when at most `R` runs accept
     intro ha
     refine (Nat.mul_le_mul_left _ (card_le_card fun x hx => ?_)).trans
       (BitString.two_pow_mul_card_filter_card_filter_block_le hR
         (fun s => V (a, List.ofFn s) = true) ((h a).1 ha))
     rw [mem_filter, repeatMajority_ofFn, decide_eq_false_iff_not, not_lt] at hx
     exact mem_filter.2 ⟨mem_univ _, hx.2⟩
-  · -- on a non-member, the majority accepts only when at most `R` runs reject
+  · -- on a no-instance, the majority accepts only when at most `R` runs reject
     intro ha
     refine (Nat.mul_le_mul_left _ (card_le_card fun x hx => ?_)).trans
       (BitString.two_pow_mul_card_filter_card_filter_block_le hR
@@ -114,9 +123,9 @@ theorem DecidesWithBoundedError.repeatMajority {p : Polynomial ℕ} {V : α × L
     omega
 
 /-- Error at most `2 ^ (-q(n)) ≤ 1 / 4` is bounded error. -/
-theorem DecidesWithErrorExponent.decidesWithBoundedError {q p : Polynomial ℕ}
-    {V : α × List Bool → Bool} {A : Set α} (h : DecidesWithErrorExponent enc q p V A)
-    (hq : ∀ n, 2 ≤ q.eval n) : DecidesWithBoundedError enc p V A := fun a => by
+theorem SolvesWithErrorExponent.solvesWithBoundedError {q p : Polynomial ℕ}
+    {V : α × List Bool → Bool} (h : Q.SolvesWithErrorExponent enc q p V)
+    (hq : ∀ n, 2 ≤ q.eval n) : Q.SolvesWithBoundedError enc p V := fun a => by
   have hsum := acceptCount_add_card_filter_eq_false (V := V) (a := a) (n := p.eval (enc a).length)
   have h4 : 2 ^ 2 ≤ 2 ^ q.eval (enc a).length := Nat.pow_le_pow_right (by norm_num) (hq _)
   rw [← acceptCount]
@@ -129,22 +138,38 @@ theorem DecidesWithErrorExponent.decidesWithBoundedError {q p : Polynomial ℕ}
     rw [← acceptCount] at this
     omega
 
+end PromiseProblem
+
+open PromiseProblem
+
+/-- `V` decides `A` with error at most `2 ^ (-q(n))`, using random strings whose length is `p`
+evaluated at the length `n` of the encoded instance: it solves `ofSet A` with that error. For every
+instance `a`, the random strings `r` giving the wrong answer, `V (a, r) = false` for members of `A`
+and `V (a, r) = true` for the others, make up at most a `2 ^ (-q(n))` fraction. -/
+def DecidesWithErrorExponent (enc : α ↪ List Bool) (q p : Polynomial ℕ)
+    (V : α × List Bool → Bool) (A : Set α) : Prop :=
+  (ofSet A).SolvesWithErrorExponent enc q p V
+
+variable {enc : α ↪ List Bool}
+
+/-- **Error reduction for `PromiseBPP`**, the promise-problem form of the `BPP` error reduction of
+[Arora and Barak, Section 7.4.1][AroraBarak09]: a promise problem is in `PromiseBPP` exactly when,
+for every polynomial `q`, it is solved in polynomial time with error at most `2 ^ (-q(n))`. -/
+theorem mem_PromiseBPP_iff_forall_solvesWithErrorExponent {Q : PromiseProblem α} :
+    Q ∈ PromiseBPP enc ↔ ∀ q : Polynomial ℕ, ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
+      ComputableInPolyTime V (encPair enc encBits) encBool ∧ Q.SolvesWithErrorExponent enc q p V :=
+  ⟨fun ⟨p, V, hV, h⟩ q => ⟨12 * q * p, _, computableInPolyTime_repeatMajority hV _ _,
+      h.repeatMajority q⟩,
+    fun h => let ⟨p, V, hV, h⟩ := h 2; ⟨p, V, hV, h.solvesWithBoundedError fun _ => by simp⟩⟩
+
 /-- **Error reduction for `BPP`** [Arora and Barak, Section 7.4.1][AroraBarak09]: a problem is in
 `BPP` exactly when, for every polynomial `q`, it is decided in polynomial time with error at most
 `2 ^ (-q(n))`. -/
 theorem mem_BPP_iff_forall_decidesWithErrorExponent {A : Set α} :
     A ∈ BPP enc ↔ ∀ q : Polynomial ℕ, ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
       ComputableInPolyTime V (encPair enc encBits) encBool ∧
-        DecidesWithErrorExponent enc q p V A := by
-  have this : A ∈ BPP enc ↔ ∀ q : Polynomial ℕ, ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧ DecidesWithErrorExponent enc q p
-      V A := by
-    rw [mem_BPP]
-    refine ⟨fun ⟨p, V, hV, h⟩ q => ⟨12 * q * p, _,
-      (computableInPolyTime_repeatMajority hV _ _).tidy, h.repeatMajority q⟩, fun h => ?_⟩
-    obtain ⟨p, V, hV, h⟩ := h 2
-    exact ⟨p, V, (.of_tidy hV), h.decidesWithBoundedError fun _ => by simp⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+        DecidesWithErrorExponent enc q p V A :=
+  mem_PromiseBPP_iff_forall_solvesWithErrorExponent (Q := ofSet A)
 
 /-! ### Boolean closure of `BPP` -/
 

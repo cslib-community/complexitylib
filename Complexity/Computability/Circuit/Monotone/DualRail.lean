@@ -20,7 +20,7 @@ its negation [Goldschlager1977]. The monotone circuit (`Cslib.Circuits.Monotone.
 carried positively by input `2 i + 1` and negatively by input `2 i + 2` (`railBits`). Each gate is
 replaced by two gates, carrying it positively and negatively: an AND gate by the AND of the
 positive rails and the OR of the negative rails, an OR gate dually, a negation by copies of the
-crossed rails (conjunctions with the constant `true` wire), and a constant by the constant and its
+crossed rails (idempotent disjunctions), and a constant by the constant and its
 negation (`dualGates`). Every wire `w` of the De Morgan circuit is then carried by the wires
 `2 w + 1` and `2 w + 2` (`railWire`), uniformly for inputs and gates, so the translation of a gate
 depends on the gate alone, not on its position.
@@ -28,7 +28,9 @@ depends on the gate alone, not on its position.
 The translation works on gate lists (`dualCode`): it keeps well-formedness
 (`isCodeFrom_dualCode`), and evaluating the translated list on the dual-rail inputs gives the
 dual-rail values (`evalCode_dualCode`). The translated circuit computes the same function on the
-dual-rail inputs (`eval_dualRail`) and has twice the size (`size_dualRail`).
+dual-rail inputs (`eval_dualRail`) and has twice the size (`size_dualRail`). Each original AND or
+OR gate contributes exactly one AND gate, while negations and constants contribute none, so the
+translated AND cost is exactly the original binary-gate cost (`cost_dualRail`).
 
 ## Main definitions
 
@@ -44,6 +46,8 @@ dual-rail inputs (`eval_dualRail`) and has twice the size (`size_dualRail`).
   values.
 * `Cslib.Circuits.Monotone.eval_dualRail`: the translated circuit computes the same function.
 * `Cslib.Circuits.Monotone.size_dualRail`: the translated circuit has twice the size.
+* `Cslib.Circuits.Monotone.cost_dualRail`: the translated AND cost is the original binary-gate
+  cost.
 
 ## References
 
@@ -114,12 +118,13 @@ theorem getD_railBits_false (x : List Bool) {w : ℕ} (hw : w < x.length) :
 
 /-- **The two monotone gates computing a De Morgan gate positively and negatively**, from its
 operation and its wires `g.2`: an AND gate by the AND of the positive rails and the OR of the
-negative rails, an OR gate dually, a negation by the crossed rails (each in a conjunction with the
-constant `true` wire `0`), a constant by the constant and its negation. -/
+negative rails, an OR gate dually, a negation by the crossed rails (each in an idempotent
+disjunction), a constant by the constant and its negation. -/
 def dualGates (g : Boolean.Op × List ℕ) : List (Op × List ℕ) :=
   match g.1 with
   | .const b => [(.const b, []), (.const (!b), [])]
-  | .not => [(.and, [railWire false (g.2.getD 0 0), 0]), (.and, [railWire true (g.2.getD 0 0), 0])]
+  | .not => [(.or, [railWire false (g.2.getD 0 0), railWire false (g.2.getD 0 0)]),
+      (.or, [railWire true (g.2.getD 0 0), railWire true (g.2.getD 0 0)])]
   | .and => [(.and, [railWire true (g.2.getD 0 0), railWire true (g.2.getD 1 0)]),
       (.or, [railWire false (g.2.getD 0 0), railWire false (g.2.getD 1 0)])]
   | .or => [(.or, [railWire true (g.2.getD 0 0), railWire true (g.2.getD 1 0)]),
@@ -143,6 +148,15 @@ def dualCode (gates : List (Boolean.Op × List ℕ)) : List (Op × List ℕ) := 
 theorem dualCode_append (gates gates' : List (Boolean.Op × List ℕ)) :
     dualCode (gates ++ gates') = dualCode gates ++ dualCode gates' :=
   List.flatMap_append
+
+private theorem sum_andCost_dualCode (gates : List (Boolean.Op × List ℕ)) :
+    ((dualCode gates).map fun g => andCost g.1).sum =
+      (gates.map fun g => Boolean.binaryCost g.1).sum := by
+  induction gates with
+  | nil => rfl
+  | cons g gates ih =>
+    rcases g with ⟨_ | _ | _ | _, _⟩ <;>
+      simpa [dualCode, dualGates, andCost, Boolean.binaryCost] using ih
 
 private theorem getD_lt_of_isCode {l : List ℕ} {B j : ℕ} (hj : j < l.length) (h : ∀ i ∈ l, i < B) :
     l.getD j 0 < B := by
@@ -219,6 +233,31 @@ private theorem evalCode_pair {σ : Signature} {U : Type*} (I : Interpretation �
   rw [hv]
   simp
 
+/-- Evaluating the dual-rail translation of a single binary gate (`and` or `or`) appends the gate's
+value and its negation to `railBits vs`. -/
+private theorem evalCode_dualGates_binary (vs : List Bool) {a b : ℕ} (ha : a < vs.length)
+    (hb : b < vs.length) :
+    evalCode interpretation false (railBits vs) (dualGates (.and, [a, b])) =
+      railBits (vs ++
+        [Boolean.interpretation .and fun k => [a, b][k.val]?.elim false (vs.getD · false)]) ∧
+    evalCode interpretation false (railBits vs) (dualGates (.or, [a, b])) =
+      railBits (vs ++
+        [Boolean.interpretation .or fun k => [a, b][k.val]?.elim false (vs.getD · false)]) := by
+  have hlr : (railBits vs).length = 2 * vs.length + 1 := length_railBits vs
+  have hTa := getD_railBits_true vs ha
+  have hFa := getD_railBits_false vs ha
+  have hTb := getD_railBits_true vs hb
+  have hFb := getD_railBits_false vs hb
+  simp only [List.getD_eq_getElem?_getD] at hTa hFa hTb hFb
+  rw [railBits_append, railBits_append]
+  constructor <;>
+    (simp only [dualGates, List.getD_cons_zero, List.getD_cons_succ]
+     rw [evalCode_pair _ _ _ _ _ (by
+       simp only [railWire, Bool.false_eq_true, ↓reduceIte, List.mem_cons,
+         List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
+       omega)]
+     simp [interpretation, Boolean.interpretation, hTa, hFa, hTb, hFb])
+
 /-- **The translated gate list computes the dual-rail values**: on the dual-rail inputs, the
 gates translating gate `j` carry the value of gate `j` and its negation. -/
 theorem evalCode_dualCode (x : List Bool) {gates : List (Boolean.Op × List ℕ)}
@@ -230,16 +269,17 @@ theorem evalCode_dualCode (x : List Bool) {gates : List (Boolean.Op × List ℕ)
   | append_singleton gates g ih =>
     rw [Program.isCodeFrom_append] at h
     obtain ⟨hgates, ⟨⟨hlen, hlt⟩, -⟩⟩ := h
-    rw [dualCode_append, evalCode_append, ih hgates, evalCode_append_singleton, railBits_append]
+    rw [dualCode_append, evalCode_append, ih hgates, evalCode_append_singleton,
+      show dualCode [g] = dualGates g by simp [dualCode]]
     set vs := evalCode Boolean.interpretation false x gates with hvs
     have hlv : vs.length = x.length + gates.length := length_evalCode _ _ _ _
     have hw (j : ℕ) (hj : j < g.2.length) : g.2.getD j 0 < vs.length := by
       have := getD_lt_of_isCode hj hlt
       omega
     have hlr : (railBits vs).length = 2 * vs.length + 1 := length_railBits vs
-    rw [show dualCode [g] = dualGates g by simp [dualCode]]
     rcases g with ⟨_ | _ | _ | _, args⟩ <;> simp only at hlen hw
     · obtain rfl : args = [] := List.length_eq_zero_iff.1 hlen
+      rw [railBits_append]
       simp only [dualGates]
       rw [evalCode_pair _ _ _ _ _ (by simp)]
       simp [interpretation, Boolean.interpretation]
@@ -247,6 +287,7 @@ theorem evalCode_dualCode (x : List Bool) {gates : List (Boolean.Op × List ℕ)
       have ha : a < vs.length := by simpa using hw 0 (by simp)
       have hTa := getD_railBits_true vs ha
       have hFa := getD_railBits_false vs ha
+      rw [railBits_append]
       simp only [dualGates, List.getD_cons_zero]
       rw [evalCode_pair _ _ _ _ _ (by
           simp only [railWire, ↓reduceIte, List.mem_cons,
@@ -255,33 +296,11 @@ theorem evalCode_dualCode (x : List Bool) {gates : List (Boolean.Op × List ℕ)
       simp only [List.getD_eq_getElem?_getD] at hTa hFa
       simp [interpretation, Boolean.interpretation, hTa, hFa]
     · obtain ⟨a, b, rfl⟩ := List.length_eq_two.1 hlen
-      have ha : a < vs.length := by simpa using hw 0 (by simp)
-      have hb : b < vs.length := by simpa using hw 1 (by simp)
-      have hTa := getD_railBits_true vs ha
-      have hFa := getD_railBits_false vs ha
-      have hTb := getD_railBits_true vs hb
-      have hFb := getD_railBits_false vs hb
-      simp only [dualGates, List.getD_cons_zero, List.getD_cons_succ]
-      rw [evalCode_pair _ _ _ _ _ (by
-          simp only [railWire, Bool.false_eq_true, ↓reduceIte, List.mem_cons,
-            List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-          omega)]
-      simp only [List.getD_eq_getElem?_getD] at hTa hFa hTb hFb
-      simp [interpretation, Boolean.interpretation, hTa, hFa, hTb, hFb]
+      exact (evalCode_dualGates_binary vs (by simpa using hw 0 (by simp))
+        (by simpa using hw 1 (by simp))).1
     · obtain ⟨a, b, rfl⟩ := List.length_eq_two.1 hlen
-      have ha : a < vs.length := by simpa using hw 0 (by simp)
-      have hb : b < vs.length := by simpa using hw 1 (by simp)
-      have hTa := getD_railBits_true vs ha
-      have hFa := getD_railBits_false vs ha
-      have hTb := getD_railBits_true vs hb
-      have hFb := getD_railBits_false vs hb
-      simp only [dualGates, List.getD_cons_zero, List.getD_cons_succ]
-      rw [evalCode_pair _ _ _ _ _ (by
-          simp only [railWire, Bool.false_eq_true, ↓reduceIte, List.mem_cons,
-            List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-          omega)]
-      simp only [List.getD_eq_getElem?_getD] at hTa hFa hTb hFb
-      simp [interpretation, Boolean.interpretation, hTa, hFa, hTb, hFb]
+      exact (evalCode_dualGates_binary vs (by simpa using hw 0 (by simp))
+        (by simpa using hw 1 (by simp))).2
 
 /-! ### Circuits -/
 
@@ -331,6 +350,15 @@ theorem code_dualRail (c : Circuit Boolean.signature n m) :
 /-- The dual-rail translation has twice the size. -/
 theorem size_dualRail (c : Circuit Boolean.signature n m) : (dualRail c).size = 2 * c.size := by
   rw [← Circuit.length_code_fst, code_dualRail, length_dualCode, Circuit.length_code_fst]
+
+/-- The dual-rail translation has exactly one AND gate per original binary AND or OR gate.
+Negations become idempotent OR gates and therefore have no AND cost. -/
+theorem cost_dualRail (c : Circuit Boolean.signature n m) :
+    (dualRail c).program.cost andCost = c.program.cost Boolean.binaryCost := by
+  have h := congrArg (fun code => (code.1.map fun g => andCost g.1).sum) (code_dualRail c)
+  rw [sum_andCost_dualCode] at h
+  simpa only [Circuit.code, Program.code_eq_ofFn_lines, List.map_ofFn, Function.comp_apply,
+    Line.code_fst, List.sum_ofFn, ← Program.cost_eq_sum] using h
 
 private theorem toNat_outputs_dualRail (c : Circuit Boolean.signature n m) (j : Fin m) :
     ((dualRail c).outputs j).toNat = railWire true (c.outputs j).toNat := by

@@ -61,17 +61,6 @@ public lemma length_encOption_find?_le (enc : α ↪ List Bool) (p : α → Bool
   · simp
   · simpa using length_le_encList_of_mem enc (List.mem_of_find?_eq_some h)
 
-/-- A list of elements of bounded size has bounded size. -/
-public lemma length_encList_le (enc : α ↪ List Bool) (l : List α) {b : ℕ}
-    (h : ∀ a ∈ l, (enc a).length ≤ b) : (encList enc l).length ≤ l.length * (2 * b + 1) := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    have h₁ := h a (List.mem_cons_self ..)
-    have h₂ := ih fun a ha => h a (List.mem_cons_of_mem _ ha)
-    simp only [encList_cons, List.length_append, length_frame, List.length_cons]
-    nlinarith
-
 namespace ComputableTidilyInDegree
 
 variable {γ : Type} {encIn : γ ↪ List Bool}

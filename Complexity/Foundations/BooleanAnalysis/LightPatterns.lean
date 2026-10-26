@@ -106,6 +106,30 @@ theorem bernoulliAverage_lowerSet_transfer {A : Set (ι → Bool)}
 
 /-! ### The harmonic mean transform at a sparse random set -/
 
+/-- For `1 ≤ k` and `0 ≤ r ≤ 1 / (512 k)`, `(1 / (2 * √(2 ^ k))) ^ (5 r) ≥ 63 / 64`. -/
+private theorem sixtyThree_div_sixtyFour_le_rpow {k r : ℝ} (hk : 1 ≤ k) (hr : 0 ≤ r)
+    (hr' : r ≤ 1 / (512 * k)) :
+    63 / 64 ≤ (1 / (2 * Real.sqrt ((2 : ℝ) ^ k))) ^ (5 * r) := by
+  let B : ℝ := (2 : ℝ) ^ k
+  let a : ℝ := 1 / (2 * Real.sqrt B)
+  have hBp : 0 < B := Real.rpow_pos_of_pos (by norm_num) k
+  have ha : 0 < a := by dsimp [a]; positivity
+  have hkr : r * (512 * k) ≤ 1 := (le_div_iff₀ (by positivity)).mp hr'
+  have hrk : r ≤ r * k := by nlinarith [mul_nonneg hr (sub_nonneg.mpr hk)]
+  have hlog : Real.log a = -(k / 2 + 1) * Real.log 2 := by
+    dsimp [a, B]
+    rw [Real.log_div one_ne_zero (by positivity), Real.log_one,
+      Real.log_mul (by norm_num) (by positivity), Real.log_sqrt hBp.le,
+      Real.log_rpow (by norm_num)]
+    ring
+  have he := Real.add_one_le_exp (Real.log a * (5 * r))
+  rw [← Real.rpow_def_of_pos ha, hlog] at he
+  have hlog2 : Real.log 2 ≤ 1 := by
+    linarith [Real.log_le_sub_one_of_pos (show (0 : ℝ) < 2 by norm_num)]
+  have hloss : (k / 2 + 1) * (5 * r) * Real.log 2 ≤ (k / 2 + 1) * (5 * r) :=
+    mul_le_of_le_one_right (by positivity) hlog2
+  nlinarith
+
 /-- **The harmonic mean transform at a sparse random set**, as in the proof of
 [Korten, Lemma 10][Korten2026]: for a density `f` relative to the uniform distribution bounded by
 `2 ^ k`, `k ≥ 1`, the transform at a random set of rate `r ≤ 1 / (512 k)` is at least
@@ -120,11 +144,8 @@ theorem le_bernoulliAverage_le_harmonicTransform_of_rpow
   let a : ℝ := 1 / (2 * Real.sqrt B)
   let A : Set (ι → Bool) := {s | 1 / (4 * B) ≤ harmonicTransform f s}
   have hB : 1 ≤ B := Real.one_le_rpow (by norm_num) (by linarith)
-  have hBp : 0 < B := lt_of_lt_of_le zero_lt_one hB
   have ha : 0 < a := by dsimp [a]; positivity
-  have hA : IsLowerSet A := by
-    intro s t hst ht
-    exact ht.trans (harmonicTransform_antitone hf hst)
+  have hA : IsLowerSet A := fun _ _ hst ht => ht.trans (harmonicTransform_antitone hf hst)
   have hA' : A.Nonempty := by
     refine ⟨fun _ => false, ?_⟩
     change 1 / (4 * B) ≤ harmonicTransform f (fun _ => false)
@@ -132,8 +153,7 @@ theorem le_bernoulliAverage_le_harmonicTransform_of_rpow
     apply (div_le_one (by positivity)).mpr
     linarith
   have hkr : r * (512 * k) ≤ 1 := (le_div_iff₀ (by positivity)).mp hr'
-  have hrk : r ≤ r * k := by nlinarith [mul_nonneg hr (sub_nonneg.mpr hk)]
-  have hr20 : r ≤ 1 / 20 := by nlinarith
+  have hr20 : r ≤ 1 / 20 := by nlinarith [mul_nonneg hr (sub_nonneg.mpr hk)]
   have hind : A.indicator 1 =
       fun s => if 1 / (4 * B) ≤ harmonicTransform f s then (1 : ℝ) else 0 := by
     funext s
@@ -145,24 +165,8 @@ theorem le_bernoulliAverage_le_harmonicTransform_of_rpow
     hind ▸ le_bernoulliAverage_le_harmonicTransform hf hmean hB hbound
   have htransfer := (Real.rpow_le_rpow ha.le hgood (by positivity : 0 ≤ 5 * r)).trans
     (bernoulliAverage_lowerSet_transfer hA hA' hr hr20)
-  have hlog : Real.log a = -(k / 2 + 1) * Real.log 2 := by
-    dsimp [a]
-    rw [Real.log_div one_ne_zero (by positivity), Real.log_one,
-      Real.log_mul (by norm_num) (by positivity), Real.log_sqrt hBp.le]
-    dsimp [B]
-    rw [Real.log_rpow (by norm_num)]
-    ring
-  have he := Real.add_one_le_exp (Real.log a * (5 * r))
-  rw [← Real.rpow_def_of_pos ha] at he
-  rw [hlog] at he
-  have hlog2 : Real.log 2 ≤ 1 := by
-    have h := Real.log_le_sub_one_of_pos (show (0 : ℝ) < 2 by norm_num)
-    linarith
-  have hloss : (k / 2 + 1) * (5 * r) * Real.log 2 ≤ (k / 2 + 1) * (5 * r) :=
-    mul_le_of_le_one_right (by positivity) hlog2
-  change 63 / 64 ≤ bernoulliAverage r fun s => if 1 / (4 * B) ≤ harmonicTransform f s then 1 else 0
   rw [← hind]
-  nlinarith
+  exact (sixtyThree_div_sixtyFour_le_rpow hk hr hr').trans htransfer
 
 /-- Korten's light-patterns lemma for densities: with probability at least `63 / 64`, the fraction
 of patterns of marginal density at most `2 ^ (-2 k - 2)` is at most `2 ^ (-k)`. -/
@@ -247,35 +251,17 @@ private theorem coordinateMarginal_normalize (mass : (ι → Bool) → ℝ) (s :
 
 /-! ### Korten's light-patterns lemma -/
 
-/-- **Korten's light-patterns lemma** [Korten, Lemma 10][Korten2026], with its constants and
-pattern count. Nonnegative masses summing to one represent a distribution;
-the pointwise bound is min-entropy deficit at most the real parameter `k`. -/
-theorem le_bernoulliAverage_card_coordinateMass_le
-    {mass : (ι → Bool) → ℝ}
-    (hm : ∀ x, 0 ≤ mass x) (hmean : (∑ x, mass x) = 1) {k r : ℝ} (hk : 1 ≤ k)
-    (hbound : ∀ x, mass x ≤ (2 : ℝ) ^ (k - Fintype.card ι))
-    (hr : 0 ≤ r) (hr' : r ≤ 1 / (512 * k)) :
-    63 / 64 ≤ bernoulliAverage r (fun s =>
+/-- Scaling `mass` by `2 ^ |ι|` converts the marginal-density threshold `2 ^ (-2 k - 2)` into the
+pattern-mass count bound at threshold `2 ^ (-|s| - 2 k - 2)`. -/
+private theorem ite_expect_coordinateMarginal_le_of_normalize (mass : (ι → Bool) → ℝ) (k : ℝ)
+    (s : ι → Bool) :
+    let f : (ι → Bool) → ℝ := fun x => (2 : ℝ) ^ Fintype.card ι * mass x
+    (if (𝔼 z, if coordinateMarginal f s z ≤ (2 : ℝ) ^ (-2 * k - 2) then (1 : ℝ) else 0) ≤
+        (2 : ℝ) ^ (-k) then (1 : ℝ) else 0) ≤
       if ((univ.filter fun z => coordinateMass mass s z ≤
           (2 : ℝ) ^ (-(Fintype.card {i // s i = true} : ℝ) - 2 * k - 2)).card : ℝ) ≤
-        (2 : ℝ) ^ ((Fintype.card {i // s i = true} : ℝ) - k) then 1 else 0) := by
-  let f : (ι → Bool) → ℝ := fun x => (2 : ℝ) ^ Fintype.card ι * mass x
-  have hf : ∀ x, 0 ≤ f x := fun x => mul_nonneg (by positivity) (hm x)
-  have hsum : (𝔼 x, f x) = 1 := by
-    dsimp [f]
-    rw [Fintype.expect_eq_sum_div_card, ← mul_sum, hmean]
-    simp
-  have hproduct : (2 : ℝ) ^ Fintype.card ι * (2 : ℝ) ^ (k - Fintype.card ι) = (2 : ℝ) ^ k := by
-    rw [← Real.rpow_natCast, ← Real.rpow_add (by norm_num)]
-    congr 1
-    ring
-  have hfb : ∀ x, f x ≤ (2 : ℝ) ^ k := by
-    intro x
-    exact (mul_le_mul_of_nonneg_left (hbound x) (by positivity)).trans_eq hproduct
-  have hkr : r * (512 * k) ≤ 1 := (le_div_iff₀ (by positivity)).mp hr'
-  have hr1 : r ≤ 1 := by nlinarith [mul_nonneg hr (sub_nonneg.mpr hk)]
-  refine (le_bernoulliAverage_expect_coordinateMarginal_le hf hsum hk hfb hr hr').trans
-    (bernoulliAverage_mono hr hr1 fun s => ?_)
+        (2 : ℝ) ^ ((Fintype.card {i // s i = true} : ℝ) - k) then 1 else 0 := by
+  intro f
   let m := Fintype.card {i // s i = true}
   have hp : (0 : ℝ) < (2 : ℝ) ^ m := by positivity
   have hthreshold : (2 : ℝ) ^ m * (2 : ℝ) ^ (-(m : ℝ) - 2 * k - 2) =
@@ -302,6 +288,35 @@ theorem le_bernoulliAverage_card_coordinateMass_le
     simp [m]
   simp only [havg, div_le_iff₀ hp, hcount]
   exact le_rfl
+
+/-- **Korten's light-patterns lemma** [Korten, Lemma 10][Korten2026], with its constants and
+pattern count. Nonnegative masses summing to one represent a distribution;
+the pointwise bound is min-entropy deficit at most the real parameter `k`. -/
+theorem le_bernoulliAverage_card_coordinateMass_le
+    {mass : (ι → Bool) → ℝ}
+    (hm : ∀ x, 0 ≤ mass x) (hmean : (∑ x, mass x) = 1) {k r : ℝ} (hk : 1 ≤ k)
+    (hbound : ∀ x, mass x ≤ (2 : ℝ) ^ (k - Fintype.card ι))
+    (hr : 0 ≤ r) (hr' : r ≤ 1 / (512 * k)) :
+    63 / 64 ≤ bernoulliAverage r (fun s =>
+      if ((univ.filter fun z => coordinateMass mass s z ≤
+          (2 : ℝ) ^ (-(Fintype.card {i // s i = true} : ℝ) - 2 * k - 2)).card : ℝ) ≤
+        (2 : ℝ) ^ ((Fintype.card {i // s i = true} : ℝ) - k) then 1 else 0) := by
+  let f : (ι → Bool) → ℝ := fun x => (2 : ℝ) ^ Fintype.card ι * mass x
+  have hf : ∀ x, 0 ≤ f x := fun x => mul_nonneg (by positivity) (hm x)
+  have hsum : (𝔼 x, f x) = 1 := by
+    dsimp [f]
+    rw [Fintype.expect_eq_sum_div_card, ← mul_sum, hmean]
+    simp
+  have hproduct : (2 : ℝ) ^ Fintype.card ι * (2 : ℝ) ^ (k - Fintype.card ι) = (2 : ℝ) ^ k := by
+    rw [← Real.rpow_natCast, ← Real.rpow_add (by norm_num)]
+    congr 1
+    ring
+  have hfb : ∀ x, f x ≤ (2 : ℝ) ^ k := fun x =>
+    (mul_le_mul_of_nonneg_left (hbound x) (by positivity)).trans_eq hproduct
+  have hkr : r * (512 * k) ≤ 1 := (le_div_iff₀ (by positivity)).mp hr'
+  have hr1 : r ≤ 1 := by nlinarith [mul_nonneg hr (sub_nonneg.mpr hk)]
+  exact (le_bernoulliAverage_expect_coordinateMarginal_le hf hsum hk hfb hr hr').trans
+    (bernoulliAverage_mono hr hr1 (ite_expect_coordinateMarginal_le_of_normalize mass k))
 
 end
 

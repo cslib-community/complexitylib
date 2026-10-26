@@ -116,6 +116,126 @@ private theorem listStrictMajority_map_enumList (ℓ : ℕ) (vote : List Bool �
 
 /-! ### The main theorem -/
 
+private theorem computableTidilyInPolyTime_nwDecider_of_params {α : Type} (enc : α ↪ List Bool)
+    {V : α × List Bool → Bool} (hV : ComputableInPolyTime V (encPair enc encBits) encBool)
+    {g : List Bool → Bool} {k : ℕ}
+    (hg : ComputableInO g encBits encBool (fun y => 2 ^ (k * y.length))
+      fun y => 2 ^ (k * y.length))
+    (n₀ e c : ℕ) (p : Polynomial ℕ) :
+    let t := fun N => n₀ + 3 + e * (Nat.log 2 N + 1)
+    let b := 2 ^ (8 * c + 1)
+    ComputableTidilyInPolyTime
+      (nwDecider V g (fun x => (b + 1) * t (enc x).length) (fun x => c * (4 * t (enc x).length))
+        (fun x => t (enc x).length - 1) (fun x => p.eval (enc x).length))
+      enc encBool := by
+  intro t b
+  have hlog : ComputableTidilyInPolyTime (fun x => t (enc x).length) enc encUnary := by fun_prop
+  have hbudget (d : ℕ) : PolyBounded (fun x => (enc x).length) fun x =>
+      2 ^ (d * t (enc x).length) := by
+    refine PolyBounded.of_polynomiallyBounded (fun x => (enc x).length)
+      (bound := fun N => 2 ^ (d * (n₀ + 3)) * 2 ^ (d * e * (Nat.log 2 N + 1)))
+      ((PolynomiallyBounded.const _).mul (polynomiallyBounded_two_pow_mul_log _)) |>.mono
+      fun x => le_of_eq ?_
+    rw [← pow_add]; dsimp [t]; ring_nf
+  have hseedO : ComputableTidilyInPolyTime (fun x => (b + 1) * t (enc x).length) enc encUnary := by
+    fun_prop
+  have hblockO : ComputableTidilyInPolyTime (fun x => c * (4 * t (enc x).length)) enc encUnary := by
+    fun_prop
+  have hoverlapO : ComputableTidilyInPolyTime (fun x => t (enc x).length - 1) enc encUnary := by
+    fun_prop
+  have houtO : ComputableTidilyInPolyTime (fun x => p.eval (enc x).length) enc encUnary := by
+    fun_prop
+  refine (computableInPolyTime_nwDecider hV
+    (fun _ _ h => Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_left k h)) hg (.of_tidy hseedO)
+    (.of_tidy hblockO) (.of_tidy hoverlapO) (.of_tidy houtO)
+    (hbudget (b + 1)) ((hbudget (k * (c * 4))).mono fun x => le_of_eq ?_)).tidy
+  ring_nf
+
+private theorem nw_design_and_size_bounds {c m Tc τ : ℕ} (hc : 0 < c) (hτ3 : 3 ≤ τ)
+    (hBτ : 8 * (m + Tc + 5) ≤ 2 ^ τ) :
+    m ≤ (greedyMasks ((2 ^ (8 * c + 1) + 1) * τ) (c * (4 * τ)) (τ - 1)).length ∧
+    Tc + 2 + 1 + m * (2 ^ (τ - 1) * (2 * (τ - 1) + 3) + 1) + 1 ≤ 2 ^ (4 * τ) ∧
+    (m : ℝ) < 1 / 6 * ((2 ^ (4 * τ) : ℕ) : ℝ) := by
+  set b := 2 ^ (8 * c + 1) with hb
+  set P := 2 ^ τ with hP
+  have hP8 : 8 ≤ P := (Nat.pow_le_pow_right two_pos hτ3).trans_eq' rfl
+  have hc4 : c * 4 ≤ b + 1 := by
+    have h₁ : c < 2 ^ c := Nat.lt_two_pow_self
+    have h₂ : 2 ^ c * 4 ≤ b := by
+      rw [hb, show 2 ^ c * 4 = 2 ^ (c + 2) by rw [pow_add]; rfl]
+      exact Nat.pow_le_pow_right two_pos (by omega)
+    omega
+  have hlen : m ≤ (greedyMasks ((b + 1) * τ) (c * (4 * τ)) (τ - 1)).length := by
+    refine le_length_greedyMasks (by omega) (by nlinarith) (by nlinarith) ?_
+    calc 4 ^ (c * (4 * τ)) * m ≤ 4 ^ (c * (4 * τ)) * P := Nat.mul_le_mul_left _ (by omega)
+      _ = b ^ τ := by
+        rw [hb, hP, ← pow_mul, show (4 : ℕ) = 2 ^ 2 by rfl, ← pow_mul, ← pow_add]; ring_nf
+  have hY : 2 ^ (τ - 1) * (2 * (τ - 1) + 3) + 1 ≤ P ^ 2 := by
+    have hQ : 2 ^ (τ - 1) * 2 = P := by rw [hP, ← pow_succ, Nat.sub_add_cancel (by omega)]
+    have := Nat.lt_two_pow_self (n := τ - 1); have := @Nat.one_le_two_pow (τ - 1)
+    rw [← hQ]; nlinarith
+  have h₂ : 8 * (m * P ^ 2) ≤ P ^ 3 :=
+    calc 8 * (m * P ^ 2) = 8 * m * P ^ 2 := by ring
+      _ ≤ P * P ^ 2 := Nat.mul_le_mul_right _ (by omega)
+      _ = P ^ 3 := by ring
+  have h₃ : 8 * P ^ 3 ≤ P ^ 4 := by
+    rw [pow_succ P 3, mul_comm (P ^ 3)]; exact Nat.mul_le_mul_right _ hP8
+  have h₄ : P ≤ P ^ 4 := Nat.le_self_pow (by norm_num) P
+  have h₁ := Nat.mul_le_mul_left m hY
+  have h6m : 6 * m < 2 ^ (4 * τ) := by rw [mul_comm 4 τ, pow_mul, ← hP]; omega
+  refine ⟨hlen, by rw [mul_comm 4 τ, pow_mul, ← hP]; omega, ?_⟩
+  have h6m' : (6 * m : ℝ) < ((2 ^ (4 * τ) : ℕ) : ℝ) := by exact_mod_cast h6m
+  linarith
+
+private theorem majority_iff_of_abs_sub_lt {m ℓ Z : ℕ} {test : BooleanFunction m} {P : Prop}
+    (hNW : |((Z : ℝ) / 2 ^ ℓ - (#{r | test r = true} : ℝ) / 2 ^ m)| < 1 / 6)
+    (hdec : (P → 2 * 2 ^ m ≤ 3 * #{r | test r = true}) ∧
+      (¬P → 2 * 2 ^ m ≤ 3 * #{r | test r = false})) :
+    P ↔ 2 ^ ℓ / 2 < Z := by
+  set R := #{r | test r = true}
+  have hRF : #{r : Fin m → Bool | test r = false} = 2 ^ m - R := by
+    have h := card_filter_add_card_filter_not (s := univ) (fun r : Fin m → Bool => test r = true)
+    simp only [Bool.not_eq_true, card_univ, Fintype.card_fun, Fintype.card_bool,
+      Fintype.card_fin] at h
+    have h' : R + #{r : Fin m → Bool | test r = false} = 2 ^ m := by convert h
+    omega
+  have h2ℓ : (0 : ℝ) < 2 ^ ℓ := by positivity
+  have h2m : (0 : ℝ) < 2 ^ m := by positivity
+  rw [abs_sub_lt_iff] at hNW
+  constructor
+  · intro hP
+    have hR' : (2 : ℝ) * 2 ^ m ≤ 3 * R := by exact_mod_cast hdec.1 hP
+    have hZ' : (2 : ℝ) ^ ℓ < 2 * Z := by
+      have := hNW.2
+      rw [div_sub_div _ _ h2m.ne' h2ℓ.ne', div_lt_iff₀ (by positivity)] at this
+      nlinarith
+    have hZ'' : 2 ^ ℓ < 2 * Z := by exact_mod_cast hZ'
+    exact (Nat.div_lt_iff_lt_mul two_pos).2 (by omega)
+  · intro hlt
+    by_contra hP
+    have hRF' : 2 * 2 ^ m ≤ 3 * (2 ^ m - R) := hRF ▸ hdec.2 hP
+    have hRm : R ≤ 2 ^ m := (card_filter_le _ _).trans (by simp)
+    have hR' : (3 : ℝ) * R ≤ 2 ^ m := by exact_mod_cast (show 3 * R ≤ 2 ^ m by omega)
+    have hZ' : (2 : ℝ) * Z < 2 ^ ℓ := by
+      have := hNW.1
+      rw [div_sub_div _ _ h2ℓ.ne' h2m.ne', div_lt_iff₀ (by positivity)] at this
+      nlinarith
+    have hZ'' : 2 * Z < 2 ^ ℓ := by exact_mod_cast hZ'
+    have := (Nat.div_lt_iff_lt_mul two_pos).1 hlt
+    omega
+
+private theorem nwDecider_eq_decide {α : Type} {V : α × List Bool → Bool} {g : List Bool → Bool}
+    {L : Language Bool} (hslice : ∀ n, (fun y : Fin n → Bool => g (List.ofFn y)) = L.slice n)
+    (seed block overlap out : α → ℕ) (x : α)
+    (hlen : out x ≤ (greedyMasks (seed x) (block x) (overlap x)).length) :
+    nwDecider V g seed block overlap out x = decide (2 ^ seed x / 2 <
+      #{z | V (x, List.ofFn (generator
+        (Design.greedy (seed x) (block x) (overlap x) (out x) hlen)
+        (L.slice (block x)) z)) = true}) := by
+  rw [nwDecider, listStrictMajority_map_enumList]
+  congr 3; refine filter_congr fun z _ => ?_
+  rw [← hslice, listGenerator_take_greedyMasks hlen]
+
 /-- **Hardness versus randomness: average-case hardness in `E` derandomizes `BPP`**
 [NisanWigderson1994], [Arora and Barak, Chapter 20][AroraBarak09]. Let `L` be a problem on words
 in `E`, decidable in time `O(2 ^ (k n))` for some `k`, and let `c > 0`. If for all large `n` the
@@ -134,176 +254,41 @@ theorem BPP_subset_P_of_isAverageCaseHard {L : Language Bool} {c : ℕ}
   obtain ⟨k, hL⟩ := mem_E_iff.1 hL
   obtain ⟨g, hgL, hg⟩ := exists_computableInO_of_mem_DTIME hL
   have hslice (n : ℕ) : (fun y : Fin n → Bool => g (List.ofFn y)) = L.slice n := by
-    funext y
-    rw [Bool.eq_iff_iff, Language.slice_eq_true_iff, ← hgL]
-    rfl
+    funext y; rw [Bool.eq_iff_iff, Language.slice_eq_true_iff, ← hgL]; rfl
   obtain ⟨L', hL', hVL'⟩ := PPoly.exists_of_polyTime hV
-  -- the size of the verifier as a circuit in its random string, and the budget `B`
   set Tc : ℕ → ℕ := fun N =>
-    complexity interpretation (single (L'.slice (2 * N + 1 + p.eval N))) with hTc
+    complexity interpretation (single (L'.slice (2 * N + 1 + p.eval N)))
   have hTcpoly : PolynomiallyBounded Tc :=
     (mem_PPoly.1 hL').comp (g := fun N => 2 * N + 1 + p.eval N) (by fun_prop)
   set B : ℕ → ℕ := fun N => p.eval N + Tc N + 5 with hB
-  have hBpoly : PolynomiallyBounded B := by
-    simp only [hB]
-    fun_prop
+  have hBpoly : PolynomiallyBounded B := by simp only [hB]; fun_prop
   obtain ⟨e, he⟩ := hBpoly.exists_clog_le_mul_log
   obtain ⟨n₀, hn₀⟩ := eventually_atTop.1 hard
-  -- the parameters
   set t : ℕ → ℕ := fun N => n₀ + 3 + e * (Nat.log 2 N + 1) with ht
-  set b := 2 ^ (8 * c + 1) with hb
-  set seed : α → ℕ := fun x => (b + 1) * t (enc x).length with hseed
-  set block : α → ℕ := fun x => c * (4 * t (enc x).length) with hblock
-  set overlap : α → ℕ := fun x => t (enc x).length - 1 with hoverlap
-  set out : α → ℕ := fun x => p.eval (enc x).length with hout
-  refine ⟨nwDecider V g seed block overlap out, .of_tidy ?_, fun x => ?_⟩
-  · -- polynomial time
-    have hlog : ComputableTidilyInPolyTime (fun x => t (enc x).length) enc encUnary := by
-      simp only [ht]
-      fun_prop
-    have hbudget (d : ℕ) : PolyBounded (fun x => (enc x).length) fun x =>
-        2 ^ (d * t (enc x).length) := by
-      refine PolyBounded.of_polynomiallyBounded (fun x => (enc x).length)
-        (bound := fun N => 2 ^ (d * (n₀ + 3)) * 2 ^ (d * e * (Nat.log 2 N + 1)))
-        ((PolynomiallyBounded.const _).mul (polynomiallyBounded_two_pow_mul_log _)) |>.mono
-        fun x => le_of_eq ?_
-      rw [← pow_add, ht]
-      ring_nf
-    have hseedO : ComputableTidilyInPolyTime seed enc encUnary := by
-      simp only [hseed]
-      fun_prop
-    have hblockO : ComputableTidilyInPolyTime block enc encUnary := by
-      simp only [hblock]
-      fun_prop
-    have hoverlapO : ComputableTidilyInPolyTime overlap enc encUnary := by
-      simp only [hoverlap]
-      fun_prop
-    have houtO : ComputableTidilyInPolyTime out enc encUnary := by
-      simp only [hout]
-      fun_prop
-    refine (computableInPolyTime_nwDecider hV
-      (fun _ _ h => Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_left k h)) hg (.of_tidy hseedO)
-      (.of_tidy hblockO) (.of_tidy hoverlapO) (.of_tidy houtO)
-      (hbudget (b + 1)) ((hbudget (k * (c * 4))).mono fun x => le_of_eq ?_)).tidy
-    · simp only [hblock]
-      ring_nf
-  · -- correctness on the instance `x`
-    set N := (enc x).length with hN
-    set τ := t N with hτ
-    set m := p.eval N with hm
-    have hτ3 : n₀ + 3 ≤ τ := by simp only [hτ, ht]; omega
-    -- `2 ^ τ` is at least eight times the budget
-    have hBτ : 8 * B N ≤ 2 ^ τ := by
-      have h₁ : B N ≤ 2 ^ (e * (Nat.log 2 N + 1)) :=
-        (Nat.le_pow_clog one_lt_two _).trans (Nat.pow_le_pow_right two_pos (he N))
-      have h₂ : 8 ≤ 2 ^ (n₀ + 3) := by
-        rw [pow_add]
-        exact Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _)
-      calc 8 * B N ≤ 2 ^ (n₀ + 3) * 2 ^ (e * (Nat.log 2 N + 1)) := Nat.mul_le_mul h₂ h₁
-        _ = 2 ^ τ := by rw [← pow_add]
-    have hBN : B N = m + Tc N + 5 := rfl
-    set P := 2 ^ τ with hP
-    have hP8 : 8 ≤ P := (Nat.pow_le_pow_right two_pos (by omega : 3 ≤ τ)).trans_eq' rfl
-    -- the greedy design has at least `m` blocks
-    have hc4 : c * 4 ≤ b + 1 := by
-      have h₁ : c < 2 ^ c := Nat.lt_two_pow_self
-      have h₂ : 2 ^ c * 4 ≤ b := by
-        rw [hb, show 2 ^ c * 4 = 2 ^ (c + 2) by rw [pow_add]; rfl]
-        exact Nat.pow_le_pow_right two_pos (by omega)
-      omega
-    have hlen : m ≤ (greedyMasks ((b + 1) * τ) (c * (4 * τ)) (τ - 1)).length := by
-      refine le_length_greedyMasks (by omega) (by nlinarith) (by nlinarith) ?_
-      calc 4 ^ (c * (4 * τ)) * m ≤ 4 ^ (c * (4 * τ)) * P := Nat.mul_le_mul_left _ (by omega)
-        _ = b ^ τ := by
-          rw [hb, hP, ← pow_mul, show (4 : ℕ) = 2 ^ 2 by rfl, ← pow_mul, ← pow_add]
-          ring_nf
-    set D := Design.greedy ((b + 1) * τ) (c * (4 * τ)) (τ - 1) m hlen
-    -- the hardness of the slice
-    have hhard : IsAverageCaseHard (L.slice (c * (4 * τ))) (2 ^ (4 * τ)) := by
-      have h := hn₀ (c * (4 * τ)) (by nlinarith)
-      rwa [Nat.mul_div_cancel_left _ hc] at h
-    -- the verifier with the instance fixed, as a test of its random string
-    set test : BooleanFunction m := fun r => V (x, List.ofFn r) with htest_def
-    have htest : complexity interpretation (single test) ≤ Tc N + 2 := by
-      have h := complexity_le_of_append L' (frame (enc x)) (f := test) fun r => by
-        rw [htest_def, hVL', encPair_apply, encBits_apply]
-      rwa [length_frame] at h
-    -- the generator fools the test
-    have hY : 2 ^ (τ - 1) * (2 * (τ - 1) + 3) + 1 ≤ P ^ 2 := by
-      have hQ : 2 ^ (τ - 1) * 2 = P := by
-        rw [hP, ← pow_succ, Nat.sub_add_cancel (by omega)]
-      have h₁ : τ - 1 < 2 ^ (τ - 1) := Nat.lt_two_pow_self
-      have h₂ : 1 ≤ 2 ^ (τ - 1) := Nat.one_le_two_pow
-      rw [← hQ]
-      nlinarith
-    have hs : Tc N + 2 + 1 + m * (2 ^ (τ - 1) * (2 * (τ - 1) + 3) + 1) + 1 ≤ 2 ^ (4 * τ) := by
-      have h₁ : m * (2 ^ (τ - 1) * (2 * (τ - 1) + 3) + 1) ≤ m * P ^ 2 := Nat.mul_le_mul_left _ hY
-      have h₂ : 8 * (m * P ^ 2) ≤ P ^ 3 :=
-        calc 8 * (m * P ^ 2) = 8 * m * P ^ 2 := by ring
-          _ ≤ P * P ^ 2 := Nat.mul_le_mul_right _ (by omega)
-          _ = P ^ 3 := by ring
-      have h₃ : 8 * P ^ 3 ≤ P ^ 4 := by
-        rw [pow_succ P 3, mul_comm (P ^ 3)]
-        exact Nat.mul_le_mul_right _ hP8
-      have h₄ : P ≤ P ^ 4 := Nat.le_self_pow (by norm_num) P
-      rw [mul_comm 4 τ, pow_mul, ← hP]
-      omega
-    have hεs : (m : ℝ) < 1 / 6 * ((2 ^ (4 * τ) : ℕ) : ℝ) := by
-      have h₄ : P ≤ P ^ 4 := Nat.le_self_pow (by norm_num) P
-      have h : 6 * m < 2 ^ (4 * τ) := by
-        rw [mul_comm 4 τ, pow_mul, ← hP]
-        omega
-      have h' : (6 * m : ℝ) < ((2 ^ (4 * τ) : ℕ) : ℝ) := by exact_mod_cast h
-      linarith
-    have hNW := abs_card_div_sub_card_div_lt D hhard hs hεs test htest
-    -- the decider counts the seeds on which the test accepts the output of the generator
-    have hmaj : nwDecider V g seed block overlap out x = decide (2 ^ ((b + 1) * τ) / 2 <
-        #{z | test (generator D (L.slice (c * (4 * τ))) z) = true}) := by
-      rw [nwDecider, listStrictMajority_map_enumList]
-      congr 3
-      refine filter_congr fun z _ => ?_
-      rw [← hslice]
-      change V (x, listGenerator g (c * (4 * τ)) ((greedyMasks ((b + 1) * τ) (c * (4 * τ))
-        (τ - 1)).take m) (List.ofFn z)) = true ↔ _
-      rw [listGenerator_take_greedyMasks hlen]
-    rw [hmaj, decide_eq_true_iff]
-    -- compare with the counts of the verifier
-    set Z := #{z | test (generator D (L.slice (c * (4 * τ))) z) = true} with hZ
-    set R := #{r | test r = true} with hR
-    have hRF : #{r : Fin m → Bool | test r = false} = 2 ^ m - R := by
-      have h := card_filter_add_card_filter_not (s := univ) (fun r : Fin m → Bool => test r = true)
-      simp only [Bool.not_eq_true, card_univ, Fintype.card_fun, Fintype.card_bool,
-        Fintype.card_fin] at h
-      have h' : R + #{r : Fin m → Bool | test r = false} = 2 ^ m := by convert h
-      omega
-    have h2ℓ : (0 : ℝ) < 2 ^ ((b + 1) * τ) := by positivity
-    have h2m : (0 : ℝ) < 2 ^ m := by positivity
-    rw [abs_sub_lt_iff] at hNW
-    constructor
-    · intro hxA
-      have h := (hdec x).1 hxA
-      have hR' : (2 : ℝ) * 2 ^ m ≤ 3 * R := by exact_mod_cast h
-      have hZ' : (2 : ℝ) ^ ((b + 1) * τ) < 2 * Z := by
-        have : (R : ℝ) / 2 ^ m - (Z : ℝ) / 2 ^ ((b + 1) * τ) < 1 / 6 := hNW.2
-        rw [div_sub_div _ _ h2m.ne' h2ℓ.ne', div_lt_iff₀ (by positivity)] at this
-        nlinarith
-      have hZ'' : 2 ^ ((b + 1) * τ) < 2 * Z := by exact_mod_cast hZ'
-      exact (Nat.div_lt_iff_lt_mul two_pos).2 (by omega)
-    · intro hlt
-      by_contra hxA
-      have h := (hdec x).2 hxA
-      have hRF' : 2 * 2 ^ m ≤ 3 * (2 ^ m - R) := hRF ▸ h
-      have hRm : R ≤ 2 ^ m := (card_filter_le _ _).trans (by simp)
-      have hR' : (3 : ℝ) * R ≤ 2 ^ m := by
-        have : 3 * R ≤ 2 ^ m := by omega
-        exact_mod_cast this
-      have hZ' : (2 : ℝ) * Z < 2 ^ ((b + 1) * τ) := by
-        have : (Z : ℝ) / 2 ^ ((b + 1) * τ) - (R : ℝ) / 2 ^ m < 1 / 6 := hNW.1
-        rw [div_sub_div _ _ h2ℓ.ne' h2m.ne', div_lt_iff₀ (by positivity)] at this
-        nlinarith
-      have hZ'' : 2 * Z < 2 ^ ((b + 1) * τ) := by exact_mod_cast hZ'
-      have := (Nat.div_lt_iff_lt_mul two_pos).1 hlt
-      omega
+  set b := 2 ^ (8 * c + 1)
+  refine ⟨nwDecider V g (fun x => (b + 1) * t (enc x).length)
+    (fun x => c * (4 * t (enc x).length)) (fun x => t (enc x).length - 1)
+    (fun x => p.eval (enc x).length),
+    .of_tidy (computableTidilyInPolyTime_nwDecider_of_params enc hV hg n₀ e c p), fun x => ?_⟩
+  set N := (enc x).length
+  set τ := t N with hτ
+  set m := p.eval N
+  have hτ3 : n₀ + 3 ≤ τ := by simp only [hτ, ht]; omega
+  have hBτ : 8 * B N ≤ 2 ^ τ := by
+    rw [hτ, ht, pow_add]
+    exact Nat.mul_le_mul (by rw [pow_add]; exact Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _))
+      ((Nat.le_pow_clog one_lt_two _).trans (Nat.pow_le_pow_right two_pos (he N)))
+  obtain ⟨hlen, hs, hεs⟩ := nw_design_and_size_bounds hc (by omega) hBτ
+  have hhard : IsAverageCaseHard (L.slice (c * (4 * τ))) (2 ^ (4 * τ)) := by
+    have h := hn₀ (c * (4 * τ)) (by nlinarith)
+    rwa [Nat.mul_div_cancel_left _ hc] at h
+  set test : BooleanFunction m := fun r => V (x, List.ofFn r) with htest_def
+  have htest : complexity interpretation (single test) ≤ Tc N + 2 := by
+    have h := complexity_le_of_append L' (frame (enc x)) (f := test) fun r => by
+      rw [htest_def, hVL', encPair_apply, encBits_apply]
+    rwa [length_frame] at h
+  rw [nwDecider_eq_decide hslice _ _ _ _ x hlen, decide_eq_true_iff]
+  exact majority_iff_of_abs_sub_lt (abs_card_div_sub_card_div_lt _ hhard hs hεs test htest) (hdec x)
 
 /-- **Hardness versus randomness: `P = BPP` from average-case hardness in `E`**
 [NisanWigderson1994], [Arora and Barak, Chapter 20][AroraBarak09]. If some problem in `E` has

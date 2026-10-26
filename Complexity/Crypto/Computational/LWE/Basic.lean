@@ -29,6 +29,7 @@ not identify it with a discrete Gaussian or establish a worst-case lattice reduc
 
 ## Main definitions
 
+* `Cslib.Crypto.LWE.publicMatrix`: the deterministic LWE matrix `[B * t + e | B]`.
 * `Cslib.Crypto.LWE.publicMatrixLaw`: independent decision-LWE samples with a shared uniform secret.
 * `Cslib.Crypto.LWE.realEnsemble`, `Cslib.Crypto.LWE.uniformEnsemble`: the binary experiments.
 * `Cslib.Crypto.DecisionLWE`: indistinguishability of those experiments for the specified families.
@@ -53,6 +54,12 @@ open scoped _root_.Matrix
 
 namespace LWE
 
+/-- The deterministic LWE public matrix `[B * t + error | B]`. -/
+def publicMatrix {n m w : ℕ} (B : Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))
+    (t : Fin n → ZMod (2 ^ w)) (error : Fin m → ZMod (2 ^ w)) :
+    Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)) :=
+  fun i => Fin.cons ((B *ᵥ t) i + error i) (B i)
+
 /-- Draw the public matrix `[B * t + e | B]`. The errors are independent of one another, of
 the uniform matrix, and of the uniform secret shared by all rows. -/
 noncomputable def publicMatrixLaw (n m w : ℕ) (noise : PMF (ZMod (2 ^ w))) :
@@ -60,7 +67,7 @@ noncomputable def publicMatrixLaw (n m w : ℕ) (noise : PMF (ZMod (2 ^ w))) :
   let secret ← PMF.uniformOfFintype (Fin n → ZMod (2 ^ w))
   let publicPart ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))
   let error ← PMF.pi (fun _ : Fin m => noise)
-  return fun i => Fin.cons ((publicPart *ᵥ secret) i + error i) (publicPart i)
+  return publicMatrix publicPart secret error
 
 /-- Binary decision-LWE samples, using `w` bits per residue and a uniform secret. -/
 noncomputable def realEnsemble (n m w : ℕ → ℕ)

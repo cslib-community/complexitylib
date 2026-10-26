@@ -327,4 +327,44 @@ def applyKnownCall (predicate : Name) (programIndex : Nat) (rule : Name)
     if applications.isEmpty then throwError "no applicable local routine certificate"
     return ⟨applications⟩
 
+/-- Apply a scan through each matching supplied callback before checking its list. Argument
+preparation must prove the callback's exact encoding contract. Each application is independent;
+ordinary certificate lookup remains a separate fallback if a later obligation rejects it. -/
+def applyScanWithLocalCallback (predicate certificate : Name) : Aesop.RuleTac := fun input =>
+  input.goal.withContext do
+    let initial ← saveState
+    let mut applications := #[]
+    try
+      let goals ← applyNamedCertificate input.goal certificate
+      let some callback ← goals.findM? fun goal => return (`htest).isSuffixOf (← goal.getTag)
+        | throwError "scan has no callback premise"
+      let knownCalls ← applyKnownCall predicate 2 (predicate ++ `comp) `g `hf
+        { input with goal := callback }
+      for matched in knownCalls.applications do
+        try
+          matched.postState.restore
+          let remaining ← (Lean.Elab.Tactic.run input.goal <|
+              Term.withoutErrToSorry <| withoutRecover do
+            setGoals (matched.goals.toList.map (·.mvarId))
+            evalTactic (← `(tactic| all_goals solve |
+              aesop (config := { terminal := true, assumptionTransparency := .reducible })
+                (rule_sets := [PolyTime])))
+            if ← Aesop.hasSorry (mkMVar callback) then
+              throwError "callback preparation contains an admitted premise"
+            setGoals (← goals.filterM fun goal => return !(← goal.isAssigned))
+            solveTagged `hlist).run'
+          if ← Aesop.hasSorry (mkMVar input.goal) then
+            throwError "scan application contains an admitted premise"
+          applications := applications.push {
+            goals := ← remaining.toArray.mapM (Aesop.mvarIdToSubgoal input.goal)
+            postState := ← saveState
+            scriptSteps? := none
+            successProbability? := none }
+        catch _ => pure ()
+        finally initial.restore
+    catch _ => pure ()
+    finally initial.restore
+    if applications.isEmpty then throwError "no supplied callback guides this scan"
+    return ⟨applications⟩
+
 end Cslib.Tactic

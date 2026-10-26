@@ -226,8 +226,12 @@ def ofVerifier (D : Decoder enc) (hV : ComputableInPolyTime V (encPair enc encBi
   toFun π := if verifierAccepts D p V π then verifierInstance D π else a₀
   computable := by
     obtain ⟨_, _, hD⟩ := D.computable
+    have hdecoder : ComputableTidilyInPolyTime D.decode encBits enc := by
+      obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hD.computableInPolyTime
+      exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
+        .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
     have hi : ComputableTidilyInPolyTime (verifierInstance D) encBits enc :=
-      hD.computableTidilyInPolyTime.comp .unframe
+      hdecoder.comp .unframe
     have hlen : ComputableTidilyInPolyTime
         (fun π => p.eval (enc (verifierInstance D π)).length) encBits encUnary :=
       (unary_eval p).comp ((encoding_length enc).comp hi)

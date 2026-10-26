@@ -193,9 +193,16 @@ def kindDecoder : Decoder encKind where
       ComputableTidilyInPolyTime.unary_min.comp ((by fun_prop :
         ComputableTidilyInPolyTime (fun w : List Bool => w.length) encBits encUnary).prod
         (ComputableTidilyInPolyTime.const 7))
-    exact (h.of_enc_eq fun w => by
+    have hp : ComputableTidilyInPolyTime (fun w : List Bool => kindOfIndex w.length)
+        encBits encKind := h.of_enc_eq fun w => by
       change encUnary (kindIndex (kindOfIndex w.length)) = _
-      rw [kindIndex_kindOfIndex]).exists_degree
+      rw [kindIndex_kindOfIndex]
+    obtain ⟨t, s, ⟨T, hT, ht⟩, ⟨S, hS, hs⟩, k, Q, hfin, tm, htm⟩ := hp
+    have hplain : ComputableInPolyTime (fun w : List Bool => kindOfIndex w.length)
+        encBits encKind :=
+      ⟨T, S, hT, hS, k, Q, hfin, tm,
+        fun w => ((htm w).mono (ht w) (hs w)).computesInTimeAndSpace⟩
+    exact hplain.exists_degree
 
 /-- Token lists are decoded element by element. -/
 def tokensDecoder : Decoder (encList encToken) := .list (.pair kindDecoder .nat)
@@ -279,7 +286,10 @@ theorem isCode_iff (w : List Bool) : isCode w = true ↔ ∃ φ, encQBF φ = w :
 theorem isCode_pt : Turing.MultiTapeTM.ComputableInPolyTime isCode encBits encBool := by
   refine .of_tidy ?_
   obtain ⟨d, e, hD⟩ := tokensDecoder.computable
-  have hD := hD.computableTidilyInPolyTime
+  have hD : ComputableTidilyInPolyTime tokensDecoder.decode encBits (encList encToken) := by
+    obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hD.computableInPolyTime
+    exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
+      .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
   have hre : ComputableTidilyInPolyTime (fun w => encList encToken (tokensDecoder.decode w))
       encBits encBits := hD.of_enc_eq fun _ => rfl
   exact (ComputableTidilyInPolyTime.of_finite (fun q : Bool × Bool => q.1 && q.2)).comp

@@ -9,6 +9,7 @@ module
 -- vendored: use the local `DegreeBounded.add_max` rule; the fold contracts are unchanged.
 -- vendored: derive the encoded suffix bound from Mathlib's `List.Sublist.flatMap`.
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree
 
 /-!
@@ -36,26 +37,6 @@ state (`Turing.MultiTapeTM.ComputableTidilyInDegree.foldlWith`).
 
 namespace Turing.MultiTapeTM
 
-
-/-- A list encoding whose encoded lists are at least as long as their elements, their suffixes and
-their lengths. -/
-public class SizedListEncoding {α : Type*} (encA : α ↪ List Bool) (encL : List α ↪ List Bool) :
-    Prop where
-  length_le (l : List α) : l.length ≤ (encL l).length
-  length_elem_le (l : List α) : ∀ a ∈ l, (encA a).length ≤ (encL l).length
-  length_drop_le (l : List α) (i : ℕ) : (encL (l.drop i)).length ≤ (encL l).length
-
-public instance {α : Type*} (enc : α ↪ List Bool) : SizedListEncoding enc (encList enc) where
-  length_le l := by induction l <;> grind [encList_cons, length_frame]
-  length_elem_le l a ha := by induction l <;> grind [encList_cons, length_frame]
-  length_drop_le l i := ((List.drop_sublist i l).flatMap (frame ∘ enc)).length_le
-
-public instance : SizedListEncoding encBool encBits where
-  length_le l := by simp
-  length_elem_le l a ha := by
-    simp only [encBool_apply, List.length_singleton, encBits_apply]
-    exact List.length_pos_of_mem ha
-  length_drop_le l i := by simp
 
 /-- **Left folds with bounds of given degrees.** If the list has output degree `eL`, the states have
 length of degree `b`, and a round has degree `dS`, a fold takes time of degree

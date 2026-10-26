@@ -7,6 +7,10 @@ Authors: Christian Reitwiessner
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryCounter
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryPrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Mathlib.Data.Nat.Size
@@ -30,104 +34,6 @@ iterates a function within the space of a round, plus the length of the counter.
 -/
 
 namespace Turing.MultiTapeTM
-
-namespace NatPred
-
-/-- Subtracts a borrow from the binary digits `l`, least significant first, keeping a leading
-zero. -/
-@[expose] public def decr : List Bool → List Bool
-  | [] => []
-  | true :: l => false :: l
-  | false :: l => true :: decr l
-
-/-- Drops a leading zero, the last digit. -/
-@[expose] public def norm (l : List Bool) : List Bool :=
-  if l.getLast? = some false then l.dropLast else l
-
-lemma norm_cons {l : List Bool} (hl : l ≠ []) (b : Bool) : norm (b :: l) = b :: norm l := by
-  obtain ⟨x, hx⟩ := Option.isSome_iff_exists.mp (List.getLast?_isSome.mpr hl)
-  simp only [norm, List.getLast?_cons, hx, Option.getD_some, List.dropLast_cons_of_ne_nil hl]
-  split_ifs <;> rfl
-
-lemma bits_ne_nil {m : ℕ} (hm : m ≠ 0) : m.bits ≠ [] := by
-  rcases Nat.even_or_odd' m with ⟨k, rfl | rfl⟩
-  · rw [Nat.bit0_bits k (by omega)]; simp
-  · rw [Nat.bit1_bits]; simp
-
-lemma decr_ne_nil {l : List Bool} (hl : l ≠ []) : decr l ≠ [] := by
-  rcases l with _ | ⟨_ | _, l⟩ <;> simp_all [decr]
-
-lemma norm_bits (n : ℕ) : norm n.bits = n.bits := by
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    rcases Nat.even_or_odd' n with ⟨m, rfl | rfl⟩
-    · rcases Nat.eq_zero_or_pos m with rfl | hm
-      · rfl
-      · rw [Nat.bit0_bits m (by omega), norm_cons (bits_ne_nil (by omega)), ih m (by omega)]
-    · rcases Nat.eq_zero_or_pos m with rfl | hm
-      · rfl
-      · rw [Nat.bit1_bits, norm_cons (bits_ne_nil (by omega)), ih m (by omega)]
-
-public lemma bits_pred (n : ℕ) : (n - 1).bits = norm (decr n.bits) := by
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    rcases Nat.even_or_odd' n with ⟨m, rfl | rfl⟩
-    · rcases Nat.eq_zero_or_pos m with rfl | hm
-      · rfl
-      · rw [Nat.bit0_bits m (by omega), decr, show 2 * m - 1 = 2 * (m - 1) + 1 by omega,
-          Nat.bit1_bits, ih m (by omega), norm_cons (decr_ne_nil (bits_ne_nil (by omega)))]
-    · rw [Nat.bit1_bits, decr, Nat.add_sub_cancel]
-      rcases Nat.eq_zero_or_pos m with rfl | hm
-      · rfl
-      · rw [Nat.bit0_bits m (by omega), norm_cons (bits_ne_nil (by omega)), norm_bits]
-
-/-- One round of the decrement: subtract the borrow from the digit `b`, append the result and keep
-the borrow. -/
-@[expose] public def decrStep (p : Bool × List Bool) (b : Bool) : Bool × List Bool :=
-  (p.1 && !b, p.2 ++ [p.1 ^^ b])
-
-lemma length_decr (l : List Bool) : (decr l).length = l.length := by
-  induction l with
-  | nil => rfl
-  | cons b l ih => cases b <;> simp [decr, ih]
-
-lemma foldl_decrStep (l : List Bool) (c : Bool) (out : List Bool) :
-    (l.foldl decrStep (c, out)).2 = out ++ if c then decr l else l := by
-  induction l generalizing c out with
-  | nil => cases c <;> simp [decr]
-  | cons b l ih => cases c <;> cases b <;> simp [decrStep, ih, decr]
-
-/-- One round of dropping a leading zero: append the pending digit and keep the new one. -/
-@[expose] public def normStep (p : Option Bool × List Bool) (b : Bool) :
-    Option Bool × List Bool :=
-  (some b, p.2 ++ p.1.toList)
-
-/-- Appends the pending digit unless it is a zero. -/
-@[expose] public def normFinish (p : Option Bool × List Bool) : List Bool :=
-  if p.1 = some true then p.2 ++ [true] else p.2
-
-lemma length_foldl_normStep (l : List Bool) (p : Option Bool) (acc : List Bool) :
-    (l.foldl normStep (p, acc)).2.length ≤ acc.length + p.toList.length + l.length := by
-  induction l generalizing p acc with
-  | nil => simp
-  | cons b l ih =>
-    rw [List.foldl_cons, normStep]
-    have := ih (some b) (acc ++ p.toList)
-    simp only [Option.toList_some, List.length_append, List.length_cons, List.length_nil]
-      at this ⊢
-    omega
-
-lemma normFinish_foldl (l : List Bool) (p : Option Bool) (acc : List Bool) :
-    normFinish (l.foldl normStep (p, acc)) = acc ++ norm (p.toList ++ l) := by
-  induction l generalizing p acc with
-  | nil => rcases p with _ | _ | _ <;> simp [normFinish, norm]
-  | cons b l ih =>
-    rw [List.foldl_cons, normStep, ih]
-    rcases p with _ | p
-    · simp
-    · simp [norm_cons]
-
-end NatPred
 
 /-! ### The rounds, in linear time -/
 
@@ -173,6 +79,8 @@ lemma normFinish_deg :
 end Rounds
 
 namespace ComputableTidilyInO
+
+open Internal.BinaryCounter
 
 open NatPred
 
@@ -258,45 +166,6 @@ section Iterate
 
 variable {γ β : Type} [Inhabited β] {encIn : γ ↪ List Bool} {encB : β ↪ List Bool}
 
-/-- A round of the counted iteration: stop at zero, otherwise count down and apply `step`. -/
-@[expose] public def countStep (step : β → β) : Option (ℕ × β) → Option (ℕ × β)
-  | some (i + 1, b) => some (i, step b)
-  | _ => none
-
-lemma countStep_eq (step : β → β) (o : Option (ℕ × β)) : countStep step o =
-    if o.isSome && !decide ((o.getD default).1 = 0) then
-      some ((o.getD default).1 - 1, step (o.getD default).2) else none := by
-  rcases o with _ | ⟨_ | i, b⟩ <;> rfl
-
-omit [Inhabited β] in
-lemma iterate_countStep (step : β → β) (t : ℕ) (b : β) {k : ℕ} (hk : k ≤ t) :
-    (countStep step)^[k] (some (t, b)) = some (t - k, step^[k] b) := by
-  induction k with
-  | zero => rfl
-  | succ k ih =>
-    rw [Function.iterate_succ_apply', ih (by omega), show t - k = t - (k + 1) + 1 by omega,
-      countStep, Function.iterate_succ_apply']
-
-/-- The length of `encNat` is monotone. -/
-public lemma length_encNat_mono {m n : ℕ} (h : m ≤ n) : (encNat m).length ≤ (encNat n).length := by
-  simpa [Nat.size_eq_bits_len] using Nat.size_le_size h
-
--- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
--- vendored: `length_encNat_add_le` below, from that revision's `Complexity/Binary`
-
-/-- Adding `i` adds at most `i` bits. -/
-public lemma length_encNat_add_le (n i : ℕ) : (encNat (n + i)).length ≤ (encNat n).length + i := by
-  induction i with
-  | zero => rfl
-  | succ i ih =>
-    refine le_trans ?_ (Nat.add_le_add_right ih 1)
-    simp only [encNat_apply, Nat.size_eq_bits_len, ← Nat.add_assoc]
-    refine Nat.size_le.mpr ((Nat.succ_le_of_lt (Nat.lt_size_self _)).trans_lt ?_)
-    rw [pow_succ]
-    have := Nat.one_le_two_pow (n := (n + i).size)
-    omega
-
-
 /-- A round of the counted iteration. -/
 lemma countStep_inO {step : β → β} {Ts Ss : β → ℕ}
     (hstep : ComputableTidilyInO step encB encB Ts Ss) :
@@ -325,18 +194,6 @@ lemma countStep_inO {step : β → β} {Ts Ss : β → ℕ}
       · simp only [Option.getD_some, encOption_some, List.length_cons, length_encPair]; omega
     simp only [Function.comp_apply]
     split_ifs <;> omega
-
-lemma sum_le {c₀ c₁ k k' A M X Y : ℕ} (hX : X ≤ k * (M + 1)) (hY : Y ≤ c₀ * (A + 1)) :
-    c₀ * (A + 1) + X + c₁ * (Y + 1) ≤ (c₀ + c₁ * (c₀ + 1) + k + k') * (A + M + 1) := by
-  have h₁ : c₁ * (Y + 1) ≤ c₁ * (c₀ + 1) * (A + M + 1) :=
-    calc c₁ * (Y + 1) ≤ c₁ * (c₀ * (A + 1) + 1) := Nat.mul_le_mul_left _ (by omega)
-      _ ≤ c₁ * ((c₀ + 1) * (A + M + 1)) := Nat.mul_le_mul_left _ (by nlinarith)
-      _ = _ := by ring
-  have h₂ : X ≤ k * (A + M + 1) := hX.trans (Nat.mul_le_mul_left _ (by omega))
-  have h₃ : c₀ * (A + 1) ≤ c₀ * (A + M + 1) := Nat.mul_le_mul_left _ (by omega)
-  have : (c₀ + c₁ * (c₀ + 1) + k + k') * (A + M + 1) = c₀ * (A + M + 1) +
-      c₁ * (c₀ + 1) * (A + M + 1) + k * (A + M + 1) + k' * (A + M + 1) := by ring
-  omega
 
 /-- **Iterating `n x` times, with `n x` in binary.** If the rounds are within the time `R x` and
 the space `Q x`, and the iterates have length at most `B x`, the iteration takes the time of the

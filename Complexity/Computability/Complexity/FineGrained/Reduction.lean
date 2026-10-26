@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 
 /-!
 # Reductions of linear size
@@ -22,6 +22,11 @@ polynomial (`Cslib.Complexity.DecidableInExpTime.of_reduction`): run the reducti
 decider. The polynomial absorbs the running time of the reduction and the length of its output.
 Hence subexponential time in `μB` gives subexponential time in `μA`
 (`Cslib.Complexity.DecidableInSubexpTime.of_reduction`).
+
+More generally, subexponential time transfers along **$2^{O(m(a))}$-time reductions**
+(`Cslib.Complexity.DecidableInSubexpTime.of_expReduction`), where the target measure is bounded
+linearly in $m(a) \log_2 m(a)$ and the $2^{O(m(a))}$ runtime is absorbed into
+$2^{(\varepsilon / 2) m(a) \log_2 m(a)}$.
 
 Under the exponential time hypothesis, 3SAT is not decidable in subexponential time in the number
 of clauses (`Cslib.Complexity.ETH_iff_not_decidableInSubexpTime_length`, by the sparsification
@@ -39,6 +44,8 @@ stronger: a lower bound for a measure gives one for every measure at most linear
 * `Cslib.Complexity.DecidableInExpTime.of_reduction`,
   `Cslib.Complexity.DecidableInSubexpTime.of_reduction`: transfer along reductions of linear
   size.
+* `Cslib.Complexity.DecidableInSubexpTime.of_expReduction`: subexponential-time transfer along
+  $2^{O(m)}$-time reductions into parameter $m \log_2 m$.
 * `Cslib.Complexity.ETH.not_decidableInSubexpTime_of_reduction`: lower bounds from the exponential
   time hypothesis through reductions of linear size from 3SAT.
 
@@ -208,6 +215,163 @@ theorem ETH.not_decidableInSubexpTime_of_reduction (hETH : ETH) {f : CNF ℕ →
     · have := hμ [[]] (by simp)
       simp only [List.length_singleton, mul_one] at this
       nlinarith
+
+/-! ### Exponential-time reductions into $m \log_2 m$ -/
+
+/-- For any constant $C \ge 0$ and $\varepsilon > 0$, $(C : \mathbb{R}) \cdot n$ is bounded by an
+$\varepsilon$-dependent constant plus $(\varepsilon / 2) \cdot n \log_2 n$. -/
+private theorem mul_le_pow_add_mul_log (C : ℕ) {ε : ℝ} (hε : 0 < ε) (n : ℕ) :
+    (C : ℝ) * n ≤ C * ((2 ^ (⌈(2 * C : ℝ) / ε⌉₊ + 1) : ℕ) : ℝ) +
+      (ε / 2) * (n * Nat.log 2 n : ℝ) := by
+  set M : ℕ := ⌈(2 * C : ℝ) / ε⌉₊ + 1
+  have hnonneg : 0 ≤ (ε / 2) * (n * Nat.log 2 n : ℝ) := by positivity
+  have hpow_nonneg : 0 ≤ (C : ℝ) * ((2 ^ M : ℕ) : ℝ) := by positivity
+  by_cases hn : n < 2 ^ M
+  · have hn_le : (n : ℝ) ≤ ((2 ^ M : ℕ) : ℝ) := by exact_mod_cast hn.le
+    have h1 : (C : ℝ) * n ≤ C * ((2 ^ M : ℕ) : ℝ) :=
+      mul_le_mul_of_nonneg_left hn_le (Nat.cast_nonneg C)
+    linarith
+  · have hn' : 2 ^ M ≤ n := not_lt.mp hn
+    have hlog : M ≤ Nat.log 2 n := Nat.le_log_of_pow_le Nat.one_lt_two hn'
+    have hM_ge : (2 * C : ℝ) / ε ≤ M :=
+      (Nat.le_ceil ((2 * C : ℝ) / ε)).trans (by simp [M])
+    have hlog_ge : (2 * C : ℝ) / ε ≤ (Nat.log 2 n : ℝ) :=
+      hM_ge.trans (by exact_mod_cast hlog)
+    have hC_le : (C : ℝ) ≤ (ε / 2) * (Nat.log 2 n : ℝ) := by
+      rw [div_le_iff₀ hε] at hlog_ge
+      linarith
+    have hmul := mul_le_mul_of_nonneg_right hC_le (Nat.cast_nonneg n)
+    linarith [show (ε / 2) * (Nat.log 2 n : ℝ) * n = (ε / 2) * (n * Nat.log 2 n : ℝ) by ring]
+
+/-- **Subexponential-time transfer along $2^{O(m(a))}$-time reductions.** If $f : \alpha \to \beta$
+is computable in time $O(2^{C m(a)} \cdot (|a| + 1)^D)$, reduces $A$ to $B$, and maps every
+instance $a$ to one with parameter $\mu_B(f(a)) \le c \cdot m(a) \log_2 m(a) + c$, then a
+$2^{o(\mu_B)}$-time decider for $B$ yields a $2^{o(m \log m)}$-time decider for $A$. -/
+theorem DecidableInSubexpTime.of_expReduction {f : α → β} {m : α → ℕ}
+    (hf : ∃ C D : ℕ, ComputableInO f encA encB
+      (fun a => 2 ^ (C * m a) * ((encA a).length + 1) ^ D)
+      (fun a => 2 ^ (C * m a) * ((encA a).length + 1) ^ D))
+    (hfA : ∀ a, a ∈ A ↔ f a ∈ B) {c : ℕ}
+    (hμ : ∀ a, μB (f a) ≤ c * (m a * Nat.log 2 (m a)) + c)
+    (h : DecidableInSubexpTime B encB μB) :
+    DecidableInSubexpTime A encA (fun a => m a * Nat.log 2 (m a)) := by
+  intro ε hε
+  obtain ⟨C, D, hfO⟩ := hf
+  have hfO := hfO.tidy
+  obtain ⟨l, hl⟩ := hfO.length_le_time
+  set δ : ℝ := ε / (2 * (c + 1))
+  have hδ : 0 < δ := by positivity
+  obtain ⟨e, hdec⟩ := h δ hδ
+  obtain ⟨g, t, k, hg, hgB, ht⟩ := hdec.exists_computableInO
+  have hg := hg.tidy
+  set C' : ℕ := C * (e + 1)
+  set E : ℕ := D * (e + 1)
+  set M : ℕ := ⌈(2 * C' : ℝ) / ε⌉₊ + 1
+  set K₀ : ℝ := 2 ^ ((C' : ℝ) * ((2 ^ M : ℕ) : ℝ))
+  set K₁ : ℝ := 1 + k * 2 ^ (δ * c) * (2 * l + 1) ^ e + k
+  set K : ℝ := K₁ * K₀
+  refine DecidableInExpTime.of_computableInO (.of_tidy (hg.comp hfO))
+    (fun a => (hfA a).trans (hgB (f a)))
+    ⌈K⌉₊ E fun a => ?_
+  show _ ≤ _
+  set L : ℕ := (encA a).length
+  set P_exp : ℝ := 2 ^ ((C : ℝ) * m a)
+  set P_poly : ℝ := ((L : ℝ) + 1) ^ D
+  set P : ℝ := P_exp * P_poly
+  set X₁ : ℝ := 2 ^ ((ε / 2) * (m a * Nat.log 2 (m a) : ℕ))
+  set X : ℝ := 2 ^ (ε * (m a * Nat.log 2 (m a) : ℕ))
+  have hP_exp1 : 1 ≤ P_exp := Real.one_le_rpow (by norm_num) (by positivity)
+  have hP_poly1 : 1 ≤ P_poly :=
+    one_le_pow₀ (by linarith [(Nat.cast_nonneg L : (0 : ℝ) ≤ L)])
+  have hP : 1 ≤ P := one_le_mul_of_one_le_of_one_le hP_exp1 hP_poly1
+  have hX₁ : 1 ≤ X₁ := Real.one_le_rpow (by norm_num) (by positivity)
+  have hk : (0 : ℝ) ≤ k := Nat.cast_nonneg k
+  have hP_nat : ((2 ^ (C * m a) * (L + 1) ^ D : ℕ) : ℝ) = P := by
+    simp only [P, P_exp, P_poly]
+    rw [Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast]
+    push_cast
+    rfl
+  have hlen : ((encB (f a)).length : ℝ) + 1 ≤ (2 * l + 1) * P := by
+    have h1 : ((encB (f a)).length : ℝ) ≤ l * (P + 1) := by
+      have := hl a
+      rw [← hP_nat]
+      exact_mod_cast this
+    nlinarith
+  have hcδ : (c : ℝ) * δ ≤ ε / 2 := by
+    simp only [δ]
+    rw [mul_div_assoc', div_le_iff₀ (by positivity)]
+    nlinarith
+  have hexp : (2 : ℝ) ^ (δ * μB (f a)) ≤ 2 ^ (δ * c) * X₁ := by
+    rw [← Real.rpow_add (by norm_num)]
+    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
+    have hμ' : (μB (f a) : ℝ) ≤ c * (m a * Nat.log 2 (m a) : ℕ) + c := by
+      exact_mod_cast hμ a
+    have hmul := mul_le_mul_of_nonneg_right hcδ (Nat.cast_nonneg (m a * Nat.log 2 (m a)))
+    nlinarith
+  have hpow : (((encB (f a)).length : ℝ) + 1) ^ e ≤ (2 * l + 1) ^ e * P ^ e := by
+    rw [← mul_pow]
+    exact pow_le_pow_left₀ (by positivity) hlen e
+  have ht' : (t (f a) : ℝ) ≤
+      k * (2 ^ (δ * c) * (2 * l + 1) ^ e) * (X₁ * P ^ e) + k := by
+    refine (ht (f a)).trans ?_
+    have := mul_le_mul hexp hpow (by positivity) (by positivity)
+    nlinarith
+  have hPe : P ^ e ≤ P ^ (e + 1) := pow_le_pow_right₀ hP (Nat.le_succ e)
+  have hP1 : P ≤ P ^ (e + 1) := le_self_pow₀ hP (Nat.succ_ne_zero e)
+  have hX₁P : 1 ≤ X₁ * P ^ (e + 1) := one_le_mul_of_one_le_of_one_le hX₁ (one_le_pow₀ hP)
+  have hstep1 : P + (t (f a) : ℝ) ≤ K₁ * (X₁ * P ^ (e + 1)) := by
+    have h₁ : P ≤ X₁ * P ^ (e + 1) := hP1.trans (le_mul_of_one_le_left (by positivity) hX₁)
+    have h₂ : X₁ * P ^ e ≤ X₁ * P ^ (e + 1) := mul_le_mul_of_nonneg_left hPe (by positivity)
+    have h₃ := mul_le_mul_of_nonneg_left h₂
+      (by positivity : (0 : ℝ) ≤ k * (2 ^ (δ * c) * (2 * l + 1) ^ e))
+    have h₄ := mul_le_mul_of_nonneg_left hX₁P hk
+    simp only [K₁]
+    nlinarith
+  have hP_exp_pow : P_exp ^ (e + 1) ≤ K₀ * X₁ := by
+    have hrpow : P_exp ^ (e + 1) = 2 ^ ((C' : ℝ) * m a) := by
+      simp only [P_exp, C', ← Real.rpow_natCast]
+      rw [← Real.rpow_mul (by norm_num)]
+      congr 1
+      push_cast
+      ring
+    rw [hrpow]
+    have hK₀X₁ : K₀ * X₁ =
+        2 ^ ((C' : ℝ) * ((2 ^ M : ℕ) : ℝ) + (ε / 2) * (m a * Nat.log 2 (m a) : ℕ)) := by
+      simp only [K₀, X₁]
+      rw [← Real.rpow_add (by norm_num)]
+    rw [hK₀X₁]
+    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
+    simpa only [Nat.cast_mul] using mul_le_pow_add_mul_log C' hε (m a)
+  have hP_poly_pow : P_poly ^ (e + 1) = ((L : ℝ) + 1) ^ E := by
+    simp only [P_poly, E, ← pow_mul]
+  have hX₁_sq : X₁ * X₁ = X := by
+    simp only [X₁, X]
+    rw [← Real.rpow_add (by norm_num)]
+    congr 1
+    ring
+  have hstep2 : X₁ * P ^ (e + 1) ≤ K₀ * (X * ((L : ℝ) + 1) ^ E) := by
+    have hsplit : X₁ * P ^ (e + 1) = X₁ * P_exp ^ (e + 1) * P_poly ^ (e + 1) := by
+      simp only [P, mul_pow]
+      ring
+    rw [hsplit, hP_poly_pow]
+    have hmul1 := mul_le_mul_of_nonneg_left hP_exp_pow (by positivity : (0 : ℝ) ≤ X₁)
+    have hmul2 := mul_le_mul_of_nonneg_right hmul1 (by positivity : (0 : ℝ) ≤ ((L : ℝ) + 1) ^ E)
+    calc X₁ * P_exp ^ (e + 1) * ((L : ℝ) + 1) ^ E
+        ≤ X₁ * (K₀ * X₁) * ((L : ℝ) + 1) ^ E := hmul2
+      _ = K₀ * ((X₁ * X₁) * ((L : ℝ) + 1) ^ E) := by ring
+      _ = K₀ * (X * ((L : ℝ) + 1) ^ E) := by rw [hX₁_sq]
+  have hK_ceil : K ≤ ⌈K⌉₊ := Nat.le_ceil K
+  have hLHS : (((2 ^ (C * m a) * (L + 1) ^ D + t (f a) : ℕ) : ℝ)) =
+      P + (t (f a) : ℝ) := by
+    rw [Nat.cast_add, hP_nat]
+  calc (((2 ^ (C * m a) * (L + 1) ^ D + t (f a) : ℕ) : ℝ))
+      = P + (t (f a) : ℝ) := hLHS
+    _ ≤ K₁ * (X₁ * P ^ (e + 1)) := hstep1
+    _ ≤ K₁ * (K₀ * (X * ((L : ℝ) + 1) ^ E)) :=
+        mul_le_mul_of_nonneg_left hstep2 (by positivity)
+    _ = K * (X * ((L : ℝ) + 1) ^ E) := by simp only [K, mul_assoc]
+    _ ≤ ⌈K⌉₊ * (X * ((L : ℝ) + 1) ^ E) :=
+        mul_le_mul_of_nonneg_right hK_ceil (by positivity)
 
 end Reduction
 

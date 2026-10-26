@@ -196,72 +196,10 @@ example {Y : PromiseProblem β} : PromiseProblem.NPHard encB Y ↔
     HardUnder (fun enc A Y => PromiseProblem.PolyTimeReducible enc encB (.ofSet A) Y) @NP Y :=
   PromiseProblem.npHard_iff_hardUnder
 
-/-! ### Randomized reductions on promise problems -/
-
 universe u in
 example {α : Type u} (enc : α ↪ List Bool) (X : PromiseProblem α) :
     PromiseProblem.PolyTimeReducible enc enc X X :=
   .refl enc X
-
-example {X : PromiseProblem α} {Y : PromiseProblem β} :
-    PromiseProblem.RPReducible encA encB X Y ↔
-      ∃ R : α → Cslib.ProbComp β, Cslib.Probability.IsPPTOn encA encB R ∧
-        (∀ a ∈ X.yes, ∀ b ∈ (Cslib.ProbComp.eval (R a)).support, b ∈ Y.yes) ∧
-        ∀ a ∈ X.no, 2 / 3 ≤ ((Cslib.ProbComp.eval (R a)).toOuterMeasure Y.no).toReal :=
-  Iff.rfl
-
-example {X : PromiseProblem α} {Y : PromiseProblem β} :
-    PromiseProblem.RPReducible encA encB X Y ↔
-      ∃ R : α → Cslib.ProbComp β, Cslib.Probability.IsPPTOn encA encB R ∧
-        (∀ a ∈ X.yes, ((Cslib.ProbComp.eval (R a)).toOuterMeasure Y.yes).toReal = 1) ∧
-        ∀ a ∈ X.no, 2 / 3 ≤ ((Cslib.ProbComp.eval (R a)).toOuterMeasure Y.no).toReal :=
-  PromiseProblem.rpReducible_iff_toOuterMeasure_eq_one
-
-example {X : PromiseProblem α} {Y : PromiseProblem β} {s : α → ℝ} :
-    PromiseProblem.RPReducibleWithError encA encB s Xᶜ Yᶜ ↔
-      ∃ R : α → Cslib.ProbComp β, Cslib.Probability.IsPPTOn encA encB R ∧
-        (∀ a ∈ X.no, ∀ b ∈ (Cslib.ProbComp.eval (R a)).support, b ∈ Y.no) ∧
-        ∀ a ∈ X.yes, s a ≤ ((Cslib.ProbComp.eval (R a)).toOuterMeasure Y.yes).toReal :=
-  PromiseProblem.rpReducibleWithError_compl_iff
-
-example {X : PromiseProblem α} {Y : PromiseProblem β}
-    (h : PromiseProblem.PolyTimeReducible encA encB X Y) :
-    PromiseProblem.RPReducible encA encB X Y :=
-  h.rpReducible
-
-example {X : PromiseProblem α} : PromiseProblem.RPReducible encA encA X X :=
-  PromiseProblem.RPReducible.refl encA X
-
-example {γ : Type} {encC : γ ↪ List Bool}
-    {X : PromiseProblem α} {Y : PromiseProblem β} {Z : PromiseProblem γ}
-    {s₁ : α → ℝ} {s₂ : ℝ} (hs₂ : 0 ≤ s₂)
-    (hXY : PromiseProblem.RPReducibleWithError encA encB s₁ X Y)
-    (hYZ : PromiseProblem.RPReducibleWithError encB encC (fun _ => s₂) Y Z) :
-    PromiseProblem.RPReducibleWithError encA encC (fun a => s₁ a * s₂) X Z :=
-  hXY.trans hYZ hs₂
-
-example {γ : Type} {encC : γ ↪ List Bool}
-    {X : PromiseProblem α} {Y : PromiseProblem β} {Z : PromiseProblem γ}
-    {s₁ : α → ℝ} {s₂ : ℝ} (hs₂ : s₂ ≤ 1)
-    (hXY : PromiseProblem.RPReducibleWithError encA encB s₁ X Y)
-    (hYZ : PromiseProblem.RPReducibleWithError encB encC (fun _ => s₂) Y Z) :
-    PromiseProblem.RPReducibleWithError encA encC (fun a => s₁ a + s₂ - 1) X Z :=
-  hXY.trans_add hYZ hs₂
-
-example {X : PromiseProblem α} {Y : PromiseProblem β}
-    (hXY : PromiseProblem.RPReducible encA encB X Y)
-    (hY : Y ∈ PromiseCoRP encB) : X ∈ PromiseCoRP encA :=
-  hXY.mem_PromiseCoRP hY
-
-example {X : PromiseProblem α} {Y : PromiseProblem β}
-    (hXY : PromiseProblem.RPReducible encA encB X Y)
-    (hY : Y ∈ PromiseBPP encB) : X ∈ PromiseBPP encA :=
-  hXY.mem_PromiseBPP hY
-
-example {X : PromiseProblem α} {Y : PromiseProblem β}
-    (hXY : PromiseProblem.RPReducible encA encB Xᶜ Yᶜ)
-    (hY : Y ∈ PromiseRP encB) : X ∈ PromiseRP encA :=
-  hXY.mem_PromiseRP_of_compl hY
 
 /-! ### The generic hardness lemmas -/
 

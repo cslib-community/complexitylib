@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 
@@ -20,12 +21,12 @@ its fallback may be computed from the input; no inhabitant of the value type is 
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionSome`: construct an optional value.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetD`: read an option with a fallback
+* `Turing.MultiTapeTM.ComputableInPolyTime.optionSome`: construct an optional value.
+* `Turing.MultiTapeTM.ComputableInPolyTime.optionGetD`: read an option with a fallback
   supplied as part of the input.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetDWithInput`: the composition rule.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionIsSome`: test a computed optional value.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionElimWithInput`: branch on an optional
+* `Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput`: the composition rule.
+* `Turing.MultiTapeTM.ComputableInPolyTime.optionIsSome`: test a computed optional value.
+* `Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput`: branch on an optional
   value while retaining the original input, including empty value types.
 
 ## References
@@ -43,7 +44,7 @@ variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
 @[fun_prop]
 theorem optionSome (enc : α ↪ List Bool) :
     ComputableTidilyInPolyTime (some (α := α)) enc (encOption enc) :=
-  of_linear OptionEncoding.some
+  of_linear (Internal.NormalForm.linear OptionEncoding.some)
 
 /-- Test whether a computed option contains a value, without requiring a default value. -/
 @[fun_prop]
@@ -101,30 +102,3 @@ theorem optionElimWithInput {γ : Type} {encC : γ ↪ List Bool}
     cases value a <;> rfl
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
-
-/-! ### Plain polynomial-time automation -/
-
-namespace Turing.MultiTapeTM.ComputableInPolyTime
-
-/-- Read a computed option with a computed fallback, using their shared value encoding. -/
-@[fun_prop]
-theorem optionGetDWithInput {α : Type}
-    {β : Type}
-    {encA : α ↪ List Bool}
-    {encB : β ↪ List Bool}
-    {value : α → Option β}
-    {fallback : α → β}
-    (hvalue : ComputableInPolyTime value encA (encOption encB))
-    (hfallback : ComputableInPolyTime fallback encA encB) :
-    ComputableInPolyTime (fun (a : α) => (value a).getD (fallback a))
-  encA encB :=
-  .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetDWithInput α β encA encB value
-      fallback hvalue.tidy hfallback.tidy)
-
-/-- Construct an optional value while retaining the complete input encoding. -/
-@[fun_prop]
-theorem optionSome {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (some (α := α)) enc (encOption enc) :=
-  .of_tidy (ComputableTidilyInPolyTime.optionSome enc)
-
-end Turing.MultiTapeTM.ComputableInPolyTime

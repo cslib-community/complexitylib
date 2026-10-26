@@ -206,6 +206,22 @@ theorem two_mul_abs_leafScore_le {M : ℝ} {d : ℕ} {q : ι → ℝ} (t : Decis
         simp only [leafScore]
         linarith
 
+/-- When two subtrees `t₀` and `t₁` have depth at most `d - 1` and all query margins have magnitude
+at most `M` (`1 ≤ M`), a root shift of at least `(2 * M + 1) ^ (d - 1)` dominates the difference of
+their leaf scores by at least `1`. -/
+private theorem leafScore_add_one_le_add_of_le {M δ : ℝ} {d : ℕ} {q : ι → ℝ}
+    (t₀ t₁ : DecisionTree ι β) (p₀ p₁ : List Bool) (ht₀ : t₀.depth ≤ d - 1)
+    (ht₁ : t₁.depth ≤ d - 1) (hM : 1 ≤ M) (hq : ∀ i, |q i| ≤ M) (hδ : 1 ≤ δ) :
+    leafScore (2 * M + 1) (d - 1) q t₀ p₀ + 1 ≤
+      (2 * M + 1) ^ (d - 1) * δ + leafScore (2 * M + 1) (d - 1) q t₁ p₁ := by
+  have hp₀ := two_mul_abs_leafScore_le t₀ p₀ ht₀ (by linarith) hq
+  have hp₁ := two_mul_abs_leafScore_le t₁ p₁ ht₁ (by linarith) hq
+  have hle_abs := le_abs_self (leafScore (2 * M + 1) (d - 1) q t₀ p₀)
+  have hneg_abs := neg_le_abs (leafScore (2 * M + 1) (d - 1) q t₁ p₁)
+  have hpow : (2 * M + 1) ^ (d - 1) * 1 ≤ (2 * M + 1) ^ (d - 1) * δ :=
+    mul_le_mul_of_nonneg_left hδ (pow_nonneg (by linarith) _)
+  linarith
+
 /-- **Affine leaf scores** (Theorem 2.9): if `t` has depth at most `d`, every query margin `q i`
 has magnitude at most `M` (`1 ≤ M`), and `x : ι → Bool` agrees with the sign of `q` with margin at
 least `1` (`x i = true → 1 ≤ q i` and `x i = false → q i ≤ -1`), then with base `B = 2 * M + 1`,
@@ -221,40 +237,30 @@ theorem leafScore_add_one_le_leafScore_path {M : ℝ} {d : ℕ} {q : ι → ℝ}
     rw [paths_leaf, List.mem_singleton] at hp
     exact (hne (hp.trans rfl)).elim
   | node i left right ihl ihr =>
-    have hleft : left.depth ≤ d - 1 := by rw [depth_node] at ht; omega
-    have hright : right.depth ≤ d - 1 := by rw [depth_node] at ht; omega
-    have hpow_pos : (0 : ℝ) ≤ (2 * M + 1) ^ (d - 1) := pow_nonneg (by linarith) _
+    have hleft : left.depth ≤ d - 1 := by
+      rw [depth_node] at ht
+      omega
+    have hright : right.depth ≤ d - 1 := by
+      rw [depth_node] at ht
+      omega
     rw [paths_node, List.mem_append, List.mem_map, List.mem_map] at hp
     rcases hp with ⟨p', hp', rfl⟩ | ⟨p', hp', rfl⟩
     · cases hx : x i with
       | false =>
-        have hp'ne : p' ≠ left.path x := fun h => by
-          apply hne
-          simp [path, hx, h]
+        have hp'ne : p' ≠ left.path x := fun h => hne (by simp [path, hx, h])
         simpa [path, hx, leafScore] using ihl hleft hp' hp'ne
       | true =>
-        have hlp := two_mul_abs_leafScore_le left p' hleft (by linarith) hq
-        have hrp := two_mul_abs_leafScore_le right (right.path x) hright (by linarith) hq
-        have hle_abs_l := le_abs_self (leafScore (2 * M + 1) (d - 1) q left p')
-        have hneg_abs_r := neg_le_abs (leafScore (2 * M + 1) (d - 1) q right (right.path x))
-        have hqi : (2 * M + 1) ^ (d - 1) * 1 ≤ (2 * M + 1) ^ (d - 1) * q i :=
-          mul_le_mul_of_nonneg_left (htrue i hx) hpow_pos
-        simp only [path, hx, Bool.cond_true, leafScore]
-        linarith
+        simpa only [path, hx, Bool.cond_true, leafScore] using
+          leafScore_add_one_le_add_of_le left right p' (right.path x) hleft hright hM hq
+            (htrue i hx)
     · cases hx : x i with
       | false =>
-        have hrp := two_mul_abs_leafScore_le right p' hright (by linarith) hq
-        have hlp := two_mul_abs_leafScore_le left (left.path x) hleft (by linarith) hq
-        have hle_abs_r := le_abs_self (leafScore (2 * M + 1) (d - 1) q right p')
-        have hneg_abs_l := neg_le_abs (leafScore (2 * M + 1) (d - 1) q left (left.path x))
-        have hqi : (2 * M + 1) ^ (d - 1) * q i ≤ (2 * M + 1) ^ (d - 1) * (-1) :=
-          mul_le_mul_of_nonneg_left (hfalse i hx) hpow_pos
+        have hcross := leafScore_add_one_le_add_of_le right left p' (left.path x) hright hleft hM
+          hq (show 1 ≤ -q i by linarith [hfalse i hx])
         simp only [path, hx, Bool.cond_false, leafScore]
         linarith
       | true =>
-        have hp'ne : p' ≠ right.path x := fun h => by
-          apply hne
-          simp [path, hx, h]
+        have hp'ne : p' ≠ right.path x := fun h => hne (by simp [path, hx, h])
         have hrec := ihr hright hp' hp'ne
         simp only [path, hx, Bool.cond_true, leafScore]
         linarith

@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Reduction.Game
 public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Reduction.PolyTime
 public import Complexity.Crypto.Computational.Encryption.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Security of an acyclic encrypted-key chain
@@ -50,7 +51,7 @@ theorem negligible_publicKeyChainHybrid {E : Scheme}
     {width depth : ℕ → ℕ}
     (hwidth : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
       keys.2.length = width n)
-    (hdepth : ComputableTidilyInPolyTime depth encUnary encUnary)
+    (hdepth : ComputableInPolyTime depth encUnary encUnary)
     {test : ℕ → (List (List Bool) × List (List (List Bool))) → ProbComp Bool}
     (htest : IsPPTOn
       (encPair encUnary (encPair (encList encBits) (encList (encList encBits)))) encBool
@@ -58,6 +59,7 @@ theorem negligible_publicKeyChainHybrid {E : Scheme}
     Negligible (fun n => Game.advantage
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) (depth n) >>= test n))
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) 0 >>= test n))) := by
+  have hdepth := hdepth.tidy
   obtain ⟨c, d, hcapacity, hbound⟩ := Encryption.exists_keyLength_bound hkeyGen
   let capacity := fun n => c * (n + 1) ^ d
   have hwidth_le (n : ℕ) : width n ≤ capacity n := by
@@ -65,10 +67,10 @@ theorem negligible_publicKeyChainHybrid {E : Scheme}
     have h := hbound n keys hkeys
     rw [hwidth n keys hkeys] at h
     exact (Nat.le_add_left _ _).trans h
-  have hred := isPPT_linkAdversary hkeyGen hencrypt htest hdepth hcapacity
+  have hred := isPPT_linkAdversary hkeyGen hencrypt htest (.of_tidy hdepth) hcapacity
   have hpoly : PolynomiallyBounded (fun n => dyadicSize (depth n) * dyadicSize (capacity n)) := by
     have hd : PolynomiallyBounded depth := hdepth.polynomiallyBounded
-    have hc : PolynomiallyBounded capacity := hcapacity.polynomiallyBounded
+    have hc : PolynomiallyBounded capacity := hcapacity.tidy.polynomiallyBounded
     fun_prop
   have hneg := (hsecure _ hred).polynomiallyBounded_mul hpoly
   refine negligible_of_le hneg (fun n => ?_)

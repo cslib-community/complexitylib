@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Cslib.Computability.Circuit.Boolean.Shannon
+import Complexity.Foundations.Data.Nat.Log
 import Cslib.Foundations.Data.Nat.Asymptotics
 
 /-!
@@ -90,9 +91,12 @@ theorem mem_NP_image {β : Type} {encB : β ↪ List Bool} (D : Decoder encB) {B
     (hB : B ∈ NP encB) : encB '' B ∈ NP encBits := by
   obtain ⟨p, V, hV, hBV⟩ := mem_NP.mp hB
   obtain ⟨d, e, hD⟩ := D.computable
+  have hdecoder : ComputableTidilyInPolyTime D.decode encBits encB := by
+    obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hD.computableInPolyTime
+    exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
+      .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
   have hdec : ComputableTidilyInPolyTime (fun x : List Bool × List Bool => D.decode x.1)
-      (encPair encBits encBits) encB :=
-    hD.computableTidilyInPolyTime.comp (fst _ _)
+      (encPair encBits encBits) encB := hdecoder.comp (fst _ _)
   refine mem_NP.mpr
     ⟨p, fun x => decide (encB (D.decode x.1) = x.1) && V (D.decode x.1, x.2),
       .of_tidy (bool_and' (decide_eq' ((encode encB).comp hdec) (fst _ _))
@@ -150,9 +154,7 @@ private theorem le_arity (k n : ℕ) : Nat.log 2 (n + 1) + 1 ≤ arity k n :=
 private theorem eventually_arity_le (k : ℕ) : ∀ᶠ n in atTop, arity k n ≤ n := by
   filter_upwards [Nat.eventually_mul_log_le (2 * (k + 3)) one_lt_two, eventually_ge_atTop 4]
     with n hn h4
-  have hlog : Nat.log 2 (n + 1) ≤ Nat.log 2 n + 1 := by
-    calc Nat.log 2 (n + 1) ≤ Nat.log 2 (n * 2) := Nat.log_mono_right (by omega)
-      _ = Nat.log 2 n + 1 := Nat.log_mul_base (by norm_num) (by omega)
+  have hlog : Nat.log 2 (n + 1) ≤ Nat.log 2 n + 1 := Nat.log_add_one_le 2 n
   have h2 : 2 ≤ Nat.log 2 n := (Nat.le_log_iff_pow_le (by norm_num) (by omega)).2 (by omega)
   calc arity k n ≤ (k + 3) * (Nat.log 2 n + 2) := Nat.mul_le_mul_left _ (by omega)
     _ ≤ 2 * (k + 3) * Nat.log 2 n := by nlinarith

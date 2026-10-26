@@ -36,6 +36,11 @@ namespace Cslib.Circuits.Boolean
 def modGate (q m : ℕ) (x : Fin m → Bool) : Bool :=
   decide ((Finset.univ.filter fun i => x i = true).card % q ≠ 0)
 
+/-- For `q = 2`, `modGate 2 m` is the `m`-bit parity function `parity m`. -/
+theorem modGate_two_eq_parity (m : ℕ) : modGate 2 m = parity m := by
+  funext x
+  simp only [modGate, parity, parityOn, ne_eq, Nat.mod_two_ne_zero]
+
 /-- **AC⁰[q]**: the languages over `Bool` decided, at every input length, by circuits with `MOD_q`
 gates of polynomially bounded size and constant depth. -/
 def AC0Mod (q : ℕ) : Set (Language Bool) :=

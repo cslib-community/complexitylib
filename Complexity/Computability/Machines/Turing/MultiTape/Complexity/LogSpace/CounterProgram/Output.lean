@@ -282,7 +282,8 @@ theorem computableInLogSpace_of_reachesOut (P : CounterProgram) {α β : Type}
     rfl
   · rw [hrun]
     exact (hpre a u hu).1
-  · rw [(hs a).2.2.1, QueryMachine.output, hout a]
+  · rw [(hs a).2.2.1,
+      P.toQueryMachine.output_eq_of_not_halted _ (fun i hi => (hpre a i hi).1), hout a]
     change _ = _ ++ P.finish ((P.step (enc a))^[t a] P.init)
     rw [ht, finish, (hs a).2.1]
     rfl

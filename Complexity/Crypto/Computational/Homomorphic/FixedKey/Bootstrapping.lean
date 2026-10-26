@@ -62,7 +62,7 @@ theorem fullyHomomorphic {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ
     (hevaluate : IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
       encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
-    (hD : ComputableTidilyInPolyTime
+    (hD : ComputableInPolyTime
       (fun n => (⟨_, D.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1)) :
     let F := scheme D
@@ -74,7 +74,7 @@ theorem fullyHomomorphic {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ
       IsPPTOn encUnary (encPair encBits encBits) F.keyGen ∧
       IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
         (fun p => F.encrypt p.1 p.2.1 p.2.2) ∧
-      ComputableTidilyInPolyTime
+      ComputableInPolyTime
         (fun p : ℕ × List Bool × List Bool => F.decrypt p.1 p.2.1 p.2.2)
         (encPair encUnary (encPair encBits encBits)) encBool ∧
       IsPPTOn
@@ -84,7 +84,7 @@ theorem fullyHomomorphic {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ
   ⟨correct D hE hwidth hboot, fun _ _ => trivial, fixedWidth D hE hwidth hboot,
     (polynomiallyBounded_widths D hD).1, (polynomiallyBounded_widths D hD).2,
     polynomiallyBounded_decryptionSize D hD, isPPTOn_scheme_keyGen hkeyGen hencrypt D,
-    isPPTOn_scheme_encrypt hencrypt D, computableTidilyInPolyTime_scheme_decrypt D hD,
+    isPPTOn_scheme_encrypt hencrypt D, computableInPolyTime_scheme_decrypt D hD,
     isPPTOn_scheme_evaluate hencrypt D hD hevaluate,
     indCPA_scheme D hsecure hcircular hkeyGen hencrypt hwidth.secret_length⟩
 

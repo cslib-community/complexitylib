@@ -265,20 +265,12 @@ theorem graphLinearCorr_sq_le (g : Graph (β → γ)) {δ : ℝ} (hδ0 : 0 ≤ �
     (g.toGraph projectionEval).unsatVal_le_one
   rcases g.edges.eq_nil_or_concat with hnil | ⟨l, d, hconcat⟩
   · have hempty : IsEmpty (Fin g.edges.length) := by simp [hnil]
-    have hcorr0 : graphLinearCorr g δ B A = 0 := by
-      simp [graphLinearCorr]
-    rw [hcorr0, sq, mul_zero]
+    rw [show graphLinearCorr g δ B A = 0 by simp [graphLinearCorr], sq, mul_zero]
     positivity
   · have hm_pos : (0 : ℝ) < g.edges.length := by
       rw [hconcat, List.length_concat]
       positivity
-    have hjensen :
-        graphLinearCorr g δ B A ^ 2 ≤
-          𝔼 i : Fin g.edges.length,
-            linearCorr (g.edges.get i).constraint δ
-              (B (g.edges.get i).dst) (A (g.edges.get i).src) ^ 2 :=
-      sq_expect_le_expect_sq univ _
-    refine hjensen.trans ?_
+    refine (sq_expect_le_expect_sq univ _).trans ?_
     rw [Fintype.expect_eq_sum_div_card, Fintype.card_fin, div_le_iff₀ hm_pos]
     calc (∑ i : Fin g.edges.length,
           linearCorr (g.edges.get i).constraint δ

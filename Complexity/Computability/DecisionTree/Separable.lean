@@ -198,6 +198,17 @@ namespace DecisionTree
 
 variable {X Y β : Type*}
 
+/-- Clearing denominators: if `(c / d) * n ≤ m` and `m ≤ k * c` for positive `c, d`, then
+`n ≤ k * d`. -/
+private theorem le_mul_of_div_mul_le {n m k c d : ℕ} (hc : 0 < c) (hd : 0 < d)
+    (h : (c : ℝ) / d * n ≤ m) (hk : m ≤ k * c) : n ≤ k * d := by
+  have hcR : (0 : ℝ) < c := Nat.cast_pos.mpr hc
+  have hdR : (0 : ℝ) < d := Nat.cast_pos.mpr hd
+  rw [div_mul_eq_mul_div, div_le_iff₀ hdR] at h
+  have hkR : (m : ℝ) ≤ k * c := by exact_mod_cast hk
+  have : (n : ℝ) ≤ k * d := by nlinarith
+  exact_mod_cast this
+
 /-- A nonempty product domain contains a rectangle reaching one leaf of a bi-monotone comparison
 tree, with at most the leaf count lost from each side. The natural-number inequalities are the
 division-free form of `|A'| ≥ |A| / L` and `|B'| ≥ |B| / L`. -/
@@ -219,20 +230,12 @@ theorem exists_leaf_rectangle_biMonotone (t : DecisionTree (BiMonotoneComparison
     have ha₁ : a < 1 := (div_lt_one ht).mpr (by linarith)
     obtain ⟨b, A₀, B₀, hA₀, hB₀, hA₀ne, hB₀ne, hAc, hBc, hquery⟩ :=
       q.exists_rectangle A B hA hB ha.le ha₁.le
-    have scale {n m k c d : ℕ} (hc : 0 < c) (hd : 0 < d)
-        (h : (c : ℝ) / d * n ≤ m) (hk : m ≤ k * c) : n ≤ k * d := by
-      have hcR : (0 : ℝ) < c := Nat.cast_pos.mpr hc
-      have hdR : (0 : ℝ) < d := Nat.cast_pos.mpr hd
-      rw [div_mul_eq_mul_div, div_le_iff₀ hdR] at h
-      have hkR : (m : ℝ) ≤ k * c := by exact_mod_cast hk
-      have : (n : ℝ) ≤ k * d := by nlinarith
-      exact_mod_cast this
     cases b with
     | false =>
       obtain ⟨A', B', p, hA', hB', hA'ne, hB'ne, hAl, hBl, hp⟩ := ihl A₀ B₀ hA₀ne hB₀ne
       refine ⟨A', B', false :: p, hA'.trans hA₀, hB'.trans hB₀, hA'ne, hB'ne,
-        scale left.leafCount_pos (Nat.add_pos_left left.leafCount_pos _) ?_ hAl,
-        scale left.leafCount_pos (Nat.add_pos_left left.leafCount_pos _) ?_ hBl, ?_⟩
+        le_mul_of_div_mul_le left.leafCount_pos (Nat.add_pos_left left.leafCount_pos _) ?_ hAl,
+        le_mul_of_div_mul_le left.leafCount_pos (Nat.add_pos_left left.leafCount_pos _) ?_ hBl, ?_⟩
       · simpa only [Bool.false_eq_true, ↓reduceIte, a, leafCount, Nat.cast_add] using hAc
       · simpa only [Bool.false_eq_true, ↓reduceIte, a, leafCount, Nat.cast_add] using hBc
       · intro x hx y hy
@@ -244,8 +247,8 @@ theorem exists_leaf_rectangle_biMonotone (t : DecisionTree (BiMonotoneComparison
         ring
       obtain ⟨A', B', p, hA', hB', hA'ne, hB'ne, hAr, hBr, hp⟩ := ihr A₀ B₀ hA₀ne hB₀ne
       refine ⟨A', B', true :: p, hA'.trans hA₀, hB'.trans hB₀, hA'ne, hB'ne,
-        scale right.leafCount_pos (Nat.add_pos_left left.leafCount_pos _) ?_ hAr,
-        scale right.leafCount_pos (Nat.add_pos_left left.leafCount_pos _) ?_ hBr, ?_⟩
+        le_mul_of_div_mul_le right.leafCount_pos (Nat.add_pos_left left.leafCount_pos _) ?_ hAr,
+        le_mul_of_div_mul_le right.leafCount_pos (Nat.add_pos_left left.leafCount_pos _) ?_ hBr, ?_⟩
       · simpa only [↓reduceIte, heq, leafCount, Nat.cast_add] using hAc
       · simpa only [↓reduceIte, heq, leafCount, Nat.cast_add] using hBc
       · intro x hx y hy

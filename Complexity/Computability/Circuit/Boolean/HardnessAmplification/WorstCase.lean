@@ -132,7 +132,8 @@ theorem truthTableExtension_block (h : BitString b ↪ F) (f : BooleanFunction (
 selected by `r`. -/
 noncomputable def hardnessEncode (enc : F ≃ BitString w) (h : BitString b ↪ F)
     (f : BooleanFunction (m * b)) : BooleanFunction (m * w + w) :=
-  fun y => enc (truthTableExtension h f (pointOfBits enc fun i => y (Fin.castAdd w i))) ⬝ᵥ
+  fun y => enc (truthTableExtension h f
+    ((BitString.pointEquiv enc).symm fun i => y (Fin.castAdd w i))) ⬝ᵥ
     fun j => y (Fin.natAdd (m * w) j)
 
 /-- The encoding at the input `(x, r)` is the parity of the bits of `p x` selected by `r`. -/
@@ -140,7 +141,7 @@ noncomputable def hardnessEncode (enc : F ≃ BitString w) (h : BitString b ↪ 
 theorem hardnessEncode_append (enc : F ≃ BitString w) (h : BitString b ↪ F)
     (f : BooleanFunction (m * b)) (x : BitString (m * w)) (r : BitString w) :
     hardnessEncode enc h f (Fin.append x r) =
-      enc (truthTableExtension h f (pointOfBits enc x)) ⬝ᵥ r := by
+      enc (truthTableExtension h f ((BitString.pointEquiv enc).symm x)) ⬝ᵥ r := by
   simp only [hardnessEncode, Fin.append_left, Fin.append_right]
 
 /-- **The encoding is a concatenated code** (`Cslib.Code.concat`): the outer word is the
@@ -150,7 +151,7 @@ theorem hardnessEncode_append_eq_concat (enc : F ≃ BitString w) (h : BitString
     (f : BooleanFunction (m * b)) (x : BitString (m * w)) (r : BitString w) :
     hardnessEncode enc h f (Fin.append x r) =
       Code.concat (fun a => BitString.hadamardCode (enc a)) (truthTableExtension h f)
-        (pointOfBits enc x, r) := by
+        ((BitString.pointEquiv enc).symm x, r) := by
   rw [hardnessEncode_append, Code.concat_apply, BitString.hadamardCode_apply]
 
 /-! ### The Goldreich–Levin stage -/
@@ -182,7 +183,8 @@ theorem exists_glPredictor_agree (enc : F ≃ BitString w) (h : BitString b ↪ 
   classical
   set p := truthTableExtension h f
   let pred : BitString (m * w) → BitString w → Bool := fun x r => C (Fin.append x r)
-  let target : BitString (m * w) → BitString w := fun x => enc (p (pointOfBits enc x))
+  let target : BitString (m * w) → BitString w :=
+    fun x => enc (p ((BitString.pointEquiv enc).symm x))
   -- the agreement splits over the points
   have hsplit : (#{y | C y = hardnessEncode enc h f y} : ℝ) =
       ∑ x : BitString (m * w), (#{r | pred x r = target x ⬝ᵥ r} : ℝ) := by
@@ -251,15 +253,19 @@ theorem exists_glPredictor_agree (enc : F ≃ BitString w) (h : BitString b ↪ 
   refine ⟨masks, guess, ?_⟩
   have hcount : #{x | glPredictor enc C masks guess x = p x} =
       #{x | Crypto.GoldreichLevin.candidate (pred x) masks guess = target x} := by
-    refine card_nbij' (bitsOfPoint enc) (pointOfBits enc) (fun x hx => ?_) (fun x hx => ?_)
-      (fun x _ => pointOfBits_bitsOfPoint enc x) (fun x _ => bitsOfPoint_pointOfBits enc x)
+    refine card_nbij' (BitString.pointBits enc) (BitString.pointEquiv enc).symm
+      (fun x hx => ?_) (fun x hx => ?_)
+      (fun x _ => BitString.pointEquiv_symm_pointBits enc x)
+      (fun x _ => BitString.pointBits_pointEquiv_symm enc x)
     · simp only [coe_filter, mem_univ, true_and, Set.mem_ofPred_eq] at hx ⊢
-      simp only [target, pointOfBits_bitsOfPoint, ← hx, glPredictor, Equiv.apply_symm_apply]
+      simp only [target, BitString.pointEquiv_symm_pointBits, ← hx, glPredictor,
+        Equiv.apply_symm_apply]
       rfl
     · simp only [coe_filter, mem_univ, true_and, Set.mem_ofPred_eq] at hx ⊢
       simp only [glPredictor]
-      rw [show (fun r => C (Fin.append (bitsOfPoint enc (pointOfBits enc x)) r)) = pred x by
-        rw [bitsOfPoint_pointOfBits]]
+      rw [show (fun r => C (Fin.append (BitString.pointBits enc
+          ((BitString.pointEquiv enc).symm x)) r)) = pred x by
+        rw [BitString.pointBits_pointEquiv_symm]]
       rw [hx, Equiv.symm_apply_apply]
   rw [hcount]
   have : (#good : ℝ) ≤ 2 ^ (K + 1) *

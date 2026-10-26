@@ -9,6 +9,8 @@ module
 
 public import Complexity.Crypto.Computational.GMW.Protocol
 import Complexity.Computability.Probabilistic.Sampling
+import Complexity.Foundations.Data.List.Lookup
+import Mathlib.Data.List.GetD
 
 /-!
 # Completeness and soundness of the 3-copy GMW protocol
@@ -258,19 +260,6 @@ theorem acceptProb_gmwVerifier_gmwProver {α : Type} {generator : List Bool → 
 
 /-! ### Soundness of `gmwVerifier` against arbitrary provers -/
 
-private theorem getD_take_drop (l : List Bool) (d w i : ℕ) (hi : i < w) :
-    ((l.drop d).take w).getD i false = l.getD (d + i) false := by
-  simp [List.getD_eq_getElem?_getD, List.getElem?_take_of_lt hi, List.getElem?_drop]
-
-private theorem getD_append_left {u v : List Bool} {i : ℕ} (hi : i < u.length) :
-    (u ++ v).getD i false = u.getD i false := by
-  simp [List.getD_eq_getElem?_getD, List.getElem?_append_left hi]
-
-private theorem getD_append_right {u v : List Bool} {d i : ℕ} (hu : u.length = d) :
-    (u ++ v).getD (d + i) false = v.getD i false := by
-  subst d
-  simp [List.getD_eq_getElem?_getD, List.getElem?_append_right (Nat.le_add_right u.length i)]
-
 private theorem satisfiable_of_verifyCopyBits {φ : CNF ℕ} {copy₀ copy₁ : List Bool}
     (hwidth : ∀ c ∈ φ, c.length ≤ 3)
     (h₀ : verifyCopyBits φ false copy₀ = true)
@@ -298,15 +287,15 @@ private theorem satisfiable_of_verifyCopyBits {φ : CNF ℕ} {copy₀ copy₁ : 
     have hj_len : 2 * φ.vars.length + j < copyLen φ := by unfold copyLen; omega
     have hflag₀ : (copyOpenFlags φ false copy₀).getD (2 * φ.vars.length + j) false = true := by
       simp only [copyOpenFlags, Bool.false_eq_true, ↓reduceIte]
-      rw [getD_append_right (by simp [Nat.two_mul])]
-      simp [List.getD_eq_getElem?_getD, hj]
+      rw [List.getD_append_right _ _ _ _ (by simp [Nat.two_mul])]
+      simp [List.getD_eq_getElem?_getD, hj, Nat.two_mul]
     have hflag₁ : (copyOpenFlags φ true copy₁).getD (2 * φ.vars.length + j) false = true := by
       simp only [copyOpenFlags, ↓reduceIte]
-      rw [getD_append_right (by simp [Nat.two_mul])]
-      exact hact
+      rw [List.getD_append_right _ _ _ _ (by simp [Nat.two_mul])]
+      simpa [Nat.two_mul] using hact
     have hcopy_eq := hagree (2 * φ.vars.length + j) hj_len hflag₀ hflag₁
-    have hpart₀ := getD_take_drop copy₀ (2 * φ.vars.length) (8 * φ.length) j hj
-    have hpart₁ := getD_take_drop copy₁ (2 * φ.vars.length) (8 * φ.length) j hj
+    have hpart₀ := List.getD_take_drop copy₀ (2 * φ.vars.length) hj false
+    have hpart₁ := List.getD_take_drop copy₁ (2 * φ.vars.length) hj false
     rw [← htab₀]
     change ((copy₀.drop (2 * φ.vars.length)).take (8 * φ.length)).getD j false = true
     rw [hpart₀, hcopy_eq, ← hpart₁]
@@ -346,14 +335,15 @@ private theorem getD_allOpenFlags_copy0 (φ : CNF ℕ) (ch bits : List Bool) {i 
     (allOpenFlags φ ch bits).getD i false =
       (copyOpenFlags φ (ch.getD 0 false) (gmwCopy0 φ bits)).getD i false := by
   simp only [allOpenFlags, List.append_assoc]
-  exact getD_append_left (by simpa using hi)
+  exact List.getD_append _ _ _ _ (by simpa using hi)
 
 private theorem getD_allOpenFlags_copy1 (φ : CNF ℕ) (ch bits : List Bool) {i : ℕ}
     (hi : i < copyLen φ) :
     (allOpenFlags φ ch bits).getD (copyLen φ + i) false =
       (copyOpenFlags φ (ch.getD 1 false) (gmwCopy1 φ bits)).getD i false := by
   simp only [allOpenFlags, List.append_assoc]
-  rw [getD_append_right (by simp), getD_append_left (by simpa using hi)]
+  rw [List.getD_append_right _ _ _ _ (by simp), length_copyOpenFlags, Nat.add_sub_cancel_left,
+    List.getD_append _ _ _ _ (by simpa using hi)]
 
 private theorem getD_allOpenFlags_copy2 (φ : CNF ℕ) (ch bits : List Bool) (i : ℕ) :
     (allOpenFlags φ ch bits).getD (2 * copyLen φ + i) false =
@@ -363,7 +353,7 @@ private theorem getD_allOpenFlags_copy2 (φ : CNF ℕ) (ch bits : List Bool) (i 
         copyOpenFlags φ (ch.getD 1 false) (gmwCopy1 φ bits)).length = 2 * copyLen φ := by
     simp only [List.length_append, length_copyOpenFlags]; omega
   simp only [allOpenFlags]
-  exact getD_append_right hlen
+  rw [List.getD_append_right _ _ _ _ (by omega), hlen, Nat.add_sub_cancel_left]
 
 private theorem verifyCommitments_eq_of_true {generator : List Bool → List Bool} {s m : ℕ}
     {φ : CNF ℕ} {r flags₀ flags₁ commitReply opened₀ opened₁ seeds₀ seeds₁ : List Bool}
@@ -422,7 +412,7 @@ private theorem mem_ThreeSAT_of_verifyTranscript_false_true
       rw [getD_allOpenFlags_copy1 φ ch₁ opened₁ hi, hb₁]
       exact hf₁
     have heq := verifyCommitments_eq_of_true hbind hc₀ hc₁ hidx hf₀' hf₁'
-    simp only [gmwCopy1, getD_take_drop _ _ _ _ hi]
+    simp only [gmwCopy1, List.getD_take_drop _ _ hi]
     exact heq
   · rw [hb₀] at hv₀_2
     rw [hb₁] at hv₁_2
@@ -435,7 +425,7 @@ private theorem mem_ThreeSAT_of_verifyTranscript_false_true
       rw [getD_allOpenFlags_copy2 φ ch₁ opened₁ i, hb₁]
       exact hf₁
     have heq := verifyCommitments_eq_of_true hbind hc₀ hc₁ hidx hf₀' hf₁'
-    simp only [gmwCopy2, getD_take_drop _ _ _ _ hi]
+    simp only [gmwCopy2, List.getD_take_drop _ _ hi]
     exact heq
 
 /-- If a first-round commitment transcript `commitReply` under a binding receiver string `r` admits

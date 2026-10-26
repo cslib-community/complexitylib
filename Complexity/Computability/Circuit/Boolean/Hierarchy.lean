@@ -28,9 +28,10 @@ Walking from a constant function to any function `f` shows that `f` costs at mos
 
 * `Cslib.Circuits.Boolean.complexity_const`: a constant costs exactly one gate.
 * `Cslib.Circuits.Boolean.complexity_update_le`: changing one value costs `2 n + 3` gates.
-* `Cslib.Circuits.Boolean.complexity_le_two_pow_mul_add_one`,
-  `Cslib.Circuits.Boolean.complexity_le_of_dependsOn`: the truth-table bound, for all functions
-  and for functions depending on few inputs.
+* `Cslib.Circuits.Boolean.complexity_mask_le`,
+  `Cslib.Circuits.Boolean.complexity_le_two_pow_mul_add_one`,
+  `Cslib.Circuits.Boolean.complexity_le_of_dependsOn`: the sparse and truth-table bounds, for
+  finite supports, all functions, and functions depending on few inputs.
 * `Cslib.Circuits.Boolean.exists_complexity_mem_Ioc`: complexities below that of a given function
   are attained, up to `2 n + 3`.
 * `Cslib.Circuits.Boolean.SIZE_ssubset`: the size hierarchy.
@@ -76,16 +77,13 @@ theorem complexity_update_le (f : BooleanFunction n) (a : Fin n → Bool) (b : B
           complexity_or_le _ _
       _ ≤ complexity interpretation (single f) + (2 * n + 3) := by omega
 
-/-- **The truth-table bound.** A Boolean function on `n` inputs costs at most
-`2 ^ n * (2 * n + 3) + 1` gates: start from a constant and change one value at a time. -/
-theorem complexity_le_two_pow_mul_add_one (f : BooleanFunction n) :
-    complexity interpretation (single f) ≤ 2 ^ n * (2 * n + 3) + 1 := by
+/-- Restricting a Boolean function `f` to `S` and returning `false` outside `S` costs at most
+`#S * (2 * n + 3) + 1` gates: start from the constant `false` and change one value in `S` at a
+time. -/
+theorem complexity_mask_le (f : BooleanFunction n) (S : Finset (Fin n → Bool)) :
+    complexity interpretation (single fun x => decide (x ∈ S) && f x) ≤
+      #S * (2 * n + 3) + 1 := by
   classical
-  suffices h : ∀ S : Finset (Fin n → Bool),
-      complexity interpretation (single fun x => decide (x ∈ S) && f x) ≤
-        #S * (2 * n + 3) + 1 by
-    simpa using h Finset.univ
-  intro S
   induction S using Finset.induction_on with
   | empty => simpa using (Synthesis.const false).complexity_le
   | @insert a S ha ih =>
@@ -98,6 +96,13 @@ theorem complexity_le_two_pow_mul_add_one (f : BooleanFunction n) :
     rw [e, Finset.card_insert_of_notMem ha, add_one_mul]
     calc _ ≤ _ := complexity_update_le _ a (f a)
       _ ≤ _ := by omega
+
+/-- **The truth-table bound.** A Boolean function on `n` inputs costs at most
+`2 ^ n * (2 * n + 3) + 1` gates: start from a constant and change one value at a time. -/
+theorem complexity_le_two_pow_mul_add_one (f : BooleanFunction n) :
+    complexity interpretation (single f) ≤ 2 ^ n * (2 * n + 3) + 1 := by
+  classical
+  simpa using complexity_mask_le f Finset.univ
 
 /-- A Boolean function that depends only on the inputs in `s` costs at most
 `2 ^ #s * (2 * #s + 3) + 1` gates. -/

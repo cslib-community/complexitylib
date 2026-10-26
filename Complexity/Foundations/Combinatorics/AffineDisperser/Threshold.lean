@@ -12,7 +12,7 @@ public import Complexity.Foundations.Combinatorics.AffineDisperser.Explicit
 public import Mathlib.Analysis.Asymptotics.Defs
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Order.Filter.AtTopBot.Basic
-import Cslib.Foundations.Data.Nat.Asymptotics
+import Complexity.Foundations.Data.Nat.Asymptotics
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
@@ -53,22 +53,12 @@ namespace Cslib.AffineDisperser
 
 open Filter Explicit
 
-/-- Exponentials beat polynomials: `c * (n + 1) ^ k ≤ 2 ^ n` for all large `n`. -/
-theorem eventually_mul_pow_le_two_pow (c k : ℕ) :
-    ∀ᶠ n : ℕ in atTop, c * (n + 1) ^ k ≤ 2 ^ n := by
-  filter_upwards [Nat.eventually_mul_pow_le_pow (c * 2 ^ k) k one_lt_two,
-    eventually_ge_atTop 1] with n hn hn1
-  calc c * (n + 1) ^ k ≤ c * (2 * n) ^ k :=
-        Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) k)
-    _ = c * 2 ^ k * n ^ k := by rw [mul_pow, mul_assoc]
-    _ ≤ 2 ^ n := hn
-
 /-- The Chebyshev factor is small: `64 (3 L + 3) (4 L + 1) ^ (8 ⌊√L⌋ + 10) ≤ 2 ^ L` for all large
 `L`. -/
 private theorem eventually_chebyshevFactor_le :
     ∀ᶠ L : ℕ in atTop, 64 * (3 * L + 3) * (4 * L + 1) ^ (8 * Nat.sqrt L + 10) ≤ 2 ^ L := by
-  obtain ⟨Q, hQ⟩ := eventually_atTop.1 (eventually_mul_pow_le_two_pow 500 2)
-  obtain ⟨S, hS⟩ := eventually_atTop.1 (eventually_mul_pow_le_two_pow 384 2)
+  obtain ⟨Q, hQ⟩ := eventually_atTop.1 (Nat.eventually_mul_add_one_pow_le_pow 500 2 one_lt_two)
+  obtain ⟨S, hS⟩ := eventually_atTop.1 (Nat.eventually_mul_add_one_pow_le_pow 384 2 one_lt_two)
   filter_upwards [eventually_ge_atTop ((10 * Q + S + 10) ^ 2)] with L hL
   set s := Nat.sqrt L
   have hs : 10 * Q + S + 10 ≤ s := Nat.le_sqrt'.2 hL
@@ -91,9 +81,6 @@ private theorem eventually_chebyshevFactor_le :
         Nat.mul_le_mul h2 (Nat.pow_le_pow_left h1 _)
     _ = 2 ^ (s + q * (8 * s + 10)) := by rw [← pow_mul, ← pow_add]
     _ ≤ 2 ^ L := Nat.pow_le_pow_right two_pos h3
-
-theorem tendsto_log_two_atTop : Tendsto (Nat.log 2) atTop atTop :=
-  tendsto_atTop_atTop.2 fun b => ⟨2 ^ b, fun _ hN => Nat.le_log_of_pow_le one_lt_two hN⟩
 
 /-- Decomposing `explicitThreshold N` into the budget `N / (⌊log₂ N⌋ + 1) ^ 2`, the block-count
 term, the subfield term, and the symmetric-power terms. -/
@@ -185,9 +172,9 @@ private theorem four_mul_numBlocks_le_of_prod_le {N : ℕ}
 `4 * ((⌊log₂ N⌋ + 1) * (numBlocks N * (numBlocks N + 1))) ≤ N`. -/
 private theorem eventually_four_mul_numBlocks_le :
     ∀ᶠ N in atTop, 4 * ((Nat.log 2 N + 1) * (numBlocks N * (numBlocks N + 1))) ≤ N := by
-  obtain ⟨ℓ₁, hℓ₁⟩ := eventually_atTop.1 (eventually_mul_pow_le_two_pow 16 7)
+  obtain ⟨ℓ₁, hℓ₁⟩ := eventually_atTop.1 (Nat.eventually_mul_add_one_pow_le_pow 16 7 one_lt_two)
   obtain ⟨L₂, hL₂⟩ := eventually_atTop.1 eventually_chebyshevFactor_le
-  filter_upwards [tendsto_log_two_atTop.eventually_ge_atTop (ℓ₁ + 3 * L₂ + 3)] with N hN
+  filter_upwards [Nat.eventually_le_log (ℓ₁ + 3 * L₂ + 3) one_lt_two] with N hN
   set ℓ := Nat.log 2 N
   have hpow := hℓ₁ ℓ (by omega)
   have hN0 : N ≠ 0 := by
@@ -234,9 +221,9 @@ private theorem eventually_four_mul_numBlocks_le :
 `(⌊log₂ N⌋ + 1) * explicitThreshold N ≤ 6 N` for all large `N`. -/
 theorem eventually_explicitThreshold_le :
     ∀ᶠ N in atTop, (Nat.log 2 N + 1) * explicitThreshold N ≤ 6 * N := by
-  obtain ⟨ℓ₁, hℓ₁⟩ := eventually_atTop.1 (eventually_mul_pow_le_two_pow 1 2)
+  obtain ⟨ℓ₁, hℓ₁⟩ := eventually_atTop.1 (Nat.eventually_mul_add_one_pow_le_pow 1 2 one_lt_two)
   filter_upwards [eventually_four_mul_numBlocks_le,
-    tendsto_log_two_atTop.eventually_ge_atTop (ℓ₁ + 1)] with N hkey hN
+    Nat.eventually_le_log (ℓ₁ + 1) one_lt_two] with N hkey hN
   set ℓ := Nat.log 2 N
   have hN0 : N ≠ 0 := by
     rintro rfl
@@ -270,7 +257,7 @@ theorem eventually_explicitThreshold_le :
 
 /-- The disperser theorem is not vacuous: `explicitThreshold N < N` for all large `N`. -/
 theorem eventually_explicitThreshold_lt : ∀ᶠ N in atTop, explicitThreshold N < N := by
-  filter_upwards [eventually_explicitThreshold_le, tendsto_log_two_atTop.eventually_ge_atTop 6,
+  filter_upwards [eventually_explicitThreshold_le, Nat.eventually_le_log 6 one_lt_two,
     eventually_gt_atTop 0] with N h hℓ hN
   have : 7 * explicitThreshold N ≤ 6 * N := le_trans (Nat.mul_le_mul_right _ (by omega)) h
   omega

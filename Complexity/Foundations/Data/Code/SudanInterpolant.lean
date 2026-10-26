@@ -511,6 +511,31 @@ theorem natDegree_interpolant_le (α w : ι → F) {d D : ℕ} (hd : 1 ≤ d)
 /-! ### Simplicity of the roots -/
 
 omit [Fintype ι] [DecidableEq F] in
+/-- If `(a₀, b₀)` maximizes the `(1, d)`-weighted degree of `S` and `b₀` is largest among those
+maximizers, then `X ^ a₀ * Y ^ (b₀ + 1)` has a nonzero coefficient in `(Y - C P) * S`. -/
+private theorem coeff_X_sub_C_mul_ne_zero {d a₀ b₀ : ℕ} {P : F[X]} (hP : P.natDegree ≤ d)
+    {S : F[X][Y]} (ha₀ : (S.coeff b₀).coeff a₀ ≠ 0)
+    (hle : ∀ a b, (S.coeff b).coeff a ≠ 0 → a + d * b ≤ a₀ + d * b₀)
+    (hbmax : ∀ a b, (S.coeff b).coeff a ≠ 0 → a + d * b = a₀ + d * b₀ → b ≤ b₀) :
+    (((Y - C P) * S).coeff (b₀ + 1)).coeff a₀ ≠ 0 := by
+  rw [mul_comm, coeff_mul_X_sub_C, coeff_sub, mul_comm, coeff_mul]
+  have hzero : ∑ x ∈ antidiagonal a₀, P.coeff x.1 * (S.coeff (b₀ + 1)).coeff x.2 = 0 := by
+    refine sum_eq_zero fun ⟨i, j⟩ hij => ?_
+    rw [mem_antidiagonal] at hij
+    by_cases hPi : P.coeff i = 0
+    · rw [hPi, zero_mul]
+    by_cases hSj : (S.coeff (b₀ + 1)).coeff j = 0
+    · rw [hSj, mul_zero]
+    exfalso
+    have hi : i ≤ d := (le_natDegree_of_ne_zero hPi).trans hP
+    have hj := hle j (b₀ + 1) hSj
+    have hjM : j + d * (b₀ + 1) = a₀ + d * b₀ := by nlinarith
+    have := hbmax j (b₀ + 1) hSj hjM
+    omega
+  rw [hzero, sub_zero]
+  exact ha₀
+
+omit [Fintype ι] [DecidableEq F] in
 /-- **Division by `Y - P` lowers the weighted degree bound by `d`.** If `P` has degree at most `d`
 and `(Y - P) * S` has `(1, d)`-weighted degree at most `D`, then every monomial `X ^ a * Y ^ b` of
 `S` has `a + d * (b + 1) ≤ D`. -/
@@ -541,32 +566,13 @@ theorem add_mul_add_one_le_of_mul {d D : ℕ} {P : F[X]} (hP : P.natDegree ≤ d
   have hbmax : ∀ p ∈ supp, p.1 + d * p.2 = M₀ → p.2 ≤ b₀ := fun p hp hpM => by
     rw [show b₀ = (a₀, b₀).2 from rfl, ← hb₀]
     exact le_sup' Prod.snd (mem_filter.2 ⟨hp, hpM⟩)
-  -- the coefficient of `X ^ a₀ * Y ^ (b₀ + 1)` in `(Y - P) * S`
-  have hcoeff : (((Y - C P) * S).coeff (b₀ + 1)).coeff a₀ ≠ 0 := by
-    rw [mul_comm, coeff_mul_X_sub_C, coeff_sub, mul_comm, coeff_mul]
-    have hzero : ∑ x ∈ antidiagonal a₀, P.coeff x.1 * (S.coeff (b₀ + 1)).coeff x.2 = 0 := by
-      refine sum_eq_zero fun ⟨i, j⟩ hij => ?_
-      rw [mem_antidiagonal] at hij
-      by_cases hPi : P.coeff i = 0
-      · rw [hPi, zero_mul]
-      by_cases hSj : (S.coeff (b₀ + 1)).coeff j = 0
-      · rw [hSj, mul_zero]
-      exfalso
-      have hi : i ≤ d := (le_natDegree_of_ne_zero hPi).trans hP
-      have hj := hle (j, b₀ + 1) ((hmem _ _).1 hSj)
-      have hjM : j + d * (b₀ + 1) = M₀ := by
-        simp only at hj
-        rw [← hM₀] at hj ⊢
-        simp only at hj ⊢
-        nlinarith
-      have := hbmax (j, b₀ + 1) ((hmem _ _).1 hSj) hjM
-      simp only at this
-      omega
-    rw [hzero, sub_zero]
-    exact (hmem a₀ b₀).2 hp₀
+  simp only at hM₀
+  have hcoeff := coeff_X_sub_C_mul_ne_zero hP ((hmem a₀ b₀).2 hp₀)
+    (fun a' b' hab' => hM₀ ▸ hle (a', b') ((hmem a' b').1 hab'))
+    (fun a' b' hab' hM => hbmax (a', b') ((hmem a' b').1 hab') (hM.trans hM₀))
   have hD := h a₀ (b₀ + 1) hcoeff
   have hab' := hle (a, b) ((hmem a b).1 hab)
-  simp only at hab' hM₀
+  simp only at hab'
   nlinarith
 
 omit [Fintype ι] [DecidableEq F] in

@@ -42,7 +42,7 @@ theorem publicRowHead_eq {n m w : ℕ} (inputs : SerializedKeyInputs) (i : Fin m
     publicRowHead n w inputs i.val =
       (publicMatrix (decodeKeyInputs n m w inputs).publicPart
         (decodeKeyInputs n m w inputs).secret (decodeKeyInputs n m w inputs).error i 0).val := by
-  unfold publicRowHead publicMatrix decodeKeyInputs
+  unfold publicRowHead publicMatrix LWE.publicMatrix decodeKeyInputs
   simp only [Fin.cons_zero, _root_.Matrix.mulVec, dotProduct]
   rw [List.map_range_eq_ofFn, List.sum_ofFn]
   have h : ((∑ j : Fin n,
@@ -71,7 +71,7 @@ theorem publicMatrixSerialized_eq (n m w : ℕ) (inputs : SerializedKeyInputs) :
   simp only [List.flatten_cons]
   congr 1
   · rw [publicRowHead_eq inputs i]
-  · simp [publicMatrix, decodeKeyInputs, ZMod.val_natCast]
+  · simp [publicMatrix, LWE.publicMatrix, decodeKeyInputs, ZMod.val_natCast]
 
 /-- The total secret computation agrees with the same padded and modularly normalized inputs. -/
 theorem secretSerialized_eq (n w : ℕ) (secret : List ℕ) :

@@ -64,4 +64,45 @@ example {p : ℝ} (hp₀ : 0 ≤ p) (hp₁ : p ≤ 1) (n : ℕ) :
     (1 - p) ^ n ≤ 1 / (1 + (n : ℝ) * p) :=
   Real.one_sub_pow_le_one_div_one_add_mul hp₀ hp₁ n
 
+-- Pointwise XOR cancellation and `uniformList` invariance under one-time-pad masking.
+example :
+    List.zipWith Bool.xor [true, false, true]
+      (List.zipWith Bool.xor [true, false, true] [false, true, true]) =
+      [false, true, true] :=
+  BitString.zipWith_xor_self_left [true, false, true] [false, true, true] rfl
+
+example :
+    (BitString.uniformList 3).map (fun pad => List.zipWith Bool.xor pad [true, false, true]) =
+      BitString.uniformList 3 :=
+  BitString.uniformList_map_zipWith_xor [true, false, true]
+
+example :
+    ((BitString.uniformList 3).map
+      (fun pad => List.zipWith Bool.xor pad [true, false, true])) [false, false, false] ≤
+      (1 : ENNReal) / 2 ^ 3 := by
+  rw [show (3 : ℕ) = [true, false, true].length from rfl,
+    BitString.uniformList_map_zipWith_xor [true, false, true]]
+  exact BitString.uniformList_apply_le 3 [false, false, false]
+
+example :
+    (BitString.uniformList 3).map
+        (fun pad => List.zipWith Bool.xor (pad.take 3) [true, false, true]) =
+      BitString.uniformList 3 :=
+  BitString.uniformList_map_take_zipWith_xor rfl
+
+-- Point-mass bound `1 / 2 ^ n`, finite-set union bound, and finite-cache lookup union bound.
+example (r : List Bool) :
+    BitString.uniformList 3 r ≤ (1 : ENNReal) / 2 ^ 3 :=
+  BitString.uniformList_apply_le 3 r
+
+example (s : Finset (List Bool)) :
+    (BitString.uniformList 3).toOuterMeasure s ≤
+      (s.card : ENNReal) * ((1 : ENNReal) / 2 ^ 3) :=
+  BitString.toOuterMeasure_uniformList_finset_le 3 s
+
+example (cache : List (List Bool × List Bool)) :
+    (BitString.uniformList 3).toOuterMeasure {r | (cache.lookup r).isSome} ≤
+      (cache.length : ENNReal) * ((1 : ENNReal) / 2 ^ 3) :=
+  BitString.toOuterMeasure_lookup_uniformList_le 3 cache
+
 end ComplexityTests.BitStringRows

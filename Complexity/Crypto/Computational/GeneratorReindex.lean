@@ -35,6 +35,8 @@ lengths. No nonuniform choice of a bad length is supplied to the reduction.
 
 ## Main results
 
+* `Cslib.Crypto.GeneratorReindex.parameter_apply_of_strictMono`: exact parameter recovery on the
+  range of a strictly monotone schedule.
 * `Cslib.Crypto.GeneratorReindex.isPolyTime_generate`: uniform machine-backed efficiency.
 * `Cslib.Crypto.GeneratorReindex.indistinguishable`: extending a secure family preserves
   computational indistinguishability at every seed length.
@@ -64,9 +66,12 @@ def parameter (length : ℕ → ℕ) (size : ℕ) : ℕ :=
 /-- Searching an efficient schedule up to an efficient unary input size is polynomial-time. -/
 @[program_certificate]
 theorem isPolyTime_parameter {α : Type} {input : α ↪ List Bool} {length : ℕ → ℕ} {size : α → ℕ}
-    (hlength : ComputableTidilyInPolyTime length encUnary encUnary)
-    (hsize : ComputableTidilyInPolyTime size input encUnary) :
-    ComputableTidilyInPolyTime (fun a => parameter length (size a)) input encUnary := by
+    (hlength : ComputableInPolyTime length encUnary encUnary)
+    (hsize : ComputableInPolyTime size input encUnary) :
+    ComputableInPolyTime (fun a => parameter length (size a)) input encUnary := by
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hlength
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hsize
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
   unfold parameter
   polytime
 
@@ -78,6 +83,17 @@ theorem parameter_le (length : ℕ → ℕ) (size : ℕ) : parameter length size
 theorem parameter_fits {length : ℕ → ℕ} {size : ℕ} (hsize : length 0 ≤ size) :
     length (parameter length size) ≤ size :=
   Nat.findGreatest_spec (P := fun n => length n ≤ size) (Nat.zero_le _) hsize
+
+/-- For a strictly monotone schedule `length`, `parameter length (length n) = n`. -/
+@[simp]
+theorem parameter_apply_of_strictMono {length : ℕ → ℕ} (hmono : StrictMono length) (n : ℕ) :
+    parameter length (length n) = n := by
+  apply le_antisymm
+  · by_contra! hlt
+    have hspec : length (parameter length (length n)) ≤ length n :=
+      parameter_fits (hmono.monotone (Nat.zero_le n))
+    exact (hmono hlt).not_ge hspec
+  · exact Nat.le_findGreatest (hmono.id_le n) le_rfl
 
 /-- The next parameter's seed is too large, even when the schedule is not monotone. -/
 theorem lt_length_succ_parameter {length : ℕ → ℕ} (hge : ∀ n, n + 1 ≤ length n) (size : ℕ) :
@@ -106,10 +122,27 @@ def generate (length : ℕ → ℕ) (generator : ℕ → List Bool → List Bool
 
 /-- Generation composes bounded search, the supplied family, and padding. -/
 theorem isPolyTime_generate {length : ℕ → ℕ} {generator : ℕ → List Bool → List Bool}
-    (hlength : ComputableTidilyInPolyTime length encUnary encUnary)
-    (hgenerator : ComputableTidilyInPolyTime (fun a => generator a.1 a.2)
+    (hlength : ComputableInPolyTime length encUnary encUnary)
+    (hgenerator : ComputableInPolyTime (fun a => generator a.1 a.2)
       (encPair encUnary encBits) encBits) :
-    ComputableTidilyInPolyTime (generate length generator) encBits encBits := by
+    ComputableInPolyTime (generate length generator) encBits encBits := by
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hlength
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hgenerator
+  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
+  have hparameter : ComputableTidilyInPolyTime
+      (fun seed : List Bool => parameter length seed.length) encBits encUnary :=
+    (isPolyTime_parameter (.of_tidy hlength) (.of_tidy (by fun_prop))).tidy
+  have hpadded : ComputableTidilyInPolyTime (fun seed : List Bool =>
+      GeneratorPadding.generate (length (parameter length seed.length)) seed.length
+        (generator (parameter length seed.length)) seed) encBits encBits :=
+    (GeneratorPadding.isPolyTime_generate (α := List Bool) (input := encBits)
+      (generator := fun seed => generator (parameter length seed.length))
+      (.of_tidy (by fun_prop))
+      (.of_tidy (by fun_prop))
+      (.of_tidy (hgenerator.comp
+        ((hparameter.comp (ComputableTidilyInPolyTime.fst encBits encBits)).prod
+          (ComputableTidilyInPolyTime.snd encBits encBits))))
+      (.of_tidy (by fun_prop))).tidy
   unfold generate
   polytime
 
@@ -138,15 +171,17 @@ theorem generate_distribution (length : ℕ → ℕ) (generator : ℕ → List B
 /-- Extending a uniformly efficient secure family preserves uniform security at every seed
 length. A single calibrated reduction controls every padding length in the polynomial range. -/
 theorem indistinguishable {length : ℕ → ℕ} {generator : ℕ → List Bool → List Bool}
-    (hlength : ComputableTidilyInPolyTime length encUnary encUnary)
+    (hlength : ComputableInPolyTime length encUnary encUnary)
     (hge : ∀ n, n + 1 ≤ length n)
-    (hgenerator : ComputableTidilyInPolyTime (fun a => generator a.1 a.2)
+    (hgenerator : ComputableInPolyTime (fun a => generator a.1 a.2)
       (encPair encUnary encBits) encBits)
     (hsecure : ComputationallyIndistinguishable
       (fun n => (uniformList (length n)).map (generator n))
       (fun n => uniformList (length n + 1))) :
     ComputationallyIndistinguishable (generatorEnsemble (generate length generator))
       (fun n => uniformList (n + 1)) := by
+  have hlength := hlength.tidy
+  have hgenerator := hgenerator.tidy
   intro adversary hadversary
   let real : ℕ → ProbComp (List Bool) := fun n => generator n <$> BitString.sampleList (length n)
   let ideal : ℕ → ProbComp (List Bool) := fun n => BitString.sampleList (length n + 1)
@@ -161,7 +196,7 @@ theorem indistinguishable {length : ℕ → ℕ} {generator : ℕ → List Bool 
     unfold test
     ppt
   obtain ⟨ε, hε, hbound⟩ := hfamily.uniform_bound hreal hideal
-    (bound := fun n => length (n + 1)) (by polytime) test htest
+    (bound := fun n => length (n + 1)) (.of_tidy (by polytime)) test htest
   have hdecay := hε.comp_of_polynomial_bound (parameter_tendsto length)
     (hlength.polynomiallyBounded.comp (PolynomiallyBounded.id.add (.const 1)))
     (Eventually.of_forall (fun size => (lt_length_succ_parameter hge size).le))
@@ -177,17 +212,19 @@ theorem indistinguishable {length : ℕ → ℕ} {generator : ℕ → List Bool 
 /-- A uniformly efficient one-bit expanding family on a polynomial schedule gives a PRG
 stretching every input by one bit. -/
 theorem pseudorandomGenerator {length : ℕ → ℕ} {generator : ℕ → List Bool → List Bool}
-    (hlength : ComputableTidilyInPolyTime length encUnary encUnary)
+    (hlength : ComputableInPolyTime length encUnary encUnary)
     (hge : ∀ n, n + 1 ≤ length n)
-    (hgenerator : ComputableTidilyInPolyTime (fun a => generator a.1 a.2)
+    (hgenerator : ComputableInPolyTime (fun a => generator a.1 a.2)
       (encPair encUnary encBits) encBits)
     (houtput : ∀ n seed, seed.length = length n → (generator n seed).length = length n + 1)
     (hsecure : ComputationallyIndistinguishable
       (fun n => (uniformList (length n)).map (generator n))
       (fun n => uniformList (length n + 1))) :
-    PseudorandomGenerator (generate length generator) (fun n => n + 1) :=
-  .of_indistinguishable (isPolyTime_generate hlength hgenerator)
+    PseudorandomGenerator (generate length generator) (fun n => n + 1) := by
+  have hlength := hlength.tidy
+  have hgenerator := hgenerator.tidy
+  exact .of_indistinguishable (isPolyTime_generate (.of_tidy hlength) (.of_tidy hgenerator))
     (length_generate houtput) (fun _ => Nat.lt_succ_self _)
-    (indistinguishable hlength hge hgenerator hsecure)
+    (indistinguishable (.of_tidy hlength) hge (.of_tidy hgenerator) hsecure)
 
 end Cslib.Crypto.GeneratorReindex

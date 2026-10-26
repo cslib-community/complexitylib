@@ -311,6 +311,45 @@ theorem le_bnd_of_infixAt {p : ℕ} {u : List Bool} (h : InfixAt (encCNF φ) p u
 theorem literalBits_ne_nil (v : ℕ) (b : Bool) : literalBits v b ≠ [] := by
   simp [literalBits]
 
+/-- Bounds survive an update of one register. -/
+macro (name := boundedTac) "bounded_tac" : tactic => `(tactic| (
+  simp only [St.Bounded, bnd] at *
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> omega))
+
+/-- Checking from label `15` whether a clause with at least two literals has a third literal. -/
+private theorem reaches_width_two {q : ℕ} {m₁ m₂ : Literal ℕ} {rest : Clause ℕ}
+    (hrest : LitsAt (encCNF φ) q (m₂ :: rest)) {st : St} (hB : st.Bounded (bnd φ))
+    (x : ℕ) (hx : x ≤ bnd φ) :
+    ∃ st' : St, st'.Bounded (bnd φ) ∧
+      decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ))
+        (15, ({ st with q₁ := q } : St).regs x)
+        (if (m₁ :: m₂ :: rest).length = 0 ∨ 3 ≤ (m₁ :: m₂ :: rest).length then 102 else 103,
+          st'.regs x) := by
+  have hro : ∀ i, i ≠ 0 → (reg i).readsChoice = false := fun i hi => by
+    simp [Expr.readsChoice, hi]
+  obtain ⟨hm₂, hrest₂⟩ := hrest.cons
+  have hend₂ := le_bnd_of_infixAt hm₂ (literalBits_ne_nil _ _)
+  have hB₁ : ({ st with q₁ := q } : St).Bounded (bnd φ) := by bounded_tac
+  have hB₂ : ({ st with q₁ := q + (literalBits m₂.1 m₂.2).length } : St).Bounded (bnd φ) := by
+    bounded_tac
+  have hread₂ : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ))
+      (15, ({ st with q₁ := q } : St).regs x)
+      (19, ({ st with q₁ := q + (literalBits m₂.1 m₂.2).length } : St).regs x) := by
+    refine Reaches.oread (show decider.instr 15 = _ from rfl) (hro 8 (by omega))
+      (St.forall_mem_regs hB₁ hx) ?_
+    simp only [eval_reg, St.getD_regs_8, hm₂.literal_start, readLabel]
+    simpa using reaches_skipLitCode codeAt_skipLit₁₆ (by omega) (by simp) hm₂
+      (St.getD_regs_8 _ _) (St.forall_mem_regs hB₁ hx) hend₂
+  refine ⟨_, hB₂, hread₂.trans (Reaches.oread (show decider.instr 19 = _ from rfl)
+    (hro 8 (by omega)) (St.forall_mem_regs hB₂ hx) ?_)⟩
+  rcases rest with _ | ⟨m₃, rest⟩
+  · simp only [eval_reg, St.getD_regs_8, hrest₂.getElem?_nil, readLabel, List.length_cons,
+      List.length_nil]
+    exact Reaches.refl _
+  · simp only [eval_reg, St.getD_regs_8, hrest₂.cons.1.literal_start, readLabel, List.length_cons,
+      show 3 ≤ rest.length + 1 + 1 + 1 by omega, or_true, ↓reduceIte]
+    exact Reaches.refl _
+
 /-- **The width of a clause**: from label `10`, the run accepts exactly when the clause at the
 scanning position is empty or has more than two literals. -/
 theorem reaches_width {p : ℕ} {c : Clause ℕ} (hc : LitsAt (encCNF φ) p c) {st : St}
@@ -318,24 +357,22 @@ theorem reaches_width {p : ℕ} {c : Clause ℕ} (hc : LitsAt (encCNF φ) p c) {
     ∃ st' : St, st'.Bounded (bnd φ) ∧
       decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (10, st.regs x)
         (if c.length = 0 ∨ 3 ≤ c.length then 102 else 103, st'.regs x) := by
-  have hR := st.forall_mem_regs hB hx
   have hro : ∀ i, i ≠ 0 → (reg i).readsChoice = false := fun i hi => by
     simp [Expr.readsChoice, hi]
-  have hB₁ : ∀ q, q ≤ bnd φ → ({ st with q₁ := q } : St).Bounded (bnd φ) := fun q hq => by
-    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15⟩ := hB
-    exact ⟨h1, h2, h3, h4, h5, h6, h7, hq, h9, h10, h11, h12, h13, h14, h15⟩
   have hpB : p ≤ bnd φ := hp ▸ hB.1
+  have hB₁ : ∀ q, q ≤ bnd φ → ({ st with q₁ := q } : St).Bounded (bnd φ) := fun q hq => by
+    bounded_tac
   -- label 10, then the first read at label 11
   have h₁₀ : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (10, st.regs x)
       (11, ({ st with q₁ := p } : St).regs x) := by
     refine Reaches.oassign (show decider.instr 10 = _ from rfl) (by omega) (hro 1 (by omega))
-      hR ?_
+      (st.forall_mem_regs hB hx) ?_
     simp only [eval_reg, St.getD_regs_1, St.set_regs_8, hp]
     exact Reaches.refl _
   rcases c with _ | ⟨m₁, _ | ⟨m₂, rest⟩⟩
   · refine ⟨{ st with q₁ := p }, hB₁ p hpB, h₁₀.trans ?_⟩
     refine Reaches.oread (show decider.instr 11 = _ from rfl) (hro 8 (by omega))
-      ((({ st with q₁ := p } : St)).forall_mem_regs (hB₁ p hpB) hx) ?_
+      (St.forall_mem_regs (hB₁ p hpB) hx) ?_
     simp only [eval_reg, St.getD_regs_8, hc.getElem?_nil, readLabel, List.length_nil,
       true_or, ↓reduceIte]
     exact Reaches.refl _
@@ -345,40 +382,17 @@ theorem reaches_width {p : ℕ} {c : Clause ℕ} (hc : LitsAt (encCNF φ) p c) {
     have hread₁ : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (10, st.regs x)
         (15, ({ st with q₁ := p + (literalBits m₁.1 m₁.2).length } : St).regs x) := by
       refine h₁₀.trans (Reaches.oread (show decider.instr 11 = _ from rfl) (hro 8 (by omega))
-        ((({ st with q₁ := p } : St)).forall_mem_regs (hB₁ p hpB) hx) ?_)
+        (St.forall_mem_regs (hB₁ p hpB) hx) ?_)
       simp only [eval_reg, St.getD_regs_8, hm₁.literal_start, readLabel]
-      have := reaches_skipLitCode codeAt_skipLit₁₂ (by omega) (by simp) hm₁
-        (St.getD_regs_8 _ _) ((({ st with q₁ := p } : St)).forall_mem_regs (hB₁ p hpB) hx)
-        hend₁
-      simpa using this
+      simpa using reaches_skipLitCode codeAt_skipLit₁₂ (by omega) (by simp) hm₁
+        (St.getD_regs_8 _ _) (St.forall_mem_regs (hB₁ p hpB) hx) hend₁
   · refine ⟨_, hB₁ _ (by omega), hread₁.trans ?_⟩
     refine Reaches.oread (show decider.instr 15 = _ from rfl) (hro 8 (by omega))
-      ((({ st with q₁ := _ } : St)).forall_mem_regs (hB₁ _ (by omega)) hx) ?_
+      (St.forall_mem_regs (hB₁ _ (by omega)) hx) ?_
     simp only [eval_reg, St.getD_regs_8, hrest.getElem?_nil, readLabel, List.length_singleton]
     exact Reaches.refl _
-  · obtain ⟨hm₂, hrest₂⟩ := hrest.cons
-    have hend₂ := le_bnd_of_infixAt hm₂ (literalBits_ne_nil _ _)
-    have hread₂ : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (10, st.regs x)
-        (19, ({ st with q₁ := p + (literalBits m₁.1 m₁.2).length +
-          (literalBits m₂.1 m₂.2).length } : St).regs x) := by
-      refine hread₁.trans (Reaches.oread (show decider.instr 15 = _ from rfl) (hro 8 (by omega))
-        ((({ st with q₁ := _ } : St)).forall_mem_regs (hB₁ _ (by omega)) hx) ?_)
-      simp only [eval_reg, St.getD_regs_8, hm₂.literal_start, readLabel]
-      have := reaches_skipLitCode codeAt_skipLit₁₆ (by omega) (by simp) hm₂
-        (St.getD_regs_8 _ _) ((({ st with q₁ := _ } : St)).forall_mem_regs (hB₁ _ (by omega)) hx)
-        hend₂
-      simpa using this
-    refine ⟨_, hB₁ _ (by omega), hread₂.trans ?_⟩
-    refine Reaches.oread (show decider.instr 19 = _ from rfl) (hro 8 (by omega))
-      ((({ st with q₁ := _ } : St)).forall_mem_regs (hB₁ _ (by omega)) hx) ?_
-    rcases rest with _ | ⟨m₃, rest⟩
-    · simp only [eval_reg, St.getD_regs_8, hrest₂.getElem?_nil, readLabel, List.length_cons,
-        List.length_nil]
-      exact Reaches.refl _
-    · simp only [eval_reg, St.getD_regs_8, hrest₂.cons.1.literal_start, readLabel,
-        List.length_cons]
-      simp only [show 3 ≤ rest.length + 1 + 1 + 1 by omega, or_true, ↓reduceIte]
-      exact Reaches.refl _
+  · obtain ⟨st', hB', h₂⟩ := reaches_width_two (m₁ := m₁) hrest hB x hx
+    exact ⟨st', hB', hread₁.trans h₂⟩
 
 /-! ### Every branch through the decider -/
 
@@ -430,13 +444,11 @@ theorem ab_modeA : ∀ (cs : CNF ℕ) {p : ℕ} {st : St}, (∀ c ∈ cs, c ∈ 
     ClausesAt (encCNF φ) p cs → st.p = p → st.Bounded (bnd φ) → ∀ b : Bool,
     decider.AllBranches (encCNF φ) (bnd φ) (Post φ) (fun _ => False) (3, st.regs b.toNat)
   | [], p, st, _, hcs, hp, hB, b => by
-    have h : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (3, st.regs 0)
-        (103, st.regs 0) := by
-      refine Reaches.oread (show decider.instr 3 = _ from rfl) (by simp [Expr.readsChoice])
-        (st.forall_mem_regs hB (Nat.zero_le _)) ?_
-      simp only [eval_reg, St.getD_regs_1, hp, hcs.getElem?_nil, readLabel]
-      exact Reaches.refl _
-    exact ab_of_reaches h (fun b => ab_reject hB b) b
+    refine ab_of_reaches (Reaches.oread (show decider.instr 3 = _ from rfl)
+      (by simp [Expr.readsChoice]) (st.forall_mem_regs hB (Nat.zero_le _)) ?_)
+      (fun b => ab_reject hB b) b
+    simp only [eval_reg, St.getD_regs_1, hp, hcs.getElem?_nil, readLabel]
+    exact Reaches.refl _
   | c :: cs, p, st, hsub, hcs, hp, hB, b => by
     obtain ⟨hc, hrest⟩ := hcs.cons
     have hcφ : c ∈ φ := hsub c List.mem_cons_self
@@ -444,8 +456,7 @@ theorem ab_modeA : ∀ (cs : CNF ℕ) {p : ℕ} {st : St}, (∀ c ∈ cs, c ∈ 
         (4, st.regs 0) := by
       refine Reaches.oread (show decider.instr 3 = _ from rfl) (by simp [Expr.readsChoice])
         (st.forall_mem_regs hB (Nat.zero_le _)) ?_
-      simp only [eval_reg, St.getD_regs_1, hp]
-      rw [readLabel_some 4 4 103 hc.getElem?_isSome rfl]
+      simp only [eval_reg, St.getD_regs_1, hp, readLabel_some 4 4 103 hc.getElem?_isSome rfl]
       exact Reaches.refl _
     refine ab_of_reaches h₃ (fun b => ab_choice (show decider.instr 4 = _ from rfl) hB
       (fun b => ?_) (fun b => ?_) b) b
@@ -454,9 +465,8 @@ theorem ab_modeA : ∀ (cs : CNF ℕ) {p : ℕ} {st : St}, (∀ c ∈ cs, c ∈ 
       refine ab_of_reaches hw (fun b => ?_) b
       split_ifs with hwidth
       · refine ab_accept hB' b (notMem_TwoSAT_iff.mpr ?_)
-        rcases hwidth with h | h
-        · exact .inr (.inl (List.length_eq_zero_iff.mp h ▸ hcφ))
-        · exact .inl ⟨c, hcφ, by omega⟩
+        exact hwidth.elim (fun h => .inr (.inl (List.length_eq_zero_iff.mp h ▸ hcφ)))
+          fun h => .inl ⟨c, hcφ, by omega⟩
       · exact ab_reject hB' b
     · -- skip the clause
       have hlen := hc.le_length
@@ -467,11 +477,7 @@ theorem ab_modeA : ∀ (cs : CNF ℕ) {p : ℕ} {st : St}, (∀ c ∈ cs, c ∈ 
       refine ab_of_reaches hskip (fun b => ab_modeA cs (fun c hc => hsub c
         (List.mem_cons_of_mem _ hc)) (by
           change ClausesAt _ (p + (List.flatMap (fun l => literalBits l.1 l.2) c).length + 1) cs
-          rw [length_clauseBits, ← Nat.add_assoc] at hrest
-          exact hrest) rfl ?_ b) b
-      obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15⟩ := hB
-      exact ⟨by simp only [bnd]; omega, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14,
-        h15⟩
+          rwa [length_clauseBits, ← Nat.add_assoc] at hrest) rfl (by bounded_tac) b) b
 
 /-! ### The walk -/
 
@@ -504,11 +510,6 @@ theorem codeAt_skipClause₂₂ : decider.CodeAt 22 (skipClauseCode 22 1 20) := 
 theorem codeAt_skipLit₂₉ : decider.CodeAt 29 (skipLitCode 29 1 27) := fun i hi => by
   simp only [skipLitCode, List.length_cons, List.length_nil] at hi
   interval_cases i <;> rfl
-
-/-- Bounds survive an update of one register. -/
-macro (name := boundedTac) "bounded_tac" : tactic => `(tactic| (
-  simp only [St.Bounded, bnd] at *
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> omega))
 
 /-- The chosen occurrence becomes the starting one and the current one, with polarity `1`. -/
 theorem reaches_pick {p : ℕ} {st : St} (hp : st.p = p) (hB : st.Bounded (bnd φ)) :
@@ -619,6 +620,65 @@ theorem codeAt_sign₉₆ : decider.CodeAt 96 (signCode 96 11 15 100 101) := fun
   simp only [signCode, List.length_cons, List.length_nil] at hi
   interval_cases i <;> rfl
 
+/-- Checking at labels `93` and `94` whether the read polarity `b` is opposite to `st.sgn`. -/
+private theorem reaches_check_polarity {st : St} (hsgn : st.sgn ≤ 1)
+    (hB : st.Bounded (bnd φ)) (b : Bool) :
+    decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ))
+      (if b then 93 else 94, st.regs 0)
+      (if b = !decide (st.sgn = 1) then 95 else 103, st.regs 0) := by
+  have hR := st.forall_mem_regs hB (Nat.zero_le _)
+  rcases (by omega : st.sgn = 0 ∨ st.sgn = 1) with hs | hs <;> cases b <;> rw [hs]
+  · refine Reaches.olt (show decider.instr 94 = _ from rfl) (by simp [Expr.readsChoice])
+      (by simp [Expr.readsChoice]) hR ?_
+    simp only [eval_reg, eval_const, St.getD_regs_4, hs, Nat.zero_lt_one, ↓reduceIte]
+    exact Reaches.refl _
+  · refine Reaches.olt (show decider.instr 93 = _ from rfl) (by simp [Expr.readsChoice])
+      (by simp [Expr.readsChoice]) hR ?_
+    simp only [eval_reg, eval_const, St.getD_regs_4, hs, Nat.zero_lt_one, ↓reduceIte]
+    exact Reaches.refl _
+  · refine Reaches.olt (show decider.instr 94 = _ from rfl) (by simp [Expr.readsChoice])
+      (by simp [Expr.readsChoice]) hR ?_
+    simp only [eval_reg, eval_const, St.getD_regs_4, hs, lt_irrefl, ↓reduceIte]
+    exact Reaches.refl _
+  · refine Reaches.olt (show decider.instr 93 = _ from rfl) (by simp [Expr.readsChoice])
+      (by simp [Expr.readsChoice]) hR ?_
+    simp only [eval_reg, eval_const, St.getD_regs_4, hs, lt_irrefl, ↓reduceIte]
+    exact Reaches.refl _
+
+/-- The register state after moving along a verified arc to literal `ℓ'` at `st.o₁`. -/
+private def checkMoveSt (st : St) (ℓ' : Literal ℕ) : St :=
+  { st with cur := st.o₁, t := st.o₁ + 8 * ℓ'.1.bits.length, sgn := ℓ'.2.toNat }
+
+/-- Moving from label `95` to the new current literal `ℓ'` at `st.o₁` and returning to `35`. -/
+private theorem reaches_check_move {st : St} {ℓ' : Literal ℕ}
+    (ho₁ : InfixAt (encCNF φ) st.o₁ (literalBits ℓ'.1 ℓ'.2)) (hB : st.Bounded (bnd φ)) :
+    (checkMoveSt st ℓ').Bounded (bnd φ) ∧
+      decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (95, st.regs 0)
+        (35, (checkMoveSt st ℓ').regs 0) := by
+  have hend₁ := le_bnd_of_infixAt ho₁ (literalBits_ne_nil _ _)
+  have hlen₁ : st.o₁ + 8 * ℓ'.1.bits.length ≤ bnd φ := by
+    simp only [length_literalBits] at hend₁
+    omega
+  have hℓ'2 := Bool.toNat_le ℓ'.2
+  set st₃ : St := { st with cur := st.o₁ }
+  have hB₃ : st₃.Bounded (bnd φ) := by simp only [st₃]; bounded_tac
+  set st₄ : St := { st₃ with t := st.o₁ + 8 * ℓ'.1.bits.length }
+  have hB₄ : st₄.Bounded (bnd φ) := by simp only [st₄, st₃]; bounded_tac
+  refine ⟨by simp only [checkMoveSt]; bounded_tac, ?_⟩
+  refine Reaches.oassign (show decider.instr 95 = _ from rfl) (by omega)
+    (by simp [Expr.readsChoice]) (st.forall_mem_regs hB (Nat.zero_le _)) ?_
+  simp only [eval_reg, St.getD_regs_11, St.set_regs_3]
+  have hsign' := reaches_signCode codeAt_sign₉₆ (B := bnd φ) (by omega) (by omega)
+    (by simp) ho₁ (St.getD_regs_11 st₃ 0) (st₃.forall_mem_regs hB₃ (Nat.zero_le _)) hend₁
+  simp only [St.set_regs_15] at hsign'
+  refine hsign'.trans ?_
+  have hl : decider.instr (if ℓ'.2 then 100 else 101) = assign 4 (const ℓ'.2.toNat) 35 := by
+    cases ℓ'.2 <;> rfl
+  refine Reaches.oassign hl (by omega) (by simp [Expr.readsChoice])
+    (st₄.forall_mem_regs hB₄ (Nat.zero_le _)) ?_
+  simp only [eval_const, St.set_regs_4, checkMoveSt]
+  exact Reaches.refl _
+
 /-- **Checking an arc and moving along it**, deterministically: from label `79`, with the
 occurrences of literals `ℓ'` and `m` in registers `11` and `12`, the run moves to `ℓ'` at the
 head of the walk when `m` is the negation of the current literal, and rejects otherwise. -/
@@ -632,26 +692,22 @@ theorem reaches_check {st : St} {v : ℕ} {b₁ : Bool}
       (m = Std.Sat.Literal.negate (v, decide (st.sgn = 1)) → st'.o₀ = st.o₀ ∧
         st'.phase = st.phase ∧ st'.steps = st.steps ∧ st'.len = st.len ∧ st'.cur = st.o₁ ∧
         st'.sgn = ℓ'.2.toNat) := by
-  have hR := st.forall_mem_regs hB (Nat.zero_le _)
-  have hend₁ := le_bnd_of_infixAt ho₁ (literalBits_ne_nil _ _)
   have hend₂ := le_bnd_of_infixAt ho₂ (literalBits_ne_nil _ _)
   have hendc := le_bnd_of_infixAt hcur (literalBits_ne_nil _ _)
-  have hlen₁ : st.o₁ + 8 * ℓ'.1.bits.length ≤ bnd φ := by
-    simp only [length_literalBits] at hend₁; omega
   have hlen₂ : st.o₂ + 8 * m.1.bits.length ≤ bnd φ := by
-    simp only [length_literalBits] at hend₂; omega
+    simp only [length_literalBits] at hend₂
+    omega
   obtain ⟨x, y, hx, hy, hcmp⟩ := reaches_cmpVarCode codeAt_cmpVar₇₉ (by omega) (by omega)
     (by omega) (by omega) (by omega) (by omega) (by simp) (by simp) ho₂ hcur
-    (St.getD_regs_12 st 0) (St.getD_regs_3 st 0) hR hend₂ hendc
+    (St.getD_regs_12 st 0) (St.getD_regs_3 st 0) (st.forall_mem_regs hB (Nat.zero_le _))
+    hend₂ hendc
   simp only [St.set_regs_13, St.set_regs_14] at hcmp
   set st₁ : St := { st with t₁ := x, t₂ := y }
   have hB₁ : st₁.Bounded (bnd φ) := by simp only [st₁]; bounded_tac
   by_cases hmv : m.1 = v
   swap
-  · have hne : m ≠ Std.Sat.Literal.negate (v, decide (st.sgn = 1)) := fun h => hmv (by
-      rw [h]; rfl)
-    refine ⟨st₁, hB₁, ?_, fun h => absurd h hne⟩
-    simpa [hmv, hne] using hcmp
+  · have hne : m ≠ Std.Sat.Literal.negate (v, decide (st.sgn = 1)) := fun h => hmv (by rw [h]; rfl)
+    exact ⟨st₁, hB₁, by simpa [hmv, hne] using hcmp, fun h => absurd h hne⟩
   rw [ite_eq_left hmv] at hcmp
   have hsign := reaches_signCode codeAt_sign₈₉ (B := bnd φ) (by omega) (by omega) (by simp) ho₂
     (St.getD_regs_12 st₁ 0) (st₁.forall_mem_regs hB₁ (Nat.zero_le _)) hend₂
@@ -660,85 +716,20 @@ theorem reaches_check {st : St} {v : ℕ} {b₁ : Bool}
   have hB₂ : st₂.Bounded (bnd φ) := by simp only [st₂, st₁]; bounded_tac
   have hneg : m = Std.Sat.Literal.negate (v, decide (st.sgn = 1)) ↔
       m.2 = !decide (st.sgn = 1) := by
-    obtain ⟨mv, mb⟩ := m
-    simp only at hmv
+    rcases m with ⟨_, mb⟩
     subst hmv
     simp [Std.Sat.Literal.negate]
-  have hsgn' : st.sgn = 0 ∨ st.sgn = 1 := by omega
+  have hpol := hcmp.trans (hsign.trans (reaches_check_polarity (st := st₂) hsgn hB₂ m.2))
   by_cases hpass : m = Std.Sat.Literal.negate (v, decide (st.sgn = 1))
   · -- the move
-    set st₃ : St := { st₂ with cur := st.o₁ }
-    have hB₃ : st₃.Bounded (bnd φ) := by simp only [st₃, st₂, st₁]; bounded_tac
-    set st₄ : St := { st₃ with t := st.o₁ + 8 * ℓ'.1.bits.length }
-    have hB₄ : st₄.Bounded (bnd φ) := by simp only [st₄, st₃, st₂, st₁]; bounded_tac
-    have h₉₅ : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (95, st₂.regs 0)
-        (35, ({ st₄ with sgn := ℓ'.2.toNat } : St).regs 0) := by
-      refine Reaches.oassign (show decider.instr 95 = _ from rfl) (by omega)
-        (by simp [Expr.readsChoice]) (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
-      simp only [eval_reg, St.getD_regs_11, St.set_regs_3]
-      have hsign' := reaches_signCode codeAt_sign₉₆ (B := bnd φ) (by omega) (by omega)
-        (by simp) ho₁ (St.getD_regs_11 st₃ 0) (st₃.forall_mem_regs hB₃ (Nat.zero_le _)) hend₁
-      simp only [St.set_regs_15] at hsign'
-      refine hsign'.trans ?_
-      have hfin : ∀ l : ℕ, decider.instr l = assign 4 (const ℓ'.2.toNat) 35 →
-          decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (l, st₄.regs 0)
-            (35, ({ st₄ with sgn := ℓ'.2.toNat } : St).regs 0) := fun l hl => by
-        refine Reaches.oassign hl (by omega) (by simp [Expr.readsChoice])
-          (st₄.forall_mem_regs hB₄ (Nat.zero_le _)) ?_
-        simp only [eval_const, St.set_regs_4]
-        exact Reaches.refl _
-      refine hfin _ ?_
-      obtain ⟨lv, lb⟩ := ℓ'
-      cases lb <;> rfl
-    have hℓ'2 := Bool.toNat_le ℓ'.2
-    refine ⟨{ st₄ with sgn := ℓ'.2.toNat }, by simp only [st₄, st₃, st₂, st₁]; bounded_tac, ?_,
-      fun _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩⟩
+    obtain ⟨hBmv, hmv'⟩ := reaches_check_move (st := st₂) ho₁ hB₂
+    rw [ite_eq_left (hneg.mp hpass)] at hpol
+    refine ⟨checkMoveSt st₂ ℓ', hBmv, ?_, fun _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩⟩
     rw [ite_eq_left hpass]
-    refine hcmp.trans (hsign.trans ?_)
-    have hm2 := hneg.mp hpass
-    rcases hsgn' with h0 | h1
-    · rw [h0] at hm2
-      simp only [zero_ne_one, decide_false, Bool.not_false] at hm2
-      rw [ite_eq_left hm2]
-      refine Reaches.olt (show decider.instr 93 = _ from rfl) (by simp [Expr.readsChoice])
-        (by simp [Expr.readsChoice]) (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
-      simp only [eval_reg, eval_const, St.getD_regs_4, show st₂.sgn = 0 from h0, Nat.zero_lt_one,
-        ↓reduceIte]
-      exact h₉₅
-    · rw [h1] at hm2
-      simp only [decide_true, Bool.not_true] at hm2
-      rw [hm2]
-      simp only [Bool.false_eq_true, ↓reduceIte]
-      refine Reaches.olt (show decider.instr 94 = _ from rfl) (by simp [Expr.readsChoice])
-        (by simp [Expr.readsChoice]) (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
-      simp only [eval_reg, eval_const, St.getD_regs_4, show st₂.sgn = 1 from h1, lt_irrefl,
-        ↓reduceIte]
-      exact h₉₅
+    exact hpol.trans hmv'
   · -- the wrong polarity
-    refine ⟨st₂, hB₂, ?_, fun h => absurd h hpass⟩
-    rw [ite_eq_right hpass]
-    refine hcmp.trans (hsign.trans ?_)
-    have hm2 : m.2 = decide (st.sgn = 1) := by
-      have := mt hneg.mpr hpass
-      cases h : m.2 <;> cases h' : decide (st.sgn = 1) <;> simp_all
-    rcases hsgn' with h0 | h1
-    · rw [h0] at hm2
-      simp only [zero_ne_one, decide_false] at hm2
-      rw [hm2]
-      simp only [Bool.false_eq_true, ↓reduceIte]
-      refine Reaches.olt (show decider.instr 94 = _ from rfl) (by simp [Expr.readsChoice])
-        (by simp [Expr.readsChoice]) (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
-      simp only [eval_reg, eval_const, St.getD_regs_4, show st₂.sgn = 0 from h0, Nat.zero_lt_one,
-        ↓reduceIte]
-      exact Reaches.refl _
-    · rw [h1] at hm2
-      simp only [decide_true] at hm2
-      rw [ite_eq_left hm2]
-      refine Reaches.olt (show decider.instr 93 = _ from rfl) (by simp [Expr.readsChoice])
-        (by simp [Expr.readsChoice]) (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
-      simp only [eval_reg, eval_const, St.getD_regs_4, show st₂.sgn = 1 from h1, lt_irrefl,
-        ↓reduceIte]
-      exact Reaches.refl _
+    rw [ite_eq_right (mt hneg.mpr hpass)] at hpol
+    exact ⟨st₂, hB₂, by simpa [hpass] using hpol, fun h => absurd h hpass⟩
 
 /-- **Every branch checking an arc and moving along it**: from label `79`, with the occurrences
 of literals `ℓ'` and `m` of a clause `c` in registers `11` and `12`, every branch rejects or moves
@@ -795,6 +786,68 @@ def Same (st st' : St) : Prop :=
 
 theorem Same.rfl' {st : St} : Same st st := ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
 
+/-- Reading the first literal `m₁` of a non-empty clause from label `60` to label `66`. -/
+private theorem reaches_inspect_first {st : St} {m₁ : Literal ℕ}
+    (hm₁ : InfixAt (encCNF φ) st.p (literalBits m₁.1 m₁.2)) (hB : st.Bounded (bnd φ)) :
+    ({ st with q₁ := st.p, q₂ := st.p + (literalBits m₁.1 m₁.2).length } : St).Bounded (bnd φ) ∧
+      decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (60, st.regs 0)
+        (66,
+          ({ st with q₁ := st.p, q₂ := st.p + (literalBits m₁.1 m₁.2).length } : St).regs 0) := by
+  have hro : ∀ i, i ≠ 0 → (reg i).readsChoice = false := fun i hi => by
+    simp [Expr.readsChoice, hi]
+  have hend₁ := le_bnd_of_infixAt hm₁ (literalBits_ne_nil _ _)
+  set st₁ : St := { st with q₁ := st.p }
+  have hB₁ : st₁.Bounded (bnd φ) := by simp only [st₁]; bounded_tac
+  refine ⟨by bounded_tac, ?_⟩
+  refine Reaches.oassign (show decider.instr 60 = _ from rfl) (by omega) (hro 1 (by omega))
+    (st.forall_mem_regs hB (Nat.zero_le _)) ?_
+  simp only [eval_reg, St.getD_regs_1, St.set_regs_8]
+  refine Reaches.oread (show decider.instr 61 = _ from rfl) (hro 8 (by omega))
+    (st₁.forall_mem_regs hB₁ (Nat.zero_le _)) ?_
+  simp only [eval_reg, St.getD_regs_8, hm₁.literal_start, readLabel]
+  refine Reaches.oassign (show decider.instr 62 = _ from rfl) (by omega) (hro 8 (by omega))
+    (st₁.forall_mem_regs hB₁ (Nat.zero_le _)) ?_
+  simp only [eval_reg, St.getD_regs_8, St.set_regs_9]
+  simpa [st₁] using reaches_skipLitCode codeAt_skipLit₆₃ (by omega) (by simp) hm₁
+    (St.getD_regs_9 { st₁ with q₂ := st.p } 0)
+    (St.forall_mem_regs (st := { st₁ with q₂ := st.p }) (by simp only [st₁]; bounded_tac)
+      (Nat.zero_le _)) hend₁
+
+/-- Reading the second literal `m₂` of a clause from label `66` and checking for a third. -/
+private theorem reaches_inspect_second {st₂ : St} {m₂ : Literal ℕ} {rest : Clause ℕ}
+    (hrest : LitsAt (encCNF φ) st₂.q₂ (m₂ :: rest)) (hB₂ : st₂.Bounded (bnd φ)) :
+    ∃ st₃ : St, st₃.Bounded (bnd φ) ∧ Same st₂ st₃ ∧ st₃.q₁ = st₂.q₁ ∧ st₃.q₂ = st₂.q₂ ∧
+      decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (66, st₂.regs 0)
+        (if rest = [] then 74 else 103, st₃.regs 0) := by
+  have hro : ∀ i, i ≠ 0 → (reg i).readsChoice = false := fun i hi => by
+    simp [Expr.readsChoice, hi]
+  obtain ⟨hm₂, hrest₂⟩ := hrest.cons
+  have hend₂ := le_bnd_of_infixAt hm₂ (literalBits_ne_nil _ _)
+  set q₃ := st₂.q₂ + (literalBits m₂.1 m₂.2).length
+  set st₃ : St := { st₂ with q₃ := q₃ }
+  have hB₃ : st₃.Bounded (bnd φ) := by simp only [st₃, q₃]; bounded_tac
+  have h₇₃ : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (66, st₂.regs 0)
+      (73, st₃.regs 0) := by
+    refine Reaches.oread (show decider.instr 66 = _ from rfl) (hro 9 (by omega))
+      (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
+    simp only [eval_reg, St.getD_regs_9, hm₂.literal_start, readLabel]
+    refine Reaches.oassign (show decider.instr 69 = _ from rfl) (by omega) (hro 9 (by omega))
+      (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
+    simp only [eval_reg, St.getD_regs_9, St.set_regs_10]
+    simpa [st₃, q₃] using reaches_skipLitCode codeAt_skipLit₇₀ (by omega) (by simp) hm₂
+      (St.getD_regs_10 { st₂ with q₃ := st₂.q₂ } 0)
+      (St.forall_mem_regs (st := { st₂ with q₃ := st₂.q₂ }) (by bounded_tac) (Nat.zero_le _))
+      hend₂
+  refine ⟨st₃, hB₃, Same.rfl', rfl, rfl, h₇₃.trans ?_⟩
+  refine Reaches.oread (show decider.instr 73 = _ from rfl) (hro 10 (by omega))
+    (st₃.forall_mem_regs hB₃ (Nat.zero_le _)) ?_
+  rcases rest with _ | ⟨m₃, rest⟩
+  · simp only [eval_reg, St.getD_regs_10, st₃, hrest₂.getElem?_nil, readLabel, ↓reduceIte]
+    exact Reaches.refl _
+  · simp only [eval_reg, St.getD_regs_10, st₃, hrest₂.cons.1.literal_start, readLabel,
+      reduceCtorEq, ↓reduceIte]
+    exact Reaches.refl _
+
 /-- **Reading a guessed clause**, deterministically, up to the guess of its literal `ℓ'`: an
 empty clause or one with more than two literals is rejected, the literal of a unit clause is
 taken, and the two literals of a clause of width two are placed in registers `8` and `9`. -/
@@ -815,44 +868,24 @@ theorem reaches_inspect {q : ℕ} {c : Clause ℕ} (hc : LitsAt (encCNF φ) q c)
   have hro : ∀ i, i ≠ 0 → (reg i).readsChoice = false := fun i hi => by
     simp [Expr.readsChoice, hi]
   subst hp
-  have hpB : st.p ≤ bnd φ := hB.1
-  set st₁ : St := { st with q₁ := st.p }
-  have hB₁ : st₁.Bounded (bnd φ) := by simp only [st₁]; bounded_tac
-  have h₆₀ : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (60, st.regs 0)
-      (61, st₁.regs 0) := by
+  rcases c with _ | ⟨m₁, rest⟩
+  · set st₁ : St := { st with q₁ := st.p }
+    have hB₁ : st₁.Bounded (bnd φ) := by simp only [st₁]; bounded_tac
+    refine ⟨st₁, hB₁, Same.rfl', .inl ⟨.inl rfl, ?_⟩⟩
     refine Reaches.oassign (show decider.instr 60 = _ from rfl) (by omega) (hro 1 (by omega))
       (st.forall_mem_regs hB (Nat.zero_le _)) ?_
     simp only [eval_reg, St.getD_regs_1, St.set_regs_8]
-    exact Reaches.refl _
-  rcases c with _ | ⟨m₁, rest⟩
-  · refine ⟨st₁, hB₁, Same.rfl', .inl ⟨.inl rfl, h₆₀.trans ?_⟩⟩
     refine Reaches.oread (show decider.instr 61 = _ from rfl) (hro 8 (by omega))
       (st₁.forall_mem_regs hB₁ (Nat.zero_le _)) ?_
     simp only [eval_reg, St.getD_regs_8, st₁, hc.getElem?_nil, readLabel]
     exact Reaches.refl _
   obtain ⟨hm₁, hrest⟩ := hc.cons
-  have hend₁ := le_bnd_of_infixAt hm₁ (literalBits_ne_nil _ _)
-  set q₂ := st.p + (literalBits m₁.1 m₁.2).length
-  set st₂ : St := { st₁ with q₂ := q₂ }
-  have hB₂ : st₂.Bounded (bnd φ) := by simp only [st₂, st₁]; bounded_tac
-  have h₆₆ : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (60, st.regs 0)
-      (66, st₂.regs 0) := by
-    refine h₆₀.trans (Reaches.oread (show decider.instr 61 = _ from rfl) (hro 8 (by omega))
-      (st₁.forall_mem_regs hB₁ (Nat.zero_le _)) ?_)
-    simp only [eval_reg, St.getD_regs_8, st₁, hm₁.literal_start, readLabel]
-    refine Reaches.oassign (show decider.instr 62 = _ from rfl) (by omega) (hro 8 (by omega))
-      (st₁.forall_mem_regs hB₁ (Nat.zero_le _)) ?_
-    simp only [eval_reg, St.getD_regs_8, St.set_regs_9]
-    have := reaches_skipLitCode codeAt_skipLit₆₃ (by omega) (by simp) hm₁
-      (St.getD_regs_9 { st₁ with q₂ := st.p } 0)
-      (St.forall_mem_regs (st := { st₁ with q₂ := st.p }) (by simp only [st₁]; bounded_tac)
-        (Nat.zero_le _)) hend₁
-    simpa [st₂, st₁, q₂] using this
+  set st₂ : St := { st with q₁ := st.p, q₂ := st.p + (literalBits m₁.1 m₁.2).length }
+  obtain ⟨hB₂, h₆₆⟩ := reaches_inspect_first hm₁ hB
   rcases rest with _ | ⟨m₂, rest⟩
   · -- a unit clause
-    set st₃ : St := { st₂ with o₁ := st.p, o₂ := st.p }
-    have hB₃ : st₃.Bounded (bnd φ) := by simp only [st₃, st₂, st₁]; bounded_tac
-    refine ⟨st₃, hB₃, Same.rfl', .inr (.inl ⟨m₁, rfl, hm₁, hm₁, h₆₆.trans ?_⟩)⟩
+    refine ⟨{ st₂ with o₁ := st.p, o₂ := st.p }, by change st₂.Bounded (bnd φ) at hB₂; bounded_tac,
+      Same.rfl', .inr (.inl ⟨m₁, rfl, hm₁, hm₁, h₆₆.trans ?_⟩)⟩
     refine Reaches.oread (show decider.instr 66 = _ from rfl) (hro 9 (by omega))
       (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
     simp only [eval_reg, St.getD_regs_9, st₂, hrest.getElem?_nil, readLabel]
@@ -860,38 +893,16 @@ theorem reaches_inspect {q : ℕ} {c : Clause ℕ} (hc : LitsAt (encCNF φ) q c)
       (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
     simp only [eval_reg, St.getD_regs_8, St.set_regs_11]
     refine Reaches.oassign (show decider.instr 68 = _ from rfl) (by omega) (hro 8 (by omega))
-      (St.forall_mem_regs (by simp only [st₁]; bounded_tac) (Nat.zero_le _)) ?_
+      (St.forall_mem_regs (by bounded_tac) (Nat.zero_le _)) ?_
     simp only [eval_reg, St.getD_regs_8, St.set_regs_12]
     exact Reaches.refl _
-  obtain ⟨hm₂, hrest₂⟩ := hrest.cons
-  have hend₂ := le_bnd_of_infixAt hm₂ (literalBits_ne_nil _ _)
-  set q₃ := q₂ + (literalBits m₂.1 m₂.2).length
-  set st₃ : St := { st₂ with q₃ := q₃ }
-  have hB₃ : st₃.Bounded (bnd φ) := by simp only [st₃, st₂, st₁]; bounded_tac
-  have h₇₃ : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (60, st.regs 0)
-      (73, st₃.regs 0) := by
-    refine h₆₆.trans (Reaches.oread (show decider.instr 66 = _ from rfl) (hro 9 (by omega))
-      (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_)
-    simp only [eval_reg, St.getD_regs_9, st₂, hm₂.literal_start, readLabel]
-    refine Reaches.oassign (show decider.instr 69 = _ from rfl) (by omega) (hro 9 (by omega))
-      (st₂.forall_mem_regs hB₂ (Nat.zero_le _)) ?_
-    simp only [eval_reg, St.getD_regs_9, St.set_regs_10]
-    have := reaches_skipLitCode codeAt_skipLit₇₀ (by omega) (by simp) hm₂
-      (St.getD_regs_10 { st₂ with q₃ := q₂ } 0)
-      (St.forall_mem_regs (st := { st₂ with q₃ := q₂ }) (by simp only [st₂, st₁]; bounded_tac)
-        (Nat.zero_le _)) hend₂
-    simpa [st₃, st₂, st₁, q₃] using this
+  obtain ⟨st₃, hB₃, hsame, hq₁, hq₂, h₂⟩ := reaches_inspect_second (st₂ := st₂) hrest hB₂
   rcases rest with _ | ⟨m₃, rest⟩
-  · refine ⟨st₃, hB₃, Same.rfl', .inr (.inr ⟨m₁, m₂, rfl, hm₁, hm₂, h₇₃.trans ?_⟩)⟩
-    refine Reaches.oread (show decider.instr 73 = _ from rfl) (hro 10 (by omega))
-      (st₃.forall_mem_regs hB₃ (Nat.zero_le _)) ?_
-    simp only [eval_reg, St.getD_regs_10, st₃, hrest₂.getElem?_nil, readLabel]
-    exact Reaches.refl _
-  · refine ⟨st₃, hB₃, Same.rfl', .inl ⟨.inr (by simp), h₇₃.trans ?_⟩⟩
-    refine Reaches.oread (show decider.instr 73 = _ from rfl) (hro 10 (by omega))
-      (st₃.forall_mem_regs hB₃ (Nat.zero_le _)) ?_
-    simp only [eval_reg, St.getD_regs_10, st₃, hrest₂.cons.1.literal_start, readLabel]
-    exact Reaches.refl _
+  · rw [ite_eq_left rfl] at h₂
+    exact ⟨st₃, hB₃, hsame, .inr (.inr ⟨m₁, m₂, rfl, hq₁ ▸ hm₁, hq₂ ▸ hrest.cons.1,
+      h₆₆.trans h₂⟩)⟩
+  · rw [ite_eq_right (by simp)] at h₂
+    exact ⟨st₃, hB₃, hsame, .inl ⟨.inr (by simp), h₆₆.trans h₂⟩⟩
 
 /-- The registers after the guess of `ℓ'` in a clause of width two. -/
 def pairSt (st : St) (first : Bool) : St :=
@@ -1082,6 +1093,52 @@ def headOut (st : St) (same : Prop) [Decidable same] (X Y : ℕ) : ℕ × St :=
     else (102, { st with t₁ := X, t₂ := Y })
   else (50, { st with t₁ := X, t₂ := Y })
 
+/-- Comparing the polarity `st.sgn` with `st.phase` at label `45` when `v = x`. -/
+private theorem reaches_head_eq {st : St} (hsgn : st.sgn ≤ 1) (hph : st.phase ≤ 1)
+    (hB : st.Bounded (bnd φ)) {X Y : ℕ} (hX : X ≤ bnd φ) (hY : Y ≤ bnd φ) :
+    decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ))
+      (45, ({ st with t₁ := X, t₂ := Y } : St).regs 0)
+      ((headOut st True X Y).1, (headOut st True X Y).2.regs 0) := by
+  set st₁ : St := { st with t₁ := X, t₂ := Y }
+  have hB₁ : st₁.Bounded (bnd φ) := by simp only [st₁]; bounded_tac
+  have hR := st₁.forall_mem_regs hB₁ (Nat.zero_le _)
+  simp only [headOut, true_and]
+  refine Reaches.olt (show decider.instr 45 = _ from rfl) (by simp [Expr.readsChoice])
+    (by simp [Expr.readsChoice]) hR ?_
+  rcases (by omega : st.sgn = 0 ∨ st.sgn = 1) with hs0 | hs1
+  · simp only [eval_reg, eval_const, St.getD_regs_4, show st₁.sgn = 0 from hs0,
+      Nat.zero_lt_one, ↓reduceIte]
+    refine Reaches.olt (show decider.instr 46 = _ from rfl) (by simp [Expr.readsChoice])
+      (by simp [Expr.readsChoice]) hR ?_
+    rcases (by omega : st.phase = 0 ∨ st.phase = 1) with hp0 | hp1
+    · simp only [eval_reg, eval_const, St.getD_regs_5, show st₁.phase = 0 from hp0,
+        Nat.zero_lt_one, ↓reduceIte]
+      rw [ite_eq_left (by rw [hs0, hp0]), ite_eq_left hp0]
+      refine Reaches.oassign (show decider.instr 48 = _ from rfl) (by omega)
+        (by simp [Expr.readsChoice]) hR ?_
+      simp only [eval_const, St.set_regs_5]
+      refine Reaches.oassign (show decider.instr 49 = _ from rfl) (by omega)
+        (by simp [Expr.readsChoice]) (St.forall_mem_regs (st := { st₁ with phase := 1 })
+          (by simp only [st₁]; bounded_tac) (Nat.zero_le _)) ?_
+      simpa [eval_const, St.set_regs_6] using Reaches.refl _
+    · simp only [eval_reg, eval_const, St.getD_regs_5, show st₁.phase = 1 from hp1, lt_irrefl,
+        ↓reduceIte]
+      rw [ite_eq_right (by omega)]
+      exact Reaches.refl _
+  · simp only [eval_reg, eval_const, St.getD_regs_4, show st₁.sgn = 1 from hs1, lt_irrefl,
+      ↓reduceIte]
+    refine Reaches.olt (show decider.instr 47 = _ from rfl) (by simp [Expr.readsChoice])
+      (by simp [Expr.readsChoice]) hR ?_
+    rcases (by omega : st.phase = 0 ∨ st.phase = 1) with hp0 | hp1
+    · simp only [eval_reg, eval_const, St.getD_regs_5, show st₁.phase = 0 from hp0,
+        Nat.zero_lt_one, ↓reduceIte]
+      rw [ite_eq_right (by omega)]
+      exact Reaches.refl _
+    · simp only [eval_reg, eval_const, St.getD_regs_5, show st₁.phase = 1 from hp1, lt_irrefl,
+        ↓reduceIte]
+      rw [ite_eq_left (by rw [hs1, hp1]), ite_eq_right (by omega)]
+      exact Reaches.refl _
+
 /-- **The head of the walk**, deterministically: it compares the current variable `v` with the
 starting variable `x`, and the polarity with the phase. -/
 theorem reaches_head {st : St} {x v : ℕ} {b₀ b₁ : Bool}
@@ -1099,63 +1156,9 @@ theorem reaches_head {st : St} {x v : ℕ} {b₀ b₁ : Bool}
     hendc hend₀
   simp only [St.set_regs_13, St.set_regs_14] at hcmp
   refine ⟨X, Y, hX, hY, hcmp.trans ?_⟩
-  set st₁ : St := { st with t₁ := X, t₂ := Y } with hst₁
-  have hB₁ : st₁.Bounded (bnd φ) := by simp only [st₁]; bounded_tac
-  have hR := st₁.forall_mem_regs hB₁ (Nat.zero_le _)
   by_cases hvx : v = x
-  swap
+  · simpa [headOut, hvx] using reaches_head_eq hsgn hph hB hX hY
   · simp only [headOut, hvx, false_and, ↓reduceIte]
-    exact Reaches.refl _
-  simp only [headOut, hvx, true_and, ↓reduceIte]
-  have hsg : st.sgn = 0 ∨ st.sgn = 1 := by omega
-  have hp : st.phase = 0 ∨ st.phase = 1 := by omega
-  rcases hsg with hs0 | hs1 <;> rcases hp with hp0 | hp1
-  · rw [ite_eq_left (by rw [hs0, hp0]), ite_eq_left hp0]
-    refine Reaches.olt (show decider.instr 45 = _ from rfl) (by simp [Expr.readsChoice])
-      (by simp [Expr.readsChoice]) hR ?_
-    simp only [eval_reg, eval_const, St.getD_regs_4, show st₁.sgn = 0 from hs0,
-      Nat.zero_lt_one, ↓reduceIte]
-    refine Reaches.olt (show decider.instr 46 = _ from rfl) (by simp [Expr.readsChoice])
-      (by simp [Expr.readsChoice]) hR ?_
-    simp only [eval_reg, eval_const, St.getD_regs_5, show st₁.phase = 0 from hp0,
-      Nat.zero_lt_one, ↓reduceIte]
-    refine Reaches.oassign (show decider.instr 48 = _ from rfl) (by omega)
-      (by simp [Expr.readsChoice]) hR ?_
-    simp only [eval_const, St.set_regs_5]
-    refine Reaches.oassign (show decider.instr 49 = _ from rfl) (by omega)
-      (by simp [Expr.readsChoice]) (St.forall_mem_regs (st := { st₁ with phase := 1 })
-        (by simp only [st₁]; bounded_tac) (Nat.zero_le _)) ?_
-    simp only [eval_const, St.set_regs_6]
-    exact Reaches.refl _
-  · rw [ite_eq_right (by omega)]
-    refine Reaches.olt (show decider.instr 45 = _ from rfl) (by simp [Expr.readsChoice])
-      (by simp [Expr.readsChoice]) hR ?_
-    simp only [eval_reg, eval_const, St.getD_regs_4, show st₁.sgn = 0 from hs0,
-      Nat.zero_lt_one, ↓reduceIte]
-    refine Reaches.olt (show decider.instr 46 = _ from rfl) (by simp [Expr.readsChoice])
-      (by simp [Expr.readsChoice]) hR ?_
-    simp only [eval_reg, eval_const, St.getD_regs_5, show st₁.phase = 1 from hp1, lt_irrefl,
-      ↓reduceIte]
-    exact Reaches.refl _
-  · rw [ite_eq_right (by omega)]
-    refine Reaches.olt (show decider.instr 45 = _ from rfl) (by simp [Expr.readsChoice])
-      (by simp [Expr.readsChoice]) hR ?_
-    simp only [eval_reg, eval_const, St.getD_regs_4, show st₁.sgn = 1 from hs1, lt_irrefl,
-      ↓reduceIte]
-    refine Reaches.olt (show decider.instr 47 = _ from rfl) (by simp [Expr.readsChoice])
-      (by simp [Expr.readsChoice]) hR ?_
-    simp only [eval_reg, eval_const, St.getD_regs_5, show st₁.phase = 0 from hp0,
-      Nat.zero_lt_one, ↓reduceIte]
-    exact Reaches.refl _
-  · rw [ite_eq_left (by rw [hs1, hp1]), ite_eq_right (by omega)]
-    refine Reaches.olt (show decider.instr 45 = _ from rfl) (by simp [Expr.readsChoice])
-      (by simp [Expr.readsChoice]) hR ?_
-    simp only [eval_reg, eval_const, St.getD_regs_4, show st₁.sgn = 1 from hs1, lt_irrefl,
-      ↓reduceIte]
-    refine Reaches.olt (show decider.instr 47 = _ from rfl) (by simp [Expr.readsChoice])
-      (by simp [Expr.readsChoice]) hR ?_
-    simp only [eval_reg, eval_const, St.getD_regs_5, show st₁.phase = 1 from hp1, lt_irrefl,
-      ↓reduceIte]
     exact Reaches.refl _
 
 /-- **Every branch from the head of the walk** halts, accepting only when both paths are found,
@@ -1373,6 +1376,53 @@ theorem branches_modeA {c : Clause ℕ} (hc : c ∈ φ) (hw : c.length = 0 ∨ 3
   simp only [Bool.false_eq_true, ↓reduceIte]
   exact hscan.trans (branches_of_reaches' hwidth (by omega) false false)
 
+/-- Two literals `ℓ'` and `m` covering a two-literal clause `[m₁, m₂]` match in one of the two
+orders. -/
+private theorem pair_choice {ℓ' m m₁ m₂ : Literal ℕ} (hm : m ∈ [m₁, m₂]) (hℓ' : ℓ' ∈ [m₁, m₂])
+    (hall : ∀ y ∈ [m₁, m₂], y = m ∨ y = ℓ') :
+    (ℓ' = m₁ ∧ m = m₂) ∨ (ℓ' = m₂ ∧ m = m₁) := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hm hℓ'
+  by_cases h1 : ℓ' = m₁
+  · refine .inl ⟨h1, ?_⟩
+    rcases hall m₂ (by simp) with h | h
+    · exact h.symm
+    · exact hm.elim (fun h' => h'.trans (h1.symm.trans h.symm)) id
+  · refine .inr ⟨hℓ'.resolve_left h1, ?_⟩
+    rcases hall m₁ (by simp) with h | h
+    · exact h.symm
+    · exact absurd h.symm h1
+
+/-- Choosing the order of the two literals of a binary clause at label `74` so that `ℓ'` is in
+`o₁` and `m` is in `o₂`. -/
+private theorem branches_arc_pair {st st₂ st₃ : St} {b : Bool} {ℓ' m m₁ m₂ : Literal ℕ}
+    (hB₃ : st₃.Bounded (bnd φ)) (hsame : Same st₂ st₃)
+    (hm : m ∈ [m₁, m₂]) (hℓ' : ℓ' ∈ [m₁, m₂]) (hall : ∀ y ∈ [m₁, m₂], y = m ∨ y = ℓ')
+    (hq₁ : InfixAt (encCNF φ) st₃.q₁ (literalBits m₁.1 m₁.2))
+    (hq₂ : InfixAt (encCNF φ) st₃.q₂ (literalBits m₂.1 m₂.2))
+    (hto60 : Branches (P := decider) (w := encCNF φ) (50, st.regs b.toNat)
+      (60, st₂.regs (false : Bool).toNat))
+    (h : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (60, st₂.regs 0)
+      (74, st₃.regs 0)) :
+    ∃ st₄ : St, st₄.Bounded (bnd φ) ∧ Same st₂ st₄ ∧
+      InfixAt (encCNF φ) st₄.o₁ (literalBits ℓ'.1 ℓ'.2) ∧
+      InfixAt (encCNF φ) st₄.o₂ (literalBits m.1 m.2) ∧
+      Branches (P := decider) (w := encCNF φ) (50, st.regs b.toNat)
+        (79, st₄.regs (false : Bool).toNat) := by
+  obtain ⟨h₀, h₁, h₂, h₃, h₄, h₅⟩ := hsame
+  have hB₃' (first : Bool) : (pairSt st₃ first).Bounded (bnd φ) := by
+    cases first <;> simp only [pairSt, Bool.false_eq_true, ite_false, ite_true] <;> bounded_tac
+  rcases pair_choice hm hℓ' hall with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+  · refine ⟨pairSt st₃ true, hB₃' true, ⟨h₀, h₁, h₂, h₃, h₄, h₅⟩, by simpa [pairSt] using hq₁,
+      by simpa [pairSt] using hq₂, hto60.trans ?_⟩
+    exact (branches_of_reaches' h (by omega) false false).trans
+      ((branches_choice (show decider.instr 74 = _ from rfl) st₃ false false).trans
+        (branches_of_reaches' (reaches_pair hB₃ true) (by simp) false false))
+  · refine ⟨pairSt st₃ false, hB₃' false, ⟨h₀, h₁, h₂, h₃, h₄, h₅⟩, by simpa [pairSt] using hq₂,
+      by simpa [pairSt] using hq₁, hto60.trans ?_⟩
+    exact (branches_of_reaches' h (by omega) false true).trans
+      ((branches_choice (show decider.instr 74 = _ from rfl) st₃ true false).trans
+        (branches_of_reaches' (reaches_pair hB₃ false) (by simp) false false))
+
 /-- **A branch along an arc** of the implication graph, from label `50` back to the head of the
 walk, for a formula whose clauses have one or two literals. -/
 theorem branches_arc {st : St} {v : ℕ} {b₁ : Bool}
@@ -1392,70 +1442,62 @@ theorem branches_arc {st : St} {v : ℕ} {b₁ : Bool}
     false
   set st₂ : St := { stepSt st with p := q }
   have hB₂ : st₂.Bounded (bnd φ) := by simp only [st₂, stepSt]; bounded_tac
-  have hto60 : Branches (P := decider) (w := encCNF φ) (50, st.regs b.toNat)
-      (60, st₂.regs (false : Bool).toNat) :=
-    (branches_of_reaches' (reaches_steps hB hlen hs) (by omega) b false).trans hscan
-  obtain ⟨st₃, hB₃, ⟨h₀, h₁, h₂, h₃, h₄, h₅⟩, hcase⟩ := reaches_inspect hq rfl hB₂
+  have hto60 := (branches_of_reaches' (reaches_steps hB hlen hs) (by omega) b false).trans hscan
+  obtain ⟨st₃, hB₃, hsame, hcase⟩ := reaches_inspect hq rfl hB₂
   -- the positions of `ℓ'` and of the negation of the current literal, at label `79`
-  obtain ⟨st₄, hB₄, h₄₀, h₄₁, h₄₂, h₄₃, h₄₄, h₄₅, ho₁, ho₂, hto79⟩ : ∃ st₄ : St,
-      st₄.Bounded (bnd φ) ∧ st₄.o₀ = st.o₀ ∧ st₄.cur = st.cur ∧ st₄.sgn = st.sgn ∧
-      st₄.phase = st.phase ∧ st₄.steps = st.steps + 1 ∧ st₄.len = st.len ∧
-      InfixAt (encCNF φ) st₄.o₁ (literalBits ℓ'.1 ℓ'.2) ∧
-      InfixAt (encCNF φ) st₄.o₂ (literalBits (Std.Sat.Literal.negate (v, decide (st.sgn = 1))).1
-        (Std.Sat.Literal.negate (v, decide (st.sgn = 1))).2) ∧
-      Branches (P := decider) (w := encCNF φ) (50, st.regs b.toNat)
-        (79, st₄.regs (false : Bool).toNat) := by
+  obtain ⟨st₄, hB₄, ⟨h₄₀, h₄₁, h₄₂, h₄₃, h₄₄, h₄₅⟩, ho₁, ho₂, hto79⟩ :
+      ∃ st₄ : St, st₄.Bounded (bnd φ) ∧ Same st₂ st₄ ∧
+        InfixAt (encCNF φ) st₄.o₁ (literalBits ℓ'.1 ℓ'.2) ∧
+        InfixAt (encCNF φ) st₄.o₂ (literalBits (Std.Sat.Literal.negate (v, decide (st.sgn = 1))).1
+          (Std.Sat.Literal.negate (v, decide (st.sgn = 1))).2) ∧
+        Branches (P := decider) (w := encCNF φ) (50, st.regs b.toNat)
+          (79, st₄.regs (false : Bool).toNat) := by
     rcases hcase with ⟨hbad, -⟩ | ⟨m₁, hc, ho₁, ho₂, h⟩ | ⟨m₁, m₂, hc, hq₁, hq₂, h⟩
     · have := hw _ hcφ
       rcases hbad with h | h
-      · rw [h] at this
-        simp at this
+      · simp [h] at this
       · omega
     · rw [hc] at hneg hℓ'
       simp only [List.mem_singleton] at hneg hℓ'
-      refine ⟨st₃, hB₃, h₀, h₁, h₂, h₃, h₄, h₅, hℓ' ▸ ho₁, hneg ▸ ho₂,
+      exact ⟨st₃, hB₃, hsame, hℓ' ▸ ho₁, hneg ▸ ho₂,
         hto60.trans (branches_of_reaches' h (by omega) false false)⟩
     · rw [hc] at hneg hℓ' hall
-      have hfirst : (ℓ' = m₁ ∧ Std.Sat.Literal.negate (v, decide (st.sgn = 1)) = m₂) ∨
-          (ℓ' = m₂ ∧ Std.Sat.Literal.negate (v, decide (st.sgn = 1)) = m₁) := by
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hneg hℓ'
-        by_cases h1 : ℓ' = m₁
-        · refine .inl ⟨h1, ?_⟩
-          rcases hall m₂ (by simp) with h | h
-          · exact h.symm
-          · rcases hneg with h' | h'
-            · exact h'.trans (h1.symm.trans h.symm)
-            · exact h'
-        · have h2 : ℓ' = m₂ := hℓ'.resolve_left h1
-          refine .inr ⟨h2, ?_⟩
-          rcases hall m₁ (by simp) with h | h
-          · exact h.symm
-          · exact absurd h.symm h1
-      have hB₃' (first : Bool) : (pairSt st₃ first).Bounded (bnd φ) := by
-        cases first <;> simp only [pairSt, Bool.false_eq_true, ite_false, ite_true] <;>
-          bounded_tac
-      rcases hfirst with ⟨rfl, hm⟩ | ⟨rfl, hm⟩
-      · refine ⟨pairSt st₃ true, hB₃' true, h₀, h₁, h₂, h₃, h₄, h₅, by simpa [pairSt] using hq₁,
-          by simpa [pairSt, hm] using hq₂, hto60.trans ?_⟩
-        refine (branches_of_reaches' h (by omega) false false).trans
-          ((branches_choice (show decider.instr 74 = _ from rfl) st₃ false false).trans ?_)
-        exact branches_of_reaches' (reaches_pair hB₃ true) (by simp) false false
-      · refine ⟨pairSt st₃ false, hB₃' false, h₀, h₁, h₂, h₃, h₄, h₅,
-          by simpa [pairSt] using hq₂, by simpa [pairSt, hm] using hq₁, hto60.trans ?_⟩
-        refine (branches_of_reaches' h (by omega) false true).trans
-          ((branches_choice (show decider.instr 74 = _ from rfl) st₃ true false).trans ?_)
-        exact branches_of_reaches' (reaches_pair hB₃ false) (by simp) false false
+      exact branches_arc_pair hB₃ hsame hneg hℓ' hall hq₁ hq₂ hto60 h
   -- the check
-  have hcur₄ : InfixAt (encCNF φ) st₄.cur (literalBits v b₁) := h₄₁ ▸ hcur
-  obtain ⟨st₅, hB₅, hcheck, hfields⟩ := reaches_check hcur₄ (by rw [h₄₂]; exact hsgn) ho₁ ho₂
-    hB₄
+  obtain ⟨st₅, hB₅, hcheck, hfields⟩ := reaches_check (h₄₁ ▸ hcur) (by rw [h₄₂]; exact hsgn)
+    ho₁ ho₂ hB₄
   have hpass : Std.Sat.Literal.negate (v, decide (st.sgn = 1)) =
-      Std.Sat.Literal.negate (v, decide (st₄.sgn = 1)) := by rw [h₄₂]
+      Std.Sat.Literal.negate (v, decide (st₄.sgn = 1)) := by simp [h₄₂, st₂, stepSt]
   rw [ite_eq_left hpass] at hcheck
   obtain ⟨h₅₀, h₅₁, h₅₂, h₅₃, h₅₄, h₅₅⟩ := hfields hpass
   refine ⟨st₅, false, hto79.trans (branches_of_reaches' hcheck (by omega) false false),
-    by rw [h₅₀, h₄₀], by rw [h₅₁, h₄₃], by rw [h₅₂, h₄₄], by rw [h₅₃, h₄₅],
+    by simp [h₅₀, h₄₀, st₂, stepSt], by simp [h₅₁, h₄₃, st₂, stepSt],
+    by simp [h₅₂, h₄₄, st₂, stepSt], by simp [h₅₃, h₄₅, st₂, stepSt],
     ⟨⟨_, hcφ, hℓ'⟩, h₅₄ ▸ ho₁⟩, h₅₅, hB₅⟩
+
+/-- Reaching the target of the current half of the walk at label `35`: phase `0` switches to phase
+`1` at label `50`, and phase `1` accepts at label `102`. -/
+private theorem branches_walk_hit {st : St} {x : ℕ} {b₁ : Bool}
+    (hOc : InfixAt (encCNF φ) st.cur (literalBits x b₁)) (hB : st.Bounded (bnd φ))
+    {X Y : ℕ} (hX : X ≤ bnd φ) (hY : Y ≤ bnd φ)
+    (hhead : decider.Reaches (encCNF φ) (decider.Oblivious (bnd φ)) (35, st.regs 0)
+      ((headOut st True X Y).1, (headOut st True X Y).2.regs 0))
+    (hhit : st.sgn = st.phase) (b : Bool) :
+    ∃ (l : ℕ) (st' : St) (b' : Bool),
+      Branches (P := decider) (w := encCNF φ) (35, st.regs b.toNat) (l, st'.regs b'.toNat) ∧
+      (st.phase = 0 → l = 50 ∧ st'.phase = 1 ∧ st'.steps = 0 ∧ st'.o₀ = st.o₀ ∧
+        st'.len = st.len ∧ st'.Bounded (bnd φ) ∧ st'.sgn = 0 ∧
+        ∃ b₂, InfixAt (encCNF φ) st'.cur (literalBits x b₂)) ∧
+      (st.phase = 1 → l = 102) := by
+  simp only [headOut, true_and, hhit, ↓reduceIte] at hhead
+  by_cases hp0 : st.phase = 0
+  · rw [ite_eq_left hp0] at hhead
+    exact ⟨50, _, false, branches_of_reaches' hhead (by omega) b false,
+      fun _ => ⟨rfl, rfl, rfl, rfl, rfl, by bounded_tac, by simp [hp0], b₁, hOc⟩,
+      fun h => absurd h (by omega)⟩
+  · rw [ite_eq_right hp0] at hhead
+    exact ⟨102, _, false, branches_of_reaches' hhead (by omega) b false,
+      fun h => absurd h hp0, fun _ => rfl⟩
 
 /-- **A branch along a walk** of the implication graph from the current literal to the end of the
 half, within the remaining steps: it ends switching to the second half, or accepting at the end
@@ -1476,38 +1518,21 @@ private theorem branches_walk (hw : ∀ c ∈ φ, 1 ≤ c.length ∧ c.length �
   induction m with
   | zero =>
     intro st v b₁ hO₀ hOc hsgn hph hB hlen hsteps hpath b
-    have heq := Relation.RelatesInSteps.zero hpath
-    simp only [Prod.mk.injEq] at heq
-    obtain ⟨rfl, hsp⟩ := heq
+    obtain ⟨rfl, hsp⟩ := Prod.mk.inj (Relation.RelatesInSteps.zero hpath)
     have hhit : st.sgn = st.phase := by
       have : st.sgn = 0 ∨ st.sgn = 1 := by omega
       have : st.phase = 0 ∨ st.phase = 1 := by omega
       by_cases h1 : st.sgn = 1 <;> by_cases h2 : st.phase = 1 <;> simp_all
     obtain ⟨X, Y, hX, hY, hhead⟩ := reaches_head hO₀ hOc hsgn hph hB
-    simp only [headOut, true_and, hhit, ↓reduceIte] at hhead
-    by_cases hp0 : st.phase = 0
-    · rw [ite_eq_left hp0] at hhead
-      refine ⟨50, _, false, branches_of_reaches' hhead (by omega) b false,
-        fun _ => ⟨rfl, rfl, rfl, rfl, rfl, by bounded_tac, by simp [hp0], b₁, hOc⟩,
-        fun h => absurd h (by omega)⟩
-    · rw [ite_eq_right hp0] at hhead
-      exact ⟨102, _, false, branches_of_reaches' hhead (by omega) b false,
-        fun h => absurd h hp0, fun _ => rfl⟩
+    exact branches_walk_hit hOc hB hX hY (by simpa [headOut] using hhead) hhit b
   | succ m ih =>
     intro st v b₁ hO₀ hOc hsgn hph hB hlen hsteps hpath b
     obtain ⟨ℓ₁, harc, hrest⟩ := hpath.succ'
     obtain ⟨X, Y, hX, hY, hhead⟩ := reaches_head hO₀ hOc hsgn hph hB
     by_cases hhit : v = x ∧ st.sgn = st.phase
     · -- the end of the half is reached already
-      simp only [headOut, hhit, and_self, ↓reduceIte] at hhead
-      by_cases hp0 : st.phase = 0
-      · rw [ite_eq_left hp0] at hhead
-        refine ⟨50, _, false, branches_of_reaches' hhead (by omega) b false,
-          fun _ => ⟨rfl, rfl, rfl, rfl, rfl, by bounded_tac, by simp [hp0], b₁,
-            hhit.1 ▸ hOc⟩, fun h => absurd h (by omega)⟩
-      · rw [ite_eq_right hp0] at hhead
-        exact ⟨102, _, false, branches_of_reaches' hhead (by omega) b false,
-          fun h => absurd h hp0, fun _ => rfl⟩
+      exact branches_walk_hit (hhit.1 ▸ hOc) hB hX hY (by simpa [headOut, hhit.1] using hhead)
+        hhit.2 b
     · -- one step along the walk
       rw [headOut, ite_eq_right (by simpa using hhit)] at hhead
       set st₁ : St := { st with t₁ := X, t₂ := Y }
@@ -1563,24 +1588,15 @@ private theorem exists_relatesInSteps {ℓ ℓ' : Literal ℕ}
   obtain ⟨m, hm, hsteps⟩ := h.relatesWithinSteps_of_encard_le hcard
   exact ⟨m, hm.trans (length_flatten_le_length_encCNF φ), hsteps⟩
 
-/-- **An accepting branch for a variable `x` with a path from `x` to `¬x` and one back**, for a
-formula whose clauses have one or two literals. -/
-theorem branches_modeB (hw : ∀ c ∈ φ, 1 ≤ c.length ∧ c.length ≤ 2) {x : ℕ}
-    (h₁ : Relation.ReflTransGen φ.Implies (x, true) (x, false))
-    (h₂ : Relation.ReflTransGen φ.Implies (x, false) (x, true)) :
-    ∃ s, Branches (P := decider) (w := encCNF φ) decider.init s ∧
-      decider.instr s.1 = .accept := by
+/-- Guessing the initial literal occurrence `(x, false)` in mode B and reaching the walk head at
+label `35`. -/
+private theorem branches_modeB_init {x m₁ : ℕ}
+    (hpath₁ : Relation.RelatesInSteps φ.Implies (x, true) (x, false) (m₁ + 1)) :
+    ∃ o ≤ bnd φ, InfixAt (encCNF φ) o (literalBits x false) ∧
+      Branches (P := decider) (w := encCNF φ) decider.init
+        (35, ({ len := (encCNF φ).length, p := o, o₀ := o, cur := o, sgn := 1 } : St).regs
+          (false : Bool).toNat) := by
   -- an occurrence of `x`: the first arc out of `x` comes from a clause containing `¬x`
-  obtain ⟨m₁, hm₁, hpath₁⟩ := exists_relatesInSteps h₁
-  obtain ⟨m₂, hm₂, hpath₂⟩ := exists_relatesInSteps h₂
-  obtain ⟨m₁, rfl⟩ : ∃ k, m₁ = k + 1 := by
-    rcases m₁ with _ | k
-    · simp at hpath₁
-    · exact ⟨k, rfl⟩
-  obtain ⟨m₂, rfl⟩ : ∃ k, m₂ = k + 1 := by
-    rcases m₂ with _ | k
-    · simp at hpath₂
-    · exact ⟨k, rfl⟩
   obtain ⟨ℓ₁, ⟨c, hcφ, hneg, -, -⟩, -⟩ := hpath₁.succ'
   obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hcφ
   obtain ⟨j, hj, hjx⟩ := List.mem_iff_getElem.mp hneg
@@ -1594,16 +1610,30 @@ theorem branches_modeB (hw : ∀ c ∈ φ, 1 ≤ c.length ∧ c.length ≤ 2) {x
     false
   replace ho : InfixAt (encCNF φ) o (literalBits x false) := by rw [hjx] at ho; exact ho
   have hoB := le_bnd_of_infixAt ho (literalBits_ne_nil _ _)
+  refine ⟨o, by omega, ho, ?_⟩
+  rw [init_decider]
+  refine (branches_of_reaches' (reaches_count 0 (Nat.zero_le _)) (by omega) false true).trans ?_
+  refine (branches_choice (show decider.instr 2 = _ from rfl) _ true false).trans ?_
+  simp only [↓reduceIte]
+  exact hscan.trans (hlit.trans
+    (branches_of_reaches' (reaches_pick rfl (by bounded_tac)) (by omega) false false))
+
+/-- **An accepting branch for a variable `x` with a path from `x` to `¬x` and one back**, for a
+formula whose clauses have one or two literals. -/
+theorem branches_modeB (hw : ∀ c ∈ φ, 1 ≤ c.length ∧ c.length ≤ 2) {x : ℕ}
+    (h₁ : Relation.ReflTransGen φ.Implies (x, true) (x, false))
+    (h₂ : Relation.ReflTransGen φ.Implies (x, false) (x, true)) :
+    ∃ s, Branches (P := decider) (w := encCNF φ) decider.init s ∧
+      decider.instr s.1 = .accept := by
+  obtain ⟨m₁, hm₁, hpath₁⟩ := exists_relatesInSteps h₁
+  obtain ⟨m₂, hm₂, hpath₂⟩ := exists_relatesInSteps h₂
+  rcases m₁ with _ | m₁
+  · simp at hpath₁
+  rcases m₂ with _ | m₂
+  · simp at hpath₂
+  obtain ⟨o, hoB, ho, hto35⟩ := branches_modeB_init hpath₁
   set st₀ : St := { len := (encCNF φ).length, p := o, o₀ := o, cur := o, sgn := 1 }
   have hB₀ : st₀.Bounded (bnd φ) := by simp only [st₀]; bounded_tac
-  have hto35 : Branches (P := decider) (w := encCNF φ) decider.init
-      (35, st₀.regs (false : Bool).toNat) := by
-    rw [init_decider]
-    refine (branches_of_reaches' (reaches_count 0 (Nat.zero_le _)) (by omega) false true).trans ?_
-    refine (branches_choice (show decider.instr 2 = _ from rfl) _ true false).trans ?_
-    simp only [↓reduceIte]
-    refine hscan.trans (hlit.trans ?_)
-    exact branches_of_reaches' (reaches_pick rfl (by bounded_tac)) (by omega) false false
   -- the first half, from `x` to `¬x`
   obtain ⟨l, st₁, b₁, hbr₁, h0, -⟩ := branches_walk hw (m₁ + 1) st₀ (v := x) (b₁ := false) ho ho
     (by simp [st₀]) (by simp [st₀]) hB₀ rfl (by simp only [st₀]; omega)

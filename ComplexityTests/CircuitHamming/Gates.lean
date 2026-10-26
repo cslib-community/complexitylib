@@ -232,6 +232,14 @@ example (f g h : Fin 0 → Bool) :
       hammingDist f h + hammingDist g h :=
   hammingDist_and_add_hammingDist_or f g h
 
+/-- Flipping a disagreeing coordinate (`i = 0`) decreases the Hamming distance by one; flipping an
+agreeing coordinate (`i = 1`) increases it by one. -/
+example :
+    hammingDist (flipOn {0} ![true, false, false]) ![false, false, false] = 0 ∧
+      hammingDist (flipOn {1} ![true, false, false]) ![false, false, false] = 2 := by
+  rw [hammingDist_flip, hammingDist_flip]
+  decide
+
 /-! ### Axioms -/
 
 /--

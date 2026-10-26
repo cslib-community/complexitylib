@@ -74,7 +74,7 @@ noncomputable def parityPredictionGame (f : List Bool → List Bool) (adversary 
 /-- The prediction experiment composes sampling, the adversary and Boolean word operations. -/
 @[program_certificate]
 theorem isPPTOn_parityPredictionGame {f : List Bool → List Bool} {adversary : Distinguisher}
-    (hf : ComputableTidilyInPolyTime f encBits encBits) (ha : IsPPT encBool adversary) :
+    (hf : ComputableInPolyTime f encBits encBits) (ha : IsPPT encBool adversary) :
     IsPPTOn encUnary encBool (parityPredictionGame f adversary) := by
   unfold parityPredictionGame
   ppt
@@ -88,12 +88,13 @@ noncomputable def wordInverter (f : List Bool → List Bool)
   return wordDecode f (fun query => evaluate (n, image ++ query) coins ^^ flip)
     degree n image masks
 
+attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Every fixed degree gives one strict PPT inverter for all parameters and images. -/
 @[program_certificate]
 theorem isPPT_wordInverter {f : List Bool → List Bool}
     {evaluate : (ℕ × List Bool) → List Bool → Bool}
-    (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hevaluate : ComputableTidilyInPolyTime
+    (hf : ComputableInPolyTime f encBits encBits)
+    (hevaluate : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × List Bool => evaluate p.1 p.2)
       (encPair (encPair encUnary encBits) encBits) encBool)
     (c d degree : ℕ) : IsPPT encBits (wordInverter f evaluate c d degree) := by
@@ -104,8 +105,7 @@ theorem isPPT_wordInverter {f : List Bool → List Bool}
           degree p.1.1.1.1 p.1.1.1.2 p.2)
       (encPair (encPair (encPair (encPair encUnary encBits) encBool) encBits) encBits)
       encBits := by
-    apply ComputableInPolyTime.of_tidy
-    fun_prop
+    apply polyTime_wordDecode degree hf <;> fun_prop
   unfold wordInverter coinBudget
   ppt
 
@@ -207,21 +207,27 @@ theorem negligible_parityPrediction {f : List Bool → List Bool} (hf : OneWay f
   apply negligible_prediction_of_negligible_inversion
   intro degree
   simpa only [eval_wordInversionGame f] using
-    hf.inversion_negligible _ (isPPT_wordInverter hf.polyTime.tidy hefficient c d degree)
+    hf.inversion_negligible _ (isPPT_wordInverter hf.polyTime (.of_tidy hefficient) c d degree)
 
 /-- One efficient typed evaluator witnesses the concrete reduction at every precision degree.
 When `f` is efficient, `isPPT_wordInverter` certifies each resulting inverter. -/
 theorem exists_word_reduction (f : List Bool → List Bool) (adversary : Distinguisher)
     (hPPT : IsPPT encBool adversary) :
     ∃ (c d : ℕ) (evaluate : (ℕ × List Bool) → List Bool → Bool),
-      ComputableTidilyInPolyTime (fun p : (ℕ × List Bool) × List Bool => evaluate p.1 p.2)
+      ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => evaluate p.1 p.2)
         (encPair (encPair encUnary encBits) encBits) encBool ∧
       ∀ degree n, |Pr[parityPredictionGame f adversary n] - 1 / 2| ≤
         1 / (precision degree n : ℝ) +
           8 * Pr[inversionGame f (wordInverter f evaluate c d degree) n] := by
-  obtain ⟨c, d, evaluate, hefficient, hrealize⟩ := hPPT.on.exists_seeded_evaluator
-  exact ⟨c, d, evaluate, hefficient, fun degree n =>
-    word_prediction_advantage_le f adversary evaluate c d
-      (fun n input => hrealize (n, input)) degree n⟩
+  have this : ∃ (c d : ℕ) (evaluate : (ℕ × List Bool) → List Bool → Bool),
+    ComputableTidilyInPolyTime (fun p : (ℕ × List Bool) × List Bool => evaluate p.1 p.2) (encPair
+    (encPair encUnary encBits) encBits) encBool ∧ ∀ degree n, |Pr[parityPredictionGame f
+    adversary n] - 1 / 2| ≤ 1 / (precision degree n : ℝ) + 8 * Pr[inversionGame f (wordInverter f
+    evaluate c d degree) n] := by
+    obtain ⟨c, d, evaluate, hefficient, hrealize⟩ := hPPT.on.exists_seeded_evaluator
+    exact ⟨c, d, evaluate, hefficient, fun degree n =>
+      word_prediction_advantage_le f adversary evaluate c d
+        (fun n input => hrealize (n, input)) degree n⟩
+  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
 
 end Cslib.Crypto.GoldreichLevin

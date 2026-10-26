@@ -134,7 +134,7 @@ theorem isMulTable_monomialTable (ms : List ℕ) (R : List (List (List Bool)))
     rw [hR i e he, Finset.sum_range (fun d => bitEquiv.symm (((R.getD i []).getD e []).getD d false)
       • α i ^ d)]
   rw [Basis.reindex_apply, Basis.reindex_apply, prodPowBasis_mul_prodPowBasis hm hE hα c hc,
-    fieldOfBits, ← Equiv.sum_comp finPiFinEquiv]
+    fieldOfBits, ofBits, ← Equiv.sum_comp finPiFinEquiv]
   refine Finset.sum_congr rfl fun M _ => ?_
   rw [Basis.reindex_apply, Equiv.symm_apply_apply]
   congr 1
@@ -236,7 +236,7 @@ private theorem traceSymBits_reindex {ι ι' : Type*} [Fintype ι] [Fintype ι']
       traceSymBits μ r t b (fun q => pos (q.1, e q.2)) x := by
   have h : readField (b.reindex e) pos x = readField b (fun q => pos (q.1, e q.2)) x := by
     funext i
-    rw [readField, readField, ← Equiv.sum_comp e]
+    rw [readField, readField, ofBits, ofBits, ← Equiv.sum_comp e]
     simp [Basis.reindex_apply]
   rw [traceSymBits, traceSymBits, h]
 

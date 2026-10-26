@@ -109,6 +109,75 @@ private theorem card_pointerGraph (F : Finset (Fin n)) (x : Fin n → Fin m) :
 private def onesOn (F : Finset (Fin n)) (y : Fin n → Fin m → Bool) : Finset (F × Fin m) :=
   univ.filter fun p => y p.1 p.2 = true
 
+/-- When `X` is fixed outside `F`, `pointerGraph F` is injective on `X`. -/
+private theorem pointerGraph_injOn {F : Finset (Fin n)} {X : Finset (Fin n → Fin m)}
+    (hXfix : ∀ x ∈ X, ∀ x' ∈ X, ∀ i ∉ F, x i = x' i) :
+    Set.InjOn (pointerGraph F) (X : Set (Fin n → Fin m)) := by
+  intro x hx x' hx' h
+  funext i
+  by_cases hi : i ∈ F
+  · have : (⟨i, hi⟩, x i) ∈ pointerGraph F x' := h ▸ mem_pointerGraph.mpr rfl
+    exact (mem_pointerGraph.mp this).symm
+  · exact hXfix x hx x' hx' i hi
+
+/-- When `X` is `r`-dense on `F` and fixed outside `F`, the pointer graphs of `X` are `r`-spread:
+at most `#(X.image (pointerGraph F)) / r ^ #T` pointer graphs contain a nonempty set `T`. -/
+private theorem card_filter_subset_image_pointerGraph_mul_pow_le {F : Finset (Fin n)}
+    {X : Finset (Fin n → Fin m)} {r : ℝ} (hr : 0 < r)
+    (hXfix : ∀ x ∈ X, ∀ x' ∈ X, ∀ i ∉ F, x i = x' i) (hdense : IsDense r F X)
+    (T : Finset (F × Fin m)) (hT : T.Nonempty) :
+    (#((X.image (pointerGraph F)).filter (T ⊆ ·)) : ℝ) * r ^ #T ≤
+      #(X.image (pointerGraph F)) := by
+  classical
+  set Xh := X.image (pointerGraph F)
+  have hXh : #Xh = #X := card_image_of_injOn (pointerGraph_injOn hXfix)
+  by_cases hex : ∃ x₀ ∈ X, T ⊆ pointerGraph F x₀
+  · obtain ⟨x₀, hx₀, hTx₀⟩ := hex
+    set I : Finset (Fin n) := T.image fun p => p.1.1
+    have hIF : I ⊆ F := by
+      intro i hi
+      obtain ⟨p, -, rfl⟩ := mem_image.mp hi
+      exact p.1.2
+    have hIT : #I = #T := by
+      refine card_image_of_injOn fun p hp q hq h => ?_
+      have hp' := mem_pointerGraph.mp (hTx₀ hp)
+      have hq' := mem_pointerGraph.mp (hTx₀ hq)
+      have h1 : p.1 = q.1 := Subtype.ext h
+      exact Prod.ext h1 (by rw [← hp', ← hq', h1])
+    have hfilt : Xh.filter (T ⊆ ·) ⊆
+        (X.filter fun x => ∀ i ∈ I, x i = x₀ i).image (pointerGraph F) := by
+      intro s hs
+      obtain ⟨hsXh, hTs⟩ := mem_filter.mp hs
+      obtain ⟨x, hx, rfl⟩ := mem_image.mp hsXh
+      refine mem_image.mpr ⟨x, mem_filter.mpr ⟨hx, fun i hi => ?_⟩, rfl⟩
+      obtain ⟨p, hp, rfl⟩ := mem_image.mp hi
+      rw [mem_pointerGraph.mp (hTs hp), mem_pointerGraph.mp (hTx₀ hp)]
+    have h1 : (#(Xh.filter (T ⊆ ·)) : ℝ) ≤ #(X.filter fun x => ∀ i ∈ I, x i = x₀ i) := by
+      exact_mod_cast (card_le_card hfilt).trans card_image_le
+    have h2 := hdense I hIF (hT.image _) x₀
+    rw [hIT] at h2
+    rw [hXh]
+    nlinarith [pow_pos hr #T]
+  · push Not at hex
+    have : Xh.filter (T ⊆ ·) = ∅ := by
+      refine filter_eq_empty_iff.mpr fun s hs hTs => ?_
+      obtain ⟨x, hx, rfl⟩ := mem_image.mp hs
+      exact hex x hx hTs
+    rw [this, card_empty, Nat.cast_zero, zero_mul]
+    positivity
+
+/-- When `Y` is fixed outside `F`, `onesOn F` is injective on `Y`. -/
+private theorem onesOn_injOn {F : Finset (Fin n)} {Y : Finset (Fin n → Fin m → Bool)}
+    (hYfix : ∀ y ∈ Y, ∀ y' ∈ Y, ∀ i ∉ F, y i = y' i) :
+    Set.InjOn (onesOn F) (Y : Set (Fin n → Fin m → Bool)) := by
+  intro y hy y' hy' h
+  funext i a
+  by_cases hi : i ∈ F
+  · have := congrArg (fun s => (⟨i, hi⟩, a) ∈ s) h
+    simp only [onesOn, mem_filter, mem_univ, true_and, eq_iff_iff] at this
+    cases hya : y i a <;> cases hya' : y' i a <;> simp_all
+  · rw [hYfix y hy y' hy' i hi]
+
 /-- **The full-range lemma.** Let `X` be `r`-dense on `F` and let `Y` have at most `D` bits of
 deficiency on the blocks of `F`, with `16 #F (D + 1) ≤ r`, both fixed outside `F`. Then for any
 target values `β x`, some `x ∈ X` and `y ∈ Y` give the index gadget the value `β x` on `F`
@@ -124,56 +193,13 @@ theorem exists_forall_eq_of_isDense {F : Finset (Fin n)} {X : Finset (Fin n → 
   by_contra hcon
   push Not at hcon
   -- the pointer sets of `X`
-  have hGinj : Set.InjOn (pointerGraph F) (X : Set (Fin n → Fin m)) := by
-    intro x hx x' hx' h
-    funext i
-    by_cases hi : i ∈ F
-    · have : (⟨i, hi⟩, x i) ∈ pointerGraph F x' := h ▸ mem_pointerGraph.mpr rfl
-      exact (mem_pointerGraph.mp this).symm
-    · exact hXfix x hx x' hx' i hi
+  have hGinj := pointerGraph_injOn hXfix
   set Xh := X.image (pointerGraph F)
-  have hXh : #Xh = #X := card_image_of_injOn hGinj
   have hcardXh : ∀ s ∈ Xh, #s = #F := by
     intro s hs
     obtain ⟨x, -, rfl⟩ := mem_image.mp hs
     exact card_pointerGraph F x
-  have hspread : ∀ T : Finset (F × Fin m), T.Nonempty →
-      (#(Xh.filter (T ⊆ ·)) : ℝ) * r ^ #T ≤ #Xh := by
-    intro T hT
-    by_cases hex : ∃ x₀ ∈ X, T ⊆ pointerGraph F x₀
-    · obtain ⟨x₀, hx₀, hTx₀⟩ := hex
-      set I : Finset (Fin n) := T.image fun p => p.1.1
-      have hIF : I ⊆ F := by
-        intro i hi
-        obtain ⟨p, -, rfl⟩ := mem_image.mp hi
-        exact p.1.2
-      have hIT : #I = #T := by
-        refine card_image_of_injOn fun p hp q hq h => ?_
-        have hp' := mem_pointerGraph.mp (hTx₀ hp)
-        have hq' := mem_pointerGraph.mp (hTx₀ hq)
-        have h1 : p.1 = q.1 := Subtype.ext h
-        exact Prod.ext h1 (by rw [← hp', ← hq', h1])
-      have hfilt : Xh.filter (T ⊆ ·) ⊆
-          (X.filter fun x => ∀ i ∈ I, x i = x₀ i).image (pointerGraph F) := by
-        intro s hs
-        obtain ⟨hsXh, hTs⟩ := mem_filter.mp hs
-        obtain ⟨x, hx, rfl⟩ := mem_image.mp hsXh
-        refine mem_image.mpr ⟨x, mem_filter.mpr ⟨hx, fun i hi => ?_⟩, rfl⟩
-        obtain ⟨p, hp, rfl⟩ := mem_image.mp hi
-        rw [mem_pointerGraph.mp (hTs hp), mem_pointerGraph.mp (hTx₀ hp)]
-      have h1 : (#(Xh.filter (T ⊆ ·)) : ℝ) ≤ #(X.filter fun x => ∀ i ∈ I, x i = x₀ i) := by
-        exact_mod_cast (card_le_card hfilt).trans card_image_le
-      have h2 := hdense I hIF (hT.image _) x₀
-      rw [hIT] at h2
-      rw [hXh]
-      nlinarith [pow_pos hr #T]
-    · push Not at hex
-      have : Xh.filter (T ⊆ ·) = ∅ := by
-        refine filter_eq_empty_iff.mpr fun s hs hTs => ?_
-        obtain ⟨x, hx, rfl⟩ := mem_image.mp hs
-        exact hex x hx hTs
-      rw [this, card_empty, Nat.cast_zero, zero_mul]
-      positivity
+  have hspread := card_filter_subset_image_pointerGraph_mul_pow_le hr hXfix hdense
   -- the target patterns
   set βh : Finset (F × Fin m) → F × Fin m → Bool := fun s p =>
     if h : ∃ x ∈ X, pointerGraph F x = s then β h.choose p.1.1 else false
@@ -185,14 +211,6 @@ theorem exists_forall_eq_of_isDense {F : Finset (Fin n)} {X : Finset (Fin n → 
   have hbound := card_filter_avoidsPatterns_mul_two_pow_le_of_spread hr hspread hcardXh
     (hX.image _) (D := D) (by simpa using hrD) βh
   -- every `y ∈ Y` avoids the patterns
-  have honesInj : Set.InjOn (onesOn F) (Y : Set (Fin n → Fin m → Bool)) := by
-    intro y hy y' hy' h
-    funext i a
-    by_cases hi : i ∈ F
-    · have := congrArg (fun s => (⟨i, hi⟩, a) ∈ s) h
-      simp only [onesOn, mem_filter, mem_univ, true_and, eq_iff_iff] at this
-      cases hya : y i a <;> cases hya' : y' i a <;> simp_all
-    · rw [hYfix y hy y' hy' i hi]
   have hmaps : Y.image (onesOn F) ⊆
       (univ : Finset (Finset (F × Fin m))).filter (AvoidsPatterns Xh id βh) := by
     intro s hs
@@ -205,15 +223,13 @@ theorem exists_forall_eq_of_isDense {F : Finset (Fin n)} {X : Finset (Fin n → 
     simpa [onesOn] using hne
   have hY' : (#Y : ℝ) ≤
       #((univ : Finset (Finset (F × Fin m))).filter (AvoidsPatterns Xh id βh)) := by
-    rw [← card_image_of_injOn honesInj]
+    rw [← card_image_of_injOn (onesOn_injOn hYfix)]
     exact_mod_cast card_le_card hmaps
   have hU : Fintype.card (F × Fin m) = #F * m := by simp
-  rw [hU] at hbound
-  have hpos : (0 : ℝ) < 2 ^ (#F * m) := by positivity
-  have h2D : (0 : ℝ) < 2 ^ D := by positivity
-  have : (2 : ℝ) ^ (D + 1) = 2 * 2 ^ D := by rw [pow_succ]; ring
-  rw [this] at hbound
-  nlinarith [mul_le_mul_of_nonneg_left hY' h2D.le]
+  have hpow : (2 : ℝ) ^ (D + 1) = 2 * 2 ^ D := by rw [pow_succ, mul_comm]
+  rw [hU, hpow] at hbound
+  nlinarith [mul_le_mul_of_nonneg_left hY' (by positivity : (0 : ℝ) ≤ 2 ^ D),
+    (by positivity : (0 : ℝ) < 2 ^ (#F * m))]
 
 end FullRange
 
