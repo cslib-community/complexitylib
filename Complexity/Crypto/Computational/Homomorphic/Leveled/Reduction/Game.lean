@@ -384,8 +384,8 @@ theorem advantage_game_eq_leveledAdversary (E : Scheme) (budget capacity : ℕ �
 /-- Polynomial concrete-security bound for the actual serialized leveled scheme in terms of
 the chain length `2 * budget n` and secret-width bound `capacity n`: rounding both dyadic
 ranges via `dyadicSize_le` bounds the single-adversary reduction loss by
-`16 * (2 * budget n + 1) * (capacity n + 1)` ([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in the loss;
-the running-time clause is not formalized). -/
+`16 * (2 * budget n + 1) * (capacity n + 1)` ([Gentry2009], Section 2, Theorem 4, p. 171, up to
+a constant factor in the loss; the running-time clause is not formalized). -/
 theorem advantage_game_le_mul_leveledAdversary (E : Scheme) (budget capacity : ℕ → ℕ)
     (adversary : Encryption.Adversary) (n width : ℕ)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
