@@ -51,6 +51,7 @@ for file_id,rows in files.items():
     stack[e['thread_id']].append(eid)
    else:assert stack[e['thread_id']].pop()==eid
   assert all(not s for s in stack.values())
+  assert set(trace_counts)<=set(groups), 'orphan native trace owner'
   kinds=collections.Counter();heads=collections.Counter();synthetic=0
   for eid,g in groups.items():
    assert eid not in seen_events;seen_events.add(eid);assert set(g)=={'begin','end'}
