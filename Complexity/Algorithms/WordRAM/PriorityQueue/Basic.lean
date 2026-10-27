@@ -812,6 +812,8 @@ structure PQPackage (B : Basis) (r_pq : ℕ) where
 
 namespace PQPackage
 
+attribute [nolint defsWithUnderscore] T_init T_empty T_get T_ins T_dec T_ext
+
 /-- Translate a `PQPackage` along any basis simulation. -/
 def mapSimulates {B B' : Basis} {r_pq : ℕ} (φ : B.Simulates B') (pkg : PQPackage B r_pq) :
     PQPackage B' r_pq where

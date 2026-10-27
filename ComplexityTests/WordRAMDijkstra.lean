@@ -36,8 +36,8 @@ theorem fits : Fits 10 (8 * (graph.n + graph.m + 2) * (graph.maxWeight + 2)) := 
 /-- The main theorem applies to the instance: the compiled program halts within
 `230 (m + 1) (⌊log₂ n⌋ + 1)` instructions and leaves `1` at the source's output cell, the
 encoded distance `0`. -/
-example : ∃ t steps, Runs 10 (heapDijkstra.program HeapReg.zero) (.init graph.encode) t steps ∧
-    (∃ v, step 10 (heapDijkstra.program HeapReg.zero) t = .halt v) ∧ steps + 1 ≤ 230 * 5 * 2 ∧
+example : ∃ t steps, Runs 10 (heapDijkstra.program OuterReg.zero) (.init graph.encode) t steps ∧
+    (∃ v, step 10 (heapDijkstra.program OuterReg.zero) t = .halt v) ∧ steps + 1 ≤ 230 * 5 * 2 ∧
     t.data.mem (graph.outAddr graph.source) = 1 := by
   obtain ⟨t, steps, hr, hh, hle, hd⟩ := logLinearSpec graph 10 fits
   have hm : graph.m = 4 := by decide
@@ -49,10 +49,10 @@ example : ∃ t steps, Runs 10 (heapDijkstra.program HeapReg.zero) (.init graph.
     (by simp [encodeDist])
 
 /-- The interpreter runs the structured program on the instance and finds the encoded distances
-`1`, `4` and `2` in the output cells, within the bound `200 (m + 1) (⌊log₂ n⌋ + 1) + 27` of
+`1`, `4` and `2` in the output cells, within the bound `200 (m + 1) (⌊log₂ n⌋ + 1)` of
 `heapDijkstra_spec`. -/
-example : ((heapDijkstra.eval 10 8 (.init graph.encode)).map fun yn =>
-    ((List.finRange 3).map fun v => yn.1.mem (graph.outAddr v), decide (yn.2 ≤ 2027))) =
+example : ((heapDijkstra.eval 10 16 (.init graph.encode)).map fun yn =>
+    ((List.finRange 3).map fun v => yn.1.mem (graph.outAddr v), decide (yn.2 ≤ 2000))) =
     some ([1, 4, 2], true) := by
   decide +kernel
 
@@ -62,11 +62,11 @@ def edgeless : ListInstance where
   adj := ![[], []]
   source := 0
 
-/-- With no edge the bound `200 (m + 1) (⌊log₂ n⌋ + 1) + 27` of `heapDijkstra_spec` is `427`. The
+/-- With no edge the bound `200 (m + 1) (⌊log₂ n⌋ + 1)` of `heapDijkstra_spec` is `400`. The
 interpreter finds `1` (distance `0`) in the source's output cell and `0` (unreachable) in the other
 one, within that bound. -/
-example : ((heapDijkstra.eval 10 8 (.init edgeless.encode)).map fun yn =>
-    ((List.finRange 2).map fun v => yn.1.mem (edgeless.outAddr v), decide (yn.2 ≤ 427))) =
+example : ((heapDijkstra.eval 10 16 (.init edgeless.encode)).map fun yn =>
+    ((List.finRange 2).map fun v => yn.1.mem (edgeless.outAddr v), decide (yn.2 ≤ 400))) =
     some ([1, 0], true) := by
   decide +kernel
 
