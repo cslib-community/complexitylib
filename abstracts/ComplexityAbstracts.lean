@@ -41,6 +41,7 @@ import ComplexityAbstracts.ShamirBridge
 import ComplexityAbstracts.SipserLautemannAbstract
 import ComplexityAbstracts.SipserLautemannBridge
 import ComplexityAbstracts.SubexponentialSATAbstract
+import ComplexityAbstracts.SubexponentialSATBridge
 import ComplexityAbstracts.SubsetSumAbstract
 import ComplexityAbstracts.SubsetSumBridge
 import ComplexityAbstracts.TQBFAbstract

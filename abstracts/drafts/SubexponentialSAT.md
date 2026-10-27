@@ -3,13 +3,15 @@
 This is staging material for [#1226](https://github.com/cslib-community/complexitylib/issues/1226),
 not an entry in the selected catalogue. Samuel selected the title below in
 [#587](https://github.com/cslib-community/complexitylib/issues/587#issuecomment-6445129935). The
-[draft abstract](../ComplexityAbstracts/SubexponentialSATAbstract.lean) defines the intended
-contracts as propositions; it does not prove them. Its audit verifies only their dependency
-boundary. No PDF for these claims is published.
+[integration draft](../ComplexityAbstracts/SubexponentialSATAbstract.lean) now states the four
+theorems through [its bridge](../ComplexityAbstracts/SubexponentialSATBridge.lean), consuming the
+unconditional native endpoint. Its audit verifies the statement dependency boundary; Lean checks
+the proofs. No PDF for these claims is published.
 
-The proposed entry below is for use **after** the unconditional native endpoint and bridge are
-checked and independently reviewed. The proposed theorem names are deliberately absent today;
-the catalogue validator must reject selecting the draft propositions as headline theorems.
+The proposed entry below is for use **after** the source dependencies and endpoint have landed,
+the bridge has been validated on that source, and outside review and the required final checks
+are complete. The theorem names now exist in this integration preparation, but the live
+catalogue and the #1227 note remain unchanged.
 
 ```json
 {
@@ -28,25 +30,24 @@ the catalogue validator must reject selecting the draft propositions as headline
 }
 ```
 
-Proposed README selection row, pending the endpoint:
+Proposed README selection row, pending integration and review:
 
 | Result | Model and scope |
 | --- | --- |
 | [OpenAI: the Exponential Time Hypothesis is false](../ComplexityAbstracts/SubexponentialSATAbstract.lean) | One fixed native machine per width, exact declared-variable counts, and interpolation-scale time with polynomial overhead and polynomial space in the original external encoded input length; all SAT exponents zero and ETH/SETH false. §§3–6 and Proposition 6.4, not the sharper Theorem 1.1 / Appendix D bound. |
 
-Before promotion, discharge the four concrete branch obligations recorded in #1226: the native
-branch certificate, feasible-branch exactness, global polynomial branch space, and the branch
-polylogarithmic time bound. Then prove the unconditional native endpoint, add the bridge with
-construction provenance, and replace the four pending proposition definitions by the four
-proved theorem statements, displaying the full exact-count telescope. Recheck the guard and
-native-definition correspondence tests, add the entry to `catalogue.json`, move the row into
-the README selection (adjusting its relative link), and build and inspect the generated PDFs.
-Delete this staging file in that same promotion. Only then can the #1227 note change from
+The endpoint checkpoint discharges the native branch certificate, feasible-branch exactness,
+global polynomial branch space and branch polylogarithmic time obligations; the bridge imports
+its public theorems, with no supplier assumptions. Before promotion, integrate the pending source
+dependencies and endpoint, validate this bridge on the landed source, and obtain outside review
+and the required final checks. Then add the entry to `catalogue.json`, move the row into the README
+selection (adjusting its relative link), and build and inspect the generated PDFs. Delete this
+staging file in that same promotion. Only then can the #1227 note change from
 “claimed” to “proved in this library”, linking the new abstract; whether the conditional entry
 remains is Samuel's decision.
 
 Source: OpenAI, *The Exponential Time Hypothesis is False*, revised 25 October 2026,
 [Proposition 6.4, pp. 43–44](https://github.com/openai/math/blob/7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/paper.pdf).
 The draft uses the accepted native join's original-input accounting and declared-range semantics,
-including small sizes and width lifting. It does not import the private join or introduce a
-conditional replacement headline.
+including small sizes and width lifting. The bridge imports the public unconditional endpoint,
+not the earlier private join, and introduces no conditional replacement headline.

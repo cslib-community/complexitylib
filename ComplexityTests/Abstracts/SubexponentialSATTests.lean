@@ -9,11 +9,11 @@ import Complexity.Computability.Complexity.FineGrained
 import Complexity.Computability.Complexity.FineGrained.CountingScale
 import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 
-/-! # Semantic checks for the pending subexponential SAT abstract
+/-! # Semantic checks for the subexponential SAT abstract
 
 These checks identify the displayed definitions with the existing library interfaces and exercise
-declared unused variables, empty cases and invalid inputs. They prove no counting algorithm or
-refutation headline. The implementation imports are confined to this test module, outside the
+declared unused variables, empty cases and invalid inputs. They also exercise the exact counter
+theorem on valid, invalid and unused-variable inputs. The implementation imports stay outside the
 abstract's audited statement surface.
 -/
 
@@ -74,5 +74,13 @@ example : validDeclaredInput 1 1 [[(1, true)]] = false := by decide
 -- The declared unary header survives even on an empty formula.
 example : (encInput (3, [])).length = 7 := by decide
 example : numVars [[(100, true), (100, false)]] = 1 := by decide
+
+-- One witness handles all these inputs: empty, unused-variable, contradictory and invalid.
+example : ∃ count : Input → ℕ,
+    count (0, []) = 1 ∧ count (3, [[(0, true)]]) = 4 ∧
+    count (1, [[(0, true)], [(0, false)]]) = 0 ∧
+    count (1, [[(1, true)]]) = 0 ∧ count (1, [[(0, true), (0, true)]]) = 0 := by
+  obtain ⟨count, _, _, _, _, _, _, _, _, hcount, _, _⟩ := exact_count 1
+  refine ⟨count, ?_, ?_, ?_, ?_, ?_⟩ <;> rw [hcount] <;> decide
 
 end ComplexityTests.Abstracts.SubexponentialSATTests

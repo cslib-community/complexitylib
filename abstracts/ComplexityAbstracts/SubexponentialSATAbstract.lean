@@ -4,10 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: OpenAI, Samuel Schlesinger, Anton Kovsharov
 -/
 
--- upstream: local-only (formal abstract draft; endpoint pending)
+-- upstream: local-only (formal abstract library)
 
 import ComplexityAbstracts.Check
 import ComplexityAbstracts.Encoding
+import ComplexityAbstracts.SubexponentialSATBridge
 import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Analysis.SpecialFunctions.Sqrt
@@ -15,30 +16,30 @@ import Mathlib.Data.Fintype.Pi
 
 /-! # Draft: OpenAI: the Exponential Time Hypothesis is false
 
-**Unproved contracts, not headline theorems.** This draft prepares the formal abstract requested
-in #1226. `ExactCounting`, `ETHRefutation`, `SETHRefutation`, and `ZeroSATExponents` below are
-propositions describing the intended results; this file supplies no proof of any of them. There
-is no bridge yet, and this draft is not selected in the public catalogue. In particular, a passing
-`#check_abstract` checks the dependency boundary of these definitions, not their truth.
+**Integration draft; catalogue publication pending.** The four theorems below are proved through
+`SubexponentialSATBridge` from the unconditional native counting endpoint. This branch prepares
+the formal abstract requested in #1226; dependency integration and outside review remain
+publication prerequisites, and this draft is not selected in the public catalogue.
 
-The intended primary result is one deterministic machine for each fixed clause width, counting
-exactly over the declared variables. Its target running time is exponential in a constant times
+The primary result is one deterministic machine for each fixed clause width, counting
+exactly over the declared variables. Its running time is exponential in a constant times
 `n (log log (n + 16))² / sqrt (log (n + 16))`, multiplied by a polynomial in the original encoded
-input length. Its target work space, including a separate charge for the encoded output, is
+input length. Its work space, including a separate charge for the encoded output, is
 polynomial in that same external length. This is the interpolation-scale route of Sections 3–6 and
 Proposition 6.4 of [OpenAI2026ETH], not the sharper Theorem 1.1 / Appendix D bound.
 
 The definitions here display the existing CNF semantics, encodings and fine-grained classes;
 they are not alternative library interfaces. The accompanying regression module checks their
-agreement with the canonical definitions. Machinery is existential, and no private endpoint
-preparation is imported. The native endpoint, its proof bridge, and outside source review must
-be completed before these contracts can become catalogue theorems.
+agreement with the canonical definitions. Machinery is existential. The bridge imports the
+public unconditional endpoint, whose native counter and consequences prove the displayed
+statements without any branch-certificate or exactness hypothesis.
 
 **What a reader inspects.** Read the definitions below, the displayed `Encoding` foundation,
 and the one additional allowed module, `MultiTape.ResourceBounds`. The latter contributes only
 the plain native `ComputableInO` resource convention, explained below, over upstream deterministic
 machines. No CNF implementation, complexity-class definition or counting construction is
-allowlisted. Once a bridge exists, Lean will check its proofs against these statements.
+allowlisted. Lean checks the bridge proofs; `#check_abstract` audits the dependency boundary
+of the definitions and theorem statements, not their English interpretation.
 
 ## References and credit
 
@@ -51,8 +52,8 @@ allowlisted. Once a bridge exists, Lean will check its proofs against these stat
 The native port is the joint work recorded in #1226, including Samuel Schlesinger,
 Anton Kovsharov, Erik Demaine and the contributing Codex, Claude and Jetski workers. The native
 machine and encoding foundations include Christian Reitwiessner's contributions. This draft
-does not claim authorship of those implementations. Construction provenance will be recorded in
-the bridge when the unconditional endpoint is available.
+does not claim authorship of those implementations. Construction provenance is recorded in
+`SubexponentialSATBridge`.
 -/
 
 namespace ComplexityAbstracts.SubexponentialSATAbstract
@@ -146,7 +147,7 @@ def DecidableInExpTime {α : Type} (A : Set α) (enc : α ↪ List Bool)
 /-! ## The exponential time hypotheses
 
 The decision parameter is the number of distinct occurring variables, not the declared count
-or the largest label. The intended bridge must therefore use the native dense-relabeling
+or the largest label. The bridge therefore uses the native dense-relabeling
 correspondence. Zero infimum exponent alone does not assert a polynomial-time algorithm.
 -/
 
@@ -166,17 +167,16 @@ def ETH : Prop :=
 def SETH : Prop :=
   ∀ ε : ℝ, 0 < ε → ∃ k : ℕ, ¬DecidableInExpTime (KSAT k) encCNF numVars (1 - ε)
 
-/-! ## Intended headline contracts — proofs pending
+/-! ## Exact counting and the exponential time hypotheses
 
-All declarations in this section are definitions of propositions, not theorems. The primary
-contract fixes the counter, time and space functions, constants and native machine for each `k`
-before every input. It includes `k = 0, 1`, `n = 0`, empty formulas and empty clauses. Invalid
-width or variable-range inputs return zero. In particular, a valid empty formula returns `2^n`,
-including one assignment when `n = 0`; unused declared variables remain free choices.
+The primary theorem fixes the counter, time and space functions, constants and native machine
+for each `k` before every input. It includes `k = 0, 1`, `n = 0`, empty formulas and empty clauses.
+Invalid width or variable-range inputs return zero. In particular, a valid empty formula returns
+`2^n`, including one assignment when `n = 0`; unused declared variables remain free choices.
 
 The scale uses natural logarithms and a shift by sixteen to cover all natural `n`; this changes
 only constants in the asymptotic bound. It is the scale of Proposition 6.4, not the smaller
-exponent of Theorem 1.1. The future proof uses width `max 2 k` internally while retaining the
+exponent of Theorem 1.1. The proof uses width `max 2 k` internally while retaining the
 original width guard, one inner support normalization and one outer declared-variable correction.
 Those proof details do not weaken the total external contract.
 -/
@@ -185,31 +185,33 @@ Those proof details do not weaken the total external contract.
 noncomputable def interpolationScale (n : ℕ) : ℝ :=
   n * Real.log (Real.log ((n : ℝ) + 16)) ^ 2 / Real.sqrt (Real.log ((n : ℝ) + 16))
 
-/-- Pending primary claim: one exact native counter per fixed width, with interpolation-scale
+/-- One exact native counter per fixed width, with interpolation-scale
 time and polynomial space in the length of the original declared input. -/
-def ExactCounting : Prop :=
+theorem exact_count :
   ∀ k : ℕ, ∃ (count : Input → ℕ) (T S : Input → ℕ) (A c e a b : ℕ),
     Turing.MultiTapeTM.ComputableInO count encInput
       ComplexityTests.Abstracts.Encoding.encNat T S ∧
     (∀ x, count x = if validDeclaredInput k x.1 x.2 then modelCountOn x.2 x.1 else 0) ∧
     (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
       (((encInput x).length : ℝ) + 1) ^ e) + c) ∧
-    (∀ x, S x ≤ a * ((encInput x).length + 1) ^ b)
+    (∀ x, S x ≤ a * ((encInput x).length + 1) ^ b) :=
+  SubexponentialSATBridge.exact_count
 
-/-- Pending headline: the exponential time hypothesis is false. -/
-def ETHRefutation : Prop := ¬ETH
+/-- The exponential time hypothesis is false. -/
+theorem not_eth : ¬ETH := SubexponentialSATBridge.not_eth
 
-/-- Pending headline: the strong exponential time hypothesis is false. -/
-def SETHRefutation : Prop := ¬SETH
+/-- The strong exponential time hypothesis is false. -/
+theorem not_seth : ¬SETH := SubexponentialSATBridge.not_seth
 
-/-- Pending headline: every fixed-width SAT exponent is zero. -/
-def ZeroSATExponents : Prop := ∀ k, satExponent k = 0
+/-- Every fixed-width SAT exponent is zero. -/
+theorem satExponent_eq_zero : ∀ k, satExponent k = 0 :=
+  SubexponentialSATBridge.satExponent_eq_zero
 
 end ComplexityAbstracts.SubexponentialSATAbstract
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.SubexponentialSATAbstract`:
-23 root declarations, 138 dependencies checked
+23 root declarations, 140 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.SubexponentialSATAbstract allowing [
