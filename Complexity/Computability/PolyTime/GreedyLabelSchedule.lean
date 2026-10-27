@@ -38,11 +38,12 @@ Completes the `(n + m)`-slot greedy pass and empty-scope factor normalization of
    `constructBalancedSchedulesCertificate` certify `O((r ^ Q + 1) * poly(|input|))` native time and
    polynomial workspace (`ComputableInPolySpace`).
 
-Encoded `ComputableInPolyTime`, `NativeCertificate`, `ComputableInO`, and `ComputableInPolySpace`
-theorems govern the concrete list/integer operations (`slotOfIndex`, `pendingSlotOfState`,
-`greedySlotStepBody`, `greedySchedulePass`, `normalizeEmptyFactorSchedules`,
-`constructBalancedSchedules`, and their certificates) under `encScheduleParams` and `encOuterAcc`,
-whereas `constructedVarSchedule` and `constructedFactorSchedule` are unencoded typed specification
+Public encoded `ComputableInPolyTime`, `NativeCertificate`, `ComputableInO`, and
+`ComputableInPolySpace` theorems govern `slotOfIndex`, `greedySchedulePass`,
+`constructBalancedSchedules`, and their certificates (built on the concrete list/integer step and
+postprocessing subroutines `pendingSlotOfState`, `greedySlotStepBody`, and
+`normalizeEmptyFactorSchedules`) under `encScheduleParams` and `encOuterAcc`, whereas
+`constructedVarSchedule` and `constructedFactorSchedule` are unencoded typed specification
 bridges (`Fin n → Fin Q → Fin r` and `Fin m → Fin Q → Fin r`) to `greedyLabelPass`,
 `completeLabels`, `normalizeEmptyFactors`, `potential`, and `occupancy`. Total fallback conventions:
 `slotOfIndex` caps `s` at `n + m` via `min (n + m) s` before unary subtraction and returns `none`
