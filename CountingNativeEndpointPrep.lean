@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
+import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 
 /-!
 # Private preparation for the native counting endpoint
@@ -30,6 +31,7 @@ unconditional endpoint, after the concrete leaf suppliers discharge its remainin
 namespace Cslib.Complexity.CountingNativeEndpointPrep
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification
+open Cslib.Logic.PL.CNF (validDeclaredInput validDeclaredInput_eq_true_iff)
 open Cslib.Logic.PL.ClauseSet.Sparsification Turing.MultiTapeTM
 open Turing.MultiTapeTM.Universal (encUnit encUnit_apply)
 open CountingSparsify SubexponentialSAT SubexponentialSAT.ReplacementParams
@@ -44,8 +46,8 @@ private abbrev encFullInput := encPair encUnit encInput
 
 private def inputSize (x : Input) : ℕ := (encInput x).length
 private def width (k : ℕ) : ℕ := max 2 k
-private def divisor (p : Context) : ℕ := max 1 (numGroups p.2)
-private def thresholdBase (k : ℕ) (p : Context) : ℕ := countingThresholdBase (width k) (divisor p)
+private def divisor (p : Context) : ℕ := BranchedSparseCNFCounter.leafSearchDivisor p.2
+private def thresholdBase (k : ℕ) (p : Context) : ℕ := BranchedSparseCNFCounter.leafThresholdBase k p.2
 private def depthCoeff (k : ℕ) (p : Context) : ℕ := countingDepthCoeff (width k) (thresholdBase k p)
 private def prepare (x : Input) : FullInput := ((), x)
 

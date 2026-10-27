@@ -29,6 +29,7 @@ All definitions and results below are private, pending the final unconditional c
 namespace Cslib.Complexity.CountingNativeEndpointConsequencesPrep
 
 open Cslib.Logic.PL Turing.MultiTapeTM CountingSparsify SubexponentialSAT
+open Cslib.Logic.PL.CNF (validDeclaredInput validDeclaredInput_eq_true_iff)
 
 private abbrev Input := ℕ × CNF ℕ
 private abbrev encInput := encPair encUnary encCNF
