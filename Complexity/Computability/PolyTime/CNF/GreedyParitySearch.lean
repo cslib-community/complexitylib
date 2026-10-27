@@ -24,8 +24,24 @@ import Mathlib.Data.List.Dedup
 In §6 and Lemma 6.2 of [OpenAI2026ETH] (pp. 40, 42), given an initial parity-check matrix where
 every passing nonsatisfying assignment violates at least `m / P` clauses, a deterministic greedy
 loop runs for `3n` rounds, streaming all `(2m)^P` tuples `γ ∈ ([m] × {0, 1})^P` via
-`Cslib.GenericRAM.IndexFold.run`, materializing `h_γ` mod `2`, and appending the first candidate in
-enumeration order minimizing `countSys (rows ++ [h_γ])`.
+`Cslib.GenericRAM.IndexFold.run`, materializing `h_γ` mod `2`, and—whenever the candidate space is
+nonempty (`0 < candidateTupleCount m P`)—appending the first candidate in enumeration order
+minimizing `countSys (rows ++ [h_γ])` (falling back to the length-`m` zero row
+`List.replicate m false` when `candidateTupleCount m P = 0`, i.e., `m = 0` and `P > 0`).
+
+## Scope and fixed-counter quantifier
+
+In the native certificate and complexity API (`selectBestStepCertificate`,
+`selectBestTestRowCertificate`, `greedyParityRowsCertificate`, `computableInO_selectBestTestRow`,
+`computableInO_greedyParityRows`, `computableInPolySpace_greedyParityRows`), the candidate counter
+`countSys : List (List Bool) → ℕ` and its certificate
+`cCount : NativeCertificate countSys (encList encBits) encNat` are fixed before the runtime inputs
+`(m, P, rows)` / `(n, m, P, rows)`. Neither the original CNF formula `φ` nor an arbitrary encoded
+context is a runtime input to this machine: choosing a separate `countSys` per `φ` allows a
+different machine and polynomial bound per `φ`. Uniform composition with a variable-CNF Theorem 2.2
+common-zero counter therefore requires a captured-context certificate interface—for example, a
+counter on `(context, rows)` whose encoded `context` is retained and charged throughout `IndexFold`
+and the outer `3n`-round loop.
 
 ## Main definitions
 
@@ -35,7 +51,7 @@ enumeration order minimizing `countSys (rows ++ [h_γ])`.
 * `Cslib.Logic.PL.CNF.selectBestTestRow`, `Cslib.Logic.PL.CNF.greedyParityRows`,
   `Cslib.Logic.PL.CNF.selectBestTestRowCertificate`,
   `Cslib.Logic.PL.CNF.greedyParityRowsCertificate`: streaming selector, `3n`-round greedy loop, and
-  native certificates.
+  fixed-counter native certificates.
 
 ## Main results
 
@@ -51,10 +67,13 @@ enumeration order minimizing `countSys (rows ++ [h_γ])`.
 * `Cslib.Logic.PL.CNF.exists_min_index_selectBestTestRow`,
   `Cslib.Logic.PL.CNF.countSys_selectBestTestRow_le`,
   `Cslib.Logic.PL.CNF.countSys_greedyParityRows_eq_card_sat`,
-  `Cslib.Logic.PL.CNF.numPassing_greedyParityRows_fin`: tie-breaking, minimality, and Lemma 6.2.
+  `Cslib.Logic.PL.CNF.numPassing_greedyParityRows_fin`: nonempty-space
+  (`0 < candidateTupleCount m P`) tie-breaking, minimality, and Lemma 6.2 under
+  `hn : 1 ≤ Fintype.card V` and `hP : 1 ≤ P`.
 * `Cslib.Logic.PL.CNF.computableInO_selectBestTestRow`,
   `Cslib.Logic.PL.CNF.computableInO_greedyParityRows`,
-  `Cslib.Logic.PL.CNF.computableInPolySpace_greedyParityRows`: native time and workspace bounds.
+  `Cslib.Logic.PL.CNF.computableInPolySpace_greedyParityRows`: fixed-counter native time and
+  workspace bounds.
 
 ## References
 
@@ -454,8 +473,11 @@ def selectBestStep (countSys : List (List Bool) → ℕ)
     if decide (candVal < best.2) then some (candRow, candVal) else some best
   ((m, P), (rows, nextBest))
 
-/-- Stream `j ∈ 0 .. (2 * m) ^ P - 1` via `Cslib.GenericRAM.IndexFold.run` to select the first
-candidate parity-test row attaining the minimum of `countSys (rows ++ [h_γ])`. -/
+/-- Stream `j ∈ 0 .. (2 * m) ^ P - 1` via `Cslib.GenericRAM.IndexFold.run`: when the candidate
+space is nonempty (`0 < candidateTupleCount m P`), select the first candidate parity-test row in
+enumeration order attaining the minimum of `countSys (rows ++ [h_γ])`; if
+`candidateTupleCount m P = 0` (`m = 0`, `P > 0`), return the total fallback length-`m` zero row
+`List.replicate m false`. -/
 def selectBestTestRow (countSys : List (List Bool) → ℕ)
     (m P : ℕ) (rows : List (List Bool)) : List Bool :=
   ((IndexFold.run (selectBestStep countSys) (candidateTupleCount m P)
@@ -667,10 +689,13 @@ theorem length_encList_greedyParityRowsAt (countSys : List (List Bool) → ℕ)
       List.append_nil, length_frame, encBits_apply, length_selectBestTestRow]; ring
 
 /-- **Exact bridge from `greedyParityRows` to `CNF.numPassing_greedy` (`#1234`, Lemma 6.2).**
-When `countSys` computes `numPassing φ.violations` on candidate row lists of length at most
-`initRows.length + 3 * |V|` whose appended rows have weight `≤ P`, and `initRows` satisfies
-Lemma 6.1's `φ.length ≤ P * weight (φ.violations σ)` bound, `3 * |V|` greedy rounds yield
-`countSys finalRows = #{σ : V → Bool | φ.eval σ = true}`. -/
+Under `hn : 1 ≤ Fintype.card V` and `hP : 1 ≤ P`, when `initRows` has row width `φ.length`,
+`countSys` computes `numPassing φ.violations` on width-`φ.length` candidate row lists of length at
+most `initRows.length + 3 * Fintype.card V` whose appended rows have weight `≤ P`, and `initRows`
+satisfies Lemma 6.1's `φ.length ≤ P * weight (φ.violations σ)` bound, `3 * Fintype.card V` greedy
+rounds yield `countSys finalRows = #{σ : V → Bool | φ.eval σ = true}`. Positivity is material:
+for `V = Fin 0`, `φ = [[]]`, `P = 1`, `initRows = []`, and `countSys` given by `numPassing`, the
+agreement and support conditions hold, yet `0` rounds leave count `1` while `#sat = 0`. -/
 theorem countSys_greedyParityRows_eq_card_sat {V : Type*} [Fintype V] [DecidableEq V]
     (φ : CNF V) {P : ℕ} (hn : 1 ≤ Fintype.card V) (hP : 1 ≤ P)
     {countSys : List (List Bool) → ℕ} {initRows : List (List Bool)}
@@ -751,8 +776,8 @@ theorem countSys_greedyParityRows_eq_card_sat {V : Type*} [Fintype V] [Decidable
       (by simpa only [A, Nat.zero_le, ↓reduceIte, rowsAt, greedyParityRowsAt_zero] using hinit)
       γ hA hγ_min
 
-/-- Concrete `Fin n` specialization of Lemma 6.2 (`N(A) = #F` and `D(A) = 0` after `3 * n`
-rounds). -/
+/-- Concrete `Fin n` specialization of Lemma 6.2: under `hn : 1 ≤ n` and `hP : 1 ≤ P`, `3 * n`
+greedy rounds yield `N(A) = #F` and `D(A) = 0`. -/
 theorem numPassing_greedyParityRows_fin {n P : ℕ} (φ : CNF (Fin n))
     (hn : 1 ≤ n) (hP : 1 ≤ P) (initRows : List (List Bool))
     (hinit_len : ∀ r ∈ initRows, r.length = φ.length)
@@ -910,7 +935,8 @@ private theorem computableInPolyTime_extractSelectBestRow :
     ((ComputableTidilyInPolyTime.fst encBits encNat).comp
       (ComputableTidilyInPolyTime.snd (encPair encNat encAcc) eBest))
 
-/-- Native streaming machine certificate for `selectBestTestRow` via `IndexFold.certificate`. -/
+/-- Native streaming machine certificate for `selectBestTestRow` via `IndexFold.certificate`, for a
+fixed counter `(countSys, cCount)` supplied before runtime inputs `(m, P, rows)`. -/
 noncomputable def selectBestTestRowCertificate {countSys : List (List Bool) → ℕ}
     (cCount : NativeCertificate countSys (encList encBits) encNat) :
     NativeCertificate (fun a : ℕ × ℕ × List (List Bool) =>
@@ -971,7 +997,15 @@ private theorem computableInPolyTime_greedyRoundCountIn :
   refine .of_tidy ?_; unfold greedyRoundCountIn encGreedyIn
   exact ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop)
 
-/-- Native machine certificate for the `3 * n`-round `greedyParityRows` procedure. -/
+/-- Native machine certificate for the `3 * n`-round `greedyParityRows` procedure for a fixed
+counter `(countSys, cCount)`.
+
+Here `countSys` and `cCount` are fixed before the runtime inputs `(n, m, P, rows)` encoded by
+`encGreedyIn`; neither the original CNF nor an arbitrary encoded context is an input to this
+machine, and choosing a separate `countSys` per `φ` allows a different machine and polynomial per
+`φ`. Uniform composition with a variable-CNF Theorem 2.2 counter requires a captured-context
+certificate interface (such as a counter on `(context, rows)` retaining and charging `context`
+throughout the loop). -/
 noncomputable def greedyParityRowsCertificate {countSys : List (List Bool) → ℕ}
     (cCount : NativeCertificate countSys (encList encBits) encNat) :
     NativeCertificate (fun a : ℕ × ℕ × ℕ × List (List Bool) =>
@@ -1163,7 +1197,8 @@ private theorem selectBestTestRowCertificate_bounds {countSys : List (List Bool)
       _ ≤ initExt L + roundOver L := by dsimp only [initExt, roundOver]; omega
       _ ≤ poly L := hpolyL
 
-/-- **Per-round `ComputableInO` time and polynomial-workspace bound for `selectBestTestRow`.** -/
+/-- **Fixed-counter per-round `ComputableInO` time and polynomial-workspace bound for
+`selectBestTestRow`** (with `countSys` and `cCount` fixed before runtime inputs `(m, P, rows)`). -/
 theorem computableInO_selectBestTestRow {countSys : List (List Bool) → ℕ}
     (cCount : NativeCertificate countSys (encList encBits) encNat)
     (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space)
@@ -1187,9 +1222,11 @@ private theorem greedyIn_le (n m P : ℕ) (rows : List (List Bool)) :
   simp only [encGreedyIn, encSelectBestIn, length_encPair, encUnary_apply, List.length_replicate]
   exact ⟨by omega, by omega, by omega, by omega⟩
 
-/-- **Full `3n`-round `ComputableInO` time and polynomial-workspace bound for `greedyParityRows`.**
-Runs in time `O((3 * n + 1) * ((2 * m) ^ P + 1) * (poly(|input|) + R))` and polynomial workspace
-`O(poly(|input|))`, never storing `(2 * m) ^ P` lists or counts ([OpenAI2026ETH], §6.3, p. 43). -/
+/-- **Fixed-counter `3n`-round `ComputableInO` time and polynomial-workspace bound for
+`greedyParityRows`.** For fixed `countSys` and `cCount` (supplied before runtime inputs
+`(n, m, P, rows)`), runs in time `O((3 * n + 1) * ((2 * m) ^ P + 1) * (poly(|input|) + R))` and
+polynomial workspace `O(poly(|input|))`, never storing `(2 * m) ^ P` lists or counts
+([OpenAI2026ETH], §6.3, p. 43). -/
 theorem computableInO_greedyParityRows {countSys : List (List Bool) → ℕ}
     (cCount : NativeCertificate countSys (encList encBits) encNat)
     (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space)
@@ -1304,7 +1341,8 @@ theorem computableInO_greedyParityRows {countSys : List (List Bool) → ℕ}
   exact ⟨poly, hpoly, (greedyParityRowsCertificate cCount).computes.mono_le
     (fun a => (hboth a).1) (fun a => (hboth a).2)⟩
 
-/-- Whenever `cCount` uses polynomial workspace, `greedyParityRows` runs in polynomial space. -/
+/-- For a fixed counter `(countSys, cCount)` using polynomial workspace, `greedyParityRows` runs in
+polynomial space on runtime inputs `(n, m, P, rows)`. -/
 theorem computableInPolySpace_greedyParityRows {countSys : List (List Bool) → ℕ}
     (cCount : NativeCertificate countSys (encList encBits) encNat)
     (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space) :
