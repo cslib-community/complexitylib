@@ -807,6 +807,8 @@ public import Complexity.Computability.Complexity.Problems.IntegerProgramming
 public import Complexity.Computability.Complexity.Problems.Knapsack
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness
+public import Complexity.Computability.Complexity.Problems.OneInThreeSAT
+public import Complexity.Computability.Complexity.Problems.OneInThreeSAT.Reduction
 public import Complexity.Computability.Complexity.Problems.Partition
 public import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
 public import Complexity.Computability.Complexity.Problems.SAT
@@ -2142,6 +2144,15 @@ public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
 public import Complexity.Logics.Propositional.CNF.Compact.ModelCount
 public import Complexity.Logics.Propositional.CNF.Compact.Relabel
+public import Complexity.Logics.Propositional.CNF.ExactOne
+public import Complexity.Logics.Propositional.CNF.ExactOne.BlockBounds
+public import Complexity.Logics.Propositional.CNF.ExactOne.Blocks
+public import Complexity.Logics.Propositional.CNF.ExactOne.Compile
+public import Complexity.Logics.Propositional.CNF.ExactOne.FromSAT
+public import Complexity.Logics.Propositional.CNF.ExactOne.Gadgets
+public import Complexity.Logics.Propositional.CNF.ExactOne.ModelCount
+public import Complexity.Logics.Propositional.CNF.ExactOne.PolyTime
+public import Complexity.Logics.Propositional.CNF.ExactOne.Positive
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.Gadgets
 public import Complexity.Logics.Propositional.CNF.ImplicationChain
