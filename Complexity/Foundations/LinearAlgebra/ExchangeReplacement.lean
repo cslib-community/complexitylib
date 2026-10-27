@@ -264,13 +264,6 @@ theorem two_smul_W0 (Q r : ℕ) : (2 : ℚ) • W0 Q r = twoW0 Q r ℚ := by
 
 /-! ### 2. Parity interpolation polynomial `f_I` and exchange matrix `M_0` -/
 
-private theorem eval_sum {ι : Type*} (s : Finset ι) (f : ι → ℚ[X]) (x : ℚ) :
-    (∑ i ∈ s, f i).eval x = ∑ i ∈ s, (f i).eval x := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert a s ha ih => rw [sum_insert ha, eval_add, ih, sum_insert ha]
-
 /-- The `j`-th polynomial factor `(-1)^(A₀ + j) ∏_{a < j} (2 X - 2 (A₀ + a))`
 appearing in the numerator of `f_I(X)` (eq. 4.7 and Lemma 4.6). -/
 noncomputable def fallingTermPoly (A₀ j : ℕ) : ℚ[X] :=
@@ -371,7 +364,7 @@ theorem eval_fI_of_mem_Ico {A₀ R k : ℕ} (hk : k ∈ Ico A₀ (A₀ + R)) :
   rw [mem_Ico] at hk
   obtain ⟨q, rfl⟩ := Nat.exists_eq_add_of_le hk.1
   have hq : q < R := by omega
-  rw [fI, eval_sum]
+  rw [fI, Polynomial.eval_finsetSum]
   have hterm :
       ∀ j ∈ range R,
         (C ((j.factorial : ℚ)⁻¹) * fallingTermPoly A₀ j).eval ((A₀ + q : ℕ) : ℚ) =
@@ -676,7 +669,7 @@ theorem M0_mulVec_eigenvec {Q r A₀ R : ℕ} (β : AuxLabel Q r) :
           (((j.factorial : ℚ)⁻¹) •
             (fallingTermMatrixInt Q r A₀ j).map (Int.cast : ℤ → ℚ)).mulVec (eigenvec ℚ β)) =
         (fI A₀ R).eval (antisymCount β : ℚ) • eigenvec ℚ β := by
-    rw [fI, eval_sum, sum_smul]
+    rw [fI, Polynomial.eval_finsetSum, sum_smul]
     refine sum_congr rfl fun j _ => ?_
     rw [Matrix.smul_mulVec, fallingTermMatrix_map_mulVec_eigenvec, eval_mul, eval_C, smul_smul]
   rw [hsum, Matrix.mulVec_smul, fullSwapMatrix_mulVec_eigenvec, smul_smul,
