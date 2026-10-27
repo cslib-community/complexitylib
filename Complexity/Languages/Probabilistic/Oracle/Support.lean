@@ -18,7 +18,8 @@ import Complexity.Languages.Probabilistic.Oracle.Simulation
 A result of a program with private coins is possible when some private samples and some replies
 to its external queries lead to it: it lies in `OracleComp.support program`, the results at the
 leaves of the program's tree of calls. That is the generic support of
-`Languages/Probabilistic/Semantics.lean`, and the rules of `OracleComp.supportWith` apply to it.
+`Complexity/Languages/Probabilistic/Semantics.lean`, and the rules of `OracleComp.supportWith`
+apply to it.
 Private samples range over the support of the closed program (`support_sample`). Every stateful
 execution returns only possible results (`mem_support_of_mem`). When every reply type is nonempty,
 every possible result is returned by some stateful execution (`mem_support_iff_exists`): an oracle

@@ -67,30 +67,24 @@ public theorem of_dropFrame (h : ∀ a, encOut (f a) = dropFrame (encIn a)) :
 /-- Prepending `true` to an encoded value. -/
 public theorem of_cons_true (h : ∀ a, encOut (f a) = true :: encIn a) :
     ComputableTidilyInLinearTimeAndSpace f encIn encOut :=
-  (headT none).computableTidilyInLinearTimeAndSpace fun a => by
-    rw [h]
-    cases encIn a <;> simp [headT_run_true, headT_q₀, headT_step, headT_final]
+  (headT none).computableTidilyInLinearTimeAndSpace fun a => by rw [h, headT_none_run]
 
 /-- Dropping the first symbol of an encoded value. -/
 public theorem of_tail (h : ∀ a, encOut (f a) = (encIn a).tail) :
     ComputableTidilyInLinearTimeAndSpace f encIn encOut :=
   (headT (some false)).computableTidilyInLinearTimeAndSpace fun a => by
-    rw [h]
-    cases encIn a <;> simp [headT_run_true, headT_q₀, headT_step, headT_final]
+    rw [h, headT_some_false_run]
 
 /-- Keeping just the first symbol of an encoded value. -/
 public theorem of_take_one (h : ∀ a, encOut (f a) = (encIn a).take 1) :
     ComputableTidilyInLinearTimeAndSpace f encIn encOut :=
   (headT (some true)).computableTidilyInLinearTimeAndSpace fun a => by
-    rw [h]
-    cases encIn a <;> simp [headT_run_true, headT_q₀, headT_step, headT_final]
+    rw [h, headT_some_true_run]
 
 /-- Testing an encoded value for emptiness. -/
 public theorem of_isEmpty {f : α → Bool} (h : ∀ a, f a = (encIn a).isEmpty) :
     ComputableTidilyInLinearTimeAndSpace f encIn encBool :=
-  isEmptyT.computableTidilyInLinearTimeAndSpace fun a => by
-    rw [h]
-    cases encIn a <;> simp [isEmptyT_run_true, isEmptyT_q₀, isEmptyT_step, isEmptyT_final]
+  isEmptyT.computableTidilyInLinearTimeAndSpace fun a => by rw [h, isEmptyT_run]; rfl
 
 /-- A function with a fixed value `d` on the input encoded by the empty word, and tidily computable
 in linear time and space on the other inputs. -/

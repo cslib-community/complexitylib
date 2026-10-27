@@ -90,7 +90,7 @@ Verbatim from [OliveiraSanthanam2018, Section 1.2, Theorem 5, p. 8],
 
 > **Definition 43** (Average-case MCSP [HS17]). We say that MCSP-C[s] is computed on average by a
 > device D (an algorithm or a family of circuits) if for every large enough n, the following holds:
-> • D is never incorrect. For each y ∈ {0, 1}^{2^n}, D(y) ∈ {MCSP-C[s](y), “?”}.
+> • D is never incorrect. For each y ∈ {0, 1}^{2^n}, D(y) ∈ {MCSP-C\[s\](y), “?”}.
 > • D rarely outputs “?”. Pr_{z∼{0,1}^{2^n}}[D(z) ∈ {0, 1}] ≥ 1 − 1/n.
 > We say that MCSP-C[s] is average-case hard for a class of devices A if no D ∈ A computes
 > MCSP-C[s] on average.

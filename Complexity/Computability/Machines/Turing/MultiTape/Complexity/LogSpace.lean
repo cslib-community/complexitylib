@@ -68,6 +68,8 @@ tapes and counters of logarithmic length [Sipser, Section 8.5][Sipser2013].
   `Turing.MultiTapeTM.ComputableInLogSpace.of_finite`: logspace functions in zero space.
 * `Turing.MultiTapeTM.ComputableInLogSpace.computableTidilyInPolyTime`: logspace functions are
   computable in polynomial time.
+* `Turing.MultiTapeTM.Transducer.computableInLogSpace`: functions computed by finite-state
+  transducers are computable in logarithmic space.
 * `Turing.MultiTapeTM.polyBounded_log`: logarithmic bounds are polynomially bounded.
 * `Turing.MultiTapeTM.doubled_inSpace`: doubling bits uses linear work space.
 * `Turing.MultiTapeTM.doubled_flatten`, `Turing.MultiTapeTM.doubled_doubled_replicate`:
@@ -310,11 +312,18 @@ theorem doubled_inSpace :
     (doubledTransducer.computableTidilyInLinearTimeAndSpace fun l =>
       (doubledTransducer_run l).symm))
 
+/-- **A function computed by a finite-state transducer is computable in logarithmic space**: the
+transducer runs without work tapes. -/
+theorem Transducer.computableInLogSpace {Q : Type} [Finite Q] (τ : Transducer Bool Q)
+    {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool} {f : α → β}
+    (hf : ∀ a, encOut (f a) = τ.run τ.q₀ (encIn a)) : ComputableInLogSpace f encIn encOut :=
+  ⟨_, 0, (τ.computableTidilyInTimeAndSpace hf).computableInTimeAndSpace.mono (fun _ => le_rfl)
+    fun _ => Nat.zero_le _⟩
+
 /-- **Framing an encoded instance** takes no work space. -/
 theorem computableInLogSpace_frame {α : Type} (enc : α ↪ List Bool) :
-    ComputableInLogSpace (fun a => enc a) enc (encFramed encBits) := by
-  have h := Encodings.frameT.computableTidilyInTimeAndSpace (encOut := encFramed encBits)
-    (f := fun a => enc a) fun a => by rw [encFramed_apply, encBits_apply, Encodings.frameT_run]
-  exact ⟨_, 0, h.computableInTimeAndSpace.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
+    ComputableInLogSpace (fun a => enc a) enc (encFramed encBits) :=
+  Encodings.frameT.computableInLogSpace fun a => by
+    rw [encFramed_apply, encBits_apply, Encodings.frameT_run]
 
 end Turing.MultiTapeTM
