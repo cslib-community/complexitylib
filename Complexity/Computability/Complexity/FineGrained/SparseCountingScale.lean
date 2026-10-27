@@ -28,8 +28,8 @@ threshold `2 ≤ numGroups n` (`640000 ≤ ⌈log₂ n⌉`), the tree-exponent b
 `n / numGroups n = O(interpolationScale n)`, the polylogarithmic absorption
 `(log n)^d = o(interpolationScale n)` underlying equation `(6.4)`, the polylogarithmic
 leaf-occurrence bound `B = O_k((s_n log s_n)^{k - 1}) ≤ λ_n^k` discharging Lemma 4.8 feasibility,
-and the uniform runtime-composition theorems of Section 6.3 equation `(6.4)` and Proposition 6.4
-across all `n, m : ℕ`.
+and the uniform runtime-composition theorems of Section 6.3 equation `(6.4)` (on the sparse
+domain `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`) and Proposition 6.4 (across all `n, m : ℕ`).
 
 ## Main definitions
 
@@ -52,8 +52,9 @@ across all `n, m : ℕ`.
 * `eventually_leafOccurrenceBound_le`, `eventually_leafOccurrenceBound_feasible`:
   `leafOccurrenceBound C_k k (numGroups n) ≤ ⌈log₂ n⌉ ^ k` eventually for `1 ≤ k`, directly
   discharging `ReplacementParams.Feasible` at `β = k`.
-* `sparse_formula_time_bound`, `prop64_time_bound`: Section 6.3 equation `(6.4)` and the full
-  Proposition 6.4 runtime composition across all `n, m : ℕ`.
+* `sparse_formula_time_bound`, `prop64_time_bound`: Section 6.3 equation `(6.4)` across the
+  sparse domain `m ≤ C_B * ⌈log₂ n⌉ ^ β * n` and the full Proposition 6.4 runtime composition
+  across all `n, m : ℕ`.
 
 ## References
 
@@ -944,15 +945,16 @@ private theorem rpow_two_le_add_one {x A : ℝ} (n : ℕ) (hA : 0 ≤ A)
     (Real.one_le_rpow one_le_two (mul_nonneg hA (interpolationScale_nonneg n)))).trans
     (rpow_two_mul_le_add_one n hx)
 
-/-- **Section 6.3 equation `(6.4)` (counting one sparse formula)**: combining Lemma 6.1 initial-test
-construction `2 ^ (C_init * ⌈log₂ n⌉ ^ d_init)` with at most `3 n (2 m + 2) ^ P + 1` candidate
+/-- **Section 6.3 equation `(6.4)` (counting one sparse formula)**: on the promised sparse domain
+`m ≤ C_B * ⌈log₂ n⌉ ^ β * n`, combining the finite `n < N₀` fallback with Lemma 6.1 initial-test
+construction `2 ^ (C_init * ⌈log₂ n⌉ ^ d_init)` and at most `3 n (2 m + 2) ^ P + 1` candidate
 calls each taking `(n + m + 1) ^ d_call * 2 ^ (A_sys * interpolationScale n)` bit operations yields
 a uniform bound `C_sparse * (n + m + 1) ^ d_sparse * 2 ^ (A_sparse * interpolationScale n)` across
-all `n, m : ℕ`. -/
+all `n, m : ℕ` with `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`. -/
 theorem sparse_formula_time_bound
     (N₀ C_exhaust d_exhaust C_init d_init d_call C_B β C_P e_B e_μ : ℕ) (A_sys : ℝ)
     (time : ℕ → ℕ → ℝ)
-    (htime : ∀ n m : ℕ,
+    (htime : ∀ n m : ℕ, m ≤ C_B * Nat.clog 2 n ^ β * n →
       (n < N₀ ∧
         time n m ≤ (C_exhaust : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ d_exhaust * (2 : ℝ) ^ n) ∨
       (N₀ ≤ n ∧ ∃ B P : ℕ, m ≤ B * n ∧ B ≤ C_B * Nat.clog 2 n ^ β ∧
@@ -962,9 +964,10 @@ theorem sparse_formula_time_bound
             (3 * (n : ℝ) * (2 * (m : ℝ) + 2) ^ P + 1) *
             (2 : ℝ) ^ (A_sys * interpolationScale n))) :
     ∃ (C_sparse d_sparse : ℕ) (A_sparse : ℝ), 0 < A_sparse ∧
-      ∀ n m : ℕ, time n m ≤
-        (C_sparse : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse *
-          (2 : ℝ) ^ (A_sparse * interpolationScale n) := by
+      ∀ n m : ℕ, m ≤ C_B * Nat.clog 2 n ^ β * n →
+        time n m ≤
+          (C_sparse : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse *
+            (2 : ℝ) ^ (A_sparse * interpolationScale n) := by
   set d_sparse : ℕ := max d_exhaust d_call
   set A' : ℝ := max A_sys 0
   set A_sparse : ℝ := A' + 1
@@ -977,9 +980,19 @@ theorem sparse_formula_time_bound
         (2 : ℝ) ^ (A' * interpolationScale n)
   set G : ℕ → ℝ := fun n => if n < N₀ then max ((C_exhaust : ℝ) * (2 : ℝ) ^ n) (F_main n)
     else F_main n
-  obtain ⟨C_sparse, hC⟩ := uniform_bound_of_eventually (time := time) (G := G)
+  set time_sparse : ℕ → ℕ → ℝ := fun n m =>
+    if m ≤ C_B * Nat.clog 2 n ^ β * n then time n m else 0
+  obtain ⟨C_sparse, hC⟩ := uniform_bound_of_eventually (time := time_sparse) (G := G)
     (d := d_sparse) (C_large := 2) hA_pos
     (fun n m => by
+      by_cases hm_dom : m ≤ C_B * Nat.clog 2 n ^ β * n
+      swap
+      · have hF_nonneg : 0 ≤ F_main n := by dsimp only [F_main]; positivity
+        have hG_nonneg : 0 ≤ G n := by
+          dsimp only [G]; split_ifs <;> [exact le_max_of_le_right hF_nonneg; exact hF_nonneg]
+        simp only [time_sparse, hm_dom, ↓reduceIte]
+        exact mul_nonneg (by positivity) hG_nonneg
+      simp only [time_sparse, hm_dom, ↓reduceIte]
       have hbase1 : (1 : ℝ) ≤ (n : ℝ) + (m : ℝ) + 1 := by
         linarith [(Nat.cast_nonneg n : (0 : ℝ) ≤ n), (Nat.cast_nonneg m : (0 : ℝ) ≤ m)]
       have hd_ex := pow_le_pow_right₀ hbase1 (le_max_left d_exhaust d_call)
@@ -989,7 +1002,7 @@ theorem sparse_formula_time_bound
           (2 : ℝ) ^ (A' * interpolationScale n) :=
         Real.rpow_le_rpow_of_exponent_le one_le_two
           (mul_le_mul_of_nonneg_right (le_max_left A_sys 0) (interpolationScale_nonneg n))
-      rcases htime n m with ⟨hlt, hfb⟩ | ⟨_, B, P, hm, hB, hP, hsp⟩
+      rcases htime n m hm_dom with ⟨hlt, hfb⟩ | ⟨_, B, P, hm, hB, hP, hsp⟩
       · have hG_ge : (C_exhaust : ℝ) * (2 : ℝ) ^ n ≤ G n := by
           simp only [G, hlt, ↓reduceIte]; exact le_max_left _ _
         calc
@@ -1023,7 +1036,8 @@ theorem sparse_formula_time_bound
       simp only [G, hnot, ↓reduceIte, F_main, Nat.cast_ofNat]
       linarith [rpow_two_le_add_one n (le_max_right A_sys 0) hinit_ev,
         rpow_two_mul_le_add_one (A := A') n hq_ev])
-  exact ⟨C_sparse, d_sparse, A_sparse, hA_pos, hC⟩
+  refine ⟨C_sparse, d_sparse, A_sparse, hA_pos, fun n m hm_dom => ?_⟩
+  simpa only [time_sparse, hm_dom, ↓reduceIte] using hC n m
 
 /-- **General Proposition 6.4 runtime-composition theorem** (including polynomial-exponent `P_leaf`
 as in Lemma 6.1's `P = 20000 B² μ²` and optional per-leaf initial-matrix construction cost):
