@@ -30,10 +30,18 @@ open Cslib.BalancedSchedules Cslib.LinearAlgebra
 
 /-- Concrete equation family on `Fin 3` with two equations:
 - equation `0`: `x₀ + x₀ x₁ = 0` (monomials `{0}`, `{0, 1}`; scope `{0, 1}`),
-- equation `1`: `x₁ x₂ + 1 = 0` (monomials `{1, 2}`, `∅`; scope `{1, 2}`). -/
+- equation `1`: `x₁ x₂ + 1 = 0` (monomials `{1, 2}`, `∅`; scope `{1, 2}`).
+Its satisfying assignments are `(false, true, true)` and `(true, true, true)` (`2` common zeros). -/
 def sampleEqs : Fin 2 → Finset (Finset (Fin 3))
   | ⟨0, _⟩ => {{0}, {0, 1}}
   | ⟨1, _⟩ => {{1, 2}, ∅}
+
+/-- Expected-value control: `sampleEqs` has `commonZeroCount = 2`, while the empty equation set has
+`commonZeroCount = 8`. -/
+example :
+    commonZeroCount univ sampleEqs = 2 ∧
+    commonZeroCount (∅ : Finset (Fin 2)) sampleEqs = 8 := by
+  decide
 
 /-- Total incidence of `augmentedEquationScope sampleEqs` is `(2 + 2) + 3 = 7 ≥ 3`. -/
 example :
@@ -60,6 +68,114 @@ example :
       commonDenom 3 2 ≤ designRowNormBound 3 2 ∧
       0 < designRowNormBound 3 2 := by
   refine ⟨by decide, by decide, commonDenom_le_designRowNormBound 3 2, designRowNormBound_pos 3 2⟩
+
+/-- Canonical `Q = 1, r = 1, A₀ = 0, R = 1, τ = 0` replacement design for any scope family on
+`Fin n` (`1 ≤ n`), used to exercise concrete branch-recovery and degree/norm specialization lemmas
+on small explicit formulas. -/
+def unitReplacementDesign {F : Type*} [Fintype F] {n : ℕ}
+    (scope : F → Finset (Fin n)) : ReplacementDesign scope 1 1 0 1 0 :=
+  let h := Fintype.card (ScopeIncidence scope)
+  let eFin := Fintype.equivFin (ScopeIncidence scope)
+  let place : ScopeIncidence scope → Fin h × AuxLabel 1 1 :=
+    fun e => (eFin e, (fun _ => 0, fun _ => 0))
+  have hinj : Function.Injective place := fun e₁ e₂ hEq =>
+    eFin.injective (congrArg Prod.fst hEq)
+  { varAssign := fun _ _ => 0
+    factorAssign := fun _ _ => 0
+    h := h
+    place := place
+    card_varGroup_le := fun t g => by
+      have hsub : #(varGroup (fun (_ : Fin n) (_ : Fin 1) => (0 : Fin 1)) t g) ≤ n := by
+        simpa only [card_univ, Fintype.card_fin] using
+          card_le_univ (varGroup (fun (_ : Fin n) (_ : Fin 1) => (0 : Fin 1)) t g)
+      omega
+    factorAssign_of_empty := fun _ _ _ => rfl
+    injective_place := hinj
+    place_snd := fun _ => rfl
+    h_mul_D_le := by
+      change Fintype.card (ScopeIncidence scope) * 1 ^ (2 * 1) ≤ 2 * ∑ f : F, #(scope f)
+      rw [card_scopeIncidence]
+      omega
+    total_measurement_rows_le := by
+      have hmeas : #(measurementIndices 1 1 0 1) = 0 := by decide
+      simp [hmeas]
+    sum_abs_measurement_row_le :=
+      sum_abs_varMeasurementMatrix_le 1 1 0 1 hinj (scopeVarOf scope)
+    natDegree_replacementRow_le :=
+      natDegree_varReplacementRow_le 1 1 0 1 place (scopeVarOf scope)
+    eval_replacementRow_zero :=
+      eval_varReplacementRow_zero 1 1 0 1 hinj (scopeVarOf scope)
+    evalReplacementRow_nodePoint_eq_zero_of_kernel := fun e t g hg ξ hsupp hker =>
+      evalVarReplacementRow_nodePoint_eq_zero_of_kernel 1 1 0 1 place (scopeVarOf scope)
+        (fun _ _ => 0) (fun _ => rfl) e t g hg ξ hsupp hker
+    map_replacementRowScaledInt :=
+      map_varReplacementRowScaledInt 1 1 0 1 place (scopeVarOf scope)
+    sum_coeffNorm1_replacementRowScaledInt_le :=
+      sum_coeffNorm1_varReplacementRowScaledInt_le (by decide) hinj (scopeVarOf scope)
+        (by intro a ha; omega) }
+
+/-- Explicit equivalence between the unbranched variables `{0, 2}` (`univ \ {1}` in `Fin 3`) and
+`Fin 2`. -/
+def sampleFreeVarEquiv : ↥((univ : Finset (Fin 3)) \ ({1} : Finset (Fin 3))) ≃ Fin 2 where
+  toFun v := if v.1 = 0 then 0 else 1
+  invFun i := if i = 0 then ⟨0, by decide⟩ else ⟨2, by decide⟩
+  left_inv := by decide
+  right_inv := by decide
+
+/-- Checked client of `commonZeroCount_eq_sum_branch_emod_ediv_design` on `sampleEqs` with partial
+branching set `S = {1}` (branching on variable `1 : Fin 3` and leaving `{0, 2} ≃ Fin 2` free):
+the branch-summed `ReplacementDesign` recovery equals the exact count `2`. -/
+example :
+    ∑ b ∈ branchAssignments ({1} : Finset (Fin 3)),
+      ((univariateClearedParityTruncatedSum (univ : Finset (Fin 2))
+        (fun i => relabelRestrictedMonomials ({1} : Finset (Fin 3)) sampleFreeVarEquiv b
+          (sampleEqs i))
+        (commonDenom 1 1 : ℤ) 2 (branchPrecision 3)
+        (designReplacementScaledIntMap
+          (unitReplacementDesign
+            (augmentedEquationScope fun i =>
+              relabelRestrictedMonomials ({1} : Finset (Fin 3)) sampleFreeVarEquiv b
+                (sampleEqs i)))
+          Sum.inl)).eval 0 /
+          clearedProductDenom (commonDenom 1 1 : ℤ) 2 (branchPrecision 3)
+            #(univ : Finset (Fin 2))) %
+              ((2 : ℤ) ^ branchPrecision 3) = 2 := by
+  have hrec := commonZeroCount_eq_sum_branch_emod_ediv_design
+    ({1} : Finset (Fin 3)) sampleFreeVarEquiv (univ : Finset (Fin 2)) sampleEqs (k := 2)
+    (fun b => augmentedEquationScope fun i =>
+      relabelRestrictedMonomials ({1} : Finset (Fin 3)) sampleFreeVarEquiv b (sampleEqs i))
+    (fun b => unitReplacementDesign
+      (augmentedEquationScope fun i =>
+        relabelRestrictedMonomials ({1} : Finset (Fin 3)) sampleFreeVarEquiv b (sampleEqs i)))
+    (fun _ => Sum.inl)
+    (by decide)
+  have hcount : commonZeroCount (univ : Finset (Fin 2)) sampleEqs = 2 := by decide
+  rw [← hrec, hcount]
+  rfl
+
+/-- Concrete degree and `coeffNorm1` bounds on `sampleEqs` via `unitReplacementDesign`: at degree
+bound `k = 2` and precision `ℓ = 4`, the truncated sum has `natDegree = 0` (`≤ 0`) and every
+coordinate polynomial has `coeffNorm1` bounded by
+`2 ^ 3 * (4 * E_ℓ * (2 * designRowNormBound 1 1 ^ 2 + commonDenom 1 1 ^ 2) ^ 7) ^ 2`. -/
+example {E_ℓ : ℕ} (hE : ∀ j < 4, (Polynomial.parityBaseDigit 4 j).coeffNorm1 ≤ E_ℓ) (s : ℕ) :
+    (univariateClearedParityTruncatedSum (univ : Finset (Fin 2)) sampleEqs
+      (commonDenom 1 1 : ℤ) 2 4
+      (designReplacementScaledIntMap
+        (unitReplacementDesign (augmentedEquationScope sampleEqs)) Sum.inl)).natDegree ≤ 0 ∧
+    (univariateClearedParityCoord (univ : Finset (Fin 2)) sampleEqs
+      (commonDenom 1 1 : ℤ) 2 4
+      (designReplacementScaledIntMap
+        (unitReplacementDesign (augmentedEquationScope sampleEqs)) Sum.inl) s).coeffNorm1 ≤
+      2 ^ 3 *
+        (4 * E_ℓ *
+          (2 * designRowNormBound 1 1 ^ 2 + commonDenom 1 1 ^ 2) ^ (2 * 4 - 1)) ^ 2 := by
+  refine ⟨?_, ?_⟩
+  · simpa using natDegree_univariateClearedParityTruncatedSum_design_le
+      (unitReplacementDesign (augmentedEquationScope sampleEqs)) Sum.inl
+      (univ : Finset (Fin 2)) sampleEqs 2 4 (by decide)
+  · simpa using coeffNorm1_univariateClearedParityCoord_design_le
+      (unitReplacementDesign (augmentedEquationScope sampleEqs)) Sum.inl
+      (univ : Finset (Fin 2)) sampleEqs 2 4 (S_mon := 2) (by decide) (by decide) hE s
 
 /-- Empty equation family on `n = 16384` variables used to witness
 `exists_replacementDesign_augmentedEquationScope` with `b₀ = 0` (`b = 1`), `w = 1`, `Q = 3`,
