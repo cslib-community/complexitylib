@@ -781,6 +781,7 @@ public import Complexity.Computability.Complexity.FineGrained.ReplacementSchedul
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedule
+public import Complexity.Computability.Complexity.FineGrained.SparseCNFDesignSchedule
 public import Complexity.Computability.Complexity.FineGrained.SparseCountingScale
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
@@ -1391,6 +1392,7 @@ public import Complexity.Computability.PolyTime.Int.Jet
 public import Complexity.Computability.PolyTime.Int.Table
 public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Computability.PolyTime.LinearAlgebra.CopyPlacement
+public import Complexity.Computability.PolyTime.LinearAlgebra.ExchangeReplacement
 public import Complexity.Computability.PolyTime.ParityFactorEval
 public import Complexity.Computability.PolyTime.SparseMonomialJet
 public import Complexity.Computability.Probabilistic.Adaptive
@@ -1820,6 +1822,7 @@ public import Complexity.Foundations.BooleanAnalysis.SignApproximation
 public import Complexity.Foundations.BooleanAnalysis.SparseBranching
 public import Complexity.Foundations.BooleanAnalysis.SparseClearedSpecialization
 public import Complexity.Foundations.BooleanAnalysis.SparseEquations
+public import Complexity.Foundations.BooleanAnalysis.SparseHermiteRecovery
 public import Complexity.Foundations.BooleanAnalysis.SparseReplacementDesign
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
 public import Complexity.Foundations.Combinatorics.AffineDisperser
@@ -2254,6 +2257,7 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingP
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTreeBounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Path
