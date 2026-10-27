@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Anton Kovsharov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Anton Kovsharov
 -/
 
 module
@@ -47,6 +47,7 @@ accepted bad points (`Cslib.BitString.numPassing_eq`).
 
 ## Main results
 
+* `Cslib.BitString.weight_testRow_le`: a test row of list length `P` has Hamming weight at most `P`.
 * `Cslib.BitString.two_mul_card_testParity_eq_true`: the exact number of rejecting lists.
 * `Cslib.BitString.pow_le_four_mul_card_testParity_eq_true`: a quarter of the lists reject.
 * `Cslib.BitString.four_mul_card_accept_le_of_forall_le`: a minimizing list accepts at most three
@@ -82,6 +83,28 @@ theorem testRow_dotProduct (γ : Fin P → Fin m × Bool) (z : Fin m → Bool) :
   simp only [testRow, dotProduct, testParity, Finset.sum_mul, ite_mul, zero_mul]
   rw [Finset.sum_comm]
   simp [Finset.sum_ite_eq]
+
+/-- A test row built from a list `γ` of `P` index-bit pairs has Hamming weight at most `P`. -/
+theorem weight_testRow_le (γ : Fin P → Fin m × Bool) : weight (testRow γ) ≤ P := by
+  have hsub :
+      ({e : Fin m | testRow γ e = true} : Finset (Fin m)) ⊆
+        univ.image fun j : Fin P => (γ j).1 := by
+    intro e he
+    rw [mem_filter] at he
+    have hne : (∑ j : Fin P, if (γ j).1 = e then (γ j).2 else 0) ≠ 0 := by
+      rw [← testRow, he.2]
+      decide
+    obtain ⟨j, -, hj⟩ := exists_ne_zero_of_sum_ne_zero hne
+    have hje : (γ j).1 = e := by
+      by_contra h
+      simp only [h, ↓reduceIte] at hj
+      exact hj rfl
+    exact mem_image.mpr ⟨j, mem_univ j, hje⟩
+  calc weight (testRow γ)
+      = #{e : Fin m | testRow γ e = true} := rfl
+    _ ≤ #(univ.image fun j : Fin P => (γ j).1) := card_le_card hsub
+    _ ≤ #(univ : Finset (Fin P)) := card_image_le
+    _ = P := by simp only [card_univ, Fintype.card_fin]
 
 /-- Exactly half of the coefficient strings have inner product `true` with a nonzero string: the
 inner product with `w` is the parity on the support of `w`, which is balanced

@@ -121,6 +121,28 @@ example :
       cancelFormula.modelCount = 2 := by
   decide
 
+/-- Zero-variable (`Fin 0`) boundary: the empty formula has `modelCountOn Finset.univ = 1`, while
+the contradictory formula `[[]]` has `0` satisfying assignments and `1` nonsatisfying assignment
+accepted by `[]` (eliminated by `[![true]]`). -/
+def emptyFin0 : CNF (Fin 0) := []
+
+def unsatFin0 : CNF (Fin 0) := [[]]
+
+example :
+    emptyFin0.modelCountOn Finset.univ = 1 ∧
+      unsatFin0.modelCountOn Finset.univ = 0 ∧
+      #{σ : Fin 0 → Bool |
+          ∀ r ∈ ([] : List (Fin unsatFin0.length → Bool)),
+            ∑ M ∈ unsatFin0.parityRowMonomials r, monomial (ZMod 2) M σ = 0} =
+        unsatFin0.modelCountOn Finset.univ +
+          #{σ : Fin 0 → Bool |
+              unsatFin0.eval σ = false ∧
+                PassesTests unsatFin0.violations [] σ} ∧
+      #{σ : Fin 0 → Bool |
+          ∀ r ∈ ([![true]] : List (Fin unsatFin0.length → Bool)),
+            ∑ M ∈ unsatFin0.parityRowMonomials r, monomial (ZMod 2) M σ = 0} = 0 := by
+  decide
+
 /-! ### End-to-end greedy run with `CNF.card_commonZeros_greedy` and `CNF.greedy_system_bounds` -/
 
 /-- Concrete greedy run on `x₀` over `Fin 1`: `CNF.card_commonZeros_greedy` recovers

@@ -62,8 +62,7 @@ accepted nonsatisfying assignments, and equaling `φ.modelCountOn Finset.univ` a
   row with `∑ e, r e * φ.violations σ e`.
 * `Cslib.Logic.PL.CNF.parityRowMonomials_add`: mod-`2` symmetric-difference cancellation across
   added parity rows.
-* `Cslib.BitString.weight_testRow_le`,
-  `Cslib.Logic.PL.CNF.card_parityRowMonomials_le`,
+* `Cslib.Logic.PL.CNF.card_parityRowMonomials_le`,
   `Cslib.Logic.PL.CNF.card_parityRowMonomials_testRow_le`: sparsity bounds `weight r * 2 ^ k` and
   `P * 2 ^ k`.
 * `Cslib.Logic.PL.CNF.commonZero_parityRowMonomials_iff_passesTests`,
@@ -80,30 +79,6 @@ accepted nonsatisfying assignments, and equaling `φ.modelCountOn Finset.univ` a
 -/
 
 @[expose] public section
-
-open Finset in
-/-- A test row built from a list `γ` of `P` clause-bit pairs has Hamming weight at most `P`. -/
-theorem Cslib.BitString.weight_testRow_le {m P : ℕ} (γ : Fin P → Fin m × Bool) :
-    Cslib.BitString.weight (Cslib.BitString.testRow γ) ≤ P := by
-  have hsub :
-      ({e : Fin m | Cslib.BitString.testRow γ e = true} : Finset (Fin m)) ⊆
-        Finset.univ.image fun j : Fin P => (γ j).1 := by
-    intro e he
-    rw [Finset.mem_filter] at he
-    have hne : (∑ j : Fin P, if (γ j).1 = e then (γ j).2 else 0) ≠ 0 := by
-      rw [← Cslib.BitString.testRow, he.2]
-      decide
-    obtain ⟨j, -, hj⟩ := Finset.exists_ne_zero_of_sum_ne_zero hne
-    have hje : (γ j).1 = e := by
-      by_contra h
-      simp only [h, ↓reduceIte] at hj
-      exact hj rfl
-    exact Finset.mem_image.mpr ⟨j, Finset.mem_univ j, hje⟩
-  calc Cslib.BitString.weight (Cslib.BitString.testRow γ)
-      = #{e : Fin m | Cslib.BitString.testRow γ e = true} := rfl
-    _ ≤ #(Finset.univ.image fun j : Fin P => (γ j).1) := Finset.card_le_card hsub
-    _ ≤ #(Finset.univ : Finset (Fin P)) := Finset.card_image_le
-    _ = P := by simp only [Finset.card_univ, Fintype.card_fin]
 
 namespace Cslib.Logic.PL
 
