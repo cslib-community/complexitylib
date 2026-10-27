@@ -780,6 +780,7 @@ public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedu
 public import Complexity.Computability.Complexity.FineGrained.SparseCountingScale
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
+public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
 public import Complexity.Computability.Complexity.HardnessEncoding.Program
 public import Complexity.Computability.Complexity.Parameterized
@@ -899,6 +900,7 @@ public import Complexity.Computability.GenericRAM.Algebraic
 public import Complexity.Computability.GenericRAM.Defs
 public import Complexity.Computability.GenericRAM.Native
 public import Complexity.Computability.GenericRAM.Native.BooleanFold
+public import Complexity.Computability.GenericRAM.Native.BooleanSearch
 public import Complexity.Computability.GenericRAM.Native.Certificate
 public import Complexity.Computability.GenericRAM.Native.Combinators
 public import Complexity.Computability.GenericRAM.Native.ExhaustiveCountFallback
