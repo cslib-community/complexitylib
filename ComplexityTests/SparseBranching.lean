@@ -100,4 +100,41 @@ example :
     4 * 2 ≤ heavyThreshold 4 20 2 * 20 :=
   mul_le_heavyThreshold_mul (by decide)
 
+/-- §5.6 shared-precision (`ℓ = n + 1 = 3`) branch-summed modular recovery on `testSys` when
+branching on `S = {0}`. -/
+example :
+    (commonZeroCount (univ : Finset (Fin 2)) testSys : ℤ) =
+      ∑ b ∈ branchAssignments ({0} : Finset (Fin 2)),
+        ((univariateParityTruncatedSum (univ : Finset (Fin 2))
+          (fun i => relabelRestrictedMonomials ({0} : Finset (Fin 2))
+            (equivFin (univ \ ({0} : Finset (Fin 2)))) b (testSys i))
+          (branchPrecision (Fintype.card (Fin 2)))
+          (fun x _i w => Polynomial.C (bitVal ℤ (x w)) + Polynomial.X)).eval 0) %
+            ((2 : ℤ) ^ branchPrecision (Fintype.card (Fin 2))) := by
+  refine commonZeroCount_eq_sum_branch_emod_eval_zero {0}
+    (equivFin (univ \ ({0} : Finset (Fin 2)))) univ testSys _ ?_
+  intro _b _hb x _i _hi _M _hM w _hw
+  simp only [Polynomial.eval_add, Polynomial.eval_C, Polynomial.eval_X, add_zero]
+
+/-- §5.6 linear per-branch degree bound `d_H ≤ (k * R_deg) * ((2 * c + 4) * n')` (`k = 2`,
+`R_deg = 3`, `c = 1`, `n = 2`, `n' = 1`). -/
+example (b : Fin 2 → Bool)
+    (q : (Fin #(univ \ ({0} : Finset (Fin 2))) → Bool) → Fin 2 →
+      Fin #(univ \ ({0} : Finset (Fin 2))) → Polynomial ℤ)
+    (hdeg : ∀ x, ∀ i ∈ (univ : Finset (Fin 2)),
+      ∀ M ∈ relabelRestrictedMonomials ({0} : Finset (Fin 2))
+        (equivFin (univ \ ({0} : Finset (Fin 2)))) b (testSys i),
+      ∀ v ∈ M, (q x i v).natDegree ≤ 3) :
+    (univariateParityTruncatedSum (univ : Finset (Fin 2))
+      (fun i => relabelRestrictedMonomials ({0} : Finset (Fin 2))
+        (equivFin (univ \ ({0} : Finset (Fin 2)))) b (testSys i))
+      (branchPrecision (Fintype.card (Fin 2))) q).natDegree ≤
+      (2 * 3) * ((2 * 1 + 4) * Fintype.card (Fin #(univ \ ({0} : Finset (Fin 2))))) := by
+  have hk : ∀ i ∈ (univ : Finset (Fin 2)), ∀ M ∈ testSys i, #M ≤ 2 := by
+    intro _i _ M _
+    exact (card_le_univ M).trans (by decide)
+  exact natDegree_univariateParityTruncatedSum_branch_le {0}
+    (equivFin (univ \ ({0} : Finset (Fin 2)))) univ testSys b q
+    (by decide) (by decide) hk hdeg
+
 end Cslib.BitString

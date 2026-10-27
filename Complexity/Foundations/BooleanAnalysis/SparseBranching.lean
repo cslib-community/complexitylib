@@ -66,6 +66,8 @@ of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (pp. 37�
   singleton scopes `{v}` for every variable $v \in \iota'$.
 * `Cslib.BitString.heavyThreshold`: integer ceiling $\lceil M s / n \rceil$ for the heavy-variable
   incidence threshold $b_0$.
+* `Cslib.BitString.branchPrecision`: the shared modular precision $\ell = n + 1$ used across the
+  unrestricted system and all free-variable branches.
 
 ## Main results
 
@@ -82,6 +84,11 @@ of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (pp. 37�
 * `Cslib.BitString.card_le_totalIncidence_withNeutralFactors`: neutral scopes guarantee $M' \ge n'$.
 * `Cslib.BitString.card_heavyVars_le_card_div` and
   `Cslib.BitString.card_sdiff_heavyVars_ge_half`: $|S| \le n / s$ and $n' \ge n / 2$ for $s \ge 2$.
+* `Cslib.BitString.commonZeroCount_eq_sum_branch_emod_eval_zero` and
+  `Cslib.BitString.natDegree_univariateParityTruncatedSum_branch_le`: §5.6 shared-precision
+  $\ell = n + 1$ branch recovery and linear degree bound
+  $\deg_T \le (k R_{\mathrm{deg}})((2 c + 4) n')$ when $m_{\mathrm{test}} \le c n$ and
+  $n \le 2 n'$.
 
 ## References
 
@@ -859,6 +866,125 @@ theorem card_sdiff_heavyVars_ge_half [DecidableEq ι] (V : Finset ι) (F : Finse
   have hdiv : #V / s ≤ #V / 2 := Nat.div_le_div_left hs (by decide)
   have hge := card_sdiff_heavyVars_ge V F scope hb₀ (by omega) hV hM
   constructor <;> omega
+
+/-- **§5.1 & §5.6 ($\ell = n + 1$)**: the shared modular precision `n + 1` used for both the
+unrestricted system on `n` variables and every free-variable branch. -/
+def branchPrecision (n : ℕ) : ℕ :=
+  n + 1
+
+/-- The branch precision `branchPrecision n` is always at least `1`. -/
+theorem one_le_branchPrecision (n : ℕ) : 1 ≤ branchPrecision n :=
+  Nat.succ_pos n
+
+/-- Strict inequality `2 ^ n < 2 ^ branchPrecision n`. -/
+theorem two_pow_lt_two_pow_branchPrecision (n : ℕ) :
+    2 ^ n < 2 ^ branchPrecision n :=
+  Nat.pow_lt_pow_right (by decide) (Nat.lt_succ_self n)
+
+/-- **§5.1 ($N(\mathcal{P}) < 2^\ell$)**: the common-zero count on `ι` is strictly smaller than
+`2 ^ branchPrecision (Fintype.card ι)`. -/
+theorem commonZeroCount_lt_two_pow_branchPrecision [Fintype ι] [DecidableEq ι] (I : Finset κ)
+    (P : κ → Finset (Finset ι)) :
+    commonZeroCount I P < 2 ^ branchPrecision (Fintype.card ι) :=
+  lt_of_le_of_lt (commonZeroCount_le_two_pow I P)
+    (two_pow_lt_two_pow_branchPrecision (Fintype.card ι))
+
+/-- **§5.6 (branch count $< 2^\ell$ at original precision $\ell = n + 1$)**: for any subset `S`
+and branch assignment `b : ι → Bool`, the relabeled branch common-zero count on `ι'` is strictly
+smaller than `2 ^ branchPrecision (Fintype.card ι)` whenever `e : ↥(univ \ S) ≃ ι'`. -/
+theorem commonZeroCount_relabelRestrictedMonomials_lt_two_pow_branchPrecision [Fintype ι]
+    [Fintype ι'] [DecidableEq ι] [DecidableEq ι'] (S : Finset ι) (e : ↥(univ \ S) ≃ ι')
+    (I : Finset κ) (P : κ → Finset (Finset ι)) (b : ι → Bool) :
+    commonZeroCount I (fun i => relabelRestrictedMonomials S e b (P i)) <
+      2 ^ branchPrecision (Fintype.card ι) := by
+  have hcard : Fintype.card ι' ≤ Fintype.card ι := by
+    rw [← Fintype.card_congr e, Fintype.card_coe]
+    exact card_le_univ (univ \ S)
+  calc
+    commonZeroCount I (fun i => relabelRestrictedMonomials S e b (P i))
+      ≤ 2 ^ Fintype.card ι' := commonZeroCount_le_two_pow _ _
+    _ ≤ 2 ^ Fintype.card ι := Nat.pow_le_pow_right (by decide) hcard
+    _ < 2 ^ branchPrecision (Fintype.card ι) :=
+      two_pow_lt_two_pow_branchPrecision (Fintype.card ι)
+
+/-- **§5.6 (exact branch recovery at original precision $\ell = n + 1$)**: on any branch `(S, b)`
+relabeled along `e : ↥(univ \ S) ≃ ι'`, evaluating `univariateParityTruncatedSum` at `T = 0` with
+the original precision `branchPrecision (Fintype.card ι) = n + 1` and taking the remainder modulo
+`2 ^ branchPrecision (Fintype.card ι)` yields the exact branch common-zero count. -/
+theorem emod_eval_zero_univariateParityTruncatedSum_branch_eq [Fintype ι] [Fintype ι']
+    [DecidableEq ι] [DecidableEq ι'] (S : Finset ι) (e : ↥(univ \ S) ≃ ι') (I : Finset κ)
+    (P : κ → Finset (Finset ι)) (b : ι → Bool)
+    (q : (ι' → Bool) → κ → ι' → Polynomial ℤ)
+    (hq0 : ∀ x : ι' → Bool, ∀ i ∈ I, ∀ M ∈ relabelRestrictedMonomials S e b (P i),
+      ∀ v ∈ M, (q x i v).eval 0 = bitVal ℤ (x v)) :
+    ((univariateParityTruncatedSum I (fun i => relabelRestrictedMonomials S e b (P i))
+      (branchPrecision (Fintype.card ι)) q).eval 0) %
+        ((2 : ℤ) ^ branchPrecision (Fintype.card ι)) =
+      (commonZeroCount I (fun i => relabelRestrictedMonomials S e b (P i)) : ℤ) := by
+  have hcard : Fintype.card ι' < branchPrecision (Fintype.card ι) := by
+    rw [branchPrecision, ← Fintype.card_congr e, Fintype.card_coe]
+    exact Nat.lt_succ_of_le (card_le_univ (univ \ S))
+  exact emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount I
+    (fun i => relabelRestrictedMonomials S e b (P i)) hcard q hq0
+
+/-- **§5.6 (Theorem 2.2 branch-summed modular recovery)**: summing the per-branch `T = 0`
+remainders modulo `2 ^ branchPrecision (Fintype.card ι)` across all `b ∈ branchAssignments S`
+recovers the exact unrestricted count `(commonZeroCount I P : ℤ)`. -/
+theorem commonZeroCount_eq_sum_branch_emod_eval_zero [Fintype ι] [Fintype ι']
+    [DecidableEq ι] [DecidableEq ι'] (S : Finset ι) (e : ↥(univ \ S) ≃ ι')
+    (I : Finset κ) (P : κ → Finset (Finset ι))
+    (q : (ι → Bool) → (ι' → Bool) → κ → ι' → Polynomial ℤ)
+    (hq0 : ∀ b ∈ branchAssignments S, ∀ x : ι' → Bool, ∀ i ∈ I,
+      ∀ M ∈ relabelRestrictedMonomials S e b (P i), ∀ v ∈ M,
+        (q b x i v).eval 0 = bitVal ℤ (x v)) :
+    (commonZeroCount I P : ℤ) =
+      ∑ b ∈ branchAssignments S,
+        ((univariateParityTruncatedSum I
+          (fun i => relabelRestrictedMonomials S e b (P i))
+          (branchPrecision (Fintype.card ι)) (q b)).eval 0) %
+            ((2 : ℤ) ^ branchPrecision (Fintype.card ι)) := by
+  rw [commonZeroCount_eq_sum_relabelRestrictedMonomials S e I P, Nat.cast_sum]
+  refine sum_congr rfl fun b hb => ?_
+  exact (emod_eval_zero_univariateParityTruncatedSum_branch_eq S e I P b (q b) (hq0 b hb)).symm
+
+/-- **§5.6 ($m_{\mathrm{test}} + 2(\ell - 1) \le (2c + 4)n'$ when $n \le 2n'$)**: when `m ≤ c * n`
+and `n ≤ 2 * n'`, the equation-plus-precision factor `m + 2 * (branchPrecision n - 1)` is at most
+`(2 * c + 4) * n'`. -/
+theorem branchEquationBudget_le {m c n n' : ℕ} (hm : m ≤ c * n) (hn : n ≤ 2 * n') :
+    m + 2 * (branchPrecision n - 1) ≤ (2 * c + 4) * n' := by
+  unfold branchPrecision
+  calc
+    m + 2 * (n + 1 - 1) = m + 2 * n := by omega
+    _ ≤ c * n + 2 * n := Nat.add_le_add_right hm (2 * n)
+    _ = (c + 2) * n := by ring
+    _ ≤ (c + 2) * (2 * n') := Nat.mul_le_mul_left (c + 2) hn
+    _ = (2 * c + 4) * n' := by ring
+
+/-- **§5.6 ($d_H = O_{k, c}(n' R)$ per-branch degree bound)**: on any branch `(S, b)` relabeled
+along `e : ↥(univ \ S) ≃ ι'`, if `#I ≤ c * Fintype.card ι`, `Fintype.card ι ≤ 2 * Fintype.card ι'`,
+every monomial in the unrestricted system `P` has degree at most `k`, and every branch replacement
+polynomial `q x i v` has `natDegree ≤ R_deg`, then `univariateParityTruncatedSum` at precision
+`branchPrecision (Fintype.card ι)` has `natDegree` at most
+`(k * R_deg) * ((2 * c + 4) * Fintype.card ι')`. -/
+theorem natDegree_univariateParityTruncatedSum_branch_le [CommRing R] [Fintype ι] [Fintype ι']
+    [DecidableEq ι] [DecidableEq ι'] (S : Finset ι) (e : ↥(univ \ S) ≃ ι') (I : Finset κ)
+    (P : κ → Finset (Finset ι)) (b : ι → Bool) (q : (ι' → Bool) → κ → ι' → Polynomial R)
+    {k R_deg c : ℕ} (hm : #I ≤ c * Fintype.card ι)
+    (hn : Fintype.card ι ≤ 2 * Fintype.card ι')
+    (hk : ∀ i ∈ I, ∀ M ∈ P i, #M ≤ k)
+    (hdeg : ∀ x : ι' → Bool, ∀ i ∈ I,
+      ∀ M ∈ relabelRestrictedMonomials S e b (P i), ∀ v ∈ M,
+        (q x i v).natDegree ≤ R_deg) :
+    (univariateParityTruncatedSum I
+      (fun i => relabelRestrictedMonomials S e b (P i))
+      (branchPrecision (Fintype.card ι)) q).natDegree ≤
+      (k * R_deg) * ((2 * c + 4) * Fintype.card ι') := by
+  have hk_branch : ∀ i ∈ I, ∀ M' ∈ relabelRestrictedMonomials S e b (P i), #M' ≤ k :=
+    fun i hi => card_mem_relabelRestrictedMonomials_le (hk i hi)
+  refine (natDegree_univariateParityTruncatedSum_le I
+    (fun i => relabelRestrictedMonomials S e b (P i))
+    (branchPrecision (Fintype.card ι)) q hk_branch hdeg).trans ?_
+  exact Nat.mul_le_mul_left (k * R_deg) (branchEquationBudget_le hm hn)
 
 end NeutralScopesAndThresholds
 
