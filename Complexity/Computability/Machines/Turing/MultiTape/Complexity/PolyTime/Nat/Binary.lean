@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 public import Complexity.Foundations.Data.Nat.Bits
 public import Complexity.Foundations.Data.Nat.BinarySize
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Subtraction
 import Complexity.Foundations.Data.BitString.List.Binary
 import Complexity.Tactic.PolyTime.Init
 import Mathlib.Data.List.GetD
@@ -121,64 +122,6 @@ theorem size_le_self (n : ℕ) : n.size ≤ n :=
 end Nat
 
 namespace Turing.MultiTapeTM.BinarySub
-
-/-- The borrow out of a digit position: the minuend digit `x` minus the subtrahend digit `y` and
-the incoming borrow `c` is negative. -/
-def borrow (c x y : Bool) : Bool := !x && (y || c) || y && c
-
-/-- One round of schoolbook subtraction, least significant digit first: append the difference
-digit and pass on the borrow. -/
-def subStep (s : Bool × List Bool) (d : Bool × Bool) : Bool × List Bool :=
-  (borrow s.1 d.1 d.2, s.2 ++ [s.1 ^^ d.1 ^^ d.2])
-
-/-- The digit pairs of two binary naturals at their first `size a + size b` positions. -/
-def digitPairs (p : ℕ × ℕ) : List (Bool × Bool) :=
-  (List.range (p.1.bits.length + p.2.bits.length)).map fun i =>
-    (p.1.bits.getD i false, p.2.bits.getD i false)
-
-lemma bits_getD (n i : ℕ) : n.bits.getD i false = n.testBit i := by
-  rw [Nat.testBit_eq_inth, ← List.getD_default_eq_getI]
-  rfl
-
-lemma foldl_subStep (ps : List (Bool × Bool)) (c : Bool) (out : List Bool) :
-    ∃ ds, (ps.foldl subStep (c, out)).2 = out ++ ds ∧ ds.length = ps.length ∧
-      ds.foldr Nat.bit 0 + (ps.map Prod.snd).foldr Nat.bit 0 + c.toNat =
-        (ps.map Prod.fst).foldr Nat.bit 0 +
-          (ps.foldl subStep (c, out)).1.toNat * 2 ^ ps.length := by
-  induction ps generalizing c out with
-  | nil => exact ⟨[], by simp⟩
-  | cons d ps ih =>
-    obtain ⟨x, y⟩ := d
-    obtain ⟨ds, hds, hlen, hval⟩ := ih (borrow c x y) (out ++ [c ^^ x ^^ y])
-    refine ⟨(c ^^ x ^^ y) :: ds, ?_, ?_, ?_⟩
-    · simpa [subStep] using hds
-    · simpa using hlen
-    · simp only [List.foldl_cons, subStep] at hval ⊢
-      simp only [List.map_cons, List.foldr_cons, Nat.bit_val, List.length_cons, Nat.pow_succ]
-      cases c <;> cases x <;> cases y <;>
-        simp only [borrow, Bool.not_true, Bool.not_false, Bool.and_true, Bool.and_false,
-          Bool.or_true, Bool.or_false, Bool.true_xor, Bool.false_xor, Bool.toNat_true,
-          Bool.toNat_false] at hval ⊢ <;> lia
-
-/-- Truncated subtraction through the borrow of schoolbook subtraction: when the final borrow is
-set the difference is negative, and otherwise the digits read off the difference. -/
-lemma sub_eq (p : ℕ × ℕ) : p.1 - p.2 =
-    if ((digitPairs p).foldl subStep (false, [])).1 then 0
-    else ((digitPairs p).foldl subStep (false, [])).2.foldr Nat.bit 0 := by
-  obtain ⟨ds, hds, hlen, hval⟩ := foldl_subStep (digitPairs p) false []
-  have hfst : ((digitPairs p).map Prod.fst).foldr Nat.bit 0 = p.1 := by
-    simp only [digitPairs, List.map_map, Function.comp_def, bits_getD]
-    exact Nat.foldr_bit_testBit (by simp [Nat.size_eq_bits_len])
-  have hsnd : ((digitPairs p).map Prod.snd).foldr Nat.bit 0 = p.2 := by
-    simp only [digitPairs, List.map_map, Function.comp_def, bits_getD]
-    exact Nat.foldr_bit_testBit (by simp [Nat.size_eq_bits_len])
-  have hlt := Nat.foldr_bit_lt ds
-  rw [hfst, hsnd, ← hlen] at hval
-  rw [hds, List.nil_append]
-  cases h : ((digitPairs p).foldl subStep (false, [])).1 <;>
-    simp only [h, Bool.toNat_true, Bool.toNat_false, Bool.false_eq_true, ↓reduceIte] at hval ⊢ <;>
-    lia
-
 private lemma foldl_append_singleton {α β : Type} (f : α → β) (l : List α) (out : List β) :
     l.foldl (fun acc a => acc ++ [f a]) out = out ++ l.map f := by
   induction l generalizing out with

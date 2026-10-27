@@ -19,13 +19,14 @@ import Mathlib.Tactic.Linarith
 The captured repeated-multiplication algorithm is the existing binary-power recipe. Its
 reachable encoded lengths are bounded directly; no high-level tidy certificate is transported.
 The resulting number may have exponential value, but only polynomially many encoded bits.
+Like the direct binary-addition rule, this is a named certificate: it does not add an automatic
+binary branch to goals with an undetermined intermediate encoding.
 -/
 
 @[expose] public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Raise a binary natural to a unary exponent using direct captured multiplication. -/
-@[fun_prop]
 theorem binary_pow : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 ^ p.2)
     (encPair encNat encUnary) encNat := by
   have hfold (b k : ℕ) : (List.replicate k true).foldl (fun acc _ => acc * b) 1 = b ^ k := by
