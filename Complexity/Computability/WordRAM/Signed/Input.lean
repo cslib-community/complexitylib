@@ -47,7 +47,9 @@ variable {r : ℕ}
 def prologue : Code .standard (r + 9) := ram[
   zero ← #0; two ← #2; left ← *zero; left ← left * two; *zero ← left ]
 
-/-- The complete program, with a charged header conversion and fixed-size instruction blocks. -/
+/-- The complete program, with a charged header conversion and fixed-size instruction blocks.
+Callers supply `input.map encode` and decode the returned word, including for nonnegative values.
+Correctness is guaranteed only for `SupportedProgram`; division/remainder use placeholders. -/
 def compile (p : GenericRAM.Program model r) : WordRAM.Program .standard (r + 9) :=
   prologue.assemble 0 ++ compileFrom (prologue (r := r)).size 0 p
 

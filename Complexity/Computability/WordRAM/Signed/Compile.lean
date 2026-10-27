@@ -78,7 +78,8 @@ def block (base pc : ℕ) (i : GenericRAM.Instr model r) : WordRAM.Program .stan
   rawBlock base pc i ++ List.replicate (64 - (rawBlock base pc i).length)
     (.jump (entry base (pc + 1)))
 
-/-- Compile a suffix whose first source instruction has index `pc`. -/
+/-- Compile a suffix whose first source instruction has index `pc`. Only instructions in
+the supported fragment have a signed correctness guarantee; division/remainder use placeholders. -/
 def compileFrom (base : ℕ) : ℕ → GenericRAM.Program model r → WordRAM.Program .standard (r + 9)
   | _, [] => []
   | pc, i :: p => block base pc i ++ compileFrom base (pc + 1) p
