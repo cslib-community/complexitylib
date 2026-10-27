@@ -687,7 +687,7 @@ For any `k C_B β_B : ℕ`, there exists `N₁ ≥ 16384` such that for any widt
 with `N₁ ≤ Fintype.card V`, `φ.length ≤ B * Fintype.card V`, and
 `B ≤ C_B * (Nat.clog 2 (Fintype.card V)) ^ β_B`, and any `rows : List (Fin φ.length → Bool)` with
 `rows.length ≤ 6 * Fintype.card V`, `∀ r ∈ rows, weight r ≤ W`, and
-`W ≤ CNF.initialRowWeightBound B φ.length`, at `b₀ = CNF.parityBranchThreshold k W (Fintype.card V)`
+`W ≤ initialRowWeightBound B φ.length`, at `b₀ = CNF.parityBranchThreshold k W (Fintype.card V)`
 and `β = 2 * β_B + 5`:
 1. Every branch `b : V → Bool` unconditionally satisfies `Feasible (2 * β_B + 5) n'` and admits a
    concrete `ReplacementDesign`, whose single-branch examination count is bounded by
@@ -705,7 +705,7 @@ theorem CNF.exists_branch_schedule_and_examBound_parityRowSystem_of_le_clog_pow
         N₁ ≤ Fintype.card V →
         φ.length ≤ B * Fintype.card V →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
-        W ≤ CNF.initialRowWeightBound B φ.length →
+        W ≤ initialRowWeightBound B φ.length →
         ∀ {rows : List (Fin φ.length → Bool)},
           (∀ r ∈ rows, weight r ≤ W) →
           rows.length ≤ 6 * Fintype.card V →
@@ -764,8 +764,8 @@ theorem CNF.exists_branch_schedule_and_examBound_parityRowSystem_of_le_clog_pow
 `2 ^ (A * interpolationScale n)` domain-examination bounds**:
 For any `k C_B β_B : ℕ`, there exists `N₁ ≥ 16384` such that for any width-`≤ k` CNF `φ : CNF V`
 with `N₁ ≤ Fintype.card V`, `1 ≤ B`, `B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B`, and
-`φ.length ≤ B * Fintype.card V`, at `D₀ = CNF.initialRowWeightBound B φ.length`,
-`P = CNF.greedyRowListLength B φ.length`, `b₀ = CNF.parityBranchThreshold k D₀ (Fintype.card V)`,
+`φ.length ≤ B * Fintype.card V`, at `D₀ = initialRowWeightBound B φ.length`,
+`P = greedyRowListLength B φ.length`, `b₀ = CNF.parityBranchThreshold k D₀ (Fintype.card V)`,
 and `β = 2 * β_B + 5`:
 1. There exists an initial row list `A₀` of length `≤ 3 * Fintype.card V` and row weight `≤ D₀`
    such that any greedy extension `A` up to stage `3 * Fintype.card V` satisfies
@@ -787,8 +787,8 @@ theorem CNF.exists_greedy_parityRowSystem_branch_schedule_and_examBound_of_le_cl
         1 ≤ B →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
         φ.length ≤ B * Fintype.card V →
-        let D₀ := CNF.initialRowWeightBound B φ.length
-        let P := CNF.greedyRowListLength B φ.length
+        let D₀ := initialRowWeightBound B φ.length
+        let P := greedyRowListLength B φ.length
         let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
         ∃ A₀ : List (Fin φ.length → Bool), A₀.length ≤ 3 * Fintype.card V ∧
           (∀ r ∈ A₀, weight r ≤ D₀) ∧

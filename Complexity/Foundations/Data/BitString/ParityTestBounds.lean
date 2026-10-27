@@ -13,18 +13,9 @@ public import Mathlib.Data.Nat.Log
 /-!
 # Sparsity and list-length parameters for initial and greedy parity tests
 
-Shared integer parameter definitions for the initial parity-check matrix construction and greedy
+Shared CNF-free parameter definitions for the initial parity-check matrix construction and greedy
 row-augmentation procedure of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH],
-§§6.1–6.2, Lemmas 6.1–6.2 (pp. 40–42), with `μ = ⌊log₂ m⌋ + 1`:
-
-* `D₀ = 320000 B² μ³`: the per-row Hamming-weight bound on the initial parity-check matrix `A^(0)`.
-* `P = 20000 B² μ²`: the support-fraction denominator `m / P` in Lemma 6.1 and greedy candidate
-  list length in Lemma 6.2.
-
-Keeping these CNF-free definitions in `Cslib.BitString` allows both the executable Tanner-code
-search (`Complexity.Computability.PolyTime.BitString.InitialTestsSearch`) and the propositional CNF
-parity-counting pipeline (`Complexity.Logics.Propositional.CNF.SparseParityCounter`) to share a
-single canonical pair of declarations.
+§§6.1–6.2, Lemmas 6.1–6.2 (pp. 40–42), with `μ = ⌊log₂ m⌋ + 1`.
 
 ## Main definitions
 
