@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-module
 
 import Complexity.Computability.GenericRAM.Native.IndexFold
 import Mathlib.Data.Nat.Size
@@ -15,6 +14,7 @@ The range list appears only in specifications and these small tests. The impleme
 one index and one accumulator. No finite, inhabited, or standard-encoding assumption is imposed
 on the generic accumulator.
 -/
+
 
 open Cslib.GenericRAM Turing.MultiTapeTM
 open Cslib.GenericRAM.IndexFold
@@ -58,12 +58,17 @@ example {β : Type} (enc : β ↪ List Bool) (body : ℕ × β → β) (initial 
     (k j B : ℕ) (hj : j ≤ 2 ^ k) (h : (enc (run body j initial).2).length ≤ B) :
     (encPair encNat enc (run body j initial)).length ≤ 2 * (k + 1) + 1 + B := by
   have hb := length_run_le body initial hj h
-  simpa [Nat.size_eq_bits_len, ← Nat.size_pow] using hb
+  have hlen : (encNat (2 ^ k)).length = k + 1 := by
+    change (2 ^ k).bits.length = k + 1
+    rw [Nat.size_eq_bits_len, Nat.size_pow]
+  rw [hlen] at hb
+  exact hb
 
 -- No native implementation of the body is inferred merely from its mathematical function.
 example {α β : Type} {input : α ↪ List Bool} {enc : β ↪ List Bool}
     {n : α → ℕ} {initial : α → β} {_body : ℕ × β → β}
-    (_cn : NativeCertificate n input encNat) (_ci : NativeCertificate initial input enc) : True := by
+    (_cn : NativeCertificate n input encNat)
+    (_ci : NativeCertificate initial input enc) : True := by
   fail_if_success
     have : IsComputable (fun a => run _body (n a) (initial a)) input
         (encPair encNat enc) := by
@@ -103,3 +108,36 @@ example : IsComputable (fun n : ℕ => run (fun p : ℕ × Bool => p.2) n true)
     encNat (encPair encNat encBool) := by
   exact (certificate (NativeCertificate.linear (ComputableInO.of_linear (.of_eq fun _ => rfl)))
     (NativeCertificate.const true) keepCertificate).isComputable
+
+-- With a Boolean accumulator the live-state invariant is unconditional, even over 2^k visits.
+example (body : ℕ × Bool → Bool) (k j : ℕ) (hj : j ≤ 2 ^ k) :
+    (encPair encNat encBool (run body j true)).length ≤ 2 * (k + 1) + 2 := by
+  have hb := length_run_le (encB := encBool) body true hj (B := 1) (by simp [encBool_apply])
+  have hlen : (encNat (2 ^ k)).length = k + 1 := by
+    change (2 ^ k).bits.length = k + 1
+    rw [Nat.size_eq_bits_len, Nat.size_pow]
+  rw [hlen] at hb
+  simpa [Nat.add_assoc] using hb
+
+-- Instantiate the independent resource theorem with an actual native callback, not assumed
+-- prefix bounds. The Boolean value always occupies exactly one bit. R and Q charge the full
+-- index/Boolean pair; the counted-loop theorem supplies its additional binary-counter costs.
+example : ∃ T S, ComputableInO
+    (fun n : ℕ => run (fun p : ℕ × Bool => p.2) n true)
+    encNat (encPair encNat encBool) T S := by
+  let cn := NativeCertificate.linear
+    (ComputableInO.of_linear (.of_eq (encIn := encNat) (f := id) fun _ => rfl))
+  let ci := NativeCertificate.const (ei := encNat) (em := encBool) true
+  refine ⟨_, _, computableInO cn ci keepCertificate
+    (fun n => 2 * (encNat n).length + 2)
+    (fun n => 2 * (encNat n).length + 2) (fun _ => 1) ?_ ?_ ?_⟩
+  · intro n j hj
+    change (encPair encNat encBool (run (fun p => p.2) j true)).length ≤ _
+    simpa [Nat.add_assoc] using length_run_le (encB := encBool) (fun p : ℕ × Bool => p.2) true hj
+      (B := 1) (by simp [encBool_apply])
+  · intro n j hj
+    change (encPair encNat encBool (run (fun p => p.2) j true)).length ≤ _
+    simpa [Nat.add_assoc] using length_run_le (encB := encBool) (fun p : ℕ × Bool => p.2) true hj
+      (B := 1) (by simp [encBool_apply])
+  · intro _ _ _
+    simp [encBool_apply]
