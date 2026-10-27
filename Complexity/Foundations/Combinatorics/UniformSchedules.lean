@@ -272,15 +272,8 @@ theorem expect_incidence_potential_le {V F : Type*} [Fintype V] [DecidableEq V]
 /-- Any rational function on a nonempty finite type attains a value at most its uniform average. -/
 theorem exists_le_expect {Ω : Type*} [Fintype Ω] [Nonempty Ω] (f : Ω → ℚ) :
     ∃ ω : Ω, f ω ≤ 𝔼 ω', f ω' := by
-  by_contra! h
-  have hsum : (∑ _ω : Ω, 𝔼 ω' : Ω, f ω') < ∑ ω : Ω, f ω :=
-    Finset.sum_lt_sum_of_nonempty univ_nonempty fun ω _ => h ω
-  have hcard : (0 : ℚ) < Fintype.card Ω := by exact_mod_cast Fintype.card_pos
-  have h1 : (𝔼 _ω : Ω, 𝔼 ω' : Ω, f ω') < 𝔼 ω : Ω, f ω := by
-    simp only [Finset.expect, NNRat.smul_def, NNRat.cast_inv, NNRat.cast_natCast, card_univ]
-    exact mul_lt_mul_of_pos_left hsum (inv_pos.2 hcard)
-  rw [Fintype.expect_const] at h1
-  exact lt_irrefl _ h1
+  obtain ⟨ω, _, hω⟩ := exists_le_of_expect_le univ_nonempty (f := f) le_rfl
+  exact ⟨ω, hω⟩
 
 /-- Fixing one coordinate `i : A` of a schedule `a : A → L` can be done without increasing the
 conditional expectation over the remaining coordinates `{j : A // j ≠ i} → L` (Lemma 4.5, p. 31). -/
