@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.Enumeration
@@ -508,11 +509,6 @@ theorem bitsZipWithInput (op : Bool → Bool → Bool) {α : Type} {input : α �
     (hright : ComputableInPolyTime right input encBits) :
     ComputableInPolyTime (fun a => (left a).zipWith op (right a)) input encBits :=
   .of_tidy (ComputableTidilyInPolyTime.bitsZipWithInput op hleft.tidy hright.tidy)
-
-/-- Convert framed Boolean lists to raw words without changing their contents. -/
-@[fun_prop]
-theorem listToBits : ComputableInPolyTime (fun l => l) (encList encBool) encBits :=
-  .of_tidy ComputableTidilyInPolyTime.listToBits
 
 /-- Read a row of a computed word, charging padding and both computed unary indices. -/
 @[fun_prop]
