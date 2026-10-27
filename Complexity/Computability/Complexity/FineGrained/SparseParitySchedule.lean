@@ -23,8 +23,10 @@ Theorem 2.2, printed pp. 38–39):
 
 1. **Incidence, free-variable, and scope-width bounds for `CNF.parityRowSystem` (§6.3, p. 43)**:
    In Lemma 6.2 and Section 6.3, every candidate parity-row list `rows : List (Fin φ.length → Bool)`
-   (as well as the final list `A (3 * n)`) has at most `6 * Fintype.card V` equations ($c = 6$ in
-   Theorem 2.2) and row Hamming weight at most `W` (with `W = max D₀ P`). For any width-`≤ k` CNF
+   (as well as the final list `A (3 * n)`) has at most `6 * Fintype.card V` equations, giving
+   equation-count ratio `6`, and row Hamming weight at most `W` (with `W = max D₀ P`). Theorem 2.2
+   uses a sufficiently large `c = c(k)` to bound both the equation count and monomial sparsity.
+   For any width-`≤ k` CNF
    `φ : CNF V`:
    - `CNF.totalIncidence_parityRowSystem_le_six_mul`: when `rows.length ≤ 6 * Fintype.card V` and
      `∀ r ∈ rows, weight r ≤ W`, total variable-equation incidence across `φ.parityRowSystem rows`
