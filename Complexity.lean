@@ -1573,7 +1573,12 @@ public import Complexity.Computability.WordRAM.Randomized.Defs
 public import Complexity.Computability.WordRAM.Randomized.Expected
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
+public import Complexity.Computability.WordRAM.Signed.Comparison
+public import Complexity.Computability.WordRAM.Signed.Compile
 public import Complexity.Computability.WordRAM.Signed.Encoding
+public import Complexity.Computability.WordRAM.Signed.Input
+public import Complexity.Computability.WordRAM.Signed.Operations
+public import Complexity.Computability.WordRAM.Signed.State
 public import Complexity.Computability.WordRAM.Structured
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Computability.WordRAM.Trace

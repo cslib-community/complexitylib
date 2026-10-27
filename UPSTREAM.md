@@ -133,15 +133,19 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   bound (`hStepsBound`) and a polynomial bound on the encoded intermediate run results
   (`hOutLen`); `transport_polyTime_of_le_const` derives both from a constant step bound. Uniform
   arbitrary-program dispatch and charged configuration selection remain separate.
-* **Signed arithmetic on unsigned words.** `WordRAM/Signed/{Encoding,Arithmetic}` reuse
-  `GenericRAM.Signed`'s range and arithmetic semantics. The original sign-and-magnitude
-  encoding needs one extra unsigned bit; fixed addition, subtraction and multiplication
-  blocks run with two extra bits in at most 15, 17 and 14 instructions, respectively,
-  excluding the final halt. Multiplication requires the signed product to fit; addition and
-  subtraction also compute exact expanded results. This transfers successful arithmetic,
-  not source faults or entire signed programs. Whole-machine compilation is tracked in
-  [#1353](https://github.com/cslib-community/complexitylib/issues/1353); transfer from Anthropic's
-  modular machine and its 3SUM/APSP algorithms remains separate.
+* **Signed programs on unsigned words.** `WordRAM/Signed/*` reuse `GenericRAM.Signed`'s
+  range, arithmetic and interpreter. The sign-and-magnitude encoding needs one extra unsigned
+  bit; the arithmetic blocks use two. `State`, `Operations`, `Compile` and `Input` extend them
+  to complete programs with constants, copies, add/subtract/multiply, memory, signed tests,
+  jumps and halt. Successful source runs of `t` instructions transfer to one fixed unsigned
+  program at width `w + 2` within `32*t + 5` instructions, including the five-instruction length
+  header conversion and the final halt. Each source integer uses one target word, source
+  memory addresses are unchanged, nine scratch registers precede the source register bank,
+  and each source instruction occupies sixty-four target code slots. Code labels need not fit
+  a data word in the target model. Run-prefix theorems preserve the complete source memory
+  and register bank. This is forward correctness, not reflection of source
+  faults. Division/remainder remain in [#1360](https://github.com/cslib-community/complexitylib/issues/1360);
+  transfer from Anthropic's modular signed machine and its 3SUM/APSP algorithms remains separate.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
