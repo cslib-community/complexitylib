@@ -438,6 +438,12 @@ still to read them for the mathematics and write proofs against Complexitylib's 
 adapted code keeps its Apache 2.0 attribution. The rewrites state no license and are only read
 and credited.
 
+- **Native sparse-formula counting** ([#1226](https://github.com/cslib-community/complexitylib/issues/1226)):
+  `CNF.GreedyContext` certifies the existing greedy parity search uniformly from a supplied counter
+  on encoded `(context, rows)`, retaining and charging the context through both loops. Theorem 2.2
+  counting and Tanner initialization remain separate prerequisites; the complete native counting
+  endpoint is still open. This conditional interface does not establish their algorithms or rates.
+
 ## Documentation and repository
 
 - **The guide** ([#585]): a chapter per area, including Foundations (bit strings, Fourier
