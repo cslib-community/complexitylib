@@ -48,12 +48,16 @@ truncation from `Complexity.Foundations.Data.Polynomial.ParityAmplifier` [Toda][
   `commonZeroCount I P` on the nose via `(· % 2 ^ ℓ)` whenever `Fintype.card ι < ℓ`
   (`Cslib.BitString.emod_sum_sumCoeffsBelow_prod_parityFactor_eq_commonZeroCount`).
 
-Finally, for any system of equations with variable scopes `scope : κ → Finset ι` and incidence
-threshold `b₀`, the set `Cslib.BitString.heavyVars` of variables appearing in more than `b₀`
+Finally, for any system of equations with variable scopes `scope : κ → Finset ι` contained in a
+candidate variable set `V` (`∀ i ∈ F, scope i ⊆ V`) and positive incidence threshold `1 ≤ b₀`,
+the set `Cslib.BitString.heavyVars V F scope b₀` of variables in `V` appearing in more than `b₀`
 scopes has cardinality at most `totalIncidence F scope / b₀`
-(`Cslib.BitString.card_heavyVars_le_div`), while every remaining variable has incidence at most
-`b₀`. Branching on all `2 ^ #S` assignments to a variable subset `S` and simplifying each equation
-via `Cslib.BitString.restrictMonomials` preserves degree bounds, never increases the number of
+(`Cslib.BitString.card_heavyVars_le_div`; and at most `(k_scope * #F) / b₀` when every scope has
+cardinality at most `k_scope`, `Cslib.BitString.card_heavyVars_le_mul_card_div`), while every
+remaining variable in `V \ heavyVars V F scope b₀` (and in any post-branching restricted equation
+scope when `∀ i ∈ I, equationScope (P i) ⊆ V`) has incidence at most `b₀`. Branching on all
+`2 ^ #S` assignments to a variable subset `S` and simplifying each equation via
+`Cslib.BitString.restrictMonomials` preserves degree bounds, never increases the number of
 monomials per equation, and decomposes `commonZeroCount` additively across the branches
 (`Cslib.BitString.commonZeroCount_eq_sum_branches`).
 
@@ -764,74 +768,6 @@ theorem commonZeroCount_eq_sum_branches [Fintype ι] [DecidableEq ι] (S : Finse
 
 /-! ### 6. Cleared-denominator homogenization and `ℓ₁`-norm bounds (§5.4 & Appendix B.2) -/
 
-/-- `Polynomial.coeffNorm1` satisfies the finite-sum triangle inequality. -/
-theorem coeffNorm1_sum_le {α : Type*} (s : Finset α) (f : α → Polynomial ℤ) :
-    Polynomial.coeffNorm1 (∑ a ∈ s, f a) ≤ ∑ a ∈ s, Polynomial.coeffNorm1 (f a) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp only [sum_empty, Polynomial.coeffNorm1_zero, le_refl]
-  | insert a s ha ih =>
-    rw [sum_insert ha, sum_insert ha]
-    exact (Polynomial.coeffNorm1_add_le _ _).trans (add_le_add le_rfl ih)
-
-/-- `Polynomial.coeffNorm1` is invariant under negation. -/
-@[simp]
-theorem coeffNorm1_neg (p : Polynomial ℤ) :
-    Polynomial.coeffNorm1 (-p) = Polynomial.coeffNorm1 p := by
-  rw [Polynomial.coeffNorm1, Polynomial.coeffNorm1, Polynomial.support_neg]
-  refine sum_congr rfl fun i _ => ?_
-  rw [Polynomial.coeff_neg, Int.natAbs_neg]
-
-/-- `Polynomial.coeffNorm1 (p - q) ≤ Polynomial.coeffNorm1 p + Polynomial.coeffNorm1 q`. -/
-theorem coeffNorm1_sub_le (p q : Polynomial ℤ) :
-    Polynomial.coeffNorm1 (p - q) ≤ Polynomial.coeffNorm1 p + Polynomial.coeffNorm1 q := by
-  rw [sub_eq_add_neg]
-  exact (Polynomial.coeffNorm1_add_le p (-q)).trans (by rw [coeffNorm1_neg])
-
-/-- `Polynomial.coeffNorm1` is submultiplicative on `ℤ[X]`. -/
-theorem coeffNorm1_mul_le (p q : Polynomial ℤ) :
-    Polynomial.coeffNorm1 (p * q) ≤ Polynomial.coeffNorm1 p * Polynomial.coeffNorm1 q := by
-  have hdecomp : p * q = ∑ i ∈ p.support, Polynomial.C (p.coeff i) * (q * Polynomial.X ^ i) := by
-    conv_lhs => rw [p.as_sum_support_C_mul_X_pow]
-    rw [sum_mul]
-    refine sum_congr rfl fun i _ => ?_
-    ring
-  rw [hdecomp]
-  calc
-    Polynomial.coeffNorm1 (∑ i ∈ p.support, Polynomial.C (p.coeff i) * (q * Polynomial.X ^ i))
-      ≤ ∑ i ∈ p.support,
-          Polynomial.coeffNorm1 (Polynomial.C (p.coeff i) * (q * Polynomial.X ^ i)) :=
-        coeffNorm1_sum_le _ _
-    _ ≤ ∑ i ∈ p.support, (p.coeff i).natAbs * Polynomial.coeffNorm1 q := by
-        refine sum_le_sum fun i _ => ?_
-        exact (Polynomial.coeffNorm1_C_mul_le (p.coeff i) _).trans
-          (Nat.mul_le_mul_left _ (Polynomial.coeffNorm1_mul_X_pow_le q i))
-    _ = Polynomial.coeffNorm1 p * Polynomial.coeffNorm1 q := by
-        rw [← sum_mul, ← Polynomial.coeffNorm1]
-
-/-- `Polynomial.coeffNorm1 (p ^ k) ≤ Polynomial.coeffNorm1 p ^ k`. -/
-theorem coeffNorm1_pow_le (p : Polynomial ℤ) (k : ℕ) :
-    Polynomial.coeffNorm1 (p ^ k) ≤ Polynomial.coeffNorm1 p ^ k := by
-  induction k with
-  | zero =>
-    have h1 : (1 : Polynomial ℤ) = Polynomial.C 1 := by simp only [map_one]
-    simp only [pow_zero, h1, Polynomial.coeffNorm1_C, Int.natAbs_one, le_refl]
-  | succ k ih =>
-    rw [pow_succ, pow_succ]
-    exact (coeffNorm1_mul_le _ _).trans (Nat.mul_le_mul_right _ ih)
-
-/-- `Polynomial.coeffNorm1` of a finite product is at most the product of the `coeffNorm1`s. -/
-theorem coeffNorm1_prod_le {α : Type*} (s : Finset α) (f : α → Polynomial ℤ) :
-    Polynomial.coeffNorm1 (∏ a ∈ s, f a) ≤ ∏ a ∈ s, Polynomial.coeffNorm1 (f a) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-    have h1 : (1 : Polynomial ℤ) = Polynomial.C 1 := by simp only [map_one]
-    simp only [prod_empty, h1, Polynomial.coeffNorm1_C, Int.natAbs_one, le_refl]
-  | insert a s ha ih =>
-    rw [prod_insert ha, prod_insert ha]
-    exact (coeffNorm1_mul_le _ _).trans (Nat.mul_le_mul_left _ ih)
-
 /-- Cleared-denominator evaluation `a_j * Δ + b_j * A_i` of `parityBaseDigit ℓ j = a_j + b_j X` at
 `L_i = A_i / Δ`. -/
 def parityBaseDigitCleared {A : Type*} [CommRing A] (ℓ j : ℕ) (Δ A_i : A) : A :=
@@ -970,7 +906,7 @@ theorem coeffNorm1_clearedMonomialPoly_le {d_den : ℤ} {k B₀ : ℕ} {θ : ι 
         Polynomial.coeffNorm1_C_mul_le _ _
     _ ≤ B₀ ^ (k - #M) * ∏ v ∈ M, Polynomial.coeffNorm1 (θ v) := by
         rw [Int.natAbs_pow]
-        exact Nat.mul_le_mul (Nat.pow_le_pow_left hd _) (coeffNorm1_prod_le M θ)
+        exact Nat.mul_le_mul (Nat.pow_le_pow_left hd _) (Polynomial.coeffNorm1_prod_le M θ)
     _ ≤ B₀ ^ (k - #M) * ∏ _v ∈ M, B₀ :=
         Nat.mul_le_mul_left _ (prod_le_prod hθ)
     _ = B₀ ^ k := by
@@ -986,7 +922,7 @@ theorem coeffNorm1_clearedMonomialSumPoly_le {d_den : ℤ} {k B₀ : ℕ} {θ : 
   calc
     Polynomial.coeffNorm1 (∑ M ∈ 𝓜, clearedMonomialPoly d_den k θ M)
       ≤ ∑ M ∈ 𝓜, Polynomial.coeffNorm1 (clearedMonomialPoly d_den k θ M) :=
-        coeffNorm1_sum_le 𝓜 _
+        Polynomial.coeffNorm1_sum_le 𝓜 _
     _ ≤ ∑ _M ∈ 𝓜, B₀ ^ k :=
         sum_le_sum fun M hM => coeffNorm1_clearedMonomialPoly_le hd (hk M hM) (hθ M hM)
     _ = #𝓜 * B₀ ^ k := by
@@ -1036,9 +972,9 @@ theorem coeffNorm1_hPolyCleared_le (Δ : ℤ) {A_i : Polynomial ℤ} {B : ℕ}
   calc
     Polynomial.coeffNorm1 (A_i * (A_i - Polynomial.C Δ))
       ≤ Polynomial.coeffNorm1 A_i * Polynomial.coeffNorm1 (A_i - Polynomial.C Δ) :=
-        coeffNorm1_mul_le _ _
+        Polynomial.coeffNorm1_mul_le _ _
     _ ≤ B * (Polynomial.coeffNorm1 A_i + Polynomial.coeffNorm1 (Polynomial.C Δ)) :=
-        Nat.mul_le_mul hA (coeffNorm1_sub_le A_i (Polynomial.C Δ))
+        Nat.mul_le_mul hA (Polynomial.coeffNorm1_sub_le A_i (Polynomial.C Δ))
     _ ≤ B * (B + Δ.natAbs) := by
         rw [Polynomial.coeffNorm1_C]
         exact Nat.mul_le_mul_left B (add_le_add hA le_rfl)
@@ -1055,7 +991,7 @@ theorem coeffNorm1_coeff_parityFactorCleared_le (ℓ : ℕ) (Δ : ℤ) {A_i : Po
   · have hpowΔ :
         Polynomial.coeffNorm1 ((Polynomial.C Δ) ^ (2 * (ℓ - 1 - s))) ≤
           (B + Δ.natAbs) ^ (2 * (ℓ - 1 - s)) := by
-      refine (coeffNorm1_pow_le (Polynomial.C Δ) _).trans ?_
+      refine (Polynomial.coeffNorm1_pow_le (Polynomial.C Δ) _).trans ?_
       rw [Polynomial.coeffNorm1_C]
       exact Nat.pow_le_pow_left (Nat.le_add_left Δ.natAbs B) _
     have he :
@@ -1068,7 +1004,7 @@ theorem coeffNorm1_coeff_parityFactorCleared_le (ℓ : ℕ) (Δ : ℤ) {A_i : Po
       calc
         Polynomial.coeffNorm1 (hPolyCleared (Polynomial.C Δ) A_i ^ s)
           ≤ Polynomial.coeffNorm1 (hPolyCleared (Polynomial.C Δ) A_i) ^ s :=
-            coeffNorm1_pow_le _ s
+            Polynomial.coeffNorm1_pow_le _ s
         _ ≤ (B * (B + Δ.natAbs)) ^ s :=
             Nat.pow_le_pow_left (coeffNorm1_hPolyCleared_le Δ hA) s
         _ ≤ ((B + Δ.natAbs) * (B + Δ.natAbs)) ^ s :=
@@ -1085,11 +1021,11 @@ theorem coeffNorm1_coeff_parityFactorCleared_le (ℓ : ℕ) (Δ : ℤ) {A_i : Po
             ((Polynomial.C Δ) ^ (2 * (ℓ - 1 - s)) *
               parityBaseDigitCleared ℓ s (Polynomial.C Δ) A_i) *
             Polynomial.coeffNorm1 (hPolyCleared (Polynomial.C Δ) A_i ^ s) :=
-          coeffNorm1_mul_le _ _
+          Polynomial.coeffNorm1_mul_le _ _
       _ ≤ (Polynomial.coeffNorm1 ((Polynomial.C Δ) ^ (2 * (ℓ - 1 - s))) *
             Polynomial.coeffNorm1 (parityBaseDigitCleared ℓ s (Polynomial.C Δ) A_i)) *
             Polynomial.coeffNorm1 (hPolyCleared (Polynomial.C Δ) A_i ^ s) :=
-          Nat.mul_le_mul_right _ (coeffNorm1_mul_le _ _)
+          Nat.mul_le_mul_right _ (Polynomial.coeffNorm1_mul_le _ _)
       _ ≤ ((B + Δ.natAbs) ^ (2 * (ℓ - 1 - s)) *
             (Polynomial.coeffNorm1 (Polynomial.parityBaseDigit ℓ s) * (B + Δ.natAbs))) *
             (B + Δ.natAbs) ^ (2 * s) :=
