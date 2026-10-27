@@ -2175,6 +2175,7 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Counting
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingList
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Path
