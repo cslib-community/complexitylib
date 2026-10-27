@@ -15,6 +15,7 @@ import Complexity.Computability.GenericRAM.Native.BooleanFold
 import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Foundations.Data.BitString.InitialTests
 import Complexity.Foundations.Data.BitString.Parity.DotProduct
+import Complexity.Foundations.Data.List.OfFn
 import Complexity.Probability.SmallBias.Random
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -77,9 +78,11 @@ def dG (m B : ℕ) : ℕ := min m (paramD0 m B)
 def ellG (m B : ℕ) : ℕ := Nat.clog 2 ((m + dG m B - 1) / dG m B)
 /-- Vertex-side size `q_G = 2 ^ ℓ_G` of the double cover in [OpenAI2026ETH], Lemma 6.1. -/
 def qG (m B : ℕ) : ℕ := 2 ^ ellG m B
-/-- Local parity-check row count `c_G = ⌈d_G / (8 B)⌉` of [OpenAI2026ETH], Lemma 6.1. -/
+/-- Local parity-check row count `c_G = ⌈d_G / (8 B)⌉` of [OpenAI2026ETH], Lemma 6.1
+(`0` if `B = 0`). -/
 def cG (m B : ℕ) : ℕ := (dG m B + 8 * B - 1) / (8 * B)
-/-- Maximum rejected weight `h = ⌈d_G / (100 B μ)⌉ - 1` for the local code of Lemma 6.1. -/
+/-- Maximum rejected weight `h = ⌈d_G / (100 B μ)⌉ - 1` for the local code of Lemma 6.1
+(`0` if `d_G = 0` or `B = 0`). -/
 def hDist (m B : ℕ) : ℕ :=
   (dG m B + 100 * B * (Nat.log 2 m + 1) - 1) / (100 * B * (Nat.log 2 m + 1)) - 1
 /-- Reciprocal bias denominator `200 B μ` (`ε = 1 / biasDen m B`) in [OpenAI2026ETH], (6.2). -/
@@ -193,7 +196,6 @@ end
 private abbrev pOf := @PolyBounded.of_polynomiallyBounded
 private theorem add_mul_le_mul_add (A K B : ℕ) (hK : 1 ≤ K) : A + K * B ≤ K * (A + B) := by
   rw [Nat.mul_add]; exact Nat.add_le_add_right (Nat.le_mul_of_pos_left A hK) _
-private theorem length_encBool_le (b : Bool) : (encBool b).length ≤ 1 := by cases b <;> decide
 private theorem polyBounded_unary {α : Type} {ei : α ↪ List Bool} {f : α → ℕ}
     (hf : ComputableInPolyTime f ei encUnary) : PolyBounded (fun a => (ei a).length) f := by
   simpa only [Function.comp_apply, encUnary_apply, List.length_replicate] using
@@ -379,8 +381,8 @@ private theorem allPositiveIndices_cert {α γ : Type} {encIn : α ↪ List Bool
     (fun _ => le_rfl) hcount (hctx.prod hinit) (.of_polyTime hbody)
     (((PolyBounded.const 2).mul hctx.polyBounded_length).add (.const 2))
     (fun _ _ _ => le_rfl) fun a j _ => ?_).snd).mono_const 1 (fun _ => by omega)
-  rw [length_encPair, run_allIndex_fst test]
-  have := length_encBool_le (IndexFold.run body j (ctx a, initOk a)).2.2; omega
+  rw [length_encPair, run_allIndex_fst test]; simp only [encBool_apply, List.length_singleton]
+  omega
 private abbrev searchMatrixStep {Q : Type} (rowsOf colsOf : Q → ℕ)
     (check : Q → List (List Bool) → Bool)
     (p : ℕ × (Q × (Bool × List (List Bool)))) : Q × (Bool × List (List Bool)) :=
@@ -487,13 +489,13 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
   set out := (IndexFold.run (searchMatrixStep rowsOf colsOf check) j
     (qOf a, (false, listRows (rowsOf (qOf a)) (colsOf (qOf a)) []))).2
   obtain ⟨hq_eq, ⟨w, hw⟩, -, -⟩ := run_searchMatrixStep_inv rowsOf colsOf check j (qOf a)
-  have hb := length_encBool_le out.2.1
   have hmat : (encList encBits out.2.2).length = rowsOf (qOf a) * (2 * colsOf (qOf a) + 1) := by
     rw [show out.2.2 = listRows (rowsOf (qOf a)) (colsOf (qOf a)) w from hw]
     exact length_encList_listRows _ _ _
   have hqe : (encQ out.1).length = (encQ (qOf a)).length := by rw [hq_eq]
   change (encSt out).length ≤ B a
-  simp only [encSt, encPay, length_encPair, hqe, hmat, B]; omega
+  simp only [encSt, encPay, length_encPair, encBool_apply, List.length_singleton, hqe, hmat, B]
+  omega
 
 /-! ### Polynomial-time and streaming checkers -/
 
@@ -546,12 +548,6 @@ private theorem cast_nat_abs_sub (a b : ℕ) :
     simp only [Nat.sub_eq_zero_of_le h, zero_add, add_zero, Nat.cast_sub h]
   · rw [abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr (by exact_mod_cast h))]
   · exact (abs_of_nonneg (sub_nonneg.mpr (by exact_mod_cast h))).symm
-private theorem countP_ofFn_bool {d : ℕ} {α : Type*} (f : Fin d → α) (p : α → Bool) :
-    (List.ofFn f).countP p = #{j : Fin d | p (f j) = true} := by
-  change _ = weight (p ∘ f)
-  rw [← count_true_ofFn, List.count_eq_countP, ← List.map_ofFn, List.countP_map]
-  exact congrArg (List.countP · (List.ofFn f))
-    (funext fun x => by dsimp only [Function.comp_apply]; cases p x <;> rfl)
 
 /-- Exact characterization of `checkSmallBiasShifts` for `d ≥ 1` and `0 < maxBiasDen`. -/
 theorem checkSmallBiasShifts_eq_true_iff {ell d maxBiasNum maxBiasDen : ℕ} [NeZero d]
@@ -575,7 +571,7 @@ theorem checkSmallBiasShifts_eq_true_iff {ell d maxBiasNum maxBiasDen : ℕ} [Ne
       (k : Fin (2 ^ ell)) : shifts.countP (fun row => bitDot row (lowBits ell k.val)) =
         #{j : Fin d | parityOn {i : Fin ell | (equivFin ell).symm k i = true} (s j) = true} := by
     nth_rw 1 [list_eq_ofFn_ofList hlen hrows]
-    rw [BooleanFold.lowBits_eq_word _ k, countP_ofFn_bool]; congr 1; ext j
+    rw [BooleanFold.lowBits_eq_word _ k, List.countP_ofFn, ← card_filter]; congr 1; ext j
     simp only [mem_filter, mem_univ, true_and]; rw [bitDot_ofFn, dotProduct_eq_parityOn]
   have hbias_iff (S : Finset (Fin ell)) :
       ((d - 2 * #{j : Fin d | parityOn S (s j) = true}) +
@@ -1083,7 +1079,8 @@ def initialTestsRows (m B : ℕ) : List (List Bool) :=
     (findSmallBiasShifts (ellG m B) (dG m B) 1 (biasDen m B))
     (findLocalCheckMatrix (cG m B) (dG m B) (hDist m B + 1))
 
-/-- Unconditional correctness of `initialTestsRows` ([OpenAI2026ETH], 6.1) for `1 ≤ n, B`. -/
+/-- Unconditional correctness of `initialTestsRows` ([OpenAI2026ETH], 6.1) for `1 ≤ n, B` and
+`m ≤ B * n`. -/
 theorem initialTestsRows_spec {n m B : ℕ} (hn : 1 ≤ n) (hB : 1 ≤ B) (hmn : m ≤ B * n) :
     let rows := initialTestsRows m B
     rows.length ≤ 3 * n ∧ (∀ row ∈ rows, row.length = m ∧ row.count true ≤ paramD0 m B) ∧
@@ -1102,7 +1099,8 @@ theorem initialTestsRows_spec {n m B : ℕ} (hn : 1 ≤ n) (hB : 1 ≤ B) (hmn :
       ((isSmallBias_findSmallBiasShifts (maxBiasNum := 1) hden
         (by simpa only [Nat.cast_one] using exists_shifts_params hB)).1)
       ((weight_le_of_findLocalCheckMatrix (exists_localMatrix_params hm hB)).1)
-/-- Executable witness matching `Cslib.BitString.exists_initialTests` for `1 ≤ n, B`. -/
+/-- Executable witness matching `Cslib.BitString.exists_initialTests` for `1 ≤ n, B` and
+`m ≤ B * n`. -/
 theorem map_ofList_initialTestsRows_spec {n m B : ℕ} (hn : 1 ≤ n) (hB : 1 ≤ B)
     (hmn : m ≤ B * n) :
     let rows := (initialTestsRows m B).map (ofList m)
@@ -1150,7 +1148,8 @@ private theorem exists_pow_of_polyBounded_mb {u : ℕ × ℕ → ℕ}
   rw [Nat.mul_comm, Nat.pow_mul, hlen]; exact Nat.pow_le_pow_left (linear_mb_le_two_pow p.1 p.2) d
 private abbrev encMid := encPair encMB (encPair (encList encBits) (encList encBits))
 
-/-- Native `ComputableInO` certificate for `initialTestsRows` on unary `(m, B)`. -/
+/-- Native `ComputableInO` certificate for `initialTestsRows` on unary `(m, B)`, proving pure
+`2 ^ q (B + Nat.log 2 (m + 2))` time and `S (m + B)` space. -/
 theorem initialTestsRows_computableInO :
     ∃ q S : ℕ → ℕ, Cslib.PolynomiallyBounded q ∧ Cslib.PolynomiallyBounded S ∧
       ComputableInO (fun p : ℕ × ℕ => initialTestsRows p.1 p.2)
@@ -1210,7 +1209,9 @@ theorem initialTestsRows_computableInO :
   refine ((hT p).trans (Nat.mul_le_mul hKsum (hEp p))).trans ?_
   rw [← Nat.pow_add]; exact Nat.pow_le_pow_right (by decide : 0 < 2)
     (by have hEqp := hEq p; dsimp only [X, E1, E2] at hEqp ⊢; omega)
-/-- Triple-input `(n, m, B)` form of `initialTestsRows_computableInO` on unary `(n, m, B)`. -/
+/-- Triple-input `(n, m, B)` form of `initialTestsRows_computableInO` on unary `(n, m, B)`,
+proving `n + 2 ^ q (B + Nat.log 2 (m + 2))` time (where `+ n` scans past the unary `n` prefix on
+the input tape) and `S (n + m + B)` space. -/
 theorem initialTestsRows_computableInO_nmb :
     ∃ q S : ℕ → ℕ, Cslib.PolynomiallyBounded q ∧ Cslib.PolynomiallyBounded S ∧
       ComputableInO (fun p : ℕ × ℕ × ℕ => initialTestsRows p.2.1 p.2.2)
