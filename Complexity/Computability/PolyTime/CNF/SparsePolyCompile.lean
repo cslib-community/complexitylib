@@ -68,7 +68,9 @@ restriction algorithms from §5.5 (pp. 38–39) and §6 / §6.2–6.3 (pp. 39–
 
 * `Cslib.Complexity.evalMonomialList_xorEquation`, `Cslib.Complexity.length_xorEquation_le`,
   `Cslib.Complexity.isCanonicalEquation_xorEquation`,
-  `Cslib.Complexity.computableInPolyTime_xorEquation`: mod-2 equation addition specs and complexity.
+  `Cslib.Complexity.length_enc_reduceEquation_le`,
+  `Cslib.Complexity.computableInPolyTime_reduceEquation`,
+  `Cslib.Complexity.computableInPolyTime_xorEquation`: mod-2 equation reduction/addition specs.
 * `Cslib.Complexity.bitVal_evalMonomialList_eq_sum_monomial`,
   `Cslib.Complexity.bitVal_evalMonomialList_mem_lowDegree`: bridge to `BitString.monomial (ZMod 2)`
   and `BitString.lowDegree (ZMod 2) ℕ k`.
@@ -956,10 +958,6 @@ local notation "encEq" => encList (encList encNat)
 local notation "encSys" => encList (encList (encList encNat))
 local notation "encC" => encList (encPair encNat encBool)
 
-private theorem length_encList_sublist {α : Type} (enc : α ↪ List Bool) {l₁ l₂ : List α}
-    (h : l₁ <+ l₂) : (encList enc l₁).length ≤ (encList enc l₂).length :=
-  (h.flatMap (frame ∘ enc)).length_le
-
 private theorem computableTidilyInPolyTime_toggleMonomial :
     ComputableTidilyInPolyTime (fun p : List (List ℕ) × List ℕ => toggleMonomial p.1 p.2)
       (encPair encEq encM) encEq := by
@@ -1111,8 +1109,9 @@ private theorem computableTidilyInPolyTime_compileClauseBounded (k : ℕ) :
           i hi)
   exact (computableTidilyInPolyTime_isTautologicalClause.comp htake).ite' (const []) hexpand
 
-private theorem length_encEq_xorEquation_le (eq1 eq2 : List (List ℕ)) :
-    (encEq (xorEquation eq1 eq2)).length ≤ (encEq eq1).length + (encEq eq2).length := by
+/-- Reducing an equation modulo `2` (`reduceEquation`) does not increase its encoded length. -/
+theorem length_enc_reduceEquation_le (l : List (List ℕ)) :
+    (encEq (reduceEquation l)).length ≤ (encEq l).length := by
   have hred : ∀ (L acc : List (List ℕ)),
       (encEq (L.foldl toggleMonomial acc)).length ≤ (encEq acc).length + (encEq L).length := by
     intro L
@@ -1133,10 +1132,12 @@ private theorem length_encEq_xorEquation_le (eq1 eq2 : List (List ℕ)) :
             Nat.add_le_add_right hstep _
         _ = (encEq acc).length + (encEq (m :: ms)).length := by
             simp only [encList_cons, List.length_append]; omega
-  calc (encEq (xorEquation eq1 eq2)).length
-      ≤ (encEq ([] : List (List ℕ))).length + (encEq (eq1 ++ eq2)).length := hred (eq1 ++ eq2) []
-    _ = (encEq eq1).length + (encEq eq2).length := by
-        simp only [encList_nil, List.length_nil, Nat.zero_add, encList_append, List.length_append]
+  simpa only [reduceEquation, encList_nil, List.length_nil, Nat.zero_add] using hred l []
+
+private theorem length_encEq_xorEquation_le (eq1 eq2 : List (List ℕ)) :
+    (encEq (xorEquation eq1 eq2)).length ≤ (encEq eq1).length + (encEq eq2).length :=
+  (length_enc_reduceEquation_le (eq1 ++ eq2)).trans_eq (by
+    simp only [encList_append, List.length_append])
 
 private theorem compileParityRowBounded_eq_foldl (k : ℕ) (φ : CNF ℕ) (row : List Bool) :
     compileParityRowBounded k φ row =
@@ -1277,6 +1278,12 @@ private theorem computableTidilyInPolyTime_restrictSystem :
     (computableTidilyInPolyTime_restrictEquation.comp (((fst _ _).fst').prod (snd _ _)))
 
 /-! #### Public Plain `ComputableInPolyTime` Theorems (Zero `Tidy` Surface) -/
+
+/-- Mod-2 duplicate monomial cancellation `reduceEquation` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_reduceEquation :
+    ComputableInPolyTime reduceEquation encEq encEq :=
+  .of_tidy computableTidilyInPolyTime_reduceEquation
 
 /-- Mod-2 equation symmetric difference `xorEquation` is polynomial-time. -/
 @[fun_prop]

@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 OpenAI, Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 OpenAI, Samuel Schlesinger, Anton Kovsharov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: OpenAI, Samuel Schlesinger, Karn Seth
+Authors: OpenAI, Samuel Schlesinger, Karn Seth, Anton Kovsharov
 -/
 
 module
@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Mathlib.Data.Int.Order.Basic
 import Mathlib.Data.List.Basic
+import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Ring
 
 /-!
@@ -25,6 +26,7 @@ value of sums and prefix sums of lists of integers bounded termwise.
   bounded by `C`.
 * `List.natAbs_sum_take_le_length_mul`: every prefix sum of `l` is bounded by `l.length * C`.
 * `List.natAbs_sum_take_le_of_length_le`: prefix sums are bounded by `m * C` when `l.length ≤ m`.
+* `List.natAbs_getD_le_of_forall`: `getD` with default `0` preserves elementwise `natAbs` bounds.
 -/
 
 @[expose] public section
@@ -65,5 +67,12 @@ lemma natAbs_sum_take_le_length_mul {l : List ℤ} {C : ℕ} (h : ∀ x ∈ l, x
 lemma natAbs_sum_take_le_of_length_le {l : List ℤ} {C m : ℕ} (hl : l.length ≤ m)
     (h : ∀ x ∈ l, x.natAbs ≤ C) (k : ℕ) : (l.take k).sum.natAbs ≤ m * C :=
   (natAbs_sum_take_le_length_mul h k).trans (Nat.mul_le_mul_right C hl)
+
+/-- Looking up `l.getD i 0` preserves any uniform bound on `Int.natAbs` of elements of `l`. -/
+lemma natAbs_getD_le_of_forall {l : List ℤ} {B : ℕ} (hl : ∀ x ∈ l, x.natAbs ≤ B) (i : ℕ) :
+    (l.getD i 0).natAbs ≤ B := by
+  by_cases hi : i < l.length
+  · rw [List.getD_eq_getElem l 0 hi]; exact hl _ (List.getElem_mem hi)
+  · rw [List.getD_eq_default l 0 (Nat.le_of_not_lt hi), Int.natAbs_zero]; exact Nat.zero_le B
 
 end List

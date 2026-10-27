@@ -36,6 +36,8 @@ tree-word counting, or the complete counting sparsification theorem.
 
 ## Main results
 
+* `Cslib.Logic.PL.ClauseSet.Sparsification.countingDepthCoeff_le_mul_pow`:
+  the degree-`k - 2` bound on the depth coefficient in terms of the threshold base.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.countingThresholdBase_spec`: the exact integer test.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.countingThresholdBase_first`: dyadic minimality.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.exists_countingThresholdBase_le_mul_clog`:
@@ -76,7 +78,9 @@ theorem four_le_countingBChoiceCoeff {k : ℕ} (hk : 2 ≤ k) : 4 ≤ countingBC
   simpa only [countingDepthCoeff, countingBChoiceCoeff, mul_one] using
     (four_le_countingDepthCoeff (M := 1) hk)
 
-private theorem depthCoeff_le {k M : ℕ} (hM : 1 ≤ M) :
+/-- The geometric depth coefficient has degree at most `k - 2` in a positive threshold base.
+The coefficient depends only on the fixed width, including the empty sums at widths zero and one. -/
+theorem countingDepthCoeff_le_mul_pow {k M : ℕ} (hM : 1 ≤ M) :
     countingDepthCoeff k M ≤ countingBChoiceCoeff k * M ^ (k - 2) := by
   calc countingDepthCoeff k M
       ≤ 4 * ∑ r ∈ range (k - 1), 3 ^ r * M ^ (k - 2) := by
@@ -108,7 +112,8 @@ private theorem clog_depthCoeff_le {k : ℕ} (hk : 2 ≤ k) (m : ℕ) :
   apply Nat.clog_le_of_le_pow
   calc 4 * countingDepthCoeff k (2 ^ m) * 2 ^ m
       ≤ 4 * (countingBChoiceCoeff k * (2 ^ m) ^ (k - 2)) * 2 ^ m :=
-        Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (depthCoeff_le Nat.one_le_two_pow))
+        Nat.mul_le_mul_right _
+          (Nat.mul_le_mul_left _ (countingDepthCoeff_le_mul_pow Nat.one_le_two_pow))
     _ = (4 * countingBChoiceCoeff k) * (2 ^ m) ^ (k - 1) := by
       rw [show k - 1 = (k - 2) + 1 by omega, pow_succ]
       ring

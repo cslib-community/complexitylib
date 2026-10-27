@@ -100,7 +100,7 @@ example :
       (Polynomial.ofCoeffList [12, -3, 5]).coeffNorm1 = 20 :=
   ⟨(getD_parityLinearCoeffs_eq_parityBaseDigit 3 2).symm,
    (getD_parityLinearCoeffs_eq_parityBaseDigit 3 5).symm,
-   coeffNorm1_ofCoeffList [12, -3, 5]⟩
+   Polynomial.coeffNorm1_ofCoeffList [12, -3, 5]⟩
 
 example :
     ((Cslib.BitString.parityFactorCleared 3 (Polynomial.C 6)
