@@ -86,6 +86,13 @@ parameter uniformity and the native subexponential counting endpoint remain sepa
 * `Cslib.Complexity.CountingSparsify.search_eq_modelCount`,
   `Cslib.Complexity.CountingSparsify.search_eq_ite_modelCount`: the search computes `φ.modelCount`
   on formulas of width `≤ k` (and `0` otherwise).
+* `Cslib.Complexity.CountingSparsify.search_eq_ite_modelCount_of_normalized`: correctness only
+  requires the leaf counter to be exact on normalized sparse formulas within the search's
+  support and clause-count bounds.
+* `Cslib.Complexity.CountingSparsify.searchDeclaredWith_eq_ite_modelCountOn_of_normalized`:
+  the same invariant-restricted correctness contract for declared-variable counting, with either
+  occurring-variable or declared-variable leaf counts. These are semantic extensions; native
+  totality and resource certificates remain separate requirements.
 * `Cslib.Complexity.CountingSparsify.exists_computableInO_search`: native `ComputableInO ... T T`
   time-and-space transfer certificate for `CountingSparsify.search`.
 * `Cslib.Complexity.CountingSparsify.exists_computableInO_search_polySpace`: the same time envelope
@@ -421,15 +428,16 @@ theorem iterate_step (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
       rfl
 
 include hM hK in
-/-- **The search computes the model count (occurring-variable support promise).** If `g` computes
-`ψ.modelCount` on sparse formulas `ψ` of width at most `k` whose occurring variables lie in
-`φ.vars.toFinset`, then `search M K k B g φ` returns `φ.modelCount` on formulas of width at most `k`
-and `0` otherwise. -/
-theorem search_eq_ite_modelCount_of_subset (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
+/-- **Correctness from the invariants of sparse leaves.** The counter need only be exact on
+normalized sparse formulas of width at most `k`, supported on the input's variables, with at most
+`occBound K M * φ.numVars + 1` clauses. Its values outside this domain do not affect the result.
+The additive `1` includes the normalized contradiction `[[]]` when the input has no variables. -/
+theorem search_eq_ite_modelCount_of_normalized (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
     (hTB : CountingTreeBound M K B L_coeff hM hK) {g : CNF ℕ → ℕ} {φ : CNF ℕ}
-    (hg : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
+    (hg : ∀ ψ : CNF ℕ, CountingNormalized K ψ → (∀ c ∈ ψ, c.length ≤ k) →
       isSparse (countingThreshold M) K ψ = true →
-      ψ.vars.toFinset ⊆ φ.vars.toFinset → g ψ = ψ.modelCount) :
+      ψ.vars.toFinset ⊆ φ.vars.toFinset →
+      ψ.length ≤ occBound K M * φ.numVars + 1 → g ψ = ψ.modelCount) :
     search M K k B g φ =
       if (φ.all fun c => decide (c.length ≤ k)) then φ.modelCount else 0 := by
   classical
@@ -448,7 +456,10 @@ theorem search_eq_ite_modelCount_of_subset (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (
       fun c hc => length_le_of_mem_walk hM hK hkK hw.isNodeWord hc
     have hsub : ψ.1.vars.toFinset ⊆ φ.vars.toFinset :=
       vars_walk_subset hM hK hkK w
-    rw [leafWeight, hg ψ.1 hwidth hsparse hsub, CNF.length_distinctVars, CNF.length_distinctVars]
+    have hlength : ψ.1.length ≤ occBound K M * φ.numVars + 1 :=
+      length_walk_le_of_isSparse hM hK hkK hsparse
+    rw [leafWeight, hg ψ.1 ψ.2 hwidth hsparse hsub hlength,
+      CNF.length_distinctVars, CNF.length_distinctVars]
     exact (CNF.modelCountOn_eq_mul_modelCount ψ.1 φ.vars.toFinset hsub).symm
   have hsum : ∑ w ∈ W, leafWeight φ.distinctVars.length (R.walk s₀ w).1 (g (R.walk s₀ w).1) =
       (root k φ).modelCountOn φ.vars.toFinset :=
@@ -462,6 +473,21 @@ theorem search_eq_ite_modelCount_of_subset (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (
     exact Nat.min_eq_right (modelCount_le_two_pow_numVars φ)
   · rw [CNF.modelCountOn_eq_zero_of_nil_mem (List.mem_singleton_self [])]
     exact Nat.min_eq_right (Nat.zero_le _)
+
+include hM hK in
+/-- **The search computes the model count (occurring-variable support promise).** If `g` computes
+`ψ.modelCount` on sparse formulas `ψ` of width at most `k` whose occurring variables lie in
+`φ.vars.toFinset`, then `search M K k B g φ` returns `φ.modelCount` on formulas of width at most `k`
+and `0` otherwise. -/
+theorem search_eq_ite_modelCount_of_subset (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
+    (hTB : CountingTreeBound M K B L_coeff hM hK) {g : CNF ℕ → ℕ} {φ : CNF ℕ}
+    (hg : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold M) K ψ = true →
+      ψ.vars.toFinset ⊆ φ.vars.toFinset → g ψ = ψ.modelCount) :
+    search M K k B g φ =
+      if (φ.all fun c => decide (c.length ≤ k)) then φ.modelCount else 0 :=
+  search_eq_ite_modelCount_of_normalized hM hK hM2 hkK hTB
+    fun ψ _ hw hsp hsub _ => hg ψ hw hsp hsub
 
 include hM hK in
 /-- **The search computes the model count.** If `g` computes `ψ.modelCount` on sparse formulas `ψ`
@@ -1214,6 +1240,51 @@ theorem searchDeclaredWith_eq_ite_mul (NOf MOf BOf : P → ℕ) (K k : ℕ) (g :
   rw [searchDeclaredWith, searchWith_eq_search, Nat.shiftLeft_eq, CNF.length_distinctVars,
     Nat.mul_comm]
 
+/-- **Declared-variable correctness from normalized bounded leaves.** The occurring-variable
+counter need only be exact on normalized sparse width-`≤ k` formulas supported on the declared
+range and having at most `occBound K (MOf p) * NOf p + 1` clauses. -/
+theorem searchDeclaredWith_eq_ite_modelCountOn_of_normalized
+    {NOf MOf BOf : P → ℕ} {K k L_coeff : ℕ}
+    {p : P} (hM : 1 ≤ MOf p) (hK : 1 ≤ K) (hM2 : 2 ≤ MOf p) (hkK : k ≤ K)
+    (hTB : CountingTreeBound (MOf p) K (BOf p) L_coeff hM hK)
+    {g : P × CNF ℕ → ℕ}
+    (hg : ∀ ψ : CNF ℕ, CountingNormalized K ψ → (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold (MOf p)) K ψ = true →
+      ψ.vars.toFinset ⊆ Finset.range (NOf p) →
+      ψ.length ≤ occBound K (MOf p) * NOf p + 1 → g (p, ψ) = ψ.modelCount)
+    (φ : CNF ℕ) :
+    searchDeclaredWith NOf MOf BOf K k g p φ =
+      if validDeclaredInput k (NOf p) φ then φ.modelCountOn (Finset.range (NOf p)) else 0 := by
+  rw [searchDeclaredWith_eq_ite_mul]
+  split_ifs with hvalid
+  · obtain ⟨hw, hsub⟩ := validDeclaredInput_eq_true_iff.mp hvalid
+    have hn : φ.numVars ≤ NOf p := by
+      simpa only [CNF.numVars, Finset.card_range] using Finset.card_le_card hsub
+    have hsearch : search (MOf p) K k (BOf p) (fun ψ => g (p, ψ)) φ = φ.modelCount := by
+      rw [search_eq_ite_modelCount_of_normalized hM hK hM2 hkK hTB
+        (fun ψ hnorm hψw hsp hψsub hlen => hg ψ hnorm hψw hsp (hψsub.trans hsub)
+          (hlen.trans (Nat.add_le_add_right (Nat.mul_le_mul_left _ hn) 1))),
+        ite_eq_left_iff.mpr fun h =>
+          absurd (List.all_eq_true.mpr fun c hc => decide_eq_true (hw c hc)) h]
+    rw [hsearch, CNF.modelCountOn_eq_mul_modelCount φ (Finset.range (NOf p)) hsub,
+      Finset.card_range]
+  · rfl
+
+/-- Declared-variable correctness on valid inputs, from the invariants of sparse leaves. -/
+theorem searchDeclaredWith_eq_modelCountOn_of_normalized
+    {NOf MOf BOf : P → ℕ} {K k L_coeff : ℕ}
+    {p : P} (hM : 1 ≤ MOf p) (hK : 1 ≤ K) (hM2 : 2 ≤ MOf p) (hkK : k ≤ K)
+    (hTB : CountingTreeBound (MOf p) K (BOf p) L_coeff hM hK)
+    {g : P × CNF ℕ → ℕ}
+    (hg : ∀ ψ : CNF ℕ, CountingNormalized K ψ → (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold (MOf p)) K ψ = true →
+      ψ.vars.toFinset ⊆ Finset.range (NOf p) →
+      ψ.length ≤ occBound K (MOf p) * NOf p + 1 → g (p, ψ) = ψ.modelCount)
+    {φ : CNF ℕ} (hw : ∀ c ∈ φ, c.length ≤ k) (hsub : φ.vars.toFinset ⊆ Finset.range (NOf p)) :
+    searchDeclaredWith NOf MOf BOf K k g p φ = φ.modelCountOn (Finset.range (NOf p)) := by
+  rw [searchDeclaredWith_eq_ite_modelCountOn_of_normalized hM hK hM2 hkK hTB hg φ,
+    ite_eq_left_iff.mpr fun h => absurd (validDeclaredInput_eq_true_iff.mpr ⟨hw, hsub⟩) h]
+
 /-- **Correctness of `searchDeclaredWith` under `CountingTreeBound`.**
 If `g (p, ψ) = ψ.modelCount` on sparse formulas `ψ` of width `≤ k` whose occurring variables lie in
 `Finset.range (NOf p)`, then `searchDeclaredWith` returns `φ.modelCountOn (Finset.range (NOf p))`
@@ -1227,18 +1298,9 @@ theorem searchDeclaredWith_eq_ite_modelCountOn {NOf MOf BOf : P → ℕ} {K k L_
       ψ.vars.toFinset ⊆ Finset.range (NOf p) → g (p, ψ) = ψ.modelCount)
     (φ : CNF ℕ) :
     searchDeclaredWith NOf MOf BOf K k g p φ =
-      if validDeclaredInput k (NOf p) φ then φ.modelCountOn (Finset.range (NOf p)) else 0 := by
-  rw [searchDeclaredWith_eq_ite_mul]
-  split_ifs with hvalid
-  · obtain ⟨hw, hsub⟩ := validDeclaredInput_eq_true_iff.mp hvalid
-    have hsearch : search (MOf p) K k (BOf p) (fun ψ => g (p, ψ)) φ = φ.modelCount := by
-      rw [search_eq_ite_modelCount_of_subset hM hK hM2 hkK hTB
-        (fun ψ hψw hsp hψsub => hg ψ hψw hsp (hψsub.trans hsub)),
-        ite_eq_left_iff.mpr fun h =>
-          absurd (List.all_eq_true.mpr fun c hc => decide_eq_true (hw c hc)) h]
-    rw [hsearch, CNF.modelCountOn_eq_mul_modelCount φ (Finset.range (NOf p)) hsub,
-      Finset.card_range]
-  · rfl
+      if validDeclaredInput k (NOf p) φ then φ.modelCountOn (Finset.range (NOf p)) else 0 :=
+  searchDeclaredWith_eq_ite_modelCountOn_of_normalized hM hK hM2 hkK hTB
+    (fun ψ _ hw hsp hsub _ => hg ψ hw hsp hsub) φ
 
 /-- **Correctness of `searchDeclaredWith` on valid inputs under `CountingTreeBound`.** -/
 theorem searchDeclaredWith_eq_modelCountOn {NOf MOf BOf : P → ℕ} {K k L_coeff : ℕ}
@@ -1252,6 +1314,45 @@ theorem searchDeclaredWith_eq_modelCountOn {NOf MOf BOf : P → ℕ} {K k L_coef
     searchDeclaredWith NOf MOf BOf K k g p φ = φ.modelCountOn (Finset.range (NOf p)) := by
   rw [searchDeclaredWith_eq_ite_modelCountOn hM hK hM2 hkK hTB hg φ,
     ite_eq_left_iff.mpr fun h => absurd (validDeclaredInput_eq_true_iff.mpr ⟨hw, hsub⟩) h]
+
+/-- Normalize a declared-variable leaf counter that is exact only on normalized bounded leaves,
+then recover the original declared-variable count. The input guard returns zero on invalid inputs.
+-/
+theorem searchDeclaredWith_normalizeDeclaredLeaf_eq_ite_modelCountOn_of_normalized
+    {NOf MOf BOf : P → ℕ} {K k L_coeff : ℕ}
+    {p : P} (hM : 1 ≤ MOf p) (hK : 1 ≤ K) (hM2 : 2 ≤ MOf p) (hkK : k ≤ K)
+    (hTB : CountingTreeBound (MOf p) K (BOf p) L_coeff hM hK)
+    {h : P × CNF ℕ → ℕ}
+    (hh : ∀ ψ : CNF ℕ, CountingNormalized K ψ → (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold (MOf p)) K ψ = true →
+      ψ.vars.toFinset ⊆ Finset.range (NOf p) →
+      ψ.length ≤ occBound K (MOf p) * NOf p + 1 →
+      h (p, ψ) = ψ.modelCountOn (Finset.range (NOf p)))
+    (φ : CNF ℕ) :
+    searchDeclaredWith NOf MOf BOf K k (normalizeDeclaredLeaf NOf h) p φ =
+      if validDeclaredInput k (NOf p) φ then φ.modelCountOn (Finset.range (NOf p)) else 0 :=
+  searchDeclaredWith_eq_ite_modelCountOn_of_normalized hM hK hM2 hkK hTB
+    (fun ψ hnorm hw hsp hsub hlen =>
+      normalizeDeclaredLeaf_eq_modelCount hsub (hh ψ hnorm hw hsp hsub hlen)) φ
+
+/-- Declared-variable correctness on valid inputs after normalizing a counter whose correctness
+is restricted to normalized bounded sparse leaves. -/
+theorem searchDeclaredWith_normalizeDeclaredLeaf_eq_modelCountOn_of_normalized
+    {NOf MOf BOf : P → ℕ} {K k L_coeff : ℕ}
+    {p : P} (hM : 1 ≤ MOf p) (hK : 1 ≤ K) (hM2 : 2 ≤ MOf p) (hkK : k ≤ K)
+    (hTB : CountingTreeBound (MOf p) K (BOf p) L_coeff hM hK)
+    {h : P × CNF ℕ → ℕ}
+    (hh : ∀ ψ : CNF ℕ, CountingNormalized K ψ → (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold (MOf p)) K ψ = true →
+      ψ.vars.toFinset ⊆ Finset.range (NOf p) →
+      ψ.length ≤ occBound K (MOf p) * NOf p + 1 →
+      h (p, ψ) = ψ.modelCountOn (Finset.range (NOf p)))
+    {φ : CNF ℕ} (hw : ∀ c ∈ φ, c.length ≤ k) (hsub : φ.vars.toFinset ⊆ Finset.range (NOf p)) :
+    searchDeclaredWith NOf MOf BOf K k (normalizeDeclaredLeaf NOf h) p φ =
+      φ.modelCountOn (Finset.range (NOf p)) :=
+  searchDeclaredWith_eq_modelCountOn_of_normalized hM hK hM2 hkK hTB
+    (fun ψ hnorm hψw hsp hψsub hlen =>
+      normalizeDeclaredLeaf_eq_modelCount hψsub (hh ψ hnorm hψw hsp hψsub hlen)) hw hsub
 
 /-- **Correctness of `searchDeclaredWith` composed with `normalizeDeclaredLeaf`.**
 When a leaf provider `h : P × CNF ℕ → ℕ` returns the declared-range count
