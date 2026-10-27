@@ -23,31 +23,35 @@ cleared-denominator integer interpolation pipeline of Section 5.4 and Appendix B
 
 1. **Cleared-denominator evaluation at $T = 0$, ring homogenization, and `natDegree` bounds
    (§5.3–5.4 & Appendix B.2)**:
-   When each variable $v \in \iota$ in equation $i \in I$ has an integer numerator polynomial
-   $\theta_{x, i, v}(T) \in \mathbb{Z}[T]$ over a common denominator $d_{\mathrm{den}} \in
-   \mathbb{Z}$ satisfying $\theta_{x, i, v}(0) = d_{\mathrm{den}} \cdot \mathrm{bitVal}_{\mathbb{Z}}
-   (x_v)$ and $\deg_T \theta_{x, i, v} \le R_{\mathrm{deg}}$, the cleared-denominator equation
-   polynomial `Cslib.BitString.clearedMonomialSumPoly` has `natDegree ≤ k * R_deg`, evaluates at
-   $T = 0$ to $d_{\mathrm{den}}^k \cdot \mathrm{monomialSum}_{\mathbb{Z}}(\mathcal{P}_i, x)$, and
-   maps into any commutative ring $R$ (such as $\mathbb{Q}$) as $d_{\mathrm{den}}^k$ times
-   `Cslib.BitString.univariateMonomialSumPoly`.
+   When every monomial $M \in \mathcal{P}_i$ has size $\#M \le k$ and each variable $v \in M$ in
+   equation $i \in I$ has an integer numerator polynomial $\theta_{x, i, v}(T) \in \mathbb{Z}[T]$
+   over a common denominator $d_{\mathrm{den}} \in \mathbb{Z}$ satisfying
+   $\theta_{x, i, v}(0) = d_{\mathrm{den}} \cdot \mathrm{bitVal}_{\mathbb{Z}}(x_v)$ and
+   $\deg_T \theta_{x, i, v} \le R_{\mathrm{deg}}$, the cleared-denominator equation polynomial
+   `Cslib.BitString.clearedMonomialSumPoly` has `natDegree ≤ k * R_deg`, evaluates at $T = 0$ to
+   $d_{\mathrm{den}}^k \cdot \mathrm{monomialSum}_{\mathbb{Z}}(\mathcal{P}_i, x)$, and maps into any
+   commutative ring $R$ as `C ((d_den : R) ^ k)` times `Cslib.BitString.univariateMonomialSumPoly`
+   whenever `(θ x i v).map (Int.castRingHom R) = C (d_den : R) * q x i v` for all $M \in
+   \mathcal{P}_i$ and $v \in M$.
 2. **Cube-summed cleared-denominator polynomials $\tilde{H}_s(T) = \Omega [V^s] H(T)$ and exact
    integer division recovery (§5.4 & Appendix B.3, eq. B.1)**:
    Summing the cleared parity-factor products over $x \in \{0, 1\}^\iota$ yields
    `Cslib.BitString.univariateClearedParityProduct`, its $V^s$-coordinates
    `Cslib.BitString.univariateClearedParityCoord` ($\tilde{H}_s(T) \in \mathbb{Z}[T]$), and its
-   truncated sum `Cslib.BitString.univariateClearedParityTruncatedSum`. Over any field $K$ of
-   characteristic zero (such as $\mathbb{Q}$), $\tilde{H}_s(T)$ equals the common product
-   denominator $\Omega = (d_{\mathrm{den}}^k)^{(2\ell - 1)\#I}$
-   (`Cslib.BitString.clearedProductDenom`) times the rational coordinate polynomial `[V^s] H(T)`
-   associated to the rational replacement family `Cslib.BitString.divDenomReplacement`
-   ($r_{x, i, v}(T) = d_{\mathrm{den}}^{-1} \theta_{x, i, v}(T)$). At $T = 0$, $\tilde{H}_s(0)$ is
-   an exact integer multiple of $\Omega$; when $d_{\mathrm{den}} \neq 0$ and
-   `Fintype.card ι < ℓ`, dividing each $\tilde{H}_s(0)$ (or Cramer's rule determinant numerator
-   $N_{H, s} = D_H \tilde{H}_s(0)$ in eq. B.1) by $\Omega$ (or $\Omega D_H$), summing over
-   $0 \le s < \ell$, and reducing modulo $2^\ell$ recovers `commonZeroCount I P` on the nose, both
-   on a single problem and summed across all heavy-variable branches at shared precision
-   $\ell = n + 1$.
+   truncated sum `Cslib.BitString.univariateClearedParityTruncatedSum`. Over any field $K$ with
+   $(d_{\mathrm{den}} : K) \neq 0$, $1 \le \ell$, and $\forall i \in I, \forall M \in \mathcal{P}_i,
+   \#M \le k$, $\tilde{H}_s(T)$ maps into $K[T]$ as the common product denominator
+   $\Omega = (d_{\mathrm{den}}^k)^{(2\ell - 1)\#I}$ (`Cslib.BitString.clearedProductDenom`) times
+   the rational coordinate polynomial `[V^s] H(T)` associated to the rational replacement family
+   `Cslib.BitString.divDenomReplacement` ($r_{x, i, v}(T) = d_{\mathrm{den}}^{-1}
+   \theta_{x, i, v}(T)$). At $T = 0$, when $1 \le \ell$, $\#M \le k$, and
+   $\theta_{x, i, v}(0) = d_{\mathrm{den}} \cdot \mathrm{bitVal}_{\mathbb{Z}}(x_v)$,
+   $\tilde{H}_s(0)$ is an exact integer multiple of $\Omega$; when $d_{\mathrm{den}} \neq 0$ and
+   `Fintype.card ι < ℓ` (and $D_H \neq 0$ for Cramer determinant recovery), dividing each
+   $\tilde{H}_s(0)$ (or Cramer's rule determinant numerator $N_{H, s} = D_H \tilde{H}_s(0)$ in
+   eq. B.1) by $\Omega$ (or $\Omega D_H$), summing over $0 \le s < \ell$, and reducing modulo
+   $2^\ell$ recovers `commonZeroCount I P` on the nose, both on a single problem and summed across
+   all heavy-variable branches at shared precision $\ell = n + 1$.
 
 ## Main definitions
 
@@ -72,7 +76,8 @@ cleared-denominator integer interpolation pipeline of Section 5.4 and Appendix B
   `Cslib.BitString.natDegree_univariateClearedParityTruncatedSum_le`: equation (5.5a) `natDegree`
   bounds for $\tilde{H}_s(T)$ and $S_\ell(\tilde{H}(T))$.
 * `Cslib.BitString.map_univariateClearedParityCoord_divDenomReplacement`,
-  `Cslib.BitString.map_univariateClearedParityTruncatedSum_divDenomReplacement`: over any field $K$,
+  `Cslib.BitString.map_univariateClearedParityTruncatedSum_divDenomReplacement`: over any field $K$
+  with $(d_{\mathrm{den}} : K) \neq 0$, $1 \le \ell$, and monomial degree at most $k$,
   $\tilde{H}_s(T) = \Omega [V^s] H(T)$ and $S_\ell(\tilde{H}(T)) = \Omega S_\ell(H(T))$.
 * `Cslib.BitString.bivariateCoeffNorm1_parityFactorCleared_le`,
   `Cslib.BitString.bivariateCoeffNorm1_prod_parityFactorCleared_le`,
@@ -84,7 +89,8 @@ cleared-denominator integer interpolation pipeline of Section 5.4 and Appendix B
   `Cslib.BitString.emod_ediv_eval_zero_univariateClearedParityTruncatedSum_eq_commonZeroCount`:
   exact integer divisibility by $\Omega$ at $T = 0$ and exact modular recovery of `commonZeroCount`.
 * `Cslib.BitString.emod_sum_cramer_ediv_eq_commonZeroCount`: Appendix B.3 (eq. B.1) exact integer
-  division recovery from Cramer's rule determinant numerators $N_{H, s} = D_H \tilde{H}_s(0)$.
+  division recovery from Cramer's rule determinant numerators $N_{H, s} = D_H \tilde{H}_s(0)$ when
+  $d_{\mathrm{den}} \neq 0$, $D_H \neq 0$, and `Fintype.card ι < ℓ`.
 * `Cslib.BitString.commonZeroCount_eq_sum_branch_emod_ediv_cleared`: §5.5 branch-summed exact
   recovery from cleared-denominator branch polynomials at shared precision $\ell = n + 1$.
 
