@@ -19,13 +19,16 @@ import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
-# Binomial measurement row counts and completed replacement design (Lemmas 4.1 and 4.7)
+# Binomial measurement row counts and algebraic replacement design assembly (Lemmas 4.1 and 4.7)
 
-This module completes the mathematical construction of Section 4 of the manuscript
+This module assembles the algebraic replacement design construction of Section 4 of the manuscript
 *The Exponential Time Hypothesis is False* (`[OpenAI2026ETH]`, printed pp. 28, 32–34) by
 proving the exact binomial fiber count of Lemma 4.1 (p. 28, equation 4.8), the total
-measurement row bound of equation (4.16) (p. 32), and the completed replacement design
-existence theorem of Lemma 4.7 (pp. 33–34) satisfying Definition 3.1 (pp. 21–22):
+measurement row bound of equation (4.16) (p. 32), and a generalized algebraic Lemma 4.7 existence
+theorem (pp. 33–34) establishing conditions (1)–(4) of Definition 3.1 (pp. 21–22) together with
+the explicit cleared-denominator and `ℓ₁`-coefficient norm bounds of Lemma 4.6 underlying
+condition (5) (formal `O(Q log Q + log D)` bit-length and native runtime-cost integration remain
+separate):
 
 1. **Slot-level antisymmetric and symmetric pair counts (Lemma 4.1 proof, p. 28):**
    - For each evaluation slot `s : Fin Q`, the `r × r` pair basis splits into
