@@ -119,7 +119,10 @@ def sparseCNFDeclaredCounter {P : Type*} (NOf BOf : P → ℕ) (k N₀ : ℕ)
     else 0
   else 0
 
-/-- Normalized Section 6.3 sparse `k`-CNF leaf provider returning `ψ.modelCount` on valid inputs. -/
+/-- Normalized Section 6.3 sparse `k`-CNF leaf provider.
+Returns `ψ.modelCount` on valid sparse or below-threshold inputs, as well as empty formulas and
+formulas containing an empty clause. The supplied `polyCounter` must be exact on the compiled sparse
+systems required by `sparseCNFLeafCounter_eq_modelCount`. -/
 def sparseCNFLeafCounter {P : Type*} (NOf BOf : P → ℕ) (k N₀ : ℕ)
     (polyCounter : ℕ × List (List (List ℕ)) → ℕ) (x : P × CNF ℕ) : ℕ :=
   normalizeDeclaredLeaf NOf (sparseCNFDeclaredCounter NOf BOf k N₀ polyCounter) x
