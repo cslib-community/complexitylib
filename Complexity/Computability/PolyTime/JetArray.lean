@@ -8,12 +8,11 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
+public import Complexity.Computability.PolyTime.Int.Table
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.Nat.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Int.Order
 import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Algebra.BigOperators.Intervals
@@ -27,19 +26,18 @@ Appendix B.2 of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026E
 elements of the truncated bivariate polynomial ring `ℤ[V]/(V^ℓ)[z]/(z^J)` as dense `J × ℓ`
 tables of integer coefficients, stored in their unique representative modulo `(z^J, V^ℓ)`.
 
-This module provides an executable `List (List ℤ)` representation (`Cslib.JetRows`) with total
-out-of-bounds-zero coefficient lookup (`Cslib.coeffAt`), proves exact coefficient formulas and
-ring laws on `(J, ℓ)`-shaped arrays, establishes `ℓ₁` coefficient-norm and binary bit-length bounds
-for truncated 2D convolution, and certifies that every operation is computable in polynomial time
-on multi-tape Turing machines (`Turing.MultiTapeTM.ComputableInPolyTime`) with dimensions `(J, ℓ)`
-in unary and coefficient tables in `encList (encList encIntBin)`.
+Building on the rectangular integer table primitives (`Cslib.IsTableShape`, `Cslib.rowEntry`,
+`Cslib.tabulateTable`) in `Complexity/Computability/PolyTime/Int/Table.lean`, this module provides
+executable truncated jet operations on `List (List ℤ)` (`Cslib.JetRows`), proves exact coefficient
+formulas and commutative-ring laws on `(J, ℓ)`-shaped arrays, establishes `ℓ₁` coefficient-norm and
+binary bit-length bounds for truncated 2D convolution, and certifies that every operation is
+computable in polynomial time on multi-tape Turing machines
+(`Turing.MultiTapeTM.ComputableInPolyTime`) with dimensions `(J, ℓ)` in unary and coefficient
+tables in `encList (encList encIntBin)`.
 
 ## Main definitions
 
 * `Cslib.JetRows`: alias `List (List ℤ)` for dense `J × ℓ` coefficient tables.
-* `Cslib.IsJetShape`: predicate asserting `A.length = J` and every row of `A` has length `ℓ`.
-* `Cslib.coeffAt`: total `(j, u)` coefficient lookup with `0` default outside stored bounds.
-* `Cslib.tabulateJet`: construct a `J × ℓ` table from a coefficient function `ℕ → ℕ → ℤ`.
 * `Cslib.zeroJet`, `Cslib.constJet`, `Cslib.zJet`, `Cslib.vJet`: zero, constant, and generator
   jet arrays.
 * `Cslib.addJet`, `Cslib.negJet`, `Cslib.subJet`, `Cslib.smulJet`: linear operations on `J × ℓ`
@@ -51,17 +49,16 @@ in unary and coefficient tables in `encList (encList encIntBin)`.
 
 ## Main results
 
-* `Cslib.eq_of_isJetShape_of_coeffAt_eq`: extensionality on `(J, ℓ)`-shaped jet arrays.
-* `Cslib.coeffAt_zeroJet`, `Cslib.coeffAt_constJet`, `Cslib.coeffAt_addJet`,
-  `Cslib.coeffAt_negJet`, `Cslib.coeffAt_subJet`, `Cslib.coeffAt_smulJet`,
-  `Cslib.coeffAt_shiftZJet`, `Cslib.coeffAt_shiftVJet`, `Cslib.coeffAt_convJet`: exact in-bounds
+* `Cslib.rowEntry_zeroJet`, `Cslib.rowEntry_constJet`, `Cslib.rowEntry_addJet`,
+  `Cslib.rowEntry_negJet`, `Cslib.rowEntry_subJet`, `Cslib.rowEntry_smulJet`,
+  `Cslib.rowEntry_shiftZJet`, `Cslib.rowEntry_shiftVJet`, `Cslib.rowEntry_convJet`: exact in-bounds
   coefficient formulas.
 * `Cslib.addJet_comm`, `Cslib.addJet_assoc`, `Cslib.convJet_comm`, `Cslib.convJet_assoc`,
   `Cslib.convJet_addJet`, `Cslib.addJet_convJet`, `Cslib.constJet_one_convJet`,
   `Cslib.convJet_constJet_one`: commutative-ring identities on `(J, ℓ)`-shaped arrays.
 * `Cslib.jetL1Norm_addJet_le`, `Cslib.jetL1Norm_convJet_le`: subadditivity and submultiplicativity
   of the `ℓ₁` coefficient norm under truncated addition and 2D convolution.
-* `Cslib.size_natAbs_coeffAt_convJet_le`, `Cslib.length_encIntBin_mem_convJet_le`: binary
+* `Cslib.size_natAbs_rowEntry_convJet_le`, `Cslib.length_encIntBin_mem_convJet_le`: binary
   magnitude and encoded bit-length bounds on entries of `convJet`.
 * `Cslib.computableInPolyTime_zeroJet`, `Cslib.computableInPolyTime_constJet`,
   `Cslib.computableInPolyTime_addJet`, `Cslib.computableInPolyTime_negJet`,
@@ -79,258 +76,177 @@ in unary and coefficient tables in `encList (encList encIntBin)`.
 
 namespace Cslib
 
-/-! ### Representation, shape, and tabulation -/
-
 /-- Dense list-of-rows representation of truncated bivariate jets in `ℤ[V]/(V^ℓ)[z]/(z^J)`. -/
 abbrev JetRows : Type := List (List ℤ)
-
-/-- Shape predicate for a dense `J × ℓ` jet array: `J` rows, each of length `ℓ`. -/
-def IsJetShape (J ℓ : ℕ) (A : List (List ℤ)) : Prop :=
-  A.length = J ∧ ∀ row ∈ A, row.length = ℓ
-
-/-- Total coefficient accessor at `(z^j, V^u)`, returning `0` when `(j, u)` is out of bounds. -/
-def coeffAt (A : List (List ℤ)) (j u : ℕ) : ℤ :=
-  (A.getD j []).getD u 0
-
-/-- Construct the `J × ℓ` jet array whose `(j, u)` entry is `g j u` for `j < J` and `u < ℓ`. -/
-def tabulateJet (J ℓ : ℕ) (g : ℕ → ℕ → ℤ) : List (List ℤ) :=
-  (List.range J).map fun j => (List.range ℓ).map fun u => g j u
-
-@[simp]
-lemma length_tabulateJet (J ℓ : ℕ) (g : ℕ → ℕ → ℤ) :
-    (tabulateJet J ℓ g).length = J := by
-  simp [tabulateJet]
-
-lemma length_of_mem_tabulateJet {J ℓ : ℕ} {g : ℕ → ℕ → ℤ} {row : List ℤ}
-    (hrow : row ∈ tabulateJet J ℓ g) : row.length = ℓ := by
-  obtain ⟨_, -, rfl⟩ := List.mem_map.mp hrow
-  simp
-
-/-- Every tabulated jet array has shape `(J, ℓ)`. -/
-theorem isJetShape_tabulateJet (J ℓ : ℕ) (g : ℕ → ℕ → ℤ) :
-    IsJetShape J ℓ (tabulateJet J ℓ g) :=
-  ⟨length_tabulateJet J ℓ g, fun _ hrow => length_of_mem_tabulateJet hrow⟩
-
-/-- Looking up `(j, u)` in `tabulateJet J ℓ g` yields `g j u` in bounds and `0` otherwise. -/
-lemma coeffAt_tabulateJet (J ℓ : ℕ) (g : ℕ → ℕ → ℤ) (j u : ℕ) :
-    coeffAt (tabulateJet J ℓ g) j u = if j < J ∧ u < ℓ then g j u else 0 := by
-  by_cases hj : j < J <;> by_cases hu : u < ℓ <;>
-    simp [coeffAt, tabulateJet, List.getD_eq_getElem?_getD, hj, hu]
-
-lemma coeffAt_tabulateJet_of_lt {J ℓ : ℕ} (g : ℕ → ℕ → ℤ) {j u : ℕ}
-    (hj : j < J) (hu : u < ℓ) :
-    coeffAt (tabulateJet J ℓ g) j u = g j u := by
-  rw [coeffAt_tabulateJet, ite_eq_left ⟨hj, hu⟩]
-
-/-- Outside `j < J ∧ u < ℓ`, a `(J, ℓ)`-shaped jet array reads as `0`. -/
-lemma coeffAt_eq_zero_of_isJetShape {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsJetShape J ℓ A)
-    {j u : ℕ} (h : ¬(j < J ∧ u < ℓ)) : coeffAt A j u = 0 := by
-  unfold coeffAt
-  rcases Nat.lt_or_ge j A.length with hj | hj
-  · rw [List.getD_eq_getElem _ _ hj]
-    have hjJ : j < J := hA.1 ▸ hj
-    have hlen : A[j].length = ℓ := hA.2 _ (List.getElem_mem hj)
-    have hu : A[j].length ≤ u := by omega
-    exact List.getD_eq_default _ _ hu
-  · rw [List.getD_eq_default _ _ hj, List.getD_nil]
-
-/-- Every stored entry of a list of rows occurs as `coeffAt A j u` at valid indices. -/
-lemma exists_coeffAt_eq {A : List (List ℤ)} {row : List ℤ} {z : ℤ}
-    (hrow : row ∈ A) (hz : z ∈ row) : ∃ j u, j < A.length ∧ u < row.length ∧ coeffAt A j u = z := by
-  obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hrow
-  obtain ⟨u, hu, rfl⟩ := List.getElem_of_mem hz
-  exact ⟨j, u, hj, hu, by simp [coeffAt, List.getD_eq_getElem?_getD, hj, hu]⟩
-
-/-- Two `(J, ℓ)`-shaped jet arrays are equal when their in-bounds coefficients agree. -/
-theorem eq_of_isJetShape_of_coeffAt_eq {J ℓ : ℕ} {A B : List (List ℤ)}
-    (hA : IsJetShape J ℓ A) (hB : IsJetShape J ℓ B)
-    (h : ∀ j < J, ∀ u < ℓ, coeffAt A j u = coeffAt B j u) : A = B := by
-  apply List.ext_getElem (hA.1.trans hB.1.symm)
-  intro j hjA hjB
-  have hj : j < J := hA.1 ▸ hjA
-  have hlenA : A[j].length = ℓ := hA.2 _ (List.getElem_mem hjA)
-  have hlenB : B[j].length = ℓ := hB.2 _ (List.getElem_mem hjB)
-  apply List.ext_getElem (hlenA.trans hlenB.symm)
-  intro u huA huB
-  have hu : u < ℓ := hlenA ▸ huA
-  have hju := h j hj u hu
-  simpa only [coeffAt, List.getD_eq_getElem _ _ hjA, List.getD_eq_getElem _ _ hjB,
-    List.getD_eq_getElem _ _ huA, List.getD_eq_getElem _ _ huB] using hju
-
-/-- Re-tabulating a `(J, ℓ)`-shaped jet array from `coeffAt` recovers it unchanged. -/
-lemma tabulateJet_coeffAt {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsJetShape J ℓ A) :
-    tabulateJet J ℓ (coeffAt A) = A :=
-  eq_of_isJetShape_of_coeffAt_eq (isJetShape_tabulateJet J ℓ _) hA fun _ hj _ hu =>
-    coeffAt_tabulateJet_of_lt _ hj hu
 
 /-! ### Executable jet operations -/
 
 /-- The `J × ℓ` zero jet array. -/
 def zeroJet (J ℓ : ℕ) : List (List ℤ) :=
-  tabulateJet J ℓ fun _ _ => 0
+  tabulateTable J ℓ fun _ _ => 0
 
 /-- The constant jet `c` placed at `(0, 0)` and `0` elsewhere, truncated to `J × ℓ`. -/
 def constJet (J ℓ : ℕ) (c : ℤ) : List (List ℤ) :=
-  tabulateJet J ℓ fun j u => if j = 0 ∧ u = 0 then c else 0
+  tabulateTable J ℓ fun j u => if j = 0 ∧ u = 0 then c else 0
 
 /-- The generator `z` in `ℤ[V]/(V^ℓ)[z]/(z^J)` (`1` at `(1, 0)` when in range). -/
 def zJet (J ℓ : ℕ) : List (List ℤ) :=
-  tabulateJet J ℓ fun j u => if j = 1 ∧ u = 0 then 1 else 0
+  tabulateTable J ℓ fun j u => if j = 1 ∧ u = 0 then 1 else 0
 
 /-- The generator `V` in `ℤ[V]/(V^ℓ)[z]/(z^J)` (`1` at `(0, 1)` when in range). -/
 def vJet (J ℓ : ℕ) : List (List ℤ) :=
-  tabulateJet J ℓ fun j u => if j = 0 ∧ u = 1 then 1 else 0
+  tabulateTable J ℓ fun j u => if j = 0 ∧ u = 1 then 1 else 0
 
 /-- Entrywise addition of two jet arrays, normalized to shape `J × ℓ`. -/
 def addJet (J ℓ : ℕ) (A B : List (List ℤ)) : List (List ℤ) :=
-  tabulateJet J ℓ fun j u => coeffAt A j u + coeffAt B j u
+  tabulateTable J ℓ fun j u => rowEntry A j u + rowEntry B j u
 
 /-- Entrywise negation of a jet array, normalized to shape `J × ℓ`. -/
 def negJet (J ℓ : ℕ) (A : List (List ℤ)) : List (List ℤ) :=
-  tabulateJet J ℓ fun j u => -coeffAt A j u
+  tabulateTable J ℓ fun j u => -rowEntry A j u
 
 /-- Entrywise subtraction of two jet arrays, normalized to shape `J × ℓ`. -/
 def subJet (J ℓ : ℕ) (A B : List (List ℤ)) : List (List ℤ) :=
-  tabulateJet J ℓ fun j u => coeffAt A j u - coeffAt B j u
+  tabulateTable J ℓ fun j u => rowEntry A j u - rowEntry B j u
 
 /-- Entrywise integer scalar multiplication of a jet array, normalized to shape `J × ℓ`. -/
 def smulJet (J ℓ : ℕ) (c : ℤ) (A : List (List ℤ)) : List (List ℤ) :=
-  tabulateJet J ℓ fun j u => c * coeffAt A j u
+  tabulateTable J ℓ fun j u => c * rowEntry A j u
 
 /-- Multiplication by `z` modulo `z^J`, shifting row index up by `1` and dropping row `J - 1`. -/
 def shiftZJet (J ℓ : ℕ) (A : List (List ℤ)) : List (List ℤ) :=
-  tabulateJet J ℓ fun j u => if j = 0 then 0 else coeffAt A (j - 1) u
+  tabulateTable J ℓ fun j u => if j = 0 then 0 else rowEntry A (j - 1) u
 
 /-- Multiplication by `V` modulo `V^ℓ`, shifting column index up by `1` and dropping `ℓ - 1`. -/
 def shiftVJet (J ℓ : ℕ) (A : List (List ℤ)) : List (List ℤ) :=
-  tabulateJet J ℓ fun j u => if u = 0 then 0 else coeffAt A j (u - 1)
+  tabulateTable J ℓ fun j u => if u = 0 then 0 else rowEntry A j (u - 1)
 
 /-- Coefficient `(j, u)` of the 2D Cauchy product of `A` and `B`, computed over `List.range`. -/
 def convEntry (A B : List (List ℤ)) (j u : ℕ) : ℤ :=
   ((List.range (j + 1)).map fun j₁ =>
     ((List.range (u + 1)).map fun u₁ =>
-      coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁)).sum).sum
+      rowEntry A j₁ u₁ * rowEntry B (j - j₁) (u - u₁)).sum).sum
 
 /-- Truncated 2D convolution in `ℤ[V]/(V^ℓ)[z]/(z^J)` using `O(J^2 ℓ^2)` integer operations. -/
 def convJet (J ℓ : ℕ) (A B : List (List ℤ)) : List (List ℤ) :=
-  tabulateJet J ℓ (convEntry A B)
+  tabulateTable J ℓ (convEntry A B)
 
 /-! ### Output shape and exact coefficient semantics -/
 
-theorem isJetShape_zeroJet (J ℓ : ℕ) : IsJetShape J ℓ (zeroJet J ℓ) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_zeroJet (J ℓ : ℕ) : IsTableShape J ℓ (zeroJet J ℓ) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_constJet (J ℓ : ℕ) (c : ℤ) : IsJetShape J ℓ (constJet J ℓ c) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_constJet (J ℓ : ℕ) (c : ℤ) : IsTableShape J ℓ (constJet J ℓ c) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_zJet (J ℓ : ℕ) : IsJetShape J ℓ (zJet J ℓ) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_zJet (J ℓ : ℕ) : IsTableShape J ℓ (zJet J ℓ) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_vJet (J ℓ : ℕ) : IsJetShape J ℓ (vJet J ℓ) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_vJet (J ℓ : ℕ) : IsTableShape J ℓ (vJet J ℓ) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_addJet (J ℓ : ℕ) (A B : List (List ℤ)) : IsJetShape J ℓ (addJet J ℓ A B) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_addJet (J ℓ : ℕ) (A B : List (List ℤ)) : IsTableShape J ℓ (addJet J ℓ A B) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_negJet (J ℓ : ℕ) (A : List (List ℤ)) : IsJetShape J ℓ (negJet J ℓ A) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_negJet (J ℓ : ℕ) (A : List (List ℤ)) : IsTableShape J ℓ (negJet J ℓ A) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_subJet (J ℓ : ℕ) (A B : List (List ℤ)) : IsJetShape J ℓ (subJet J ℓ A B) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_subJet (J ℓ : ℕ) (A B : List (List ℤ)) : IsTableShape J ℓ (subJet J ℓ A B) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_smulJet (J ℓ : ℕ) (c : ℤ) (A : List (List ℤ)) :
-    IsJetShape J ℓ (smulJet J ℓ c A) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_smulJet (J ℓ : ℕ) (c : ℤ) (A : List (List ℤ)) :
+    IsTableShape J ℓ (smulJet J ℓ c A) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_shiftZJet (J ℓ : ℕ) (A : List (List ℤ)) : IsJetShape J ℓ (shiftZJet J ℓ A) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_shiftZJet (J ℓ : ℕ) (A : List (List ℤ)) : IsTableShape J ℓ (shiftZJet J ℓ A) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_shiftVJet (J ℓ : ℕ) (A : List (List ℤ)) : IsJetShape J ℓ (shiftVJet J ℓ A) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_shiftVJet (J ℓ : ℕ) (A : List (List ℤ)) : IsTableShape J ℓ (shiftVJet J ℓ A) :=
+  isTableShape_tabulateTable J ℓ _
 
-theorem isJetShape_convJet (J ℓ : ℕ) (A B : List (List ℤ)) : IsJetShape J ℓ (convJet J ℓ A B) :=
-  isJetShape_tabulateJet J ℓ _
+theorem isTableShape_convJet (J ℓ : ℕ) (A B : List (List ℤ)) : IsTableShape J ℓ (convJet J ℓ A B) :=
+  isTableShape_tabulateTable J ℓ _
 
 lemma convEntry_eq_sum (A B : List (List ℤ)) (j u : ℕ) :
     convEntry A B j u =
       ∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-        coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁) := by
+        rowEntry A j₁ u₁ * rowEntry B (j - j₁) (u - u₁) := by
   simp only [convEntry, List.sum_map_range, Finset.sum_range]
 
 @[simp]
-theorem coeffAt_zeroJet (J ℓ j u : ℕ) : coeffAt (zeroJet J ℓ) j u = 0 := by
-  simp [zeroJet, coeffAt_tabulateJet]
+theorem rowEntry_zeroJet (J ℓ j u : ℕ) : rowEntry (zeroJet J ℓ) j u = 0 := by
+  simp [zeroJet, rowEntry_tabulateTable]
 
-theorem coeffAt_constJet {J ℓ : ℕ} (c : ℤ) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (constJet J ℓ c) j u = if j = 0 ∧ u = 0 then c else 0 :=
-  coeffAt_tabulateJet_of_lt _ hj hu
+theorem rowEntry_constJet {J ℓ : ℕ} (c : ℤ) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (constJet J ℓ c) j u = if j = 0 ∧ u = 0 then c else 0 :=
+  rowEntry_tabulateTable_of_lt _ hj hu
 
-theorem coeffAt_zJet {J ℓ : ℕ} {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (zJet J ℓ) j u = if j = 1 ∧ u = 0 then 1 else 0 :=
-  coeffAt_tabulateJet_of_lt _ hj hu
+theorem rowEntry_zJet {J ℓ : ℕ} {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (zJet J ℓ) j u = if j = 1 ∧ u = 0 then 1 else 0 :=
+  rowEntry_tabulateTable_of_lt _ hj hu
 
-theorem coeffAt_vJet {J ℓ : ℕ} {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (vJet J ℓ) j u = if j = 0 ∧ u = 1 then 1 else 0 :=
-  coeffAt_tabulateJet_of_lt _ hj hu
+theorem rowEntry_vJet {J ℓ : ℕ} {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (vJet J ℓ) j u = if j = 0 ∧ u = 1 then 1 else 0 :=
+  rowEntry_tabulateTable_of_lt _ hj hu
 
-theorem coeffAt_addJet {J ℓ : ℕ} (A B : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (addJet J ℓ A B) j u = coeffAt A j u + coeffAt B j u :=
-  coeffAt_tabulateJet_of_lt _ hj hu
+theorem rowEntry_addJet {J ℓ : ℕ} (A B : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (addJet J ℓ A B) j u = rowEntry A j u + rowEntry B j u :=
+  rowEntry_tabulateTable_of_lt _ hj hu
 
-theorem coeffAt_negJet {J ℓ : ℕ} (A : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (negJet J ℓ A) j u = -coeffAt A j u :=
-  coeffAt_tabulateJet_of_lt _ hj hu
+theorem rowEntry_negJet {J ℓ : ℕ} (A : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (negJet J ℓ A) j u = -rowEntry A j u :=
+  rowEntry_tabulateTable_of_lt _ hj hu
 
-theorem coeffAt_subJet {J ℓ : ℕ} (A B : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (subJet J ℓ A B) j u = coeffAt A j u - coeffAt B j u :=
-  coeffAt_tabulateJet_of_lt _ hj hu
+theorem rowEntry_subJet {J ℓ : ℕ} (A B : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (subJet J ℓ A B) j u = rowEntry A j u - rowEntry B j u :=
+  rowEntry_tabulateTable_of_lt _ hj hu
 
-theorem coeffAt_smulJet {J ℓ : ℕ} (c : ℤ) (A : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (smulJet J ℓ c A) j u = c * coeffAt A j u :=
-  coeffAt_tabulateJet_of_lt _ hj hu
+theorem rowEntry_smulJet {J ℓ : ℕ} (c : ℤ) (A : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (smulJet J ℓ c A) j u = c * rowEntry A j u :=
+  rowEntry_tabulateTable_of_lt _ hj hu
 
-theorem coeffAt_shiftZJet {J ℓ : ℕ} (A : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (shiftZJet J ℓ A) j u = if j = 0 then 0 else coeffAt A (j - 1) u :=
-  coeffAt_tabulateJet_of_lt _ hj hu
+theorem rowEntry_shiftZJet {J ℓ : ℕ} (A : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (shiftZJet J ℓ A) j u = if j = 0 then 0 else rowEntry A (j - 1) u :=
+  rowEntry_tabulateTable_of_lt _ hj hu
 
-theorem coeffAt_shiftVJet {J ℓ : ℕ} (A : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (shiftVJet J ℓ A) j u = if u = 0 then 0 else coeffAt A j (u - 1) :=
-  coeffAt_tabulateJet_of_lt _ hj hu
+theorem rowEntry_shiftVJet {J ℓ : ℕ} (A : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (shiftVJet J ℓ A) j u = if u = 0 then 0 else rowEntry A j (u - 1) :=
+  rowEntry_tabulateTable_of_lt _ hj hu
 
-theorem coeffAt_convJet {J ℓ : ℕ} (A B : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
-    coeffAt (convJet J ℓ A B) j u =
+theorem rowEntry_convJet {J ℓ : ℕ} (A B : List (List ℤ)) {j u : ℕ} (hj : j < J) (hu : u < ℓ) :
+    rowEntry (convJet J ℓ A B) j u =
       ∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-        coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁) := by
-  rw [convJet, coeffAt_tabulateJet_of_lt _ hj hu, convEntry_eq_sum]
+        rowEntry A j₁ u₁ * rowEntry B (j - j₁) (u - u₁) := by
+  rw [convJet, rowEntry_tabulateTable_of_lt _ hj hu, convEntry_eq_sum]
 
 /-! ### Algebraic identities on `(J, ℓ)`-shaped jet arrays -/
 
 theorem addJet_comm (J ℓ : ℕ) (A B : List (List ℤ)) :
     addJet J ℓ A B = addJet J ℓ B A :=
-  eq_of_isJetShape_of_coeffAt_eq (isJetShape_addJet J ℓ A B) (isJetShape_addJet J ℓ B A)
-    fun j hj u hu => by rw [coeffAt_addJet A B hj hu, coeffAt_addJet B A hj hu, Int.add_comm]
+  eq_of_isTableShape_of_rowEntry_eq (isTableShape_addJet J ℓ A B) (isTableShape_addJet J ℓ B A)
+    fun j hj u hu => by rw [rowEntry_addJet A B hj hu, rowEntry_addJet B A hj hu, Int.add_comm]
 
 theorem addJet_assoc (J ℓ : ℕ) (A B C : List (List ℤ)) :
     addJet J ℓ (addJet J ℓ A B) C = addJet J ℓ A (addJet J ℓ B C) :=
-  eq_of_isJetShape_of_coeffAt_eq (isJetShape_addJet J ℓ _ _) (isJetShape_addJet J ℓ _ _)
+  eq_of_isTableShape_of_rowEntry_eq (isTableShape_addJet J ℓ _ _) (isTableShape_addJet J ℓ _ _)
     fun j hj u hu => by
-      rw [coeffAt_addJet _ _ hj hu, coeffAt_addJet _ _ hj hu,
-        coeffAt_addJet _ _ hj hu, coeffAt_addJet _ _ hj hu, Int.add_assoc]
+      rw [rowEntry_addJet _ _ hj hu, rowEntry_addJet _ _ hj hu,
+        rowEntry_addJet _ _ hj hu, rowEntry_addJet _ _ hj hu, Int.add_assoc]
 
-theorem zeroJet_addJet {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsJetShape J ℓ A) :
+theorem zeroJet_addJet {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsTableShape J ℓ A) :
     addJet J ℓ (zeroJet J ℓ) A = A :=
-  eq_of_isJetShape_of_coeffAt_eq (isJetShape_addJet J ℓ _ _) hA fun j hj u hu => by
-    rw [coeffAt_addJet _ _ hj hu, coeffAt_zeroJet, zero_add]
+  eq_of_isTableShape_of_rowEntry_eq (isTableShape_addJet J ℓ _ _) hA fun j hj u hu => by
+    rw [rowEntry_addJet _ _ hj hu, rowEntry_zeroJet, zero_add]
 
-theorem addJet_zeroJet {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsJetShape J ℓ A) :
+theorem addJet_zeroJet {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsTableShape J ℓ A) :
     addJet J ℓ A (zeroJet J ℓ) = A := by
   rw [addJet_comm, zeroJet_addJet hA]
 
 theorem negJet_addJet (J ℓ : ℕ) (A : List (List ℤ)) :
     addJet J ℓ (negJet J ℓ A) A = zeroJet J ℓ :=
-  eq_of_isJetShape_of_coeffAt_eq (isJetShape_addJet J ℓ _ _) (isJetShape_zeroJet J ℓ)
+  eq_of_isTableShape_of_rowEntry_eq (isTableShape_addJet J ℓ _ _) (isTableShape_zeroJet J ℓ)
     fun j hj u hu => by
-      rw [coeffAt_addJet _ _ hj hu, coeffAt_negJet A hj hu, coeffAt_zeroJet, neg_add_cancel]
+      rw [rowEntry_addJet _ _ hj hu, rowEntry_negJet A hj hu, rowEntry_zeroJet, neg_add_cancel]
 
 theorem addJet_negJet (J ℓ : ℕ) (A : List (List ℤ)) :
     addJet J ℓ A (negJet J ℓ A) = zeroJet J ℓ := by
@@ -338,29 +254,29 @@ theorem addJet_negJet (J ℓ : ℕ) (A : List (List ℤ)) :
 
 theorem subJet_eq_addJet_negJet (J ℓ : ℕ) (A B : List (List ℤ)) :
     subJet J ℓ A B = addJet J ℓ A (negJet J ℓ B) :=
-  eq_of_isJetShape_of_coeffAt_eq (isJetShape_subJet J ℓ A B) (isJetShape_addJet J ℓ _ _)
+  eq_of_isTableShape_of_rowEntry_eq (isTableShape_subJet J ℓ A B) (isTableShape_addJet J ℓ _ _)
     fun j hj u hu => by
-      rw [coeffAt_subJet A B hj hu, coeffAt_addJet _ _ hj hu, coeffAt_negJet B hj hu,
+      rw [rowEntry_subJet A B hj hu, rowEntry_addJet _ _ hj hu, rowEntry_negJet B hj hu,
         sub_eq_add_neg]
 
 theorem smulJet_addJet (J ℓ : ℕ) (c : ℤ) (A B : List (List ℤ)) :
     smulJet J ℓ c (addJet J ℓ A B) = addJet J ℓ (smulJet J ℓ c A) (smulJet J ℓ c B) :=
-  eq_of_isJetShape_of_coeffAt_eq (isJetShape_smulJet J ℓ c _) (isJetShape_addJet J ℓ _ _)
+  eq_of_isTableShape_of_rowEntry_eq (isTableShape_smulJet J ℓ c _) (isTableShape_addJet J ℓ _ _)
     fun j hj u hu => by
-      rw [coeffAt_smulJet c _ hj hu, coeffAt_addJet A B hj hu, coeffAt_addJet _ _ hj hu,
-        coeffAt_smulJet c A hj hu, coeffAt_smulJet c B hj hu, mul_add]
+      rw [rowEntry_smulJet c _ hj hu, rowEntry_addJet A B hj hu, rowEntry_addJet _ _ hj hu,
+        rowEntry_smulJet c A hj hu, rowEntry_smulJet c B hj hu, mul_add]
 
-theorem one_smulJet {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsJetShape J ℓ A) :
+theorem one_smulJet {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsTableShape J ℓ A) :
     smulJet J ℓ 1 A = A :=
-  eq_of_isJetShape_of_coeffAt_eq (isJetShape_smulJet J ℓ 1 A) hA fun j hj u hu => by
-    rw [coeffAt_smulJet 1 A hj hu, one_mul]
+  eq_of_isTableShape_of_rowEntry_eq (isTableShape_smulJet J ℓ 1 A) hA fun j hj u hu => by
+    rw [rowEntry_smulJet 1 A hj hu, one_mul]
 
 /-- Commutativity of truncated 2D convolution. -/
 theorem convJet_comm (J ℓ : ℕ) (A B : List (List ℤ)) :
     convJet J ℓ A B = convJet J ℓ B A := by
-  refine eq_of_isJetShape_of_coeffAt_eq (isJetShape_convJet J ℓ A B) (isJetShape_convJet J ℓ B A)
-    fun j hj u hu => ?_
-  rw [coeffAt_convJet A B hj hu, coeffAt_convJet B A hj hu, ← Finset.sum_range_reflect _ (j + 1)]
+  refine eq_of_isTableShape_of_rowEntry_eq (isTableShape_convJet J ℓ A B)
+    (isTableShape_convJet J ℓ B A) fun j hj u hu => ?_
+  rw [rowEntry_convJet A B hj hu, rowEntry_convJet B A hj hu, ← Finset.sum_range_reflect _ (j + 1)]
   refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
   simp only [Finset.mem_range] at hj₁
   rw [← Finset.sum_range_reflect _ (u + 1)]
@@ -395,72 +311,73 @@ private lemma sum_range_triangle (n : ℕ) (g : ℕ → ℕ → ℕ → ℤ) :
 /-- Associativity of truncated 2D convolution. -/
 theorem convJet_assoc (J ℓ : ℕ) (A B C : List (List ℤ)) :
     convJet J ℓ (convJet J ℓ A B) C = convJet J ℓ A (convJet J ℓ B C) := by
-  refine eq_of_isJetShape_of_coeffAt_eq (isJetShape_convJet J ℓ _ C) (isJetShape_convJet J ℓ A _)
-    fun j hj u hu => ?_
-  rw [coeffAt_convJet _ C hj hu, coeffAt_convJet A _ hj hu]
+  refine eq_of_isTableShape_of_rowEntry_eq (isTableShape_convJet J ℓ _ C)
+    (isTableShape_convJet J ℓ A _) fun j hj u hu => ?_
+  rw [rowEntry_convJet _ C hj hu, rowEntry_convJet A _ hj hu]
   have hL :
       (∑ j₁₂ ∈ Finset.range (j + 1), ∑ u₁₂ ∈ Finset.range (u + 1),
-          coeffAt (convJet J ℓ A B) j₁₂ u₁₂ * coeffAt C (j - j₁₂) (u - u₁₂)) =
+          rowEntry (convJet J ℓ A B) j₁₂ u₁₂ * rowEntry C (j - j₁₂) (u - u₁₂)) =
         ∑ j₁₂ ∈ Finset.range (j + 1), ∑ j₁ ∈ Finset.range (j₁₂ + 1),
           ∑ u₁₂ ∈ Finset.range (u + 1), ∑ u₁ ∈ Finset.range (u₁₂ + 1),
-            coeffAt A j₁ u₁ * coeffAt B (j₁₂ - j₁) (u₁₂ - u₁) * coeffAt C (j - j₁₂) (u - u₁₂) := by
+            rowEntry A j₁ u₁ * rowEntry B (j₁₂ - j₁) (u₁₂ - u₁) *
+              rowEntry C (j - j₁₂) (u - u₁₂) := by
     refine Finset.sum_congr rfl fun j₁₂ hj₁₂ => ?_
     simp only [Finset.mem_range] at hj₁₂
     have hj₁₂_lt : j₁₂ < J := by omega
     calc
       (∑ u₁₂ ∈ Finset.range (u + 1),
-          coeffAt (convJet J ℓ A B) j₁₂ u₁₂ * coeffAt C (j - j₁₂) (u - u₁₂))
+          rowEntry (convJet J ℓ A B) j₁₂ u₁₂ * rowEntry C (j - j₁₂) (u - u₁₂))
           = ∑ u₁₂ ∈ Finset.range (u + 1), ∑ j₁ ∈ Finset.range (j₁₂ + 1),
               ∑ u₁ ∈ Finset.range (u₁₂ + 1),
-                coeffAt A j₁ u₁ * coeffAt B (j₁₂ - j₁) (u₁₂ - u₁) *
-                  coeffAt C (j - j₁₂) (u - u₁₂) := by
+                rowEntry A j₁ u₁ * rowEntry B (j₁₂ - j₁) (u₁₂ - u₁) *
+                  rowEntry C (j - j₁₂) (u - u₁₂) := by
             refine Finset.sum_congr rfl fun u₁₂ hu₁₂ => ?_
             simp only [Finset.mem_range] at hu₁₂
-            rw [coeffAt_convJet A B hj₁₂_lt (by omega), Finset.sum_mul]
+            rw [rowEntry_convJet A B hj₁₂_lt (by omega), Finset.sum_mul]
             exact Finset.sum_congr rfl fun _ _ => Finset.sum_mul ..
       _ = _ := Finset.sum_comm
   have hR :
       (∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-          coeffAt A j₁ u₁ * coeffAt (convJet J ℓ B C) (j - j₁) (u - u₁)) =
+          rowEntry A j₁ u₁ * rowEntry (convJet J ℓ B C) (j - j₁) (u - u₁)) =
         ∑ j₁ ∈ Finset.range (j + 1), ∑ j₂ ∈ Finset.range (j - j₁ + 1),
           ∑ u₁ ∈ Finset.range (u + 1), ∑ u₂ ∈ Finset.range (u - u₁ + 1),
-            coeffAt A j₁ u₁ * coeffAt B j₂ u₂ * coeffAt C (j - j₁ - j₂) (u - u₁ - u₂) := by
+            rowEntry A j₁ u₁ * rowEntry B j₂ u₂ * rowEntry C (j - j₁ - j₂) (u - u₁ - u₂) := by
     refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
     simp only [Finset.mem_range] at hj₁
     have hj_sub : j - j₁ < J := by omega
     calc
       (∑ u₁ ∈ Finset.range (u + 1),
-          coeffAt A j₁ u₁ * coeffAt (convJet J ℓ B C) (j - j₁) (u - u₁))
+          rowEntry A j₁ u₁ * rowEntry (convJet J ℓ B C) (j - j₁) (u - u₁))
           = ∑ u₁ ∈ Finset.range (u + 1), ∑ j₂ ∈ Finset.range (j - j₁ + 1),
               ∑ u₂ ∈ Finset.range (u - u₁ + 1),
-                coeffAt A j₁ u₁ * coeffAt B j₂ u₂ * coeffAt C (j - j₁ - j₂) (u - u₁ - u₂) := by
+                rowEntry A j₁ u₁ * rowEntry B j₂ u₂ * rowEntry C (j - j₁ - j₂) (u - u₁ - u₂) := by
             refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
             simp only [Finset.mem_range] at hu₁
-            rw [coeffAt_convJet B C hj_sub (by omega), Finset.mul_sum]
+            rw [rowEntry_convJet B C hj_sub (by omega), Finset.mul_sum]
             refine Finset.sum_congr rfl fun j₂ _ => ?_
             rw [Finset.mul_sum]
             exact Finset.sum_congr rfl fun u₂ _ => (mul_assoc _ _ _).symm
       _ = _ := Finset.sum_comm
   rw [hL, hR, sum_range_triangle j fun j₁ j₂ j₃ =>
     ∑ u₁₂ ∈ Finset.range (u + 1), ∑ u₁ ∈ Finset.range (u₁₂ + 1),
-      coeffAt A j₁ u₁ * coeffAt B j₂ (u₁₂ - u₁) * coeffAt C j₃ (u - u₁₂)]
+      rowEntry A j₁ u₁ * rowEntry B j₂ (u₁₂ - u₁) * rowEntry C j₃ (u - u₁₂)]
   refine Finset.sum_congr rfl fun j₁ _ => Finset.sum_congr rfl fun j₂ _ => ?_
   exact sum_range_triangle u fun u₁ u₂ u₃ =>
-    coeffAt A j₁ u₁ * coeffAt B j₂ u₂ * coeffAt C (j - j₁ - j₂) u₃
+    rowEntry A j₁ u₁ * rowEntry B j₂ u₂ * rowEntry C (j - j₁ - j₂) u₃
 
 /-- Left distributivity of truncated 2D convolution over addition. -/
 theorem convJet_addJet (J ℓ : ℕ) (A B C : List (List ℤ)) :
     convJet J ℓ A (addJet J ℓ B C) = addJet J ℓ (convJet J ℓ A B) (convJet J ℓ A C) := by
-  refine eq_of_isJetShape_of_coeffAt_eq (isJetShape_convJet J ℓ A _) (isJetShape_addJet J ℓ _ _)
-    fun j hj u hu => ?_
-  rw [coeffAt_convJet A _ hj hu, coeffAt_addJet _ _ hj hu, coeffAt_convJet A B hj hu,
-    coeffAt_convJet A C hj hu, ← Finset.sum_add_distrib]
+  refine eq_of_isTableShape_of_rowEntry_eq (isTableShape_convJet J ℓ A _)
+    (isTableShape_addJet J ℓ _ _) fun j hj u hu => ?_
+  rw [rowEntry_convJet A _ hj hu, rowEntry_addJet _ _ hj hu, rowEntry_convJet A B hj hu,
+    rowEntry_convJet A C hj hu, ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
   simp only [Finset.mem_range] at hj₁
   rw [← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
   simp only [Finset.mem_range] at hu₁
-  rw [coeffAt_addJet B C (by omega) (by omega), mul_add]
+  rw [rowEntry_addJet B C (by omega) (by omega), mul_add]
 
 /-- Right distributivity of truncated 2D convolution over addition. -/
 theorem addJet_convJet (J ℓ : ℕ) (A B C : List (List ℤ)) :
@@ -469,8 +386,8 @@ theorem addJet_convJet (J ℓ : ℕ) (A B C : List (List ℤ)) :
 
 theorem zeroJet_convJet (J ℓ : ℕ) (A : List (List ℤ)) :
     convJet J ℓ (zeroJet J ℓ) A = zeroJet J ℓ :=
-  eq_of_isJetShape_of_coeffAt_eq (isJetShape_convJet J ℓ _ A) (isJetShape_zeroJet J ℓ)
-    fun j hj u hu => by simp [coeffAt_convJet _ A hj hu]
+  eq_of_isTableShape_of_rowEntry_eq (isTableShape_convJet J ℓ _ A) (isTableShape_zeroJet J ℓ)
+    fun j hj u hu => by simp [rowEntry_convJet _ A hj hu]
 
 theorem convJet_zeroJet (J ℓ : ℕ) (A : List (List ℤ)) :
     convJet J ℓ A (zeroJet J ℓ) = zeroJet J ℓ := by
@@ -478,39 +395,32 @@ theorem convJet_zeroJet (J ℓ : ℕ) (A : List (List ℤ)) :
 
 theorem constJet_convJet (J ℓ : ℕ) (c : ℤ) (A : List (List ℤ)) :
     convJet J ℓ (constJet J ℓ c) A = smulJet J ℓ c A := by
-  refine eq_of_isJetShape_of_coeffAt_eq (isJetShape_convJet J ℓ _ A) (isJetShape_smulJet J ℓ c A)
-    fun j hj u hu => ?_
-  rw [coeffAt_convJet _ A hj hu, coeffAt_smulJet c A hj hu]
-  have hsum :
-      (∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-          coeffAt (constJet J ℓ c) j₁ u₁ * coeffAt A (j - j₁) (u - u₁)) =
-        ∑ j₁ ∈ Finset.range (j + 1),
-          if j₁ = 0 then c * coeffAt A j u else 0 := by
-    refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
+  refine eq_of_isTableShape_of_rowEntry_eq (isTableShape_convJet J ℓ _ A)
+    (isTableShape_smulJet J ℓ c A) fun j hj u hu => ?_
+  rw [rowEntry_convJet _ A hj hu, rowEntry_smulJet c A hj hu]
+  trans ∑ j₁ ∈ Finset.range (j + 1), if j₁ = 0 then c * rowEntry A j u else 0
+  · refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
     simp only [Finset.mem_range] at hj₁
-    have hinner :
-        (∑ u₁ ∈ Finset.range (u + 1),
-            coeffAt (constJet J ℓ c) j₁ u₁ * coeffAt A (j - j₁) (u - u₁)) =
-          ∑ u₁ ∈ Finset.range (u + 1),
-            if u₁ = 0 then (if j₁ = 0 then c * coeffAt A j u else 0) else 0 := by
-      refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
+    trans ∑ u₁ ∈ Finset.range (u + 1),
+      if u₁ = 0 then (if j₁ = 0 then c * rowEntry A j u else 0) else 0
+    · refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
       simp only [Finset.mem_range] at hu₁
-      rw [coeffAt_constJet c (by omega) (by omega)]
+      rw [rowEntry_constJet c (by omega) (by omega)]
       by_cases hj0 : j₁ = 0 <;> by_cases hu0 : u₁ = 0 <;> simp [hj0, hu0]
-    rw [hinner, Finset.sum_ite_eq' (Finset.range (u + 1)) 0,
-      ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ u))]
-  rw [hsum, Finset.sum_ite_eq' (Finset.range (j + 1)) 0,
-    ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ j))]
+    · rw [Finset.sum_ite_eq' (Finset.range (u + 1)) 0,
+        ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ u))]
+  · rw [Finset.sum_ite_eq' (Finset.range (j + 1)) 0,
+      ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ j))]
 
 theorem convJet_constJet (J ℓ : ℕ) (A : List (List ℤ)) (c : ℤ) :
     convJet J ℓ A (constJet J ℓ c) = smulJet J ℓ c A := by
   rw [convJet_comm, constJet_convJet]
 
-theorem constJet_one_convJet {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsJetShape J ℓ A) :
+theorem constJet_one_convJet {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsTableShape J ℓ A) :
     convJet J ℓ (constJet J ℓ 1) A = A := by
   rw [constJet_convJet, one_smulJet hA]
 
-theorem convJet_constJet_one {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsJetShape J ℓ A) :
+theorem convJet_constJet_one {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsTableShape J ℓ A) :
     convJet J ℓ A (constJet J ℓ 1) = A := by
   rw [convJet_constJet, one_smulJet hA]
 
@@ -525,63 +435,50 @@ theorem convJet_smulJet (J ℓ : ℕ) (c : ℤ) (A B : List (List ℤ)) :
 /-- `shiftZJet` agrees with multiplying by the generator `zJet` under `convJet`. -/
 theorem shiftZJet_eq_convJet (J ℓ : ℕ) (A : List (List ℤ)) :
     shiftZJet J ℓ A = convJet J ℓ (zJet J ℓ) A := by
-  refine eq_of_isJetShape_of_coeffAt_eq (isJetShape_shiftZJet J ℓ A) (isJetShape_convJet J ℓ _ A)
-    fun j hj u hu => ?_
-  rw [coeffAt_shiftZJet A hj hu, coeffAt_convJet _ A hj hu]
-  have hsum :
-      (∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-          coeffAt (zJet J ℓ) j₁ u₁ * coeffAt A (j - j₁) (u - u₁)) =
-        ∑ j₁ ∈ Finset.range (j + 1),
-          if j₁ = 1 then coeffAt A (j - 1) u else 0 := by
-    refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
+  refine eq_of_isTableShape_of_rowEntry_eq (isTableShape_shiftZJet J ℓ A)
+    (isTableShape_convJet J ℓ _ A) fun j hj u hu => ?_
+  rw [rowEntry_shiftZJet A hj hu, rowEntry_convJet _ A hj hu]
+  symm
+  trans ∑ j₁ ∈ Finset.range (j + 1), if j₁ = 1 then rowEntry A (j - 1) u else 0
+  · refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
     simp only [Finset.mem_range] at hj₁
-    have hinner :
-        (∑ u₁ ∈ Finset.range (u + 1),
-            coeffAt (zJet J ℓ) j₁ u₁ * coeffAt A (j - j₁) (u - u₁)) =
-          ∑ u₁ ∈ Finset.range (u + 1),
-            if u₁ = 0 then (if j₁ = 1 then coeffAt A (j - 1) u else 0) else 0 := by
-      refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
+    trans ∑ u₁ ∈ Finset.range (u + 1),
+      if u₁ = 0 then (if j₁ = 1 then rowEntry A (j - 1) u else 0) else 0
+    · refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
       simp only [Finset.mem_range] at hu₁
-      rw [coeffAt_zJet (by omega) (by omega)]
+      rw [rowEntry_zJet (by omega) (by omega)]
       by_cases hj1 : j₁ = 1 <;> by_cases hu0 : u₁ = 0 <;> simp [hj1, hu0]
-    rw [hinner, Finset.sum_ite_eq' (Finset.range (u + 1)) 0,
-      ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ u))]
-  rw [hsum, Finset.sum_ite_eq' (Finset.range (j + 1)) 1]
-  by_cases hj0 : j = 0
-  · subst hj0
-    simp
-  · rw [ite_eq_right hj0, ite_eq_left (by simp only [Finset.mem_range]; omega)]
+    · rw [Finset.sum_ite_eq' (Finset.range (u + 1)) 0,
+        ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ u))]
+  · rw [Finset.sum_ite_eq' (Finset.range (j + 1)) 1]
+    by_cases hj0 : j = 0
+    · subst hj0; simp
+    · rw [ite_eq_right hj0, ite_eq_left (by simp only [Finset.mem_range]; omega)]
 
 /-- `shiftVJet` agrees with multiplying by the generator `vJet` under `convJet`. -/
 theorem shiftVJet_eq_convJet (J ℓ : ℕ) (A : List (List ℤ)) :
     shiftVJet J ℓ A = convJet J ℓ (vJet J ℓ) A := by
-  refine eq_of_isJetShape_of_coeffAt_eq (isJetShape_shiftVJet J ℓ A) (isJetShape_convJet J ℓ _ A)
-    fun j hj u hu => ?_
-  rw [coeffAt_shiftVJet A hj hu, coeffAt_convJet _ A hj hu]
-  have hsum :
-      (∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-          coeffAt (vJet J ℓ) j₁ u₁ * coeffAt A (j - j₁) (u - u₁)) =
-        ∑ j₁ ∈ Finset.range (j + 1),
-          if j₁ = 0 then (if u = 0 then 0 else coeffAt A j (u - 1)) else 0 := by
-    refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
+  refine eq_of_isTableShape_of_rowEntry_eq (isTableShape_shiftVJet J ℓ A)
+    (isTableShape_convJet J ℓ _ A) fun j hj u hu => ?_
+  rw [rowEntry_shiftVJet A hj hu, rowEntry_convJet _ A hj hu]
+  symm
+  trans ∑ j₁ ∈ Finset.range (j + 1),
+    if j₁ = 0 then (if u = 0 then 0 else rowEntry A j (u - 1)) else 0
+  · refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
     simp only [Finset.mem_range] at hj₁
-    have hinner :
-        (∑ u₁ ∈ Finset.range (u + 1),
-            coeffAt (vJet J ℓ) j₁ u₁ * coeffAt A (j - j₁) (u - u₁)) =
-          ∑ u₁ ∈ Finset.range (u + 1),
-            if u₁ = 1 then (if j₁ = 0 then coeffAt A j (u - 1) else 0) else 0 := by
-      refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
+    trans ∑ u₁ ∈ Finset.range (u + 1),
+      if u₁ = 1 then (if j₁ = 0 then rowEntry A j (u - 1) else 0) else 0
+    · refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
       simp only [Finset.mem_range] at hu₁
-      rw [coeffAt_vJet (by omega) (by omega)]
+      rw [rowEntry_vJet (by omega) (by omega)]
       by_cases hj0 : j₁ = 0 <;> by_cases hu1 : u₁ = 1 <;> simp [hj0, hu1]
-    rw [hinner, Finset.sum_ite_eq' (Finset.range (u + 1)) 1]
-    by_cases hu0 : u = 0
-    · subst hu0
-      simp
-    · rw [ite_eq_left (by simp only [Finset.mem_range]; omega)]
-      by_cases hj0 : j₁ = 0 <;> simp [hj0, hu0]
-  rw [hsum, Finset.sum_ite_eq' (Finset.range (j + 1)) 0,
-    ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ j))]
+    · rw [Finset.sum_ite_eq' (Finset.range (u + 1)) 1]
+      by_cases hu0 : u = 0
+      · subst hu0; simp
+      · rw [ite_eq_left (by simp only [Finset.mem_range]; omega)]
+        by_cases hj0 : j₁ = 0 <;> simp [hj0, hu0]
+  · rw [Finset.sum_ite_eq' (Finset.range (j + 1)) 0,
+      ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ j))]
 
 /-! ### `ℓ₁` coefficient norm and binary bit-length bounds -/
 
@@ -589,10 +486,10 @@ theorem shiftVJet_eq_convJet (J ℓ : ℕ) (A : List (List ℤ)) :
 def jetL1Norm (A : List (List ℤ)) : ℕ :=
   (A.map fun row => (row.map Int.natAbs).sum).sum
 
-lemma jetL1Norm_tabulateJet (J ℓ : ℕ) (g : ℕ → ℕ → ℤ) :
-    jetL1Norm (tabulateJet J ℓ g) =
+lemma jetL1Norm_tabulateTable (J ℓ : ℕ) (g : ℕ → ℕ → ℤ) :
+    jetL1Norm (tabulateTable J ℓ g) =
       ∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (g j u).natAbs := by
-  simp only [jetL1Norm, tabulateJet, List.map_map, Function.comp_def, List.sum_map_range,
+  simp only [jetL1Norm, tabulateTable, List.map_map, Function.comp_def, List.sum_map_range,
     Finset.sum_range]
 
 private lemma sum_getD_natAbs_le (ℓ : ℕ) (row : List ℤ) :
@@ -609,35 +506,35 @@ private lemma sum_getD_natAbs_le (ℓ : ℕ) (row : List ℤ) :
       omega
 
 /-- Truncating any list of rows to `(J, ℓ)` cannot increase its `ℓ₁` coefficient norm. -/
-lemma sum_coeffAt_natAbs_le_jetL1Norm (J ℓ : ℕ) (A : List (List ℤ)) :
-    (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (coeffAt A j u).natAbs) ≤ jetL1Norm A := by
+lemma sum_rowEntry_natAbs_le_jetL1Norm (J ℓ : ℕ) (A : List (List ℤ)) :
+    (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (rowEntry A j u).natAbs) ≤ jetL1Norm A := by
   induction A generalizing J with
-  | nil => simp [coeffAt, jetL1Norm]
+  | nil => simp [rowEntry, jetL1Norm]
   | cons row rows ih =>
     cases J with
     | zero => simp
     | succ J' =>
       rw [Finset.sum_range_succ']
-      simp only [coeffAt, List.getD_cons_zero, List.getD_cons_succ, jetL1Norm, List.map_cons,
+      simp only [rowEntry, List.getD_cons_zero, List.getD_cons_succ, jetL1Norm, List.map_cons,
         List.sum_cons]
       have hrow := sum_getD_natAbs_le ℓ row
       have hrows := ih J'
-      simp only [coeffAt, jetL1Norm] at hrows
+      simp only [rowEntry, jetL1Norm] at hrows
       omega
 
-/-- On a `(J, ℓ)`-shaped jet array, `jetL1Norm` equals the sum of in-bounds `|coeffAt A j u|`. -/
-lemma jetL1Norm_eq_sum_coeffAt {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsJetShape J ℓ A) :
-    jetL1Norm A = ∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (coeffAt A j u).natAbs := by
-  conv_lhs => rw [← tabulateJet_coeffAt hA]
-  exact jetL1Norm_tabulateJet J ℓ (coeffAt A)
+/-- On a `(J, ℓ)`-shaped jet array, `jetL1Norm` equals the sum of in-bounds `|rowEntry A j u|`. -/
+lemma jetL1Norm_eq_sum_rowEntry {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsTableShape J ℓ A) :
+    jetL1Norm A = ∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (rowEntry A j u).natAbs := by
+  conv_lhs => rw [← tabulateTable_rowEntry hA]
+  exact jetL1Norm_tabulateTable J ℓ (rowEntry A)
 
 @[simp]
 theorem jetL1Norm_zeroJet (J ℓ : ℕ) : jetL1Norm (zeroJet J ℓ) = 0 := by
-  simp [zeroJet, jetL1Norm_tabulateJet]
+  simp [zeroJet, jetL1Norm_tabulateTable]
 
 theorem jetL1Norm_constJet_le (J ℓ : ℕ) (c : ℤ) :
     jetL1Norm (constJet J ℓ c) ≤ c.natAbs := by
-  rw [constJet, jetL1Norm_tabulateJet]
+  rw [constJet, jetL1Norm_tabulateTable]
   cases J with
   | zero => simp
   | succ J' =>
@@ -653,25 +550,25 @@ theorem jetL1Norm_constJet_le (J ℓ : ℕ) (c : ℤ) :
 
 theorem jetL1Norm_negJet_le (J ℓ : ℕ) (A : List (List ℤ)) :
     jetL1Norm (negJet J ℓ A) ≤ jetL1Norm A := by
-  rw [negJet, jetL1Norm_tabulateJet]
+  rw [negJet, jetL1Norm_tabulateTable]
   simp only [Int.natAbs_neg]
-  exact sum_coeffAt_natAbs_le_jetL1Norm J ℓ A
+  exact sum_rowEntry_natAbs_le_jetL1Norm J ℓ A
 
 /-- Triangle inequality for the `ℓ₁` coefficient norm under `addJet`. -/
 theorem jetL1Norm_addJet_le (J ℓ : ℕ) (A B : List (List ℤ)) :
     jetL1Norm (addJet J ℓ A B) ≤ jetL1Norm A + jetL1Norm B := by
-  rw [addJet, jetL1Norm_tabulateJet]
+  rw [addJet, jetL1Norm_tabulateTable]
   calc
-    (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (coeffAt A j u + coeffAt B j u).natAbs)
+    (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (rowEntry A j u + rowEntry B j u).natAbs)
         ≤ ∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ,
-            ((coeffAt A j u).natAbs + (coeffAt B j u).natAbs) :=
+            ((rowEntry A j u).natAbs + (rowEntry B j u).natAbs) :=
           Finset.sum_le_sum fun _ _ => Finset.sum_le_sum fun _ _ => Int.natAbs_add_le _ _
-    _ = (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (coeffAt A j u).natAbs) +
-          (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (coeffAt B j u).natAbs) := by
+    _ = (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (rowEntry A j u).natAbs) +
+          (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (rowEntry B j u).natAbs) := by
           simp only [Finset.sum_add_distrib]
     _ ≤ jetL1Norm A + jetL1Norm B :=
-          Nat.add_le_add (sum_coeffAt_natAbs_le_jetL1Norm J ℓ A)
-            (sum_coeffAt_natAbs_le_jetL1Norm J ℓ B)
+          Nat.add_le_add (sum_rowEntry_natAbs_le_jetL1Norm J ℓ A)
+            (sum_rowEntry_natAbs_le_jetL1Norm J ℓ B)
 
 theorem jetL1Norm_subJet_le (J ℓ : ℕ) (A B : List (List ℤ)) :
     jetL1Norm (subJet J ℓ A B) ≤ jetL1Norm A + jetL1Norm B := by
@@ -681,34 +578,34 @@ theorem jetL1Norm_subJet_le (J ℓ : ℕ) (A B : List (List ℤ)) :
 
 theorem jetL1Norm_smulJet_le (J ℓ : ℕ) (c : ℤ) (A : List (List ℤ)) :
     jetL1Norm (smulJet J ℓ c A) ≤ c.natAbs * jetL1Norm A := by
-  rw [smulJet, jetL1Norm_tabulateJet]
+  rw [smulJet, jetL1Norm_tabulateTable]
   simp only [Int.natAbs_mul, ← Finset.mul_sum]
-  exact Nat.mul_le_mul_left c.natAbs (sum_coeffAt_natAbs_le_jetL1Norm J ℓ A)
+  exact Nat.mul_le_mul_left c.natAbs (sum_rowEntry_natAbs_le_jetL1Norm J ℓ A)
 
 theorem jetL1Norm_shiftZJet_le (J ℓ : ℕ) (A : List (List ℤ)) :
     jetL1Norm (shiftZJet J ℓ A) ≤ jetL1Norm A := by
-  rw [shiftZJet, jetL1Norm_tabulateJet]
+  rw [shiftZJet, jetL1Norm_tabulateTable]
   cases J with
   | zero => simp
   | succ J' =>
     rw [Finset.sum_range_succ']
     simp only [↓reduceIte, Int.natAbs_zero, Finset.sum_const_zero, add_zero, Nat.succ_ne_zero,
       Nat.add_sub_cancel]
-    exact sum_coeffAt_natAbs_le_jetL1Norm J' ℓ A
+    exact sum_rowEntry_natAbs_le_jetL1Norm J' ℓ A
 
 theorem jetL1Norm_shiftVJet_le (J ℓ : ℕ) (A : List (List ℤ)) :
     jetL1Norm (shiftVJet J ℓ A) ≤ jetL1Norm A := by
-  rw [shiftVJet, jetL1Norm_tabulateJet]
+  rw [shiftVJet, jetL1Norm_tabulateTable]
   cases ℓ with
   | zero => simp
   | succ ℓ' =>
     have hrow (j : ℕ) :
-        (∑ u ∈ Finset.range (ℓ' + 1), (if u = 0 then 0 else coeffAt A j (u - 1)).natAbs) =
-          ∑ u ∈ Finset.range ℓ', (coeffAt A j u).natAbs := by
+        (∑ u ∈ Finset.range (ℓ' + 1), (if u = 0 then 0 else rowEntry A j (u - 1)).natAbs) =
+          ∑ u ∈ Finset.range ℓ', (rowEntry A j u).natAbs := by
       rw [Finset.sum_range_succ']
       simp
     simp only [hrow]
-    exact sum_coeffAt_natAbs_le_jetL1Norm J ℓ' A
+    exact sum_rowEntry_natAbs_le_jetL1Norm J ℓ' A
 
 private lemma sum_conv_nat_le_mul (N : ℕ) (a b : ℕ → ℕ) :
     (∑ j ∈ Finset.range N, ∑ j₁ ∈ Finset.range (j + 1), a j₁ * b (j - j₁)) ≤
@@ -740,13 +637,13 @@ private lemma sum_conv_nat_le_mul (N : ℕ) (a b : ℕ → ℕ) :
 `‖A * B mod (z^J, V^ℓ)‖₁ ≤ ‖A‖₁ · ‖B‖₁`. -/
 theorem jetL1Norm_convJet_le (J ℓ : ℕ) (A B : List (List ℤ)) :
     jetL1Norm (convJet J ℓ A B) ≤ jetL1Norm A * jetL1Norm B := by
-  rw [convJet, jetL1Norm_tabulateJet]
+  rw [convJet, jetL1Norm_tabulateTable]
   let rowNorm (M : List (List ℤ)) (j : ℕ) : ℕ :=
-    ∑ u ∈ Finset.range ℓ, (coeffAt M j u).natAbs
+    ∑ u ∈ Finset.range ℓ, (rowEntry M j u).natAbs
   have hentry (j u : ℕ) :
       (convEntry A B j u).natAbs ≤
         ∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-          (coeffAt A j₁ u₁).natAbs * (coeffAt B (j - j₁) (u - u₁)).natAbs := by
+          (rowEntry A j₁ u₁).natAbs * (rowEntry B (j - j₁) (u - u₁)).natAbs := by
     rw [convEntry_eq_sum]
     refine (Int.natAbs_sum_le _ _).trans (Finset.sum_le_sum fun j₁ _ => ?_)
     refine (Int.natAbs_sum_le _ _).trans (Finset.sum_le_sum fun u₁ _ => ?_)
@@ -755,22 +652,22 @@ theorem jetL1Norm_convJet_le (J ℓ : ℕ) (A B : List (List ℤ)) :
     (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (convEntry A B j u).natAbs)
         ≤ ∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ,
             ∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-              (coeffAt A j₁ u₁).natAbs * (coeffAt B (j - j₁) (u - u₁)).natAbs :=
+              (rowEntry A j₁ u₁).natAbs * (rowEntry B (j - j₁) (u - u₁)).natAbs :=
           Finset.sum_le_sum fun j _ => Finset.sum_le_sum fun u _ => hentry j u
     _ = ∑ j ∈ Finset.range J, ∑ j₁ ∈ Finset.range (j + 1),
           ∑ u ∈ Finset.range ℓ, ∑ u₁ ∈ Finset.range (u + 1),
-            (coeffAt A j₁ u₁).natAbs * (coeffAt B (j - j₁) (u - u₁)).natAbs :=
+            (rowEntry A j₁ u₁).natAbs * (rowEntry B (j - j₁) (u - u₁)).natAbs :=
           Finset.sum_congr rfl fun _ _ => Finset.sum_comm
     _ ≤ ∑ j ∈ Finset.range J, ∑ j₁ ∈ Finset.range (j + 1),
           rowNorm A j₁ * rowNorm B (j - j₁) :=
           Finset.sum_le_sum fun j _ => Finset.sum_le_sum fun j₁ _ =>
-            sum_conv_nat_le_mul ℓ (fun u₁ => (coeffAt A j₁ u₁).natAbs)
-              (fun u₂ => (coeffAt B (j - j₁) u₂).natAbs)
+            sum_conv_nat_le_mul ℓ (fun u₁ => (rowEntry A j₁ u₁).natAbs)
+              (fun u₂ => (rowEntry B (j - j₁) u₂).natAbs)
     _ ≤ (∑ j₁ ∈ Finset.range J, rowNorm A j₁) * (∑ j₂ ∈ Finset.range J, rowNorm B j₂) :=
           sum_conv_nat_le_mul J (rowNorm A) (rowNorm B)
     _ ≤ jetL1Norm A * jetL1Norm B :=
-          Nat.mul_le_mul (sum_coeffAt_natAbs_le_jetL1Norm J ℓ A)
-            (sum_coeffAt_natAbs_le_jetL1Norm J ℓ B)
+          Nat.mul_le_mul (sum_rowEntry_natAbs_le_jetL1Norm J ℓ A)
+            (sum_rowEntry_natAbs_le_jetL1Norm J ℓ B)
 
 /-- Every stored entry of `A` has magnitude bounded by `jetL1Norm A`. -/
 lemma natAbs_le_jetL1Norm_of_mem {A : List (List ℤ)} {row : List ℤ} (hrow : row ∈ A)
@@ -781,28 +678,15 @@ lemma natAbs_le_jetL1Norm_of_mem {A : List (List ℤ)} {row : List ℤ} (hrow : 
   exact (List.single_le_sum (fun _ _ => Nat.zero_le _) _ hz').trans
     (List.single_le_sum (fun _ _ => Nat.zero_le _) _ hrow')
 
-private lemma coeffAt_rel_of_mem {P : ℤ → Prop} (h0 : P 0) {A : List (List ℤ)}
-    (hA : ∀ row ∈ A, ∀ z ∈ row, P z) (j u : ℕ) : P (coeffAt A j u) := by
-  unfold coeffAt
-  rcases Nat.lt_or_ge j A.length with hj | hj
-  · rw [List.getD_eq_getElem _ _ hj]
-    rcases Nat.lt_or_ge u A[j].length with hu | hu
-    · rw [List.getD_eq_getElem _ _ hu]
-      exact hA _ (List.getElem_mem hj) _ (List.getElem_mem hu)
-    · rw [List.getD_eq_default _ _ hu]
-      exact h0
-  · rw [List.getD_eq_default _ _ hj, List.getD_nil]
-    exact h0
-
-/-- Every coefficient `coeffAt A j u` has magnitude bounded by `jetL1Norm A`. -/
-lemma natAbs_coeffAt_le_jetL1Norm (A : List (List ℤ)) (j u : ℕ) :
-    (coeffAt A j u).natAbs ≤ jetL1Norm A :=
-  coeffAt_rel_of_mem (Nat.zero_le _) (fun _ hrow _ hz => natAbs_le_jetL1Norm_of_mem hrow hz) j u
+/-- Every coefficient `rowEntry A j u` has magnitude bounded by `jetL1Norm A`. -/
+lemma natAbs_rowEntry_le_jetL1Norm (A : List (List ℤ)) (j u : ℕ) :
+    (rowEntry A j u).natAbs ≤ jetL1Norm A :=
+  rowEntry_rel_of_mem (Nat.zero_le _) (fun _ hrow _ hz => natAbs_le_jetL1Norm_of_mem hrow hz) j u
 
 /-- Magnitude bound on every entry of `convJet` in terms of input `ℓ₁` norms. -/
-theorem natAbs_coeffAt_convJet_le_norm (J ℓ : ℕ) (A B : List (List ℤ)) (j u : ℕ) :
-    (coeffAt (convJet J ℓ A B) j u).natAbs ≤ jetL1Norm A * jetL1Norm B :=
-  (natAbs_coeffAt_le_jetL1Norm _ j u).trans (jetL1Norm_convJet_le J ℓ A B)
+theorem natAbs_rowEntry_convJet_le_norm (J ℓ : ℕ) (A B : List (List ℤ)) (j u : ℕ) :
+    (rowEntry (convJet J ℓ A B) j u).natAbs ≤ jetL1Norm A * jetL1Norm B :=
+  (natAbs_rowEntry_le_jetL1Norm _ j u).trans (jetL1Norm_convJet_le J ℓ A B)
 
 /-- Encoded bit-length bound on every stored entry of `convJet` via input `ℓ₁` norms. -/
 theorem length_encIntBin_mem_convJet_le_norm {J ℓ : ℕ} {A B : List (List ℤ)}
@@ -816,21 +700,21 @@ theorem length_encIntBin_mem_convJet_le_norm {J ℓ : ℕ} {A B : List (List ℤ
 /-- Entrywise max-magnitude bound for `convJet`: if entries of `A` and `B` have magnitudes at most
 `MA` and `MB`, then every coefficient of `convJet J ℓ A B` has magnitude at most
 `J * ℓ * (MA * MB)`. -/
-theorem natAbs_coeffAt_convJet_le {J ℓ MA MB : ℕ} {A B : List (List ℤ)}
+theorem natAbs_rowEntry_convJet_le {J ℓ MA MB : ℕ} {A B : List (List ℤ)}
     (hA : ∀ row ∈ A, ∀ z ∈ row, z.natAbs ≤ MA)
     (hB : ∀ row ∈ B, ∀ z ∈ row, z.natAbs ≤ MB) (j u : ℕ) :
-    (coeffAt (convJet J ℓ A B) j u).natAbs ≤ J * ℓ * (MA * MB) := by
-  have hA' := coeffAt_rel_of_mem (Nat.zero_le MA) hA
-  have hB' := coeffAt_rel_of_mem (Nat.zero_le MB) hB
-  rw [convJet, coeffAt_tabulateJet]
+    (rowEntry (convJet J ℓ A B) j u).natAbs ≤ J * ℓ * (MA * MB) := by
+  have hA' := rowEntry_rel_of_mem (Nat.zero_le MA) hA
+  have hB' := rowEntry_rel_of_mem (Nat.zero_le MB) hB
+  rw [convJet, rowEntry_tabulateTable]
   split_ifs with hju
   · obtain ⟨hj, hu⟩ := hju
     rw [convEntry_eq_sum]
     calc
       (∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-          coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁)).natAbs
+          rowEntry A j₁ u₁ * rowEntry B (j - j₁) (u - u₁)).natAbs
           ≤ ∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
-              (coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁)).natAbs := by
+              (rowEntry A j₁ u₁ * rowEntry B (j - j₁) (u - u₁)).natAbs := by
             refine (Int.natAbs_sum_le _ _).trans (Finset.sum_le_sum fun _ _ => ?_)
             exact Int.natAbs_sum_le _ _
       _ ≤ ∑ _j₁ ∈ Finset.range (j + 1), ∑ _u₁ ∈ Finset.range (u + 1), MA * MB := by
@@ -846,20 +730,20 @@ theorem natAbs_coeffAt_convJet_le {J ℓ MA MB : ℕ} {A B : List (List ℤ)}
 /-- Binary magnitude-size bound for `convJet`: if stored entries of `A` and `B` have binary
 magnitude size at most `bA` and `bB`, then every coefficient of `convJet J ℓ A B` has binary
 magnitude size at most `bA + bB + (J * ℓ).size`. -/
-theorem size_natAbs_coeffAt_convJet_le {J ℓ bA bB : ℕ} {A B : List (List ℤ)}
+theorem size_natAbs_rowEntry_convJet_le {J ℓ bA bB : ℕ} {A B : List (List ℤ)}
     (hA : ∀ row ∈ A, ∀ z ∈ row, z.natAbs.size ≤ bA)
     (hB : ∀ row ∈ B, ∀ z ∈ row, z.natAbs.size ≤ bB) (j u : ℕ) :
-    (coeffAt (convJet J ℓ A B) j u).natAbs.size ≤ bA + bB + (J * ℓ).size := by
-  have hA' := coeffAt_rel_of_mem (by simp) hA
-  have hB' := coeffAt_rel_of_mem (by simp) hB
-  rw [convJet, coeffAt_tabulateJet]
+    (rowEntry (convJet J ℓ A B) j u).natAbs.size ≤ bA + bB + (J * ℓ).size := by
+  have hA' := rowEntry_rel_of_mem (by simp) hA
+  have hB' := rowEntry_rel_of_mem (by simp) hB
+  rw [convJet, rowEntry_tabulateTable]
   split_ifs with hju
   · obtain ⟨hj, hu⟩ := hju
     unfold convEntry
     rw [← Function.comp_def List.sum, ← List.map_map, ← List.sum_flatten,
       ← List.flatMap_def]
     let terms := (List.range (j + 1)).flatMap fun j₁ =>
-      (List.range (u + 1)).map fun u₁ => coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁)
+      (List.range (u + 1)).map fun u₁ => rowEntry A j₁ u₁ * rowEntry B (j - j₁) (u - u₁)
     have hmem : ∀ z ∈ terms, z.natAbs.size ≤ bA + bB := by
       intro z hz
       obtain ⟨j₁, -, hz⟩ := List.mem_flatMap.mp hz
@@ -880,9 +764,9 @@ theorem length_encIntBin_mem_convJet_le {J ℓ bA bB : ℕ} {A B : List (List �
     (hB : ∀ row ∈ B, ∀ z ∈ row, (Turing.MultiTapeTM.encIntBin z).length ≤ bB + 1)
     {row : List ℤ} (hrow : row ∈ convJet J ℓ A B) {z : ℤ} (hz : z ∈ row) :
     (Turing.MultiTapeTM.encIntBin z).length ≤ bA + bB + (J * ℓ).size + 1 := by
-  obtain ⟨j, u, -, -, rfl⟩ := exists_coeffAt_eq hrow hz
+  obtain ⟨j, u, rfl⟩ := exists_rowEntry_eq hrow hz
   rw [Turing.MultiTapeTM.length_encIntBin]
-  refine Nat.add_le_add_right (size_natAbs_coeffAt_convJet_le ?_ ?_ j u) 1
+  refine Nat.add_le_add_right (size_natAbs_rowEntry_convJet_le ?_ ?_ j u) 1
   · intro r hr x hx
     have h := hA r hr x hx
     rw [Turing.MultiTapeTM.length_encIntBin] at h
@@ -900,38 +784,6 @@ open Turing MultiTapeTM
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-/-- Coefficient lookup `coeffAt` on a list of rows is computable in polynomial time. -/
-@[fun_prop]
-theorem computableInPolyTime_coeffAt {A : α → List (List ℤ)} {j u : α → ℕ}
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
-    (hj : ComputableInPolyTime j encIn encUnary)
-    (hu : ComputableInPolyTime u encIn encUnary) :
-    ComputableInPolyTime (fun x => coeffAt (A x) (j x) (u x)) encIn encIntBin := by
-  have hA := hA.tidy
-  have hj := hj.tidy
-  have hu := hu.tidy
-  exact .of_tidy ((ComputableTidilyInPolyTime.listGetD (encA := encIntBin) 0).comp
-    (((ComputableTidilyInPolyTime.listGetD (encA := encList encIntBin) []).comp
-      (hA.prod hj)).prod hu))
-
-/-- Tabulating a `J × ℓ` jet array from unary dimensions `(J, ℓ)` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_tabulateJet {J ℓ : α → ℕ} {g : α → ℕ → ℕ → ℤ}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary)
-    (hg : ComputableInPolyTime (fun p : (α × ℕ) × ℕ => g p.1.1 p.1.2 p.2)
-      (encPair (encPair encIn encUnary) encUnary) encIntBin) :
-    ComputableInPolyTime (fun x => tabulateJet (J x) (ℓ x) (g x))
-      encIn (encList (encList encIntBin)) := by
-  have hJ := hJ.tidy
-  have hℓ := hℓ.tidy
-  have hg := hg.tidy
-  exact .of_tidy (ComputableTidilyInPolyTime.mapWithInput
-    (ComputableTidilyInPolyTime.range.comp hJ)
-    (ComputableTidilyInPolyTime.mapWithInput
-      (ComputableTidilyInPolyTime.range.comp
-        (hℓ.comp (ComputableTidilyInPolyTime.fst encIn encUnary))) hg))
-
 /-- `zeroJet` is computable in polynomial time for unary `(J, ℓ)`. -/
 @[fun_prop]
 theorem computableInPolyTime_zeroJet {J ℓ : α → ℕ}
@@ -939,141 +791,109 @@ theorem computableInPolyTime_zeroJet {J ℓ : α → ℕ}
     (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
     ComputableInPolyTime (fun x => zeroJet (J x) (ℓ x))
       encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateJet hJ hℓ (.of_tidy (ComputableTidilyInPolyTime.const 0))
+  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (ComputableTidilyInPolyTime.const 0))
 
 /-- `constJet` is computable in polynomial time for unary `(J, ℓ)` and binary `c`. -/
 @[fun_prop]
 theorem computableInPolyTime_constJet {J ℓ : α → ℕ} {c : α → ℤ}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary)
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hc : ComputableInPolyTime c encIn encIntBin) :
     ComputableInPolyTime (fun x => constJet (J x) (ℓ x) (c x))
       encIn (encList (encList encIntBin)) := by
-  refine computableInPolyTime_tabulateJet hJ hℓ ?_
+  refine computableInPolyTime_tabulateTable hJ hℓ ?_
   have hc := hc.tidy
-  have heq :
-      (fun p : (α × ℕ) × ℕ => if p.1.2 = 0 ∧ p.2 = 0 then c p.1.1 else 0) =
-        fun p => if (p.1.2 == 0 && p.2 == 0) then c p.1.1 else 0 := by
-    funext p
-    simp
-  rw [heq]
+  rw [show (fun p : (α × ℕ) × ℕ => if p.1.2 = 0 ∧ p.2 = 0 then c p.1.1 else 0) =
+      fun p => if (p.1.2 == 0 && p.2 == 0) then c p.1.1 else 0 by funext; simp]
   exact .of_tidy (by fun_prop)
 
 /-- `zJet` is computable in polynomial time for unary `(J, ℓ)`. -/
 @[fun_prop]
 theorem computableInPolyTime_zJet {J ℓ : α → ℕ}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
-    ComputableInPolyTime (fun x => zJet (J x) (ℓ x))
-      encIn (encList (encList encIntBin)) := by
-  refine computableInPolyTime_tabulateJet hJ hℓ ?_
-  have heq :
-      (fun p : (α × ℕ) × ℕ => if p.1.2 = 1 ∧ p.2 = 0 then (1 : ℤ) else 0) =
-        fun p => if (p.1.2 == 1 && p.2 == 0) then 1 else 0 := by
-    funext p
-    simp
-  rw [heq]
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
+    ComputableInPolyTime (fun x => zJet (J x) (ℓ x)) encIn (encList (encList encIntBin)) := by
+  refine computableInPolyTime_tabulateTable hJ hℓ ?_
+  rw [show (fun p : (α × ℕ) × ℕ => if p.1.2 = 1 ∧ p.2 = 0 then (1 : ℤ) else 0) =
+      fun p => if (p.1.2 == 1 && p.2 == 0) then 1 else 0 by funext; simp]
   exact .of_tidy (by fun_prop)
 
 /-- `vJet` is computable in polynomial time for unary `(J, ℓ)`. -/
 @[fun_prop]
 theorem computableInPolyTime_vJet {J ℓ : α → ℕ}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
-    ComputableInPolyTime (fun x => vJet (J x) (ℓ x))
-      encIn (encList (encList encIntBin)) := by
-  refine computableInPolyTime_tabulateJet hJ hℓ ?_
-  have heq :
-      (fun p : (α × ℕ) × ℕ => if p.1.2 = 0 ∧ p.2 = 1 then (1 : ℤ) else 0) =
-        fun p => if (p.1.2 == 0 && p.2 == 1) then 1 else 0 := by
-    funext p
-    simp
-  rw [heq]
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
+    ComputableInPolyTime (fun x => vJet (J x) (ℓ x)) encIn (encList (encList encIntBin)) := by
+  refine computableInPolyTime_tabulateTable hJ hℓ ?_
+  rw [show (fun p : (α × ℕ) × ℕ => if p.1.2 = 0 ∧ p.2 = 1 then (1 : ℤ) else 0) =
+      fun p => if (p.1.2 == 0 && p.2 == 1) then 1 else 0 by funext; simp]
   exact .of_tidy (by fun_prop)
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `addJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_addJet {J ℓ : α → ℕ} {A B : α → List (List ℤ)}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary)
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
     (hB : ComputableInPolyTime B encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => addJet (J x) (ℓ x) (A x) (B x))
       encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateJet hJ hℓ (.of_tidy (by fun_prop))
+  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (by fun_prop))
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `negJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_negJet {J ℓ : α → ℕ} {A : α → List (List ℤ)}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary)
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
-    ComputableInPolyTime (fun x => negJet (J x) (ℓ x) (A x))
-      encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateJet hJ hℓ (.of_tidy (by fun_prop))
+    ComputableInPolyTime (fun x => negJet (J x) (ℓ x) (A x)) encIn (encList (encList encIntBin)) :=
+  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (by fun_prop))
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `subJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_subJet {J ℓ : α → ℕ} {A B : α → List (List ℤ)}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary)
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
     (hB : ComputableInPolyTime B encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => subJet (J x) (ℓ x) (A x) (B x))
       encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateJet hJ hℓ (.of_tidy (by fun_prop))
+  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (by fun_prop))
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `smulJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_smulJet {J ℓ : α → ℕ} {c : α → ℤ} {A : α → List (List ℤ)}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary)
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hc : ComputableInPolyTime c encIn encIntBin)
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => smulJet (J x) (ℓ x) (c x) (A x))
       encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateJet hJ hℓ (.of_tidy (by fun_prop))
+  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (by fun_prop))
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `shiftZJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_shiftZJet {J ℓ : α → ℕ} {A : α → List (List ℤ)}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary)
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => shiftZJet (J x) (ℓ x) (A x))
       encIn (encList (encList encIntBin)) := by
-  refine computableInPolyTime_tabulateJet hJ hℓ ?_
-  have heq :
-      (fun p : (α × ℕ) × ℕ =>
-          if p.1.2 = 0 then (0 : ℤ) else coeffAt (A p.1.1) (p.1.2 - 1) p.2) =
-        fun p => if p.1.2 == 0 then 0 else coeffAt (A p.1.1) (p.1.2 - 1) p.2 := by
-    funext p
-    simp
-  rw [heq]
+  refine computableInPolyTime_tabulateTable hJ hℓ ?_
+  rw [show (fun p : (α × ℕ) × ℕ =>
+        if p.1.2 = 0 then (0 : ℤ) else rowEntry (A p.1.1) (p.1.2 - 1) p.2) =
+      fun p => if p.1.2 == 0 then 0 else rowEntry (A p.1.1) (p.1.2 - 1) p.2 by funext; simp]
   exact .of_tidy (by fun_prop)
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `shiftVJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_shiftVJet {J ℓ : α → ℕ} {A : α → List (List ℤ)}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary)
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => shiftVJet (J x) (ℓ x) (A x))
       encIn (encList (encList encIntBin)) := by
-  refine computableInPolyTime_tabulateJet hJ hℓ ?_
-  have heq :
-      (fun p : (α × ℕ) × ℕ =>
-          if p.2 = 0 then (0 : ℤ) else coeffAt (A p.1.1) p.1.2 (p.2 - 1)) =
-        fun p => if p.2 == 0 then 0 else coeffAt (A p.1.1) p.1.2 (p.2 - 1) := by
-    funext p
-    simp
-  rw [heq]
+  refine computableInPolyTime_tabulateTable hJ hℓ ?_
+  rw [show (fun p : (α × ℕ) × ℕ =>
+        if p.2 = 0 then (0 : ℤ) else rowEntry (A p.1.1) p.1.2 (p.2 - 1)) =
+      fun p => if p.2 == 0 then 0 else rowEntry (A p.1.1) p.1.2 (p.2 - 1) by funext; simp]
   exact .of_tidy (by fun_prop)
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
@@ -1082,8 +902,7 @@ attribute [local fun_prop] ComputableInPolyTime.tidy in
 theorem computableInPolyTime_convEntry {A B : α → List (List ℤ)} {j u : α → ℕ}
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
     (hB : ComputableInPolyTime B encIn (encList (encList encIntBin)))
-    (hj : ComputableInPolyTime j encIn encUnary)
-    (hu : ComputableInPolyTime u encIn encUnary) :
+    (hj : ComputableInPolyTime j encIn encUnary) (hu : ComputableInPolyTime u encIn encUnary) :
     ComputableInPolyTime (fun x => convEntry (A x) (B x) (j x) (u x)) encIn encIntBin := by
   refine .of_tidy ?_
   unfold convEntry
@@ -1093,84 +912,68 @@ theorem computableInPolyTime_convEntry {A B : α → List (List ℤ)} {j u : α 
 dense `List (List ℤ)` arrays over `encIntBin`. -/
 @[fun_prop]
 theorem computableInPolyTime_convJet {J ℓ : α → ℕ} {A B : α → List (List ℤ)}
-    (hJ : ComputableInPolyTime J encIn encUnary)
-    (hℓ : ComputableInPolyTime ℓ encIn encUnary)
+    (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
     (hB : ComputableInPolyTime B encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => convJet (J x) (ℓ x) (A x) (B x))
       encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateJet hJ hℓ (by fun_prop)
+  computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
 /-- Direct polynomial-time certificate for `zeroJet`. -/
 theorem zeroJet_polytime :
     ComputableInPolyTime (fun p : ℕ × ℕ => zeroJet p.1 p.2)
-      (encPair encUnary encUnary) (encList (encList encIntBin)) := by
-  fun_prop
+      (encPair encUnary encUnary) (encList (encList encIntBin)) := by fun_prop
 
 /-- Direct polynomial-time certificate for `constJet`. -/
 theorem constJet_polytime :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × ℤ => constJet p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)) := by
-  fun_prop
+      (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)) := by fun_prop
 
 /-- Direct polynomial-time certificate for `addJet`. -/
 theorem addJet_polytime :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => addJet p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  fun_prop
+        (encList (encList encIntBin))) (encList (encList encIntBin)) := by fun_prop
 
 /-- Direct polynomial-time certificate for `negJet`. -/
 theorem negJet_polytime :
-    ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × List (List ℤ) => negJet p.1.1 p.1.2 p.2)
+    ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => negJet p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  fun_prop
+      (encList (encList encIntBin)) := by fun_prop
 
 /-- Direct polynomial-time certificate for `subJet`. -/
 theorem subJet_polytime :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => subJet p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  fun_prop
+        (encList (encList encIntBin))) (encList (encList encIntBin)) := by fun_prop
 
 /-- Direct polynomial-time certificate for `smulJet`. -/
 theorem smulJet_polytime :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℤ) × List (List ℤ) => smulJet p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  fun_prop
+      (encList (encList encIntBin)) := by fun_prop
 
 /-- Direct polynomial-time certificate for `shiftZJet`. -/
 theorem shiftZJet_polytime :
-    ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × List (List ℤ) => shiftZJet p.1.1 p.1.2 p.2)
+    ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftZJet p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  fun_prop
+      (encList (encList encIntBin)) := by fun_prop
 
 /-- Direct polynomial-time certificate for `shiftVJet`. -/
 theorem shiftVJet_polytime :
-    ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × List (List ℤ) => shiftVJet p.1.1 p.1.2 p.2)
+    ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftVJet p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  fun_prop
+      (encList (encList encIntBin)) := by fun_prop
 
 /-- Direct polynomial-time certificate for `convJet`. -/
 theorem convJet_polytime :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => convJet p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  fun_prop
+        (encList (encList encIntBin))) (encList (encList encIntBin)) := by fun_prop
 
 end PolyTime
 

@@ -7,10 +7,11 @@ Authors: Anton Kovsharov
 import Complexity.Computability.PolyTime.JetArray
 
 /-!
-# Regression tests for truncated bivariate jet arrays
+# Regression tests for rectangular integer tables and truncated bivariate jet arrays
 
 Concrete kernel-checked evaluations and theorem instantiations for
-`Complexity.Computability.PolyTime.JetArray`:
+`Complexity.Computability.PolyTime.Int.Table` and `Complexity.Computability.PolyTime.JetArray`:
+- rectangular `rowEntry` lookup, `tabulateTable`, `IsTableShape`, and extensionality;
 - 2D truncation at both `z^J` and `V^ℓ` on rectangular (`J ≠ ℓ`) signed arrays;
 - boundary dimensions `J = 0`, `ℓ = 0`, and ragged-input normalization;
 - commutativity, associativity, distributivity, and shift nilpotency;
@@ -22,6 +23,28 @@ namespace ComplexityTests.JetArray
 
 open Cslib
 open Turing MultiTapeTM
+
+/-! ### Shared rectangular table lookup and tabulation (`PolyTime.Int.Table`) -/
+
+example :
+    let T := tabulateTable 2 3 fun i j => (10 * i + j : ℤ) - 5
+    T = [[-5, -4, -3], [5, 6, 7]] ∧
+      rowEntry T 1 2 = 7 ∧
+      rowEntry T 2 0 = 0 ∧
+      rowEntry T 0 3 = 0 := by
+  decide +kernel
+
+example :
+    tabulateTable 2 3 (rowEntry [[1, 2, -1], [3, 0, 4]]) = [[1, 2, -1], [3, 0, 4]] :=
+  tabulateTable_rowEntry ⟨rfl, by decide +kernel⟩
+
+example :
+    ComputableInPolyTime
+      (fun p : (ℕ × ℕ) × JetRows =>
+        tabulateTable p.1.1 p.1.2 fun i j => rowEntry p.2 j i)
+      (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
+      (encList (encList encIntBin)) := by
+  fun_prop
 
 /-! ### Concrete 2D truncation and rectangular arithmetic -/
 
@@ -104,12 +127,12 @@ example :
         jetL1Norm [[1, 2, 0], [3, 0, 0]] * jetL1Norm [[0, 1, 0], [0, 0, 0]] := by
   decide +kernel
 
--- Nonvacuous instantiation of `size_natAbs_coeffAt_convJet_le` and
+-- Nonvacuous instantiation of `size_natAbs_rowEntry_convJet_le` and
 -- `length_encIntBin_mem_convJet_le` on 2 × 3 inputs with magnitudes ≤ 5 (`size ≤ 3`).
 example (j u : ℕ) :
-    (coeffAt (convJet 2 3 [[1, 2, -1], [3, 0, 4]] [[2, -3, 1], [-1, 5, 2]]) j u).natAbs.size ≤
+    (rowEntry (convJet 2 3 [[1, 2, -1], [3, 0, 4]] [[2, -3, 1], [-1, 5, 2]]) j u).natAbs.size ≤
       3 + 3 + (2 * 3).size :=
-  size_natAbs_coeffAt_convJet_le (bA := 3) (bB := 3) (by decide +kernel) (by decide +kernel) j u
+  size_natAbs_rowEntry_convJet_le (bA := 3) (bB := 3) (by decide +kernel) (by decide +kernel) j u
 
 example {row : List ℤ}
     (hrow : row ∈ convJet 2 3 [[1, 2, -1], [3, 0, 4]] [[2, -3, 1], [-1, 5, 2]])
