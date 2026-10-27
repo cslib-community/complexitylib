@@ -65,13 +65,20 @@ def polyNorm1 (p : List ℤ) : ℕ := (p.map Int.natAbs).sum
 theorem jetL1Norm_eq_sum_map_polyNorm1 (rows : List (List ℤ)) :
     jetL1Norm rows = (rows.map polyNorm1).sum := rfl
 
-private lemma polyNorm1_nil : polyNorm1 [] = 0 := rfl
-private lemma polyNorm1_cons (c : ℤ) (p : List ℤ) :
+/-- `polyNorm1` of the empty coefficient list is `0`. -/
+theorem polyNorm1_nil : polyNorm1 [] = 0 := rfl
+
+/-- `polyNorm1` of `c :: p` adds `c.natAbs` to `polyNorm1 p`. -/
+theorem polyNorm1_cons (c : ℤ) (p : List ℤ) :
     polyNorm1 (c :: p) = c.natAbs + polyNorm1 p := rfl
-private lemma polyNorm1_append (p q : List ℤ) :
+
+/-- `polyNorm1` is additive across list concatenation. -/
+theorem polyNorm1_append (p q : List ℤ) :
     polyNorm1 (p ++ q) = polyNorm1 p + polyNorm1 q := by
   simp only [polyNorm1, List.map_append, List.sum_append]
-private lemma polyNorm1_reverse (p : List ℤ) : polyNorm1 p.reverse = polyNorm1 p := by
+
+/-- Reversing a coefficient list preserves `polyNorm1`. -/
+theorem polyNorm1_reverse (p : List ℤ) : polyNorm1 p.reverse = polyNorm1 p := by
   simp only [polyNorm1, List.map_reverse, List.sum_reverse]
 
 /-- Taking a prefix does not increase `polyNorm1`. -/
@@ -80,13 +87,15 @@ theorem polyNorm1_take_le (p : List ℤ) (n : ℕ) : polyNorm1 (p.take n) ≤ po
   have h := List.monotone_sum_take (p.map Int.natAbs) (le_max_left n (p.map Int.natAbs).length)
   dsimp only at h; rwa [List.take_of_length_le (le_max_right n _)] at h
 
-private lemma natAbs_mem_le_polyNorm1 {p : List ℤ} {z : ℤ} (hz : z ∈ p) : z.natAbs ≤ polyNorm1 p :=
+/-- Every coefficient `z ∈ p` has `z.natAbs ≤ polyNorm1 p`. -/
+theorem natAbs_mem_le_polyNorm1 {p : List ℤ} {z : ℤ} (hz : z ∈ p) : z.natAbs ≤ polyNorm1 p :=
   List.le_sum_of_mem (List.mem_map_of_mem hz)
 
 private lemma natAbs_sum_le_polyNorm1 (p : List ℤ) : p.sum.natAbs ≤ polyNorm1 p :=
   List.le_sum_of_subadditive Int.natAbs Int.natAbs_zero.le Int.natAbs_add_le p
 
-private lemma polyNorm1_le_length_mul {p : List ℤ} {B : ℕ} (h : ∀ z ∈ p, z.natAbs ≤ B) :
+/-- Uniform entrywise magnitude bound `B` implies `polyNorm1 p ≤ p.length * B`. -/
+theorem polyNorm1_le_length_mul {p : List ℤ} {B : ℕ} (h : ∀ z ∈ p, z.natAbs ≤ B) :
     polyNorm1 p ≤ p.length * B := by
   have hmem : ∀ x ∈ p.map Int.natAbs, x ≤ B := fun _ hx => by
     obtain ⟨z, hz, rfl⟩ := List.mem_map.mp hx; exact h z hz
@@ -112,7 +121,8 @@ theorem coeffNorm1_ofCoeffList (p : List ℤ) : (ofCoeffList p).coeffNorm1 = pol
   conv_rhs => rw [eq_map_range_getD (rfl : p.length = p.length)]
   simp only [List.map_map, Function.comp_def, sum_map_range_eq_finset, coeff_ofCoeffList]
 
-private lemma length_encIntBin_le_of_natAbs_le {z : ℤ} {e : ℕ} (hz : z.natAbs ≤ 2 ^ e) :
+/-- Bounding `z.natAbs ≤ 2 ^ e` bounds `(encIntBin z).length ≤ e + 2`. -/
+theorem length_encIntBin_le_of_natAbs_le {z : ℤ} {e : ℕ} (hz : z.natAbs ≤ 2 ^ e) :
     (encIntBin z).length ≤ e + 2 := by
   rw [length_encIntBin]
   have := Nat.size_le.mpr (hz.trans_lt (Nat.pow_lt_pow_right (by norm_num) (Nat.lt_succ_self e)))
@@ -157,7 +167,8 @@ private lemma coeff_ofCoeffList_mul_eq {R : Type*} [Semiring R] (p q : List R) (
     (fun i j => (ofCoeffList p).coeff i * (ofCoeffList q).coeff j), ← sum_map_range_eq_finset]
   exact congrArg List.sum (List.map_congr_left fun i _ => by simp only [coeff_ofCoeffList])
 
-private lemma getD_polyAdd (p q : List ℤ) (i : ℕ) :
+/-- Entrywise `getD` specification of `polyAdd`. -/
+theorem getD_polyAdd (p q : List ℤ) (i : ℕ) :
     (polyAdd p q).getD i 0 = p.getD i 0 + q.getD i 0 := by
   by_cases hi : i < max p.length q.length
   · exact List.getD_map_range _ 0 hi
@@ -182,7 +193,9 @@ theorem polyNorm1_polyAdd_le (p q : List ℤ) :
 @[simp] theorem length_mulZJet (J : ℕ) (u v : List ℤ) : (mulZJet J u v).length = J := by
   simp only [mulZJet, List.length_map, List.length_range]
 
-private lemma coeff_ofCoeffList_mulZJet {J j : ℕ} (hj : j < J) (u v : List ℤ) :
+/-- Below `J`, `ofCoeffList (mulZJet J u v)` has the same coefficients as
+`ofCoeffList u * ofCoeffList v`. -/
+theorem coeff_ofCoeffList_mulZJet {J j : ℕ} (hj : j < J) (u v : List ℤ) :
     (ofCoeffList (mulZJet J u v)).coeff j = (ofCoeffList u * ofCoeffList v).coeff j := by
   rw [coeff_ofCoeffList, mulZJet, List.getD_map_range _ 0 hj, coeff_ofCoeffList_mul_eq, cauchyCoeff]
 
@@ -668,7 +681,8 @@ theorem ofCoeffList_truncZJet (J : ℕ) (u : List ℤ) :
   · rw [List.getD_eq_default (truncZJet J u) _ (by rw [length_truncZJet]; omega),
       List.getD_eq_default (u.take J) _ (by simp only [List.length_take]; omega)]
 
-private lemma coeff_eq_below_mul {P₁ P₂ Q₁ Q₂ : ℤ[X]} {J : ℕ}
+/-- Polynomial multiplication preserves coefficient equality below degree `J`. -/
+theorem coeff_eq_below_mul {P₁ P₂ Q₁ Q₂ : ℤ[X]} {J : ℕ}
     (h1 : ∀ i < J, P₁.coeff i = Q₁.coeff i) (h2 : ∀ i < J, P₂.coeff i = Q₂.coeff i) :
     ∀ j < J, (P₁ * P₂).coeff j = (Q₁ * Q₂).coeff j := by
   intro j hj; rw [Polynomial.coeff_mul, Polynomial.coeff_mul]
@@ -1046,7 +1060,8 @@ private theorem unary_decide_eq_tidy {a b : α → ℕ}
     ComputableTidilyInPolyTime (fun x => decide (a x = b x)) encIn encBool :=
   (decide_eq encUnary).comp (ha.prod hb)
 
-private lemma polyNorm1_le_two_pow_encList (l : List ℤ) :
+/-- `polyNorm1 l` is bounded exponentially in `(encList encIntBin l).length`. -/
+theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
     polyNorm1 l ≤ 2 ^ (2 * (encList encIntBin l).length) := by
   set L := (encList encIntBin l).length
   have helem (z : ℤ) (hz : z ∈ l) : z.natAbs ≤ 2 ^ L := by
@@ -1270,7 +1285,8 @@ theorem parityLinearCoeffs_polytime :
   simpa only [length_powZJet] using length_encList_le encIntBin _ fun z hz =>
     length_encIntBin_le_of_natAbs_le ((natAbs_mem_le_polyNorm1 hz).trans hnorm)
 
-private theorem singleton_intBin_polytime {z : α → ℤ}
+/-- Wrapping a binary integer into a singleton list is polynomial-time. -/
+theorem singleton_intBin_polytime {z : α → ℤ}
     (hz : ComputableInPolyTime z encIn encIntBin) :
     ComputableInPolyTime (fun x => [z x]) encIn (encList encIntBin) :=
   .of_tidy (cons' hz.tidy (const []))
