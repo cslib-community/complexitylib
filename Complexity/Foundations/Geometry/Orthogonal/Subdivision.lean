@@ -206,7 +206,9 @@ theorem segmentWalk_unit (a b : Point) {e : Point × Point}
 theorem wireLength_segmentWalk (a b : Point) : wireLength (segmentWalk a b) = length a b :=
   wireLength_walk _ _ _ (direction_unit _ _)
 
-private theorem consecutivePairs_join {q r : Route} {p : Point}
+/-- Joining routes at a common endpoint, listing that endpoint once, concatenates their
+segment lists. -/
+theorem consecutivePairs_join {q r : Route} {p : Point}
     (hq : q.getLast? = some p) (hr : r.head? = some p) :
     (q ++ r.tail).consecutivePairs = q.consecutivePairs ++ r.consecutivePairs := by
   induction q with
@@ -229,7 +231,8 @@ private theorem consecutivePairs_join {q r : Route} {p : Point}
         (a, b) :: ((b :: q).consecutivePairs ++ r.consecutivePairs)
       rw [ih hq']
 
-private theorem support_join {q r : Route} {p : Point}
+/-- Joining routes at their common endpoint takes the union of their full real supports. -/
+theorem support_join {q r : Route} {p : Point}
     (hq : q.getLast? = some p) (hr : r.head? = some p) :
     support (q ++ r.tail) = support q ∪ support r := by
   have hmem := List.mem_of_getLast? hq
@@ -244,7 +247,8 @@ private theorem support_join {q r : Route} {p : Point}
       List.tail_cons, Set.mem_union, or_and_right, exists_or, exists_eq_left]
     aesop
 
-private theorem last_join {q r : Route} {p : Point}
+/-- A route joined at a common endpoint has the last endpoint of the second route. -/
+theorem last_join {q r : Route} {p : Point}
     (hq : q.getLast? = some p) (hr : r.head? = some p) :
     (q ++ r.tail).getLast? = r.getLast? := by
   cases r with
@@ -259,7 +263,8 @@ private theorem last_join {q r : Route} {p : Point}
       simp [List.getLast?_append,
         List.getLast?_eq_some_getLast (l := c :: r) (by simp)]
 
-private theorem wireLength_join {q r : Route} {p : Point}
+/-- Joining at a common endpoint adds the two Manhattan wire lengths. -/
+theorem wireLength_join {q r : Route} {p : Point}
     (hq : q.getLast? = some p) (hr : r.head? = some p) :
     wireLength (q ++ r.tail) = wireLength q + wireLength r := by
   simp only [wireLength, consecutivePairs_join hq hr, List.map_append, List.sum_append]
@@ -465,7 +470,9 @@ theorem walk_nodup (a d : Point) (k : ℕ) (hd : UnitVector d) : (walk a d k).No
 theorem segmentWalk_nodup (a b : Point) : (segmentWalk a b).Nodup :=
   walk_nodup _ _ _ (direction_unit _ _)
 
-private theorem mem_support_segment {r : Route} (hlen : 2 ≤ r.length) {p : ℝ × ℝ}
+/-- Every supported point of a route with at least two listed points belongs to one of its
+consecutive segments. In this case separate degenerate pieces for listed points are redundant. -/
+theorem mem_support_segment {r : Route} (hlen : 2 ≤ r.length) {p : ℝ × ℝ}
     (hp : p ∈ support r) : ∃ e ∈ r.consecutivePairs, p ∈ segment e.1 e.2 := by
   induction r with
   | nil => simp at hlen
@@ -485,7 +492,9 @@ private theorem mem_support_segment {r : Route} (hlen : 2 ≤ r.length) {p : ℝ
           exact ⟨e, by simpa only [List.consecutivePairs, List.tail_cons, List.zip_cons_cons,
             List.mem_cons] using Or.inr he, hp⟩
 
-private theorem first_segment_tail_contact {a b : Point} {r : Route}
+/-- The first segment of a continuously simple route meets its tail only at their common
+listed endpoint. -/
+theorem first_segment_tail_contact {a b : Point} {r : Route}
     (hs : IsSimple (a :: b :: r)) {p : ℝ × ℝ} (hp : p ∈ segment a b)
     (hq : p ∈ support (b :: r)) : p = realPoint b := by
   have hnot := (List.nodup_cons.1 hs.1).1
