@@ -2228,6 +2228,7 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingI
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingList
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingOccurrences
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParameters
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPathBounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
