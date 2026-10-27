@@ -1291,8 +1291,9 @@ theorem constructBalancedSchedulesCertificate_bounds :
     ofPolyTime_exists_bound computableInPolyTime_finalizeBalancedSchedules
   exact mkConstructCert_bounds _ _ hpPass hmPass hPass hFinal
 
-/-- `constructBalancedSchedules` runs in `O((r ^ Q + 1) * poly(|input|))` native time (hence
-`poly(n, m, |E|, D, Q, r, C)` bit operations where `D = r ^ (2 * Q)`) and polynomial workspace. -/
+/-- `constructBalancedSchedules` runs in `O((r ^ Q + 1) * poly(|input|))` native time
+and polynomial workspace. For valid incidence endpoints, this gives
+`poly(n, m, |E|, D, Q, r, C)` bit operations, where `D = r ^ (2 * Q)`. -/
 theorem computableInO_constructBalancedSchedules :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       ComputableInO
