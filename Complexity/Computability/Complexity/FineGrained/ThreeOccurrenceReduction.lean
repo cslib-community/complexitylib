@@ -36,11 +36,6 @@ pp. 43–47).
 
 ## Main results
 
-* `Cslib.Logic.PL.CNF.numVars_relabel_of_injOn`, `Cslib.Logic.PL.CNF.numVars_relabel`:
-  injective variable relabelings preserve `CNF.numVars`.
-* `Cslib.Logic.PL.CNF.count_vars_denseRelabel`,
-  `Cslib.Logic.PL.CNF.count_vars_denseRelabel_le`: `CNF.denseRelabel` preserves per-variable
-  literal-occurrence counts and upper bounds.
 * `Cslib.Complexity.computableInPolyTime_toThreeOccurrenceDense`,
   `Cslib.Complexity.modelCount_toThreeOccurrenceDense`,
   `Cslib.Complexity.vars_toThreeOccurrenceDense_toFinset`,
@@ -55,13 +50,15 @@ pp. 43–47).
   `Cslib.Complexity.ETH.not_decidableInSubexpTime_threeSATThree_numVars`: fine-grained exponential
   and subexponential reductions from `ThreeSAT` to `ThreeSATThree` in both `CNF.numVars` and
   `List.length`.
-* `Cslib.Complexity.exists_computableInO_guardOccurrenceCounter`,
+* `Cslib.Complexity.exists_computableInO_guardOccurrenceCounter_of_promise`,
+  `Cslib.Complexity.exists_computableInO_guardOccurrenceCounter`,
+  `Cslib.Complexity.CountingSparsify.exists_computableInO_search_threeOccurrence_of_promise`,
   `Cslib.Complexity.CountingSparsify.exists_computableInO_search_of_threeOccurrence_counter`: a
   total model counter `f` running in time and space `O(2 ^ (δ * χ.numVars) * (|encCNF χ| + 1) ^ e)`
-  yields a clause-exponential leaf counter in time and space
-  `O(2 ^ ((k * δ) * ψ.length) * (|encCNF ψ| + 1) ^ E)`, and hence (under `CountingTreeBound`, a
-  library adaptation of Appendix A.2–A.3) a general width-`≤ k` model counter via
-  `CountingSparsify.search` in time and space
+  (either globally or on dense width-`≤ k`, occurrence-`≤ 3` formulas) yields a clause-exponential
+  leaf counter in time and space `O(2 ^ ((k * δ) * ψ.length) * (|encCNF ψ| + 1) ^ E)`, and hence
+  (under `CountingTreeBound`, a library adaptation of Appendix A.2–A.3) a general width-`≤ k` model
+  counter via `CountingSparsify.search` in time and space
   `O(2 ^ ((1 / B + occBound K M * (k * δ)) * φ.numVars) * (|encCNF φ| + 1) ^ E')`.
 
 ## References
@@ -74,48 +71,6 @@ pp. 43–47).
 -/
 
 @[expose] public section
-
-namespace Cslib.Logic.PL.CNF
-
-variable {V W : Type*}
-
-/-- Relabeling injectively on the occurring variables preserves `numVars`. -/
-theorem numVars_relabel_of_injOn [DecidableEq V] [DecidableEq W] (φ : CNF V) (f : V → W)
-    (hf : Set.InjOn f {v | v ∈ φ.vars}) :
-    (φ.relabel f).numVars = φ.numVars := by
-  rw [ ← length_distinctVars, ← length_distinctVars, distinctVars_relabel_of_injOn φ f hf,
-    List.length_map]
-
-/-- Relabeling along an injective map preserves `numVars`. -/
-@[simp]
-theorem numVars_relabel [DecidableEq V] [DecidableEq W] {f : V → W} (hf : Function.Injective f)
-    (φ : CNF V) : (φ.relabel f).numVars = φ.numVars :=
-  numVars_relabel_of_injOn φ f fun _ _ _ _ h => hf h
-
-/-- Dense variable relabeling preserves the exact literal-occurrence count of every occurring
-variable. -/
-theorem count_vars_denseRelabel [DecidableEq V] (φ : CNF V) {v : V} (hv : v ∈ φ.vars) :
-    φ.denseRelabel.vars.count (φ.distinctVars.idxOf v) = φ.vars.count v := by
-  rw [denseRelabel, vars_relabel]
-  simp only [List.count_eq_countP, List.countP_map, Function.comp_def]
-  apply List.countP_congr
-  intro w _
-  simp only [beq_iff_eq]
-  rw [eq_comm, List.idxOf_inj (mem_distinctVars.mpr hv), eq_comm]
-
-/-- Any upper bound on original literal-occurrence counts is preserved by `CNF.denseRelabel`. -/
-theorem count_vars_denseRelabel_le [DecidableEq V] (φ : CNF V) {B : ℕ}
-    (h : ∀ v, φ.vars.count v ≤ B) (i : ℕ) :
-    φ.denseRelabel.vars.count i ≤ B := by
-  by_cases hi : i ∈ φ.denseRelabel.vars
-  · rw [denseRelabel, vars_relabel] at hi
-    obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hi
-    rw [count_vars_denseRelabel φ hv]
-    exact h v
-  · rw [List.count_eq_zero.mpr hi]
-    exact Nat.zero_le _
-
-end Cslib.Logic.PL.CNF
 
 namespace Cslib.Complexity
 
@@ -378,15 +333,13 @@ theorem guardOccurrenceCounter_pos_iff_mem_kSAT {k : ℕ} (hk : 2 ≤ k) {f : CN
     simp only [hψ, Bool.false_eq_true, ite_false, lt_irrefl, KSAT, Set.mem_ofPred_eq, hψ',
       false_and]
 
-/-- **From variable-exponential occurrence-3 counting to clause-exponential leaf counting.**
-If `f : CNF ℕ → ℕ` has a combined time-and-space certificate `ComputableInO f encCNF encNat tf tf`
-with `(tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * (|encCNF χ| + 1) ^ e) + c` for all `χ : CNF ℕ`, then
-`guardOccurrenceCounter k f` has a combined time-and-space certificate
-`ComputableInO (guardOccurrenceCounter k f) encCNF encNat T T` with
-`(T ψ : ℝ) ≤ C₀ * (2 ^ ((k * δ) * ψ.length) * (|encCNF ψ| + 1) ^ E) + C₀` for all `ψ : CNF ℕ`. -/
-theorem exists_computableInO_guardOccurrenceCounter (k : ℕ) {f : CNF ℕ → ℕ} {tf : CNF ℕ → ℕ}
-    (hf : ComputableInO f encCNF encNat tf tf) {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
-    (ht : ∀ χ : CNF ℕ, (tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * ((encCNF χ).length + 1) ^ e) + c) :
+private theorem exists_computableInO_guardOccurrenceCounter_aux (k : ℕ)
+    {f : CNF ℕ → ℕ} {tf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf tf)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
+    (ht : ∀ ψ : CNF ℕ, (∀ d ∈ ψ, d.length ≤ k) →
+      (tf (toThreeOccurrenceDense ψ) : ℝ) ≤
+        c * (2 ^ (δ * (toThreeOccurrenceDense ψ).numVars) *
+          ((encCNF (toThreeOccurrenceDense ψ)).length + 1) ^ e) + c) :
     ∃ T : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
       ComputableInO (guardOccurrenceCounter k f) encCNF encNat T T ∧
       ∀ ψ : CNF ℕ, (T ψ : ℝ) ≤
@@ -454,7 +407,7 @@ theorem exists_computableInO_guardOccurrenceCounter (k : ℕ) {f : CNF ℕ → �
       exact pow_le_pow_left₀ (by positivity) hlen e
     have htf : (tf (toThreeOccurrenceDense ψ) : ℝ) ≤
         c * (2 * l + 1) ^ e * X * Q + c * (X * Q) := by
-      have htψ := ht (toThreeOccurrenceDense ψ)
+      have htψ := ht ψ hψ'
       have hprod := mul_le_mul hexp hpow (by positivity) (by positivity)
       have hprod' : (2 : ℝ) ^ (δ * (toThreeOccurrenceDense ψ).numVars) *
           (((encCNF (toThreeOccurrenceDense ψ)).length : ℝ) + 1) ^ e ≤
@@ -485,9 +438,80 @@ theorem exists_computableInO_guardOccurrenceCounter (k : ℕ) {f : CNF ℕ → �
     push_cast [P] at hsum ⊢
     linarith
 
+/-- **From variable-exponential occurrence-3 counting to clause-exponential leaf counting (promised
+runtime).**
+If `2 ≤ k` and `f : CNF ℕ → ℕ` has a combined time-and-space certificate
+`ComputableInO f encCNF encNat tf tf` whose time and space `tf χ` satisfy
+`(tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * (|encCNF χ| + 1) ^ e) + c` on every dense formula `χ` of
+width `≤ k` and variable occurrence `≤ 3`, then `guardOccurrenceCounter k f` has a combined
+time-and-space certificate `ComputableInO (guardOccurrenceCounter k f) encCNF encNat T T` with
+`(T ψ : ℝ) ≤ C₀ * (2 ^ ((k * δ) * ψ.length) * (|encCNF ψ| + 1) ^ E) + C₀` for all `ψ : CNF ℕ`. -/
+theorem exists_computableInO_guardOccurrenceCounter_of_promise {k : ℕ} (hk : 2 ≤ k)
+    {f : CNF ℕ → ℕ} {tf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf tf)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
+    (ht : ∀ χ : CNF ℕ, (∀ d ∈ χ, d.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars →
+      (tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * ((encCNF χ).length + 1) ^ e) + c) :
+    ∃ T : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
+      ComputableInO (guardOccurrenceCounter k f) encCNF encNat T T ∧
+      ∀ ψ : CNF ℕ, (T ψ : ℝ) ≤
+        C₀ * ((2 : ℝ) ^ ((k * δ) * ψ.length) * (((encCNF ψ).length : ℝ) + 1) ^ E) + C₀ :=
+  exists_computableInO_guardOccurrenceCounter_aux k hf hδ fun ψ hψ =>
+    ht (toThreeOccurrenceDense ψ) (width_toThreeOccurrenceDense hk hψ)
+      (count_vars_toThreeOccurrenceDense_le ψ) (vars_toThreeOccurrenceDense_eq_range_numVars ψ)
+
+/-- **From variable-exponential occurrence-3 counting to clause-exponential leaf counting.**
+If `f : CNF ℕ → ℕ` has a combined time-and-space certificate `ComputableInO f encCNF encNat tf tf`
+with `(tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * (|encCNF χ| + 1) ^ e) + c` for all `χ : CNF ℕ`, then
+`guardOccurrenceCounter k f` has a combined time-and-space certificate
+`ComputableInO (guardOccurrenceCounter k f) encCNF encNat T T` with
+`(T ψ : ℝ) ≤ C₀ * (2 ^ ((k * δ) * ψ.length) * (|encCNF ψ| + 1) ^ E) + C₀` for all `ψ : CNF ℕ`. -/
+theorem exists_computableInO_guardOccurrenceCounter (k : ℕ) {f : CNF ℕ → ℕ} {tf : CNF ℕ → ℕ}
+    (hf : ComputableInO f encCNF encNat tf tf) {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
+    (ht : ∀ χ : CNF ℕ, (tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * ((encCNF χ).length + 1) ^ e) + c) :
+    ∃ T : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
+      ComputableInO (guardOccurrenceCounter k f) encCNF encNat T T ∧
+      ∀ ψ : CNF ℕ, (T ψ : ℝ) ≤
+        C₀ * ((2 : ℝ) ^ ((k * δ) * ψ.length) * (((encCNF ψ).length : ℝ) + 1) ^ E) + C₀ :=
+  exists_computableInO_guardOccurrenceCounter_aux k hf hδ fun ψ _ => ht (toThreeOccurrenceDense ψ)
+
 namespace CountingSparsify
 
 variable {M K : ℕ} (hM : 1 ≤ M) (hK : 1 ≤ K)
+
+include hM hK in
+/-- **Counting sparsification from a dense 3-occurrence model counter (promised runtime).**
+Under `CountingTreeBound`, given `2 ≤ k ≤ K` and a total model counter `f : CNF ℕ → ℕ` with a
+combined time-and-space certificate `ComputableInO f encCNF encNat tf tf` that on every dense
+formula `χ` of width `≤ k` and variable occurrence `≤ 3` computes `χ.modelCount` and satisfies
+`(tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * (|encCNF χ| + 1) ^ e) + c`, the search
+`search M K k B (guardOccurrenceCounter k f)` computes `φ.modelCount` on every formula `φ` of width
+`≤ k` and has a combined time-and-space certificate with fixed-parameter transfer bound
+`O(2 ^ ((1 / B + occBound K M * (k * δ)) * φ.numVars) * (|encCNF φ| + 1) ^ E)`. -/
+theorem exists_computableInO_search_threeOccurrence_of_promise
+    (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hk2 : 2 ≤ k) (hkK : k ≤ K)
+    (hTB : CountingTreeBound M K B L_coeff hM hK)
+    {f : CNF ℕ → ℕ} {tf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf tf)
+    (hf_eq : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars → f χ = χ.modelCount)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
+    (ht : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars →
+      (tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * ((encCNF χ).length + 1) ^ e) + c) :
+    (∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ k) →
+      search M K k B (guardOccurrenceCounter k f) φ = φ.modelCount) ∧
+    ∃ T : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
+      ComputableInO (search M K k B (guardOccurrenceCounter k f)) encCNF encNat T T ∧
+      ∀ φ : CNF ℕ, (T φ : ℝ) ≤
+        C₀ * ((2 : ℝ) ^ ((1 / B + occBound K M * (k * δ)) * φ.numVars) *
+          (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ := by
+  refine ⟨fun φ hφ => search_eq_modelCount hM hK hM2 hkK hTB
+    (fun ψ hψ _ => guardOccurrenceCounter_eq_modelCount hk2 hf_eq hψ) hφ, ?_⟩
+  obtain ⟨Tg, Cg, Eg, hgO, hgt⟩ :=
+    exists_computableInO_guardOccurrenceCounter_of_promise hk2 hf hδ ht
+  exact exists_computableInO_search hM hK hM2 hkK hTB hgO
+    (fun ψ _ _ => guardOccurrenceCounter_le_two_pow_numVars hk2 hf_eq ψ)
+    (by positivity) hgt
 
 include hM hK in
 /-- **Counting sparsification from a dense 3-occurrence model counter.**
@@ -511,13 +535,9 @@ theorem exists_computableInO_search_of_threeOccurrence_counter (hM2 : 2 ≤ M) {
       ComputableInO (search M K k B (guardOccurrenceCounter k f)) encCNF encNat T T ∧
       ∀ φ : CNF ℕ, (T φ : ℝ) ≤
         C₀ * ((2 : ℝ) ^ ((1 / B + occBound K M * (k * δ)) * φ.numVars) *
-          (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ := by
-  refine ⟨fun φ hφ => search_eq_modelCount hM hK hM2 hkK hTB
-    (fun ψ hψ _ => guardOccurrenceCounter_eq_modelCount hk2 hf_eq hψ) hφ, ?_⟩
-  obtain ⟨Tg, Cg, Eg, hgO, hgt⟩ := exists_computableInO_guardOccurrenceCounter k hf hδ ht
-  exact exists_computableInO_search hM hK hM2 hkK hTB hgO
-    (fun ψ _ _ => guardOccurrenceCounter_le_two_pow_numVars hk2 hf_eq ψ)
-    (by positivity) hgt
+          (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ :=
+  exists_computableInO_search_threeOccurrence_of_promise hM hK hM2 hk2 hkK hTB hf hf_eq
+    hδ fun χ _ _ _ => ht χ
 
 end CountingSparsify
 
