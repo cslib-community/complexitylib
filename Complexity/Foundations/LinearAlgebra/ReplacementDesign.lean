@@ -55,13 +55,21 @@ existence theorem of Lemma 4.7 (pp. 33–34) satisfying Definition 3.1 (pp. 21�
      `((r * (h * #(measurementIndices Q r A₀ R)) : ℕ) : ℚ) ≤ 2 * τ * (n : ℚ)`
      (`card_allGroupMeasurementRows_le_two_mul_tau_mul_n`).
 
-4. **Completed replacement design (Definition 3.1, pp. 21–22, and Lemma 4.7, pp. 33–34):**
+4. **Algebraic replacement design assembly (Definition 3.1, pp. 21–22, and Lemma 4.7, pp. 33–34):**
    - `ReplacementDesign` bundles the variable partition `varAssign`, factor group schedule
-     `factorAssign`, copy count `h`, and injective copy placement `place` together with all
-     five conditions of Definition 3.1 and Lemma 4.6's explicit `ℓ₁`-coefficient norm bound.
-   - `exists_replacementDesign` proves **Lemma 4.7** by combining Lemma 4.1, Lemma 4.3,
-     Lemma 4.5 (`exists_balanced_schedules_of_scopes`), Section 4.5 (`fiberRankCopy`,
-     `varReplacementRow`, `varMeasurementMatrix`), and Lemma 4.6.
+     `factorAssign`, copy count `h`, and injective copy placement `place` together with the
+     group-size, measurement-row count, measurement `ℓ₁`-norm, degree, evaluation-at-zero, and
+     kernel-invariance properties of Definition 3.1 (1)–(4), plus the explicit cleared-denominator
+     identity and `ℓ₁` coefficient norm bound of Lemma 4.6 (`commonDenom Q R = (R - 1)! * Q!`)
+     underlying Definition 3.1 (5) (formal `O(Q log Q + log D)` bit-length and native runtime-cost
+     endpoints remain separate follow-up).
+   - `exists_replacementDesign` proves an algebraic generalization of **Lemma 4.7** (printed
+     pp. 33–34) by combining Lemma 4.1, Lemma 4.3, Lemma 4.5
+     (`exists_balanced_schedules_of_scopes`), Section 4.5 (`fiberRankCopy`, `varReplacementRow`,
+     `varMeasurementMatrix`), and Lemma 4.6:
+     it requires only `0 ≤ τ`, `M ≤ b * n` (omitting `n ≤ M` and `τ ≤ 1 / 2`), and the weaker
+     node-range condition `hI : ∀ a < R - 1, A₀ + a ≤ Q` (vacuous at `R = 1`) rather than full
+     interval containment `I ⊆ [0, Q]`.
 
 ## Main definitions
 
@@ -71,7 +79,7 @@ existence theorem of Lemma 4.7 (pp. 33–34) satisfying Definition 3.1 (pp. 21�
 * `Cslib.LinearAlgebra.binomTailProb`: the binomial tail probability
   `Pr[W ∉ {A₀, ..., A₀ + R - 1}]` for `W ∼ Bin(Q, (r - 1) / (2 * r))` (eq. 4.8).
 * `Cslib.LinearAlgebra.ReplacementDesign`: bundled Section 4 replacement design satisfying
-  Definition 3.1 (1)–(5) and Lemma 4.6.
+  Definition 3.1 (1)–(4) and the explicit denominator/coefficient-norm bounds of Lemma 4.6.
 
 ## Main results
 
@@ -84,8 +92,8 @@ existence theorem of Lemma 4.7 (pp. 33–34) satisfying Definition 3.1 (pp. 21�
   Lemma 4.1 exact binomial fiber count and equation (4.8) tail bound.
 * `Cslib.LinearAlgebra.card_allGroupMeasurementRows_le_two_mul_tau_mul_n`:
   equation (4.16) total measurement row bound `≤ 2 * τ * n`.
-* `Cslib.LinearAlgebra.exists_replacementDesign`: **Lemma 4.7** existence of a complete
-  Definition 3.1 replacement design.
+* `Cslib.LinearAlgebra.exists_replacementDesign`: **Lemma 4.7** algebraic existence of a
+  Section 4 replacement design.
 
 ## References
 
@@ -174,39 +182,7 @@ theorem map_swap_antisymPairs (r : ℕ) :
 `2 * #(antisymPairs r) + r = r * r`. -/
 theorem two_mul_card_antisymPairs_add (r : ℕ) :
     2 * #(antisymPairs r) + r = r * r := by
-  let S₁ := antisymPairs r
-  let S₂ := (antisymPairs r).map (Equiv.prodComm (Fin r) (Fin r)).toEmbedding
-  let S₃ := diagPairs r
-  have hdisj₁₂ : Disjoint S₁ S₂ := by
-    rw [disjoint_left]
-    intro p hp₁ hp₂
-    dsimp only [S₁, S₂] at hp₁ hp₂
-    rw [map_swap_antisymPairs, mem_filter] at hp₂
-    rw [mem_antisymPairs] at hp₁
-    exact lt_asymm hp₁ hp₂.2
-  have hdisj₁₂₃ : Disjoint (S₁ ∪ S₂) S₃ := by
-    rw [disjoint_left]
-    intro p hp₁₂ hp₃
-    dsimp only [S₁, S₂, S₃] at hp₁₂ hp₃
-    rw [mem_diagPairs] at hp₃
-    rcases mem_union.mp hp₁₂ with hp₁ | hp₂
-    · rw [mem_antisymPairs, hp₃] at hp₁
-      exact lt_irrefl _ hp₁
-    · rw [map_swap_antisymPairs, mem_filter, hp₃] at hp₂
-      exact lt_irrefl _ hp₂.2
-  have hunion : (S₁ ∪ S₂) ∪ S₃ = (univ : Finset (Fin r × Fin r)) := by
-    ext p
-    simp only [mem_union, S₁, S₂, S₃, map_swap_antisymPairs, mem_antisymPairs, mem_filter,
-      mem_diagPairs, mem_univ, true_and, iff_true]
-    rcases lt_trichotomy p.1 p.2 with hlt | heq | hgt
-    · exact Or.inl (Or.inr hlt)
-    · exact Or.inr heq
-    · exact Or.inl (Or.inl hgt)
-  have hcard := congrArg Finset.card hunion
-  rw [card_union_of_disjoint hdisj₁₂₃, card_union_of_disjoint hdisj₁₂] at hcard
-  dsimp only [S₁, S₂, S₃] at hcard
-  rw [card_map, card_diagPairs, card_univ, Fintype.card_prod, Fintype.card_fin] at hcard
-  linarith
+  simpa only [antisymPairs, pow_two] using two_mul_card_antisymPair_add_eq_sq r
 
 /-- Twice the number of antisymmetric pairs in `Fin r × Fin r` is `r * (r - 1)`. -/
 theorem two_mul_card_antisymPairs (r : ℕ) :
@@ -539,11 +515,12 @@ theorem card_allGroupMeasurementRows_le_two_mul_tau_mul_n {Q r A₀ R h M b n : 
     field_simp [hb0]
   linarith
 
-/-! ### Part 4: Completed Section 4 replacement design (Definition 3.1 & Lemma 4.7, pp. 32–34) -/
+/-! ### Part 4: Algebraic Section 4 replacement design (Definition 3.1 & Lemma 4.7, pp. 32–34) -/
 
-/-- A completed Section 4 replacement design for a factor scope family `scope : F → Finset (Fin n)`
-satisfying Definition 3.1 (1)–(5) (pp. 21–22) and the explicit coefficient norm bounds of
-Lemma 4.6 (p. 33). -/
+/-- A bundled Section 4 replacement design for a factor scope family `scope : F → Finset (Fin n)`,
+recording Definition 3.1 (1)–(4) (pp. 21–22) together with the explicit cleared-denominator
+identity and `ℓ₁` coefficient norm bound of Lemma 4.6 (p. 33) that underlie Definition 3.1 (5)
+(formal `O(Q log Q + log D)` bit-length and native runtime endpoints are separate follow-up). -/
 structure ReplacementDesign {F : Type*} [Fintype F]
     (scope : F → Finset (Fin n)) (Q r A₀ R : ℕ) (τ : ℚ) where
   /-- Variable group schedule `a_v : Fin Q → Fin r` for each `v : Fin n`
@@ -644,13 +621,17 @@ theorem ReplacementDesign.evalReplacementRow_nodePoint_eq_of_eq_on_varGroup {F :
     (scopeVarOf scope) D.varAssign hplace_fst_snd e t x x' ?_ hmeas
   rwa [hplace_snd_snd]
 
-/-- **Lemma 4.7 (Existence of a Section 4 replacement design, pp. 33–34)**:
+/-- **Lemma 4.7 (Algebraic existence of a Section 4 replacement design, pp. 33–34)**:
 Suppose `1 ≤ n`, `1 ≤ b`, `1 ≤ w`, `2 ≤ r`, `1 ≤ R`, `R < Q`, `0 ≤ τ`, every factor scope
 `scope f` has size at most `w`, every variable belongs to at most `b` scopes,
 `M = ∑ f, #(scope f) ≤ b * n`, the balance inequalities `2 * (b + w) * (r ^ (2 * Q)) ^ 2 ≤ M`
-and `2 * Q * r ^ 2 ≤ n` hold (eq. 4.13), the interval `[A₀, A₀ + R)` lies in `[0, Q]`, and the
-binomial tail bound `binomTailProb Q r A₀ R ≤ τ / (r * b)` holds (eq. 4.8). Then there exists a
-`ReplacementDesign` satisfying all conditions of Definition 3.1 and Lemma 4.6. -/
+and `2 * Q * r ^ 2 ≤ n` hold (eq. 4.13), the mismatch-annihilator node-range condition
+`hI : ∀ a < R - 1, A₀ + a ≤ Q` holds (vacuous at `R = 1` and implied by `[A₀, A₀ + R) ⊆ [0, Q]`),
+and the binomial tail bound `binomTailProb Q r A₀ R ≤ τ / (r * b)` holds (eq. 4.8). Then there
+exists a `ReplacementDesign` satisfying Definition 3.1 (1)–(4) and the explicit cleared-denominator
+and `ℓ₁`-coefficient norm bounds of Lemma 4.6 (omitting the paper's `n ≤ M` and `0 < τ ≤ 1 / 2`
+regime assumptions and leaving the `O(Q log Q + log D)` bit-length / native runtime endpoint as
+separate follow-up). -/
 theorem exists_replacementDesign {F : Type*} [Fintype F]
     (scope : F → Finset (Fin n)) {Q r A₀ R b w : ℕ} {τ : ℚ}
     (hn : 1 ≤ n) (hb_pos : 1 ≤ b) (hw_pos : 1 ≤ w)
