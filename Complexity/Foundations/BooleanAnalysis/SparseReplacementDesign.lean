@@ -67,7 +67,8 @@ Appendix B.2–B.3 cleared-denominator parity-polynomial zero-counting pipeline
    yields concrete `ReplacementDesign` specializations of:
    - the equation (5.5) degree bound `(k * (R - 1)) * (#I + 2 * (ℓ - 1))` (strengthening the
      manuscript's coarser `k * R * (#I + 2 * (ℓ - 1))` display on p. 37 using `natDegree ≤ R - 1`
-     from Definition 3.1 (4); `natDegree_univariateClearedParityCoord_design_le`,
+     from Lemma 4.3 and its variable-row transfer in §4.5 (4.14);
+     `natDegree_univariateClearedParityCoord_design_le`,
      `natDegree_univariateClearedParityTruncatedSum_design_le`),
    - the rational homogenization identity $\tilde{H}_s(T) = \Omega [V^s] H(T)$ over `ℚ[X]`
      (`map_univariateClearedParityCoord_design`,
@@ -301,7 +302,8 @@ theorem eval_zero_evalVarReplacementRowScaledIntPoly {F : Type*} [Fintype F]
   cases x (scopeVarOf scope e) <;>
     simp only [bitVal_true, bitVal_false, Int.cast_one, Int.cast_zero]
 
-/-- `evalVarReplacementRowPoly D e x` has `natDegree ≤ R - 1` (Definition 3.1 (4)). -/
+/-- `evalVarReplacementRowPoly D e x` has `natDegree ≤ R - 1` by Lemma 4.3 and its
+variable-row transfer in §4.5 (4.14). -/
 theorem natDegree_evalVarReplacementRowPoly_le {F : Type*} [Fintype F]
     {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ)
     (e : ScopeIncidence scope) (x : Fin n → Bool) :
@@ -560,7 +562,8 @@ theorems for `ReplacementDesign` -/
 for `s < ℓ` and `∀ i ∈ I, ∀ M ∈ P i, #M ≤ k`, the cleared coordinate polynomial
 `univariateClearedParityCoord I P (commonDenom Q R : ℤ) k ℓ (designReplacementScaledIntMap D emb) s`
 has `natDegree ≤ (k * (R - 1)) * (#I + 2 * (ℓ - 1))` (strengthening the manuscript's coarser
-`k * R * (#I + 2 * (ℓ - 1))` display in (5.5) via `natDegree ≤ R - 1` from Definition 3.1 (4)). -/
+`k * R * (#I + 2 * (ℓ - 1))` display in (5.5) via `natDegree ≤ R - 1`
+from Lemma 4.3 and its variable-row transfer in §4.5 (4.14)). -/
 theorem natDegree_univariateClearedParityCoord_design_le {F : Type*} [Fintype F]
     {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ) (emb : κ → F)
     (I : Finset κ) (P : κ → Finset (Finset (Fin n))) {k ℓ s : ℕ}
@@ -577,7 +580,8 @@ when `∀ i ∈ I, ∀ M ∈ P i, #M ≤ k`, the cleared truncated sum
 `univariateClearedParityTruncatedSum I P (commonDenom Q R : ℤ) k ℓ
   (designReplacementScaledIntMap D emb)`
 has `natDegree ≤ (k * (R - 1)) * (#I + 2 * (ℓ - 1))` (strengthening the manuscript's coarser
-`k * R * (#I + 2 * (ℓ - 1))` display in (5.5) via `natDegree ≤ R - 1` from Definition 3.1 (4)). -/
+`k * R * (#I + 2 * (ℓ - 1))` display in (5.5) via `natDegree ≤ R - 1`
+from Lemma 4.3 and its variable-row transfer in §4.5 (4.14)). -/
 theorem natDegree_univariateClearedParityTruncatedSum_design_le {F : Type*} [Fintype F]
     {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ) (emb : κ → F)
     (I : Finset κ) (P : κ → Finset (Finset (Fin n))) (k ℓ : ℕ)
