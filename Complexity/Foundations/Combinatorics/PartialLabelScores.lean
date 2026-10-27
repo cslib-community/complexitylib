@@ -289,6 +289,21 @@ remain explicit. This rational value carries no algorithmic cost certificate. -/
   partialIncidencePotential edge varLabels factorLabels / ((Fintype.card E : ℚ) * C) +
     partialGroupPotential varLabels / ((Fintype.card T : ℚ) * Fintype.card V)
 
+/-- The computable normalized score is the conditional finite average of the actual
+normalized objective on full completions. -/
+theorem normalizedPartialScore_eq_expect {E V F T G : Type*} [Fintype E] [Fintype V]
+    [DecidableEq V] [Fintype F] [DecidableEq F] [Fintype T] [DecidableEq T]
+    [Fintype G] [DecidableEq G] [Nonempty G] (edge : E → F × V)
+    (varLabels : V → Option (T → G)) (factorLabels : F → Option (T → G)) (C : ℕ) :
+    normalizedPartialScore edge varLabels factorLabels C =
+      𝔼 a : V → T → G, 𝔼 d : F → T → G,
+        (potential (fun e => (completeLabels varLabels a (edge e).2,
+          completeLabels factorLabels d (edge e).1)) / ((Fintype.card E : ℚ) * C) +
+        (∑ t, potential (fun v => completeLabels varLabels a v t)) /
+          ((Fintype.card T : ℚ) * Fintype.card V)) := by
+  rw [normalizedPartialScore, partialIncidencePotential_eq_expect, partialGroupPotential_eq_expect]
+  simp_rw [Finset.expect_add_distrib, ← Finset.expect_div, Fintype.expect_const]
+
 /-- Fixing a whole variable schedule preserves the average normalized score. The update is
 one whole word, shared by all its incidences and all schedule coordinates. -/
 theorem expect_normalizedPartialScore_update_variable {E V F T G : Type*} [Fintype E]
