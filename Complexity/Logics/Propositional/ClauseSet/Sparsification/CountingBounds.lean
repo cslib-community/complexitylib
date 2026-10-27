@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Foundations.Data.Nat.Choose.Real
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParameters
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPathBounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
 
@@ -19,7 +19,8 @@ We connect the actual counting-path insertion and petal-step bounds of `Counting
 (Appendix A.2–A.3, Lemma A.2 and the path budgets of Lemma A.3, printed pp. 46–47 of
 [OpenAI2026ETH]) to the prefix words of a `CountingBranchingRule`, and combine the leaf-word
 petal-step injection with the geometric binomial-tail bound
-`Cslib.sum_choose_le_two_pow_div_add_one` to bound the number of leaf words of any
+`Cslib.sum_choose_le_two_pow_div_add_one` and the first-success threshold base
+`countingThresholdBase` of `CountingParameters` to bound the number of leaf words of any
 counting-sparsification tree.
 
 For a `CountingBranchingRule (fun r => M ^ r) V σ` starting from a state `s` whose clause set
@@ -27,24 +28,19 @@ For a `CountingBranchingRule (fun r => M ^ r) V σ` starting from a state `s` wh
 variable set `declared` of size `N = declared.card`:
 * every node word `w` has length at most `countingDepthCoeff k M * N`, where
   `countingDepthCoeff k M = 4 * ∑ r < k - 1, (3 * M) ^ r`;
-* every node word `w` has `M * #{i < w.length | w[i] = true} ≤ countingBStepCoeff k * N`, where
-  `countingBStepCoeff k = 4 * ∑ r < k - 1, 3 ^ r`;
+* every node word `w` has `M * #{i < w.length | w[i] = true} ≤ countingBChoiceCoeff k * N`, where
+  `countingBChoiceCoeff k = 4 * ∑ r < k - 1, 3 ^ r`;
 * because two leaf words with `true` steps at the same positions are equal
   (`CountingBranchingRule.IsLeafWord.eq_of_getD_eq`), any finset `W` of leaf words injects into the
   subsets of `range (countingDepthCoeff k M * N)` of cardinality at most
-  `countingBStepCoeff k * N / M`, giving
-  `W.card ≤ ∑ j ≤ countingBStepCoeff k * N / M, (countingDepthCoeff k M * N).choose j`
+  `countingBChoiceCoeff k * N / M`, giving
+  `W.card ≤ ∑ j ≤ countingBChoiceCoeff k * N / M, (countingDepthCoeff k M * N).choose j`
   (`CountingBranchingRule.card_le_of_isLeafWord`);
-* under the integer parameter budget `countingBStepCoeff k ≤ M` and
-  `B * countingBStepCoeff k * Nat.clog 2 (4 * countingDepthCoeff k M * M) ≤ M` (for `2 ≤ k`, with
-  `1 ≤ B`), `W.card ≤ 2 ^ (N / B + 1)` (`CountingBranchingRule.card_le_two_pow_of_isLeafWord`).
-
-## Main definitions
-
-* `Cslib.Logic.PL.ClauseSet.Sparsification.countingDepthCoeff`: the linear depth coefficient
-  `4 * ∑ r ∈ range (k - 1), (3 * M) ^ r`.
-* `Cslib.Logic.PL.ClauseSet.Sparsification.countingBStepCoeff`: the linear `M`-scaled petal-step
-  coefficient `4 * ∑ r ∈ range (k - 1), 3 ^ r`.
+* under the integer parameter budget `countingBChoiceCoeff k ≤ M` and
+  `B * countingBChoiceCoeff k * Nat.clog 2 (4 * countingDepthCoeff k M * M) ≤ M` (for `2 ≤ k`, with
+  `1 ≤ B`), and in particular unconditionally at `M = countingThresholdBase k B`,
+  `W.card ≤ 2 ^ (N / B + 1)` (`CountingBranchingRule.card_le_two_pow_of_isLeafWord`,
+  `CountingBranchingRule.card_le_two_pow_thresholdBase`).
 
 ## Main results
 
@@ -58,9 +54,10 @@ variable set `declared` of size `N = declared.card`:
   petal-step budget along node and leaf words.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.CountingBranchingRule.card_le_of_isLeafWord`:
   binomial-sum bound on any finset of leaf words.
-* `Cslib.Logic.PL.ClauseSet.Sparsification.CountingBranchingRule.card_le_two_pow_of_isLeafWord`:
+* `Cslib.Logic.PL.ClauseSet.Sparsification.CountingBranchingRule.card_le_two_pow_of_isLeafWord`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.CountingBranchingRule.card_le_two_pow_thresholdBase`:
   exponential bound `2 ^ (declared.card / B + 1)` on any finset of leaf words under the integer
-  parameter budget.
+  parameter budget and at `countingThresholdBase k B`.
 
 ## References
 
@@ -75,43 +72,15 @@ open Finset
 
 variable {V : Type*} [DecidableEq V]
 
-/-! ### Linear depth and petal-step coefficients -/
-
-/-- The linear depth coefficient `4 * ∑_{r < k - 1} (3 * M) ^ r` bounding the length of a counting
-branching path of width at most `k` (Appendix A.3, Lemma A.3, printed p. 47 [OpenAI2026ETH]). -/
-def countingDepthCoeff (k M : ℕ) : ℕ :=
-  4 * ∑ r ∈ range (k - 1), (3 * M) ^ r
-
-/-- The linear petal-step coefficient `4 * ∑_{r < k - 1} 3 ^ r` in the `M`-scaled petal-step budget
-`M * #B ≤ countingBStepCoeff k * N` (Appendix A.3, Lemma A.3, printed p. 47 [OpenAI2026ETH]). -/
-def countingBStepCoeff (k : ℕ) : ℕ :=
-  4 * ∑ r ∈ range (k - 1), 3 ^ r
-
 theorem countingDepthCoeff_eq_zero {k : ℕ} (hk : k ≤ 1) (M : ℕ) :
     countingDepthCoeff k M = 0 := by
   have hk0 : k - 1 = 0 := by omega
   simp [countingDepthCoeff, hk0]
 
-theorem countingBStepCoeff_eq_zero {k : ℕ} (hk : k ≤ 1) :
-    countingBStepCoeff k = 0 := by
+theorem countingBChoiceCoeff_eq_zero {k : ℕ} (hk : k ≤ 1) :
+    countingBChoiceCoeff k = 0 := by
   have hk0 : k - 1 = 0 := by omega
-  simp [countingBStepCoeff, hk0]
-
-theorem four_le_countingDepthCoeff {k : ℕ} (hk : 2 ≤ k) (M : ℕ) :
-    4 ≤ countingDepthCoeff k M := by
-  have h0 : 0 ∈ range (k - 1) := mem_range.mpr (by omega)
-  have hsum := single_le_sum (f := fun r => (3 * M) ^ r) (fun _ _ => Nat.zero_le _) h0
-  rw [pow_zero] at hsum
-  unfold countingDepthCoeff
-  omega
-
-theorem four_le_countingBStepCoeff {k : ℕ} (hk : 2 ≤ k) :
-    4 ≤ countingBStepCoeff k := by
-  have h0 : 0 ∈ range (k - 1) := mem_range.mpr (by omega)
-  have hsum := single_le_sum (f := fun r => 3 ^ r) (fun _ _ => Nat.zero_le _) h0
-  rw [pow_zero] at hsum
-  unfold countingBStepCoeff
-  omega
+  simp [countingBChoiceCoeff, hk0]
 
 /-! ### Prefix paths and leaf-count bounds for a counting branching rule -/
 
@@ -207,10 +176,10 @@ theorem IsNodeWord.length_le {w : List Bool} (hw : R.IsNodeWord s w) :
 
 /-- **Node words have few petal steps.** From a reduced, nontautological clause set of width `≤ k`
 over `declared`, every node word satisfies
-`M * #{i < w.length | w.getD i false = true} ≤ countingBStepCoeff k * declared.card`. -/
+`M * #{i < w.length | w.getD i false = true} ≤ countingBChoiceCoeff k * declared.card`. -/
 theorem IsNodeWord.mul_card_le {w : List Bool} (hw : R.IsNodeWord s w) :
     M * ((range w.length).filter fun i => w.getD i false = true).card ≤
-      countingBStepCoeff k * declared.card := by
+      countingBChoiceCoeff k * declared.card := by
   obtain ⟨c, H, hstep, hchoice⟩ := exists_choice_seq_of_isNodeWord s hw
   exact mul_card_counting_B_le hM w.length (fun i => R.toClauseSet (R.walk s (w.take i)))
     c H (fun i => w.getD i false) hstep hchoice hred hnt hk declared hsupport
@@ -223,22 +192,22 @@ theorem IsLeafWord.length_le {w : List Bool} (hw : R.IsLeafWord s w) :
 
 /-- **Leaf words have few petal steps.** From a reduced, nontautological clause set of width `≤ k`
 over `declared`, every leaf word satisfies
-`M * #{i < w.length | w.getD i false = true} ≤ countingBStepCoeff k * declared.card`. -/
+`M * #{i < w.length | w.getD i false = true} ≤ countingBChoiceCoeff k * declared.card`. -/
 theorem IsLeafWord.mul_card_le {w : List Bool} (hw : R.IsLeafWord s w) :
     M * ((range w.length).filter fun i => w.getD i false = true).card ≤
-      countingBStepCoeff k * declared.card :=
+      countingBChoiceCoeff k * declared.card :=
   hw.isNodeWord.mul_card_le hM hred hnt hk declared hsupport
 
 /-- **Binomial-sum leaf-word bound.** From a reduced, nontautological clause set of width `≤ k` over
 `declared`, any finset `W` of leaf words has cardinality at most
-`∑_{j ≤ countingBStepCoeff k * declared.card / M}
+`∑_{j ≤ countingBChoiceCoeff k * declared.card / M}
   (countingDepthCoeff k M * declared.card).choose j`. -/
 theorem card_le_of_isLeafWord (W : Finset (List Bool)) (hW : ∀ w ∈ W, R.IsLeafWord s w) :
-    W.card ≤ ∑ j ∈ range (countingBStepCoeff k * declared.card / M + 1),
+    W.card ≤ ∑ j ∈ range (countingBChoiceCoeff k * declared.card / M + 1),
       (countingDepthCoeff k M * declared.card).choose j := by
   classical
   set Λ := countingDepthCoeff k M * declared.card
-  set ρ := countingBStepCoeff k * declared.card / M
+  set ρ := countingBChoiceCoeff k * declared.card / M
   let pos (w : List Bool) : Finset ℕ := (range Λ).filter fun i => w.getD i false = true
   have hpos : ∀ w ∈ W, pos w ∈ (range Λ).powerset.filter (·.card ≤ ρ) := by
     intro w hw
@@ -278,26 +247,43 @@ theorem card_le_of_isLeafWord (W : Finset (List Bool)) (hW : ∀ w ∈ W, R.IsLe
         refine sum_congr rfl fun j _ => ?_
         rw [card_powersetCard, card_range]
 
-/-- **Exponential leaf-word bound.** Under the integer parameter budget `countingBStepCoeff k ≤ M`
-and `B * countingBStepCoeff k * Nat.clog 2 (4 * countingDepthCoeff k M * M) ≤ M` (for `2 ≤ k`, with
-`1 ≤ B`), any finset `W` of leaf words has cardinality at most `2 ^ (declared.card / B + 1)`. -/
+/-- **Exponential leaf-word bound.** Under the integer parameter budget `countingBChoiceCoeff k ≤ M`
+and `B * countingBChoiceCoeff k * Nat.clog 2 (4 * countingDepthCoeff k M * M) ≤ M` (for `2 ≤ k`,
+with `1 ≤ B`), any finset `W` of leaf words has cardinality at most `2 ^ (declared.card / B + 1)`.
+-/
 theorem card_le_two_pow_of_isLeafWord {B : ℕ} (hB : 1 ≤ B)
-    (hbudget : 2 ≤ k → countingBStepCoeff k ≤ M ∧
-      B * countingBStepCoeff k * Nat.clog 2 (4 * countingDepthCoeff k M * M) ≤ M)
+    (hbudget : 2 ≤ k → countingBChoiceCoeff k ≤ M ∧
+      B * countingBChoiceCoeff k * Nat.clog 2 (4 * countingDepthCoeff k M * M) ≤ M)
     (W : Finset (List Bool)) (hW : ∀ w ∈ W, R.IsLeafWord s w) :
     W.card ≤ 2 ^ (declared.card / B + 1) := by
   refine (card_le_of_isLeafWord hM hred hnt hk declared hsupport W hW).trans ?_
   by_cases hk2 : 2 ≤ k
   · obtain ⟨hΓM, hbud⟩ := hbudget hk2
     exact Cslib.sum_choose_le_two_pow_div_add_one
-      (four_le_countingDepthCoeff hk2 M) (four_le_countingBStepCoeff hk2)
+      (four_le_countingDepthCoeff hk2) (four_le_countingBChoiceCoeff hk2)
       hΓM hB hbud declared.card
   · have hk1 : k ≤ 1 := by omega
-    rw [countingDepthCoeff_eq_zero hk1 M, countingBStepCoeff_eq_zero hk1]
+    rw [countingDepthCoeff_eq_zero hk1 M, countingBChoiceCoeff_eq_zero hk1]
     simp only [zero_mul, Nat.zero_div, zero_add, range_one, sum_singleton, Nat.choose_zero_right]
     exact Nat.one_le_two_pow
 
 end PathBounds
+
+/-- **Unconditional exponential leaf-word bound at `countingThresholdBase k B`.**
+For any `1 ≤ B` and any counting branching rule `R` at `M = countingThresholdBase k B`, any finset
+`W` of leaf words from a reduced, nontautological clause set of width `≤ k` over `declared` has
+cardinality at most `2 ^ (declared.card / B + 1)`. -/
+theorem card_le_two_pow_thresholdBase {k B : ℕ} (hB : 1 ≤ B)
+    {R : CountingBranchingRule (fun r => (countingThresholdBase k B) ^ r) V σ} {s : σ}
+    (hred : Reduced (R.toClauseSet s))
+    (hnt : ∀ C ∈ R.toClauseSet s, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C)
+    (hk : ∀ C ∈ R.toClauseSet s, C.card ≤ k)
+    (declared : Finset V)
+    (hsupport : ∀ C ∈ R.toClauseSet s, ∀ l ∈ C, l.1 ∈ declared)
+    (W : Finset (List Bool)) (hW : ∀ w ∈ W, R.IsLeafWord s w) :
+    W.card ≤ 2 ^ (declared.card / B + 1) :=
+  card_le_two_pow_of_isLeafWord (two_le_countingThresholdBase k B) hred hnt hk declared hsupport hB
+    (fun hk2 => countingThresholdBase_spec hk2 hB) W hW
 
 end CountingBranchingRule
 
