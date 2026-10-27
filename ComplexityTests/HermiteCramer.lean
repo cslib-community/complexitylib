@@ -15,10 +15,11 @@ import Mathlib.Tactic.NormNum
 Concrete `#eval` / kernel checks, nonvacuous theorem instantiations, bit-length bound checks, and
 plain `ComputableInPolyTime` composition tests for:
 * `Complexity.Computability.PolyTime.Int.ExactDiv` (`tdiv`, `tmod`, `ediv`, `emod`, `modPowTwo`,
-  exact division, and `intBits` bounds across signed and zero-divisor edge cases);
+  exact division, and `encIntBin` code-length bounds across signed and zero-divisor edge cases);
 * `Complexity.Computability.Circuit.Rational.Runtime.HermiteCramer` (recovering `H(0)` for a
   concrete degree-5 polynomial `H ∈ ℚ[X]` with non-integer rational coefficients from `r = 2,
-  J = 3` scaled Taylor jets with `Ω = 6 > 1`, plus modular count recovery mod `2 ^ ℓ`).
+  J = 3` scaled Taylor jets with `Ω = 6 > 1`, modular count recovery mod `2 ^ ℓ`, and `intBits`
+  bit-length bounds).
 -/
 
 namespace ComplexityTests.HermiteCramer
@@ -52,13 +53,17 @@ example :
   refine ⟨rfl, ?_⟩
   decide +kernel
 
--- Concrete bit-length bounds on negative Euclidean division and modular reduction.
+-- Concrete `encIntBin` code-length and `intBits` bounds on negative division and modular reduction.
 example :
+    (encIntBin ((-1 : ℤ).ediv 100)).length ≤ (encIntBin (-1)).length ∧
+    (encIntBin ((-7 : ℤ).emod (-3))).length ≤ (encIntBin (-3)).length ∧
+    (encIntBin ((-17 : ℤ).modPowTwo 5)).length ≤ 5 + 1 ∧
     intBits ((-1 : ℤ).ediv 100) ≤ intBits (-1) ∧
     intBits ((-7 : ℤ).ediv 3) ≤ intBits (-7) ∧
     intBits ((-7 : ℤ).emod (-3)) ≤ intBits (-3) + 1 ∧
     intBits ((-17 : ℤ).modPowTwo 5) ≤ 5 + 1 :=
-  ⟨intBits_ediv_le (-1) 100, intBits_ediv_le (-7) 3,
+  ⟨length_encIntBin_ediv_le (-1) 100, length_encIntBin_emod_le_of_ne_zero (-7) (by decide),
+    length_encIntBin_modPowTwo_le (-17) 5, intBits_ediv_le (-1) 100, intBits_ediv_le (-7) 3,
     intBits_emod_le_add_one_of_ne_zero (-7) (by decide), intBits_modPowTwo_le (-17) 5⟩
 
 /-! ### Concrete degree-5 Hermite Cramer recovery (`r = 2, J = 3, Ω = 6 > 1`) -/

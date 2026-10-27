@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Computability.Circuit.Rational.Runtime.Determinant
 public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Foundations.Data.Polynomial.HermiteInterpolation
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -57,9 +58,14 @@ to extract bounded counts modulo `2 ^ ℓ`.
   `Cslib.Circuits.Rational.hermiteRecoverModPowTwo_eq`,
   `Cslib.Circuits.Rational.modPowTwo_sum_hermiteRecoverZero_eq`: exact Cramer numerator identity
   and integer / modular recovery of `H(0)` and coordinate sums.
-* `Cslib.Circuits.Rational.intBits_le_of_mem_hermiteRows`,
-  `Cslib.Circuits.Rational.intBits_le_of_mem_cramerColZeroRows`: sign-magnitude entry bit-length
-  bounds.
+* `Cslib.Circuits.Rational.intBits_tdiv_le`, `Cslib.Circuits.Rational.intBits_ediv_le`,
+  `Cslib.Circuits.Rational.intBits_emod_le_of_ne_zero`,
+  `Cslib.Circuits.Rational.intBits_emod_le_add_one_of_ne_zero`,
+  `Cslib.Circuits.Rational.intBits_emod_le_max`,
+  `Cslib.Circuits.Rational.intBits_modPowTwo_le`,
+  `Cslib.Circuits.Rational.intBits_le_of_mem_hermiteRows`,
+  `Cslib.Circuits.Rational.intBits_le_of_mem_cramerColZeroRows`: sign-magnitude bit-length bounds
+  for division, modular reduction, and Hermite/Cramer table entries.
 * `Cslib.Circuits.Rational.computableInPolyTime_hermiteRows`,
   `Cslib.Circuits.Rational.hermiteRows_polytime`,
   `Cslib.Circuits.Rational.computableInPolyTime_cramerColZeroRows`,
@@ -423,6 +429,39 @@ theorem modPowTwo_sum_hermiteRecoverZero_eq {nodes : List ℤ} {J ℓ : ℕ} {Ω
   exact Int.modPowTwo_eq_of_dvd_sub hcount₀ hcount₁ hdvd
 
 /-! ### Entry magnitude and bit-length bounds -/
+
+/-- Truncated integer division never increases the sign-magnitude bit length of the dividend. -/
+theorem intBits_tdiv_le (a b : ℤ) : intBits (a.tdiv b) ≤ intBits a :=
+  Nat.add_le_add_right (Int.size_natAbs_tdiv_le a b) 1
+
+/-- Euclidean integer division never increases the sign-magnitude bit length of the dividend. -/
+theorem intBits_ediv_le (a b : ℤ) : intBits (a.ediv b) ≤ intBits a :=
+  Nat.add_le_add_right (Int.size_natAbs_ediv_le a b) 1
+
+/-- For a nonzero divisor `b`, the Euclidean remainder `a.emod b` has sign-magnitude bit length at
+most `intBits b`. -/
+theorem intBits_emod_le_of_ne_zero (a : ℤ) {b : ℤ} (hb : b ≠ 0) :
+    intBits (a.emod b) ≤ intBits b :=
+  Nat.add_le_add_right (Int.size_natAbs_emod_le_of_ne_zero a hb) 1
+
+/-- For a nonzero divisor `b`, `intBits (a.emod b) ≤ intBits b + 1`. -/
+theorem intBits_emod_le_add_one_of_ne_zero (a : ℤ) {b : ℤ} (hb : b ≠ 0) :
+    intBits (a.emod b) ≤ intBits b + 1 :=
+  (intBits_emod_le_of_ne_zero a hb).trans (Nat.le_succ _)
+
+/-- Unconditionally on `b` (including `b = 0`),
+`intBits (a.emod b) ≤ max (intBits a) (intBits b)`. -/
+theorem intBits_emod_le_max (a b : ℤ) : intBits (a.emod b) ≤ max (intBits a) (intBits b) := by
+  by_cases hb : b = 0
+  · subst hb
+    change intBits (a % 0) ≤ _
+    rw [Int.emod_zero]
+    exact le_max_left _ _
+  · exact (intBits_emod_le_of_ne_zero a hb).trans (le_max_right _ _)
+
+/-- Reducing modulo `2 ^ ℓ` produces an integer of sign-magnitude bit length at most `ℓ + 1`. -/
+theorem intBits_modPowTwo_le (x : ℤ) (ℓ : ℕ) : intBits (x.modPowTwo ℓ) ≤ ℓ + 1 :=
+  (intBits_le_iff _ _).mpr (Int.natAbs_modPowTwo_lt x ℓ)
 
 /-- If every node in `nodes` has magnitude below `2 ^ b`, then every entry of
 `hermiteRows nodes J` has magnitude strictly below `2 ^ ((nodes.length * J) * (b + 1))`. -/

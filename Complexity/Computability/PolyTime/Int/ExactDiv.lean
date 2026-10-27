@@ -8,15 +8,15 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Computability.Circuit.Rational.Runtime.Determinant
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.BinaryDiv
+public import Mathlib.Data.Nat.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Plain polynomial-time signed integer division and modular reduction
 
 Plain `Turing.MultiTapeTM.ComputableInPolyTime` certificates, exact-division identities, and
-sign-magnitude bit-length bounds for signed binary integer division and remainder over
+sign-magnitude code-length bounds for signed binary integer division and remainder over
 `Turing.MultiTapeTM.encIntBin`:
 
 * truncated-toward-zero division and remainder (`Int.tdiv`, `Int.tmod`);
@@ -40,10 +40,13 @@ All certificates are total (at divisor `0`, `a / 0 = 0`, `a.tdiv 0 = 0`, `a % 0 
   multiples `(d * q).ediv d = q` and `(q * d).ediv d = q` for `d ≠ 0`.
 * `Int.modPowTwo_eq_of_dvd_sub`: unique recovery of `z ∈ [0, 2 ^ ℓ)` from any `x` with
   `2 ^ ℓ ∣ x - z`.
-* `Cslib.Circuits.Rational.intBits_ediv_le`, `Cslib.Circuits.Rational.intBits_tdiv_le`,
-  `Cslib.Circuits.Rational.intBits_emod_le_of_ne_zero`,
-  `Cslib.Circuits.Rational.intBits_emod_le_add_one_of_ne_zero`,
-  `Cslib.Circuits.Rational.intBits_modPowTwo_le`: sign-magnitude bit-length bounds.
+* `Int.size_natAbs_tdiv_le`, `Int.size_natAbs_ediv_le`, `Int.size_natAbs_emod_le_of_ne_zero`,
+  `Int.size_natAbs_modPowTwo_le`, `Turing.MultiTapeTM.length_encIntBin_tdiv_le`,
+  `Turing.MultiTapeTM.length_encIntBin_ediv_le`,
+  `Turing.MultiTapeTM.length_encIntBin_emod_le_of_ne_zero`,
+  `Turing.MultiTapeTM.length_encIntBin_emod_le_max`,
+  `Turing.MultiTapeTM.length_encIntBin_modPowTwo_le`: binary magnitude and `encIntBin` code-length
+  bounds.
 * `Turing.MultiTapeTM.ComputableInPolyTime.intBin_tdiv`, `.intBin_tmod`, `.intBin_ediv`,
   `.intBin_emod`, `.intBin_div`, `.intBin_mod`, `.intBin_modPowTwo`: plain polynomial-time
   certificates and `@[fun_prop]` composition rules (`.intBin_tdiv'`, `.intBin_tmod'`,
@@ -176,42 +179,19 @@ private theorem emod_eq_emodNat (a b : ℤ) :
   · simp only [hb, ↓reduceIte, emod_natAbs_eq]
     exact (Int.toNat_of_nonneg (Int.emod_nonneg a hb)).symm
 
-theorem natAbs_tdiv_le (a b : ℤ) : (a.tdiv b).natAbs ≤ a.natAbs := by
-  rw [tdiv_eq_signMagnitude]
-  split_ifs <;> simp only [Int.natAbs_neg, Int.natAbs_natCast] <;> exact Nat.div_le_self _ _
-
-theorem natAbs_ediv_le (a b : ℤ) : (a.ediv b).natAbs ≤ a.natAbs := by
-  rw [ediv_eq_signMagnitude]
-  by_cases hb : b = 0
-  · simp [hb]
-  · simp only [hb, ↓reduceIte]
-    by_cases ha : a < 0
-    · simp only [ha, ↓reduceIte]
-      have ha_pos : 1 ≤ a.natAbs := Int.natAbs_pos.mpr (ne_of_lt ha)
-      have hle : (a.natAbs - 1) / b.natAbs + 1 ≤ a.natAbs := by
-        have := Nat.div_le_self (a.natAbs - 1) b.natAbs
-        omega
-      split_ifs <;> simp only [Int.natAbs_neg, Int.natAbs_natCast] <;> exact hle
-    · simp only [ha, ↓reduceIte]
-      split_ifs <;> simp only [Int.natAbs_neg, Int.natAbs_natCast] <;> exact Nat.div_le_self _ _
-
 theorem natAbs_emod_lt_of_ne_zero (a : ℤ) {b : ℤ} (hb : b ≠ 0) :
     (a.emod b).natAbs < b.natAbs := by
-  have h₀ : 0 ≤ a % b := Int.emod_nonneg a hb
-  have h₁ : a % b < (b.natAbs : ℤ) := by
-    rw [← emod_natAbs_eq]
-    exact Int.emod_lt_of_pos a (by exact_mod_cast Int.natAbs_pos.mpr hb)
   have hcast : ((a.emod b).natAbs : ℤ) < (b.natAbs : ℤ) := by
     change ((a % b).natAbs : ℤ) < (b.natAbs : ℤ)
-    rw [Int.natCast_natAbs, abs_of_nonneg h₀]
-    exact h₁
+    rw [Int.natCast_natAbs, abs_of_nonneg (Int.emod_nonneg a hb)]
+    exact Int.emod_lt a hb
   exact Int.ofNat_lt.mp hcast
 
 theorem size_natAbs_tdiv_le (a b : ℤ) : (a.tdiv b).natAbs.size ≤ a.natAbs.size :=
-  Nat.size_le_size (natAbs_tdiv_le a b)
+  Nat.size_le_size (Int.natAbs_tdiv_le_natAbs a b)
 
 theorem size_natAbs_ediv_le (a b : ℤ) : (a.ediv b).natAbs.size ≤ a.natAbs.size :=
-  Nat.size_le_size (natAbs_ediv_le a b)
+  Nat.size_le_size (Int.natAbs_ediv_le_natAbs a b)
 
 theorem size_natAbs_emod_le_of_ne_zero (a : ℤ) {b : ℤ} (hb : b ≠ 0) :
     (a.emod b).natAbs.size ≤ b.natAbs.size :=
@@ -222,44 +202,47 @@ theorem size_natAbs_modPowTwo_le (x : ℤ) (ℓ : ℕ) : (x.modPowTwo ℓ).natAb
 
 end Int
 
-namespace Cslib.Circuits.Rational
+namespace Turing.MultiTapeTM
 
-/-! ### Bit-length bounds -/
+/-! ### Sign-magnitude `encIntBin` code-length bounds -/
 
-/-- Truncated integer division never increases the sign-magnitude bit length of the dividend. -/
-theorem intBits_tdiv_le (a b : ℤ) : intBits (a.tdiv b) ≤ intBits a :=
-  Nat.add_le_add_right (Int.size_natAbs_tdiv_le a b) 1
+/-- Truncated integer division never increases the `encIntBin` code length of the dividend. -/
+theorem length_encIntBin_tdiv_le (a b : ℤ) :
+    (encIntBin (a.tdiv b)).length ≤ (encIntBin a).length := by
+  simp only [length_encIntBin]
+  exact Nat.add_le_add_right (Int.size_natAbs_tdiv_le a b) 1
 
-/-- Euclidean integer division never increases the sign-magnitude bit length of the dividend. -/
-theorem intBits_ediv_le (a b : ℤ) : intBits (a.ediv b) ≤ intBits a :=
-  Nat.add_le_add_right (Int.size_natAbs_ediv_le a b) 1
+/-- Euclidean integer division never increases the `encIntBin` code length of the dividend. -/
+theorem length_encIntBin_ediv_le (a b : ℤ) :
+    (encIntBin (a.ediv b)).length ≤ (encIntBin a).length := by
+  simp only [length_encIntBin]
+  exact Nat.add_le_add_right (Int.size_natAbs_ediv_le a b) 1
 
-/-- For a nonzero divisor `b`, the Euclidean remainder `a.emod b` has sign-magnitude bit length at
-most `intBits b`. -/
-theorem intBits_emod_le_of_ne_zero (a : ℤ) {b : ℤ} (hb : b ≠ 0) :
-    intBits (a.emod b) ≤ intBits b :=
-  Nat.add_le_add_right (Int.size_natAbs_emod_le_of_ne_zero a hb) 1
-
-/-- For a nonzero divisor `b`, `intBits (a.emod b) ≤ intBits b + 1`. -/
-theorem intBits_emod_le_add_one_of_ne_zero (a : ℤ) {b : ℤ} (hb : b ≠ 0) :
-    intBits (a.emod b) ≤ intBits b + 1 :=
-  (intBits_emod_le_of_ne_zero a hb).trans (Nat.le_succ _)
+/-- For `b ≠ 0`, the Euclidean remainder `a.emod b` has `encIntBin` code length at most
+`(encIntBin b).length`. -/
+theorem length_encIntBin_emod_le_of_ne_zero (a : ℤ) {b : ℤ} (hb : b ≠ 0) :
+    (encIntBin (a.emod b)).length ≤ (encIntBin b).length := by
+  simp only [length_encIntBin]
+  exact Nat.add_le_add_right (Int.size_natAbs_emod_le_of_ne_zero a hb) 1
 
 /-- Unconditionally on `b` (including `b = 0`),
-`intBits (a.emod b) ≤ max (intBits a) (intBits b)`. -/
-theorem intBits_emod_le_max (a b : ℤ) : intBits (a.emod b) ≤ max (intBits a) (intBits b) := by
+`(encIntBin (a.emod b)).length ≤ max (encIntBin a).length (encIntBin b).length`. -/
+theorem length_encIntBin_emod_le_max (a b : ℤ) :
+    (encIntBin (a.emod b)).length ≤ max (encIntBin a).length (encIntBin b).length := by
   by_cases hb : b = 0
   · subst hb
-    change intBits (a % 0) ≤ _
+    change (encIntBin (a % 0)).length ≤ _
     rw [Int.emod_zero]
     exact le_max_left _ _
-  · exact (intBits_emod_le_of_ne_zero a hb).trans (le_max_right _ _)
+  · exact (length_encIntBin_emod_le_of_ne_zero a hb).trans (le_max_right _ _)
 
-/-- Reducing modulo `2 ^ ℓ` produces an integer of sign-magnitude bit length at most `ℓ + 1`. -/
-theorem intBits_modPowTwo_le (x : ℤ) (ℓ : ℕ) : intBits (x.modPowTwo ℓ) ≤ ℓ + 1 :=
-  (intBits_le_iff _ _).mpr (Int.natAbs_modPowTwo_lt x ℓ)
+/-- Reducing modulo `2 ^ ℓ` produces an `encIntBin` code of length at most `ℓ + 1`. -/
+theorem length_encIntBin_modPowTwo_le (x : ℤ) (ℓ : ℕ) :
+    (encIntBin (x.modPowTwo ℓ)).length ≤ ℓ + 1 := by
+  rw [length_encIntBin]
+  exact Nat.add_le_add_right (Int.size_natAbs_modPowTwo_le x ℓ) 1
 
-end Cslib.Circuits.Rational
+end Turing.MultiTapeTM
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
