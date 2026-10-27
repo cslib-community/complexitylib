@@ -24,12 +24,14 @@ Section 6.4, Proposition 6.4 (pp. 43–44) [OpenAI2026ETH] and dense variable re
 
 ### Source relation and library adaptations
 
-* **Proposition 6.4 (§6.4, pp. 43–44) vs. Theorem 1.1:** Proposition 6.4 establishes deterministic
-  exact model counting for $k$-CNF formulas on $n$ declared variables in time bounded using the
-  squared-$\log\log$ interpolation scale $\rho(n) = n (\log\log n)^2 / \sqrt{\log n}$
-  (formalized with the $+16$ domain shift as `interpolationScale n`), whereas Theorem 1.1 states
-  the sharper single-$\log\log$ headline bound. This module uses Proposition 6.4's
-  `interpolationScale`, which is already $o(n)$ (`isLittleO_interpolationScale`).
+* **Proposition 6.4 (§6.4, pp. 43–44) vs. Theorem 1.1:** Proposition 6.4 states that for every fixed
+  integer $k \ge 2$, there is a deterministic algorithm that, given a $k$-CNF formula $F$ on
+  $n \ge 20$ variables with $m$ clauses, outputs the exact number of satisfying assignments of $F$
+  in $\{0, 1\}^n$ in time $(n + m)^{O_k(1)} \cdot 2^{O_k(\rho(n))}$, where
+  $\rho(n) = n (\log\log n)^2 / \sqrt{\log n}$ (formalized for all $n \in \mathbb{N}$ with the
+  $+16$ domain shift as `interpolationScale n`), whereas Theorem 1.1 states the sharper
+  single-$\log\log$ headline bound. This module uses Proposition 6.4's `interpolationScale`, which
+  is already $o(n)$ (`isLittleO_interpolationScale`).
 * **Library adaptations:** First-occurrence dense variable numbering
   (`CNF.denseRelabel φ = φ.relabel φ.distinctVars.idxOf`, mapping occurring variables onto
   `Finset.range φ.numVars` while preserving `φ.modelCount` as

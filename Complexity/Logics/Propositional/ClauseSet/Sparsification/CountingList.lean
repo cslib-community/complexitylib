@@ -18,13 +18,16 @@ tautology removal (`removeTautologies`), nontautological normalization (`countin
 singleton negated-heart unit clauses (`negatedHeartUnits`), the disjoint counting children
 (`countingChild`), and one deterministic counting-sparsification step (`countingNext`).
 
-At each branching step on a heart `H`, the `false` (A) branch adds `H` while the `true` (B) branch
-adds both the petals `petals ψ c H` and the singleton negated-heart units `negatedHeartUnits H`
-[OpenAI2026ETH, Appendix A.1, equation (A.2)]. Applying `dedupClauses` before `reduce` ensures that
-the list-level normal form (`CountingNormalized`) is preserved unconditionally across steps while
-computing the exact clause-set operation `ClauseSet.Sparsification.countingChild`
-(`toClauseSet_countingChild`) and conserving the declared-variable model count
-(`modelCountOn_countingChild`).
+Initial preprocessing (`countingNormalize φ = normalize (removeTautologies φ)`) removes tautologies,
+deduplicates literals and clauses, and reduces to a subset-minimal antichain. At each branching step
+on a heavy heart `H` satisfying `deg_c(H) ≥ θ_{c - |H|}` (equation (A.1), p. 44, with the
+unnumbered threshold schedule `θ j = M ^ j`), the `false` (A) branch adds `H` while the `true` (B)
+branch adds both the petals `petals ψ c H` and the singleton negated-heart units
+`negatedHeartUnits H` [OpenAI2026ETH, Appendix A.1, equation (A.2), pp. 44–45]. Applying
+`dedupClauses` before `reduce` restores the duplicate-free antichain (`CountingNormalized`) across
+steps without re-running tautology removal, while computing the exact clause-set operation
+`ClauseSet.Sparsification.countingChild` (`toClauseSet_countingChild`) and conserving the
+declared-variable model count (`modelCountOn_countingChild`).
 
 ## Main definitions
 
@@ -102,8 +105,9 @@ def countingChild (ψ : CNF V) (c : ℕ) (H : Clause V) (b : Bool) : CNF V :=
 def countingNext (θ : ℕ → ℕ) (k : ℕ) (ψ : CNF V) (b : Bool) : CNF V :=
   countingChild ψ (choice θ k ψ).1 (choice θ k ψ).2 b
 
-/-- The counting-sparsification threshold schedule `θ j = M ^ j` [OpenAI2026ETH, Appendix A.1,
-equation (A.1)]. -/
+/-- The counting-sparsification threshold schedule `θ j = M ^ j` (defined on p. 44 of
+[OpenAI2026ETH, Appendix A.1] for `1 ≤ j ≤ k` and extended by `M ^ 0 = 1`, used in the heavy-heart
+branching inequality `deg_c(H) ≥ θ_{c - |H|}` of equation (A.1)). -/
 def countingThreshold (M j : ℕ) : ℕ := M ^ j
 
 /-- For `1 ≤ M`, every counting threshold is positive. -/

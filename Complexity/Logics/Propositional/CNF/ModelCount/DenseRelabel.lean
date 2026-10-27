@@ -21,7 +21,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 `CNF.denseRelabel φ` renames each variable of a CNF formula `φ` by its index in `φ.distinctVars`.
 Unlike `CNF.compact` (which uses first positions in `φ.vars` and can leave gaps when variables
 repeat), `CNF.denseRelabel φ` maps the occurring variables bijectively onto `0, …, φ.numVars - 1`
-in order of first occurrence [OpenAI2026ETH, Section 2].
+in order of first occurrence (a library adaptation to the declared-variable model of
+[OpenAI2026ETH]).
 
 The renaming preserves clause lengths, clause count, `numVars`, `Satisfiable`, `modelCount`, and
 gives `φ.denseRelabel.modelCountOn (Finset.range φ.numVars) = φ.modelCount`. It is computable in
