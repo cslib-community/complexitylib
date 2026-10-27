@@ -170,11 +170,6 @@ end Operations
 
 /-! ### Private index reindexing helpers -/
 
-private theorem ite_sum_zero {α M : Type*} [AddCommMonoid M] (P : Prop) [Decidable P]
-    (s : Finset α) (f : α → M) :
-    (if P then ∑ x ∈ s, f x else 0) = ∑ x ∈ s, if P then f x else 0 := by
-  split_ifs <;> simp only [sum_const_zero]
-
 private theorem conv_eq_prod_sum {J ℓ : ℕ} {R : Type*} [Semiring R]
     (A B : JetTable J ℓ R) (j : Fin J) (u : Fin ℓ) :
     conv A B j u =
@@ -786,10 +781,6 @@ section StagedClearing
 
 variable {J ℓ : ℕ} {K : Type*} [CommRing K]
 
-private theorem zsmul_prod_eq {ι : Type*} (d : ℤ) (s : Finset ι) (F : ι → JetTable J ℓ K) :
-    (∏ i ∈ s, d • F i) = (d ^ #s) • ∏ i ∈ s, F i := by
-  simp only [zsmul_eq_const_mul, prod_mul_distrib, prod_const, const_pow, Int.cast_pow]
-
 /-- Stage-1 integer numerator for a single monomial `M` of degree `#M ≤ k`, cleared by
 `Δ = d_den ^ k` via padding `d_den ^ (k - #M)` ([OpenAI2026ETH, Appendix B.2, p. 48]). -/
 def clearedMonomialJet {ι : Type*} (d_den : ℤ) (k : ℕ) (θ_int : ι → JetTable J ℓ ℤ)
@@ -809,7 +800,7 @@ theorem cast_clearedMonomialJet {ι : Type*} (d_den : ℤ) (k : ℕ)
     (d_den ^ k) • (∏ v ∈ M, θ_rat v) = castRingHom K (clearedMonomialJet d_den k θ_int M) := by
   rw [clearedMonomialJet, map_zsmul, map_prod]
   simp only [← hθ]
-  rw [zsmul_prod_eq, smul_smul, ← pow_add, Nat.sub_add_cancel hM]
+  rw [← smul_prod, smul_smul, ← pow_add, Nat.sub_add_cancel hM]
 
 /-- **Stage-1 denominator clearing (Appendix B.2, p. 48).** If `d_den • θ_rat v` is represented by
 `θ_int v`, then `Δ = d_den ^ k` clears any sum of monomials of degree at most `k`. -/
@@ -1020,7 +1011,7 @@ theorem cast_prod_cleared {ι : Type*} (Γ : ℤ) (s : Finset ι)
     (F_rat : ι → JetTable J ℓ K) (F_int : ι → JetTable J ℓ ℤ)
     (hF : ∀ i ∈ s, Γ • F_rat i = castRingHom K (F_int i)) :
     (Γ ^ #s) • (∏ i ∈ s, F_rat i) = castRingHom K (∏ i ∈ s, F_int i) := by
-  rw [map_prod, ← zsmul_prod_eq]
+  rw [map_prod, smul_prod]
   exact prod_congr rfl hF
 
 theorem l1Norm_prod_cleared_le {ι : Type*} (s : Finset ι) (F_int : ι → JetTable J ℓ ℤ)
@@ -1068,14 +1059,6 @@ def signedPrefixJet {R : Type*} [CommRing R] (updates : List (ℤ × JetTable J 
     JetTable J ℓ R :=
   ((updates.take t).map fun p => p.1 • p.2).sum
 
-private theorem l1Norm_list_sum_le (l : List (JetTable J ℓ ℤ)) :
-    l1Norm l.sum ≤ (l.map l1Norm).sum := by
-  induction l with
-  | nil => simp only [List.sum_nil, l1Norm_zero, List.map_nil, le_rfl]
-  | cons hd tl ih =>
-    simp only [List.sum_cons, List.map_cons]
-    exact (l1Norm_add_le _ _).trans (Nat.add_le_add_left ih _)
-
 /-- **Prefix accumulator denominator clearing (Appendix B.2, p. 49).** At every step `t`, `Ω` clears
 the intermediate accumulator `signedPrefixJet`. -/
 theorem cast_signedPrefixJet (Ω : ℤ)
@@ -1115,7 +1098,8 @@ theorem l1Norm_signedPrefixJet_le {n m_test B₁ M_star : ℕ}
     exact (Nat.mul_le_mul hsgn hnrm).trans (Nat.one_mul C).le
   calc
     l1Norm (signedPrefixJet updates_int t)
-      ≤ (((updates_int.take t).map fun p => p.1 • p.2).map l1Norm).sum := l1Norm_list_sum_le _
+      ≤ (((updates_int.take t).map fun p => p.1 • p.2).map l1Norm).sum :=
+        List.le_sum_of_subadditive l1Norm l1Norm_zero.le l1Norm_add_le _
     _ = ((updates_int.take t).map fun p => l1Norm (p.1 • p.2)).sum := by
         rw [List.map_map]
         rfl
