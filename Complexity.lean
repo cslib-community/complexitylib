@@ -761,6 +761,7 @@ public import Complexity.Computability.Complexity.Fagin.Verifier
 public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
+public import Complexity.Computability.Complexity.FineGrained.CountingScale
 public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import Complexity.Computability.Complexity.FineGrained.Exponents
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
@@ -1765,6 +1766,7 @@ public import Complexity.Foundations.BooleanAnalysis.LowDegree
 public import Complexity.Foundations.BooleanAnalysis.LowDegreeParity
 public import Complexity.Foundations.BooleanAnalysis.MaximalSupport
 public import Complexity.Foundations.BooleanAnalysis.MirrorSets
+public import Complexity.Foundations.BooleanAnalysis.Mobius
 public import Complexity.Foundations.BooleanAnalysis.Monotone
 public import Complexity.Foundations.BooleanAnalysis.MultilinearExtension
 public import Complexity.Foundations.BooleanAnalysis.Noise
@@ -1782,12 +1784,14 @@ public import Complexity.Foundations.Combinatorics.AffineDisperser.Bits
 public import Complexity.Foundations.Combinatorics.AffineDisperser.Explicit
 public import Complexity.Foundations.Combinatorics.AffineDisperser.IndependentSources
 public import Complexity.Foundations.Combinatorics.AffineDisperser.Threshold
+public import Complexity.Foundations.Combinatorics.BalancedSchedules
 public import Complexity.Foundations.Combinatorics.CentralBinomial
 public import Complexity.Foundations.Combinatorics.DepthReduction
 public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
 public import Complexity.Foundations.Combinatorics.Expander.AffinePlane
 public import Complexity.Foundations.Combinatorics.Expander.AffineTower
 public import Complexity.Foundations.Combinatorics.Expander.Basic
+public import Complexity.Foundations.Combinatorics.Expander.Cayley
 public import Complexity.Foundations.Combinatorics.Expander.Cheeger
 public import Complexity.Foundations.Combinatorics.Expander.Connected
 public import Complexity.Foundations.Combinatorics.Expander.Contraction
@@ -1852,6 +1856,7 @@ public import Complexity.Foundations.Combinatorics.MajorityTree
 public import Complexity.Foundations.Combinatorics.MajorityVote
 public import Complexity.Foundations.Combinatorics.Multigraph
 public import Complexity.Foundations.Combinatorics.PowersetTail
+public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.Sunflower
 public import Complexity.Foundations.Combinatorics.Sunflower.LowerBound
@@ -1877,6 +1882,7 @@ public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Vote
 public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Parity.Weight
+public import Complexity.Foundations.Data.BitString.ParityTests
 public import Complexity.Foundations.Data.BitString.PartialAssignment
 public import Complexity.Foundations.Data.BitString.PartialAssignment.Counting
 public import Complexity.Foundations.Data.BitString.Propagation
@@ -1938,6 +1944,7 @@ public import Complexity.Foundations.Data.Matrix.Permanent
 public import Complexity.Foundations.Data.Matrix.Reindex
 public import Complexity.Foundations.Data.Matrix.TotallyRegular
 public import Complexity.Foundations.Data.MvPolynomial.Catalecticant
+public import Complexity.Foundations.Data.MvPolynomial.CoefficientDegree
 public import Complexity.Foundations.Data.MvPolynomial.DualNumber
 public import Complexity.Foundations.Data.MvPolynomial.Hessian
 public import Complexity.Foundations.Data.MvPolynomial.HessianRank
@@ -1969,6 +1976,7 @@ public import Complexity.Foundations.Data.Option
 public import Complexity.Foundations.Data.OrderedSet
 public import Complexity.Foundations.Data.OrderedSet.Spec
 public import Complexity.Foundations.Data.Polynomial.CoeffList
+public import Complexity.Foundations.Data.Polynomial.HermiteInterpolation
 public import Complexity.Foundations.Data.Polynomial.ParityAmplifier
 public import Complexity.Foundations.Data.Polynomial.SignQueries
 public import Complexity.Foundations.Data.Rat.Basic
@@ -2000,6 +2008,7 @@ public import Complexity.Foundations.GroupTheory.Perm.Fin
 public import Complexity.Foundations.GroupTheory.Perm.FiveCycle
 public import Complexity.Foundations.GroupTheory.Perm.Last
 public import Complexity.Foundations.LinearAlgebra.CubeSum
+public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
@@ -2137,9 +2146,11 @@ public import Complexity.Logics.Propositional.CNF.Gadgets
 public import Complexity.Logics.Propositional.CNF.ImplicationChain
 public import Complexity.Logics.Propositional.CNF.ImplicationCycle
 public import Complexity.Logics.Propositional.CNF.ModelCount
+public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 public import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
 public import Complexity.Logics.Propositional.CNF.Occurrence
 public import Complexity.Logics.Propositional.CNF.Parity
+public import Complexity.Logics.Propositional.CNF.ParityTests
 public import Complexity.Logics.Propositional.CNF.Planar.Crossover
 public import Complexity.Logics.Propositional.CNF.Planar.CrossoverCounting
 public import Complexity.Logics.Propositional.CNF.Planar.CrossoverSplit
@@ -2156,6 +2167,7 @@ public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.ClauseSet.Basic
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Counting
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Path
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.PolyTime
@@ -2256,6 +2268,7 @@ public import Complexity.Probability.Rewinding
 public import Complexity.Probability.Shearer
 public import Complexity.Probability.SmallBias
 public import Complexity.Probability.SmallBias.Powering
+public import Complexity.Probability.SmallBias.Random
 public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.Product
