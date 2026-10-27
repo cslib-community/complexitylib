@@ -1,19 +1,17 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger, Anton Kovsharov
+Authors: Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-public import Complexity.Tactic.PolyTime.Init
 public import Mathlib.Data.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Data.Nat.Size
 
@@ -37,8 +35,6 @@ a certified unary size function.
   floor and ceiling logarithms in any fixed base on unary counters.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow_clog_const`: a fixed factor raised to
   a fixed-base ceiling logarithm, with unary output and complete intermediate-size bounds.
-* `Turing.MultiTapeTM.ComputableInPolyTime.binary_clog_two_nat`, `.binary_clog_two_nat'`:
-  plain polynomial-time base-two ceiling logarithm on binary naturals (`encNat` to `encNat`).
 
 ## References
 
@@ -160,45 +156,3 @@ theorem unary_pow_clog_const {α : Type} {input : α ↪ List Bool} {size : α �
   simpa only [hspec] using hefficient
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
-
-namespace Turing.MultiTapeTM.ComputableInPolyTime
-
-private theorem size_sub_one_eq_clog_two (n : ℕ) : (n - 1).size = Nat.clog 2 n := by
-  rcases eq_or_ne n 0 with rfl | hn0
-  · simp only [Nat.zero_sub, Nat.size_zero, Nat.clog_zero_right]
-  rcases eq_or_ne n 1 with rfl | hn1
-  · simp only [tsub_self, Nat.size_zero, Nat.clog_one_right]
-  apply le_antisymm
-  · rw [Nat.size_le]
-    have hpow : n ≤ 2 ^ Nat.clog 2 n := Nat.le_pow_clog Nat.one_lt_two n
-    omega
-  · rw [Nat.clog_le_iff_le_pow Nat.one_lt_two]
-    have hlt : n - 1 < 2 ^ (n - 1).size := Nat.lt_size_self (n - 1)
-    omega
-
-private theorem plain_natPred : ComputableInPolyTime (· - 1) encNat encNat :=
-  ComputableInO.natPred.computableInPolyTime
-    (PolyBounded.of_forall_le 1 2 (fun _ => by simp only [one_mul, le_refl]))
-    (PolyBounded.of_forall_le 1 1 (fun _ => by simp only [one_mul, pow_one, le_refl]))
-
-private theorem plain_encNat_length :
-    ComputableInPolyTime (fun m : ℕ => (encNat m).length) encNat encUnary :=
-  .of_tidy (ComputableTidilyInPolyTime.encoding_length encNat)
-
-private theorem binary_clog_two_unary : ComputableInPolyTime (Nat.clog 2) encNat encUnary :=
-  (plain_encNat_length.comp plain_natPred).of_enc_eq fun n => by
-    refine congrArg encUnary ?_
-    rw [Function.comp_apply, encNat_apply, Nat.size_eq_bits_len, size_sub_one_eq_clog_two]
-
-/-- The base-two ceiling logarithm is polynomial-time on binary naturals (`encNat` to `encNat`). -/
-@[fun_prop, program_certificate]
-theorem binary_clog_two_nat : ComputableInPolyTime (Nat.clog 2) encNat encNat :=
-  unary_to_binary.comp binary_clog_two_unary
-
-/-- The base-two ceiling logarithm of a computed binary natural, returned in binary. -/
-theorem binary_clog_two_nat' {α : Type} {input : α ↪ List Bool} {f : α → ℕ}
-    (hf : ComputableInPolyTime f input encNat) :
-    ComputableInPolyTime (fun a => Nat.clog 2 (f a)) input encNat :=
-  binary_clog_two_nat.comp hf
-
-end Turing.MultiTapeTM.ComputableInPolyTime

@@ -5,8 +5,8 @@ Authors: Anton Kovsharov
 -/
 
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryLog
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Choose
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Sqrt
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.PolyTime.FineGrained.ParameterCheck
