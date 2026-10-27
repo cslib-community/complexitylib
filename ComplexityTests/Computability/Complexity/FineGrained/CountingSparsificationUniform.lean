@@ -115,4 +115,46 @@ example : ∃ d e, ComputableInO (normalizeDeclaredLeaf Prod.snd declaredProbe) 
     (polyBounded_pow
       ((PolyBounded.self.add declaredProbe_poly.polyBounded_length).add (.const 1)) e)
 
+private def varyingB (p : Context) : ℕ := if p.1 then 1 else 2
+private def varyingM (p : Context) : ℕ := countingThresholdBase 2 (varyingB p)
+
+private theorem varying_depth (p : Context) : countingDepthCoeff 2 (varyingM p) = 4 := by
+  simp [countingDepthCoeff]
+
+private theorem varying_leaf_input_bound (g : Context × CNF ℕ → ℕ)
+    (x : Bool × ℕ × CNF ℕ) (i : ℕ)
+    (hc : let p := (x.1, x.2.1)
+      let st := (step (varyingM p) 2 (fun ψ => g (p, ψ)))^[i] (init 2 x.2.2)
+      st.2.1.isEmpty = false ∧
+        isSparse (countingThreshold (varyingM p)) 2 (st.2.1.headD []) = true) :
+    let p := (x.1, x.2.1)
+    let st := (step (varyingM p) 2 (fun ψ => g (p, ψ)))^[i] (init 2 x.2.2)
+    (encInput ((x.1, x.2.1), st.2.1.headD [])).length + 1 ≤
+      2 * (encContext (x.1, x.2.1)).length + 2 + nodeBound 2 4 x.2.2 := by
+  have hB : 1 ≤ varyingB (x.1, x.2.1) := by unfold varyingB; split <;> omega
+  have hM2 := two_le_countingThresholdBase 2 (varyingB (x.1, x.2.1))
+  have hTB := countingTreeBound_countingThresholdBase (by decide : 1 ≤ 2) hB
+  have hp := (iterate_step_prefix_bounds (by omega) (by decide : 1 ≤ 2) hM2
+    (by decide : 2 ≤ 2) hTB (fun ψ => g ((x.1, x.2.1), ψ)) x.2.2 i).2.2.2 hc
+  have hlen := hp.2.2.2.2
+  rw [show countingDepthCoeff 2 (countingThresholdBase 2 (varyingB (x.1, x.2.1))) = 4 from
+    varying_depth (x.1, x.2.1)] at hlen
+  dsimp only
+  simp only [encInput, varyingM, length_encPair]
+  omega
+
+private theorem varying_leaf_allowance_poly (d : ℕ) :
+    PolyBounded
+      (fun x : Bool × ℕ × CNF ℕ => (encPair encBool (encPair encUnary encCNF) x).length)
+      (fun x => (2 * (encContext (x.1, x.2.1)).length + 2 + nodeBound 2 4 x.2.2) ^ d) := by
+  have hcontext : ComputableInPolyTime (fun x : Bool × ℕ × CNF ℕ => (x.1, x.2.1))
+      (encPair encBool (encPair encUnary encCNF)) encContext := by
+    unfold encContext
+    fun_prop
+  have hformula : ComputableInPolyTime (fun x : Bool × ℕ × CNF ℕ => x.2.2)
+      (encPair encBool (encPair encUnary encCNF)) encCNF := by fun_prop
+  exact polyBounded_pow
+    ((((PolyBounded.const 2).mul hcontext.polyBounded_length).add (.const 2)).add
+      ((polyBounded_nodeBound 2 4).comp hformula.polyBounded_length)) d
+
 end CountingSparsificationUniformTests
