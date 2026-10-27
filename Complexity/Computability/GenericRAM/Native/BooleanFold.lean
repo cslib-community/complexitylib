@@ -13,7 +13,7 @@ public import Complexity.Foundations.Data.BitString.Binary
 public import Complexity.Foundations.Data.BitString.Enumeration
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
-import Mathlib.Data.List.Fold
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
 
 /-!
 # Streaming local Boolean assignments
@@ -35,23 +35,6 @@ namespace Cslib.GenericRAM.BooleanFold
 open Turing.MultiTapeTM
 open Cslib.BitString
 
-private theorem unframeBits :
-    ComputableInPolyTime (fun l : List Bool => l) (encList encBool) encBits := by
-  have hstep : ComputableInPolyTime (fun p : List Bool × Bool => p.2 :: p.1)
-      (encPair encBits encBool) encBits :=
-    ComputableInPolyTime.bitsCons (ComputableInPolyTime.snd encBits encBool)
-      (ComputableInPolyTime.fst encBits encBool)
-  have hfold := ComputableInPolyTime.foldl' (encA := encBool) (encL := encList encBool)
-    (encB := encBits) (list := id) (init := fun _ => []) (step := fun acc bit => bit :: acc)
-    ComputableInPolyTime.id' (ComputableInPolyTime.const []) hstep
-    (B := fun l => (encList encBool l).length) .self (by
-      intro l i _
-      change ((l.take i).foldl (flip List.cons) []).length ≤ _
-      rw [List.foldl_cons_nil, List.length_reverse]
-      exact (List.length_take_le' _ _).trans
-        (SizedListEncoding.length_le (encA := encBool) (encL := encList encBool) l))
-  have h := ComputableInPolyTime.bitsReverse.comp hfold
-  simpa only [Function.comp_def, List.reverse_foldl, id_eq] using h
 
 /-- The fixed decoder reads its runtime width in unary and its runtime index in binary.
 The actual machine has polynomial time and charged workspace in their complete pair encoding. -/
@@ -68,7 +51,7 @@ theorem decoder_polyTime :
       (ComputableInPolyTime.snd (encPair encUnary encNat) encUnary)
   have hm := ComputableInPolyTime.mapWithInput (f := fun p i => p.2.testBit i)
     (encB := encBool) hl hf
-  simpa only [lowBits, Function.comp_def] using unframeBits.comp hm
+  simpa only [lowBits, Function.comp_def] using ComputableInPolyTime.listToBits.comp hm
 
 /-- Bounds selected from the direct fixed decoder machine; the machine is uniform in both
 runtime width and index. This is not a separate finite machine for every width. -/

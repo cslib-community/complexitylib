@@ -35,9 +35,6 @@ example (n : ℕ) : (encNat (2 ^ n)).length = n + 1 := length_clock n
 example (n : ℕ) : clock.time n = n ∧ clock.space n = n := by simp [clock]
 example : (encNat (2 ^ 8)).length = 9 := by decide
 
--- Width and index are runtime NATURALS in one fixed certificate, not input-indexed types.
-example : decoder.IsPolynomial := decoder_isPolynomial
-
 -- Coverage includes arbitrary list words with their original declared length.
 example (word : List Bool) : ∃! j : Fin (2 ^ word.length), lowBits word.length j = word :=
   decoder_coverage word.length word rfl

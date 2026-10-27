@@ -1170,6 +1170,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTi
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
