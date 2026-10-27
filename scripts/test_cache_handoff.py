@@ -150,13 +150,25 @@ class HandoffTests(unittest.TestCase):
 
     def test_pack_requires_clean_matching_checkout_and_known_platform(self):
         for changes in ({"GITHUB_SHA": "f" * 40}, {"GITHUB_EVENT_NAME": "pull_request"},
-                        {"ImageOS": ""}, {"GITHUB_RUN_ATTEMPT": "0"}):
+                        {"ImageOS": ""}, {"GITHUB_RUN_ATTEMPT": "0"},
+                        {"DISABLE_BUILD_HANDOFF": "1"}, {"DISABLE_BUILD_HANDOFF": "true"}):
             with self.subTest(changes=changes), self.assertRaises(handoff.Rejected):
                 handoff.pack(self.root, self.output, {**self.env, **changes})
         (self.root / "lean-toolchain").write_text("changed")
         with self.assertRaises(handoff.Rejected):
             self.pack()
         self.assertFalse((self.base / "outputs").exists())
+
+    def test_kill_switch_disables_restore_before_contacting_api(self):
+        for value in ("1", "true", "TRUE", "yes"):
+            env = {**self.env, "GITHUB_EVENT_NAME": "push", "GITHUB_REF": "refs/heads/main",
+                   "DISABLE_BUILD_HANDOFF": value}
+            with self.subTest(value=value), self.assertRaises(handoff.Rejected):
+                handoff.restore(
+                    self.root, env,
+                    api=lambda *args, **kwargs: self.fail("API called when handoff disabled"),
+                    downloader=lambda *args: self.fail("Downloaded when handoff disabled"),
+                )
 
     def test_pack_rejects_symlinks_and_empty_build(self):
         link = self.build / "linked-dir"

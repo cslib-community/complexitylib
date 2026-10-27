@@ -68,12 +68,16 @@ jobs:
       # A merge-group build has already checked this exact commit before it lands on main.
       # Reuse its root outputs without granting merge groups access to the public-cache writer.
       # Missing, expired or mismatched handoffs leave the ordinary build below unchanged.
+      # Set the repository variable DISABLE_BUILD_HANDOFF=1 to disable this handoff without a commit.
       - name: Restore validated merge-group build outputs
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
         continue-on-error: true
         timeout-minutes: 3
         env:
           GH_TOKEN: ${{ github.token }}
+          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
         run: python3 -B scripts/cache_handoff.py restore
       - name: "lake build"
         run: lake build --wfail --iofail @complexitylib @/mk_all @/checkInitImports @mathlib/lint-style
@@ -184,9 +188,13 @@ jobs:
       # to have completed successfully; an artifact from a failed/cancelled run is never reused.
       - name: Stage merge-group build outputs
         id: cache-handoff
-        if: github.event_name == 'merge_group'
+        if: >-
+          github.event_name == 'merge_group' &&
+          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
         continue-on-error: true
         timeout-minutes: 3
+        env:
+          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
         run: python3 -B scripts/cache_handoff.py pack --output "$RUNNER_TEMP/lean-handoff"
       - name: Upload merge-group build outputs
         if: github.event_name == 'merge_group' && steps.cache-handoff.outputs.artifact-name != ''
