@@ -62,6 +62,7 @@ theorem execWithin_append {B : Basis} {r w T₁ T₂ : ℕ} {c d : Code B r} {x 
   | op o => exact h₁.seq h₂
   | branch c pos neg _ _ => exact h₁.seq h₂
   | loop c body _ => exact h₁.seq h₂
+  | rand d s => exact h₁.seq h₂
 
 /-! ### Heap order with one defect -/
 

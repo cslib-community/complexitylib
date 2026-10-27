@@ -173,21 +173,29 @@ theorem stateOf_init (input : List ℕ) :
   rw [← WordRAMBridge.Presentation.init_eq]
   rfl
 
+omit h in
+/-- A step that does not fault is not at a `rand` instruction, which faults deterministically. -/
+theorem isRandFree_of_step {w : ℕ} {q : Program .exact r} {t : Cslib.WordRAM.State r}
+    (ht : Cslib.WordRAM.step w q t ≠ .fault) : ∀ j, q[t.pc]? = some j → j.IsRandFree := by
+  rintro (_ | _ | _ | _ | _) hj <;> first | trivial | exact ht (step_rand hj)
+
 /-- A step of a library program that continues is a step of its translation. -/
 theorem step_next {w : ℕ} {q : Program .exact r} {t t' : Cslib.WordRAM.State r}
     (ht : Cslib.WordRAM.step w q t = .next t') :
-    S.step w (q.map S.instrOf) (stateOf S t) = S.next (stateOf S t') := by
+    S.step w (S.programOf q) (stateOf S t) = S.next (stateOf S t') := by
+  have hnr := isRandFree_of_step (w := w) (q := q) (t := t) (by simp [ht])
   obtain ⟨pc, reg, mem⟩ := t
-  rcases S.step_matches h w q pc reg mem with ⟨_, _, _, h₁, h₂⟩ | ⟨_, _, h₂⟩ | ⟨_, h₂⟩ <;>
+  rcases S.step_matches_at h w q pc reg mem hnr with ⟨_, _, _, h₁, h₂⟩ | ⟨_, _, h₂⟩ | ⟨_, h₂⟩ <;>
     rw [ht] at h₂ <;> cases h₂
   exact h₁
 
 /-- A step of a library program that halts is a step of its translation. -/
 theorem step_halt {w : ℕ} {q : Program .exact r} {t : Cslib.WordRAM.State r} {v : ℕ}
     (ht : Cslib.WordRAM.step w q t = .halt v) :
-    S.step w (q.map S.instrOf) (stateOf S t) = S.halted v := by
+    S.step w (S.programOf q) (stateOf S t) = S.halted v := by
+  have hnr := isRandFree_of_step (w := w) (q := q) (t := t) (by simp [ht])
   obtain ⟨pc, reg, mem⟩ := t
-  rcases S.step_matches h w q pc reg mem with ⟨_, _, _, _, h₂⟩ | ⟨_, h₁, h₂⟩ | ⟨_, h₂⟩ <;>
+  rcases S.step_matches_at h w q pc reg mem hnr with ⟨_, _, _, _, h₂⟩ | ⟨_, h₁, h₂⟩ | ⟨_, h₂⟩ <;>
     rw [ht] at h₂ <;> cases h₂
   exact h₁
 
@@ -195,7 +203,7 @@ theorem step_halt {w : ℕ} {q : Program .exact r} {t : Cslib.WordRAM.State r} {
 translation, between the corresponding states. -/
 theorem runs_map {w : ℕ} {q : Program .exact r} {s t : Cslib.WordRAM.State r} {k : ℕ}
     (hr : Runs w q s t k) :
-    Relation.RelatesInSteps (fun a b => S.step w (q.map S.instrOf) a = S.next b) (stateOf S s)
+    Relation.RelatesInSteps (fun a b => S.step w (S.programOf q) a = S.next b) (stateOf S s)
       (stateOf S t) k := by
   induction hr with
   | refl => exact .refl _
@@ -220,7 +228,7 @@ theorem logLinear (S : WordRAMBridge.Presentation) (h : WordRAMBridge.Laws S)
         ∀ v : Fin n, mem t (n + 2 * (ListInstance.mk n G s).m + 4 + v) =
           encodeDist (walkDist W G s v) := by
   obtain ⟨r, q, K, hq⟩ := logLinearStatement
-  refine ⟨r, q.map S.instrOf, K, fun n G s w hw => ?_⟩
+  refine ⟨r, S.programOf q, K, fun n G s w hw => ?_⟩
   obtain ⟨t, steps, hr, ⟨v, hv⟩, hle, hd⟩ := hq ⟨n, G, s⟩ w hw
   refine ⟨Machine.stateOf S t, steps, ?_, ⟨v, Machine.step_halt h hv⟩, hle, fun u => ?_⟩
   · rw [← Machine.stateOf_init]
