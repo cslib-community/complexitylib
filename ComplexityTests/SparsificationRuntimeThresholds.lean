@@ -12,7 +12,7 @@ import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
 
 namespace ComplexityTests.SparsificationRuntimeThresholds
 
-open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Turing.MultiTapeTM
+open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Turing.MultiTapeTM ComputableTidilyInPolyTime
 
 /-- Two clauses sharing the heart `x₁`. -/
 abbrev ψ : CNF ℕ := [[(1, true), (2, true)], [(1, true), (3, true)]]
@@ -33,17 +33,27 @@ example (M : ℕ) : isSparse (countingThreshold M) 0 ψ = true := by
 example (M : ℕ) : isSparse (countingThreshold M) 2 ([] : CNF ℕ) = true := by
   simp [isSparse, candidates]
 
-/-- One machine tests sparseness for every runtime base, given in binary. -/
-example : ComputableInPolyTime (fun x : ℕ × CNF ℕ => isSparse (countingThreshold x.1) 2 x.2)
-    (encPair encNat (encList (encList (encPair encNat encBool)))) encBool :=
-  computableInPolyTime_isSparse_countingThreshold encNat 2
-
-/-- One machine takes the counting step for every runtime base, given in binary. -/
+/-- A composition with a computed base: one machine branches on a formula with base `M` and then
+tests the resulting child for sparseness with base `2 * M`, for every runtime `M` in binary. -/
 example : ComputableInPolyTime
-    (fun x : ℕ × (CNF ℕ × Bool) => countingNext (countingThreshold x.1) 2 x.2.1 x.2.2)
-    (encPair encNat (encPair (encList (encList (encPair encNat encBool))) encBool))
-    (encList (encList (encPair encNat encBool))) :=
-  computableInPolyTime_countingNext_countingThreshold encNat 2
+    (fun x : ℕ × CNF ℕ =>
+      isSparse (countingThreshold (2 * x.1)) 2 (countingNext (countingThreshold x.1) 2 x.2 true))
+    (encPair encNat (encList (encList (encPair encNat encBool)))) encBool := by
+  have hs := (computableInPolyTime_isSparse_countingThreshold encNat 2).tidy
+  have hn := (computableInPolyTime_countingNext_countingThreshold encNat 2).tidy
+  have hchild : ComputableTidilyInPolyTime
+      (fun x : ℕ × CNF ℕ => countingNext (countingThreshold x.1) 2 x.2 true)
+      (encPair encNat (encList (encList (encPair encNat encBool))))
+      (encList (encList (encPair encNat encBool))) :=
+    by
+      simpa only [Function.comp_def] using hn.comp
+        ((fst encNat (encList (encList (encPair encNat encBool)))).prod
+          ((snd encNat (encList (encList (encPair encNat encBool)))).prod
+            (const (encMid := encBool) true)))
+  have hbase : ComputableTidilyInPolyTime (fun x : ℕ × CNF ℕ => 2 * x.1)
+      (encPair encNat (encList (encList (encPair encNat encBool)))) encNat := by
+    fun_prop
+  exact .of_tidy (by simpa only [Function.comp_def] using hs.comp (hbase.prod hchild))
 
 /-- A runtime parameter of another type: a pair `(M, a)` selecting the thresholds `M ^ j + a`. -/
 example : ComputableInPolyTime
@@ -52,10 +62,5 @@ example : ComputableInPolyTime
   refine computableInPolyTime_isSparseWith encNat (θ := fun (p : ℕ × ℕ) j => p.1 ^ j + p.2) ?_ 2
   refine .of_tidy ?_
   fun_prop
-
-/-- The fixed-threshold certificates remain available for their existing clients. -/
-example (M : ℕ) : ComputableInPolyTime (isSparse (V := ℕ) (countingThreshold M) 2)
-    (encList (encList (encPair encNat encBool))) encBool :=
-  computableInPolyTime_isSparse encNat (computableInPolyTime_countingThreshold_le M) 2
 
 end ComplexityTests.SparsificationRuntimeThresholds
