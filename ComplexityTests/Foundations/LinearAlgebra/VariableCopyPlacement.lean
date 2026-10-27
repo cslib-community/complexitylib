@@ -187,19 +187,22 @@ theorem sepVec_ker :
      zero_mul]
   rfl
 
-/-- Nonvacuous Definition 3.1 kernel separation on `sepPlace`:
+/-- Nonvacuous Definition 3.1 kernel separation on `sepPlace` for incidence `1`
+(`testVarOf 1 = 1`, assigned factor group `(sepPlace 1).2.2 0 = 0`):
 `sepVec` is nonzero (`sepVec 1 = 1`), supported on the nonempty off-group
-`varGroup sepVarA 0 1 = {1}`, and in `ker Ĉ`; incidence `1` (`testVarOf 1 = 1`) lies in the same
-copy `0` as incidence `0`, and `evalVarReplacementRow` at `nodePoint 0 = 1` annihilates `sepVec`
-by `evalVarReplacementRow_nodePoint_eq_zero_of_kernel`. -/
+`varGroup sepVarA 0 1 = {1}` (`1 ≠ 0`), and in `ker Ĉ`; at `T = 0`, `evalVarReplacementRow`
+for incidence `1` evaluates on `sepVec` to `1` (`evalVarReplacementRow_zero`), whereas at
+`nodePoint 0 = 1` it annihilates `sepVec` (`= 0`) by
+`evalVarReplacementRow_nodePoint_eq_zero_of_kernel`. -/
 example :
     sepVec 1 = 1 ∧
       (1 : Fin 2) ∈ varGroup sepVarA (0 : Fin 2) (1 : Fin 2) ∧
-      (sepPlace 1).1 = (sepPlace 0).1 ∧
-      evalVarReplacementRow 2 2 0 2 sepPlace testVarOf 0 (nodePoint (0 : Fin 2)) sepVec = 0 :=
-  ⟨rfl, by decide, by decide,
+      evalVarReplacementRow 2 2 0 2 sepPlace testVarOf 1 0 sepVec = 1 ∧
+      evalVarReplacementRow 2 2 0 2 sepPlace testVarOf 1 (nodePoint (0 : Fin 2)) sepVec = 0 :=
+  ⟨rfl, by decide,
+    evalVarReplacementRow_zero 2 2 0 2 injective_sepPlace testVarOf 1 sepVec,
     evalVarReplacementRow_nodePoint_eq_zero_of_kernel 2 2 0 2 sepPlace testVarOf sepVarA
-      sepPlace_fst_snd 0 (0 : Fin 2) (1 : Fin 2) (by decide) sepVec sepVec_supp sepVec_ker⟩
+      sepPlace_fst_snd 1 (0 : Fin 2) (1 : Fin 2) (by decide) sepVec sepVec_supp sepVec_ker⟩
 
 /-- Lemma 4.6 explicit `ℓ₁`-coefficient norm bounds for `Q = 2, r = 2, A₀ = 0, R = 2`:
 `commonDenom 2 2 = 2`, `1 + (1 + 2 ^ 2) * 2 * (4 * 2) ^ 1 = 81`, so the cleared row coefficient
