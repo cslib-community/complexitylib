@@ -281,19 +281,18 @@ theorem card_image_boolean_mulVec_le {α : Type*} [Fintype α] [DecidableEq α] 
     exact boolean_mulVec_mem_intMeasurementBox hC x
   exact (card_le_card hsub).trans_eq (card_intMeasurementBox D c)
 
-/-- Canonical decomposition of functions on `ι` into functions on the fibers of `group : ι → G`. -/
+/-- Canonical decomposition of functions on `ι` into functions on the fibers of `group : ι → G`,
+specializing `(Equiv.piCongrFiberwise fun _ => Equiv.refl _).symm`. -/
 @[expose] def piGroupEquiv {ι G α : Type*} (group : ι → G) :
-    (∀ g : G, {i : ι // group i = g} → α) ≃ (ι → α) where
-  toFun u i := u (group i) ⟨i, rfl⟩
-  invFun x g i := x i.1
-  left_inv u := funext fun g => funext fun ⟨i, hi⟩ => by subst hi; rfl
-  right_inv _ := rfl
+    (∀ g : G, {i : ι // group i = g} → α) ≃ (ι → α) :=
+  (Equiv.piCongrFiberwise (γ₁ := fun _ => α) (f := group) fun _ => Equiv.refl _).symm
 
 /-- Evaluating `piGroupEquiv` at `i` when `group i = g` selects `u g ⟨i, hi⟩`. -/
 @[simp] theorem piGroupEquiv_apply_of_eq {ι G α : Type*} (group : ι → G)
     (u : ∀ g : G, {i : ι // group i = g} → α) {i : ι} {g : G} (hi : group i = g) :
     piGroupEquiv group u i = u g ⟨i, hi⟩ := by
-  cases hi; rfl
+  subst hi
+  rw [piGroupEquiv, Equiv.piCongrFiberwise_symm_apply, Equiv.refl_symm, Equiv.refl_apply]
 
 private def extendFromGroup {ι G R : Type*} [DecidableEq G] [Zero R] (group : ι → G) (g : G)
     (ξ : {i : ι // group i = g} → R) (i : ι) : R :=
@@ -305,7 +304,7 @@ private theorem piGroupEquiv_add_single {ι G R : Type*} [DecidableEq G] [AddMon
     piGroupEquiv group (x + Pi.single h delta) =
       piGroupEquiv group x + extendFromGroup group h delta := by
   funext i
-  simp only [piGroupEquiv, Equiv.coe_fn_mk, Pi.add_apply, extendFromGroup]
+  simp only [Pi.add_apply, piGroupEquiv_apply_of_eq _ _ rfl, extendFromGroup]
   by_cases hi : group i = h
   · subst hi; simp only [Pi.single_eq_same, ↓reduceDIte]
   · simp only [Pi.single_eq_of_ne hi, Pi.zero_apply, hi, ↓reduceDIte, add_zero]
@@ -552,7 +551,10 @@ theorem evalRowRat_eq_of_eq_on_assigned_group {t : Fin Q} {f : F} (hf : f ∈ s)
   let g₀ := M.factorGroup f t
   let xLoc := (piGroupEquiv (M.varGroup t)).symm x
   let xLoc' := (piGroupEquiv (M.varGroup t)).symm x'
-  have hg₀ : xLoc g₀ = xLoc' g₀ := funext fun i => hassigned i.1 i.2
+  have hg₀ : xLoc g₀ = xLoc' g₀ := funext fun i => by
+    simp only [xLoc, xLoc', piGroupEquiv, Equiv.symm_symm, Equiv.piCongrFiberwise_apply,
+      Equiv.refl_apply]
+    exact hassigned i.1 i.2
   have hsame : ∀ h, M.ratLocalMeasureLinearMap t h (xLoc h) =
       M.ratLocalMeasureLinearMap t h (xLoc' h) := by
     intro h
@@ -564,7 +566,7 @@ theorem evalRowRat_eq_of_eq_on_assigned_group {t : Fin Q} {f : F} (hf : f ∈ s)
             ∑ i : ι, (M.matrix t h k i : ℚ) * z i := by
         intro z
         simp only [ratLocalMeasureLinearMap, LinearMap.coe_mk, AddHom.coe_mk, piGroupEquiv,
-          Equiv.coe_fn_symm_mk]
+          Equiv.symm_symm, Equiv.piCongrFiberwise_apply, Equiv.refl_apply]
         rw [M.sum_groupSubtype t h _ (fun i => (M.matrix t h k i : ℚ) * z i) (fun _ => rfl)]
         refine sum_subset (subset_univ _) fun i _ hi => ?_
         rw [M.matrix_support t h k i (fun hh' => hi (mem_filter.mpr ⟨mem_univ i, hh'⟩)),
@@ -882,16 +884,18 @@ theorem sum_restricted_prod_eq_sum_measurement_fibers {B : Type*} [CommRing B]
         ∏ g : Fin r, M.groupedFactor evalFactor t g u := by
     refine (Finset.sum_nbij (piGroupEquiv (M.varGroup t)) ?_ ?_ ?_ ?_).symm
     · intro u hu
-      exact mem_filter.mpr ⟨mem_univ _, fun i hiE =>
-        (mem_filter.mp (Fintype.mem_piFinset.mp hu (M.varGroup t i))).2 ⟨i, rfl⟩ hiE⟩
+      refine mem_filter.mpr ⟨mem_univ _, fun i hiE => ?_⟩
+      rw [piGroupEquiv_apply_of_eq _ _ rfl]
+      exact (mem_filter.mp (Fintype.mem_piFinset.mp hu (M.varGroup t i))).2 ⟨i, rfl⟩ hiE
     · intro u₁ _ u₂ _ heq
       exact (piGroupEquiv (M.varGroup t)).injective heq
     · intro x hx
       rw [mem_coe, mem_filter] at hx
       refine ⟨(piGroupEquiv (M.varGroup t)).symm x, mem_coe.mpr ?_,
         (piGroupEquiv (M.varGroup t)).apply_symm_apply x⟩
-      exact Fintype.mem_piFinset.mpr fun g =>
-        mem_filter.mpr ⟨mem_univ _, fun i hiE => hx.2 i.1 hiE⟩
+      refine Fintype.mem_piFinset.mpr fun g => mem_filter.mpr ⟨mem_univ _, fun i hiE => ?_⟩
+      simpa only [piGroupEquiv, Equiv.symm_symm, Equiv.piCongrFiberwise_apply,
+        Equiv.refl_apply] using hx.2 i.1 hiE
     · intro u _
       exact M.prod_groupedFactor_eq evalFactor t u
   rw [hbij]
