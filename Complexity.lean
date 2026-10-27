@@ -1355,6 +1355,8 @@ public import Complexity.Computability.PCP.SelectedComposition
 public import Complexity.Computability.PCP.ThreeSAT
 public import Complexity.Computability.PCP.TwoProverGame
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
+public import Complexity.Computability.PolyTime.Int.Table
+public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Computability.Probabilistic.Adaptive
 public import Complexity.Computability.Probabilistic.BoundedUniform
 public import Complexity.Computability.Probabilistic.CenteredBinomial
@@ -1780,6 +1782,7 @@ public import Complexity.Foundations.BooleanAnalysis.QuadraticForm
 public import Complexity.Foundations.BooleanAnalysis.RelevantCoordinates
 public import Complexity.Foundations.BooleanAnalysis.SignApproximation
 public import Complexity.Foundations.BooleanAnalysis.SparseBranching
+public import Complexity.Foundations.BooleanAnalysis.SparseClearedSpecialization
 public import Complexity.Foundations.BooleanAnalysis.SparseEquations
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
 public import Complexity.Foundations.Combinatorics.AffineDisperser
@@ -1845,6 +1848,7 @@ public import Complexity.Foundations.Combinatorics.FunctionalGraph.HittingTime
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Powers
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Projection
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Spectrum
+public import Complexity.Foundations.Combinatorics.GreedySchedules
 public import Complexity.Foundations.Combinatorics.Hoeffding
 public import Complexity.Foundations.Combinatorics.Hypergeometric
 public import Complexity.Foundations.Combinatorics.HypergraphCut
@@ -1865,6 +1869,7 @@ public import Complexity.Foundations.Combinatorics.MajorityVote
 public import Complexity.Foundations.Combinatorics.Multigraph
 public import Complexity.Foundations.Combinatorics.PartialLabelScores
 public import Complexity.Foundations.Combinatorics.PowersetTail
+public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.Sunflower
@@ -1988,6 +1993,7 @@ public import Complexity.Foundations.Data.Nat.Radix
 public import Complexity.Foundations.Data.Option
 public import Complexity.Foundations.Data.OrderedSet
 public import Complexity.Foundations.Data.OrderedSet.Spec
+public import Complexity.Foundations.Data.Polynomial.BivariateCoeffNorm1
 public import Complexity.Foundations.Data.Polynomial.CoeffList
 public import Complexity.Foundations.Data.Polynomial.CoeffNorm1
 public import Complexity.Foundations.Data.Polynomial.HermiteInterpolation
@@ -2191,6 +2197,7 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Counting
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingDeletion
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingOccurrences
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Path

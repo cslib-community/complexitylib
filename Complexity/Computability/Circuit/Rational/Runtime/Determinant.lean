@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Computability.Circuit.Rational.Determinant
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
+public import Complexity.Computability.PolyTime.Int.Table
 public import Mathlib.Data.Nat.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -22,9 +23,10 @@ import Mathlib.Data.List.GetD
 `Rational.DeterminantAlgorithm.determinant` runs the stages of Bird's division-free determinant on
 dense tables whose dimension is part of the type. This file restates the same staged algorithm as
 an ordinary program on lists of rows, `Rational.detRows`, whose dimension is the number of rows,
-and certifies that it is computable in polynomial time on multi-tape Turing machines over
-framed lists of binary sign-magnitude integers (`Rational.detRows_polytime`). Missing entries read
-as `0` and extra entries are ignored.
+reusing `Cslib.rowEntry` and `Cslib.tabulateTable` from
+`Complexity/Computability/PolyTime/Int/Table.lean`, and certifies that it is computable in
+polynomial time on multi-tape Turing machines over framed lists of binary sign-magnitude integers
+(`Rational.detRows_polytime`). Missing entries read as `0` and extra entries are ignored.
 
 It also bounds the size of every value the program computes. For a `d × d` input whose entries
 have absolute value below `2 ^ b`, every entry of the `k`-th stage, and every partial sum and
@@ -34,9 +36,8 @@ encoding, and, following the original development, for the stages of the dense t
 
 ## Main definitions
 
-* `Rational.rowEntry`: entry `(i, j)` of a list of rows, `0` when missing.
-* `Rational.tabulateRows`, `Rational.rowsOf`, `Rational.ofRows`, `Rational.squareRows`:
-  conversion and tabulation between square matrices and lists of rows.
+* `Rational.rowsOf`, `Rational.ofRows`, `Rational.squareRows`: conversion and square normalization
+  between square matrices and lists of rows.
 * `Rational.traceTerms`, `Rational.productTerms`, `Rational.stepEntryRows`: the diagonal terms,
   product terms, and entry formula for one Bird stage on lists of rows.
 * `Rational.stepRows`, `Rational.stagesRows`: one Bird stage, and the iterated stages.
@@ -142,13 +143,8 @@ end DeterminantAlgorithm
 
 /-! ### The list program -/
 
-/-- Entry `(i, j)` of a matrix stored as a list of rows; missing entries read as `0`. -/
-def rowEntry (rows : List (List ℤ)) (i j : ℕ) : ℤ :=
-  (rows.getD i []).getD j 0
-
-/-- The `d × d` list of rows whose entry `(i, j)` is `g i j`. -/
-def tabulateRows (d : ℕ) (g : ℕ → ℕ → ℤ) : List (List ℤ) :=
-  (List.range d).map fun i => (List.range d).map fun j => g i j
+export Cslib (rowEntry tabulateTable exists_rowEntry_eq
+  computableInPolyTime_rowEntry computableInPolyTime_tabulateTable)
 
 /-- The list of rows of a square matrix. -/
 def rowsOf {d : ℕ} (A : Matrix (Fin d) (Fin d) ℤ) : List (List ℤ) :=
@@ -161,7 +157,7 @@ def ofRows (rows : List (List ℤ)) : Matrix (Fin rows.length) (Fin rows.length)
 
 /-- Pad or truncate every row to the number of rows. -/
 def squareRows (rows : List (List ℤ)) : List (List ℤ) :=
-  tabulateRows rows.length (rowEntry rows)
+  tabulateTable rows.length rows.length (rowEntry rows)
 
 /-- The diagonal entries `F k k` for `i < k < d`, summed in one Bird stage; `d` is the number of
 rows of `A`. -/
@@ -179,7 +175,7 @@ def stepEntryRows (A F : List (List ℤ)) (i j : ℕ) : ℤ :=
 
 /-- One Bird stage on lists of rows. -/
 def stepRows (A F : List (List ℤ)) : List (List ℤ) :=
-  tabulateRows A.length (stepEntryRows A F)
+  tabulateTable A.length A.length (stepEntryRows A F)
 
 /-- The `k`-th Bird stage, starting from the squared input. -/
 def stagesRows (A : List (List ℤ)) (k : ℕ) : List (List ℤ) :=
@@ -203,13 +199,6 @@ theorem intBits_eq_length_encIntBin (z : ℤ) :
   rfl
 
 /-! ### Basic lemmas -/
-
-/-- Looking up entry `(i, j)` of `tabulateRows d g` returns `g i j` when `i < d` and `j < d`, and
-`0` otherwise. -/
-lemma rowEntry_tabulateRows (d : ℕ) (g : ℕ → ℕ → ℤ) (i j : ℕ) :
-    rowEntry (tabulateRows d g) i j = if i < d ∧ j < d then g i j else 0 := by
-  by_cases hi : i < d <;> by_cases hj : j < d <;>
-    simp [rowEntry, tabulateRows, List.getD_eq_getElem?_getD, hi, hj]
 
 /-- The list of rows `rowsOf A` of a `d × d` matrix `A` has length `d`. -/
 @[simp] lemma length_rowsOf {d : ℕ} (A : Matrix (Fin d) (Fin d) ℤ) : (rowsOf A).length = d := by
@@ -250,10 +239,10 @@ private theorem rowEntry_stagesRows (A : List (List ℤ)) (k : ℕ) (i j : Fin A
       ((BirdDet.Spec.stepEntry (ofRows A))^[k] (ofRows A)) i j := by
   induction k generalizing i j with
   | zero =>
-    rw [stagesRows_zero, squareRows, rowEntry_tabulateRows, ite_eq_left ⟨i.isLt, j.isLt⟩]
+    rw [stagesRows_zero, squareRows, rowEntry_tabulateTable, ite_eq_left ⟨i.isLt, j.isLt⟩]
     rfl
   | succ k ih =>
-    rw [stagesRows_succ, Function.iterate_succ_apply', stepRows, rowEntry_tabulateRows,
+    rw [stagesRows_succ, Function.iterate_succ_apply', stepRows, rowEntry_tabulateTable,
       ite_eq_left ⟨i.isLt, j.isLt⟩, stepEntryRows, traceTerms, productTerms,
       sum_map_drop_range_fin, sum_map_drop_range_fin, BirdDet.Spec.stepEntry_eq]
     simp only [ih, Matrix.of_apply, ofRows]
@@ -305,24 +294,8 @@ theorem detRows_rowsOf_denote {d : ℕ} (A : DeterminantAlgorithm.Table d) :
 /-- Entry bounds hold for every entry index once they hold for every stored entry. -/
 lemma natAbs_rowEntry_lt {rows : List (List ℤ)} {b : ℕ}
     (h : ∀ row ∈ rows, ∀ z ∈ row, z.natAbs < 2 ^ b) (i j : ℕ) :
-    (rowEntry rows i j).natAbs < 2 ^ b := by
-  unfold rowEntry
-  rcases Nat.lt_or_ge i rows.length with hi | hi
-  · rw [List.getD_eq_getElem _ _ hi]
-    rcases Nat.lt_or_ge j rows[i].length with hj | hj
-    · rw [List.getD_eq_getElem _ _ hj]
-      exact h _ (List.getElem_mem hi) _ (List.getElem_mem hj)
-    · rw [List.getD_eq_default _ _ hj]
-      exact Nat.two_pow_pos b
-  · rw [List.getD_eq_default _ _ hi, List.getD_nil]
-    exact Nat.two_pow_pos b
-
-/-- Every stored entry of a list of rows is one of its indexed entries. -/
-lemma exists_rowEntry_eq {rows : List (List ℤ)} {row : List ℤ} {z : ℤ} (hrow : row ∈ rows)
-    (hz : z ∈ row) : ∃ i j, rowEntry rows i j = z := by
-  obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hrow
-  obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hz
-  exact ⟨i, j, by simp [rowEntry, List.getD_eq_getElem?_getD, hi, hj]⟩
+    (rowEntry rows i j).natAbs < 2 ^ b :=
+  rowEntry_rel_of_mem (Nat.two_pow_pos b) h i j
 
 private lemma length_traceTerms_le (A F : List (List ℤ)) (i : ℕ) :
     (traceTerms A F i).length ≤ A.length := by
@@ -426,12 +399,12 @@ theorem natAbs_rowEntry_stagesRows_lt {A : List (List ℤ)} {b : ℕ}
     (rowEntry (stagesRows A k) i j).natAbs < 2 ^ (b + k * (1 + A.length + b)) := by
   induction k generalizing i j with
   | zero =>
-    rw [stagesRows_zero, squareRows, rowEntry_tabulateRows, Nat.zero_mul, Nat.add_zero]
+    rw [stagesRows_zero, squareRows, rowEntry_tabulateTable, Nat.zero_mul, Nat.add_zero]
     split_ifs
     · exact hA i j
     · exact Nat.two_pow_pos b
   | succ k ih =>
-    rw [stagesRows_succ, stepRows, rowEntry_tabulateRows,
+    rw [stagesRows_succ, stepRows, rowEntry_tabulateTable,
       show b + (k + 1) * (1 + A.length + b) = b + k * (1 + A.length + b) + (1 + A.length + b) by
         ring]
     split_ifs
@@ -492,27 +465,17 @@ theorem intBits_step_le {A F : List (List ℤ)} {b e : ℕ}
 
 open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
 
-/-- Tabulating a `d × d` list of rows produces `d` rows. -/
-@[simp] lemma length_tabulateRows (d : ℕ) (g : ℕ → ℕ → ℤ) :
-    (tabulateRows d g).length = d := by
-  simp [tabulateRows]
-
-/-- Every row in `tabulateRows d g` has length `d`. -/
-lemma length_of_mem_tabulateRows {d : ℕ} {g : ℕ → ℕ → ℤ} {row : List ℤ}
-    (hrow : row ∈ tabulateRows d g) : row.length = d := by
-  obtain ⟨_, -, rfl⟩ := List.mem_map.mp hrow; simp
-
 /-- Every stage table `stagesRows A k` has `A.length` rows. -/
 @[simp] lemma length_stagesRows (A : List (List ℤ)) (k : ℕ) :
     (stagesRows A k).length = A.length := by
-  cases k <;> simp [stagesRows_zero, stagesRows_succ, squareRows, stepRows, length_tabulateRows]
+  cases k <;> simp [stagesRows_zero, stagesRows_succ, squareRows, stepRows, length_tabulateTable]
 
 /-- Every row in `stagesRows A k` has length `A.length`. -/
 lemma length_of_mem_stagesRows {A : List (List ℤ)} {k : ℕ} {row : List ℤ}
     (hrow : row ∈ stagesRows A k) : row.length = A.length := by
   cases k with
-  | zero => exact length_of_mem_tabulateRows hrow
-  | succ k => rw [stagesRows_succ] at hrow; exact length_of_mem_tabulateRows hrow
+  | zero => exact length_of_mem_tabulateTable hrow
+  | succ k => rw [stagesRows_succ] at hrow; exact length_of_mem_tabulateTable hrow
 
 private lemma intBits_le_length_encList {A : List (List ℤ)} {row : List ℤ} (hrow : row ∈ A)
     {z : ℤ} (hz : z ∈ row) : intBits z ≤ (encList (encList encIntBin) A).length + 1 := by
@@ -565,39 +528,14 @@ private lemma polyBounded_stageTableBound {α : Type} {size L k : α → ℕ}
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-/-- Matrix entry lookup on a list of rows is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_rowEntry {rows : α → List (List ℤ)} {i j : α → ℕ}
-    (hrows : ComputableInPolyTime rows encIn (encList (encList encIntBin)))
-    (hi : ComputableInPolyTime i encIn encUnary)
-    (hj : ComputableInPolyTime j encIn encUnary) :
-    ComputableInPolyTime (fun x => rowEntry (rows x) (i x) (j x)) encIn encIntBin := by
-  have hrows := hrows.tidy
-  have hi := hi.tidy
-  have hj := hj.tidy
-  exact .of_tidy ((listGetD (encA := encIntBin) 0).comp
-    (((listGetD (encA := encList encIntBin) []).comp (hrows.prod hi)).prod hj))
-
-/-- Tabulating a `d × d` matrix of binary integers from a unary dimension is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_tabulateRows {d : α → ℕ} {g : α → ℕ → ℕ → ℤ}
-    (hd : ComputableInPolyTime d encIn encUnary)
-    (hg : ComputableInPolyTime (fun p : (α × ℕ) × ℕ => g p.1.1 p.1.2 p.2)
-      (encPair (encPair encIn encUnary) encUnary) encIntBin) :
-    ComputableInPolyTime (fun x => tabulateRows (d x) (g x))
-      encIn (encList (encList encIntBin)) := by
-  have hd := hd.tidy
-  have hg := hg.tidy
-  exact .of_tidy (mapWithInput (range.comp hd) (mapWithInput (range.comp (hd.comp (fst encIn
-    encUnary))) hg))
-
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Padding or truncating a list of rows to a square table is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_squareRows :
     ComputableInPolyTime squareRows
       (encList (encList encIntBin)) (encList (encList encIntBin)) :=
-  (computableInPolyTime_tabulateRows (.of_tidy (length_list _)) (.of_tidy (by fun_prop)))
+  computableInPolyTime_tabulateTable (.of_tidy (length_list _)) (.of_tidy (length_list _))
+    (.of_tidy (by fun_prop))
 
 @[local fun_prop]
 private theorem dropUnary_list {β : Type} {encB : β ↪ List Bool} {l : α → List β} {n : α → ℕ}
@@ -655,7 +593,7 @@ theorem computableInPolyTime_stepRows :
     ComputableInPolyTime (fun p : List (List ℤ) × List (List ℤ) => stepRows p.1 p.2)
       (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
       (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateRows (by fun_prop) (by fun_prop)
+  computableInPolyTime_tabulateTable (by fun_prop) (by fun_prop) (by fun_prop)
 
 /-- Iterating `k` Bird stages on a list of rows is polynomial-time for a unary stage count `k`. -/
 @[fun_prop]
