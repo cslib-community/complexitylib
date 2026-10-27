@@ -65,7 +65,7 @@ with the Section 4 algebraic replacement design specialization of Sections 5.3�
    the nose after `3 * Fintype.card V` greedy rounds
    (`CNF.modelCountOn_eq_sum_branch_emod_ediv_design_greedy`,
    `CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_greedy`), with
-   `max D₀ P` simplified unconditionally to `D₀ = CNF.initialRowWeightBound B φ.length`
+   `max D₀ P` simplified unconditionally to `D₀ = initialRowWeightBound B φ.length`
    (`CNF.max_initialRowWeightBound_greedyRowListLength`).
 
 ## Main definitions
@@ -519,30 +519,30 @@ theorem CNF.modelCountOn_eq_sum_branch_emod_ediv_design_greedy
 `P = 20000 * B ^ 2 * (Nat.log 2 m + 1) ^ 2` is at most the Lemma 6.1 initial row weight bound
 `D₀ = 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3`. -/
 theorem CNF.greedyRowListLength_le_initialRowWeightBound (B m : ℕ) :
-    CNF.greedyRowListLength B m ≤ CNF.initialRowWeightBound B m := by
-  unfold CNF.greedyRowListLength CNF.initialRowWeightBound
+    greedyRowListLength B m ≤ initialRowWeightBound B m := by
+  unfold greedyRowListLength initialRowWeightBound
   have h1 : 20000 * B ^ 2 ≤ 320000 * B ^ 2 :=
     Nat.mul_le_mul_right (B ^ 2) (by decide)
   have h2 : (Nat.log 2 m + 1) ^ 2 ≤ (Nat.log 2 m + 1) ^ 3 :=
     Nat.pow_le_pow_right (Nat.succ_pos _) (by decide)
   exact Nat.mul_le_mul h1 h2
 
-/-- Consequently `max (CNF.initialRowWeightBound B m) (CNF.greedyRowListLength B m)` simplifies to
-`CNF.initialRowWeightBound B m`. -/
+/-- Consequently `max (initialRowWeightBound B m) (greedyRowListLength B m)` simplifies to
+`initialRowWeightBound B m`. -/
 @[simp]
 theorem CNF.max_initialRowWeightBound_greedyRowListLength (B m : ℕ) :
-    max (CNF.initialRowWeightBound B m) (CNF.greedyRowListLength B m) =
-      CNF.initialRowWeightBound B m :=
+    max (initialRowWeightBound B m) (greedyRowListLength B m) =
+      initialRowWeightBound B m :=
   max_eq_left (CNF.greedyRowListLength_le_initialRowWeightBound B m)
 
 /-- **Lemmas 6.1–6.2 & §§5.4–5.5, 6.3 (end-to-end initial + greedy parity-test compilation and
 branch-summed `ReplacementDesign` recovery of `φ.modelCountOn Finset.univ`)**: for any width-`≤ k`
 CNF `φ` on `n = Fintype.card V ≥ 1` variables with `φ.length ≤ B * n` (`B ≥ 1`), there exist
 initial parity rows `A_init` (`A_init.length ≤ 3 * n`, each of weight at most
-`D₀ = CNF.initialRowWeightBound B φ.length`) such that for any greedy sequence
+`D₀ = initialRowWeightBound B φ.length`) such that for any greedy sequence
 `A (i + 1) = A i ++ [testRow (γ i)]` with `A 0 = A_init` minimizing
 `commonZeroCount univ (φ.parityRowSystem (A i ++ [testRow γ']))` over candidate rows of list length
-`P = CNF.greedyRowListLength B φ.length`:
+`P = greedyRowListLength B φ.length`:
 1. At every stage `i ≤ 3 * n`, `(A i).length ≤ 6 * n`, and every compiled equation
    `φ.parityRowSystem (A i) j` has degree at most `k`, at most `D₀ * 2 ^ k` monomials, and
    variable-scope size `#(equationScope (φ.parityRowSystem (A i) j)) ≤ k * (D₀ * 2 ^ k)`.
@@ -553,8 +553,8 @@ theorem CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_gree
     {F : (V → Bool) → Type*} [∀ b, Fintype (F b)] (φ : CNF V) {k B : ℕ}
     (hk : ∀ c ∈ φ, c.length ≤ k) (hn : 1 ≤ Fintype.card V) (hB : 1 ≤ B)
     (hm : φ.length ≤ B * Fintype.card V) :
-    let D₀ := CNF.initialRowWeightBound B φ.length
-    let P := CNF.greedyRowListLength B φ.length
+    let D₀ := initialRowWeightBound B φ.length
+    let P := greedyRowListLength B φ.length
     ∃ A_init : List (Fin φ.length → Bool), A_init.length ≤ 3 * Fintype.card V ∧
       (∀ r_row ∈ A_init, weight r_row ≤ D₀) ∧
       ∀ (A : ℕ → List (Fin φ.length → Bool))

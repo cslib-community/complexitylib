@@ -235,7 +235,7 @@ degree bound, and `2 ^ (A * interpolationScale n)` examination bound for `CNF.pa
 For any `k C_B β_B : ℕ`, at the threshold `N₁ ≥ 16384` of
 `CNF.exists_branch_schedule_recovery_and_examBound_parityRowSystem_of_le_clog_pow k C_B β_B`,
 whenever `∀ c ∈ φ, c.length ≤ k`, `N₁ ≤ Fintype.card V`, `φ.length ≤ B * Fintype.card V`,
-`B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B`, `W ≤ CNF.initialRowWeightBound B φ.length`,
+`B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B`, `W ≤ BitString.initialRowWeightBound B φ.length`,
 `∀ r ∈ rows, weight r ≤ W`, and `rows.length ≤ 6 * Fintype.card V`, at
 `b₀ = CNF.parityBranchThreshold k W (Fintype.card V)` and `β = 2 * β_B + 5`, for any
 free-variable equivalence `e : ↥(univ \ S) ≃ Fin n'`, there exist `hQ : 0 < numNodes n'`,
@@ -264,7 +264,7 @@ theorem CNF.exists_branch_schedule_hermiteCramer_and_examBound_parityRowSystem_o
         N₁ ≤ Fintype.card V →
         φ.length ≤ B * Fintype.card V →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
-        W ≤ CNF.initialRowWeightBound B φ.length →
+        W ≤ BitString.initialRowWeightBound B φ.length →
         ∀ {rows : List (Fin φ.length → Bool)},
           (∀ r ∈ rows, weight r ≤ W) →
           rows.length ≤ 6 * Fintype.card V →
@@ -380,8 +380,8 @@ theorem CNF.exists_greedy_parityRowSystem_hermiteCramer_recovery_and_examBound_o
         1 ≤ B →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
         φ.length ≤ B * Fintype.card V →
-        let D₀ := CNF.initialRowWeightBound B φ.length
-        let P := CNF.greedyRowListLength B φ.length
+        let D₀ := BitString.initialRowWeightBound B φ.length
+        let P := BitString.greedyRowListLength B φ.length
         let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
         ∃ A₀ : List (Fin φ.length → Bool), A₀.length ≤ 3 * Fintype.card V ∧
           (∀ r ∈ A₀, weight r ≤ D₀) ∧
@@ -522,7 +522,7 @@ theorem CNF.exists_parityRowSystem_modelCountOn_hermiteCramer_recovery_and_examB
         1 ≤ B →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
         φ.length ≤ B * Fintype.card V →
-        let D₀ := CNF.initialRowWeightBound B φ.length
+        let D₀ := BitString.initialRowWeightBound B φ.length
         let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
         ∃ rows : List (Fin φ.length → Bool),
           rows.length ≤ 6 * Fintype.card V ∧
@@ -682,8 +682,8 @@ theorem CNF.exists_prop64NormalizedLeaves_greedy_total_hermiteCramer_recovery_an
           (2 : ℝ) ^ (17 * interpolationScale (Fintype.card V)) ∧
         (∀ L ∈ φ.prop64NormalizedLeaves k,
           let ψ := L.toCNF
-          let D₀ := CNF.initialRowWeightBound B ψ.length
-          let P := CNF.greedyRowListLength B ψ.length
+          let D₀ := BitString.initialRowWeightBound B ψ.length
+          let P := BitString.greedyRowListLength B ψ.length
           let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
           (∀ c ∈ ψ, c.length ≤ k) ∧
           ψ.length ≤ B * Fintype.card V ∧
@@ -888,8 +888,8 @@ theorem CNF.exists_prop64NormalizedLeaves_total_hermiteCramer_recovery_and_examB
           (2 : ℝ) ^ (17 * interpolationScale (Fintype.card V)) ∧
         (∀ L ∈ φ.prop64NormalizedLeaves k,
           let ψ := L.toCNF
-          let D₀ := CNF.initialRowWeightBound B ψ.length
-          let P := CNF.greedyRowListLength B ψ.length
+          let D₀ := BitString.initialRowWeightBound B ψ.length
+          let P := BitString.greedyRowListLength B ψ.length
           let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
           (∀ c ∈ ψ, c.length ≤ k) ∧
           ψ.length ≤ B * Fintype.card V ∧

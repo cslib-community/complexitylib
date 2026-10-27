@@ -118,7 +118,7 @@ branch-summed `interpolationScale` examination bound on the actual `toCountingDe
 theorem nonvacuous_sec63_modelCountOn_hermiteCramer_and_clearedParityJetTable_recovery_k3 :
     ∃ (N₁ : ℕ) (_ : NeZero N₁), 16384 ≤ N₁ ∧
       let φ := sampleHermiteTaut3CNF N₁
-      let D₀ := CNF.initialRowWeightBound 1 φ.length
+      let D₀ := Cslib.BitString.initialRowWeightBound 1 φ.length
       let b₀ := CNF.parityBranchThreshold 3 D₀ (Fintype.card (Fin N₁))
       ∃ rows : List (Fin φ.length → Bool),
         rows.length ≤ 6 * Fintype.card (Fin N₁) ∧
@@ -229,8 +229,8 @@ theorem nonvacuous_prop64NormalizedLeaves_total_hermiteCramer_and_jetTable_recov
           CNF.LeafCandidateQueryIndex (Fin N₃) B L.toCNF → ℝ),
         (∀ L ∈ φ.prop64NormalizedLeaves 3,
           let ψ := L.toCNF
-          let D₀ := CNF.initialRowWeightBound B ψ.length
-          let P := CNF.greedyRowListLength B ψ.length
+          let D₀ := Cslib.BitString.initialRowWeightBound B ψ.length
+          let P := Cslib.BitString.greedyRowListLength B ψ.length
           let b₀ := CNF.parityBranchThreshold 3 D₀ (Fintype.card (Fin N₃))
           Fintype.card (CNF.LeafCandidateQueryIndex (Fin N₃) B ψ) =
             3 * Fintype.card (Fin N₃) * (2 * ψ.length) ^ P + 1 ∧
@@ -341,7 +341,7 @@ theorem nonvacuous_prop64NormalizedLeaves_total_hermiteCramer_and_jetTable_recov
     fun L q =>
       if hL : L ∈ φ.prop64NormalizedLeaves 3 then
         let ψ := L.toCNF
-        let D₀ := CNF.initialRowWeightBound B ψ.length
+        let D₀ := Cslib.BitString.initialRowWeightBound B ψ.length
         let b₀ := CNF.parityBranchThreshold 3 D₀ (Fintype.card (Fin N₃))
         let A := (hleaf L hL).2.2.2.2.2.choose
         let hA_spec := (hleaf L hL).2.2.2.2.2.choose_spec
@@ -373,7 +373,7 @@ theorem nonvacuous_prop64NormalizedLeaves_total_hermiteCramer_and_jetTable_recov
     dsimp only [actualQueryExam]
     rw [dite_eq_left_of_eq_true (eq_true hL)]
     let ψ := L.toCNF
-    let D₀ := CNF.initialRowWeightBound B ψ.length
+    let D₀ := Cslib.BitString.initialRowWeightBound B ψ.length
     let b₀ := CNF.parityBranchThreshold 3 D₀ (Fintype.card (Fin N₃))
     let A := (hleaf L hL).2.2.2.2.2.choose
     let hA_spec := (hleaf L hL).2.2.2.2.2.choose_spec

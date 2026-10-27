@@ -1,18 +1,19 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Anton Kovsharov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger, Karn Seth
+Authors: Samuel Schlesinger, Karn Seth, Anton Kovsharov
 -/
 
 module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Mathlib.Data.Nat.Factorial.Basic
 public import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
 
 /-!
-# Binary sizes of products and powers
+# Binary sizes of products, powers, and factorials
 
 These pure facts are moved unchanged from the binary arithmetic facade. They retain their
 qualified names without depending on a machine calculus.
@@ -36,5 +37,9 @@ theorem size_pow_le (m k : ℕ) : (m ^ k).size ≤ k * m.size + 1 := by
     have := size_mul_le (m ^ k) m
     rw [Nat.pow_succ, Nat.succ_mul]
     lia
+
+/-- The binary length of `n!` is at most `n * n.size + 1`. -/
+theorem size_factorial_le (n : ℕ) : n.factorial.size ≤ n * n.size + 1 :=
+  (Nat.size_le_size n.factorial_le_pow).trans (size_pow_le n n)
 
 end Nat

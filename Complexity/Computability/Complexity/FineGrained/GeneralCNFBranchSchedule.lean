@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Anton Kovsharov
 -/
 
 module
@@ -294,7 +294,7 @@ degree bound, and `2 ^ (A * interpolationScale n)` examination bound for `CNF.pa
 For any `k C_B β_B : ℕ`, at the threshold `N₁ ≥ 16384` of
 `CNF.exists_branch_schedule_and_examBound_parityRowSystem_of_le_clog_pow k C_B β_B`, whenever
 `∀ c ∈ φ, c.length ≤ k`, `N₁ ≤ Fintype.card V`, `φ.length ≤ B * Fintype.card V`,
-`B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B`, `W ≤ CNF.initialRowWeightBound B φ.length`,
+`B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B`, `W ≤ initialRowWeightBound B φ.length`,
 `∀ r ∈ rows, weight r ≤ W`, and `rows.length ≤ 6 * Fintype.card V`, at
 `b₀ = CNF.parityBranchThreshold k W (Fintype.card V)` and `β = 2 * β_B + 5`, there exist
 per-branch feasibility proofs `hF b` and concrete `ReplacementDesign`s `D b` such that:
@@ -316,7 +316,7 @@ theorem CNF.exists_branch_schedule_recovery_and_examBound_parityRowSystem_of_le_
         N₁ ≤ Fintype.card V →
         φ.length ≤ B * Fintype.card V →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
-        W ≤ CNF.initialRowWeightBound B φ.length →
+        W ≤ initialRowWeightBound B φ.length →
         ∀ {rows : List (Fin φ.length → Bool)},
           (∀ r ∈ rows, weight r ≤ W) →
           rows.length ≤ 6 * Fintype.card V →
@@ -417,8 +417,8 @@ theorem CNF.exists_greedy_parityRowSystem_recovery_and_examBound_of_le_clog_pow
         1 ≤ B →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
         φ.length ≤ B * Fintype.card V →
-        let D₀ := CNF.initialRowWeightBound B φ.length
-        let P := CNF.greedyRowListLength B φ.length
+        let D₀ := initialRowWeightBound B φ.length
+        let P := greedyRowListLength B φ.length
         let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
         ∃ A₀ : List (Fin φ.length → Bool), A₀.length ≤ 3 * Fintype.card V ∧
           (∀ r ∈ A₀, weight r ≤ D₀) ∧
@@ -534,7 +534,7 @@ bound:**
 For any `k C_B β_B : ℕ`, there exists `N₁ ≥ 16384` such that for any width-`≤ k` CNF `φ : CNF V`
 with `N₁ ≤ Fintype.card V`, `1 ≤ B`, `B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B`, and
 `φ.length ≤ B * Fintype.card V` (including `φ = []`), at
-`D₀ = CNF.initialRowWeightBound B φ.length` and
+`D₀ = initialRowWeightBound B φ.length` and
 `b₀ = CNF.parityBranchThreshold k D₀ (Fintype.card V)`, there exists a parity-row list
 `rows : List (Fin φ.length → Bool)` (`rows.length ≤ 6 * Fintype.card V`) such that:
 1. `commonZeroCount univ (φ.parityRowSystem rows) = φ.modelCountOn Finset.univ`.
@@ -553,7 +553,7 @@ theorem CNF.exists_parityRowSystem_modelCountOn_recovery_and_examBound_of_le_clo
         1 ≤ B →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
         φ.length ≤ B * Fintype.card V →
-        let D₀ := CNF.initialRowWeightBound B φ.length
+        let D₀ := initialRowWeightBound B φ.length
         let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
         ∃ rows : List (Fin φ.length → Bool),
           rows.length ≤ 6 * Fintype.card V ∧
@@ -644,7 +644,7 @@ theorem CNF.exists_parityRowSystem_modelCountOn_recovery_and_examBound_of_le_clo
   · have : Nonempty (Fin φ.length) := ⟨⟨0, hlen_pos⟩⟩
     have hN_gr : N_gr ≤ Fintype.card V := (le_max_right _ _).trans hcard
     obtain ⟨A₀, _, _, hgreedy⟩ := hgreedy_rec φ hk hN_gr hB1 hB_le hm
-    let P := CNF.greedyRowListLength B φ.length
+    let P := greedyRowListLength B φ.length
     let A := greedyTrajectory φ P A₀
     let γ : ℕ → Fin P → Fin φ.length × Bool := fun i => nextGreedyStep φ P (A i)
     have hmin : ∀ i (γ' : Fin P → Fin φ.length × Bool),
@@ -676,8 +676,8 @@ variable-occurrence restriction on `φ`):
 2. **Per-leaf greedy parity-design recovery and `interpolationScale` examination bounds:**
    For every leaf `L ∈ φ.prop64Leaves k`, setting `ψ := L.toCNF`,
    `B := CNF.prop64LeafClauseRatio k (Fintype.card V)`,
-   `D₀ := CNF.initialRowWeightBound B ψ.length`,
-   `P := CNF.greedyRowListLength B ψ.length`, and
+   `D₀ := initialRowWeightBound B ψ.length`,
+   `P := greedyRowListLength B ψ.length`, and
    `b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)`:
    - `(∀ c ∈ ψ, c.length ≤ k) ∧ ψ.length ≤ B * Fintype.card V`, and
    - `ψ` admits Lemma 6.1 initial parity rows `A₀` (`A₀.length ≤ 3 * Fintype.card V`, row weight
@@ -705,8 +705,8 @@ theorem CNF.exists_prop64Leaves_greedy_recovery_and_examBound {k : ℕ} (hk : 2 
         ∀ L ∈ φ.prop64Leaves k,
           let ψ := L.toCNF
           let B := CNF.prop64LeafClauseRatio k (Fintype.card V)
-          let D₀ := CNF.initialRowWeightBound B ψ.length
-          let P := CNF.greedyRowListLength B ψ.length
+          let D₀ := initialRowWeightBound B ψ.length
+          let P := greedyRowListLength B ψ.length
           let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
           (∀ c ∈ ψ, c.length ≤ k) ∧
           ψ.length ≤ B * Fintype.card V ∧
@@ -830,7 +830,7 @@ theorem CNF.exists_prop64Leaves_modelCountOn_recovery_and_examBound {k : ℕ} (h
         ∀ L ∈ φ.prop64Leaves k,
           let ψ := L.toCNF
           let B := CNF.prop64LeafClauseRatio k (Fintype.card V)
-          let D₀ := CNF.initialRowWeightBound B ψ.length
+          let D₀ := initialRowWeightBound B ψ.length
           let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
           (∀ c ∈ ψ, c.length ≤ k) ∧
           ψ.length ≤ B * Fintype.card V ∧

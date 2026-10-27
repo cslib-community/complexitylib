@@ -49,18 +49,18 @@ asymptotic `interpolationScale` tree-exponent and candidate-query overhead bound
    - `CNF.LeafCandidateQueryIndex V B ψ` and `CNF.candidateQueryRows A q`: index all parity-row
      systems evaluated during the `3 * n` greedy rounds of Lemma 6.2 (`Sum.inl (i, γ')` for
      `i : Fin (3 * Fintype.card V)` and ordered candidate list
-     `γ' : Fin (CNF.greedyRowListLength B ψ.length) → Fin ψ.length × Bool`, including discarded
-     candidates counted with list multiplicity, plus `Sum.inr ()` for the final query
+     `γ' : Fin (BitString.greedyRowListLength B ψ.length) → Fin ψ.length × Bool`, including
+     discarded candidates counted with list multiplicity, plus `Sum.inr ()` for the final query
      `A (3 * Fintype.card V)`), with exact cardinality
      `3 * Fintype.card V * (2 * ψ.length) ^ P + 1 ≤ CNF.leafCandidateQueryBound B ψ`
      (`CNF.card_leafCandidateQueryIndex_eq`, `CNF.card_leafCandidateQueryIndex_le`).
    - `CNF.candidateQueryRows_length_and_weight_le`: every candidate or final query
      `q : CNF.LeafCandidateQueryIndex V B ψ` has at most `6 * Fintype.card V` parity rows, each of
-     Hamming weight at most `CNF.initialRowWeightBound B ψ.length`.
+     Hamming weight at most `BitString.initialRowWeightBound B ψ.length`.
    - `CNF.greedyRowListLength_le_mul_pow_clog` and
      `CNF.exists_prop64_leafCandidateQueryBound_le_interpolationScale`: prove
-     `CNF.greedyRowListLength B m ≤ 20000 * B ^ 2 * (Nat.clog 2 (2 * m + 4)) ^ 2` for all `B, m`
-     and apply `SparseCountingScale.eventually_query_overhead_poly_le` to bound
+     `BitString.greedyRowListLength B m ≤ 20000 * B ^ 2 * (Nat.clog 2 (2 * m + 4)) ^ 2`
+     for all `B, m` and apply `SparseCountingScale.eventually_query_overhead_poly_le` to bound
      `(CNF.leafCandidateQueryBound B ψ : ℝ) ≤ (2 : ℝ) ^ interpolationScale (Fintype.card V)` for
      every Proposition 6.4 leaf formula `ψ = L.toCNF`.
    - `CNF.exists_prop64NormalizedLeaves_greedy_total_recovery_and_examBound` and
@@ -152,23 +152,23 @@ obtained by filtering tautological clauses (`nontautological`) and reducing by s
     (reduce (nontautological φ.toClauseSet))
 
 /-- The Lemma 6.2 / Section 6.3 eq. `(6.4)` candidate-query upper bound
-`3 * Fintype.card V * (2 * ψ.length + 2) ^ (CNF.greedyRowListLength B ψ.length) + 1`
+`3 * Fintype.card V * (2 * ψ.length + 2) ^ (BitString.greedyRowListLength B ψ.length) + 1`
 bounding the number of candidate parity-row systems evaluated across the `3 * n` greedy rounds on a
 sparse formula `ψ : CNF V` at clause-density bound `B` ([OpenAI2026ETH], §6.3, p. 43). -/
 @[expose] def CNF.leafCandidateQueryBound [Fintype V] (B : ℕ) (ψ : CNF V) : ℕ :=
-  3 * Fintype.card V * (2 * ψ.length + 2) ^ (CNF.greedyRowListLength B ψ.length) + 1
+  3 * Fintype.card V * (2 * ψ.length + 2) ^ (BitString.greedyRowListLength B ψ.length) + 1
 
 /-- Index type of all parity-row systems evaluated during the Section 6.3 Lemma 6.2 greedy
 procedure on a leaf formula `ψ : CNF V` at clause-density bound `B`
 ([OpenAI2026ETH], §6.3, eq. `(6.4)`, p. 43):
 - `Sum.inl (i, γ')` indexes the candidate system `A i.1 ++ [testRow γ']` at greedy round
   `i : Fin (3 * Fintype.card V)` and ordered candidate list
-  `γ' : Fin (CNF.greedyRowListLength B ψ.length) → Fin ψ.length × Bool` (including discarded
+  `γ' : Fin (BitString.greedyRowListLength B ψ.length) → Fin ψ.length × Bool` (including discarded
   candidates, counted with list multiplicity), and
 - `Sum.inr ()` indexes the final system `A (3 * Fintype.card V)`. -/
 abbrev CNF.LeafCandidateQueryIndex (V : Type*) [Fintype V] (B : ℕ) (ψ : CNF V) : Type _ :=
   (Fin (3 * Fintype.card V) ×
-    (Fin (CNF.greedyRowListLength B ψ.length) → Fin ψ.length × Bool)) ⊕ Unit
+    (Fin (BitString.greedyRowListLength B ψ.length) → Fin ψ.length × Bool)) ⊕ Unit
 
 /-- The parity-row list evaluated at query `q : CNF.LeafCandidateQueryIndex V B ψ` along a
 trajectory `A : ℕ → List (Fin ψ.length → Bool)` ([OpenAI2026ETH], §6.3, p. 43):
@@ -207,10 +207,10 @@ theorem CNF.one_le_leafCandidateQueryBound [Fintype V] (B : ℕ) (ψ : CNF V) :
 
 /-- The exact number of candidate and final parity-row queries indexed by
 `CNF.LeafCandidateQueryIndex V B ψ` is
-`3 * Fintype.card V * (2 * ψ.length) ^ (CNF.greedyRowListLength B ψ.length) + 1`. -/
+`3 * Fintype.card V * (2 * ψ.length) ^ (BitString.greedyRowListLength B ψ.length) + 1`. -/
 theorem CNF.card_leafCandidateQueryIndex_eq [Fintype V] (B : ℕ) (ψ : CNF V) :
     Fintype.card (CNF.LeafCandidateQueryIndex V B ψ) =
-      3 * Fintype.card V * (2 * ψ.length) ^ (CNF.greedyRowListLength B ψ.length) + 1 := by
+      3 * Fintype.card V * (2 * ψ.length) ^ (BitString.greedyRowListLength B ψ.length) + 1 := by
   simp only [CNF.LeafCandidateQueryIndex, Fintype.card_sum, Fintype.card_prod,
     Fintype.card_pi, Fintype.card_fin, Fintype.card_bool, Fintype.card_unit,
     Finset.prod_const, Finset.card_univ]
@@ -391,22 +391,22 @@ theorem CNF.length_prop64NormalizedLeaves_le_interpolationScale
 /-! ### 3. Lemma 6.2 candidate-query overhead and Proposition 6.4 tree-wide examination bounds -/
 
 /-- For every `B, m : ℕ`, the Lemma 6.1–6.2 greedy candidate list length
-`CNF.greedyRowListLength B m = 20000 * B ^ 2 * (Nat.log 2 m + 1) ^ 2` satisfies
-`CNF.greedyRowListLength B m ≤ 20000 * B ^ 2 * (Nat.clog 2 (2 * m + 4)) ^ 2`. -/
+`BitString.greedyRowListLength B m = 20000 * B ^ 2 * (Nat.log 2 m + 1) ^ 2` satisfies
+`BitString.greedyRowListLength B m ≤ 20000 * B ^ 2 * (Nat.clog 2 (2 * m + 4)) ^ 2`. -/
 theorem CNF.greedyRowListLength_le_mul_pow_clog (B m : ℕ) :
-    CNF.greedyRowListLength B m ≤ 20000 * B ^ 2 * (Nat.clog 2 (2 * m + 4)) ^ 2 := by
+    BitString.greedyRowListLength B m ≤ 20000 * B ^ 2 * (Nat.clog 2 (2 * m + 4)) ^ 2 := by
   have hlog_lt : Nat.log 2 m < Nat.clog 2 (2 * m + 4) := by
     rw [Nat.lt_clog_iff_pow_lt one_lt_two]
     rcases Nat.eq_zero_or_pos m with rfl | hm_pos
     · decide
     · have hpow : 2 ^ Nat.log 2 m ≤ m := Nat.pow_log_le_self 2 (by omega)
       omega
-  unfold CNF.greedyRowListLength
+  unfold BitString.greedyRowListLength
   exact Nat.mul_le_mul_left (20000 * B ^ 2) (Nat.pow_le_pow_left hlog_lt 2)
 
 private theorem greedyRowListLength_le_initialRowWeightBound (B m : ℕ) :
-    CNF.greedyRowListLength B m ≤ CNF.initialRowWeightBound B m := by
-  unfold CNF.greedyRowListLength CNF.initialRowWeightBound
+    BitString.greedyRowListLength B m ≤ BitString.initialRowWeightBound B m := by
+  unfold BitString.greedyRowListLength BitString.initialRowWeightBound
   exact Nat.mul_le_mul (Nat.mul_le_mul_right _ (by decide))
     (Nat.pow_le_pow_right (Nat.succ_pos _) (by decide))
 
@@ -429,15 +429,15 @@ theorem CNF.length_candidateQueryRows_le_of_step [Fintype V] {B : ℕ} {ψ : CNF
     omega
 
 /-- If every row in `A i` (`i ≤ 3 * Fintype.card V`) has Hamming weight at most
-`CNF.initialRowWeightBound B ψ.length`, then every row in `CNF.candidateQueryRows A q`
+`BitString.initialRowWeightBound B ψ.length`, then every row in `CNF.candidateQueryRows A q`
 (including every candidate `testRow γ'`) has Hamming weight at most
-`CNF.initialRowWeightBound B ψ.length`. -/
+`BitString.initialRowWeightBound B ψ.length`. -/
 theorem CNF.weight_mem_candidateQueryRows_le_of_step [Fintype V] {B : ℕ} {ψ : CNF V}
     {A : ℕ → List (Fin ψ.length → Bool)}
     (hw : ∀ i ≤ 3 * Fintype.card V, ∀ r ∈ A i,
-      weight r ≤ CNF.initialRowWeightBound B ψ.length)
+      weight r ≤ BitString.initialRowWeightBound B ψ.length)
     (q : CNF.LeafCandidateQueryIndex V B ψ) :
-    ∀ r ∈ CNF.candidateQueryRows A q, weight r ≤ CNF.initialRowWeightBound B ψ.length := by
+    ∀ r ∈ CNF.candidateQueryRows A q, weight r ≤ BitString.initialRowWeightBound B ψ.length := by
   rcases q with ⟨i, γ'⟩ | ⟨⟩
   · intro r hr
     simp only [CNF.candidateQueryRows, List.mem_append, List.mem_singleton] at hr
@@ -448,21 +448,21 @@ theorem CNF.weight_mem_candidateQueryRows_le_of_step [Fintype V] {B : ℕ} {ψ :
   · exact hw (3 * Fintype.card V) le_rfl
 
 /-- Along any trajectory `A` starting from `A 0 = A₀` with `A₀.length ≤ 3 * Fintype.card V`
-and `∀ r ∈ A₀, weight r ≤ CNF.initialRowWeightBound B ψ.length` and appending one
+and `∀ r ∈ A₀, weight r ≤ BitString.initialRowWeightBound B ψ.length` and appending one
 `testRow (γ i)` per step, every query `q : CNF.LeafCandidateQueryIndex V B ψ` has at most
 `6 * Fintype.card V` parity rows, each of Hamming weight at most
-`CNF.initialRowWeightBound B ψ.length`. -/
+`BitString.initialRowWeightBound B ψ.length`. -/
 theorem CNF.candidateQueryRows_length_and_weight_le [Fintype V] {B : ℕ} {ψ : CNF V}
     {A₀ : List (Fin ψ.length → Bool)} (hlen0 : A₀.length ≤ 3 * Fintype.card V)
-    (hw0 : ∀ r ∈ A₀, weight r ≤ CNF.initialRowWeightBound B ψ.length)
+    (hw0 : ∀ r ∈ A₀, weight r ≤ BitString.initialRowWeightBound B ψ.length)
     {A : ℕ → List (Fin ψ.length → Bool)}
-    {γ : ℕ → Fin (CNF.greedyRowListLength B ψ.length) → Fin ψ.length × Bool}
+    {γ : ℕ → Fin (BitString.greedyRowListLength B ψ.length) → Fin ψ.length × Bool}
     (h0 : A 0 = A₀) (hA : ∀ i, A (i + 1) = A i ++ [testRow (γ i)])
     (q : CNF.LeafCandidateQueryIndex V B ψ) :
     (CNF.candidateQueryRows A q).length ≤ 6 * Fintype.card V ∧
-    ∀ r ∈ CNF.candidateQueryRows A q, weight r ≤ CNF.initialRowWeightBound B ψ.length := by
+    ∀ r ∈ CNF.candidateQueryRows A q, weight r ≤ BitString.initialRowWeightBound B ψ.length := by
   have hstep : ∀ i, (A i).length ≤ 3 * Fintype.card V + i ∧
-      ∀ r ∈ A i, weight r ≤ CNF.initialRowWeightBound B ψ.length := by
+      ∀ r ∈ A i, weight r ≤ BitString.initialRowWeightBound B ψ.length := by
     intro i
     induction i with
     | zero =>
@@ -515,7 +515,7 @@ theorem CNF.exists_leafCandidateQueryBound_le_interpolationScale
   refine ⟨N_q, fun {V _} ψ {B} hcard hm hB => ?_⟩
   have hP := CNF.greedyRowListLength_le_mul_pow_clog B ψ.length
   have hbound := hN_q (Fintype.card V) hcard ψ.length B
-    (CNF.greedyRowListLength B ψ.length) hm hB hP
+    (BitString.greedyRowListLength B ψ.length) hm hB hP
   unfold CNF.leafCandidateQueryBound
   exact_mod_cast hbound
 
@@ -612,8 +612,8 @@ theorem CNF.exists_prop64NormalizedLeaves_greedy_total_recovery_and_examBound
           (2 : ℝ) ^ (17 * interpolationScale (Fintype.card V)) ∧
         (∀ L ∈ φ.prop64NormalizedLeaves k,
           let ψ := L.toCNF
-          let D₀ := CNF.initialRowWeightBound B ψ.length
-          let P := CNF.greedyRowListLength B ψ.length
+          let D₀ := BitString.initialRowWeightBound B ψ.length
+          let P := BitString.greedyRowListLength B ψ.length
           let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
           (∀ c ∈ ψ, c.length ≤ k) ∧
           ψ.length ≤ B * Fintype.card V ∧
@@ -910,8 +910,8 @@ theorem CNF.exists_prop64NormalizedLeaves_total_recovery_and_examBound
           (2 : ℝ) ^ (17 * interpolationScale (Fintype.card V)) ∧
         (∀ L ∈ φ.prop64NormalizedLeaves k,
           let ψ := L.toCNF
-          let D₀ := CNF.initialRowWeightBound B ψ.length
-          let P := CNF.greedyRowListLength B ψ.length
+          let D₀ := BitString.initialRowWeightBound B ψ.length
+          let P := BitString.greedyRowListLength B ψ.length
           let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
           (∀ c ∈ ψ, c.length ≤ k) ∧
           ψ.length ≤ B * Fintype.card V ∧
