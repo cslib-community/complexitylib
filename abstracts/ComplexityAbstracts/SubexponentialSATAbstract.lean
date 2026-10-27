@@ -13,7 +13,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Data.Fintype.Pi
 
-/-! # Draft: exact subexponential counting and the exponential time hypotheses
+/-! # Draft: OpenAI: the Exponential Time Hypothesis is false
 
 **Unproved contracts, not headline theorems.** This draft prepares the formal abstract requested
 in #1226. `ExactCounting`, `ETHRefutation`, `SETHRefutation`, and `ZeroSATExponents` below are

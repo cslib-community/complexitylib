@@ -1,7 +1,8 @@
 # Pending catalogue proposal: subexponential SAT
 
 This is staging material for [#1226](https://github.com/cslib-community/complexitylib/issues/1226),
-not an entry in the selected catalogue. Samuel decides the final title. The
+not an entry in the selected catalogue. Samuel selected the title below in
+[#587](https://github.com/cslib-community/complexitylib/issues/587#issuecomment-6445129935). The
 [draft abstract](../ComplexityAbstracts/SubexponentialSATAbstract.lean) defines the intended
 contracts as propositions; it does not prove them. Its audit verifies only their dependency
 boundary. No PDF for these claims is published.
@@ -13,7 +14,7 @@ the catalogue validator must reject selecting the draft propositions as headline
 ```json
 {
   "id": "subexponential-sat",
-  "title": "OpenAI: exact subexponential counting and the failure of ETH",
+  "title": "OpenAI: the Exponential Time Hypothesis is false",
   "module": "ComplexityAbstracts.SubexponentialSATAbstract",
   "headline_theorems": [
     "ComplexityAbstracts.SubexponentialSATAbstract.exact_count",
@@ -27,11 +28,11 @@ the catalogue validator must reject selecting the draft propositions as headline
 }
 ```
 
-Proposed README selection row, also pending the endpoint and Samuel's wording decision:
+Proposed README selection row, pending the endpoint:
 
 | Result | Model and scope |
 | --- | --- |
-| [OpenAI: exact subexponential counting and the failure of ETH](../ComplexityAbstracts/SubexponentialSATAbstract.lean) | One fixed native machine per width, exact declared-variable counts, and interpolation-scale time with polynomial overhead and polynomial space in the original external encoded input length; all SAT exponents zero and ETH/SETH false. §§3–6 and Proposition 6.4, not the sharper Theorem 1.1 / Appendix D bound. |
+| [OpenAI: the Exponential Time Hypothesis is false](../ComplexityAbstracts/SubexponentialSATAbstract.lean) | One fixed native machine per width, exact declared-variable counts, and interpolation-scale time with polynomial overhead and polynomial space in the original external encoded input length; all SAT exponents zero and ETH/SETH false. §§3–6 and Proposition 6.4, not the sharper Theorem 1.1 / Appendix D bound. |
 
 Before promotion, discharge the four concrete branch obligations recorded in #1226: the native
 branch certificate, feasible-branch exactness, global polynomial branch space, and the branch
