@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Anton Kovsharov
 -/
 
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 
 /-! Tests for sparse `𝔽₂` CNF parity-check compilation and heavy-variable restriction. -/
@@ -35,12 +36,12 @@ def dupClause : Clause ℕ := [(3, true), (1, false), (3, true), (1, false), (0,
 
 example : compileClause dupClause = [[1], [0, 1], [1, 3], [0, 1, 3]] := rfl
 example : compileClauseBounded 5 dupClause = compileClause dupClause := rfl
+example : compileClauseBounded 2 dupClause ≠ compileClause dupClause := by decide
 
 /-- Check concrete evaluation on a falsifying assignment (`x₀ = false, x₁ = true, x₃ = false`)
 and a satisfying assignment (`x₀ = true, x₁ = true, x₃ = false`). -/
 example : evalMonomialList (compileClause dupClause) (fun v => v == 1) = true ∧
     dupClause.eval (fun v => v == 1) = false := ⟨rfl, rfl⟩
-
 example : evalMonomialList (compileClause dupClause) (fun v => v == 0 || v == 1) = false ∧
     dupClause.eval (fun v => v == 0 || v == 1) = true := ⟨rfl, rfl⟩
 
@@ -52,11 +53,8 @@ def sampleCNF : CNF ℕ := [[(1, false)], [(2, true), (1, false)], tautClause]
 
 example : compileParityRow sampleCNF [true, true, true] = [[1, 2]] := rfl
 example : compileParityRowBounded 3 sampleCNF [true, true, true] = [[1, 2]] := rfl
-
-/-- Common zeros of `compileParitySystem` match `PassesTests` on concrete assignments. -/
 example : evalSystem (compileParitySystem sampleCNF [[true, true, false]])
     (fun v => v == 1 || v == 2) = false := rfl
-
 example : evalSystem (compileParitySystem sampleCNF [[true, true, false]])
     (fun v => v == 1) = true := rfl
 
@@ -75,30 +73,35 @@ def heavySys : List (List (List ℕ)) := [cancelEq, [[0, 1]], [[1, 3]]]
 
 example : (varDegree 0 heavySys, varDegree 1 heavySys, varDegree 2 heavySys, varDegree 3 heavySys) =
     (1, 3, 1, 1) := rfl
-
 example : findHeavyVar 4 2 heavySys = some 1 := rfl
 example : restrictSystem 1 true heavySys = [[], [[0]], [[3]]] := rfl
 example : varDegree 1 (restrictSystem 1 true heavySys) = 0 := rfl
 example : findHeavyVar 4 2 (restrictSystem 1 true heavySys) = none := rfl
 
-/-! ### 4. Plain `ComputableInPolyTime` surface check -/
+/-! ### 4. Plain `ComputableInPolyTime` `fun_prop` pipeline compositions -/
 
+/-- Compiling a bounded-width parity system and immediately restricting a variable composes cleanly
+via `fun_prop` on the plain `ComputableInPolyTime` surface. -/
 example : ComputableInPolyTime
-    (fun p : CNF ℕ × List (List Bool) => compileParitySystemBounded 3 p.1 p.2)
-    (encPair encCNF (encList encBits))
-    (encList (encList (encList encNat))) :=
-  computableInPolyTime_compileParitySystemBounded 3
+    (fun x : (ℕ × Bool) × (CNF ℕ × List (List Bool)) =>
+      restrictSystem x.1.1 x.1.2 (compileParitySystemBounded 3 x.2.1 x.2.2))
+    (encPair (encPair encNat encBool) (encPair encCNF (encList encBits)))
+    (encList (encList (encList encNat))) := by fun_prop
 
+/-- Restricting a variable and then querying `findHeavyVar` composes cleanly via `fun_prop`. -/
 example : ComputableInPolyTime
-    (fun p : (ℕ × ℕ) × List (List (List ℕ)) => findHeavyVar p.1.1 p.1.2 p.2)
-    (encPair (encPair encUnary encNat) (encList (encList (encList encNat))))
-    (encOption encNat) :=
-  computableInPolyTime_findHeavyVar
+    (fun x : (ℕ × ℕ) × ((ℕ × Bool) × List (List (List ℕ))) =>
+      findHeavyVar x.1.1 x.1.2 (restrictSystem x.2.1.1 x.2.1.2 x.2.2))
+    (encPair (encPair encUnary encNat)
+      (encPair (encPair encNat encBool) (encList (encList (encList encNat)))))
+    (encOption encNat) := by fun_prop
 
+/-- XORing two compiled parity-check rows on the same CNF composes cleanly via `fun_prop`. -/
 example : ComputableInPolyTime
-    (fun p : (ℕ × Bool) × List (List (List ℕ)) => restrictSystem p.1.1 p.1.2 p.2)
-    (encPair (encPair encNat encBool) (encList (encList (encList encNat))))
-    (encList (encList (encList encNat))) :=
-  computableInPolyTime_restrictSystem
+    (fun x : CNF ℕ × (List Bool × List Bool) =>
+      xorEquation (compileParityRowBounded 3 x.1 x.2.1)
+        (compileParityRowBounded 3 x.1 x.2.2))
+    (encPair encCNF (encPair encBits encBits))
+    (encList (encList encNat)) := by fun_prop
 
 end ComplexityTests.SparsePolyCompile

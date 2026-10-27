@@ -23,6 +23,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Foundations.Data.BitString.ZModTwo
 import Mathlib.Data.List.GetD
 
 /-!
@@ -112,38 +113,10 @@ def IsCanonicalMonomial (m : List ℕ) : Prop := m.Pairwise (· < ·)
 theorem IsCanonicalMonomial.nodup {m : List ℕ} (hm : IsCanonicalMonomial m) : m.Nodup :=
   hm.imp ne_of_lt
 
-theorem IsCanonicalMonomial.eq_of_mem_iff {m₁ m₂ : List ℕ}
-    (hm₁ : IsCanonicalMonomial m₁) (hm₂ : IsCanonicalMonomial m₂)
-    (hmem : ∀ v, v ∈ m₁ ↔ v ∈ m₂) : m₁ = m₂ := by
-  induction m₁ generalizing m₂ with
-  | nil =>
-    cases m₂ with
-    | nil => rfl
-    | cons y _ => exact False.elim (List.not_mem_nil ((hmem y).mpr List.mem_cons_self))
-  | cons x xs ih =>
-    cases m₂ with
-    | nil => exact False.elim (List.not_mem_nil ((hmem x).mp List.mem_cons_self))
-    | cons y ys =>
-      rw [IsCanonicalMonomial, List.pairwise_cons] at hm₁ hm₂
-      have hxy : x = y := by
-        rcases List.mem_cons.mp ((hmem x).mp List.mem_cons_self) with rfl | hxs
-        · rfl
-        · rcases List.mem_cons.mp ((hmem y).mpr List.mem_cons_self) with rfl | hys
-          · rfl
-          · exact absurd (lt_trans (hm₂.1 x hxs) (hm₁.1 y hys)) (lt_irrefl _)
-      subst hxy
-      refine congrArg (x :: ·) (ih hm₁.2 hm₂.2 fun z => ⟨fun hz => ?_, fun hz => ?_⟩)
-      · rcases List.mem_cons.mp ((hmem z).mp (List.mem_cons_of_mem x hz)) with rfl | hzys
-        · exact absurd (hm₁.1 z hz) (lt_irrefl _)
-        · exact hzys
-      · rcases List.mem_cons.mp ((hmem z).mpr (List.mem_cons_of_mem x hz)) with rfl | hzxs
-        · exact absurd (hm₂.1 z hz) (lt_irrefl _)
-        · exact hzxs
-
 theorem IsCanonicalMonomial.eq_of_toFinset_eq {m₁ m₂ : List ℕ}
     (hm₁ : IsCanonicalMonomial m₁) (hm₂ : IsCanonicalMonomial m₂)
     (h : m₁.toFinset = m₂.toFinset) : m₁ = m₂ :=
-  hm₁.eq_of_mem_iff hm₂ fun v => by rw [← List.mem_toFinset, h, List.mem_toFinset]
+  List.Pairwise.eq_of_mem_iff hm₁ hm₂ fun v => by rw [← List.mem_toFinset, h, List.mem_toFinset]
 
 /-- A sparse `𝔽₂` polynomial equation is canonical when its monomial list is duplicate-free and
 every monomial is strictly increasing. -/
@@ -190,10 +163,6 @@ theorem evalSystem_eq_true_iff (sys : List (List (List ℕ))) (σ : ℕ → Bool
     evalSystem sys σ = true ↔ ∀ eq ∈ sys, evalMonomialList eq σ = false := by
   simp only [evalSystem, List.all_eq_true, Bool.not_eq_true']
 
-private theorem bitVal_zmod2_xor (a b : Bool) :
-    bitVal (ZMod 2) (xor a b) = bitVal (ZMod 2) a + bitVal (ZMod 2) b := by
-  cases a <;> cases b <;> decide
-
 private theorem bitVal_all_eq_monomial (m : List ℕ) (σ : ℕ → Bool) :
     bitVal (ZMod 2) (m.all σ) = monomial (ZMod 2) m.toFinset σ := by
   rw [monomial_apply]
@@ -205,11 +174,11 @@ private theorem bitVal_all_eq_monomial (m : List ℕ) (σ : ℕ → Bool) :
 private theorem bitVal_evalMonomialList_eq_list_sum (eq : List (List ℕ)) (σ : ℕ → Bool) :
     bitVal (ZMod 2) (evalMonomialList eq σ) =
       (eq.map fun m => monomial (ZMod 2) m.toFinset σ).sum := by
-  induction eq with
-  | nil => simp only [evalMonomialList_nil, bitVal_false, List.map_nil, List.sum_nil]
-  | cons _ _ ih =>
-    rw [evalMonomialList_cons, bitVal_zmod2_xor, bitVal_all_eq_monomial, ih, List.map_cons,
-      List.sum_cons]
+  rw [← bitEquiv_symm_apply, evalMonomialList,
+    ← List.foldl_map (f := fun m : List ℕ => m.all σ) (g := xor),
+    bitEquiv_symm_foldl_xor, List.map_map]
+  refine congrArg List.sum (List.map_congr_left fun m _ => ?_)
+  simp only [Function.comp_apply, bitEquiv_symm_apply, bitVal_all_eq_monomial]
 
 /-- On a canonical equation `eq`, reading `evalMonomialList eq σ` in `ZMod 2` equals the `Finset`
 sum of `BitString.monomial (ZMod 2)` over `(eq.map List.toFinset).toFinset`. -/
@@ -238,7 +207,8 @@ theorem bitVal_evalMonomialList_mem_lowDegree {k : ℕ} {eq : List (List ℕ)}
     rw [show (fun σ : ℕ → Bool => bitVal (ZMod 2) (evalMonomialList (m :: ms) σ)) =
         monomial (ZMod 2) m.toFinset + fun σ => bitVal (ZMod 2) (evalMonomialList ms σ) from
       funext fun σ => by
-        simp only [evalMonomialList_cons, bitVal_zmod2_xor, bitVal_all_eq_monomial, Pi.add_apply]]
+        rw [evalMonomialList_cons, ← bitEquiv_symm_apply (xor _ _), ← Bool.add_eq_xor, map_add,
+          bitEquiv_symm_apply, bitEquiv_symm_apply, bitVal_all_eq_monomial, Pi.add_apply]]
     exact Submodule.add_mem _
       (monomial_mem_lowDegree ((List.toFinset_card_le m).trans (hdeg m List.mem_cons_self)))
       (ih fun m' hm' => hdeg m' (List.mem_cons_of_mem _ hm'))
@@ -1016,18 +986,15 @@ private theorem computableTidilyInPolyTime_xorEquation :
     ComputableTidilyInPolyTime (fun p : List (List ℕ) × List (List ℕ) => xorEquation p.1 p.2)
       (encPair encEq encEq) encEq := by
   have := computableTidilyInPolyTime_reduceEquation; unfold xorEquation; fun_prop
-
 private theorem computableTidilyInPolyTime_insertSorted :
     ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => insertSorted p.1 p.2)
       (encPair encM encNat) encM := by
   unfold insertSorted; fun_prop
-
 private theorem length_encM_sortDedup_le (vs : List ℕ) :
     (encM (sortDedup vs)).length ≤ vs.length * (2 * (encM vs).length + 1) :=
   (length_encList_le encNat (sortDedup vs) fun u hu =>
     SizedListEncoding.length_elem_le (encA := encNat) (encL := encM) vs u (mem_sortDedup.mp hu)
     ).trans (Nat.mul_le_mul_right _ (length_sortDedup_le vs))
-
 private theorem computableTidilyInPolyTime_sortDedup :
     ComputableTidilyInPolyTime sortDedup encM encM :=
   foldl' (encA := encNat) (encL := encM) (encB := encM)
@@ -1042,19 +1009,15 @@ private theorem computableTidilyInPolyTime_sortDedup :
         (SizedListEncoding.length_le (encA := encNat) (encL := encM) vs)
       exact (length_encM_sortDedup_le (vs.take i)).trans
         (Nat.mul_le_mul hlen (Nat.add_le_add_right (Nat.mul_le_mul_left 2 htake) 1)))
-
 private theorem computableTidilyInPolyTime_isTautologicalClause :
     ComputableTidilyInPolyTime isTautologicalClause encC encBool := by
   unfold isTautologicalClause; fun_prop
-
 private theorem computableTidilyInPolyTime_posVars :
     ComputableTidilyInPolyTime posVars encC encM := by
   have := computableTidilyInPolyTime_sortDedup; unfold posVars; fun_prop
-
 private theorem computableTidilyInPolyTime_negVars :
     ComputableTidilyInPolyTime negVars encC encM := by
   have := computableTidilyInPolyTime_sortDedup; unfold negVars; fun_prop
-
 private theorem length_encNat_le_of_mem_clause {c : Clause ℕ} {v : ℕ} {b : Bool}
     (h : (v, b) ∈ c) : (encNat v).length ≤ (encC c).length :=
   (length_le_encPair_left encNat encBool (v, b)).trans
@@ -1298,11 +1261,7 @@ private theorem computableTidilyInPolyTime_findHeavyVar :
       (unary_to_binary.comp (hdeg.comp ((snd _ _).prod ((fst _ _).snd'))))
   have hfind := findWithInput (test := fun x v => decide (x.1.2 < varDegree v x.2)) hrange hpred
   refine hfind.of_enc_eq fun p => congrArg (encOption encNat) ?_
-  have hid : ∀ l : List ℕ, (l.map fun v => v) = l := fun l => by
-    induction l with
-    | nil => rfl
-    | cons _ _ ih => exact congrArg (_ :: ·) ih
-  rw [hid]; rfl
+  rw [List.map_id']; rfl
 
 private theorem computableTidilyInPolyTime_restrictEquation :
     ComputableTidilyInPolyTime
@@ -1336,6 +1295,7 @@ theorem computableInPolyTime_compileClauseBounded (k : ℕ) :
 /-- For any fixed width bound `k : ℕ`, compiling a parity-check row on `φ : CNF ℕ` is
 polynomial-time (for any sized Boolean list encoding `encRow`, such as `encBits` or
 `encList encBool`). -/
+@[fun_prop]
 theorem computableInPolyTime_compileParityRowBounded (k : ℕ)
     {encRow : List Bool ↪ List Bool} [ListEncoding encBool encRow]
     [SizedListEncoding encBool encRow] :
@@ -1345,6 +1305,7 @@ theorem computableInPolyTime_compileParityRowBounded (k : ℕ)
 
 /-- For any fixed width bound `k : ℕ`, compiling a list of parity-check rows on `φ : CNF ℕ` into a
 sparse degree-`≤ k` `𝔽₂` polynomial system is polynomial-time. -/
+@[fun_prop]
 theorem computableInPolyTime_compileParitySystemBounded (k : ℕ)
     {encRow : List Bool ↪ List Bool} [ListEncoding encBool encRow]
     [SizedListEncoding encBool encRow] :
@@ -1362,28 +1323,54 @@ theorem computableInPolyTime_varDegree :
 
 /-- Finding the first heavy variable `v < n` with `varDegree v sys > b₀` (`n` in unary, `b₀` in
 binary, result in `encOption encNat`) is polynomial-time. -/
-@[fun_prop]
 theorem computableInPolyTime_findHeavyVar :
     ComputableInPolyTime
       (fun p : (ℕ × ℕ) × List (List (List ℕ)) => findHeavyVar p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encNat) encSys) (encOption encNat) :=
   .of_tidy computableTidilyInPolyTime_findHeavyVar
 
-/-- Substituting `x_v = val` into a sparse `𝔽₂` equation (`restrictEquation`) is polynomial-time. -/
 @[fun_prop]
+theorem computableInPolyTime_findHeavyVar_apply {α : Type} {encIn : α ↪ List Bool}
+    {fn fb : α → ℕ} {fsys : α → List (List (List ℕ))}
+    (hn : ComputableInPolyTime fn encIn encUnary)
+    (hb : ComputableInPolyTime fb encIn encNat)
+    (hsys : ComputableInPolyTime fsys encIn encSys) :
+    ComputableInPolyTime (fun x => findHeavyVar (fn x) (fb x) (fsys x)) encIn (encOption encNat) :=
+  computableInPolyTime_findHeavyVar.comp ((hn.pair (enc := encPair encUnary encNat) hb).pair hsys)
+
+/-- Substituting `x_v = val` into a sparse `𝔽₂` equation (`restrictEquation`) is polynomial-time. -/
 theorem computableInPolyTime_restrictEquation :
     ComputableInPolyTime
       (fun p : (ℕ × Bool) × List (List ℕ) => restrictEquation p.1.1 p.1.2 p.2)
       (encPair (encPair encNat encBool) encEq) encEq :=
   .of_tidy computableTidilyInPolyTime_restrictEquation
 
-/-- Substituting `x_v = val` across a sparse `𝔽₂` system (`restrictSystem`) is polynomial-time. -/
 @[fun_prop]
+theorem computableInPolyTime_restrictEquation_apply {α : Type} {encIn : α ↪ List Bool}
+    {fv : α → ℕ} {fval : α → Bool} {feq : α → List (List ℕ)}
+    (hv : ComputableInPolyTime fv encIn encNat)
+    (hval : ComputableInPolyTime fval encIn encBool)
+    (heq : ComputableInPolyTime feq encIn encEq) :
+    ComputableInPolyTime (fun x => restrictEquation (fv x) (fval x) (feq x)) encIn encEq :=
+  computableInPolyTime_restrictEquation.comp
+    ((hv.pair (enc := encPair encNat encBool) hval).pair heq)
+
+/-- Substituting `x_v = val` across a sparse `𝔽₂` system (`restrictSystem`) is polynomial-time. -/
 theorem computableInPolyTime_restrictSystem :
     ComputableInPolyTime
       (fun p : (ℕ × Bool) × List (List (List ℕ)) => restrictSystem p.1.1 p.1.2 p.2)
       (encPair (encPair encNat encBool) encSys) encSys :=
   .of_tidy computableTidilyInPolyTime_restrictSystem
+
+@[fun_prop]
+theorem computableInPolyTime_restrictSystem_apply {α : Type} {encIn : α ↪ List Bool}
+    {fv : α → ℕ} {fval : α → Bool} {fsys : α → List (List (List ℕ))}
+    (hv : ComputableInPolyTime fv encIn encNat)
+    (hval : ComputableInPolyTime fval encIn encBool)
+    (hsys : ComputableInPolyTime fsys encIn encSys) :
+    ComputableInPolyTime (fun x => restrictSystem (fv x) (fval x) (fsys x)) encIn encSys :=
+  computableInPolyTime_restrictSystem.comp
+    ((hv.pair (enc := encPair encNat encBool) hval).pair hsys)
 
 end PolyTime
 
