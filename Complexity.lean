@@ -845,6 +845,7 @@ public import Complexity.Computability.Complexity.Problems.STCON.Completeness
 public import Complexity.Computability.Complexity.Problems.STCON.Reduction
 public import Complexity.Computability.Complexity.Problems.STCON.Search
 public import Complexity.Computability.Complexity.Problems.SharpSAT
+public import Complexity.Computability.Complexity.Problems.SharpThreeSAT
 public import Complexity.Computability.Complexity.Problems.SubsetSum
 public import Complexity.Computability.Complexity.Problems.SubsetSum.Digits
 public import Complexity.Computability.Complexity.Problems.SubsetSum.Mask
@@ -2198,6 +2199,7 @@ public import Complexity.Logics.Propositional.CNF.PolynomialTests
 public import Complexity.Logics.Propositional.CNF.SparseParityCounter
 public import Complexity.Logics.Propositional.CNF.ThreeCNF
 public import Complexity.Logics.Propositional.CNF.ThreeCNF.Exact
+public import Complexity.Logics.Propositional.CNF.ThreeCNF.Exact.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
