@@ -7,9 +7,10 @@ Authors: Renfei Zhou
 -- upstream: local-only (formal abstract library)
 
 import Complexity.Algorithms.WordRAM.Quicksort
+import Complexity.Algorithms.WordRAM.Quickselect
 
 /-!
-# Bridge for the randomized word-RAM and quicksort formal abstract
+# Bridge for the randomized word-RAM, quicksort, and quickselect formal abstract
 
 `RandomizedWordRAMAbstract.lean` defines the randomized word RAM from scratch, with fresh inductive
 types for its ALU operations, instructions (including `rand`), finite-depth uniform sampling trees,
@@ -18,20 +19,20 @@ states, configurations, clocked steps and runs, worst-case time and `rand`-call 
 
 This bridge establishes two facts:
 
-1. **Lifting randomized quicksort from `Basis.standard` to `Basis.exact`:**
-   `Cslib.Algorithms.WordRAM.Quicksort` is written in `Code .standard 16` via `ram[...]` and
-   `Allocation`, which type over `Basis.standard`. It never uses `.div` or `.mod`, and all four
-   `.sub` instructions (`gt ← gt - one` in `partStep` and `sp ← sp - one`, `tmp ← hi - lo`,
-   `tmp ← tmp - one` in `popPrefix`) satisfy `b ≤ a` whenever reached from a valid outer-loop
-   state. Consequently, translating every operation symbol identically to `Basis.exact`
-   (`toExactCode`) preserves the structured `ProbComp` execution tree `m_code` on the nose, and all
-   four clauses of `Quicksort.quicksort_correct_and_bounds` transfer directly to
-   `(toExactCode Quicksort.code).program Quicksort.Reg.zero : Program .exact 16`.
+1. **Lifting randomized quicksort and quickselect from `Basis.standard` to `Basis.exact`:**
+   `Cslib.Algorithms.WordRAM.Quicksort` and `Cslib.Algorithms.WordRAM.Quickselect` are written in
+   `Code .standard 16` via `ram[...]` and `Allocation`, which type over `Basis.standard`. Neither
+   uses `.div` or `.mod`, and every `.sub` instruction (`gt ← gt - one` in `partStep`;
+   `sp ← sp - one`, `tmp ← hi - lo`, `tmp ← tmp - one` in `Quicksort.popPrefix`; and
+   `len ← len - one` in `Quickselect.loadHeader`, `tmp ← hi - lo1` in `Quickselect.samplePivot`)
+   satisfies `b ≤ a` whenever reached. Translating every operation symbol identically to
+   `Basis.exact` (`toExactCode`) therefore preserves the structured `ProbComp` execution trees on
+   the nose, transferring all guarantees of `Quicksort` and `Quickselect` to `Program .exact 16`.
 2. **Polymorphic presentation correspondence (Pattern B):**
    Every presentation `S` satisfying `Laws S` matches `Cslib.WordRAM` over `Basis.exact` step for
    step (`program_surjective`, `stepRand_matches`, `runRand_matches`, `evalRand_eq`,
    `haltsWithin_iff`, `randCallsBounded_iff`, and `expectedTime_eq`). Transporting the lifted
-   `Basis.exact` quicksort theorem across this correspondence yields `quicksort` in
+   `Basis.exact` theorems across this correspondence yields `quicksort` and `quickselect` in
    `RandomizedWordRAMAbstract.lean` with zero project-module allowlisting.
 -/
 
@@ -627,6 +628,296 @@ theorem quicksort_exact_correct_and_bounds {w : ℕ} {input : List ℕ}
     exact ⟨y, hcfg_eq, hbnd, hperm, hsort, hmod⟩
   · rwa [hexp_eq]
 
+/-! ### Lifting `Quickselect` from `Basis.standard` to `Basis.exact` -/
+
+private theorem ExecRand.toExact_partitionAndNarrow {w : ℕ} {x : Data 16}
+    {m : ProbComp (Data 16 × ℕ)} (h : ExecRand w Quickselect.partitionAndNarrow x m)
+    (hone : x.regs Quicksort.Reg.one = 1) :
+    ExecRand w (toExactCode Quickselect.partitionAndNarrow) x m := by
+  change ExecRand w
+    (.seq Quicksort.partInit
+      (.seq (.loop (.lt Quicksort.Reg.cur Quicksort.Reg.gt) Quicksort.partStep)
+        Quickselect.narrowRange)) x m at h
+  cases h with
+  | @seq _ _ _ m₁ m₂ h₁ h₂ =>
+    refine .seq (ExecRand.toExact_of_noSubDivMod h₁ rfl) fun z₁ hz₁ => ?_
+    have hz₁_one : z₁.1.regs Quicksort.Reg.one = 1 :=
+      (ExecRand.regs_eq_of_preserves h₁ rfl z₁ hz₁).trans hone
+    have h₂z := h₂ z₁ hz₁
+    generalize m₂ z₁.1 = m_rest at h₂z ⊢
+    cases h₂z with
+    | seq hloop hnr =>
+      exact .seq (ExecRand.toExact_partLoop hloop hz₁_one) fun z₂ hz₂ =>
+        ExecRand.toExact_of_noSubDivMod (hnr z₂ hz₂) rfl
+
+private theorem ExecRand.toExact_selectStep {w : ℕ} {x : Data 16}
+    {m : ProbComp (Data 16 × ℕ)} (h : ExecRand w Quickselect.selectStep x m)
+    (hone : x.regs Quicksort.Reg.one = 1)
+    (hc : (Cond.lt Quickselect.Reg.lo1 Quickselect.Reg.hi).Holds x) :
+    ExecRand w (toExactCode Quickselect.selectStep) x m := by
+  have hle : x.regs Quickselect.Reg.lo1 ≤ x.regs Quickselect.Reg.hi := by
+    have hlt : x.regs Quickselect.Reg.lo1 < x.regs Quickselect.Reg.hi := by
+      simpa [Cond.holds_lt] using hc
+    omega
+  change ExecRand w
+    (.seq (.seq (.op (.bin .sub Quickselect.Reg.tmp Quickselect.Reg.hi Quickselect.Reg.lo1))
+      (.rand Quickselect.Reg.tmp Quickselect.Reg.tmp))
+      Quickselect.partitionAndNarrow) x m at h
+  cases h with
+  | @seq _ _ _ m_samp _ hsamp hpn =>
+    have hsamp_ex : ExecRand w (toExactCode Quickselect.samplePivot) x m_samp := by
+      cases hsamp with
+      | seq hsub hrand =>
+        cases hsub with
+        | op ho_sub =>
+          exact .seq (.op (by rw [eval_toExactOp_sub hle]; exact ho_sub)) fun z₀ hz₀ =>
+            ExecRand.toExact_rand (hrand z₀ hz₀)
+    refine .seq hsamp_ex fun z₁ hz₁ => ?_
+    have hz₁_one : z₁.1.regs Quicksort.Reg.one = 1 :=
+      (ExecRand.regs_eq_of_preserves hsamp rfl z₁ hz₁).trans hone
+    exact ExecRand.toExact_partitionAndNarrow (hpn z₁ hz₁) hz₁_one
+
+private theorem ExecRand.toExact_selectLoop_aux {w : ℕ} {c : Code .standard 16} {x : Data 16}
+    {m : ProbComp (Data 16 × ℕ)} (h : ExecRand w c x m) :
+    c = .loop (.lt Quickselect.Reg.lo1 Quickselect.Reg.hi) Quickselect.selectStep →
+    x.regs Quicksort.Reg.one = 1 →
+    ExecRand w (toExactCode c) x m := by
+  induction h with
+  | loop_exit hc =>
+    rintro ⟨⟩ _
+    exact .loop_exit hc
+  | loop_iter hc hb hl _ ihl =>
+    rintro ⟨⟩ hone
+    refine .loop_iter hc (ExecRand.toExact_selectStep hb hone hc) fun z hz => ?_
+    exact ihl z hz rfl ((ExecRand.regs_eq_of_preserves hb rfl z hz).trans hone)
+  | _ =>
+    intro hc_eq
+    cases hc_eq
+
+private theorem ExecRand.toExact_selectLoop {w : ℕ} {x : Data 16} {m : ProbComp (Data 16 × ℕ)}
+    (h : ExecRand w
+      (.loop (.lt Quickselect.Reg.lo1 Quickselect.Reg.hi) Quickselect.selectStep) x m)
+    (hone : x.regs Quicksort.Reg.one = 1) :
+    ExecRand w
+      (toExactCode (.loop (.lt Quickselect.Reg.lo1 Quickselect.Reg.hi) Quickselect.selectStep))
+      x m :=
+  ExecRand.toExact_selectLoop_aux h rfl hone
+
+private theorem selectSetup_sets_one {w : ℕ} {x : Data 16} {m : ProbComp (Data 16 × ℕ)}
+    (h : ExecRand w Quickselect.selectSetup x m) :
+    ∀ z ∈ m.support, z.1.regs Quicksort.Reg.one = 1 := by
+  change ExecRand w (.seq (.op (.const Quickselect.Reg.one 1)) _) x m at h
+  cases h with
+  | seq h₁ h₂ =>
+    cases h₁ with
+    | op ho =>
+      simp only [Op.eval, Data.put] at ho
+      split_ifs at ho with hf
+      cases ho
+      intro z hz
+      obtain ⟨z₁, hz₁, hz₂⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
+      cases OracleComp.eq_of_mem_supportWith_pure hz₁
+      obtain ⟨z₂, hz₂', hz_eq⟩ := OracleComp.mem_supportWith_bind_iff.mp hz₂
+      cases OracleComp.eq_of_mem_supportWith_pure hz_eq
+      exact ExecRand.regs_eq_of_preserves (h₂ _ rfl) rfl z₂ hz₂'
+
+private theorem ExecRand.toExact_selectSlice {w : ℕ} {x : Data 16} {m : ProbComp (Data 16 × ℕ)}
+    (h : ExecRand w Quickselect.selectSlice x m) :
+    ExecRand w (toExactCode Quickselect.selectSlice) x m := by
+  change ExecRand w
+    (.seq Quickselect.selectSetup
+      (.seq (.loop (.lt Quickselect.Reg.lo1 Quickselect.Reg.hi) Quickselect.selectStep)
+        (.op (.load Quickselect.Reg.ans Quickselect.Reg.target)))) x m at h
+  cases h with
+  | @seq _ _ _ m₁ m₂ hsetup hrest =>
+    refine .seq (ExecRand.toExact_of_noSubDivMod hsetup rfl) fun z₁ hz₁ => ?_
+    have hz₁_one := selectSetup_sets_one hsetup z₁ hz₁
+    have hrz := hrest z₁ hz₁
+    generalize m₂ z₁.1 = m_rest at hrz ⊢
+    cases hrz with
+    | seq hloop hload =>
+      exact .seq (ExecRand.toExact_selectLoop hloop hz₁_one) fun z₂ hz₂ =>
+        ExecRand.toExact_of_noSubDivMod (hload z₂ hz₂) rfl
+
+private theorem Exec.toExact_loadHeader {w k : ℕ} {input : List ℕ}
+    (hfit : InputFits w (k :: input)) :
+    ∃ x_hdr : Data 16,
+      Exec w Quickselect.loadHeader (Data.init (k :: input)) x_hdr 4 ∧
+      Exec w (toExactCode Quickselect.loadHeader) (Data.init (k :: input)) x_hdr 4 := by
+  open Quickselect Quickselect.Reg in
+  let x₀ : Data 16 := Data.init (k :: input)
+  have hfit_len1 : Fits w (input.length + 1) := by
+    simpa only [List.length_cons] using hfit.1
+  have hfit1 : Fits w 1 := hfit_len1.of_le (by omega)
+  have hfit_len : Fits w input.length := hfit_len1.of_le (by omega)
+  let s₁ := x₀.set len (input.length + 1)
+  let s₂ := s₁.set one 1
+  let s₃ := s₂.set rk k
+  let x_hdr := s₃.set len input.length
+  have e₁ : Exec (B := .standard) w (.op (.load len ans)) x₀ s₁ 1 := by
+    simpa only [s₁, x₀, Data.init_regs, Data.init_mem_zero, List.length_cons] using
+      Exec.load (w := w) (d := len) (a := ans) (x := x₀)
+  have e₂ : Exec (B := .standard) w (.op (.const one 1)) s₁ s₂ 1 := Exec.const hfit1
+  have e₃ : Exec (B := .standard) w (.op (.load rk one)) s₂ s₃ 1 := by
+    have ho₂ : s₂.regs one = 1 := by simp only [s₂, Data.set_regs, Function.update_self]
+    have hm₂ : s₂.mem 1 = k := by
+      simp only [s₂, s₁, Data.set_mem, x₀, Data.init_mem_succ, List.getD_cons_zero]
+    simpa only [s₃, ho₂, hm₂] using Exec.load (w := w) (d := rk) (a := one) (x := s₂)
+  have hl₃ : s₃.regs len = input.length + 1 := by
+    simp only [s₃, s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : len ≠ rk),
+      Function.update_of_ne (by decide : len ≠ one), Function.update_self]
+  have ho₃ : s₃.regs one = 1 := by
+    simp only [s₃, s₂, Data.set_regs, Function.update_of_ne (by decide : one ≠ rk),
+      Function.update_self]
+  have e₄ : Exec w (.op (.bin .sub len len one)) s₃ x_hdr 1 := by
+    simpa only [x_hdr, hl₃, ho₃, BinOp.eval, Nat.add_sub_cancel] using
+      Exec.bin (w := w) (f := .sub) (d := len) (i := len) (j := one) (x := s₃)
+        (by simpa only [hl₃, ho₃, BinOp.eval, Nat.add_sub_cancel] using hfit_len)
+  have e₄_ex : Exec w (toExactCode (.op (.bin .sub len len one))) s₃ x_hdr 1 := by
+    cases e₄ with
+    | op ho => exact .op (by rw [eval_toExactOp_sub (by rw [hl₃, ho₃]; omega)]; exact ho)
+  exact ⟨x_hdr,
+    e₁.seq (e₂.seq (e₃.seq e₄)),
+    (Exec.toExact_of_noSubDivMod e₁ rfl).seq
+      ((Exec.toExact_of_noSubDivMod e₂ rfl).seq
+        ((Exec.toExact_of_noSubDivMod e₃ rfl).seq e₄_ex))⟩
+
+private theorem ExecRand.toExact_quickselectCode {w k : ℕ} {input : List ℕ}
+    {m : ProbComp (Data 16 × ℕ)} (hfit : InputFits w (k :: input))
+    (h : ExecRand w Quickselect.code (Data.init (k :: input)) m) :
+    ExecRand w (toExactCode Quickselect.code) (Data.init (k :: input)) m := by
+  obtain ⟨x_hdr, e_hdr, e_hdr_ex⟩ := Exec.toExact_loadHeader hfit
+  change ExecRand w
+    (.seq Quickselect.loadHeader
+      (.branch (.lt Quickselect.Reg.rk Quickselect.Reg.len)
+        (.seq (.op (.bin .add Quickselect.Reg.base Quickselect.Reg.one Quickselect.Reg.one))
+          Quickselect.selectSlice)
+        (.op (.const Quickselect.Reg.ans 0)))) (Data.init (k :: input)) m at h
+  cases h with
+  | @seq _ _ _ m_hdr m_br h_hdr h_br =>
+    obtain rfl := h_hdr.unique e_hdr.execRand
+    refine ExecRand.seq e_hdr_ex.execRand fun z hz => ?_
+    cases OracleComp.eq_of_mem_supportWith_pure hz
+    have hbr := h_br (x_hdr, 4) rfl
+    generalize m_br (x_hdr, 4).1 = mbr at hbr ⊢
+    cases hbr with
+    | branch_pos hc hp =>
+      cases hp with
+      | seq hbase hslice =>
+        exact .branch_pos hc (.seq (ExecRand.toExact_of_noSubDivMod hbase rfl) fun z₁ hz₁ =>
+          ExecRand.toExact_selectSlice (hslice z₁ hz₁))
+    | branch_neg hc hn =>
+      exact .branch_neg hc (ExecRand.toExact_of_noSubDivMod hn rfl)
+
+/-- Compiled `Basis.exact` quickselect program (`(toExactCode Quickselect.code).program ans`). -/
+def quickselectExactProgram : Program .exact 16 :=
+  (toExactCode Quickselect.code).program Quickselect.Reg.ans
+
+/-- All four clauses of `Quickselect.quickselect_correct_and_bounds` hold identically for
+`quickselectExactProgram : Program .exact 16`. -/
+theorem quickselect_exact_correct_and_bounds {w k : ℕ} {input : List ℕ}
+    (hk : k < input.length) (hw : logWidth 2 input.length ≤ w)
+    (hfit : InputFits w (k :: input)) :
+    RandHaltsWithin w quickselectExactProgram (.init (k :: input))
+      (Quickselect.worstCaseTime input.length) ∧
+    RandCallsBounded w quickselectExactProgram (.init (k :: input))
+      (Quickselect.worstCaseTime input.length) (input.length - 1) ∧
+    (∀ cfg ∈ (runRand w quickselectExactProgram (Quickselect.worstCaseTime input.length)
+        (.running (.init (k :: input)))).support,
+      ∃ y : Data 16,
+        cfg = .halted (input.mergeSort[k]'(by rw [List.length_mergeSort]; exact hk)) y ∧
+        y.Bounded w ∧
+        (Quicksort.memSlice 2 (input.length + 2) y.mem).Perm input ∧
+        y.mem (2 + k) = input.mergeSort[k]'(by rw [List.length_mergeSort]; exact hk) ∧
+        (∀ i < k, y.mem (2 + i) ≤ y.mem (2 + k)) ∧
+        (∀ i, k < i → i < input.length → y.mem (2 + k) ≤ y.mem (2 + i)) ∧
+        Modifies (Finset.Ico 2 (input.length + 2))
+          (Data.init (r := 16) (k :: input)).mem y.mem) ∧
+    expectedTime w quickselectExactProgram (.init (k :: input)) ≤
+      (Quickselect.expectedTimeBound input.length : ℝ≥0∞) := by
+  obtain ⟨⟨m_code, hcode_std, -, hT_raw⟩, -⟩ := Quickselect.code_spec hk hw hfit
+  have hcode_ex := ExecRand.toExact_quickselectCode hfit hcode_std
+  have hT_bound : ∀ z ∈ m_code.support, z.2 + 1 ≤ Quickselect.worstCaseTime input.length := by
+    intro z hz
+    have hz_le := (hT_raw z hz).2
+    simp only [Quickselect.worstCaseTime]
+    omega
+  have hrun_eq : runRand w quickselectExactProgram (Quickselect.worstCaseTime input.length)
+      (.running (.init (k :: input))) =
+      runRand w Quickselect.program (Quickselect.worstCaseTime input.length)
+        (.running (.init (k :: input))) := by
+    change runRand w ((toExactCode Quickselect.code).program Quickselect.Reg.ans)
+        (Quickselect.worstCaseTime input.length) (.running ⟨0, Data.init (k :: input)⟩) =
+      runRand w (Quickselect.code.program Quickselect.Reg.ans)
+        (Quickselect.worstCaseTime input.length) (.running ⟨0, Data.init (k :: input)⟩)
+    rw [hcode_ex.runRand_program Quickselect.Reg.ans hT_bound,
+      hcode_std.runRand_program Quickselect.Reg.ans hT_bound]
+  have hexp_eq : expectedTime w quickselectExactProgram (.init (k :: input)) =
+      expectedTime w Quickselect.program (.init (k :: input)) := by
+    change expectedTime w ((toExactCode Quickselect.code).program Quickselect.Reg.ans)
+        ⟨0, Data.init (k :: input)⟩ =
+      expectedTime w (Quickselect.code.program Quickselect.Reg.ans) ⟨0, Data.init (k :: input)⟩
+    rw [hcode_ex.expectedTime_program Quickselect.Reg.ans,
+      hcode_std.expectedTime_program Quickselect.Reg.ans]
+  obtain ⟨hHalts, hCalls, hPost, hExp⟩ := Quickselect.quickselect_correct_and_bounds hk hw hfit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · unfold RandHaltsWithin at hHalts ⊢
+    rwa [hrun_eq]
+  · unfold RandCallsBounded at hCalls ⊢
+    rwa [hrun_eq]
+  · intro cfg hcfg
+    rw [hrun_eq] at hcfg
+    exact hPost cfg hcfg
+  · rwa [hexp_eq]
+
+/-- Out-of-range (`input.length ≤ k`) deterministic `8`-step halting for
+`quickselectExactProgram : Program .exact 16`. -/
+theorem quickselect_exact_out_of_range {w k : ℕ} {input : List ℕ}
+    (hk : input.length ≤ k) (hfit : InputFits w (k :: input)) :
+    RandHaltsWithin w quickselectExactProgram (.init (k :: input)) 8 ∧
+    RandCallsBounded w quickselectExactProgram (.init (k :: input)) 8 0 ∧
+    (∀ cfg ∈ (runRand w quickselectExactProgram 8 (.running (.init (k :: input)))).support,
+      ∃ y : Data 16, cfg = .halted 0 y ∧ y.Bounded w ∧
+        y.mem = (Data.init (r := 16) (k :: input)).mem) ∧
+    expectedTime w quickselectExactProgram (.init (k :: input)) = 8 := by
+  obtain ⟨y_out, e_std, hy_ans, hmem_out⟩ := Quickselect.code_out_of_range_spec hk hfit
+  have hm_std : ExecRand w Quickselect.code (Data.init (k :: input)) (pure (y_out, 7)) :=
+    e_std.execRand
+  have hm_ex : ExecRand w (toExactCode Quickselect.code) (Data.init (k :: input))
+      (pure (y_out, 7)) :=
+    ExecRand.toExact_quickselectCode hfit hm_std
+  have hT_bound : ∀ z ∈ (pure (y_out, 7) : ProbComp (Data 16 × ℕ)).support, z.2 + 1 ≤ 8 := by
+    intro z hz
+    cases OracleComp.eq_of_mem_supportWith_pure hz
+    omega
+  have hrun_ex : runRand w quickselectExactProgram 8 (.running (.init (k :: input))) =
+      pure (.halted 0 y_out) := by
+    change runRand w ((toExactCode Quickselect.code).program Quickselect.Reg.ans) 8
+      (.running ⟨0, Data.init (k :: input)⟩) = _
+    rw [hm_ex.runRand_program Quickselect.Reg.ans hT_bound]
+    simp only [map_pure, hy_ans]
+  have hexp_eq : expectedTime w quickselectExactProgram (.init (k :: input)) =
+      expectedTime w Quickselect.program (.init (k :: input)) := by
+    change expectedTime w ((toExactCode Quickselect.code).program Quickselect.Reg.ans)
+        ⟨0, Data.init (k :: input)⟩ =
+      expectedTime w (Quickselect.code.program Quickselect.Reg.ans) ⟨0, Data.init (k :: input)⟩
+    rw [hm_ex.expectedTime_program Quickselect.Reg.ans,
+      hm_std.expectedTime_program Quickselect.Reg.ans]
+  obtain ⟨-, -, -, -, hExp⟩ := Quickselect.quickselect_out_of_range hk hfit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · intro cfg hcfg
+    rw [hrun_ex] at hcfg
+    cases OracleComp.eq_of_mem_supportWith_pure hcfg
+    exact ⟨0, y_out, rfl⟩
+  · rw [RandCallsBounded, hrun_ex]
+    exact .pure _ 0
+  · intro cfg hcfg
+    have hbnd := runRand_bounded_init hfit hcfg
+    rw [hrun_ex] at hcfg
+    cases OracleComp.eq_of_mem_supportWith_pure hcfg
+    exact ⟨y_out, rfl, hbnd.2, hmem_out⟩
+  · rwa [hexp_eq]
+
 /-! ## Part 2: Polymorphic presentation correspondence (Pattern B) -/
 
 /-- Polymorphic signature of an abstract presentation of the randomized exact word RAM. -/
@@ -1167,5 +1458,94 @@ theorem quicksort (S : Presentation) (h : Laws S) :
     exact hmod a (by rw [Finset.mem_Ico]; omega)
   · rw [Presentation.init, S.expectedTime_eq h, ← hinit]
     exact hExp
+
+/-- **In-place randomized quickselect** transported to any presentation `S` satisfying `Laws S`. -/
+theorem quickselect (S : Presentation) (h : Laws S) :
+    ∃ p : List (S.Instr 16),
+      (∀ (w k : ℕ) (input : List ℕ),
+        k < input.length →
+        2 * (Nat.log 2 input.length + 1) ≤ w →
+        Presentation.InputFits w (k :: input) →
+        let n := input.length
+        let T := 10 * n ^ 2 + 15
+        let ans := input.mergeSort.getD k 0
+        S.HaltsWithin (r := 16) w p (S.init (k :: input)) T ∧
+        S.RandCallsBounded (r := 16) w p (S.init (k :: input)) T (n - 1) ∧
+        (∀ cfg ∈ (S.evalRand (r := 16) w p T (S.init (k :: input))).support,
+          ∃ reg mem, cfg = S.halted ans reg mem ∧
+            (∀ i, reg i < 2 ^ w) ∧
+            (∀ a, mem a < 2 ^ w) ∧
+            (Presentation.slice 2 (n + 2) mem).Perm input ∧
+            mem (2 + k) = ans ∧
+            (∀ i < k, mem (2 + i) ≤ ans) ∧
+            (∀ i, k < i → i < n → ans ≤ mem (2 + i)) ∧
+            (∀ a, a < 2 ∨ n + 2 ≤ a → mem a = Presentation.initMem (k :: input) a)) ∧
+        S.expectedTime (r := 16) w p (S.init (k :: input)) ≤
+          ((80 * n + 15 : ℕ) : ℝ≥0∞)) ∧
+      (∀ (w k : ℕ) (input : List ℕ),
+        input.length ≤ k →
+        Presentation.InputFits w (k :: input) →
+        S.HaltsWithin (r := 16) w p (S.init (k :: input)) 8 ∧
+        S.RandCallsBounded (r := 16) w p (S.init (k :: input)) 8 0 ∧
+        (∀ cfg ∈ (S.evalRand (r := 16) w p 8 (S.init (k :: input))).support,
+          ∃ reg mem, cfg = S.halted 0 reg mem ∧
+            (∀ i, reg i < 2 ^ w) ∧
+            (∀ a, mem a < 2 ^ w) ∧
+            mem = Presentation.initMem (k :: input)) ∧
+        S.expectedTime (r := 16) w p (S.init (k :: input)) = 8) := by
+  refine ⟨S.programOf quickselectExactProgram, ?_, ?_⟩
+  · intro w k input hk hw hfit
+    have hw' : logWidth 2 input.length ≤ w := hw
+    have hfit' : Cslib.WordRAM.InputFits w (k :: input) := hfit
+    obtain ⟨hHalts, hCalls, hPost, hExp⟩ := quickselect_exact_correct_and_bounds hk hw' hfit'
+    have hinit := Presentation.init_state_eq (r := 16) (k :: input)
+    have hinit_mem : (Data.init (r := 16) (k :: input)).mem =
+        Presentation.initMem (k :: input) := by
+      funext a
+      rcases a with _ | a <;> simp [Presentation.initMem, Data.init]
+    have hans_eq : input.mergeSort[k]'(by rw [List.length_mergeSort]; exact hk) =
+        input.mergeSort.getD k 0 := by
+      rw [List.getD_eq_getElem?_getD,
+        List.getElem?_eq_getElem (by rw [List.length_mergeSort]; exact hk), Option.getD_some]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [Presentation.init, S.haltsWithin_iff h, ← hinit]
+      exact hHalts
+    · rw [Presentation.init, S.randCallsBounded_iff h, ← hinit]
+      exact hCalls
+    · intro cfg hcfg
+      rw [Presentation.init, S.evalRand_eq h, ← hinit, PMF.mem_support_map_iff] at hcfg
+      obtain ⟨cfg', hcfg', rfl⟩ := hcfg
+      rw [Cslib.WordRAM.support_evalRand] at hcfg'
+      obtain ⟨y, rfl, hbnd, hperm, hy_k, hleft, hright, hmod⟩ := hPost cfg' hcfg'
+      rw [hans_eq] at hy_k ⊢
+      refine ⟨y.regs, y.mem, rfl, hbnd.1, hbnd.2, hperm, hy_k,
+        fun i hi => by rw [← hy_k]; exact hleft i hi,
+        fun i hki hin => by rw [← hy_k]; exact hright i hki hin,
+        fun a ha => ?_⟩
+      rw [← hinit_mem]
+      exact hmod a (by rw [Finset.mem_Ico]; omega)
+    · rw [Presentation.init, S.expectedTime_eq h, ← hinit]
+      exact hExp
+  · intro w k input hk hfit
+    have hfit' : Cslib.WordRAM.InputFits w (k :: input) := hfit
+    obtain ⟨hHalts, hCalls, hPost, hExp⟩ := quickselect_exact_out_of_range hk hfit'
+    have hinit := Presentation.init_state_eq (r := 16) (k :: input)
+    have hinit_mem : (Data.init (r := 16) (k :: input)).mem =
+        Presentation.initMem (k :: input) := by
+      funext a
+      rcases a with _ | a <;> simp [Presentation.initMem, Data.init]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [Presentation.init, S.haltsWithin_iff h, ← hinit]
+      exact hHalts
+    · rw [Presentation.init, S.randCallsBounded_iff h, ← hinit]
+      exact hCalls
+    · intro cfg hcfg
+      rw [Presentation.init, S.evalRand_eq h, ← hinit, PMF.mem_support_map_iff] at hcfg
+      obtain ⟨cfg', hcfg', rfl⟩ := hcfg
+      rw [Cslib.WordRAM.support_evalRand] at hcfg'
+      obtain ⟨y, rfl, hbnd, hmem_eq⟩ := hPost cfg' hcfg'
+      exact ⟨y.regs, y.mem, rfl, hbnd.1, hbnd.2, hmem_eq.trans hinit_mem⟩
+    · rw [Presentation.init, S.expectedTime_eq h, ← hinit]
+      exact hExp
 
 end ComplexityAbstracts.RandomizedWordRAMBridge
