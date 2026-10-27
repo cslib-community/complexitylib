@@ -133,6 +133,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   bound (`hStepsBound`) and a polynomial bound on the encoded intermediate run results
   (`hOutLen`); `transport_polyTime_of_le_const` derives both from a constant step bound. Uniform
   arbitrary-program dispatch and charged configuration selection remain separate.
+* **Signed arithmetic on unsigned words.** `WordRAM/Signed/{Encoding,Arithmetic}` reuse
+  `GenericRAM.Signed`'s range and arithmetic semantics. The original sign-and-magnitude
+  encoding needs one extra unsigned bit; fixed addition, subtraction and multiplication
+  blocks run with two extra bits in at most 15, 17 and 14 instructions, respectively,
+  excluding the final halt. Multiplication requires the signed product to fit; addition and
+  subtraction also compute exact expanded results. This transfers successful arithmetic,
+  not source faults or entire signed programs. Whole-machine compilation is tracked in
+  [#1353](https://github.com/cslib-community/complexitylib/issues/1353); transfer from Anthropic's
+  modular machine and its 3SUM/APSP algorithms remains separate.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
