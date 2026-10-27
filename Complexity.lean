@@ -2145,6 +2145,7 @@ public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
 public import Complexity.Logics.Propositional.CNF.Compact.ModelCount
 public import Complexity.Logics.Propositional.CNF.Compact.Relabel
+public import Complexity.Logics.Propositional.CNF.ExactTests
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.Gadgets
 public import Complexity.Logics.Propositional.CNF.ImplicationChain
