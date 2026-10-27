@@ -35,9 +35,13 @@ index `c_e < h` so that all pairs `(c_e, u_e)` are distinct, partition the varia
 groups `S_{t,g}` at step `t`, and pull back the `{0, 1, -1}` block measurement rows and
 cleared-denominator block replacement rows along `ι : K^n → K^{h × D}`. Parameterized over any
 `blockMeas : List (List ℤ)` and `blockRepl : List (List (List ℤ))`, this module proves all
-combinatorial, linear-algebraic, and `ℓ₁`-norm invariants, bridges to
-`Complexity.Foundations.LinearAlgebra.VariableCopyPlacement`, and certifies every routine in
-`Turing.MultiTapeTM.ComputableInPolyTime`.
+combinatorial, linear-algebraic, and `ℓ₁`-norm invariants and bridges to
+`Complexity.Foundations.LinearAlgebra.VariableCopyPlacement`. Generic `copyEmbedExec` over
+arbitrary `K` and `x : ℕ → K` serves as an unencoded semantic helper for the linear-map pullback
+and refinement bridges (with no tape encoding or complexity certificate), while plain
+`Turing.MultiTapeTM.ComputableInPolyTime` certificates cover the seven concrete integer/list
+routines (`fiberRanks`, `flatPlacement`, `varGroupList`, `pullbackMeasurementRow`,
+`pullbackMeasurementMatrix`, `restrictGroupColumns`, and `pullbackReplacementRow`).
 
 ## Main definitions
 
