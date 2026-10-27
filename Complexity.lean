@@ -771,6 +771,8 @@ public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
 public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import Complexity.Computability.Complexity.FineGrained.Exponents
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
+public import Complexity.Computability.Complexity.FineGrained.GeneralCNFCountingAsymptotics
+public import Complexity.Computability.Complexity.FineGrained.GeneralCNFHermiteRecovery
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
 public import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
 public import Complexity.Computability.Complexity.FineGrained.PPZ
@@ -1830,6 +1832,7 @@ public import Complexity.Foundations.BooleanAnalysis.SignApproximation
 public import Complexity.Foundations.BooleanAnalysis.SparseBranching
 public import Complexity.Foundations.BooleanAnalysis.SparseClearedSpecialization
 public import Complexity.Foundations.BooleanAnalysis.SparseEquations
+public import Complexity.Foundations.BooleanAnalysis.SparseHermiteJetRecovery
 public import Complexity.Foundations.BooleanAnalysis.SparseHermiteRecovery
 public import Complexity.Foundations.BooleanAnalysis.SparseReplacementDesign
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
