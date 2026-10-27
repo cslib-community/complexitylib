@@ -115,7 +115,8 @@ noncomputable def certificate {encIn : α ↪ List Bool} {count : α → ℕ}
     (cb : NativeCertificate body (encPair encNat encB) encB) :
     NativeCertificate (fun a => run body (count a) (initial a))
       encIn (encPair encNat encB) :=
-  NativeCertificate.iterate cn ((NativeCertificate.const (em := encNat) 0).prod ci) (roundCertificate cb)
+  NativeCertificate.iterate cn ((NativeCertificate.const (em := encNat) 0).prod ci)
+    (roundCertificate cb)
 
 /-- Independent time/workspace bounds under explicit reachable-prefix callback and accumulator
 bounds. The runtime count stays binary. These are charged native `O` bounds, not exact clocks.
