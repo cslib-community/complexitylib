@@ -94,13 +94,14 @@ example (v : Fin 2) :
   ⟨one_le_varIncidence_withNeutralFactors univ (fun i => equationScope (testSys i)) v,
     card_le_totalIncidence_withNeutralFactors univ (fun i => equationScope (testSys i))⟩
 
-/-- Heavy-variable threshold ceiling `heavyThreshold M n s` satisfies `M * s ≤ b₀ * n` and yields
-at least `n / 2` free variables when `s ≥ 2`. -/
+/-- Heavy-variable threshold ceiling `heavyThreshold M n s` and the manuscript's separate-ceiling
+formula `paperHeavyThreshold M n s = ⌈M / n⌉ * s` both satisfy `M * s ≤ b₀ * n`. -/
 example :
-    4 * 2 ≤ heavyThreshold 4 20 2 * 20 :=
-  mul_le_heavyThreshold_mul (by decide)
+    4 * 2 ≤ heavyThreshold 4 20 2 * 20 ∧
+      4 * 2 ≤ paperHeavyThreshold 4 20 2 * 20 :=
+  ⟨mul_le_heavyThreshold_mul (by decide), mul_le_paperHeavyThreshold_mul (by decide)⟩
 
-/-- §5.6 shared-precision (`ℓ = n + 1 = 3`) branch-summed modular recovery on `testSys` when
+/-- §5.5 shared-precision (`ℓ = n + 1 = 3`) branch-summed modular recovery on `testSys` when
 branching on `S = {0}`. -/
 example :
     (commonZeroCount (univ : Finset (Fin 2)) testSys : ℤ) =
@@ -116,7 +117,7 @@ example :
   intro _b _hb x _i _hi _M _hM w _hw
   simp only [Polynomial.eval_add, Polynomial.eval_C, Polynomial.eval_X, add_zero]
 
-/-- §5.6 linear per-branch degree bound `d_H ≤ (k * R_deg) * ((2 * c + 4) * n')` (`k = 2`,
+/-- §5.5 linear per-branch degree bound `d_H ≤ (k * R_deg) * ((2 * c + 4) * n')` (`k = 2`,
 `R_deg = 3`, `c = 1`, `n = 2`, `n' = 1`). -/
 example (b : Fin 2 → Bool)
     (q : (Fin #(univ \ ({0} : Finset (Fin 2))) → Bool) → Fin 2 →

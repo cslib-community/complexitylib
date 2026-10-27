@@ -9,15 +9,17 @@ module
 
 public import Complexity.Init
 public import Complexity.Foundations.BooleanAnalysis.SparseEquations
+public import Complexity.Foundations.Data.Polynomial.ParityAmplifierDegree
 import Mathlib.Data.Finset.Sum
 import Mathlib.Data.Fintype.Pi
 
 /-!
 # Univariate parity-product specialization and heavy-variable branch reduction
 
-This module completes the algebraic and combinatorial infrastructure of Sections 5.3, 5.5, and 5.6
-of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (pp. 37–39), building on
-`Complexity.Foundations.BooleanAnalysis.SparseEquations`:
+This module completes the algebraic and combinatorial infrastructure of Sections 5.3 and 5.5
+(Proof of Theorem 2.2) of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH]
+(pp. 37–39), building on `Complexity.Foundations.BooleanAnalysis.SparseEquations` and
+`Complexity.Foundations.Data.Polynomial.ParityAmplifierDegree`:
 
 1. **Univariate $H(T)$ and coordinatewise $H_s(T) = [V^s] H(T)$ specialization (§5.3, eq. 5.5)**:
    When each variable $v \in \iota$ in equation $i \in I$ is replaced by a univariate polynomial
@@ -29,29 +31,36 @@ of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (pp. 37�
    `Cslib.BitString.univariateParityCoord` ($s < \ell$) and truncated sum
    `Cslib.BitString.univariateParityTruncatedSum` have `natDegree` at most
    `(k * R_deg) * (#I + 2 * (ℓ - 1))` (`Cslib.BitString.natDegree_univariateParityCoord_le`,
-   `Cslib.BitString.natDegree_univariateParityTruncatedSum_le`) and recover `commonZeroCount I P`
-   modulo $2^\ell$ at $T = 0$
-   (`Cslib.BitString.eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount`,
-   `Cslib.BitString.emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount`).
-2. **Free-variable branch relabeling (§5.5–5.6, Proof of Theorem 2.2)**:
+   `Cslib.BitString.natDegree_univariateParityTruncatedSum_le`). For integer-coefficient
+   replacements `q : (ι → Bool) → κ → ι → ℤ[X]`, evaluating at $T = 0$ is congruent to
+   `commonZeroCount I P` modulo $2^\ell$ when `1 ≤ ℓ`
+   (`Cslib.BitString.eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount`) and recovers
+   `commonZeroCount I P` via `(· % 2 ^ ℓ)` when `Fintype.card ι < ℓ`
+   (`Cslib.BitString.emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount`). Note that
+   generic-ring degree and evaluation transport over `R[X]` does not by itself close modular
+   recovery for rational replacement rows `ℚ[X]`; bridging rational replacement rows with nonzero
+   cleared denominators to integer modular recovery is a separate follow-up milestone (as in #1248).
+2. **Free-variable branch relabeling (§5.5, Proof of Theorem 2.2)**:
    After branching on a subset $S \subseteq \iota$ of heavy variables, every restricted equation
    `restrictMonomials S b (P i)` is supported on `univ \ S`. Transporting along an equivalence
    `e : ↥(univ \ S) ≃ ι'` (such as `Fin n'` with $n' = n - |S|$) via
    `Cslib.BitString.relabelRestrictedMonomials` preserves degree bounds `#M ≤ k`, never increases
    monomial counts, bounds every free variable's equation incidence by `b₀` when $S$ is the
-   heavy-variable set (`Cslib.BitString.varIncidence_relabelRestrictedMonomials_heavyVars_le`), and
-   decomposes `commonZeroCount I P` additively as the sum of `commonZeroCount` on the relabeled
-   free-variable cube `ι' → Bool`
-   (`Cslib.BitString.commonZeroCount_eq_sum_relabelRestrictedMonomials`).
-3. **Neutral variable-coverage scopes and Theorem 2.2 threshold bounds (§5.5–5.6)**:
+   heavy-variable set and `∀ i ∈ I, equationScope (P i) ⊆ V`
+   (`Cslib.BitString.varIncidence_relabelRestrictedMonomials_heavyVars_le`), and decomposes
+   `commonZeroCount I P` additively as the sum of `commonZeroCount` on the relabeled free-variable
+   cube `ι' → Bool` (`Cslib.BitString.commonZeroCount_eq_sum_relabelRestrictedMonomials`).
+3. **Neutral variable-coverage scopes and Theorem 2.2 threshold bounds (§5.5)**:
    Adjoining a singleton neutral scope `{v}` for each declared variable $v \in \iota'$ via
    `Cslib.BitString.withNeutralFactors` and `Cslib.BitString.withNeutralScope` increments each
    variable's incidence by `1`, ensuring positive variable incidence (`1 ≤ varIncidence`),
    total incidence $M' \ge n'$ (`Cslib.BitString.card_le_totalIncidence_withNeutralFactors`), and
-   light-variable incidence at most $b_0 + 1$. Finally, when $M \cdot s \le b_0 \cdot n$ (as for
-   $b_0 = \lceil M s / n \rceil$ with $s = \lceil \sqrt{\lambda} \rceil$), the heavy-variable set
-   has size at most $n / s$, at most $2^{n / s}$ branches, and leaves $n' \ge n - n / s \ge n / 2$
-   free variables when $s \ge 2$.
+   light-variable incidence at most $b_0 + 1$. Finally, when `1 ≤ b₀`, `1 ≤ s`,
+   `∀ i ∈ F, scope i ⊆ V`, and `totalIncidence F scope * s ≤ b₀ * #V` (which holds both for the
+   manuscript's threshold `paperHeavyThreshold M n s = ⌈M / n⌉ * s` and for the combined-ceiling
+   variant `heavyThreshold M n s = ⌈M * s / n⌉` when `1 ≤ n`), the heavy-variable set has size at
+   most `#V / s`, at most `2 ^ (Fintype.card ι / s)` branches, and leaves
+   `#(V \ heavyVars V F scope b₀) ≥ #V - #V / s ≥ #V / 2` free variables when `2 ≤ s`.
 
 ## Main definitions
 
@@ -64,8 +73,9 @@ of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (pp. 37�
   monomial families and restricted branch equations onto a free-variable index type `ι'`.
 * `Cslib.BitString.withNeutralFactors`, `Cslib.BitString.withNeutralScope`: adjoining neutral
   singleton scopes `{v}` for every variable $v \in \iota'$.
-* `Cslib.BitString.heavyThreshold`: integer ceiling $\lceil M s / n \rceil$ for the heavy-variable
-  incidence threshold $b_0$.
+* `Cslib.BitString.paperHeavyThreshold`, `Cslib.BitString.heavyThreshold`: the manuscript's
+  heavy-variable threshold $\lceil M / n \rceil s$ and the combined-ceiling variant
+  $\lceil M s / n \rceil$.
 * `Cslib.BitString.branchPrecision`: the shared modular precision $\ell = n + 1$ used across the
   unrestricted system and all free-variable branches.
 
@@ -76,16 +86,18 @@ of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (pp. 37�
   $\deg_T \le (k R_{\mathrm{deg}})(m_{\mathrm{test}} + 2(\ell - 1))$.
 * `Cslib.BitString.eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount` and
   `Cslib.BitString.emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount`: equation (5.5)
-  congruence and exact recovery of `commonZeroCount` at $T = 0$.
+  congruence (for `1 ≤ ℓ`) and exact recovery (for `Fintype.card ι < ℓ`) of `commonZeroCount` at
+  $T = 0$ under integer-coefficient replacements.
 * `Cslib.BitString.commonZeroCount_eq_sum_relabelRestrictedMonomials`: additive branch decomposition
   of `commonZeroCount` into `commonZeroCount` over the relabeled free-variable cube `ι' → Bool`.
 * `Cslib.BitString.varIncidence_relabelRestrictedMonomials_heavyVars_le`: post-branching
   free-variable incidence bound $\le b_0$ on `ι'`.
 * `Cslib.BitString.card_le_totalIncidence_withNeutralFactors`: neutral scopes guarantee $M' \ge n'$.
 * `Cslib.BitString.card_heavyVars_le_card_div` and
-  `Cslib.BitString.card_sdiff_heavyVars_ge_half`: $|S| \le n / s$ and $n' \ge n / 2$ for $s \ge 2$.
+  `Cslib.BitString.card_sdiff_heavyVars_ge_half`: $|S| \le n / s$ and $n' \ge n / 2$ for $s \ge 2$,
+  $b_0 \ge 1$, and scope coverage.
 * `Cslib.BitString.commonZeroCount_eq_sum_branch_emod_eval_zero` and
-  `Cslib.BitString.natDegree_univariateParityTruncatedSum_branch_le`: §5.6 shared-precision
+  `Cslib.BitString.natDegree_univariateParityTruncatedSum_branch_le`: §5.5 shared-precision
   $\ell = n + 1$ branch recovery and linear degree bound
   $\deg_T \le (k R_{\mathrm{deg}})((2 c + 4) n')$ when $m_{\mathrm{test}} \le c n$ and
   $n \le 2 n'$.
@@ -93,7 +105,7 @@ of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (pp. 37�
 ## References
 
 * [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH]
-  (Sections 5.3, 5.5, and 5.6)
+  (Sections 5.3 and 5.5)
 -/
 
 @[expose] public noncomputable section
@@ -139,18 +151,11 @@ theorem eval_univariateMonomialPoly [CommSemiring R] (q : ι → Polynomial R) (
     (univariateMonomialPoly R q M).eval t = ∏ v ∈ M, (q v).eval t := by
   rw [univariateMonomialPoly, Polynomial.eval_prod]
 
-private theorem eval_sum {α : Type*} [CommSemiring R] (S : Finset α) (f : α → Polynomial R)
-    (t : R) :
-    (∑ x ∈ S, f x).eval t = ∑ x ∈ S, (f x).eval t := by
-  change Polynomial.evalRingHom t (∑ x ∈ S, f x) = _
-  rw [map_sum]
-  rfl
-
 /-- Pointwise evaluation of `univariateMonomialSumPoly R q 𝓜` at `t : R`. -/
 theorem eval_univariateMonomialSumPoly [CommSemiring R] (q : ι → Polynomial R)
     (𝓜 : Finset (Finset ι)) (t : R) :
     (univariateMonomialSumPoly R q 𝓜).eval t = ∑ M ∈ 𝓜, ∏ v ∈ M, (q v).eval t := by
-  rw [univariateMonomialSumPoly, eval_sum]
+  rw [univariateMonomialSumPoly, Polynomial.eval_finsetSum]
   exact sum_congr rfl fun M _ => eval_univariateMonomialPoly q M t
 
 /-- **Restoration at `T = 0`**: if every `q v` (`v ∈ M`) evaluates at `0` to `bitVal R (x v)`, then
@@ -188,188 +193,7 @@ theorem natDegree_univariateMonomialSumPoly_le [CommSemiring R] {q : ι → Poly
 
 end UnivariateReplacement
 
-/-! ### Section 2: Ring-homomorphism transport and `natDegree` bounds for `parityFactor` -/
-
-section UnivariateParityFactor
-
-/-- Any ring homomorphism `φ : A →+* B` commutes with `Polynomial.evalInt`. -/
-theorem map_evalInt {A B : Type*} [CommRing A] [CommRing B] (φ : A →+* B) (y : A)
-    (p : Polynomial ℤ) :
-    φ (Polynomial.evalInt y p) = Polynomial.evalInt (φ y) p := by
-  induction p using Polynomial.induction_on' with
-  | add p q ihp ihq =>
-    rw [Polynomial.evalInt, Polynomial.eval₂_add, map_add, ← Polynomial.evalInt,
-      ← Polynomial.evalInt, ihp, ihq, Polynomial.evalInt, Polynomial.evalInt,
-      ← Polynomial.eval₂_add]
-    rfl
-  | monomial n a =>
-    rw [Polynomial.evalInt, Polynomial.evalInt, Polynomial.eval₂_monomial,
-      Polynomial.eval₂_monomial, map_mul, map_pow]
-    congr 1
-    rw [eq_intCast, eq_intCast, map_intCast]
-
-/-- Mapping `parityFactor ℓ y` coefficientwise by `φ : A →+* B` yields `parityFactor ℓ (φ y)`. -/
-theorem map_parityFactor {A B : Type*} [CommRing A] [CommRing B] (φ : A →+* B) (ℓ : ℕ) (y : A) :
-    (Polynomial.parityFactor ℓ y).map φ = Polynomial.parityFactor ℓ (φ y) := by
-  ext s
-  rw [Polynomial.coeff_map, Polynomial.coeff_parityFactor, Polynomial.coeff_parityFactor]
-  split_ifs with hs
-  · rw [map_mul, map_pow, map_evalInt, map_evalInt]
-  · exact map_zero φ
-
-/-- Any ring homomorphism `φ : A →+* B` commutes with `sumCoeffsBelow`. -/
-theorem map_sumCoeffsBelow {A B : Type*} [Semiring A] [Semiring B] (φ : A →+* B)
-    (P : Polynomial A) (m : ℕ) :
-    φ (P.sumCoeffsBelow m) = (P.map φ).sumCoeffsBelow m := by
-  rw [Polynomial.sumCoeffsBelow, Polynomial.sumCoeffsBelow, map_sum]
-  refine sum_congr rfl fun j _ => ?_
-  rw [Polynomial.coeff_map]
-
-/-- Evaluating the `s`-th coefficient of `∏ i ∈ I, parityFactor ℓ (L i)` at `t : R` agrees with
-the `s`-th coefficient of `∏ i ∈ I, parityFactor ℓ ((L i).eval t)`. -/
-theorem eval_coeff_prod_parityFactor [CommRing R] (I : Finset κ) (ℓ : ℕ)
-    (L : κ → Polynomial R) (s : ℕ) (t : R) :
-    ((∏ i ∈ I, Polynomial.parityFactor ℓ (L i)).coeff s).eval t =
-      (∏ i ∈ I, Polynomial.parityFactor ℓ ((L i).eval t)).coeff s := by
-  let φ : Polynomial R →+* R := Polynomial.evalRingHom t
-  change φ ((∏ i ∈ I, Polynomial.parityFactor ℓ (L i)).coeff s) = _
-  rw [← Polynomial.coeff_map, Polynomial.map_prod]
-  refine congrArg (fun Q : Polynomial R => Q.coeff s) (prod_congr rfl fun i _ => ?_)
-  exact map_parityFactor φ ℓ (L i)
-
-/-- Evaluating `sumCoeffsBelow m` of `∏ i ∈ I, parityFactor ℓ (L i)` at `t : R` agrees with
-`sumCoeffsBelow m` of `∏ i ∈ I, parityFactor ℓ ((L i).eval t)`. -/
-theorem eval_sumCoeffsBelow_prod_parityFactor [CommRing R] (I : Finset κ) (ℓ : ℕ)
-    (L : κ → Polynomial R) (m : ℕ) (t : R) :
-    ((∏ i ∈ I, Polynomial.parityFactor ℓ (L i)).sumCoeffsBelow m).eval t =
-      (∏ i ∈ I, Polynomial.parityFactor ℓ ((L i).eval t)).sumCoeffsBelow m := by
-  rw [Polynomial.sumCoeffsBelow, eval_sum, Polynomial.sumCoeffsBelow]
-  exact sum_congr rfl fun s _ => eval_coeff_prod_parityFactor I ℓ L s t
-
-/-- For `y : Polynomial R` and `p : Polynomial ℤ`,
-`(evalInt y p).natDegree ≤ p.natDegree * y.natDegree`. -/
-theorem natDegree_evalInt_le [CommRing R] (y : Polynomial R) (p : Polynomial ℤ) :
-    (Polynomial.evalInt y p).natDegree ≤ p.natDegree * y.natDegree := by
-  rw [Polynomial.evalInt, Polynomial.eval₂_eq_sum_range]
-  refine (Polynomial.natDegree_sum_le _ _).trans ?_
-  rw [Finset.fold_max_le]
-  refine ⟨Nat.zero_le _, fun i hi => ?_⟩
-  rw [mem_range, Nat.lt_succ_iff] at hi
-  dsimp only [Function.comp_apply]
-  have hcast : (Int.castRingHom (Polynomial R) (p.coeff i)) = Polynomial.C (p.coeff i : R) := by
-    rw [eq_intCast, ← Polynomial.C_eq_intCast]
-  rw [hcast]
-  calc
-    (Polynomial.C (p.coeff i : R) * y ^ i).natDegree
-      ≤ (Polynomial.C (p.coeff i : R)).natDegree + (y ^ i).natDegree :=
-        Polynomial.natDegree_mul_le
-    _ ≤ 0 + i * y.natDegree := by
-        rw [Polynomial.natDegree_C]
-        exact add_le_add le_rfl Polynomial.natDegree_pow_le
-    _ ≤ p.natDegree * y.natDegree := by
-        rw [zero_add]
-        exact Nat.mul_le_mul_right _ hi
-
-/-- `evalInt y (parityBaseDigit ℓ j)` has `natDegree ≤ y.natDegree`. -/
-theorem natDegree_evalInt_parityBaseDigit_le [CommRing R] (ℓ j : ℕ) (y : Polynomial R) :
-    (Polynomial.evalInt y (Polynomial.parityBaseDigit ℓ j)).natDegree ≤ y.natDegree := by
-  calc
-    (Polynomial.evalInt y (Polynomial.parityBaseDigit ℓ j)).natDegree
-      ≤ (Polynomial.parityBaseDigit ℓ j).natDegree * y.natDegree :=
-        natDegree_evalInt_le y _
-    _ ≤ 1 * y.natDegree :=
-        Nat.mul_le_mul_right _ (Polynomial.natDegree_parityBaseDigit_le ℓ j)
-    _ = y.natDegree := one_mul _
-
-/-- `evalInt y hPoly` has `natDegree ≤ 2 * y.natDegree`. -/
-theorem natDegree_evalInt_hPoly_le [CommRing R] (y : Polynomial R) :
-    (Polynomial.evalInt y Polynomial.hPoly).natDegree ≤ 2 * y.natDegree := by
-  rw [Polynomial.evalInt_hPoly]
-  calc
-    (y ^ 2 - y).natDegree
-      ≤ max (y ^ 2).natDegree y.natDegree := Polynomial.natDegree_sub_le _ _
-    _ ≤ max (2 * y.natDegree) y.natDegree :=
-        max_le_max Polynomial.natDegree_pow_le le_rfl
-    _ = 2 * y.natDegree := max_eq_left (by omega)
-
-/-- The `j`-th coefficient of `parityFactor ℓ y` has `natDegree ≤ (1 + 2 * j) * y.natDegree`. -/
-theorem natDegree_coeff_parityFactor_le [CommRing R] (ℓ : ℕ) (y : Polynomial R) (j : ℕ) :
-    ((Polynomial.parityFactor ℓ y).coeff j).natDegree ≤ (1 + 2 * j) * y.natDegree := by
-  rw [Polynomial.coeff_parityFactor]
-  split_ifs with hj
-  · calc
-      (Polynomial.evalInt y (Polynomial.parityBaseDigit ℓ j) *
-          Polynomial.evalInt y Polynomial.hPoly ^ j).natDegree
-        ≤ (Polynomial.evalInt y (Polynomial.parityBaseDigit ℓ j)).natDegree +
-            (Polynomial.evalInt y Polynomial.hPoly ^ j).natDegree :=
-          Polynomial.natDegree_mul_le
-      _ ≤ y.natDegree + j * (Polynomial.evalInt y Polynomial.hPoly).natDegree :=
-          add_le_add (natDegree_evalInt_parityBaseDigit_le ℓ j y) Polynomial.natDegree_pow_le
-      _ ≤ y.natDegree + j * (2 * y.natDegree) :=
-          add_le_add le_rfl (Nat.mul_le_mul_left j (natDegree_evalInt_hPoly_le y))
-      _ = (1 + 2 * j) * y.natDegree := by ring
-  · simp only [Polynomial.natDegree_zero, zero_le]
-
-/-- If every `L i` (`i ∈ I`) has `natDegree ≤ d`, then the `V ^ s`-coefficient of
-`∏ i ∈ I, parityFactor ℓ (L i)` has `natDegree ≤ d * (#I + 2 * s)`. -/
-theorem natDegree_coeff_prod_parityFactor_le [CommRing R] (I : Finset κ) (ℓ : ℕ)
-    (L : κ → Polynomial R) {d : ℕ} (hL : ∀ i ∈ I, (L i).natDegree ≤ d) :
-    ∀ s : ℕ, ((∏ i ∈ I, Polynomial.parityFactor ℓ (L i)).coeff s).natDegree ≤ d * (#I + 2 * s) := by
-  classical
-  induction I using Finset.induction_on with
-  | empty =>
-    intro s
-    simp only [prod_empty, card_empty, zero_add]
-    rcases eq_or_ne s 0 with rfl | hs
-    · simp only [Polynomial.coeff_one_zero, Polynomial.natDegree_one, zero_le]
-    · rw [Polynomial.coeff_one, ite_eq_right hs, Polynomial.natDegree_zero]
-      exact Nat.zero_le _
-  | insert a I ha ih =>
-    intro s
-    rw [prod_insert ha, card_insert_of_notMem ha, Polynomial.coeff_mul]
-    have haL : (L a).natDegree ≤ d := hL a (mem_insert_self a I)
-    have hIL : ∀ i ∈ I, (L i).natDegree ≤ d := fun i hi => hL i (mem_insert_of_mem hi)
-    refine (Polynomial.natDegree_sum_le _ _).trans ?_
-    rw [Finset.fold_max_le]
-    refine ⟨Nat.zero_le _, fun p hp => ?_⟩
-    rw [mem_antidiagonal] at hp
-    calc
-      (((Polynomial.parityFactor ℓ (L a)).coeff p.1) *
-          ((∏ i ∈ I, Polynomial.parityFactor ℓ (L i)).coeff p.2)).natDegree
-        ≤ ((Polynomial.parityFactor ℓ (L a)).coeff p.1).natDegree +
-            ((∏ i ∈ I, Polynomial.parityFactor ℓ (L i)).coeff p.2).natDegree :=
-          Polynomial.natDegree_mul_le
-      _ ≤ (1 + 2 * p.1) * (L a).natDegree + d * (#I + 2 * p.2) :=
-          add_le_add (natDegree_coeff_parityFactor_le ℓ (L a) p.1) (ih hIL p.2)
-      _ ≤ (1 + 2 * p.1) * d + d * (#I + 2 * p.2) :=
-          add_le_add (Nat.mul_le_mul_left _ haL) le_rfl
-      _ = d * (#I + 1 + 2 * (p.1 + p.2)) := by ring
-      _ = d * (#I + 1 + 2 * s) := by rw [hp]
-
-/-- For `s < ℓ`, the `V ^ s`-coefficient of `∏ i ∈ I, parityFactor ℓ (L i)` has
-`natDegree ≤ d * (#I + 2 * (ℓ - 1))`. -/
-theorem natDegree_coeff_prod_parityFactor_le_of_lt [CommRing R] (I : Finset κ) (ℓ : ℕ)
-    (L : κ → Polynomial R) {d : ℕ} (hL : ∀ i ∈ I, (L i).natDegree ≤ d) {s : ℕ} (hs : s < ℓ) :
-    ((∏ i ∈ I, Polynomial.parityFactor ℓ (L i)).coeff s).natDegree ≤
-      d * (#I + 2 * (ℓ - 1)) := by
-  refine (natDegree_coeff_prod_parityFactor_le I ℓ L hL s).trans ?_
-  exact Nat.mul_le_mul_left d (by omega)
-
-/-- The truncated sum `sumCoeffsBelow ℓ (∏ i ∈ I, parityFactor ℓ (L i))` has
-`natDegree ≤ d * (#I + 2 * (ℓ - 1))`. -/
-theorem natDegree_sumCoeffsBelow_prod_parityFactor_le [CommRing R] (I : Finset κ) (ℓ : ℕ)
-    (L : κ → Polynomial R) {d : ℕ} (hL : ∀ i ∈ I, (L i).natDegree ≤ d) :
-    ((∏ i ∈ I, Polynomial.parityFactor ℓ (L i)).sumCoeffsBelow ℓ).natDegree ≤
-      d * (#I + 2 * (ℓ - 1)) := by
-  rw [Polynomial.sumCoeffsBelow]
-  refine (Polynomial.natDegree_sum_le _ _).trans ?_
-  rw [Finset.fold_max_le]
-  refine ⟨Nat.zero_le _, fun s hs => ?_⟩
-  exact natDegree_coeff_prod_parityFactor_le_of_lt I ℓ L hL (mem_range.mp hs)
-
-end UnivariateParityFactor
-
-/-! ### Section 3: Cube-summed univariate polynomial $H(T)$ and equation (5.5) -/
+/-! ### Section 2: Cube-summed univariate polynomial $H(T)$ and equation (5.5) -/
 
 section CubeSummedUnivariate
 
@@ -443,7 +267,7 @@ theorem natDegree_univariateParityCoord_le [Fintype ι] [DecidableEq ι] [CommRi
   refine (Polynomial.natDegree_sum_le _ _).trans ?_
   rw [Finset.fold_max_le]
   refine ⟨Nat.zero_le _, fun x _ => ?_⟩
-  refine natDegree_coeff_prod_parityFactor_le_of_lt I ℓ
+  refine Polynomial.natDegree_coeff_prod_parityFactor_le_of_lt I ℓ
     (fun i => univariateMonomialSumPoly R (q x i) (P i)) (fun i hi => ?_) hs
   exact natDegree_univariateMonomialSumPoly_le (hk i hi) (hq x i hi)
 
@@ -473,9 +297,9 @@ theorem eval_zero_univariateParityTruncatedSum [Fintype ι] [DecidableEq ι] [Co
     (univariateParityTruncatedSum I P ℓ q).eval 0 =
       ∑ x : ι → Bool,
         (∏ i ∈ I, Polynomial.parityFactor ℓ (monomialSum R (P i) x)).sumCoeffsBelow ℓ := by
-  rw [univariateParityTruncatedSum_eq_sum, eval_sum]
+  rw [univariateParityTruncatedSum_eq_sum, Polynomial.eval_finsetSum]
   refine sum_congr rfl fun x _ => ?_
-  rw [eval_sumCoeffsBelow_prod_parityFactor]
+  rw [Polynomial.eval_sumCoeffsBelow_prod_parityFactor]
   congr 1
   refine prod_congr rfl fun i hi => ?_
   rw [eval_zero_univariateMonomialSumPoly (hq0 x i hi)]
@@ -507,7 +331,7 @@ theorem emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount [Fintype 
 
 end CubeSummedUnivariate
 
-/-! ### Section 4: Free-variable branch relabeling (§5.5–5.6, Proof of Theorem 2.2) -/
+/-! ### Section 3: Free-variable branch relabeling (§5.5, Proof of Theorem 2.2) -/
 
 section BranchRelabeling
 
@@ -735,7 +559,7 @@ theorem varIncidence_relabelRestrictedMonomials_heavyVars_le [Fintype ι] [Decid
 
 end BranchRelabeling
 
-/-! ### Section 5: Neutral variable-coverage scopes and Theorem 2.2 threshold bounds (§5.5–5.6) -/
+/-! ### Section 4: Neutral variable-coverage scopes and Theorem 2.2 threshold bounds (§5.5) -/
 
 section NeutralScopesAndThresholds
 
@@ -798,8 +622,12 @@ theorem card_le_totalIncidence_withNeutralFactors [Fintype ι'] (I : Finset κ)
   rw [totalIncidence_withNeutralFactors]
   exact Nat.le_add_left _ _
 
-/-- **§5.5 (heavy-variable threshold $b_0 = \lceil M s / n \rceil$)**: integer ceiling of
-`M * s / n`. -/
+/-- **§5.5 (manuscript heavy-variable threshold $b_0 = \lceil M / n \rceil s$, p. 38)**: the
+product `((M + n - 1) / n) * s` of the integer ceiling `⌈M / n⌉` and `s`. -/
+def paperHeavyThreshold (M n s : ℕ) : ℕ :=
+  ((M + n - 1) / n) * s
+
+/-- Combined-ceiling variant `⌈M * s / n⌉ = (M * s + n - 1) / n` of the heavy-variable threshold. -/
 def heavyThreshold (M n s : ℕ) : ℕ :=
   (M * s + n - 1) / n
 
@@ -811,6 +639,16 @@ theorem mul_le_heavyThreshold_mul {M n s : ℕ} (hn : 1 ≤ n) :
   have hlt : (M * s + n - 1) % n < n := Nat.mod_lt _ hn
   rw [Nat.mul_comm ((M * s + n - 1) / n) n]
   omega
+
+/-- When `1 ≤ n`, `M * s ≤ paperHeavyThreshold M n s * n`. -/
+theorem mul_le_paperHeavyThreshold_mul {M n s : ℕ} (hn : 1 ≤ n) :
+    M * s ≤ paperHeavyThreshold M n s * n := by
+  unfold paperHeavyThreshold
+  have hceil : M ≤ ((M + n - 1) / n) * n := by
+    simpa only [heavyThreshold, mul_one] using (mul_le_heavyThreshold_mul (M := M) (s := 1) hn)
+  calc
+    M * s ≤ (((M + n - 1) / n) * n) * s := Nat.mul_le_mul_right s hceil
+    _ = (((M + n - 1) / n) * s) * n := by ring
 
 /-- **§5.5 ($|S| \le n / s$)**: whenever `totalIncidence F scope * s ≤ b₀ * #V`, `1 ≤ b₀`,
 `1 ≤ s`, and `∀ i ∈ F, scope i ⊆ V`, the heavy-variable set `heavyVars V F scope b₀` has
@@ -867,7 +705,7 @@ theorem card_sdiff_heavyVars_ge_half [DecidableEq ι] (V : Finset ι) (F : Finse
   have hge := card_sdiff_heavyVars_ge V F scope hb₀ (by omega) hV hM
   constructor <;> omega
 
-/-- **§5.1 & §5.6 ($\ell = n + 1$)**: the shared modular precision `n + 1` used for both the
+/-- **§5.1 & §5.5 ($\ell = n + 1$)**: the shared modular precision `n + 1` used for both the
 unrestricted system on `n` variables and every free-variable branch. -/
 def branchPrecision (n : ℕ) : ℕ :=
   n + 1
@@ -889,7 +727,7 @@ theorem commonZeroCount_lt_two_pow_branchPrecision [Fintype ι] [DecidableEq ι]
   lt_of_le_of_lt (commonZeroCount_le_two_pow I P)
     (two_pow_lt_two_pow_branchPrecision (Fintype.card ι))
 
-/-- **§5.6 (branch count $< 2^\ell$ at original precision $\ell = n + 1$)**: for any subset `S`
+/-- **§5.5 (branch count $< 2^\ell$ at original precision $\ell = n + 1$)**: for any subset `S`
 and branch assignment `b : ι → Bool`, the relabeled branch common-zero count on `ι'` is strictly
 smaller than `2 ^ branchPrecision (Fintype.card ι)` whenever `e : ↥(univ \ S) ≃ ι'`. -/
 theorem commonZeroCount_relabelRestrictedMonomials_lt_two_pow_branchPrecision [Fintype ι]
@@ -907,7 +745,7 @@ theorem commonZeroCount_relabelRestrictedMonomials_lt_two_pow_branchPrecision [F
     _ < 2 ^ branchPrecision (Fintype.card ι) :=
       two_pow_lt_two_pow_branchPrecision (Fintype.card ι)
 
-/-- **§5.6 (exact branch recovery at original precision $\ell = n + 1$)**: on any branch `(S, b)`
+/-- **§5.5 (exact branch recovery at original precision $\ell = n + 1$)**: on any branch `(S, b)`
 relabeled along `e : ↥(univ \ S) ≃ ι'`, evaluating `univariateParityTruncatedSum` at `T = 0` with
 the original precision `branchPrecision (Fintype.card ι) = n + 1` and taking the remainder modulo
 `2 ^ branchPrecision (Fintype.card ι)` yields the exact branch common-zero count. -/
@@ -927,7 +765,7 @@ theorem emod_eval_zero_univariateParityTruncatedSum_branch_eq [Fintype ι] [Fint
   exact emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount I
     (fun i => relabelRestrictedMonomials S e b (P i)) hcard q hq0
 
-/-- **§5.6 (Theorem 2.2 branch-summed modular recovery)**: summing the per-branch `T = 0`
+/-- **§5.5 (Theorem 2.2 branch-summed modular recovery)**: summing the per-branch `T = 0`
 remainders modulo `2 ^ branchPrecision (Fintype.card ι)` across all `b ∈ branchAssignments S`
 recovers the exact unrestricted count `(commonZeroCount I P : ℤ)`. -/
 theorem commonZeroCount_eq_sum_branch_emod_eval_zero [Fintype ι] [Fintype ι']
@@ -947,7 +785,7 @@ theorem commonZeroCount_eq_sum_branch_emod_eval_zero [Fintype ι] [Fintype ι']
   refine sum_congr rfl fun b hb => ?_
   exact (emod_eval_zero_univariateParityTruncatedSum_branch_eq S e I P b (q b) (hq0 b hb)).symm
 
-/-- **§5.6 ($m_{\mathrm{test}} + 2(\ell - 1) \le (2c + 4)n'$ when $n \le 2n'$)**: when `m ≤ c * n`
+/-- **§5.5 ($m_{\mathrm{test}} + 2(\ell - 1) \le (2c + 4)n'$ when $n \le 2n'$)**: when `m ≤ c * n`
 and `n ≤ 2 * n'`, the equation-plus-precision factor `m + 2 * (branchPrecision n - 1)` is at most
 `(2 * c + 4) * n'`. -/
 theorem branchEquationBudget_le {m c n n' : ℕ} (hm : m ≤ c * n) (hn : n ≤ 2 * n') :
@@ -960,7 +798,7 @@ theorem branchEquationBudget_le {m c n n' : ℕ} (hm : m ≤ c * n) (hn : n ≤ 
     _ ≤ (c + 2) * (2 * n') := Nat.mul_le_mul_left (c + 2) hn
     _ = (2 * c + 4) * n' := by ring
 
-/-- **§5.6 ($d_H = O_{k, c}(n' R)$ per-branch degree bound)**: on any branch `(S, b)` relabeled
+/-- **§5.5 ($d_H = O_{k, c}(n' R)$ per-branch degree bound)**: on any branch `(S, b)` relabeled
 along `e : ↥(univ \ S) ≃ ι'`, if `#I ≤ c * Fintype.card ι`, `Fintype.card ι ≤ 2 * Fintype.card ι'`,
 every monomial in the unrestricted system `P` has degree at most `k`, and every branch replacement
 polynomial `q x i v` has `natDegree ≤ R_deg`, then `univariateParityTruncatedSum` at precision
