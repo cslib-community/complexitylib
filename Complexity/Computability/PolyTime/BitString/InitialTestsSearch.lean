@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Computability.GenericRAM.Native.IndexFold
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import Complexity.Foundations.Combinatorics.Expander.TannerCode
+public import Complexity.Foundations.Data.BitString.ParityTestBounds
 import Complexity.Computability.GenericRAM.Native.BooleanFold
 import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Foundations.Data.BitString.InitialTests
@@ -31,13 +32,13 @@ Deterministic sequential search and shortened Tanner parity-check construction f
 [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], §6.1, Lemma 6.1 (pp. 40–42),
 giving the executable counterpart to `Cslib.BitString.exists_initialTests`. Given `n, B ≥ 1` and
 `m ≤ B * n`, `initialTestsRows m B` constructs a binary matrix `A^(0)` on `m` columns with at most
-`3 * n` rows of weight at most `paramD0 m B` whose `GF(2)` kernel excludes every nonzero vector of
-weight below `m / paramP m B`, in `exp(poly(B, log(m + 2)))` bit operations and `poly(n, m, B)`
-working space via `Cslib.GenericRAM.IndexFold.run`.
+`3 * n` rows of weight at most `initialRowWeightBound B m` whose `GF(2)` kernel excludes every
+nonzero vector of weight below `m / greedyRowListLength B m`, in `exp(poly(B, log(m + 2)))` bit
+operations and `poly(n, m, B)` working space via `Cslib.GenericRAM.IndexFold.run`.
 
 ## Main definitions
 
-* `paramP`, `paramD0`, `dG`, `ellG`, `qG`, `cG`, `hDist`, `biasDen`: Lemma 6.1 parameter schedule.
+* `dG`, `ellG`, `qG`, `cG`, `hDist`, `biasDen`: Lemma 6.1 parameter schedule.
 * `checkSmallBiasShifts`, `checkLocalCodeDistance`, `findSmallBiasShifts`, `findLocalCheckMatrix`:
   streaming `IndexFold.run` checkers and sequential searchers.
 * `buildShortenedTannerRows`, `initialTestsRows`: shortened Tanner check-matrix assembly.
@@ -68,12 +69,9 @@ private theorem le_ceilDiv_mul {a b : ℕ} (ha : 1 ≤ a) (hb : 0 < b) : a ≤ (
   have : a + b - 1 + 1 = a + b := by omega
   nlinarith
 
-/-- Support denominator `P = 20000 B² μ²` (`μ = ⌊log₂ m⌋ + 1`) of [OpenAI2026ETH], Lemma 6.1. -/
-def paramP (m B : ℕ) : ℕ := 20000 * B ^ 2 * (Nat.log 2 m + 1) ^ 2
-/-- Row-sparsity cap `D₀ = 320000 B² μ³` (`μ = ⌊log₂ m⌋ + 1`) of [OpenAI2026ETH], Lemma 6.1. -/
-def paramD0 (m B : ℕ) : ℕ := 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3
-/-- Cayley degree `d_G = min(m, D₀)` of [OpenAI2026ETH], Lemma 6.1. -/
-def dG (m B : ℕ) : ℕ := min m (paramD0 m B)
+/-- Cayley degree `d_G = min(m, D₀)` (`D₀ = initialRowWeightBound B m`) of [OpenAI2026ETH],
+Lemma 6.1. -/
+def dG (m B : ℕ) : ℕ := min m (initialRowWeightBound B m)
 /-- Cube dimension `ℓ_G = ⌈log₂ ⌈m / d_G⌉⌉` of [OpenAI2026ETH], Lemma 6.1 (`0` if `d_G = 0`). -/
 def ellG (m B : ℕ) : ℕ := Nat.clog 2 ((m + dG m B - 1) / dG m B)
 /-- Vertex-side size `q_G = 2 ^ ℓ_G` of the double cover in [OpenAI2026ETH], Lemma 6.1. -/
@@ -89,7 +87,8 @@ def hDist (m B : ℕ) : ℕ :=
 def biasDen (m B : ℕ) : ℕ := 200 * B * (Nat.log 2 m + 1)
 
 theorem dG_pos {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : 0 < dG m B := by
-  unfold dG paramD0; have : 0 < 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3 := by positivity
+  unfold dG initialRowWeightBound
+  have : 0 < 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3 := by positivity
   omega
 theorem le_qG_mul_dG {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : m ≤ qG m B * dG m B :=
   (le_ceilDiv_mul hm (dG_pos hm hB)).trans
@@ -113,10 +112,12 @@ theorem qG_lt_two_mul {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : qG m B < 2 * m
 theorem qG_le_two_mul_add_one (m B : ℕ) : qG m B ≤ 2 * m + 1 := by
   rcases Nat.eq_zero_or_pos m with rfl | hm; · simp only [qG, ellG, dG, Nat.zero_min]; decide
   rcases Nat.eq_zero_or_pos B with rfl | hB
-  · rw [qG, ellG, show dG m 0 = 0 by simp only [dG, paramD0, sq, mul_zero, zero_mul, Nat.min_zero],
+  · rw [qG, ellG, show dG m 0 = 0 by
+      simp only [dG, initialRowWeightBound, sq, mul_zero, zero_mul, Nat.min_zero],
       Nat.div_zero]; change 1 ≤ 2 * m + 1; omega
   have := qG_lt_two_mul hm hB; omega
-private theorem dG_eq_of_ellG_pos {m B : ℕ} (hpos : 0 < ellG m B) : dG m B = paramD0 m B := by
+private theorem dG_eq_of_ellG_pos {m B : ℕ} (hpos : 0 < ellG m B) :
+    dG m B = initialRowWeightBound B m := by
   by_contra hne; have hd : dG m B = m := Nat.min_eq_left (by unfold dG at hne; omega)
   rcases Nat.eq_zero_or_pos m with rfl | hm; · rw [ellG, hd] at hpos; exact absurd hpos (by decide)
   have hdiv : (m + m - 1) / m ≤ 1 := Nat.le_of_lt_succ ((Nat.div_lt_iff_lt_mul hm).2 (by omega))
@@ -143,7 +144,7 @@ theorem two_mul_qG_mul_cG_le_three_mul {n m B : ℕ} (hn : 1 ≤ n) (hm : 1 ≤ 
     rw [hq, mul_one]; rw [hd] at hmul; have : m + 8 * B - 1 + 1 = m + 8 * B := by omega
     nlinarith
   · have h8_le_dG : 8 * B ≤ dG m B := by
-      rw [dG_eq_of_ellG_pos hpos, paramD0]; have : B ≤ B ^ 2 := by nlinarith
+      rw [dG_eq_of_ellG_pos hpos, initialRowWeightBound]; have : B ≤ B ^ 2 := by nlinarith
       have : 0 < (Nat.log 2 m + 1) ^ 3 := by positivity
       nlinarith
     have : dG m B + 8 * B - 1 + 1 = dG m B + 8 * B := by omega
@@ -163,29 +164,29 @@ section
 variable {α : Type} {ei : α ↪ List Bool} {m B : α → ℕ}
   (hm : ComputableInPolyTime m ei encUnary) (hB : ComputableInPolyTime B ei encUnary)
 include hm hB
-@[fun_prop] theorem paramP_polyTime :
-    ComputableInPolyTime (fun a => paramP (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold paramP; fun_prop)
-@[fun_prop] theorem paramD0_polyTime :
-    ComputableInPolyTime (fun a => paramD0 (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold paramD0; fun_prop)
+@[fun_prop] theorem greedyRowListLength_polyTime :
+    ComputableInPolyTime (fun a => greedyRowListLength (B a) (m a)) ei encUnary :=
+  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold greedyRowListLength; fun_prop)
+@[fun_prop] theorem initialRowWeightBound_polyTime :
+    ComputableInPolyTime (fun a => initialRowWeightBound (B a) (m a)) ei encUnary :=
+  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold initialRowWeightBound; fun_prop)
 @[fun_prop] theorem dG_polyTime :
     ComputableInPolyTime (fun a => dG (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold dG paramD0; fun_prop)
+  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold dG initialRowWeightBound; fun_prop)
 @[fun_prop] theorem ellG_polyTime :
     ComputableInPolyTime (fun a => ellG (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold ellG dG paramD0; fun_prop)
+  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold ellG dG initialRowWeightBound; fun_prop)
 @[fun_prop] theorem qG_polyTime :
     ComputableInPolyTime (fun a => qG (m a) (B a)) ei encUnary :=
   .of_tidy (by
-    have := hm.tidy; have := hB.tidy; unfold qG ellG dG paramD0
+    have := hm.tidy; have := hB.tidy; unfold qG ellG dG initialRowWeightBound
     exact ComputableTidilyInPolyTime.unary_pow_clog_const (by fun_prop) 2 2)
 @[fun_prop] theorem cG_polyTime :
     ComputableInPolyTime (fun a => cG (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold cG dG paramD0; fun_prop)
+  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold cG dG initialRowWeightBound; fun_prop)
 @[fun_prop] theorem hDist_polyTime :
     ComputableInPolyTime (fun a => hDist (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold hDist dG paramD0; fun_prop)
+  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold hDist dG initialRowWeightBound; fun_prop)
 @[fun_prop] theorem biasDen_polyTime :
     ComputableInPolyTime (fun a => biasDen (m a) (B a)) ei encUnary :=
   .of_tidy (by have := hm.tidy; have := hB.tidy; unfold biasDen; fun_prop)
@@ -966,9 +967,9 @@ theorem le_mul_weight_of_buildShortenedTannerRows_params {n m B : ℕ}
     (hH0 : checkLocalCodeDistance (cG m B) (dG m B) (hDist m B + 1) H0 = true) :
     let rows := buildShortenedTannerRows m (ellG m B) (dG m B) (cG m B) shifts H0
     rows.length ≤ 3 * n ∧
-      (∀ row ∈ rows, row.length = m ∧ row.count true ≤ paramD0 m B) ∧
+      (∀ row ∈ rows, row.length = m ∧ row.count true ≤ initialRowWeightBound B m) ∧
       ∀ z : Fin m → Bool, z ≠ 0 →
-        (∀ row ∈ rows, ofList m row ⬝ᵥ z = false) → m ≤ paramP m B * weight z := by
+        (∀ row ∈ rows, ofList m row ⬝ᵥ z = false) → m ≤ greedyRowListLength B m * weight z := by
   have hd : 0 < dG m B := dG_pos hm hB; have : NeZero (dG m B) := ⟨hd.ne'⟩
   have hqd : m ≤ 2 ^ ellG m B * dG m B := le_qG_mul_dG hm hB
   have hden : 0 < biasDen m B := by unfold biasDen; positivity
@@ -990,13 +991,14 @@ theorem le_mul_weight_of_buildShortenedTannerRows_params {n m B : ℕ}
   have hd0 : 0 ≤ (dG m B : ℝ) / D := by positivity
   have hmulP := mul_le_mul_of_nonneg_right ((mul_le_mul_of_nonneg_right
     (mul_le_mul hh_ge hdiff_ge (by positivity) (hd0.trans hh_ge)) (by positivity)).trans htan)
-    (by unfold paramP; positivity : (0 : ℝ) ≤ paramP m B)
-  have hP_ident : ((dG m B : ℝ) / D) * ((dG m B : ℝ) / (2 * D)) * 2 ^ ellG m B * (paramP m B : ℝ) =
-      (dG m B : ℝ) * ((qG m B * dG m B : ℕ) : ℝ) := by
-    dsimp only [D]; unfold paramP qG mu; push_cast; field_simp; ring
+    (by unfold greedyRowListLength; positivity : (0 : ℝ) ≤ greedyRowListLength B m)
+  have hP_ident :
+      ((dG m B : ℝ) / D) * ((dG m B : ℝ) / (2 * D)) * 2 ^ ellG m B *
+        (greedyRowListLength B m : ℝ) = (dG m B : ℝ) * ((qG m B * dG m B : ℕ) : ℝ) := by
+    dsimp only [D]; unfold greedyRowListLength qG mu; push_cast; field_simp; ring
   rw [hP_ident] at hmulP; have hdR : (0 : ℝ) < dG m B := by exact_mod_cast hd
   have hqdR : (m : ℝ) ≤ ((qG m B * dG m B : ℕ) : ℝ) := by exact_mod_cast le_qG_mul_dG hm hB
-  exact_mod_cast (by nlinarith : (m : ℝ) ≤ (paramP m B : ℝ) * (weight z : ℝ))
+  exact_mod_cast (by nlinarith : (m : ℝ) ≤ (greedyRowListLength B m : ℝ) * (weight z : ℝ))
 /-- Plain polynomial-time certificate for `buildShortenedTannerRows` when `2 ^ ell ≤ bound`. -/
 theorem buildShortenedTannerRows_polyTime {α : Type} {encIn : α ↪ List Bool}
     {m ell d c bound : α → ℕ} {shifts H0 : α → List (List Bool)}
@@ -1035,7 +1037,8 @@ private theorem exists_shifts_params {m B : ℕ} [NeZero (dG m B)] (hB : 1 ≤ B
     refine exists_isSmallBias_map_of_exp_lt (ι := Fin (ellG m B)) (d := dG m B) (by positivity) ?_
     rw [Fintype.card_fin]
     have hexp : ((1 : ℝ) / biasDen m B) ^ 2 * (dG m B : ℝ) / 2 = 4 * (mu m : ℝ) := by
-      rw [dG_eq_of_ellG_pos hpos]; unfold paramD0 biasDen mu; push_cast; field_simp; ring
+      rw [dG_eq_of_ellG_pos hpos]
+      unfold initialRowWeightBound biasDen mu; push_cast; field_simp; ring
     rw [hexp, Real.exp_neg, mul_inv_lt_iff₀ (Real.exp_pos _), one_mul]
     have hell_mu := ellG_le_mu m B
     have h8 : (2 : ℝ) * 2 ^ ellG m B ≤ (8 : ℝ) ^ mu m :=
@@ -1083,9 +1086,10 @@ def initialTestsRows (m B : ℕ) : List (List Bool) :=
 `m ≤ B * n`. -/
 theorem initialTestsRows_spec {n m B : ℕ} (hn : 1 ≤ n) (hB : 1 ≤ B) (hmn : m ≤ B * n) :
     let rows := initialTestsRows m B
-    rows.length ≤ 3 * n ∧ (∀ row ∈ rows, row.length = m ∧ row.count true ≤ paramD0 m B) ∧
+    rows.length ≤ 3 * n ∧
+      (∀ row ∈ rows, row.length = m ∧ row.count true ≤ initialRowWeightBound B m) ∧
       ∀ z : Fin m → Bool, z ≠ 0 →
-        (∀ row ∈ rows, ofList m row ⬝ᵥ z = false) → m ≤ paramP m B * weight z := by
+        (∀ row ∈ rows, ofList m row ⬝ᵥ z = false) → m ≤ greedyRowListLength B m * weight z := by
   rcases Nat.eq_zero_or_pos m with rfl | hm
   · have hc0 : cG 0 B = 0 := by
       simp only [cG, dG, Nat.zero_min, zero_add]; exact Nat.div_eq_of_lt (by omega)
@@ -1104,19 +1108,21 @@ theorem initialTestsRows_spec {n m B : ℕ} (hn : 1 ≤ n) (hB : 1 ≤ B) (hmn :
 theorem map_ofList_initialTestsRows_spec {n m B : ℕ} (hn : 1 ≤ n) (hB : 1 ≤ B)
     (hmn : m ≤ B * n) :
     let rows := (initialTestsRows m B).map (ofList m)
-    rows.length ≤ 3 * n ∧ (∀ r ∈ rows, weight r ≤ paramD0 m B) ∧
-      ∀ z : Fin m → Bool, z ≠ 0 → (∀ r ∈ rows, r ⬝ᵥ z = false) → m ≤ paramP m B * weight z := by
+    rows.length ≤ 3 * n ∧ (∀ r ∈ rows, weight r ≤ initialRowWeightBound B m) ∧
+      ∀ z : Fin m → Bool, z ≠ 0 →
+        (∀ r ∈ rows, r ⬝ᵥ z = false) → m ≤ greedyRowListLength B m * weight z := by
   obtain ⟨hlen, hrows, hdist⟩ := initialTestsRows_spec hn hB hmn
   refine ⟨by simpa only [List.length_map] using hlen, fun r hr => ?_,
     fun z hz0 hz => hdist z hz0 fun row hmem => hz _ (List.mem_map.mpr ⟨row, hmem, rfl⟩)⟩
   obtain ⟨row, hmem, rfl⟩ := List.mem_map.mp hr
   rw [← count_true_ofFn, ofFn_ofList (hrows row hmem).1]; exact (hrows row hmem).2
-/-- Real division corollary `(m : ℝ) / paramP m B ≤ weight z` for `1 ≤ n, B` and `m ≤ B * n`. -/
-theorem div_paramP_le_weight_of_initialTestsRows {n m B : ℕ} (hn : 1 ≤ n) (hB : 1 ≤ B)
-    (hmn : m ≤ B * n) {z : Fin m → Bool} (hz0 : z ≠ 0)
+/-- Real division corollary `(m : ℝ) / greedyRowListLength B m ≤ weight z` for `1 ≤ n, B` and
+`m ≤ B * n`. -/
+theorem div_greedyRowListLength_le_weight_of_initialTestsRows {n m B : ℕ} (hn : 1 ≤ n)
+    (hB : 1 ≤ B) (hmn : m ≤ B * n) {z : Fin m → Bool} (hz0 : z ≠ 0)
     (hz : ∀ row ∈ initialTestsRows m B, ofList m row ⬝ᵥ z = false) :
-    (m : ℝ) / (paramP m B : ℝ) ≤ (weight z : ℝ) := by
-  have hP : (0 : ℝ) < paramP m B := by unfold paramP; positivity
+    (m : ℝ) / (greedyRowListLength B m : ℝ) ≤ (weight z : ℝ) := by
+  have hP : (0 : ℝ) < greedyRowListLength B m := by unfold greedyRowListLength; positivity
   rw [div_le_iff₀ hP, mul_comm]; exact_mod_cast (initialTestsRows_spec hn hB hmn).2.2 z hz0 hz
 
 private theorem two_pow_add_one_le (a : ℕ) : 2 ^ a + 1 ≤ 2 ^ (a + 1) := by
@@ -1190,7 +1196,7 @@ theorem initialTestsRows_computableInO :
   have hdG_X : PolyBounded X (fun p => dG p.1 p.2) :=
     (((PolyBounded.const 320000).mul (hB_X.mul hB_X)).mul
       (hmu_X.mul (hmu_X.mul hmu_X))).mono fun p => by
-      refine (Nat.min_le_right _ _).trans ?_; unfold paramD0 mu; ring_nf; exact le_rfl
+      refine (Nat.min_le_right _ _).trans ?_; unfold initialRowWeightBound mu; ring_nf; exact le_rfl
   have hell_X : PolyBounded X (fun p => ellG p.1 p.2) := hmu_X.mono fun p => ellG_le_mu p.1 p.2
   have hcG_X : PolyBounded X (fun p => cG p.1 p.2) :=
     (hdG_X.add (.const 1)).mono fun p => cG_le_dG_add_one p.1 p.2

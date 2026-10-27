@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Foundations.BooleanAnalysis.SparseClearedSpecialization
+public import Complexity.Foundations.Data.BitString.ParityTestBounds
 public import Complexity.Logics.Propositional.CNF.ExactTests
 public import Complexity.Logics.Propositional.CNF.PolynomialTests
 
@@ -56,9 +57,6 @@ Appendix B.2–B.3 (`Complexity.Foundations.BooleanAnalysis.SparseEquations`,
 
 * `Cslib.Logic.PL.CNF.parityRowSystem`: the `Fin rows.length`-indexed sparse `𝔽₂` polynomial system
   `fun i => φ.parityRowMonomials (rows.get i)`.
-* `Cslib.Logic.PL.CNF.initialRowWeightBound`, `Cslib.Logic.PL.CNF.greedyRowListLength`: the
-  explicit Lemma 6.1–6.2 parameters `D₀ = 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3` and
-  `P = 20000 * B ^ 2 * (Nat.log 2 m + 1) ^ 2`.
 
 ## Main results
 
@@ -270,22 +268,13 @@ theorem CNF.commonZeroCount_parityRowSystem_greedy (φ : CNF V) {P : ℕ}
     simpa only [CNF.commonZeroCount_parityRowSystem] using hγ i γ'
   rw [CNF.numPassing_greedy φ hn hP A hinit γ hA hγ_pass, CNF.modelCountOn_univ]
 
-/-- The Lemma 6.1 initial row weight bound `D₀(B, m) = 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3`. -/
-def CNF.initialRowWeightBound (B m : ℕ) : ℕ :=
-  320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3
-
-/-- The Lemma 6.1–6.2 greedy candidate list length
-`P(B, m) = 20000 * B ^ 2 * (Nat.log 2 m + 1) ^ 2`. -/
-def CNF.greedyRowListLength (B m : ℕ) : ℕ :=
-  20000 * B ^ 2 * (Nat.log 2 m + 1) ^ 2
-
 /-- **Lemmas 6.1–6.2 & §6.3 (initial + greedy parity tests via `commonZeroCount` with system
 sparsity and scope bounds)**: for any width-`≤ k` CNF `φ` on `n = Fintype.card V ≥ 1` variables with
 `φ.length ≤ B * n` (`B ≥ 1`), there exist initial parity rows `A₀` (`A₀.length ≤ 3 * n`, each of
-weight at most `D₀ = CNF.initialRowWeightBound B φ.length`) such that for any greedy sequence
+weight at most `D₀ = initialRowWeightBound B φ.length`) such that for any greedy sequence
 `A (i + 1) = A i ++ [testRow (γ i)]` with `A 0 = A₀` minimizing
 `commonZeroCount univ (φ.parityRowSystem (A i ++ [testRow γ']))` over candidate rows of list length
-`P = CNF.greedyRowListLength B φ.length`:
+`P = greedyRowListLength B φ.length`:
 1. After `3 * n` rounds, `commonZeroCount univ (φ.parityRowSystem (A (3 * n))) =
    φ.modelCountOn Finset.univ`.
 2. At every stage `i ≤ 3 * n`, `(A i).length ≤ 6 * n`, and every compiled equation
@@ -294,8 +283,8 @@ weight at most `D₀ = CNF.initialRowWeightBound B φ.length`) such that for any
 theorem CNF.exists_initialTests_commonZeroCount_greedy (φ : CNF V) {k B : ℕ}
     (hk : ∀ c ∈ φ, c.length ≤ k) (hn : 1 ≤ Fintype.card V) (hB : 1 ≤ B)
     (hm : φ.length ≤ B * Fintype.card V) :
-    let D₀ := CNF.initialRowWeightBound B φ.length
-    let P := CNF.greedyRowListLength B φ.length
+    let D₀ := initialRowWeightBound B φ.length
+    let P := greedyRowListLength B φ.length
     ∃ A₀ : List (Fin φ.length → Bool), A₀.length ≤ 3 * Fintype.card V ∧
       (∀ r ∈ A₀, weight r ≤ D₀) ∧
       ∀ (A : ℕ → List (Fin φ.length → Bool))
@@ -312,7 +301,7 @@ theorem CNF.exists_initialTests_commonZeroCount_greedy (φ : CNF V) {k B : ℕ}
             (∀ M ∈ φ.parityRowSystem (A i) j, M ⊆ φ.vars.toFinset ∧ #M ≤ k) ∧
             #(φ.parityRowSystem (A i) j) ≤ max D₀ P * 2 ^ k ∧
             #(equationScope (φ.parityRowSystem (A i) j)) ≤ k * (max D₀ P * 2 ^ k) := by
-  dsimp only [CNF.initialRowWeightBound, CNF.greedyRowListLength]
+  dsimp only [initialRowWeightBound, greedyRowListLength]
   obtain ⟨A₀, hlen, hw, hgreedy⟩ := φ.numPassing_greedy_initial hn hB hm
   refine ⟨A₀, hlen, hw, fun A γ h0 hA hγ => ⟨?_, fun i hi => ?_⟩⟩
   · rw [CNF.commonZeroCount_parityRowSystem, CNF.modelCountOn_univ]

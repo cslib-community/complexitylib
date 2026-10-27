@@ -241,7 +241,7 @@ example :
 -- 6. Concrete check of `CNF.initialRowWeightBound_le_mul_pow_clog` on `testCNF` (`n = 2`, `m = 2`,
 --    `B = 1`, `C_B = 1`, `β_B = 0`).
 example :
-    CNF.initialRowWeightBound 1 testCNF.length ≤
+    initialRowWeightBound 1 testCNF.length ≤
       CNF.initialRowWeightCoeff 1 0 * Nat.clog 2 (Fintype.card (Fin 2)) ^ (2 * 0 + 3) :=
   CNF.initialRowWeightBound_le_mul_pow_clog (by decide) (by decide) (by decide)
 
@@ -251,7 +251,7 @@ example :
     ∃ N₀ : ℕ, 20 ≤ N₀ ∧
       ∀ n ≥ N₀,
         let φ := emptyCNF n
-        let W := CNF.initialRowWeightBound 1 φ.length
+        let W := initialRowWeightBound 1 φ.length
         let b₀ := CNF.parityBranchThreshold 3 W (Fintype.card (Fin n))
         ∀ b : Fin n → Bool,
           Nonempty

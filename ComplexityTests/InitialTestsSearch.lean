@@ -12,7 +12,8 @@ namespace ComplexityTests.InitialTestsSearch
 open Cslib Cslib.BitString Cslib.Complexity.InitialTestsSearch Cslib.Probability.PMF
 open Turing.MultiTapeTM
 -- Base ell = 0 (qG = 1) schedule values, trivial shift search, and degenerate empty cases.
-example : paramP 1 1 = 20000 ∧ paramD0 1 1 = 320000 ∧ ellG 1 1 = 0 ∧ qG 1 1 = 1 ∧ dG 1 1 = 1 ∧
+example : greedyRowListLength 1 1 = 20000 ∧ initialRowWeightBound 1 1 = 320000 ∧ ellG 1 1 = 0 ∧
+    qG 1 1 = 1 ∧ dG 1 1 = 1 ∧
     checkSmallBiasShifts 0 3 0 1 [[], [], []] = true ∧
     checkSmallBiasShifts 0 3 0 1 [[true], [], []] = false ∧
     findSmallBiasShifts 0 3 0 1 = [[], [], []] ∧
@@ -66,7 +67,7 @@ example :
     let encIn : TestIn ↪ List Bool :=
       encPair (encPair encUnary encUnary) (encPair (encList encBits) (encList encBits))
     ComputableInPolyTime (fun x : TestIn =>
-      (paramP x.1.1 x.1.2 + paramD0 x.1.1 x.1.2 + qG x.1.1 x.1.2,
+      (greedyRowListLength x.1.2 x.1.1 + initialRowWeightBound x.1.2 x.1.1 + qG x.1.1 x.1.2,
         (checkSmallBiasShifts (ellG x.1.1 x.1.2) (dG x.1.1 x.1.2) 1 (biasDen x.1.1 x.1.2) x.2.1,
           buildShortenedTannerRows x.1.1 (ellG x.1.1 x.1.2) (dG x.1.1 x.1.2) (cG x.1.1 x.1.2)
             x.2.1 x.2.2))) encIn (encPair encUnary (encPair encBool (encList encBits))) := by
@@ -81,20 +82,15 @@ example :
     (buildShortenedTannerRows_polyTime (bound := fun x => 2 * x.1.1 + 1) (by fun_prop)
       (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
       fun x => qG_le_two_mul_add_one x.1.1 x.1.2))
--- End-to-end instantiation of initialTestsRows_spec, map_ofList_initialTestsRows_spec, O-bound.
+-- End-to-end check of initialTestsRows_spec and map_ofList_initialTestsRows_spec at (4, 6, 2).
 example :
     (initialTestsRows 6 2).length ≤ 12 ∧
-      (∀ r ∈ (initialTestsRows 6 2).map (ofList 6), weight r ≤ paramD0 6 2) ∧
-      (∀ z : Fin 6 → Bool, z ≠ 0 → (∀ r ∈ initialTestsRows 6 2, ofList 6 r ⬝ᵥ z = false) →
-        (6 : ℝ) / (paramP 6 2 : ℝ) ≤ (weight z : ℝ)) ∧
-      ∃ q S : ℕ → ℕ, PolynomiallyBounded q ∧ PolynomiallyBounded S ∧
-        ComputableInO (fun p : ℕ × ℕ × ℕ => initialTestsRows p.2.1 p.2.2)
-          (encPair encUnary (encPair encUnary encUnary)) (encList encBits)
-          (fun p => p.1 + 2 ^ q (p.2.2 + Nat.log 2 (p.2.1 + 2)))
-          (fun p => S (p.1 + p.2.1 + p.2.2)) :=
+      (∀ r ∈ (initialTestsRows 6 2).map (ofList 6), weight r ≤ initialRowWeightBound 2 6) ∧
+      ∀ z : Fin 6 → Bool, z ≠ 0 → (∀ r ∈ initialTestsRows 6 2, ofList 6 r ⬝ᵥ z = false) →
+        (6 : ℝ) / (greedyRowListLength 2 6 : ℝ) ≤ (weight z : ℝ) :=
   ⟨(initialTestsRows_spec (n := 4) (m := 6) (B := 2) (by decide) (by decide) (by decide)).1,
     (map_ofList_initialTestsRows_spec (n := 4) (by decide) (by decide) (by decide)).2.1,
-    fun _ hz0 hz => div_paramP_le_weight_of_initialTestsRows (n := 4) (by decide) (by decide)
-      (by decide) hz0 hz, initialTestsRows_computableInO_nmb⟩
+    fun _ hz0 hz => div_greedyRowListLength_le_weight_of_initialTestsRows (n := 4) (by decide)
+      (by decide) (by decide) hz0 hz⟩
 
 end ComplexityTests.InitialTestsSearch

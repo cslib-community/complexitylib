@@ -1920,6 +1920,7 @@ public import Complexity.Foundations.Data.BitString.List.Vote
 public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Parity.DotProduct
 public import Complexity.Foundations.Data.BitString.Parity.Weight
+public import Complexity.Foundations.Data.BitString.ParityTestBounds
 public import Complexity.Foundations.Data.BitString.ParityTests
 public import Complexity.Foundations.Data.BitString.PartialAssignment
 public import Complexity.Foundations.Data.BitString.PartialAssignment.Counting
