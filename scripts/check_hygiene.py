@@ -8,9 +8,16 @@ Checks enforced by default (see AGENTS.md):
 3. Every `set_option maxHeartbeats` or `set_option maxRecDepth` has an explanatory comment
    on the same line, within the preceding 3 lines, or (for `set_option ... in`) on the next
    line, where Mathlib's `linter.style.maxHeartbeats` expects it.
-4. Docstrings in `Complexity/` contain only root-qualified or external Markdown links (`[text](target)`)
-   and root-qualified slash-containing `.lean` code tokens (`Complexity/.../*.lean`, `Cslib/...`,
-   `Mathlib/...`), catching links that `doc-gen4` would resolve brokenly from the documentation root.
+4. Docstrings in `Complexity/` contain only root-qualified or external inline Markdown links
+   (`[text](target)`, where external means `http://` or `https://` and anchors start with `#`,
+   matching `doc-gen4`'s `extendLink`) and root-qualified slash-containing `.lean` code tokens
+   (`Complexity/.../*.lean`, `Cslib/...`, `Mathlib/...`) in inline code spans and fenced Lean code
+   blocks. `Complexity/...` targets are checked for file existence on disk; dependency roots
+   (`Cslib/`, `Mathlib/`, `Batteries/`) are checked on disk when `.lake/packages` is present locally
+   and by root prefix in CI (where `check_hygiene.py` runs before `.lake` is restored) or for
+   toolchain roots (`Std/`, `Init/`, `Lean/`). Reference-link definitions (`[label]: target`) and
+   indented (4-space) code blocks are not scanned; `scripts/check_docs.py` in `docs.yml` remains the
+   full HTML backstop.
 5. (Default selection only.) `references.bib` keys are unique and its entries are sorted by key,
    both compared case-insensitively as BibTeX does, so that PRs adding entries rarely conflict.
 
@@ -66,7 +73,9 @@ DOC_FENCE_RE = re.compile(
 DOC_INLINE_RE = re.compile(
     r"(?P<escape>\\.)"
     r"|(?P<math>\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)"
-    r"|(?P<link>(?<!!)\[(?:`+[^`\n]*`+|\\.|[^\[\]`\\])*\]\(\s*(?P<target>[^)\s]+)(?:\s+\"[^\"]*\")?\s*\))"
+    r"|(?P<link>(?<!!)\[(?:`+[^`\n]*`+|\\.|[^\[\]`\\])*\]\(\s*"
+    r"(?:<(?P<angle_target>[^>\s]+)>|(?P<target>[^)\s\"']+))"
+    r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)\n]*\)))?\s*\))"
     r"|(?P<code_fence>`+)(?P<code>.+?)(?<!`)(?P=code_fence)(?!`)"
 )
 WHITESPACE_RUN_RE = re.compile(r"\S+")
@@ -151,7 +160,7 @@ def validate_doc_module_path(part: str, root: pathlib.Path) -> str | None:
 
 def validate_doc_markdown_target(target: str, root: pathlib.Path) -> str | None:
     """Validate a Markdown link target `[text](target)` in a `Complexity/` docstring."""
-    if target.startswith(("https://", "http://", "//", "mailto:", "#")):
+    if target.startswith(("https://", "http://", "#")):
         return None
     path_part, _, _ = target.partition("#")
     if (
@@ -210,8 +219,8 @@ def check_docstring_links(raw: str, rel: pathlib.Path, root: pathlib.Path) -> li
                     chars[j] = " "
         masked_doc = "".join(chars)
         for m in DOC_INLINE_RE.finditer(masked_doc):
-            if m.group("target") is not None:
-                target = m.group("target")
+            target = m.group("angle_target") or m.group("target")
+            if target is not None:
                 reason = validate_doc_markdown_target(target, root)
                 if reason:
                     line_no = raw.count("\n", 0, doc_start + m.start()) + 1

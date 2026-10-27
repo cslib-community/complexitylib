@@ -243,6 +243,40 @@ class CheckHygieneTests(unittest.TestCase):
         self.assertIn("Complexity/MissingTarget.lean:5: invalid docstring module path `Complexity/AlsoMissing.lean`",
                       errors[2])
 
+    def test_docstring_link_schemes_titles_and_angles(self) -> None:
+        self.write("Complexity/Init.lean", "module\n-- upstream: candidate\n")
+
+        # doc-gen4's `extendLink` prefixes `getRoot` to `mailto:` and `//`, so both must fail;
+        # single-quoted/parenthesized titles with bad targets must also fail.
+        bad = self.write(
+            "Complexity/BadSchemesAndTitles.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "Bad schemes: [me](mailto:a@b.c) and [proto](//example.com/y).\n"
+            "Bad titled links: [s](Foo.html 'single') and [p](Bar.html (parens)).\n"
+            "-/\n",
+        )
+        errors = check_hygiene.check_file(bad, root=self.root)
+        self.assertEqual(len(errors), 4, errors)
+        self.assertIn("Complexity/BadSchemesAndTitles.lean:4: invalid docstring Markdown link target `mailto:a@b.c`",
+                      errors[0])
+        self.assertIn("Complexity/BadSchemesAndTitles.lean:4: invalid docstring Markdown link target `//example.com/y`",
+                      errors[1])
+        self.assertIn("Complexity/BadSchemesAndTitles.lean:5: invalid docstring Markdown link target `Foo.html`",
+                      errors[2])
+        self.assertIn("Complexity/BadSchemesAndTitles.lean:5: invalid docstring Markdown link target `Bar.html`",
+                      errors[3])
+
+        # Angle-bracket targets and titled valid links pass.
+        good = self.write(
+            "Complexity/GoodAnglesAndTitles.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "Angle target [init](<Complexity/Init.html>) and [titled](Complexity/Init.html 'Init').\n"
+            "-/\n",
+        )
+        self.assertEqual(check_hygiene.check_file(good, root=self.root), [])
+
 
 class BibliographyTests(unittest.TestCase):
     def test_sorted_unique_keys_pass(self) -> None:
