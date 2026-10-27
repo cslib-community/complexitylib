@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 public import Complexity.Foundations.Data.Nat.Bits
+public import Complexity.Foundations.Data.Nat.BinarySize
 import Complexity.Foundations.Data.BitString.List.Binary
 import Complexity.Tactic.PolyTime.Init
 import Mathlib.Data.List.GetD
@@ -101,22 +102,6 @@ theorem size_add_le_max (m n : ℕ) : (m + n).size ≤ max m.size n.size + 1 := 
     (Nat.pow_le_pow_right (by lia) (le_max_right m.size n.size))
   rw [Nat.pow_succ]
   lia
-
-/-- The binary length of a product is at most the binary lengths of the factors together. -/
-theorem size_mul_le (m n : ℕ) : (m * n).size ≤ m.size + n.size := by
-  refine Nat.size_le.2 ?_
-  rw [Nat.pow_add]
-  exact Nat.mul_lt_mul'' (Nat.lt_size_self m) (Nat.lt_size_self n)
-
-/-- The binary length of a power is at most the exponent times the binary length of the base,
-plus one for the zeroth power. -/
-theorem size_pow_le (m k : ℕ) : (m ^ k).size ≤ k * m.size + 1 := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    have := size_mul_le (m ^ k) m
-    rw [Nat.pow_succ, Nat.succ_mul]
-    lia
 
 /-- A sum of naturals of binary length at most `b` has binary length at most `b` plus the binary
 length of the number of summands. -/
