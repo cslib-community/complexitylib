@@ -70,8 +70,6 @@ pipeline of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] 
 
 * `Cslib.ReplacementCounting.Design.measurementFiberJet`: the equation (3.13) Möbius-summed
   measurement-fiber Taylor-jet coefficient at node `t` and order `j`.
-* `Cslib.JetTable.ofPolyVPolyZ`: ring homomorphism `Polynomial (Polynomial R) →+* JetTable J ℓ R`
-  extracting `(j, u) ↦ (Q.coeff u).coeff j`.
 * `Cslib.BitString.clearedParityJetTable`: `(J × ℓ)` integer jet table at evaluation point `t : ℤ`
   built from `JetTable.clearedParityFactorJet` and `JetTable.clearedMonomialSumJet`.
 * `Cslib.BitString.sparseParityJetOrder`: canonical confluent jet order
@@ -305,92 +303,7 @@ end Design
 
 end Cslib.ReplacementCounting
 
-/-! ### 2. `JetTable.ofPolyVPolyZ`: extracting `(J × ℓ)` jet tables from `R[z][V]` -/
-
-namespace Cslib.JetTable
-
-/-- Transpose homomorphism `JetTable ℓ J R →+* JetTable J ℓ R` swapping the two table indices
-`(u, j) ↔ (j, u)`. -/
-def transpose {J ℓ : ℕ} {R : Type*} [CommRing R] :
-    JetTable ℓ J R →+* JetTable J ℓ R where
-  toFun A := of fun j u => A u j
-  map_one' := ext fun j u => by
-    simp only [of_apply, one_eq_const, const_apply, and_comm]
-  map_mul' A B := ext fun j u => by
-    change (A * B) u j = (of (fun j' u' => A u' j') * of (fun j' u' => B u' j')) j u
-    rw [mul_eq_conv, mul_eq_conv, conv_apply, conv_apply]
-    simp only [of_apply]
-    trans ∑ u₁ : Fin ℓ, ∑ j₁ : Fin J,
-      ∑ j₂ ∈ univ.filter (fun j₂ : Fin J => (j₁ : ℕ) + (j₂ : ℕ) = (j : ℕ)),
-        ∑ u₂ ∈ univ.filter (fun u₂ : Fin ℓ => (u₁ : ℕ) + (u₂ : ℕ) = (u : ℕ)),
-          A u₁ j₁ * B u₂ j₂
-    · refine sum_congr rfl fun u₁ _ => ?_
-      rw [sum_comm]
-      exact sum_congr rfl fun j₁ _ => sum_comm
-    · rw [sum_comm]
-      exact sum_congr rfl fun j₁ _ => sum_comm
-  map_zero' := ext fun _ _ => by simp only [of_apply, coe_zero]
-  map_add' _ _ := ext fun _ _ => by simp only [of_apply, coe_add]
-
-@[simp]
-theorem transpose_apply {J ℓ : ℕ} {R : Type*} [CommRing R]
-    (A : JetTable ℓ J R) (j : Fin J) (u : Fin ℓ) :
-    transpose A j u = A u j :=
-  rfl
-
-/-- Quotient extraction homomorphism `R[z][V] →+* JetTable J ℓ R` sending a bivariate polynomial
-`Q : Polynomial (Polynomial R)` (outer variable `V`, inner variable `z`) to its `(J × ℓ)`
-coefficient table `(j, u) ↦ (Q.coeff u).coeff j`, obtained by composing `ofBivarPoly ℓ J` with
-`transpose`. -/
-def ofPolyVPolyZ (J ℓ : ℕ) {R : Type*} [CommRing R] :
-    Polynomial (Polynomial R) →+* JetTable J ℓ R :=
-  transpose.comp (ofBivarPoly ℓ J)
-
-@[simp]
-theorem ofPolyVPolyZ_apply {J ℓ : ℕ} {R : Type*} [CommRing R]
-    (Q : Polynomial (Polynomial R)) (j : Fin J) (u : Fin ℓ) :
-    ofPolyVPolyZ J ℓ Q j u = (Q.coeff u).coeff j := by
-  simp only [ofPolyVPolyZ, RingHom.coe_comp, Function.comp_apply, transpose_apply,
-    ofBivarPoly_apply]
-
-/-- Embedding a `z`-polynomial `p : Polynomial R` into `R[z][V]` via `Polynomial.C` and extracting
-its `(J × ℓ)` table via `ofPolyVPolyZ J ℓ` agrees with `ofPolyZ J ℓ p`. -/
-@[simp]
-theorem ofPolyVPolyZ_C {J ℓ : ℕ} {R : Type*} [CommRing R] (p : Polynomial R) :
-    ofPolyVPolyZ J ℓ (Polynomial.C p) = ofPolyZ J ℓ p := by
-  ext j u
-  simp only [ofPolyVPolyZ_apply, ofPolyZ_apply, coeff_C]
-  split_ifs <;> simp only [coeff_zero]
-
-/-- Extracting `Polynomial.C (Polynomial.C c)` via `ofPolyVPolyZ J ℓ` yields `const c`. -/
-theorem ofPolyVPolyZ_C_C {J ℓ : ℕ} {R : Type*} [CommRing R] (c : R) :
-    ofPolyVPolyZ J ℓ (Polynomial.C (Polynomial.C c)) = const c := by
-  ext j u
-  simp only [ofPolyVPolyZ_apply, const_apply, coeff_C]
-  by_cases hu : (u : ℕ) = 0
-  · simp only [hu, and_true, ↓reduceIte, coeff_C]
-  · simp only [hu, and_false, ↓reduceIte, coeff_zero]
-
-/-- Extracting `Polynomial.X ^ s : Polynomial (Polynomial R)` via `ofPolyVPolyZ J ℓ` yields
-`vPow s`. -/
-@[simp]
-theorem ofPolyVPolyZ_X_pow {J ℓ : ℕ} {R : Type*} [CommRing R] (s : ℕ) :
-    ofPolyVPolyZ J ℓ ((Polynomial.X : Polynomial (Polynomial R)) ^ s) = vPow s := by
-  ext j u
-  simp only [ofPolyVPolyZ_apply, vPow_apply, coeff_X_pow]
-  by_cases hs : (u : ℕ) = s
-  · simp only [hs, and_true, ↓reduceIte, coeff_one]
-  · simp only [hs, and_false, ↓reduceIte, coeff_zero]
-
-/-- `ofPolyZ J ℓ (Polynomial.C c)` is `const c`. -/
-@[simp]
-theorem ofPolyZ_C {J ℓ : ℕ} {R : Type*} [CommRing R] (c : R) :
-    ofPolyZ J ℓ (Polynomial.C c) = const c := by
-  rw [← ofPolyVPolyZ_C, ofPolyVPolyZ_C_C]
-
-end Cslib.JetTable
-
-/-! ### 3. §5.4 & Appendix B.2–B.3 Taylor-shift commutation, `JetTable` bridge, and unconditional
+/-! ### 2. §5.4 & Appendix B.2–B.3 Taylor-shift commutation, `JetTable` bridge, and unconditional
 Hermite–Cramer recovery -/
 
 namespace Cslib.BitString

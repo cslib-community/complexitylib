@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Anton Kovsharov. All rights reserved.
+Copyright (c) 2026 Anton Kovsharov, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Anton Kovsharov
+Authors: Anton Kovsharov, Samuel Schlesinger
 -/
 
 module
@@ -30,7 +30,8 @@ algorithm clears denominators in three fixed stages (`Δ = d_den ^ k`, `Γ = Δ 
 
 * `Cslib.JetTable`: `(J × ℓ)` truncated bivariate jet tables `Fin J → Fin ℓ → R`, equipped with
   `zero`, `const`, `one`, `add`, `neg`, `sub`, `smul`, `conv`, `vPow`, a `CommRing` instance, and
-  ring homomorphisms `constRingHom`, `mapRingHom`, `castRingHom`, `ofBivarPoly`, and `ofPolyZ`.
+  ring homomorphisms `constRingHom`, `mapRingHom`, `castRingHom`, `ofBivarPoly`, `ofPolyZ`,
+  `transpose`, and `ofPolyVPolyZ`.
 * `Cslib.JetTable.l1Norm`: integer `ℓ₁` coefficient norm `∑ j, ∑ u, (A j u).natAbs`.
 * `Cslib.JetTable.clearedMonomialJet`, `Cslib.JetTable.clearedMonomialSumJet`,
   `Cslib.JetTable.clearedUnivariateJet`, `Cslib.JetTable.parityFactorJet`,
@@ -601,6 +602,85 @@ theorem ofPolyZ_apply (p : Polynomial R) (j : Fin J) (u : Fin ℓ) :
     ofPolyZ J ℓ p j u = if (u : ℕ) = 0 then p.coeff j else 0 := by
   simp only [ofPolyZ, RingHom.coe_comp, Function.comp_apply, ofBivarPoly_apply,
     coe_mapRingHom, coeff_map, coeff_C]
+
+/-- Transpose homomorphism `JetTable ℓ J R →+* JetTable J ℓ R` swapping the two table indices
+`(u, j) ↔ (j, u)`. -/
+def transpose {J ℓ : ℕ} {R : Type*} [CommRing R] :
+    JetTable ℓ J R →+* JetTable J ℓ R where
+  toFun A := of fun j u => A u j
+  map_one' := ext fun j u => by
+    simp only [of_apply, one_eq_const, const_apply, and_comm]
+  map_mul' A B := ext fun j u => by
+    change (A * B) u j = (of (fun j' u' => A u' j') * of (fun j' u' => B u' j')) j u
+    rw [mul_eq_conv, mul_eq_conv, conv_apply, conv_apply]
+    simp only [of_apply]
+    trans ∑ u₁ : Fin ℓ, ∑ j₁ : Fin J,
+      ∑ j₂ ∈ univ.filter (fun j₂ : Fin J => (j₁ : ℕ) + (j₂ : ℕ) = (j : ℕ)),
+        ∑ u₂ ∈ univ.filter (fun u₂ : Fin ℓ => (u₁ : ℕ) + (u₂ : ℕ) = (u : ℕ)),
+          A u₁ j₁ * B u₂ j₂
+    · refine sum_congr rfl fun u₁ _ => ?_
+      rw [sum_comm]
+      exact sum_congr rfl fun j₁ _ => sum_comm
+    · rw [sum_comm]
+      exact sum_congr rfl fun j₁ _ => sum_comm
+  map_zero' := ext fun _ _ => by simp only [of_apply, coe_zero]
+  map_add' _ _ := ext fun _ _ => by simp only [of_apply, coe_add]
+
+@[simp]
+theorem transpose_apply {J ℓ : ℕ} {R : Type*} [CommRing R]
+    (A : JetTable ℓ J R) (j : Fin J) (u : Fin ℓ) :
+    transpose A j u = A u j :=
+  rfl
+
+/-- Quotient extraction homomorphism `R[z][V] →+* JetTable J ℓ R` sending a bivariate polynomial
+`Q : Polynomial (Polynomial R)` (outer variable `V`, inner variable `z`) to its `(J × ℓ)`
+coefficient table `(j, u) ↦ (Q.coeff u).coeff j`, obtained by composing `ofBivarPoly ℓ J` with
+`transpose`. -/
+noncomputable def ofPolyVPolyZ (J ℓ : ℕ) {R : Type*} [CommRing R] :
+    Polynomial (Polynomial R) →+* JetTable J ℓ R :=
+  transpose.comp (ofBivarPoly ℓ J)
+
+@[simp]
+theorem ofPolyVPolyZ_apply {J ℓ : ℕ} {R : Type*} [CommRing R]
+    (Q : Polynomial (Polynomial R)) (j : Fin J) (u : Fin ℓ) :
+    ofPolyVPolyZ J ℓ Q j u = (Q.coeff u).coeff j := by
+  simp only [ofPolyVPolyZ, RingHom.coe_comp, Function.comp_apply, transpose_apply,
+    ofBivarPoly_apply]
+
+/-- Embedding a `z`-polynomial `p : Polynomial R` into `R[z][V]` via `Polynomial.C` and extracting
+its `(J × ℓ)` table via `ofPolyVPolyZ J ℓ` agrees with `ofPolyZ J ℓ p`. -/
+@[simp]
+theorem ofPolyVPolyZ_C {J ℓ : ℕ} {R : Type*} [CommRing R] (p : Polynomial R) :
+    ofPolyVPolyZ J ℓ (Polynomial.C p) = ofPolyZ J ℓ p := by
+  ext j u
+  simp only [ofPolyVPolyZ_apply, ofPolyZ_apply, coeff_C]
+  split_ifs <;> simp only [coeff_zero]
+
+/-- Extracting `Polynomial.C (Polynomial.C c)` via `ofPolyVPolyZ J ℓ` yields `const c`. -/
+theorem ofPolyVPolyZ_C_C {J ℓ : ℕ} {R : Type*} [CommRing R] (c : R) :
+    ofPolyVPolyZ J ℓ (Polynomial.C (Polynomial.C c)) = const c := by
+  ext j u
+  simp only [ofPolyVPolyZ_apply, const_apply, coeff_C]
+  by_cases hu : (u : ℕ) = 0
+  · simp only [hu, and_true, ↓reduceIte, coeff_C]
+  · simp only [hu, and_false, ↓reduceIte, coeff_zero]
+
+/-- Extracting `Polynomial.X ^ s : Polynomial (Polynomial R)` via `ofPolyVPolyZ J ℓ` yields
+`vPow s`. -/
+@[simp]
+theorem ofPolyVPolyZ_X_pow {J ℓ : ℕ} {R : Type*} [CommRing R] (s : ℕ) :
+    ofPolyVPolyZ J ℓ ((Polynomial.X : Polynomial (Polynomial R)) ^ s) = vPow s := by
+  ext j u
+  simp only [ofPolyVPolyZ_apply, vPow_apply, coeff_X_pow]
+  by_cases hs : (u : ℕ) = s
+  · simp only [hs, and_true, ↓reduceIte, coeff_one]
+  · simp only [hs, and_false, ↓reduceIte, coeff_zero]
+
+/-- `ofPolyZ J ℓ (Polynomial.C c)` is `const c`. -/
+@[simp]
+theorem ofPolyZ_C {J ℓ : ℕ} {R : Type*} [CommRing R] (c : R) :
+    ofPolyZ J ℓ (Polynomial.C c) = const c := by
+  rw [← ofPolyVPolyZ_C, ofPolyVPolyZ_C_C]
 
 theorem mul_vPow_apply (A : JetTable J ℓ R) (s : ℕ) (j : Fin J) (u : Fin ℓ) :
     (A * (vPow s : JetTable J ℓ R) : JetTable J ℓ R) j u =
