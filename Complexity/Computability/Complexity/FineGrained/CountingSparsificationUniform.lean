@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
+public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
@@ -33,6 +34,8 @@ subexponential counting endpoint of [OpenAI2026ETH], Section 6.4 (pp. 43–44).
   time and workspace for exact leaf normalization, charging the intermediate declared count.
 * `Cslib.Complexity.CountingSparsify.length_encNat_searchDeclaredWith_le`: the final output
   occupies at most the externally declared count plus one bits.
+* `Cslib.Complexity.CountingSparsify.exists_computableInO_searchDeclaredWith`: one plain search
+  certificate on the full context, unary declared size and formula, with independent resources.
 
 ## References
 
@@ -524,5 +527,80 @@ private theorem declared_resources_input {C : Type} {encC : C ↪ List Bool}
   · have hsum := Nat.add_le_add_right (hpoly x) (Q (rearrange x))
     dsimp only [Function.comp_apply, rearrange, L, L'] at hsum ⊢
     omega
+
+/-- Independent resources for the existing declared-variable search on one full runtime input.
+The threshold-comparison and leaf certificates precede every input `(context, N, formula)`;
+`N` is encoded in unary. The numerical depth and leaf-workspace envelopes are polynomial in
+that complete encoded input, and the leaf promises concern every active prefix `i ≤ rounds`,
+including the terminal prefix. The original occurring-support state and cap are unchanged.
+
+The time bound contains the round count times a per-step allowance. The workspace bound contains
+the independent leaf-workspace allowance and a polynomial for initialization, retained context,
+all prefix states, binary clock, leaf output and final declared-variable scaling. It has
+no factor of the number of rounds or the leaf time. Any prior preparation of a larger context must
+be composed separately and charged against its own original external input. -/
+theorem exists_computableInO_searchDeclaredWith {C : Type} {encC : C ↪ List Bool}
+    {MOf BOf D : C × ℕ → ℕ} {K k : ℕ}
+    (hB : ComputableInPolyTime BOf (encPair encC encUnary) encNat)
+    (hθ : ComputableInPolyTime
+      (fun x : (C × ℕ) × ℕ × ℕ => decide (countingThreshold (MOf x.1) x.2.1 ≤ x.2.2))
+      (encPair (encPair encC encUnary) (encPair encUnary encUnary)) encBool)
+    (hM : ∀ p, 1 ≤ MOf p) (hK : 1 ≤ K) (hM2 : ∀ p, 2 ≤ MOf p) (hkK : k ≤ K)
+    (hTB : ∀ p, CountingTreeBound (MOf p) K (BOf p) (D p) (hM p) hK)
+    (hD : PolyBounded
+      (fun x : C × ℕ × CNF ℕ => (encPair encC (encPair encUnary encCNF) x).length)
+      (fun x => D (x.1, x.2.1)))
+    {g t s : (C × ℕ) × CNF ℕ → ℕ} {R Q : C × ℕ × CNF ℕ → ℕ}
+    (hcounter : ComputableInO g (encPair (encPair encC encUnary) encCNF) encNat t s)
+    (hg : ∀ x : C × ℕ × CNF ℕ, validDeclaredInput k x.2.1 x.2.2 = true →
+      ∀ i ≤ rounds (BOf (x.1, x.2.1)) x.2.2,
+      let p := (x.1, x.2.1)
+      let st := (step (MOf p) K (fun ψ => g (p, ψ)))^[i] (init k x.2.2)
+      st.2.1.isEmpty = false ∧ isSparse (countingThreshold (MOf p)) K (st.2.1.headD []) = true →
+      g (p, st.2.1.headD []) ≤ 2 ^ (st.2.1.headD []).numVars)
+    (ht : ∀ x : C × ℕ × CNF ℕ, validDeclaredInput k x.2.1 x.2.2 = true →
+      ∀ i ≤ rounds (BOf (x.1, x.2.1)) x.2.2,
+      let p := (x.1, x.2.1)
+      let st := (step (MOf p) K (fun ψ => g (p, ψ)))^[i] (init k x.2.2)
+      st.2.1.isEmpty = false ∧ isSparse (countingThreshold (MOf p)) K (st.2.1.headD []) = true →
+      t (p, st.2.1.headD []) ≤ R x)
+    (hs : ∀ x : C × ℕ × CNF ℕ, validDeclaredInput k x.2.1 x.2.2 = true →
+      ∀ i ≤ rounds (BOf (x.1, x.2.1)) x.2.2,
+      let p := (x.1, x.2.1)
+      let st := (step (MOf p) K (fun ψ => g (p, ψ)))^[i] (init k x.2.2)
+      st.2.1.isEmpty = false ∧ isSparse (countingThreshold (MOf p)) K (st.2.1.headD []) = true →
+      s (p, st.2.1.headD []) ≤ Q x)
+    (hQ : PolyBounded
+      (fun x : C × ℕ × CNF ℕ => (encPair encC (encPair encUnary encCNF) x).length) Q) :
+    ∃ c e, ComputableInO
+      (fun x : C × ℕ × CNF ℕ =>
+        searchDeclaredWith Prod.snd MOf BOf K k g (x.1, x.2.1) x.2.2)
+      (encPair encC (encPair encUnary encCNF)) encNat
+      (fun x => c * ((encPair encC (encPair encUnary encCNF) x).length + 1) ^ e +
+        (rounds (BOf (x.1, x.2.1)) x.2.2 + 1) *
+          (c * ((encPair encC (encPair encUnary encCNF) x).length + 1) ^ e + R x))
+      (fun x => c * ((encPair encC (encPair encUnary encCNF) x).length + 1) ^ e + Q x) ∧
+      PolyBounded
+        (fun x : C × ℕ × CNF ℕ => (encPair encC (encPair encUnary encCNF) x).length)
+        (fun x => c * ((encPair encC (encPair encUnary encCNF) x).length + 1) ^ e + Q x) := by
+  let toFull (x : (C × ℕ) × CNF ℕ) := (x.1.1, x.1.2, x.2)
+  have hfull : ComputableInPolyTime toFull (encPair (encPair encC encUnary) encCNF)
+      (encPair encC (encPair encUnary encCNF)) := by unfold toFull; fun_prop
+  have hD' := hD.comp hfull.polyBounded_length
+  have hQ' := hQ.comp hfull.polyBounded_length
+  obtain ⟨d, hstep⟩ := exists_computableInO_stepWith
+    (θ := fun p => countingThreshold (MOf p)) hθ K hcounter
+  change ComputableInO (stepWith (fun p => countingThreshold (MOf p)) K g)
+    (encPair (encPair encC encUnary) encState) (encPair (encPair encC encUnary) encState)
+    (stepCost (encPair encC encUnary) MOf K d g t)
+    (stepCost (encPair encC encUnary) MOf K d g s) at hstep
+  obtain ⟨c, e, hcore, _⟩ := declared_resources_of_step
+    (show ComputableInPolyTime (Prod.snd : C × ℕ → ℕ) (encPair encC encUnary) encUnary by
+      fun_prop)
+    hB hM hK hM2 hkK hTB hD' hstep
+    (fun x hx i hi => hg (toFull x) hx i hi)
+    (fun x hx i hi => ht (toFull x) hx i hi)
+    (fun x hx i hi => hs (toFull x) hx i hi) hQ'
+  exact declared_resources_input hcore hQ
 
 end Cslib.Complexity.CountingSparsify

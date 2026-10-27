@@ -443,6 +443,10 @@ and credited.
   on encoded `(context, rows)`, retaining and charging the context through both loops. Theorem 2.2
   counting and Tanner initialization remain separate prerequisites; the complete native counting
   endpoint is still open. This conditional interface does not establish their algorithms or rates.
+  `CountingSparsificationUniform` composes a single runtime-threshold and leaf machine through the
+  existing declared-variable search, with independent time and polynomial workspace in its complete
+  encoded input. The leaf resource promises and polynomial numerical-depth premise remain explicit;
+  the final native specialization must discharge them and charge any preceding context preparation.
 
 ## Documentation and repository
 

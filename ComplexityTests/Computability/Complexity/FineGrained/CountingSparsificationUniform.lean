@@ -157,4 +157,79 @@ private theorem varying_leaf_allowance_poly (d : ℕ) :
     ((((PolyBounded.const 2).mul hcontext.polyBounded_length).add (.const 2)).add
       ((polyBounded_nodeBound 2 4).comp hformula.polyBounded_length)) d
 
+/-- A small occurring-support diagnostic; its context chooses between one and zero. -/
+def occurringProbe (x : (Bool × ℕ) × CNF ℕ) : ℕ := if x.1.1 then 1 else 0
+
+private theorem varying_comparison : ComputableInPolyTime
+    (fun x : Context × ℕ × ℕ => decide (countingThreshold (varyingM x.1) x.2.1 ≤ x.2.2))
+    (encPair encContext (encPair encUnary encUnary)) encBool := by
+  have hM : ComputableInPolyTime varyingM encContext encNat := by
+    have heq : varyingM = fun p : Context =>
+        if p.1 then countingThresholdBase 2 1 else countingThresholdBase 2 2 := by
+      funext p
+      cases hp : p.1 <;> simp [varyingM, varyingB, hp]
+    rw [heq]
+    unfold encContext
+    fun_prop
+  exact computableInPolyTime_countingThreshold_le_binary.comp
+    ((hM.comp (ComputableInPolyTime.fst encContext (encPair encUnary encUnary))).prod
+      (ComputableInPolyTime.snd encContext (encPair encUnary encUnary)))
+
+example : searchDeclaredWith Prod.snd varyingM varyingB 2 2 occurringProbe
+    (true, 3) unitFormula = 4 := by decide
+example : searchDeclaredWith Prod.snd varyingM varyingB 2 2 occurringProbe
+    (false, 3) unitFormula = 0 := by decide
+
+-- One whole-search machine sees both budgets and arbitrarily large unary declared sizes.
+-- An exponential leaf-time allowance still produces polynomial whole-search workspace.
+example : ∃ d c e, ComputableInO
+      (fun x : Bool × ℕ × CNF ℕ =>
+        searchDeclaredWith Prod.snd varyingM varyingB 2 2 occurringProbe (x.1, x.2.1) x.2.2)
+      (encPair encBool (encPair encUnary encCNF)) encNat
+      (fun x => c * ((encPair encBool (encPair encUnary encCNF) x).length + 1) ^ e +
+        (rounds (varyingB (x.1, x.2.1)) x.2.2 + 1) *
+          (c * ((encPair encBool (encPair encUnary encCNF) x).length + 1) ^ e +
+            2 ^ x.2.1 *
+              (2 * (encContext (x.1, x.2.1)).length + 2 + nodeBound 2 4 x.2.2) ^ d))
+      (fun x => c * ((encPair encBool (encPair encUnary encCNF) x).length + 1) ^ e +
+        (2 * (encContext (x.1, x.2.1)).length + 2 + nodeBound 2 4 x.2.2) ^ d) ∧
+    PolyBounded
+      (fun x : Bool × ℕ × CNF ℕ => (encPair encBool (encPair encUnary encCNF) x).length)
+      (fun x => c * ((encPair encBool (encPair encUnary encCNF) x).length + 1) ^ e +
+        (2 * (encContext (x.1, x.2.1)).length + 2 + nodeBound 2 4 x.2.2) ^ d) := by
+  have hp : ComputableInPolyTime occurringProbe encInput encNat := by
+    unfold occurringProbe encInput encContext
+    fun_prop
+  obtain ⟨d, _, hd⟩ := hp.tidy.exists_degree
+  have hcounter := (ComputableInO.of_tidy hd.inO).mono_le
+    (T' := fun x => 2 ^ x.1.2 * ((encInput x).length + 1) ^ d)
+    (fun x => by
+      simpa only [one_mul] using Nat.mul_le_mul_right (((encInput x).length + 1) ^ d)
+        (Nat.one_le_two_pow (n := x.1.2))) (fun _ => le_rfl)
+  have hB : ComputableInPolyTime varyingB encContext encNat := by
+    unfold varyingB encContext
+    fun_prop
+  have hM2 (p : Context) : 2 ≤ varyingM p := two_le_countingThresholdBase 2 (varyingB p)
+  have hM (p : Context) : 1 ≤ varyingM p := (by decide : 1 ≤ 2).trans (hM2 p)
+  have hTB (p : Context) : CountingTreeBound (varyingM p) 2 (varyingB p) 4 (hM p)
+      (by decide : 1 ≤ 2) := by
+    have hBpos : 1 ≤ varyingB p := by unfold varyingB; split <;> omega
+    have ht := countingTreeBound_countingThresholdBase (by decide : 1 ≤ 2) hBpos
+    simpa only [varyingM, countingDepthCoeff, Nat.reduceSub, Finset.range_one, Finset.sum_singleton,
+      pow_zero, Nat.mul_one] using ht
+  obtain ⟨c, e, hc⟩ := exists_computableInO_searchDeclaredWith
+    hB varying_comparison hM (by decide : 1 ≤ 2) hM2 (by decide : 2 ≤ 2) hTB
+    (PolyBounded.const 4) hcounter
+    (fun x _ i _ _ => by
+      unfold occurringProbe
+      split
+      · exact Nat.one_le_two_pow
+      · exact Nat.zero_le _)
+    (fun x _ i _ hactive => Nat.mul_le_mul_left (2 ^ x.2.1)
+      (Nat.pow_le_pow_left (varying_leaf_input_bound occurringProbe x i hactive) d))
+    (fun x _ i _ hactive =>
+      Nat.pow_le_pow_left (varying_leaf_input_bound occurringProbe x i hactive) d)
+    (varying_leaf_allowance_poly d)
+  exact ⟨d, c, e, hc⟩
+
 end CountingSparsificationUniformTests
