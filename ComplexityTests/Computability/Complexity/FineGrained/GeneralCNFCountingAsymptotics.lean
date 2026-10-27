@@ -91,12 +91,12 @@ both a round-`0` candidate query `Sum.inl (0, γ₀)` and the final query `Sum.i
 `sampleTaut3CNF`. -/
 theorem sampleTaut3CNF_candidateQueryIndex_and_rows_bounds :
     Fintype.card (CNF.LeafCandidateQueryIndex (Fin 4) 2 sampleTaut3CNF) =
-      12 * 6 ^ (BitString.greedyRowListLength 2 3) + 1 ∧
+      12 * 6 ^ (Cslib.BitString.greedyRowListLength 2 3) + 1 ∧
     Fintype.card (CNF.LeafCandidateQueryIndex (Fin 4) 2 sampleTaut3CNF) ≤
       CNF.leafCandidateQueryBound 2 sampleTaut3CNF ∧
-    BitString.greedyRowListLength 2 sampleTaut3CNF.length ≤
+    Cslib.BitString.greedyRowListLength 2 sampleTaut3CNF.length ≤
       20000 * 2 ^ 2 * (Nat.clog 2 (2 * sampleTaut3CNF.length + 4)) ^ 2 ∧
-    let γ₀ : Fin (BitString.greedyRowListLength 2 sampleTaut3CNF.length) →
+    let γ₀ : Fin (Cslib.BitString.greedyRowListLength 2 sampleTaut3CNF.length) →
         Fin sampleTaut3CNF.length × Bool :=
       fun _ => (⟨0, by decide⟩, true)
     let A : ℕ → List (Fin sampleTaut3CNF.length → Bool) :=
@@ -106,10 +106,10 @@ theorem sampleTaut3CNF_candidateQueryIndex_and_rows_bounds :
     let q_final : CNF.LeafCandidateQueryIndex (Fin 4) 2 sampleTaut3CNF := Sum.inr ()
     (CNF.candidateQueryRows A q_cand).length ≤ 24 ∧
     (∀ r ∈ CNF.candidateQueryRows A q_cand,
-      weight r ≤ BitString.initialRowWeightBound 2 sampleTaut3CNF.length) ∧
+      weight r ≤ Cslib.BitString.initialRowWeightBound 2 sampleTaut3CNF.length) ∧
     (CNF.candidateQueryRows A q_final).length ≤ 24 ∧
     (∀ r ∈ CNF.candidateQueryRows A q_final,
-      weight r ≤ BitString.initialRowWeightBound 2 sampleTaut3CNF.length) := by
+      weight r ≤ Cslib.BitString.initialRowWeightBound 2 sampleTaut3CNF.length) := by
   refine ⟨?_, CNF.card_leafCandidateQueryIndex_le 2 sampleTaut3CNF,
     CNF.greedyRowListLength_le_mul_pow_clog 2 sampleTaut3CNF.length, ?_⟩
   · rw [CNF.card_leafCandidateQueryIndex_eq, Fintype.card_fin,
@@ -173,8 +173,8 @@ theorem nonvacuous_prop64NormalizedLeaves_total_recovery_and_actual_candidate_ex
           CNF.LeafCandidateQueryIndex (Fin N₃) B L.toCNF → ℝ),
         (∀ L ∈ φ.prop64NormalizedLeaves 3,
           let ψ := L.toCNF
-          let D₀ := BitString.initialRowWeightBound B ψ.length
-          let P := BitString.greedyRowListLength B ψ.length
+          let D₀ := Cslib.BitString.initialRowWeightBound B ψ.length
+          let P := Cslib.BitString.greedyRowListLength B ψ.length
           let b₀ := CNF.parityBranchThreshold 3 D₀ (Fintype.card (Fin N₃))
           (∀ c ∈ ψ, c.length ≤ 3) ∧
           ψ.length ≤ B * Fintype.card (Fin N₃) ∧
@@ -259,7 +259,7 @@ theorem nonvacuous_prop64NormalizedLeaves_total_recovery_and_actual_candidate_ex
     fun L q =>
       if hL : L ∈ φ.prop64NormalizedLeaves 3 then
         let ψ := L.toCNF
-        let D₀ := BitString.initialRowWeightBound B ψ.length
+        let D₀ := Cslib.BitString.initialRowWeightBound B ψ.length
         let b₀ := CNF.parityBranchThreshold 3 D₀ (Fintype.card (Fin N₃))
         let A := (hleaf L hL).2.2.2.choose
         let hA_spec := (hleaf L hL).2.2.2.choose_spec
@@ -291,7 +291,7 @@ theorem nonvacuous_prop64NormalizedLeaves_total_recovery_and_actual_candidate_ex
     dsimp only [actualQueryExam]
     rw [dite_eq_left_of_eq_true (eq_true hL)]
     let ψ := L.toCNF
-    let D₀ := BitString.initialRowWeightBound B ψ.length
+    let D₀ := Cslib.BitString.initialRowWeightBound B ψ.length
     let b₀ := CNF.parityBranchThreshold 3 D₀ (Fintype.card (Fin N₃))
     let A := (hleaf L hL).2.2.2.choose
     let hA_spec := (hleaf L hL).2.2.2.choose_spec

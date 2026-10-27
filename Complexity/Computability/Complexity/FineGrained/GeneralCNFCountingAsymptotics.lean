@@ -49,8 +49,8 @@ asymptotic `interpolationScale` tree-exponent and candidate-query overhead bound
    - `CNF.LeafCandidateQueryIndex V B ψ` and `CNF.candidateQueryRows A q`: index all parity-row
      systems evaluated during the `3 * n` greedy rounds of Lemma 6.2 (`Sum.inl (i, γ')` for
      `i : Fin (3 * Fintype.card V)` and ordered candidate list
-     `γ' : Fin (BitString.greedyRowListLength B ψ.length) → Fin ψ.length × Bool`, including discarded
-     candidates counted with list multiplicity, plus `Sum.inr ()` for the final query
+     `γ' : Fin (BitString.greedyRowListLength B ψ.length) → Fin ψ.length × Bool`, including
+     discarded candidates counted with list multiplicity, plus `Sum.inr ()` for the final query
      `A (3 * Fintype.card V)`), with exact cardinality
      `3 * Fintype.card V * (2 * ψ.length) ^ P + 1 ≤ CNF.leafCandidateQueryBound B ψ`
      (`CNF.card_leafCandidateQueryIndex_eq`, `CNF.card_leafCandidateQueryIndex_le`).
@@ -59,8 +59,8 @@ asymptotic `interpolationScale` tree-exponent and candidate-query overhead bound
      Hamming weight at most `BitString.initialRowWeightBound B ψ.length`.
    - `CNF.greedyRowListLength_le_mul_pow_clog` and
      `CNF.exists_prop64_leafCandidateQueryBound_le_interpolationScale`: prove
-     `BitString.greedyRowListLength B m ≤ 20000 * B ^ 2 * (Nat.clog 2 (2 * m + 4)) ^ 2` for all `B, m`
-     and apply `SparseCountingScale.eventually_query_overhead_poly_le` to bound
+     `BitString.greedyRowListLength B m ≤ 20000 * B ^ 2 * (Nat.clog 2 (2 * m + 4)) ^ 2`
+     for all `B, m` and apply `SparseCountingScale.eventually_query_overhead_poly_le` to bound
      `(CNF.leafCandidateQueryBound B ψ : ℝ) ≤ (2 : ℝ) ^ interpolationScale (Fintype.card V)` for
      every Proposition 6.4 leaf formula `ψ = L.toCNF`.
    - `CNF.exists_prop64NormalizedLeaves_greedy_total_recovery_and_examBound` and
