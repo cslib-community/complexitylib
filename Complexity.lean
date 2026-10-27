@@ -1364,9 +1364,11 @@ public import Complexity.Computability.PCP.RegularConstraintGraph
 public import Complexity.Computability.PCP.SelectedComposition
 public import Complexity.Computability.PCP.ThreeSAT
 public import Complexity.Computability.PCP.TwoProverGame
+public import Complexity.Computability.PolyTime.CNF.ClauseJetEval
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.Int.ExactDiv
+public import Complexity.Computability.PolyTime.Int.Jet
 public import Complexity.Computability.PolyTime.Int.Table
 public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Computability.PolyTime.ParityFactorEval
@@ -2203,6 +2205,7 @@ public import Complexity.Logics.Propositional.CNF.Planar.PairedCrossover
 public import Complexity.Logics.Propositional.CNF.Planar.PairedWire
 public import Complexity.Logics.Propositional.CNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.PolynomialTests
+public import Complexity.Logics.Propositional.CNF.SatisfactionPolynomial
 public import Complexity.Logics.Propositional.CNF.SparseParityCounter
 public import Complexity.Logics.Propositional.CNF.ThreeCNF
 public import Complexity.Logics.Propositional.CNF.ThreeCNF.Exact
