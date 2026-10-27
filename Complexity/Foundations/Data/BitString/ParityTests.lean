@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Foundations.Data.BitString.Weight
 public import Mathlib.Data.Matrix.Mul
+import Complexity.Foundations.Data.BitString.Parity
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.Algebra.Order.Star.Int
 import Mathlib.Analysis.Complex.ExponentialBounds
@@ -24,8 +25,9 @@ with `eⱼ = e` (`Cslib.BitString.testRow`). The row rejects a bit string `z` wh
 
 If `z` is nonzero with at least `m / P` ones, then at least a quarter of the `(2m) ^ P` lists reject
 `z` (`Cslib.BitString.pow_le_four_mul_card_testParity_eq_true`). Exactly
-`2 ^ (P - 1) (m ^ P - (m - weight z) ^ P)` lists do: among lists whose indices hit a one of `z`,
-flipping one such bit `cⱼ` exchanges acceptance and rejection, and `(1 - 1/P) ^ P ≤ e⁻¹ < 1/2`.
+`2 ^ (P - 1) (m ^ P - (m - weight z) ^ P)` lists do: for indices that hit a one of `z`, the parity
+is the parity of the coefficients on a nonempty set, which is balanced
+(`Cslib.card_filter_parityOn_eq`); and `(1 - 1/P) ^ P ≤ e⁻¹ < 1/2`.
 
 Averaging then gives a deterministic procedure [OpenAI2026ETH, Lemma 6.2]. Given points `x`
 with *violation vectors* `v x`, a list of rows *accepts* `x` when every row has parity zero on
@@ -81,25 +83,18 @@ theorem testRow_dotProduct (γ : Fin P → Fin m × Bool) (z : Fin m → Bool) :
   rw [Finset.sum_comm]
   simp [Finset.sum_ite_eq]
 
-/-- Exactly half of the coefficient strings have inner product `true` with a nonzero string. -/
+/-- Exactly half of the coefficient strings have inner product `true` with a nonzero string: the
+inner product with `w` is the parity on the support of `w`, which is balanced
+(`Cslib.card_filter_parityOn_eq`). -/
 theorem two_mul_card_dotProduct_eq_true {w : Fin P → Bool} {j : Fin P} (hj : w j = true) :
     2 * #{c : Fin P → Bool | c ⬝ᵥ w = true} = 2 ^ P := by
-  set flip : (Fin P → Bool) → (Fin P → Bool) := fun c => c + Pi.single j true
-  have hflip : ∀ c, flip c ⬝ᵥ w = c ⬝ᵥ w + true := fun c => by
-    rw [add_dotProduct, single_dotProduct, hj]
-    rfl
-  have hinv : ∀ c, flip (flip c) = c := fun c => by
-    simp only [flip, add_assoc]
-    rw [← Pi.single_add, show (true + true : Bool) = 0 from rfl, Pi.single_zero, add_zero]
-  have h : #{c : Fin P → Bool | c ⬝ᵥ w = true} = #{c : Fin P → Bool | ¬ c ⬝ᵥ w = true} := by
-    refine Finset.card_nbij' flip flip (fun c hc => ?_) (fun c hc => ?_) (fun c _ => hinv c)
-      (fun c _ => hinv c)
-    all_goals
-      simp only [coe_filter, mem_univ, true_and, Set.mem_ofPred_eq, hflip] at hc ⊢
-      cases h : c ⬝ᵥ w <;> simp_all [show (0 : Bool) = false from rfl]
-  have := card_filter_add_card_filter_not (s := (univ : Finset (Fin P → Bool)))
-    (p := fun c => c ⬝ᵥ w = true)
-  rw [card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, ← h] at this
+  have hdot : ∀ c : Fin P → Bool, c ⬝ᵥ w = parityOn {i | w i = true} c := fun c => by
+    rw [parityOn_eq_sum, dotProduct, sum_filter]
+    exact sum_congr rfl fun i _ => by cases w i <;> cases c i <;> rfl
+  simp only [hdot]
+  rw [card_filter_parityOn_eq ⟨j, by simpa using hj⟩, Fintype.card_fin, ← pow_succ']
+  congr 1
+  have := j.pos
   omega
 
 /-- For fixed indices, the number of coefficient strings whose list rejects `z`. -/
