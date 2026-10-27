@@ -493,6 +493,7 @@ public import Complexity.Computability.Circuit.Rational.Rectangular
 public import Complexity.Computability.Circuit.Rational.Runtime
 public import Complexity.Computability.Circuit.Rational.Runtime.Determinant
 public import Complexity.Computability.Circuit.Rational.Runtime.Encode
+public import Complexity.Computability.Circuit.Rational.Runtime.HermiteCramer
 public import Complexity.Computability.Circuit.Rational.Runtime.Lift
 public import Complexity.Computability.Circuit.Rational.Runtime.Lift.Defs
 public import Complexity.Computability.Circuit.Rational.Runtime.Parameters
@@ -773,6 +774,7 @@ public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
 public import Complexity.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import Complexity.Computability.Complexity.FineGrained.Schoening
+public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
 public import Complexity.Computability.Complexity.HardnessEncoding.Program
@@ -897,6 +899,7 @@ public import Complexity.Computability.GenericRAM.Native.Combinators
 public import Complexity.Computability.GenericRAM.Native.IndexFold
 public import Complexity.Computability.GenericRAM.Native.MeasurementFold
 public import Complexity.Computability.GenericRAM.Native.Nat
+public import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 public import Complexity.Computability.GenericRAM.Signed
 public import Complexity.Computability.GenericRAM.Simulation.Finite
 public import Complexity.Computability.GenericRAM.Simulation.Run
@@ -1362,7 +1365,9 @@ public import Complexity.Computability.PCP.RegularConstraintGraph
 public import Complexity.Computability.PCP.SelectedComposition
 public import Complexity.Computability.PCP.ThreeSAT
 public import Complexity.Computability.PCP.TwoProverGame
+public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
+public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Computability.PolyTime.Int.Table
 public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Computability.PolyTime.ParityFactorEval
@@ -1793,6 +1798,7 @@ public import Complexity.Foundations.BooleanAnalysis.SignApproximation
 public import Complexity.Foundations.BooleanAnalysis.SparseBranching
 public import Complexity.Foundations.BooleanAnalysis.SparseClearedSpecialization
 public import Complexity.Foundations.BooleanAnalysis.SparseEquations
+public import Complexity.Foundations.BooleanAnalysis.SparseReplacementDesign
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
 public import Complexity.Foundations.Combinatorics.AffineDisperser
 public import Complexity.Foundations.Combinatorics.AffineDisperser.AffineSubspace
@@ -1882,6 +1888,7 @@ public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
+public import Complexity.Foundations.Combinatorics.SubsetPairCount
 public import Complexity.Foundations.Combinatorics.Sunflower
 public import Complexity.Foundations.Combinatorics.Sunflower.LowerBound
 public import Complexity.Foundations.Combinatorics.Sunflower.Pluck
@@ -1915,6 +1922,7 @@ public import Complexity.Foundations.Data.BitString.PartialAssignment.Counting
 public import Complexity.Foundations.Data.BitString.Propagation
 public import Complexity.Foundations.Data.BitString.ShortWords
 public import Complexity.Foundations.Data.BitString.Sign
+public import Complexity.Foundations.Data.BitString.Support
 public import Complexity.Foundations.Data.BitString.Threshold
 public import Complexity.Foundations.Data.BitString.Weight
 public import Complexity.Foundations.Data.BitString.WordCount
@@ -2213,6 +2221,9 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingD
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingList
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingOccurrences
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingInsertions
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingOccurrences
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParameters
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits
