@@ -10,7 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Foundations.Data.BitString.Weight
 public import Mathlib.Data.Matrix.Mul
-import Complexity.Foundations.Data.BitString.Parity
+import Complexity.Foundations.Data.BitString.Parity.DotProduct
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.Algebra.Order.Star.Int
 import Mathlib.Analysis.Complex.ExponentialBounds
@@ -84,14 +84,11 @@ theorem testRow_dotProduct (γ : Fin P → Fin m × Bool) (z : Fin m → Bool) :
   simp [Finset.sum_ite_eq]
 
 /-- Exactly half of the coefficient strings have inner product `true` with a nonzero string: the
-inner product with `w` is the parity on the support of `w`, which is balanced
-(`Cslib.card_filter_parityOn_eq`). -/
+inner product with `w` is the parity on the support of `w` (`dotProduct_eq_parityOn`), which is
+balanced (`Cslib.card_filter_parityOn_eq`). -/
 theorem two_mul_card_dotProduct_eq_true {w : Fin P → Bool} {j : Fin P} (hj : w j = true) :
     2 * #{c : Fin P → Bool | c ⬝ᵥ w = true} = 2 ^ P := by
-  have hdot : ∀ c : Fin P → Bool, c ⬝ᵥ w = parityOn {i | w i = true} c := fun c => by
-    rw [parityOn_eq_sum, dotProduct, sum_filter]
-    exact sum_congr rfl fun i _ => by cases w i <;> cases c i <;> rfl
-  simp only [hdot]
+  simp only [dotProduct_eq_parityOn]
   rw [card_filter_parityOn_eq ⟨j, by simpa using hj⟩, Fintype.card_fin, ← pow_succ']
   congr 1
   have := j.pos
