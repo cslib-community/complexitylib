@@ -774,6 +774,7 @@ public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
 public import Complexity.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import Complexity.Computability.Complexity.FineGrained.Schoening
+public import Complexity.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedule
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
