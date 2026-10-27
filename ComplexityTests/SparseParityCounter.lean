@@ -25,16 +25,20 @@ assignment `x₀ = true, x₁ = true`. -/
 def testCNF : CNF (Fin 2) :=
   [[(0, true), (1, false)], [(1, true)]]
 
+/-- Concrete two-row unit parity check matrix selecting clause `0` and clause `1` of `testCNF`. -/
+def testRows : List (Fin testCNF.length → Bool) :=
+  [Pi.single ⟨0, by decide⟩ true, Pi.single ⟨1, by decide⟩ true]
+
 /-- Concrete check of `CNF.commonZeroCount_parityRowSystem` and
-`CNF.commonZeroCount_parityRowSystem_eq_modelCountOn_add` on `testCNF`. -/
-example (rows : List (Fin testCNF.length → Bool)) :
-    commonZeroCount univ (testCNF.parityRowSystem rows) =
-      numPassing testCNF.violations rows ∧
-    commonZeroCount univ (testCNF.parityRowSystem rows) =
+`CNF.commonZeroCount_parityRowSystem_eq_modelCountOn_add` on `testCNF` and `testRows`. -/
+example :
+    commonZeroCount univ (testCNF.parityRowSystem testRows) =
+      numPassing testCNF.violations testRows ∧
+    commonZeroCount univ (testCNF.parityRowSystem testRows) =
       testCNF.modelCountOn Finset.univ +
-        #{σ : Fin 2 → Bool | testCNF.eval σ = false ∧ PassesTests testCNF.violations rows σ} :=
-  ⟨testCNF.commonZeroCount_parityRowSystem rows,
-    testCNF.commonZeroCount_parityRowSystem_eq_modelCountOn_add rows⟩
+        #{σ : Fin 2 → Bool | testCNF.eval σ = false ∧ PassesTests testCNF.violations testRows σ} :=
+  ⟨testCNF.commonZeroCount_parityRowSystem testRows,
+    testCNF.commonZeroCount_parityRowSystem_eq_modelCountOn_add testRows⟩
 
 /-- Concrete check of `CNF.exists_initialTests_commonZeroCount_greedy` on `testCNF` (`k = 2`,
 `B = 1`, `n = 2`, `m = 2 ≤ 1 * 2`). -/
