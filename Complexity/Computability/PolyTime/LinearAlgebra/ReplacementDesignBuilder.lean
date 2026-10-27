@@ -40,7 +40,8 @@ and `ReplacementDesignData`), while `listScopeFamily`, `withNeutralScopesIndexEq
 executable routines are total: scopes ignore variable indices `≥ n_free`; schedule words
 truncate/pad with `0` to length `Q` modulo `max r 1` with missing rows and empty in-range
 scopes normalized to `List.replicate Q 0`; auxiliary tables cap at `min D_cap (r ^ (2 * Q))`
-(`copyCount = 0` at `r = 0`); and `lookupReplacementRow` returns `[]` when `(f, v)` is absent.
+(`copyCount = 0` when `r = 0` and `Q > 0`); and for data produced by the builder,
+`lookupReplacementRow` returns `[]` when `(f, v)` is absent.
 
 ## Main definitions
 

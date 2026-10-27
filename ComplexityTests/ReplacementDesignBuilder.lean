@@ -34,7 +34,7 @@ abbrev augScopes : List (List ℕ) := withNeutralScopesList rawScopes 4
 abbrev sampleVarSched : List (List ℕ) := [[0, 0], [0, 1], [1, 0], [1, 1]]
 /-- Balanced factor schedule on `augScopes` mapping the 8 incidences to distinct labels. -/
 abbrev sampleScopeSched : List (List ℕ) := [[0, 1], [0, 0], [1, 1], [1, 0], [1, 1], [1, 0]]
-/-- Concrete Lemma 4.7 design output on `(n_free = 4, D = 16, Q = 2, r = 2, A₀ = 1, R = 2)`. -/
+/-- Design output with relaxed parameters `(n_free = 4, D = 16, Q = 2, r = 2, A₀ = 1, R = 2)`. -/
 abbrev sampleData : ReplacementDesignData :=
   buildReplacementDesignData 4 16 2 2 1 2 augScopes sampleVarSched sampleScopeSched
 
@@ -55,7 +55,7 @@ example : (∀ v : Fin 4, varIncidence univ (listScopeFamily 4 augScopes) v = 2)
   ⟨fun v => by rw [varIncidence_listScopeFamily_withNeutralScopesList]; revert v; decide,
    by rw [totalIncidence_listScopeFamily_withNeutralScopesList]; decide⟩
 
-/-! ### 2. Concrete Lemma 4.7 design: groups, truncation, `T = 0` identity, restricted kernel -/
+/-! ### 2. Concrete construction: groups, truncation, `T = 0` identity, restricted kernel -/
 example : incidenceLabelsList 4 2 2 augScopes sampleVarSched sampleScopeSched =
       [8, 9, 2, 3, 12, 6, 13, 7] ∧
     sampleData.varGroups = [[[0, 1], [2, 3]], [[0, 2], [1, 3]]] ∧
@@ -80,7 +80,10 @@ example :
     (buildReplacementDesignData 4 4 2 0 1 2 [[0]] [[]] [[]]).copyCount = 0 :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
 
-/-! ### 3. Non-vacuous Lemma 4.7 semantic bridge instantiation (`b₀ = 1`, `τ = 9 / 4`) -/
+/-! ### 3. Nonvacuous semantic bridge with relaxed parameters (`b₀ = 1`, `τ = 9 / 4`)
+
+This exercises the constructor's relaxed hypotheses, not the full numerical regime of Lemma 4.7:
+here `R = Q`, `τ > 1 / 2`, and the lemma's size hypotheses do not hold. -/
 example : ∃ D : ReplacementDesign (listScopeFamily 4 augScopes) 2 2 1 2 (9 / 4),
     sampleData.Refines augScopes D := by
   have hbal : BalancedSchedule (by decide : 1 ≤ 2) 4 2 augScopes sampleVarSched sampleScopeSched :=
