@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Anton Kovsharov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Anton Kovsharov
 -/
 
 module
@@ -10,7 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Foundations.Data.BitString.Weight
 public import Mathlib.Data.Matrix.Mul
-import Complexity.Foundations.Data.BitString.Parity
+import Complexity.Foundations.Data.BitString.Parity.DotProduct
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.Algebra.Order.Star.Int
 import Mathlib.Analysis.Complex.ExponentialBounds
@@ -47,6 +47,7 @@ accepted bad points (`Cslib.BitString.numPassing_eq`).
 
 ## Main results
 
+* `Cslib.BitString.weight_testRow_le`: a test row of list length `P` has Hamming weight at most `P`.
 * `Cslib.BitString.two_mul_card_testParity_eq_true`: the exact number of rejecting lists.
 * `Cslib.BitString.pow_le_four_mul_card_testParity_eq_true`: a quarter of the lists reject.
 * `Cslib.BitString.four_mul_card_accept_le_of_forall_le`: a minimizing list accepts at most three
@@ -83,15 +84,34 @@ theorem testRow_dotProduct (γ : Fin P → Fin m × Bool) (z : Fin m → Bool) :
   rw [Finset.sum_comm]
   simp [Finset.sum_ite_eq]
 
+/-- A test row built from a list `γ` of `P` index-bit pairs has Hamming weight at most `P`. -/
+theorem weight_testRow_le (γ : Fin P → Fin m × Bool) : weight (testRow γ) ≤ P := by
+  have hsub :
+      ({e : Fin m | testRow γ e = true} : Finset (Fin m)) ⊆
+        univ.image fun j : Fin P => (γ j).1 := by
+    intro e he
+    rw [mem_filter] at he
+    have hne : (∑ j : Fin P, if (γ j).1 = e then (γ j).2 else 0) ≠ 0 := by
+      rw [← testRow, he.2]
+      decide
+    obtain ⟨j, -, hj⟩ := exists_ne_zero_of_sum_ne_zero hne
+    have hje : (γ j).1 = e := by
+      by_contra h
+      simp only [h, ↓reduceIte] at hj
+      exact hj rfl
+    exact mem_image.mpr ⟨j, mem_univ j, hje⟩
+  calc weight (testRow γ)
+      = #{e : Fin m | testRow γ e = true} := rfl
+    _ ≤ #(univ.image fun j : Fin P => (γ j).1) := card_le_card hsub
+    _ ≤ #(univ : Finset (Fin P)) := card_image_le
+    _ = P := by simp only [card_univ, Fintype.card_fin]
+
 /-- Exactly half of the coefficient strings have inner product `true` with a nonzero string: the
-inner product with `w` is the parity on the support of `w`, which is balanced
-(`Cslib.card_filter_parityOn_eq`). -/
+inner product with `w` is the parity on the support of `w` (`dotProduct_eq_parityOn`), which is
+balanced (`Cslib.card_filter_parityOn_eq`). -/
 theorem two_mul_card_dotProduct_eq_true {w : Fin P → Bool} {j : Fin P} (hj : w j = true) :
     2 * #{c : Fin P → Bool | c ⬝ᵥ w = true} = 2 ^ P := by
-  have hdot : ∀ c : Fin P → Bool, c ⬝ᵥ w = parityOn {i | w i = true} c := fun c => by
-    rw [parityOn_eq_sum, dotProduct, sum_filter]
-    exact sum_congr rfl fun i _ => by cases w i <;> cases c i <;> rfl
-  simp only [hdot]
+  simp only [dotProduct_eq_parityOn]
   rw [card_filter_parityOn_eq ⟨j, by simpa using hj⟩, Fintype.card_fin, ← pow_succ']
   congr 1
   have := j.pos

@@ -106,8 +106,8 @@ def countingNext (θ : ℕ → ℕ) (k : ℕ) (ψ : CNF V) (b : Bool) : CNF V :=
   countingChild ψ (choice θ k ψ).1 (choice θ k ψ).2 b
 
 /-- The counting-sparsification threshold schedule `θ j = M ^ j` (defined on p. 44 of
-[OpenAI2026ETH, Appendix A.1] for `1 ≤ j ≤ k` and extended by `M ^ 0 = 1`, used in the heavy-heart
-branching inequality `deg_c(H) ≥ θ_{c - |H|}` of equation (A.1)). -/
+[OpenAI2026ETH, Appendix A.1] for `0 ≤ j < k`, extended here to a total function on `ℕ`, and used
+in the heavy-heart branching inequality `deg_c(H) ≥ θ_{c - |H|}` of equation (A.1)). -/
 def countingThreshold (M j : ℕ) : ℕ := M ^ j
 
 /-- For `1 ≤ M`, every counting threshold is positive. -/
