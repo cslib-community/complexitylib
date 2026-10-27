@@ -22,7 +22,7 @@ requires the additive `+ 1` in the leaf-length bound.
 
 namespace Cslib.Complexity.CountingNormalizedLeavesTests
 
-open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification
+open Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Logic.PL.CNF.Sparsification
 open Cslib.Logic.PL.ClauseSet.Sparsification Cslib.Complexity.CountingSparsify
 
 /-- A bounded declared-variable provider that is exact only below the promised leaf-length cap. -/

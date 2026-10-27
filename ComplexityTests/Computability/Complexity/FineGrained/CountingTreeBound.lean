@@ -19,6 +19,7 @@ public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
 namespace Cslib.Complexity.CountingTreeBoundTests
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Cslib.Logic.PL.ClauseSet.Sparsification
+open Cslib.Logic.PL.CNF (normalizeDeclaredLeaf)
 open Cslib.Complexity.CountingSparsify Turing.MultiTapeTM
 
 example : countingDepthCoeff 1 2 = 0 := by decide

@@ -766,6 +766,7 @@ public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingParameterBounds
 public import Complexity.Computability.Complexity.FineGrained.CountingScale
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsification
+public import Complexity.Computability.Complexity.FineGrained.CountingSparsificationUniform
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
 public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
 public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
@@ -1385,10 +1386,15 @@ public import Complexity.Computability.PCP.SelectedComposition
 public import Complexity.Computability.PCP.ThreeSAT
 public import Complexity.Computability.PCP.TwoProverGame
 public import Complexity.Computability.PolyTime.BitString.InitialTestsSearch
+public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
+public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
+public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceStepCert
 public import Complexity.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
+public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 public import Complexity.Computability.PolyTime.CNF.ClauseJetEval
 public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
+public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CommonCountingAccum
 public import Complexity.Computability.PolyTime.FineGrained.ParameterCheck
