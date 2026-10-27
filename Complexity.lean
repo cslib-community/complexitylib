@@ -780,6 +780,7 @@ public import Complexity.Computability.Complexity.FineGrained.ReplacementSchedul
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedule
+public import Complexity.Computability.Complexity.FineGrained.SparseCNFDesignSchedule
 public import Complexity.Computability.Complexity.FineGrained.SparseCountingScale
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
@@ -2256,6 +2257,7 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingP
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTreeBounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Path
