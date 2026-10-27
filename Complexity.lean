@@ -762,6 +762,7 @@ public import Complexity.Computability.Complexity.Fagin.Verifier
 public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
+public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingScale
 public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import Complexity.Computability.Complexity.FineGrained.Exponents
@@ -774,6 +775,7 @@ public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
 public import Complexity.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedule
+public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
 public import Complexity.Computability.Complexity.HardnessEncoding.Program
@@ -847,6 +849,7 @@ public import Complexity.Computability.Complexity.Problems.STCON.Completeness
 public import Complexity.Computability.Complexity.Problems.STCON.Reduction
 public import Complexity.Computability.Complexity.Problems.STCON.Search
 public import Complexity.Computability.Complexity.Problems.SharpSAT
+public import Complexity.Computability.Complexity.Problems.SharpThreeSAT
 public import Complexity.Computability.Complexity.Problems.SubsetSum
 public import Complexity.Computability.Complexity.Problems.SubsetSum.Digits
 public import Complexity.Computability.Complexity.Problems.SubsetSum.Mask
@@ -1364,6 +1367,7 @@ public import Complexity.Computability.PCP.RegularConstraintGraph
 public import Complexity.Computability.PCP.SelectedComposition
 public import Complexity.Computability.PCP.ThreeSAT
 public import Complexity.Computability.PCP.TwoProverGame
+public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.Int.ExactDiv
@@ -2192,6 +2196,7 @@ public import Complexity.Logics.Propositional.CNF.ImplicationChain
 public import Complexity.Logics.Propositional.CNF.ImplicationCycle
 public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
+public import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel
 public import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
 public import Complexity.Logics.Propositional.CNF.Occurrence
 public import Complexity.Logics.Propositional.CNF.Parity
@@ -2204,9 +2209,11 @@ public import Complexity.Logics.Propositional.CNF.Planar.PairedCrossover
 public import Complexity.Logics.Propositional.CNF.Planar.PairedWire
 public import Complexity.Logics.Propositional.CNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.PolynomialTests
+public import Complexity.Logics.Propositional.CNF.SparseDesignCounter
 public import Complexity.Logics.Propositional.CNF.SparseParityCounter
 public import Complexity.Logics.Propositional.CNF.ThreeCNF
 public import Complexity.Logics.Propositional.CNF.ThreeCNF.Exact
+public import Complexity.Logics.Propositional.CNF.ThreeCNF.Exact.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
@@ -2218,8 +2225,11 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Counting
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingDeletion
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingInsertions
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingList
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingOccurrences
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParameters
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPathBounds
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits

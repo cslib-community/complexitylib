@@ -178,7 +178,7 @@ private theorem not_and_not_subclause_iff {D C : Clause V} :
   cases subclause D C <;> cases subclause C D <;> simp
 
 /-- The list-level reduction computes the reduction of clause sets. -/
-private theorem toClauseSet_reduce (ψ : CNF V) :
+theorem toClauseSet_reduce (ψ : CNF V) :
     (reduce ψ).toClauseSet = ClauseSet.Sparsification.reduce ψ.toClauseSet := by
   have hkeep (C : Clause V) : (ψ.all fun D => !(subclause D C && !subclause C D)) = true ↔
       ∀ D' ∈ ψ.toClauseSet, ¬ D' ⊂ C.toFinset := by
@@ -199,7 +199,8 @@ private theorem toClauseSet_reduce (ψ : CNF V) :
     obtain ⟨C, hC, rfl⟩ := mem_toClauseSet.mp hC'
     exact ⟨C, List.mem_filter.mpr ⟨hC, (hkeep C).mpr hk⟩, rfl⟩
 
-private theorem toClauseSet_flower {ψ : CNF V} (hnd : ∀ C ∈ ψ, C.Nodup) (c : ℕ) (H : Clause V) :
+/-- The list-level flower computes the clause-set flower when clauses have no repeated literals. -/
+theorem toClauseSet_flower {ψ : CNF V} (hnd : ∀ C ∈ ψ, C.Nodup) (c : ℕ) (H : Clause V) :
     (flower ψ c H).toClauseSet = ClauseSet.Sparsification.flower ψ.toClauseSet c H.toFinset := by
   ext C'
   rw [mem_toClauseSet, ClauseSet.Sparsification.mem_flower, mem_toClauseSet]
@@ -221,7 +222,8 @@ theorem toFinset_filter_not_mem (C H : Clause V) :
   rw [Bool.not_eq_true', List.any_eq_false]
   exact ⟨fun h hl => h l hl (beq_self_eq_true l), fun h l' hl' heq => h (beq_iff_eq.mp heq ▸ hl')⟩
 
-private theorem toClauseSet_petals {ψ : CNF V} (hnd : ∀ C ∈ ψ, C.Nodup) (c : ℕ) (H : Clause V) :
+/-- The list-level petals compute the clause-set petals when clauses have no repeated literals. -/
+theorem toClauseSet_petals {ψ : CNF V} (hnd : ∀ C ∈ ψ, C.Nodup) (c : ℕ) (H : Clause V) :
     (petals ψ c H).toClauseSet = ClauseSet.Sparsification.petals ψ.toClauseSet c H.toFinset := by
   ext C'
   rw [mem_toClauseSet, ClauseSet.Sparsification.mem_petals, ← toClauseSet_flower hnd]
@@ -289,7 +291,8 @@ private theorem heavy_eq_true_iff {θ : ℕ → ℕ} {k : ℕ} {ψ : CNF V} (h :
 /-! ### Candidates -/
 
 omit [DecidableEq V] in
-private theorem mem_hearts {k : ℕ} {C H : Clause V} (hH : H ∈ hearts k C) : H <+ C := by
+/-- Every candidate heart of `C` is a sublist of `C`. -/
+theorem mem_hearts {k : ℕ} {C H : Clause V} (hH : H ∈ hearts k C) : H <+ C := by
   obtain ⟨S, -, rfl⟩ := List.mem_map.mp hH
   conv_rhs => rw [← List.zipIdx_map_fst 0 C]
   exact List.filter_sublist.map _
@@ -606,7 +609,8 @@ private theorem pairwise_zipIdx (ψ : CNF V) :
   simp only [List.getElem_zipIdx, Nat.zero_add]
   exact hij
 
-private theorem nodup_toFinset_dedupClauses (ψ : CNF V) :
+/-- Deduplicating clauses produces clauses with pairwise distinct literal sets. -/
+theorem nodup_toFinset_dedupClauses (ψ : CNF V) :
     ((dedupClauses ψ).map List.toFinset).Nodup := by
   rw [dedupClauses, List.map_map, List.nodup_iff_pairwise_ne, List.pairwise_map]
   refine ((pairwise_zipIdx ψ).filter _).imp_of_mem fun {p q} _ hq hpq heq => ?_
@@ -618,7 +622,8 @@ private theorem nodup_toFinset_dedupClauses (ψ : CNF V) :
   have h₂ : subclause q.1 p.1 = true := subclause_eq_true_iff.mpr heq.ge
   simp [hpq, h₁, h₂] at this
 
-private theorem toClauseSet_dedupClauses (ψ : CNF V) :
+/-- Deduplicating clauses preserves the clause set. -/
+theorem toClauseSet_dedupClauses (ψ : CNF V) :
     (dedupClauses ψ).toClauseSet = ψ.toClauseSet := by
   refine Finset.Subset.antisymm (toClauseSet_mono (dedupClauses_sublist ψ).subset) ?_
   intro C' hC'
