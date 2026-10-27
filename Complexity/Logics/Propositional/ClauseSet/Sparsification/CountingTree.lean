@@ -18,7 +18,8 @@ import Mathlib.Algebra.Group.Action.Defs
 /-!
 # Recursive counting-sparsification tree
 
-The decision sparsification tree (`BranchingRule` in `Sparsification/Tree.lean`) fixes its step to
+The decision sparsification tree (`BranchingRule` in
+`Complexity/Logics/Propositional/ClauseSet/Sparsification/Tree.lean`) fixes its step to
 `child`, whose branches cover the parent's satisfying assignments but may overlap. For exact model
 counting (`Counting.lean`), `countingChild` refines the petal branch (`true`) by adjoining the unit
 clauses `negatedHeartUnits H` requiring every literal of `H` to be false, matching equation (A.2)
