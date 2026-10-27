@@ -40,7 +40,8 @@ the integer parameter budget on `(M, K, B)` rather than an external `CountingTre
 * `Cslib.Complexity.CountingSparsify.exists_computableInO_search_of_budget`: native
   `ComputableInO ... T T` time-and-space transfer certificate for `CountingSparsify.search` under
   the integer parameter budget.
-* `Cslib.Complexity.CountingSparsify.exists_computableInO_search_threeOccurrence_of_budget`:
+* `Cslib.Complexity.CountingSparsify.exists_computableInO_search_threeOccurrence_promise_of_budget`,
+  `Cslib.Complexity.CountingSparsify.exists_computableInO_search_threeOccurrence_of_budget`:
   end-to-end counting-sparsification reduction from a dense occurrence-`≤ 3` model counter under
   the integer parameter budget.
 
@@ -139,6 +140,37 @@ theorem exists_computableInO_search_of_budget (hM2 : 2 ≤ M) {k B : ℕ} (hkK :
 
 include hM hK in
 /-- **End-to-end counting sparsification from a dense 3-occurrence model counter under the integer
+parameter budget (promised runtime).**
+Given `2 ≤ k ≤ K` and a total model counter `f : CNF ℕ → ℕ` with a combined time-and-space
+certificate `ComputableInO f encCNF encNat tf tf` that on every dense formula `χ` of width `≤ k`
+and variable occurrence `≤ 3` computes `χ.modelCount` and satisfies
+`(tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * (|encCNF χ| + 1) ^ e) + c`, the search
+`search M K k B (guardOccurrenceCounter k f)` computes `φ.modelCount` on every formula `φ` of width
+`≤ k` and has a combined time-and-space certificate with fixed-parameter transfer bound
+`O(2 ^ ((1 / B + occBound K M * (k * δ)) * φ.numVars) * (|encCNF φ| + 1) ^ E)`. -/
+theorem exists_computableInO_search_threeOccurrence_promise_of_budget
+    (hM2 : 2 ≤ M) {k B : ℕ} (hk2 : 2 ≤ k) (hkK : k ≤ K) (hB : 1 ≤ B)
+    (hbudget : 2 ≤ K → countingBStepCoeff K ≤ M ∧
+      B * countingBStepCoeff K * Nat.clog 2 (4 * countingDepthCoeff K M * M) ≤ M)
+    {f : CNF ℕ → ℕ} {tf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf tf)
+    (hf_eq : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars → f χ = χ.modelCount)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
+    (ht : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars →
+      (tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * ((encCNF χ).length + 1) ^ e) + c) :
+    (∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ k) →
+      search M K k B (guardOccurrenceCounter k f) φ = φ.modelCount) ∧
+    ∃ T : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
+      ComputableInO (search M K k B (guardOccurrenceCounter k f)) encCNF encNat T T ∧
+      ∀ φ : CNF ℕ, (T φ : ℝ) ≤
+        C₀ * ((2 : ℝ) ^ ((1 / B + occBound K M * (k * δ)) * φ.numVars) *
+          (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ :=
+  exists_computableInO_search_threeOccurrence_of_promise hM hK hM2 hk2 hkK
+    (countingTreeBound_of_budget hM hK hM2 hB hbudget) hf hf_eq hδ ht
+
+include hM hK in
+/-- **End-to-end counting sparsification from a dense 3-occurrence model counter under the integer
 parameter budget.**
 Given `2 ≤ k ≤ K` and a total model counter `f : CNF ℕ → ℕ` that computes `χ.modelCount` on every
 dense formula `χ` of width `≤ k` and variable occurrence `≤ 3` and has a combined time-and-space
@@ -163,8 +195,8 @@ theorem exists_computableInO_search_threeOccurrence_of_budget
       ∀ φ : CNF ℕ, (T φ : ℝ) ≤
         C₀ * ((2 : ℝ) ^ ((1 / B + occBound K M * (k * δ)) * φ.numVars) *
           (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ :=
-  exists_computableInO_search_of_threeOccurrence_counter hM hK hM2 hk2 hkK
-    (countingTreeBound_of_budget hM hK hM2 hB hbudget) hf hf_eq hδ ht
+  exists_computableInO_search_threeOccurrence_promise_of_budget hM hK hM2 hk2 hkK hB hbudget
+    hf hf_eq hδ fun χ _ _ _ => ht χ
 
 end CountingSparsify
 
