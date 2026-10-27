@@ -762,6 +762,7 @@ public import Complexity.Computability.Complexity.Fagin.Verifier
 public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
+public import Complexity.Computability.Complexity.FineGrained.CountingCSP
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeModelCount
@@ -2261,6 +2262,7 @@ public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
+public import Complexity.Logics.Propositional.CSP
 public import Complexity.Logics.Propositional.ClauseSet.Basic
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds

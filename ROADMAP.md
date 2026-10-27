@@ -446,6 +446,12 @@ and credited.
   subexponential-time `k`-SAT, zero SAT exponents, `¬ETH`, and `¬SETH`. This is the Sections 3–6 and
   Appendices A–B interpolation-scale bound, not the sharper Appendix D runtime. Integration,
   validation, and the curated formal abstract are tracked in #1226.
+- **Counting CSP over bounded-arity Boolean constraint languages** ([#1326]):
+  Milestone 1 formalizes Boolean CSPs of bounded arity (`Complexity.Logics.Propositional.CSP`) and
+  their polynomial-time compilation to CNF (`toCNF`). Connecting this to native model counting
+  proves subexponential model counting (`exists_modelCounter_CSP`) and subexponential decision for
+  `ValidKCSP k` and `CSP(Γ)` over any finite Boolean constraint language `Γ` of bounded arity
+  (`decidableInSubexpTime_ValidKCSP`, `decidableInSubexpTime_LanguageCSP`, Corollary C.2).
 
 ## Documentation and repository
 
@@ -513,3 +519,4 @@ not planned, not as proved.
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
+[#1326]: https://github.com/cslib-community/complexitylib/issues/1326
