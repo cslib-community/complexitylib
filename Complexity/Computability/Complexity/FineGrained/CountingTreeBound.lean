@@ -270,6 +270,135 @@ theorem exists_computableInO_search_threeOccurrence_thresholdBase
     (two_le_countingThresholdBase K B) hk2 hkK hB (fun hk2' => countingThresholdBase_spec hk2' hB)
     hf hf_eq hδ ht
 
+include hK in
+/-- **Unconditional polynomial-workspace counting sparsification at
+`countingThresholdBase K B`.** -/
+theorem exists_computableInO_search_polySpace_countingThresholdBase
+    {k B : ℕ} (hkK : k ≤ K) (hB : 1 ≤ B)
+    {g : CNF ℕ → ℕ} {t s : CNF ℕ → ℕ} (hg : ComputableInO g encCNF encNat t s)
+    (hg_le : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold (countingThresholdBase K B)) K ψ = true → g ψ ≤ 2 ^ ψ.numVars)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e a b : ℕ}
+    (ht : ∀ ψ : CNF ℕ, (∀ C ∈ ψ, C.length ≤ k) →
+      isSparse (countingThreshold (countingThresholdBase K B)) K ψ = true →
+      (t ψ : ℝ) ≤ c * (2 ^ (δ * ψ.length) * ((encCNF ψ).length + 1) ^ e) + c)
+    (hs : ∀ ψ : CNF ℕ, (∀ C ∈ ψ, C.length ≤ k) →
+      isSparse (countingThreshold (countingThresholdBase K B)) K ψ = true →
+      s ψ ≤ a * ((encCNF ψ).length + 1) ^ b) :
+    ∃ T S : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
+      ComputableInO (search (countingThresholdBase K B) K k B g) encCNF encNat T S ∧
+      PolyBounded (fun φ : CNF ℕ => (encCNF φ).length) S ∧
+      ∀ φ : CNF ℕ, (T φ : ℝ) ≤
+        C₀ * ((2 : ℝ) ^ ((1 / B + occBound K (countingThresholdBase K B) * δ) * φ.numVars) *
+          (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ :=
+  exists_computableInO_search_polySpace _ hK (two_le_countingThresholdBase K B) hkK
+    (countingTreeBound_countingThresholdBase hK hB) hg hg_le hδ ht hs
+
+include hK in
+/-- **Unconditional polynomial-workspace counting sparsification from a dense 3-occurrence counter
+at `countingThresholdBase K B`.** -/
+theorem exists_computableInO_search_threeOccurrence_polySpace_thresholdBase
+    {k B : ℕ} (hk2 : 2 ≤ k) (hkK : k ≤ K) (hB : 1 ≤ B)
+    {f : CNF ℕ → ℕ} {tf sf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf sf)
+    (hf_eq : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars → f χ = χ.modelCount)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e a b : ℕ}
+    (ht : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars →
+      (tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * ((encCNF χ).length + 1) ^ e) + c)
+    (hs : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars → sf χ ≤ a * ((encCNF χ).length + 1) ^ b) :
+    (∀ φ : CNF ℕ, search (countingThresholdBase K B) K k B (guardOccurrenceCounter k f) φ =
+      if (φ.all fun c => decide (c.length ≤ k)) then φ.modelCount else 0) ∧
+    ∃ T S : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
+      ComputableInO (search (countingThresholdBase K B) K k B (guardOccurrenceCounter k f))
+        encCNF encNat T S ∧
+      PolyBounded (fun φ : CNF ℕ => (encCNF φ).length) S ∧
+      ∀ φ : CNF ℕ, (T φ : ℝ) ≤
+        C₀ * ((2 : ℝ) ^
+            ((1 / B + occBound K (countingThresholdBase K B) * (k * δ)) * φ.numVars) *
+          (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ :=
+  exists_computableInO_search_threeOccurrence_polySpace_of_promise
+    ((by decide : 1 ≤ 2).trans (two_le_countingThresholdBase K B)) hK
+    (two_le_countingThresholdBase K B) hk2 hkK
+    (countingTreeBound_countingThresholdBase hK hB) hf hf_eq hδ ht hs
+
+include hK in
+/-- **Unconditional declared-variable correctness of `searchDeclaredWith` at
+`countingThresholdBase K (BOf p)`.** -/
+theorem searchDeclaredWith_eq_ite_modelCountOn_countingThresholdBase {P : Type*}
+    {NOf BOf : P → ℕ} {k : ℕ} (hkK : k ≤ K) {p : P} (hB : 1 ≤ BOf p)
+    {g : P × CNF ℕ → ℕ}
+    (hg : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold (countingThresholdBase K (BOf p))) K ψ = true →
+      ψ.vars.toFinset ⊆ Finset.range (NOf p) → g (p, ψ) = ψ.modelCount)
+    (φ : CNF ℕ) :
+    searchDeclaredWith NOf (fun q => countingThresholdBase K (BOf q)) BOf K k g p φ =
+      if validDeclaredInput k (NOf p) φ then φ.modelCountOn (Finset.range (NOf p)) else 0 :=
+  searchDeclaredWith_eq_ite_modelCountOn
+    (NOf := NOf) (MOf := fun q => countingThresholdBase K (BOf q)) (BOf := BOf)
+    ((by decide : 1 ≤ 2).trans (two_le_countingThresholdBase K (BOf p))) hK
+    (two_le_countingThresholdBase K (BOf p)) hkK
+    (countingTreeBound_countingThresholdBase hK hB) hg φ
+
+include hK in
+/-- **Unconditional declared-variable correctness of `searchDeclaredWith` on valid inputs at
+`countingThresholdBase K (BOf p)`.** -/
+theorem searchDeclaredWith_eq_modelCountOn_countingThresholdBase {P : Type*}
+    {NOf BOf : P → ℕ} {k : ℕ} (hkK : k ≤ K) {p : P} (hB : 1 ≤ BOf p)
+    {g : P × CNF ℕ → ℕ}
+    (hg : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold (countingThresholdBase K (BOf p))) K ψ = true →
+      ψ.vars.toFinset ⊆ Finset.range (NOf p) → g (p, ψ) = ψ.modelCount)
+    {φ : CNF ℕ} (hw : ∀ c ∈ φ, c.length ≤ k) (hsub : φ.vars.toFinset ⊆ Finset.range (NOf p)) :
+    searchDeclaredWith NOf (fun q => countingThresholdBase K (BOf q)) BOf K k g p φ =
+      φ.modelCountOn (Finset.range (NOf p)) :=
+  searchDeclaredWith_eq_modelCountOn
+    (NOf := NOf) (MOf := fun q => countingThresholdBase K (BOf q)) (BOf := BOf)
+    ((by decide : 1 ≤ 2).trans (two_le_countingThresholdBase K (BOf p))) hK
+    (two_le_countingThresholdBase K (BOf p)) hkK
+    (countingTreeBound_countingThresholdBase hK hB) hg hw hsub
+
+include hK in
+/-- **Unconditional declared-variable correctness of `searchDeclaredWith` composed with
+`normalizeDeclaredLeaf` at `countingThresholdBase K (BOf p)`.** -/
+theorem searchDeclaredWith_normalizeDeclaredLeaf_eq_ite_modelCountOn_countingThresholdBase
+    {P : Type*} {NOf BOf : P → ℕ} {k : ℕ} (hkK : k ≤ K) {p : P} (hB : 1 ≤ BOf p)
+    {h : P × CNF ℕ → ℕ}
+    (hh : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold (countingThresholdBase K (BOf p))) K ψ = true →
+      ψ.vars.toFinset ⊆ Finset.range (NOf p) →
+      h (p, ψ) = ψ.modelCountOn (Finset.range (NOf p)))
+    (φ : CNF ℕ) :
+    searchDeclaredWith NOf (fun q => countingThresholdBase K (BOf q)) BOf K k
+        (normalizeDeclaredLeaf NOf h) p φ =
+      if validDeclaredInput k (NOf p) φ then φ.modelCountOn (Finset.range (NOf p)) else 0 :=
+  searchDeclaredWith_normalizeDeclaredLeaf_eq_ite_modelCountOn
+    (NOf := NOf) (MOf := fun q => countingThresholdBase K (BOf q)) (BOf := BOf)
+    ((by decide : 1 ≤ 2).trans (two_le_countingThresholdBase K (BOf p))) hK
+    (two_le_countingThresholdBase K (BOf p)) hkK
+    (countingTreeBound_countingThresholdBase hK hB) hh φ
+
+include hK in
+/-- **Unconditional declared-variable correctness of `searchDeclaredWith` composed with
+`normalizeDeclaredLeaf` on valid inputs at `countingThresholdBase K (BOf p)`.** -/
+theorem searchDeclaredWith_normalizeDeclaredLeaf_eq_modelCountOn_countingThresholdBase
+    {P : Type*} {NOf BOf : P → ℕ} {k : ℕ} (hkK : k ≤ K) {p : P} (hB : 1 ≤ BOf p)
+    {h : P × CNF ℕ → ℕ}
+    (hh : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
+      isSparse (countingThreshold (countingThresholdBase K (BOf p))) K ψ = true →
+      ψ.vars.toFinset ⊆ Finset.range (NOf p) →
+      h (p, ψ) = ψ.modelCountOn (Finset.range (NOf p)))
+    {φ : CNF ℕ} (hw : ∀ c ∈ φ, c.length ≤ k) (hsub : φ.vars.toFinset ⊆ Finset.range (NOf p)) :
+    searchDeclaredWith NOf (fun q => countingThresholdBase K (BOf q)) BOf K k
+        (normalizeDeclaredLeaf NOf h) p φ =
+      φ.modelCountOn (Finset.range (NOf p)) :=
+  searchDeclaredWith_normalizeDeclaredLeaf_eq_modelCountOn
+    (NOf := NOf) (MOf := fun q => countingThresholdBase K (BOf q)) (BOf := BOf)
+    ((by decide : 1 ≤ 2).trans (two_le_countingThresholdBase K (BOf p))) hK
+    (two_le_countingThresholdBase K (BOf p)) hkK
+    (countingTreeBound_countingThresholdBase hK hB) hh hw hsub
+
 end CountingSparsify
 
 end Cslib.Complexity

@@ -87,4 +87,68 @@ example {K k B : ℕ} (hK : 1 ≤ K) (hk2 : 2 ≤ k) (hkK : k ≤ K) (hB : 1 ≤
   exists_computableInO_search_threeOccurrence_thresholdBase
     hK hk2 hkK hB hf hf_eq hδ ht
 
+/-! ### Acceptance controls for `searchDeclaredWith` and `normalizeDeclaredLeaf` -/
+
+/-- Exact occurring-variable leaf counter for concrete test evaluation. -/
+def occurringLeafCounter : ℕ × CNF ℕ → ℕ :=
+  fun x => x.2.modelCount
+
+/-- Exact declared-range (`Finset.range N`) leaf counter for concrete test evaluation. -/
+def declaredLeafCounter : ℕ × CNF ℕ → ℕ :=
+  fun x => x.2.modelCountOn (Finset.range x.1)
+
+/-- `N = 0` with the empty formula `[]` returns `1`. -/
+example :
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      (normalizeDeclaredLeaf id declaredLeafCounter) 0 [] = 1 := by
+  decide
+
+/-- `N = 3` with the empty formula `[]` returns `2 ^ 3 = 8`. -/
+example :
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [] = 8 := by
+  decide
+
+/-- The unit formula `[[(0, true)]]` gives `1` at `N = 1` and `4` at `N = 3`. -/
+example :
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      (normalizeDeclaredLeaf id declaredLeafCounter) 1 [[(0, true)]] = 1 ∧
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[(0, true)]] = 4 := by
+  decide
+
+/-- Distinguishing occurring-variable leaf counts from declared-`N` leaf counts on `[[(0, true)]]`
+at `N = 3`: feeding the unnormalized declared-`N` count `4` directly into `searchDeclaredWith`
+hits the internal cap `2 ^ 1 = 2` and scales by `2 ^ (3 - 1) = 4` to yield `8`, whereas
+normalizing via `normalizeDeclaredLeaf` yields `1` internally and the exact declared count `4`. -/
+example :
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      declaredLeafCounter 3 [[(0, true)]] = 8 ∧
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[(0, true)]] = 4 ∧
+    CNF.modelCountOn [[(0, true)]] (Finset.range 3) = 4 := by
+  decide
+
+/-- Empty clauses return `0` even when `N = 3`. -/
+example :
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[]] = 0 := by
+  decide
+
+/-- A tautological clause `[[(0, true), (0, false)]]` disappearing during normalization retains its
+declared-variable contribution at `N = 3` and returns `8`. -/
+example :
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[(0, true), (0, false)]] = 8 := by
+  decide
+
+/-- A variable label outside `Finset.range 3` (`[[(3, true)]]`) and an excessive-width clause
+(`k = 2` on width `3`) take the guard's zero branch. -/
+example :
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      occurringLeafCounter 3 [[(3, true)]] = 0 ∧
+    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
+      occurringLeafCounter 3 [[(0, true), (1, true), (2, true)]] = 0 := by
+  decide
+
 end Cslib.Complexity.CountingTreeBoundTests
