@@ -24,11 +24,18 @@ constant-term recovery and univariate numerator degree bounds of
    - `CNF.parityRowAugmentedIndexEquiv`: canonical equivalence
      `Fin m ⊕ Fin n' ≃ {j : Fin m // j ∈ (univ : Finset (Fin m))} ⊕ Fin n'`.
    - `CNF.parityRowAugmentedInl`: active-equation factor embedding into `{j // j ∈ univ} ⊕ Fin n'`.
-   - `CNF.branchAugmentedScope_parityRowSystem_comp_equiv_inl` and
+   - `CNF.branchAugmentedScope_parityRowAugmentedInl`,
+     `CNF.branchAugmentedScope_parityRowSystem_comp_equiv_inl`, and
      `CNF.branchAugmentedScope_parityRowSystem_comp_equiv_inr`: evaluate
-     `branchAugmentedScope S e univ (φ.parityRowSystem rows) b` along
-     `CNF.parityRowAugmentedIndexEquiv`.
+     `branchAugmentedScope S e univ (φ.parityRowSystem rows) b` along `CNF.parityRowAugmentedInl`
+     and `CNF.parityRowAugmentedIndexEquiv`.
 2. **Schedule-instantiated exact recovery of `commonZeroCount` and `numPassing` (§5.4–5.5 & §6.3)**:
+   - `CNF.exists_branch_replacementDesign_commonZeroCount_parityRowSystem_eq`: given per-branch
+     `Feasible β n' (b₀ + 1) (max (k * (W * 2 ^ k)) 1) M'_b`, consumes
+     `CNF.exists_branch_replacementDesign_parityRowSystem` and recovers
+     `commonZeroCount univ (φ.parityRowSystem rows)` and `numPassing φ.violations rows` with
+     univariate numerator degree at most
+     `(k * (rowBound β n' - 1)) * (rows.length + 2 * (branchPrecision (Fintype.card V) - 1))`.
    - `CNF.exists_schedule_design_commonZeroCount_parityRowSystem_eq` and
      `CNF.exists_schedule_design_numPassing_eq`: combine
      `CNF.exists_branch_schedule_parityRowSystem` with
@@ -40,14 +47,21 @@ constant-term recovery and univariate numerator degree bounds of
      (`B ≤ C_B * (Nat.clog 2 n) ^ β_B`, `b₀ = CNF.parityBranchThreshold k W n`,
      `β = 2 * β_B + 5`) with exact branch-summed constant-term recovery and numerator degree bounds.
 3. **End-to-end greedy `modelCountOn` schedule-design recovery (§6.1–6.3)**:
-   - `CNF.exists_greedy_parityRowSystem_schedule_design_modelCountOn_eq`: combines
-     `CNF.exists_greedy_parityRowSystem_branch_schedule` with exact branch-summed constant-term
-     recovery of `φ.modelCountOn Finset.univ` and the `(k * (rowBound β n' - 1)) * (8 * n)`
-     numerator degree bound after `3 * n` greedy rounds.
-   - `CNF.exists_greedy_parityRowSystem_schedule_design_modelCountOn_of_le_clog_pow`: combines
+   - In Lemma 6.2 and Section 6.3, every candidate and final parity-row system has equation-count
+     ratio `6` (`rows.length ≤ 6 * Fintype.card V`, giving
+     `rows.length + 2 * (branchPrecision n - 1) ≤ 8 * n`), whereas Theorem 2.2's parameter
+     `c = c(k)` bounds both equation count and the monomial-sparsity exponent; our theorems keep the
+     equation-count bound `rows.length ≤ 6 * Fintype.card V` and the monomial-sparsity bound
+     `W * 2 ^ k` explicit.
+   - `CNF.exists_greedy_testRow_trajectory`: finite-minimization existence of a greedy parity-row
+     trajectory `(A, γ)` whenever `Nonempty (Fin P → Fin φ.length × Bool)`.
+   - `CNF.exists_greedy_parityRowSystem_schedule_design_modelCountOn_eq` and
+     `CNF.exists_greedy_parityRowSystem_schedule_design_modelCountOn_of_le_clog_pow`: combine
+     `CNF.exists_greedy_parityRowSystem_branch_schedule` and
      `CNF.exists_greedy_parityRowSystem_branch_schedule_of_le_clog_pow` with exact branch-summed
-     constant-term recovery of `φ.modelCountOn Finset.univ` unconditionally for any width-`≤ k` CNF
-     with `φ.length ≤ B * n` and `B ≤ C_B * (Nat.clog 2 n) ^ β_B`.
+     constant-term recovery of `φ.modelCountOn Finset.univ` and the
+     `(k * (rowBound _ n' - 1)) * (8 * Fintype.card V)` numerator degree bound after `3 * n` greedy
+     rounds.
 
 ## Main definitions
 
@@ -56,12 +70,15 @@ constant-term recovery and univariate numerator degree bounds of
 
 ## Main results
 
+* `Cslib.Logic.PL.CNF.branchAugmentedScope_parityRowAugmentedInl`
 * `Cslib.Logic.PL.CNF.branchAugmentedScope_parityRowSystem_comp_equiv_inl`
 * `Cslib.Logic.PL.CNF.branchAugmentedScope_parityRowSystem_comp_equiv_inr`
+* `Cslib.Logic.PL.CNF.exists_branch_replacementDesign_commonZeroCount_parityRowSystem_eq`
 * `Cslib.Logic.PL.CNF.exists_schedule_design_commonZeroCount_parityRowSystem_eq`
 * `Cslib.Logic.PL.CNF.exists_schedule_design_numPassing_eq`
 * `Cslib.Logic.PL.CNF.exists_schedule_design_commonZeroCount_parityRowSystem_of_le_clog_pow`
 * `Cslib.Logic.PL.CNF.exists_schedule_design_numPassing_of_le_clog_pow`
+* `Cslib.Logic.PL.CNF.exists_greedy_testRow_trajectory`
 * `Cslib.Logic.PL.CNF.exists_greedy_parityRowSystem_schedule_design_modelCountOn_eq`
 * `Cslib.Logic.PL.CNF.exists_greedy_parityRowSystem_schedule_design_modelCountOn_of_le_clog_pow`
 
@@ -142,6 +159,79 @@ theorem CNF.branchAugmentedScope_parityRowSystem_comp_equiv_inr [Fintype V] [Dec
 
 /-! ### 2. Schedule-instantiated exact recovery of `commonZeroCount` and `numPassing` -/
 
+/-- **§5.4–5.5 & §6.3 (`Feasible`-instantiated `ReplacementDesign` recovery of `commonZeroCount`
+and `numPassing` on `φ.parityRowSystem rows`)**: given a width-`≤ k` CNF `φ : CNF V`, a parity-row
+list `rows : List (Fin φ.length → Bool)` with `∀ r_row ∈ rows, weight r_row ≤ W`, heavy-variable
+set `S = heavyVars univ univ (fun j => equationScope (φ.parityRowSystem rows j)) b₀`, free-variable
+relabeling `e : ↥(univ \ S) ≃ Fin n'`, and per-branch
+`Feasible β n' (b₀ + 1) (max (k * (W * 2 ^ k)) 1) M'_b`,
+there exists a family `D` of concrete Lemma 4.8 schedule `ReplacementDesign`s across all branches
+`b : V → Bool` recovering `commonZeroCount univ (φ.parityRowSystem rows)` and
+`numPassing φ.violations rows` via constant-term evaluation with univariate numerator degree at most
+`(k * (rowBound β n' - 1)) * (rows.length + 2 * (branchPrecision (Fintype.card V) - 1))`. -/
+theorem CNF.exists_branch_replacementDesign_commonZeroCount_parityRowSystem_eq
+    [Fintype V] [DecidableEq V] {φ : CNF V} {β k W b₀ : ℕ}
+    (hk : ∀ c ∈ φ, c.length ≤ k)
+    {rows : List (Fin φ.length → Bool)} (hW : ∀ r_row ∈ rows, weight r_row ≤ W)
+    (e : ↥(univ \ heavyVars univ (univ : Finset (Fin rows.length))
+      (fun j => equationScope (φ.parityRowSystem rows j)) b₀) ≃ Fin n')
+    (hF : ∀ b : V → Bool,
+      Feasible β n' (b₀ + 1) (max (k * (W * 2 ^ k)) 1)
+        (∑ f : {j : Fin rows.length // j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n',
+          #(branchAugmentedScope
+            (heavyVars univ (univ : Finset (Fin rows.length))
+              (fun j => equationScope (φ.parityRowSystem rows j)) b₀)
+            e univ (φ.parityRowSystem rows) b f))) :
+    let S := heavyVars univ (univ : Finset (Fin rows.length))
+      (fun j => equationScope (φ.parityRowSystem rows j)) b₀
+    ∃ D : (b : V → Bool) →
+        ReplacementDesign (branchAugmentedScope S e univ (φ.parityRowSystem rows) b)
+          (numNodes n') (numGroups n') (intervalStart β n') (rowBound β n') (tauRat n'),
+      (commonZeroCount (univ : Finset (Fin rows.length)) (φ.parityRowSystem rows) : ℤ) =
+        (∑ b ∈ branchAssignments S,
+          ((univariateClearedParityTruncatedSum (univ : Finset (Fin rows.length))
+            (φ.branchParityRowSystem rows S e b)
+            (commonDenom (numNodes n') (rowBound β n') : ℤ) k
+            (branchPrecision (Fintype.card V))
+            (designReplacementScaledIntMap (D b) CNF.parityRowAugmentedInl)).eval 0 /
+              clearedProductDenom (commonDenom (numNodes n') (rowBound β n') : ℤ) k
+                (branchPrecision (Fintype.card V))
+                #(univ : Finset (Fin rows.length))) %
+                  ((2 : ℤ) ^ branchPrecision (Fintype.card V))) ∧
+      (numPassing φ.violations rows : ℤ) =
+        (∑ b ∈ branchAssignments S,
+          ((univariateClearedParityTruncatedSum (univ : Finset (Fin rows.length))
+            (φ.branchParityRowSystem rows S e b)
+            (commonDenom (numNodes n') (rowBound β n') : ℤ) k
+            (branchPrecision (Fintype.card V))
+            (designReplacementScaledIntMap (D b) CNF.parityRowAugmentedInl)).eval 0 /
+              clearedProductDenom (commonDenom (numNodes n') (rowBound β n') : ℤ) k
+                (branchPrecision (Fintype.card V))
+                #(univ : Finset (Fin rows.length))) %
+                  ((2 : ℤ) ^ branchPrecision (Fintype.card V))) ∧
+      ∀ b : V → Bool,
+        (univariateClearedParityTruncatedSum (univ : Finset (Fin rows.length))
+          (φ.branchParityRowSystem rows S e b)
+          (commonDenom (numNodes n') (rowBound β n') : ℤ) k
+          (branchPrecision (Fintype.card V))
+          (designReplacementScaledIntMap (D b) CNF.parityRowAugmentedInl)).natDegree ≤
+        (k * (rowBound β n' - 1)) *
+          (rows.length + 2 * (branchPrecision (Fintype.card V) - 1)) := by
+  intro S
+  let D : (b : V → Bool) →
+      ReplacementDesign (branchAugmentedScope S e univ (φ.parityRowSystem rows) b)
+        (numNodes n') (numGroups n') (intervalStart β n') (rowBound β n') (tauRat n') :=
+    fun b => Classical.choice
+      (φ.exists_branch_replacementDesign_parityRowSystem hk hW e b (hF b))
+  have hcz := CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design hk rows S e
+    (fun b => branchAugmentedScope S e univ (φ.parityRowSystem rows) b) D
+    (fun _ => CNF.parityRowAugmentedInl)
+  refine ⟨D, hcz, ?_, fun b => ?_⟩
+  · rw [← CNF.commonZeroCount_parityRowSystem]
+    exact hcz
+  · exact CNF.natDegree_univariateClearedParityTruncatedSum_branchParityRowSystem_le hk rows S e b
+      (D b) CNF.parityRowAugmentedInl (branchPrecision (Fintype.card V))
+
 /-- **§5.4–5.5 & §6.3 (schedule-instantiated `ReplacementDesign` recovery of `commonZeroCount` on
 `φ.parityRowSystem rows`)**: for every `1 ≤ β`, the threshold `n₀ ≥ 20` of
 `CNF.exists_branch_schedule_parityRowSystem` guarantees that whenever `n₀ ≤ n'`,
@@ -195,16 +285,10 @@ theorem CNF.exists_schedule_design_commonZeroCount_parityRowSystem_eq {β : ℕ}
   refine ⟨n₀, hn₀20, fun {V _ _ φ n' k W b₀} hk {rows} hW => ?_⟩
   intro S e hn' hb₀ hw
   have h_all := hsched hk hW e hn' hb₀ hw
-  let D : (b : V → Bool) →
-      ReplacementDesign (branchAugmentedScope S e univ (φ.parityRowSystem rows) b)
-        (numNodes n') (numGroups n') (intervalStart β n') (rowBound β n') (tauRat n') :=
-    fun b => Classical.choice (h_all b).2
-  refine ⟨fun b => (h_all b).1, D, ?_, fun b => ?_⟩
-  · exact CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design hk rows S e
-      (fun b => branchAugmentedScope S e univ (φ.parityRowSystem rows) b) D
-      (fun _ => CNF.parityRowAugmentedInl)
-  · exact CNF.natDegree_univariateClearedParityTruncatedSum_branchParityRowSystem_le hk rows S e b
-      (D b) CNF.parityRowAugmentedInl (branchPrecision (Fintype.card V))
+  obtain ⟨D, hcz, _, hdeg⟩ :=
+    φ.exists_branch_replacementDesign_commonZeroCount_parityRowSystem_eq hk hW e
+      (fun b => (h_all b).1)
+  exact ⟨fun b => (h_all b).1, D, hcz, hdeg⟩
 
 /-- **§5.4–5.5 & §6.3 (schedule-instantiated `ReplacementDesign` recovery of
 `numPassing φ.violations rows`)**: under the hypotheses of
@@ -314,17 +398,10 @@ theorem CNF.exists_schedule_design_commonZeroCount_parityRowSystem_of_le_clog_po
   refine ⟨N₀, hN₀20, fun {V _ _ φ n' B W} hk hN₀ hm hB hW_bound {rows} hW hlen => ?_⟩
   intro b₀ S e
   obtain ⟨hsqrt, hcard, hbr, h_all⟩ := hsched hk hN₀ hm hB hW_bound hW hlen e
-  let D : (b : V → Bool) →
-      ReplacementDesign (branchAugmentedScope S e univ (φ.parityRowSystem rows) b)
-        (numNodes n') (numGroups n') (intervalStart (2 * β_B + 5) n')
-        (rowBound (2 * β_B + 5) n') (tauRat n') :=
-    fun b => Classical.choice (h_all b).2
-  refine ⟨hsqrt, hcard, hbr, fun b => (h_all b).1, D, ?_, fun b => ?_⟩
-  · exact CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design hk rows S e
-      (fun b => branchAugmentedScope S e univ (φ.parityRowSystem rows) b) D
-      (fun _ => CNF.parityRowAugmentedInl)
-  · exact CNF.natDegree_univariateClearedParityTruncatedSum_branchParityRowSystem_le hk rows S e b
-      (D b) CNF.parityRowAugmentedInl (branchPrecision (Fintype.card V))
+  obtain ⟨D, hcz, _, hdeg⟩ :=
+    φ.exists_branch_replacementDesign_commonZeroCount_parityRowSystem_eq hk hW e
+      (fun b => (h_all b).1)
+  exact ⟨hsqrt, hcard, hbr, fun b => (h_all b).1, D, hcz, hdeg⟩
 
 /-- **Unconditional Section 6.3 schedule-design recovery of `numPassing φ.violations rows` for
 `B ≤ C_B * (Nat.clog 2 n) ^ β_B`**. -/
@@ -385,12 +462,41 @@ theorem CNF.exists_schedule_design_numPassing_of_le_clog_pow (k C_B β_B : ℕ) 
 
 /-! ### 3. End-to-end greedy `modelCountOn` schedule-design recovery -/
 
+/-- Finite-minimization existence of a greedy parity-row trajectory `(A, γ)` starting from any
+initial row list `A₀`, provided the candidate tuple type `Fin P → Fin φ.length × Bool` is nonempty
+(for instance whenever `1 ≤ φ.length`). -/
+theorem CNF.exists_greedy_testRow_trajectory [Fintype V] [DecidableEq V]
+    (φ : CNF V) (P : ℕ) [Nonempty (Fin P → Fin φ.length × Bool)]
+    (A₀ : List (Fin φ.length → Bool)) :
+    ∃ (A : ℕ → List (Fin φ.length → Bool))
+      (γ : ℕ → Fin P → Fin φ.length × Bool),
+      A 0 = A₀ ∧
+      (∀ i, A (i + 1) = A i ++ [testRow (γ i)]) ∧
+      (∀ i (γ' : Fin P → Fin φ.length × Bool),
+        commonZeroCount univ (φ.parityRowSystem (A i ++ [testRow (γ i)])) ≤
+          commonZeroCount univ (φ.parityRowSystem (A i ++ [testRow γ']))) := by
+  have hmin : ∀ rows : List (Fin φ.length → Bool),
+      ∃ γ₀ : Fin P → Fin φ.length × Bool,
+        ∀ γ' : Fin P → Fin φ.length × Bool,
+          commonZeroCount univ (φ.parityRowSystem (rows ++ [testRow γ₀])) ≤
+            commonZeroCount univ (φ.parityRowSystem (rows ++ [testRow γ'])) := fun rows => by
+    obtain ⟨γ₀, _, hγ₀⟩ :=
+      exists_min_image (univ : Finset (Fin P → Fin φ.length × Bool))
+        (fun γ' => commonZeroCount univ (φ.parityRowSystem (rows ++ [testRow γ'])))
+        univ_nonempty
+    exact ⟨γ₀, fun γ' => hγ₀ γ' (mem_univ γ')⟩
+  choose nextGamma hnextGamma using hmin
+  let A : ℕ → List (Fin φ.length → Bool) :=
+    fun i => Nat.recOn i A₀ (fun _ rows => rows ++ [testRow (nextGamma rows)])
+  refine ⟨A, fun i => nextGamma (A i), rfl, fun _ => rfl, fun i γ' => hnextGamma (A i) γ'⟩
+
 /-- **Lemmas 6.1–6.2 & §§5.4–5.5, 6.3 (conditional greedy parity-test schedule-design recovery of
 `φ.modelCountOn Finset.univ`)**: combines `CNF.exists_greedy_parityRowSystem_branch_schedule` with
 `CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design` so that at every stage
 `i ≤ 3 * n`, concrete Lemma 4.8 schedule `ReplacementDesign`s exist across all heavy-variable
-branches, and at the final stage `i = 3 * n`, they recover `(φ.modelCountOn Finset.univ : ℤ)` with
-univariate numerator degree at most `(k * (rowBound β n' - 1)) * (8 * Fintype.card V)`. -/
+branches (with equation-count bound `(A i).length ≤ 6 * n`), and at the final stage `i = 3 * n`,
+they recover `(φ.modelCountOn Finset.univ : ℤ)` with univariate numerator degree at most
+`(k * (rowBound β n' - 1)) * (8 * Fintype.card V)`. -/
 theorem CNF.exists_greedy_parityRowSystem_schedule_design_modelCountOn_eq {β : ℕ} (hβ : 1 ≤ β) :
     ∃ n₀ : ℕ, 20 ≤ n₀ ∧
       ∀ {V : Type*} [Fintype V] [DecidableEq V]
