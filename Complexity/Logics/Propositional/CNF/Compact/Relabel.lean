@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Erik Demaine, Samuel Schlesinger
 -/
 
 module
@@ -20,6 +20,9 @@ variables keeps its order under this renaming, even though compact names may hav
 
 ## Main results
 
+* `Cslib.Logic.PL.CNF.distinctVars_relabel_of_injOn`,
+  `Cslib.Logic.PL.CNF.numVars_relabel_of_injOn`, `Cslib.Logic.PL.CNF.numVars_relabel`: injective
+  variable relabelings preserve `distinctVars` order and `numVars`.
 * `Cslib.Logic.PL.CNF.distinctVars_compact`: exact ordered list of compact variable names.
 * `Cslib.Logic.PL.CNF.idxOf_distinctVars_compact`: graph vertex indices are preserved.
 
@@ -66,6 +69,19 @@ theorem distinctVars_relabel_of_injOn (φ : CNF V) (f : V → W)
     (φ.relabel f).distinctVars = φ.distinctVars.map f := by
   simp only [distinctVars, vars_relabel, List.length_map]
   exact selectDistinct_map_injOn _ _ _ hf
+
+/-- Relabeling injectively on the occurring variables preserves `numVars`. -/
+theorem numVars_relabel_of_injOn (φ : CNF V) (f : V → W)
+    (hf : Set.InjOn f {v | v ∈ φ.vars}) :
+    (φ.relabel f).numVars = φ.numVars := by
+  rw [← length_distinctVars, ← length_distinctVars, distinctVars_relabel_of_injOn φ f hf,
+    List.length_map]
+
+/-- Relabeling along an injective map preserves `numVars`. -/
+@[simp]
+theorem numVars_relabel {f : V → W} (hf : Function.Injective f) (φ : CNF V) :
+    (φ.relabel f).numVars = φ.numVars :=
+  numVars_relabel_of_injOn φ f fun _ _ _ _ h => hf h
 
 variable [BEq V] [LawfulBEq V]
 

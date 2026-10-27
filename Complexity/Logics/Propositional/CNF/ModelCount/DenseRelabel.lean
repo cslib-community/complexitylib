@@ -37,8 +37,10 @@ natural-number indices (`encCNF`).
 
 * `Cslib.Logic.PL.CNF.vars_denseRelabel_toFinset`,
   `Cslib.Logic.PL.CNF.numVars_denseRelabel`,
-  `Cslib.Logic.PL.CNF.distinctVars_denseRelabel`: the occurring variables of `φ.denseRelabel` are
-  `0, …, φ.numVars - 1` in order.
+  `Cslib.Logic.PL.CNF.distinctVars_denseRelabel`,
+  `Cslib.Logic.PL.CNF.count_vars_denseRelabel`,
+  `Cslib.Logic.PL.CNF.count_vars_denseRelabel_le`: the occurring variables of `φ.denseRelabel` are
+  `0, …, φ.numVars - 1` in order, with preserved literal-occurrence counts.
 * `Cslib.Logic.PL.CNF.satisfiable_denseRelabel`,
   `Cslib.Logic.PL.CNF.modelCount_denseRelabel`,
   `Cslib.Logic.PL.CNF.modelCountOn_denseRelabel`: satisfiability and model counts are preserved.
@@ -115,6 +117,29 @@ theorem distinctVars_denseRelabel (φ : CNF V) :
     fun _ ha _ _ h => (List.idxOf_inj (mem_distinctVars.mpr ha)).mp h
   rw [denseRelabel, distinctVars_relabel_of_injOn φ φ.distinctVars.idxOf hinj,
     map_idxOf_of_nodup φ.distinctVars φ.nodup_distinctVars, length_distinctVars]
+
+/-- Dense variable relabeling preserves the exact literal-occurrence count of every occurring
+variable. -/
+theorem count_vars_denseRelabel (φ : CNF V) {v : V} (hv : v ∈ φ.vars) :
+    φ.denseRelabel.vars.count (φ.distinctVars.idxOf v) = φ.vars.count v := by
+  rw [denseRelabel, vars_relabel]
+  simp only [List.count_eq_countP, List.countP_map, Function.comp_def]
+  apply List.countP_congr
+  intro w _
+  simp only [beq_iff_eq]
+  rw [eq_comm, List.idxOf_inj (mem_distinctVars.mpr hv), eq_comm]
+
+/-- Any upper bound on original literal-occurrence counts is preserved by `CNF.denseRelabel`. -/
+theorem count_vars_denseRelabel_le (φ : CNF V) {B : ℕ}
+    (h : ∀ v, φ.vars.count v ≤ B) (i : ℕ) :
+    φ.denseRelabel.vars.count i ≤ B := by
+  by_cases hi : i ∈ φ.denseRelabel.vars
+  · rw [denseRelabel, vars_relabel] at hi
+    obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hi
+    rw [count_vars_denseRelabel φ hv]
+    exact h v
+  · rw [List.count_eq_zero.mpr hi]
+    exact Nat.zero_le _
 
 /-- Reading original variable values at their `distinctVars` indices recovers the evaluation of
 `φ`. -/
