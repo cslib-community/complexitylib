@@ -493,6 +493,7 @@ public import Complexity.Computability.Circuit.Rational.Rectangular
 public import Complexity.Computability.Circuit.Rational.Runtime
 public import Complexity.Computability.Circuit.Rational.Runtime.Determinant
 public import Complexity.Computability.Circuit.Rational.Runtime.Encode
+public import Complexity.Computability.Circuit.Rational.Runtime.HermiteCramer
 public import Complexity.Computability.Circuit.Rational.Runtime.Lift
 public import Complexity.Computability.Circuit.Rational.Runtime.Lift.Defs
 public import Complexity.Computability.Circuit.Rational.Runtime.Parameters
@@ -1361,7 +1362,9 @@ public import Complexity.Computability.PCP.RegularConstraintGraph
 public import Complexity.Computability.PCP.SelectedComposition
 public import Complexity.Computability.PCP.ThreeSAT
 public import Complexity.Computability.PCP.TwoProverGame
+public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
+public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Computability.PolyTime.Int.Table
 public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Computability.PolyTime.ParityFactorEval
@@ -2210,7 +2213,9 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Counting
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingDeletion
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingInsertions
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingOccurrences
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParameters
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits
