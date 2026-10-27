@@ -21,16 +21,19 @@ import Mathlib.Data.Nat.Choose.Bounds
 # Executable confluent Hermite Cramer recovery
 
 Executable list-of-rows builders and plain `Turing.MultiTapeTM.ComputableInPolyTime` certificates
-for recovering the integer constant term `H(0)` of a rational polynomial `H ∈ ℚ[X]` of degree less
-than `N = nodes.length * J` from integer-scaled order-`J` Taylor jets `Ω · [z ^ j] H(t_i + z)` at
-distinct integer nodes `nodes = [t_0, …, t_{Q-1}]`.
+for recovering the integer constant term `H(0) = (H_zero : ℚ)` of a rational polynomial
+`H ∈ ℚ[X]` with `H.natDegree < N` (`N = nodes.length * J`) from a `nodes.length × J` table `jets`
+(`jets.length = nodes.length`, each row of length `J`) of integer-scaled order-`J` Taylor jets
+`Ω · [z ^ j] H(t_i + z)` with nonzero scale `Ω ≠ 0` at distinct integer nodes
+`nodes = [t_0, …, t_{Q-1}]` (`nodes.Nodup`).
 
 Following Appendix B.3, equation (B.1), of [OpenAI2026ETH], `hermiteRows nodes J` tabulates the
 `N × N` integer confluent Vandermonde matrix `V` (`Polynomial.hermiteMatrix`), `cramerColZeroRows`
 replaces column `0` with the flattened scaled jet vector `b = Ω y` to form `V_{(0)}`, and
 `hermiteRecoverZero` evaluates `N_H = detRows V_{(0)}` and `D_H = detRows V` via the division-free
-staged determinant of `Runtime/Determinant.lean` before performing the single exact integer
-division `N_H / (Ω · D_H)`. `hermiteRecoverModPowTwo` composes this recovery with `Int.modPowTwo`
+staged determinant of `Runtime/Determinant.lean` before performing the single total integer
+division `N_H / (Ω · D_H)` (`Int.ediv`, exact when `nodes.Nodup` and `Ω ≠ 0`, and returning `0`
+when `Ω = 0` or `D_H = 0`). `hermiteRecoverModPowTwo` composes this recovery with `Int.modPowTwo`
 to extract bounded counts modulo `2 ^ ℓ`.
 
 ## Main definitions
@@ -38,9 +41,12 @@ to extract bounded counts modulo `2 ^ ℓ`.
 * `Cslib.Circuits.Rational.hermiteRows`: executable `(nodes.length * J) × (nodes.length * J)`
   integer confluent Vandermonde matrix as `List (List ℤ)`.
 * `Cslib.Circuits.Rational.cramerColZeroRows`: replace column `0` of each row `k` with `rhs[k]`.
-* `Cslib.Circuits.Rational.hermiteRecoverZero`: recover `H(0) = det V_{(0)} / (Ω · det V)` via
-  `detRows` and `Int.ediv`.
-* `Cslib.Circuits.Rational.hermiteRecoverModPowTwo`: recover `H(0) mod 2 ^ ℓ`.
+* `Cslib.Circuits.Rational.hermiteRecoverZero`: recover integer `H(0) = det V_{(0)} / (Ω · det V)`
+  for nonzero `Ω ≠ 0` and distinct `nodes` via `detRows` and total `Int.ediv` (returning `0` when
+  `Ω = 0` or `det V = 0`).
+* `Cslib.Circuits.Rational.hermiteRecoverModPowTwo`: recover the least nonnegative residue of
+  integer `H(0)` modulo `2 ^ ℓ` under the same `Ω ≠ 0`, `nodes.Nodup`, degree, and jet-shape
+  hypotheses.
 
 ## Main results
 
@@ -101,13 +107,20 @@ unchanged. -/
 def cramerColZeroRows (mat : List (List ℤ)) (rhs : List ℤ) : List (List ℤ) :=
   mat.zipIdx.map fun p => rhs.getD p.2 0 :: p.1.tail
 
-/-- Recover the integer value `H(0)` of a polynomial of degree `< nodes.length * J` from its
-`Ω`-scaled order-`J` Taylor jets at distinct integer `nodes` via Cramer's rule and `detRows`. -/
+/-- Recover the integer value `H(0) = (H_zero : ℚ)` of `H ∈ ℚ[X]` with
+`H.natDegree < nodes.length * J` from a `nodes.length × J` table `jets`
+(`jets.length = nodes.length`, each row of length `J`) of its `Ω`-scaled order-`J` Taylor jets
+with nonzero scale `Ω ≠ 0` at distinct integer `nodes` (`nodes.Nodup`), via Cramer's rule,
+`detRows`, and total `Int.ediv` (returning `0` when `Ω = 0` or
+`detRows (hermiteRows nodes J) = 0`; see `hermiteRecoverZero_eq`). -/
 def hermiteRecoverZero (nodes : List ℤ) (J : ℕ) (Ω : ℤ) (jets : List (List ℤ)) : ℤ :=
   (detRows (cramerColZeroRows (hermiteRows nodes J) jets.flatten)).ediv
     (Ω * detRows (hermiteRows nodes J))
 
-/-- Recover the least nonnegative residue of `H(0)` modulo `2 ^ ℓ`. -/
+/-- Recover the least nonnegative residue of integer `H(0)` modulo `2 ^ ℓ` from `Ω`-scaled
+order-`J` Taylor jets `jets` under the hypotheses of `hermiteRecoverZero_eq` (`nodes.Nodup`,
+`Ω ≠ 0`, `H.natDegree < nodes.length * J`, integer `H(0)`, and `nodes.length × J` jet shape; see
+`hermiteRecoverModPowTwo_eq`). -/
 def hermiteRecoverModPowTwo (nodes : List ℤ) (J ℓ : ℕ) (Ω : ℤ) (jets : List (List ℤ)) : ℤ :=
   (hermiteRecoverZero nodes J Ω jets).modPowTwo ℓ
 
