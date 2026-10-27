@@ -770,6 +770,7 @@ public import Complexity.Computability.Complexity.FineGrained.PPZ
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
+public import Complexity.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
@@ -893,6 +894,7 @@ public import Complexity.Computability.GenericRAM.Native.BooleanFold
 public import Complexity.Computability.GenericRAM.Native.Certificate
 public import Complexity.Computability.GenericRAM.Native.Combinators
 public import Complexity.Computability.GenericRAM.Native.IndexFold
+public import Complexity.Computability.GenericRAM.Native.MeasurementFold
 public import Complexity.Computability.GenericRAM.Native.Nat
 public import Complexity.Computability.GenericRAM.Signed
 public import Complexity.Computability.GenericRAM.Simulation.Finite
@@ -1105,6 +1107,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Multi
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Arithmetic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Division
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Subtraction
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatStream
@@ -1166,6 +1170,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OnWords
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPower
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListBinaryLookup
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
@@ -1177,6 +1183,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTi
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimePiPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeRadix
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.StepMachineCompiler
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.UnaryMachines
@@ -1357,6 +1364,7 @@ public import Complexity.Computability.PCP.TwoProverGame
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.Int.Table
 public import Complexity.Computability.PolyTime.JetArray
+public import Complexity.Computability.PolyTime.ParityFactorEval
 public import Complexity.Computability.Probabilistic.Adaptive
 public import Complexity.Computability.Probabilistic.BoundedUniform
 public import Complexity.Computability.Probabilistic.CenteredBinomial
@@ -1871,6 +1879,7 @@ public import Complexity.Foundations.Combinatorics.Multigraph
 public import Complexity.Foundations.Combinatorics.PartialLabelScores
 public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
+public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.Sunflower
@@ -1969,6 +1978,7 @@ public import Complexity.Foundations.Data.MvPolynomial.Hessian
 public import Complexity.Foundations.Data.MvPolynomial.HessianRank
 public import Complexity.Foundations.Data.Nat.ArithmeticProgression
 public import Complexity.Foundations.Data.Nat.Asymptotics
+public import Complexity.Foundations.Data.Nat.BinarySize
 public import Complexity.Foundations.Data.Nat.Bits
 public import Complexity.Foundations.Data.Nat.Bitwise.HighestDiff
 public import Complexity.Foundations.Data.Nat.Bitwise.Multiplication
@@ -1991,6 +2001,7 @@ public import Complexity.Foundations.Data.Nat.Power
 public import Complexity.Foundations.Data.Nat.Prime
 public import Complexity.Foundations.Data.Nat.Primrec
 public import Complexity.Foundations.Data.Nat.Radix
+public import Complexity.Foundations.Data.Nat.Radix.Measurement
 public import Complexity.Foundations.Data.Option
 public import Complexity.Foundations.Data.OrderedSet
 public import Complexity.Foundations.Data.OrderedSet.Spec
@@ -2185,7 +2196,9 @@ public import Complexity.Logics.Propositional.CNF.Planar.PairedCrossover
 public import Complexity.Logics.Propositional.CNF.Planar.PairedWire
 public import Complexity.Logics.Propositional.CNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.PolynomialTests
+public import Complexity.Logics.Propositional.CNF.SparseParityCounter
 public import Complexity.Logics.Propositional.CNF.ThreeCNF
+public import Complexity.Logics.Propositional.CNF.ThreeCNF.Exact
 public import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
@@ -2197,6 +2210,7 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Counting
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingDeletion
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingOccurrences
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
