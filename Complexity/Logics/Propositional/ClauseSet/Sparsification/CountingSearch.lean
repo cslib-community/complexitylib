@@ -8,11 +8,10 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingList
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Algebra.Group.Action.Defs
 import Mathlib.Tactic.Ring
-import Mathlib.Tactic.Positivity
 
 /-!
 # Counting sparsification -- branching rules and depth-first tree search
@@ -25,7 +24,7 @@ which at every state that is not sparse takes the heart (`false`) or petal-plus-
 
 When all thresholds for `j ≥ 1` are at least `2` (in particular for `countingThreshold M` with
 `M ≥ 2`), every non-sparse step strictly decreases the clause-set potential
-`potential ψ = ∑ C ∈ ψ, 2 ^ C.card` (`potential_countingChild_lt`,
+`potential ψ = ∑ C ∈ ψ, 2 ^ C.card` (`potential_countingChild_lt` from `CountingTree.lean`,
 `CountingBranchingRule.potential_next_lt`): removing a flower of `|F| ≥ 2` clauses of width `c`
 decreases the potential by `|F| · 2 ^ c`, while adding the `|F|` petals of width `c - |H| ≤ c - 1`
 and `|H| ≤ c - 1` unit clauses adds at most `|F| · 2 ^ (c - 1) + 2 (c - 1) < |F| · 2 ^ c`.
@@ -58,8 +57,7 @@ At the list level, `Cslib.Logic.PL.CNF.Sparsification.countingRule` instantiates
 
 ## Main results
 
-* `Cslib.Logic.PL.ClauseSet.Sparsification.potential_countingChild_lt`,
-  `Cslib.Logic.PL.ClauseSet.Sparsification.CountingBranchingRule.potential_next_lt`: strict
+* `Cslib.Logic.PL.ClauseSet.Sparsification.CountingBranchingRule.potential_next_lt`: strict
   potential decrease on both counting branches when `∀ j, 1 ≤ j → 2 ≤ θ j`.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.card_countingChild_le`,
   `Cslib.Logic.PL.ClauseSet.Sparsification.CountingBranchingRule.IsNodeWord.card_walk_le`:
@@ -139,70 +137,6 @@ private theorem card_of_mem_negatedHeartUnits {H : Finset (Literal V)} {C : Fins
     (hC : C ∈ negatedHeartUnits H) : C.card = 1 := by
   obtain ⟨l, -, rfl⟩ := mem_image.mp hC
   exact card_singleton _
-
-/-- The potential of `negatedHeartUnits H` is at most `2 * H.card`. -/
-private theorem potential_negatedHeartUnits_le (H : Finset (Literal V)) :
-    potential (negatedHeartUnits H) ≤ H.card * 2 := by
-  unfold potential
-  rw [sum_congr rfl fun C hC => by rw [card_of_mem_negatedHeartUnits hC], sum_const, smul_eq_mul,
-    pow_one]
-  exact Nat.mul_le_mul_right 2 card_image_le
-
-/-- **Termination of counting sparsification.** When `∀ j, 1 ≤ j → 2 ≤ θ j`, each counting
-branching step on a heavy heart strictly decreases the potential `∑ C ∈ ψ, 2 ^ C.card`. -/
-theorem potential_countingChild_lt (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 ≤ j → 2 ≤ θ j)
-    {ψ : ClauseSet V} {c : ℕ} {H : Finset (Literal V)} (h : Heavy θ ψ c H) (b : Bool) :
-    potential (countingChild ψ c H b) < potential ψ := by
-  cases b with
-  | false => exact potential_child_lt hθ1 h false
-  | true =>
-    set F := flower ψ c H
-    have hFsplit : potential ψ = potential (ψ \ F) + potential F := by
-      unfold potential
-      rw [← sum_sdiff (flower_subset ψ c H)]
-    have hF : potential F = F.card * 2 ^ c := by
-      unfold potential
-      rw [sum_congr rfl fun C hC => by rw [(mem_flower.mp hC).2.1], sum_const, smul_eq_mul]
-    have hF2 : 2 ≤ F.card := (hθ2 (c - H.card) (by have := h.2.1; omega)).trans h.2.2
-    have hpetals : potential (petals ψ c H) = F.card * 2 ^ (c - H.card) := by
-      unfold potential
-      rw [sum_congr rfl fun C hC => by rw [card_of_mem_petals hC], sum_const, card_petals,
-        smul_eq_mul]
-    have hunits := potential_negatedHeartUnits_le H
-    have hc1 : c = (c - 1) + 1 := by have := h.1; have := h.2.1; omega
-    have hpow_le : 2 ^ (c - H.card) ≤ 2 ^ (c - 1) :=
-      Nat.pow_le_pow_right (by omega) (by have := h.1; omega)
-    have hH_lt : H.card < 2 ^ (c - 1) :=
-      (show H.card ≤ c - 1 by have := h.2.1; omega).trans_lt Nat.lt_two_pow_self
-    have hsum_lt : potential (petals ψ c H) + potential (negatedHeartUnits H) < F.card * 2 ^ c := by
-      have h1 : potential (petals ψ c H) ≤ F.card * 2 ^ (c - 1) := by
-        rw [hpetals]
-        exact Nat.mul_le_mul_left F.card hpow_le
-      have h2 : potential (negatedHeartUnits H) < 2 * 2 ^ (c - 1) := by omega
-      have h3 : 2 * 2 ^ (c - 1) ≤ F.card * 2 ^ (c - 1) :=
-        Nat.mul_le_mul_right _ hF2
-      have h4 : F.card * 2 ^ c = F.card * 2 ^ (c - 1) + F.card * 2 ^ (c - 1) := by
-        conv_lhs => rw [hc1, pow_succ]
-        ring
-      omega
-    calc potential (countingChild ψ c H true)
-        ≤ potential ((ψ \ F) ∪ petals ψ c H ∪ negatedHeartUnits H) :=
-          sum_le_sum_of_subset (countingChild_true_subset h)
-      _ ≤ potential ((ψ \ F) ∪ petals ψ c H) + potential (negatedHeartUnits H) := by
-          unfold potential
-          have := sum_union_inter (s₁ := (ψ \ F) ∪ petals ψ c H) (s₂ := negatedHeartUnits H)
-            (f := fun C : Finset (Literal V) => 2 ^ C.card)
-          omega
-      _ ≤ potential (ψ \ F) + potential (petals ψ c H) + potential (negatedHeartUnits H) := by
-          have : potential ((ψ \ F) ∪ petals ψ c H) ≤
-              potential (ψ \ F) + potential (petals ψ c H) := by
-            unfold potential
-            have := sum_union_inter (s₁ := ψ \ F) (s₂ := petals ψ c H)
-              (f := fun C : Finset (Literal V) => 2 ^ C.card)
-            omega
-          omega
-      _ < potential (ψ \ F) + potential F := by rw [hF]; omega
-      _ = potential ψ := hFsplit.symm
 
 /-- Counting children keep the clause width `≤ k` when `1 ≤ k`. -/
 theorem card_le_of_mem_countingChild (hθ : ∀ j, 1 ≤ θ j) {ψ : ClauseSet V} {c k : ℕ}
@@ -300,12 +234,12 @@ variable {R}
 
 /-- **Termination.** When `∀ j, 1 ≤ j → 2 ≤ θ j`, each counting branching step strictly decreases
 the potential. -/
-theorem potential_next_lt (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 ≤ j → 2 ≤ θ j) {s : σ}
+theorem potential_next_lt (hθ : ∀ j, 1 ≤ j → 2 ≤ θ j) {s : σ}
     (hs : ¬ Sparse θ (R.toClauseSet s)) (b : Bool) :
     potential (R.toClauseSet (R.next s b)) < potential (R.toClauseSet s) := by
   obtain ⟨c, H, hch, hnext⟩ := R.exists_choice_next s hs
   rw [hnext]
-  exact potential_countingChild_lt hθ1 hθ2 hch.1 b
+  exact potential_countingChild_lt hθ hch.1 b
 
 /-- **Additive model-count conservation.** At any non-sparse state, the declared-variable model
 count equals the sum of the model counts of its two children. -/
@@ -338,14 +272,14 @@ private theorem IsLeafWord.eq_nil {s : σ} (hs : Sparse θ (R.toClauseSet s)) {w
   | nil => rfl
   | cons b w => exact absurd hs hw.1
 
-/-- Every state has a leaf word when `∀ j, 1 ≤ θ j` and `∀ j, 1 ≤ j → 2 ≤ θ j`. -/
-theorem exists_isLeafWord (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 ≤ j → 2 ≤ θ j) (s : σ) :
+/-- Every state has a leaf word when `∀ j, 1 ≤ j → 2 ≤ θ j`. -/
+theorem exists_isLeafWord (hθ : ∀ j, 1 ≤ j → 2 ≤ θ j) (s : σ) :
     ∃ w, R.IsLeafWord s w := by
   induction h : potential (R.toClauseSet s) using Nat.strong_induction_on generalizing s with
   | _ n ih =>
     by_cases hs : Sparse θ (R.toClauseSet s)
     · exact ⟨[], hs⟩
-    · obtain ⟨w, hw⟩ := ih _ (h ▸ potential_next_lt hθ1 hθ2 hs false) (R.next s false) rfl
+    · obtain ⟨w, hw⟩ := ih _ (h ▸ potential_next_lt hθ hs false) (R.next s false) rfl
       exact ⟨false :: w, hs, hw⟩
 
 /-- Node words preserve clause width `≤ k` when `1 ≤ k`. -/
@@ -410,7 +344,7 @@ open Classical in
 of `s`) to return to `rest`, with accumulator `min cap (acc + ∑ w ∈ W, f (R.walk s w))`. If all
 leaf words of `s` have length at most `h`, the stack above `rest` has height at most `h + 1` at
 every intermediate step `i ≤ N` and the accumulator remains at most `cap`. -/
-theorem exists_iterate_searchStep (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 ≤ j → 2 ≤ θ j)
+theorem exists_iterate_searchStep (hθ : ∀ j, 1 ≤ j → 2 ≤ θ j)
     (cap : ℕ) (f : σ → ℕ) (s : σ) {h : ℕ} (hh : ∀ w, R.IsLeafWord s w → w.length ≤ h) :
     ∃ W : Finset (List Bool), (∀ w, w ∈ W ↔ R.IsLeafWord s w) ∧ ∃ N, N + 1 ≤ 2 * W.card ∧
       ∀ rest acc, acc ≤ cap →
@@ -433,12 +367,12 @@ theorem exists_iterate_searchStep (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 �
         · refine ⟨[], min cap (acc + f s), ?_, by simp, Nat.min_le_left _ _, by simp⟩
           simp only [Function.iterate_one, searchStep, hs, ↓reduceIte, List.nil_append]
     · have hlt (b : Bool) : potential (R.toClauseSet (R.next s b)) < n :=
-        hp ▸ potential_next_lt hθ1 hθ2 hs b
+        hp ▸ potential_next_lt hθ hs b
       have hh' (b : Bool) : ∀ w, R.IsLeafWord (R.next s b) w → w.length ≤ h - 1 := fun w hw => by
         have := hh (b :: w) ⟨hs, hw⟩
         simp only [List.length_cons] at this
         omega
-      obtain ⟨u, hu⟩ := exists_isLeafWord (R := R) hθ1 hθ2 s
+      obtain ⟨u, hu⟩ := exists_isLeafWord (R := R) hθ s
       have hh1 : 1 ≤ h := by
         cases u with
         | nil => exact absurd hu hs
@@ -515,7 +449,7 @@ theorem exists_iterate_searchStep (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 �
 (`M t = M (R.next t false) + M (R.next t true)`) and `f` agrees with `M` on the leaves of `s`, then
 the sum of `f (R.walk s w)` over any finset `W` containing exactly the leaf words of `s` equals
 `M s`. -/
-theorem sum_leafWords_eq (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 ≤ j → 2 ≤ θ j)
+theorem sum_leafWords_eq (hθ : ∀ j, 1 ≤ j → 2 ≤ θ j)
     {M f : σ → ℕ}
     (hM : ∀ t, ¬ Sparse θ (R.toClauseSet t) → M t = M (R.next t false) + M (R.next t true))
     (s : σ) (hf : ∀ w, R.IsLeafWord s w → f (R.walk s w) = M (R.walk s w))
@@ -532,7 +466,7 @@ theorem sum_leafWords_eq (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 ≤ j → 2
       rw [hWeq, sum_singleton]
       exact hf [] hs
     · have hlt (b : Bool) : potential (R.toClauseSet (R.next s b)) < n :=
-        hp ▸ potential_next_lt hθ1 hθ2 hs b
+        hp ▸ potential_next_lt hθ hs b
       let W₀ := (W.filter fun w => w.head? = some false).image List.tail
       let W₁ := (W.filter fun w => w.head? = some true).image List.tail
       have hW₀ (u : List Bool) : u ∈ W₀ ↔ R.IsLeafWord (R.next s false) u := by
@@ -590,13 +524,13 @@ theorem sum_leafWords_eq (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 ≤ j → 2
 /-- **Leaf model-count partition.** If `f` computes `(R.toClauseSet ·).toCNF.modelCountOn declared`
 on every leaf of `s`, then the sum of `f (R.walk s w)` over the leaf words of `s` equals
 `(R.toClauseSet s).toCNF.modelCountOn declared`. -/
-theorem sum_leafWords_modelCountOn (hθ1 : ∀ j, 1 ≤ θ j) (hθ2 : ∀ j, 1 ≤ j → 2 ≤ θ j)
+theorem sum_leafWords_modelCountOn (hθ : ∀ j, 1 ≤ j → 2 ≤ θ j)
     (declared : Finset V) {f : σ → ℕ} (s : σ)
     (hf : ∀ w, R.IsLeafWord s w →
       f (R.walk s w) = (R.toClauseSet (R.walk s w)).toCNF.modelCountOn declared)
     {W : Finset (List Bool)} (hW : ∀ w, w ∈ W ↔ R.IsLeafWord s w) :
     ∑ w ∈ W, f (R.walk s w) = (R.toClauseSet s).toCNF.modelCountOn declared :=
-  sum_leafWords_eq hθ1 hθ2 (fun _ ht => modelCountOn_next ht declared) s hf hW
+  sum_leafWords_eq hθ (fun _ ht => modelCountOn_next ht declared) s hf hW
 
 end CountingBranchingRule
 
@@ -648,7 +582,7 @@ theorem sum_leafWords_countingRule_modelCountOn {θ : ℕ → ℕ} (hθ1 : ∀ j
     {W : Finset (List Bool)} (hW : ∀ w, w ∈ W ↔ (countingRule hθ1 hk).IsLeafWord s w) :
     ∑ w ∈ W, f ((countingRule hθ1 hk).walk s w) = s.1.modelCountOn declared :=
   CountingBranchingRule.sum_leafWords_eq (R := countingRule hθ1 hk)
-    (M := fun t => t.1.modelCountOn declared) hθ1 hθ2
+    (M := fun t => t.1.modelCountOn declared) hθ2
     (fun t _ => modelCountOn_countingNext t.2.toNormalized declared) s hf hW
 
 end Cslib.Logic.PL.CNF.Sparsification

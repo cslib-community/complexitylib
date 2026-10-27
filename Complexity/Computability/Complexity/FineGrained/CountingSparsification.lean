@@ -24,10 +24,13 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 # Algorithmic counting sparsification on native machines
 
 Implements the depth-first counting-sparsification search
-(`Cslib.Complexity.CountingSparsify.search`) of Appendix A and Section 6.4, Proposition 6.4
+(`Cslib.Complexity.CountingSparsify.search`) for Lemma 6.3, Proposition 6.4, and Appendix A
 [OpenAI2026ETH] on the native multi-tape Turing machines, parallel to the decision sparsifier
 `Cslib.Complexity.Sparsify.search`
-(`Complexity/Computability/Complexity/FineGrained/Sparsification.lean`).
+(`Complexity/Computability/Complexity/FineGrained/Sparsification.lean`). In Lemma 6.3 (Section 6.4,
+printed p. 43), *"The input count is the sum of the leaf counts"*, obtained in Appendix A (printed
+p. 44) by *"repeatedly splitting a formula into two cases. Both children use the same n variables,
+and every satisfying assignment of the parent satisfies exactly one child."*
 
 Given a formula `φ : CNF ℕ` with `n = φ.numVars` occurring variables, the search maintains a state
 `(n, (stk, acc))` (`CountingSparsify.State`, with `n` in unary and `acc` in binary capped at
@@ -45,12 +48,21 @@ Given a formula `φ : CNF ℕ` with `n = φ.numVars` occurring variables, the se
   disjoint counting children `countingNext (countingThreshold M) K ψ false` and
   `countingNext (countingThreshold M) K ψ true` (Appendix A.1, equation (A.2), pp. 44–45).
 
-Under the quantitative tree depth and leaf-count bounds of Appendix A.2–A.3 (`CountingTreeBound`),
-running `step M K g` for `rounds B φ = 2 ^ (n / B + 2)` steps visits every leaf of the
-counting-sparsification tree and returns `φ.modelCount` (`CountingSparsify.search_eq_modelCount`),
-within time `O(2 ^ ((1 / B + occBound K M * δ) * n) * (|encCNF φ| + 1) ^ E)` whenever `g` counts
-sparse width-`≤ k` formulas in time `O(2 ^ (δ * m) * (|encCNF ψ| + 1) ^ e)`
-(`CountingSparsify.exists_computableInO_search`).
+To mirror `Sparsify`, this module packages the quantitative tree depth (`w.length ≤ L_coeff * N`)
+and fixed-parameter leaf-count (`W.card ≤ 2 ^ (N / B + 1)`) hypotheses into `CountingTreeBound`, a
+library adaptation of Appendix A.2–A.3 (Lemmas A.2–A.3, pp. 46–47) that remains an open
+quantitative obligation for `K ≥ 2` (unit insertion accounting and finite recursive leaf partition
+are prerequisites, with higher-width occurrence, deletion, survival, and leaf-recurrence bounds
+handled separately). Under `CountingTreeBound`, running `step M K g` for
+`rounds B φ = 2 ^ (n / B + 2)` steps visits every leaf of the counting-sparsification tree and
+returns `φ.modelCount` (`CountingSparsify.search_eq_modelCount`). Given a total leaf routine `g`
+with `hg : ComputableInO g encCNF encNat t t` and a global bound `ht` holding for every
+`ψ : CNF ℕ` (`(t ψ : ℝ) ≤ c * (2 ^ (δ * ψ.length) * (|encCNF ψ| + 1) ^ e) + c`),
+`CountingSparsify.exists_computableInO_search` yields a combined time-and-space certificate
+`ComputableInO (search M K k B g) encCNF encNat T T` with the fixed-parameter library-adaptation
+transfer bound `T φ ≤ C₀ * (2 ^ ((1 / B + occBound K M * δ) * n) * (|encCNF φ| + 1) ^ E) + C₀`.
+Because `hg` bounds both time and space of `g` by `t` (which may be exponential) and the step space
+bound includes `leafTime`, no separate polynomial leaf-workspace certificate is claimed here.
 
 ## Main definitions
 
@@ -61,21 +73,21 @@ sparse width-`≤ k` formulas in time `O(2 ^ (δ * m) * (|encCNF ψ| + 1) ^ e)`
   counting-sparsification search.
 * `Cslib.Complexity.CountingSparsify.occBound`: the sparse leaf clause-density bound
   `2 * ∑ j ∈ Finset.range K, countingThreshold M j`.
-* `Cslib.Complexity.CountingSparsify.CountingTreeBound`: the Appendix A.2–A.3 depth and leaf-count
-  hypotheses for `countingRule`.
+* `Cslib.Complexity.CountingSparsify.CountingTreeBound`: the fixed-parameter depth and leaf-count
+  hypotheses for `countingRule` (a library adaptation of Appendix A.2–A.3).
 
 ## Main results
 
 * `Cslib.Complexity.CountingSparsify.search_eq_modelCount`,
   `Cslib.Complexity.CountingSparsify.search_eq_ite_modelCount`: the search computes `φ.modelCount`
   on formulas of width `≤ k` (and `0` otherwise).
-* `Cslib.Complexity.CountingSparsify.exists_computableInO_search`: native `ComputableInO` time and
-  space certificate for `CountingSparsify.search`.
+* `Cslib.Complexity.CountingSparsify.exists_computableInO_search`: native `ComputableInO ... T T`
+  time-and-space transfer certificate for `CountingSparsify.search`.
 
 ## References
 
 * [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Section 6.4,
-  Proposition 6.4 (pp. 43–44) and Appendix A (pp. 44–47).
+  Lemma 6.3 and Proposition 6.4 (pp. 43–44) and Appendix A (pp. 44–47).
 -/
 
 @[expose] public section
@@ -331,8 +343,9 @@ end Tree
 
 /-! ### The run of the search -/
 
-/-- The quantitative depth and leaf-count bounds for the counting-sparsification tree
-(Appendix A.2–A.3 [OpenAI2026ETH]): from any `CountingNormalized K` root formula `ψ` whose
+/-- The fixed-parameter quantitative depth and leaf-count hypotheses for the
+counting-sparsification tree (a library adaptation of Appendix A.2–A.3, Lemmas A.2–A.3, pp. 46–47
+[OpenAI2026ETH], open for `K ≥ 2`): from any `CountingNormalized K` root formula `ψ` whose
 occurring variables lie in a finite set `declared` of size `N = declared.card`, every leaf word of
 `rule hM hK` has length at most `L_coeff * N`, and any finset of leaf words has cardinality at
 most `2 ^ (N / B + 1)`. -/
@@ -370,7 +383,7 @@ private theorem iterate_step (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
   have hn_eq : n = φ.numVars := CNF.length_distinctVars φ
   obtain ⟨hlen, hWbound⟩ := hTB s₀ φ.vars.toFinset mem_vars_of_mem_root
   obtain ⟨W, hW, N, hN, h⟩ := CountingBranchingRule.exists_iterate_searchStep (R := R)
-    (one_le_countingThreshold hM) (fun _ => two_le_countingThreshold hM2)
+    (fun _ => two_le_countingThreshold hM2)
     (2 ^ n) (fun t => leafWeight n t.1 (g t.1)) s₀ hlen
   have hWcard : W.card ≤ 2 ^ (φ.numVars / B + 1) :=
     hWbound W fun w hw => (hW w).mp hw
@@ -628,10 +641,12 @@ private noncomputable def leafTime (K M L_coeff : ℕ) (δ : ℝ) (c e : ℕ) (�
     ((nodeBound K L_coeff φ : ℝ) + 1) ^ e) + c⌉₊
 
 include hM hK in
-/-- **The time of the rounds.** Under `CountingTreeBound`, the counting-sparsification search is
-computed within `rounds B φ + 1` times the bound on a round: a polynomial in `stateBound`, plus the
-time bound of the leaf counter on the sparse leaves (`leafTime`), plus the cost of the binary round
-counter; and within polynomial space for a round. -/
+/-- **The time and space of the rounds.** Under `CountingTreeBound`, given a total leaf routine `g`
+with `hg : ComputableTidilyInO g encCNF encNat t t` and global bound `ht` holding for every
+`ψ : CNF ℕ`, `search M K k B g` runs within time equal to initialization plus `rounds B φ + 1`
+times the per-round bound (a polynomial in `stateBound`, plus `leafTime`, plus the binary
+round-counter step cost), and within space equal to initialization/round-count space plus the
+per-round bound (including `leafTime`, since `hg` bounds both time and space of `g` by `t`). -/
 private theorem exists_computableTidilyInO_search (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
     (hTB : CountingTreeBound M K B L_coeff hM hK)
     {g : CNF ℕ → ℕ} {t : CNF ℕ → ℕ} (hg : ComputableTidilyInO g encCNF encNat t t)
@@ -712,10 +727,15 @@ private theorem exists_computableTidilyInO_search (hM2 : 2 ≤ M) {k B L_coeff :
     (ComputableTidilyInO.iterate hn.inO hi.inO hstep hround hround hstate).snd'.snd'⟩
 
 include hM hK in
-/-- **The time of the counting-sparsification search.** With a leaf model counter `g` running
-within time `O(2 ^ (δ * m) * (|encCNF ψ| + 1) ^ e)` on formulas with `m` clauses and bounded by
-`2 ^ ψ.numVars` on sparse width-`≤ k` formulas, `search M K k B g` is computable within time
-`O(2 ^ ((1 / B + occBound K M * δ) * φ.numVars) * (|encCNF φ| + 1) ^ E)`. -/
+/-- **The time and space of the counting-sparsification search.** Given a total leaf routine `g`
+with `hg : ComputableInO g encCNF encNat t t` whose time and space `t ψ` satisfy the global bound
+`ht` (`O(2 ^ (δ * ψ.length) * (|encCNF ψ| + 1) ^ e)`) for every `ψ : CNF ℕ`, and whose output is at
+most `2 ^ ψ.numVars` on sparse width-`≤ k` formulas, `search M K k B g` has a combined
+time-and-space certificate `ComputableInO (search M K k B g) encCNF encNat T T` with the
+fixed-parameter transfer bound
+`T φ ≤ C₀ * (2 ^ ((1 / B + occBound K M * δ) * φ.numVars) * (|encCNF φ| + 1) ^ E) + C₀` (a library
+adaptation of the leaf-to-root runtime assembly, without an independent polynomial-space
+certificate). -/
 theorem exists_computableInO_search (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
     (hTB : CountingTreeBound M K B L_coeff hM hK)
     {g : CNF ℕ → ℕ} {t : CNF ℕ → ℕ} (hg : ComputableInO g encCNF encNat t t)
