@@ -94,4 +94,19 @@ example {B L_coeff : ℕ}
   (CountingSparsify.exists_computableInO_search_of_threeOccurrence_counter
     (by decide) (by decide) (by decide) (by decide) le_rfl hTB hf hf_eq hδ ht).1
 
+example {B L_coeff : ℕ}
+    (hTB : CountingSparsify.CountingTreeBound 2 3 B L_coeff (by decide) (by decide))
+    {f tf : CNF ℕ → ℕ}
+    (hf : Turing.MultiTapeTM.ComputableInO f encCNF Turing.MultiTapeTM.encNat tf tf)
+    (hf_eq : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ 3) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars → f χ = χ.modelCount)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
+    (ht : ∀ χ : CNF ℕ, (∀ d ∈ χ, d.length ≤ 3) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars →
+      (tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * ((encCNF χ).length + 1) ^ e) + c) :
+    ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) →
+      CountingSparsify.search 2 3 3 B (guardOccurrenceCounter 3 f) φ = φ.modelCount :=
+  (CountingSparsify.exists_computableInO_search_threeOccurrence_of_promise
+    (by decide) (by decide) (by decide) (by decide) le_rfl hTB hf hf_eq hδ ht).1
+
 end Cslib.Complexity.Tests.ThreeOccurrenceReduction
