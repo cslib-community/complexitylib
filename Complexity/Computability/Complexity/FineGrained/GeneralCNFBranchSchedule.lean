@@ -84,7 +84,9 @@ Section 5.5 / 6.3 `interpolationScale` domain-examination bounds
 * `CNF.exists_prop64LeafClauseRatio_le_mul_clog_pow`
 * `CNF.exists_branch_schedule_recovery_and_examBound_parityRowSystem_of_le_clog_pow`
 * `CNF.exists_greedy_parityRowSystem_recovery_and_examBound_of_le_clog_pow`
+* `CNF.exists_parityRowSystem_modelCountOn_recovery_and_examBound_of_le_clog_pow`
 * `CNF.exists_prop64Leaves_greedy_recovery_and_examBound`
+* `CNF.exists_prop64Leaves_modelCountOn_recovery_and_examBound`
 
 ## References
 
@@ -511,6 +513,155 @@ theorem CNF.exists_greedy_parityRowSystem_recovery_and_examBound_of_le_clog_pow
     unfold branchPrecision
     omega
 
+private noncomputable def nextGreedyStep [Fintype V] [DecidableEq V]
+    (φ : CNF V) (P : ℕ) [Nonempty (Fin φ.length)]
+    (L : List (Fin φ.length → Bool)) : Fin P → Fin φ.length × Bool :=
+  (exists_min_image (univ : Finset (Fin P → Fin φ.length × Bool))
+    (fun γ' => commonZeroCount univ (φ.parityRowSystem (L ++ [testRow γ'])))
+    univ_nonempty).choose
+
+private noncomputable def greedyTrajectory [Fintype V] [DecidableEq V]
+    (φ : CNF V) (P : ℕ) [Nonempty (Fin φ.length)]
+    (A₀ : List (Fin φ.length → Bool)) : ℕ → List (Fin φ.length → Bool)
+  | 0 => A₀
+  | i + 1 =>
+    let L := greedyTrajectory φ P A₀ i
+    L ++ [testRow (nextGreedyStep φ P L)]
+
+/-- **Unconditional Section 6.3 parity-row system existence, `ReplacementDesign` recovery of
+`φ.modelCountOn Finset.univ`, degree bound, and `2 ^ (A * interpolationScale n)` examination
+bound:**
+For any `k C_B β_B : ℕ`, there exists `N₁ ≥ 16384` such that for any width-`≤ k` CNF `φ : CNF V`
+with `N₁ ≤ Fintype.card V`, `1 ≤ B`, `B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B`, and
+`φ.length ≤ B * Fintype.card V` (including `φ = []`), at
+`D₀ = CNF.initialRowWeightBound B φ.length` and
+`b₀ = CNF.parityBranchThreshold k D₀ (Fintype.card V)`, there exists a parity-row list
+`rows : List (Fin φ.length → Bool)` (`rows.length ≤ 6 * Fintype.card V`) such that:
+1. `commonZeroCount univ (φ.parityRowSystem rows) = φ.modelCountOn Finset.univ`.
+2. For any free-variable equivalence `e : ↥(univ \ S) ≃ Fin n'`, there exist per-branch `hF b` and
+   concrete `ReplacementDesign`s `D b` such that `(φ.modelCountOn Finset.univ : ℤ)` equals the
+   branch-summed constant-term evaluation of `univariateClearedParityTruncatedSum`, with numerator
+   degree `≤ (k * (rowBound (2 * β_B + 5) n' - 1)) * (8 * Fintype.card V)` and single-branch /
+   branch-summed `2 ^ (A * interpolationScale (Fintype.card V))` domain-examination bounds. -/
+theorem CNF.exists_parityRowSystem_modelCountOn_recovery_and_examBound_of_le_clog_pow
+    (k C_B β_B : ℕ) :
+    ∃ N₁ : ℕ, 16384 ≤ N₁ ∧
+      ∀ {V : Type*} [Fintype V] [DecidableEq V]
+        (φ : CNF V) {B : ℕ},
+        (∀ c ∈ φ, c.length ≤ k) →
+        N₁ ≤ Fintype.card V →
+        1 ≤ B →
+        B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
+        φ.length ≤ B * Fintype.card V →
+        let D₀ := CNF.initialRowWeightBound B φ.length
+        let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
+        ∃ rows : List (Fin φ.length → Bool),
+          rows.length ≤ 6 * Fintype.card V ∧
+          commonZeroCount univ (φ.parityRowSystem rows) = φ.modelCountOn Finset.univ ∧
+          let S := heavyVars univ (univ : Finset (Fin rows.length))
+            (fun j => equationScope (φ.parityRowSystem rows j)) b₀
+          ∀ ⦃n' : ℕ⦄ (e : ↥(univ \ S) ≃ Fin n'),
+            (Fintype.card V ≤ 2 * n' ∧ n' ≤ Fintype.card V) ∧
+            (∃ (hF : ∀ b : V → Bool,
+                  Feasible (2 * β_B + 5) n' (b₀ + 1) (max (k * (D₀ * 2 ^ k)) 1)
+                    (∑ f : {j : Fin rows.length //
+                        j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n',
+                      #(branchAugmentedScope S e univ (φ.parityRowSystem rows) b f)))
+                (D : ∀ b : V → Bool,
+                  ReplacementDesign
+                    (branchAugmentedScope S e univ (φ.parityRowSystem rows) b)
+                    (numNodes n') (numGroups n') (intervalStart (2 * β_B + 5) n')
+                    (rowBound (2 * β_B + 5) n') (tauRat n')),
+                (φ.modelCountOn Finset.univ : ℤ) =
+                  (∑ b ∈ branchAssignments S,
+                    ((univariateClearedParityTruncatedSum (univ : Finset (Fin rows.length))
+                      (φ.branchParityRowSystem rows S e b)
+                      (commonDenom (numNodes n') (rowBound (2 * β_B + 5) n') : ℤ) k
+                      (branchPrecision (Fintype.card V))
+                      (designReplacementScaledIntMap (D b)
+                        (fun j => Sum.inl ⟨j, mem_univ j⟩))).eval 0 /
+                        clearedProductDenom
+                          (commonDenom (numNodes n') (rowBound (2 * β_B + 5) n') : ℤ) k
+                          (branchPrecision (Fintype.card V))
+                          #(univ : Finset (Fin rows.length))) %
+                            ((2 : ℤ) ^ branchPrecision (Fintype.card V))) ∧
+                (∀ b : V → Bool,
+                  (univariateClearedParityTruncatedSum (univ : Finset (Fin rows.length))
+                    (φ.branchParityRowSystem rows S e b)
+                    (commonDenom (numNodes n') (rowBound (2 * β_B + 5) n') : ℤ) k
+                    (branchPrecision (Fintype.card V))
+                    (designReplacementScaledIntMap (D b)
+                      (fun j => Sum.inl ⟨j, mem_univ j⟩))).natDegree ≤
+                    (k * (rowBound (2 * β_B + 5) n' - 1)) * (8 * Fintype.card V)) ∧
+                ∀ (b : V → Bool)
+                    (s_active : Finset
+                      ({j : Fin rows.length // j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n')),
+                  let d := k * (rows.length + 2 * (branchPrecision (Fintype.card V) - 1))
+                  let q := (d * rowBound (2 * β_B + 5) n') / numNodes n'
+                  let C := (hF b).toCountingDesign (D b) s_active
+                  (∑ t : Fin (numNodes n'),
+                      (#{p : Finset (Fin n') × Finset (Fin n') | #p.1 ≤ q ∧ p.2 ⊆ p.1} : ℝ) *
+                        (2 * (#(C.measurementBox t) : ℝ) *
+                          ∑ g : Fin (numGroups n'), (Fintype.card (C.LocalCube t g) : ℝ))) ≤
+                    (2 : ℝ) ^ ((CNF.parityBranchExamScaleCoeff k β_B : ℝ) *
+                      interpolationScale (Fintype.card V))) ∧
+            ∀ (examSum : (V → Bool) → ℝ),
+              (∀ b ∈ branchAssignments S,
+                examSum b ≤
+                  (2 : ℝ) ^ ((CNF.parityBranchExamScaleCoeff k β_B : ℝ) *
+                    interpolationScale (Fintype.card V))) →
+              (∑ b ∈ branchAssignments S, examSum b) ≤
+                (2 : ℝ) ^ (((CNF.parityBranchExamScaleCoeff k β_B + 32 : ℕ) : ℝ) *
+                  interpolationScale (Fintype.card V)) := by
+  obtain ⟨N_row, hN_row16, hrow_rec⟩ :=
+    CNF.exists_branch_schedule_recovery_and_examBound_parityRowSystem_of_le_clog_pow k C_B β_B
+  obtain ⟨N_gr, hN_gr16, hgreedy_rec⟩ :=
+    CNF.exists_greedy_parityRowSystem_recovery_and_examBound_of_le_clog_pow k C_B β_B
+  refine ⟨max N_row N_gr, le_trans hN_row16 (le_max_left _ _),
+    fun {V _ _} φ {B} hk hcard hB1 hB_le hm => ?_⟩
+  intro D₀ b₀
+  rcases Nat.eq_zero_or_pos φ.length with hlen0 | hlen_pos
+  · have hnil : φ = [] := List.eq_nil_of_length_eq_zero hlen0
+    have hcount_nil :
+        commonZeroCount (univ : Finset (Fin ([] : List (Fin φ.length → Bool)).length))
+          (φ.parityRowSystem []) = φ.modelCountOn Finset.univ := by
+      rw [CNF.commonZeroCount_parityRowSystem_eq_modelCountOn_add]
+      suffices #{σ : V → Bool | φ.eval σ = false ∧ PassesTests φ.violations [] σ} = 0 by omega
+      rw [card_eq_zero, filter_eq_empty_iff]
+      intro σ _ ⟨hev, _⟩
+      rw [hnil] at hev
+      exact Bool.noConfusion hev
+    refine ⟨[], Nat.zero_le _, hcount_nil, ?_⟩
+    intro S n' e
+    have hN_row : N_row ≤ Fintype.card V := (le_max_left _ _).trans hcard
+    have hW_nil : ∀ r ∈ ([] : List (Fin φ.length → Bool)), weight r ≤ D₀ := by
+      intro r hr; cases hr
+    have hlen_nil : ([] : List (Fin φ.length → Bool)).length ≤ 6 * Fintype.card V := Nat.zero_le _
+    obtain ⟨hn_bounds, ⟨hF, D, hrec, hdeg, hexam⟩, hsum⟩ :=
+      hrow_rec hk hN_row hm hB_le le_rfl hW_nil hlen_nil e
+    rw [hcount_nil] at hrec
+    exact ⟨hn_bounds, ⟨hF, D, hrec, hdeg, hexam⟩, hsum⟩
+  · have : Nonempty (Fin φ.length) := ⟨⟨0, hlen_pos⟩⟩
+    have hN_gr : N_gr ≤ Fintype.card V := (le_max_right _ _).trans hcard
+    obtain ⟨A₀, _, _, hgreedy⟩ := hgreedy_rec φ hk hN_gr hB1 hB_le hm
+    let P := CNF.greedyRowListLength B φ.length
+    let A := greedyTrajectory φ P A₀
+    let γ : ℕ → Fin P → Fin φ.length × Bool := fun i => nextGreedyStep φ P (A i)
+    have hmin : ∀ i (γ' : Fin P → Fin φ.length × Bool),
+        commonZeroCount univ (φ.parityRowSystem (A i ++ [testRow (γ i)])) ≤
+          commonZeroCount univ (φ.parityRowSystem (A i ++ [testRow γ'])) :=
+      fun i γ' =>
+        (exists_min_image (univ : Finset (Fin P → Fin φ.length × Bool))
+          (fun γ'' => commonZeroCount univ (φ.parityRowSystem (A i ++ [testRow γ''])))
+          univ_nonempty).choose_spec.2 γ' (mem_univ γ')
+    obtain ⟨hcount, hstage⟩ := hgreedy A γ rfl (fun _ => rfl) hmin
+    obtain ⟨hlen_final, hstage_final⟩ := hstage (3 * Fintype.card V) le_rfl
+    refine ⟨A (3 * Fintype.card V), hlen_final, hcount, ?_⟩
+    intro S n' e
+    obtain ⟨hn_bounds, ⟨hF, D, hrec, hdeg, hexam⟩, hsum⟩ := hstage_final e
+    rw [hcount] at hrec
+    exact ⟨hn_bounds, ⟨hF, D, hrec, hdeg, hexam⟩, hsum⟩
+
 /-! ### 3. Section 6.4 Proposition 6.4 leaf-to-root decomposition for arbitrary `k`-CNFs -/
 
 /-- **Proposition 6.4 end-to-end disjoint sparsification leaf-to-root decomposition,
@@ -649,5 +800,120 @@ theorem CNF.exists_prop64Leaves_greedy_recovery_and_examBound {k : ℕ} (hk : 2 
   have hB_le : B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ (2 * (k - 1)) := hCB (Fintype.card V) hn2
   refine ⟨hk_ψ, hm_ψ, ?_⟩
   exact hgreedy_rec ψ hk_ψ hcard hB1 hB_le hm_ψ
+
+/-- **Proposition 6.4 unconditional leaf-to-root `modelCountOn` recovery and
+`2 ^ (A * interpolationScale n)` examination bounds for arbitrary `k`-CNFs
+([OpenAI2026ETH], §6.4, pp. 43–44):**
+For any `k ≥ 2`, there exists `N₂ ≥ 16384` such that for any finite variable type `V` with
+`N₂ ≤ Fintype.card V` and any width-`≤ k` CNF `φ : CNF V` (with no clause-count, occurrence, or
+nonemptiness restriction on `φ` or its leaves):
+1. `((φ.prop64Leaves k).map fun L => L.toCNF.modelCountOn Finset.univ).sum =`
+   `φ.modelCountOn Finset.univ`.
+2. For every leaf `L ∈ φ.prop64Leaves k` (`ψ := L.toCNF`), there unconditionally exists a parity-row
+   list `rows : List (Fin ψ.length → Bool)` (`rows.length ≤ 6 * Fintype.card V`) such that
+   `commonZeroCount univ (ψ.parityRowSystem rows) = ψ.modelCountOn Finset.univ`, and for any
+   free-variable equivalence `e : ↥(univ \ S) ≃ Fin n'`, there exist per-branch `hF b` and concrete
+   `ReplacementDesign`s `D b` at schedule exponent `β = CNF.prop64ScheduleExponent k` recovering
+   `(L.toCNF.modelCountOn Finset.univ : ℤ)` via `univariateClearedParityTruncatedSum` with
+   numerator degree
+   `≤ (k * (rowBound (CNF.prop64ScheduleExponent k) n' - 1)) * (8 * Fintype.card V)`
+   and single-branch / branch-summed `2 ^ (A * interpolationScale (Fintype.card V))`
+   domain-examination bounds. -/
+theorem CNF.exists_prop64Leaves_modelCountOn_recovery_and_examBound {k : ℕ} (hk : 2 ≤ k) :
+    ∃ N₂ : ℕ, 16384 ≤ N₂ ∧
+      ∀ {V : Type*} [Fintype V] [DecidableEq V]
+        (φ : CNF V),
+        (∀ c ∈ φ, c.length ≤ k) →
+        N₂ ≤ Fintype.card V →
+        ((φ.prop64Leaves k).map fun L => L.toCNF.modelCountOn Finset.univ).sum =
+          φ.modelCountOn Finset.univ ∧
+        ∀ L ∈ φ.prop64Leaves k,
+          let ψ := L.toCNF
+          let B := CNF.prop64LeafClauseRatio k (Fintype.card V)
+          let D₀ := CNF.initialRowWeightBound B ψ.length
+          let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
+          (∀ c ∈ ψ, c.length ≤ k) ∧
+          ψ.length ≤ B * Fintype.card V ∧
+          ∃ rows : List (Fin ψ.length → Bool),
+            rows.length ≤ 6 * Fintype.card V ∧
+            commonZeroCount univ (ψ.parityRowSystem rows) = ψ.modelCountOn Finset.univ ∧
+            let S := heavyVars univ (univ : Finset (Fin rows.length))
+              (fun j => equationScope (ψ.parityRowSystem rows j)) b₀
+            ∀ ⦃n' : ℕ⦄ (e : ↥(univ \ S) ≃ Fin n'),
+              (Fintype.card V ≤ 2 * n' ∧ n' ≤ Fintype.card V) ∧
+              (∃ (hF : ∀ b : V → Bool,
+                    Feasible (CNF.prop64ScheduleExponent k) n' (b₀ + 1)
+                      (max (k * (D₀ * 2 ^ k)) 1)
+                      (∑ f : {j : Fin rows.length //
+                          j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n',
+                        #(branchAugmentedScope S e univ (ψ.parityRowSystem rows) b f)))
+                  (D : ∀ b : V → Bool,
+                    ReplacementDesign
+                      (branchAugmentedScope S e univ (ψ.parityRowSystem rows) b)
+                      (numNodes n') (numGroups n')
+                      (intervalStart (CNF.prop64ScheduleExponent k) n')
+                      (rowBound (CNF.prop64ScheduleExponent k) n') (tauRat n')),
+                  (ψ.modelCountOn Finset.univ : ℤ) =
+                    (∑ b ∈ branchAssignments S,
+                      ((univariateClearedParityTruncatedSum (univ : Finset (Fin rows.length))
+                        (ψ.branchParityRowSystem rows S e b)
+                        (commonDenom (numNodes n')
+                          (rowBound (CNF.prop64ScheduleExponent k) n') : ℤ) k
+                        (branchPrecision (Fintype.card V))
+                        (designReplacementScaledIntMap (D b)
+                          (fun j => Sum.inl ⟨j, mem_univ j⟩))).eval 0 /
+                          clearedProductDenom
+                            (commonDenom (numNodes n')
+                              (rowBound (CNF.prop64ScheduleExponent k) n') : ℤ) k
+                            (branchPrecision (Fintype.card V))
+                            #(univ : Finset (Fin rows.length))) %
+                              ((2 : ℤ) ^ branchPrecision (Fintype.card V))) ∧
+                  (∀ b : V → Bool,
+                    (univariateClearedParityTruncatedSum (univ : Finset (Fin rows.length))
+                      (ψ.branchParityRowSystem rows S e b)
+                      (commonDenom (numNodes n')
+                        (rowBound (CNF.prop64ScheduleExponent k) n') : ℤ) k
+                      (branchPrecision (Fintype.card V))
+                      (designReplacementScaledIntMap (D b)
+                        (fun j => Sum.inl ⟨j, mem_univ j⟩))).natDegree ≤
+                      (k * (rowBound (CNF.prop64ScheduleExponent k) n' - 1)) *
+                        (8 * Fintype.card V)) ∧
+                  ∀ (b : V → Bool)
+                      (s_active : Finset
+                        ({j : Fin rows.length //
+                            j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n')),
+                    let d := k * (rows.length + 2 * (branchPrecision (Fintype.card V) - 1))
+                    let q := (d * rowBound (CNF.prop64ScheduleExponent k) n') / numNodes n'
+                    let C := (hF b).toCountingDesign (D b) s_active
+                    (∑ t : Fin (numNodes n'),
+                        (#{p : Finset (Fin n') × Finset (Fin n') | #p.1 ≤ q ∧ p.2 ⊆ p.1} : ℝ) *
+                          (2 * (#(C.measurementBox t) : ℝ) *
+                            ∑ g : Fin (numGroups n'),
+                              (Fintype.card (C.LocalCube t g) : ℝ))) ≤
+                      (2 : ℝ) ^ ((CNF.prop64BranchExamScaleCoeff k : ℝ) *
+                        interpolationScale (Fintype.card V))) ∧
+              ∀ (examSum : (V → Bool) → ℝ),
+                (∀ b ∈ branchAssignments S,
+                  examSum b ≤
+                    (2 : ℝ) ^ ((CNF.prop64BranchExamScaleCoeff k : ℝ) *
+                      interpolationScale (Fintype.card V))) →
+                (∑ b ∈ branchAssignments S, examSum b) ≤
+                  (2 : ℝ) ^ (((CNF.prop64BranchExamScaleCoeff k + 32 : ℕ) : ℝ) *
+                    interpolationScale (Fintype.card V)) := by
+  obtain ⟨C_B, _, hCB⟩ := CNF.exists_prop64LeafClauseRatio_le_mul_clog_pow hk
+  obtain ⟨N₁, hN₁, hmodel_rec⟩ :=
+    CNF.exists_parityRowSystem_modelCountOn_recovery_and_examBound_of_le_clog_pow
+      k C_B (2 * (k - 1))
+  refine ⟨N₁, hN₁, fun {V _ _} φ hk_φ hcard => ?_⟩
+  refine ⟨CNF.sum_modelCountOn_prop64Leaves k φ Finset.univ, fun L hL => ?_⟩
+  intro ψ B D₀ b₀
+  have hn1 : 1 ≤ Fintype.card V := by omega
+  have hn2 : 2 ≤ Fintype.card V := by omega
+  obtain ⟨hk_ψ, _, hlen_ψ⟩ := CNF.length_le_of_mem_prop64Leaves hk_φ hL
+  have hm_ψ : ψ.length ≤ B * Fintype.card V := hlen_ψ hn1
+  have hB1 : 1 ≤ B := CNF.one_le_prop64LeafClauseRatio k (Fintype.card V)
+  have hB_le : B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ (2 * (k - 1)) := hCB (Fintype.card V) hn2
+  refine ⟨hk_ψ, hm_ψ, ?_⟩
+  exact hmodel_rec ψ hk_ψ hcard hB1 hB_le hm_ψ
 
 end Cslib.Logic.PL

@@ -158,7 +158,8 @@ example :
   have h := hsched hk hcard hm hB le_rfl hW hlen (emptyGenCNFEquiv n b₀)
   exact ⟨h.1, h.2.1⟩
 
-/-- Concrete witness for `CNF.exists_prop64Leaves_greedy_recovery_and_examBound` at `k = 3`. -/
+/-- Concrete witness for `CNF.exists_prop64Leaves_greedy_recovery_and_examBound` and
+`CNF.exists_prop64Leaves_modelCountOn_recovery_and_examBound` at `k = 3`. -/
 example :
     ∃ N₂ : ℕ, 16384 ≤ N₂ ∧
       let φ := emptyGenCNF N₂
@@ -167,15 +168,19 @@ example :
       ∀ L ∈ φ.prop64Leaves 3,
         let ψ := L.toCNF
         let B := CNF.prop64LeafClauseRatio 3 (Fintype.card (Fin N₂))
-        (∀ c ∈ ψ, c.length ≤ 3) ∧ ψ.length ≤ B * Fintype.card (Fin N₂) := by
+        (∀ c ∈ ψ, c.length ≤ 3) ∧
+        ψ.length ≤ B * Fintype.card (Fin N₂) ∧
+        ∃ rows : List (Fin ψ.length → Bool),
+          rows.length ≤ 6 * Fintype.card (Fin N₂) ∧
+          commonZeroCount univ (ψ.parityRowSystem rows) = ψ.modelCountOn Finset.univ := by
   obtain ⟨N₂, hN₂, hprop64⟩ :=
-    CNF.exists_prop64Leaves_greedy_recovery_and_examBound (by decide : 2 ≤ 3)
+    CNF.exists_prop64Leaves_modelCountOn_recovery_and_examBound (by decide : 2 ≤ 3)
   refine ⟨N₂, hN₂, ?_⟩
   have hcard : N₂ ≤ Fintype.card (Fin N₂) := by simp
   have hk : ∀ c ∈ emptyGenCNF N₂, c.length ≤ 3 := by simp [emptyGenCNF]
   obtain ⟨hsum, hleaves⟩ := hprop64 (emptyGenCNF N₂) hk hcard
   refine ⟨hsum, fun L hL => ?_⟩
-  obtain ⟨hk_L, hm_L, _⟩ := hleaves L hL
-  exact ⟨hk_L, hm_L⟩
+  obtain ⟨hk_L, hm_L, rows, hlen_r, hcount_r, _⟩ := hleaves L hL
+  exact ⟨hk_L, hm_L, rows, hlen_r, hcount_r⟩
 
 end Cslib.Complexity.SubexponentialSAT.GeneralCNFBranchScheduleTests
