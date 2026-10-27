@@ -102,10 +102,10 @@ lemma val_coordinate_symm_snd (e : ℕ) (i : Fin (Generator.matrixDimension e)) 
 
 /-! ### Lists of rows -/
 
-/-- A tabulated list of rows is the list of rows of a matrix it agrees with. -/
-lemma tabulateRows_eq_rowsOf {d : ℕ} (g : ℕ → ℕ → ℤ) (A : Matrix (Fin d) (Fin d) ℤ)
-    (h : ∀ i j : Fin d, g i j = A i j) : tabulateRows d g = rowsOf A := by
-  simp only [tabulateRows, rowsOf, ← List.map_coe_finRange_eq_range, List.map_map]
+/-- A tabulated square list of rows is the list of rows of a matrix it agrees with. -/
+lemma tabulateTable_eq_rowsOf {d : ℕ} (g : ℕ → ℕ → ℤ) (A : Matrix (Fin d) (Fin d) ℤ)
+    (h : ∀ i j : Fin d, g i j = A i j) : tabulateTable d d g = rowsOf A := by
+  simp only [tabulateTable, rowsOf, ← List.map_coe_finRange_eq_range, List.map_map]
   exact List.map_congr_left fun i _ => List.map_congr_left fun j _ => h i j
 
 /-- Every stored entry is bounded once every indexed entry is. -/
@@ -204,7 +204,7 @@ def testEntry (M N : ℕ) (minus plus : List (List ℤ)) (t : ℤ) (u v : ℕ) :
 
 /-- The integer Taylor test matrix `IntegralTest.padded M N a t` as a list of rows. -/
 def testRows (M N : ℕ) (a t : ℤ) : List (List ℤ) :=
-  tabulateRows M (testEntry M N (coeffRows (-a) M) (coeffRows a M) t)
+  tabulateTable M M (testEntry M N (coeffRows (-a) M) (coeffRows a M) t)
 
 /-- `testEntry` on `coeffRows (-a) M` and `coeffRows a M` equals `IntegralTest.padded`. -/
 theorem testEntry_eq (M N : ℕ) (a t : ℤ) (u v : Fin M) :
@@ -221,12 +221,12 @@ theorem testEntry_eq (M N : ℕ) (a t : ℤ) (u v : Fin M) :
 
 private theorem rowEntry_testRows (M N : ℕ) (a t : ℤ) (u v : Fin M) :
     rowEntry (testRows M N a t) u v = IntegralTest.padded M N a t u v := by
-  rw [testRows, rowEntry_tabulateRows, ite_eq_left ⟨u.isLt, v.isLt⟩, testEntry_eq]
+  rw [testRows, rowEntry_tabulateTable, ite_eq_left ⟨u.isLt, v.isLt⟩, testEntry_eq]
 
 /-- The list program computes the integer Taylor test matrix. -/
 theorem testRows_eq (M N : ℕ) (a t : ℤ) :
     testRows M N a t = rowsOf (IntegralTest.padded M N a t) :=
-  tabulateRows_eq_rowsOf _ _ (testEntry_eq M N a t)
+  tabulateTable_eq_rowsOf _ _ (testEntry_eq M N a t)
 
 /-- The Taylor rows, read at residues, are the residue-indexed `Generator.integerTest`. -/
 private theorem rowEntry_testRows_integerTest (N e : ℕ) (a t : ℤ)
@@ -238,7 +238,7 @@ private theorem rowEntry_testRows_integerTest (N e : ℕ) (a t : ℤ)
 
 /-- `testRows M N a t` has `M` rows. -/
 @[simp] lemma length_testRows (M N : ℕ) (a t : ℤ) : (testRows M N a t).length = M :=
-  length_tabulateRows _ _
+  length_tabulateTable _ _ _
 
 /-! ### The integer lift -/
 
@@ -269,7 +269,8 @@ def liftEntry (M Dg : ℕ) (T : List (List ℤ)) (p r : ℤ) (u v i j : ℕ) : �
 /-- The integer lift matrix with test matrix `T`, in the row-major block order: index `i` is the
 pair `(i / Dg, i % Dg)`. -/
 def liftTable (M Dg : ℕ) (T : List (List ℤ)) (p r : ℤ) : List (List ℤ) :=
-  tabulateRows (M * Dg) fun i j => liftEntry M Dg T p r (i / Dg) (j / Dg) (i % Dg) (j % Dg)
+  tabulateTable (M * Dg) (M * Dg) fun i j =>
+    liftEntry M Dg T p r (i / Dg) (j / Dg) (i % Dg) (j % Dg)
 
 /-- The `n + 1` integer lift matrices at the grid point `(t, p, r)`, with truncation `N`, `M`
 residues and cyclotomic degree `Dg`. -/
@@ -326,7 +327,7 @@ theorem liftTable_eq (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1)) :
     liftTable (CyclotomicRing.dimension e) (CyclotomicRing.degree e)
         (testRows (CyclotomicRing.dimension e) N a (x 0)) (x 1) (x 2) =
       rowsOf (Generator.integralLift n N e x a) :=
-  tabulateRows_eq_rowsOf _ _ (liftEntry_coordinate n N e x a)
+  tabulateTable_eq_rowsOf _ _ (liftEntry_coordinate n N e x a)
 
 /-- Reading entry `(i, j)` of `liftTable` gives `Generator.integralLift`. -/
 theorem rowEntry_liftTable (n N e : ℕ) (x : Fin 3 → ℕ) (a : Fin (n + 1))
@@ -355,7 +356,7 @@ theorem liftRows_eq_inputTables (n N e : ℕ) (x : Fin 3 → ℕ) :
 /-- `liftTable M Dg T p r` has `M * Dg` rows. -/
 @[simp] lemma length_liftTable (M Dg : ℕ) (T : List (List ℤ)) (p r : ℤ) :
     (liftTable M Dg T p r).length = M * Dg :=
-  length_tabulateRows _ _
+  length_tabulateTable _ _ _
 
 /-- `liftRows n N M Dg t p r` has `n + 1` tables. -/
 @[simp] lemma length_liftRows (n N M Dg t p r : ℕ) :
