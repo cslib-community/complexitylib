@@ -1950,6 +1950,7 @@ public import Complexity.Foundations.Data.MvPolynomial.AffineTaylor
 public import Complexity.Foundations.Data.MvPolynomial.Catalecticant
 public import Complexity.Foundations.Data.MvPolynomial.CoefficientDegree
 public import Complexity.Foundations.Data.MvPolynomial.DualNumber
+public import Complexity.Foundations.Data.MvPolynomial.FactorCounting
 public import Complexity.Foundations.Data.MvPolynomial.Hessian
 public import Complexity.Foundations.Data.MvPolynomial.HessianRank
 public import Complexity.Foundations.Data.Nat.ArithmeticProgression
