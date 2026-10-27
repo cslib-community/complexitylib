@@ -16,7 +16,7 @@ import Mathlib.Algebra.Group.Action.Defs
 /-!
 # Charging deleted marked clauses to actual counting insertions
 
-The deletion-charge argument of Appendix A.3, Lemma A.3 and (A.3) [OpenAI2026ETH] assigns
+The deletion-charge argument of Appendix A.2, Lemma A.3 and (A.3) [OpenAI2026ETH] assigns
 a removed marked width-`j` clause to a new strict subclause inserted in that step.
 The present-clause bound supplies at most `2 * θ (j - i)` recipients for a width-`i` insertion.
 
