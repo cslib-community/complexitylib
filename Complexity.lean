@@ -1814,6 +1814,7 @@ public import Complexity.Foundations.Combinatorics.Expander.Replacement
 public import Complexity.Foundations.Combinatorics.Expander.SimpleGraph
 public import Complexity.Foundations.Combinatorics.Expander.SlotGraph
 public import Complexity.Foundations.Combinatorics.Expander.Spectrum
+public import Complexity.Foundations.Combinatorics.Expander.TannerCode
 public import Complexity.Foundations.Combinatorics.Expander.Tensor
 public import Complexity.Foundations.Combinatorics.Expander.Tower
 public import Complexity.Foundations.Combinatorics.Expander.TowerFamily
