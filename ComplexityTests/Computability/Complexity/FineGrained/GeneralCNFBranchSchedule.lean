@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Anton Kovsharov
 -/
 
 module
@@ -104,7 +104,7 @@ example :
     ∃ N₁ : ℕ, 16384 ≤ N₁ ∧
       ∀ n ≥ N₁,
         let φ := emptyGenCNF n
-        let W := CNF.initialRowWeightBound 1 φ.length
+        let W := initialRowWeightBound 1 φ.length
         let rows : List (Fin φ.length → Bool) := []
         let b₀ := CNF.parityBranchThreshold 3 W (Fintype.card (Fin n))
         let S := heavyVars univ (univ : Finset (Fin rows.length))
