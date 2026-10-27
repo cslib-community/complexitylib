@@ -29,42 +29,52 @@ open Cslib.Logic.PL.ClauseSet.Sparsification
 open Cslib.Complexity.SubexponentialSAT
 open Cslib.Complexity.SubexponentialSAT.ReplacementParams
 
-example : 2 ≤ CNF.prop64ThresholdBase 3 16384 :=
-  CNF.two_le_prop64ThresholdBase 3 16384
-
-example : 1 ≤ CNF.prop64LeafClauseRatio 3 16384 :=
-  CNF.one_le_prop64LeafClauseRatio 3 16384
-
 example : CNF.prop64ScheduleExponent 3 = 13 := rfl
 
-example (φ : CNF (Fin 4)) :
-    ((φ.prop64Leaves 3).map fun L => L.toCNF.modelCountOn Finset.univ).sum =
-      φ.modelCountOn Finset.univ :=
-  CNF.sum_modelCountOn_prop64Leaves 3 φ Finset.univ
+/-- Concrete 3-CNF on `Fin 4` with `11` satisfying assignments out of `16`. -/
+def sampleGen3CNF : CNF (Fin 4) :=
+  [[(0, true), (1, false), (2, true)], [(1, false), (3, false)]]
 
-example (φ : CNF (Fin 4)) (x : Fin 4 → Bool) :
-    ((φ.prop64Leaves 3).map ClauseSet.toCNF).countP (fun F => F.eval x) =
-      if φ.eval x then 1 else 0 :=
-  CNF.countP_eval_toCNF_prop64Leaves 3 φ x
-
-example {φ : CNF (Fin 4)} (hk : ∀ c ∈ φ, c.length ≤ 3)
-    {L : ClauseSet (Fin 4)} (hL : L ∈ φ.prop64Leaves 3) :
-    (∀ c ∈ L.toCNF, c.length ≤ 3) ∧
-    (∀ v : Fin 4, L.toCNF.occurrences v ≤
-      2 * ∑ c ∈ range 3, (CNF.prop64ThresholdBase 3 4) ^ c) ∧
-    L.toCNF.length ≤ CNF.prop64LeafClauseRatio 3 4 * 4 := by
-  obtain ⟨h1, h2, h3⟩ := CNF.length_le_of_mem_prop64Leaves hk hL
-  exact ⟨h1, h2, h3 (by decide)⟩
-
+-- Concrete numerical verification of `CNF.sum_modelCountOn_prop64Leaves` on `sampleGen3CNF`.
 example :
-    ∃ C_M : ℕ, 1 ≤ C_M ∧ ∀ n : ℕ, 2 ≤ n →
-      CNF.prop64ThresholdBase 3 n ≤ C_M * (Nat.clog 2 n) ^ 2 :=
-  CNF.exists_prop64ThresholdBase_le_mul_clog_sq (by decide : 2 ≤ 3)
+    ((sampleGen3CNF.prop64Leaves 3).map fun L => L.toCNF.modelCountOn Finset.univ).sum = 11 := by
+  rw [CNF.sum_modelCountOn_prop64Leaves 3 sampleGen3CNF Finset.univ]
+  decide
 
+-- Concrete verification of both branches (`1` and `0`) of `CNF.countP_eval_toCNF_prop64Leaves`.
 example :
-    ∃ C_B : ℕ, 1 ≤ C_B ∧ ∀ n : ℕ, 2 ≤ n →
-      CNF.prop64LeafClauseRatio 3 n ≤ C_B * (Nat.clog 2 n) ^ 4 :=
-  CNF.exists_prop64LeafClauseRatio_le_mul_clog_pow (by decide : 2 ≤ 3)
+    ((sampleGen3CNF.prop64Leaves 3).map ClauseSet.toCNF).countP
+        (fun F => F.eval (fun _ => false)) = 1 ∧
+      ((sampleGen3CNF.prop64Leaves 3).map ClauseSet.toCNF).countP
+        (fun F => F.eval (fun _ => true)) = 0 := by
+  rw [CNF.countP_eval_toCNF_prop64Leaves, CNF.countP_eval_toCNF_prop64Leaves]
+  decide
+
+-- Compose `CNF.length_le_of_mem_prop64Leaves`, `CNF.exists_prop64ThresholdBase_le_mul_clog_sq`,
+-- and `CNF.exists_prop64LeafClauseRatio_le_mul_clog_pow` on `sampleGen3CNF` at `n = 4`
+-- (`Nat.clog 2 4 = 2`).
+example :
+    ∃ C_M C_B : ℕ, 2 ≤ C_M * 4 ∧ 1 ≤ C_B * 16 ∧
+      CNF.prop64ThresholdBase 3 4 ≤ C_M * 4 ∧
+      CNF.prop64LeafClauseRatio 3 4 ≤ C_B * 16 ∧
+      ∀ L ∈ sampleGen3CNF.prop64Leaves 3,
+        (∀ c ∈ L.toCNF, c.length ≤ 3) ∧
+        L.toCNF.length ≤ (C_B * 16) * 4 := by
+  obtain ⟨C_M, _, hCM⟩ := CNF.exists_prop64ThresholdBase_le_mul_clog_sq (by decide : 2 ≤ 3)
+  obtain ⟨C_B, _, hCB⟩ := CNF.exists_prop64LeafClauseRatio_le_mul_clog_pow (by decide : 2 ≤ 3)
+  have h4 : Nat.clog 2 4 ^ 2 = 4 := by decide
+  have h16 : Nat.clog 2 4 ^ 4 = 16 := by decide
+  have hM4 : CNF.prop64ThresholdBase 3 4 ≤ C_M * 4 := by
+    rw [← h4]
+    exact hCM 4 (by decide)
+  have hB4 : CNF.prop64LeafClauseRatio 3 4 ≤ C_B * 16 := by
+    rw [← h16]
+    exact hCB 4 (by decide)
+  refine ⟨C_M, C_B, (CNF.two_le_prop64ThresholdBase 3 4).trans hM4,
+    (CNF.one_le_prop64LeafClauseRatio 3 4).trans hB4, hM4, hB4, fun L hL => ?_⟩
+  have hk : ∀ c ∈ sampleGen3CNF, c.length ≤ 3 := by decide
+  obtain ⟨hwidth, -, hlen⟩ := CNF.length_le_of_mem_prop64Leaves hk hL
+  exact ⟨hwidth, (hlen (by decide)).trans (Nat.mul_le_mul_right 4 hB4)⟩
 
 /-- Empty CNF on `n` variables for nonvacuous test instantiation. -/
 def emptyGenCNF (n : ℕ) : CNF (Fin n) := []
@@ -158,8 +168,8 @@ example :
   have h := hsched hk hcard hm hB le_rfl hW hlen (emptyGenCNFEquiv n b₀)
   exact ⟨h.1, h.2.1⟩
 
-/-- Concrete witness for `CNF.exists_prop64Leaves_greedy_recovery_and_examBound` and
-`CNF.exists_prop64Leaves_modelCountOn_recovery_and_examBound` at `k = 3`. -/
+/-- Concrete witness for `CNF.exists_prop64Leaves_modelCountOn_recovery_and_examBound` at `k = 3`.
+-/
 example :
     ∃ N₂ : ℕ, 16384 ≤ N₂ ∧
       let φ := emptyGenCNF N₂
