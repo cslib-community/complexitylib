@@ -15,8 +15,9 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 
 Nonvacuous computational and type-checking tests for `Cslib.parityLinearCoeffs`,
 `Cslib.evalParityAmplifier`, and `Cslib.evalParityFactorJet` across boundary (`ℓ = 0`, `J = 0`,
-short `yJet` zero-padding), negative, zero, odd, and even inputs, nontrivial rational $z$-jet
-homogenization, and compositional `fun_prop` pipeline synthesis.
+`Δ = 0` homogenized evaluation, short `yJet` zero-padding), negative, zero, odd, and even inputs,
+nontrivial rational $z$-jet homogenization, shared `IsTableShape` / `rowEntry` / `jetL1Norm`
+bridges, and compositional `fun_prop` pipeline synthesis.
 -/
 
 namespace Cslib.ParityFactorEvalTests
@@ -42,13 +43,15 @@ example :
         decide (evalParityAmplifier ℓ y % ((2 : ℤ) ^ ℓ) = if y % 2 = 0 then 1 else 0)) = true :=
   rfl
 
-/-! ### Boundary shapes (`J = 0`, `ℓ = 0`) and short-input zero-padding (`yJet.length < J`) -/
+/-! ### Boundary shapes (`J = 0`, `ℓ = 0`), `Δ = 0` homogenization, and short-input zero-padding -/
 
 example :
     evalParityFactorJet 0 3 6 [12, -3, 5] = [] ∧
       evalParityFactorJet 3 0 6 [12, -3, 5] = [[], [], []] ∧
-      evalParityFactorJet 3 2 6 [12] = [[-216, 1296], [0, 0], [0, 0]] :=
-  ⟨rfl, rfl, rfl⟩
+      evalParityFactorJet 3 2 6 [12] = [[-216, 1296], [0, 0], [0, 0]] ∧
+      evalParityFactorJet 1 1 0 [1] = [[-1]] ∧
+      evalParityFactorJet 2 2 0 [1, 2] = [[0, 2], [0, 12]] :=
+  ⟨rfl, rfl, rfl, rfl, rfl⟩
 
 /-! ### Nontrivial `J = 3, ℓ = 3, Δ = 6` rational `z`-jet homogenization test -/
 
@@ -74,6 +77,18 @@ example :
 example :
     (evalParityFactorJet 3 3 6 [12, -3, 5]).map List.sum = [-241056, 466560, -1127520] :=
   rfl
+
+/-! ### Shared `IsTableShape`, `rowEntry`, and `jetL1Norm` bridges (`Table` & `JetArray`) -/
+
+example :
+    IsTableShape 3 3 (evalParityFactorJet 3 3 6 [12, -3, 5]) ∧
+      rowEntry (evalParityFactorJet 3 3 6 [12, -3, 5]) 2 1 = 101736 ∧
+      rowEntry (evalParityFactorJet 3 3 6 [12, -3, 5]) 2 4 = 0 ∧
+      jetL1Norm (evalParityFactorJet 3 3 6 [12, -3, 5]) = 2233008 ∧
+      jetL1Norm (evalParityFactorJet 3 3 6 [12, -3, 5]) ≤
+        3 * 2 ^ (7 * 3 ^ 2) * (polyNorm1 ([12, -3, 5].take 3) + (6 : ℤ).natAbs + 2) ^ (2 * 3 - 1) :=
+  ⟨isTableShape_evalParityFactorJet 3 3 6 [12, -3, 5], rfl, rfl, rfl,
+   jetL1Norm_evalParityFactorJet_le 3 3 6 [12, -3, 5]⟩
 
 /-! ### Concrete specification bridges to `ParityAmplifier`, `CoeffNorm1`, and `SparseEquations` -/
 
@@ -105,11 +120,12 @@ example :
 example :
     ComputableInPolyTime
       (fun p : (ℕ × ℕ) × (ℤ × List ℤ) =>
-        evalParityFactorJet (p.1.1 + 1) (p.1.2 + 1) p.2.1
+        let A := evalParityFactorJet (p.1.1 + 1) (p.1.2 + 1) p.2.1
           (polyAdd (truncZJet (p.1.1 + 1) p.2.2)
-            (powZJet (p.1.1 + 1) (mulZJet (p.1.1 + 1) p.2.2 p.2.2) p.1.2)))
+            (powZJet (p.1.1 + 1) (mulZJet (p.1.1 + 1) p.2.2 p.2.2) p.1.2))
+        rowEntry (convJet (p.1.1 + 1) (p.1.2 + 1) A A) p.1.1 p.1.2)
       (encPair (encPair encUnary encUnary) (encPair encIntBin (encList encIntBin)))
-      (encList (encList encIntBin)) := by
+      encIntBin := by
   fun_prop
 
 end Cslib.ParityFactorEvalTests

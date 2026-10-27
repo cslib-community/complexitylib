@@ -11,10 +11,11 @@ public import Complexity.Init
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+public import Complexity.Computability.PolyTime.Int.Table
+public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Foundations.BooleanAnalysis.SparseEquations
 public import Complexity.Foundations.Data.Polynomial.CoeffList
 public import Mathlib.Algebra.Field.Rat
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -43,9 +44,10 @@ parity-amplifier factor on a fixed-denominator $z$-jet cleared by $\Gamma = \Del
 * `Cslib.parityLinearCoeffs`, `Cslib.evalParityAmplifier`: $(a_{\ell, s}, b_{\ell, s})$ expansion
   bridged to `Polynomial.parityAmplifier` and `Polynomial.parityBaseDigit`, parity congruence mod
   $2^\ell$, $2^{7 \ell^2}$ magnitude bound, and `ComputableInPolyTime`.
-* `Cslib.evalParityFactorJet`: $\Gamma$-cleared $J \times \ell$ factor table bridged to
-  `Cslib.BitString.parityFactorCleared`, $\mathbb{Z}[X]$ / $\mathbb{Q}[X]$ / $j = 0$ identities,
-  Appendix B.2 norm/bit bounds, and `ComputableInPolyTime`.
+* `Cslib.evalParityFactorJet`: $\Gamma$-cleared $J \times \ell$ factor table built with
+  `Cslib.tabulateTable` and `Cslib.rowEntry`, bridged to `Cslib.IsTableShape`, `Cslib.jetL1Norm`,
+  and `Cslib.BitString.parityFactorCleared`, with $\mathbb{Z}[X]$ / $\mathbb{Q}[X]$ ($\Delta \ne 0$)
+  / $j = 0$ identities, Appendix B.2 norm/bit bounds, and `ComputableInPolyTime`.
 -/
 
 @[expose] public section
@@ -59,8 +61,9 @@ open Polynomial Turing.MultiTapeTM
 /-- The $\ell_1$-norm $\sum_i |c_i|$ of an integer coefficient list. -/
 def polyNorm1 (p : List ℤ) : ℕ := (p.map Int.natAbs).sum
 
-/-- The $\ell_1$-norm $\sum_r \|r\|_1$ of a 2D integer table. -/
-def tableNorm1 (rows : List (List ℤ)) : ℕ := (rows.map polyNorm1).sum
+/-- `Cslib.jetL1Norm` equals the sum of `Cslib.polyNorm1` across rows. -/
+theorem jetL1Norm_eq_sum_map_polyNorm1 (rows : List (List ℤ)) :
+    jetL1Norm rows = (rows.map polyNorm1).sum := rfl
 
 private lemma polyNorm1_nil : polyNorm1 [] = 0 := rfl
 private lemma polyNorm1_cons (c : ℤ) (p : List ℤ) :
@@ -629,12 +632,18 @@ def ParityFactorEval.cols (J ℓ : ℕ) (Δ : ℤ) (yJet : List ℤ) : List (Lis
   (List.range ℓ).map fun s => ParityFactorEval.colJet J ℓ Δ yJet coeffs hJet s
 
 /-- Staged fixed-denominator parity-factor jet evaluation ([OpenAI2026ETH], Appendix B.2): returns
-a $J \times \ell$ integer table (`J` rows of length `ℓ`) whose entry `(j, s)` is the $z^j$
+a $J \times \ell$ integer table (`J` rows of length `ℓ`) whose entry `(j, s)` (`j < J`, `s < ℓ`) is
+unconditionally (including when $\Delta = 0$) the $z^j$ coefficient of the homogenized integer
+polynomial $\Delta^{2 (\ell - 1 - s)} (\Delta a_s + b_s \widetilde{Y}(z))
+(\widetilde{Y}(z) (\widetilde{Y}(z) - \Delta))^s \bmod z^J$ for
+$\widetilde{Y}(z) = \sum_{r < J} \text{yJet}[r] z^r$. When $\Delta \ne 0$, this equals the $z^j$
 coefficient of $\Gamma \cdot (a_s + b_s Y(z)) (Y(z) (Y(z) - 1))^s \bmod z^J$ for
-$Y(z) = \Delta^{-1} \sum_{r < J} \text{yJet}[r] z^r$ and $\Gamma = \Delta^{2 \ell - 1}$. -/
+$Y(z) = \Delta^{-1} \widetilde{Y}(z)$ and $\Gamma = \Delta^{2 \ell - 1}$ (see
+`evalParityFactorJet_entry_cast_rat`; for $\Delta = 0$, e.g.
+`evalParityFactorJet 1 1 0 [1] = [[-1]]`, whereas the rational expression has $\Gamma = 0$). -/
 def evalParityFactorJet (J ℓ : ℕ) (Δ : ℤ) (yJet : List ℤ) : List (List ℤ) :=
   let cols := ParityFactorEval.cols J ℓ Δ yJet
-  (List.range J).map fun j => (List.range ℓ).map fun s => (cols.getD s []).getD j 0
+  tabulateTable J ℓ fun j s => rowEntry cols s j
 
 /-- `truncZJet J u` has length `J`. -/
 @[simp] theorem length_truncZJet (J : ℕ) (u : List ℤ) : (truncZJet J u).length = J := by
@@ -646,16 +655,10 @@ def evalParityFactorJet (J ℓ : ℕ) (Δ : ℤ) (yJet : List ℤ) : List (List 
   | zero => simp only [powZJet, Function.iterate_zero, id_eq, length_truncZJet]
   | succ s _ => simp only [powZJet, Function.iterate_succ_apply', length_mulZJet]
 
-/-- `evalParityFactorJet` has `J` rows. -/
-@[simp] theorem length_evalParityFactorJet (J ℓ : ℕ) (Δ : ℤ) (yJet : List ℤ) :
-    (evalParityFactorJet J ℓ Δ yJet).length = J := by
-  simp only [evalParityFactorJet, List.length_map, List.length_range]
-
-/-- Every row of `evalParityFactorJet` has length `ℓ`. -/
-theorem length_row_of_mem_evalParityFactorJet {J ℓ : ℕ} {Δ : ℤ} {yJet r : List ℤ}
-    (hr : r ∈ evalParityFactorJet J ℓ Δ yJet) : r.length = ℓ := by
-  obtain ⟨j, _, rfl⟩ := List.mem_map.mp hr
-  simp only [List.length_map, List.length_range]
+/-- `evalParityFactorJet J ℓ Δ yJet` has rectangular shape `J × ℓ`. -/
+theorem isTableShape_evalParityFactorJet (J ℓ : ℕ) (Δ : ℤ) (yJet : List ℤ) :
+    IsTableShape J ℓ (evalParityFactorJet J ℓ Δ yJet) :=
+  isTableShape_tabulateTable J ℓ _
 
 /-- `truncZJet J u` represents `u.take J` under `Polynomial.ofCoeffList`. -/
 theorem ofCoeffList_truncZJet (J : ℕ) (u : List ℤ) :
@@ -691,33 +694,34 @@ theorem getD_powZJet_of_lt {J j : ℕ} (hj : j < J) (u : List ℤ) (s : ℕ) :
       List.take_of_length_le (l := powZJet J u s) (by rw [length_powZJet]), pow_succ']
     exact coeff_eq_below_mul (fun _ _ => rfl) (fun i hi => by rw [coeff_ofCoeffList, ih hi]) j hj
 
-private lemma getD_evalParityFactorJet_eq {J ℓ j s : ℕ} (hj : j < J) (hs : s < ℓ)
+private lemma rowEntry_evalParityFactorJet_eq {J ℓ j s : ℕ} (hj : j < J) (hs : s < ℓ)
     (Δ : ℤ) (yJet : List ℤ) :
-    ((evalParityFactorJet J ℓ Δ yJet).getD j []).getD s 0 =
+    rowEntry (evalParityFactorJet J ℓ Δ yJet) j s =
       (ParityFactorEval.colJet J ℓ Δ yJet (parityLinearCoeffs ℓ)
         (mulZJet J (truncZJet J yJet) (polyAdd (truncZJet J yJet) [-Δ])) s).getD j 0 := by
-  rw [evalParityFactorJet, List.getD_map_range _ [] hj, List.getD_map_range _ 0 hs,
-    ParityFactorEval.cols, List.getD_map_range _ [] hs]
+  rw [evalParityFactorJet, rowEntry_tabulateTable_of_lt _ hj hs, rowEntry, ParityFactorEval.cols,
+    List.getD_map_range _ [] hs]
 
 private lemma row_sum_evalParityFactorJet {J ℓ j : ℕ} (hj : j < J) (Δ : ℤ) (yJet : List ℤ) :
     ((evalParityFactorJet J ℓ Δ yJet).getD j []).sum =
-      ∑ s ∈ Finset.range ℓ, ((evalParityFactorJet J ℓ Δ yJet).getD j []).getD s 0 := by
-  set row := (evalParityFactorJet J ℓ Δ yJet).getD j []
-  have hjlen : j < (evalParityFactorJet J ℓ Δ yJet).length := by rwa [length_evalParityFactorJet]
-  have hrow_len : row.length = ℓ := length_row_of_mem_evalParityFactorJet
-    (by dsimp only [row]; rw [List.getD_eq_getElem _ [] hjlen]; exact List.getElem_mem hjlen)
+      ∑ s ∈ Finset.range ℓ, rowEntry (evalParityFactorJet J ℓ Δ yJet) j s := by
+  have hshape := isTableShape_evalParityFactorJet J ℓ Δ yJet
+  have hjlen : j < (evalParityFactorJet J ℓ Δ yJet).length := hshape.1.symm ▸ hj
+  have hrow_len : ((evalParityFactorJet J ℓ Δ yJet).getD j []).length = ℓ := by
+    rw [List.getD_eq_getElem _ [] hjlen]
+    exact hshape.2 _ (List.getElem_mem hjlen)
   conv_lhs => rw [eq_map_range_getD hrow_len]
   exact sum_map_range_eq_finset ℓ _
 
 /-- **Polynomial-in-$z$ specification of `evalParityFactorJet`** modulo $z^J$. -/
 theorem evalParityFactorJet_entry_eq_coeff {J ℓ j s : ℕ} (hj : j < J) (hs : s < ℓ)
     (Δ : ℤ) (yJet : List ℤ) :
-    ((evalParityFactorJet J ℓ Δ yJet).getD j []).getD s 0 =
+    rowEntry (evalParityFactorJet J ℓ Δ yJet) j s =
       let ab := (parityLinearCoeffs ℓ).getD s (0, 0)
       let Y := ofCoeffList (yJet.take J)
       (C (Δ ^ (2 * (ℓ - 1 - s))) *
         ((C (Δ * ab.1) + C ab.2 * Y) * (Y * (Y - C Δ)) ^ s)).coeff j := by
-  rw [getD_evalParityFactorJet_eq hj hs Δ yJet]; dsimp only [ParityFactorEval.colJet]
+  rw [rowEntry_evalParityFactorJet_eq hj hs Δ yJet]; dsimp only [ParityFactorEval.colJet]
   set ab := (parityLinearCoeffs ℓ).getD s (0, 0); set Y := ofCoeffList (yJet.take J)
   set hJet := mulZJet J (truncZJet J yJet) (polyAdd (truncZJet J yJet) [-Δ])
   have hc (z : ℤ) : ofCoeffList [z] = C z := by
@@ -745,7 +749,7 @@ all $\ell, s \in \mathbb{N}$, entry $(j, s)$ of `evalParityFactorJet J ℓ Δ yJ
 coefficient of the $V^s$ coefficient of `Cslib.BitString.parityFactorCleared`. -/
 theorem evalParityFactorJet_entry_eq_parityFactorCleared {J j : ℕ} (hj : j < J) (ℓ s : ℕ)
     (Δ : ℤ) (yJet : List ℤ) :
-    ((evalParityFactorJet J ℓ Δ yJet).getD j []).getD s 0 =
+    rowEntry (evalParityFactorJet J ℓ Δ yJet) j s =
       ((Cslib.BitString.parityFactorCleared ℓ (C Δ) (ofCoeffList (yJet.take J))).coeff s).coeff
         j := by
   by_cases hs : s < ℓ
@@ -759,8 +763,7 @@ theorem evalParityFactorJet_entry_eq_parityFactorCleared {J j : ℕ} (hj : j < J
     have hcast (c : ℤ) : (c : ℤ[X]) = C c := (eq_intCast C c).symm
     rw [hcast, hcast, ← C_pow, C_mul]
     ring
-  · rw [evalParityFactorJet, List.getD_map_range _ [] hj,
-      List.getD_eq_default _ _ (by simp only [List.length_map, List.length_range]; omega),
+  · rw [rowEntry_eq_zero_of_isTableShape (isTableShape_evalParityFactorJet J ℓ Δ yJet) (by omega),
       Cslib.BitString.coeff_parityFactorCleared, ite_eq_right hs, coeff_zero]
 
 private lemma map_intCast_C (z : ℤ) : (C z : ℤ[X]).map (Int.castRingHom ℚ) = C (z : ℚ) := by
@@ -772,7 +775,7 @@ theorem evalParityFactorJet_entry_cast_rat {J ℓ j s : ℕ} (hℓ : 1 ≤ ℓ) 
     {Δ : ℤ} (hΔ : Δ ≠ 0) (yJet : List ℤ) :
     let ab := (parityLinearCoeffs ℓ).getD s (0, 0)
     let YQ : ℚ[X] := C (Δ : ℚ)⁻¹ * (ofCoeffList (yJet.take J)).map (Int.castRingHom ℚ)
-    ((((evalParityFactorJet J ℓ Δ yJet).getD j []).getD s 0 : ℤ) : ℚ) =
+    ((rowEntry (evalParityFactorJet J ℓ Δ yJet) j s : ℤ) : ℚ) =
       (C ((Δ : ℚ) ^ (2 * ℓ - 1)) *
         ((C (ab.1 : ℚ) + C (ab.2 : ℚ) * YQ) * (YQ * (YQ - 1)) ^ s)).coeff j := by
   dsimp only; rw [evalParityFactorJet_entry_eq_coeff hj hs Δ yJet]; dsimp only
@@ -816,7 +819,7 @@ theorem evalParityFactorJet_row_sum_cast_rat {J ℓ j : ℕ} (hℓ : 1 ≤ ℓ) 
   dsimp only; set YQ : ℚ[X] := C (Δ : ℚ)⁻¹ * (ofCoeffList (yJet.take J)).map (Int.castRingHom ℚ)
   rw [row_sum_evalParityFactorJet hj Δ yJet, Int.cast_sum]
   have hterms :
-      ∑ s ∈ Finset.range ℓ, ((((evalParityFactorJet J ℓ Δ yJet).getD j []).getD s 0 : ℤ) : ℚ) =
+      ∑ s ∈ Finset.range ℓ, ((rowEntry (evalParityFactorJet J ℓ Δ yJet) j s : ℤ) : ℚ) =
         ∑ s ∈ Finset.range ℓ,
           (C ((Δ : ℚ) ^ (2 * ℓ - 1)) *
             ((C (((parityLinearCoeffs ℓ).getD s (0, 0)).1 : ℚ) +
@@ -836,7 +839,7 @@ theorem evalParityFactorJet_row_sum_cast_rat {J ℓ j : ℕ} (hℓ : 1 ≤ ℓ) 
 theorem evalParityFactorJet_row_zero_entry {J ℓ s : ℕ} (hJ : 1 ≤ J) (hs : s < ℓ)
     (Δ y : ℤ) {yJet : List ℤ} (hy0 : yJet.getD 0 0 = Δ * y) :
     let ab := (parityLinearCoeffs ℓ).getD s (0, 0)
-    ((evalParityFactorJet J ℓ Δ yJet).getD 0 []).getD s 0 =
+    rowEntry (evalParityFactorJet J ℓ Δ yJet) 0 s =
       Δ ^ (2 * ℓ - 1) * ((ab.1 + ab.2 * y) * (y * (y - 1)) ^ s) := by
   dsimp only; rw [evalParityFactorJet_entry_eq_coeff (by omega : 0 < J) hs Δ yJet]; dsimp only
   rw [Polynomial.coeff_zero_eq_eval_zero]
@@ -941,21 +944,21 @@ private lemma polyNorm1_parityFactorColJet_le {J ℓ s : ℕ} (hs : s < ℓ) (Δ
     ← pow_add, show 2 * (ℓ - 1 - s) + (2 * s + 1) = 2 * ℓ - 1 by omega]
 
 /-- **Total factor-table $\ell_1$-norm bound** ([OpenAI2026ETH], Appendix B.2, bound $B_1$). -/
-theorem tableNorm1_evalParityFactorJet_le (J ℓ : ℕ) (Δ : ℤ) (yJet : List ℤ) :
-    tableNorm1 (evalParityFactorJet J ℓ Δ yJet) ≤
+theorem jetL1Norm_evalParityFactorJet_le (J ℓ : ℕ) (Δ : ℤ) (yJet : List ℤ) :
+    jetL1Norm (evalParityFactorJet J ℓ Δ yJet) ≤
       ℓ * 2 ^ (7 * ℓ ^ 2) * (polyNorm1 (yJet.take J) + Δ.natAbs + 2) ^ (2 * ℓ - 1) := by
   set hJet := mulZJet J (truncZJet J yJet) (polyAdd (truncZJet J yJet) [-Δ])
-  have hswap : tableNorm1 (evalParityFactorJet J ℓ Δ yJet) =
+  have hswap : jetL1Norm (evalParityFactorJet J ℓ Δ yJet) =
       ∑ s ∈ Finset.range ℓ,
         polyNorm1 (ParityFactorEval.colJet J ℓ Δ yJet (parityLinearCoeffs ℓ) hJet s) := by
-    unfold tableNorm1 evalParityFactorJet polyNorm1
-    simp only [List.map_map, Function.comp_def, sum_map_range_eq_finset]; rw [Finset.sum_comm]
+    rw [evalParityFactorJet, jetL1Norm_tabulateTable, Finset.sum_comm]
     refine Finset.sum_congr rfl fun s hs => ?_
     have hslt : s < ℓ := Finset.mem_range.mp hs
     set col := ParityFactorEval.colJet J ℓ Δ yJet (parityLinearCoeffs ℓ) hJet s
     have hcol_eq : (ParityFactorEval.cols J ℓ Δ yJet).getD s [] = col := by
       rw [ParityFactorEval.cols, List.getD_map_range _ [] hslt]
     have hlen : col.length = J := by simp only [col, ParityFactorEval.colJet, length_mulZJet]
+    unfold polyNorm1 rowEntry
     conv_rhs => rw [eq_map_range_getD hlen]
     simp only [hcol_eq, List.map_map, Function.comp_def, sum_map_range_eq_finset]
   rw [hswap]
@@ -963,8 +966,10 @@ theorem tableNorm1_evalParityFactorJet_le (J ℓ : ℕ) (Δ : ℤ) (yJet : List 
     polyNorm1_parityFactorColJet_le (Finset.mem_range.mp hs) Δ yJet).trans_eq ?_
   simp only [Finset.sum_const, Finset.card_range, smul_eq_mul]; ring
 
-private lemma polyNorm1_mem_le_tableNorm1 {rows : List (List ℤ)} {r : List ℤ} (hr : r ∈ rows) :
-    polyNorm1 r ≤ tableNorm1 rows := List.le_sum_of_mem (List.mem_map_of_mem hr)
+private lemma polyNorm1_mem_le_jetL1Norm {rows : List (List ℤ)} {r : List ℤ} (hr : r ∈ rows) :
+    polyNorm1 r ≤ jetL1Norm rows := by
+  rw [jetL1Norm_eq_sum_map_polyNorm1]
+  exact List.le_sum_of_mem (List.mem_map_of_mem hr)
 
 /-- Prefix-sum magnitude bound for every row of `evalParityFactorJet` ([OpenAI2026ETH],
 Appendix B.2). -/
@@ -974,7 +979,7 @@ theorem natAbs_row_take_sum_evalParityFactorJet_le {J ℓ : ℕ} {Δ : ℤ} {yJe
       ℓ * 2 ^ (7 * ℓ ^ 2) * (polyNorm1 (yJet.take J) + Δ.natAbs + 2) ^ (2 * ℓ - 1) :=
   (natAbs_sum_le_polyNorm1 (r.take m)).trans
     ((polyNorm1_take_le r m).trans
-      ((polyNorm1_mem_le_tableNorm1 hr).trans (tableNorm1_evalParityFactorJet_le J ℓ Δ yJet)))
+      ((polyNorm1_mem_le_jetL1Norm hr).trans (jetL1Norm_evalParityFactorJet_le J ℓ Δ yJet)))
 
 private lemma factorJet_cap_le_two_pow (J ℓ : ℕ) (Δ : ℤ) (yJet : List ℤ) :
     ℓ * 2 ^ (7 * ℓ ^ 2) * (polyNorm1 (yJet.take J) + Δ.natAbs + 2) ^ (2 * ℓ - 1) ≤
@@ -1009,8 +1014,8 @@ theorem length_encIntBin_evalParityFactorJet_le {J ℓ : ℕ} {Δ : ℤ} {yJet r
   refine ⟨length_encIntBin_le_of_natAbs_le
     ((natAbs_row_take_sum_evalParityFactorJet_le hr m).trans hcap), fun z hz => ?_⟩
   exact length_encIntBin_le_of_natAbs_le
-    ((((natAbs_mem_le_polyNorm1 hz).trans (polyNorm1_mem_le_tableNorm1 hr)).trans
-      (tableNorm1_evalParityFactorJet_le J ℓ Δ yJet)).trans hcap)
+    (((natAbs_le_jetL1Norm_of_mem hr hz).trans
+      (jetL1Norm_evalParityFactorJet_le J ℓ Δ yJet)).trans hcap)
 
 /-! ### Plain polynomial-time certificates (`ComputableInPolyTime`) -/
 
@@ -1322,9 +1327,8 @@ private theorem parityFactorCols_polytime {J ℓ : α → ℕ} {Δ : α → ℤ}
     (hyJet : ComputableInPolyTime yJet encIn (encList encIntBin)) :
     ComputableInPolyTime (fun x => evalParityFactorJet (J x) (ℓ x) (Δ x) (yJet x))
       encIn (encList (encList encIntBin)) := by
-  have hcols := (parityFactorCols_polytime hJ hℓ hΔ hyJet).tidy
-  have hJ := hJ.tidy; have hℓ := hℓ.tidy
-  refine .of_tidy ?_; unfold evalParityFactorJet; fun_prop
+  have _ := parityFactorCols_polytime hJ hℓ hΔ hyJet
+  unfold evalParityFactorJet; fun_prop
 
 /-- **Standalone plain polynomial-time certificate for `evalParityFactorJet`** on unary $(J, \ell)$
 and binary $(\Delta, \text{yJet})$. -/
