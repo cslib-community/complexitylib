@@ -773,6 +773,7 @@ public import Complexity.Computability.Complexity.FineGrained.PermutationIndepen
 public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
+public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
 public import Complexity.Computability.Complexity.HardnessEncoding.Program
 public import Complexity.Computability.Complexity.Parameterized
