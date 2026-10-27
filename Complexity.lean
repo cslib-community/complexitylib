@@ -2218,12 +2218,11 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Counting
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingDeletion
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingInsertions
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingList
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingOccurrences
-public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
-public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingInsertions
-public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingOccurrences
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParameters
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits
