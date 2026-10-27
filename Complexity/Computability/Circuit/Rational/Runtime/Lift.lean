@@ -138,7 +138,7 @@ private theorem natAbs_testTerms_take_sum_le (u v m : ℕ) :
 
 private theorem natAbs_rowEntry_testRows_le (N u v : ℕ) :
     (rowEntry (testRows M N a t) u v).natAbs ≤ M * ((2 * w) ^ (2 * M) * H ^ M) := by
-  rw [testRows, rowEntry_tabulateRows]
+  rw [testRows, rowEntry_tabulateTable]
   split_ifs
   · rw [testEntry]
     split_ifs
@@ -202,7 +202,7 @@ private theorem natAbs_liftEntry_le (u v i j : ℕ) :
 
 private theorem natAbs_rowEntry_liftTable_le (i j : ℕ) :
     (rowEntry (liftTable M Dg T p r) i j).natAbs ≤ M * (M * (A * H ^ (2 * M))) := by
-  rw [liftTable, rowEntry_tabulateRows]
+  rw [liftTable, rowEntry_tabulateTable]
   split_ifs
   · exact natAbs_liftEntry_le hT hH hp hr ..
   · simp

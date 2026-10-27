@@ -1074,13 +1074,6 @@ theorem polyBounded_stateBound (K L_coeff : ℕ) :
     (((PolyBounded.const 2).mul (polyBounded_nodeBound K L_coeff)).add (.const 1))
   exact (((PolyBounded.const 4).mul hn).add ((PolyBounded.const 4).mul hstack)).add (.const 10)
 
-theorem polyBounded_pow {α : Type*} {size f : α → ℕ}
-    (hf : PolyBounded size f) (d : ℕ) : PolyBounded size (fun a => f a ^ d) := by
-  obtain ⟨c, e, h⟩ := hf.exists_le
-  refine .of_forall_le (c ^ d) (e * d) fun a => ?_
-  calc f a ^ d ≤ (c * (size a + 1) ^ e) ^ d := Nat.pow_le_pow_left (h a) d
-    _ = c ^ d * (size a + 1) ^ (e * d) := by rw [mul_pow, ← pow_mul]
-
 include hM hK in
 /-- **Independent polynomial workspace for counting sparsification.** A single total leaf machine
 with separate time `t` and workspace `s` gives a single total machine for the existing `search`.
@@ -1127,11 +1120,10 @@ theorem exists_computableInO_search_polySpace (hM2 : 2 ≤ M) {k B L_coeff : ℕ
     omega
   have hinput := (PolyBounded.self (size := fun φ : CNF ℕ => (encCNF φ).length)).add
     (PolyBounded.const 1)
-  have hinit := (polyBounded_pow hinput dn).add (polyBounded_pow hinput di)
-  have hstep := (PolyBounded.const 2).mul (polyBounded_pow
-    (((PolyBounded.const 2).mul (polyBounded_stateBound K L_coeff)).add (.const 1)) d)
-  have hleaf := (PolyBounded.const a).mul
-    (polyBounded_pow ((polyBounded_nodeBound K L_coeff).add (.const 1)) b)
+  have hinit := (hinput.pow dn).add (hinput.pow di)
+  have hstep := (PolyBounded.const 2).mul ((((PolyBounded.const 2).mul
+    (polyBounded_stateBound K L_coeff)).add (.const 1)).pow d)
+  have hleaf := (PolyBounded.const a).mul (((polyBounded_nodeBound K L_coeff).add (.const 1)).pow b)
   exact ((hinit.add (hstep.add hleaf)).add (polyBounded_stateBound K L_coeff)).add hclock
 
 /-! ### Captured runtime context and declared-variable wrapper -/

@@ -79,7 +79,8 @@ open Matrix
 /-- Replace column `colA` of `A` with column `colB` of `B`, producing an `A.length × A.length`
 list of rows. -/
 def cramerRows (A B : List (List ℤ)) (colA colB : ℕ) : List (List ℤ) :=
-  tabulateRows A.length fun r c => if c = colA then rowEntry B r colB else rowEntry A r c
+  tabulateTable A.length A.length fun r c =>
+    if c = colA then rowEntry B r colB else rowEntry A r c
 
 /-- Encoded reduced-rational `(i, j)`-entry of `A⁻¹ * B` given the common denominator `den`,
 computed by Cramer's rule and `detRows`. -/
@@ -126,7 +127,7 @@ theorem cramerRows_eq {d : ℕ} (A B : Matrix (Fin d) (Fin d) ℤ) (i j : Fin d)
     cramerRows (rowsOf A) (rowsOf B) i.val j.val =
       rowsOf (A.updateCol i (fun r => B r j)) := by
   rw [cramerRows, length_rowsOf]
-  refine tabulateRows_eq_rowsOf _ _ fun r c => ?_
+  refine tabulateTable_eq_rowsOf _ _ fun r c => ?_
   simp only [Matrix.updateCol_apply, rowEntry_rowsOf, Fin.ext_iff]
 
 /-- `matrixEntryWord` agrees with ` encodeRat (ExecutableGenerator.normalizedEntry A B den i j)`. -/
@@ -252,11 +253,9 @@ theorem computableInPolyTime_cramerRows {A B : α → List (List ℤ)} {colA col
     ComputableInPolyTime
       (fun x => cramerRows (A x) (B x) (colA x) (colB x))
       encIn (encList (encList encIntBin)) := by
-  unfold cramerRows
-  apply computableInPolyTime_tabulateRows
-  · exact .of_tidy ((ComputableTidilyInPolyTime.length_list _).comp hA.tidy)
-  · apply ComputableInPolyTime.of_tidy
-    fun_prop
+  have hlen : ComputableInPolyTime (fun x => (A x).length) encIn encUnary :=
+    .of_tidy ((ComputableTidilyInPolyTime.length_list _).comp hA.tidy)
+  exact computableInPolyTime_tabulateTable hlen hlen (.of_tidy (by fun_prop))
 
 /-- Encoding one normalized rational entry via Cramer's rule and `detRows` is polynomial-time. -/
 @[fun_prop]
