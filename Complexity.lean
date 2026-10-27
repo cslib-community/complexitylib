@@ -770,6 +770,7 @@ public import Complexity.Computability.Complexity.FineGrained.PPZ
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
+public import Complexity.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
@@ -1866,6 +1867,7 @@ public import Complexity.Foundations.Combinatorics.Multigraph
 public import Complexity.Foundations.Combinatorics.PartialLabelScores
 public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
+public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.Sunflower
