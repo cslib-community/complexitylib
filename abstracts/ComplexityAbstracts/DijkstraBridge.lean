@@ -20,9 +20,11 @@ file proves that the two agree, for every walk predicate `W` that satisfies `Wal
 
 The abstract also defines its own word RAM over the exact basis, the machine of
 `WordRAMAbstract`. `WordRAMBridge` proves, for every presentation of that machine that satisfies
-its `Laws`, that one step of a library program over `Cslib.WordRAM.Basis.exact` matches one step
-of its translation (`WordRAMBridge.Presentation.step_matches`). This file extends that to runs of
-a given number of steps (`runs_map`), and transfers
+its `Laws`, that one step of a library program over `Cslib.WordRAM.Basis.exact` at an instruction
+other than `rand` matches one step of its translation `WordRAMBridge.Presentation.programOf`
+(`WordRAMBridge.Presentation.step_matches_at`). A step that does not fault is not at a `rand`
+(`isRandFree_of_step`), so this file extends that to runs of a given number of steps (`runs_map`),
+and transfers
 `Cslib.Algorithms.WordRAM.Dijkstra.logLinearStatement` to the walk distance and the abstract's
 machine.
 
