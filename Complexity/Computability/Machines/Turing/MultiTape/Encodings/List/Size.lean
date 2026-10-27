@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Erik Demaine, Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine, Christian Reitwiessner, Samuel Schlesinger
+Authors: Erik Demaine, Christian Reitwiessner, Samuel Schlesinger, Anton Kovsharov
 -/
 module
 -- upstream: candidate
@@ -49,5 +49,21 @@ public lemma length_encList_le (enc : α ↪ List Bool) (l : List α) {b : ℕ}
     have h₂ := ih fun a ha => h a (List.mem_cons_of_mem _ ha)
     simp only [encList_cons, List.length_append, length_frame, List.length_cons]
     nlinarith
+
+/-- Sublists do not increase framed list encoding length. -/
+public lemma length_encList_sublist {α : Type*} (enc : α ↪ List Bool) {l₁ l₂ : List α}
+    (h : List.Sublist l₁ l₂) : (encList enc l₁).length ≤ (encList enc l₂).length :=
+  (h.flatMap (frame ∘ enc)).length_le
+
+/-- Elementwise encoding-length bounds lift across `List.map` on framed list encodings. -/
+public lemma length_encList_map_le {α β : Type*} (ea : α ↪ List Bool) (eb : β ↪ List Bool)
+    {f : α → β} {l : List α} (hf : ∀ x ∈ l, (eb (f x)).length ≤ (ea x).length) :
+    (encList eb (l.map f)).length ≤ (encList ea l).length := by
+  induction l with
+  | nil => exact le_rfl
+  | cons a ls ih =>
+    have ha := hf a List.mem_cons_self
+    have hls := ih fun x hx => hf x (List.mem_cons_of_mem a hx)
+    simp only [List.map_cons, encList_cons, List.length_append, length_frame]; omega
 
 end Turing.MultiTapeTM

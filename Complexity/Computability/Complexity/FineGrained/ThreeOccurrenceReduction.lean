@@ -61,6 +61,13 @@ pp. 43–47).
   counter via `CountingSparsify.search` in time and space
   `O(2 ^ ((1 / B + occBound K M * (k * δ)) * φ.numVars) * (|encCNF φ| + 1) ^ E')`.
 
+* `Cslib.Complexity.exists_computableInO_guardOccurrenceCounter_polySpace_of_promise`,
+  `CountingSparsify.exists_computableInO_search_threeOccurrence_polySpace_of_promise`:
+  the same guard, compiler, and search with separate leaf time and polynomial workspace promises,
+  yielding a total machine with the same time envelope and independent polynomial workspace in the
+  full input encoding. Parameters are fixed; no leaf counter or runtime parameter uniformity is
+  supplied by these transfer results.
+
 ## References
 
 * [C. H. Papadimitriou, *Computational Complexity*, Proposition 9.3][Papadimitriou94]
@@ -333,17 +340,19 @@ theorem guardOccurrenceCounter_pos_iff_mem_kSAT {k : ℕ} (hk : 2 ≤ k) {f : CN
     simp only [hψ, Bool.false_eq_true, ite_false, lt_irrefl, KSAT, Set.mem_ofPred_eq, hψ',
       false_and]
 
-private theorem exists_computableInO_guardOccurrenceCounter_aux (k : ℕ)
-    {f : CNF ℕ → ℕ} {tf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf tf)
-    {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
-    (ht : ∀ ψ : CNF ℕ, (∀ d ∈ ψ, d.length ≤ k) →
-      (tf (toThreeOccurrenceDense ψ) : ℝ) ≤
-        c * (2 ^ (δ * (toThreeOccurrenceDense ψ).numVars) *
-          ((encCNF (toThreeOccurrenceDense ψ)).length + 1) ^ e) + c) :
-    ∃ T : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
-      ComputableInO (guardOccurrenceCounter k f) encCNF encNat T T ∧
-      ∀ ψ : CNF ℕ, (T ψ : ℝ) ≤
-        C₀ * ((2 : ℝ) ^ ((k * δ) * ψ.length) * (((encCNF ψ).length : ℝ) + 1) ^ E) + C₀ := by
+private theorem exists_computableInO_guardOccurrenceCounter_resources (k : ℕ)
+    {f : CNF ℕ → ℕ} {tf sf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf sf) :
+    ∃ d l : ℕ, (∀ ψ : CNF ℕ, (encCNF (toThreeOccurrenceDense ψ)).length ≤
+      l * (((encCNF ψ).length + 1) ^ d + 1)) ∧
+      ComputableInO (guardOccurrenceCounter k f) encCNF encNat
+      (fun ψ => ((encCNF ψ).length + 1) ^ d +
+        if (ψ.all fun c => decide (c.length ≤ k)) then
+          ((encCNF ψ).length + 1) ^ d + tf (toThreeOccurrenceDense ψ)
+        else ((encCNF ψ).length + 1) ^ d)
+      (fun ψ => ((encCNF ψ).length + 1) ^ d +
+        if (ψ.all fun c => decide (c.length ≤ k)) then
+          ((encCNF ψ).length + 1) ^ d + sf (toThreeOccurrenceDense ψ)
+        else ((encCNF ψ).length + 1) ^ d) := by
   obtain ⟨dc, ec, hc⟩ := (computableInPolyTime_all_length_le k).tidy.exists_degree
   obtain ⟨dr, er, hr⟩ := computableInPolyTime_toThreeOccurrenceDense.tidy.exists_degree
   obtain ⟨dz, ez, hz⟩ :=
@@ -354,17 +363,25 @@ private theorem exists_computableInO_guardOccurrenceCounter_aux (k : ℕ)
   have hrO := (hr.mono (d' := d) (e' := er) (by omega) le_rfl).inO
   have hzO := (hz.mono (d' := d) (e' := ez) (by omega) le_rfl).inO
   obtain ⟨l, hl⟩ := hrO.length_le
-  have hcomp := hf.tidy.comp hrO
-  have hite := hcO.ite hcomp hzO
-  set T : CNF ℕ → ℕ := fun ψ =>
-    ((encCNF ψ).length + 1) ^ d +
-      if (ψ.all fun c => decide (c.length ≤ k)) then
-        ((encCNF ψ).length + 1) ^ d + tf (toThreeOccurrenceDense ψ)
-      else
-        ((encCNF ψ).length + 1) ^ d
+  exact ⟨d, l, hl, .of_tidy (hcO.ite (hf.tidy.comp hrO) hzO)⟩
+
+private theorem guardOccurrenceCounter_time_bound (k d l : ℕ) {tf : CNF ℕ → ℕ}
+    (hl : ∀ ψ : CNF ℕ, (encCNF (toThreeOccurrenceDense ψ)).length ≤
+      l * (((encCNF ψ).length + 1) ^ d + 1))
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
+    (ht : ∀ ψ : CNF ℕ, (∀ d ∈ ψ, d.length ≤ k) →
+      (tf (toThreeOccurrenceDense ψ) : ℝ) ≤
+        c * (2 ^ (δ * (toThreeOccurrenceDense ψ).numVars) *
+          ((encCNF (toThreeOccurrenceDense ψ)).length + 1) ^ e) + c) :
+    ∃ C₀ E : ℕ, ∀ ψ : CNF ℕ,
+      ((((encCNF ψ).length + 1) ^ d +
+        if (ψ.all fun c => decide (c.length ≤ k)) then
+          ((encCNF ψ).length + 1) ^ d + tf (toThreeOccurrenceDense ψ)
+        else ((encCNF ψ).length + 1) ^ d : ℕ) : ℝ) ≤
+        C₀ * ((2 : ℝ) ^ ((k * δ) * ψ.length) * (((encCNF ψ).length : ℝ) + 1) ^ E) + C₀ := by
   set E := d * e + d
   set K : ℝ := 2 + c * (2 * l + 1) ^ e + c
-  refine ⟨T, ⌈K⌉₊, E, .of_tidy hite, fun ψ => ?_⟩
+  refine ⟨⌈K⌉₊, E, fun ψ => ?_⟩
   set P : ℝ := (((encCNF ψ).length : ℝ) + 1) ^ d
   set Q : ℝ := (((encCNF ψ).length : ℝ) + 1) ^ E
   set X : ℝ := (2 : ℝ) ^ ((k * δ) * ψ.length)
@@ -382,7 +399,6 @@ private theorem exists_computableInO_guardOccurrenceCounter_aux (k : ℕ)
   have hPXQ : P ≤ X * Q := hPQ.trans hQXQ
   have hPeXQ : P ^ e ≤ X * Q := hPeQ.trans hQXQ
   have h1XQ : (1 : ℝ) ≤ X * Q := one_le_mul_of_one_le_of_one_le hX1 hQ1
-  dsimp only [T]
   split_ifs with hψ
   · have hψ' : ∀ c ∈ ψ, c.length ≤ k := by
       simpa only [List.all_eq_true, decide_eq_true_eq] using hψ
@@ -438,6 +454,21 @@ private theorem exists_computableInO_guardOccurrenceCounter_aux (k : ℕ)
     push_cast [P] at hsum ⊢
     linarith
 
+private theorem exists_computableInO_guardOccurrenceCounter_aux (k : ℕ)
+    {f : CNF ℕ → ℕ} {tf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf tf)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
+    (ht : ∀ ψ : CNF ℕ, (∀ d ∈ ψ, d.length ≤ k) →
+      (tf (toThreeOccurrenceDense ψ) : ℝ) ≤
+        c * (2 ^ (δ * (toThreeOccurrenceDense ψ).numVars) *
+          ((encCNF (toThreeOccurrenceDense ψ)).length + 1) ^ e) + c) :
+    ∃ T : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
+      ComputableInO (guardOccurrenceCounter k f) encCNF encNat T T ∧
+      ∀ ψ : CNF ℕ, (T ψ : ℝ) ≤
+        C₀ * ((2 : ℝ) ^ ((k * δ) * ψ.length) * (((encCNF ψ).length : ℝ) + 1) ^ E) + C₀ := by
+  obtain ⟨d, l, hl, h⟩ := exists_computableInO_guardOccurrenceCounter_resources k hf
+  obtain ⟨C₀, E, hT⟩ := guardOccurrenceCounter_time_bound k d l hl hδ ht
+  exact ⟨_, C₀, E, h, hT⟩
+
 /-- **From variable-exponential occurrence-3 counting to clause-exponential leaf counting (promised
 runtime).**
 If `2 ≤ k` and `f : CNF ℕ → ℕ` has a combined time-and-space certificate
@@ -474,6 +505,42 @@ theorem exists_computableInO_guardOccurrenceCounter (k : ℕ) {f : CNF ℕ → �
       ∀ ψ : CNF ℕ, (T ψ : ℝ) ≤
         C₀ * ((2 : ℝ) ^ ((k * δ) * ψ.length) * (((encCNF ψ).length : ℝ) + 1) ^ E) + C₀ :=
   exists_computableInO_guardOccurrenceCounter_aux k hf hδ fun ψ _ => ht (toThreeOccurrenceDense ψ)
+
+/-- The existing width guard and dense occurrence-3 compiler preserve independent polynomial
+workspace. `hf` is one total machine; `ht` and `hs` need hold only on the dense width-`≤ k`,
+occurrence-`≤ 3` promise. The result is total, including the zero output on rejected widths.
+The compiler output, its retained input, and the leaf output are charged by the native composition
+rules. All parameters and polynomial constants are fixed before choosing the resulting machine. -/
+theorem exists_computableInO_guardOccurrenceCounter_polySpace_of_promise {k : ℕ} (hk : 2 ≤ k)
+    {f : CNF ℕ → ℕ} {tf sf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf sf)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e a b : ℕ}
+    (ht : ∀ χ : CNF ℕ, (∀ d ∈ χ, d.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars →
+      (tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * ((encCNF χ).length + 1) ^ e) + c)
+    (hs : ∀ χ : CNF ℕ, (∀ d ∈ χ, d.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars → sf χ ≤ a * ((encCNF χ).length + 1) ^ b) :
+    ∃ T S : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
+      ComputableInO (guardOccurrenceCounter k f) encCNF encNat T S ∧
+      PolyBounded (fun ψ : CNF ℕ => (encCNF ψ).length) S ∧
+      ∀ ψ : CNF ℕ, (T ψ : ℝ) ≤
+        C₀ * ((2 : ℝ) ^ ((k * δ) * ψ.length) * (((encCNF ψ).length : ℝ) + 1) ^ E) + C₀ := by
+  obtain ⟨d, l, hl, h⟩ := exists_computableInO_guardOccurrenceCounter_resources k hf
+  obtain ⟨C₀, E, hT⟩ := guardOccurrenceCounter_time_bound k d l hl hδ fun ψ hψ =>
+    ht (toThreeOccurrenceDense ψ) (width_toThreeOccurrenceDense hk hψ)
+      (count_vars_toThreeOccurrenceDense_le ψ) (vars_toThreeOccurrenceDense_eq_range_numVars ψ)
+  refine ⟨_, _, C₀, E, h, ?_, hT⟩
+  refine ⟨fun n => 2 * (n + 1) ^ d + a * (l * ((n + 1) ^ d + 1) + 1) ^ b,
+    by fun_prop, fun ψ => ?_⟩
+  dsimp only
+  split_ifs with hψ
+  · have hwidth : ∀ c ∈ ψ, c.length ≤ k := by
+      simpa only [List.all_eq_true, decide_eq_true_eq] using hψ
+    have hsψ := hs (toThreeOccurrenceDense ψ) (width_toThreeOccurrenceDense hk hwidth)
+      (count_vars_toThreeOccurrenceDense_le ψ) (vars_toThreeOccurrenceDense_eq_range_numVars ψ)
+    have hpow := Nat.mul_le_mul_left a
+      (Nat.pow_le_pow_left (Nat.add_le_add_right (hl ψ) 1) b)
+    omega
+  · omega
 
 namespace CountingSparsify
 
@@ -538,6 +605,42 @@ theorem exists_computableInO_search_of_threeOccurrence_counter (hM2 : 2 ≤ M) {
           (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ :=
   exists_computableInO_search_threeOccurrence_of_promise hM hK hM2 hk2 hkK hTB hf hf_eq
     hδ fun χ _ _ _ => ht χ
+
+include hM hK in
+/-- Counting sparsification with independent polynomial workspace from one total dense
+occurrence-3 counter whose correctness, time, and space guarantees are promised only on dense
+width-`≤ k`, occurrence-`≤ 3` formulas. The unchanged search returns the model count on width
+`≤ k` inputs and zero otherwise, in the original exponential time envelope and polynomial space
+in the full input encoding. `M`, `K`, `k`, `B`, and `L_coeff` are fixed parameters; this does not
+supply a counter or establish uniformity for runtime parameter choices. -/
+theorem exists_computableInO_search_threeOccurrence_polySpace_of_promise
+    (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hk2 : 2 ≤ k) (hkK : k ≤ K)
+    (hTB : CountingTreeBound M K B L_coeff hM hK)
+    {f : CNF ℕ → ℕ} {tf sf : CNF ℕ → ℕ} (hf : ComputableInO f encCNF encNat tf sf)
+    (hf_eq : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars → f χ = χ.modelCount)
+    {δ : ℝ} (hδ : 0 ≤ δ) {c e a b : ℕ}
+    (ht : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars →
+      (tf χ : ℝ) ≤ c * (2 ^ (δ * χ.numVars) * ((encCNF χ).length + 1) ^ e) + c)
+    (hs : ∀ χ : CNF ℕ, (∀ c ∈ χ, c.length ≤ k) → (∀ v, χ.vars.count v ≤ 3) →
+      χ.vars.toFinset = Finset.range χ.numVars → sf χ ≤ a * ((encCNF χ).length + 1) ^ b) :
+    (∀ φ : CNF ℕ, search M K k B (guardOccurrenceCounter k f) φ =
+      if (φ.all fun c => decide (c.length ≤ k)) then φ.modelCount else 0) ∧
+    ∃ T S : CNF ℕ → ℕ, ∃ C₀ E : ℕ,
+      ComputableInO (search M K k B (guardOccurrenceCounter k f)) encCNF encNat T S ∧
+      PolyBounded (fun φ : CNF ℕ => (encCNF φ).length) S ∧
+      ∀ φ : CNF ℕ, (T φ : ℝ) ≤
+        C₀ * ((2 : ℝ) ^ ((1 / B + occBound K M * (k * δ)) * φ.numVars) *
+          (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ := by
+  refine ⟨search_eq_ite_modelCount hM hK hM2 hkK hTB
+    (fun ψ hψ _ => guardOccurrenceCounter_eq_modelCount hk2 hf_eq hψ), ?_⟩
+  obtain ⟨Tg, Sg, Cg, Eg, hgO, hgS, hgt⟩ :=
+    exists_computableInO_guardOccurrenceCounter_polySpace_of_promise hk2 hf hδ ht hs
+  obtain ⟨a', b', hgs⟩ := hgS.exists_le
+  exact exists_computableInO_search_polySpace hM hK hM2 hkK hTB hgO
+    (fun ψ _ _ => guardOccurrenceCounter_le_two_pow_numVars hk2 hf_eq ψ)
+    (by positivity) (fun ψ _ _ => hgt ψ) (fun ψ _ _ => hgs ψ)
 
 end CountingSparsify
 
