@@ -66,7 +66,8 @@ private theorem binaryHeap_dijkstra_bound (G : ListInstance) :
       min G.n G.m * (PriorityQueue.BinaryHeap.pkg.T_ins G.n + 20) +
       G.m * (PriorityQueue.BinaryHeap.pkg.T_dec G.n + 20) ≤
       200 * (G.m + 1) * (Nat.log 2 G.n + 1) := by
-  dsimp only [PriorityQueue.BinaryHeap.pkg]
+  dsimp only [PriorityQueue.BinaryHeap.pkg, PriorityQueue.BinaryHeap.tEmpty,
+    PriorityQueue.BinaryHeap.tIns, PriorityQueue.BinaryHeap.tDec, PriorityQueue.BinaryHeap.tExt]
   have hm1 := Nat.mul_le_mul_right (46 * Nat.log 2 G.n + 28 + 10 + 20)
     (Nat.min_le_right G.n (G.m + 1))
   have hm2 := Nat.mul_le_mul_right (28 * Nat.log 2 G.n + 20 + 20) (Nat.min_le_right G.n G.m)

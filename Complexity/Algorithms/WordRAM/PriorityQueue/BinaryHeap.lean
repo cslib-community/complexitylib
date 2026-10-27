@@ -75,13 +75,24 @@ structure Rep (n w base : ℕ) (s : IndexedMinPQ.State n) (x : Data rBin) : Prop
   /-- Abstract state `s` matches `stateOfMem n base x.mem`. -/
   state_eq : s = stateOfMem n base x.mem
 
+/-- Worst-case instruction bound for `isEmpty`. -/
+abbrev tEmpty (_ : ℕ) : ℕ := 10
+/-- Worst-case instruction bound for `getKey`. -/
+abbrev tGet (_ : ℕ) : ℕ := 14
+/-- Worst-case instruction bound for `insert`. -/
+abbrev tIns (n : ℕ) : ℕ := 28 * Nat.log 2 n + 20
+/-- Worst-case instruction bound for `decreaseKey`. -/
+abbrev tDec (n : ℕ) : ℕ := 28 * Nat.log 2 n + 16
+/-- Worst-case instruction bound for `extractMin`. -/
+abbrev tExt (n : ℕ) : ℕ := 46 * Nat.log 2 n + 28
+
 /-- Per-operation worst-case instruction charge (excluding standalone trailing `halt`). -/
 def charge (n : ℕ) : IndexedMinPQ.Op n → ℕ
-  | .isEmpty => 10
-  | .getKey _ => 14
-  | .insert _ _ => 28 * Nat.log 2 n + 20
-  | .decreaseKey _ _ => 28 * Nat.log 2 n + 16
-  | .extractMin => 46 * Nat.log 2 n + 28
+  | .isEmpty => tEmpty n
+  | .getKey _ => tGet n
+  | .insert _ _ => tIns n
+  | .decreaseKey _ _ => tDec n
+  | .extractMin => tExt n
 
 section OpSpecs
 
@@ -543,7 +554,8 @@ private theorem opCode_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.Sta
     have hetot : ExecWithin w opCode x y (charge n .isEmpty) := by
       rw [opCode_eq]
       exact (execWithin_append hset
-        (.branch_pos hc2 (.branch_pos hc1 (.branch_pos hc0 he)))).mono (by dsimp [charge]; omega)
+        (.branch_pos hc2 (.branch_pos hc1 (.branch_pos hc0 he)))).mono
+        (by dsimp [charge, tEmpty]; omega)
     obtain ⟨m, hm, hex⟩ := hetot
     exact ⟨y, m, hex, hdec, hry, hym ▸ Modifies.refl _ _, hm⟩
   | getKey v =>
@@ -556,7 +568,8 @@ private theorem opCode_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.Sta
     have hetot : ExecWithin w opCode x y (charge n (.getKey v)) := by
       rw [opCode_eq]
       exact (execWithin_append hset
-        (.branch_pos hc2 (.branch_pos hc1 (.branch_neg hc0 he)))).mono (by dsimp [charge]; omega)
+        (.branch_pos hc2 (.branch_pos hc1 (.branch_neg hc0 he)))).mono
+        (by dsimp [charge, tGet]; omega)
     obtain ⟨m, hm, hex⟩ := hetot
     exact ⟨y, m, hex, hdec, hry, hym ▸ Modifies.refl _ _, hm⟩
   | insert v keyVal =>
@@ -570,7 +583,8 @@ private theorem opCode_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.Sta
     have hetot : ExecWithin w opCode x y (charge n (.insert v keyVal)) := by
       rw [opCode_eq]
       exact (execWithin_append hset
-        (.branch_pos hc2 (.branch_neg hc1 (.branch_pos hc0 he)))).mono (by dsimp [charge]; omega)
+        (.branch_pos hc2 (.branch_neg hc1 (.branch_pos hc0 he)))).mono
+        (by dsimp [charge, tIns]; omega)
     obtain ⟨m, hm, hex⟩ := hetot
     exact ⟨y, m, hex, rfl, hry, hmod, hm⟩
   | decreaseKey v keyVal =>
@@ -583,7 +597,8 @@ private theorem opCode_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.Sta
     have hetot : ExecWithin w opCode x y (charge n (.decreaseKey v keyVal)) := by
       rw [opCode_eq]
       exact (execWithin_append hset
-        (.branch_pos hc2 (.branch_neg hc1 (.branch_neg hc0 he)))).mono (by dsimp [charge]; omega)
+        (.branch_pos hc2 (.branch_neg hc1 (.branch_neg hc0 he)))).mono
+        (by dsimp [charge, tDec]; omega)
     obtain ⟨m, hm, hex⟩ := hetot
     exact ⟨y, m, hex, rfl, hry, hmod, hm⟩
   | extractMin =>
@@ -592,7 +607,7 @@ private theorem opCode_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.Sta
     obtain ⟨y, he, hdec, hry, hmod⟩ := doExtractMin_spec (K_max := K_max) hS hr₁ hz₁ ho₁
     have hetot : ExecWithin w opCode x y (charge n .extractMin) := by
       rw [opCode_eq]
-      exact (execWithin_append hset (.branch_neg hc2 he)).mono (by dsimp [charge]; omega)
+      exact (execWithin_append hset (.branch_neg hc2 he)).mono (by dsimp [charge, tExt]; omega)
     obtain ⟨m, hm, hex⟩ := hetot
     exact ⟨y, m, hex, hdec, hry, hmod, hm⟩
 
@@ -652,11 +667,11 @@ def pkg : PQPackage .exact rBin where
   space := space
   space_lower := space_lower
   T_init _ := 11
-  T_empty _ := 10
-  T_get _ := 14
-  T_ins n := 28 * Nat.log 2 n + 20
-  T_dec n := 28 * Nat.log 2 n + 16
-  T_ext n := 46 * Nat.log 2 n + 28
+  T_empty := tEmpty
+  T_get := tGet
+  T_ins := tIns
+  T_dec := tDec
+  T_ext := tExt
   cert hS hK := subroutineDS hS hK
   cert_space _ _ := rfl
   cert_initTime _ _ := le_rfl

@@ -168,7 +168,8 @@ def siftDownChoose : Code .exact rBin := ram_exact[
     if zero < t then [ p ← l + one; vp ← vk; dp ← dk ] else [ p ← p ] ]
   else [ p ← p ] ]
 
-/-- Swap `k` with chosen child `(p, vp, dp)` if `PrioLT (vp, dp) (vk, dk)`, else stop `siftDown`. -/
+/-- Swap `k` with chosen child `(p, vp, dp)` if `EntryLT (vp, dp) (vk, dk)`, else stop `siftDown`.
+-/
 def siftDownSink : Code .exact rBin := ram_exact[
   t ← hb + k; vk ← *t; t ← baseReg + vk; dk ← *t;
   ⟪cmpPK⟫;

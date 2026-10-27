@@ -18,12 +18,12 @@ bounds for `siftUp`, `siftDown`, and `doExtractNonEmpty` under the lexicographic
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftUp_spec`: upward restoration in at most
-  `28 * ⌊log₂ n⌋ + 2` instructions.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftDown_spec`: downward restoration in at most
-  `46 * ⌊log₂ n⌋ + 4` instructions.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftUp_spec`: upward restoration from index `K`
+  in at most `28 * ⌊log₂ K⌋ + 2` instructions.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftDown_spec`: downward restoration at heap
+  size `S` in at most `46 * ⌊log₂ (S + 1)⌋ + 4` instructions.
 * `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.doExtractNonEmpty_spec`: non-empty root
-  extraction in at most `46 * ⌊log₂ n⌋ + 25` instructions.
+  extraction at heap size `S ≥ 1` in at most `46 * ⌊log₂ S⌋ + 20` instructions.
 
 ## References
 
