@@ -1370,6 +1370,7 @@ public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Computability.PolyTime.Int.Table
 public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Computability.PolyTime.ParityFactorEval
+public import Complexity.Computability.PolyTime.SparseMonomialJet
 public import Complexity.Computability.Probabilistic.Adaptive
 public import Complexity.Computability.Probabilistic.BoundedUniform
 public import Complexity.Computability.Probabilistic.CenteredBinomial
