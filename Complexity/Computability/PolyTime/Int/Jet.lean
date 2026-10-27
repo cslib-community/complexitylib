@@ -24,7 +24,7 @@ import Mathlib.Data.List.GetD
 /-!
 # Truncated univariate integer Taylor jet subtraction, congruences, and fold combinators
 
-Builds on `Cslib.truncZJet`, `Cslib.polyAdd`, `Cslib.mulZJet`, and `Cslib.coeffNorm1_ofCoeffList`
+Builds on `Cslib.truncZJet`, `Cslib.polyAdd`, and `Cslib.mulZJet`
 from `Complexity/Computability/PolyTime/ParityFactorEval.lean` to provide truncated length-`J`
 addition, subtraction, scalar subtraction, `Polynomial.X ^ J` divisibility congruences, `foldl`
 product invariants, `encIntBin` bit-length bounds, and a plain `ComputableInPolyTime` product-fold
@@ -176,25 +176,26 @@ theorem length_encIntBin_getD_le_coeffNorm1 (a : List ℤ) (k : ℕ) :
 theorem coeffNorm1_truncZJet_le (J : ℕ) (a : List ℤ) :
     (Polynomial.ofCoeffList (Cslib.truncZJet J a)).coeffNorm1 ≤
       (Polynomial.ofCoeffList a).coeffNorm1 := by
-  rw [Cslib.ofCoeffList_truncZJet, Cslib.coeffNorm1_ofCoeffList, Cslib.coeffNorm1_ofCoeffList]
-  exact Cslib.polyNorm1_take_le a J
+  simpa only [Cslib.ofCoeffList_truncZJet, Polynomial.coeffNorm1_ofCoeffList,
+    Cslib.polyNorm1] using Cslib.polyNorm1_take_le a J
 
 theorem coeffNorm1_truncZJet_singleton_le (J : ℕ) (c : ℤ) :
     (Polynomial.ofCoeffList (Cslib.truncZJet J [c])).coeffNorm1 ≤ c.natAbs :=
   (coeffNorm1_truncZJet_le J [c]).trans
-    (by simp only [Cslib.coeffNorm1_ofCoeffList, Cslib.polyNorm1, List.map_cons, List.map_nil,
+    (by simp only [Polynomial.coeffNorm1_ofCoeffList, List.map_cons, List.map_nil,
       List.sum_cons, List.sum_nil, Nat.add_zero, le_refl])
 
 theorem coeffNorm1_add_le (J : ℕ) (a b : List ℤ) :
     (Polynomial.ofCoeffList (add J a b)).coeffNorm1 ≤
       (Polynomial.ofCoeffList a).coeffNorm1 + (Polynomial.ofCoeffList b).coeffNorm1 :=
   (coeffNorm1_truncZJet_le J _).trans
-    (by simpa only [Cslib.coeffNorm1_ofCoeffList] using Cslib.polyNorm1_polyAdd_le a b)
+    (by simpa only [Polynomial.coeffNorm1_ofCoeffList, Cslib.polyNorm1] using
+      Cslib.polyNorm1_polyAdd_le a b)
 
 theorem coeffNorm1_sub_le (J : ℕ) (a b : List ℤ) :
     (Polynomial.ofCoeffList (sub J a b)).coeffNorm1 ≤
       (Polynomial.ofCoeffList a).coeffNorm1 + (Polynomial.ofCoeffList b).coeffNorm1 := by
-  rw [Cslib.coeffNorm1_ofCoeffList, Cslib.polyNorm1, sub, List.map_map, Function.comp_def,
+  rw [Polynomial.coeffNorm1_ofCoeffList, sub, List.map_map, Function.comp_def,
     List.sum_map_range, Fin.sum_univ_eq_sum_range (fun k => (a.getD k 0 - b.getD k 0).natAbs)]
   have hcongr : (∑ k ∈ Finset.range J, (a.getD k 0 - b.getD k 0).natAbs) =
       ∑ k ∈ Finset.range J,
@@ -208,14 +209,14 @@ theorem coeffNorm1_subConst_le (J : ℕ) (c : ℤ) (a : List ℤ) :
     (Polynomial.ofCoeffList (subConst J c a)).coeffNorm1 ≤
       c.natAbs + (Polynomial.ofCoeffList a).coeffNorm1 := by
   refine (coeffNorm1_sub_le J [c] a).trans (Nat.add_le_add_right ?_ _)
-  simp only [Cslib.coeffNorm1_ofCoeffList, Cslib.polyNorm1, List.map_cons, List.map_nil,
+  simp only [Polynomial.coeffNorm1_ofCoeffList, List.map_cons, List.map_nil,
     List.sum_cons, List.sum_nil, Nat.add_zero, le_refl]
 
 /-- Submultiplicativity of `Polynomial.coeffNorm1` under `Cslib.mulZJet J`. -/
 theorem coeffNorm1_mulZJet_le (J : ℕ) (a b : List ℤ) :
     (Polynomial.ofCoeffList (Cslib.mulZJet J a b)).coeffNorm1 ≤
       (Polynomial.ofCoeffList a).coeffNorm1 * (Polynomial.ofCoeffList b).coeffNorm1 := by
-  simpa only [Cslib.coeffNorm1_ofCoeffList] using
+  simpa only [Polynomial.coeffNorm1_ofCoeffList, Cslib.polyNorm1] using
     (Cslib.polyNorm1_mulZJet_le J a b).trans
       (Nat.mul_le_mul (Cslib.polyNorm1_take_le a J) (Cslib.polyNorm1_take_le b J))
 
@@ -239,7 +240,7 @@ theorem coeffNorm1_foldl_mulZJet_le {α : Type*} (J : ℕ) (l : List α)
 -/
 theorem size_coeffNorm1_le_length_encList (a : List ℤ) :
     (Polynomial.ofCoeffList a).coeffNorm1.size ≤ 2 * (encList encIntBin a).length := by
-  rw [Cslib.coeffNorm1_ofCoeffList, Cslib.polyNorm1]
+  rw [Polynomial.coeffNorm1_ofCoeffList]
   have hz : ∀ n ∈ a.map Int.natAbs, n.size ≤ (encList encIntBin a).length := fun n hn => by
     rcases List.mem_map.mp hn with ⟨z, hz, rfl⟩
     have hmem := length_le_encList_of_mem encIntBin hz
@@ -258,7 +259,7 @@ theorem length_encList_encIntBin_le_of_coeffNorm1 (a : List ℤ) :
     fun n hn => ?_).trans (by simp)
   rcases List.mem_map.mp hn with ⟨z, hz, rfl⟩
   have hsz : z.natAbs.size ≤ (Polynomial.ofCoeffList a).coeffNorm1.size := by
-    rw [Cslib.coeffNorm1_ofCoeffList, Cslib.polyNorm1]
+    rw [Polynomial.coeffNorm1_ofCoeffList]
     exact Nat.size_le_size (List.le_sum_of_mem (List.mem_map_of_mem hz))
   rw [length_encIntBin]; omega
 

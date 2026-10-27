@@ -345,26 +345,26 @@ theorem CNF.sum_branch_domainExaminationBound_parityRowSystem_le [Fintype V] [De
 /-! ### 3. End-to-end Lemma 6.1 + Lemma 6.2 + Section 6.3 greedy parity-test schedule theorem -/
 
 private theorem greedyRowListLength_le_initialRowWeightBound (B m : ℕ) :
-    CNF.greedyRowListLength B m ≤ CNF.initialRowWeightBound B m := by
-  unfold CNF.greedyRowListLength CNF.initialRowWeightBound
+    greedyRowListLength B m ≤ initialRowWeightBound B m := by
+  unfold greedyRowListLength initialRowWeightBound
   have h1 : 20000 * B ^ 2 ≤ 320000 * B ^ 2 := Nat.mul_le_mul_right _ (by decide)
   have h2 : (Nat.log 2 m + 1) ^ 2 ≤ (Nat.log 2 m + 1) ^ 3 :=
     Nat.pow_le_pow_right (Nat.succ_pos _) (by decide)
   exact Nat.mul_le_mul h1 h2
 
 private theorem max_initialRowWeightBound_greedyRowListLength (B m : ℕ) :
-    max (CNF.initialRowWeightBound B m) (CNF.greedyRowListLength B m) =
-      CNF.initialRowWeightBound B m :=
+    max (initialRowWeightBound B m) (greedyRowListLength B m) =
+      initialRowWeightBound B m :=
   max_eq_left (greedyRowListLength_le_initialRowWeightBound B m)
 
 /-- **Lemmas 6.1–6.2 & Section 6.3 (greedy parity-row selection with uniform per-branch
 `Feasible` and `ReplacementDesign` guarantees at every stage `i ≤ 3 * n`)**:
 For any `1 ≤ β`, there exists `n₀ ≥ 20` such that for any width-`≤ k` CNF `φ : CNF V` on
 `n = Fintype.card V ≥ 1` variables with `φ.length ≤ B * n` (`1 ≤ B`), there exist initial parity
-rows `A₀` (`A₀.length ≤ 3 * n`, each of weight at most `D₀ = CNF.initialRowWeightBound B φ.length`)
+rows `A₀` (`A₀.length ≤ 3 * n`, each of weight at most `D₀ = initialRowWeightBound B φ.length`)
 such that for any `3 * n`-step greedy sequence `A (i + 1) = A i ++ [testRow (γ i)]` with `A 0 = A₀`
 minimizing `commonZeroCount` over candidate rows of list length
-`P = CNF.greedyRowListLength B φ.length`:
+`P = greedyRowListLength B φ.length`:
 1. After `3 * n` rounds,
    `commonZeroCount univ (φ.parityRowSystem (A (3 * n))) = φ.modelCountOn Finset.univ`.
 2. At every stage `i ≤ 3 * n`, `(A i).length ≤ 6 * n`, and whenever the free-variable count `n'`
@@ -383,8 +383,8 @@ theorem CNF.exists_greedy_parityRowSystem_branch_schedule {β : ℕ} (hβ : 1 �
         1 ≤ Fintype.card V →
         1 ≤ B →
         φ.length ≤ B * Fintype.card V →
-        let D₀ := CNF.initialRowWeightBound B φ.length
-        let P := CNF.greedyRowListLength B φ.length
+        let D₀ := initialRowWeightBound B φ.length
+        let P := greedyRowListLength B φ.length
         ∃ A₀ : List (Fin φ.length → Bool), A₀.length ≤ 3 * Fintype.card V ∧
           (∀ r ∈ A₀, weight r ≤ D₀) ∧
           ∀ (A : ℕ → List (Fin φ.length → Bool))
@@ -445,18 +445,18 @@ private theorem clog_two_le_two_mul_of_le_two_mul {n n' : ℕ} (hn : n ≤ 2 * n
     (Nat.clog_le_iff_le_pow one_lt_two).mpr h2
   omega
 
-/-- Coefficient for the polynomial bound on `CNF.initialRowWeightBound B m` when
+/-- Coefficient for the polynomial bound on `initialRowWeightBound B m` when
 `B ≤ C_B * (Nat.clog 2 n) ^ β_B` and `m ≤ B * n`. -/
 def CNF.initialRowWeightCoeff (C_B β_B : ℕ) : ℕ :=
   320000 * C_B ^ 2 * (C_B + β_B + 2) ^ 3
 
 /-- **Section 6.1 & 6.3 ($D_0 \le C \cdot (\lceil \log_2 n \rceil)^{2\beta_B + 3}$):**
 when `2 ≤ n`, `m ≤ B * n`, and `B ≤ C_B * (Nat.clog 2 n) ^ β_B`, the initial parity-row weight bound
-`CNF.initialRowWeightBound B m` is at most
+`initialRowWeightBound B m` is at most
 `CNF.initialRowWeightCoeff C_B β_B * (Nat.clog 2 n) ^ (2 * β_B + 3)`. -/
 theorem CNF.initialRowWeightBound_le_mul_pow_clog {n m B C_B β_B : ℕ}
     (hn : 2 ≤ n) (hm : m ≤ B * n) (hB : B ≤ C_B * Nat.clog 2 n ^ β_B) :
-    CNF.initialRowWeightBound B m ≤
+    initialRowWeightBound B m ≤
       CNF.initialRowWeightCoeff C_B β_B * Nat.clog 2 n ^ (2 * β_B + 3) := by
   set lam := Nat.clog 2 n
   have hlam1 : 1 ≤ lam :=
@@ -485,7 +485,7 @@ theorem CNF.initialRowWeightBound_le_mul_pow_clog {n m B C_B β_B : ℕ}
   have hlog3 : (Nat.log 2 m + 1) ^ 3 ≤ (C_B + β_B + 2) ^ 3 * lam ^ 3 := by
     calc (Nat.log 2 m + 1) ^ 3 ≤ ((C_B + β_B + 2) * lam) ^ 3 := Nat.pow_le_pow_left hlog 3
       _ = (C_B + β_B + 2) ^ 3 * lam ^ 3 := mul_pow _ _ 3
-  unfold CNF.initialRowWeightBound CNF.initialRowWeightCoeff
+  unfold initialRowWeightBound CNF.initialRowWeightCoeff
   calc 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3
       ≤ 320000 * (C_B ^ 2 * lam ^ (2 * β_B)) * ((C_B + β_B + 2) ^ 3 * lam ^ 3) :=
         Nat.mul_le_mul (Nat.mul_le_mul_left 320000 hB2) hlog3
@@ -506,7 +506,7 @@ def CNF.parityScheduleCoeff (k C_B β_B : ℕ) : ℕ :=
 private theorem parityBranchThreshold_succ_and_width_le_clog_pow {n n' m B W k C_B β_B : ℕ}
     (hn : 2 ≤ n) (hn_le : n ≤ 2 * n') (hn' : 2 ≤ n')
     (hm : m ≤ B * n) (hB : B ≤ C_B * Nat.clog 2 n ^ β_B)
-    (hW : W ≤ CNF.initialRowWeightBound B m)
+    (hW : W ≤ initialRowWeightBound B m)
     (hcoeff : CNF.parityScheduleCoeff k C_B β_B ≤ Nat.clog 2 n') :
     CNF.parityBranchThreshold k W n + 1 ≤ Nat.clog 2 n' ^ (2 * β_B + 5) ∧
     max (k * (W * 2 ^ k)) 1 ≤ Nat.clog 2 n' ^ (2 * β_B + 5) := by
@@ -565,7 +565,7 @@ For any `k C_B β_B : ℕ`, there exists an explicit threshold `N₀ ≥ 20` suc
 CNF `φ : CNF V` with `N₀ ≤ Fintype.card V`, `φ.length ≤ B * Fintype.card V`, and
 `B ≤ C_B * (Nat.clog 2 (Fintype.card V)) ^ β_B`, and any parity-row list
 `rows : List (Fin φ.length → Bool)` with `rows.length ≤ 6 * Fintype.card V`,
-`∀ r ∈ rows, weight r ≤ W`, and `W ≤ CNF.initialRowWeightBound B φ.length`, at the canonical
+`∀ r ∈ rows, weight r ≤ W`, and `W ≤ initialRowWeightBound B φ.length`, at the canonical
 threshold `b₀ = CNF.parityBranchThreshold k W (Fintype.card V)` and exponent `β = 2 * β_B + 5`:
 1. `2 ≤ (Nat.clog 2 (Fintype.card V)).sqrt`,
 2. `Fintype.card V ≤ 2 * n'` and `Fintype.card V / 2 ≤ n'`,
@@ -580,7 +580,7 @@ theorem CNF.exists_branch_schedule_parityRowSystem_of_le_clog_pow (k C_B β_B : 
         N₀ ≤ Fintype.card V →
         φ.length ≤ B * Fintype.card V →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
-        W ≤ CNF.initialRowWeightBound B φ.length →
+        W ≤ initialRowWeightBound B φ.length →
         ∀ {rows : List (Fin φ.length → Bool)},
           (∀ r ∈ rows, weight r ≤ W) →
           rows.length ≤ 6 * Fintype.card V →
@@ -645,7 +645,7 @@ theorem CNF.exists_branch_schedule_parityRowSystem_of_le_clog_pow (k C_B β_B : 
 For any `k C_B β_B : ℕ`, there exists `N₀ ≥ 20` such that for any width-`≤ k` CNF `φ : CNF V` with
 `N₀ ≤ Fintype.card V`, `1 ≤ B ≤ C_B * (Nat.clog 2 (Fintype.card V)) ^ β_B`, and
 `φ.length ≤ B * Fintype.card V`, there exist initial parity rows `A₀` (`A₀.length ≤ 3 * n`, each of
-weight at most `D₀ = CNF.initialRowWeightBound B φ.length`) such that for any `3 * n`-step greedy
+weight at most `D₀ = initialRowWeightBound B φ.length`) such that for any `3 * n`-step greedy
 sequence `A (i + 1) = A i ++ [testRow (γ i)]` with `A 0 = A₀` minimizing `commonZeroCount`:
 1. `commonZeroCount univ (φ.parityRowSystem (A (3 * Fintype.card V))) = φ.modelCountOn Finset.univ`.
 2. At every stage `i ≤ 3 * Fintype.card V`, `(A i).length ≤ 6 * Fintype.card V`, and at the
@@ -664,8 +664,8 @@ theorem CNF.exists_greedy_parityRowSystem_branch_schedule_of_le_clog_pow (k C_B 
         1 ≤ B →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
         φ.length ≤ B * Fintype.card V →
-        let D₀ := CNF.initialRowWeightBound B φ.length
-        let P := CNF.greedyRowListLength B φ.length
+        let D₀ := initialRowWeightBound B φ.length
+        let P := greedyRowListLength B φ.length
         let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
         ∃ A₀ : List (Fin φ.length → Bool), A₀.length ≤ 3 * Fintype.card V ∧
           (∀ r ∈ A₀, weight r ≤ D₀) ∧

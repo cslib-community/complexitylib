@@ -96,6 +96,10 @@ parameter uniformity and the native subexponential counting endpoint remain sepa
   time-and-space transfer certificate for `CountingSparsify.search`.
 * `Cslib.Complexity.CountingSparsify.exists_computableInO_search_polySpace`: the same time envelope
   with independent polynomial workspace, from separately promised leaf time and workspace.
+* `Cslib.Complexity.CountingSparsify.stepWith`,
+  `Cslib.Complexity.CountingSparsify.iterate_stepWith_fst`,
+  `Cslib.Complexity.CountingSparsify.iterate_stepWith_countingThreshold`: the step with a captured
+  runtime context, which keeps the context and agrees with `step` at the context's base.
 
 ## References
 
