@@ -17,14 +17,15 @@ public import Complexity.Computability.WordRAM.Compile
 The input registers hold the encodings of two signed integers. The routines use only ordinary
 unsigned arithmetic, comparisons and branches; no signed operation is added to the machine.
 The bounds exclude the final halt; `Exec.executes` adds exactly one instruction.
-Registers zero and one are inputs, register two is the output, and registers three through
-eight are scratch. Memory and all other registers are preserved. `Code.rename` can place the
-routines in a larger register file.
+Registers `left` (index 0) and `right` (index 1) are inputs, `result` (index 2) is the output,
+and indices 3 through 8 are scratch, including `two` (index 3). Memory and all other registers
+are preserved. `Code.rename` can place the routines in a larger register file.
 
 The source semantics are `GenericRAM.Signed.Arithmetic.eval`, restricted here to addition,
 subtraction and multiplication. This is an arithmetic bridge, not a compiler for signed RAM
 programs or a simulation of modular arithmetic. Division, remainder, addressing and control
-transfer are separate work.
+transfer are separate work. The common `w + 2` allowance covers exact out-of-range sums
+and differences; it is not a minimal-width claim for results that fit the source range.
 
 ## Main definitions
 
@@ -108,7 +109,7 @@ def addCore : Code .standard (r + 9) := ram[ ⟪addMagnitudes⟫; ⟪finish⟫ ]
 /-- Add two sign-and-magnitude words, normalizing the sign of zero. -/
 def add : Code .standard (r + 9) := ram[ ⟪unpack⟫; ⟪addCore⟫ ]
 
-/-- Reverse the right sign bit; register two is a temporary constant one. -/
+/-- Reverse the right sign bit; the result register temporarily holds the constant one. -/
 def flipRightSign : Code .standard (r + 9) := ram[
   result ← #1; signB ← result - signB ]
 
@@ -251,8 +252,8 @@ theorem exec_add {w : ℕ} {a b : ℤ} (ha : GenericRAM.Signed.Fits w a)
   let z := unpacked x a.natAbs b.natAbs (if a < 0 then 1 else 0) (if b < 0 then 1 else 0)
   have hu := exec_unpack two_fits x hxa hxb (magnitude_fits ha) (magnitude_fits hb)
   have hab : a.natAbs + b.natAbs ≤ 2 * 2 ^ (w - 1) := by
-    have := natAbs_le ha
-    have := natAbs_le hb
+    have := ha.natAbs_le
+    have := hb.natAbs_le
     omega
   obtain ⟨y, hy, hyr, hym⟩ := exec_addCore z (a := a.natAbs) (b := b.natAbs)
     (sa := if a < 0 then 1 else 0) (sb := if b < 0 then 1 else 0)
@@ -283,8 +284,8 @@ theorem exec_subtract {w : ℕ} {a b : ℤ} (ha : GenericRAM.Signed.Fits w a)
       (ram[ result ← #1; signB ← result - signB ]) z q 2 := by
     ram_eval [q, z, unpacked, result, signB, Fin.mk.injEq, h1, hf]
   have hab : a.natAbs + b.natAbs ≤ 2 * 2 ^ (w - 1) := by
-    have := natAbs_le ha
-    have := natAbs_le hb
+    have := ha.natAbs_le
+    have := hb.natAbs_le
     omega
   obtain ⟨y, hy, hyr, hym⟩ := exec_addCore q (a := a.natAbs) (b := b.natAbs)
     (sa := if a < 0 then 1 else 0) (sb := 1 - if b < 0 then 1 else 0)
@@ -318,7 +319,7 @@ theorem exec_multiply {w : ℕ} {a b : ℤ} (ha : GenericRAM.Signed.Fits w a)
   let q := (z.set result (a.natAbs * b.natAbs)).set signA s
   have hu := exec_unpack two_fits x hxa hxb (magnitude_fits ha) (magnitude_fits hb)
   have hprod : a.natAbs * b.natAbs ≤ 2 * 2 ^ (w - 1) := by
-    have := natAbs_le hp
+    have := hp.natAbs_le
     rw [Int.natAbs_mul] at this
     omega
   have hf := arithmetic_fits ha.1 hprod

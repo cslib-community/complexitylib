@@ -66,21 +66,10 @@ theorem decode_encode (z : ℤ) : decode (encode z) = z := by
 theorem encode_injective : Function.Injective encode :=
   Function.LeftInverse.injective decode_encode
 
-/-- A signed word's magnitude is at most the magnitude of its negative endpoint. -/
-theorem natAbs_le {w : ℕ} {z : ℤ} (h : GenericRAM.Signed.Fits w z) :
-    z.natAbs ≤ 2 ^ (w - 1) := by
-  rcases h with ⟨_, hlo, hhi⟩
-  have hp : ((2 ^ (w - 1) : ℕ) : ℤ) = 2 ^ (w - 1) := by norm_cast
-  by_cases hz : 0 ≤ z
-  · have := Int.eq_natAbs_of_nonneg hz
-    omega
-  · have := Int.ofNat_natAbs_of_nonpos (by omega : z ≤ 0)
-    omega
-
 /-- Every signed `w`-bit integer fits in one unsigned word with one extra bit. -/
 theorem encode_fits {w : ℕ} {z : ℤ} (h : GenericRAM.Signed.Fits w z) :
     Fits (w + 1) (encode z) := by
-  have hm := natAbs_le h
+  have hm := h.natAbs_le
   have hw0 := h.1
   have hp : 2 ^ (w + 1) = 4 * 2 ^ (w - 1) := by
     have hw : w + 1 = (w - 1) + 2 := by omega

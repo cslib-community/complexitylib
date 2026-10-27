@@ -34,6 +34,7 @@ not the unsigned `Cslib.WordRAM` instance; in particular subtraction is not trun
 ## Main results
 
 * `fits_zero`, `fits_one`: basic representable values.
+* `Fits.natAbs_le`: magnitude bounded by the negative endpoint.
 
 ## References
 
@@ -73,6 +74,17 @@ def Fits (w : ℕ) (value : ℤ) : Prop :=
 
 instance (w : ℕ) (value : ℤ) : Decidable (Fits w value) :=
   inferInstanceAs (Decidable (_ ∧ _ ∧ _))
+
+/-- A signed word's magnitude is at most the magnitude of its negative endpoint. -/
+theorem Fits.natAbs_le {w : ℕ} {z : ℤ} (h : Fits w z) :
+    z.natAbs ≤ 2 ^ (w - 1) := by
+  rcases h with ⟨_, hlo, hhi⟩
+  have hp : ((2 ^ (w - 1) : ℕ) : ℤ) = 2 ^ (w - 1) := by norm_cast
+  by_cases hz : 0 ≤ z
+  · have := Int.eq_natAbs_of_nonneg hz
+    omega
+  · have := Int.ofNat_natAbs_of_nonpos (by omega : z ≤ 0)
+    omega
 
 /-- Zero fits at every positive width. -/
 theorem fits_zero {w : ℕ} (positive : 0 < w) : Fits w 0 := by
