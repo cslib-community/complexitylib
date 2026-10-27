@@ -44,11 +44,15 @@ example : subsetPairCount 3 0 = 1 ∧ subsetPairCount 3 1 = 7 ∧ subsetPairCoun
     s.length = 19 ∧ expectedValid3_2.all (fun p => s.count p == 1) = true ∧
       s.all (fun p => p ∈ expectedValid3_2) = true := by decide
 
--- 4. `q > n` (`n = 3, q = 5`): `subsetPairCount 3 5 = 3 ^ 3 = 27` and out-of-range fallback.
-example : subsetPairCount 3 5 = 27 ∧
+-- 4. `q > n` (`n = 3, q = 5`): `subsetPairCount 3 5 = 3 ^ 3 = 27`, concrete refinement with
+-- `Cslib.subsetPairCount`, and out-of-range fallback.
+example : subsetPairCount 3 5 = 27 ∧ Cslib.subsetPairCount 3 5 = 27 ∧
+    subsetPairCount 3 2 = Cslib.subsetPairCount 3 2 ∧
     ((List.range (subsetPairCount 3 5)).map (unrankSubsetPair 3 5)).Nodup ∧
     unrankSubsetPair 3 2 19 = ([false, false, false], [false, false, false], false) ∧
-    unrankSubsetPair 3 2 100 = ([false, false, false], [false, false, false], false) := by decide
+    unrankSubsetPair 3 2 100 = ([false, false, false], [false, false, false], false) :=
+  ⟨by rw [subsetPairCount_eq]; decide, by decide, subsetPairCount_eq 3 2,
+    by decide, by decide, by decide⟩
 
 -- 5. Möbius alternating sum cancellation and degree-2 cube sum reconstruction via `run`.
 private def testPoly3 (w : List Bool) : ℤ :=

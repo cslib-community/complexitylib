@@ -9,10 +9,8 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.GenericRAM.Native.IndexFold
-public import Complexity.Foundations.Data.BitString.List
-public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-public import Mathlib.Data.Finset.Powerset
-public import Mathlib.Data.Nat.Choose.Basic
+public import Complexity.Foundations.Combinatorics.SubsetPairCount
+public import Complexity.Foundations.Data.BitString.Support
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -21,7 +19,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
-import Complexity.Foundations.Data.BitString.Weight
 import Mathlib.Algebra.Ring.Parity
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Card
@@ -38,34 +35,35 @@ steps without materializing exponentially many subsets.
 ## Main definitions
 
 * `Cslib.GenericRAM.SubsetPairFold.pascalTable`, `Cslib.GenericRAM.SubsetPairFold.subsetPairCount`:
-  dynamic-programming Pascal table (by row-by-row addition) and executable count `C_q`.
-* `Cslib.GenericRAM.SubsetPairFold.DecodedPair`, `Cslib.GenericRAM.SubsetPairFold.unrankSubsetPair`:
-  polynomial-time `(E, U)` unranker with deterministic out-of-range fallback.
-* `Cslib.GenericRAM.SubsetPairFold.supportOfList` and
+  dynamic-programming Pascal table and executable count `C_q`.
+* `Cslib.GenericRAM.SubsetPairFold.DecodedPair`, `Cslib.GenericRAM.SubsetPairFold.unrankSubsetPair`,
   `Cslib.GenericRAM.SubsetPairFold.ValidSubsetPair`,
   `Cslib.GenericRAM.SubsetPairFold.unrankValidSubsetPair`,
-  `Cslib.GenericRAM.SubsetPairFold.validSubsetPairEquiv`: finite-set view and bijection.
+  `Cslib.GenericRAM.SubsetPairFold.validSubsetPairEquiv`: `(E, U)` unranker and bijection (via
+  `Cslib.BitString.supportOfList`).
 * `Cslib.GenericRAM.SubsetPairFold.pascalTableCertificate`,
-  `Cslib.GenericRAM.SubsetPairFold.subsetPairCountCertificate`, and
-  `Cslib.GenericRAM.SubsetPairFold.unrankSubsetPairCertificate`: native resource certificates.
-* `Cslib.GenericRAM.SubsetPairFold.indexBody`, `Cslib.GenericRAM.SubsetPairFold.runPrefix`,
-  `Cslib.GenericRAM.SubsetPairFold.run`, `Cslib.GenericRAM.SubsetPairFold.certificate`: streaming
-  fold over `0, …, subsetPairCount n q - 1` built on `Cslib.GenericRAM.IndexFold.run`.
+  `Cslib.GenericRAM.SubsetPairFold.subsetPairCountCertificate`,
+  `Cslib.GenericRAM.SubsetPairFold.unrankSubsetPairCertificate`,
+  `Cslib.GenericRAM.SubsetPairFold.indexBody`, `Cslib.GenericRAM.SubsetPairFold.runPrefix`,
+  `Cslib.GenericRAM.SubsetPairFold.run`, `Cslib.GenericRAM.SubsetPairFold.certificate`: native
+  resource certificates and streaming fold built on `Cslib.GenericRAM.IndexFold.run`.
 
 ## Main results
 
 * `Cslib.GenericRAM.SubsetPairFold.getD_pascalTable_eq_choose`,
-  `Cslib.GenericRAM.SubsetPairFold.length_encNat_mem_pascalTable_le`: DP table correctness/size.
-* `Cslib.GenericRAM.SubsetPairFold.subsetPairCount_eq_sum`,
+  `Cslib.GenericRAM.SubsetPairFold.length_encNat_mem_pascalTable_le`,
+  `Cslib.GenericRAM.SubsetPairFold.subsetPairCount_eq_sum`,
+  `Cslib.GenericRAM.SubsetPairFold.subsetPairCount_eq`,
   `Cslib.GenericRAM.SubsetPairFold.subsetPairCount_pos`,
   `Cslib.GenericRAM.SubsetPairFold.subsetPairCount_le_three_pow`,
-  `Cslib.GenericRAM.SubsetPairFold.length_encNat_subsetPairCount_le`: `C_q` formula and bounds.
+  `Cslib.GenericRAM.SubsetPairFold.length_encNat_subsetPairCount_le`: DP table, `C_q` refinement
+  with `Cslib.subsetPairCount`, and binary-length bounds.
 * `Cslib.GenericRAM.SubsetPairFold.bijective_unrankValidSubsetPair`,
   `Cslib.GenericRAM.SubsetPairFold.nodup_map_unrankSubsetPair`,
-  `Cslib.GenericRAM.SubsetPairFold.existsUnique_unrankSubsetPair`: validity, `Nodup`, bijection.
-* `Cslib.GenericRAM.SubsetPairFold.pascalTable_polyTime`,
+  `Cslib.GenericRAM.SubsetPairFold.existsUnique_unrankSubsetPair`,
+  `Cslib.GenericRAM.SubsetPairFold.pascalTable_polyTime`,
   `Cslib.GenericRAM.SubsetPairFold.subsetPairCount_polyTime`,
-  `Cslib.GenericRAM.SubsetPairFold.unrankSubsetPair_polyTime`: plain polynomial-time certificates.
+  `Cslib.GenericRAM.SubsetPairFold.unrankSubsetPair_polyTime`: bijection and `fun_prop` polytime.
 * `Cslib.GenericRAM.SubsetPairFold.run_eq_foldl_map`,
   `Cslib.GenericRAM.SubsetPairFold.run_mobius_eq_sum_restricted_subsets`,
   `Cslib.GenericRAM.SubsetPairFold.computableInO`,
@@ -82,7 +80,7 @@ steps without materializing exponentially many subsets.
 namespace Cslib.GenericRAM.SubsetPairFold
 
 open scoped BigOperators
-open Turing.MultiTapeTM
+open Turing.MultiTapeTM Cslib.BitString
 
 namespace Internal
 
@@ -238,22 +236,21 @@ theorem subsetPairCount_eq_sum (n q : ℕ) :
   rw [List.map_congr_left fun s _ => by rw [getD_pascalTable_eq_choose le_rfl],
     ← List.sum_toFinset _ List.nodup_range, List.toFinset_range]
 
+/-- Refinement equality equating the DP `subsetPairCount` to `Cslib.subsetPairCount`. -/
+theorem subsetPairCount_eq (n q : ℕ) : subsetPairCount n q = Cslib.subsetPairCount n q :=
+  subsetPairCount_eq_sum n q
+
 /-- `subsetPairCount n q` is strictly positive for all `n, q` (since `(∅, ∅)` is always valid). -/
-theorem subsetPairCount_pos (n q : ℕ) : 0 < subsetPairCount n q := by
-  rw [subsetPairCount_eq_sum, Finset.sum_range_succ']
-  simp only [pow_zero, Nat.choose_zero_right, mul_one]; omega
+theorem subsetPairCount_pos (n q : ℕ) : 0 < subsetPairCount n q :=
+  subsetPairCount_eq n q ▸ Cslib.subsetPairCount_pos n q
 
 /-- When `n ≤ q`, `subsetPairCount n q = 3 ^ n` ([OpenAI2026ETH], eq. (3.14)). -/
-theorem subsetPairCount_eq_three_pow_of_le {n q : ℕ} (h : n ≤ q) :
-    subsetPairCount n q = 3 ^ n := by
-  rw [subsetPairCount_eq_sum, Nat.min_eq_right h]; change _ = (2 + 1) ^ n
-  simpa only [one_pow, mul_one, Nat.cast_id] using (add_pow (2 : ℕ) 1 n).symm
+theorem subsetPairCount_eq_three_pow_of_le {n q : ℕ} (h : n ≤ q) : subsetPairCount n q = 3 ^ n :=
+  subsetPairCount_eq n q ▸ Cslib.subsetPairCount_eq_three_pow h
 
 /-- `subsetPairCount n q ≤ 3 ^ n` for all `n, q : ℕ`. -/
-theorem subsetPairCount_le_three_pow (n q : ℕ) : subsetPairCount n q ≤ 3 ^ n := by
-  rw [subsetPairCount_eq_sum, ← subsetPairCount_eq_three_pow_of_le (le_refl n),
-    subsetPairCount_eq_sum, Nat.min_self]
-  exact Finset.sum_le_sum_of_subset (Finset.range_mono (by omega))
+theorem subsetPairCount_le_three_pow (n q : ℕ) : subsetPairCount n q ≤ 3 ^ n :=
+  subsetPairCount_eq n q ▸ Cslib.subsetPairCount_le_three_pow n q
 
 /-- The binary index bound `subsetPairCount n q` occupies at most `2 * n + 1` bits in `encNat`. -/
 theorem length_encNat_subsetPairCount_le (n q : ℕ) :
@@ -498,37 +495,6 @@ theorem snd_snd_unrankSubsetPair_eq_decide_odd (n q j : ℕ) :
     rw [Bool.eq_iff_iff, beq_iff_eq, decide_eq_true_eq, Nat.odd_iff]
   · rw [unrankSubsetPair_of_le (by omega)]; simp [List.count_replicate]
 
-/-- Convert a Boolean indicator list to its support subset in `Fin n` via `BitString.ofList`. -/
-def supportOfList (n : ℕ) (word : List Bool) : Finset (Fin n) :=
-  Finset.univ.filter fun i => Cslib.BitString.ofList n word i = true
-
-@[simp] theorem mem_supportOfList {n : ℕ} {word : List Bool} {i : Fin n} :
-    i ∈ supportOfList n word ↔ word.getD i.val false = true := by
-  simp [supportOfList, Cslib.BitString.ofList]
-
-@[simp] theorem supportOfList_ofFn_decide {n : ℕ} (S : Finset (Fin n)) :
-    supportOfList n (List.ofFn fun i => decide (i ∈ S)) = S := by ext i; simp [supportOfList]
-
-/-- On words of length `n`, `List.ofFn (fun i => decide (i ∈ supportOfList n word))` is `word`. -/
-theorem ofFn_decide_mem_supportOfList {n : ℕ} {word : List Bool} (hw : word.length = n) :
-    (List.ofFn fun i : Fin n => decide (i ∈ supportOfList n word)) = word := by
-  have hfun : (fun i : Fin n => decide (i ∈ supportOfList n word)) =
-      Cslib.BitString.ofList n word := by funext i; simp [supportOfList, Cslib.BitString.ofList]
-  rw [hfun, Cslib.BitString.ofFn_ofList hw]
-
-/-- On words of exact length `n`, `supportOfList n` is injective. -/
-theorem supportOfList_injective_of_length {n : ℕ} {w₁ w₂ : List Bool}
-    (hw₁ : w₁.length = n) (hw₂ : w₂.length = n)
-    (heq : supportOfList n w₁ = supportOfList n w₂) : w₁ = w₂ := by
-  rw [← ofFn_decide_mem_supportOfList hw₁, ← ofFn_decide_mem_supportOfList hw₂, heq]
-
-/-- On words of exact length `n`, `#(supportOfList n word) = word.count true`. -/
-theorem card_supportOfList_of_length {n : ℕ} {word : List Bool} (hw : word.length = n) :
-    (supportOfList n word).card = word.count true := by
-  change Cslib.BitString.weight (Cslib.BitString.ofList n word) = word.count true
-  simpa only [Cslib.BitString.ofFn_ofList hw] using
-    (Cslib.BitString.count_true_ofFn (Cslib.BitString.ofList n word)).symm
-
 /-- Valid `(E, U)` subset pairs on `Fin n` with `#E ≤ q` and `U ⊆ E` ([OpenAI2026ETH]). -/
 abbrev ValidSubsetPair (n q : ℕ) : Type :=
   {p : Finset (Fin n) × Finset (Fin n) // p.1.card ≤ q ∧ p.2 ⊆ p.1}
@@ -594,22 +560,8 @@ theorem injective_unrankValidSubsetPair (n q : ℕ) :
 theorem sum_two_pow_card_eq_subsetPairCount (n q : ℕ) :
     (∑ E ∈ (Finset.univ : Finset (Fin n)).powerset.filter (fun E => E.card ≤ q), 2 ^ E.card) =
       subsetPairCount n q := by
-  rw [subsetPairCount_eq_sum]
-  have hmaps : ∀ E ∈ (Finset.univ : Finset (Fin n)).powerset.filter (fun E => E.card ≤ q),
-      E.card ∈ Finset.range (min q n + 1) := fun E hE => by
-    have hEq := (Finset.mem_filter.mp hE).2
-    have hEn : E.card ≤ n := by
-      simpa only [Finset.card_univ, Fintype.card_fin] using Finset.card_le_univ E
-    exact Finset.mem_range.mpr (by omega)
-  rw [← Finset.sum_fiberwise_of_maps_to hmaps]; refine Finset.sum_congr rfl fun s hs => ?_
-  have hs_le : s ≤ min q n := by simpa only [Finset.mem_range, Nat.lt_succ_iff] using hs
-  have hfiber : ((Finset.univ : Finset (Fin n)).powerset.filter (fun E => E.card ≤ q)).filter
-      (fun E => E.card = s) = Finset.powersetCard s (Finset.univ : Finset (Fin n)) := by
-    ext E; simp only [Finset.mem_filter, Finset.mem_powerset, Finset.subset_univ, true_and,
-      Finset.mem_powersetCard]; omega
-  rw [hfiber, Finset.sum_congr rfl (fun E hE => by rw [(Finset.mem_powersetCard.mp hE).2]),
-    Finset.sum_const, Finset.card_powersetCard, Finset.card_univ, Fintype.card_fin, smul_eq_mul,
-    Nat.mul_comm]
+  simpa only [subsetPairCount_eq, Fintype.card_fin] using
+    Cslib.sum_powerset_filter_card_le_two_pow (ι := Fin n) q
 
 private theorem sum_validSubsetPair {M : Type*} [AddCommMonoid M] (n q : ℕ)
     (f : Finset (Fin n) → Finset (Fin n) → M) :
@@ -638,9 +590,8 @@ private theorem sum_validSubsetPair {M : Type*} [AddCommMonoid M] (n q : ℕ)
 /-- The finite type `ValidSubsetPair n q` has exact cardinality `subsetPairCount n q`. -/
 theorem card_validSubsetPair (n q : ℕ) :
     Fintype.card (ValidSubsetPair n q) = subsetPairCount n q := by
-  rw [← Finset.card_univ, Finset.card_eq_sum_ones, sum_validSubsetPair n q (fun _ _ => 1)]
-  simp only [← Finset.card_eq_sum_ones, Finset.card_powerset]
-  exact sum_two_pow_card_eq_subsetPairCount n q
+  rw [Fintype.card_subtype, subsetPairCount_eq]
+  exact Cslib.card_subsetPairs_eq_subsetPairCount_of_card (Fintype.card_fin n) q
 
 /-- `unrankValidSubsetPair n q` is a bijection onto `ValidSubsetPair n q`. -/
 theorem bijective_unrankValidSubsetPair (n q : ℕ) :
