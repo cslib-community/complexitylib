@@ -8,13 +8,16 @@ Checks enforced by default (see AGENTS.md):
 3. Every `set_option maxHeartbeats` or `set_option maxRecDepth` has an explanatory comment
    on the same line, within the preceding 3 lines, or (for `set_option ... in`) on the next
    line, where Mathlib's `linter.style.maxHeartbeats` expects it.
-4. (Default selection only.) `references.bib` keys are unique and its entries are sorted by key,
+4. Docstrings in `Complexity/` contain only root-qualified or external Markdown links (`[text](target)`)
+   and root-qualified slash-containing `.lean` code tokens (`Complexity/.../*.lean`, `Cslib/...`,
+   `Mathlib/...`), catching links that `doc-gen4` would resolve brokenly from the documentation root.
+5. (Default selection only.) `references.bib` keys are unique and its entries are sorted by key,
    both compared case-insensitively as BibTeX does, so that PRs adding entries rarely conflict.
 
 Opt-in heuristic checks:
-5. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
+6. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
    under Complexity/.
-6. (`--max-lines N`) Flag Lean files exceeding N lines.
+7. (`--max-lines N`) Flag Lean files exceeding N lines.
 """
 
 from __future__ import annotations
@@ -26,7 +29,14 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from proof_lengths import COMMAND, masks  # noqa: E402
+from proof_lengths import (  # noqa: E402
+    CHAR_LITERAL,
+    COMMAND,
+    COMMENT_SPECIAL,
+    NORMAL_SPECIAL,
+    STRING_SPECIAL,
+    masks,
+)
 
 UPSTREAM_MARKER_RE = re.compile(
     r"^--\s*upstream:\s*(?:"
@@ -47,6 +57,180 @@ CUSTOM_AXIOM_RE = re.compile(
 SET_OPTION_RE = re.compile(r"^\s*set_option\s+(maxHeartbeats|maxRecDepth)\b")
 # cslib pads some keys with spaces.
 BIB_KEY_RE = re.compile(r"^@\w+\s*\{\s*([^,\s]+)\s*,", re.M)
+
+DOC_DEP_ROOTS = ("Cslib", "Mathlib", "Batteries", "Std", "Init", "Lean")
+DOC_FENCE_RE = re.compile(
+    r"^[ \t]*(?P<fence>`{3,}|~{3,})(?P<info>[^\n]*)\n(?P<body>.*?)(?:\n[ \t]*(?P=fence)[ \t]*(?=\n|$)|\Z)",
+    re.M | re.S,
+)
+DOC_INLINE_RE = re.compile(
+    r"(?P<escape>\\.)"
+    r"|(?P<math>\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)"
+    r"|(?P<link>(?<!!)\[(?:`+[^`\n]*`+|\\.|[^\[\]`\\])*\]\(\s*(?P<target>[^)\s]+)(?:\s+\"[^\"]*\")?\s*\))"
+    r"|(?P<code_fence>`+)(?P<code>.+?)(?<!`)(?P=code_fence)(?!`)"
+)
+WHITESPACE_RUN_RE = re.compile(r"\S+")
+
+
+def extract_docstrings(text: str) -> list[tuple[int, str]]:
+    """Return `(start_offset, body)` for every top-level `/-! ... -/` or `/-- ... -/` docstring."""
+    docstrings: list[tuple[int, str]] = []
+    size = len(text)
+    depth, quoted, i = 0, False, 0
+    doc_start: int | None = None
+    while i < size:
+        if depth:
+            match = COMMENT_SPECIAL.search(text, i)
+            if not match:
+                break
+            if match[0] == "/-":
+                depth += 1
+            else:
+                depth -= 1
+                if depth == 0 and doc_start is not None:
+                    docstrings.append((doc_start, text[doc_start:match.start()]))
+                    doc_start = None
+            i = match.end()
+        elif quoted:
+            match = STRING_SPECIAL.search(text, i)
+            if not match:
+                break
+            j = match.start()
+            if text[j] == "\\" and j + 1 < size:
+                i = j + 2
+            else:
+                quoted = text[j] != '"'
+                i = j + 1
+        else:
+            match = NORMAL_SPECIAL.search(text, i)
+            if not match:
+                break
+            j = match.start()
+            if match[0] == "--":
+                end = text.find("\n", j)
+                i = size if end < 0 else end
+            elif match[0] == "/-":
+                if text.startswith(("/--", "/-!"), j) and not text.startswith("/---", j):
+                    doc_start = j + 3
+                depth, i = 1, j + 2
+            elif match[0] == "'":
+                literal = CHAR_LITERAL.match(text, j)
+                i = literal.end() if literal else j + 1
+            elif match[0] != '"':
+                close = '"' + match[0][1:-1]
+                end = text.find(close, match.end())
+                i = size if end < 0 else end + len(close)
+            else:
+                quoted, i = True, j + 1
+    return docstrings
+
+
+def validate_doc_module_path(part: str, root: pathlib.Path) -> str | None:
+    """Validate a slash-containing `.lean` code token that `doc-gen4` auto-links from doc root."""
+    if any(ch in part for ch in "{}\\") or part.startswith("/") or "//" in part:
+        return "use a clean repository-root `Complexity/.../*.lean` path or a full URL link"
+    segments = part.split("/")
+    if any(seg in ("", ".", "..") for seg in segments):
+        return "path must not contain `.` or `..` segments"
+    top = segments[0]
+    if top == "Complexity":
+        if not (root / part).is_file():
+            return f"local module `{part}` does not exist"
+        return None
+    if top in DOC_DEP_ROOTS:
+        if top in ("Cslib", "Mathlib", "Batteries"):
+            pkg_dir = root / ".lake" / "packages" / top.lower()
+            if pkg_dir.is_dir() and not (pkg_dir / part).is_file() and not (root / part).is_file():
+                return f"dependency module `{part}` does not exist"
+        return None
+    return (
+        "slash-qualified `.lean` code token is auto-linked by doc-gen4; "
+        "prefix with `Complexity/` or link to a full URL"
+    )
+
+
+def validate_doc_markdown_target(target: str, root: pathlib.Path) -> str | None:
+    """Validate a Markdown link target `[text](target)` in a `Complexity/` docstring."""
+    if target.startswith(("https://", "http://", "//", "mailto:", "#")):
+        return None
+    path_part, _, _ = target.partition("#")
+    if (
+        path_part.endswith(".html")
+        and "/" in path_part
+        and not path_part.startswith("/")
+        and "//" not in path_part
+        and not any(ch in path_part for ch in "{}\\")
+    ):
+        segments = path_part.split("/")
+        if not any(seg in ("", ".", "..") for seg in segments):
+            lean_rel = path_part[:-5] + ".lean"
+            top = segments[0]
+            if top == "Complexity":
+                if (root / lean_rel).is_file():
+                    return None
+                return f"target module `{lean_rel}` does not exist"
+            if top in DOC_DEP_ROOTS:
+                if top in ("Cslib", "Mathlib", "Batteries"):
+                    pkg_dir = root / ".lake" / "packages" / top.lower()
+                    if (
+                        pkg_dir.is_dir()
+                        and not (pkg_dir / lean_rel).is_file()
+                        and not (root / lean_rel).is_file()
+                    ):
+                        return f"target dependency module `{lean_rel}` does not exist"
+                return None
+    return (
+        "use a root-qualified `Complexity/.../*.html` path, `#anchor`, or `https://` URL "
+        "(or escape `\\[...\\]` if not a link)"
+    )
+
+
+def check_docstring_links(raw: str, rel: pathlib.Path, root: pathlib.Path) -> list[str]:
+    """Check Markdown links and auto-linked `.lean` code tokens in `Complexity/` docstrings."""
+    errors: list[str] = []
+    for doc_start, doc in extract_docstrings(raw):
+        chars = list(doc)
+        for m in DOC_FENCE_RE.finditer(doc):
+            info = m.group("info").strip()
+            lang = info.split()[0] if info else ""
+            if lang in ("", "lean"):
+                body = m.group("body")
+                body_offset = doc_start + m.start("body")
+                for tm in WHITESPACE_RUN_RE.finditer(body):
+                    tok = tm.group(0)
+                    if "/" in tok and tok.endswith(".lean"):
+                        reason = validate_doc_module_path(tok, root)
+                        if reason:
+                            line_no = raw.count("\n", 0, body_offset + tm.start()) + 1
+                            errors.append(
+                                f"{rel}:{line_no}: invalid docstring module path `{tok}` ({reason})"
+                            )
+            for j in range(m.start(), m.end()):
+                if chars[j] != "\n":
+                    chars[j] = " "
+        masked_doc = "".join(chars)
+        for m in DOC_INLINE_RE.finditer(masked_doc):
+            if m.group("target") is not None:
+                target = m.group("target")
+                reason = validate_doc_markdown_target(target, root)
+                if reason:
+                    line_no = raw.count("\n", 0, doc_start + m.start()) + 1
+                    errors.append(
+                        f"{rel}:{line_no}: invalid docstring Markdown link target `{target}` ({reason})"
+                    )
+            elif m.group("code") is not None:
+                code_body = m.group("code")
+                code_offset = doc_start + m.start("code")
+                for tm in WHITESPACE_RUN_RE.finditer(code_body):
+                    tok = tm.group(0)
+                    if "/" in tok and tok.endswith(".lean"):
+                        reason = validate_doc_module_path(tok, root)
+                        if reason:
+                            line_no = raw.count("\n", 0, code_offset + tm.start()) + 1
+                            errors.append(
+                                f"{rel}:{line_no}: invalid docstring module path `{tok}` ({reason})"
+                            )
+    return errors
 
 
 def is_candidate_module(text: str) -> bool:
@@ -127,6 +311,8 @@ def check_file(
     in_complexity = rel.parts and rel.parts[0] == "Complexity"
     if in_complexity and not UPSTREAM_MARKER_RE.search(raw):
         errors.append(f"{rel}: missing or invalid `-- upstream:` marker")
+    if in_complexity:
+        errors.extend(check_docstring_links(raw, rel, root))
 
     for idx, s_line in enumerate(syntax.split("\n"), 1):
         for m in FORBIDDEN_TOKEN_RE.finditer(s_line):

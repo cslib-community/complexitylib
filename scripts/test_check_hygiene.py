@@ -141,6 +141,108 @@ class CheckHygieneTests(unittest.TestCase):
         self.assertEqual(check_hygiene.check_file(p, root=self.root),
                          ["Complexity/QuotedText.lean:7: forbidden `native_decide`"])
 
+    def test_docstring_markdown_links_and_module_paths_from_1358_and_1367(self) -> None:
+        self.write(
+            "Complexity/Computability/Circuit/Monotone/Clique/LogarithmicPetals.lean",
+            "module\n-- upstream: candidate\n",
+        )
+        self.write(
+            "Complexity/Computability/Circuit/Monotone/Clique/Asymptotic.lean",
+            "module\n-- upstream: candidate\n",
+        )
+        self.write(
+            "Complexity/Logics/Propositional/ClauseSet/Sparsification/Tree.lean",
+            "module\n-- upstream: candidate\n",
+        )
+
+        # Before #1358: bare sibling `.html` link, root-relative `.lean` code spans, and brace-expanded paths.
+        broken_1358 = self.write(
+            "Complexity/Broken1358.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "[LogarithmicPetals](LogarithmicPetals.html) gives stronger bounds.\n"
+            "See `Monotone/Clique/Asymptotic.lean` and `Sparsification/Tree.lean`.\n"
+            "Adapted from `LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean` and\n"
+            "`SAT/ThreeSAT/PeriodicThreeSATThree{,Correctness,ExactSize}.lean`.\n"
+            "-/\n",
+        )
+        errors_1358 = check_hygiene.check_file(broken_1358, root=self.root)
+        self.assertEqual(len(errors_1358), 5, errors_1358)
+        self.assertIn("Complexity/Broken1358.lean:4: invalid docstring Markdown link target `LogarithmicPetals.html`",
+                      errors_1358[0])
+        self.assertIn("Complexity/Broken1358.lean:5: invalid docstring module path `Monotone/Clique/Asymptotic.lean`",
+                      errors_1358[1])
+        self.assertIn("Complexity/Broken1358.lean:5: invalid docstring module path `Sparsification/Tree.lean`",
+                      errors_1358[2])
+        self.assertIn("Complexity/Broken1358.lean:6: invalid docstring module path `LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean`",
+                      errors_1358[3])
+        self.assertIn("Complexity/Broken1358.lean:7: invalid docstring module path `SAT/ThreeSAT/PeriodicThreeSATThree{,Correctness,ExactSize}.lean`",
+                      errors_1358[4])
+
+        # After #1358: root-qualified `Complexity/...` paths, external URLs, bare filenames without `/`, and dependency paths.
+        fixed_1358 = self.write(
+            "Complexity/Fixed1358.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "[LogarithmicPetals](Complexity/Computability/Circuit/Monotone/Clique/LogarithmicPetals.html)\n"
+            "gives stronger bounds than `Complexity/Computability/Circuit/Monotone/Clique/Asymptotic.lean`\n"
+            "and `Complexity/Logics/Propositional/ClauseSet/Sparsification/Tree.lean` (`Game.lean`).\n"
+            "Also see `Cslib/Foundations/Data/BitString.lean`, `Mathlib/Data/Nat/Log.lean`,\n"
+            "[#anchor](#section-anchor), [decl](##SomeDecl), and\n"
+            "[PlanarThreeSATGadgets.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean).\n"
+            "-/\n",
+        )
+        self.assertEqual(check_hygiene.check_file(fixed_1358, root=self.root), [])
+
+        # Before #1367: unescaped bracketed notation `MCSP-C[s](y)` parsed as a Markdown link.
+        broken_1367 = self.write(
+            "Complexity/Broken1367.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "> • D is never incorrect. For each y, D(y) ∈ {MCSP-C[s](y), \"?\"}.\n"
+            "-/\n",
+        )
+        errors_1367 = check_hygiene.check_file(broken_1367, root=self.root)
+        self.assertEqual(len(errors_1367), 1, errors_1367)
+        self.assertIn("Complexity/Broken1367.lean:4: invalid docstring Markdown link target `y`",
+                      errors_1367[0])
+
+        # After #1367: escaped `MCSP-C\[s\](y)`, math spans `$...[A, H](\lambda)$`, and inline code `` `MCSP-C[s](y)` ``.
+        fixed_1367 = self.write(
+            "Complexity/Fixed1367.lean",
+            "module\n-- upstream: candidate\n"
+            "-- Ordinary comment `Foo/Bar.lean` and MCSP-C[s](y) are not docstrings.\n"
+            "/- Non-doc block comment `Foo/Bar.lean` and MCSP-C[s](y) -/\n"
+            "/-!\n"
+            "> • D is never incorrect. For each y, D(y) ∈ {MCSP-C\\[s\\](y), \"?\"}.\n"
+            "Math span $\\mathsf{Adv}^{\\text{cr}}[\\mathcal{A}, H](\\lambda)$ and code `MCSP-C[s](y)`.\n"
+            "Link with code label [`LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean`](https://example.com/file.lean).\n"
+            "-/\n",
+        )
+        self.assertEqual(check_hygiene.check_file(fixed_1367, root=self.root), [])
+
+    def test_docstring_nonexistent_complexity_module_or_fenced_code_path_fails(self) -> None:
+        p = self.write(
+            "Complexity/MissingTarget.lean",
+            "module\n-- upstream: candidate\n"
+            "/--\n"
+            "Broken HTML target [Missing](Complexity/DoesNotExist.html#sec) and\n"
+            "missing module `Complexity/AlsoMissing.lean`.\n"
+            "```lean\n"
+            "-- see Monotone/Clique/Asymptotic.lean\n"
+            "```\n"
+            "-/\n"
+            "theorem demo : True := trivial\n",
+        )
+        errors = check_hygiene.check_file(p, root=self.root)
+        self.assertEqual(len(errors), 3, errors)
+        self.assertIn("Complexity/MissingTarget.lean:7: invalid docstring module path `Monotone/Clique/Asymptotic.lean`",
+                      errors[0])
+        self.assertIn("Complexity/MissingTarget.lean:4: invalid docstring Markdown link target `Complexity/DoesNotExist.html#sec`",
+                      errors[1])
+        self.assertIn("Complexity/MissingTarget.lean:5: invalid docstring module path `Complexity/AlsoMissing.lean`",
+                      errors[2])
+
 
 class BibliographyTests(unittest.TestCase):
     def test_sorted_unique_keys_pass(self) -> None:
