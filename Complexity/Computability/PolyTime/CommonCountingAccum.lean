@@ -1245,7 +1245,8 @@ theorem recoverOuterJetSumModPowTwo_eq {J ℓ : ℕ} {Ω count : ℤ} {nodes : L
       hermiteRecoverZero_extractCoordNodeJets_eq hnodup hΩ nodeJets hlen P hclear u (hdeg u) (hH0 u)
   rw [recoverOuterJetSumModPowTwo, hsum]; exact Int.modPowTwo_eq_of_dvd_sub hcount₀ hcount₁ hdvd
 
-/-- End-to-end Stage 3–4 count recovery from `streamOuterJetAccum` across `Q` distinct `nodes`. -/
+/-- Outer-round accumulation plus Cramer count recovery from supplied cleared group payloads across
+`Q` distinct `nodes`. -/
 theorem recoverOuterJetSumModPowTwo_streamOuterJetAccum_eq {α : Type} {J ℓ r m T_rounds : ℕ}
     {Γ count : ℤ} {nodes : List ℤ} (hnodup : nodes.Nodup) (hΓ : Γ ≠ 0)
     (evalRound : α × ℕ → ℤ × List JetRows) (nodeCtx : Fin nodes.length → α)
