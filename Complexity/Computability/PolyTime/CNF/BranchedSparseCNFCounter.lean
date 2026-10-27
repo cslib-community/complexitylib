@@ -44,7 +44,8 @@ is False*][OpenAI2026ETH], parameterized solely over `branchEval : BranchEvalInp
 - **Total fallback & exactness**: valid dense formulas (`leafDensityRatio k N * N < ψ.length`,
   including `[[]]` at `N = 0`) dispatch to `countCNFExhaustive`, sparse formulas dispatch to
   `sparseCNFDeclaredCounter` backed by `branchedPolyCounter`, invalid inputs (`validDeclaredInput =
-  false`) return `0`, and exactness holds unconditionally on all width-`≤ k` supported CNFs.
+  false`) return `0`. Assuming exact feasible-branch evaluation, exactness holds on all
+  width-`≤ k` supported CNFs without a density restriction.
 
 ## Main definitions
 
@@ -276,8 +277,9 @@ theorem branchedPolyCounter_eq_commonZeroCount {k N₀_top N₀_branch N maxEqs 
   countSparsePolySystem_eq_commonZeroCount hbranch (mkPaperSparseInput N k sys)
     (fun eq heq => (hsys.2 eq heq).1) (fun eq heq m hm v hv => ((hsys.2 eq heq).2.2 m hm).2 v hv)
 
-/-- **Unconditional exactness of `branchedSparseCNFDeclaredCounter` (§5.5, §6.3, §6.4)** on all
-width-`≤ k` formulas `ψ` with `ψ.vars.toFinset ⊆ Finset.range N`. -/
+/-- **Exactness of `branchedSparseCNFDeclaredCounter` without a density restriction**
+(§5.5, §6.3, §6.4), assuming exact feasible-branch evaluation, on all width-`≤ k` formulas `ψ`
+with `ψ.vars.toFinset ⊆ Finset.range N`. -/
 theorem branchedSparseCNFDeclaredCounter_eq_modelCountOn {k N₀_leaf N₀_top N₀_branch : ℕ}
     {branchEval : BranchEvalInput → ℕ}
     (hbranch : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
@@ -295,8 +297,9 @@ theorem branchedSparseCNFDeclaredCounter_eq_modelCountOn {k N₀_leaf N₀_top N
     exact sparseCNFDeclaredCounter_eq_modelCountOn hw hsub (Or.inl (Nat.le_of_not_lt hgt))
       fun _ _ hsys => branchedPolyCounter_eq_commonZeroCount hbranch hsys
 
-/-- **Unconditional exactness of `branchedSparseCNFLeafCounter` (§5.5, §6.3, §6.4)** on all
-width-`≤ k` formulas `ψ` with `ψ.vars.toFinset ⊆ Finset.range N`. -/
+/-- **Exactness of `branchedSparseCNFLeafCounter` without a density restriction**
+(§5.5, §6.3, §6.4), assuming exact feasible-branch evaluation, on all width-`≤ k` formulas `ψ`
+with `ψ.vars.toFinset ⊆ Finset.range N`. -/
 theorem branchedSparseCNFLeafCounter_eq_modelCount {k N₀_leaf N₀_top N₀_branch : ℕ}
     {branchEval : BranchEvalInput → ℕ}
     (hbranch : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
