@@ -133,7 +133,7 @@ example :
   refine ⟨X_pow_dvd_evalClauseClearedJet_clauseSatPoly 4 (by decide) testVarJet testPhi[0],
     X_pow_dvd_evalGroupClauseProductJet_cnfSatPoly 4 (by decide) testVarJet testPhi, ?_⟩
   have hB : ∀ C ∈ testClauses, ∀ lit ∈ C, (Polynomial.ofCoeffList lit.2).coeffNorm1 ≤ 5 := by
-    simpa only [Cslib.coeffNorm1_ofCoeffList, Cslib.polyNorm1] using
+    simpa only [Polynomial.coeffNorm1_ofCoeffList] using
       (by decide : ∀ C ∈ testClauses, ∀ lit ∈ C, (lit.2.map Int.natAbs).sum ≤ 5)
   have h1 := length_encIntBin_getD_evalGroupClauseProductJet_le 4 6 testClauses 5 hB 2
   have hlen : testClauses.length = 2 := rfl
