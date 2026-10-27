@@ -1369,6 +1369,7 @@ public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Computability.PolyTime.Int.Table
 public import Complexity.Computability.PolyTime.JetArray
+public import Complexity.Computability.PolyTime.LinearAlgebra.ExchangeReplacement
 public import Complexity.Computability.PolyTime.ParityFactorEval
 public import Complexity.Computability.Probabilistic.Adaptive
 public import Complexity.Computability.Probabilistic.BoundedUniform

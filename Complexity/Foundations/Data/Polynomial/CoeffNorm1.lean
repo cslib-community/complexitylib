@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Anton Kovsharov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Anton Kovsharov
 -/
 
 module
@@ -9,8 +9,11 @@ module
 
 public import Complexity.Init
 public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.Polynomial.CoeffList
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Algebra.Order.Ring.Abs
+import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -41,6 +44,7 @@ integer-cast inequalities used in Lemma 4.6, Lemma 5.1, and Appendix B of `[Open
   submultiplicativity for binary products, powers, and finite products.
 * `Polynomial.natCast_coeffNorm1`: integer cast identity
   `(p.coeffNorm1 : ℤ) = ∑ i ∈ p.support, |p.coeff i|`.
+* `Polynomial.coeffNorm1_ofCoeffList`: `coeffNorm1 (ofCoeffList l) = (l.map Int.natAbs).sum`.
 
 ## References
 
@@ -289,5 +293,22 @@ theorem natCast_coeffNorm1_C_mul_le (a : ℤ) (p : ℤ[X]) :
     (coeffNorm1 (C a * p) : ℤ) ≤ |a| * (coeffNorm1 p : ℤ) := by
   rw [← Int.natCast_natAbs, ← Nat.cast_mul]
   exact_mod_cast coeffNorm1_C_mul_le a p
+
+/-- The `ℓ₁` coefficient norm of `ofCoeffList l` equals the sum of `Int.natAbs` of `l`. -/
+@[simp]
+theorem coeffNorm1_ofCoeffList (l : List ℤ) :
+    coeffNorm1 (ofCoeffList l) = (l.map Int.natAbs).sum := by
+  have hsub : (ofCoeffList l).support ⊆ range l.length := fun i hi =>
+    mem_range.2 <| by
+      by_contra hge
+      exact (mem_support_iff.1 hi)
+        (by rw [coeff_ofCoeffList, List.getD_eq_default l 0 (by omega)])
+  rw [coeffNorm1_eq_sum_of_support_subset hsub,
+    ← Fin.sum_univ_eq_sum_range (fun i => ((ofCoeffList l).coeff i).natAbs),
+    ← List.sum_map_range l.length (fun i => ((ofCoeffList l).coeff i).natAbs)]
+  congr 1; apply List.ext_getElem (by simp only [List.length_map, List.length_range])
+  intro i hi₁ _
+  have hi : i < l.length := by simpa only [List.length_map, List.length_range] using hi₁
+  simp only [List.getElem_map, List.getElem_range, coeff_ofCoeffList, List.getD_eq_getElem l 0 hi]
 
 end Polynomial
