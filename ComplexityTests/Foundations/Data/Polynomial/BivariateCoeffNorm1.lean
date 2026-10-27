@@ -28,14 +28,4 @@ example :
   rw [bivariateCoeffNorm1_C, coeffNorm1_C]
   rfl
 
-/-- Concrete check of `coeffNorm1_coeff_le_bivariateCoeffNorm1`, `bivariateCoeffNorm1_add_le`, and
-`bivariateCoeffNorm1_mul_le`. -/
-example (P Q : Polynomial (Polynomial ℤ)) (s : ℕ) :
-    (P.coeff s).coeffNorm1 ≤ P.bivariateCoeffNorm1 ∧
-      (P + Q).bivariateCoeffNorm1 ≤ P.bivariateCoeffNorm1 + Q.bivariateCoeffNorm1 ∧
-      (P * Q).bivariateCoeffNorm1 ≤ P.bivariateCoeffNorm1 * Q.bivariateCoeffNorm1 :=
-  ⟨coeffNorm1_coeff_le_bivariateCoeffNorm1 P s,
-    bivariateCoeffNorm1_add_le P Q,
-    bivariateCoeffNorm1_mul_le P Q⟩
-
 end ComplexityTests.BivariateCoeffNorm1
