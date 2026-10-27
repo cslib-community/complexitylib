@@ -60,35 +60,31 @@ def space (N : ℕ) : ℕ := 3 * N + 1
 theorem space_lower (N : ℕ) : N + 1 ≤ space N := by
   unfold space; omega
 
-/-- Reflexive lexicographic priority comparison on `(handle, key) : ℕ × ℕ`: smaller key wins,
-breaking ties by smaller handle index. -/
-def EntryLE (a b : ℕ × ℕ) : Prop :=
-  a.2 < b.2 ∨ (a.2 = b.2 ∧ a.1 ≤ b.1)
+/-- Reflexive lexicographic priority comparison on `(handle, key) : ℕ × ℕ`, reusing
+`IndexedMinPQ.RawPrioLE`. -/
+abbrev EntryLE (a b : ℕ × ℕ) : Prop := IndexedMinPQ.RawPrioLE a b
 
 /-- Strict lexicographic priority comparison on `(handle, key) : ℕ × ℕ`. -/
 def EntryLT (a b : ℕ × ℕ) : Prop :=
   a.2 < b.2 ∨ (a.2 = b.2 ∧ a.1 < b.1)
 
-instance instDecidableEntryLE (a b : ℕ × ℕ) : Decidable (EntryLE a b) := by
-  unfold EntryLE; infer_instance
-
 instance instDecidableEntryLT (a b : ℕ × ℕ) : Decidable (EntryLT a b) := by
   unfold EntryLT; infer_instance
 
 theorem EntryLE.refl (a : ℕ × ℕ) : EntryLE a a :=
-  Or.inr ⟨rfl, le_rfl⟩
+  IndexedMinPQ.RawPrioLE.refl a
 
-theorem EntryLE.trans {a b c : ℕ × ℕ} (hab : EntryLE a b) (hbc : EntryLE b c) : EntryLE a c := by
-  dsimp only [EntryLE] at *; omega
+theorem EntryLE.trans {a b c : ℕ × ℕ} (hab : EntryLE a b) (hbc : EntryLE b c) : EntryLE a c :=
+  IndexedMinPQ.RawPrioLE.trans hab hbc
 
 theorem EntryLT.le {a b : ℕ × ℕ} (h : EntryLT a b) : EntryLE a b := by
-  dsimp only [EntryLT, EntryLE] at *; omega
+  dsimp only [EntryLT, EntryLE, IndexedMinPQ.RawPrioLE] at *; omega
 
 theorem not_entryLT {a b : ℕ × ℕ} : ¬EntryLT a b ↔ EntryLE b a := by
-  dsimp only [EntryLT, EntryLE]; omega
+  dsimp only [EntryLT, EntryLE, IndexedMinPQ.RawPrioLE]; omega
 
 theorem entryLE_of_key_le {u k₁ k₂ : ℕ} (h : k₁ ≤ k₂) : EntryLE (u, k₁) (u, k₂) := by
-  dsimp only [EntryLE]; omega
+  dsimp only [EntryLE, IndexedMinPQ.RawPrioLE]; omega
 
 /-- The `(handle, key)` pair stored at 1-based heap position `i`. -/
 def heapEntry (N base : ℕ) (mem : ℕ → ℕ) (i : ℕ) : ℕ × ℕ :=

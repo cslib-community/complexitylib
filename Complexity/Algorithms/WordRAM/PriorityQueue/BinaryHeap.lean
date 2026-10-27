@@ -45,7 +45,6 @@ and `Fits w K_max`:
 
 ## References
 
-* [J. W. J. Williams, *Algorithm 232: Heapsort*][Williams1964]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
   Algorithms*][CLRS2009]
 -/

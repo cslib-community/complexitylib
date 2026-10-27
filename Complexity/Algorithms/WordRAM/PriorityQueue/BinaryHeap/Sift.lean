@@ -15,6 +15,20 @@ public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Program
 This file proves functional correctness, framing, and `O(⌊log₂ n⌋ + 1)` exact-basis instruction
 bounds for `siftUp`, `siftDown`, and `doExtractNonEmpty` under the lexicographic priority order
 `IndexedMinPQ.PrioLE`.
+
+## Main results
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftUp_spec`: upward restoration in at most
+  `28 * ⌊log₂ n⌋ + 2` instructions.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftDown_spec`: downward restoration in at most
+  `46 * ⌊log₂ n⌋ + 4` instructions.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.doExtractNonEmpty_spec`: non-empty root
+  extraction in at most `46 * ⌊log₂ n⌋ + 25` instructions.
+
+## References
+
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
+  Algorithms*][CLRS2009]
 -/
 
 @[expose] public section
@@ -177,47 +191,37 @@ private theorem HeapShape.swap {mem : ℕ → ℕ} {a b : ℕ} (h : HeapShape N 
     · subst h2; rw [hpb]; omega
     · rfl
 
-private theorem cmpKP_spec {y : Data rBin} (hzero : y.regs zero = 0) (hone : y.regs one = 1) :
-    ExecWithin w cmpKP y
-      (y.set t (if EntryLT (y.regs vk, y.regs dk) (y.regs vp, y.regs dp) then 1 else 0)) 6 := by
-  by_cases h1 : y.regs dk < y.regs dp
-  · have hp : EntryLT (y.regs vk, y.regs dk) (y.regs vp, y.regs dp) := Or.inl h1
+private theorem cmpEntries_spec (vA dA vB dB : Fin rBin) {y : Data rBin}
+    (hzero : y.regs zero = 0) (hone : y.regs one = 1) :
+    ExecWithin w (cmpEntries vA dA vB dB) y
+      (y.set t (if EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) then 1 else 0)) 6 := by
+  by_cases h1 : y.regs dA < y.regs dB
+  · have hp : EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := Or.inl h1
     simp only [hp, ↓reduceIte]
-    ram_exact_eval [cmpKP, hzero, hone, h1]
-  · by_cases h2 : y.regs dk = y.regs dp
-    · by_cases h3 : y.regs vk < y.regs vp
-      · have hp : EntryLT (y.regs vk, y.regs dk) (y.regs vp, y.regs dp) := Or.inr ⟨h2, h3⟩
+    ram_exact_eval [cmpEntries, hzero, hone, h1]
+  · by_cases h2 : y.regs dA = y.regs dB
+    · by_cases h3 : y.regs vA < y.regs vB
+      · have hp : EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := Or.inr ⟨h2, h3⟩
         simp only [hp, ↓reduceIte]
-        ram_exact_eval [cmpKP, hzero, hone, h2, h3, lt_irrefl]
-      · have hp : ¬EntryLT (y.regs vk, y.regs dk) (y.regs vp, y.regs dp) := by
+        ram_exact_eval [cmpEntries, hzero, hone, h2, h3, lt_irrefl]
+      · have hp : ¬EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := by
           dsimp only [EntryLT]; omega
         simp only [hp, ↓reduceIte]
-        ram_exact_eval [cmpKP, hzero, hone, h2, h3, lt_irrefl]
-    · have hp : ¬EntryLT (y.regs vk, y.regs dk) (y.regs vp, y.regs dp) := by
+        ram_exact_eval [cmpEntries, hzero, hone, h2, h3, lt_irrefl]
+    · have hp : ¬EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := by
         dsimp only [EntryLT]; omega
       simp only [hp, ↓reduceIte]
-      ram_exact_eval [cmpKP, hzero, hone, h1, h2]
+      ram_exact_eval [cmpEntries, hzero, hone, h1, h2]
+
+private theorem cmpKP_spec {y : Data rBin} (hzero : y.regs zero = 0) (hone : y.regs one = 1) :
+    ExecWithin w cmpKP y
+      (y.set t (if EntryLT (y.regs vk, y.regs dk) (y.regs vp, y.regs dp) then 1 else 0)) 6 :=
+  cmpEntries_spec vk dk vp dp hzero hone
 
 private theorem cmpPK_spec {y : Data rBin} (hzero : y.regs zero = 0) (hone : y.regs one = 1) :
     ExecWithin w cmpPK y
-      (y.set t (if EntryLT (y.regs vp, y.regs dp) (y.regs vk, y.regs dk) then 1 else 0)) 6 := by
-  by_cases h1 : y.regs dp < y.regs dk
-  · have hp : EntryLT (y.regs vp, y.regs dp) (y.regs vk, y.regs dk) := Or.inl h1
-    simp only [hp, ↓reduceIte]
-    ram_exact_eval [cmpPK, hzero, hone, h1]
-  · by_cases h2 : y.regs dp = y.regs dk
-    · by_cases h3 : y.regs vp < y.regs vk
-      · have hp : EntryLT (y.regs vp, y.regs dp) (y.regs vk, y.regs dk) := Or.inr ⟨h2, h3⟩
-        simp only [hp, ↓reduceIte]
-        ram_exact_eval [cmpPK, hzero, hone, h2, h3, lt_irrefl]
-      · have hp : ¬EntryLT (y.regs vp, y.regs dp) (y.regs vk, y.regs dk) := by
-          dsimp only [EntryLT]; omega
-        simp only [hp, ↓reduceIte]
-        ram_exact_eval [cmpPK, hzero, hone, h2, h3, lt_irrefl]
-    · have hp : ¬EntryLT (y.regs vp, y.regs dp) (y.regs vk, y.regs dk) := by
-        dsimp only [EntryLT]; omega
-      simp only [hp, ↓reduceIte]
-      ram_exact_eval [cmpPK, hzero, hone, h1, h2]
+      (y.set t (if EntryLT (y.regs vp, y.regs dp) (y.regs vk, y.regs dk) then 1 else 0)) 6 :=
+  cmpEntries_spec vp dp vk dk hzero hone
 
 end SwapAndCompare
 

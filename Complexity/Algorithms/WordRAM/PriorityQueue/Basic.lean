@@ -43,6 +43,11 @@ scoped `ram_exact[…]` / `ram_exact_eval` notation under `PriorityQueue.Notatio
 * `PQCode.callIsEmpty_exec`, `PQCode.callGetKey_exec`, `PQCode.callInsert_exec`,
   `PQCode.callDecreaseKey_exec`, `PQCode.callExtractMin_exec`: relocated inline operation calls with
   amortized potential accounting and bidirectional framing.
+
+## References
+
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
+  Algorithms*][CLRS2009]
 -/
 
 @[expose] public section

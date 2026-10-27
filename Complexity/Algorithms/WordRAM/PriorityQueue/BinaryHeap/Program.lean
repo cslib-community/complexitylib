@@ -21,6 +21,18 @@ Registers `0..4` (`baseReg`, `nReg`, `hb`, `pb`, `sz`) are persistent (`input = 
 caller-overwritable (`input = true`). Parent positions are computed via `p ← k >>> one`
 (`k >>> 1 = k / 2`), so no constant larger than `1` is ever loaded and all operations succeed at
 every word width `w` with `Fits w (base + space n)` and `Fits w K_max` (including `n = 0, w = 1`).
+
+## Main definitions
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.rBin`: register count (`25`).
+* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftUp`,
+  `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftDown`: heap-order restoration loops.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.pqCode`: packaged `PQCode .exact rBin`.
+
+## References
+
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
+  Algorithms*][CLRS2009]
 -/
 
 @[expose] public section
@@ -63,11 +75,11 @@ abbrev outFlag : Fin rBin := 11
 abbrev outV : Fin rBin := 12
 /-- Output key register (`getKey`, `extractMin`). -/
 abbrev outK : Fin rBin := 13
-/-- Scratch constant `0` (also `zScratch1` for `zeroFill`). -/
+/-- Scratch constant `0` (also `zeroReg` for `SubroutineCode.zeroFillCode`). -/
 abbrev zero : Fin rBin := 14
-/-- Scratch constant `1` (also `zScratch2` for `zeroFill`). -/
+/-- Scratch constant `1` (also `oneReg` for `SubroutineCode.zeroFillCode`). -/
 abbrev one : Fin rBin := 15
-/-- Scratch address / boolean comparison register (also `zScratch0` for `zeroFill`). -/
+/-- Scratch address / comparison register (also `curReg` for `SubroutineCode.zeroFillCode`). -/
 abbrev t : Fin rBin := 16
 /-- Current 1-based heap position during `siftUp` / `siftDown`. -/
 abbrev k : Fin rBin := 17
@@ -120,19 +132,18 @@ def swapCode : Code .exact rBin := ram_exact[
   t ← pb + vp; *t ← k;
   t ← pb + vk; *t ← p ]
 
-/-- Set `t := 1` iff `PrioLT (vk, dk) (vp, dp)`, else `t := 0`. -/
-def cmpKP : Code .exact rBin := ram_exact[
-  if dk < dp then [ t ← one ] else [
-    if dk = dp then [
-      if vk < vp then [ t ← one ] else [ t ← zero ] ]
+/-- Set `t := 1` iff `EntryLT (vA, dA) (vB, dB)`, else `t := 0`. -/
+abbrev cmpEntries (vA dA vB dB : Fin rBin) : Code .exact rBin := ram_exact[
+  if dA < dB then [ t ← one ] else [
+    if dA = dB then [
+      if vA < vB then [ t ← one ] else [ t ← zero ] ]
     else [ t ← zero ] ] ]
 
-/-- Set `t := 1` iff `PrioLT (vp, dp) (vk, dk)`, else `t := 0`. -/
-def cmpPK : Code .exact rBin := ram_exact[
-  if dp < dk then [ t ← one ] else [
-    if dp = dk then [
-      if vp < vk then [ t ← one ] else [ t ← zero ] ]
-    else [ t ← zero ] ] ]
+/-- Set `t := 1` iff `EntryLT (vk, dk) (vp, dp)`, else `t := 0`. -/
+abbrev cmpKP : Code .exact rBin := cmpEntries vk dk vp dp
+
+/-- Set `t := 1` iff `EntryLT (vp, dp) (vk, dk)`, else `t := 0`. -/
+abbrev cmpPK : Code .exact rBin := cmpEntries vp dp vk dk
 
 /-- One iteration of `siftUp` from `k ≥ 2`, using `k >>> one = k / 2` for the parent position. -/
 def siftUpBody : Code .exact rBin := ram_exact[

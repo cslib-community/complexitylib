@@ -75,30 +75,47 @@ def empty (n : ℕ) : State n := fun _ => none
 def dom {n : ℕ} (s : State n) : Finset (Fin n) :=
   Finset.univ.filter fun v => (s v).isSome
 
+/-- Lexicographic priority comparison on raw `(handle, key) : ℕ × ℕ` pairs: smaller key first,
+breaking equal-key ties by smaller handle index. -/
+abbrev RawPrioLE (a b : ℕ × ℕ) : Prop :=
+  a.2 < b.2 ∨ (a.2 = b.2 ∧ a.1 ≤ b.1)
+
+instance instDecidableRawPrioLE (a b : ℕ × ℕ) : Decidable (RawPrioLE a b) :=
+  inferInstanceAs (Decidable (_ ∨ _))
+
+/-- Reflexivity of `RawPrioLE`. -/
+theorem RawPrioLE.refl (a : ℕ × ℕ) : RawPrioLE a a :=
+  Or.inr ⟨rfl, le_rfl⟩
+
+/-- Transitivity of `RawPrioLE`. -/
+theorem RawPrioLE.trans {a b c : ℕ × ℕ} (hab : RawPrioLE a b) (hbc : RawPrioLE b c) :
+    RawPrioLE a c := by
+  unfold RawPrioLE at hab hbc ⊢
+  omega
+
 /-- Lexicographic priority comparison on `(handle, key)` pairs: smaller key first, breaking
 equal-key ties by smaller handle index. -/
 def PrioLE {n : ℕ} (a b : Fin n × ℕ) : Prop :=
-  a.2 < b.2 ∨ (a.2 = b.2 ∧ a.1.val ≤ b.1.val)
+  RawPrioLE (a.1.val, a.2) (b.1.val, b.2)
 
 instance instDecidablePrioLE {n : ℕ} (a b : Fin n × ℕ) : Decidable (PrioLE a b) :=
-  inferInstanceAs (Decidable (_ ∨ _))
+  inferInstanceAs (Decidable (RawPrioLE _ _))
 
 /-- Reflexivity of `PrioLE`. -/
 theorem PrioLE.refl {n : ℕ} (a : Fin n × ℕ) : PrioLE a a :=
-  Or.inr ⟨rfl, le_rfl⟩
+  RawPrioLE.refl _
 
 /-- Transitivity of `PrioLE`. -/
 theorem PrioLE.trans {n : ℕ} {a b c : Fin n × ℕ} (hab : PrioLE a b) (hbc : PrioLE b c) :
-    PrioLE a c := by
-  unfold PrioLE at hab hbc ⊢
-  omega
+    PrioLE a c :=
+  RawPrioLE.trans hab hbc
 
 /-- Antisymmetry of `PrioLE`. -/
 theorem PrioLE.antisymm {n : ℕ} {a b : Fin n × ℕ} (hab : PrioLE a b) (hba : PrioLE b a) :
     a = b := by
   rcases a with ⟨ua, ka⟩
   rcases b with ⟨ub, kb⟩
-  dsimp only [PrioLE] at hab hba
+  dsimp only [PrioLE, RawPrioLE] at hab hba
   have hk : ka = kb := by omega
   have hu : ua = ub := Fin.ext (by omega)
   rw [hu, hk]

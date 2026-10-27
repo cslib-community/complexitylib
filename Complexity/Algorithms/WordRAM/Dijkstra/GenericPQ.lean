@@ -7,6 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
+public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
 public import Complexity.Algorithms.WordRAM.Dijkstra.ListEncode
 public import Complexity.Algorithms.WordRAM.PriorityQueue.Basic
 public import Complexity.Computability.WordRAM.Compile
@@ -46,8 +47,6 @@ Instantiating `dijkstra_of_pq_spec` with:
 ## References
 
 * [E. W. Dijkstra, *A note on two problems in connexion with graphs*][Dijkstra1959]
-* [M. L. Fredman and R. E. Tarjan, *Fibonacci heaps and their uses in improved network optimization
-  algorithms*][FredmanTarjan1987]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
   Algorithms*][CLRS2009]
 -/
@@ -59,7 +58,6 @@ namespace Cslib.Algorithms.WordRAM.Dijkstra
 open Cslib.WordRAM
 open Cslib.Algorithms.Lean
 open Cslib.Algorithms.WordRAM.PriorityQueue
-open scoped Cslib.Algorithms.WordRAM.PriorityQueue.Notation
 
 /-- Relocation map embedding the `r_pq` priority-queue registers above the `15` outer registers. -/
 def pqMap {r_pq : ℕ} : Fin r_pq → Fin (15 + r_pq) := Fin.natAdd 15
