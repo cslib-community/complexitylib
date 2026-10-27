@@ -33,26 +33,23 @@ contract is the occurring-support count `ψ.modelCount`. An externally declared 
 normalizing any declared-`N` leaf count before it reaches the weighting, are left to the outer
 wrapper.
 
-For the thresholds `countingThreshold (Mof c)`, the context step is the existing step at base
-`Mof c` with leaf counter `g (c, ·)`, at every iterate
+For the thresholds `countingThreshold (MOf c)`, the context step is the existing step at base
+`MOf c` with leaf counter `g (c, ·)`, at every iterate
 (`Cslib.Complexity.CountingSparsify.iterate_stepWith_countingThreshold`), so the existing
 correctness theorems apply pointwise. One step is computable within a polynomial in the encoded
 context and state, plus the time and space of the leaf counter on a sparse head formula
 (`Cslib.Complexity.CountingSparsify.exists_computableInO_stepWith`); the context is charged in
 full, and the leaf counter's time and space are kept separate.
 
-This module provides the step interface only. The resource bound for a whole uniform search, the
+This module certifies one step only. The resource bound for a whole uniform search, the
 outer wrapper for an externally declared count, and the assembly of Proposition 6.4 are separate.
 
-## Main definitions
-
-* `Cslib.Complexity.CountingSparsify.stepWith`: one step with a captured runtime context.
+The context step `Cslib.Complexity.CountingSparsify.stepWith` and its agreement lemmas live with
+the search in `Complexity/Computability/Complexity/FineGrained/CountingSparsification.lean`; this
+module certifies its resources.
 
 ## Main results
 
-* `Cslib.Complexity.CountingSparsify.iterate_stepWith_fst`: the context is never changed.
-* `Cslib.Complexity.CountingSparsify.iterate_stepWith_countingThreshold`: agreement with the
-  fixed-parameter step at the context's own base.
 * `Cslib.Complexity.CountingSparsify.exists_computableInO_stepWith`: the time and space of one
   step.
 
@@ -71,50 +68,6 @@ open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Turing.MultiTapeTM
 namespace CountingSparsify
 
 variable {C : Type}
-
-/-- One step of the counting-sparsification search with a captured runtime context `c`: the
-thresholds are `θ c`, the leaf counter receives `c` with the sparse head formula, and `c` is kept.
--/
-def stepWith (θ : C → ℕ → ℕ) (K : ℕ) (g : C × CNF ℕ → ℕ) (x : C × State) : C × State :=
-  (x.1, if x.2.2.1.isEmpty then x.2
-    else if isSparse (θ x.1) K (x.2.2.1.headD []) then
-      leafUpdate x.2 (g (x.1, x.2.2.1.headD []))
-    else
-      (x.2.1, (countingNext (θ x.1) K (x.2.2.1.headD []) false ::
-        countingNext (θ x.1) K (x.2.2.1.headD []) true :: x.2.2.1.tail, x.2.2.2)))
-
-/-- A step keeps the context. -/
-@[simp] theorem stepWith_fst (θ : C → ℕ → ℕ) (K : ℕ) (g : C × CNF ℕ → ℕ) (x : C × State) :
-    (stepWith θ K g x).1 = x.1 :=
-  rfl
-
-/-- The search keeps the context. -/
-theorem iterate_stepWith_fst (θ : C → ℕ → ℕ) (K : ℕ) (g : C × CNF ℕ → ℕ) (i : ℕ)
-    (x : C × State) : ((stepWith θ K g)^[i] x).1 = x.1 := by
-  induction i generalizing x with
-  | zero => rfl
-  | succ i ih => rw [Function.iterate_succ_apply, ih, stepWith_fst]
-
-/-- For the counting thresholds of a base read from the context, a context step is the existing
-step at that base, with the leaf counter applied to the context. -/
-theorem stepWith_countingThreshold (Mof : C → ℕ) (K : ℕ) (g : C × CNF ℕ → ℕ) (c : C)
-    (s : State) :
-    stepWith (fun c => countingThreshold (Mof c)) K g (c, s) =
-      (c, step (Mof c) K (fun ψ => g (c, ψ)) s) :=
-  rfl
-
-/-- **Agreement with the fixed-parameter search.** Every iterate of the context step, for the
-counting thresholds of a base read from the context, is the iterate of the existing step at that
-base. -/
-theorem iterate_stepWith_countingThreshold (Mof : C → ℕ) (K : ℕ) (g : C × CNF ℕ → ℕ) (c : C)
-    (i : ℕ) (s : State) :
-    (stepWith (fun c => countingThreshold (Mof c)) K g)^[i] (c, s) =
-      (c, (step (Mof c) K (fun ψ => g (c, ψ)))^[i] s) := by
-  induction i generalizing s with
-  | zero => rfl
-  | succ i ih =>
-    rw [Function.iterate_succ_apply, stepWith_countingThreshold, ih,
-      ← Function.iterate_succ_apply]
 
 section PolyTime
 
