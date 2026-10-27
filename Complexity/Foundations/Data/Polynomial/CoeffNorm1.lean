@@ -20,8 +20,8 @@ import Mathlib.Tactic.Ring
 This module defines the `ℓ₁` coefficient norm `Polynomial.coeffNorm1` of a univariate integer
 polynomial `p : ℤ[X]`:
 $$\|p\|_1 = \sum_{i \in \mathrm{supp}(p)} |p_i|,$$
-together with its basic triangle, scaling, shift, linear-factor, and integer-cast inequalities
-used in Lemma 4.6, Lemma 5.1, and Appendix B of `[OpenAI2026ETH]`.
+together with its basic triangle, scaling, shift, linear-factor, submultiplicative, and
+integer-cast inequalities used in Lemma 4.6, Lemma 5.1, and Appendix B of `[OpenAI2026ETH]`.
 
 ## Main definitions
 
@@ -37,12 +37,15 @@ used in Lemma 4.6, Lemma 5.1, and Appendix B of `[OpenAI2026ETH]`.
   `Polynomial.coeffNorm1_mul_X_pow_le`, `Polynomial.coeffNorm1_C_sub_X_mul_le`,
   `Polynomial.coeffNorm1_one_sub_X_mul_le`, `Polynomial.coeffNorm1_one_sub_X_pow_mul_le`:
   norm bounds under scalar multiplication, monomial shifts, and linear factors.
+* `Polynomial.coeffNorm1_mul_le`, `Polynomial.coeffNorm1_pow_le`, `Polynomial.coeffNorm1_prod_le`:
+  submultiplicativity for binary products, powers, and finite products.
 * `Polynomial.natCast_coeffNorm1`: integer cast identity
   `(p.coeffNorm1 : ℤ) = ∑ i ∈ p.support, |p.coeff i|`.
 
 ## References
 
-* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (Lemma 4.6 and Appendix B.1)
+* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH]
+  (Lemma 4.6, Appendix B.1, and Appendix B.2)
 -/
 
 @[expose] public noncomputable section
@@ -217,6 +220,47 @@ theorem coeffNorm1_one_sub_X_pow_mul_le (ℓ : ℕ) (p : ℤ[X]) :
     have hEq : (1 - X) ^ (ℓ + 1) * p = (1 - X) * ((1 - X) ^ ℓ * p) := by ring
     rw [hEq, pow_succ', mul_assoc]
     exact (coeffNorm1_one_sub_X_mul_le _).trans (Nat.mul_le_mul_left 2 ih)
+
+/-- `coeffNorm1` is submultiplicative on `ℤ[X]`. -/
+theorem coeffNorm1_mul_le (p q : ℤ[X]) :
+    coeffNorm1 (p * q) ≤ coeffNorm1 p * coeffNorm1 q := by
+  have hdecomp : p * q = ∑ i ∈ p.support, C (p.coeff i) * (q * X ^ i) := by
+    conv_lhs => rw [p.as_sum_support_C_mul_X_pow]
+    rw [sum_mul]
+    refine sum_congr rfl fun i _ => ?_
+    ring
+  rw [hdecomp]
+  calc
+    coeffNorm1 (∑ i ∈ p.support, C (p.coeff i) * (q * X ^ i))
+      ≤ ∑ i ∈ p.support, coeffNorm1 (C (p.coeff i) * (q * X ^ i)) :=
+        coeffNorm1_sum_le _ _
+    _ ≤ ∑ i ∈ p.support, (p.coeff i).natAbs * coeffNorm1 q := by
+        refine sum_le_sum fun i _ => ?_
+        exact (coeffNorm1_C_mul_le (p.coeff i) _).trans
+          (Nat.mul_le_mul_left _ (coeffNorm1_mul_X_pow_le q i))
+    _ = coeffNorm1 p * coeffNorm1 q := by
+        rw [← sum_mul, ← coeffNorm1]
+
+/-- `coeffNorm1 (p ^ k) ≤ coeffNorm1 p ^ k`. -/
+theorem coeffNorm1_pow_le (p : ℤ[X]) (k : ℕ) :
+    coeffNorm1 (p ^ k) ≤ coeffNorm1 p ^ k := by
+  induction k with
+  | zero =>
+    simp only [pow_zero, coeffNorm1_one, le_refl]
+  | succ k ih =>
+    rw [pow_succ, pow_succ]
+    exact (coeffNorm1_mul_le _ _).trans (Nat.mul_le_mul_right _ ih)
+
+/-- `coeffNorm1` of a finite product is at most the product of the `coeffNorm1`s. -/
+theorem coeffNorm1_prod_le {ι : Type*} (s : Finset ι) (f : ι → ℤ[X]) :
+    coeffNorm1 (∏ a ∈ s, f a) ≤ ∏ a ∈ s, coeffNorm1 (f a) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    simp only [prod_empty, coeffNorm1_one, le_refl]
+  | insert a s ha ih =>
+    rw [prod_insert ha, prod_insert ha]
+    exact (coeffNorm1_mul_le _ _).trans (Nat.mul_le_mul_left _ ih)
 
 /-- Casting `coeffNorm1 p` to `ℤ` gives the sum of integer absolute values `|p.coeff i|`. -/
 theorem natCast_coeffNorm1 (p : ℤ[X]) :

@@ -27,9 +27,12 @@ example : coeffNorm1 0 = 0 ∧ coeffNorm1 1 = 1 ∧ coeffNorm1 (C (-5)) = 5 := b
 
 example (p q : ℤ[X]) :
     coeffNorm1 (p - q) ≤ coeffNorm1 p + coeffNorm1 q ∧
+      coeffNorm1 (p * q) ≤ coeffNorm1 p * coeffNorm1 q ∧
+      coeffNorm1 (p ^ 3) ≤ coeffNorm1 p ^ 3 ∧
       coeffNorm1 ((1 - X) ^ 3 * p) ≤ 8 * coeffNorm1 p ∧
       (coeffNorm1 (C (-3) * p) : ℤ) ≤ 3 * (coeffNorm1 p : ℤ) := by
-  refine ⟨coeffNorm1_sub_le p q, coeffNorm1_one_sub_X_pow_mul_le 3 p, ?_⟩
+  refine ⟨coeffNorm1_sub_le p q, coeffNorm1_mul_le p q, coeffNorm1_pow_le p 3,
+    coeffNorm1_one_sub_X_pow_mul_le 3 p, ?_⟩
   simpa using natCast_coeffNorm1_C_mul_le (-3) p
 
 end Polynomial.CoeffNorm1Tests

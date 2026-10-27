@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Foundations.Data.Polynomial.CoeffNorm1
 public import Mathlib.Algebra.MvPolynomial.Degrees
 public import Mathlib.Algebra.Polynomial.AlgebraMap
 public import Mathlib.Algebra.Polynomial.BigOperators
@@ -456,122 +457,6 @@ theorem evalInt_parityAmplifier_eq_sum {A : Type*} [CommRing A] (ℓ : ℕ) (y :
   exact evalInt_hPoly y
 
 /-! ### 3. Coefficient and `ℓ₁`-norm bounds (Lemma B.1) -/
-
-/-- The `ℓ₁` coefficient norm `∑ i ∈ p.support, (p.coeff i).natAbs` of an integer polynomial. -/
-def coeffNorm1 (p : ℤ[X]) : ℕ :=
-  ∑ i ∈ p.support, (p.coeff i).natAbs
-
-/-- The `ℓ₁` norm of `0` is `0`. -/
-@[simp]
-theorem coeffNorm1_zero : coeffNorm1 0 = 0 := by
-  simp only [coeffNorm1, support_zero, sum_empty]
-
-/-- Every individual coefficient of `p` has absolute value at most `coeffNorm1 p`. -/
-theorem natAbs_coeff_le_coeffNorm1 (p : ℤ[X]) (k : ℕ) :
-    (p.coeff k).natAbs ≤ coeffNorm1 p := by
-  by_cases hk : k ∈ p.support
-  · exact single_le_sum (f := fun i => (p.coeff i).natAbs) (fun _ _ => Nat.zero_le _) hk
-  · rw [notMem_support_iff.mp hk, Int.natAbs_zero]
-    exact Nat.zero_le _
-
-/-- The sum of `|p.coeff i|` over any finite set of indices is at most `coeffNorm1 p`. -/
-theorem sum_natAbs_coeff_le_coeffNorm1 (p : ℤ[X]) (s : Finset ℕ) :
-    ∑ i ∈ s, (p.coeff i).natAbs ≤ coeffNorm1 p := by
-  have hsub : ∑ i ∈ s, (p.coeff i).natAbs = ∑ i ∈ s ∩ p.support, (p.coeff i).natAbs := by
-    refine (sum_subset inter_subset_left ?_).symm
-    intro i hi his
-    rw [mem_inter, not_and_or, notMem_support_iff] at his
-    rcases his with hns | hp0
-    · exact absurd hi hns
-    · simp only [hp0, Int.natAbs_zero]
-  rw [hsub, coeffNorm1]
-  exact sum_le_sum_of_subset inter_subset_right
-
-/-- Triangle inequality for `coeffNorm1`. -/
-theorem coeffNorm1_add_le (p q : ℤ[X]) :
-    coeffNorm1 (p + q) ≤ coeffNorm1 p + coeffNorm1 q := by
-  have hsub : (p + q).support ⊆ p.support ∪ q.support := support_add
-  calc
-    coeffNorm1 (p + q)
-      ≤ ∑ i ∈ p.support ∪ q.support, ((p + q).coeff i).natAbs :=
-        sum_le_sum_of_subset hsub
-    _ ≤ ∑ i ∈ p.support ∪ q.support, ((p.coeff i).natAbs + (q.coeff i).natAbs) := by
-        refine sum_le_sum fun i _ => ?_
-        rw [coeff_add]
-        exact Int.natAbs_add_le _ _
-    _ = (∑ i ∈ p.support ∪ q.support, (p.coeff i).natAbs) +
-          ∑ i ∈ p.support ∪ q.support, (q.coeff i).natAbs := sum_add_distrib
-    _ ≤ coeffNorm1 p + coeffNorm1 q :=
-        add_le_add (sum_natAbs_coeff_le_coeffNorm1 p _) (sum_natAbs_coeff_le_coeffNorm1 q _)
-
-/-- Multiplying by `X ^ k` does not increase `coeffNorm1`. -/
-theorem coeffNorm1_mul_X_pow_le (p : ℤ[X]) (k : ℕ) :
-    coeffNorm1 (p * X ^ k) ≤ coeffNorm1 p := by
-  rw [coeffNorm1]
-  have hsub : (p * X ^ k).support ⊆ p.support.map ⟨fun i => i + k, add_left_injective k⟩ := by
-    intro i hi
-    rw [mem_support_iff] at hi
-    rw [mem_map]
-    by_cases hik : k ≤ i
-    · refine ⟨i - k, ?_, by simp only [Function.Embedding.coeFn_mk]; omega⟩
-      rw [mem_support_iff]
-      intro h0
-      apply hi
-      have hi_eq : i = i - k + k := (Nat.sub_add_cancel hik).symm
-      rw [hi_eq, coeff_mul_X_pow, h0]
-    · exfalso
-      apply hi
-      rw [mul_comm, coeff_X_pow_mul']
-      simp only [hik, ↓reduceIte]
-  refine (sum_le_sum_of_subset hsub).trans ?_
-  rw [sum_map]
-  refine le_of_eq (sum_congr rfl fun i _ => ?_)
-  simp only [Function.Embedding.coeFn_mk, coeff_mul_X_pow]
-
-/-- The `ℓ₁` norm of a constant polynomial `C a` is `a.natAbs`. -/
-theorem coeffNorm1_C (a : ℤ) : coeffNorm1 (C a) = a.natAbs := by
-  by_cases ha : a = 0
-  · subst ha
-    simp only [map_zero, coeffNorm1_zero, Int.natAbs_zero]
-  · rw [coeffNorm1, support_C ha, sum_singleton, coeff_C_zero]
-
-/-- Scaling by `C a` scales `coeffNorm1` by at most `a.natAbs`. -/
-theorem coeffNorm1_C_mul_le (a : ℤ) (p : ℤ[X]) :
-    coeffNorm1 (C a * p) ≤ a.natAbs * coeffNorm1 p := by
-  have hsub : (C a * p).support ⊆ p.support := by
-    intro i hi
-    rw [mem_support_iff, coeff_C_mul] at hi
-    exact mem_support_iff.mpr (right_ne_zero_of_mul hi)
-  calc
-    coeffNorm1 (C a * p) ≤ ∑ i ∈ p.support, ((C a * p).coeff i).natAbs :=
-      sum_le_sum_of_subset hsub
-    _ = a.natAbs * coeffNorm1 p := by
-      rw [coeffNorm1, mul_sum]
-      refine sum_congr rfl fun i _ => ?_
-      rw [coeff_C_mul, Int.natAbs_mul]
-
-/-- Multiplying by `1 - X` increases `coeffNorm1` by at most a factor of `2`. -/
-theorem coeffNorm1_one_sub_X_mul_le (p : ℤ[X]) :
-    coeffNorm1 ((1 - X) * p) ≤ 2 * coeffNorm1 p := by
-  have hEq : (1 - X) * p = p + C (-1) * (p * X ^ 1) := by
-    rw [map_neg, map_one]
-    ring
-  rw [hEq, two_mul]
-  refine (coeffNorm1_add_le _ _).trans (add_le_add le_rfl ?_)
-  have h1 := coeffNorm1_C_mul_le (-1) (p * X ^ 1)
-  have h2 := coeffNorm1_mul_X_pow_le p 1
-  simp only [Int.natAbs_neg, Int.natAbs_one, one_mul] at h1
-  exact h1.trans h2
-
-/-- Multiplying by `(1 - X) ^ ℓ` increases `coeffNorm1` by at most a factor of `2 ^ ℓ`. -/
-theorem coeffNorm1_one_sub_X_pow_mul_le (ℓ : ℕ) (p : ℤ[X]) :
-    coeffNorm1 ((1 - X) ^ ℓ * p) ≤ 2 ^ ℓ * coeffNorm1 p := by
-  induction ℓ with
-  | zero => simp only [pow_zero, one_mul, le_refl]
-  | succ ℓ ih =>
-    have hEq : (1 - X) ^ (ℓ + 1) * p = (1 - X) * ((1 - X) ^ ℓ * p) := by ring
-    rw [hEq, pow_succ', mul_assoc]
-    exact (coeffNorm1_one_sub_X_mul_le _).trans (Nat.mul_le_mul_left 2 ih)
 
 private theorem sum_range_choose_add (m k : ℕ) :
     ∑ j ∈ range (k + 1), Nat.choose (m + j) j = Nat.choose (m + k + 1) k := by
