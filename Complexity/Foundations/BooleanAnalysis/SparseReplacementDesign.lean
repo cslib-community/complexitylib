@@ -22,14 +22,19 @@ Appendix B.2–B.3 cleared-denominator parity-polynomial zero-counting pipeline
 48–50):
 
 1. **Neutral singleton scope augmentation (§5.3 & §5.5, pp. 37–38)**:
-   Given an equation family `P : κ → Finset (Finset (Fin n))`, `augmentedEquationScope P` augments
-   the equation scopes `equationScope (P i)` (`Sum.inl i`) with one singleton scope `{v}`
-   (`Sum.inr v`) per variable `v : Fin n`. This ensures that every variable occurs in at least one
-   factor scope, that the total incidence count is `(∑ i, #(equationScope (P i))) + n ≥ n`
-   (`sum_card_augmentedEquationScope`, `le_sum_card_augmentedEquationScope`), and that per-variable
-   factor occurrences increase by exactly `1` (`card_filter_mem_augmentedEquationScope`), so
-   Lemma 4.7 (`exists_replacementDesign`) applies directly whenever equation occurrences are bounded
-   by `b₀` and equation scopes by `w ≥ 1` (`exists_replacementDesign_augmentedEquationScope`).
+   Reusing `withNeutralFactors` and `withNeutralScope` from
+   `Complexity.Foundations.BooleanAnalysis.SparseBranching` on
+   `scope = fun i => equationScope (P i)` adjoins one singleton scope `{v}` (`Sum.inr v`) per
+   variable `v : Fin n` to the equation scopes `equationScope (P i)` (`Sum.inl i`). Combined with
+   `totalIncidence_withNeutralFactors` (`M = (∑ i, #(equationScope (P i))) + n ≥ n`) and
+   `varIncidence_withNeutralFactors_le` (`varIncidence ≤ b₀ + 1`), we prove
+   `card_withNeutralScope_le`, `totalIncidence_withNeutralFactors_le`, and
+   `exists_replacementDesign_withNeutralScope`: Lemma 4.7 (`exists_replacementDesign`) applies to
+   `withNeutralScope (fun i => equationScope (P i))` whenever equation variable occurrences are
+   bounded by `b₀`, equation scopes have size at most `w ≥ 1`, and the numerical balance
+   (`2 * (b₀ + 1 + w) * (r ^ (2 * Q)) ^ 2 ≤ (∑ i, #(equationScope (P i))) + n`,
+   `2 * Q * r ^ 2 ≤ n`), interval (`∀ a < R - 1, A₀ + a ≤ Q`), and binomial-tail
+   (`binomTailProb Q r A₀ R ≤ τ / (r * (b₀ + 1))`) hypotheses hold for `b = b₀ + 1`.
 
 2. **Univariate polynomial replacement rows from a `ReplacementDesign` (§5.3–5.4, pp. 37–38)**:
    For any `D : ReplacementDesign scope Q r A₀ R τ`, incidence `e : ScopeIncidence scope`, and
@@ -47,17 +52,22 @@ Appendix B.2–B.3 cleared-denominator parity-polynomial zero-counting pipeline
      `designRowNormBound Q R = commonDenom Q R * (1 + (1 + 2 ^ Q) * R * (4 * Q) ^ (R - 1))`, and
    - at each evaluation node `nodePoint t` (`t : Fin Q`), `(evalVarReplacementRowPoly D e x).eval
      (nodePoint t)` depends only on `x` restricted to the assigned variable group
-     `varGroup D.varAssign t (D.factorAssign (scopeFactorOf scope e) t)` and the measurement vector
-     `(varMeasurementMatrix Q r A₀ R ℚ D.place (scopeVarOf scope)).mulVec
+     `varGroup D.varAssign t (D.factorAssign (scopeFactorOf scope e) t)` and the full measurement
+     vector `(varMeasurementMatrix Q r A₀ R ℚ D.place (scopeVarOf scope)).mulVec
      (fun u => bitVal ℚ (x u))`.
 
-3. **Concrete §5.3–5.5 degree, norm, and exact modular zero-counting theorems**:
+3. **Concrete §5.3–5.5 degree, locality, norm, and exact modular zero-counting theorems**:
    Packaging these replacement rows into `designReplacementMap D emb` and
-   `designReplacementScaledIntMap D emb` (for any factor embedding `emb : κ → F`) discharges all
-   clearing, degree, $T = 0$ evaluation, and `coeffNorm1` premises of
-   `SparseClearedSpecialization`, yielding concrete `ReplacementDesign` specializations of:
-   - the equation (5.5a) degree bound `(k * (R - 1)) * (#I + 2 * (ℓ - 1))`
-     (`natDegree_univariateClearedParityCoord_design_le`,
+   `designReplacementScaledIntMap D emb` (for any factor embedding `emb : κ → F`, falling back to
+   the constant Boolean value outside `scope (emb i)`) discharges all clearing, degree, $T = 0$
+   evaluation, and `coeffNorm1` premises of `SparseClearedSpecialization` unconditionally, and
+   preserves node-point group-and-measurement locality on covered scopes
+   (`eval_nodePoint_designReplacementMap_eq_of_eq_on_varGroup`,
+   `eval_univariateMonomialSumPoly_designReplacementMap_nodePoint_eq`). This
+   yields concrete `ReplacementDesign` specializations of:
+   - the equation (5.5) degree bound `(k * (R - 1)) * (#I + 2 * (ℓ - 1))` (strengthening the
+     manuscript's coarser `k * R * (#I + 2 * (ℓ - 1))` display on p. 37 using `natDegree ≤ R - 1`
+     from Definition 3.1 (4); `natDegree_univariateClearedParityCoord_design_le`,
      `natDegree_univariateClearedParityTruncatedSum_design_le`),
    - the rational homogenization identity $\tilde{H}_s(T) = \Omega [V^s] H(T)$ over `ℚ[X]`
      (`map_univariateClearedParityCoord_design`,
@@ -65,8 +75,10 @@ Appendix B.2–B.3 cleared-denominator parity-polynomial zero-counting pipeline
    - the Appendix B.2 coordinate `ℓ₁`-norm bound
      (`coeffNorm1_univariateClearedParityCoord_design_le`),
    - exact integer division and modulo-`2 ^ ℓ` recovery of `commonZeroCount I P` when `n < ℓ` and
-     `∀ i ∈ I, ∀ M ∈ P i, #M ≤ k`, including Cramer's rule determinant recovery (when `D_H ≠ 0`)
-     and §5.5 heavy-variable branch summation at shared precision `branchPrecision n = n + 1`
+     `∀ i ∈ I, ∀ M ∈ P i, #M ≤ k`, including Cramer's rule determinant recovery (under `D_H ≠ 0`
+     and the Cramer numerator identity `hcramer : ∀ s ∈ range ℓ, N_H s = D_H *
+     (univariateClearedParityCoord ... s).eval 0`) and §5.5 heavy-variable branch summation at
+     shared precision `branchPrecision n = n + 1`
      (`emod_sum_ediv_eval_zero_clearedParityCoord_design_eq_commonZeroCount`,
      `emod_ediv_eval_zero_clearedParityTruncatedSum_design_eq_commonZeroCount`,
      `emod_sum_cramer_ediv_design_eq_commonZeroCount`,
@@ -74,8 +86,6 @@ Appendix B.2–B.3 cleared-denominator parity-polynomial zero-counting pipeline
 
 ## Main definitions
 
-* `Cslib.BitString.augmentedEquationScope`: scope family on `κ ⊕ Fin n` combining
-  `equationScope (P i)` with neutral singleton scopes `{v}`.
 * `Cslib.BitString.designRowNormBound`: the Lemma 4.6 row `ℓ₁`-norm bound
   `commonDenom Q R * (1 + (1 + 2 ^ Q) * R * (4 * Q) ^ (R - 1))`.
 * `Cslib.BitString.evalVarReplacementRowPoly`,
@@ -87,18 +97,20 @@ Appendix B.2–B.3 cleared-denominator parity-polynomial zero-counting pipeline
 
 ## Main results
 
-* `Cslib.BitString.sum_card_augmentedEquationScope`,
-  `Cslib.BitString.card_filter_mem_augmentedEquationScope`,
-  `Cslib.BitString.exists_replacementDesign_augmentedEquationScope`: incidence count, variable
-  occurrence count, and Lemma 4.7 existence for neutral-singleton augmented equation scopes.
+* `Cslib.BitString.card_withNeutralScope_le`,
+  `Cslib.BitString.totalIncidence_withNeutralFactors_le`,
+  `Cslib.BitString.exists_replacementDesign_withNeutralScope`: scope-width bound, total-incidence
+  upper bound, and Lemma 4.7 existence for `withNeutralScope`.
 * `Cslib.BitString.map_evalVarReplacementRowScaledIntPoly`,
   `Cslib.BitString.eval_zero_evalVarReplacementRowPoly`,
   `Cslib.BitString.eval_zero_evalVarReplacementRowScaledIntPoly`,
   `Cslib.BitString.natDegree_evalVarReplacementRowScaledIntPoly_le`,
   `Cslib.BitString.coeffNorm1_evalVarReplacementRowScaledIntPoly_le`,
-  `Cslib.BitString.eval_evalVarReplacementRowPoly_nodePoint_eq_of_eq_on_varGroup`:
-  Definition 3.1 and Lemma 4.6 properties of `evalVarReplacementRowPoly` and
-  `evalVarReplacementRowScaledIntPoly`.
+  `Cslib.BitString.eval_evalVarReplacementRowPoly_nodePoint_eq_of_eq_on_varGroup`,
+  `Cslib.BitString.eval_nodePoint_designReplacementMap_eq_of_eq_on_varGroup`,
+  `Cslib.BitString.eval_univariateMonomialSumPoly_designReplacementMap_nodePoint_eq`:
+  Definition 3.1 and Lemma 4.6 properties of `evalVarReplacementRowPoly`,
+  `evalVarReplacementRowScaledIntPoly`, and `designReplacementMap`.
 * `Cslib.BitString.natDegree_univariateClearedParityCoord_design_le`,
   `Cslib.BitString.natDegree_univariateClearedParityTruncatedSum_design_le`,
   `Cslib.BitString.map_univariateClearedParityCoord_design`,
@@ -127,120 +139,73 @@ open Cslib.BalancedSchedules Cslib.LinearAlgebra
 
 variable {κ : Type*} {n Q r A₀ R : ℕ} {τ : ℚ}
 
-/-! ### 1. Neutral singleton scope augmentation (§5.3 & §5.5, pp. 37–38) -/
+/-! ### 1. Neutral singleton scope augmentation via `withNeutralScope` (§5.3 & §5.5, pp. 37–38) -/
 
-/-- The augmented factor scope family on `κ ⊕ Fin n` combining the equation scopes
-`equationScope (P i)` (`Sum.inl i`) with one neutral singleton scope `{v}` (`Sum.inr v`) per
-variable `v : Fin n` (§5.3 and §5.5, printed pp. 37–38). -/
-def augmentedEquationScope (P : κ → Finset (Finset (Fin n))) : κ ⊕ Fin n → Finset (Fin n)
-  | Sum.inl i => equationScope (P i)
-  | Sum.inr v => {v}
-
+/-- `withNeutralFactors (univ : Finset κ)` is `(univ : Finset (κ ⊕ ι'))`. -/
 @[simp]
-theorem augmentedEquationScope_inl (P : κ → Finset (Finset (Fin n))) (i : κ) :
-    augmentedEquationScope P (Sum.inl i) = equationScope (P i) :=
-  rfl
+theorem withNeutralFactors_univ [Fintype κ] {ι' : Type*} [Fintype ι'] :
+    withNeutralFactors (univ : Finset κ) = (univ : Finset (κ ⊕ ι')) := by
+  ext f
+  cases f <;> simp [withNeutralFactors]
 
-@[simp]
-theorem augmentedEquationScope_inr (P : κ → Finset (Finset (Fin n))) (v : Fin n) :
-    augmentedEquationScope P (Sum.inr v) = {v} :=
-  rfl
-
-/-- Every variable `v ∈ M` of a monomial `M ∈ P i` belongs to
-`augmentedEquationScope P (Sum.inl i)`. -/
-theorem mem_augmentedEquationScope_inl_of_mem {P : κ → Finset (Finset (Fin n))} {i : κ}
-    {M : Finset (Fin n)} {v : Fin n} (hM : M ∈ P i) (hv : v ∈ M) :
-    v ∈ augmentedEquationScope P (Sum.inl i) :=
-  mem_biUnion.mpr ⟨M, hM, hv⟩
-
-/-- The total incidence count of `augmentedEquationScope P` equals
-`(∑ i : κ, #(equationScope (P i))) + n`. -/
-theorem sum_card_augmentedEquationScope [Fintype κ] (P : κ → Finset (Finset (Fin n))) :
-    (∑ f : κ ⊕ Fin n, #(augmentedEquationScope P f)) =
-      (∑ i : κ, #(equationScope (P i))) + n := by
-  simp only [Fintype.sum_sum_type, augmentedEquationScope_inl, augmentedEquationScope_inr,
-    card_singleton, sum_const, card_univ, Fintype.card_fin, smul_eq_mul, mul_one]
-
-/-- Neutral singleton factors ensure that the total incidence count of `augmentedEquationScope P`
-is at least `n` (§5.5, p. 38: `M' ≥ n'`). -/
-theorem le_sum_card_augmentedEquationScope [Fintype κ] (P : κ → Finset (Finset (Fin n))) :
-    n ≤ ∑ f : κ ⊕ Fin n, #(augmentedEquationScope P f) := by
-  rw [sum_card_augmentedEquationScope]
-  exact Nat.le_add_left n _
-
-/-- If `1 ≤ w` and every equation scope `equationScope (P i)` has size at most `w`, then every
-scope in `augmentedEquationScope P` has size at most `w`. -/
-theorem card_augmentedEquationScope_le {P : κ → Finset (Finset (Fin n))} {w : ℕ}
-    (hw1 : 1 ≤ w) (hw : ∀ i : κ, #(equationScope (P i)) ≤ w) (f : κ ⊕ Fin n) :
-    #(augmentedEquationScope P f) ≤ w := by
+/-- If `1 ≤ w` and every scope `scope i` has size at most `w`, then every scope in
+`withNeutralScope scope` has size at most `w`. -/
+theorem card_withNeutralScope_le {ι' : Type*} {scope : κ → Finset ι'} {w : ℕ}
+    (hw1 : 1 ≤ w) (hw : ∀ i : κ, #(scope i) ≤ w) (f : κ ⊕ ι') :
+    #(withNeutralScope scope f) ≤ w := by
   cases f with
   | inl i => exact hw i
-  | inr v => simpa only [augmentedEquationScope_inr, card_singleton] using hw1
+  | inr v => simpa only [withNeutralScope, card_singleton] using hw1
 
-/-- Each variable `v : Fin n` occurs in `#{i : κ | v ∈ equationScope (P i)} + 1` scopes of
-`augmentedEquationScope P` (its equation occurrences plus its neutral singleton scope). -/
-theorem card_filter_mem_augmentedEquationScope [Fintype κ]
-    (P : κ → Finset (Finset (Fin n))) (v : Fin n) :
-    #{f : κ ⊕ Fin n | v ∈ augmentedEquationScope P f} =
-      #{i : κ | v ∈ equationScope (P i)} + 1 := by
-  rw [card_filter, card_filter, Fintype.sum_sum_type]
-  simp only [augmentedEquationScope_inl, augmentedEquationScope_inr, mem_singleton, sum_ite_eq,
-    mem_univ, ↓reduceIte]
-  congr 1
-
-/-- If every variable occurs in at most `b₀` equation scopes, then every variable occurs in at most
-`b₀ + 1` scopes of `augmentedEquationScope P`. -/
-theorem card_filter_mem_augmentedEquationScope_le [Fintype κ]
-    {P : κ → Finset (Finset (Fin n))} {b₀ : ℕ}
-    (hb : ∀ v : Fin n, #{i : κ | v ∈ equationScope (P i)} ≤ b₀) (v : Fin n) :
-    #{f : κ ⊕ Fin n | v ∈ augmentedEquationScope P f} ≤ b₀ + 1 := by
-  rw [card_filter_mem_augmentedEquationScope]
-  exact Nat.add_le_add_right (hb v) 1
-
-/-- If every variable occurs in at most `b₀` equation scopes, then the total incidence count of
-`augmentedEquationScope P` is at most `(b₀ + 1) * n`. -/
-theorem sum_card_augmentedEquationScope_le [Fintype κ]
-    {P : κ → Finset (Finset (Fin n))} {b₀ : ℕ}
-    (hb : ∀ v : Fin n, #{i : κ | v ∈ equationScope (P i)} ≤ b₀) :
-    (∑ f : κ ⊕ Fin n, #(augmentedEquationScope P f)) ≤ (b₀ + 1) * n := by
-  classical
-  have hswap :
-      (∑ f : κ ⊕ Fin n, #(augmentedEquationScope P f)) =
-        ∑ v : Fin n, #{f : κ ⊕ Fin n | v ∈ augmentedEquationScope P f} := by
-    simp only [card_eq_sum_ones, sum_filter]
-    rw [sum_comm]
-    refine sum_congr rfl fun f _ => ?_
-    simp only [sum_ite_mem, univ_inter]
-  rw [hswap]
+/-- If every variable `v : ι'` has `varIncidence I scope v ≤ b₀`, then the total incidence after
+adjoining neutral singleton scopes is at most `(b₀ + 1) * Fintype.card ι'`. -/
+theorem totalIncidence_withNeutralFactors_le {ι' : Type*} [Fintype ι'] [DecidableEq ι']
+    {I : Finset κ} {scope : κ → Finset ι'} {b₀ : ℕ}
+    (hb : ∀ v : ι', varIncidence I scope v ≤ b₀) :
+    totalIncidence (withNeutralFactors I) (withNeutralScope scope) ≤
+      (b₀ + 1) * Fintype.card ι' := by
+  rw [← sum_varIncidence_eq_totalIncidence (univ : Finset ι') (withNeutralFactors I)
+    (withNeutralScope scope) (fun _ _ => subset_univ _)]
   calc
-    (∑ v : Fin n, #{f : κ ⊕ Fin n | v ∈ augmentedEquationScope P f})
-      ≤ ∑ _v : Fin n, (b₀ + 1) :=
-        sum_le_sum fun v _ => card_filter_mem_augmentedEquationScope_le hb v
-    _ = (b₀ + 1) * n := by
-        rw [sum_const, card_univ, Fintype.card_fin, smul_eq_mul, mul_comm]
+    (∑ v ∈ (univ : Finset ι'), varIncidence (withNeutralFactors I) (withNeutralScope scope) v)
+      ≤ ∑ _v ∈ (univ : Finset ι'), (b₀ + 1) :=
+        sum_le_sum fun v _ => varIncidence_withNeutralFactors_le (hb v)
+    _ = (b₀ + 1) * Fintype.card ι' := by
+        rw [sum_const, card_univ, smul_eq_mul, mul_comm]
 
-/-- **Lemma 4.7 for neutral-singleton augmented equation scopes (§5.5, pp. 38–39)**:
-when every variable belongs to at most `b₀` equation scopes and every equation scope has size at
-most `w` (`1 ≤ w`), the augmented scope family `augmentedEquationScope P` satisfies `1 ≤ b₀ + 1`
-and `M ≤ (b₀ + 1) * n` automatically, and admits a Section 4 `ReplacementDesign` under the balance
-and binomial-tail conditions for `b = b₀ + 1`. -/
-theorem exists_replacementDesign_augmentedEquationScope [Fintype κ]
-    (P : κ → Finset (Finset (Fin n))) {b₀ w : ℕ}
+/-- **Lemma 4.7 for neutral-singleton augmented scopes (`withNeutralScope`, §5.5, pp. 38–39)**:
+when every variable belongs to at most `b₀` scopes of `scope : κ → Finset (Fin n)` and every
+`scope i` has size at most `w` (`1 ≤ w`), the augmented scope family `withNeutralScope scope`
+satisfies `1 ≤ b₀ + 1` and `M ≤ (b₀ + 1) * n` automatically, and admits a Section 4
+`ReplacementDesign` under the numerical balance (`2 * (b₀ + 1 + w) * (r ^ (2 * Q)) ^ 2 ≤
+totalIncidence univ scope + n`, `2 * Q * r ^ 2 ≤ n`), interval (`∀ a < R - 1, A₀ + a ≤ Q`), and
+binomial-tail (`binomTailProb Q r A₀ R ≤ τ / (r * (b₀ + 1))`) hypotheses for `b = b₀ + 1`. -/
+theorem exists_replacementDesign_withNeutralScope [Fintype κ]
+    (scope : κ → Finset (Fin n)) {b₀ w : ℕ}
     (hn : 1 ≤ n) (hw_pos : 1 ≤ w)
     (hr : 2 ≤ r) (hR : 1 ≤ R) (hRQ : R < Q) (hτ : 0 ≤ τ)
     (hI : ∀ a < R - 1, A₀ + a ≤ Q)
-    (hb : ∀ v : Fin n, #{i : κ | v ∈ equationScope (P i)} ≤ b₀)
-    (hw : ∀ i : κ, #(equationScope (P i)) ≤ w)
+    (hb : ∀ v : Fin n, varIncidence univ scope v ≤ b₀)
+    (hw : ∀ i : κ, #(scope i) ≤ w)
     (hincidenceSize :
-      2 * (b₀ + 1 + w) * (r ^ (2 * Q)) ^ 2 ≤ (∑ i : κ, #(equationScope (P i))) + n)
+      2 * (b₀ + 1 + w) * (r ^ (2 * Q)) ^ 2 ≤ totalIncidence univ scope + n)
     (hgroupSize : 2 * Q * r ^ 2 ≤ n)
     (htail : binomTailProb Q r A₀ R ≤ τ / ((r : ℚ) * ((b₀ + 1 : ℕ) : ℚ))) :
-    Nonempty (ReplacementDesign (augmentedEquationScope P) Q r A₀ R τ) := by
-  refine exists_replacementDesign (augmentedEquationScope P) hn (Nat.le_add_left 1 b₀) hw_pos hr
-    hR hRQ hτ hI (card_filter_mem_augmentedEquationScope_le hb)
-    (card_augmentedEquationScope_le hw_pos hw) (sum_card_augmentedEquationScope_le hb) ?_ hgroupSize
-    htail
-  rwa [sum_card_augmentedEquationScope]
+    Nonempty (ReplacementDesign (withNeutralScope scope) Q r A₀ R τ) := by
+  have hvar : ∀ v : Fin n, #{f : κ ⊕ Fin n | v ∈ withNeutralScope scope f} ≤ b₀ + 1 := by
+    intro v
+    simpa only [varIncidence, withNeutralFactors_univ] using
+      varIncidence_withNeutralFactors_le (hb v)
+  have hM_le : (∑ f : κ ⊕ Fin n, #(withNeutralScope scope f)) ≤ (b₀ + 1) * n := by
+    simpa only [totalIncidence, withNeutralFactors_univ, Fintype.card_fin] using
+      totalIncidence_withNeutralFactors_le hb
+  have hM_eq :
+      (∑ f : κ ⊕ Fin n, #(withNeutralScope scope f)) = totalIncidence univ scope + n := by
+    simpa only [totalIncidence, withNeutralFactors_univ, Fintype.card_fin] using
+      totalIncidence_withNeutralFactors (univ : Finset κ) scope
+  refine exists_replacementDesign (withNeutralScope scope) hn (Nat.le_add_left 1 b₀) hw_pos hr
+    hR hRQ hτ hI hvar (card_withNeutralScope_le hw_pos hw) hM_le ?_ hgroupSize htail
+  rwa [hM_eq]
 
 /-! ### 2. Univariate replacement polynomials from a `ReplacementDesign` (§5.3–5.4, pp. 37–38) -/
 
@@ -268,16 +233,17 @@ theorem commonDenom_ratCast_ne_zero (Q R : ℕ) : (commonDenom Q R : ℚ) ≠ 0 
   Nat.cast_ne_zero.mpr (commonDenom_pos Q R).ne'
 
 /-- The univariate rational replacement polynomial `⟨P⃗_e(T), x⟩ ∈ ℚ[X]` for incidence
-`e : ScopeIncidence scope` evaluated on a Boolean assignment `x : Fin n → Bool` (§5.3, p. 37). -/
+`e : ScopeIncidence scope` and Boolean assignment `x : Fin n → Bool` (§5.3, p. 37). -/
 noncomputable def evalVarReplacementRowPoly {F : Type*} [Fintype F]
     {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ)
     (e : ScopeIncidence scope) (x : Fin n → Bool) : Polynomial ℚ :=
   ∑ u : Fin n,
-    Polynomial.C (bitVal ℚ (x u)) * varReplacementRow Q r A₀ R D.place (scopeVarOf scope) e u
+    Polynomial.C (bitVal ℚ (x u)) *
+      varReplacementRow Q r A₀ R D.place (scopeVarOf scope) e u
 
-/-- The scaled integer univariate replacement polynomial `d_den ⟨P⃗_e(T), x⟩ ∈ ℤ[X]` for incidence
-`e : ScopeIncidence scope` evaluated on a Boolean assignment `x : Fin n → Bool`
-(§5.4 & Lemma 4.6, pp. 33, 37–38). -/
+/-- The univariate scaled integer replacement polynomial `d_den · ⟨P⃗_e(T), x⟩ ∈ ℤ[X]` for
+incidence `e : ScopeIncidence scope` and Boolean assignment `x : Fin n → Bool` (§5.4 & Lemma 4.6,
+pp. 33, 37–38). -/
 noncomputable def evalVarReplacementRowScaledIntPoly {F : Type*} [Fintype F]
     {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ)
     (e : ScopeIncidence scope) (x : Fin n → Bool) : Polynomial ℤ :=
@@ -285,8 +251,8 @@ noncomputable def evalVarReplacementRowScaledIntPoly {F : Type*} [Fintype F]
     Polynomial.C (bitVal ℤ (x u)) *
       varReplacementRowScaledInt Q r A₀ R D.place (scopeVarOf scope) e u
 
-/-- Pointwise evaluation of `evalVarReplacementRowPoly D e x` at `t : ℚ` agrees with
-`evalVarReplacementRow` on `fun u => bitVal ℚ (x u)`. -/
+/-- Evaluating `evalVarReplacementRowPoly D e x` at `t : ℚ` agrees with
+`evalVarReplacementRow Q r A₀ R D.place (scopeVarOf scope) e t (fun u => bitVal ℚ (x u))`. -/
 theorem eval_evalVarReplacementRowPoly {F : Type*} [Fintype F]
     {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ)
     (e : ScopeIncidence scope) (x : Fin n → Bool) (t : ℚ) :
@@ -444,6 +410,51 @@ theorem designReplacementScaledIntMap_of_mem {F : Type*} [Fintype F]
       evalVarReplacementRowScaledIntPoly D ⟨emb i, ⟨v, hv⟩⟩ x := by
   simp only [designReplacementScaledIntMap, hv, ↓reduceDIte]
 
+/-- **Definition 3.1 (4) scoped variable-level locality for `designReplacementMap`**:
+when `hv : v ∈ scope (emb i)`, `(designReplacementMap D emb x i v).eval (nodePoint t)` depends
+only on `x` restricted to `varGroup D.varAssign t (D.factorAssign (emb i) t)` and the full
+measurement vector `(varMeasurementMatrix Q r A₀ R ℚ D.place (scopeVarOf scope)).mulVec
+(fun u => bitVal ℚ (x u))`. -/
+theorem eval_nodePoint_designReplacementMap_eq_of_eq_on_varGroup {F : Type*} [Fintype F]
+    {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ) (emb : κ → F)
+    {i : κ} {v : Fin n} (hv : v ∈ scope (emb i)) (t : Fin Q) (x x' : Fin n → Bool)
+    (hgrp : ∀ u ∈ varGroup D.varAssign t (D.factorAssign (emb i) t), x u = x' u)
+    (hmeas :
+      (varMeasurementMatrix Q r A₀ R ℚ D.place (scopeVarOf scope)).mulVec
+          (fun u => bitVal ℚ (x u)) =
+        (varMeasurementMatrix Q r A₀ R ℚ D.place (scopeVarOf scope)).mulVec
+          (fun u => bitVal ℚ (x' u))) :
+    (designReplacementMap D emb x i v).eval (nodePoint t) =
+      (designReplacementMap D emb x' i v).eval (nodePoint t) := by
+  rw [designReplacementMap_of_mem D emb x hv, designReplacementMap_of_mem D emb x' hv]
+  exact eval_evalVarReplacementRowPoly_nodePoint_eq_of_eq_on_varGroup D ⟨emb i, ⟨v, hv⟩⟩ t
+    x x' hgrp hmeas
+
+/-- **Definition 3.1 (4) & §5.3 factor-level locality for `univariateMonomialSumPoly` under scope
+coverage**: when `equationScope (P i) ⊆ scope (emb i)` (for instance when
+`scope = withNeutralScope (fun j => equationScope (P j))` and `emb = Sum.inl`), the substituted
+equation factor `(univariateMonomialSumPoly ℚ (designReplacementMap D emb x i) (P i)).eval
+(nodePoint t)` depends only on `x` restricted to `varGroup D.varAssign t (D.factorAssign (emb i) t)`
+and the full measurement vector `(varMeasurementMatrix Q r A₀ R ℚ D.place (scopeVarOf scope)).mulVec
+(fun u => bitVal ℚ (x u))`. -/
+theorem eval_univariateMonomialSumPoly_designReplacementMap_nodePoint_eq
+    {F : Type*} [Fintype F] {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ)
+    (emb : κ → F) (P : κ → Finset (Finset (Fin n))) {i : κ}
+    (hscope : equationScope (P i) ⊆ scope (emb i)) (t : Fin Q) (x x' : Fin n → Bool)
+    (hgrp : ∀ u ∈ varGroup D.varAssign t (D.factorAssign (emb i) t), x u = x' u)
+    (hmeas :
+      (varMeasurementMatrix Q r A₀ R ℚ D.place (scopeVarOf scope)).mulVec
+          (fun u => bitVal ℚ (x u)) =
+        (varMeasurementMatrix Q r A₀ R ℚ D.place (scopeVarOf scope)).mulVec
+          (fun u => bitVal ℚ (x' u))) :
+    (univariateMonomialSumPoly ℚ (designReplacementMap D emb x i) (P i)).eval (nodePoint t) =
+      (univariateMonomialSumPoly ℚ (designReplacementMap D emb x' i) (P i)).eval (nodePoint t) := by
+  rw [eval_univariateMonomialSumPoly, eval_univariateMonomialSumPoly]
+  refine sum_congr rfl fun M hM => prod_congr rfl fun v hv => ?_
+  have hv_scope : v ∈ scope (emb i) := hscope (mem_biUnion.mpr ⟨M, hM, hv⟩)
+  exact eval_nodePoint_designReplacementMap_eq_of_eq_on_varGroup D emb hv_scope t x x'
+    hgrp hmeas
+
 /-- Mapping `designReplacementScaledIntMap D emb x i v` into `ℚ[X]` yields
 `C (commonDenom Q R : ℚ) * designReplacementMap D emb x i v`. -/
 theorem map_designReplacementScaledIntMap {F : Type*} [Fintype F]
@@ -545,10 +556,11 @@ theorem coeffNorm1_clearedMonomialSumPoly_designReplacementScaledIntMap_le {F : 
 /-! ### 4. Concrete §5.3–5.5 degree, homogenization, `ℓ₁`-norm, and exact division recovery
 theorems for `ReplacementDesign` -/
 
-/-- **Equation (5.5a) coordinate `natDegree` bound for `ReplacementDesign`**:
+/-- **Equation (5.5) coordinate `natDegree` bound for `ReplacementDesign` (p. 37)**:
 for `s < ℓ` and `∀ i ∈ I, ∀ M ∈ P i, #M ≤ k`, the cleared coordinate polynomial
 `univariateClearedParityCoord I P (commonDenom Q R : ℤ) k ℓ (designReplacementScaledIntMap D emb) s`
-has `natDegree ≤ (k * (R - 1)) * (#I + 2 * (ℓ - 1))`. -/
+has `natDegree ≤ (k * (R - 1)) * (#I + 2 * (ℓ - 1))` (strengthening the manuscript's coarser
+`k * R * (#I + 2 * (ℓ - 1))` display in (5.5) via `natDegree ≤ R - 1` from Definition 3.1 (4)). -/
 theorem natDegree_univariateClearedParityCoord_design_le {F : Type*} [Fintype F]
     {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ) (emb : κ → F)
     (I : Finset κ) (P : κ → Finset (Finset (Fin n))) {k ℓ s : ℕ}
@@ -560,11 +572,12 @@ theorem natDegree_univariateClearedParityCoord_design_le {F : Type*} [Fintype F]
     (designReplacementScaledIntMap D emb) hk
     (fun x i _ _ _ v _ => natDegree_designReplacementScaledIntMap_le D emb x i v) hs
 
-/-- **Equation (5.5a) truncated-sum `natDegree` bound for `ReplacementDesign`**:
+/-- **Equation (5.5) truncated-sum `natDegree` bound for `ReplacementDesign` (p. 37)**:
 when `∀ i ∈ I, ∀ M ∈ P i, #M ≤ k`, the cleared truncated sum
 `univariateClearedParityTruncatedSum I P (commonDenom Q R : ℤ) k ℓ
   (designReplacementScaledIntMap D emb)`
-has `natDegree ≤ (k * (R - 1)) * (#I + 2 * (ℓ - 1))`. -/
+has `natDegree ≤ (k * (R - 1)) * (#I + 2 * (ℓ - 1))` (strengthening the manuscript's coarser
+`k * R * (#I + 2 * (ℓ - 1))` display in (5.5) via `natDegree ≤ R - 1` from Definition 3.1 (4)). -/
 theorem natDegree_univariateClearedParityTruncatedSum_design_le {F : Type*} [Fintype F]
     {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ) (emb : κ → F)
     (I : Finset κ) (P : κ → Finset (Finset (Fin n))) (k ℓ : ℕ)
