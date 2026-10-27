@@ -228,19 +228,21 @@ theorem exists_runPath_tidy (hm : m₀ ≠ m₁) {u : ℕ}
     (hu : (tm.runFrom (tm.initCfg input) u).Halted) :
     ∃ p : (tidy m₀ m₁ tm).RunPath input, p.head = (tidy m₀ m₁ tm).initCfg input ∧
       p.last = wordsCfg input none (fun _ => []) (tm.runFrom (tm.initCfg input) u).output ∧
-      p.time ≤ 2 * u + 3 * tm.space (tm.initCfg input) u + 2 * k + 4 ∧
-      p.space ≤ 2 * tm.space (tm.initCfg input) u +
-        2 * k * (3 * tm.space (tm.initCfg input) u + 2 * k + 3) := by
+      p.time ≤ 2 * u +
+        3 * (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) u).space + 2 * k + 4 ∧
+      p.space ≤ 2 * (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) u).space +
+        2 * k * (3 * (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) u).space + 2 * k +
+          3) := by
   set c₀ := tm.initCfg input
   set D := tm.runFrom c₀ u
-  set S := tm.space c₀ u
+  set S := (MultiTapeNTM.RunPath.ofDeterministic tm c₀ u).space
   set C₁ := Shadow.cfg m₀ m₁ D (Shadow.visited tm c₀ u)
   -- the visited cells of each tape form an interval `[L i, R i]` around the start cell
   choose L R hLR using fun i => exists_visitedByTapeHead_eq_Icc (tm := tm) c₀ u i
   have h0 : ∀ i, (0 : ℤ) ∈ Finset.Icc (L i) (R i) := fun i =>
-    hLR i ▸ mem_visitedByTapeHead.2 ⟨0, by omega, rfl⟩
+    hLR i ▸ MultiTapeNTM.RunPath.mem_visitedByTapeHead_ofDeterministic.2 ⟨0, by omega, rfl⟩
   have hp : ∀ i, D.workTapePos i ∈ Finset.Icc (L i) (R i) := fun i =>
-    hLR i ▸ mem_visitedByTapeHead_self c₀ u i
+    hLR i ▸ MultiTapeNTM.RunPath.mem_visitedByTapeHead_ofDeterministic.2 ⟨u, le_rfl, rfl⟩
   simp only [Finset.mem_Icc] at h0 hp
   set a : Fin k → ℕ := fun i => (-L i).toNat
   set b : Fin k → ℕ := fun i => (R i).toNat
@@ -294,14 +296,15 @@ theorem exists_runPath_tidy (hm : m₀ ≠ m₁) {u : ℕ}
     (by rw [MultiTapeNTM.RunPath.last_ofDeterministic, hR])
   -- the time bound
   set Tc := ((List.finRange k).map fun i => a i + 2 * b i + c i + 5).sum + 1
-  have hcard : ∀ i, a i + b i + 1 = tm.spaceUsedByTape c₀ u i := fun i => by
-    rw [spaceUsedByTape, hLR, Int.card_Icc]
+  have hcard (i : Fin k) :
+      a i + b i + 1 = (MultiTapeNTM.RunPath.ofDeterministic tm c₀ u).spaceUsedByTape i := by
+    rw [MultiTapeNTM.RunPath.spaceUsedByTape, hLR, Int.card_Icc]
     have := ha i
     have := hb i
     omega
   have hTc : Tc ≤ 3 * S + 2 * k + 1 := by
     have hsum : ((List.finRange k).map fun i => a i + 2 * b i + c i + 5).sum ≤
-        ∑ i, (3 * tm.spaceUsedByTape c₀ u i + 2) := by
+        ∑ i, (3 * (MultiTapeNTM.RunPath.ofDeterministic tm c₀ u).spaceUsedByTape i + 2) := by
       rw [← Fin.sum_univ_def]
       refine Finset.sum_le_sum fun i _ => ?_
       have := hcard i
@@ -310,9 +313,10 @@ theorem exists_runPath_tidy (hm : m₀ ≠ m₁) {u : ℕ}
       have := hb i
       have := hc i
       omega
-    have : ∑ i, (3 * tm.spaceUsedByTape c₀ u i + 2) = 3 * S + 2 * k := by
+    have : ∑ i, (3 * (MultiTapeNTM.RunPath.ofDeterministic tm c₀ u).spaceUsedByTape i + 2) =
+        3 * S + 2 * k := by
       rw [Finset.sum_add_distrib, ← Finset.mul_sum]
-      simp [S, space_eq_sum_spaceUsedByTape, mul_comm]
+      simp [S, MultiTapeNTM.RunPath.space, mul_comm]
     omega
   have hTr : C₁.inputPos.val - 1 + 2 ≤ u + 2 := by
     have h₁ : (D.inputPos : ℕ) ≤ (c₀.inputPos : ℕ) + u := inputPos_runFrom_le tm c₀ u

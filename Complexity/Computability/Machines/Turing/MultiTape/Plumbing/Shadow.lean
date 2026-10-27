@@ -135,10 +135,11 @@ theorem visited_succ (c : Cfg k Symbol State input) (n : ℕ) (i : Fin k) :
 /-- The cells visited up to step `n` are the cells visited before step `n` and the cell the head is
 on at step `n`. -/
 theorem visitedByTapeHead_eq_insert (c : Cfg k Symbol State input) (n : ℕ) (i : Fin k) :
-    tm.visitedByTapeHead c n i = insert ((tm.runFrom c n).workTapePos i) (visited tm c n i) := by
+    (MultiTapeNTM.RunPath.ofDeterministic tm c n).visitedByTapeHead i =
+      insert ((tm.runFrom c n).workTapePos i) (visited tm c n i) := by
   ext x
-  simp only [mem_visitedByTapeHead, Finset.mem_insert, visited, Finset.mem_image,
-    Finset.mem_range]
+  simp only [MultiTapeNTM.RunPath.mem_visitedByTapeHead_ofDeterministic, Finset.mem_insert,
+    visited, Finset.mem_image, Finset.mem_range]
   constructor
   · rintro ⟨m, hm, rfl⟩
     rcases Nat.lt_or_ge m n with h | h
@@ -248,8 +249,9 @@ theorem runFrom_shadow {tm : MultiTapeTM k Symbol State} {u : ℕ}
 /-- Until `tm` halts, `shadow m₀ m₁ tm` uses twice the space of `tm`. -/
 theorem space_shadow {tm : MultiTapeTM k Symbol State} {u : ℕ}
     (h : ∀ m < u, ¬(tm.runFrom (tm.initCfg input) m).Halted) :
-    (shadow m₀ m₁ tm).space ((shadow m₀ m₁ tm).initCfg input) (u + 1) =
-      2 * tm.space (tm.initCfg input) u := by
+    (MultiTapeNTM.RunPath.ofDeterministic (shadow m₀ m₁ tm) ((shadow m₀ m₁ tm).initCfg input)
+        (u + 1)).space =
+      2 * (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) u).space := by
   -- every tape of `shadow m₀ m₁ tm` visits the cells its copy of the tape of `tm` visits
   have hpos : ∀ m ≤ u, ((shadow m₀ m₁ tm).runFrom ((shadow m₀ m₁ tm).initCfg input)
       (m + 1)).workTapePos = Fin.append (tm.runFrom (tm.initCfg input) m).workTapePos
@@ -257,11 +259,13 @@ theorem space_shadow {tm : MultiTapeTM k Symbol State} {u : ℕ}
     rw [runFrom_succ_initCfg h hm]
     rfl
   have hvis : ∀ l : Fin (k + k),
-      (shadow m₀ m₁ tm).visitedByTapeHead ((shadow m₀ m₁ tm).initCfg input) (u + 1) l =
-        tm.visitedByTapeHead (tm.initCfg input) u (pairIdx l) := by
+      (MultiTapeNTM.RunPath.ofDeterministic (shadow m₀ m₁ tm) ((shadow m₀ m₁ tm).initCfg input)
+          (u + 1)).visitedByTapeHead l =
+        (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) u).visitedByTapeHead
+          (pairIdx l) := by
     intro l
     ext x
-    simp only [mem_visitedByTapeHead]
+    simp only [MultiTapeNTM.RunPath.mem_visitedByTapeHead_ofDeterministic]
     constructor
     · rintro ⟨m, hm, rfl⟩
       cases m with
@@ -279,7 +283,7 @@ theorem space_shadow {tm : MultiTapeTM k Symbol State} {u : ℕ}
       rw [hpos m (by omega)]
       refine Fin.addCases (fun i => ?_) (fun i => ?_) l <;>
         simp only [pairIdx_castAdd, pairIdx_natAdd, Fin.append_left, Fin.append_right]
-  simp only [space_eq_sum_spaceUsedByTape, spaceUsedByTape, hvis]
+  simp only [MultiTapeNTM.RunPath.space, MultiTapeNTM.RunPath.spaceUsedByTape, hvis]
   rw [Fin.sum_univ_add]
   simp only [pairIdx_castAdd, pairIdx_natAdd, two_mul]
 

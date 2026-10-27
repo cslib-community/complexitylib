@@ -84,7 +84,7 @@ private theorem workRoundtrip_computes (input : List Bool) :
 private theorem workRoundtrip_runsInSpace (input : List Bool) :
     workRoundtrip.RunsInSpace input 3 :=
   workRoundtrip.runsInSpace_of_halted (workRoundtrip_halted input)
-    (by simpa using workRoundtrip.space_linear (workRoundtrip.initCfg input) 2)
+    (MultiTapeNTM.RunPath.space_le_mul_time_add_one _)
 
 private theorem workRoundtrip_computable :
     ComputableInTimeAndSpace (fun _ : List Bool => true) encBits encBool

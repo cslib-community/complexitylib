@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 
 module
 -- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
--- vendored: `spaceUsed` is `space` since cslib #1133
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileInput
 import Mathlib.Algebra.BigOperators.Fin
@@ -114,7 +114,7 @@ public theorem transformsTapesAt_peekInput :
         tapeOfList_update_two]
   refine ⟨p, Function.update ws 0 (peekWord a ++ w), [], by rw [h₂, List.append_nil],
     ⟨rfl, by simp [hw, a], rfl⟩, ?_⟩
-  rw [space_eq_sum_spaceUsedByTape, Fin.sum_univ_one]
+  rw [MultiTapeNTM.RunPath.space, Fin.sum_univ_one]
   refine (spaceUsedByTape_le_card _ (S := {0, 1}) fun m hm => ?_).trans (by decide)
   rcases m with _ | _ | m
   · simp [runFrom, wordsCfgAt]

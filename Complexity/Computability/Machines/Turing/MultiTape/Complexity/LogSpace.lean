@@ -98,7 +98,15 @@ theorem core_runFrom_eq_of_core_eq {c₁ c₂ : Cfg k Symbol State input} (h : c
   | zero => exact h
   | succ m ih =>
     rw [runFrom_succ, runFrom_succ]
-    exact core_step_eq_of_core_eq ih
+    generalize tm.runFrom c₁ m = d₁ at ih ⊢
+    generalize tm.runFrom c₂ m = d₂ at ih ⊢
+    rcases d₁ with ⟨q₁, i₁, w₁, p₁, out₁⟩
+    rcases d₂ with ⟨q₂, i₂, w₂, p₂, out₂⟩
+    simp only [Cfg.core, Cfg.storage, Prod.mk.injEq, Storage.mk.injEq] at ih
+    obtain ⟨rfl, rfl, rfl, rfl⟩ := ih
+    cases q₁ with
+    | none => rw [step_of_halt rfl, step_of_halt rfl]; rfl
+    | some q => rw [step_of_state rfl, step_of_state rfl]; rfl
 
 /-- **A halting machine halts within the number of its cores.** Before it halts, a machine within
 space `s` repeats no core (input head position and storage), since from a repeated core it would
@@ -129,7 +137,11 @@ theorem haltsAt_le_card [Fintype Symbol] [Fintype State] {s u : ℕ}
     exact ⟨t, rfl⟩
   rw [Set.encard_coe_eq_coe_finsetCard, Finset.card_image_of_injOn hinj,
     Finset.card_range] at hsub
-  exact_mod_cast hsub.trans (tm.encard_cores_le (RunsInSpace.space_le hs))
+  -- every core of the run is the core at the end of a computation path
+  have hpath : (Set.range core).encard ≤
+      (Set.range fun p : tm.ComputationPath input => p.last.core).encard :=
+    Set.encard_le_encard (Set.range_subset_iff.2 fun t => ⟨.ofDeterministic tm input t, rfl⟩)
+  exact_mod_cast (hsub.trans hpath).trans (tm.encard_cores_le hs)
 
 /-- A machine that halts on `input` within space `s` does so within
 `(n + 2) * storageBound Symbol State k s` steps, with the same output. -/

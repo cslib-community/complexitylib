@@ -6,8 +6,8 @@ Authors: Christian Reitwiessner
 
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
--- vendored: `spaceUsed` is `space` since cslib #1133; `try` steps that the
--- unused-tactic linter flags are dropped
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122; `try` steps
+-- that the unused-tactic linter flags are dropped
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Translate
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
@@ -809,7 +809,8 @@ the number of steps, plus the largest symbol of the input. -/
 public theorem stateSpace_desc {k : ℕ} {Symbol S : Type} [Fintype S] [Fintype Symbol]
     (eS : S ↪ ℕ) (eY : Symbol ↪ ℕ) (tm : MultiTapeTM k Symbol S) (x : List Symbol) (t : ℕ) :
     stateSpace (desc eS eY tm) (x.map eY) t ≤
-      60 * (descLen (desc eS eY tm) + 1) * (tm.space (tm.initCfg x) t + 1) +
+      60 * (descLen (desc eS eY tm) + 1) *
+          ((MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg x) t).space + 1) +
         6 * (encNat (x.length + 1)).length + 2 * (encNat t).length + (x.map eY).foldr max 0 := by
   simpa [simSpace_desc] using stateSpace_le (desc eS eY tm) (x.map eY) t
 

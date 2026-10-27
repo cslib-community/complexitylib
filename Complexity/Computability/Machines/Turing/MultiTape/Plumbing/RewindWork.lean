@@ -26,16 +26,17 @@ namespace Turing.MultiTapeTM
 
 variable {Symbol : Type*} {input : List Symbol}
 
--- vendored: `spaceUsed_rewindWork_le` in crei:crei/tidy-universal; `spaceUsed` is `space` since
--- cslib #1133
+-- vendored: `spaceUsed_rewindWork_le` in crei:crei/tidy-universal; `spaceUsed` is the space of a
+-- run path since cslib #1133 and #1122
 /-- The one-tape `rewindWork` machine visits at most `p + 2` cells: its head stays within
 `[-1, p]`. -/
 public theorem space_rewindWork_le (write : Option (Option Symbol))
     (ip : Fin (input.length + 2)) (t : ℤ → Option Symbol) (out : List Symbol) {w : List Symbol}
     (hw : t = tapeOfList w) {p : ℕ} (hp : p ≤ w.length) (n : ℕ) :
-    (rewindWork Symbol write).space
-        ⟨some (rewindWork Symbol write).q₀, ip, fun _ => t, fun _ => (p : ℤ), out⟩ n ≤ p + 2 := by
-  rw [space_eq_sum_spaceUsedByTape, Fin.sum_univ_one]
+    (MultiTapeNTM.RunPath.ofDeterministic (rewindWork Symbol write)
+        ⟨some (rewindWork Symbol write).q₀, ip, fun _ => t, fun _ => (p : ℤ), out⟩ n).space ≤
+      p + 2 := by
+  rw [MultiTapeNTM.RunPath.space, Fin.sum_univ_one]
   refine (spaceUsedByTape_le_card _ (S := .Icc (-1) (p : ℤ)) fun m _ => ?_).trans ?_
   · exact Finset.mem_Icc.2 (workTapePos_runFrom_rewindWork write ip t out hw hp m)
   · rw [Int.card_Icc]; omega
