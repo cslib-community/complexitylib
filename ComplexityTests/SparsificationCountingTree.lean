@@ -6,6 +6,7 @@ Authors: Anton Kovsharov
 
 module
 
+public import Complexity.Foundations.Data.List.Counting
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
 
 public section
@@ -259,5 +260,27 @@ example : ((countingLeaves (2 ^ ·) (reduce multiCNF.toClauseSet)).map
   rw [sum_modelCountOn_countingLeaves_reduce_toClauseSet]
   unfold CNF.modelCountOn
   decide
+
+/-! ### 5. Unique-index and unique-member extraction from `List.countP = 1` -/
+
+-- Even when non-matching elements repeat (`3` appears twice), `countP = 1` yields both a unique
+-- index (`⟨1, _⟩`) and a unique list member (`4`).
+example : ∃! i : Fin [3, 4, 3, 5].length, ([3, 4, 3, 5][i] == 4) = true :=
+  List.existsUnique_fin_of_countP_eq_one (l := [3, 4, 3, 5]) (p := (· == 4)) (by decide)
+
+example : ∃! a, a ∈ [3, 4, 3, 5] ∧ (a == 4) = true :=
+  List.existsUnique_mem_of_countP_eq_one (l := [3, 4, 3, 5]) (p := (· == 4)) (by decide)
+
+-- Singleton list at index `0`.
+example : ∃! i : Fin [true].length, [true][i] = true :=
+  List.existsUnique_fin_of_countP_eq_one (l := [true]) (p := id) (by decide)
+
+-- End-to-end unique-leaf wrappers on `multiRoot` and `witnessAssign`.
+example : ∃! i : Fin (countingLeaves (2 ^ ·) multiRoot).length,
+    ((countingLeaves (2 ^ ·) multiRoot)[i]).Sat witnessAssign :=
+  (sat_iff_existsUnique_fin_countingLeaves (2 ^ ·) multiRoot witnessAssign).mp (by decide)
+
+example : ∃! L, L ∈ countingLeaves (2 ^ ·) multiRoot ∧ L.Sat witnessAssign :=
+  (sat_iff_existsUnique_mem_countingLeaves (2 ^ ·) multiRoot witnessAssign).mp (by decide)
 
 end ComplexityTests.SparsificationCountingTree

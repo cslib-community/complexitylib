@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Counting
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import Mathlib.Data.Finset.Powerset
+import Complexity.Foundations.Data.List.Counting
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Algebra.Group.Action.Defs
 
@@ -564,59 +565,6 @@ theorem countP_sat_countingLeaves (θ : ℕ → ℕ) (ψ : ClauseSet V) (x : V �
       · rw [List.countP_cons_of_neg (p := p) (by simpa only [p, decide_eq_true_eq] using hsat),
           List.countP_nil, ite_eq_right hsat]
 
-private theorem existsUnique_fin_of_countP_eq_one {α : Type*} :
-    ∀ {l : List α} {p : α → Bool}, l.countP p = 1 → ∃! i : Fin l.length, p l[i] = true
-  | [], _, h => by
-    rw [List.countP_nil] at h
-    omega
-  | a :: tl, p, h => by
-    cases hpa : p a with
-    | true =>
-      rw [List.countP_cons_of_pos hpa] at h
-      have htl : tl.countP p = 0 := by omega
-      refine Exists.intro (⟨0, Nat.succ_pos _⟩ : Fin (a :: tl).length)
-        (And.intro ?_ fun i hi => ?_)
-      · simpa only [Fin.getElem_fin, List.getElem_cons_zero] using hpa
-      · rcases i with ⟨_ | k, hk⟩
-        · rfl
-        · simp only [Fin.getElem_fin, List.getElem_cons_succ] at hi
-          have hk' : k < tl.length := by simp only [List.length_cons] at hk; omega
-          exact absurd hi ((List.countP_eq_zero.mp htl) tl[k] (List.getElem_mem hk'))
-    | false =>
-      rw [List.countP_cons_of_neg (by rw [hpa]; decide)] at h
-      obtain ⟨j, hj, hjuniq⟩ := existsUnique_fin_of_countP_eq_one h
-      refine Exists.intro j.succ (And.intro ?_ fun i hi => ?_)
-      · simpa only [Fin.getElem_fin, Fin.val_succ, List.getElem_cons_succ] using hj
-      · rcases i with ⟨_ | k, hk⟩
-        · simp only [Fin.getElem_fin, List.getElem_cons_zero] at hi
-          exact absurd hi (by rw [hpa]; decide)
-        · simp only [Fin.getElem_fin, List.getElem_cons_succ] at hi
-          have hk' : k < tl.length := by simp only [List.length_cons] at hk; omega
-          have heq := Fin.ext_iff.mp (hjuniq ⟨k, hk'⟩ (by simpa only [Fin.getElem_fin] using hi))
-          exact Fin.ext (by simp only [Fin.val_succ]; exact congrArg (· + 1) heq)
-
-private theorem existsUnique_mem_of_countP_eq_one {α : Type*} :
-    ∀ {l : List α} {p : α → Bool}, l.countP p = 1 → ∃! a, a ∈ l ∧ p a = true
-  | [], _, h => by
-    rw [List.countP_nil] at h
-    omega
-  | a :: tl, p, h => by
-    cases hpa : p a with
-    | true =>
-      rw [List.countP_cons_of_pos hpa] at h
-      have htl : tl.countP p = 0 := by omega
-      refine Exists.intro a (And.intro ⟨List.mem_cons_self, hpa⟩ fun b ⟨hb, hpb⟩ => ?_)
-      rcases List.mem_cons.mp hb with rfl | hbtl
-      · rfl
-      · exact absurd hpb ((List.countP_eq_zero.mp htl) b hbtl)
-    | false =>
-      rw [List.countP_cons_of_neg (by rw [hpa]; decide)] at h
-      obtain ⟨b, ⟨hbtl, hpb⟩, hbuniq⟩ := existsUnique_mem_of_countP_eq_one h
-      refine Exists.intro b (And.intro ⟨List.mem_cons_of_mem a hbtl, hpb⟩ fun c ⟨hc, hpc⟩ => ?_)
-      rcases List.mem_cons.mp hc with rfl | hctl
-      · exact absurd hpc (by rw [hpa]; decide)
-      · exact hbuniq c ⟨hctl, hpc⟩
-
 /-- **Exact assignment partition (indexed leaf occurrence form).** An assignment `x` satisfies `ψ`
 if and only if there is a unique index `i` into `countingLeaves θ ψ` whose leaf is satisfied by
 `x`. -/
@@ -626,7 +574,7 @@ theorem sat_iff_existsUnique_fin_countingLeaves (θ : ℕ → ℕ) (ψ : ClauseS
   constructor
   · intro hsat
     rw [ite_eq_left hsat] at hc
-    obtain ⟨i, hi, huniq⟩ := existsUnique_fin_of_countP_eq_one hc
+    obtain ⟨i, hi, huniq⟩ := List.existsUnique_fin_of_countP_eq_one hc
     exact Exists.intro i (And.intro (of_decide_eq_true hi) fun j hj => huniq j (decide_eq_true hj))
   · rintro ⟨i, hi, -⟩
     by_contra hnsat
@@ -642,7 +590,7 @@ theorem sat_iff_existsUnique_mem_countingLeaves (θ : ℕ → ℕ) (ψ : ClauseS
   constructor
   · intro hsat
     rw [ite_eq_left hsat] at hc
-    obtain ⟨L, ⟨hLm, hLs⟩, huniq⟩ := existsUnique_mem_of_countP_eq_one hc
+    obtain ⟨L, ⟨hLm, hLs⟩, huniq⟩ := List.existsUnique_mem_of_countP_eq_one hc
     exact Exists.intro L (And.intro ⟨hLm, of_decide_eq_true hLs⟩ fun L' ⟨hL'm, hL's⟩ =>
       huniq L' ⟨hL'm, decide_eq_true hL's⟩)
   · rintro ⟨L, ⟨hLm, hLs⟩, -⟩
