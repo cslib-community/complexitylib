@@ -16,12 +16,12 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingS
 # Depth and Leaf-Count Bounds for Counting Sparsification
 
 We connect the actual counting-path insertion and petal-step bounds of `CountingPathBounds`
-(Appendix A.2–A.3, Lemma A.2 and the path budgets of Lemma A.3, printed pp. 46–47 of
-[OpenAI2026ETH]) to the prefix words of a `CountingBranchingRule`, and combine the leaf-word
-petal-step injection with the geometric binomial-tail bound
-`Cslib.sum_choose_le_two_pow_div_add_one` and the first-success threshold base
-`countingThresholdBase` of `CountingParameters` to bound the number of leaf words of any
-counting-sparsification tree.
+(Appendix A.2, Lemma A.3 on p. 46 and the path budgets of Appendix A.3 on p. 46 of
+[OpenAI2026ETH]) to the prefix words of a `CountingBranchingRule`, and combine a leaf-only
+petal-step injection (a library adaptation of §A.3's depth-and-B-positions node encoding on p. 46)
+with the geometric binomial-tail bound `Cslib.sum_choose_le_two_pow_div_add_one` and the
+first-success threshold base `countingThresholdBase` of `CountingParameters` (pp. 46–47) to bound
+the number of leaf words of any counting-sparsification tree.
 
 For a `CountingBranchingRule (fun r => M ^ r) V σ` starting from a state `s` whose clause set
 `R.toClauseSet s` is `Reduced`, nontautological, of width at most `k`, and supported on a finite
@@ -30,11 +30,12 @@ variable set `declared` of size `N = declared.card`:
   `countingDepthCoeff k M = 4 * ∑ r < k - 1, (3 * M) ^ r`;
 * every node word `w` has `M * #{i < w.length | w[i] = true} ≤ countingBChoiceCoeff k * N`, where
   `countingBChoiceCoeff k = 4 * ∑ r < k - 1, 3 ^ r`;
-* because two leaf words with `true` steps at the same positions are equal
-  (`CountingBranchingRule.IsLeafWord.eq_of_getD_eq`), any finset `W` of leaf words injects into the
-  subsets of `range (countingDepthCoeff k M * N)` of cardinality at most
-  `countingBChoiceCoeff k * N / M`, giving
-  `W.card ≤ ∑ j ≤ countingBChoiceCoeff k * N / M, (countingDepthCoeff k M * N).choose j`
+* as a library adaptation of §A.3's `(Cn + 1) * ∑ choose` node bound (p. 46), leafhood rules out
+  trailing-`false` ambiguity so two leaf words with `true` steps at the same positions are equal
+  (`CountingBranchingRule.IsLeafWord.eq_of_getD_eq`); any finset `W` of leaf words therefore
+  injects into the subsets of `range (countingDepthCoeff k M * N)` of cardinality at most
+  `countingBChoiceCoeff k * N / M` without a separate depth factor, giving the pure binomial-sum
+  leaf bound `W.card ≤ ∑ j ≤ countingBChoiceCoeff k * N / M, (countingDepthCoeff k M * N).choose j`
   (`CountingBranchingRule.card_le_of_isLeafWord`);
 * under the integer parameter budget `countingBChoiceCoeff k ≤ M` and
   `B * countingBChoiceCoeff k * Nat.clog 2 (4 * countingDepthCoeff k M * M) ≤ M` (for `2 ≤ k`, with
@@ -61,7 +62,8 @@ variable set `declared` of size `N = declared.card`:
 
 ## References
 
-* [OpenAI, *The Exponential Time Hypothesis is False*, Appendix A.3, Lemma A.3][OpenAI2026ETH]
+* [OpenAI, *The Exponential Time Hypothesis is False*, Appendix A.2 (Lemma A.3, p. 46) and
+  Appendix A.3 (pp. 46–47)][OpenAI2026ETH]
 -/
 
 @[expose] public section

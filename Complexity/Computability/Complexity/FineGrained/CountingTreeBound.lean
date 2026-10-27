@@ -16,9 +16,10 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingB
 # Discharging `CountingTreeBound` for Counting Sparsification
 
 We discharge the quantitative depth and leaf-count hypothesis `CountingSparsify.CountingTreeBound`
-of `CountingSparsification` from the actual path budgets and binomial leaf-word bounds in
-`CountingBounds` and the first-success threshold base `countingThresholdBase` in
-`CountingParameters` (Appendix A.2–A.3, Lemmas A.2–A.3, printed pp. 46–47 of [OpenAI2026ETH]).
+of `CountingSparsification` from the actual path budgets and the leaf-only binomial-sum adaptation
+in `CountingBounds` and the first-success threshold base `countingThresholdBase` in
+`CountingParameters` (adapting Appendix A.2, Lemma A.3 on p. 46 and Appendix A.3 on pp. 46–47 of
+[OpenAI2026ETH]).
 
 Specifically:
 * For any parameters `M, K, B : ℕ` with `2 ≤ M`, `1 ≤ K`, and `1 ≤ B` satisfying the integer
@@ -54,8 +55,8 @@ unconditionally at `M = countingThresholdBase K B`.
 
 ## References
 
-* [OpenAI, *The Exponential Time Hypothesis is False*, Section 6.4 and
-  Appendix A.2–A.3][OpenAI2026ETH]
+* [OpenAI, *The Exponential Time Hypothesis is False*, Section 6.4 (pp. 43–44),
+  Appendix A.2 (Lemma A.3, p. 46), and Appendix A.3 (pp. 46–47)][OpenAI2026ETH]
 -/
 
 @[expose] public section
@@ -73,8 +74,9 @@ include hM hK in
 /-- **Discharging `CountingTreeBound` from the integer parameter budget.**
 For `2 ≤ M`, `1 ≤ K`, and `1 ≤ B`, if `2 ≤ K` implies `countingBChoiceCoeff K ≤ M` and
 `B * countingBChoiceCoeff K * Nat.clog 2 (4 * countingDepthCoeff K M * M) ≤ M`, then
-`CountingTreeBound M K B (countingDepthCoeff K M) hM hK` holds (Appendix A.3, Lemma A.3, printed
-p. 47 [OpenAI2026ETH]). -/
+`CountingTreeBound M K B (countingDepthCoeff K M) hM hK` holds (adapting the §A.3 node bound on
+printed pp. 46–47 of [OpenAI2026ETH] via the leaf-only B-position injection of
+`CountingBounds`). -/
 theorem countingTreeBound_of_budget (hM2 : 2 ≤ M) {B : ℕ} (hB : 1 ≤ B)
     (hbudget : 2 ≤ K → countingBChoiceCoeff K ≤ M ∧
       B * countingBChoiceCoeff K * Nat.clog 2 (4 * countingDepthCoeff K M * M) ≤ M) :
