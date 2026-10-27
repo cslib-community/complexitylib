@@ -155,6 +155,14 @@ theorem full_nonzero (v : Fin n → (Fin N → F) → F) (hv : ∀ l, v l ∈ s)
   congr 1
   exact propext ⟨fun h => funext fun l => h l l.2, fun h l _ => congrFun h l⟩
 
+omit [DecidableEq F] in
+/-- A dot product of two vectors of `n` available functions costs `2 * n + 1` gates. -/
+private theorem full_dot_univ (u v : Fin n → (Fin N → F) → F)
+    (hu : ∀ l, u l ∈ s) (hv : ∀ l, v l ∈ s) :
+    Synthesis (fullInterpretation (k := 2)) s {fun x => ∑ l, u l x * v l x} (2 * n + 1) := by
+  simpa only [card_univ, Fintype.card_fin] using
+    full_dot (s := s) univ u v (fun l _ => hu l) (fun l _ => hv l)
+
 /-- The budget of one elimination step. -/
 private theorem kernelStep_budget (n : ℕ) :
     n * (2 * n + 1) + (2 * n + 1) + n * (2 * n + 1) + (2 * n + 1) + n + n * n + n * n ≤
@@ -173,42 +181,34 @@ theorem full_kernelStep (a : Fin n → (Fin N → F) → F) (Nv : Fin n → Fin 
   -- the row values
   let b : Fin n → (Fin N → F) → F := fun i x => ∑ l, a l x * Nv i l x
   let build := build.add (family (I := fullInterpretation (k := 2)) (s := build.wires)
-    b (fun _ => 2 * n + 1) (fun i => by
-      simpa only [card_univ, Fintype.card_fin] using
-        full_dot (s := build.wires) univ a (Nv i)
-          (by synthesis_available) (by synthesis_available)))
+    b (fun _ => 2 * n + 1) fun i =>
+      full_dot_univ a (Nv i) (by synthesis_available) (by synthesis_available))
   -- the pivot flags
   let sel : Fin n → (Fin N → F) → F := fun i x => firstFlags (fun j => b j x) i
   synthesis_step build using full_firstFlags b
   -- the pivot vector
   let P : Fin n → (Fin N → F) → F := fun l x => ∑ j, sel j x * Nv j l x
   let build := build.add (family (I := fullInterpretation (k := 2)) (s := build.wires)
-    P (fun _ => 2 * n + 1) (fun l => by
-      simpa only [card_univ, Fintype.card_fin] using
-        full_dot (s := build.wires) univ sel (fun j => Nv j l)
-          (by synthesis_available) (by synthesis_available)))
+    P (fun _ => 2 * n + 1) fun l =>
+      full_dot_univ sel (fun j => Nv j l) (by synthesis_available) (by synthesis_available))
   -- the pivot value
   let β : (Fin N → F) → F := fun x => ∑ l, a l x * P l x
-  have hβ : Synthesis (fullInterpretation (k := 2)) build.wires {β} (2 * n + 1) := by
-    simpa only [card_univ, Fintype.card_fin] using
-      full_dot (s := build.wires) univ a P
-        (by synthesis_available) (by synthesis_available)
-  let build := build.add hβ
+  let build := build.add (full_dot_univ a P (by synthesis_available) (by synthesis_available))
   -- the ratios
   let ρ : Fin n → (Fin N → F) → F := fun i x => b i x / β x
   let build := build.add (family (I := fullInterpretation (k := 2)) (s := build.wires)
-    ρ (fun _ => 1) (fun i => full_binary_mem (· / ·)
-      (by synthesis_available) (by synthesis_available)))
+    ρ (fun _ => 1) fun i =>
+      full_binary_mem (· / ·) (by synthesis_available) (by synthesis_available))
   -- the corrections
   let t : Fin n × Fin n → (Fin N → F) → F := fun il x => ρ il.1 x * P il.2 x
   let build := build.add (family (I := fullInterpretation (k := 2)) (s := build.wires)
-    t (fun _ => 1) (fun il => full_binary_mem (· * ·)
-      (by synthesis_available) (by synthesis_available)))
+    t (fun _ => 1) fun il =>
+      full_binary_mem (· * ·) (by synthesis_available) (by synthesis_available))
   -- the new family
   let N' : Fin n × Fin n → (Fin N → F) → F := fun il x => Nv il.1 il.2 x - t il x
   let build := build.add (family (I := fullInterpretation (k := 2)) (s := build.wires)
-    N' (fun _ => 1) (fun il => full_binary_mem (· - ·)
-      (by synthesis_available) (by synthesis_available)))
+    N' (fun _ => 1) fun il =>
+      full_binary_mem (· - ·) (by synthesis_available) (by synthesis_available))
   refine build.finish ?_ ?_
   · rintro _ ⟨⟨i, l⟩, rfl⟩
     have hmem : N' (i, l) ∈ build.wires := by synthesis_available
@@ -219,8 +219,7 @@ theorem full_kernelStep (a : Fin n → (Fin N → F) → F) (Nv : Fin n → Fin 
     rfl
   · dsimp +zetaDelta [Builder.add, Builder.start]
     simp only [sum_const, card_univ, Fintype.card_fin, Fintype.card_prod, smul_eq_mul, mul_one]
-    have := kernelStep_budget n
-    linarith
+    linarith [kernelStep_budget n]
 
 /-- The entries of the family after processing the first `k` rows cost at most
 `(n + 1) ^ 2 + k * 8 * (n + 1) ^ 2` gates of the full binary basis. -/
