@@ -68,7 +68,7 @@ example :
     ∃ N₁ : ℕ, 16384 ≤ N₁ ∧
       ∀ n ≥ N₁,
         let φ := emptyCNF n
-        let W := CNF.initialRowWeightBound 1 φ.length
+        let W := initialRowWeightBound 1 φ.length
         let b₀ := CNF.parityBranchThreshold 3 W (Fintype.card (Fin n))
         let S := heavyVars univ
           (univ : Finset (Fin ([] : List (Fin φ.length → Bool)).length))

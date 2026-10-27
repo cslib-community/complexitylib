@@ -89,6 +89,10 @@ parameter uniformity and the native subexponential counting endpoint remain sepa
   time-and-space transfer certificate for `CountingSparsify.search`.
 * `Cslib.Complexity.CountingSparsify.exists_computableInO_search_polySpace`: the same time envelope
   with independent polynomial workspace, from separately promised leaf time and workspace.
+* `Cslib.Complexity.CountingSparsify.stepWith`,
+  `Cslib.Complexity.CountingSparsify.iterate_stepWith_fst`,
+  `Cslib.Complexity.CountingSparsify.iterate_stepWith_countingThreshold`: the step with a captured
+  runtime context, which keeps the context and agrees with `step` at the context's base.
 
 ## References
 
@@ -1080,6 +1084,53 @@ theorem exists_computableInO_search_polySpace (hM2 : 2 ≤ M) {k B L_coeff : ℕ
   have hleaf := (PolyBounded.const a).mul
     (polyBounded_pow ((polyBounded_nodeBound K L_coeff).add (.const 1)) b)
   exact ((hinit.add (hstep.add hleaf)).add (polyBounded_stateBound K L_coeff)).add hclock
+
+/-! ### Captured runtime context -/
+
+section ContextWrapper
+
+variable {P : Type*}
+
+/-- One step of the depth-first search of the counting-sparsification tree carrying an unchanged
+runtime context `p : P`, using threshold family `θ p` and context-aware leaf counter `g`
+(returning the occurring-variable count `ψ.modelCount` on sparse leaves). -/
+def stepWith (θ : P → ℕ → ℕ) (K : ℕ) (g : P × CNF ℕ → ℕ) (ps : P × State) : P × State :=
+  (ps.1,
+    if ps.2.2.1.isEmpty then ps.2
+    else if isSparse (θ ps.1) K (ps.2.2.1.headD []) then
+      leafUpdate ps.2 (g (ps.1, ps.2.2.1.headD []))
+    else
+      (ps.2.1, (countingNext (θ ps.1) K (ps.2.2.1.headD []) false ::
+        countingNext (θ ps.1) K (ps.2.2.1.headD []) true :: ps.2.2.1.tail, ps.2.2.2)))
+
+@[simp]
+theorem stepWith_fst (θ : P → ℕ → ℕ) (K : ℕ) (g : P × CNF ℕ → ℕ) (ps : P × State) :
+    (stepWith θ K g ps).1 = ps.1 := rfl
+
+@[simp]
+theorem iterate_stepWith_fst (θ : P → ℕ → ℕ) (K : ℕ) (g : P × CNF ℕ → ℕ) (r : ℕ)
+    (ps : P × State) : ((stepWith θ K g)^[r] ps).1 = ps.1 := by
+  induction r generalizing ps with
+  | zero => rfl
+  | succ r ih => rw [Function.iterate_succ_apply, ih, stepWith_fst]
+
+@[simp]
+theorem stepWith_countingThreshold (MOf : P → ℕ) (K : ℕ) (g : P × CNF ℕ → ℕ)
+    (p : P) (s : State) :
+    stepWith (fun q => countingThreshold (MOf q)) K g (p, s) =
+      (p, step (MOf p) K (fun ψ => g (p, ψ)) s) := rfl
+
+@[simp]
+theorem iterate_stepWith_countingThreshold (MOf : P → ℕ) (K : ℕ) (g : P × CNF ℕ → ℕ)
+    (r : ℕ) (p : P) (s : State) :
+    (stepWith (fun q => countingThreshold (MOf q)) K g)^[r] (p, s) =
+      (p, (step (MOf p) K (fun ψ => g (p, ψ)))^[r] s) := by
+  induction r generalizing s with
+  | zero => rfl
+  | succ r ih => rw [Function.iterate_succ_apply, stepWith_countingThreshold, ih,
+      Function.iterate_succ_apply]
+
+end ContextWrapper
 
 end CountingSparsify
 

@@ -183,7 +183,7 @@ example :
 example :
     ∃ N₀ : ℕ, 20 ≤ N₀ ∧
       let φ := unitClauseCNF N₀
-      let W := CNF.initialRowWeightBound 1 φ.length
+      let W := BitString.initialRowWeightBound 1 φ.length
       let b₀ := CNF.parityBranchThreshold 3 W (Fintype.card (Fin (N₀ + 1)))
       ∃ rows : List (Fin φ.length → Bool),
         rows.length ≤ 6 * Fintype.card (Fin (N₀ + 1)) ∧
@@ -257,7 +257,7 @@ example :
 example :
     ∃ N₀ : ℕ, 20 ≤ N₀ ∧
       let φ := unitClauseCNF N₀
-      let D₀ := CNF.initialRowWeightBound 1 φ.length
+      let D₀ := BitString.initialRowWeightBound 1 φ.length
       let b₀ := CNF.parityBranchThreshold 3 D₀ (Fintype.card (Fin (N₀ + 1)))
       ∃ (rows : List (Fin φ.length → Bool)),
         rows.length ≤ 6 * Fintype.card (Fin (N₀ + 1)) ∧
@@ -300,7 +300,7 @@ example :
   have hm : φ.length ≤ 1 * Fintype.card (Fin (N₀ + 1)) := by simp [φ, unitClauseCNF]
   obtain ⟨A₀, _, _, hgreedy⟩ :=
     hgreedy_sched φ (width_unitClauseCNF_le_three N₀) hcard le_rfl hB hm
-  let P := CNF.greedyRowListLength 1 φ.length
+  let P := BitString.greedyRowListLength 1 φ.length
   have : Nonempty (Fin P → Fin φ.length × Bool) :=
     ⟨fun _ => (⟨0, by simp [φ, unitClauseCNF]⟩, false)⟩
   obtain ⟨A, γ, h0, hA, hγ⟩ := φ.exists_greedy_testRow_trajectory P A₀

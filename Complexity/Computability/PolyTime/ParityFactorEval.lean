@@ -111,16 +111,6 @@ private lemma eq_map_range_getD {l : List ℤ} {n : ℕ} (h : l.length = n) :
   List.ext_getElem (by simp only [h, List.length_map, List.length_range]) fun i hi _ => by
     rw [List.getElem_map, List.getElem_range, List.getD_eq_getElem _ 0 hi]
 
-/-- `polyNorm1 p` agrees with `Polynomial.coeffNorm1 (Polynomial.ofCoeffList p)`. -/
-theorem coeffNorm1_ofCoeffList (p : List ℤ) : (ofCoeffList p).coeffNorm1 = polyNorm1 p := by
-  have hsub : (ofCoeffList p).support ⊆ Finset.range p.length := fun i hi => by
-    rw [Finset.mem_range]; by_contra hge
-    exact Polynomial.mem_support_iff.mp hi
-      (by rw [coeff_ofCoeffList, List.getD_eq_default _ _ (by omega)])
-  rw [coeffNorm1_eq_sum_of_support_subset hsub, polyNorm1]
-  conv_rhs => rw [eq_map_range_getD (rfl : p.length = p.length)]
-  simp only [List.map_map, Function.comp_def, sum_map_range_eq_finset, coeff_ofCoeffList]
-
 /-- Bounding `z.natAbs ≤ 2 ^ e` bounds `(encIntBin z).length ≤ e + 2`. -/
 theorem length_encIntBin_le_of_natAbs_le {z : ℤ} {e : ℕ} (hz : z.natAbs ≤ 2 ^ e) :
     (encIntBin z).length ≤ e + 2 := by
@@ -185,8 +175,7 @@ theorem ofCoeffList_polyAdd (p q : List ℤ) :
 /-- Triangle inequality for `polyNorm1` of `polyAdd`. -/
 theorem polyNorm1_polyAdd_le (p q : List ℤ) :
     polyNorm1 (polyAdd p q) ≤ polyNorm1 p + polyNorm1 q := by
-  rw [← coeffNorm1_ofCoeffList, ← coeffNorm1_ofCoeffList p, ← coeffNorm1_ofCoeffList q,
-    ofCoeffList_polyAdd]
+  simp only [polyNorm1, ← Polynomial.coeffNorm1_ofCoeffList, ofCoeffList_polyAdd]
   exact coeffNorm1_add_le _ _
 
 /-- `mulZJet J u v` has length `J`. -/
@@ -230,7 +219,8 @@ theorem polyNorm1_mulZJet_le (J : ℕ) (u v : List ℤ) :
     Finset.sum_congr rfl fun j hj => by
       have hlt := Finset.mem_range.mp hj
       rw [← getD_mulZJet_of_lt hlt, mulZJet, List.getD_map_range _ 0 hlt]
-  rw [hterms, ← coeffNorm1_ofCoeffList (u.take J), ← coeffNorm1_ofCoeffList (v.take J)]
+  rw [hterms, polyNorm1, polyNorm1, ← Polynomial.coeffNorm1_ofCoeffList (u.take J),
+    ← Polynomial.coeffNorm1_ofCoeffList (v.take J)]
   exact (sum_natAbs_coeff_le_coeffNorm1 _ _).trans (coeffNorm1_mul_le _ _)
 
 /-- Submultiplicativity of `polyNorm1` under `polyMul`. -/

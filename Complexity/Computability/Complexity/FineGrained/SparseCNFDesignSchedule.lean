@@ -354,7 +354,7 @@ theorem CNF.exists_schedule_design_commonZeroCount_parityRowSystem_of_le_clog_po
         N₀ ≤ Fintype.card V →
         φ.length ≤ B * Fintype.card V →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
-        W ≤ CNF.initialRowWeightBound B φ.length →
+        W ≤ BitString.initialRowWeightBound B φ.length →
         ∀ {rows : List (Fin φ.length → Bool)},
           (∀ r_row ∈ rows, weight r_row ≤ W) →
           rows.length ≤ 6 * Fintype.card V →
@@ -413,7 +413,7 @@ theorem CNF.exists_schedule_design_numPassing_of_le_clog_pow (k C_B β_B : ℕ) 
         N₀ ≤ Fintype.card V →
         φ.length ≤ B * Fintype.card V →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
-        W ≤ CNF.initialRowWeightBound B φ.length →
+        W ≤ BitString.initialRowWeightBound B φ.length →
         ∀ {rows : List (Fin φ.length → Bool)},
           (∀ r_row ∈ rows, weight r_row ≤ W) →
           rows.length ≤ 6 * Fintype.card V →
@@ -505,8 +505,8 @@ theorem CNF.exists_greedy_parityRowSystem_schedule_design_modelCountOn_eq {β : 
         1 ≤ Fintype.card V →
         1 ≤ B →
         φ.length ≤ B * Fintype.card V →
-        let D₀ := CNF.initialRowWeightBound B φ.length
-        let P := CNF.greedyRowListLength B φ.length
+        let D₀ := BitString.initialRowWeightBound B φ.length
+        let P := BitString.greedyRowListLength B φ.length
         ∃ A₀ : List (Fin φ.length → Bool), A₀.length ≤ 3 * Fintype.card V ∧
           (∀ r_row ∈ A₀, weight r_row ≤ D₀) ∧
           ∀ (A : ℕ → List (Fin φ.length → Bool))
@@ -610,8 +610,8 @@ theorem CNF.exists_greedy_parityRowSystem_schedule_design_modelCountOn_of_le_clo
         1 ≤ B →
         B ≤ C_B * Nat.clog 2 (Fintype.card V) ^ β_B →
         φ.length ≤ B * Fintype.card V →
-        let D₀ := CNF.initialRowWeightBound B φ.length
-        let P := CNF.greedyRowListLength B φ.length
+        let D₀ := BitString.initialRowWeightBound B φ.length
+        let P := BitString.greedyRowListLength B φ.length
         let b₀ := CNF.parityBranchThreshold k D₀ (Fintype.card V)
         ∃ A₀ : List (Fin φ.length → Bool), A₀.length ≤ 3 * Fintype.card V ∧
           (∀ r_row ∈ A₀, weight r_row ≤ D₀) ∧
