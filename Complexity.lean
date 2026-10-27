@@ -1876,6 +1876,7 @@ public import Complexity.Foundations.Data.BitString.CoverCoding
 public import Complexity.Foundations.Data.BitString.Enumeration
 public import Complexity.Foundations.Data.BitString.Flip
 public import Complexity.Foundations.Data.BitString.Hamming
+public import Complexity.Foundations.Data.BitString.InitialTests
 public import Complexity.Foundations.Data.BitString.Isolation
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.List.Binary
