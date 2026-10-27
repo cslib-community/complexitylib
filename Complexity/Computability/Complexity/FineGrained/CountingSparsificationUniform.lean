@@ -465,4 +465,64 @@ theorem length_encNat_searchDeclaredWith_le {NOf MOf BOf : P → ℕ} {K k D : �
   · change 0 ≤ NOf p + 1
     omega
 
+private theorem declared_resources_input {C : Type} {encC : C ↪ List Bool}
+    {MOf BOf : C × ℕ → ℕ} {K k c e : ℕ}
+    {g R Q : (C × ℕ) × CNF ℕ → ℕ}
+    (hcore : ComputableInO
+      (fun x : (C × ℕ) × CNF ℕ => searchDeclaredWith Prod.snd MOf BOf K k g x.1 x.2)
+      (encPair (encPair encC encUnary) encCNF) encNat
+      (fun x => c * ((encPair (encPair encC encUnary) encCNF x).length + 1) ^ e +
+        (rounds (BOf x.1) x.2 + 1) *
+          (c * ((encPair (encPair encC encUnary) encCNF x).length + 1) ^ e + R x))
+      (fun x => c * ((encPair (encPair encC encUnary) encCNF x).length + 1) ^ e + Q x))
+    (hQ : PolyBounded (fun x : C × ℕ × CNF ℕ => (encPair encC (encPair encUnary encCNF) x).length)
+      (fun x => Q ((x.1, x.2.1), x.2.2))) :
+    ∃ a d, ComputableInO
+      (fun x : C × ℕ × CNF ℕ =>
+        searchDeclaredWith Prod.snd MOf BOf K k g (x.1, x.2.1) x.2.2)
+      (encPair encC (encPair encUnary encCNF)) encNat
+      (fun x => a * ((encPair encC (encPair encUnary encCNF) x).length + 1) ^ d +
+        (rounds (BOf (x.1, x.2.1)) x.2.2 + 1) *
+          (a * ((encPair encC (encPair encUnary encCNF) x).length + 1) ^ d +
+            R ((x.1, x.2.1), x.2.2)))
+      (fun x => a * ((encPair encC (encPair encUnary encCNF) x).length + 1) ^ d +
+        Q ((x.1, x.2.1), x.2.2)) ∧
+      PolyBounded (fun x : C × ℕ × CNF ℕ => (encPair encC (encPair encUnary encCNF) x).length)
+        (fun x => a * ((encPair encC (encPair encUnary encCNF) x).length + 1) ^ d +
+          Q ((x.1, x.2.1), x.2.2)) := by
+  let rearrange (x : C × ℕ × CNF ℕ) := ((x.1, x.2.1), x.2.2)
+  let L (x : C × ℕ × CNF ℕ) := (encPair encC (encPair encUnary encCNF) x).length
+  let L' (x : C × ℕ × CNF ℕ) := (encPair (encPair encC encUnary) encCNF (rearrange x)).length
+  have hp : ComputableInPolyTime rearrange (encPair encC (encPair encUnary encCNF))
+      (encPair (encPair encC encUnary) encCNF) := by unfold rearrange; fun_prop
+  obtain ⟨da, ha⟩ := polyTime_inO hp
+  have hlen (x : C × ℕ × CNF ℕ) : L' x + 1 ≤ 2 * (L x + 1) := by
+    dsimp only [L, L', rearrange]
+    simp only [length_encPair]
+    omega
+  have hpoly (x : C × ℕ × CNF ℕ) :
+      (L x + 1) ^ da + c * (L' x + 1) ^ e ≤
+        (1 + c * 2 ^ e) * (L x + 1) ^ (da + e) := by
+    have ha' := Nat.pow_le_pow_right (by omega : 1 ≤ L x + 1) (Nat.le_add_right da e)
+    have he' := Nat.pow_le_pow_right (by omega : 1 ≤ L x + 1) (Nat.le_add_left e da)
+    have hL' : (L' x + 1) ^ e ≤ 2 ^ e * (L x + 1) ^ (da + e) := by
+      calc
+        _ ≤ (2 * (L x + 1)) ^ e := Nat.pow_le_pow_left (hlen x) e
+        _ = 2 ^ e * (L x + 1) ^ e := mul_pow _ _ _
+        _ ≤ _ := Nat.mul_le_mul_left _ he'
+    nlinarith [Nat.mul_le_mul_left c hL']
+  refine ⟨1 + c * 2 ^ e, da + e, ?_,
+    ((PolyBounded.const _).mul (polyBounded_pow (PolyBounded.self.add (.const 1)) _)).add hQ⟩
+  refine ((hcore.comp ha).mono_le (fun x => ?_) (fun x => ?_)).of_enc_eq fun _ => rfl
+  · have hinside : c * (L' x + 1) ^ e ≤ (1 + c * 2 ^ e) * (L x + 1) ^ (da + e) :=
+      (Nat.le_add_left _ _).trans (hpoly x)
+    have hsum := Nat.add_le_add (hpoly x)
+      (Nat.mul_le_mul_left (rounds (BOf (x.1, x.2.1)) x.2.2 + 1)
+        (Nat.add_le_add_right hinside (R (rearrange x))))
+    dsimp only [Function.comp_apply, rearrange, L, L'] at hsum ⊢
+    omega
+  · have hsum := Nat.add_le_add_right (hpoly x) (Q (rearrange x))
+    dsimp only [Function.comp_apply, rearrange, L, L'] at hsum ⊢
+    omega
+
 end Cslib.Complexity.CountingSparsify

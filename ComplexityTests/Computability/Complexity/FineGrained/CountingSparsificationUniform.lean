@@ -80,6 +80,13 @@ example (payload : Bool) (N : ℕ) (φ : CNF ℕ) :
     encBool_apply, List.length_singleton]
   omega
 
+example (payload : Bool) (N : ℕ) (φ : CNF ℕ) :
+    (encPair encBool (encPair encUnary encCNF) (payload, N, φ)).length =
+      2 * N + 4 + (encCNF φ).length := by
+  simp only [length_encPair, encUnary_apply, List.length_replicate,
+    encBool_apply, List.length_singleton]
+  omega
+
 private theorem declaredProbe_poly : ComputableInPolyTime declaredProbe encInput encNat := by
   unfold declaredProbe encInput encContext encCNF
   fun_prop
