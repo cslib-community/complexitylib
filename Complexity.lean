@@ -773,6 +773,7 @@ public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
 public import Complexity.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import Complexity.Computability.Complexity.FineGrained.Schoening
+public import Complexity.Computability.Complexity.FineGrained.SparseCNFDesignSchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
 public import Complexity.Computability.Complexity.HardnessEncoding.Program
