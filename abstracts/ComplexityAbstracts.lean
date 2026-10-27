@@ -23,6 +23,8 @@ import ComplexityAbstracts.GSWSecurityAbstract
 import ComplexityAbstracts.GSWSecurityBridge
 import ComplexityAbstracts.ImmermanSzelepcsenyiAbstract
 import ComplexityAbstracts.ImmermanSzelepcsenyiBridge
+import ComplexityAbstracts.KargerMinCutAbstract
+import ComplexityAbstracts.KargerMinCutBridge
 import ComplexityAbstracts.MagnificationAbstract
 import ComplexityAbstracts.MagnificationBridge
 import ComplexityAbstracts.PCPAbstract
