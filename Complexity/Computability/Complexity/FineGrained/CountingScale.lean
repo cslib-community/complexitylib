@@ -79,4 +79,33 @@ theorem eventually_mul_interpolationScale_le (A : ℝ) {ε : ℝ} (hε : 0 < ε)
   have h := mul_le_mul_of_nonneg_right hn.le (Nat.cast_nonneg n : (0 : ℝ) ≤ n)
   simpa only [interpolationScale, mul_div_assoc, mul_assoc, mul_left_comm, mul_comm] using h
 
+/-- The interpolation scale is nonnegative at every natural input. -/
+theorem interpolationScale_nonneg (n : ℕ) : 0 ≤ interpolationScale n := by
+  unfold interpolationScale
+  positivity
+
+/-- For any multiplier `A` and any `ε > 0`, `2 ^ (A * interpolationScale n)` is globally bounded
+by a constant multiple of `2 ^ (ε * n)`. -/
+theorem exists_two_pow_mul_interpolationScale_le (A : ℝ) {ε : ℝ} (hε : 0 < ε) :
+    ∃ K : ℝ, 1 ≤ K ∧ ∀ n : ℕ, (2 : ℝ) ^ (A * interpolationScale n) ≤ K * (2 : ℝ) ^ (ε * n) := by
+  obtain ⟨N₀, hN₀⟩ := eventually_atTop.mp (eventually_mul_interpolationScale_le A hε)
+  let K : ℝ := 1 + ∑ m ∈ Finset.range N₀, (2 : ℝ) ^ (A * interpolationScale m)
+  have hsum_nonneg : 0 ≤ ∑ m ∈ Finset.range N₀, (2 : ℝ) ^ (A * interpolationScale m) :=
+    Finset.sum_nonneg fun m _ => by positivity
+  have hK1 : 1 ≤ K := by dsimp [K]; linarith
+  refine ⟨K, hK1, fun n => ?_⟩
+  have h2ε : (1 : ℝ) ≤ (2 : ℝ) ^ (ε * n) := Real.one_le_rpow (by norm_num) (by positivity)
+  by_cases hn : n < N₀
+  · have hmem : n ∈ Finset.range N₀ := Finset.mem_range.mpr hn
+    have hle_sum : (2 : ℝ) ^ (A * interpolationScale n) ≤
+        ∑ m ∈ Finset.range N₀, (2 : ℝ) ^ (A * interpolationScale m) :=
+      Finset.single_le_sum (f := fun m => (2 : ℝ) ^ (A * interpolationScale m))
+        (fun m _ => by positivity) hmem
+    have hle_K : (2 : ℝ) ^ (A * interpolationScale n) ≤ K := by dsimp [K]; linarith
+    exact hle_K.trans (le_mul_of_one_le_right (by positivity) h2ε)
+  · have hle : A * interpolationScale n ≤ ε * n := hN₀ n (not_lt.mp hn)
+    have hrpow : (2 : ℝ) ^ (A * interpolationScale n) ≤ (2 : ℝ) ^ (ε * n) :=
+      Real.rpow_le_rpow_of_exponent_le (by norm_num) hle
+    exact hrpow.trans (le_mul_of_one_le_left (by positivity) hK1)
+
 end Cslib.Complexity.SubexponentialSAT

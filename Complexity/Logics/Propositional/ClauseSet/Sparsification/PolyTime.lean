@@ -74,23 +74,36 @@ local notation "encC" => encList (encPair encV encBool)
 local notation "encF" => encList (encList (encPair encV encBool))
 
 /-- The list-level reduction is polynomial-time. -/
-private theorem computableTidilyInPolyTime_reduce :
-    ComputableTidilyInPolyTime (reduce (V := V)) encF encF := by
+theorem computableInPolyTime_reduce :
+    ComputableInPolyTime (reduce (V := V)) encF encF := by
+  refine .of_tidy ?_
   unfold reduce subclause
   fun_prop
 
-private theorem computableTidilyInPolyTime_flower :
-    ComputableTidilyInPolyTime (fun p : CNF V × (ℕ × Clause V) => flower p.1 p.2.1 p.2.2)
+/-- Removing duplicate clauses with identical literal sets is polynomial-time. -/
+theorem computableInPolyTime_dedupClauses :
+    ComputableInPolyTime (dedupClauses (V := V)) encF encF := by
+  refine .of_tidy ?_
+  unfold dedupClauses subclause
+  fun_prop
+
+/-- Computing the flower of a clause size and heart is polynomial-time. -/
+theorem computableInPolyTime_flower :
+    ComputableInPolyTime (fun p : CNF V × (ℕ × Clause V) => flower p.1 p.2.1 p.2.2)
       (encPair encF (encPair encUnary encC)) encF := by
+  refine .of_tidy ?_
   unfold flower subclause
   fun_prop
 
-private theorem computableTidilyInPolyTime_heavy {θ : ℕ → ℕ}
-    (hθ : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (θ p.1 ≤ p.2))
+/-- Testing whether a candidate `(c, H)` is heavy is polynomial-time. -/
+theorem computableInPolyTime_heavy {θ : ℕ → ℕ}
+    (hθ : ComputableInPolyTime (fun p : ℕ × ℕ => decide (θ p.1 ≤ p.2))
       (encPair encUnary encUnary) encBool) :
-    ComputableTidilyInPolyTime (fun p : CNF V × (ℕ × Clause V) => heavy θ p.1 p.2)
+    ComputableInPolyTime (fun p : CNF V × (ℕ × Clause V) => heavy θ p.1 p.2)
       (encPair encF (encPair encUnary encC)) encBool := by
-  have := computableTidilyInPolyTime_flower encV
+  have hθ := hθ.tidy
+  refine .of_tidy ?_
+  have := (computableInPolyTime_flower encV).tidy
   have h₁ : ComputableTidilyInPolyTime (fun p : CNF V × (ℕ × Clause V) =>
       decide (1 ≤ p.2.2.length) && decide (p.2.2.length < p.2.1))
       (encPair encF (encPair encUnary encC)) encBool := by
@@ -102,8 +115,10 @@ private theorem computableTidilyInPolyTime_heavy {θ : ℕ → ℕ}
   exact bool_and.comp (h₁.prod (hθ.comp h₂))
 
 omit [DecidableEq V] in
-private theorem computableTidilyInPolyTime_candidates (k : ℕ) :
-    ComputableTidilyInPolyTime (candidates (V := V) k) encF (encList (encPair encUnary encC)) := by
+/-- Listing the candidate pairs `(c, H)` of a formula is polynomial-time. -/
+theorem computableInPolyTime_candidates (k : ℕ) :
+    ComputableInPolyTime (candidates (V := V) k) encF (encList (encPair encUnary encC)) := by
+  refine .of_tidy ?_
   have : ComputableTidilyInPolyTime (hearts (V := V) k) encC (encList encC) := by
     unfold hearts
     fun_prop
@@ -111,14 +126,15 @@ private theorem computableTidilyInPolyTime_candidates (k : ℕ) :
   fun_prop
 
 /-- The computed choice is polynomial-time. -/
-private theorem computableTidilyInPolyTime_choice {θ : ℕ → ℕ}
-    (hθ : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (θ p.1 ≤ p.2))
+theorem computableInPolyTime_choice {θ : ℕ → ℕ}
+    (hθ : ComputableInPolyTime (fun p : ℕ × ℕ => decide (θ p.1 ≤ p.2))
       (encPair encUnary encUnary) encBool) (k : ℕ) :
-    ComputableTidilyInPolyTime (choice (V := V) θ k) encF (encPair encUnary encC) := by
+    ComputableInPolyTime (choice (V := V) θ k) encF (encPair encUnary encC) := by
+  refine .of_tidy ?_
   have hc : ComputableTidilyInPolyTime (fun ψ : CNF V => (candidates k ψ).filter (heavy θ ψ))
       encF (encList (encPair encUnary encC)) :=
-    filterWithInput (computableTidilyInPolyTime_candidates encV k)
-      (computableTidilyInPolyTime_heavy encV hθ)
+    filterWithInput (computableInPolyTime_candidates encV k).tidy
+      (computableInPolyTime_heavy encV hθ).tidy
   have hr : ComputableTidilyInPolyTime (fun x : ℕ × Clause V => rank k x) (encPair encUnary encC)
       encUnary := by
     unfold rank
@@ -136,11 +152,10 @@ theorem computableInPolyTime_isSparse {θ : ℕ → ℕ}
     (hθ : ComputableInPolyTime (fun p : ℕ × ℕ => decide (θ p.1 ≤ p.2))
       (encPair encUnary encUnary) encBool) (k : ℕ) :
     ComputableInPolyTime (isSparse (V := V) θ k) encF encBool := by
-  have hθ := hθ.tidy
   refine .of_tidy ?_
   unfold isSparse
-  exact bool_not.comp (anyWithInput (computableTidilyInPolyTime_candidates encV k)
-    (computableTidilyInPolyTime_heavy encV hθ))
+  exact bool_not.comp (anyWithInput (computableInPolyTime_candidates encV k).tidy
+    (computableInPolyTime_heavy encV hθ).tidy)
 
 /-- **The list-level step is polynomial-time.** -/
 theorem computableInPolyTime_next {θ : ℕ → ℕ}
@@ -148,11 +163,10 @@ theorem computableInPolyTime_next {θ : ℕ → ℕ}
       (encPair encUnary encUnary) encBool) (k : ℕ) :
     ComputableInPolyTime (fun p : CNF V × Bool => next θ k p.1 p.2)
       (encPair encF encBool) encF := by
-  have hθ := hθ.tidy
   refine .of_tidy ?_
-  have := computableTidilyInPolyTime_choice encV hθ k
-  have := computableTidilyInPolyTime_reduce encV
-  have := computableTidilyInPolyTime_flower encV
+  have := (computableInPolyTime_choice encV hθ k).tidy
+  have := (computableInPolyTime_reduce encV).tidy
+  have := (computableInPolyTime_flower encV).tidy
   unfold next child intro petals
   fun_prop
 
@@ -160,11 +174,12 @@ theorem computableInPolyTime_next {θ : ℕ → ℕ}
 theorem computableInPolyTime_normalize :
     ComputableInPolyTime (normalize (V := V)) encF encF := by
   refine .of_tidy ?_
-  have := computableTidilyInPolyTime_reduce encV
+  have := (computableInPolyTime_reduce encV).tidy
+  have := (computableInPolyTime_dedupClauses encV).tidy
   have hdedup : ComputableTidilyInPolyTime (dedup (V := V)) encC encC := by
     unfold dedup
     fun_prop
-  unfold normalize dedupClauses subclause
+  unfold normalize
   fun_prop
 
 end Cslib.Logic.PL.CNF.Sparsification
