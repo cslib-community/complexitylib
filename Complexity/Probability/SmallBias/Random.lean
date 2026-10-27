@@ -15,7 +15,7 @@ import Complexity.Foundations.Combinatorics.Hoeffding
 
 A list `s₁, …, s_d` of bit strings in `ι → Bool` is `ε`-biased when the uniform distribution over
 the list is `ε`-biased (`Cslib.BitString.IsSmallBias`): for every nonempty set `S` of coordinates,
-`|Σⱼ χ_S(sⱼ)| ≤ ε d`. If `2 · 2^|ι| · exp(-ε² d / 2) < 1`, such a list exists
+`|Σⱼ χ_S(sⱼ)| ≤ ε d`. If `ε ≥ 0`, `d ≥ 1` and `2 · 2^|ι| · exp(-ε² d / 2) < 1`, such a list exists
 (`Cslib.BitString.exists_isSmallBias_map_of_exp_lt`). Unlike the explicit powering construction
 (`Cslib.BitString.exists_isSmallBias_uniformOfFintype_map`), whose lists have length a power of
 four, this gives every length `d` for which the bound holds, as [OpenAI2026ETH] needs for its
@@ -27,7 +27,7 @@ one coordinate `i₀ ∈ S` of each string the parity on `S \ {i₀}`, turns the
 a uniformly random bit string. Hoeffding's inequality
 (`Cslib.BitString.card_filter_le_abs_card_filter_sub_half_le`) then bounds the number of lists
 biased at `S` by a `2 exp(-ε² d / 2)` fraction (`Cslib.BitString.card_biased_le`), and a union bound
-over the fewer than `2^|ι|` nonempty sets leaves an unbiased list. This is the existence argument
+over the fewer than `2^|ι|` nonempty sets leaves an `ε`-biased list. This is the existence argument
 for the `ε`-biased shifts in [OpenAI2026ETH, proof of Lemma 6.1, (6.2)]; such lists are the
 generators of small-bias Cayley graphs [Naor and Naor][NaorNaor1993].
 
@@ -136,9 +136,9 @@ theorem card_biased_le {S : Finset ι} (hS : S.Nonempty) {ε : ℝ} (hε : 0 ≤
     simp only [t]
     field_simp
 
-/-- **Short `ε`-biased lists exist**: if `2 · 2^|ι| · exp(-ε² d / 2) < 1`, some list of `d ≥ 1`
-bit strings has, at every nonempty set `S`, `|Σⱼ χ_S(sⱼ)| < ε d`; so the uniform distribution
-over it is `ε`-biased. -/
+/-- **Short `ε`-biased lists exist**: if `ε ≥ 0` and `2 · 2^|ι| · exp(-ε² d / 2) < 1`, some list
+of `d ≥ 1` bit strings has, at every nonempty set `S`, `|Σⱼ χ_S(sⱼ)| < ε d`; so the uniform
+distribution over it is `ε`-biased. -/
 theorem exists_isSmallBias_map_of_exp_lt [NeZero d] {ε : ℝ} (hε : 0 ≤ ε)
     (h : 2 * 2 ^ Fintype.card ι * exp (-(ε ^ 2 * d / 2)) < 1) :
     ∃ s : Fin d → ι → Bool, IsSmallBias ε ((uniformOfFintype (Fin d)).map s) := by

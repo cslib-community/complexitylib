@@ -20,10 +20,10 @@ this is an undirected `d`-regular multigraph and the rotation map is an involuti
 Its walk operator multiplies the Fourier coefficient of each function at `S` by the bias of the
 generators at `S` (`Cslib.RotationMap.fourierCoeff_walk_cubeCayley`). The characters are therefore
 its eigenvectors, and by Plancherel's identity its spectral expansion is at most the bias of the
-generators: if the uniform distribution over the generators is `ε`-biased, then `λ(G) ≤ ε`
-(`Cslib.RotationMap.spectralExpansion_cubeCayley_le`). The
-expander mixing lemma then counts the edges between two sets
-(`Cslib.RotationMap.card_interedges_cubeCayley_le`). This is the mixing estimate (6.3) in the proof
+generators: if the uniform distribution over the generators is `ε`-biased with `ε ≥ 0`, then
+`λ(G) ≤ ε` (`Cslib.RotationMap.spectralExpansion_cubeCayley_le`). The expander mixing lemma then
+counts the edges between two sets (`Cslib.RotationMap.card_interedges_cubeCayley_le`), again for
+`ε ≥ 0`. This is the mixing estimate (6.3) in the proof
 of [OpenAI2026ETH, Lemma 6.1], whose bipartite double cover has left vertex `u` joined by its
 `j`-th edge to right vertex `u + sⱼ`.
 
