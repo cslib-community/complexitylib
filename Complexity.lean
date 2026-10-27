@@ -769,6 +769,7 @@ public import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
 public import Complexity.Computability.Complexity.FineGrained.PPZ
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.Complexity.FineGrained.Reduction
+public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
@@ -1785,6 +1786,7 @@ public import Complexity.Foundations.Combinatorics.AffineDisperser.Explicit
 public import Complexity.Foundations.Combinatorics.AffineDisperser.IndependentSources
 public import Complexity.Foundations.Combinatorics.AffineDisperser.Threshold
 public import Complexity.Foundations.Combinatorics.BalancedSchedules
+public import Complexity.Foundations.Combinatorics.BinomialTail
 public import Complexity.Foundations.Combinatorics.CentralBinomial
 public import Complexity.Foundations.Combinatorics.DepthReduction
 public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
