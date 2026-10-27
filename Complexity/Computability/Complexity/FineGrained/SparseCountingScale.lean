@@ -106,11 +106,6 @@ private theorem one_lt_log_log_add_sixteen {n : ℕ} (hn : 16 ≤ n) :
 theorem interpolationScale_zero : interpolationScale 0 = 0 := by
   simp only [interpolationScale, CharP.cast_eq_zero, zero_mul, zero_div]
 
-/-- The interpolation scale is nonnegative at every natural input. -/
-theorem interpolationScale_nonneg (n : ℕ) : 0 ≤ interpolationScale n := by
-  unfold interpolationScale
-  positivity
-
 /-- The interpolation scale is strictly positive for `1 ≤ n`. -/
 theorem interpolationScale_pos {n : ℕ} (hn : 1 ≤ n) : 0 < interpolationScale n := by
   unfold interpolationScale
