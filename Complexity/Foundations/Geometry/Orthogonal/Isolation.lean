@@ -26,7 +26,7 @@ drawing-dependent real radius.
 ## Main results
 
 * `gridPoint_mem_segment_of_near`, `gridPoint_mem_support_of_near`.
-* `IsSimple.segment_eq_first_of_head_mem`, `IsSimple.mem_first_segment_of_near_head`.
+* `segment_eq_first_of_head_mem`, `mem_first_segment_of_near_head`.
 
 ## References
 

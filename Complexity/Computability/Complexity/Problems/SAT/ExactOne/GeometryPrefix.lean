@@ -26,7 +26,7 @@ box boundary only at its own variable endpoint.
 
 ## Main results
 
-* `LocalGeometry.toPrefix_boundary_contact`: only the variable endpoint can touch the boundary.
+* `LocalGeometry.prefix_boundary_contact`: only the variable endpoint can touch the boundary.
 
 ## References
 
