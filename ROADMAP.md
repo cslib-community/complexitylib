@@ -438,11 +438,14 @@ still to read them for the mathematics and write proofs against Complexitylib's 
 adapted code keeps its Apache 2.0 attribution. The rewrites state no license and are only read
 and credited.
 
-- **Native sparse-formula counting** ([#1226](https://github.com/cslib-community/complexitylib/issues/1226)):
-  `CNF.GreedyContext` certifies the existing greedy parity search uniformly from a supplied counter
-  on encoded `(context, rows)`, retaining and charging the context through both loops. Theorem 2.2
-  counting and Tanner initialization remain separate prerequisites; the complete native counting
-  endpoint is still open. This conditional interface does not establish their algorithms or rates.
+- **Native declared-variable counting** ([#1226](https://github.com/cslib-community/complexitylib/issues/1226)):
+  `CountingNativeEndpoint.exists_declaredCounter` supplies one native counter for each fixed width,
+  exact on every valid declared-size/CNF input and zero otherwise. It has
+  `2^{O_k(interpolationScale N)} * (L + 1)^{O_k(1)}` time and independent polynomial workspace in the
+  original external encoded length `L`, with no supplier premises. The module derives
+  subexponential-time `k`-SAT, zero SAT exponents, `¬ETH`, and `¬SETH`. This is the Sections 3–6 and
+  Appendices A–B interpolation-scale bound, not the sharper Appendix D runtime. Integration,
+  validation, and the curated formal abstract are tracked in #1226.
 
 ## Documentation and repository
 

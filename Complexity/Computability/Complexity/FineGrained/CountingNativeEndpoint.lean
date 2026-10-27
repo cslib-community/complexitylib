@@ -13,50 +13,54 @@ import Complexity.Computability.Complexity.FineGrained.CountingParameterBounds
 import Complexity.Computability.PolyTime.FineGrained.ParameterCheck
 import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParametersPolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 import Complexity.Computability.Complexity.FineGrained.SparseCountingScale
-import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
+public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 import Complexity.Computability.Complexity.FineGrained.CountingSparsification
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
+import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
+public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 
 /-!
-# Private native counting endpoint preparation
+# Native declared-variable counting and the ETH/SETH consequences
 
-Unaggregated preparation for #1226. This module assembles the uniform sparsification search,
-Anton Kovsharov's normalized branched sparse leaf interface, the all-input clamped round estimate,
-and the existing dense counting/SAT consequence bridge. It preserves the original external input
-encoding, selected validity-guard costs, and independent time and workspace.
+For every fixed clause-width bound `k`, this module constructs one native counter on the full
+external input `(N, φ)`, encoded by `encPair encUnary encCNF`. It returns the number of satisfying
+assignments on `Finset.range N` when `validDeclaredInput k N φ` holds, and zero otherwise.
+The contract covers every input, including small and zero declared sizes.
 
-Every declaration is private. The generic assembly retains its four branch obligations. The final
-specialization uses Anton Kovsharov's `evalBoundedIncidenceBranch`, its native certificate, global
-polynomial workspace, and `BranchPolylogTimeBound`. Only exact feasible-branch counting remains
-an explicit premise of that specialization; this is not a public endpoint.
+Time is bounded by `c * (2 ^ (A * interpolationScale N) * (L + 1) ^ e) + c`, and independent
+workspace by `a * (L + 1) ^ b`, where `L` is the original external encoded input length. The
+counter, both natural-valued resource functions, and all natural constants are fixed before the
+input is supplied. No leaf, branch, schedule, certificate, or semantic hypothesis remains.
 
-The four namespace blocks below are unchanged from the frozen author preparation at
-`0c1707a70685e4d5fa8bd8913567136b60af9767`. The scalar block originated at
-`5dd573000e80427d829dfa764a340b55bc3f76d9` and reuses Anton Kovsharov's eventual estimate in
-`SparseCountingScale`. A separate final block specializes the assembly to the published concrete
-resource certificates without changing those four reviewed blocks.
+The proof combines uniform counting sparsification with Anton Kovsharov's concrete bounded-
+incidence branch evaluator, its native resource certificates and exactness theorem, and the
+normalized sparse leaf interface. The selected validity guard avoids charging invalid-support
+inputs for their occurring-support search clock. The downstream bridge charges dense relabeling
+in the original CNF encoding and derives subexponential-time `k`-SAT, zero SAT exponents, `¬ETH`,
+and `¬SETH`.
+
+The quantitative bound is the interpolation-scale conclusion of Sections 3–6 and Appendices A–B
+of [OpenAI2026ETH]. It does not assert the sharper Appendix D runtime from Theorem 1.1.
 
 ## Main results
 
-* Private selected-branch search certificate, charged to the original declared input.
-* Private all-input round bound with exponent multiplier `16` and a fixed natural coefficient.
-* Private declared-count contract and downstream consequences under the four branch obligations.
-* Private concrete-resource specialization retaining only the full semantic exactness premise.
+* `CountingNativeEndpoint.exists_declaredCounter`: exact guarded declared counting with fixed
+  native witnesses and independent time and polynomial workspace on every input.
+* `CountingNativeEndpoint.decidableInSubexpTime_KSAT`: subexponential-time `k`-SAT for every `k`.
+* `CountingNativeEndpoint.satExponent_eq_zero`, `CountingNativeEndpoint.not_ETH`, and
+  `CountingNativeEndpoint.not_SETH`: the fine-grained complexity consequences.
 
 ## References
 
 * [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Sections 3–6 and
   Appendices A–B, through the imported counting and leaf interfaces.
 -/
-
--- This unaggregated preparation intentionally exports no declarations.
-set_option linter.privateModule false
 
 /-! ## Parameters, original input charges, and selected guard -/
 
@@ -670,7 +674,7 @@ private theorem consequences_of_branch_contract (N₀_branch : ℕ)
 
 end Cslib.Complexity.CountingNativeEndpointPrep
 
-/-! ## Concrete bounded-incidence resources, pending semantic exactness -/
+/-! ## Concrete bounded-incidence resources -/
 
 namespace Cslib.Complexity.CountingNativeEndpointPrep
 
@@ -678,8 +682,8 @@ open Cslib.Logic.PL.CNF Cslib.GenericRAM Turing.MultiTapeTM
 open SubexponentialSAT SubexponentialSAT.SparsePolyCounter
 
 /-- Specialize the reviewed declared-count contract to the published native bounded-incidence
-resources. The full exactness premise is retained until the sibling semantic theorem is supplied.
-No restriction is added to the external inputs or to the global polynomial workspace bound. -/
+resources. Its local exactness premise is discharged by the public endpoint below. No restriction
+is added to the external inputs or to the global polynomial workspace bound. -/
 private theorem exists_declared_contract_of_boundedIncidence (k N₀_branch : ℕ)
     (hbranch : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       evalBoundedIncidenceBranch (prepareBranchEvalInput (n', eqs')) =
@@ -696,3 +700,47 @@ private theorem exists_declared_contract_of_boundedIncidence (k N₀_branch : �
     (branchPolylogTimeBound_boundedIncidenceBranchCertificate N₀_branch)
 
 end Cslib.Complexity.CountingNativeEndpointPrep
+
+/-! ## Unconditional native endpoint -/
+
+namespace Cslib.Complexity.CountingNativeEndpoint
+
+open Cslib.Logic.PL Cslib.Logic.PL.CNF Turing.MultiTapeTM
+open SubexponentialSAT SubexponentialSAT.SparsePolyCounter
+
+/-- For each fixed width bound, one native counter computes the exact guarded declared-variable
+model count on every unary-size/CNF input. Both resource functions and all constants are fixed
+before the input; time uses the interpolation scale and workspace is polynomial in the original
+external encoded input length. -/
+public theorem exists_declaredCounter (k : ℕ) :
+    ∃ (count : ℕ × CNF ℕ → ℕ) (T S : ℕ × CNF ℕ → ℕ) (A c e a b : ℕ),
+      ComputableInO count (encPair encUnary encCNF) encNat T S ∧
+      (∀ x, count x = if validDeclaredInput k x.1 x.2 then
+        x.2.modelCountOn (Finset.range x.1) else 0) ∧
+      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
+        (((encPair encUnary encCNF x).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ x, S x ≤ a * ((encPair encUnary encCNF x).length + 1) ^ b) :=
+  CountingNativeEndpointPrep.exists_declared_contract_of_boundedIncidence k 0
+    (fun _ _ hfeas => evalBoundedIncidenceBranch_eq_rootCount hfeas)
+
+/-- Every fixed-width `k`-SAT problem is decidable in subexponential time in its number of
+occurring variables, with the CNF encoded in the native model. Arbitrary variable labels are
+handled by the existing dense-relabeling bridge. -/
+public theorem decidableInSubexpTime_KSAT (k : ℕ) :
+    DecidableInSubexpTime (KSAT k) encCNF CNF.numVars := by
+  obtain ⟨count, T, S, A, c, e, a, b, hc, hspec, hT, hS⟩ := exists_declaredCounter k
+  exact CountingNativeEndpointConsequencesPrep.KSAT_of_declared_contract hc hspec hT hS
+
+/-- The SAT exponent vanishes for every fixed clause width. -/
+public theorem satExponent_eq_zero (k : ℕ) : satExponent k = 0 :=
+  satExponent_eq_zero_of_decidableInSubexpTime (decidableInSubexpTime_KSAT k)
+
+/-- The native counting construction refutes the Exponential Time Hypothesis. -/
+public theorem not_ETH : ¬ETH :=
+  not_ETH_of_decidableInSubexpTime (decidableInSubexpTime_KSAT 3)
+
+/-- The native counting construction refutes the Strong Exponential Time Hypothesis. -/
+public theorem not_SETH : ¬SETH :=
+  not_SETH_of_forall_decidableInSubexpTime decidableInSubexpTime_KSAT
+
+end Cslib.Complexity.CountingNativeEndpoint

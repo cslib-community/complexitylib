@@ -763,6 +763,7 @@ public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
+public import Complexity.Computability.Complexity.FineGrained.CountingNativeEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingParameterBounds
 public import Complexity.Computability.Complexity.FineGrained.CountingScale
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsification
