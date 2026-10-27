@@ -2250,6 +2250,7 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingP
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSurvival
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTree
+public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingTreeBounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingUnits
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Path
