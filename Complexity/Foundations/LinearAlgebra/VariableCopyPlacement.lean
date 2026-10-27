@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Foundations.Data.Polynomial.CoeffNorm1
 public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.Ring.Abs
@@ -33,9 +34,10 @@ manuscript *The Exponential Time Hypothesis is False* (`[OpenAI2026ETH]`):
 
 2. **Variable copy placement into `Fin h × AuxLabel Q r` (Section 4.5, p. 32, eq. 4.14):**
    - Given a placement `place : A → Fin h × AuxLabel Q r` and variable projection
-     `varOf : A → Fin n`, `copyEmbed place varOf` (`ι : (Fin n → K) → (Fin h × AuxLabel Q r → K)`)
-     places `x (varOf e)` at `place e` and `0` at unused positions, and `copyProj c` (`π_c`)
-     projects onto copy `c : Fin h`.
+     `varOf : A → Fin n`, the linear copy/fiber-sum map `copyEmbed place varOf`
+     (`ι : (Fin n → K) → (Fin h × AuxLabel Q r → K)`) sums `x (varOf e)` over incidences `e` with
+     `place e = p` (placing `x (varOf e)` at `place e` and `0` at unoccupied positions when `place`
+     is injective), and `copyProj c` (`π_c`) projects onto copy `c : Fin h`.
    - `varReplacementRow Q r A₀ R place varOf e : Fin n → ℚ[X]`
      (`P⃗_{f,v}(T) = P⃗_{u_{f,v}}(T) π_c ι`) has degree at most `R - 1`
      (`natDegree_varReplacementRow_le`), evaluates at `T = 0` to `δ_{varOf e}` when `place` is
@@ -62,29 +64,31 @@ manuscript *The Exponential Time Hypothesis is False* (`[OpenAI2026ETH]`):
      (`evalVarReplacementRow_nodePoint_eq_of_eq_on_varGroup`).
 
 4. **Explicit `ℓ₁`-coefficient norm bounds (Lemma 4.6, p. 33):**
-   - With `polyNorm1 P = ∑ i ∈ P.support, |P.coeff i|` and `rowNorm1 A u = ∑ y, |A u y|`, prove
-     `polyNorm1_mismatchAnnihilatorScaledInt_le :`
-     `polyNorm1 (mismatchAnnihilatorScaledInt u y) ≤ Q! * 2 ^ Q`,
-     `rowNorm1_M0ScaledInt_le :`
-     `rowNorm1 (M0ScaledInt Q r A₀ R) u ≤ (R - 1)! * R * (4 * Q) ^ (R - 1)`,
-     and the row coefficient `ℓ₁`-sum bound
+   - Reusing the canonical `Polynomial.coeffNorm1` from
+     `Complexity.Foundations.Data.Polynomial.CoeffNorm1` and defining `rowNorm1 A u = ∑ y, |A u y|`,
+     prove `coeffNorm1_mismatchAnnihilatorScaledInt_le :`
+     `(mismatchAnnihilatorScaledInt u y).coeffNorm1 ≤ Q! * 2 ^ Q` and, when `0 < Q` and
+     `hI : ∀ a < R - 1, A₀ + a ≤ Q`, prove `rowNorm1_M0ScaledInt_le :`
+     `rowNorm1 (M0ScaledInt Q r A₀ R) u ≤ (R - 1)! * R * (4 * Q) ^ (R - 1)` together with the row
+     coefficient `ℓ₁`-sum bound
      `≤ commonDenom Q R * (1 + (1 + 2 ^ Q) * R * (4 * Q) ^ (R - 1))` for both
-     `auxReplacementRowScaledInt` and `varReplacementRowScaledInt`.
+     `auxReplacementRowScaledInt` (`sum_coeffNorm1_auxReplacementRowScaledInt_le`) and, under
+     injective `place`, `varReplacementRowScaledInt`
+     (`sum_coeffNorm1_varReplacementRowScaledInt_le`).
 
 ## Main definitions
 
 * `Cslib.LinearAlgebra.fiberRank`, `Cslib.LinearAlgebra.fiberRankCopy`: deterministic copy index in
   `Fin h` from fiber multiplicity bound `≤ h`.
-* `Cslib.LinearAlgebra.copyEmbed`, `Cslib.LinearAlgebra.copyProj`: the linear embedding `ι` into
-  `Fin h × AuxLabel Q r` and copy projection `π_c`.
+* `Cslib.LinearAlgebra.copyEmbed`, `Cslib.LinearAlgebra.copyProj`: the linear copy/fiber-sum map
+  `ι` into `Fin h × AuxLabel Q r` and copy projection `π_c`.
 * `Cslib.LinearAlgebra.varReplacementRow`, `Cslib.LinearAlgebra.evalVarReplacementRow`,
   `Cslib.LinearAlgebra.varReplacementRowScaledInt`: replacement polynomial rows `P⃗_{f,v}(T)` on
   the original `n` variables and their integer-cleared counterparts.
 * `Cslib.LinearAlgebra.varGroup`, `Cslib.LinearAlgebra.varGroupRestrict`,
   `Cslib.LinearAlgebra.varMeasurementMatrix`: variable groups `S_{t,g}` and pulled-back measurement
   matrix `Ĉ = C̃ ι`.
-* `Cslib.LinearAlgebra.polyNorm1`, `Cslib.LinearAlgebra.rowNorm1`: polynomial `ℓ₁` coefficient norm
-  and matrix row `ℓ₁` norm.
+* `Cslib.LinearAlgebra.rowNorm1`: matrix row `ℓ₁` norm.
 
 ## Main results
 
@@ -98,9 +102,10 @@ manuscript *The Exponential Time Hypothesis is False* (`[OpenAI2026ETH]`):
 * `Cslib.LinearAlgebra.sum_abs_varMeasurementMatrix_le`,
   `Cslib.LinearAlgebra.abs_varMeasurementMatrix_mulVec_le_of_zero_one`:
   row `ℓ₁`-norm bound `≤ r ^ (2 * Q)` and `[-D, D]` range on `{0, 1}` inputs.
-* `Cslib.LinearAlgebra.sum_polyNorm1_auxReplacementRowScaledInt_le`,
-  `Cslib.LinearAlgebra.sum_polyNorm1_varReplacementRowScaledInt_le`:
-  Lemma 4.6 explicit row coefficient `ℓ₁`-sum bounds.
+* `Cslib.LinearAlgebra.coeffNorm1_mismatchAnnihilatorScaledInt_le`,
+  `Cslib.LinearAlgebra.sum_coeffNorm1_auxReplacementRowScaledInt_le`,
+  `Cslib.LinearAlgebra.sum_coeffNorm1_varReplacementRowScaledInt_le`:
+  Lemma 4.6 explicit row coefficient `ℓ₁`-sum bounds under `0 < Q` and `∀ a < R - 1, A₀ + a ≤ Q`.
 
 ## References
 
@@ -183,9 +188,9 @@ theorem injective_fiberRankCopy_prod {A β : Type*} [Fintype A] [LinearOrder A] 
 
 /-! ### 2. Variable copy placement into `Fin h × AuxLabel Q r` (Section 4.5, p. 32, eq. 4.14) -/
 
-/-- The linear map `ι : (Fin n → K) → (Fin h × AuxLabel Q r → K)` placing `x (varOf e)` at
-position `place e` for each incidence `e : A` and `0` at unoccupied positions
-(Section 4.5, p. 32). -/
+/-- The linear copy/fiber-sum map `ι : (Fin n → K) → (Fin h × AuxLabel Q r → K)` summing
+`x (varOf e)` over incidences `e : A` with `place e = p` (which places `x (varOf e)` at position
+`place e` and `0` at unoccupied positions when `place` is injective; Section 4.5, p. 32). -/
 def copyEmbed {A : Type*} [Fintype A] {n h Q r : ℕ} {K : Type*} [AddCommMonoid K]
     (place : A → Fin h × AuxLabel Q r) (varOf : A → Fin n)
     (x : Fin n → K) (p : Fin h × AuxLabel Q r) : K :=
@@ -646,166 +651,84 @@ theorem abs_varMeasurementMatrix_mulVec_le_of_zero_one {A : Type*} [Fintype A]
 
 /-! ### 4. Explicit `ℓ₁`-coefficient norm bounds (Lemma 4.6, p. 33) -/
 
-/-- The `ℓ₁` coefficient norm `‖P‖₁ = ∑ i ∈ P.support, |P.coeff i|` of an integer polynomial
-`P : ℤ[X]` (Lemma 4.6, p. 33). -/
-def polyNorm1 (P : ℤ[X]) : ℤ :=
-  ∑ i ∈ P.support, |P.coeff i|
-
-theorem polyNorm1_nonneg (P : ℤ[X]) : 0 ≤ polyNorm1 P :=
-  sum_nonneg fun _ _ => abs_nonneg _
-
-@[simp]
-theorem polyNorm1_zero : polyNorm1 0 = 0 := by
-  simp [polyNorm1]
-
-theorem polyNorm1_eq_sum_of_support_subset {P : ℤ[X]} {S : Finset ℕ} (hS : P.support ⊆ S) :
-    polyNorm1 P = ∑ i ∈ S, |P.coeff i| := by
-  unfold polyNorm1
-  refine sum_subset hS fun i _ hi => ?_
-  rw [notMem_support_iff.1 hi, abs_zero]
-
-theorem polyNorm1_C (a : ℤ) : polyNorm1 (C a) = |a| := by
-  rw [polyNorm1_eq_sum_of_support_subset (S := {0})]
-  · simp
-  · intro i hi
-    rw [mem_singleton]
-    by_contra h0
-    exact notMem_support_iff.2 (Polynomial.coeff_C_of_ne_zero h0) hi
-
-@[simp]
-theorem polyNorm1_one : polyNorm1 1 = 1 := by
-  rw [← C_1, polyNorm1_C, abs_one]
-
-theorem polyNorm1_add_le (P Q : ℤ[X]) : polyNorm1 (P + Q) ≤ polyNorm1 P + polyNorm1 Q := by
-  let S := P.support ∪ Q.support
-  have hPQ : (P + Q).support ⊆ S := Polynomial.support_add
-  rw [polyNorm1_eq_sum_of_support_subset hPQ,
-    polyNorm1_eq_sum_of_support_subset subset_union_left,
-    polyNorm1_eq_sum_of_support_subset subset_union_right, ← sum_add_distrib]
-  refine sum_le_sum fun i _ => ?_
-  rw [coeff_add]
-  exact abs_add_le _ _
-
-theorem polyNorm1_sum_le {ι : Type*} (s : Finset ι) (f : ι → ℤ[X]) :
-    polyNorm1 (∑ i ∈ s, f i) ≤ ∑ i ∈ s, polyNorm1 (f i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert a s ha ih =>
-    rw [sum_insert ha, sum_insert ha]
-    linarith [polyNorm1_add_le (f a) (∑ i ∈ s, f i), ih]
-
-theorem polyNorm1_C_mul_le (a : ℤ) (P : ℤ[X]) :
-    polyNorm1 (C a * P) ≤ |a| * polyNorm1 P := by
-  have hsub : (C a * P).support ⊆ P.support := by
-    intro i hi
-    rw [mem_support_iff, coeff_C_mul] at hi
-    exact mem_support_iff.2 (right_ne_zero_of_mul hi)
-  rw [polyNorm1_eq_sum_of_support_subset hsub, polyNorm1_eq_sum_of_support_subset Subset.rfl,
-    mul_sum]
-  refine le_of_eq (sum_congr rfl fun i _ => ?_)
-  rw [coeff_C_mul, abs_mul]
-
-theorem polyNorm1_X_mul (P : ℤ[X]) : polyNorm1 (X * P) = polyNorm1 P := by
-  let S := P.support.map ⟨Nat.succ, Nat.succ_injective⟩
-  have hsub : (X * P).support ⊆ S := by
-    intro i hi
-    rw [mem_support_iff] at hi
-    rcases i with _ | i
-    · rw [mul_comm, coeff_mul_X_zero] at hi
-      exact (hi rfl).elim
-    · rw [mul_comm, coeff_mul_X] at hi
-      exact mem_map.2 ⟨i, mem_support_iff.2 hi, rfl⟩
-  rw [polyNorm1_eq_sum_of_support_subset hsub, sum_map]
-  unfold polyNorm1
-  refine sum_congr rfl fun i _ => ?_
-  change |(X * P).coeff (i + 1)| = |P.coeff i|
-  rw [mul_comm, coeff_mul_X]
-
-theorem polyNorm1_neg (P : ℤ[X]) : polyNorm1 (-P) = polyNorm1 P := by
-  rw [polyNorm1_eq_sum_of_support_subset (S := P.support) (by simp),
-    polyNorm1_eq_sum_of_support_subset (S := P.support) Subset.rfl]
-  refine sum_congr rfl fun i _ => ?_
-  rw [coeff_neg, abs_neg]
-
-theorem polyNorm1_C_sub_X_mul_le (a : ℤ) (P : ℤ[X]) :
-    polyNorm1 ((C a - X) * P) ≤ (|a| + 1) * polyNorm1 P := by
-  rw [sub_mul, sub_eq_add_neg]
-  have h1 := polyNorm1_add_le (C a * P) (-(X * P))
-  rw [polyNorm1_neg, polyNorm1_X_mul] at h1
-  have h2 := polyNorm1_C_mul_le a P
-  linarith
-
-private theorem polyNorm1_prod_C_sub_X_le {Q : ℕ} (E : Finset (Fin Q)) :
-    polyNorm1 (∏ s ∈ E, (C ((s.1 : ℤ) + 1) - X)) ≤
-      ∏ s ∈ E, (((s.1 : ℤ) + 1) + 1) := by
+private theorem coeffNorm1_prod_C_sub_X_le {Q : ℕ} (E : Finset (Fin Q)) :
+    (∏ s ∈ E, (C ((s.1 : ℤ) + 1) - X)).coeffNorm1 ≤ ∏ s ∈ E, ((s.1 + 1) + 1) := by
   classical
   induction E using Finset.induction_on with
   | empty => simp
   | insert s E hs ih =>
     rw [prod_insert hs, prod_insert hs]
-    have hs_pos : 0 ≤ (s.1 : ℤ) + 1 := by positivity
+    have hnat : ((s.1 : ℤ) + 1).natAbs = s.1 + 1 := by omega
     calc
-      polyNorm1 ((C ((s.1 : ℤ) + 1) - X) * ∏ t ∈ E, (C ((t.1 : ℤ) + 1) - X)) ≤
-          (|(s.1 : ℤ) + 1| + 1) * polyNorm1 (∏ t ∈ E, (C ((t.1 : ℤ) + 1) - X)) :=
-        polyNorm1_C_sub_X_mul_le _ _
-      _ = (((s.1 : ℤ) + 1) + 1) * polyNorm1 (∏ t ∈ E, (C ((t.1 : ℤ) + 1) - X)) := by
-        rw [abs_of_nonneg hs_pos]
-      _ ≤ (((s.1 : ℤ) + 1) + 1) * ∏ t ∈ E, (((t.1 : ℤ) + 1) + 1) :=
-        mul_le_mul_of_nonneg_left ih (by positivity)
+      ((C ((s.1 : ℤ) + 1) - X) * ∏ t ∈ E, (C ((t.1 : ℤ) + 1) - X)).coeffNorm1 ≤
+          (((s.1 : ℤ) + 1).natAbs + 1) *
+            (∏ t ∈ E, (C ((t.1 : ℤ) + 1) - X)).coeffNorm1 :=
+        coeffNorm1_C_sub_X_mul_le _ _
+      _ = ((s.1 + 1) + 1) * (∏ t ∈ E, (C ((t.1 : ℤ) + 1) - X)).coeffNorm1 := by
+        rw [hnat]
+      _ ≤ ((s.1 + 1) + 1) * ∏ t ∈ E, ((t.1 + 1) + 1) :=
+        Nat.mul_le_mul_left _ ih
 
-private theorem prod_fin_add_one_eq_factorial_int (Q : ℕ) :
-    (∏ s : Fin Q, ((s.1 : ℤ) + 1)) = (Q.factorial : ℤ) := by
+private theorem prod_fin_add_one_eq_factorial (Q : ℕ) :
+    (∏ s : Fin Q, (s.1 + 1)) = Q.factorial := by
   induction Q with
   | zero => simp
   | succ Q ih =>
     rw [Fin.prod_univ_castSucc]
-    simp only [Fin.val_castSucc, Fin.val_last, ih, Nat.factorial_succ, Nat.cast_mul,
-      Nat.cast_add, Nat.cast_one]
+    simp only [Fin.val_castSucc, Fin.val_last, ih, Nat.factorial_succ]
     ring
 
 private theorem prod_add_one_add_one_le {Q : ℕ} (E : Finset (Fin Q)) :
-    (∏ s ∈ E, (((s.1 : ℤ) + 1) + 1)) ≤ ∏ s ∈ E, (2 * ((s.1 : ℤ) + 1)) := by
+    (∏ s ∈ E, ((s.1 + 1) + 1)) ≤ ∏ s ∈ E, (2 * (s.1 + 1)) := by
   classical
   induction E using Finset.induction_on with
   | empty => simp
   | insert s E hs ih =>
     rw [prod_insert hs, prod_insert hs]
-    have h1 : ((s.1 : ℤ) + 1) + 1 ≤ 2 * ((s.1 : ℤ) + 1) := by linarith [Nat.zero_le s.1]
-    have h2 : 0 ≤ ∏ t ∈ E, (((t.1 : ℤ) + 1) + 1) :=
-      Finset.prod_nonneg fun t _ => by positivity
-    exact mul_le_mul h1 ih h2 (by positivity)
+    exact Nat.mul_le_mul (by omega) ih
 
 /-- **Lemma 4.6 annihilator norm bound (p. 33)**:
 `‖Q! φ_{u,y}‖₁ ≤ Q! * 2 ^ Q` (i.e. `‖φ_{u,y}‖₁ ≤ 2 ^ Q`). -/
-theorem polyNorm1_mismatchAnnihilatorScaledInt_le {Q r : ℕ} (u y : AuxLabel Q r) :
-    polyNorm1 (mismatchAnnihilatorScaledInt u y) ≤ (Q.factorial : ℤ) * 2 ^ Q := by
+theorem coeffNorm1_mismatchAnnihilatorScaledInt_le {Q r : ℕ} (u y : AuxLabel Q r) :
+    (mismatchAnnihilatorScaledInt u y).coeffNorm1 ≤ Q.factorial * 2 ^ Q := by
   unfold mismatchAnnihilatorScaledInt
-  have hc_nonneg : 0 ≤ ∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1) :=
-    Finset.prod_nonneg fun s _ => by positivity
+  have hcast :
+      (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)) =
+        ((∏ s ∈ (mismatchSet u y)ᶜ, (s.1 + 1) : ℕ) : ℤ) := by
+    push_cast
+    rfl
+  have hnat :
+      (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)).natAbs =
+        ∏ s ∈ (mismatchSet u y)ᶜ, (s.1 + 1) := by
+    rw [hcast, Int.natAbs_natCast]
   calc
-    polyNorm1 (C (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)) *
-        ∏ s ∈ mismatchSet u y, (C ((s.1 : ℤ) + 1) - X)) ≤
-      |∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)| *
-        polyNorm1 (∏ s ∈ mismatchSet u y, (C ((s.1 : ℤ) + 1) - X)) :=
-      polyNorm1_C_mul_le _ _
-    _ = (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)) *
-        polyNorm1 (∏ s ∈ mismatchSet u y, (C ((s.1 : ℤ) + 1) - X)) := by
-      rw [abs_of_nonneg hc_nonneg]
-    _ ≤ (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)) *
-        ∏ s ∈ mismatchSet u y, (((s.1 : ℤ) + 1) + 1) :=
-      mul_le_mul_of_nonneg_left (polyNorm1_prod_C_sub_X_le _) hc_nonneg
-    _ ≤ (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)) *
-        ∏ s ∈ mismatchSet u y, (2 * ((s.1 : ℤ) + 1)) :=
-      mul_le_mul_of_nonneg_left (prod_add_one_add_one_le _) hc_nonneg
-    _ = 2 ^ #(mismatchSet u y) * (Q.factorial : ℤ) := by
+    (C (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)) *
+        ∏ s ∈ mismatchSet u y, (C ((s.1 : ℤ) + 1) - X)).coeffNorm1 ≤
+      (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)).natAbs *
+        (∏ s ∈ mismatchSet u y, (C ((s.1 : ℤ) + 1) - X)).coeffNorm1 :=
+      coeffNorm1_C_mul_le _ _
+    _ = (∏ s ∈ (mismatchSet u y)ᶜ, (s.1 + 1)) *
+        (∏ s ∈ mismatchSet u y, (C ((s.1 : ℤ) + 1) - X)).coeffNorm1 := by
+      rw [hnat]
+    _ ≤ (∏ s ∈ (mismatchSet u y)ᶜ, (s.1 + 1)) *
+        ∏ s ∈ mismatchSet u y, ((s.1 + 1) + 1) :=
+      Nat.mul_le_mul_left _ (coeffNorm1_prod_C_sub_X_le _)
+    _ ≤ (∏ s ∈ (mismatchSet u y)ᶜ, (s.1 + 1)) *
+        ∏ s ∈ mismatchSet u y, (2 * (s.1 + 1)) :=
+      Nat.mul_le_mul_left _ (prod_add_one_add_one_le _)
+    _ = 2 ^ #(mismatchSet u y) * Q.factorial := by
       rw [prod_mul_distrib, prod_const, ← mul_assoc,
-        mul_comm (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℤ) + 1)) (2 ^ #(mismatchSet u y)),
-        mul_assoc, prod_compl_mul_prod, prod_fin_add_one_eq_factorial_int]
-    _ ≤ (Q.factorial : ℤ) * 2 ^ Q := by
+        mul_comm (∏ s ∈ (mismatchSet u y)ᶜ, (s.1 + 1)) (2 ^ #(mismatchSet u y)),
+        mul_assoc, prod_compl_mul_prod, prod_fin_add_one_eq_factorial]
+    _ ≤ Q.factorial * 2 ^ Q := by
       rw [mul_comm]
-      refine mul_le_mul_of_nonneg_left ?_ (by positivity)
-      exact pow_le_pow_right₀ (by norm_num) ((card_le_univ _).trans (by simp))
+      exact Nat.mul_le_mul_left _
+        (Nat.pow_le_pow_right (by omega) ((card_le_univ _).trans (by simp)))
+
+/-- Integer-cast form of `coeffNorm1_mismatchAnnihilatorScaledInt_le`. -/
+theorem natCast_coeffNorm1_mismatchAnnihilatorScaledInt_le {Q r : ℕ} (u y : AuxLabel Q r) :
+    ((mismatchAnnihilatorScaledInt u y).coeffNorm1 : ℤ) ≤ (Q.factorial : ℤ) * 2 ^ Q := by
+  exact_mod_cast coeffNorm1_mismatchAnnihilatorScaledInt_le u y
 
 /-- The row `ℓ₁`-norm `∑ y, |A u y|` of a matrix `A` at row `u` (Lemma 4.6, p. 33). -/
 def rowNorm1 {Q r : ℕ} (A : Matrix (AuxLabel Q r) (AuxLabel Q r) ℤ) (u : AuxLabel Q r) : ℤ :=
@@ -976,23 +899,24 @@ theorem rowNorm1_M0ScaledInt_le {Q r A₀ R : ℕ} (hQ : 0 < Q) (hI : ∀ a < R 
       rw [sum_const, card_range, nsmul_eq_mul]
       ring
 
-/-- **Lemma 4.6 auxiliary row coefficient bound (p. 33)**: when `0 < Q`, for every
+/-- **Lemma 4.6 auxiliary row coefficient bound (p. 33)**: when `0 < Q` and every interpolation
+node `A₀ + a` (`a < R - 1`) is at most `Q` (`hI : ∀ a < R - 1, A₀ + a ≤ Q`), for every
 `u : AuxLabel Q r`, the sum of the absolute values of all coefficients in the cleared row
 `auxReplacementRowScaledInt Q r A₀ R u` is at most
 `commonDenom Q R * (1 + (1 + 2 ^ Q) * R * (4 * Q) ^ (R - 1))`. -/
-theorem sum_polyNorm1_auxReplacementRowScaledInt_le {Q r A₀ R : ℕ}
+theorem sum_coeffNorm1_auxReplacementRowScaledInt_le {Q r A₀ R : ℕ}
     (hQ : 0 < Q) (hI : ∀ a < R - 1, A₀ + a ≤ Q) (u : AuxLabel Q r) :
-    (∑ y : AuxLabel Q r, polyNorm1 (auxReplacementRowScaledInt Q r A₀ R u y)) ≤
+    (∑ y : AuxLabel Q r, ((auxReplacementRowScaledInt Q r A₀ R u y).coeffNorm1 : ℤ)) ≤
       (commonDenom Q R : ℤ) * (1 + (1 + 2 ^ Q) * (R : ℤ) * (4 * (Q : ℤ)) ^ (R - 1)) := by
   have hterm :
       ∀ y : AuxLabel Q r,
-        polyNorm1 (auxReplacementRowScaledInt Q r A₀ R u y) ≤
+        ((auxReplacementRowScaledInt Q r A₀ R u y).coeffNorm1 : ℤ) ≤
           (if u = y then (commonDenom Q R : ℤ) else 0) +
             (Q.factorial : ℤ) * (1 + 2 ^ Q) * |M0ScaledInt Q r A₀ R u y| := by
     intro y
     unfold auxReplacementRowScaledInt
-    refine (polyNorm1_add_le _ _).trans ?_
-    rw [polyNorm1_C, abs_mul, abs_of_nonneg (by positivity)]
+    refine (natCast_coeffNorm1_add_le _ _).trans ?_
+    rw [natCast_coeffNorm1_C, abs_mul, abs_of_nonneg (by positivity)]
     have h1 :
         |(if u = y then ((R - 1).factorial : ℤ) else 0) - M0ScaledInt Q r A₀ R u y| ≤
           (if u = y then ((R - 1).factorial : ℤ) else 0) + |M0ScaledInt Q r A₀ R u y| := by
@@ -1003,10 +927,11 @@ theorem sum_polyNorm1_auxReplacementRowScaledInt_le {Q r A₀ R : ℕ}
         split_ifs <;> simp [abs_of_nonneg (by positivity : 0 ≤ ((R - 1).factorial : ℤ))]
       rw [hite]
     have h2 :
-        polyNorm1 (C (M0ScaledInt Q r A₀ R u y) * mismatchAnnihilatorScaledInt u y) ≤
+        ((C (M0ScaledInt Q r A₀ R u y) * mismatchAnnihilatorScaledInt u y).coeffNorm1 : ℤ) ≤
           |M0ScaledInt Q r A₀ R u y| * ((Q.factorial : ℤ) * 2 ^ Q) :=
-      (polyNorm1_C_mul_le _ _).trans
-        (mul_le_mul_of_nonneg_left (polyNorm1_mismatchAnnihilatorScaledInt_le u y) (abs_nonneg _))
+      (natCast_coeffNorm1_C_mul_le _ _).trans
+        (mul_le_mul_of_nonneg_left (natCast_coeffNorm1_mismatchAnnihilatorScaledInt_le u y)
+          (abs_nonneg _))
     have hcd :
         (Q.factorial : ℤ) * (if u = y then ((R - 1).factorial : ℤ) else 0) =
           if u = y then (commonDenom Q R : ℤ) else 0 := by
@@ -1015,7 +940,7 @@ theorem sum_polyNorm1_auxReplacementRowScaledInt_le {Q r A₀ R : ℕ}
     calc
       (Q.factorial : ℤ) *
             |(if u = y then ((R - 1).factorial : ℤ) else 0) - M0ScaledInt Q r A₀ R u y| +
-          polyNorm1 (C (M0ScaledInt Q r A₀ R u y) * mismatchAnnihilatorScaledInt u y) ≤
+          ((C (M0ScaledInt Q r A₀ R u y) * mismatchAnnihilatorScaledInt u y).coeffNorm1 : ℤ) ≤
         (Q.factorial : ℤ) *
             ((if u = y then ((R - 1).factorial : ℤ) else 0) + |M0ScaledInt Q r A₀ R u y|) +
           |M0ScaledInt Q r A₀ R u y| * ((Q.factorial : ℤ) * 2 ^ Q) :=
@@ -1027,7 +952,7 @@ theorem sum_polyNorm1_auxReplacementRowScaledInt_le {Q r A₀ R : ℕ}
   have hQpos_coeff : 0 ≤ (Q.factorial : ℤ) * (1 + 2 ^ Q) :=
     mul_nonneg (by positivity) (by positivity)
   calc
-    (∑ y : AuxLabel Q r, polyNorm1 (auxReplacementRowScaledInt Q r A₀ R u y)) ≤
+    (∑ y : AuxLabel Q r, ((auxReplacementRowScaledInt Q r A₀ R u y).coeffNorm1 : ℤ)) ≤
         ∑ y : AuxLabel Q r,
           ((if u = y then (commonDenom Q R : ℤ) else 0) +
             (Q.factorial : ℤ) * (1 + 2 ^ Q) * |M0ScaledInt Q r A₀ R u y|) :=
@@ -1046,29 +971,29 @@ theorem sum_polyNorm1_auxReplacementRowScaledInt_le {Q r A₀ R : ℕ}
       push_cast
       ring
 
-/-- **Lemma 4.6 original-variable row coefficient bound (p. 33)**: when `0 < Q` and `place` is
-injective, the sum of the absolute values of all coefficients in the cleared row
-`varReplacementRowScaledInt Q r A₀ R place varOf e` on `Fin n` is at most
+/-- **Lemma 4.6 original-variable row coefficient bound (p. 33)**: when `0 < Q`, `place` is
+injective, and `hI : ∀ a < R - 1, A₀ + a ≤ Q`, the sum of the absolute values of all coefficients in
+the cleared row `varReplacementRowScaledInt Q r A₀ R place varOf e` on `Fin n` is at most
 `commonDenom Q R * (1 + (1 + 2 ^ Q) * R * (4 * Q) ^ (R - 1))`. -/
-theorem sum_polyNorm1_varReplacementRowScaledInt_le {A : Type*} [Fintype A]
+theorem sum_coeffNorm1_varReplacementRowScaledInt_le {A : Type*} [Fintype A]
     {Q r A₀ R n h : ℕ} {place : A → Fin h × AuxLabel Q r}
     (hQ : 0 < Q) (hinj : Function.Injective place) (varOf : A → Fin n)
     (hI : ∀ a < R - 1, A₀ + a ≤ Q) (e : A) :
-    (∑ v : Fin n, polyNorm1 (varReplacementRowScaledInt Q r A₀ R place varOf e v)) ≤
+    (∑ v : Fin n, ((varReplacementRowScaledInt Q r A₀ R place varOf e v).coeffNorm1 : ℤ)) ≤
       (commonDenom Q R : ℤ) * (1 + (1 + 2 ^ Q) * (R : ℤ) * (4 * (Q : ℤ)) ^ (R - 1)) := by
   classical
   have htri :
-      (∑ v : Fin n, polyNorm1 (varReplacementRowScaledInt Q r A₀ R place varOf e v)) ≤
+      (∑ v : Fin n, ((varReplacementRowScaledInt Q r A₀ R place varOf e v).coeffNorm1 : ℤ)) ≤
         ∑ v : Fin n,
           ∑ e' ∈ univ.filter (fun e' : A => (place e').1 = (place e).1 ∧ varOf e' = v),
-            polyNorm1 (auxReplacementRowScaledInt Q r A₀ R (place e).2 (place e').2) :=
-    sum_le_sum fun v _ => polyNorm1_sum_le _ _
+            ((auxReplacementRowScaledInt Q r A₀ R (place e).2 (place e').2).coeffNorm1 : ℤ) :=
+    sum_le_sum fun v _ => natCast_coeffNorm1_sum_le _ _
   have hU :
       (∑ v : Fin n,
           ∑ e' ∈ univ.filter (fun e' : A => (place e').1 = (place e).1 ∧ varOf e' = v),
-            polyNorm1 (auxReplacementRowScaledInt Q r A₀ R (place e).2 (place e').2)) =
+            ((auxReplacementRowScaledInt Q r A₀ R (place e).2 (place e').2).coeffNorm1 : ℤ)) =
         ∑ e' ∈ univ.filter (fun e' : A => (place e').1 = (place e).1),
-          polyNorm1 (auxReplacementRowScaledInt Q r A₀ R (place e).2 (place e').2) := by
+          ((auxReplacementRowScaledInt Q r A₀ R (place e).2 (place e').2).coeffNorm1 : ℤ) := by
     rw [← sum_biUnion]
     · congr 1
       ext e'
@@ -1086,21 +1011,21 @@ theorem sum_polyNorm1_varReplacementRowScaledInt_le {A : Type*} [Fintype A]
     exact hinj (Prod.ext (he₁.trans he₂.symm) h2)
   have himg :
       (∑ e' ∈ univ.filter (fun e' : A => (place e').1 = (place e).1),
-          polyNorm1 (auxReplacementRowScaledInt Q r A₀ R (place e).2 (place e').2)) =
+          ((auxReplacementRowScaledInt Q r A₀ R (place e).2 (place e').2).coeffNorm1 : ℤ)) =
         ∑ y ∈ (univ.filter (fun e' : A => (place e').1 = (place e).1)).image
             (fun e' : A => (place e').2),
-          polyNorm1 (auxReplacementRowScaledInt Q r A₀ R (place e).2 y) :=
+          ((auxReplacementRowScaledInt Q r A₀ R (place e).2 y).coeffNorm1 : ℤ) :=
     (Finset.sum_image
-      (f := fun y => polyNorm1 (auxReplacementRowScaledInt Q r A₀ R (place e).2 y))
+      (f := fun y => ((auxReplacementRowScaledInt Q r A₀ R (place e).2 y).coeffNorm1 : ℤ))
       hinj_on).symm
   have hsub :
       (∑ y ∈ (univ.filter (fun e' : A => (place e').1 = (place e).1)).image
             (fun e' : A => (place e').2),
-          polyNorm1 (auxReplacementRowScaledInt Q r A₀ R (place e).2 y)) ≤
-        ∑ y : AuxLabel Q r, polyNorm1 (auxReplacementRowScaledInt Q r A₀ R (place e).2 y) :=
-    sum_le_univ_sum_of_nonneg fun y => polyNorm1_nonneg _
+          ((auxReplacementRowScaledInt Q r A₀ R (place e).2 y).coeffNorm1 : ℤ)) ≤
+        ∑ y : AuxLabel Q r, ((auxReplacementRowScaledInt Q r A₀ R (place e).2 y).coeffNorm1 : ℤ) :=
+    sum_le_univ_sum_of_nonneg fun y => Nat.cast_nonneg _
   exact htri.trans (by
     rw [hU, himg]
-    exact hsub.trans (sum_polyNorm1_auxReplacementRowScaledInt_le hQ hI (place e).2))
+    exact hsub.trans (sum_coeffNorm1_auxReplacementRowScaledInt_le hQ hI (place e).2))
 
 end Cslib.LinearAlgebra

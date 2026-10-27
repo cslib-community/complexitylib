@@ -14,7 +14,9 @@ public import Complexity.Foundations.LinearAlgebra.VariableCopyPlacement
 
 Concrete nonvacuity tests for `Complexity.Foundations.LinearAlgebra.VariableCopyPlacement`
 on a multi-incidence system where `Q = 2, r = 2, A₀ = 0, R = 2, h = 2, n = 2`, a label repeats
-with multiplicity `2`, and the same variable appears at multiple incidences within the same copy.
+with multiplicity `2`, the same variable appears at multiple incidences within the same copy
+(producing an accumulated measurement entry equal to `2`), and a nonzero off-group kernel vector
+with a nonzero polynomial replacement entry is annihilated at `nodePoint 0`.
 -/
 
 @[expose] public section
@@ -23,18 +25,29 @@ namespace Cslib.LinearAlgebra.VariableCopyPlacementTests
 
 open Cslib.LinearAlgebra Finset Matrix Polynomial
 
-/-- Auxiliary label `(0, 0)` in `AuxLabel 2 2`. -/
+/-- Auxiliary label `((0, 0), (0, 0))` in `AuxLabel 2 2`. -/
 def u00 : AuxLabel 2 2 := (fun _ => 0, fun _ => 0)
 
-/-- Auxiliary label `(1, 1)` in `AuxLabel 2 2`. -/
+/-- Auxiliary label `((0, 0), (1, 1))` in `AuxLabel 2 2`. -/
+def u01 : AuxLabel 2 2 := (fun _ => 0, fun _ => 1)
+
+/-- Auxiliary label `((1, 1), (0, 0))` in `AuxLabel 2 2`. -/
+def u10 : AuxLabel 2 2 := (fun _ => 1, fun _ => 0)
+
+/-- Auxiliary label `((1, 1), (1, 1))` in `AuxLabel 2 2`. -/
 def u11 : AuxLabel 2 2 := (fun _ => 1, fun _ => 1)
 
-/-- Concrete 3-incidence label map `Fin 3 → AuxLabel 2 2` where `u00` has fiber size `2 ≤ h = 2`
-and `u11` has fiber size `1 ≤ h = 2`. -/
+/-- Auxiliary label `((1, 0), (0, 0))` in `AuxLabel 2 2`, disagreeing with `d_{u00} = (0, 0)` at
+slot `0` and agreeing at slot `1`. -/
+def u10_00 : AuxLabel 2 2 :=
+  (fun s => if s = 0 then 1 else 0, fun _ => 0)
+
+/-- Concrete 3-incidence label map `Fin 3 → AuxLabel 2 2` where `u01` has fiber size `2 ≤ h = 2`
+and `u10` has fiber size `1 ≤ h = 2`. -/
 def testLabel : Fin 3 → AuxLabel 2 2
-  | ⟨0, _⟩ => u00
-  | ⟨1, _⟩ => u00
-  | ⟨2, _⟩ => u11
+  | ⟨0, _⟩ => u01
+  | ⟨1, _⟩ => u01
+  | ⟨2, _⟩ => u10
 
 /-- Variable projection `Fin 3 → Fin 2` where incidences `0` and `2` share variable `0`. -/
 def testVarOf : Fin 3 → Fin 2
@@ -42,24 +55,25 @@ def testVarOf : Fin 3 → Fin 2
   | ⟨1, _⟩ => 1
   | ⟨2, _⟩ => 0
 
-/-- Variable assignment `a : Fin 2 → Fin 2 → Fin 2` compatible with `testLabel`:
-`(testLabel e).1 = testVarA (testVarOf e)` would hold if `u00.1 = u11.1`; here we also define a
-label map with matching `a`-part for testing `evalVarReplacementRow_nodePoint_eq_zero_of_kernel`. -/
-def u01 : AuxLabel 2 2 := (fun _ => 0, fun _ => 1)
+/-- Variable schedule `Fin 2 → Fin 2 → Fin 2` with variable `0` in group `0` at both steps and
+variable `1` in group `1` at step `0` and group `0` at step `1`. -/
+def sepVarA : Fin 2 → Fin 2 → Fin 2
+  | ⟨0, _⟩ => fun _ => 0
+  | ⟨1, _⟩ => fun s => if s = 0 then 1 else 0
 
-def compatLabel : Fin 3 → AuxLabel 2 2
+/-- Label map compatible with `sepVarA` and `testVarOf`:
+`sepLabel 0 = u00`, `sepLabel 1 = u10_00`, `sepLabel 2 = u01`. -/
+def sepLabel : Fin 3 → AuxLabel 2 2
   | ⟨0, _⟩ => u00
-  | ⟨1, _⟩ => u00
+  | ⟨1, _⟩ => u10_00
   | ⟨2, _⟩ => u01
-
-def compatVarA : Fin 2 → Fin 2 → Fin 2 := fun _ _ => 0
 
 theorem testLabel_fiber_le (y : AuxLabel 2 2) :
     #{e : Fin 3 | testLabel e = y} ≤ 2 := by
-  by_cases hy0 : u00 = y
+  by_cases hy0 : u01 = y
   · subst hy0
     decide
-  · by_cases hy1 : u11 = y
+  · by_cases hy1 : u10 = y
     · subst hy1
       decide
     · have hEmpty : (univ.filter fun e : Fin 3 => testLabel e = y) = ∅ := by
@@ -71,44 +85,47 @@ theorem testLabel_fiber_le (y : AuxLabel 2 2) :
         · exact hy1
       simp [hEmpty]
 
-theorem compatLabel_fiber_le (y : AuxLabel 2 2) :
-    #{e : Fin 3 | compatLabel e = y} ≤ 2 := by
+theorem sepLabel_fiber_le (y : AuxLabel 2 2) :
+    #{e : Fin 3 | sepLabel e = y} ≤ 2 := by
   by_cases hy0 : u00 = y
   · subst hy0
     decide
-  · by_cases hy1 : u01 = y
+  · by_cases hy1 : u10_00 = y
     · subst hy1
       decide
-    · have hEmpty : (univ.filter fun e : Fin 3 => compatLabel e = y) = ∅ := by
-        ext e
-        simp only [mem_filter, mem_univ, true_and, notMem_empty, iff_false]
-        fin_cases e
-        · exact hy0
-        · exact hy0
-        · exact hy1
-      simp [hEmpty]
+    · by_cases hy2 : u01 = y
+      · subst hy2
+        decide
+      · have hEmpty : (univ.filter fun e : Fin 3 => sepLabel e = y) = ∅ := by
+          ext e
+          simp only [mem_filter, mem_univ, true_and, notMem_empty, iff_false]
+          fin_cases e
+          · exact hy0
+          · exact hy1
+          · exact hy2
+        simp [hEmpty]
 
 /-- Deterministic placement into `Fin 2 × AuxLabel 2 2` via `fiberRankCopy`. -/
 def testPlace (e : Fin 3) : Fin 2 × AuxLabel 2 2 :=
   (fiberRankCopy testLabel testLabel_fiber_le e, testLabel e)
 
-def compatPlace (e : Fin 3) : Fin 2 × AuxLabel 2 2 :=
-  (fiberRankCopy compatLabel compatLabel_fiber_le e, compatLabel e)
+def sepPlace (e : Fin 3) : Fin 2 × AuxLabel 2 2 :=
+  (fiberRankCopy sepLabel sepLabel_fiber_le e, sepLabel e)
 
 theorem injective_testPlace : Function.Injective testPlace :=
   injective_fiberRankCopy_prod testLabel testLabel_fiber_le
 
-theorem injective_compatPlace : Function.Injective compatPlace :=
-  injective_fiberRankCopy_prod compatLabel compatLabel_fiber_le
+theorem injective_sepPlace : Function.Injective sepPlace :=
+  injective_fiberRankCopy_prod sepLabel sepLabel_fiber_le
 
-/-- Incidences `0` and `1` share the same label `u00` and are placed into distinct copies `0` and
-`1`. -/
+/-- Incidences `0` and `1` share the same label `u01` and are placed into distinct copies `0` and
+`1`, while incidence `2` (`u10`) is placed in copy `0`. -/
 example : (testPlace 0).1 = 0 ∧ (testPlace 1).1 = 1 ∧ (testPlace 2).1 = 0 := by
   decide
 
-/-- Compatibility `(compatPlace e).2.1 = compatVarA (testVarOf e)` for all `e : Fin 3`. -/
-theorem compatPlace_fst_snd (e : Fin 3) :
-    (compatPlace e).2.1 = compatVarA (testVarOf e) := by
+/-- Compatibility `(sepPlace e).2.1 = sepVarA (testVarOf e)` for all `e : Fin 3`. -/
+theorem sepPlace_fst_snd (e : Fin 3) :
+    (sepPlace e).2.1 = sepVarA (testVarOf e) := by
   fin_cases e <;> rfl
 
 /-- Degree bound and `T = 0` evaluation on `testPlace` (where incidences `0` and `2` both lie in
@@ -120,36 +137,84 @@ example (e : Fin 3) (v : Fin 2) :
   ⟨natDegree_varReplacementRow_le 2 2 0 2 testPlace testVarOf e v,
     eval_varReplacementRow_zero 2 2 0 2 injective_testPlace testVarOf e v⟩
 
-/-- Row `ℓ₁`-norm bound `≤ 2 ^ 4 = 16` on `varMeasurementMatrix` even when multiple incidences in
-copy `0` share variable `0`. -/
-example (p : Fin 2 × measurementIndices 2 2 0 2) :
-    (∑ v : Fin 2, |varMeasurementMatrix 2 2 0 2 ℤ testPlace testVarOf p v|) ≤ 16 :=
-  sum_abs_varMeasurementMatrix_le 2 2 0 2 injective_testPlace testVarOf p
+/-- The unique antisymmetric basis index `u10 = ((1, 1), (0, 0))` for `Q = 2, r = 2`
+lies in `measurementIndices 2 2 0 2` (`antisymCount u10 = 2 ∉ [0, 2)`). -/
+theorem u10_mem_measurementIndices : u10 ∈ measurementIndices 2 2 0 2 := by
+  decide
 
-/-- Definition 3.1 kernel separation on `compatPlace`: for `e = 0` (`d_e(0) = 0`) and `g = 1 ≠ 0`,
-any `ξ` supported on `varGroup compatVarA 0 1` in `ker Ĉ` is annihilated by
-`evalVarReplacementRow` at `nodePoint 0`. -/
-example (ξ : Fin 2 → ℚ)
-    (hsupp : ∀ v, v ∉ varGroup compatVarA (0 : Fin 2) (1 : Fin 2) → ξ v = 0)
-    (hker : (varMeasurementMatrix 2 2 0 2 ℚ compatPlace testVarOf).mulVec ξ = 0) :
-    evalVarReplacementRow 2 2 0 2 compatPlace testVarOf 0 (nodePoint (0 : Fin 2)) ξ = 0 :=
-  evalVarReplacementRow_nodePoint_eq_zero_of_kernel 2 2 0 2 compatPlace testVarOf compatVarA
-    compatPlace_fst_snd 0 (0 : Fin 2) (1 : Fin 2) (by decide) ξ hsupp hker
+/-- Nonzero aliased measurement-row control: in copy `0`, incidences `0` (`u01`) and `2` (`u10`)
+both map to variable `0` and both have value `+1` under `eigenvecInt u10`, so their coefficients
+accumulate to `2` in `varMeasurementMatrix`, while the row `ℓ₁`-norm is `2 ≤ 16`. -/
+example :
+    varMeasurementMatrix 2 2 0 2 ℤ testPlace testVarOf
+        (0, ⟨u10, u10_mem_measurementIndices⟩) 0 = 2 ∧
+      (∑ v : Fin 2,
+        |varMeasurementMatrix 2 2 0 2 ℤ testPlace testVarOf
+          (0, ⟨u10, u10_mem_measurementIndices⟩) v|) ≤ 16 :=
+  ⟨by decide,
+    sum_abs_varMeasurementMatrix_le 2 2 0 2 injective_testPlace testVarOf
+      (0, ⟨u10, u10_mem_measurementIndices⟩)⟩
+
+/-- Nonzero vector `sepVec = ![0, 1]` supported on the nonempty off-group
+`varGroup sepVarA 0 1 = {1}`. -/
+def sepVec : Fin 2 → ℚ
+  | ⟨0, _⟩ => 0
+  | ⟨1, _⟩ => 1
+
+theorem sepVec_supp (v : Fin 2) (hv : v ∉ varGroup sepVarA (0 : Fin 2) (1 : Fin 2)) :
+    sepVec v = 0 := by
+  fin_cases v
+  · rfl
+  · exfalso
+    apply hv
+    decide
+
+theorem varMeasurementMatrix_sepPlace_one_int (p : Fin 2 × measurementIndices 2 2 0 2) :
+    varMeasurementMatrix 2 2 0 2 ℤ sepPlace testVarOf p 1 = 0 := by
+  rcases p with ⟨c, b, hb⟩
+  fin_cases c <;> revert b hb <;> decide
+
+theorem sepVec_ker :
+    (varMeasurementMatrix 2 2 0 2 ℚ sepPlace testVarOf).mulVec sepVec = 0 := by
+  ext p
+  rw [Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+  have h0 : sepVec 0 = 0 := rfl
+  have h1 :
+      varMeasurementMatrix 2 2 0 2 ℚ sepPlace testVarOf p 1 =
+        (varMeasurementMatrix 2 2 0 2 ℤ sepPlace testVarOf p 1 : ℚ) := by
+    simp [varMeasurementMatrix, measurementMatrix, eigenvec]
+  rw [h0, mul_zero, zero_add, h1, varMeasurementMatrix_sepPlace_one_int p, Int.cast_zero,
+     zero_mul]
+  rfl
+
+/-- Nonvacuous Definition 3.1 kernel separation on `sepPlace`:
+`sepVec` is nonzero (`sepVec 1 = 1`), supported on the nonempty off-group
+`varGroup sepVarA 0 1 = {1}`, and in `ker Ĉ`; incidence `1` (`testVarOf 1 = 1`) lies in the same
+copy `0` as incidence `0`, and `evalVarReplacementRow` at `nodePoint 0 = 1` annihilates `sepVec`
+by `evalVarReplacementRow_nodePoint_eq_zero_of_kernel`. -/
+example :
+    sepVec 1 = 1 ∧
+      (1 : Fin 2) ∈ varGroup sepVarA (0 : Fin 2) (1 : Fin 2) ∧
+      (sepPlace 1).1 = (sepPlace 0).1 ∧
+      evalVarReplacementRow 2 2 0 2 sepPlace testVarOf 0 (nodePoint (0 : Fin 2)) sepVec = 0 :=
+  ⟨rfl, by decide, by decide,
+    evalVarReplacementRow_nodePoint_eq_zero_of_kernel 2 2 0 2 sepPlace testVarOf sepVarA
+      sepPlace_fst_snd 0 (0 : Fin 2) (1 : Fin 2) (by decide) sepVec sepVec_supp sepVec_ker⟩
 
 /-- Lemma 4.6 explicit `ℓ₁`-coefficient norm bounds for `Q = 2, r = 2, A₀ = 0, R = 2`:
 `commonDenom 2 2 = 2`, `1 + (1 + 2 ^ 2) * 2 * (4 * 2) ^ 1 = 81`, so the cleared row coefficient
 `ℓ₁`-sum is at most `2 * 81 = 162`. -/
 example (e : Fin 3) :
-    polyNorm1 (mismatchAnnihilatorScaledInt u00 u11) ≤ 8 ∧
+    (mismatchAnnihilatorScaledInt u00 u11).coeffNorm1 ≤ 8 ∧
       rowNorm1 (M0ScaledInt 2 2 0 2) u00 ≤ 16 ∧
-      (∑ v : Fin 2, polyNorm1 (varReplacementRowScaledInt 2 2 0 2 testPlace testVarOf e v)) ≤
-        162 := by
+      (∑ v : Fin 2,
+        ((varReplacementRowScaledInt 2 2 0 2 testPlace testVarOf e v).coeffNorm1 : ℤ)) ≤ 162 := by
   have hI : ∀ a < 2 - 1, 0 + a ≤ 2 := by omega
   refine ⟨?_, ?_, ?_⟩
-  · simpa using polyNorm1_mismatchAnnihilatorScaledInt_le u00 u11
+  · simpa using coeffNorm1_mismatchAnnihilatorScaledInt_le u00 u11
   · simpa using rowNorm1_M0ScaledInt_le (by decide : 0 < 2) hI u00
   · simpa [commonDenom] using
-      sum_polyNorm1_varReplacementRowScaledInt_le (by decide : 0 < 2) injective_testPlace
+      sum_coeffNorm1_varReplacementRowScaledInt_le (by decide : 0 < 2) injective_testPlace
         testVarOf hI e
 
 end Cslib.LinearAlgebra.VariableCopyPlacementTests
