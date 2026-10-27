@@ -895,6 +895,7 @@ public import Complexity.Computability.GenericRAM.Native
 public import Complexity.Computability.GenericRAM.Native.BooleanFold
 public import Complexity.Computability.GenericRAM.Native.Certificate
 public import Complexity.Computability.GenericRAM.Native.Combinators
+public import Complexity.Computability.GenericRAM.Native.ExhaustiveCountFallback
 public import Complexity.Computability.GenericRAM.Native.IndexFold
 public import Complexity.Computability.GenericRAM.Native.MeasurementFold
 public import Complexity.Computability.GenericRAM.Native.Nat
