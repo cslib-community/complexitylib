@@ -896,6 +896,7 @@ public import Complexity.Computability.GenericRAM.Algebraic
 public import Complexity.Computability.GenericRAM.Defs
 public import Complexity.Computability.GenericRAM.Native
 public import Complexity.Computability.GenericRAM.Native.BooleanFold
+public import Complexity.Computability.GenericRAM.Native.BooleanSearch
 public import Complexity.Computability.GenericRAM.Native.Certificate
 public import Complexity.Computability.GenericRAM.Native.Combinators
 public import Complexity.Computability.GenericRAM.Native.IndexFold
