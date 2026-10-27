@@ -1386,6 +1386,7 @@ public import Complexity.Computability.PCP.ThreeSAT
 public import Complexity.Computability.PCP.TwoProverGame
 public import Complexity.Computability.PolyTime.BitString.InitialTestsSearch
 public import Complexity.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
+public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 public import Complexity.Computability.PolyTime.CNF.ClauseJetEval
 public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
