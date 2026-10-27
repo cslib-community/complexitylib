@@ -49,6 +49,10 @@ example : declExh 2 ((5, 2), [[(0, true), (1, true), (2, true), (3, true)]]) = 0
 example : declExh 2 ((2, 2), [[(2, true)]]) = 0 := by decide
 example : declExh 2 ((2, 1), [[(0, true)], [(1, true)], [(0, false), (1, false)]]) = 0 ∧
     leafExh 2 ((2, 1), [[(0, true)], [(1, true)], [(0, false), (1, false)]]) = 0 := by decide
+example : declExh 2 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 0 ∧
+    leafExh 2 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 0 := by decide
+example : declExh 3 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 2 ∧
+    leafExh 3 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 1 := by decide
 
 /-! ### 2. Multi-Clause Sparse `3`-CNF Across Fallback, Pipeline Primitives, and Fast Path -/
 

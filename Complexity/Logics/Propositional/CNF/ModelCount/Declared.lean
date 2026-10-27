@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Anton Kovsharov
 -/
 
 module
@@ -31,6 +31,8 @@ counting development in #1226. They do not implement a counting algorithm or ass
 ## Main definitions
 
 * `Cslib.Logic.PL.CNF.modelCountOn`: count assignments on a declared finite set.
+* `Cslib.Logic.PL.CNF.validDeclaredInput`: guard for clause widths `≤ k` and variables `< N`.
+* `Cslib.Logic.PL.CNF.normalizeDeclaredLeaf`: right-shift a declared count by unused variables.
 
 ## Main results
 
@@ -38,6 +40,9 @@ counting development in #1226. They do not implement a counting algorithm or ass
 * `Cslib.Logic.PL.CNF.modelCountOn_eq_mul_modelCount`: unused variables give independent choices.
 * `Cslib.Logic.PL.CNF.vars_dense_relabel`: dense renaming has exactly the expected variable range.
 * `Cslib.Logic.PL.CNF.modelCountOn_dense_relabel`: dense renaming preserves the declared count.
+* `Cslib.Logic.PL.CNF.validDeclaredInput_eq_true_iff`: width and `Finset.range N` equivalence.
+* `Cslib.Logic.PL.CNF.normalizeDeclaredLeaf_eq_div`, `normalizeDeclaredLeaf_eq_modelCount`,
+  `normalizeDeclaredLeaf_le_two_pow_numVars`: division form, `modelCount`, and `2 ^ numVars` bound.
 -/
 
 @[expose] public section
@@ -156,5 +161,45 @@ This includes the empty formula without requiring a total map from `V` into `Fin
 theorem modelCountOn_dense_relabel (φ : CNF V) :
     (φ.relabel φ.distinctVars.idxOf).modelCountOn (Finset.range φ.numVars) = φ.modelCount := by
   rw [← vars_dense_relabel φ, modelCountOn_vars, modelCount_dense_relabel]
+
+/-- Guard checking that every clause of `φ` has width `≤ k` and every variable lies in `< N`. -/
+def validDeclaredInput (k N : ℕ) (φ : CNF ℕ) : Bool :=
+  (φ.all fun c => decide (c.length ≤ k)) && (φ.vars.all fun v => decide (v < N))
+
+theorem validDeclaredInput_eq_true_iff {k N : ℕ} {φ : CNF ℕ} :
+    validDeclaredInput k N φ = true ↔
+      (∀ c ∈ φ, c.length ≤ k) ∧ φ.vars.toFinset ⊆ Finset.range N := by
+  simp only [validDeclaredInput, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
+  exact and_congr_right' ⟨fun h _ hv => Finset.mem_range.mpr (h _ (List.mem_toFinset.mp hv)),
+    fun h _ hv => Finset.mem_range.mp (h (List.mem_toFinset.mpr hv))⟩
+
+/-- Right-shift normalization converting a declared-range count `ψ.modelCountOn (Finset.range N)`
+into `ψ.modelCount` (`= h (p, ψ) >>> (NOf p - ψ.distinctVars.length)`). -/
+def normalizeDeclaredLeaf {P : Type*} (NOf : P → ℕ) (h : P × CNF ℕ → ℕ) (x : P × CNF ℕ) : ℕ :=
+  h x >>> (NOf x.1 - x.2.distinctVars.length)
+
+theorem normalizeDeclaredLeaf_eq_div {P : Type*} (NOf : P → ℕ) (h : P × CNF ℕ → ℕ) (x : P × CNF ℕ) :
+    normalizeDeclaredLeaf NOf h x = h x / 2 ^ (NOf x.1 - x.2.numVars) := by
+  rw [normalizeDeclaredLeaf, Nat.shiftRight_eq_div_pow, length_distinctVars]
+
+/-- When `ψ`'s variables lie in `Finset.range (NOf p)` and `h (p, ψ)` equals the declared-range
+count `ψ.modelCountOn (Finset.range (NOf p))`, `normalizeDeclaredLeaf` recovers `ψ.modelCount`. -/
+theorem normalizeDeclaredLeaf_eq_modelCount {P : Type*} {NOf : P → ℕ} {h : P × CNF ℕ → ℕ} {p : P}
+    {ψ : CNF ℕ} (hsub : ψ.vars.toFinset ⊆ Finset.range (NOf p))
+    (hh : h (p, ψ) = ψ.modelCountOn (Finset.range (NOf p))) :
+    normalizeDeclaredLeaf NOf h (p, ψ) = ψ.modelCount := by
+  rw [normalizeDeclaredLeaf_eq_div, hh, modelCountOn_eq_mul_modelCount ψ _ hsub, Finset.card_range,
+    Nat.mul_div_right _ (Nat.two_pow_pos _)]
+
+/-- When `ψ`'s variables lie in `Finset.range (NOf p)` and `h (p, ψ) ≤ 2 ^ NOf p`,
+`normalizeDeclaredLeaf NOf h (p, ψ)` is at most `2 ^ ψ.numVars`. -/
+theorem normalizeDeclaredLeaf_le_two_pow_numVars {P : Type*} {NOf : P → ℕ} {h : P × CNF ℕ → ℕ}
+    {p : P} {ψ : CNF ℕ} (hsub : ψ.vars.toFinset ⊆ Finset.range (NOf p))
+    (hh : h (p, ψ) ≤ 2 ^ NOf p) :
+    normalizeDeclaredLeaf NOf h (p, ψ) ≤ 2 ^ ψ.numVars := by
+  rw [normalizeDeclaredLeaf_eq_div]
+  have hle : ψ.numVars ≤ NOf p := by
+    simpa only [numVars, Finset.card_range] using Finset.card_le_card hsub
+  exact Nat.div_le_of_le_mul (hh.trans (by rw [← pow_add, Nat.sub_add_cancel hle]))
 
 end Cslib.Logic.PL.CNF

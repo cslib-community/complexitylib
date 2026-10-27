@@ -63,6 +63,7 @@ unconditionally at `M = countingThresholdBase K B`.
 namespace Cslib.Complexity
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Cslib.Logic.PL.ClauseSet.Sparsification
+open Cslib.Logic.PL.CNF (normalizeDeclaredLeaf validDeclaredInput)
 open Turing.MultiTapeTM
 
 namespace CountingSparsify

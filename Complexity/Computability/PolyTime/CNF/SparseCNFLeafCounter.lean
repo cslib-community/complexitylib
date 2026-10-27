@@ -22,7 +22,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
@@ -31,24 +30,23 @@ import Mathlib.Tactic.Ring
 Implements the deterministic sparse `k`-CNF model-counting algorithm of Section 6.3 (equation
 (6.4), printed p. 43) of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] on
 native multi-tape Turing machines, parameterized over a sparse `𝔽₂` polynomial-system counter:
-- **Encoded / machine-certified procedures**: `validDeclaredCNF`, `hasEmptyClause`, and
-  `entersSparseFastPath` are `ComputableInPolyTime` Boolean guards; `compiledRowCounter`,
-  `sparseCNFFastPath`, `sparseCNFDeclaredCounter`, `normalizeDeclaredLeaf`, and
+- **Encoded procedures**: `Cslib.Logic.PL.CNF.validDeclaredInput`, `hasEmptyClause`, and
+  `entersSparseFastPath` are `ComputableInPolyTime` guards; `compiledRowCounter`,
+  `sparseCNFFastPath`, `sparseCNFDeclaredCounter`, `Cslib.Logic.PL.CNF.normalizeDeclaredLeaf`, and
   `sparseCNFLeafCounter` are certified by `sparseCNFDeclaredCertificate`,
   `normalizeDeclaredLeafCertificate`, and `sparseCNFLeafCertificate`.
-- **Unencoded mathematical specifications**: `IsCompiledSparseSystem`, `sparseCNFTimeBound`, and
+- **Unencoded specifications**: `IsCompiledSparseSystem`, `sparseCNFTimeBound`, and
   `ValidPolyTimeBound` state structural equation invariants and split runtime hypotheses.
-- **Total fallback conventions**: `sparseCNFDeclaredCounter` returns `0` when
-  `validDeclaredCNF k N ψ = false`, when `[] ∈ ψ`, or when `N ≥ N₀` and `ψ.length > B * N`; returns
-  `2 ^ N` on `ψ = []`; and falls back to `countCNFExhaustive (N, ψ)` (which defaults variable
-  indices `≥ N` to `false`) when `N < N₀`. `normalizeDeclaredLeaf` shifts right by
+- **Total fallbacks**: `sparseCNFDeclaredCounter` returns `0` when `validDeclaredInput = false`,
+  `[] ∈ ψ`, or `N ≥ N₀ ∧ ψ.length > B * N`; `2 ^ N` on `ψ = []`; and `countCNFExhaustive (N, ψ)`
+  (defaulting variables `≥ N` to `false`) when `N < N₀`. `normalizeDeclaredLeaf` shifts right by
   `N - ψ.distinctVars.length` to recover `ψ.modelCount` within `≤ 2 ^ ψ.numVars`.
 
 ## Main definitions
 
-* `validDeclaredCNF`, `hasEmptyClause`, `entersSparseFastPath`, `IsCompiledSparseSystem`
-* `compiledRowCounter`, `sparseCNFFastPath`, `sparseCNFDeclaredCounter`
-* `normalizeDeclaredLeaf`, `sparseCNFLeafCounter`, `sparseCNFTimeBound`, `ValidPolyTimeBound`
+* `hasEmptyClause`, `entersSparseFastPath`, `IsCompiledSparseSystem`, `compiledRowCounter`
+* `sparseCNFFastPath`, `sparseCNFDeclaredCounter`, `sparseCNFLeafCounter`
+* `sparseCNFTimeBound`, `ValidPolyTimeBound`
 * `sparseCNFDeclaredCertificate`, `normalizeDeclaredLeafCertificate`, `sparseCNFLeafCertificate`
 
 ## Main results
@@ -57,8 +55,8 @@ native multi-tape Turing machines, parameterized over a sparse `𝔽₂` polynom
   `commonZeroCount_compileParitySystemBounded_eq_numPassing`
 * `sparseCNFDeclaredCounter_le_two_pow`, `sparseCNFDeclaredCounter_eq_modelCountOn`,
   `sparseCNFDeclaredCounter_exhaustive_eq_modelCountOn`
-* `normalizeDeclaredLeaf_eq_modelCount`, `sparseCNFLeafCounter_le_two_pow_numVars`,
-  `sparseCNFLeafCounter_eq_modelCount`, `sparseCNFLeafCounter_exhaustive_eq_modelCount`
+* `sparseCNFLeafCounter_le_two_pow_numVars`, `sparseCNFLeafCounter_eq_modelCount`,
+  `sparseCNFLeafCounter_exhaustive_eq_modelCount`
 * `polyBounded_sparseCNFDeclaredCertificate_space`, `exists_sparseCNFDeclaredCertificate_bounds`,
   `computableInO_sparseCNFDeclaredCounter`, `computableInO_normalizeDeclaredLeaf`,
   `polyBounded_sparseCNFLeafCertificate_space`, `exists_sparseCNFLeafCertificate_bounds`,
@@ -66,8 +64,7 @@ native multi-tape Turing machines, parameterized over a sparse `𝔽₂` polynom
 
 ## References
 
-* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Section 6.3, equation (6.4),
-  printed p. 43.
+* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], §6.3, eq. (6.4), p. 43.
 -/
 
 @[expose] public section
@@ -80,26 +77,20 @@ open Cslib.Complexity.InitialTestsSearch Turing.MultiTapeTM
 
 /-! ### 1. Guards, Compiled-System Invariant, and Core Definitions -/
 
-/-- Guard checking clause widths `≤ k` and occurring variables `< N`. -/
-def validDeclaredCNF (k N : ℕ) (ψ : CNF ℕ) : Bool :=
-  (ψ.all fun c => decide (c.length ≤ k)) && (ψ.vars.all fun v => decide (v < N))
-
 /-- Boolean check for whether `ψ` contains an empty clause `[]`. -/
 def hasEmptyClause (ψ : CNF ℕ) : Bool := ψ.any List.isEmpty
 
 /-- Guard characterizing inputs `(N, B, ψ)` entering the Section 6.3 parity-test fast path. -/
 def entersSparseFastPath (k N₀ N B : ℕ) (ψ : CNF ℕ) : Bool :=
-  validDeclaredCNF k N ψ && !ψ.isEmpty && !hasEmptyClause ψ &&
+  validDeclaredInput k N ψ && !ψ.isEmpty && !hasEmptyClause ψ &&
     !decide (N < N₀) && decide (ψ.length ≤ B * N)
 
-/-- Sparsity, canonicality, degree, and variable-range invariant satisfied by every sparse `𝔽₂`
-polynomial system compiled along the Section 6.3 parity-test search. -/
+/-- Sparsity, canonicality, degree, and variable-range invariant for compiled `𝔽₂` systems. -/
 def IsCompiledSparseSystem (k N maxEqs maxTerms : ℕ) (sys : List (List (List ℕ))) : Prop :=
   sys.length ≤ maxEqs ∧ ∀ eq ∈ sys, IsCanonicalEquation eq ∧ eq.length ≤ maxTerms ∧
     ∀ mon ∈ eq, mon.length ≤ k ∧ ∀ v ∈ mon, v < N
 
-/-- Candidate parity-row counter compiling `(ψ, rows)` via `compileParitySystemBounded k` and
-evaluating `polyCounter` at ambient variable count `N` whenever `rows.length ≤ 6 * N`. -/
+/-- Evaluates `polyCounter (N, compileParitySystemBounded k ψ rows)` when `rows.length ≤ 6 * N`. -/
 def compiledRowCounter (k : ℕ) (polyCounter : ℕ × List (List (List ℕ)) → ℕ)
     (q : (ℕ × CNF ℕ) × List (List Bool)) : ℕ :=
   if decide (q.2.length ≤ 6 * q.1.1) then
@@ -120,7 +111,7 @@ Returns `0` if invalid, `2 ^ N` on `[]`, `0` if `[] ∈ ψ`, `countCNFExhaustive
 def sparseCNFDeclaredCounter {P : Type*} (NOf BOf : P → ℕ) (k N₀ : ℕ)
     (polyCounter : ℕ × List (List (List ℕ)) → ℕ) (x : P × CNF ℕ) : ℕ :=
   let N := NOf x.1; let B := BOf x.1; let ψ := x.2
-  if validDeclaredCNF k N ψ then
+  if validDeclaredInput k N ψ then
     if ψ.isEmpty then 2 ^ N
     else if hasEmptyClause ψ then 0
     else if decide (N < N₀) then countCNFExhaustive (N, ψ)
@@ -128,25 +119,12 @@ def sparseCNFDeclaredCounter {P : Type*} (NOf BOf : P → ℕ) (k N₀ : ℕ)
     else 0
   else 0
 
-/-- Right-shift normalization converting `ψ.modelCountOn (Finset.range (NOf p))` to
-`ψ.modelCount`. -/
-def normalizeDeclaredLeaf {P : Type*} (NOf : P → ℕ) (h : P × CNF ℕ → ℕ) (x : P × CNF ℕ) : ℕ :=
-  h x >>> (NOf x.1 - x.2.distinctVars.length)
-
-/-- Normalized Section 6.3 sparse `k`-CNF leaf provider returning `ψ.modelCount` on valid sparse
-width-`≤ k` formulas with variables in `Finset.range (NOf p)`. -/
+/-- Normalized Section 6.3 sparse `k`-CNF leaf provider returning `ψ.modelCount` on valid inputs. -/
 def sparseCNFLeafCounter {P : Type*} (NOf BOf : P → ℕ) (k N₀ : ℕ)
     (polyCounter : ℕ × List (List (List ℕ)) → ℕ) (x : P × CNF ℕ) : ℕ :=
   normalizeDeclaredLeaf NOf (sparseCNFDeclaredCounter NOf BOf k N₀ polyCounter) x
 
 /-! ### 2. Structural & Semantic Proofs for Guards, Compilation, and Greedy Search -/
-
-theorem validDeclaredCNF_eq_true_iff {k N : ℕ} {ψ : CNF ℕ} :
-    validDeclaredCNF k N ψ = true ↔
-      (∀ c ∈ ψ, c.length ≤ k) ∧ ψ.vars.toFinset ⊆ Finset.range N := by
-  simp only [validDeclaredCNF, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
-  exact and_congr_right' ⟨fun h _ hv => Finset.mem_range.mpr (h _ (List.mem_toFinset.mp hv)),
-    fun h _ hv => Finset.mem_range.mp (h (List.mem_toFinset.mpr hv))⟩
 
 theorem hasEmptyClause_eq_true_iff {ψ : CNF ℕ} : hasEmptyClause ψ = true ↔ [] ∈ ψ := by
   simp only [hasEmptyClause, List.any_eq_true, List.isEmpty_iff]
@@ -154,15 +132,15 @@ theorem hasEmptyClause_eq_true_iff {ψ : CNF ℕ} : hasEmptyClause ψ = true ↔
 
 theorem entersSparseFastPath_eq_true_iff {k N₀ N B : ℕ} {ψ : CNF ℕ} :
     entersSparseFastPath k N₀ N B ψ = true ↔
-      validDeclaredCNF k N ψ = true ∧ ψ.isEmpty = false ∧ hasEmptyClause ψ = false ∧
+      validDeclaredInput k N ψ = true ∧ ψ.isEmpty = false ∧ hasEmptyClause ψ = false ∧
         N₀ ≤ N ∧ ψ.length ≤ B * N := by
   simp only [entersSparseFastPath, Bool.and_eq_true, Bool.not_eq_true', decide_eq_false_iff_not,
     decide_eq_true_eq, not_lt, and_assoc]
 
 private theorem pos_of_nonempty_nonnil_valid {k N : ℕ} {ψ : CNF ℕ}
-    (hvalid : validDeclaredCNF k N ψ = true) (hne : ψ.isEmpty = false)
+    (hvalid : validDeclaredInput k N ψ = true) (hne : ψ.isEmpty = false)
     (hnil : hasEmptyClause ψ = false) : 1 ≤ N ∧ 1 ≤ ψ.length := by
-  obtain ⟨_, hsub⟩ := validDeclaredCNF_eq_true_iff.mp hvalid
+  obtain ⟨_, hsub⟩ := validDeclaredInput_eq_true_iff.mp hvalid
   rcases ψ with _ | ⟨_ | ⟨l, ls⟩, cs⟩
   · simp at hne
   · exact False.elim (Bool.false_ne_true (hnil ▸ hasEmptyClause_eq_true_iff.mpr List.mem_cons_self))
@@ -327,7 +305,8 @@ theorem sparseCNFDeclaredCounter_eq_modelCountOn {P : Type*} {NOf BOf : P → �
           (fun i : Fin sys.length => equationToFinset (NOf p) sys[i])) :
     sparseCNFDeclaredCounter NOf BOf k N₀ polyCounter (p, ψ) =
       ψ.modelCountOn (Finset.range (NOf p)) := by
-  have hvalid : validDeclaredCNF k (NOf p) ψ = true := validDeclaredCNF_eq_true_iff.mpr ⟨hw, hsub⟩
+  have hvalid : validDeclaredInput k (NOf p) ψ = true :=
+    validDeclaredInput_eq_true_iff.mpr ⟨hw, hsub⟩
   unfold sparseCNFDeclaredCounter; simp only [hvalid, ↓reduceIte]
   by_cases he : ψ.isEmpty = true
   · simp only [he, ↓reduceIte]; rw [List.isEmpty_iff.mp he, CNF.modelCountOn_nil, Finset.card_range]
@@ -411,30 +390,7 @@ theorem sparseCNFDeclaredCounter_exhaustive_eq_modelCountOn {P : Type*} {NOf BOf
     countSystemExhaustive_eq_commonZeroCount fun eq heq =>
       ⟨(hsys.2 eq heq).1, fun m hm v hv => ((hsys.2 eq heq).2.2 m hm).2 v hv⟩
 
-/-! ### 3. Exact Occurring-Support Normalization (`normalizeDeclaredLeaf`) -/
-
-theorem normalizeDeclaredLeaf_eq_div {P : Type*} (NOf : P → ℕ) (h : P × CNF ℕ → ℕ) (x : P × CNF ℕ) :
-    normalizeDeclaredLeaf NOf h x = h x / 2 ^ (NOf x.1 - x.2.numVars) := by
-  rw [normalizeDeclaredLeaf, Nat.shiftRight_eq_div_pow, CNF.length_distinctVars]
-
-/-- `normalizeDeclaredLeaf` recovers `ψ.modelCount` from `ψ.modelCountOn (Finset.range (NOf p))`. -/
-theorem normalizeDeclaredLeaf_eq_modelCount {P : Type*} {NOf : P → ℕ} {h : P × CNF ℕ → ℕ}
-    {p : P} {ψ : CNF ℕ} (hsub : ψ.vars.toFinset ⊆ Finset.range (NOf p))
-    (hh : h (p, ψ) = ψ.modelCountOn (Finset.range (NOf p))) :
-    normalizeDeclaredLeaf NOf h (p, ψ) = ψ.modelCount := by
-  rw [normalizeDeclaredLeaf_eq_div, hh,
-    CNF.modelCountOn_eq_mul_modelCount ψ (Finset.range (NOf p)) hsub, Finset.card_range,
-    Nat.mul_div_right _ (by positivity)]
-
-/-- `normalizeDeclaredLeaf` is bounded by `2 ^ ψ.numVars` whenever `h (p, ψ) ≤ 2 ^ NOf p`. -/
-theorem normalizeDeclaredLeaf_le_two_pow_numVars {P : Type*} {NOf : P → ℕ} {h : P × CNF ℕ → ℕ}
-    {p : P} {ψ : CNF ℕ} (hsub : ψ.vars.toFinset ⊆ Finset.range (NOf p))
-    (hh : h (p, ψ) ≤ 2 ^ NOf p) :
-    normalizeDeclaredLeaf NOf h (p, ψ) ≤ 2 ^ ψ.numVars := by
-  rw [normalizeDeclaredLeaf_eq_div]
-  have hle : ψ.numVars ≤ NOf p := by
-    simpa only [CNF.numVars, Finset.card_range] using Finset.card_le_card hsub
-  exact Nat.div_le_of_le_mul (hh.trans (by rw [← pow_add, Nat.sub_add_cancel hle]))
+/-! ### 3. Normalized Leaf Provider (`sparseCNFLeafCounter`) -/
 
 /-- **Unconditional leaf-accumulator bound**: `sparseCNFLeafCounter` never exceeds `2 ^ ψ.numVars`
 on any input `(p, ψ)`, regardless of `polyCounter`. -/
@@ -442,8 +398,8 @@ theorem sparseCNFLeafCounter_le_two_pow_numVars {P : Type*} (NOf BOf : P → ℕ
     (polyCounter : ℕ × List (List (List ℕ)) → ℕ) (x : P × CNF ℕ) :
     sparseCNFLeafCounter NOf BOf k N₀ polyCounter x ≤ 2 ^ x.2.numVars := by
   rcases x with ⟨p, ψ⟩
-  by_cases hv : validDeclaredCNF k (NOf p) ψ = true
-  · exact normalizeDeclaredLeaf_le_two_pow_numVars (validDeclaredCNF_eq_true_iff.mp hv).2
+  by_cases hv : validDeclaredInput k (NOf p) ψ = true
+  · exact normalizeDeclaredLeaf_le_two_pow_numVars (validDeclaredInput_eq_true_iff.mp hv).2
       (sparseCNFDeclaredCounter_le_two_pow NOf BOf k N₀ polyCounter (p, ψ))
   · simp only [Bool.not_eq_true] at hv
     simp only [sparseCNFLeafCounter, normalizeDeclaredLeaf, sparseCNFDeclaredCounter, hv,
@@ -633,9 +589,9 @@ private theorem polyBounded_greedyBoundedCertificate_space (k : ℕ)
     unfold greedyBoundedCertificate; simp only [hSpace, ↓reduceDIte]
   rw [heq]; exact PolyBounded.of_polynomiallyBounded _ hG.choose_spec.1
 
-private theorem computableInPolyTime_validDeclaredCNF (k : ℕ)
+private theorem computableInPolyTime_validDeclaredInput (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
-    ComputableInPolyTime (fun x : P × CNF ℕ => validDeclaredCNF k (NOf x.1) x.2)
+    ComputableInPolyTime (fun x : P × CNF ℕ => validDeclaredInput k (NOf x.1) x.2)
       (encPair encP encCNF) encBool := by
   refine .of_tidy ?_
   have hN_nat := ComputableTidilyInPolyTime.unary_to_binary.comp
@@ -654,7 +610,7 @@ private theorem computableInPolyTime_validDeclaredCNF (k : ℕ)
     exact ComputableTidilyInPolyTime.binary_lt'
       (ComputableTidilyInPolyTime.snd (encPair encP encCNF) encNat)
       (hN_nat.comp (ComputableTidilyInPolyTime.fst (encPair encP encCNF) encNat))
-  unfold validDeclaredCNF; exact ComputableTidilyInPolyTime.bool_and' h1 h2
+  unfold validDeclaredInput; exact ComputableTidilyInPolyTime.bool_and' h1 h2
 
 private theorem computableInPolyTime_isEmptyCNF :
     ComputableInPolyTime (fun x : P × CNF ℕ => x.2.isEmpty) (encPair encP encCNF) encBool :=
@@ -676,9 +632,9 @@ private theorem computableInPolyTime_twoPowN (hNOf : ComputableInPolyTime NOf en
 private theorem computableInPolyTime_baseGuard (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (fun x : P × CNF ℕ =>
-      validDeclaredCNF k (NOf x.1) x.2 && !x.2.isEmpty && !hasEmptyClause x.2)
+      validDeclaredInput k (NOf x.1) x.2 && !x.2.isEmpty && !hasEmptyClause x.2)
       (encPair encP encCNF) encBool := by
-  have := (computableInPolyTime_validDeclaredCNF k hNOf).tidy
+  have := (computableInPolyTime_validDeclaredInput k hNOf).tidy
   have := (computableInPolyTime_isEmptyCNF (encP := encP)).tidy
   have := (computableInPolyTime_hasEmptyClause (encP := encP)).tidy
   exact .of_tidy (by fun_prop)
@@ -702,11 +658,11 @@ private theorem computableInPolyTime_entersSparseFastPath (k N₀ : ℕ)
   refine .of_tidy ?_; unfold entersSparseFastPath; fun_prop
 
 private def nonExhGuard {P : Type*} (NOf : P → ℕ) (k N₀ : ℕ) (x : P × CNF ℕ) : Bool :=
-  !(validDeclaredCNF k (NOf x.1) x.2 && !x.2.isEmpty && !hasEmptyClause x.2 &&
+  !(validDeclaredInput k (NOf x.1) x.2 && !x.2.isEmpty && !hasEmptyClause x.2 &&
     decide (NOf x.1 < N₀))
 
 private def nonExhDirect {P : Type*} (NOf : P → ℕ) (k : ℕ) (x : P × CNF ℕ) : ℕ :=
-  if validDeclaredCNF k (NOf x.1) x.2 && x.2.isEmpty then 2 ^ NOf x.1 else 0
+  if validDeclaredInput k (NOf x.1) x.2 && x.2.isEmpty then 2 ^ NOf x.1 else 0
 
 private def sparseCNFNonFastFallback {P : Type*} (NOf : P → ℕ) (k N₀ : ℕ) (x : P × CNF ℕ) : ℕ :=
   if nonExhGuard NOf k N₀ x then nonExhDirect NOf k x else countCNFExhaustive (NOf x.1, x.2)
@@ -724,7 +680,7 @@ private theorem computableInPolyTime_nonExhDirect (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (nonExhDirect NOf k) (encPair encP encCNF) encNat :=
   .of_tidy ((ComputableTidilyInPolyTime.bool_and'
-    (computableInPolyTime_validDeclaredCNF k hNOf).tidy
+    (computableInPolyTime_validDeclaredInput k hNOf).tidy
     (computableInPolyTime_isEmptyCNF (encP := encP)).tidy).ite'
     (computableInPolyTime_twoPowN hNOf).tidy (ComputableTidilyInPolyTime.const 0))
 
@@ -941,7 +897,7 @@ private theorem nonFastFallback_agrees {k N₀ : ℕ} (x : P × CNF ℕ)
   unfold entersSparseFastPath sparseCNFNonFastFallback nonExhGuard nonExhDirect
     sparseCNFDeclaredCounter at *
   dsimp only at *
-  cases hv : validDeclaredCNF k (NOf x.1) x.2 <;> cases he : x.2.isEmpty <;>
+  cases hv : validDeclaredInput k (NOf x.1) x.2 <;> cases he : x.2.isEmpty <;>
     cases hnil : hasEmptyClause x.2 <;> by_cases hlt : NOf x.1 < N₀ <;>
     by_cases hmB : x.2.length ≤ BOf x.1 * NOf x.1 <;>
     simp only [hv, he, hnil, hlt, hmB, decide_true, decide_false, Bool.and_true, Bool.and_false,
@@ -1015,7 +971,7 @@ private theorem exists_compiledRowCertificate_bounds (k N₀ : ℕ)
     hpSysLen.comp hcandInBound_poly, fun R hR x hfast rows hrlen hrprops => ?_⟩
   set L := (encPair encP encCNF x).length
   obtain ⟨hv, _, _, _, _⟩ := entersSparseFastPath_eq_true_iff.mp hfast
-  obtain ⟨hw, hsub⟩ := validDeclaredCNF_eq_true_iff.mp hv
+  obtain ⟨hw, hsub⟩ := validDeclaredInput_eq_true_iff.mp hv
   have hN_le : NOf x.1 ≤ pNLen L := by
     simpa only [Function.comp_apply, encUnary_apply, List.length_replicate, L] using hNLen x
   have hψ_le : (encCNF x.2).length ≤ L := by simp only [L, length_encPair]; omega

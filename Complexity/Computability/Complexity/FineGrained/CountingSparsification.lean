@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.FineGrained.Exponents
+public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
@@ -1134,6 +1135,10 @@ theorem exists_computableInO_search_polySpace (hM2 : 2 ≤ M) {k B L_coeff : ℕ
 
 section ContextWrapper
 
+open Cslib.Logic.PL.CNF (normalizeDeclaredLeaf normalizeDeclaredLeaf_eq_div
+  normalizeDeclaredLeaf_eq_modelCount normalizeDeclaredLeaf_le_two_pow_numVars
+  validDeclaredInput validDeclaredInput_eq_true_iff)
+
 variable {P : Type*}
 
 /-- One step of the depth-first search of the counting-sparsification tree carrying an unchanged
@@ -1174,52 +1179,6 @@ theorem iterate_stepWith_countingThreshold (MOf : P → ℕ) (K : ℕ) (g : P ×
   | zero => rfl
   | succ r ih => rw [Function.iterate_succ_apply, stepWith_countingThreshold, ih,
       Function.iterate_succ_apply]
-
-/-- Exact right-shift normalization converting a declared-range leaf count
-`ψ.modelCountOn (Finset.range (NOf p))` into the occurring-variable count `ψ.modelCount`
-(`= h (p, ψ) >>> (NOf p - ψ.distinctVars.length)`). -/
-def normalizeDeclaredLeaf (NOf : P → ℕ) (h : P × CNF ℕ → ℕ) (x : P × CNF ℕ) : ℕ :=
-  h x >>> (NOf x.1 - x.2.distinctVars.length)
-
-theorem normalizeDeclaredLeaf_eq_div (NOf : P → ℕ) (h : P × CNF ℕ → ℕ) (x : P × CNF ℕ) :
-    normalizeDeclaredLeaf NOf h x = h x / 2 ^ (NOf x.1 - x.2.numVars) := by
-  rw [normalizeDeclaredLeaf, Nat.shiftRight_eq_div_pow, CNF.length_distinctVars]
-
-/-- When `ψ`'s occurring variables lie in `Finset.range (NOf p)` and `h (p, ψ)` equals the
-declared-range model count `ψ.modelCountOn (Finset.range (NOf p))`, `normalizeDeclaredLeaf`
-recovers the exact occurring-variable count `ψ.modelCount`. -/
-theorem normalizeDeclaredLeaf_eq_modelCount {NOf : P → ℕ} {h : P × CNF ℕ → ℕ}
-    {p : P} {ψ : CNF ℕ} (hsub : ψ.vars.toFinset ⊆ Finset.range (NOf p))
-    (hh : h (p, ψ) = ψ.modelCountOn (Finset.range (NOf p))) :
-    normalizeDeclaredLeaf NOf h (p, ψ) = ψ.modelCount := by
-  rw [normalizeDeclaredLeaf_eq_div, hh,
-    CNF.modelCountOn_eq_mul_modelCount ψ (Finset.range (NOf p)) hsub, Finset.card_range,
-    Nat.mul_div_right _ (by positivity)]
-
-/-- When `ψ`'s occurring variables lie in `Finset.range (NOf p)` and `h (p, ψ) ≤ 2 ^ NOf p`,
-`normalizeDeclaredLeaf NOf h (p, ψ)` is at most `2 ^ ψ.numVars`. -/
-theorem normalizeDeclaredLeaf_le_two_pow_numVars {NOf : P → ℕ} {h : P × CNF ℕ → ℕ}
-    {p : P} {ψ : CNF ℕ} (hsub : ψ.vars.toFinset ⊆ Finset.range (NOf p))
-    (hh : h (p, ψ) ≤ 2 ^ NOf p) :
-    normalizeDeclaredLeaf NOf h (p, ψ) ≤ 2 ^ ψ.numVars := by
-  rw [normalizeDeclaredLeaf_eq_div]
-  have hle : ψ.numVars ≤ NOf p := by
-    simpa only [CNF.numVars, Finset.card_range] using Finset.card_le_card hsub
-  refine Nat.div_le_of_le_mul (hh.trans ?_)
-  rw [← pow_add, Nat.sub_add_cancel hle]
-
-/-- Guard checking that every clause of `φ` has width at most `k` and every occurring variable of
-`φ` lies in `0, ..., N - 1`. -/
-def validDeclaredInput (k N : ℕ) (φ : CNF ℕ) : Bool :=
-  (φ.all fun c => decide (c.length ≤ k)) && (φ.vars.all fun v => decide (v < N))
-
-theorem validDeclaredInput_eq_true_iff {k N : ℕ} {φ : CNF ℕ} :
-    validDeclaredInput k N φ = true ↔
-      (∀ c ∈ φ, c.length ≤ k) ∧ φ.vars.toFinset ⊆ Finset.range N := by
-  simp only [validDeclaredInput, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
-  refine and_congr_right' ⟨fun h v hv => ?_, fun h v hv => ?_⟩
-  · exact Finset.mem_range.mpr (h v (List.mem_toFinset.mp hv))
-  · exact Finset.mem_range.mp (h (List.mem_toFinset.mpr hv))
 
 /-- **Runtime-context counting-sparsification search** (occurring-variable count): run
 `stepWith (fun q => countingThreshold (MOf q)) K g` for `rounds (BOf p) φ` steps from
