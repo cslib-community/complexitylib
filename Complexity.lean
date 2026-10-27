@@ -1881,6 +1881,7 @@ public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Vote
 public import Complexity.Foundations.Data.BitString.Parity
+public import Complexity.Foundations.Data.BitString.Parity.DotProduct
 public import Complexity.Foundations.Data.BitString.Parity.Weight
 public import Complexity.Foundations.Data.BitString.ParityTests
 public import Complexity.Foundations.Data.BitString.PartialAssignment

@@ -9,7 +9,7 @@ module
 
 public import Complexity.Foundations.Combinatorics.Expander.Cayley
 public import Complexity.Foundations.Data.BitString.Weight
-import Complexity.Foundations.Data.BitString.Parity
+import Complexity.Foundations.Data.BitString.Parity.DotProduct
 
 /-!
 # Tanner codes on small-bias Cayley graphs
@@ -27,14 +27,15 @@ is the kernel of a matrix `A` with `c` rows (`Cslib.BitString.Tanner.IsWord`).
   `2 ^ ((d - 1) c)` of the `2 ^ (d c)` matrices (`Cslib.BitString.card_kernel`), since its inner
   product with a uniform row is a balanced parity.
 * **Distance** (`Cslib.BitString.Tanner.le_weight_of_isWord`): if the local code has distance more
-  than `h` and the generators are `ε`-biased, every nonzero Tanner word `x` has
+  than `h` and the generators are `ε`-biased with `ε ≥ 0`, every nonzero Tanner word `x` has
   `(h + 1) (h + 1 - ε d) 2 ^ ℓ ≤ d · weight x`. The vertices `U`, `V` touched by `x` on the two
   sides each see at least `h + 1` of its bits, while all its bits are edges between `U` and `V`,
   which the mixing estimate (`Cslib.RotationMap.card_interedges_cubeCayley_le`) bounds.
 * **Shortening** (`Cslib.BitString.Tanner.le_weight_of_shortRow`): keeping `m` of the edges, by an
   embedding `Fin m ↪ (Fin ℓ → Bool) × Fin d`, gives `2 · 2 ^ ℓ · c` explicit rows on `Fin m`
   (`Cslib.BitString.Tanner.shortRow`), each with at most `d` ones
-  (`Cslib.BitString.Tanner.weight_shortRow_le`), whose nonzero kernel strings obey the same bound.
+  (`Cslib.BitString.Tanner.weight_shortRow_le`), whose nonzero kernel strings obey the same bound,
+  again for `ε ≥ 0`.
 
 These are the local-code, distance and shortening steps in the proof of
 [OpenAI2026ETH, Lemma 6.1], which builds the initial parity tests from such a code.
@@ -66,11 +67,6 @@ open Finset Cslib.RotationMap Cslib.Probability.PMF
 section LocalCode
 
 variable {c d : ℕ}
-
-/-- The inner product with `w` is the parity on the support of `w`. -/
-theorem dotProduct_eq_parityOn (x w : Fin d → Bool) : x ⬝ᵥ w = parityOn {i | w i = true} x := by
-  rw [parityOn_eq_sum, dotProduct, sum_filter]
-  exact sum_congr rfl fun i _ => by cases w i <;> cases x i <;> rfl
 
 /-- The rows orthogonal to a nonzero `w`: `2 ^ (d - 1)` of the `2 ^ d`. -/
 theorem card_dotProduct_eq_false {w : Fin d → Bool} (hw : w ≠ 0) :
@@ -160,8 +156,8 @@ theorem weight_eq_sum_right (s : Fin d → Fin ℓ → Bool) (x : (Fin ℓ → B
   exact (Fintype.sum_equiv (Equiv.addRight (s j)) _ _ fun v => by simp).symm
 
 /-- **The distance of the Tanner code.** If every nonzero local word accepted by `A` has weight
-more than `h`, and the generators are `ε`-biased, then every nonzero Tanner word `x` has
-`(h + 1) (h + 1 - ε d) 2 ^ ℓ ≤ d · weight x`. -/
+more than `h`, and the generators are `ε`-biased with `ε ≥ 0`, then every nonzero Tanner word `x`
+has `(h + 1) (h + 1 - ε d) 2 ^ ℓ ≤ d · weight x`. -/
 theorem le_weight_of_isWord [NeZero d] (s : Fin d → Fin ℓ → Bool) {ε : ℝ} (hε : 0 ≤ ε)
     (hs : IsSmallBias ε ((uniformOfFintype (Fin d)).map s)) (A : Fin c → Fin d → Bool) {h : ℕ}
     (hA : ∀ w : Fin d → Bool, w ≠ 0 → (∀ i, A i ⬝ᵥ w = false) → h < weight w)
@@ -347,7 +343,8 @@ theorem weight_shortRow_le (s : Fin d → Fin ℓ → Bool) (A : Fin c → Fin d
   · simp only [hr, ite_true] at hv hv'
     rw [← add_add_cancel (emb e).1 (s (emb e).2), hv, hee', ← hv', add_add_cancel]
 
-/-- **The shortened Tanner code.** Every nonzero `z` orthogonal to all the rows `shortRow` has
+/-- **The shortened Tanner code.** Under the hypotheses of `le_weight_of_isWord`, including
+`ε ≥ 0`, every nonzero `z` orthogonal to all the rows `shortRow` has
 `(h + 1) (h + 1 - ε d) 2 ^ ℓ ≤ d · weight z`. -/
 theorem le_weight_of_shortRow [NeZero d] (s : Fin d → Fin ℓ → Bool) {ε : ℝ} (hε : 0 ≤ ε)
     (hs : IsSmallBias ε ((uniformOfFintype (Fin d)).map s)) (A : Fin c → Fin d → Bool) {h : ℕ}
