@@ -15,8 +15,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Int.Order
+import Complexity.Foundations.Data.List.OfFn
+import Mathlib.Algebra.BigOperators.Intervals
+import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.List.GetD
-import Mathlib.Tactic.Ring
 
 /-!
 # Dense truncated bivariate jet arrays in polynomial time
@@ -249,19 +251,11 @@ theorem isJetShape_shiftVJet (J ℓ : ℕ) (A : List (List ℤ)) : IsJetShape J 
 theorem isJetShape_convJet (J ℓ : ℕ) (A B : List (List ℤ)) : IsJetShape J ℓ (convJet J ℓ A B) :=
   isJetShape_tabulateJet J ℓ _
 
-private lemma sum_map_range {M : Type*} [AddCommMonoid M] (n : ℕ) (f : ℕ → M) :
-    ((List.range n).map f).sum = ∑ i ∈ Finset.range n, f i := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [List.range_succ, List.map_append, List.sum_append, ih, List.map_singleton,
-      List.sum_singleton, Finset.sum_range_succ]
-
 lemma convEntry_eq_sum (A B : List (List ℤ)) (j u : ℕ) :
     convEntry A B j u =
       ∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
         coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁) := by
-  simp only [convEntry, sum_map_range]
+  simp only [convEntry, List.sum_map_range, Finset.sum_range]
 
 @[simp]
 theorem coeffAt_zeroJet (J ℓ j u : ℕ) : coeffAt (zeroJet J ℓ) j u = 0 := by
@@ -361,36 +355,18 @@ theorem one_smulJet {J ℓ : ℕ} {A : List (List ℤ)} (hA : IsJetShape J ℓ A
   eq_of_isJetShape_of_coeffAt_eq (isJetShape_smulJet J ℓ 1 A) hA fun j hj u hu => by
     rw [coeffAt_smulJet 1 A hj hu, one_mul]
 
-private lemma sum_range_succ_sub (n : ℕ) (f : ℕ → ℤ) :
-    (∑ k ∈ Finset.range (n + 1), f k) = ∑ k ∈ Finset.range (n + 1), f (n - k) := by
-  refine Finset.sum_nbij' (fun k => n - k) (fun k => n - k) ?_ ?_ ?_ ?_ ?_
-  · intro k hk
-    simp only [Finset.mem_range] at hk ⊢
-    omega
-  · intro k hk
-    simp only [Finset.mem_range] at hk ⊢
-    omega
-  · intro k hk
-    simp only [Finset.mem_range] at hk
-    omega
-  · intro k hk
-    simp only [Finset.mem_range] at hk
-    omega
-  · intro k hk
-    simp only [Finset.mem_range] at hk
-    exact congrArg f (by omega)
-
 /-- Commutativity of truncated 2D convolution. -/
 theorem convJet_comm (J ℓ : ℕ) (A B : List (List ℤ)) :
     convJet J ℓ A B = convJet J ℓ B A := by
   refine eq_of_isJetShape_of_coeffAt_eq (isJetShape_convJet J ℓ A B) (isJetShape_convJet J ℓ B A)
     fun j hj u hu => ?_
-  rw [coeffAt_convJet A B hj hu, coeffAt_convJet B A hj hu, sum_range_succ_sub j]
+  rw [coeffAt_convJet A B hj hu, coeffAt_convJet B A hj hu, ← Finset.sum_range_reflect _ (j + 1)]
   refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
   simp only [Finset.mem_range] at hj₁
-  rw [sum_range_succ_sub u]
+  rw [← Finset.sum_range_reflect _ (u + 1)]
   refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
   simp only [Finset.mem_range] at hu₁
+  simp only [Nat.add_sub_cancel]
   have hj' : j - (j - j₁) = j₁ := by omega
   have hu' : u - (u - u₁) = u₁ := by omega
   rw [hj', hu', Int.mul_comm]
@@ -616,7 +592,8 @@ def jetL1Norm (A : List (List ℤ)) : ℕ :=
 lemma jetL1Norm_tabulateJet (J ℓ : ℕ) (g : ℕ → ℕ → ℤ) :
     jetL1Norm (tabulateJet J ℓ g) =
       ∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (g j u).natAbs := by
-  simp only [jetL1Norm, tabulateJet, List.map_map, Function.comp_def, sum_map_range]
+  simp only [jetL1Norm, tabulateJet, List.map_map, Function.comp_def, List.sum_map_range,
+    Finset.sum_range]
 
 private lemma sum_getD_natAbs_le (ℓ : ℕ) (row : List ℤ) :
     (∑ u ∈ Finset.range ℓ, (row.getD u 0).natAbs) ≤ (row.map Int.natAbs).sum := by
@@ -733,15 +710,6 @@ theorem jetL1Norm_shiftVJet_le (J ℓ : ℕ) (A : List (List ℤ)) :
     simp only [hrow]
     exact sum_coeffAt_natAbs_le_jetL1Norm J ℓ' A
 
-private lemma natAbs_sum_finset_le {ι : Type*} (s : Finset ι) (f : ι → ℤ) :
-    (∑ i ∈ s, f i).natAbs ≤ ∑ i ∈ s, (f i).natAbs := by
-  classical
-  induction s using Finset.induction with
-  | empty => simp
-  | insert a s ha ih =>
-    rw [Finset.sum_insert ha, Finset.sum_insert ha]
-    exact (Int.natAbs_add_le _ _).trans (Nat.add_le_add_left ih _)
-
 private lemma sum_conv_nat_le_mul (N : ℕ) (a b : ℕ → ℕ) :
     (∑ j ∈ Finset.range N, ∑ j₁ ∈ Finset.range (j + 1), a j₁ * b (j - j₁)) ≤
       (∑ j₁ ∈ Finset.range N, a j₁) * (∑ j₂ ∈ Finset.range N, b j₂) := by
@@ -780,8 +748,8 @@ theorem jetL1Norm_convJet_le (J ℓ : ℕ) (A B : List (List ℤ)) :
         ∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
           (coeffAt A j₁ u₁).natAbs * (coeffAt B (j - j₁) (u - u₁)).natAbs := by
     rw [convEntry_eq_sum]
-    refine (natAbs_sum_finset_le _ _).trans (Finset.sum_le_sum fun j₁ _ => ?_)
-    refine (natAbs_sum_finset_le _ _).trans (Finset.sum_le_sum fun u₁ _ => ?_)
+    refine (Int.natAbs_sum_le _ _).trans (Finset.sum_le_sum fun j₁ _ => ?_)
+    refine (Int.natAbs_sum_le _ _).trans (Finset.sum_le_sum fun u₁ _ => ?_)
     rw [Int.natAbs_mul]
   calc
     (∑ j ∈ Finset.range J, ∑ u ∈ Finset.range ℓ, (convEntry A B j u).natAbs)
@@ -804,23 +772,14 @@ theorem jetL1Norm_convJet_le (J ℓ : ℕ) (A B : List (List ℤ)) :
           Nat.mul_le_mul (sum_coeffAt_natAbs_le_jetL1Norm J ℓ A)
             (sum_coeffAt_natAbs_le_jetL1Norm J ℓ B)
 
-private lemma le_sum_of_mem {l : List ℕ} {x : ℕ} (hx : x ∈ l) : x ≤ l.sum := by
-  induction l with
-  | nil => cases hx
-  | cons y ys ih =>
-    simp only [List.mem_cons] at hx
-    simp only [List.sum_cons]
-    rcases hx with rfl | hx
-    · exact Nat.le_add_right _ _
-    · exact (ih hx).trans (Nat.le_add_left _ _)
-
 /-- Every stored entry of `A` has magnitude bounded by `jetL1Norm A`. -/
 lemma natAbs_le_jetL1Norm_of_mem {A : List (List ℤ)} {row : List ℤ} (hrow : row ∈ A)
     {z : ℤ} (hz : z ∈ row) : z.natAbs ≤ jetL1Norm A := by
   have hz' : z.natAbs ∈ row.map Int.natAbs := List.mem_map_of_mem hz
   have hrow' : (row.map Int.natAbs).sum ∈ A.map fun r => (r.map Int.natAbs).sum :=
     List.mem_map_of_mem hrow
-  exact (le_sum_of_mem hz').trans (le_sum_of_mem hrow')
+  exact (List.single_le_sum (fun _ _ => Nat.zero_le _) _ hz').trans
+    (List.single_le_sum (fun _ _ => Nat.zero_le _) _ hrow')
 
 private lemma coeffAt_rel_of_mem {P : ℤ → Prop} (h0 : P 0) {A : List (List ℤ)}
     (hA : ∀ row ∈ A, ∀ z ∈ row, P z) (j u : ℕ) : P (coeffAt A j u) := by
@@ -872,8 +831,8 @@ theorem natAbs_coeffAt_convJet_le {J ℓ MA MB : ℕ} {A B : List (List ℤ)}
           coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁)).natAbs
           ≤ ∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
               (coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁)).natAbs := by
-            refine (natAbs_sum_finset_le _ _).trans (Finset.sum_le_sum fun _ _ => ?_)
-            exact natAbs_sum_finset_le _ _
+            refine (Int.natAbs_sum_le _ _).trans (Finset.sum_le_sum fun _ _ => ?_)
+            exact Int.natAbs_sum_le _ _
       _ ≤ ∑ _j₁ ∈ Finset.range (j + 1), ∑ _u₁ ∈ Finset.range (u + 1), MA * MB := by
             refine Finset.sum_le_sum fun j₁ _ => Finset.sum_le_sum fun u₁ _ => ?_
             rw [Int.natAbs_mul]
@@ -883,21 +842,6 @@ theorem natAbs_coeffAt_convJet_le {J ℓ MA MB : ℕ} {A B : List (List ℤ)}
       _ ≤ J * ℓ * (MA * MB) :=
             Nat.mul_le_mul_right _ (Nat.mul_le_mul hj hu)
   · exact Nat.zero_le _
-
-private lemma sum_map_sum_eq_sum_flatMap {α : Type*} (l : List α) (f : α → List ℤ) :
-    (l.map fun a => (f a).sum).sum = (l.flatMap f).sum := by
-  induction l with
-  | nil => simp
-  | cons a as ih => simp only [List.map_cons, List.sum_cons, List.flatMap_cons, List.sum_append, ih]
-
-private lemma length_flatMap_const {α β : Type*} (l : List α) (m : ℕ) (f : α → List β)
-    (hf : ∀ a ∈ l, (f a).length = m) : (l.flatMap f).length = l.length * m := by
-  induction l with
-  | nil => simp
-  | cons a as ih =>
-    simp only [List.flatMap_cons, List.length_append, List.length_cons,
-      hf a List.mem_cons_self, ih fun b hb => hf b (List.mem_cons_of_mem a hb)]
-    ring
 
 /-- Binary magnitude-size bound for `convJet`: if stored entries of `A` and `B` have binary
 magnitude size at most `bA` and `bB`, then every coefficient of `convJet J ℓ A B` has binary
@@ -912,7 +856,8 @@ theorem size_natAbs_coeffAt_convJet_le {J ℓ bA bB : ℕ} {A B : List (List ℤ
   split_ifs with hju
   · obtain ⟨hj, hu⟩ := hju
     unfold convEntry
-    rw [sum_map_sum_eq_sum_flatMap]
+    rw [← Function.comp_def List.sum, ← List.map_map, ← List.sum_flatten,
+      ← List.flatMap_def]
     let terms := (List.range (j + 1)).flatMap fun j₁ =>
       (List.range (u + 1)).map fun u₁ => coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁)
     have hmem : ∀ z ∈ terms, z.natAbs.size ≤ bA + bB := by
@@ -921,11 +866,7 @@ theorem size_natAbs_coeffAt_convJet_le {J ℓ bA bB : ℕ} {A B : List (List ℤ
       obtain ⟨u₁, -, rfl⟩ := List.mem_map.mp hz
       exact (Int.size_natAbs_mul_le _ _).trans (Nat.add_le_add (hA' j₁ u₁) (hB' _ _))
     have hlen : terms.length = (j + 1) * (u + 1) := by
-      have h := length_flatMap_const (List.range (j + 1)) (u + 1)
-        (fun j₁ => (List.range (u + 1)).map fun u₁ =>
-          coeffAt A j₁ u₁ * coeffAt B (j - j₁) (u - u₁))
-        (fun _ _ => by simp)
-      simpa only [List.length_range] using h
+      simp [terms, List.length_flatMap]
     refine (Int.size_natAbs_sum_le hmem).trans ?_
     rw [hlen]
     exact Nat.add_le_add_left (Nat.size_le_size (Nat.mul_le_mul hj hu)) (bA + bB)
