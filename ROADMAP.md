@@ -188,8 +188,13 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Counting and modular classes
 
-- The Another Solution Problem (ASP) framework: solution-preserving reductions with explicit
-  polynomial-time solution bijections, and applications to SAT and planar SAT.
+- The Another Solution Problem (ASP) framework: certify polynomial-time forward and inverse
+  witness maps. The parsimonious reductions to positive exact-one SAT and its planar
+  three-occurrence variants already preserve counts over occurring variables; the new local
+  replacements have constant-factor growth and preserve the earlier linear grid sides and
+  quadratic planar costs. See the [reduction catalogue](guide/ComplexityGuide/NPCompleteness.lean)
+  for the completed NP-completeness and NP-hardness endpoints. Exact count preservation alone
+  does not supply the ASP runtime certificates.
 - Counting reductions and further oracle results preserving exact multiplicities; permanent
   #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's
   approximate counting.
