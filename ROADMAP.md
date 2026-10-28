@@ -432,7 +432,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   The shared native left/right encoders ([#1493]) compute all `10^L` leaf values from `7^L`
   signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
   with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
-  Band/tile preparation, native pruned/sparse-query programs, native Chan–He preprocessing, the reduction
+  Native shared-band preparation ([#1523]) computes deterministic subset tables and a valid layout,
+  prepares padded signed matrix bands, invokes both shared encoders for every band, and restores the
+  original initialized input. Fixed 96-register code has a complete charged bound
+  `4096*(L+1)*(1+N*4^m+2^L+2*numBands*10^L)`; at `L=19m`, `N≥(4^m)^18`, including halt, this is at most
+  `81920*(L+1)*N²/(4^m)^(1/18)`. Native pruned/sparse-query programs, native Chan–He preprocessing, the reduction
   host, the fast Exact Triangle solver and full
   input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
   size-based width
@@ -566,3 +570,4 @@ not planned, not as proved.
 [#1459]: https://github.com/cslib-community/complexitylib/issues/1459
 [#1463]: https://github.com/cslib-community/complexitylib/issues/1463
 [#1493]: https://github.com/cslib-community/complexitylib/issues/1493
+[#1523]: https://github.com/cslib-community/complexitylib/issues/1523

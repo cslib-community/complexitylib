@@ -24,3 +24,7 @@ This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 The prime-window proof also adapts Mathlib/NumberTheory/Bertrand.lean,
 Copyright (c) 2020 Patrick Stevens; authors Patrick Stevens, Bolton Bailey,
 under the Apache License, Version 2.0.
+
+The native shared-band preparation selectively adapts the band-array and all-band
+organization from that same pinned source. Anthropic, PBC credit is retained in
+BandProgram.lean; its native mask scans, dense inverse table and execution proofs are new.

@@ -220,8 +220,23 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `w+2`. The two extra bits and actual arithmetic-block costs come from the existing native
   signed kernels, without a copied source machine or a whole-program simulation hypothesis.
   The existing array-copy interface is retained, with a narrow generalization for disjoint
-  blocks in either address order or identical blocks. Band/tile preparation, native pruned
-  and sparse-query programs, native preprocessing/solvers and full input/time/width composition, including the
+  blocks in either address order or identical blocks.
+  The native shared-band preparation component
+  ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)) computes a deterministic
+  `Layout` and both subset tables by native mask/popcount scans, computes the square-root block
+  count by a charged loop, and decodes each band-array index into the original row/column and
+  thin-dimension coordinates. Real matrix bounds are checked before row-major multiplication.
+  Each shared row/column band calls the unchanged encoder once; tiles refer to its catalogue
+  block in the existing leaf order. The fixed 96-register standard code starts from actual
+  `State.init` scalar/matrix input, charges snapshot and restoration of the complete original
+  prefix, and preserves arbitrary outside memory. All counter/address fits follow from an
+  explicit original-parameter word budget; signed fits follow from the original entry bound.
+  Its complete instruction bound, including halt, is
+  `81920*(L+1)*N²/(4^m)^(1/18)` when `L=19m` and `N≥(4^m)^18`. Native power, ordered-filter,
+  finite-digit and row-major list lemmas live in small topic modules; the existing mathematical
+  layout, matrix and encoding interfaces are reused. No source machine or call/time oracle
+  is introduced. Native pruned and sparse-query programs, native preprocessing/solvers and
+  full input/time/width composition, including the
   improved Section 4 route to exponent 1.9992, remain in #1394.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
