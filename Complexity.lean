@@ -644,6 +644,7 @@ public import Complexity.Computability.Complexity.Classes.NP.Closure
 public import Complexity.Computability.Complexity.Classes.NP.GuessVerify
 public import Complexity.Computability.Complexity.Classes.NP.Nondeterministic
 public import Complexity.Computability.Complexity.Classes.NP.SelfReduction
+public import Complexity.Computability.Complexity.Classes.NP.TruthTable
 public import Complexity.Computability.Complexity.Classes.NP.Witness
 public import Complexity.Computability.Complexity.Classes.Operators
 public import Complexity.Computability.Complexity.Classes.Oracle
