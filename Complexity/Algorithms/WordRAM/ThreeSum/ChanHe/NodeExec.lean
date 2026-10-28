@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.NodeRound
+public import Complexity.Computability.WordRAM.Signed.Fits
 
 /-!
 # Complete native Chan–He node construction
@@ -55,13 +56,13 @@ theorem exec {w : ℕ} (x : Data 64) (values : Fin 3 → ℕ → ℤ)
   have hwidth' : GenericRAM.Signed.Fits w (L.budget : ℤ) := hwidth
   have hM' : 0 < L.M := hM
   have hN' : 2 * L.M ≤ L.N := hN
-  have hmod : GenericRAM.Signed.Fits w (L.M : ℤ) := signed_fits_of_natAbs_le hwidth'
+  have hmod : GenericRAM.Signed.Fits w (L.M : ℤ) := hwidth'.of_natAbs_le
     (by simpa only [Int.natAbs_natCast] using
       (show L.M ≤ L.budget by have := L.bounds.2.2; omega))
   have hu : L.U ≤ L.budget := by have := L.bounds.2.2; omega
   have hsigned (j : Fin 3) (i : ℕ) (hi : i < L.n j) :
       GenericRAM.Signed.Fits w (values j i) :=
-    signed_fits_of_natAbs_le hwidth' ((hbdd j i hi).trans hu)
+    hwidth'.of_natAbs_le ((hbdd j i hi).trans hu)
   let R (y : Data 64) : Prop := Parameters x y ∧ Prepared L y ∧
     ∀ a < L.base, y.mem a = x.mem a
   obtain ⟨a, ha, hap, har, ham⟩ := exec_initialize x hfit

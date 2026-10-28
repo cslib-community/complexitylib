@@ -47,7 +47,7 @@ theorem rootArena_ready {a : Traversal.Arena} {w : ℕ} {x : Data 128}
     {ns : List (ℕ × Node)} (hw : a.Ready w)
     (hh : (rootArena a x ns).ceiling ≤ a.ceiling) : (rootArena a x ns).Ready w := by
   refine ⟨hw.1, hw.2.1, ?_⟩
-  apply NodePacking.signed_fits_of_natAbs_le hw.2.2
+  apply GenericRAM.Signed.Fits.of_natAbs_le hw.2.2
   simp only [Int.natAbs_natCast]
   dsimp only [Traversal.envelope]
   exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by dsimp only [rootArena] at *; omega) 4)

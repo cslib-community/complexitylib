@@ -121,7 +121,6 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CollisionTest
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Collisions
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Count
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountCall
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountFrame
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountPlace
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountPlaceMemory
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountTriple
@@ -1072,6 +1071,7 @@ public import Complexity.Computability.GenericRAM.Native.MeasurementFold
 public import Complexity.Computability.GenericRAM.Native.Nat
 public import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 public import Complexity.Computability.GenericRAM.Signed
+public import Complexity.Computability.GenericRAM.Signed.Fits
 public import Complexity.Computability.GenericRAM.Simulation.Finite
 public import Complexity.Computability.GenericRAM.Simulation.Run
 public import Complexity.Computability.GenericRAM.Simulation.Turing
@@ -1730,6 +1730,7 @@ public import Complexity.Computability.WordRAM.Signed.Arithmetic
 public import Complexity.Computability.WordRAM.Signed.Comparison
 public import Complexity.Computability.WordRAM.Signed.Compile
 public import Complexity.Computability.WordRAM.Signed.Encoding
+public import Complexity.Computability.WordRAM.Signed.Fits
 public import Complexity.Computability.WordRAM.Signed.Input
 public import Complexity.Computability.WordRAM.Signed.Operations
 public import Complexity.Computability.WordRAM.Signed.State

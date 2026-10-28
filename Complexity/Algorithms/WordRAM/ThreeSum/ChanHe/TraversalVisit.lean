@@ -117,7 +117,7 @@ theorem visit_exec {w : ℕ} (x : Data 128) (values : Fin 3 → ℕ → ℤ)
       hbp heap (by decide) (by decide)]
     exact htable
   have hEnd : Fits (w + 2) ((recordLayout x M).endpoint) :=
-    (NodePacking.unsigned_fits_of_signed (hnode M hMpos hMle)).of_le
+    (Signed.unsigned_fits_of_signed (hnode M hMpos hMle)).of_le
       (recordLayout x M).bounds.1
   have hEndEq : (recordLayout x M).endpoint = b.regs heap + 3 + 2 *
       (b.regs (slot 2) + b.regs (slot 4) + b.regs (slot 6)) +
