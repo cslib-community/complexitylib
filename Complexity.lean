@@ -116,6 +116,9 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Input
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Meaning
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Stage
 public import Complexity.Algorithms.WordRAM.Histogram
+public import Complexity.Algorithms.WordRAM.NatClog
+public import Complexity.Algorithms.WordRAM.NatLog
+public import Complexity.Algorithms.WordRAM.NatSqrt
 public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
@@ -130,6 +133,7 @@ public import Complexity.Algorithms.WordRAM.Stack.Controller
 public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Collisions
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Count
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
