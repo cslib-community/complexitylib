@@ -3,7 +3,9 @@ module  -- shake: keep-all --deprecated_module: ignore
 public import Complexity.Algorithms.ExactTriangle.Defs
 public import Complexity.Algorithms.ExactTriangle.Hashing
 public import Complexity.Algorithms.ExactTriangle.Lopsided
+public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
+public import Complexity.Algorithms.ExactTriangle.Witnesses
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
 public import Complexity.Algorithms.Lean.FusionTree.Compression
 public import Complexity.Algorithms.Lean.FusionTree.Correction
@@ -2067,12 +2069,14 @@ public import Complexity.Foundations.Data.Finset.Average
 public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.Markov
 public import Complexity.Foundations.Data.Finset.Quantile
+public import Complexity.Foundations.Data.Finset.Quotient
 public import Complexity.Foundations.Data.Finset.Sampling
 public import Complexity.Foundations.Data.Finset.SubsetSum
 public import Complexity.Foundations.Data.Finset.SymmDiff
 public import Complexity.Foundations.Data.Hamming
 public import Complexity.Foundations.Data.Hamming.Expansion
 public import Complexity.Foundations.Data.Int.Order
+public import Complexity.Foundations.Data.Int.Residue
 public import Complexity.Foundations.Data.List.Append
 public import Complexity.Foundations.Data.List.BalancedFold
 public import Complexity.Foundations.Data.List.Basic
@@ -2088,6 +2092,7 @@ public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.SelectDistinct
 public import Complexity.Foundations.Data.Matrix.Binary
 public import Complexity.Foundations.Data.Matrix.IntegerBits
+public import Complexity.Foundations.Data.Matrix.PairChunks
 public import Complexity.Foundations.Data.Matrix.Permanent
 public import Complexity.Foundations.Data.Matrix.Reindex
 public import Complexity.Foundations.Data.Matrix.TotallyRegular
@@ -2109,6 +2114,7 @@ public import Complexity.Foundations.Data.Nat.Bitwise.Projection
 public import Complexity.Foundations.Data.Nat.Bitwise.Sparse
 public import Complexity.Foundations.Data.Nat.Bitwise.SumTree
 public import Complexity.Foundations.Data.Nat.Card
+public import Complexity.Foundations.Data.Nat.CeilDiv
 public import Complexity.Foundations.Data.Nat.Choose
 public import Complexity.Foundations.Data.Nat.Choose.Real
 public import Complexity.Foundations.Data.Nat.Div
@@ -2123,6 +2129,7 @@ public import Complexity.Foundations.Data.Nat.Prime
 public import Complexity.Foundations.Data.Nat.Primrec
 public import Complexity.Foundations.Data.Nat.Radix
 public import Complexity.Foundations.Data.Nat.Radix.Measurement
+public import Complexity.Foundations.Data.Nat.SqrtRatio
 public import Complexity.Foundations.Data.Option
 public import Complexity.Foundations.Data.OrderedSet
 public import Complexity.Foundations.Data.OrderedSet.Spec
