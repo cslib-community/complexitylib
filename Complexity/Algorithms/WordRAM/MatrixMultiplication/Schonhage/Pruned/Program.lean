@@ -40,50 +40,93 @@ open Cslib.WordRAM Cslib.WordRAM.Signed
 /-- The program has a fixed register bank, including nine signed-arithmetic scratch registers. -/
 abbrev registers : ℕ := 96
 
+/-- Original tensor depth, loaded from the ordinary input header. -/
 abbrev inputDepth : Fin registers := 9
+/-- Computed encoding-array length and per-depth directory capacity, `10^L`. -/
 abbrev span : Fin registers := 10
+/-- Pointer to the left canonical signed encoding array. -/
 abbrev arrayA : Fin registers := 11
+/-- Pointer to the right canonical signed encoding array. -/
 abbrev arrayB : Fin registers := 12
+/-- Pointer to the original unsigned query-code list, including repeats. -/
 abbrev queries : Fin registers := 13
+/-- Number of supplied queries, before native deduplication. -/
 abbrev queryCount : Fin registers := 14
+/-- Pointer to the answer list, in the original query order. -/
 abbrev output : Fin registers := 15
+/-- Caller-supplied start of the explicit stack and directory workspace. -/
 abbrev scratch : Fin registers := 16
+/-- Current timestamp generation for native query deduplication. -/
 abbrev epoch : Fin registers := 17
+/-- Pointer to the first four-word stack frame. -/
 abbrev frames : Fin registers := 18
+/-- Pointer to the first per-depth distinct-query row. -/
 abbrev lists : Fin registers := 19
+/-- Pointer to the first per-depth signed-value row. -/
 abbrev values : Fin registers := 20
+/-- Pointer to the shared query-membership timestamp directory. -/
 abbrev stamps : Fin registers := 21
+/-- Current stack depth, with zero denoting the root. -/
 abbrev level : Fin registers := 22
+/-- Controller phase: zero for entry, one for dispatch, two for returned-child accumulation. -/
 abbrev mode : Fin registers := 23
+/-- Traversal flag; returning from the root sets this to zero. -/
 abbrev active : Fin registers := 24
+/-- Raw unsigned constant one for counters and offsets. -/
 abbrev one : Fin registers := 25
+/-- Raw unsigned radix ten for the fixed term and query dictionaries. -/
 abbrev ten : Fin registers := 26
+/-- Inner-output wildcard digit, in the existing term numbering. -/
 abbrev nine : Fin registers := 27
+/-- Raw unsigned width of a stack frame: four words. -/
 abbrev frameWidth : Fin registers := 28
+/-- Address of the currently loaded stack frame. -/
 abbrev frame : Fin registers := 29
+/-- Number of distinct requests stored in the current frame. -/
 abbrev count : Fin registers := 30
+/-- Processed least-significant leaf digits of the current node. -/
 abbrev leafPrefix : Fin registers := 31
+/-- Place value of the next leaf digit, `10^level`. -/
 abbrev stride : Fin registers := 32
+/-- Next term number to dispatch or accumulate. -/
 abbrev term : Fin registers := 33
+/-- Loop counter for powers, scans, clearing, accumulation and reporting. -/
 abbrev index : Fin registers := 34
+/-- Distinct child count computed by the actual timestamp scan. -/
 abbrev childCount : Fin registers := 35
+/-- Current numerical output-string code loaded from a query list. -/
 abbrev query : Fin registers := 36
+/-- First output digit computed by remainder modulo ten. -/
 abbrev digit : Fin registers := 37
+/-- Remaining output digits computed by division by ten. -/
 abbrev suffix : Fin registers := 38
+/-- Scratch address used by native indexed loads and stores. -/
 abbrev address : Fin registers := 39
+/-- Scratch word for arithmetic, branch fallbacks and loaded values. -/
 abbrev temporary : Fin registers := 40
+/-- Scratch word for row-size and address products. -/
 abbrev temporary₂ : Fin registers := 41
-abbrev temporary₃ : Fin registers := 42
+/-- Timestamp loaded from the membership directory. -/
 abbrev marker : Fin registers := 43
+/-- Address of the current depth's request row. -/
 abbrev listBase : Fin registers := 44
+/-- Address of the current depth's accumulator row. -/
 abbrev valueBase : Fin registers := 45
+/-- Address of the next depth's computed request row. -/
 abbrev childList : Fin registers := 46
+/-- Address of the next depth's returned-value row. -/
 abbrev childValues : Fin registers := 47
+/-- Computed child stack depth. -/
 abbrev nextLevel : Fin registers := 48
+/-- Computed address of the frame about to be pushed. -/
 abbrev childFrame : Fin registers := 49
+/-- Computed leaf prefix of the child about to be pushed. -/
 abbrev childPrefix : Fin registers := 50
+/-- Computed leaf place value for the child about to be pushed. -/
 abbrev childStride : Fin registers := 51
+/-- Raw unsigned constant zero. -/
 abbrev nil : Fin registers := 52
+/-- Raw unsigned constant two, initialized with the fixed scalar constants. -/
 abbrev two : Fin registers := 53
 
 /-- Constant initialization, before the depth-controlled power loop. -/

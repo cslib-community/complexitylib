@@ -151,13 +151,8 @@ private def answers (w L fuel : ℕ) (a b : Fin (10 ^ L) → ℤ) (qs : List (Fi
   some [-55, -1, -55]
 #guard answers 20 1 128 (fun _ => 5) (fun _ => 0) [] == some []
 
--- Mixed suffixes share work. The two wildcard positions exercise both digit orders.
-#guard answers 24 2 2048 (fun i => i.val + 1) (fun _ => 1) [99, 90, 9, 0, 99] ==
-  some [5050, 460, 55, 1, 5050]
-
--- A nonzero word at the one-past-end address survives the complete controller.
-#guard ((program.eval 20 128
-    (((State.init (input 1 (fun _ => -2) (fun _ => 3) [9, 0]) : State registers).data).write
-      (memoryEnd 1 2) 91)).map fun (y, _) => y.mem (memoryEnd 1 2)) == some 91
+-- The depth-two mixed-query and outside-sentinel cases now have kernel-checked actual native
+-- run witnesses in SchonhagePrunedInput and SchonhagePrunedKernel, respectively. The shallow
+-- interpreter checks above remain independent executable sanity checks of the code.
 
 end ComplexityTests.SchonhagePruned

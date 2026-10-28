@@ -220,9 +220,21 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `w+2`. The two extra bits and actual arithmetic-block costs come from the existing native
   signed kernels, without a copied source machine or a whole-program simulation hypothesis.
   The existing array-copy interface is retained, with a narrow generalization for disjoint
-  blocks in either address order or identical blocks. Band/tile preparation, native pruned
-  and sparse-query programs, native preprocessing/solvers and full input/time/width composition, including the
-  improved Section 4 route to exponent 1.9992, remain in #1394.
+  blocks in either address order or identical blocks.
+  The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
+  is also original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
+  quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing
+  encoder `leafIndex` to `privateLeaf`; its executable output dictionary retains digit nine
+  for the inner wildcard. Fixed 96-register code computes child lists by actual digit tests,
+  division and timestamp deduplication, scans requested cells only, and charges the full stack,
+  signed kernels and reporting. Its complete initialized runs and callable pointer/epoch kernel
+  have explicit source-magnitude, address and outside-frame contracts. The actual bound including
+  halt is `8192*(L+Q+1+(L+1)*|leaves(requested queries)|)`. The source Light implementation's
+  semantics and instruction constants are not reused. Query grouping, sparse-product/Exact
+  Triangle solving and full input/time/width composition, including the improved Section 4 route
+  to exponent 1.9992, remain in #1394. The independent band producer is #1523; its catalogue
+  retains the same leaf ordering and canonical signed words. Raw 0/1 matrix producers must
+  actually double entries before copying into signed input arrays, with that work charged.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.

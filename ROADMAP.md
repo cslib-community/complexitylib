@@ -432,9 +432,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   The shared native left/right encoders ([#1493]) compute all `10^L` leaf values from `7^L`
   signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
   with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
-  Band/tile preparation, native pruned/sparse-query programs, native Chan–He preprocessing, the reduction
-  host, the fast Exact Triangle solver and full
-  input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
+  The native pruned-query evaluator ([#1526]) uses fixed 96-register code to compute its own
+  distinct root/child queries, stack traversal and signed accumulators. Actual initialized flat
+  runs preserve query order and duplicates, the input and outside frame. Setup, sparse clearing,
+  all control/index work and halt fit `8192*(L+Q+1+(L+1)*|leaves(requested queries)|)` instructions;
+  widths follow from explicit original magnitude/address bounds. A callable pointer/epoch kernel
+  permits directory reuse across tiles. This does not construct the product's tile query groups
+  or supply a sparse-product/Exact Triangle solver. Band/tile preparation ([#1523]) is a separate
+  producer; native Chan–He preprocessing and the reduction host are separate stack components.
+  Native sparse-product and Exact Triangle solving, full input/time/width/asymptotic composition,
+  and the improved Section 4 route to exponent 1.9992 remain under #1394;
   size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation

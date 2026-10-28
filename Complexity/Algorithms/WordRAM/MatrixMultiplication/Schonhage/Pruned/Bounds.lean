@@ -40,6 +40,25 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 def nodeBudget (L f a b E n : ℕ) : ℕ :=
   8 * f + 64 * (L + 1) * 10 ^ L + a + b + 2 * 10 ^ L + E + epochAllowance n + 128
 
+/-- Root deduplication and reporting additionally use the original query/output pointers and
+the full supplied query count, which may exceed the distinct-set capacity. -/
+def evaluationBudget (L f a b q o Q E : ℕ) : ℕ :=
+  nodeBudget L f a b (E + 1) L + 4 * (q + o + Q + 1)
+
+/-- The callable kernel also computes its own powers and workspace pointers. Its numeric
+admission includes those setup bounds and permits arbitrary separated input/output addresses. -/
+def kernelBudget (L f a b q o Q E : ℕ) : ℕ :=
+  addressBound L Q + evaluationBudget L f a b q o Q E
+
+/-- The ordinary initialized layout covers evaluation, including repeated supplied queries. -/
+theorem evaluationBudget_input_le (L Q : ℕ) :
+    evaluationBudget L (scratchBase L Q) 3 (3 + 10 ^ L) (3 + 2 * 10 ^ L)
+      (outputBase L Q) Q 0 ≤ addressBound L Q := by
+  have he := epochAllowance_le L
+  have hp : 1 ≤ (10 : ℕ) ^ L := Nat.one_le_pow L _ (by decide)
+  unfold evaluationBudget nodeBudget scratchBase outputBase addressBound
+  nlinarith only [he, hp]
+
 /-- The larger concrete standalone bound covers initialization and every root parameter. -/
 theorem nodeBudget_input_le (L Q : ℕ) :
     nodeBudget L (scratchBase L Q) 3 (3 + 10 ^ L) 1 L ≤ addressBound L Q := by

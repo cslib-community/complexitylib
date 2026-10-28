@@ -24,3 +24,8 @@ This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 The prime-window proof also adapts Mathlib/NumberTheory/Bertrand.lean,
 Copyright (c) 2020 Patrick Stevens; authors Patrick Stevens, Bolton Bailey,
 under the Apache License, Version 2.0.
+
+The shared native tensor encoders and explicit-stack pruned-query evaluator are original
+implementations against Complexitylib's standard WordRAM APIs. Their finite tensor/pruning
+specifications reuse the credited pinned source above; no source machine or instruction-cost
+contract supplies the native execution proofs.

@@ -51,7 +51,7 @@ def outputDigits : Fin 10 ≃ OutVar where
 
 /-- The least-significant-first flat code of an output string. -/
 def queryIndex {L : ℕ} (w : OutStr L) : Fin (10 ^ L) :=
-  finFunctionFinEquiv fun i => outputDigits.symm (w i)
+  Encoding.leafIndex (privateLeaf w)
 
 /-- Decode a supplied finite query code with the existing executable digit enumeration. -/
 def queryAt {L : ℕ} (q : Fin (10 ^ L)) : OutStr L :=
@@ -60,13 +60,17 @@ def queryAt {L : ℕ} (q : Fin (10 ^ L)) : OutStr L :=
 /-- Encoding a decoded query returns the actual supplied code. -/
 @[simp]
 theorem queryIndex_queryAt {L : ℕ} (q : Fin (10 ^ L)) : queryIndex (queryAt q) = q := by
-  simp only [queryIndex, queryAt, Equiv.symm_apply_apply, Equiv.apply_symm_apply]
+  change (finFunctionFinEquiv fun i =>
+    outputDigits.symm (outputDigits (finFunctionFinEquiv.symm q i))) = q
+  simp only [Equiv.symm_apply_apply, Equiv.apply_symm_apply]
 
 /-- Decoding a query's code returns every output coordinate unchanged. -/
 @[simp]
 theorem queryAt_queryIndex {L : ℕ} (w : OutStr L) : queryAt (queryIndex w) = w := by
   funext i
-  simp only [queryAt, queryIndex, Equiv.symm_apply_apply, Equiv.apply_symm_apply]
+  change outputDigits ((finFunctionFinEquiv.symm
+    (finFunctionFinEquiv fun j => outputDigits.symm (w j))) i) = w i
+  simp only [Equiv.symm_apply_apply, Equiv.apply_symm_apply]
 
 /-- The requested output set is computed from the ordinary initialized list of query codes.
 Repeated list entries are allowed and will be reported in their original order. -/
@@ -101,7 +105,8 @@ theorem card_image_queryIndex {L : ℕ} (S : Finset (OutStr L)) :
 /-- The first query digit is its output-variable digit; the suffix is shifted by one place. -/
 theorem queryIndex_cons {L : ℕ} (z : OutVar) (w : OutStr L) :
     (queryIndex (Fin.cons z w) : ℕ) = (outputDigits.symm z).val + 10 * (queryIndex w).val := by
-  simp only [queryIndex, finFunctionFinEquiv_apply, Fin.sum_univ_succ, Fin.cons_zero,
+  simp only [queryIndex, Encoding.leafIndex, privateLeaf, finFunctionFinEquiv_apply,
+    Fin.sum_univ_succ, Fin.cons_zero,
     Fin.cons_succ, Fin.val_zero, pow_zero, mul_one, Fin.val_succ, pow_succ, Finset.mul_sum]
   congr 1
   apply Finset.sum_congr rfl
