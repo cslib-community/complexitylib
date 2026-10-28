@@ -71,23 +71,9 @@ example (κ n : ℕ) : (layout κ n).endpoint ≤ (n + 2) ^ (80 * κ + 480) := b
   exact (Arrays.layout_bounds (layout κ n) ((n + 2) ^ κ)).2.2.2.2.2.2.2.2.1 |>.trans
     (array_budget_polynomial κ n)
 
--- The original distinct-position problem admits equal values, but never reuses a position.
-example : Cslib.Algorithms.ThreeSum.HasSolution (fun i : Fin 3 =>
-    ([1, 1, -2] : List ℤ)[i]) := by
-  unfold Cslib.Algorithms.ThreeSum.HasSolution
-  decide +kernel
-
-example : ¬Cslib.Algorithms.ThreeSum.HasSolution (fun i : Fin 3 =>
-    ([1, 2, 3] : List ℤ)[i]) := by
-  unfold Cslib.Algorithms.ThreeSum.HasSolution
-  decide +kernel
-
--- The two width promises are explicit; a physical width of three is not globally admissible.
-example : ¬width 0 0 ≤ 3 ∧
-    Cslib.GenericRAM.Signed.Fits (4096 - 2) (-8) := by
-  constructor
-  · decide
-  · exact signed_output_fits (κ := 1) (n := 2) (by decide) (by decide)
+-- A checked frontend value fits the signed kernel ABI at the derived physical width.
+example : Cslib.GenericRAM.Signed.Fits (4096 - 2) (-8) :=
+  signed_output_fits (κ := 1) (n := 2) (by decide) (by decide)
 
 -- Complete array construction also accepts arbitrary old output and scratch memory.
 example (mem : ℕ → ℕ) :

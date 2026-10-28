@@ -19,8 +19,8 @@ computation. It builds the prime bitmap by actual trial division, computes concr
 output-table reservations, and loads and traverses every actual six-word frontend descriptor.
 The ternary reservation is computed by a native multiplication loop, not supplied by a caller.
 
-This module defines the executable program. Its initialized-input correctness, width and global
-charged bounds require companion proofs; the program definition alone does not complete them.
+This module defines the executable program. `PreprocessingInput`, `PreprocessingWidth` and
+`PreprocessingTime` prove initialized-input execution, derived width and charged global bounds.
 
 ## Main definitions
 
@@ -163,8 +163,8 @@ def forest : Code .standard 128 := .loop (.lt current roots) body
 
 /-- Complete native preprocessing after the native initialized-input frontend. -/
 def afterFrontend : Code .standard 128 :=
-  .seq snapshot (.seq preparePrimes (.seq (PrimeTable.program.rename primeRegisters)
-    (.seq setupTraversal (.seq reserve (.seq finishLayout forest)))))
+  .seq snapshot (.seq (.seq preparePrimes (PrimeTable.program.rename primeRegisters))
+    (.seq setupTraversal (.seq (.seq reserve finishLayout) forest)))
 
 /-- One finite native program per fixed magnitude exponent, independent of input length/width. -/
 def program (κ : ℕ) : Code .standard 128 := .seq (Frontend.program κ) afterFrontend

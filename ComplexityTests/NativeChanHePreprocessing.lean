@@ -26,4 +26,9 @@ open Cslib.Algorithms.WordRAM.ThreeSum.ChanHe
     yn.1.regs Traversal.heap, yn.1.mem 0]) =
     some [0, 294912, 192, 43, 20, 9, 180, 575, 575, 0])
 
+-- The complete native program faults during actual parameter arithmetic at an invalid width.
+/-- info: true -/
+#guard_msgs in
+#eval (Code.eval 1 256 (Preprocessing.program 0) (Data.init [])).isNone
+
 end ComplexityTests.NativeChanHePreprocessing

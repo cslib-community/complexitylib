@@ -171,8 +171,14 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   stack frame and exact preorder packed output. The traversal consumes a root descriptor and
   runtime fuel; its polynomial local envelope derives kernel fits and charges every stack,
   descriptor and address operation. It does not invoke a Convolution-3SUM solver. Composition
-  from initialized input through all frontend roots, global logarithmic width and subquadratic
-  preprocessing bounds remain in #1446. These components do not affect the curated headlines.
+  from initialized input through every frontend root is proved in
+  `Algorithms/WordRAM/ThreeSum/ChanHe/Preprocessing.lean`. One finite 128-register program per
+  fixed magnitude exponent returns the existing exact finite instance list. All fits derive from
+  `(1300κ+7865) clog₂(n+2)` physical width; every run prefix uses polynomial words/addresses even
+  at wider admitted widths. Its charged cost is at most
+  `Kκ (n+2)(sqrt(n+2)+1)(log₂(n+2)+1)^13`, including the final halt. The complete native
+  preprocessing milestone is #1446; the Exact Triangle solver and full final 3SUM composition
+  remain #1394. These components do not affect the curated headlines.
 
   `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
   frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical

@@ -18,7 +18,10 @@ preserves full multiplicities; the complete descriptor program enumerates the ex
 
 ## Main results
 
-Initialized-input execution uses a positive logarithmic physical width and fixed code per exponent.
+* `exec_input`: complete initialized-input execution, exact descriptors and full multiplicities.
+* `construct_preserves_parameters`: computed parameters remain available to the traversal caller.
+
+Execution uses a positive logarithmic physical width and fixed code per exponent.
 -/
 
 @[expose] public section

@@ -20,8 +20,9 @@ the reserved stack. It does not silently replace a negative 3SUM instance by an 
 
 * `oneRoot_zero`: exact 173-instruction execution of the complete controller at zero fuel.
 
-The controller composition proofs are original. General traversal correctness and the global
-preprocessing composition remain part of the ongoing native construction.
+The controller composition proofs are original. General supplied-root traversal correctness is
+proved in `TraversalRoot.root_exec`; complete initialized-input preprocessing is composed in
+`PreprocessingInput.runs_input`.
 -/
 
 @[expose] public section
