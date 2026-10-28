@@ -35,7 +35,9 @@ Algorithmic correctness theorems are stated in consumer modules.
 
 namespace Cslib.Algorithms.ExactTriangle
 
-/-- The three integer weight matrices of a complete tripartite graph have a zero triangle. -/
+/-- A complete tripartite graph with `t` vertices per part has a zero-weight triangle.
+The entries `wAB a b`, `wBC b c` and `wAC a c` weight the edges between parts A–B, B–C and A–C,
+respectively. Some vertices `a`, `b`, `c` must satisfy `wAB a b + wBC b c + wAC a c = 0`. -/
 def HasZeroTriangle {t : ℕ} (wAB wBC wAC : Fin t → Fin t → ℤ) : Prop :=
   ∃ a b c, wAB a b + wBC b c + wAC a c = 0
 
