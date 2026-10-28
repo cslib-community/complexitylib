@@ -107,8 +107,10 @@ example : (Code.eval 8 4 ThreeSum.ChanHe.Count.program countInput).map
 
 /-- The full composed contract is admissible for the same negative-input example. -/
 example : ∃ y, ExecWithin 8 ThreeSum.ChanHe.Count.program countInput y 169 ∧
-    y.regs ThreeSum.ChanHe.Count.total = 12 ∧ y.mem 21 = 4 ∧ y.mem 1 = encode (-5) := by
-  obtain ⟨y, hy, hm, ht⟩ := ThreeSum.ChanHe.Count.exec (w := 6) (M := 3)
+    y.regs ThreeSum.ChanHe.Count.total = 12 ∧ y.mem 21 = 4 ∧ y.mem 1 = encode (-5) ∧
+      ∀ i, ((9 ≤ i.val ∧ i.val ≤ 12) ∨ i = ThreeSum.ChanHe.Count.dst) →
+        y.regs i = countInput.regs i := by
+  obtain ⟨y, hy, hm, ht, hframe⟩ := ThreeSum.ChanHe.Count.exec (w := 6) (M := 3)
     countInput values (by decide) (by decide) rfl
     (by
       intro i hi
@@ -121,7 +123,7 @@ example : ∃ y, ExecWithin 8 ThreeSum.ChanHe.Count.program countInput y 169 ∧
       change i < 4 at hi
       have : i = 0 ∨ i = 1 ∨ i = 2 ∨ i = 3 := by omega
       rcases this with rfl | rfl | rfl | rfl <;> decide)
-  refine ⟨y, hy, ?_, ?_, ?_⟩
+  refine ⟨y, hy, ?_, ?_, ?_, hframe⟩
   · rw [ht]; decide
   · rw [hm]; decide
   · rw [hm]; decide

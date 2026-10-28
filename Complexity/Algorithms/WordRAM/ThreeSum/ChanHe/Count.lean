@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Collisions
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
+import Mathlib.Tactic.FinCases
+import Mathlib.Tactic.NormNum
 
 /-!
 # Native Chan–He collision counting
@@ -89,6 +91,12 @@ def program : Code .standard 28 :=
   .seq (Residues.program.rename residuesRegisters)
     (.seq prepare (Histogram.program.rename histogramRegisters))
 
+/-- The complete counting program preserves its input base, scratch base, length,
+encoded modulus and histogram base registers. -/
+theorem preserves_parameters (i : Fin 28)
+    (hi : (9 ≤ i.val ∧ i.val ≤ 12) ∨ i = dst) : program.Preserves i := by
+  fin_cases i <;> norm_num [dst] at hi <;> decide
+
 /-- The residue scratch array and the complete histogram, framed by the original memory. -/
 def memory (mem : ℕ → ℕ) (values : ℕ → ℤ) (n M scratch dst : ℕ) : ℕ → ℕ :=
   Histogram.memory (Residues.memory mem values M scratch n)
@@ -111,7 +119,8 @@ theorem exec {w M : ℕ} (x : Data 28) (values : ℕ → ℤ) (hM : 0 < M)
     (hinput : ∀ i < x.regs len, x.mem (x.regs src + i) = encode (values i)) :
     ∃ y, ExecWithin (w + 2) program x y (34 * x.regs len + 5 * M + 18) ∧
       y.mem = memory x.mem values (x.regs len) M (x.regs scratch) (x.regs dst) ∧
-      y.regs total = Histogram.pairs (fun i => (values i % (M : ℤ)).toNat) (x.regs len) := by
+      y.regs total = Histogram.pairs (fun i => (values i % (M : ℤ)).toNat) (x.regs len) ∧
+      ∀ i, ((9 ≤ i.val ∧ i.val ≤ 12) ∨ i = dst) → y.regs i = x.regs i := by
   obtain ⟨a, ha, ham, har⟩ := Residues.exec (x.comap residuesRegisters) values hM hmod
     hmodreg hfit hs hk hsk hinput
   let y := a.extend residuesRegisters x
@@ -173,8 +182,12 @@ theorem exec {w M : ℕ} (x : Data 28) (values : ℕ → ℤ) (hM : 0 < M)
       have hi' : i < x.regs len := by simpa only [hql] using hi
       rw [Data.comap_mem, hqm, hqs]
       simp [Residues.memory, hi'])
-  refine ⟨b.extend histogramRegisters q, ?_, ?_, ?_⟩
-  · exact (hy.seq (hprep.seq (hb.rename histogram_injective))).mono (by rw [hql, hqb]; omega)
+  have he := (hy.seq (hprep.seq (hb.rename histogram_injective))).mono
+    (show (23 * x.regs len + 4) + (5 + (5 * (q.comap histogramRegisters).regs Histogram.bins +
+      11 * (q.comap histogramRegisters).regs Histogram.len + 9)) ≤
+        34 * x.regs len + 5 * M + 18 by rw [hql, hqb]; omega)
+  refine ⟨b.extend histogramRegisters q, he, ?_, ?_, fun i hi =>
+    ExecWithin.regs_eq he (preserves_parameters i hi)⟩
   · change b.mem = _
     rw [hbm, Data.comap_mem, hqm, hqd, hqb, hql]
     rfl
@@ -199,8 +212,9 @@ theorem exec_coll {w M : ℕ} (x : Data 28) (values : ℕ → ℤ) (hM : 0 < M)
     ∃ y, ExecWithin (w + 2) program x y (34 * x.regs len + 5 * M + 18) ∧
       y.mem = memory x.mem values (x.regs len) M (x.regs scratch) (x.regs dst) ∧
       y.regs total = Cslib.Algorithms.ThreeSum.ChanHe.coll
-        ((Finset.range (x.regs len)).image values) M := by
-  obtain ⟨y, hy, hm, ht⟩ := exec x values hM hmod hmodreg hfit hs hk hd ht hsk hkd hinput
-  exact ⟨y, hy, hm, ht.trans (coll_eq_histogramPairs values _ M hM hinj).symm⟩
+        ((Finset.range (x.regs len)).image values) M ∧
+      ∀ i, ((9 ≤ i.val ∧ i.val ≤ 12) ∨ i = dst) → y.regs i = x.regs i := by
+  obtain ⟨y, hy, hm, ht, hr⟩ := exec x values hM hmod hmodreg hfit hs hk hd ht hsk hkd hinput
+  exact ⟨y, hy, hm, ht.trans (coll_eq_histogramPairs values _ M hM hinj).symm, hr⟩
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Count
