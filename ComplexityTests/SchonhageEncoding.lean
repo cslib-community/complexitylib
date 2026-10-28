@@ -106,14 +106,15 @@ example : ¬Fits 9 (addressBound 1) ∧ Fits 10 (addressBound 1) := by decide
 
 /-- A kernel-checked zero-depth flat execution with a negative value, derived from the
 general theorem rather than from VM evaluation. All calling/width premises are discharged. -/
-example : ∃ y : Data 32, ∃ n, n ≤ 241 ∧
+example : ∃ y : Data 32, ∃ n, n ≤ 240 ∧
+    Runs 8 ((program false).program output)
+      (State.init (inputL (fun _ : LeftStr 0 => -3))) ⟨(program false).size, y⟩ n ∧
     Executes 8 ((program false).program output)
-      (State.init (inputL (fun _ : LeftStr 0 => -3))) 3 n ∧ y.mem 3 = 7 := by
-  obtain ⟨_, y, n, hn, _, he, hv, _⟩ := runs_left (w := 6) (by decide)
+      (State.init (inputL (fun _ : LeftStr 0 => -3))) 3 (n + 1) ∧ y.mem 3 = 7 := by
+  obtain ⟨_, y, n, hn, hr, he, hv, _⟩ := runs_left (w := 6) (by decide)
     (fun _ : LeftStr 0 => -3) 3 (by decide) (by intro u; decide) (by decide) (by decide)
-  refine ⟨y, n + 1, ?_, he, ?_⟩
-  · norm_num [timeBound] at hn
-    omega
+  refine ⟨y, n, ?_, hr, he, ?_⟩
+  · simpa only [timeBound, pow_zero, Nat.reduceAdd, Nat.mul_one] using hn
   · have hidx : (leafIndex (Fin.elim0 : Leaf 0)).val = 0 := by
       have := (leafIndex (Fin.elim0 : Leaf 0)).isLt
       norm_num at this ⊢
@@ -125,14 +126,16 @@ example : ∃ y : Data 32, ∃ n, n ≤ 241 ∧
 
 /-- A nonvacuous two-stage client of the complete flat execution theorem. The checked signed
 array has a zero `P0,P0` leaf through cancellation and also many nonzero leaves in the VM test. -/
-example : ∃ y : Data 32, ∃ n, n ≤ 72001 ∧
-    Executes 18 ((program false).program output) (State.init (inputL signedLeft)) 51 n ∧
+example : ∃ y : Data 32, ∃ n, n ≤ 72000 ∧
+    Runs 18 ((program false).program output) (State.init (inputL signedLeft))
+      ⟨(program false).size, y⟩ n ∧
+    Executes 18 ((program false).program output) (State.init (inputL signedLeft)) 51 (n + 1) ∧
       y.mem (outputBase 2 + (leafIndex (fun _ : Fin 2 => Term.P0)).val) = 0 := by
-  obtain ⟨_, y, n, hn, _, he, hv, _⟩ := runs_left (w := 16) (by decide)
+  obtain ⟨_, y, n, hn, hr, he, hv, _⟩ := runs_left (w := 16) (by decide)
     signedLeft 3 (by decide) (by decide +kernel) (by decide) (by decide)
-  refine ⟨y, n + 1, ?_, he, ?_⟩
-  · norm_num [timeBound] at hn
-    omega
+  refine ⟨y, n, ?_, hr, he, ?_⟩
+  · norm_num [timeBound] at hn ⊢
+    exact hn
   · have hmath : encodingL signedLeft (fun _ : Fin 2 => Term.P0) = 0 := by decide +kernel
     simpa only [hmath, show encode 0 = 0 from rfl] using hv (fun _ : Fin 2 => Term.P0)
 
