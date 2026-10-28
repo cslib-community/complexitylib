@@ -12,14 +12,19 @@ import Cslib.Probability.PMF
 import Mathlib.Data.List.Sort
 import Mathlib.Data.Nat.Log
 
-/-! # The randomized word RAM and in-place quicksort: a formal abstract
+/-! # The randomized word RAM, quicksort, and quickselect: a formal abstract
 
 This file states the randomized word-RAM model, its worst-case and expected running time, and the
-correctness and cost bounds of randomized in-place three-way quicksort.
+correctness and cost bounds of randomized in-place three-way quicksort and quickselect.
 
-For an `n`-word input, the theorem assumes word-fitting values and
-`3 * (Nat.log 2 n + 1) ≤ w`. It sorts the original array using a `2 * n`-word auxiliary range
-stack in `[n + 1, 3 * n + 1)`; memory outside the input-and-stack frame is preserved.
+For an `n`-word input `input` satisfying `InputFits w input` and `3 * (Nat.log 2 n + 1) ≤ w`,
+`quicksort` sorts the array in place using a `2 * n`-word auxiliary range stack in
+`[n + 1, 3 * n + 1)` and runs in `O(n log n)` expected time. On `init (k :: input)`
+(`M[0] = n + 1`, `M[1] = k`, and `M[2 .. n + 2) = input`) satisfying `InputFits w (k :: input)`,
+when `k < n` and `2 * (Nat.log 2 n + 1) ≤ w`, `quickselect` selects the `0`-indexed `k`-th
+smallest element in place with **zero** auxiliary memory words (modifying only `[2, n + 2)`) and
+runs in linear expected time `80 n + 15`. When `InputFits w (k :: input)` and `n ≤ k`,
+`quickselect` halts deterministically in `8` steps with output `0` and leaves memory unchanged.
 
 At word size `w`, a *word* is a natural number below `2 ^ w`. A machine has `r` registers
 `R[0], …, R[r - 1]` and memory `M[a]` for `a : ℕ`. Its ten deterministic instructions, `init`, and
@@ -28,18 +33,21 @@ and in-place algorithms inspect final memory at `halt`). Alongside them, `rand d
 `n = R[i]`, faults when `n ≥ 2 ^ w`, and otherwise draws a uniform integer in `{0, …, n}` into
 `R[d]` in one step and one random call (`n = 0` returns `0` and still counts as one call).
 
-Simplifications relative to `Cslib.WordRAM` and `Cslib.Algorithms.WordRAM.Quicksort`:
+Simplifications relative to `Cslib.WordRAM`, `Cslib.Algorithms.WordRAM.Quicksort`, and
+`Cslib.Algorithms.WordRAM.Quickselect`:
 
 * `AluOp` fixes `Basis.exact` (as in `WordRAMAbstract`) instead of a general `Basis`. The bridge
-  lifts `Quicksort` from `Basis.standard` because it uses no division or remainder and no reached
-  subtraction underflows.
+  lifts `Quicksort` and `Quickselect` from `Basis.standard` because neither uses division or
+  remainder and no reached subtraction underflows.
 * `Instr` lists the eleven flat instructions directly instead of `Op`, `Cond`, and `Code`.
 * `Comp` specializes `ProbComp` to finite-depth uniform trees over `Fin (n + 1)` with direct
   `CallsAtMost` and `Comp.eval` (`RandBitsBounded` stays in the library).
 * `State` and `Cfg.halted` carry `reg` and `mem` directly without `Data`, keeping final registers
   and memory at `halt` for in-place postconditions.
 * Array slices and unchanged memory use `slice` and address bounds instead of `Block.Realizes` and
-  `Modifies`, and `logWidth 3 n` is written inline as `3 * (Nat.log 2 n + 1)`.
+  `Modifies`; `logWidth c n` is written inline as `c * (Nat.log 2 n + 1)`; and for `k < n` the
+  `0`-indexed `k`-th order statistic is written `input.mergeSort.getD k 0` (`List.mergeSort` sorts
+  `input` in nondecreasing order `(· ≤ ·)`).
 
 Lean checks the proofs via `RandomizedWordRAMBridge` under `propext`, `Classical.choice`, and
 `Quot.sound`; `#check_abstract` verifies zero allowlisted project modules.
@@ -224,17 +232,33 @@ noncomputable def expectedTime {r : ℕ} (w : ℕ) (p : Program r)
   ∑' t : ℕ,
     (evalRand w p t s).toOuterMeasure {cfg | ∃ u, cfg = .running u}
 
-/-! ## Input convention, memory slices, and randomized quicksort
+/-! ## Input convention, memory slices, quicksort, and quickselect
 
 An input `x₁, …, xₖ` starts at `init` with `M[0] = k`, `M[1] = x₁, …, M[k] = xₖ`, and `0`
-elsewhere; `slice a b mem` reads `[M[a], …, M[b - 1]]`. One fixed 16-register program sorts in
-place by iterative three-way randomized quicksort (splitting around a random pivot into `<`, `=`,
-and `>`), using `M[n + 1 .. 3 n + 1)` as a `2 n`-word stack. At word size
-`w ≥ 3 * (Nat.log 2 n + 1)` (`Nat.log 2 0 = 0`, so `w ≥ 3` addresses `3 n + 3` for all `n`) on any
-word-fitting input, every branch halts within `20 n² + 8 n + 32` steps and `n - 1` `rand` calls,
-leaving a sorted (`Pairwise (· ≤ ·)`) permutation of `input` in `M[1 .. n + 1)` and preserving
-memory outside `1, …, 3 n`. Across all inputs, including duplicates, its expected running time is at
-most `120 n (Nat.log 2 n + 1) + 32`.
+elsewhere; `slice a b mem` reads `[M[a], …, M[b - 1]]`.
+
+For sorting (`quicksort`), one fixed 16-register program sorts `input` of length `n` in place by
+iterative three-way randomized quicksort (splitting around a random pivot into `<`, `=`, and `>`),
+using `M[n + 1 .. 3 n + 1)` as a `2 n`-word stack. At word size `w ≥ 3 * (Nat.log 2 n + 1)`
+(`Nat.log 2 0 = 0`, so `w ≥ 3` addresses `3 n + 3` for all `n`) on any word-fitting input, every
+branch halts within `20 n² + 8 n + 32` steps and makes at most `n - 1` `rand` calls. Each halting
+state places a sorted (`Pairwise (· ≤ ·)`) permutation of `input` in `M[1 .. n + 1)` and leaves
+memory outside `1, …, 3 n` unchanged. Expected running time is at most
+`120 n (Nat.log 2 n + 1) + 32`.
+
+For selection (`quickselect`), `init (k :: input)` places `n + 1` in `M[0]`, the `0`-indexed target
+rank `k` in `M[1]`, and the `n`-element array `input` in `M[2 .. n + 2)`. One fixed 16-register
+program narrows a single active subarray `[lo, hi)` containing `2 + k` by three-way Dutch National
+Flag partitioning with **zero** auxiliary memory words. When `k < n` and
+`w ≥ 2 * (Nat.log 2 n + 1)` (`w ≥ 2` addresses `n + 2` for all `n`) on a word-fitting `k :: input`,
+every branch halts within `10 n² + 15` steps, makes at most `n - 1` `rand` calls, and returns the
+`0`-indexed `k`-th smallest element `ans = input.mergeSort.getD k 0` (where `List.mergeSort` sorts
+`input` in nondecreasing order `(· ≤ ·)`). Each halting state permutes `M[2 .. n + 2)` in place so
+that `M[2 + k] = ans`, `M[2 + i] ≤ ans` for `i < k`, and `ans ≤ M[2 + i]` for `k < i < n`, and
+leaves all memory outside `2, …, n + 1` unchanged. Expected running time is at most `80 n + 15`
+uniformly over all `k < n` and duplicate keys. When `n ≤ k` on a word-fitting `k :: input`, the
+same program halts deterministically in `8` steps, returns `0`, makes `0` `rand` calls, leaves
+memory unchanged, and has `expectedTime = 8`.
 -/
 
 /-- Start state on `input = [x₁, …, xₖ]`: `pc = 0`, registers `0`, `M[0] = k`, `M[1..k] = input`. -/
@@ -287,9 +311,67 @@ theorem quicksort :
       simp_all [AluOp.eval, Comp.bind, Comp.eval, Comp.CallsAtMost,
         stepRand, runRand])
 
+/-- **In-place randomized quickselect.** One fixed 16-register program selects the `0`-indexed
+`k`-th smallest element of every word-fitting `k :: input` of length `n = input.length` in place
+with zero auxiliary memory words:
+1. When `k < n` and `w ≥ 2 * (Nat.log 2 n + 1)`, every branch halts within `10 n² + 15` steps,
+   makes at most `n - 1` `rand` calls, and returns `ans = input.mergeSort.getD k 0`. Each halting
+   state permutes `M[2 .. n + 2)` in place so that `M[2 + k] = ans`, `M[2 + i] ≤ ans` for `i < k`,
+   and `ans ≤ M[2 + i]` for `k < i < n`, and leaves all memory outside `2, …, n + 1` unchanged.
+   Expected running time is at most `80 n + 15`.
+2. When `n ≤ k`, the program halts deterministically in `8` steps, returns `0`, makes `0` `rand`
+   calls, leaves memory unchanged, and has `expectedTime = 8`. -/
+theorem quickselect :
+    ∃ p : Program 16,
+      (∀ (w k : ℕ) (input : List ℕ),
+        k < input.length →
+        2 * (Nat.log 2 input.length + 1) ≤ w →
+        InputFits w (k :: input) →
+        let n := input.length
+        let T := 10 * n ^ 2 + 15
+        let ans := input.mergeSort.getD k 0
+        HaltsWithin w p (init (k :: input)) T ∧
+        RandCallsBounded w p (init (k :: input)) T (n - 1) ∧
+        (∀ cfg ∈ (evalRand w p T (init (k :: input))).support,
+          ∃ reg mem, cfg = .halted ans reg mem ∧
+            (∀ i, reg i < 2 ^ w) ∧
+            (∀ a, mem a < 2 ^ w) ∧
+            (slice 2 (n + 2) mem).Perm input ∧
+            mem (2 + k) = ans ∧
+            (∀ i < k, mem (2 + i) ≤ ans) ∧
+            (∀ i, k < i → i < n → ans ≤ mem (2 + i)) ∧
+            (∀ a, a < 2 ∨ n + 2 ≤ a →
+              mem a = (init (r := 16) (k :: input)).mem a)) ∧
+        expectedTime w p (init (k :: input)) ≤
+          ((80 * n + 15 : ℕ) : ENNReal)) ∧
+      (∀ (w k : ℕ) (input : List ℕ),
+        input.length ≤ k →
+        InputFits w (k :: input) →
+        HaltsWithin w p (init (k :: input)) 8 ∧
+        RandCallsBounded w p (init (k :: input)) 8 0 ∧
+        (∀ cfg ∈ (evalRand w p 8 (init (k :: input))).support,
+          ∃ reg mem, cfg = .halted 0 reg mem ∧
+            (∀ i, reg i < 2 ^ w) ∧
+            (∀ a, mem a < 2 ^ w) ∧
+            mem = (init (r := 16) (k :: input)).mem) ∧
+        expectedTime w p (init (k :: input)) = 8) :=
+  RandomizedWordRAMBridge.quickselect
+    ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
+      @AluOp.rec, AluOp.eval,
+      Instr, .const, .copy, .alu, .width, .load, .store, .jump,
+      .branchEq, .branchLt, .halt, .rand, @Instr.rec,
+      Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
+      @Comp.CallsAtMost,
+      State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
+    (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+        ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+        ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+      simp_all [AluOp.eval, Comp.bind, Comp.eval, Comp.CallsAtMost,
+        stepRand, runRand])
+
 /--
-info: abstract audit passed for `ComplexityAbstracts.RandomizedWordRAMAbstract`: 281 root
-declarations, 252 dependencies checked
+info: abstract audit passed for `ComplexityAbstracts.RandomizedWordRAMAbstract`: 282 root
+declarations, 256 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.RandomizedWordRAMAbstract

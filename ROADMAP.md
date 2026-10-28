@@ -27,7 +27,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002] |
 | A Verso guide with a chapter per area | [#585] |
 | Planar SAT and geometric hardness: orthogonal planar 3SAT-3 with explicit grid bounds, parsimonious compilers | [#1079] |
-| Randomized Word RAM: broader expected-time rules, simulation bridges and selection | [#1124] |
+| Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
 
 ### Landmark theorems, in priority order
@@ -399,6 +399,9 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
   abstract bridges to the shared predicate.
+- **Logspace automation** ([#1449]): `fun_prop` rules for `ComputableInLogSpace` (composition,
+  `ite`, word, arithmetic and list primitives), with the one-way transition from logspace to
+  polynomial time.
 - **Certificate APIs and automation** ([#1155]): predictable search, with fixed heartbeat budgets
   on regression goals, failures that name the subterm lacking a certificate, and cheap
   syntax-directed composition for glue code. Infer encodings for ordinary functional expressions
@@ -423,8 +426,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
-  bridges for the randomized word RAM ([#1124]); randomized selection; transfer of cell-probe lower
-  bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
+  bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
+  Horn-SAT, 2SAT, matching and domino-tiling clients.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -555,3 +558,4 @@ not planned, not as proved.
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
+[#1449]: https://github.com/cslib-community/complexitylib/issues/1449
