@@ -44,7 +44,7 @@ section Order
 variable {f g : ℕ → ℕ × ℕ} {S a c : ℕ}
 
 private theorem UpOrdered.ordered (h : UpOrdered f S a)
-    (hle : 2 ≤ a → a ≤ S → EntryLE (f (a / 2)) (f a)) : Ordered f S := by
+    (hle : 2 ≤ a → a ≤ S → IndexedMinPQ.RawPrioLE (f (a / 2)) (f a)) : Ordered f S := by
   intro i hi hiS
   by_cases hia : i = a
   · subst hia; exact hle hi hiS
@@ -84,14 +84,14 @@ private theorem UpOrdered.swap (h : UpOrdered f S a) (ha : 2 ≤ a) (haS : a ≤
       exact hpa.trans hp
 
 private theorem DownOrdered.ordered (h : DownOrdered f S a)
-    (hle : ∀ i, 2 ≤ i → i ≤ S → i / 2 = a → EntryLE (f a) (f i)) : Ordered f S := by
+    (hle : ∀ i, 2 ≤ i → i ≤ S → i / 2 = a → IndexedMinPQ.RawPrioLE (f a) (f i)) : Ordered f S := by
   intro i hi hiS
   by_cases hia : i / 2 = a
   · rw [hia]; exact hle i hi hiS hia
   · exact (h i hi hiS).1 hia
 
 private theorem DownOrdered.swap (h : DownOrdered f S a) (hc : c / 2 = a) (hcS : c ≤ S)
-    (hmin : ∀ i, 2 ≤ i → i ≤ S → i / 2 = a → EntryLE (f c) (f i))
+    (hmin : ∀ i, 2 ≤ i → i ≤ S → i / 2 = a → IndexedMinPQ.RawPrioLE (f c) (f i))
     (hlt : EntryLT (f c) (f a)) (hga : g a = f c) (hgc : g c = f a)
     (hgo : ∀ i, 1 ≤ i → i ≤ S → i ≠ a → i ≠ c → g i = f i) :
     DownOrdered g S c := by
@@ -390,16 +390,16 @@ private def minChild (f : ℕ → ℕ × ℕ) (S a : ℕ) : ℕ :=
 
 private theorem minChild_spec {f : ℕ → ℕ × ℕ} {a : ℕ} (ha : 2 * a ≤ S) :
     (minChild f S a = 2 * a ∨ minChild f S a = 2 * a + 1) ∧ minChild f S a ≤ S ∧
-      ∀ i, i ≤ S → i / 2 = a → EntryLE (f (minChild f S a)) (f i) := by
+      ∀ i, i ≤ S → i / 2 = a → IndexedMinPQ.RawPrioLE (f (minChild f S a)) (f i) := by
   unfold minChild
   split_ifs with h
   · refine ⟨Or.inr rfl, h.1, fun i hiS hia => ?_⟩
     rcases (by omega : i = 2 * a ∨ i = 2 * a + 1) with rfl | rfl
     · exact h.2.le
-    · exact EntryLE.refl _
+    · exact IndexedMinPQ.RawPrioLE.refl _
   · refine ⟨Or.inl rfl, ha, fun i hiS hia => ?_⟩
     rcases (by omega : i = 2 * a ∨ i = 2 * a + 1) with rfl | rfl
-    · exact EntryLE.refl _
+    · exact IndexedMinPQ.RawPrioLE.refl _
     · exact not_entryLT.mp fun hlt => h ⟨hiS, hlt⟩
 
 private def chooseLeft : Code .exact rBin := ram_exact[

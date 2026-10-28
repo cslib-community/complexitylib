@@ -61,6 +61,7 @@ open Cslib.Algorithms.WordRAM.PriorityQueue
 /-- Relocation map embedding the `r_pq` priority-queue registers above the `15` outer registers. -/
 def pqMap {r_pq : ℕ} : Fin r_pq → Fin (15 + r_pq) := Fin.natAdd 15
 
+/-- Register relocation `pqMap` is injective. -/
 theorem pqMap_injective {r_pq : ℕ} : (pqMap (r_pq := r_pq)).Injective :=
   Fin.natAdd_injective r_pq 15
 
@@ -361,8 +362,8 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
     (hvis_le : V ∈ S_vis → y.mem (G.dbase + V) ≤ B + C_wt) :
     let hK := fits_pqKeyMax hw_in
     let C := pkg.cert hw_sp hK
-    let cIns := pkg.T_ins G.n + 20
-    let cDec := pkg.T_dec G.n + 20
+    let cIns := pkg.insertTime G.n + 20
+    let cDec := pkg.decreaseTime G.n + 20
     let Φ := fun d : Data (15 + r_pq) =>
       C.potential (d.comap pqMap) +
         cIns * min (G.n - S_vis.card - (IndexedMinPQ.dom (stateOf C d)).card)
@@ -501,7 +502,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
       · rw [hz_word v]
         have hne : v ≠ V := Ne.symm hv
         simp only [hv, ↓reduceIte, hne, false_or]
-    have hchg : C.charge s (.insert V (B + C_wt)) ≤ pkg.T_ins G.n :=
+    have hchg : C.charge s (.insert V (B + C_wt)) ≤ pkg.insertTime G.n :=
       pkg.charge_insert hw_sp hK s V (B + C_wt)
     have hz_st : stateOf C z = s' := stateOf_eq C hr_z
     refine ⟨z, s', 9 + (1 + t_ins + 1), e₁.seq (.branch_pos hc_eq (e_st.seq e_ins)),
@@ -607,7 +608,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
           exact ⟨fun h => absurd hV_dom h.2, fun h => absurd hV_dom h.2⟩
         · rw [hz_word v]
           simp only [hv, ↓reduceIte]
-      have hchg : C.charge s (.decreaseKey V (B + C_wt)) ≤ pkg.T_dec G.n :=
+      have hchg : C.charge s (.decreaseKey V (B + C_wt)) ≤ pkg.decreaseTime G.n :=
         pkg.charge_decreaseKey hw_sp hK s V (B + C_wt)
       have hz_st : stateOf C z = s' := stateOf_eq C hr_z
       refine ⟨z, s', 9 + (1 + t_dec + 1 + 2),
@@ -724,8 +725,8 @@ private theorem relaxEdges_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
       ∀ c, (v, c) ∈ G.adj U → x.mem (G.dbase + v) ≤ B + c) :
     let hK := fits_pqKeyMax hw_in
     let C := pkg.cert hw_sp hK
-    let cIns := pkg.T_ins G.n + 20
-    let cDec := pkg.T_dec G.n + 20
+    let cIns := pkg.insertTime G.n + 20
+    let cDec := pkg.decreaseTime G.n + 20
     ∃ (z : Data (15 + r_pq)) (s' : IndexedMinPQ.State G.n) (t_scan : ℕ),
       ExecWithin w (relaxEdges pkg.code) x z t_scan ∧
       z.Bounded w ∧
@@ -858,9 +859,9 @@ private noncomputable def outerPot (pkg : PQPackage .exact r_pq) (G : ListInstan
   let R := remEdges G S
   let D := (IndexedMinPQ.dom s).card
   C.potential (y.comap pqMap) +
-    (pkg.T_ext G.n + pkg.T_empty G.n + 20) * min (G.n - S.card) (R + D) +
-    (pkg.T_ins G.n + 20) * min (G.n - S.card - D) R +
-    (pkg.T_dec G.n + 20) * R
+    (pkg.extractTime G.n + pkg.emptyTime G.n + 20) * min (G.n - S.card) (R + D) +
+    (pkg.insertTime G.n + 20) * min (G.n - S.card - D) R +
+    (pkg.decreaseTime G.n + 20) * R
 
 private theorem dijkstraSetup_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
     (hw_in : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2)))
@@ -870,12 +871,12 @@ private theorem dijkstraSetup_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
     ∃ y t_setup, ExecWithin w (dijkstraSetup pkg.code) (.init G.encode) y t_setup ∧
       OuterInv pkg G hw_in hw_sp y ∧
       t_setup + C.potential (y.comap pqMap) ≤
-        pkg.T_init G.n + pkg.T_ins G.n + 26 ∧
+        pkg.initTime G.n + pkg.insertTime G.n + 26 ∧
       outerPot pkg G hw_in hw_sp y ≤
         C.potential (y.comap pqMap) +
-          min G.n (G.m + 1) * (pkg.T_ext G.n + pkg.T_empty G.n + 20) +
-          min G.n G.m * (pkg.T_ins G.n + 20) +
-          G.m * (pkg.T_dec G.n + 20) := by
+          min G.n (G.m + 1) * (pkg.extractTime G.n + pkg.emptyTime G.n + 20) +
+          min G.n G.m * (pkg.insertTime G.n + 20) +
+          G.m * (pkg.decreaseTime G.n + 20) := by
   classical
   intro hK C
   have hsp_eq : C.space = pkg.space G.n := pkg.cert_space hw_sp hK
@@ -1037,9 +1038,9 @@ private theorem dijkstraSetup_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
   have hy_out : ∀ i : Fin (15 + r_pq), i.val < 15 → i ≠ dv → y.regs i = x₁.regs i := by
     intro i hi hne
     exact (Function.update_of_ne hne _ _).trans (hx₄_out i hi)
-  have hinit_le : C.initTime ≤ pkg.T_init G.n := pkg.cert_initTime hw_sp hK
+  have hinit_le : C.initTime ≤ pkg.initTime G.n := pkg.cert_initTime hw_sp hK
   have hpot0_eq : C.initPotential = 0 := pkg.cert_initPotential hw_sp hK
-  have hchg_ins : C.charge (IndexedMinPQ.empty G.n) (.insert G.source 1) ≤ pkg.T_ins G.n :=
+  have hchg_ins : C.charge (IndexedMinPQ.empty G.n) (.insert G.source 1) ≤ pkg.insertTime G.n :=
     pkg.charge_insert hw_sp hK (IndexedMinPQ.empty G.n) G.source 1
   refine ⟨y, 18 + (1 + (1 + (C.initTime + (t_ins + 1)))),
     he_hdr.seq (he_cp1.seq (he_cp2.seq (he_init.seq (he_ins.seq he_dv)))),
@@ -1063,23 +1064,24 @@ private theorem dijkstraSetup_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
     rw [hpot0_eq] at hpot₃
     omega
   · change C.potential (y.comap pqMap) +
-        (pkg.T_ext G.n + pkg.T_empty G.n + 20) *
+        (pkg.extractTime G.n + pkg.emptyTime G.n + 20) *
           min (G.n - (visitedSet G (stateOf C y) y).card)
             (remEdges G (visitedSet G (stateOf C y) y) +
               (IndexedMinPQ.dom (stateOf C y)).card) +
-        (pkg.T_ins G.n + 20) *
+        (pkg.insertTime G.n + 20) *
           min (G.n - (visitedSet G (stateOf C y) y).card -
             (IndexedMinPQ.dom (stateOf C y)).card)
             (remEdges G (visitedSet G (stateOf C y) y)) +
-        (pkg.T_dec G.n + 20) * remEdges G (visitedSet G (stateOf C y) y) ≤ _
+        (pkg.decreaseTime G.n + 20) * remEdges G (visitedSet G (stateOf C y) y) ≤ _
     rw [stateOf_eq C hr_y, hvis_y, hrem_emp, hcard_s₀, Finset.card_empty, Nat.sub_zero]
     have hmin1 : min (G.n - 1) G.m ≤ min G.n G.m := by omega
-    have hmul_ins := Nat.mul_le_mul_left (pkg.T_ins G.n + 20) hmin1
-    have hcomm1 : (pkg.T_ext G.n + pkg.T_empty G.n + 20) * min G.n (G.m + 1) =
-        min G.n (G.m + 1) * (pkg.T_ext G.n + pkg.T_empty G.n + 20) := Nat.mul_comm _ _
-    have hcomm2 : (pkg.T_ins G.n + 20) * min G.n G.m =
-        min G.n G.m * (pkg.T_ins G.n + 20) := Nat.mul_comm _ _
-    have hcomm3 : (pkg.T_dec G.n + 20) * G.m = G.m * (pkg.T_dec G.n + 20) := Nat.mul_comm _ _
+    have hmul_ins := Nat.mul_le_mul_left (pkg.insertTime G.n + 20) hmin1
+    have hcomm1 : (pkg.extractTime G.n + pkg.emptyTime G.n + 20) * min G.n (G.m + 1) =
+        min G.n (G.m + 1) * (pkg.extractTime G.n + pkg.emptyTime G.n + 20) := Nat.mul_comm _ _
+    have hcomm2 : (pkg.insertTime G.n + 20) * min G.n G.m =
+        min G.n G.m * (pkg.insertTime G.n + 20) := Nat.mul_comm _ _
+    have hcomm3 : (pkg.decreaseTime G.n + 20) * G.m = G.m * (pkg.decreaseTime G.n + 20) :=
+      Nat.mul_comm _ _
     linarith
 
 private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
@@ -1369,51 +1371,51 @@ private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
       min (G.n - S_old.card) (remEdges G S_old + (IndexedMinPQ.dom s).card) := by
     rw [hrem_split, hS_card, hdom_card]
     omega
-  have hchg_ext : C.charge s .extractMin ≤ pkg.T_ext G.n := pkg.charge_extractMin hw_sp hK s
-  have hchg_emp : C.charge s' .isEmpty ≤ pkg.T_empty G.n := pkg.charge_isEmpty hw_sp hK s'
+  have hchg_ext : C.charge s .extractMin ≤ pkg.extractTime G.n := pkg.charge_extractMin hw_sp hK s
+  have hchg_emp : C.charge s' .isEmpty ≤ pkg.emptyTime G.n := pkg.charge_isEmpty hw_sp hK s'
   refine ⟨z, t_ext + (1 + (1 + (4 + (t_scan + (t_emp + 1))))),
     he_ext.seq (he_u.seq (he_b.seq (he_off.seq (he_scan.seq (he_emp.seq he_dv))))),
     hz_inv, ?_⟩
   change t_ext + (1 + (1 + (4 + (t_scan + (t_emp + 1))))) + 2 +
       (C.potential (z.comap pqMap) +
-        (pkg.T_ext G.n + pkg.T_empty G.n + 20) *
+        (pkg.extractTime G.n + pkg.emptyTime G.n + 20) *
           min (G.n - (visitedSet G (stateOf C z) z).card)
             (remEdges G (visitedSet G (stateOf C z) z) +
               (IndexedMinPQ.dom (stateOf C z)).card) +
-        (pkg.T_ins G.n + 20) *
+        (pkg.insertTime G.n + 20) *
           min (G.n - (visitedSet G (stateOf C z) z).card -
             (IndexedMinPQ.dom (stateOf C z)).card)
             (remEdges G (visitedSet G (stateOf C z) z)) +
-        (pkg.T_dec G.n + 20) * remEdges G (visitedSet G (stateOf C z) z)) ≤
+        (pkg.decreaseTime G.n + 20) * remEdges G (visitedSet G (stateOf C z) z)) ≤
       C.potential (y.comap pqMap) +
-        (pkg.T_ext G.n + pkg.T_empty G.n + 20) *
+        (pkg.extractTime G.n + pkg.emptyTime G.n + 20) *
           min (G.n - (visitedSet G (stateOf C y) y).card)
             (remEdges G (visitedSet G (stateOf C y) y) +
               (IndexedMinPQ.dom (stateOf C y)).card) +
-        (pkg.T_ins G.n + 20) *
+        (pkg.insertTime G.n + 20) *
           min (G.n - (visitedSet G (stateOf C y) y).card -
             (IndexedMinPQ.dom (stateOf C y)).card)
             (remEdges G (visitedSet G (stateOf C y) y)) +
-        (pkg.T_dec G.n + 20) * remEdges G (visitedSet G (stateOf C y) y)
+        (pkg.decreaseTime G.n + 20) * remEdges G (visitedSet G (stateOf C y) y)
   rw [stateOf_eq C hr_z, stateOf_eq C hr, hvis_z]
   change t_ext + (1 + (1 + (4 + (t_scan + (t_emp + 1))))) + 2 +
       (C.potential (z.comap pqMap) +
-        (pkg.T_ext G.n + pkg.T_empty G.n + 20) *
+        (pkg.extractTime G.n + pkg.emptyTime G.n + 20) *
           min (G.n - S_vis.card) (R_after + (IndexedMinPQ.dom s').card) +
-        (pkg.T_ins G.n + 20) *
+        (pkg.insertTime G.n + 20) *
           min (G.n - S_vis.card - (IndexedMinPQ.dom s').card) R_after +
-        (pkg.T_dec G.n + 20) * R_after) ≤
+        (pkg.decreaseTime G.n + 20) * R_after) ≤
       C.potential (y.comap pqMap) +
-        (pkg.T_ext G.n + pkg.T_empty G.n + 20) *
+        (pkg.extractTime G.n + pkg.emptyTime G.n + 20) *
           min (G.n - S_old.card) (remEdges G S_old + (IndexedMinPQ.dom s).card) +
-        (pkg.T_ins G.n + 20) *
+        (pkg.insertTime G.n + 20) *
           min (G.n - S_old.card - (IndexedMinPQ.dom s).card) (remEdges G S_old) +
-        (pkg.T_dec G.n + 20) * remEdges G S_old
+        (pkg.decreaseTime G.n + 20) * remEdges G S_old
   rw [hpot_z]
   rw [hpot₃, hsum_eq, ← hrem_split] at hpot_scan
-  have hmul_rnd := Nat.mul_le_mul_left (pkg.T_ext G.n + pkg.T_empty G.n + 20) hrnd_drop
-  have hmul_dec : (pkg.T_dec G.n + 20) * remEdges G S_old =
-      (pkg.T_dec G.n + 20) * R_after + (pkg.T_dec G.n + 20) * (G.adj U).length := by
+  have hmul_rnd := Nat.mul_le_mul_left (pkg.extractTime G.n + pkg.emptyTime G.n + 20) hrnd_drop
+  have hmul_dec : (pkg.decreaseTime G.n + 20) * remEdges G S_old =
+      (pkg.decreaseTime G.n + 20) * R_after + (pkg.decreaseTime G.n + 20) * (G.adj U).length := by
     rw [hrem_split, Nat.mul_add]
   linarith
 
@@ -1441,16 +1443,16 @@ private theorem dijkstraExit_spec (pkg : PQPackage .exact r_pq) {G : ListInstanc
 
 /-- **Black-box structured Dijkstra theorem.** For any exact-basis `PQPackage`, `dijkstraCode`
 computes all encoded shortest-path distances within
-`T_init + T_ins + 28 + min(n, m + 1) * (T_ext + T_empty + 20) + min(n, m) * (T_ins + 20) +`
-`m * (T_dec + 20)` instructions. -/
+`initTime + insertTime + 28 + min(n, m + 1) * (extractTime + emptyTime + 20) +`
+`min(n, m) * (insertTime + 20) + m * (decreaseTime + 20)` instructions. -/
 theorem dijkstraCode_exec (pkg : PQPackage .exact r_pq) (G : ListInstance) (w : ℕ)
     (hw_in : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2)))
     (hw_sp : Fits w (G.dbase + G.n + pkg.space G.n)) :
     ∃ y, ExecWithin w (dijkstraCode pkg.code) (.init G.encode) y
-        (pkg.T_init G.n + pkg.T_ins G.n + 28 +
-          min G.n (G.m + 1) * (pkg.T_ext G.n + pkg.T_empty G.n + 20) +
-          min G.n G.m * (pkg.T_ins G.n + 20) +
-          G.m * (pkg.T_dec G.n + 20)) ∧
+        (pkg.initTime G.n + pkg.insertTime G.n + 28 +
+          min G.n (G.m + 1) * (pkg.extractTime G.n + pkg.emptyTime G.n + 20) +
+          min G.n G.m * (pkg.insertTime G.n + 20) +
+          G.m * (pkg.decreaseTime G.n + 20)) ∧
       ∀ v : Fin G.n, y.mem (G.outAddr v) = encodeDist (G.dist G.source v) := by
   obtain ⟨x, t_set, he_set, hx_inv, hset_le, hpot_le⟩ := dijkstraSetup_spec pkg hw_in hw_sp
   obtain ⟨y, he_loop, hy_inv, hc_exit⟩ :=
@@ -1468,10 +1470,10 @@ theorem dijkstra_of_pq_spec (pkg : PQPackage .exact r_pq) (G : ListInstance) (w 
     let p := (dijkstraCode pkg.code).program OuterReg.zero
     ∃ t steps, Runs w p (.init G.encode) t steps ∧
       (∃ v, step w p t = .halt v) ∧
-      steps ≤ pkg.T_init G.n + pkg.T_ins G.n + 28 +
-        min G.n (G.m + 1) * (pkg.T_ext G.n + pkg.T_empty G.n + 20) +
-        min G.n G.m * (pkg.T_ins G.n + 20) +
-        G.m * (pkg.T_dec G.n + 20) ∧
+      steps ≤ pkg.initTime G.n + pkg.insertTime G.n + 28 +
+        min G.n (G.m + 1) * (pkg.extractTime G.n + pkg.emptyTime G.n + 20) +
+        min G.n G.m * (pkg.insertTime G.n + 20) +
+        G.m * (pkg.decreaseTime G.n + 20) ∧
       ∀ v : Fin G.n, t.data.mem (G.outAddr v) = encodeDist (G.dist G.source v) := by
   intro p
   obtain ⟨y, ⟨steps, hsteps, he⟩, hd⟩ := dijkstraCode_exec pkg G w hw_in hw_sp
