@@ -154,7 +154,7 @@ theorem isPPTOn_expansionGame {Caller : Type} {input : Caller ↪ List Bool}
         (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
           (fun request => expansionOracle generator (sample a) (width a) (depth a) request.2))
             (adversary (width a) [])).run []) := by
-    apply hadversary.run_interpret_preprocess
+    apply hadversary.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
       (prepare := fun a => (width a, []))
       (resources := fun a query => 4 * query.length + 4 * width a + 3)
       (by fun_prop) (by fun_prop) (by fun_prop)

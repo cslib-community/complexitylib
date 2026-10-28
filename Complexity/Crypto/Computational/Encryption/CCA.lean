@@ -360,14 +360,14 @@ theorem isPPTOn_run_cca2Phase1Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (hA : adversary.IsPPT encMsg) :
     IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair (encPair (encPair encMsg encMsg) encBits) (encFinite Unit))
+      (encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit))
       (fun caller : ℕ × List Bool × List Bool =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase1Oracle encOut decrypt caller.1 caller.2.2))
           (adversary.choose caller.1 caller.2.1)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits encBits)
-  let EIn := encPair ECaller (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hdecArg : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
         (p.1.1, p.1.2.2, p.2.1.2))
@@ -377,7 +377,7 @@ theorem isPPTOn_run_cca2Phase1Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
         encOption encOut (decrypt p.1.1 p.1.2.2 p.2.1.2))
       EIn encBits :=
     (ComputableTidilyInPolyTime.encode (encOption encOut)).comp (hdec.tidy.comp hdecArg)
-  have hhandler : IsPPTOn EIn (encPair encBits (encFinite Unit))
+  have hhandler : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
         cca2Phase1Oracle encOut decrypt pair.1.1 pair.1.2.2 pair.2.1 pair.2.2) :=
     (ComputableTidilyInPolyTime.prod hdecWord (by fun_prop)).isPPTOn
@@ -418,14 +418,14 @@ theorem isPPTOn_run_cca2Phase2Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (hA : adversary.IsPPT encMsg) :
     IsPPTOn (encPair encUnary (encPair encBits (encPair encBits encBits)))
-      (encPair encBool (encFinite Unit))
+      (encPair encBool (encFinEnum Unit))
       (fun caller : ℕ × List Bool × List Bool × List Bool =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase2Oracle encOut decrypt caller.1 caller.2.1 caller.2.2.2))
           (adversary.guess caller.1 caller.2.2.1 caller.2.2.2)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits (encPair encBits encBits))
-  let EIn := encPair ECaller (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hdecArg : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
         (p.1.1, p.1.2.1, p.2.1.2))
@@ -439,12 +439,12 @@ theorem isPPTOn_run_cca2Phase2Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
       (fun p : (ℕ × List Bool × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
         p.2.1.2 == p.1.2.2.2)
       EIn encBool := by polytime
-  have hnoReply : IsPPTOn EIn (encPair encBits (encFinite Unit))
+  have hnoReply : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun p : (ℕ × List Bool × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
         pure ([], p.2.2)) :=
     (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const [])
       (by fun_prop)).isPPTOn
-  have hhandler : IsPPTOn EIn (encPair encBits (encFinite Unit))
+  have hhandler : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun pair : (ℕ × List Bool × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
         cca2Phase2Oracle encOut decrypt pair.1.1 pair.1.2.1 pair.1.2.2.2 pair.2.1 pair.2.2) :=
     IsPPTOn.cond heqCt hnoReply
@@ -503,7 +503,7 @@ theorem isPPTOn_cca2GameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut
     (hA : adversary.IsPPT encMsg) (bit : Bool) :
     IsPPTOn encUnary encBool (cca2GameOn valid encOut keyGen encrypt decrypt adversary bit) := by
   let E1 := encPair encUnary (encPair encBits encBits)
-  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinite Unit)
+  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit)
   let E2 := encPair E1 EChoice
   let E3 := encPair E2 encBits
   have hphase1 : IsPPTOn E1 EChoice
@@ -557,7 +557,7 @@ theorem isPPTOn_cca2GameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut
       (fun p : ((ℕ × (List Bool × List Bool)) × (((Msg × Msg) × List Bool) × Unit)) × List Bool =>
         (p.1.1.1, p.1.1.2.2, p.1.2.1.2, p.2))
       E3 (encPair encUnary (encPair encBits (encPair encBits encBits))) := by fun_prop
-  have hphase2 : IsPPTOn E3 (encPair encBool (encFinite Unit))
+  have hphase2 : IsPPTOn E3 (encPair encBool (encFinEnum Unit))
       (fun p : ((ℕ × (List Bool × List Bool)) × (((Msg × Msg) × List Bool) × Unit)) × List Bool =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))

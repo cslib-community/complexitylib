@@ -207,14 +207,14 @@ def constZModFinder : CollisionFinderFor Unit := fun _ _ => pure ([false], [true
 
 /-- `constZModFinder` is uniformly strict PPT. -/
 theorem isPPTOn_constZModFinder :
-    IsPPTOn (encPair encUnary (encFinite Unit)) (encPair encBits encBits)
+    IsPPTOn (encPair encUnary (encFinEnum Unit)) (encPair encBits encBits)
       (fun p => constZModFinder p.1 p.2) :=
   (ComputableTidilyInPolyTime.const ([false], [true])).isPPTOn
 
 /-- The constant `ZMod 11`-valued hash family is not collision-resistant. -/
 theorem not_collisionResistantFor_constZModHash :
     ¬ CollisionResistantFor (Param := Unit) (Digest := fun _ => ZMod 11)
-        (encFinite Unit) (fun _ => PMF.pure ()) constZModHash := by
+        (encFinEnum Unit) (fun _ => PMF.pure ()) constZModHash := by
   refine not_collisionResistantForOn_of_le_succProbability (c := 1) one_ne_zero
     constZModFinder isPPTOn_constZModFinder (fun n => ?_)
   have heval :

@@ -43,8 +43,9 @@ open Turing.MultiTapeTM
 /-- Supply saved samples to a closed external handler. Bounds hold for every supplied value,
 including the fallback on an exhausted list. The certificate retains the complete final state. -/
 theorem IsOraclePPTOn.run_interpret_withSampleList
-    {Operation α β Caller State Value : Type} [DecidableEq Operation] [Finite Operation]
+    {Operation α β Caller State Value : Type} [DecidableEq Operation]
     {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
+    {operationEncoding : Operation ↪ List Bool}
     {stateEncoding : State ↪ List Bool} {valueEncoding : Value ↪ List Bool}
     {program : α → WordOracleComp Operation β}
     {oracle : Caller → Value → Operation × List Bool → State → ProbComp (List Bool × State)}
@@ -53,7 +54,7 @@ theorem IsOraclePPTOn.run_interpret_withSampleList
     (fallback : Value) (hprepare : ComputableTidilyInPolyTime prepare input source)
     (horacle : IsPPTOn
       (encPair (encPair input valueEncoding)
-        (encPair (encPair (encFinite Operation) encBits) stateEncoding))
+        (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding) (fun pair => oracle pair.1.1 pair.1.2 pair.2.1 pair.2.2))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (hvalues : ComputableTidilyInPolyTime values input (encList valueEncoding))
@@ -71,7 +72,7 @@ theorem IsOraclePPTOn.run_interpret_withSampleList
           (initial a, values a)) := by
   let storage := encPair stateEncoding (encList valueEncoding)
   have hwrapped : IsPPTOn
-      (encPair input (encPair (encPair (encFinite Operation) encBits) storage))
+      (encPair input (encPair (encPair operationEncoding encBits) storage))
       (encPair encBits storage) (fun pair =>
         OracleComp.withSampleList fallback (oracle pair.1) pair.2.1 pair.2.2) := by
     unfold OracleComp.withSampleList
@@ -81,7 +82,8 @@ theorem IsOraclePPTOn.run_interpret_withSampleList
           ((pair.1, pair.2.2.2.headD fallback), (pair.2.1, pair.2.2.1)))
         (by dsimp only [storage]; fun_prop)
     · dsimp only [storage]; fun_prop
-  refine hprogram.run_interpret_preprocess hprepare hwrapped (hinitial.prod hvalues)
+  refine hprogram.run_interpret_preprocess (operationEncoding := operationEncoding)
+    hprepare hwrapped (hinitial.prod hvalues)
     (fun a state => invariant a state.1) hinit
     (resources := fun a query => 2 * resources a query) (by fun_prop) ?_
   intro a request state hstate result hresult
@@ -100,8 +102,9 @@ theorem IsOraclePPTOn.run_interpret_withSampleList
 /-- Security-parameter specialization of saved-sample substitution, retaining the complete
 ordinary state and unused suffix under the same local resource contract. -/
 theorem IsOraclePPT.run_interpret_withSampleList
-    {Operation β Caller State Value : Type} [DecidableEq Operation] [Finite Operation]
+    {Operation β Caller State Value : Type} [DecidableEq Operation]
     {input : Caller ↪ List Bool} {output : β ↪ List Bool}
+    {operationEncoding : Operation ↪ List Bool}
     {stateEncoding : State ↪ List Bool} {valueEncoding : Value ↪ List Bool}
     {program : ℕ → List Bool → WordOracleComp Operation β}
     {oracle : Caller → Value → Operation × List Bool → State → ProbComp (List Bool × State)}
@@ -111,7 +114,7 @@ theorem IsOraclePPT.run_interpret_withSampleList
     (hprepare : ComputableTidilyInPolyTime prepare input (encPair encUnary encBits))
     (horacle : IsPPTOn
       (encPair (encPair input valueEncoding)
-        (encPair (encPair (encFinite Operation) encBits) stateEncoding))
+        (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding) (fun pair => oracle pair.1.1 pair.1.2 pair.2.1 pair.2.2))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (hvalues : ComputableTidilyInPolyTime values input (encList valueEncoding))

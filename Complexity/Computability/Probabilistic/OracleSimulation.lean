@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Probabilistic.Oracle
 public import Complexity.Computability.Probabilistic.PPT
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 import Complexity.Computability.Probabilistic.Oracle.Substitution
 
 /-!
@@ -47,15 +47,16 @@ open Turing.MultiTapeTM
 The efficiently computed allowance bounds each reply and the added encoded state. One invariant
 must hold on every supported transition; clocks and storage bounds are derived internally. -/
 theorem IsOraclePPTOn.run_interpret_preprocess {Operation α β Caller State : Type}
-    [DecidableEq Operation] [Finite Operation]
+    [DecidableEq Operation]
     {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
-    {stateEncoding : State ↪ List Bool} {program : α → WordOracleComp Operation β}
+    {operationEncoding : Operation ↪ List Bool} {stateEncoding : State ↪ List Bool}
+    {program : α → WordOracleComp Operation β}
     {handler : Caller → Operation × List Bool → State → ProbComp (List Bool × State)}
     {prepare : Caller → α} {initial : Caller → State} {resources : Caller → List Bool → ℕ}
     (hprogram : IsOraclePPTOn source output program)
     (hprepare : ComputableTidilyInPolyTime prepare input source)
     (hhandler : IsPPTOn
-      (encPair input (encPair (encPair (encFinite Operation) encBits) stateEncoding))
+      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))

@@ -288,7 +288,7 @@ theorem isPPTOn_eufCmaGame (M : MACScheme) {adversary : Forger}
   obtain ⟨c, d, hlen⟩ := M.sign_ppt.length_le
   have hhandler : IsPPTOn
       (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinite Unit) encBits) (encList encBits)))
+        (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
       (encPair encBits (encList encBits))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         M.signingOracle pair.1.2 pair.2.1 pair.2.2) := by
@@ -397,7 +397,7 @@ theorem isPPTOn_run_oneTimeSigningOracle (M : MACScheme) {adversary : Forger}
   obtain ⟨c, d, hlen⟩ := M.sign_ppt.length_le
   have hhandler : IsPPTOn
       (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinite Unit) encBits) (encList encBits)))
+        (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
       (encPair encBits (encList encBits))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         M.oneTimeSigningOracle pair.1.2 pair.2.1 pair.2.2) := by
@@ -661,7 +661,7 @@ theorem isPPTOn_run_signingPairOracle (M : MACScheme) {adversary : Forger}
   obtain ⟨c, d, hlen⟩ := M.sign_ppt.length_le
   have hhandler : IsPPTOn
       (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinite Unit) encBits) (encList (encPair encBits encBits))))
+        (encPair (encPair (encFinEnum Unit) encBits) (encList (encPair encBits encBits))))
       (encPair encBits (encList (encPair encBits encBits)))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool × List Bool)) =>
         M.signingPairOracle pair.1.2 pair.2.1 pair.2.2) := by
@@ -1175,14 +1175,14 @@ theorem isOraclePPT_macToPrfDistinguisher {adversary : Forger}
     IsOraclePPT encBool (macToPrfDistinguisher adversary) := by
   have hhandler : IsOraclePPTOn
       (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinite Unit) encBits) (encList encBits)))
+        (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
       (encPair encBits (encList encBits))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         macLogHandler pair.1.1 pair.2.1 pair.2.2) := by
     unfold macLogHandler
     have hq : IsOraclePPTOn
         (encPair (encPair encUnary encBits)
-          (encPair (encPair (encFinite Unit) encBits) (encList encBits)))
+          (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
         encBits
         (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
           List.take p.1.1 <$> ProbOracleComp.query ((), p.2.1.2)) :=
