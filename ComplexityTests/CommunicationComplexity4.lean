@@ -32,12 +32,11 @@ example : (small.map Fin.val).leafCount = 3 := rfl
 
 /-! ### Trivial upper bounds -/
 
-example (f : BitString 3 → BitString 5 → Bool) : Protocol.ecomplexityFun f ≤ 4 :=
-  (Protocol.ecomplexityFun_le_min_succ f).trans_eq rfl
-
--- A function of an input from a five-element set: three bits suffice for the encoding.
-example (f : Fin 5 → ℕ → Bool) : Protocol.ecomplexityFun f ≤ 4 := by
-  have h := Protocol.ecomplexityFun_le_clog_card_succ f
+-- Even when Alice's input is infinite (`ℕ`), exchanging the players and encoding Bob's
+-- five-element input in `⌈log₂ 5⌉ = 3` bits gives a protocol sending at most `4` bits.
+example (f : ℕ → Fin 5 → Bool) : Protocol.ecomplexityFun f ≤ 4 := by
+  rw [← Protocol.ecomplexityFun_swap]
+  have h := Protocol.ecomplexityFun_le_clog_card_succ (fun y x => f x y)
   rw [Fintype.card_fin, show Nat.clog 2 5 = 3 by decide] at h
   exact_mod_cast h
 
@@ -75,9 +74,9 @@ example (p : Protocol (Finset (Fin 3)) (Finset (Fin 3)) Bool)
 
 /-! ### Rank bounds -/
 
--- Any relabelling of the outputs of `small` has rank at most `2 ^ small.depth = 4`.
-example : (Matrix.of fun x y => ((small.run x y : ℕ) : ℚ)).rank ≤ 4 :=
-  small.rank_comp_le_two_pow rfl fun z => ((z : ℕ) : ℚ)
+-- Relabelling the outputs of `small` in `ℚ` yields a matrix of rank at most `2 ^ small.depth = 4`.
+example : small.depth = 2 ∧ (Matrix.of fun x y => ((small.run x y : ℕ) : ℚ)).rank ≤ 4 :=
+  ⟨rfl, small.rank_comp_le_two_pow rfl fun z => ((z : ℕ) : ℚ)⟩
 
 -- The `8 × 8` sign matrix of the 3-bit inner product has full rank `8`, so by the sign-matrix
 -- rank bound any protocol computing it satisfies `8 ≤ 2 ^ p.depth`.
@@ -86,22 +85,21 @@ example (p : Protocol (Fin 3 → Bool) (Fin 3 → Bool) Bool) (hp : p.run = fun 
   have h := p.rank_signMatrix_le_two_pow (R := ℝ) hp
   rwa [rank_signMatrix_dotProduct, Fintype.card_fin] at h
 
--- The inner product of two bits: its `4 × 4` matrix has rank `3` over `ℚ`.
-example : (communicationMatrix ℚ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank = 3 := by
-  rw [rank_communicationMatrix_dotProduct, Fintype.card_fin]
-  rfl
-
-example : (signMatrix ℝ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank = 4 := by
-  rw [rank_signMatrix_dotProduct, Fintype.card_fin]
-  rfl
-
--- Because the sign matrix of the 3-bit inner product is Hadamard, its square has `8` on the
--- diagonal.
+-- For the 2-bit inner product, the `4 × 4` sign matrix has full rank `4` over `ℚ`, one more than
+-- the rank `3` of its `0/1` communication matrix.
 example :
-    (signMatrix ℤ (fun x y : Fin 3 → Bool => x ⬝ᵥ y) *
-      signMatrix ℤ (fun x y : Fin 3 → Bool => x ⬝ᵥ y)) 0 0 = 8 := by
-  rw [signMatrix_dotProduct_mul_self]
+    (communicationMatrix ℚ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank + 1 =
+      (signMatrix ℚ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank := by
+  rw [rank_communicationMatrix_dotProduct, rank_signMatrix_dotProduct, Fintype.card_fin]
   rfl
+
+-- Because the sign matrix `H` of the 3-bit inner product satisfies `H * H = 8 • 1`, scaling `H`
+-- by `1 / 8` over `ℚ` gives its right inverse.
+example :
+    signMatrix ℚ (fun x y : Fin 3 → Bool => x ⬝ᵥ y) *
+      ((1 / 8 : ℚ) • signMatrix ℚ (fun x y : Fin 3 → Bool => x ⬝ᵥ y)) = 1 := by
+  rw [Matrix.mul_smul, signMatrix_dotProduct_mul_self, Fintype.card_fin, smul_smul]
+  norm_num
 
 -- Character orthogonality holds over any ring, here one that is not a domain.
 example (w : Fin 3 → Bool) (hw : w ≠ 0) :

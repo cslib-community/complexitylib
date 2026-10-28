@@ -220,6 +220,14 @@ example (x : BitString 2) (y : BitString 2) :
 
 /-! ### Newman's theorem -/
 
+-- Applied to `eqPublicCoin₂`: a private-coin protocol for equality with `O(log n)` bits.
+example (n : ℕ) {δ : ℝ} (hδ : 0 < δ) :
+    PrivateCoin.ecomplexityFun (1 / 4 + δ) (equality : BitString n → BitString n → Bool) ≤
+      3 + Nat.clog 2 ⌈(n : ℝ) / δ ^ 2⌉₊ := by
+  exact (PrivateCoin.ecomplexity_le_add_clog (n := n)
+    (R := fun (x y : BitString n) b => equality x y = b) (A := Set.univ) (B := Set.univ)
+    (by simp) (by simp) hδ).trans (add_le_add_left (ecomplexityFun_quarter_equality_le n) _)
+
 -- On 16-bit strings, Newman's theorem with `eqPublicCoin₂ 16` gives a private-coin equality
 -- protocol with error `3 / 8` sending at most `3 + ⌈log₂ (16 · 64)⌉ = 13` bits (whereas
 -- deterministic equality needs `17` bits).
@@ -257,9 +265,10 @@ example :
   nlinarith [discrepancy_nonneg (ν := Probability.PMF.uniformOfFintype (BitString 4 × BitString 4))
     (f := fun x y => x ⬝ᵥ y)]
 
--- With error `1 / 3`, the inner product of ten bits needs at least four bits, with public or
--- private coins.
-example : 4 ≤ PublicCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y) := by
+-- With error `1 / 3`, the inner product of ten bits needs at least four bits with public coins,
+-- and hence also with private coins.
+private theorem four_le_publicCoin_dotProduct_ten :
+    4 ≤ PublicCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y) := by
   have h := PublicCoin.le_two_mul_ecomplexityFun_dotProduct_add_three 10
   cases hc : PublicCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y)
     using ENat.recTopCoe with
@@ -269,15 +278,8 @@ example : 4 ≤ PublicCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x �
     have : 10 ≤ 2 * c + 3 := by exact_mod_cast h
     exact_mod_cast (by omega : 4 ≤ c)
 
-example : 4 ≤ PrivateCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y) := by
-  have h := PrivateCoin.le_two_mul_ecomplexityFun_dotProduct_add_three 10
-  cases hc : PrivateCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y)
-    using ENat.recTopCoe with
-  | top => simp
-  | coe c =>
-    rw [hc] at h
-    have : 10 ≤ 2 * c + 3 := by exact_mod_cast h
-    exact_mod_cast (by omega : 4 ≤ c)
+example : 4 ≤ PrivateCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y) :=
+  four_le_publicCoin_dotProduct_ten.trans PublicCoin.ecomplexityFun_le_privateCoin
 
 -- The general error trade-off: error `1 / 2 - γ` with `c` bits forces `(2 γ)² 2 ^ n ≤ 4 ^ c`.
 example (n c : ℕ) {γ : ℝ} (hγ : 0 ≤ γ)

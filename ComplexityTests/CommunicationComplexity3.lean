@@ -97,15 +97,14 @@ example {X Y : Type*} [Finite X] [Finite Y] (f : X → Y → Bool) :
   exact_mod_cast PublicCoin.ecomplexity_le_of_forall_distributionalComplexity_le (c := 0)
     fun ν _ => distributionalComplexity_half f ν
 
--- By Yao's minimax principle, the supremum over all input distributions of the error-`1 / 2`
--- distributional complexity of equality on two bits is `0`.
-example :
-    (⨆ ν : PMF (BitString 2 × BitString 2),
-      Protocol.distributionalComplexity (1 / 2) (fun x y b => equality x y = b) ν) = 0 := by
+-- By Yao's minimax principle, the trivial deterministic upper bound `n + 1` bounds the supremum of
+-- the error-`ε` distributional complexity over all input distributions on `BitString 3`.
+example {ε : ℝ} (hε : 0 ≤ ε) (f : BitString 3 → BitString 3 → Bool) :
+    (⨆ ν : PMF (BitString 3 × BitString 3),
+      Protocol.distributionalComplexity ε (fun x y b => f x y = b) ν) ≤ 4 := by
   rw [← PublicCoin.ecomplexityFun_eq_iSup_distributionalComplexity]
-  refine le_antisymm ?_ bot_le
-  exact_mod_cast PublicCoin.ecomplexity_le_of_forall_distributionalComplexity_le (c := 0)
-    fun ν _ => distributionalComplexity_half equality ν
+  exact (PublicCoin.ecomplexityFun_le_privateCoin.trans
+    (PrivateCoin.ecomplexityFun_le_protocol hε)).trans (Protocol.ecomplexityFun_le_succ f)
 
 /-! ### The corruption bound -/
 
@@ -176,12 +175,20 @@ example (send : Bool → Bool) (p₀ p₁ : Protocol Bool Unit ℕ) (i : Fin p�
       ({x | send x = true} ∩ p₁.leafAlice i) ×ˢ p₁.leafBob i := by
   simp
 
--- The leaf rectangles of any protocol on `Fin 3 × Fin 2` partition all `6` input pairs.
+-- Because the leaf rectangles of `p` partition `Fin 3 × Fin 2`, any protocol with at most 2 leaves
+-- has a leaf rectangle containing at least 3 of the 6 input pairs.
 open Classical in
-example (p : Protocol (Fin 3) (Fin 2) Bool) :
-    ∑ i, ∑ x with x ∈ p.leafAlice i, ∑ y with y ∈ p.leafBob i, 1 = 6 := by
-  rw [← p.sum_eq_sum_leaves (fun _ _ => 1)]
-  decide
+example (p : Protocol (Fin 3) (Fin 2) Bool) (hl : p.leafCount ≤ 2) :
+    ∃ i, 3 ≤ #{x | x ∈ p.leafAlice i} * #{y | y ∈ p.leafBob i} := by
+  by_contra! h
+  have hsum := p.sum_eq_sum_leaves (fun _ _ => (1 : ℕ))
+  simp only [sum_const, smul_eq_mul, mul_one, card_univ, Fintype.card_fin] at hsum
+  have hle : ∑ i : Fin p.leafCount, #{x | x ∈ p.leafAlice i} * #{y | y ∈ p.leafBob i} ≤
+      p.leafCount * 2 := by
+    simpa using sum_le_card_nsmul univ
+      (fun i => #{x | x ∈ p.leafAlice i} * #{y | y ∈ p.leafBob i}) 2 fun i _ =>
+        Nat.le_of_lt_succ (h i)
+  omega
 
 -- The area bound: rectangles on which equality is `true` have one entry, so a protocol computing
 -- equality on three elements has at least three leaves labelled `true`.

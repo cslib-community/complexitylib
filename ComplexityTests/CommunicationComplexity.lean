@@ -92,12 +92,13 @@ example (p : Protocol (BitString 3) (BitString 3) Bool)
   rw [ecomplexity_greaterThan (by decide)] at h
   exact_mod_cast h
 
--- Any protocol computing the inner product on 3-bit strings has at least 9 leaves.
+-- Any protocol computing the inner product on 3-bit strings has at least 9 leaves, hence depth at
+-- least 4.
 example (p : Protocol (BitString 3) (BitString 3) Bool) (hp : p.run = fun x y => x ⬝ᵥ y) :
-    9 ≤ p.leafCount := by
-  have h := two_pow_lt_leafCount_of_run_eq_dotProduct hp
+    4 ≤ p.depth := by
+  have h := (two_pow_lt_leafCount_of_run_eq_dotProduct hp).trans_le p.leafCount_le_two_pow_depth
   rw [Fintype.card_fin] at h
-  omega
+  exact (Nat.pow_lt_pow_iff_right Nat.one_lt_two).mp h
 
 -- Equality on a five-element set needs three bits.
 example (p : Protocol (Fin 5) (Fin 5) Bool) (hp : p.run = equality) : 3 ≤ p.depth := by
