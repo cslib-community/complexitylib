@@ -49,20 +49,16 @@ example : (∑ i ∈ range 2, (countingUnitInsertions (nodes i) (sizes i) heart 
 
 example : ((nodes 2).filter fun C => C.card = 1).card = 3 := by decide
 
--- Exercise the actual path budget, with both proper heavy steps checked and root support charged.
-example : (∑ i ∈ range 2, (countingUnitInsertions (nodes i) (sizes i) heart true).card) ≤ 10 := by
-  have hstep : ∀ i < 2, nodes (i + 1) = countingChild (nodes i) (sizes i) heart true := by
-    intro i hi
-    have : i = 0 ∨ i = 1 := by omega
-    rcases this with rfl | rfl <;> rfl
-  have hheavy : ∀ i < 2, Heavy (fun _ => 1) (nodes i) (sizes i) heart := by
-    intro i hi
-    have : i = 0 ∨ i = 1 := by omega
-    rcases this with rfl | rfl <;> unfold Heavy <;> decide
-  have hred : Reduced (nodes 0) := by unfold Reduced; decide
+-- Exercise the actual path budget on any legal counting path starting from `root`: total unit
+-- insertions across all `N` steps are bounded by `2 * 5 = 10`.
+example (N : ℕ) (ψ : ℕ → ClauseSet (Fin 5)) (c : ℕ → ℕ)
+    (H : ℕ → Finset (Literal (Fin 5))) (b : ℕ → Bool) (hroot : ψ 0 = root)
+    (hstep : ∀ i < N, ψ (i + 1) = countingChild (ψ i) (c i) (H i) (b i))
+    (hheavy : ∀ i < N, Heavy (fun _ => 1) (ψ i) (c i) (H i)) :
+    (∑ i ∈ range N, (countingUnitInsertions (ψ i) (c i) (H i) (b i)).card) ≤ 10 := by
+  have hred : Reduced (ψ 0) := by rw [hroot]; unfold Reduced; decide
   have h := sum_countingUnitInsertions_le (θ := fun _ => 1) (by intro; decide)
-    2 nodes sizes (fun _ => heart) (fun _ => true) hstep hheavy hred univ
-    (by intro C hC l hl; exact mem_univ _)
+    N ψ c H b hstep hheavy hred univ (by intro C _ l _; exact mem_univ _)
   simpa using h
 
 -- A second A step may create the opposite unit; neither signed unit is deleted.
@@ -78,13 +74,15 @@ example : (countingUnitInsertions (insert {(0, false)} root) 2 heart true).card 
 example : ((countingChild (insert {(0, false)} root) 2 heart true).filter
     fun C => C.card = 1).card = 3 := by decide
 
--- The empty variable type and an empty root clause are permitted for a zero-step path.
-example : (∑ i ∈ range 0,
-    (countingUnitInsertions ({∅} : ClauseSet Empty) i ∅ false).card) ≤ 0 := by
+-- The empty variable type and an empty root clause force `0` unit insertions along any path.
+example (N : ℕ) (ψ : ℕ → ClauseSet Empty) (c : ℕ → ℕ)
+    (H : ℕ → Finset (Literal Empty)) (b : ℕ → Bool) (hroot : ψ 0 = {∅})
+    (hstep : ∀ i < N, ψ (i + 1) = countingChild (ψ i) (c i) (H i) (b i))
+    (hheavy : ∀ i < N, Heavy (fun _ => 1) (ψ i) (c i) (H i)) :
+    (∑ i ∈ range N, (countingUnitInsertions (ψ i) (c i) (H i) (b i)).card) = 0 := by
   have h := sum_countingUnitInsertions_le (θ := fun _ => 1) (by intro; decide)
-    0 (fun _ => ({∅} : ClauseSet Empty)) id (fun _ => ∅) (fun _ => false)
-    (by intro i hi; omega) (by intro i hi; omega) (by simp [Reduced]) ∅ (by simp)
-  exact h
+    N ψ c H b hstep hheavy (by rw [hroot]; simp [Reduced]) ∅ (by rw [hroot]; simp)
+  simpa using Nat.eq_zero_of_le_zero h
 
 -- No nontautology assumption is needed for units: the petal and negated unit may coincide.
 example : countingUnitInsertions ({{(0, true), (0, false)}} : ClauseSet (Fin 1))

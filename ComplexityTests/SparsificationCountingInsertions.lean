@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingInsertions
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
 public section
 
@@ -119,42 +120,67 @@ example : countingInsertionCount 2 (nodes false) sizes hearts (dirs false) 2 = 4
 example : ((nodes false 2).filter fun C => C ∉ root ∧ C.card = 2).card = 3 := by decide
 example : ((nodes true 1).filter fun C => C.card = 2 ∧ C ∉ nodes true 2).card = 3 := by decide
 
--- Actual full-Choice clients of the recurrence and the source's unchanged closed constant.
-example : countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 2 ≤ 88 := by
-  exact countingInsertionCount_le_rec θpos 2 (nodes true) sizes hearts (dirs true)
-    (steps true) (choices true) rootReduced rootNontautological univ
-    (by intro C hC l hl; exact mem_univ _) (by decide)
+-- Combining `countingInsertionCount_le_rec` at `j = 2` with `countingInsertionCount_one_le` on
+-- any legal counting path starting from `root` yields `countingInsertionCount N ψ c H b 2 ≤ 144`
+-- (`72 + 4 * 18`), sharper than the geometric `countingInsertionCount_le_pow` bound (`216`).
+example (N : ℕ) (ψ : ℕ → ClauseSet (Fin 9)) (c : ℕ → ℕ)
+    (H : ℕ → Finset (Literal (Fin 9))) (b : ℕ → Bool) (hroot : ψ 0 = root)
+    (hstep : ∀ i < N, ψ (i + 1) = countingChild (ψ i) (c i) (H i) (b i))
+    (hchoice : ∀ i < N, Choice θ (ψ i) (c i) (H i)) :
+    countingInsertionCount N ψ c H b 1 ≤ 18 ∧
+      countingInsertionCount N ψ c H b 2 ≤ 144 ∧
+      countingInsertionCount N ψ c H b 2 ≤ 216 := by
+  have hred : Reduced (ψ 0) := hroot ▸ rootReduced
+  have hnt : ∀ C ∈ ψ 0, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C := hroot ▸ rootNontautological
+  have hsup : ∀ C ∈ ψ 0, ∀ l ∈ C, l.1 ∈ (univ : Finset (Fin 9)) := fun _ _ _ _ => mem_univ _
+  have h1 : countingInsertionCount N ψ c H b 1 ≤ 18 := by
+    simpa using countingInsertionCount_one_le θpos N ψ c H b hstep
+      (fun i hi => (hchoice i hi).1) hred univ hsup
+  have hrec := countingInsertionCount_le_rec θpos N ψ c H b hstep hchoice hred hnt
+    univ hsup (j := 2) (by decide)
+  simp only [Nat.Ico_succ_singleton, sum_singleton, Nat.reduceSub, card_univ, Fintype.card_fin]
+    at hrec
+  change countingInsertionCount N ψ c H b 2 ≤
+    4 * 9 * 2 + 2 * (2 * countingInsertionCount N ψ c H b 1) at hrec
+  have hpow : countingInsertionCount N ψ c H b 2 ≤ 216 := by
+    simpa using countingInsertionCount_le_pow (M := 2) (by decide) N ψ c H b hstep hchoice
+      hred hnt univ hsup (j := 2) (by decide)
+  exact ⟨h1, by omega, hpow⟩
 
-example : countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 2 ≤ 216 := by
-  exact countingInsertionCount_le_pow (M := 2) (by decide) 2 (nodes true) sizes hearts (dirs true)
-    (steps true) (choices true) rootReduced rootNontautological univ
-    (by intro C hC l hl; exact mem_univ _) (by decide)
-
-example : countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 2 ≤ 240 := by
-  exact countingInsertionCount_le_pow_of_card_le (M := 2) (by decide) 2 (nodes true)
+-- Declared-variable budget form `countingInsertionCount_le_pow_of_card_le` for any `n ≥ 9`.
+example (n : ℕ) (hn : 9 ≤ n) :
+    countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 2 ≤ 24 * n := by
+  simpa using countingInsertionCount_le_pow_of_card_le (M := 2) (by decide) 2 (nodes true)
     sizes hearts (dirs true) (steps true) (choices true) rootReduced rootNontautological univ
-    (by intro C hC l hl; exact mem_univ _) (n := 10) (by decide) (by decide)
+    (by intro C hC l hl; exact mem_univ _) (n := n) (by simpa using hn) (j := 2) (by decide)
 
--- Empty variables with an empty root clause do not require division by n or an inhabited type.
-example : countingInsertionCount 0 (fun _ => ({∅} : ClauseSet Empty)) (fun _ => 0)
-    (fun _ => ∅) (fun _ => false) 2 ≤ 0 := by
-  exact countingInsertionCount_le_pow_of_card_le (M := 2) (by decide) 0
-    (fun _ => ({∅} : ClauseSet Empty)) (fun _ => 0) (fun _ => ∅) (fun _ => false)
-    (by intro i hi; omega) (by intro i hi; omega) (by unfold Reduced; decide)
-    (by simp) ∅ (by simp) (n := 0) (by simp) (by decide)
+-- Empty variables with an empty root clause do not require division by n or an inhabited type:
+-- `countingInsertionCount_le_pow_of_card_le` at `n = 0` forces `0` insertion events at every `N`.
+example (N : ℕ) (ψ : ℕ → ClauseSet Empty) (c : ℕ → ℕ)
+    (H : ℕ → Finset (Literal Empty)) (b : ℕ → Bool) (hroot : ψ 0 = {∅})
+    (hstep : ∀ i < N, ψ (i + 1) = countingChild (ψ i) (c i) (H i) (b i))
+    (hchoice : ∀ i < N, Choice θ (ψ i) (c i) (H i)) (j : ℕ) (hj : 1 ≤ j) :
+    countingInsertionCount N ψ c H b j = 0 := by
+  have hle := countingInsertionCount_le_pow_of_card_le (M := 2) (by decide) N ψ c H b
+    hstep hchoice (by rw [hroot]; unfold Reduced; decide) (by rw [hroot]; simp) ∅
+    (by rw [hroot]; simp) (n := 0) le_rfl hj
+  simpa using Nat.eq_zero_of_le_zero hle
 
 -- Contradictory root units on one variable are individually nontautological. Neither is an
--- insertion, and no unit propagation is assumed by the bound.
+-- insertion, and `countingInsertionCount_one_le` bounds unit insertions on `{()}` by `2`.
 private def oneVariable : ClauseSet Unit := {{((), true)}, {((), false)}}
 
-example : countingInsertionCount 0 (fun _ => oneVariable) (fun _ => 0)
-    (fun _ => ∅) (fun _ => false) 1 = 0 := by decide
-example : countingInsertionCount 0 (fun _ => oneVariable) (fun _ => 0)
-    (fun _ => ∅) (fun _ => false) 1 ≤ 4 := by
-  exact countingInsertionCount_le_pow (M := 2) (by decide) 0 (fun _ => oneVariable)
-    (fun _ => 0) (fun _ => ∅) (fun _ => false) (by intro i hi; omega)
-    (by intro i hi; omega) (by unfold Reduced; decide) (by decide) {()}
-    (by intro C hC l hl; exact mem_singleton.mpr (Subsingleton.elim _ _)) (by decide)
+example (N : ℕ) (ψ : ℕ → ClauseSet Unit) (c : ℕ → ℕ)
+    (H : ℕ → Finset (Literal Unit)) (b : ℕ → Bool) (hroot : ψ 0 = oneVariable)
+    (hstep : ∀ i < N, ψ (i + 1) = countingChild (ψ i) (c i) (H i) (b i))
+    (hheavy : ∀ i < N, Heavy θ (ψ i) (c i) (H i)) :
+    countingInsertionCount 0 (fun _ => oneVariable) (fun _ => 0) (fun _ => ∅) (fun _ => false) 1 =
+      0 ∧ countingInsertionCount N ψ c H b 1 ≤ 2 := by
+  refine ⟨by decide, ?_⟩
+  have h := countingInsertionCount_one_le θpos N ψ c H b hstep hheavy
+    (by rw [hroot]; unfold Reduced; decide) {()}
+    (by intro C _ l _; exact mem_singleton.mpr (Subsingleton.elim _ _))
+  simpa using h
 
 -- Without nontautology, even the one-step event balance can fail before any OLD marked clause
 -- is deleted. This is the full-Choice counterexample retained in SparsificationCountingDeletion.

@@ -162,14 +162,18 @@ private def multiRootSix : ClauseSet (Fin 6) :=
    {(1, true), (4, true)}}
 
 example : ∀ L ∈ countingLeaves (2 ^ ·) multiRootSix,
-    ∀ C ∈ L, ∀ l ∈ C, l.1 ∈ ({0, 1, 2, 3, 4} : Finset (Fin 6)) :=
-  fun _ hL => support_of_mem_countingLeaves (by decide) hL
-
-example : ∀ L ∈ countingLeaves (2 ^ ·) multiRootSix, ∀ C ∈ L, C.card ≤ 3 :=
-  fun _ hL => card_le_of_mem_countingLeaves (by decide) hL
-
-example : ∀ L ∈ countingLeaves (2 ^ ·) multiRootSix, Reduced L :=
-  fun _ hL => reduced_of_mem_countingLeaves (by unfold Reduced; decide) hL
+    Reduced L ∧
+      ∀ C ∈ L, C.card ≤ 3 ∧ (5, true) ∉ C ∧ (5, false) ∉ C := by
+  intro L hL
+  have hsup := support_of_mem_countingLeaves (declared := ({0, 1, 2, 3, 4} : Finset (Fin 6)))
+    (by decide) hL
+  have hcard := card_le_of_mem_countingLeaves (k := 3) (by decide) hL
+  refine ⟨reduced_of_mem_countingLeaves (by unfold Reduced; decide) hL, fun C hC => ?_⟩
+  refine ⟨hcard C hC, fun h5t => ?_, fun h5f => ?_⟩
+  · have := hsup C hC (5, true) h5t
+    revert this; decide
+  · have := hsup C hC (5, false) h5f
+    revert this; decide
 
 example : ((countingLeaves (2 ^ ·) multiRootSix).map
     fun L => L.toCNF.modelCountOn Finset.univ).sum = 42 := by
@@ -263,17 +267,17 @@ example : ((countingLeaves (2 ^ ·) (reduce multiCNF.toClauseSet)).map
 
 /-! ### 5. Unique-index and unique-member extraction from `List.countP = 1` -/
 
--- Even when non-matching elements repeat (`3` appears twice), `countP = 1` yields both a unique
--- index (`⟨1, _⟩`) and a unique list member (`4`).
-example : ∃! i : Fin [3, 4, 3, 5].length, ([3, 4, 3, 5][i] == 4) = true :=
-  List.existsUnique_fin_of_countP_eq_one (l := [3, 4, 3, 5]) (p := (· == 4)) (by decide)
-
-example : ∃! a, a ∈ [3, 4, 3, 5] ∧ (a == 4) = true :=
-  List.existsUnique_mem_of_countP_eq_one (l := [3, 4, 3, 5]) (p := (· == 4)) (by decide)
-
--- Singleton list at index `0`.
-example : ∃! i : Fin [true].length, [true][i] = true :=
-  List.existsUnique_fin_of_countP_eq_one (l := [true]) (p := id) (by decide)
+-- Even when non-matching elements repeat (`3` appears twice), `countP = 1` yields both the unique
+-- index `1` and the unique matching list member `4`.
+example :
+    (∃ i : Fin [3, 4, 3, 5].length, ([3, 4, 3, 5][i] == 4) = true ∧ i = ⟨1, by decide⟩) ∧
+      ∃ a, (a ∈ [3, 4, 3, 5] ∧ (a == 4) = true) ∧ a = 4 := by
+  obtain ⟨i, hi, huniq_i⟩ :=
+    List.existsUnique_fin_of_countP_eq_one (l := [3, 4, 3, 5]) (p := (· == 4)) (by decide)
+  obtain ⟨a, ha, huniq_a⟩ :=
+    List.existsUnique_mem_of_countP_eq_one (l := [3, 4, 3, 5]) (p := (· == 4)) (by decide)
+  exact ⟨⟨i, hi, (huniq_i ⟨1, by decide⟩ rfl).symm⟩,
+    ⟨a, ha, (huniq_a 4 ⟨by decide, rfl⟩).symm⟩⟩
 
 -- End-to-end unique-leaf wrappers on `multiRoot` and `witnessAssign`.
 example : ∃! i : Fin (countingLeaves (2 ^ ·) multiRoot).length,

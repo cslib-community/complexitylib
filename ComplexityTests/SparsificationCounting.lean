@@ -31,17 +31,14 @@ private def parent : ClauseSet (Fin 3) :=
 
 private def heart : Finset (Literal (Fin 3)) := {(0, true)}
 
--- Five satisfying assignments, including the four with x=true.
-example : parent.toCNF.modelCountOn Finset.univ = 5 := by
-  rw [count_eq_card]
-  decide
-
 -- The old decision branches overlap at x=y=z=true, so their counts must not simply be added.
-example : (child parent 2 heart false).toCNF.modelCountOn Finset.univ = 4 := by
+private theorem child_false_count :
+    (child parent 2 heart false).toCNF.modelCountOn Finset.univ = 4 := by
   rw [count_eq_card]
   decide
 
-example : (child parent 2 heart true).toCNF.modelCountOn Finset.univ = 2 := by
+private theorem child_true_count :
+    (child parent 2 heart true).toCNF.modelCountOn Finset.univ = 2 := by
   rw [count_eq_card]
   decide
 
@@ -49,41 +46,62 @@ example : (child parent 2 heart false).Sat (fun _ => true) ∧
     (child parent 2 heart true).Sat (fun _ => true) := by decide
 
 -- The explicit negated-heart unit removes precisely that overlap.
-example : (countingChild parent 2 heart false).toCNF.modelCountOn Finset.univ = 4 := by
+private theorem countingChild_false_count :
+    (countingChild parent 2 heart false).toCNF.modelCountOn Finset.univ = 4 := by
   rw [count_eq_card]
   decide
 
-example : (countingChild parent 2 heart true).toCNF.modelCountOn Finset.univ = 1 := by
+private theorem countingChild_true_count :
+    (countingChild parent 2 heart true).toCNF.modelCountOn Finset.univ = 1 := by
   rw [count_eq_card]
   decide
 
 example : ¬ (countingChild parent 2 heart true).Sat (fun _ => true) := by decide
 
-example : parent.toCNF.modelCountOn Finset.univ =
-    (countingChild parent 2 heart false).toCNF.modelCountOn Finset.univ +
-    (countingChild parent 2 heart true).toCNF.modelCountOn Finset.univ :=
-  modelCountOn_countingChild parent 2 heart Finset.univ
+-- `modelCountOn_countingChild` recovers the five satisfying assignments (`4 + 1 = 5`), whereas
+-- summing the overlapping decision-tree `child` counts strictly overcounts (`5 < 4 + 2`).
+example :
+    parent.toCNF.modelCountOn Finset.univ = 5 ∧
+      parent.toCNF.modelCountOn Finset.univ <
+        (child parent 2 heart false).toCNF.modelCountOn Finset.univ +
+          (child parent 2 heart true).toCNF.modelCountOn Finset.univ := by
+  have hsum : parent.toCNF.modelCountOn Finset.univ = 5 := by
+    rw [modelCountOn_countingChild parent 2 heart Finset.univ,
+      countingChild_false_count, countingChild_true_count]
+  refine ⟨hsum, ?_⟩
+  rw [hsum, child_false_count, child_true_count]
+  decide
 
 -- A fourth declared variable remains free in every branch, even though it never occurs.
 private def parentFour : ClauseSet (Fin 4) :=
   {{(0, true), (1, true)}, {(0, true), (2, true)}}
 
+private theorem parentFour_false_count :
+    (countingChild parentFour 2 {(0, true)} false).toCNF.modelCountOn Finset.univ = 8 := by
+  rw [count_eq_card]
+  decide
+
+private theorem parentFour_true_count :
+    (countingChild parentFour 2 {(0, true)} true).toCNF.modelCountOn Finset.univ = 2 := by
+  rw [count_eq_card]
+  decide
+
 example : parentFour.toCNF.modelCountOn Finset.univ = 10 := by
-  rw [count_eq_card]
-  decide
+  rw [modelCountOn_countingChild parentFour 2 {(0, true)} Finset.univ,
+    parentFour_false_count, parentFour_true_count]
 
-example : (countingChild parentFour 2 {(0, true)} false).toCNF.modelCountOn Finset.univ = 8 := by
-  rw [count_eq_card]
-  decide
-
-example : (countingChild parentFour 2 {(0, true)} true).toCNF.modelCountOn Finset.univ = 2 := by
-  rw [count_eq_card]
-  decide
-
--- With the parent AND heart support hypotheses, the unused fourth variable is not introduced.
+-- With the parent AND heart support hypotheses, the unused fourth variable is not introduced,
+-- so no clause in the B-child mentions variable `3 : Fin 4`.
 example : ∀ C ∈ countingChild parentFour 2 {(0, true)} true,
-    ∀ l ∈ C, l.1 ∈ ({0, 1, 2} : Finset (Fin 4)) :=
-  support_countingChild parentFour 2 {(0, true)} {0, 1, 2} (by decide) (by decide) true
+    (3, true) ∉ C ∧ (3, false) ∉ C := by
+  have hsup := support_countingChild parentFour 2 {(0, true)} {0, 1, 2}
+    (by decide) (by decide) true
+  intro C hC
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · have := hsup C hC (3, true) h
+    revert this; decide
+  · have := hsup C hC (3, false) h
+    revert this; decide
 
 -- Parent support alone cannot control an arbitrary heart: its negated units may add a variable.
 example : ¬ (∀ C ∈ countingChild (∅ : ClauseSet (Fin 1)) 1 {(0, true)} true,
