@@ -610,6 +610,12 @@ example (b₀ b₁ r₀ r₁ : Bool) :
 example : (xorPreludeCircuit 3 2 4).size = 49 := by
   simp [size_xorPreludeCircuit]
 
+/-- Composing `multiPartyMulSchedule 3` with `twoPartyMulSchedule` expands into `3 * 2 / 2 = 3`
+pairwise `ot14Spec` oracle rounds. -/
+example :
+    (Schedule.compose (fun _ => twoPartyMulSchedule) (multiPartyMulSchedule 3)).length = 3 :=
+  rfl
+
 /-- Composing `multiPartyMulProtocol 3` with `twoPartyMulProtocol` via
 `PerfectSemiHonestPrivate.compose` (Theorem 7.5.7) yields a 3-party shared-multiplication protocol
 in `ot14World` that is perfectly semi-honest private against every static coalition
@@ -620,6 +626,18 @@ example :
       ot14World (sharedMulFunctionality 3)
       (composeSim (multiPartyMulProtocol 3) (multiPartyMulSim 3) (fun _ => twoPartyMulSim)) :=
   (perfectSemiHonestPrivate_multiPartyMul 3).compose (fun _ => perfectSemiHonestPrivate_twoPartyMul)
+
+/-- For `m = 2`, `n = 1`, `k = 1`, and `andNandCircuit` (1 `.and` gate and 1 `.not` gate),
+`gmwCircuitSchedule 2 1 1 andNandCircuit` has 4 Step 1 message rounds, 1 Step 2 `sharedMulSpec 2`
+oracle round, and `2 * 1 = 2` Step 3 share-refresh `sharedMulSpec 2` oracle rounds plus 4 Step 3
+message rounds; composing with `multiPartyMulSchedule 2` and `twoPartyMulSchedule` expands the
+`1 + 2 = 3` `sharedMulSpec 2` calls into `3 * (2 * 1 / 2) = 3` `ot14Spec` oracle rounds (11 rounds
+in total). -/
+example :
+    (Schedule.compose (fun _ => twoPartyMulSchedule)
+      (Schedule.compose (fun _ => multiPartyMulSchedule 2)
+        (gmwCircuitSchedule 2 1 1 andNandCircuit))).length = 11 :=
+  rfl
 
 /-- `gmwOT14Protocol 2 1 1 andNandCircuit` is perfectly semi-honest private in `ot14World` against
 every static coalition `I : Finset (Fin 2)`. -/

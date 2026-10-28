@@ -7,8 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Circuit.Boolean.Parity
+public import Complexity.Computability.Circuit.Pi
 public import Complexity.Crypto.Protocols.MPC.CircuitEval
-public import Cslib.Computability.Circuit.Composition
 
 /-!
 # Multi-Party Protocol Composition, Randomized Wrapper, and Completeness of $\text{OT}_1^4$
@@ -24,32 +25,47 @@ Applications*:
    generalizes the 2-party composition theorem (Section 7.3.1, Definitions 7.3.1–7.3.2 on print
    p. 636 and Theorem 7.3.3 on print pp. 637–638) to $m$-party protocols making $k$-ary ideal
    oracle calls (Section 7.5.2.1, Definitions 7.5.5–7.5.6 on print pp. 701–702 and Theorem 7.5.7 on
-   print pp. 702–703). Replacing each `.oracle op parties` round of an outer protocol `Π` with the
+   print pp. 702–703). Replacing each `.oracle op parties` round of an outer protocol `P` with the
    embedded execution of a perfectly private $k$-party subprotocol `Sub op` yields a perfectly
-   private $m$-party protocol `Π.compose Sub` in the lower-level oracle world `W₂`.
+   private $m$-party protocol `P.compose Sub` in the lower-level oracle world `W₂`.
 2. **Reduction of Randomized Functionalities to Deterministic Ones (`randomizedFunctionality`,
    `detOfRandomized`, `Protocol.randomizedWrapper`, `randomizedWrapperSim`,
    `perfectSemiHonestPrivate_randomizedWrapper`):**
-   formalizes Equation 7.48 (Section 7.5.2.4, print p. 707; generalizing Equation 7.19 on print
-   p. 638 and Proposition 7.3.4 on print p. 639, Section 7.3.1). Each party `i : Fin m` samples a
-   uniform private coin share `r_i : BitString coins` and runs a deterministic protocol on
-   `(x_i, r_i)` that evaluates `g (∑ i : Fin m, r_i) x`. Against every proper static coalition
-   `I ≠ Finset.univ`, the sum `∑ i : Fin m, r_i` is uniform and independent of the coalition's
-   coin shares `I.restrict r`.
+   formalizes Equation 7.48 (Section 7.5.2.4, print p. 707) and Proposition 7.3.4 (Section 7.3.1,
+   print pp. 639–640) combined with the composition theorem ("Application: Reducing Private
+   Computation of General Functionalities to Deterministic Ones", Section 7.3.1, print pp. 638–639,
+   Equation 7.19). Each party `i : Fin m` samples a uniform private coin share
+   `r_i : BitString coins` and runs a deterministic protocol on `(x_i, r_i)` that evaluates
+   `g (∑ i : Fin m, r_i) x`. Against every proper static coalition `I ≠ Finset.univ`, the sum
+   `∑ i : Fin m, r_i` is uniform and independent of the coalition's coin shares `I.restrict r`.
+   `perfectSemiHonestPrivate_randomizedWrapper` is proved directly rather than via
+   `PerfectSemiHonestPrivate.compose` because the coin-sharing reduction is only private against
+   proper coalitions `I ≠ Finset.univ`, whereas `PerfectSemiHonestPrivate.compose` requires all-`I`
+   privacy of the outer protocol. Note that restricting to `I ≠ Finset.univ` is narrower than
+   Goldreich's quantifier over all $I \subseteq [m]$ in Definition 7.5.1 (print p. 696, where
+   $I = [m]$ is called "always trivial" on print pp. 697 and 703): under the joint view-and-output
+   equation (Eq. 7.40) for randomized functionalities, $I = [m]$ is not trivial when coin shares
+   are simulated independently of the output (for $m = 2$, Definition 7.2.1 considers only
+   single-party views, so Proposition 7.3.4 itself is fully covered).
 3. **XOR Prelude Circuit and $\text{OT}_1^4$-Hybrid GMW Protocol (`xorPreludeCircuit`,
    `eval_xorPreludeCircuit`, `gmwOT14Protocol`, `gmwOT14RandomizedProtocol`,
    `perfectSemiHonestPrivateProper_gmwOT14Randomized`):**
-   constructs a Boolean circuit `xorPreludeCircuit m n coins` that unpacks the `m` party input-coin
-   blocks `(x_i, r_i)` into `Fin.append (BitString.blocksEquiv.symm x) (∑ i : Fin m, r_i)`,
-   composes `gmwCircuitProtocol` (M3) with `multiPartyMulProtocol` and `twoPartyMulProtocol` (M2)
-   to obtain `gmwOT14Protocol` and `gmwOT14RandomizedProtocol`, and establishes Theorem 7.5.12
-   (Section 7.5.2.4, print p. 707; generalizing Theorem 7.3.11, Section 7.3.4, print p. 648) at
-   the circuit level.
-   Because `gmwCircuitProtocol` in M3 includes one `sharedMulSpec m` share-refresh call per output
-   coordinate `(r, j) : Fin m × Fin k` (in addition to one `sharedMulSpec m` call per `.and`/`.or`
-   gate in Step 2), composing with `multiPartyMulProtocol m` and `twoPartyMulProtocol` expands each
-   such call into $m(m-1)/2$ pairwise invocations of `ot14Spec` (an extra $m \cdot k \cdot m(m-1)/2$
-   calls to `ot14Spec` from Step 3, polynomial in $m, n, k, C.\text{size}$).
+   constructs a Boolean circuit `xorPreludeCircuit m n coins` (reusing
+   `Cslib.Circuits.Program.appendXor` and `Cslib.Circuits.Circuit.pi`) that unpacks the `m` party
+   input-coin blocks `(x_i, r_i)` into `Fin.append (BitString.blocksEquiv.symm x) (∑ i : Fin m,
+   r_i)`, composes `gmwCircuitProtocol` (M3) with `multiPartyMulProtocol` and
+   `twoPartyMulProtocol` (M2) to obtain `gmwOT14Protocol` and `gmwOT14RandomizedProtocol`, and
+   establishes Theorem 7.5.12 (Section 7.5.2.4, print p. 707; generalizing Theorem 7.3.11,
+   Section 7.3.4, print p. 648) at the circuit level for all proper coalitions `I ≠ Finset.univ`.
+   Throughout this module, security is stated as exact `PMF` distributional equality with
+   unrestricted `ProbComp` simulators, whereas Goldreich's Definitions 7.2.1 and 7.5.1 use
+   computational indistinguishability and PPT simulators (polynomial-time efficiency is certified in
+   M5). Because `gmwCircuitProtocol` in M3 includes one `sharedMulSpec m` share-refresh call per
+   output coordinate `(r, j) : Fin m × Fin k` (in addition to one `sharedMulSpec m` call per
+   `.and`/`.or` gate in Step 2), composing with `multiPartyMulProtocol m` and `twoPartyMulProtocol`
+   expands each such call into $m(m-1)/2$ pairwise invocations of `ot14Spec` (an extra
+   $m \cdot k \cdot m(m-1)/2$ calls to `ot14Spec` from Step 3, polynomial in
+   $m, n, k, C.\text{size}$).
 
 ## Main definitions
 
@@ -64,7 +80,7 @@ Applications*:
   `Cslib.Crypto.Protocols.MPC.detOfRandomized`,
   `Cslib.Crypto.Protocols.MPC.Protocol.randomizedWrapper`,
   `Cslib.Crypto.Protocols.MPC.randomizedWrapperSim`: randomized-to-deterministic wrapper
-  (Eq. 7.19, p. 638; Proposition 7.3.4, p. 639; Eq. 7.48, p. 707).
+  (Eq. 7.19, p. 638; Proposition 7.3.4, pp. 639–640; Eq. 7.48, p. 707).
 * `Cslib.Crypto.Protocols.MPC.xorPreludeCircuit`: Boolean prelude circuit combining party coin
   shares by bitwise XOR.
 * `Cslib.Crypto.Protocols.MPC.gmwOT14Protocol`,
@@ -81,8 +97,9 @@ Applications*:
 * `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivate.mapInput`: preservation of perfect
   semi-honest privacy under local party input encodings.
 * `Cslib.Crypto.Protocols.MPC.perfectSemiHonestPrivate_randomizedWrapper`: Proposition 7.3.4
-  (print p. 639) and Section 7.5.2.4 Eq. 7.48 (print p. 707), proper-coalition privacy of the
-  randomized-functionality wrapper.
+  (print pp. 639–640) combined with the composition theorem (Section 7.3.1 Application, print
+  pp. 638–639, Eq. 7.19) and Section 7.5.2.4 Eq. 7.48 (print p. 707), proper-coalition privacy of
+  the randomized-functionality wrapper.
 * `Cslib.Crypto.Protocols.MPC.eval_xorPreludeCircuit`,
   `Cslib.Crypto.Protocols.MPC.size_xorPreludeCircuit`: correctness and gate count of
   `xorPreludeCircuit`.
@@ -96,9 +113,9 @@ Applications*:
 
 * [O. Goldreich, *Foundations of Cryptography, Volume 2: Basic Applications*][Goldreich2004],
   Section 7.3.1 (Definitions 7.3.1–7.3.2 on p. 636, Theorem 7.3.3 on pp. 637–638, Eq. 7.19 on
-  p. 638, Proposition 7.3.4 on p. 639), Section 7.3.4 (Theorem 7.3.11, p. 648), Section 7.5.2.1
-  (Definitions 7.5.5–7.5.6 on pp. 701–702, Theorem 7.5.7 on pp. 702–703), and Section 7.5.2.4
-  (Eq. 7.48, Theorem 7.5.12, p. 707).
+  p. 638, Proposition 7.3.4 on pp. 639–640), Section 7.3.4 (Theorem 7.3.11, p. 648),
+  Section 7.5.2.1 (Definitions 7.5.5–7.5.6 on pp. 701–702, Theorem 7.5.7 on pp. 702–703), and
+  Section 7.5.2.4 (Eq. 7.48, Theorem 7.5.12, p. 707).
 -/
 
 public section
@@ -148,67 +165,7 @@ the sequence of subprotocol coins `Schedule.SubCoins Coins₂ sc₁ i`. -/
 
 namespace Composition
 
-/-! #### Independent product helpers for `OracleComp.pi` -/
-
-private theorem eval_pi_pure {m : ℕ} {α : Fin m → Type} (x : (i : Fin m) → α i) :
-    ProbComp.eval (OracleComp.pi (fun i => (pure (x i) : ProbComp (α i)))) = PMF.pure x := by
-  induction m with
-  | zero =>
-    simp only [OracleComp.pi_zero, ProbComp.eval_pure]
-    exact congrArg PMF.pure (funext fun i => i.elim0)
-  | succ m ih =>
-    simp only [OracleComp.pi_succ, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-      ih (fun i => x i.succ), PMF.pure_bind, PMF.pure_map]
-    exact congrArg PMF.pure (funext fun i => Fin.cases rfl (fun _ => rfl) i)
-
-private theorem eval_pi_bind {m : ℕ} {α β : Fin m → Type}
-    (p : (i : Fin m) → ProbComp (α i)) (q : (i : Fin m) → α i → ProbComp (β i)) :
-    ProbComp.eval (OracleComp.pi (fun i => p i >>= q i)) =
-      (ProbComp.eval (OracleComp.pi p)).bind fun a =>
-        ProbComp.eval (OracleComp.pi (fun i => q i (a i))) := by
-  induction m with
-  | zero =>
-    simp only [OracleComp.pi_zero, ProbComp.eval_pure, PMF.pure_bind]
-  | succ m ih =>
-    simp only [OracleComp.pi_succ, ProbComp.eval_bind, ProbComp.eval_map, ih,
-      PMF.bind_bind, PMF.bind_map, PMF.map_bind]
-    refine congrArg (ProbComp.eval (p 0)).bind (funext fun a0 => ?_)
-    rw [PMF.bind_comm]
-    refine congrArg (ProbComp.eval (OracleComp.pi fun i => p i.succ)).bind (funext fun a_rest => ?_)
-    refine congrArg (ProbComp.eval (q 0 a0)).bind (funext fun b0 => ?_)
-    rfl
-
-private theorem eval_pi_pair {m : ℕ} {α β : Fin m → Type}
-    (p : (i : Fin m) → ProbComp (α i)) (q : (i : Fin m) → ProbComp (β i)) :
-    ProbComp.eval (OracleComp.pi fun i => do
-      let a ← p i
-      let b ← q i
-      return (a, b)) =
-    (ProbComp.eval (OracleComp.pi p)).bind fun a =>
-      (ProbComp.eval (OracleComp.pi q)).map fun b i => (a i, b i) := by
-  simp only [bind_pure_comp]
-  rw [eval_pi_bind]
-  refine congrArg (ProbComp.eval (OracleComp.pi p)).bind (funext fun a => ?_)
-  exact ProbComp.eval_pi_map q (fun i b => (a i, b))
-
-private theorem eval_pi_comm {m k : ℕ} {F : Fin m → Fin k → Type}
-    (P : (i : Fin m) → (s : Fin k) → ProbComp (F i s)) :
-    ProbComp.eval (OracleComp.pi fun i : Fin m => OracleComp.pi fun s : Fin k => P i s) =
-      (ProbComp.eval (OracleComp.pi fun s : Fin k => OracleComp.pi fun i : Fin m => P i s)).map
-        (fun g i s => g s i) := by
-  induction k with
-  | zero =>
-    simp only [OracleComp.pi_zero, eval_pi_pure, ProbComp.eval_pure, PMF.pure_map]
-    exact congrArg PMF.pure (funext fun _ => funext fun s => s.elim0)
-  | succ k ih =>
-    simp only [OracleComp.pi_succ (m := k)]
-    rw [eval_pi_bind]
-    simp only [ProbComp.eval_pi_map, ih (fun i s => P i s.succ),
-      ProbComp.eval_bind, ProbComp.eval_map, PMF.map_bind, PMF.map_comp]
-    refine congrArg (ProbComp.eval (OracleComp.pi fun i => P i 0)).bind (funext fun first => ?_)
-    refine congrArg (PMF.map · _) (funext fun rest => ?_)
-    ext i s
-    exact Fin.cases rfl (fun _ => rfl) s
+/-! #### Independent product helper for single-party slot sampling -/
 
 private theorem eval_pi_single {m : ℕ} {β : Type} (i₀ : Fin m) (p : ProbComp β) :
     ProbComp.eval (OracleComp.pi fun i : Fin m =>
@@ -276,7 +233,9 @@ private theorem eval_pi_single {m : ℕ} {β : Type} (i₀ : Fin m) (p : ProbCom
 /-! #### Induced sub-coalitions, tuple pushforwards, and subprotocol coin sampling -/
 
 /-- Induced sub-coalition in `Fin k` of an outer coalition `I : Finset (Fin m)` along an embedding
-`parties : Fin k ↪ Fin m` (Goldreich Theorem 7.5.7 Proof Sketch, pp. 702–703). -/
+`parties : Fin k ↪ Fin m` (Goldreich Theorem 7.5.7 Proof Sketch, pp. 702–703). Defined via
+`Finset.univ.filter` rather than `Finset.preimage` so that `subCoalition` and `expandSimSteps`
+remain computable. -/
 @[expose] def subCoalition {k m : ℕ} (parties : Fin k ↪ Fin m) (I : Finset (Fin m)) :
     Finset (Fin k) :=
   Finset.univ.filter fun s => parties s ∈ I
@@ -893,8 +852,8 @@ Eq. 7.48, p. 707). -/
     P.steps.mapState fun _ ⟨x_i, r_i, c_i⟩ => ((x_i, r_i), c_i)
 
 /-- Coalition simulator for `P.randomizedWrapper coins` (Goldreich Section 7.3.1, Proposition 7.3.4
-Proof, p. 639; Section 7.5.2.4, p. 707): samples independent uniform coin shares `rI i` for each
-coalition party `i ∈ I`, runs the deterministic simulator `S I (fun i => (xI i, rI i)) yI`, and
+Proof, pp. 639–640; Section 7.5.2.4, p. 707): samples independent uniform coin shares `rI i` for
+each coalition party `i ∈ I`, runs the deterministic simulator `S I (fun i => (xI i, rI i)) yI`, and
 combines `(rI i, (v i).coins)` into the simulated coin tape. -/
 @[expose] noncomputable def randomizedWrapperSim {m : ℕ} {spec : MultiOracleSpec}
     {sc : Schedule m spec} {In Coins Out : Fin m → Type} (coins : ℕ)
@@ -924,7 +883,7 @@ private theorem restrict_update_of_notMem {m : ℕ} {α : Fin m → Type}
   have hne : i ≠ ℓ := fun h => hℓ (h ▸ hi)
   exact Function.update_of_ne hne v r
 
-/-- Key independence lemma for Eq. 7.48 (p. 707) and Proposition 7.3.4 (p. 639): for any proper
+/-- Key independence lemma for Eq. 7.48 (p. 707) and Proposition 7.3.4 (pp. 639–640): for any proper
 coalition `I ≠ Finset.univ`, when `r : Fin m → BitString coins` is sampled with independent uniform
 coordinates, the pair `(I.restrict r, ∑ i : Fin m, r i)` has the exact same joint distribution as
 sampling `rI` via `OracleComp.piRestrict I` and independently sampling a uniform sum
@@ -972,10 +931,22 @@ private theorem bind_restrict_and_sum_pi_uniform {m : ℕ} (coins : ℕ) {β : T
   exact ProbComp.eval_bind_restrict_pi I (fun _ : Fin m => ProbComp.uniform (BitString coins))
     (fun rI => (ProbComp.eval (ProbComp.uniform (BitString coins))).bind (k rI))
 
-/-- Proposition 7.3.4 (Goldreich Section 7.3.1, p. 639) and Section 7.5.2.4 Eq. 7.48 (p. 707):
+/-- Proposition 7.3.4 (Goldreich Section 7.3.1, pp. 639–640) combined with the composition theorem
+(Section 7.3.1 Application, pp. 638–639, Eq. 7.19) and Section 7.5.2.4 Eq. 7.48 (p. 707):
 if `P` is perfectly semi-honest private for `detOfRandomized coins g`, then
 `P.randomizedWrapper coins` is perfectly semi-honest private for `randomizedFunctionality coins g`
-against every proper static coalition `I ≠ Finset.univ`. -/
+against every proper static coalition `I ≠ Finset.univ`.
+
+This is proved directly rather than via `PerfectSemiHonestPrivate.compose`, because the coin-sharing
+reduction is only private against proper coalitions `I ≠ Finset.univ`, whereas
+`PerfectSemiHonestPrivate.compose` requires all-`I` privacy of the outer protocol. Note that
+restricting to `I ≠ Finset.univ` is narrower than Goldreich's quantifier over all `I ⊆ [m]` in
+Definition 7.5.1 (p. 696, where `I = [m]` is called trivial on pp. 697, 703): under the joint
+view-and-output equation Eq. 7.40 for randomized functionalities, `I = Finset.univ` is not
+satisfied by an output-independent coin simulator (for `m = 2`, Definition 7.2.1 considers only
+single-party views, so Proposition 7.3.4 itself is fully covered). Moreover, this theorem proves
+exact `PMF` equality with an unrestricted `ProbComp` simulator rather than Goldreich's computational
+indistinguishability with PPT simulators. -/
 theorem perfectSemiHonestPrivate_randomizedWrapper {m : ℕ}
     {spec : MultiOracleSpec} {sc : Schedule m spec} {In Coins Out : Fin m → Type}
     (coins : ℕ) (g : BitString coins → ((i : Fin m) → In i) → (i : Fin m) → Out i)
@@ -1034,24 +1005,33 @@ theorem perfectSemiHonestPrivate_randomizedWrapper {m : ℕ}
 
 namespace XORPrelude
 
-/-- De Morgan Boolean circuit of size 4 computing binary XOR (`u 0 + u 1` in `Bool`) as
-`(u 0 || u 1) && !(u 0 && u 1)`. -/
-@[expose] def xorTwoCircuit : Cslib.Circuits.Circuit Boolean.signature 2 1 where
-  size := 4
+/-- Single-output 4-gate De Morgan circuit computing `a c + b c` (`a c ^^ b c`) at coordinate
+`c : Fin coins` of `Fin.append a b : BitString (coins + coins)`, built from
+`Cslib.Circuits.Program.appendXor`. -/
+@[expose] def xorBitAtCircuit (coins : ℕ) (c : Fin coins) :
+    Cslib.Circuits.Circuit Boolean.signature (coins + coins) 1 where
   program :=
-    .gate
-      (.gate
-        (.gate
-          (.gate .empty ⟨.or, Fin.cases (.input 0) (fun _ => .input 1)⟩)
-          ⟨.and, Fin.cases (.input 0) (fun _ => .input 1)⟩)
-        ⟨.not, fun _ => .gate 1⟩)
-      ⟨.and, Fin.cases (.gate 0) (fun _ => .gate 2)⟩
-  outputs := fun _ => .gate 3
+    Cslib.Circuits.Program.empty.appendXor
+      (.input (Fin.castAdd coins c)) (.input (Fin.natAdd coins c))
+  outputs _ := .gate (Fin.last 3)
 
-private theorem eval_xorTwoCircuit (u : Fin 2 → Bool) :
-    xorTwoCircuit.eval Boolean.interpretation u = fun _ => u 0 + u 1 := by
-  revert u
-  decide
+@[simp] private theorem eval_xorBitAtCircuit (coins : ℕ) (c : Fin coins)
+    (a b : BitString coins) :
+    (xorBitAtCircuit coins c).eval Boolean.interpretation (Fin.append a b) 0 = (a + b) c := by
+  have h :=
+    Cslib.Circuits.Program.trace_appendXor Cslib.Circuits.Program.empty
+      (.input (Fin.castAdd coins c)) (.input (Fin.natAdd coins c)) (Fin.append a b)
+  change (Cslib.Circuits.Program.empty.appendXor
+    (.input (Fin.castAdd coins c)) (.input (Fin.natAdd coins c))).trace Boolean.interpretation
+    (Fin.append a b) (.gate (Fin.last 3)) = (a c ^^ b c)
+  rw [h]
+  change (Fin.append a b (Fin.castAdd coins c) ^^ Fin.append a b (Fin.natAdd coins c)) =
+    (a c ^^ b c)
+  rw [Fin.append_left, Fin.append_right]
+
+@[simp] private theorem size_xorBitAtCircuit (coins : ℕ) (c : Fin coins) :
+    (xorBitAtCircuit coins c).size = 4 :=
+  rfl
 
 /-- Single-gate Boolean circuit outputting `0 : BitString coins` via `.const false`. -/
 @[expose] def zeroBitStringCircuit (w coins : ℕ) :
@@ -1064,60 +1044,20 @@ private theorem eval_zeroBitStringCircuit (w coins : ℕ) (u : BitString w) :
     (zeroBitStringCircuit w coins).eval Boolean.interpretation u = 0 :=
   rfl
 
-/-- Coordinatewise XOR circuit of size `4 * coins` on two `coins`-bit strings. -/
-@[expose] def xorBitStringsCircuit :
-    (coins : ℕ) → Cslib.Circuits.Circuit Boolean.signature (coins + coins) coins
-  | 0 => Circuit.wiring Boolean.signature Fin.elim0
-  | coins + 1 =>
-    (((xorBitStringsCircuit coins).comp
-        (Circuit.wiring Boolean.signature
-          (Fin.append
-            (Fin.castAdd (coins + 1) ∘ Fin.castSucc)
-            (Fin.natAdd (coins + 1) ∘ Fin.castSucc)))).append
-      (xorTwoCircuit.comp
-        (Circuit.wiring Boolean.signature
-          (fun idx : Fin 2 =>
-            if idx = 0 then
-              Fin.castAdd (coins + 1) (Fin.last coins)
-            else
-              Fin.natAdd (coins + 1) (Fin.last coins)))))
+/-- Coordinatewise XOR circuit of size `4 * coins` on two `coins`-bit strings, constructed side by
+side via `Cslib.Circuits.Circuit.pi` from `xorBitAtCircuit`. -/
+@[expose] def xorBitStringsCircuit (coins : ℕ) :
+    Cslib.Circuits.Circuit Boolean.signature (coins + coins) coins :=
+  Cslib.Circuits.Circuit.pi (xorBitAtCircuit coins)
 
 private theorem eval_xorBitStringsCircuit (coins : ℕ) (a b : BitString coins) :
     (xorBitStringsCircuit coins).eval Boolean.interpretation (Fin.append a b) = a + b := by
-  induction coins with
-  | zero =>
-    funext i
-    exact i.elim0
-  | succ coins ih =>
-    simp only [xorBitStringsCircuit, Circuit.eval_append, Circuit.eval_comp,
-      Circuit.eval_wiring]
-    have hinit :
-        Fin.append a b ∘
-          Fin.append
-            (Fin.castAdd (coins + 1) ∘ Fin.castSucc)
-            (Fin.natAdd (coins + 1) ∘ Fin.castSucc) =
-        Fin.append (a ∘ Fin.castSucc) (b ∘ Fin.castSucc) := by
-      funext idx
-      induction idx using Fin.addCases with
-      | left j =>
-        simp only [Function.comp_apply, Fin.append_left]
-      | right j =>
-        simp only [Function.comp_apply, Fin.append_right]
-    rw [hinit, ih, eval_xorTwoCircuit]
-    funext c
-    induction c using Fin.addCases with
-    | left j =>
-      simp only [Fin.append_left, Function.comp_apply, Pi.add_apply]
-      rfl
-    | right j =>
-      have hj0 : j = 0 := Subsingleton.elim j 0
-      subst hj0
-      have hlast : Fin.natAdd coins (0 : Fin 1) = Fin.last coins := by
-        ext
-        exact Nat.add_zero coins
-      rw [Fin.append_right]
-      simp only [Function.comp_apply, ↓reduceIte, Fin.one_eq_zero_iff,
-        Nat.succ_succ_ne_one, Fin.append_left, Fin.append_right, Pi.add_apply, hlast]
+  ext c
+  simp [xorBitStringsCircuit]
+
+private theorem size_xorBitStringsCircuit (coins : ℕ) :
+    (xorBitStringsCircuit coins).size = 4 * coins := by
+  simp [xorBitStringsCircuit, Nat.mul_comm]
 
 /-- Boolean circuit summing `m` blocks of width `coins` by coordinatewise XOR. -/
 @[expose] def sumBlocksCircuit :
@@ -1198,13 +1138,6 @@ private theorem eval_extractCoinsCircuit (m n coins : ℕ)
   simp only [extractCoinsCircuit, Circuit.eval_wiring, Function.comp_apply,
     Cslib.BitString.blocksEquiv_symm_apply, Equiv.symm_apply_apply, Fin.append_right]
 
-private theorem size_xorBitStringsCircuit (coins : ℕ) :
-    (xorBitStringsCircuit coins).size = 4 * coins := by
-  induction coins with
-  | zero => rfl
-  | succ coins ih =>
-    simp [xorBitStringsCircuit, xorTwoCircuit, ih, Nat.mul_succ, Nat.add_comm]
-
 private theorem size_sumBlocksCircuit (m coins : ℕ) :
     (sumBlocksCircuit m coins).size = 1 + m * (4 * coins) := by
   induction m with
@@ -1281,7 +1214,8 @@ theorem perfectSemiHonestPrivate_gmwOT14 (m n k : ℕ) [NeZero m]
 /-- Randomized `m`-party $\text{OT}_1^4$-hybrid GMW protocol (Goldreich Section 7.5.2.4,
 Eq. 7.48 and Theorem 7.5.12, p. 707; cf. Section 7.3.4, Theorem 7.3.11, p. 648): runs
 `Protocol.randomizedWrapper coins` around `gmwOT14Protocol m (n + coins) k (C.comp
-(xorPreludeCircuit m n coins))`. -/
+(xorPreludeCircuit m n coins))` precomposed with `Protocol.mapInput` packing `(x_i, r_i)` into
+`Fin.append x_i r_i : BitString (n + coins)`. -/
 @[expose] noncomputable def gmwOT14RandomizedProtocol (m coins n k : ℕ) [NeZero m]
     (C : Cslib.Circuits.Circuit Boolean.signature (m * n + coins) (m * k)) :=
   ((gmwOT14Protocol m (n + coins) k (C.comp (xorPreludeCircuit m n coins))).mapInput
@@ -1297,7 +1231,16 @@ Eq. 7.48 and Theorem 7.5.12, p. 707; cf. Section 7.3.4, Theorem 7.3.11, p. 648):
 /-- Theorem 7.5.12 (Goldreich Section 7.5.2.4, p. 707; generalizing Theorem 7.3.11, Section 7.3.4,
 p. 648): for any randomized `m`-party Boolean circuit `C : Circuit Boolean.signature (m * n + coins)
 (m * k)`, `gmwOT14RandomizedProtocol m coins n k C` perfectly and privately computes the randomized
-functionality of `C` in `ot14World` against every proper static coalition `I ≠ Finset.univ`. -/
+functionality of `C` in `ot14World` against every proper static coalition `I ≠ Finset.univ`.
+
+Note that the proper-coalition quantifier `I ≠ Finset.univ` (`PerfectSemiHonestPrivateProper`) is
+narrower than Goldreich's Definition 7.5.1 and Theorem 7.5.12 (which quantify over all `I ⊆ [m]`,
+p. 696, treating `I = [m]` as trivial on pp. 697, 703), because under the joint view-and-output
+equation Eq. 7.40 for randomized functionalities, `I = Finset.univ` is not satisfied when coin
+shares are simulated independently of the output. Furthermore, this theorem establishes exact `PMF`
+distributional equality with an unrestricted `ProbComp` simulator (`gmwOT14RandomizedSim`), whereas
+Goldreich states computational indistinguishability with PPT simulators (uniform polynomial-time
+efficiency is certified in M5). -/
 theorem perfectSemiHonestPrivateProper_gmwOT14Randomized (m coins n k : ℕ) [NeZero m]
     (C : Cslib.Circuits.Circuit Boolean.signature (m * n + coins) (m * k)) :
     PerfectSemiHonestPrivateProper (gmwOT14RandomizedProtocol m coins n k C) ot14World
