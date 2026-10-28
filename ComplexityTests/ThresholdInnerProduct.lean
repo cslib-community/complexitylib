@@ -17,40 +17,22 @@ open Cslib Cslib.BitString Matrix
 
 namespace ThresholdInnerProduct
 
--- Empty sides satisfy the bound for either color and arbitrary coordinate type.
-example {ι : Type*} [Fintype ι] (B : Finset (ι → Bool)) (b : Bool) :
-    (∅ : Finset (ι → Bool)).card * B.card ≤ 2 ^ Fintype.card ι :=
-  card_mul_le_two_pow_of_dotProduct_eq ∅ B b (by simp)
-
-example {ι : Type*} [Fintype ι] (A : Finset (ι → Bool)) (b : Bool) :
-    A.card * (∅ : Finset (ι → Bool)).card ≤ 2 ^ Fintype.card ι :=
-  card_mul_le_two_pow_of_dotProduct_eq A ∅ b (by simp)
-
 -- At dimension zero the entire product is a false rectangle of area one.
-example (x y : Fin 0 → Bool) : x ⬝ᵥ y = false := by
-  simp [dotProduct, Bool.zero_eq_false]
+example :
+    (∀ x y : Fin 0 → Bool, x ⬝ᵥ y = false) ∧
+      (Finset.univ : Finset (Fin 0 → Bool)).card *
+        (Finset.univ : Finset (Fin 0 → Bool)).card = 1 :=
+  ⟨fun _ _ => by simp [dotProduct, Bool.zero_eq_false], by decide⟩
 
-example : (Finset.univ : Finset (Fin 0 → Bool)).card *
-    (Finset.univ : Finset (Fin 0 → Bool)).card = 1 := by decide
+-- The zero vector times the full cube is a false rectangle attaining the `2 ^ n` upper bound.
+example (n : ℕ) :
+    (∀ x ∈ ({0} : Finset (Fin n → Bool)),
+      ∀ y ∈ (Finset.univ : Finset (Fin n → Bool)), x ⬝ᵥ y = false) ∧
+    ({0} : Finset (Fin n → Bool)).card *
+      (Finset.univ : Finset (Fin n → Bool)).card = 2 ^ n :=
+  ⟨fun x hx y _ => by rw [Finset.mem_singleton.mp hx]; simp [Bool.zero_eq_false], by simp⟩
 
-example : (Finset.univ : Finset (Fin 0 → Bool)).card *
-    (Finset.univ : Finset (Fin 0 → Bool)).card ≤ 2 ^ 0 :=
-  card_mul_le_two_pow_of_dotProduct_eq
-    (Finset.univ : Finset (Fin 0 → Bool)) Finset.univ false
-    (fun _ _ _ _ => by simp [dotProduct, Bool.zero_eq_false])
-
--- The zero vector times the full cube attains the rectangle bound at every dimension.
-example (n : ℕ) (y : Fin n → Bool) : (0 : Fin n → Bool) ⬝ᵥ y = false := by
-  simp [Bool.zero_eq_false]
-
-example (n : ℕ) : ({0} : Finset (Fin n → Bool)).card *
-    (Finset.univ : Finset (Fin n → Bool)).card = 2 ^ n := by simp
-
--- A nonempty true rectangle exercises the other color.
-example : ∀ x ∈ ({fun _ : Fin 1 => true} : Finset (Fin 1 → Bool)),
-    ∀ y ∈ ({fun _ : Fin 1 => true} : Finset (Fin 1 → Bool)),
-      x ⬝ᵥ y = true := by decide
-
+-- A nonempty true rectangle exercises the other color and satisfies the rectangle bound.
 example : ({fun _ : Fin 1 => true} : Finset (Fin 1 → Bool)).card *
     ({fun _ : Fin 1 => true} : Finset (Fin 1 → Bool)).card ≤ 2 ^ 1 :=
   card_mul_le_two_pow_of_dotProduct_eq _ _ true (by decide)
@@ -61,8 +43,12 @@ example (A B : Finset (Fin 2 → Bool)) (b : Bool) :
   revert A B b
   decide
 
--- Monochromaticity is essential; the entire one-coordinate product has area four, not two.
+-- Monochromaticity is essential; the entire one-coordinate product has area 4 > 2 ^ 1.
 example : ¬ ∃ b, ∀ x : Fin 1 → Bool, ∀ y : Fin 1 → Bool, x ⬝ᵥ y = b := by
+  rintro ⟨b, hb⟩
+  have h := card_mul_le_two_pow_of_dotProduct_eq
+    (Finset.univ : Finset (Fin 1 → Bool)) Finset.univ b (fun x _ y _ => hb x y)
+  revert h
   decide
 
 private def andQuery : SeparableComparison (Fin 1 → Bool) (Fin 1 → Bool) :=
@@ -77,10 +63,8 @@ private theorem andTree_computes (x y : Fin 1 → Bool) :
     norm_num [andTree, andQuery, DecisionTree.eval, SeparableComparison.eval,
       dotProduct, Bool.mul_eq_and, hx, hy]
 
-example : andTree.leafCount = 2 := rfl
-
-example : 2 ≤ andTree.leafCount ^ 2 := by
-  simpa using andTree.two_pow_le_leafCount_sq_of_dotProduct andTree_computes
+example : andTree.leafCount = 2 ∧ 2 ≤ andTree.leafCount ^ 2 :=
+  ⟨rfl, by simpa using andTree.two_pow_le_leafCount_sq_of_dotProduct andTree_computes⟩
 
 private def bitAndQuery (i : Fin 2) :
     SeparableComparison (Fin 2 → Bool) (Fin 2 → Bool) :=
@@ -120,45 +104,45 @@ example : 1 ≤ (DecisionTree.leaf false :
       DecisionTree (SeparableComparison (Fin 0 → Bool) (Fin 0 → Bool)) Bool)
     (fun _ _ => by simp [dotProduct, Bool.zero_eq_false])
 
-example {n : ℕ}
-    (t : DecisionTree (SeparableComparison (Fin n → Bool) (Fin n → Bool)) Bool)
+-- Every separable-comparison decision tree computing 3-bit inner product needs at least 3 leaves.
+example (t : DecisionTree (SeparableComparison (Fin 3 → Bool) (Fin 3 → Bool)) Bool)
     (ht : ∀ x y, t.eval (fun q => q.eval x y) = x ⬝ᵥ y) :
-    2 ^ n ≤ t.leafCount ^ 2 := by
-  simpa using t.two_pow_le_leafCount_sq_of_dotProduct ht
+    3 ≤ t.leafCount := by
+  have h : 8 ≤ t.leafCount ^ 2 := by
+    simpa using t.two_pow_le_leafCount_sq_of_dotProduct ht
+  nlinarith
 
 -- Decision-list, node-count, rank, and energy bounds on `andTree` and `twoBitTree`.
 private theorem andTree_isDecisionList : andTree.IsDecisionList :=
   Or.inl ⟨rfl, trivial⟩
 
-example : 2 ≤ (andTree.nodeCount + 1) ^ 2 := by
-  simpa using andTree.two_pow_le_nodeCount_add_one_sq_of_dotProduct andTree_computes
-
-example : 2 ≤ (andTree.depth + 1) ^ 2 := by
-  simpa using
-    andTree.two_pow_le_depth_add_one_sq_of_isDecisionList_dotProduct
+example : 2 ≤ (andTree.nodeCount + 1) ^ 2 ∧ 2 ≤ (andTree.depth + 1) ^ 2 := by
+  refine ⟨?_, ?_⟩
+  · simpa using andTree.two_pow_le_nodeCount_add_one_sq_of_dotProduct andTree_computes
+  · simpa using andTree.two_pow_le_depth_add_one_sq_of_isDecisionList_dotProduct
       andTree_isDecisionList andTree_computes
 
-example : 4 ≤ (∑ j ∈ Finset.range (twoBitTree.rank + 1), twoBitTree.depth.choose j) ^ 2 := by
-  simpa using twoBitTree.two_pow_le_sum_choose_rank_sq_of_dotProduct twoBitTree_computes
+example :
+    4 ≤ (∑ j ∈ Finset.range (twoBitTree.rank + 1), twoBitTree.depth.choose j) ^ 2 ∧
+      4 ≤ (∑ j ∈ Finset.range (twoBitTree.energy + 1), twoBitTree.depth.choose j) ^ 2 :=
+  ⟨by simpa using twoBitTree.two_pow_le_sum_choose_rank_sq_of_dotProduct twoBitTree_computes,
+    by simpa using twoBitTree.two_pow_le_sum_choose_energy_sq_of_dotProduct twoBitTree_computes⟩
 
-example : (1 : ℝ) ≤
-    twoBitTree.rank * Real.logb 2 (Real.exp 1 * twoBitTree.depth / twoBitTree.rank) := by
-  simpa using twoBitTree.le_rank_mul_logb_depth_of_dotProduct twoBitTree_computes
+example :
+    (1 : ℝ) ≤
+        twoBitTree.rank * Real.logb 2 (Real.exp 1 * twoBitTree.depth / twoBitTree.rank) ∧
+      twoBitTree.rank / Real.exp 1 * (2 : ℝ) ^ ((2 : ℝ) / (2 * twoBitTree.rank)) ≤
+        twoBitTree.depth :=
+  ⟨by simpa using twoBitTree.le_rank_mul_logb_depth_of_dotProduct twoBitTree_computes,
+    by simpa using twoBitTree.rank_mul_rpow_le_depth_of_dotProduct twoBitTree_computes⟩
 
-example : twoBitTree.rank / Real.exp 1 * (2 : ℝ) ^ ((2 : ℝ) / (2 * twoBitTree.rank)) ≤
-    twoBitTree.depth := by
-  simpa using twoBitTree.rank_mul_rpow_le_depth_of_dotProduct twoBitTree_computes
-
-example : 4 ≤ (∑ j ∈ Finset.range (twoBitTree.energy + 1), twoBitTree.depth.choose j) ^ 2 := by
-  simpa using twoBitTree.two_pow_le_sum_choose_energy_sq_of_dotProduct twoBitTree_computes
-
-example : (1 : ℝ) ≤
-    twoBitTree.energy * Real.logb 2 (Real.exp 1 * twoBitTree.depth / twoBitTree.energy) := by
-  simpa using twoBitTree.le_energy_mul_logb_depth_of_dotProduct twoBitTree_computes
-
-example : twoBitTree.energy / Real.exp 1 * (2 : ℝ) ^ ((2 : ℝ) / (2 * twoBitTree.energy)) ≤
-    twoBitTree.depth := by
-  simpa using twoBitTree.energy_mul_rpow_le_depth_of_dotProduct twoBitTree_computes
+example :
+    (1 : ℝ) ≤
+        twoBitTree.energy * Real.logb 2 (Real.exp 1 * twoBitTree.depth / twoBitTree.energy) ∧
+      twoBitTree.energy / Real.exp 1 * (2 : ℝ) ^ ((2 : ℝ) / (2 * twoBitTree.energy)) ≤
+        twoBitTree.depth :=
+  ⟨by simpa using twoBitTree.le_energy_mul_logb_depth_of_dotProduct twoBitTree_computes,
+    by simpa using twoBitTree.energy_mul_rpow_le_depth_of_dotProduct twoBitTree_computes⟩
 
 -- Bi-monotone comparison tree computing 1-bit inner product via `BiMonotoneComparison.ofMin`.
 private noncomputable def andBiQuery :
