@@ -192,7 +192,7 @@ theorem relRank_le_two_rpow_abs_sum (w : Fin d → ℤ)
     rw [hcols, hrows, Nat.cast_pow, Nat.cast_pow, Nat.cast_two, sqrt_two_pow_div_two_pow,
       abs_of_nonneg (sub_nonneg.mpr hpq)]
     ring_nf
-  · refine (relRank_le_sqrt_card_div blk _ _ f).trans_eq ?_
+  · refine (relRank_le_sqrt_rows_div_cols blk _ _ f).trans_eq ?_
     rw [hcols, hrows, Nat.cast_pow, Nat.cast_pow, Nat.cast_two, sqrt_two_pow_div_two_pow,
       abs_of_nonpos (sub_nonpos.mpr hpq)]
     ring_nf
