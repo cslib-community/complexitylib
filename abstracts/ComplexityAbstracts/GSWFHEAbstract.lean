@@ -447,8 +447,9 @@ def ChosenMessageSecure (S : Cslib.Crypto.Homomorphic.Scheme) : Prop :=
 
 Gentry's Definition 3 asks for one decryption circuit shared by all depths, correctness for every
 circuit up to the depth, and algorithms polynomial in the parameter and the depth [Gentry2009,
-Definition 3]. In `leveled`, one polynomial-size circuit family `circuit` and one depth-indexed
-scheme family `E : ℕ → Cslib.Crypto.Homomorphic.Scheme` are chosen first. The family `E` satisfies
+Definition 3]. In `leveled`, one uniformly generated polynomial-size circuit family `circuit` and
+one depth-indexed scheme family `E : ℕ → Cslib.Crypto.Homomorphic.Scheme` are chosen first. The
+family `E` satisfies
 `NativeInDepth E`, so key generation, encryption, decryption and evaluation on
 `(1^security, 1^d, …)` each run on a single uniform machine with one runtime polynomial in
 `(security, d)` jointly, and at every fixed depth `d`, `E d` is correct for circuits of depth at
@@ -463,7 +464,8 @@ polynomially bounded depth `d(security) ≤ c (security + 1) ^ e` is covered by 
 -/
 
 /-- **Leveled fully homomorphic encryption from decision LWE** [Gentry2009, Theorem 3]. One
-polynomial-size decryption circuit family `circuit` and one depth-indexed scheme family `E` satisfy
+uniformly generated polynomial-size decryption circuit family `circuit` and one depth-indexed
+scheme family `E` satisfy
 `NativeInDepth E` (one runtime polynomial in `(security, d)` jointly), and at every depth `d` and
 every unary-polynomial depth budget `budget` (via `d = budget security`), the first framed word of
 the first framed component of the public key and the first framed word of the secret key, the key
@@ -475,6 +477,11 @@ theorem leveled (hLWE : DecisionLWE) :
     ∃ (circuit : ∀ security, Cslib.Circuits.Circuit Cslib.Circuits.Boolean.signature
         ((3 * secretWidth security + 1) + (ciphertextWidth security + 1)) 1)
       (E : ℕ → Cslib.Crypto.Homomorphic.Scheme),
+      Computation.PolyTime
+        (fun security =>
+          (⟨(3 * secretWidth security + 1) + (ciphertextWidth security + 1), circuit security⟩ :
+            Σ k, Cslib.Circuits.Circuit Cslib.Circuits.Boolean.signature k 1))
+        Encoding.encUnary (Cslib.Circuits.Boolean.encCircuit 1) ∧
       Cslib.PolynomiallyBounded (fun security => (circuit security).size) ∧
       Cslib.PolynomiallyBounded (fun security => 3 * secretWidth security + 1) ∧
       Cslib.PolynomiallyBounded (fun security => ciphertextWidth security + 1) ∧
@@ -511,11 +518,16 @@ theorem leveled (hLWE : DecisionLWE) :
 /-- **Fully homomorphic encryption from decision LWE and circular security** [Gentry2009,
 Definition 2 and Section 2]. There is a scheme whose key generation is the self-loop key and
 which encrypts and decrypts with GSW that is correct for every circuit, keeps GSW's widths,
-decrypts with polynomial-size circuits, has native algorithms and is IND-CPA, assuming decision
-LWE for this family and, separately, one-key circular security of GSW. -/
+decrypts with uniformly generated polynomial-size circuits, has native algorithms and is IND-CPA,
+assuming decision LWE for this family and, separately, one-key circular security of GSW. -/
 theorem fullyHomomorphic (hLWE : DecisionLWE) (hcircular : CircularSecure) :
     ∃ circuit : ∀ security, Cslib.Circuits.Circuit Cslib.Circuits.Boolean.signature
         (secretWidth security + ciphertextWidth security) 1,
+      Computation.PolyTime
+        (fun security =>
+          (⟨secretWidth security + ciphertextWidth security, circuit security⟩ :
+            Σ k, Cslib.Circuits.Circuit Cslib.Circuits.Boolean.signature k 1))
+        Encoding.encUnary (Cslib.Circuits.Boolean.encCircuit 1) ∧
       Cslib.PolynomiallyBounded (fun security => (circuit security).size) ∧
       Cslib.PolynomiallyBounded secretWidth ∧ Cslib.PolynomiallyBounded ciphertextWidth ∧
       ∃ S : Cslib.Crypto.Homomorphic.Scheme,
@@ -532,7 +544,7 @@ end ComplexityTests.Abstracts.GSWFHEAbstract
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.GSWFHEAbstract`: 46 root declarations,
-314 dependencies checked
+315 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.GSWFHEAbstract allowing [

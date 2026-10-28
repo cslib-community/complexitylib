@@ -133,15 +133,18 @@ example : ∃ (time space : ℕ × List Bool × List Bool → ℕ) (bound : ℕ 
       time (n, sk, ciphertext) ≤ bound n ∧ space (n, sk, ciphertext) ≤ bound n :=
   Leveled.exists_decrypt_parameter_bound decryptionCircuits (.of_tidy circuits_poly)
 
--- The same polynomial-size circuit family implements the complete decoder and tag selection
--- for every budget, not only the base XOR circuit or only supported secrets.
+-- The same uniformly generated polynomial-size circuit family implements the complete decoder
+-- and tag selection for every budget, not only the base XOR circuit or only supported secrets.
 example : ∃ circuits : ℕ → Circuit Boolean.signature 7 1,
+    ComputableInPolyTime
+      (fun n => (⟨7, circuits n⟩ : Σ m, Circuit Boolean.signature m 1))
+      encUnary (Boolean.encCircuit 1) ∧
     PolynomiallyBounded (fun n => (circuits n).size) ∧
     ∀ (budget : ℕ → ℕ) n (sk ciphertext : List Bool),
       sk.length = 4 → ciphertext.length = 3 →
       (circuits n).eval Boolean.interpretation (BitString.ofList 7 (sk ++ ciphertext)) 0 =
         (Leveled.scheme decryptionCircuits budget).decrypt n sk ciphertext :=
-  Leveled.exists_decrypt_circuits decryptionCircuits (.of_tidy circuits_poly)
+  Leveled.exists_uniform_decrypt_circuits decryptionCircuits (.of_tidy circuits_poly) (by fun_prop)
 
 private def malformedSecret : List Bool := [true, true, true, true]
 
@@ -152,14 +155,18 @@ example : malformedSecret.length = 4 ∧
   decide +kernel
 
 example : ∃ circuits : ℕ → Circuit Boolean.signature 7 1,
+    ComputableInPolyTime
+      (fun n => (⟨7, circuits n⟩ : Σ m, Circuit Boolean.signature m 1))
+      encUnary (Boolean.encCircuit 1) ∧
     PolynomiallyBounded (fun n => (circuits n).size) ∧
     ∀ (budget : ℕ → ℕ) n,
       (circuits n).eval Boolean.interpretation
           (BitString.ofList 7 (malformedSecret ++ [true, true, false])) 0 =
         (Leveled.scheme decryptionCircuits budget).decrypt n malformedSecret
           [true, true, false] := by
-  obtain ⟨circuits, hsize, hcorrect⟩ :=
-    Leveled.exists_decrypt_circuits decryptionCircuits (.of_tidy circuits_poly)
-  exact ⟨circuits, hsize, fun budget n => hcorrect budget n _ _ rfl rfl⟩
+  obtain ⟨circuits, hgen, hsize, hcorrect⟩ :=
+    Leveled.exists_uniform_decrypt_circuits decryptionCircuits (.of_tidy circuits_poly)
+      (by fun_prop)
+  exact ⟨circuits, hgen, hsize, fun budget n => hcorrect budget n _ _ rfl rfl⟩
 
 end ComplexityTests.Bootstrapping
