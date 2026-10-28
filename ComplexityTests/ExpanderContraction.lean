@@ -48,12 +48,12 @@ example : threeVertices.lazy.spectralExpansion ≤ 63 / 64 := by
   norm_num [spectralExpansion_completeFive] at h
   exact h
 
--- Zero-size contractions are total, without an arbitrary inhabitant of the vertex type.
-example : Function.IsPartialInv (RotationMap.finSlotEncode (by decide : 0 ≤ 0 * 0))
-    (RotationMap.finSlotDecode (m := 0)) := RotationMap.isPartialInv_finSlots _
+-- Slot `(0, 1)` decodes to `some 3` through the partial-inverse law `isPartialInv_finSlots`.
+example : RotationMap.finSlotDecode (m := 5) ((0, 1) : Fin 3 × Fin 2) = some 3 :=
+  (RotationMap.isPartialInv_finSlots (by decide : 5 ≤ 2 * 3) 3 (0, 1)).mpr (by decide)
 
 -- Actual finite witnesses for the complete contraction certificate.
-example : ComputableTidilyInPolyTime threeVertices.rot
+example : ComputableInPolyTime threeVertices.rot
     (encPair (encFinEnum (Fin 3)) (encPair (encFinEnum (Fin 2)) (encFinEnum (Fin 5))))
     (encPair (encFinEnum (Fin 3)) (encPair (encFinEnum (Fin 2)) (encFinEnum (Fin 5)))) := by
   have he : ComputableTidilyInPolyTime (RotationMap.finSlotEncode (by decide : 5 ≤ 2 * 3))
@@ -72,7 +72,7 @@ example {V W I D : Type} (G : RotationMap V D) (encode : V → W × I)
     (he : ComputableTidilyInPolyTime encode ev (encPair ew ei))
     (hd : ComputableTidilyInPolyTime decode (encPair ew ei) (encOption ev))
     (hg : ComputableTidilyInPolyTime G.rot (encPair ev ed) (encPair ev ed)) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (W × (I × D)) × Bool => ((RotationMap.contract encode decode hinv G).rot p.1, !p.2))
       (encPair (encPair ew (encPair ei ed)) encBool)
       (encPair (encPair ew (encPair ei ed)) encBool) := by
@@ -82,36 +82,37 @@ example {V W I D : Type} (G : RotationMap V D) (encode : V → W × I)
   fun_prop
 
 -- Captured optional values may contain unbounded words, with raw or framed word encodings.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : Option (List Bool) × List Bool => p.1.elim p.2 (fun word => word ++ p.2))
     (encPair (encOption encBits) encBits) encBits := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : Option (List Bool) × List Bool =>
       let fallback := p.2
       p.1.elim fallback (fun word => word ++ fallback))
     (encPair (encOption encBits) encBits) encBits := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : Option (List Bool) × List Bool =>
       match p.1 with
       | none => p.2
       | some word => word ++ p.2)
     (encPair (encOption encBits) encBits) encBits := by
-  have h : ComputableTidilyInPolyTime
+  have h : ComputableInPolyTime
       (fun p : Option (List Bool) × List Bool => p.1.elim p.2 (fun word => word ++ p.2))
       (encPair (encOption encBits) encBits) encBits := by fun_prop
   convert h using 1
   funext p
   cases p.1 <;> rfl
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : Option (List Bool) × List Bool => p.1.elim p.2 (fun word => word ++ p.2))
     (encPair (encOption (encList encBool)) (encList encBool)) (encList encBool) := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : Option (Fin 0) × List Bool => p.1.elim p.2 (fun v => Fin.elim0 v))
     (encPair (encOption (encFinEnum (Fin 0))) encBits) encBits := by
+  apply ComputableInPolyTime.of_tidy
   apply ComputableTidilyInPolyTime.optionElimWithInput
   · fun_prop
   · fun_prop

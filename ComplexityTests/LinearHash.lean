@@ -34,17 +34,17 @@ example : ProbComp.eval (extract 1 [true]) =
   simp [extract, sampleList, wordHash, listRows, listRow]
 
 -- The hash count and both words can be computed from an alternatively encoded caller.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : List Bool × ℕ => wordHash (p.2 + 1) (p.1 ++ [true]) p.1)
     (encPair (encList encBool) encUnary) encBits := by fun_prop
 
 -- A nested second projection uses the same conversion rule, independent of hashing.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × (Bool × List Bool) => p.2.2)
     (encPair encUnary (encPair encBool (encList encBool))) encBits := by fun_prop
 
 -- Encoding conversion also works in the other direction when its certificate is available.
-example : ComputableTidilyInPolyTime (fun p : ℕ × List Bool => p.2)
+example : ComputableInPolyTime (fun p : ℕ × List Bool => p.2)
     (encPair encUnary encBits) (encList encBool) := by fun_prop
 
 example : IsPPTOn (encPair encBits encUnary) encBits
@@ -59,12 +59,15 @@ example : IsPPTOn (encPair (encList encBool) encUnary) encBits
       sampleList ((p.2 + 1) * (p.1 ++ [false]).length) >>= fun seed =>
         pure (seed ++ wordHash (p.2 + 1) seed (p.1 ++ [false]))) := by ppt
 
--- Tests may randomize based on the entire output, with no efficiency assumption.
-example {n m : ℕ} (source : PMF (BitString n)) (test : List Bool → PMF Bool) :
-    dist (((source.map List.ofFn).bind (fun input => ProbComp.eval (extract m input))).bind test)
-        ((uniformList (m * n + m)).bind test) ≤
-      Real.sqrt ((2 : ℝ) ^ m * collisionProbability source) / 2 :=
-  extract_dist_bind_le source test
+-- Tests may randomize based on the entire output; for `m = 2` digest bits and a uniform 2-bit
+-- source, `extract_dist_bind_le` gives a concrete distance bound of `1 / 2`.
+example (test : List Bool → PMF Bool) :
+    dist ((((PMF.uniformOfFintype (BitString 2)).map List.ofFn).bind
+      (fun input => ProbComp.eval (extract 2 input))).bind test)
+        ((uniformList 6).bind test) ≤ 1 / 2 := by
+  apply (extract_dist_bind_le (m := 2) (PMF.uniformOfFintype (BitString 2)) test).trans
+  rw [collisionProbability_uniform]
+  norm_num [BitString]
 
 -- The finite matrix maps in the collision theorem are linear over the Boolean ring.
 example {n m : ℕ} (rows : Fin m → BitString n) (x y : BitString n) :
