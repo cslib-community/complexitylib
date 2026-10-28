@@ -131,9 +131,7 @@ families and full-input native runtime.
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation; SIS for
   general moduli; module SIS and module LWE toward Dilithium-style schemes, as theory.
-- **Symmetric:** Carter–Wegman word-level `IsOraclePPT` PRF reduction wrappers, `MACScheme`
-  packaging for randomized Carter–Wegman, and a computational nonce-MAC interface ([#736]); the
-  Naor–Reingold PRF from DDH (efficient lazy-sampling
+- **Symmetric:** the Naor–Reingold PRF from DDH (efficient lazy-sampling
   reduction and `PseudorandomFunction` bridge; algebraic/tree evaluation and distributional
   prefix-hybrid bound landed) ([#1093]).
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
@@ -489,7 +487,6 @@ not planned, not as proved.
 [#640]: https://github.com/cslib-community/complexitylib/issues/640
 [#643]: https://github.com/cslib-community/complexitylib/issues/643
 [#645]: https://github.com/cslib-community/complexitylib/issues/645
-[#736]: https://github.com/cslib-community/complexitylib/issues/736
 [#798]: https://github.com/cslib-community/complexitylib/issues/798
 [#862]: https://github.com/cslib-community/complexitylib/issues/862
 [#881]: https://github.com/cslib-community/complexitylib/issues/881
