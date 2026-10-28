@@ -20,17 +20,18 @@ import Mathlib.Topology.Order.MonotoneConvergence
 For `k = 3` the depth recursion of PPSZ reads `Q 3 (d + 1) r = (r + (1 - r) * Q 3 d r) ^ 2`. For
 fixed `r ∈ [0, 1]` the sequence `Q 3 d r` increases with `d` and is bounded by every nonnegative
 fixed point of `x ↦ (r + (1 - r) * x) ^ 2`. The fixed points are the roots of
-`((1 - r) ^ 2 * x - r ^ 2) * (x - 1)`, so the smallest nonnegative one is
-`R3 r = (r / (1 - r)) ^ 2` for `r < 1 / 2` and `R3 r = 1` otherwise, and `Q 3 d r` tends to it
+`((1 - r) ^ 2 * x - r ^ 2) * (x - 1)`, so the smallest one is `R3 r = (r / (1 - r)) ^ 2` for
+`r < 1 / 2` and `R3 r = 1` otherwise (`R3_eq`, `R3_le_of_eq`), and `Q 3 d r` tends to it
 (`tendsto_Q_three`) [Paturi, Pudlák, Saks, Zane, Claim 1 (p. 352) and
 p. 354][PaturiPudlakSaksZane2005]. Its integral is `∫₀¹ R3 = 2 - 2 log 2` (`integral_R3`), and
-by dominated convergence `qbar 3 d` tends to it (`tendsto_qbar_three`).
+by dominated convergence `qbar 3 d` tends to it (`tendsto_qbar_three`). Throughout, `log` is the
+natural logarithm `Real.log`.
 
 Combined with the bound `2^{-(1 - qbar 3 h) n}` for unique 3-SAT (`round_success_of_unique`),
 this gives, for every `ε > 0`, a bound `w` such that one round of PPSZ with w-implication outputs
 the unique satisfying assignment of every 3-CNF formula on `n` variables with probability at least
 `2^{-(2 log 2 - 1 + ε) n}` (`round_success_unique_three_limit`). Here `2 log 2 - 1 ≈ 0.386`; this
-is the `o(n)` form of [Paturi, Pudlák, Saks, Zane, Theorem 1(ii)][PaturiPudlakSaksZane2005] for
+is the `ε`-form of [Paturi, Pudlák, Saks, Zane, Theorem 1(ii)][PaturiPudlakSaksZane2005] for
 `k = 3`, with w-implication in place of bounded resolution.
 
 ## Main definitions
@@ -39,6 +40,7 @@ is the `o(n)` form of [Paturi, Pudlák, Saks, Zane, Theorem 1(ii)][PaturiPudlakS
 
 ## Main results
 
+* `Cslib.Complexity.PPSZ.R3_le_of_eq`: `R3 r` is the smallest fixed point of the recursion step.
 * `Cslib.Complexity.PPSZ.tendsto_Q_three`: `Q 3 d r → R3 r` for `r ∈ [0, 1]`.
 * `Cslib.Complexity.PPSZ.integral_R3`: `∫₀¹ R3 r dr = 2 - 2 log 2`.
 * `Cslib.Complexity.PPSZ.tendsto_qbar_three`: `qbar 3 d → 2 - 2 log 2`.
@@ -64,7 +66,8 @@ open Cslib.Logic.PL Finset Filter Topology
 /-- **The limit of the depth recursion for `k = 3`**
 [Paturi, Pudlák, Saks, Zane, Claim 1 and p. 354][PaturiPudlakSaksZane2005]:
 `R3 r = (r / (1 - r)) ^ 2` for `r < 1 / 2` and `R3 r = 1` otherwise. For `r ∈ [0, 1]` it is the
-smallest nonnegative root of `R = (r + (1 - r) * R) ^ 2`. -/
+smallest root of `R = (r + (1 - r) * R) ^ 2` (`R3_eq`, `R3_le_of_eq`); the roots are `1` and, for
+`r < 1`, `(r / (1 - r)) ^ 2`. -/
 noncomputable def R3 (r : ℝ) : ℝ := if r < 1 / 2 then (r / (1 - r)) ^ 2 else 1
 
 variable {r : ℝ}
@@ -109,9 +112,32 @@ theorem R3_eq (r : ℝ) : (r + (1 - r) * R3 r) ^ 2 = R3 r := by
 
 /-- The fixed points of the recursion step are the roots of
 `((1 - r) ^ 2 * x - r ^ 2) * (x - 1)`. -/
-theorem sq_add_one_sub_mul_sub (r x : ℝ) :
+private theorem sq_add_one_sub_mul_sub (r x : ℝ) :
     (r + (1 - r) * x) ^ 2 - x = ((1 - r) ^ 2 * x - r ^ 2) * (x - 1) := by
   ring
+
+/-- `R3 r` is the smallest fixed point of the recursion step on `[0, 1]`. -/
+theorem R3_le_of_eq (hr : r ∈ Set.Icc (0 : ℝ) 1) {x : ℝ} (hx : (r + (1 - r) * x) ^ 2 = x) :
+    R3 r ≤ x := by
+  have h := sq_add_one_sub_mul_sub r x
+  rw [hx, sub_self, eq_comm, mul_eq_zero] at h
+  rcases lt_or_ge r (1 / 2) with hr2 | hr2
+  · rcases h with h | h
+    · have : 0 < (1 - r) ^ 2 := by
+        have : 0 < 1 - r := by linarith
+        positivity
+      rw [R3_of_le hr2.le, div_pow, div_le_iff₀ this]
+      linarith
+    · linarith [R3_lt_one hr.1 hr2, sub_eq_zero.1 h]
+  · rw [R3_of_ge hr2]
+    rcases h with h | h
+    · have h1 : (1 - r) ^ 2 * (1 - x) = 1 - 2 * r := by linear_combination -h
+      by_contra hlt
+      have : 0 ≤ (1 - r) ^ 2 * (1 - x) := mul_nonneg (sq_nonneg _) (by linarith)
+      have hr' : r = 1 / 2 := by linarith
+      rw [hr'] at h1
+      linarith
+    · linarith [sub_eq_zero.1 h]
 
 /-- `Q 3 d r ≤ R3 r` on `[0, 1]`: the recursion step is monotone on `[0, ∞)` and fixes `R3 r`. -/
 theorem Q_three_le_R3 {d : ℕ} (hr : r ∈ Set.Icc (0 : ℝ) 1) : Q 3 d r ≤ R3 r := by
@@ -162,7 +188,7 @@ theorem tendsto_Q_three (hr : r ∈ Set.Icc (0 : ℝ) 1) :
 /-! ### The integral of the limit -/
 
 /-- `x ↦ (x / (1 - x)) ^ 2` is continuous on `[0, 1 / 2]`. -/
-theorem continuousOn_div_one_sub_sq :
+private theorem continuousOn_div_one_sub_sq :
     ContinuousOn (fun x : ℝ => (x / (1 - x)) ^ 2) (Set.uIcc 0 (1 / 2)) := by
   refine (continuousOn_id.div (by fun_prop) fun x hx => ?_).pow 2
   rw [Set.uIcc_of_le (by norm_num)] at hx
@@ -192,8 +218,10 @@ theorem integral_R3 : ∫ r in (0 : ℝ)..1, R3 r = 2 - 2 * Real.log 2 := by
     intervalIntegral.integral_congr h1, intervalIntegral.integral_congr h2,
     intervalIntegral.integral_eq_sub_of_hasDerivAt hF
       continuousOn_div_one_sub_sq.intervalIntegrable]
-  norm_num
-  simp only [one_div, Real.log_inv]
+  have hlog : Real.log (1 - 1 / 2) = -Real.log 2 := by
+    rw [← Real.log_inv]
+    norm_num
+  rw [hlog, intervalIntegral.integral_const, smul_eq_mul, sub_zero, Real.log_one]
   ring
 
 /-! ### The limit of `qbar 3` and unique 3-SAT -/
@@ -231,10 +259,10 @@ For `k = 3`, [Paturi, Pudlák, Saks, Zane, Theorem 1(ii)][PaturiPudlakSaksZane20
 success probability below by `2^{-(1 - μ₃ / 2) n - o(n)}`, where `μ₃ / 2 = 2 - 2 log 2`, so
 `1 - μ₃ / 2 = 2 log 2 - 1`; the `o(n)` term comes from its resolution bound `s(n)` growing with
 `n`. The form here, `2^{-(2 log 2 - 1 + ε) n}` for every `ε > 0` with `w` depending only on `ε`,
-is the `ε`-form of that bound: letting `w` grow slowly with `n` turns it into a lower bound
-`2^{-(2 log 2 - 1) n - o(n)}`, uniformly over all such formulas. The paper uses `s`-bounded
-resolution in place of w-implication; the per-variable analysis is the same
-[Scheder, p. 4][Scheder2021]. -/
+is the `ε`-form of that bound. Letting `w` grow slowly with `n` would turn it into a lower bound
+`2^{-(2 log 2 - 1) n - o(n)}`, uniformly over all such formulas; that form is not formalized here.
+The paper uses `s`-bounded resolution in place of w-implication; the per-variable analysis is the
+same [Scheder, p. 3][Scheder2021]. -/
 theorem round_success_unique_three_limit :
     ∀ ε > 0, ∃ w : ℕ, ∀ (n : ℕ) (φ : CNF (Fin n)) (σ : Fin n → Bool), φ.eval σ = true →
       (∀ τ, φ.eval τ = true → τ = σ) → (∀ c ∈ φ, c.length ≤ 3) →

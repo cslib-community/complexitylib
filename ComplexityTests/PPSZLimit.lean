@@ -37,6 +37,9 @@ example : R3 (1 / 3) = 1 / 4 := by norm_num [R3]
 
 example : R3 (3 / 4) = 1 := by norm_num [R3]
 
+-- `1` is a fixed point of the recursion step, so it bounds `R3` from above.
+example : R3 (1 / 3) ≤ 1 := R3_le_of_eq ⟨by norm_num, by norm_num⟩ (by norm_num)
+
 /-! ### The headline on a uniquely satisfiable formula -/
 
 /-- For `ε = 1 / 100`, some `w` makes one round succeed on the formula `φ` of
