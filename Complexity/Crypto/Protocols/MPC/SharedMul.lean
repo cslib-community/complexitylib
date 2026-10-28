@@ -18,7 +18,7 @@ This module formalizes the shared-multiplication functionalities and oracle-aide
 reductions from Goldreich's *Foundations of Cryptography, Volume 2: Basic Applications*:
 
 1. **1-out-of-4 Oblivious Transfer (`ot14Spec`, `ot14World`):** the asymmetric 2-party ideal
-   oracle specification and world (Section 7.3.2, Eq. 7.20, print p. 639, for $k = 4$) in which
+   oracle specification and world (Section 7.3.2, Eq. 7.20, print p. 640, for $k = 4$) in which
    slot `0` (sender) submits a 4-tuple of bits `Fin 4 → Bool` and receives `Unit`, while slot `1`
    (receiver) submits an index `Fin 4` and receives the selected bit.
 2. **$m$-Party Shared Multiplication (`sharedMulFunctionality`, `sharedMulSpec`,
@@ -64,7 +64,7 @@ reductions from Goldreich's *Foundations of Cryptography, Volume 2: Basic Applic
 ## References
 
 * [O. Goldreich, *Foundations of Cryptography, Volume 2: Basic Applications*][Goldreich2004],
-  Section 7.3 (Eqs. 7.17–7.18, p. 635), Section 7.3.2 (Eq. 7.20, p. 639), Section 7.3.3
+  Section 7.3 (Eqs. 7.17–7.18, p. 635), Section 7.3.2 (Eq. 7.20, p. 640), Section 7.3.3
   (Construction 7.3.7, Eq. 7.21, Proposition 7.3.8, pp. 643–644), Section 7.5.2 (Eqs. 7.44–7.45,
   p. 701), and Section 7.5.2.2 (Eqs. 7.46–7.47, Construction 7.5.8, Proposition 7.5.9,
   pp. 703–705).
@@ -79,7 +79,7 @@ open Cslib.Probability Cslib.ProbComp
 /-! ### Ideal $\text{OT}_1^4$ and $m$-party shared multiplication -/
 
 /-- 2-party 1-out-of-4 Oblivious Transfer oracle specification (Goldreich Section 7.3.2, Eq. 7.20,
-p. 639, for $k = 4$): slot `0` (sender) submits a 4-tuple of bits `Fin 4 → Bool` and receives
+p. 640, for $k = 4$): slot `0` (sender) submits a 4-tuple of bits `Fin 4 → Bool` and receives
 `Unit`; slot `1` (receiver) submits an index `Fin 4` and receives the selected bit `Bool`. -/
 @[reducible] def ot14Spec : MultiOracleSpec where
   Op := Unit
@@ -92,7 +92,7 @@ slot `1`. -/
 def ot14Answer (q : (s : Fin 2) → ot14Spec.Query () s) (s : Fin 2) : ot14Spec.Answer () s :=
   Fin.cases () (fun _ => q 0 (q 1)) s
 
-/-- Ideal memoryless world for `ot14Spec` (Goldreich Section 7.3.2, Eq. 7.20, p. 639): returns
+/-- Ideal memoryless world for `ot14Spec` (Goldreich Section 7.3.2, Eq. 7.20, p. 640): returns
 `()` to the sender (slot `0`) and `(q 0) (q 1)` to the receiver (slot `1`). -/
 def ot14World : MultiOracleWorld ot14Spec :=
   fun _ q => pure (ot14Answer q)
@@ -203,9 +203,10 @@ def twoPartyMulSim (I : Finset (Fin 2)) :
       (fun _ => Bool × Bool) (Fin.cases Bool (fun _ => Unit)) (fun _ => Bool) I :=
   fun xI yI => pure (fun i => twoPartyMulViewOfInOut i.1 (xI i) (yI i))
 
-private theorem sum_fin2_bool (f : Fin 2 → Bool) :
-    (∑ i : Fin 2, f i) = f 0 + f 1 :=
-  Fin.sum_univ_two f
+private theorem uniformOfFintype_fin1_bool :
+    PMF.uniformOfFintype (Fin 1 → Bool) =
+      (PMF.uniformOfFintype Bool).map (fun (b : Bool) (_ : Fin 1) => b) :=
+  (PMF.uniformOfFintype_map_equiv (Equiv.funUnique (Fin 1) Bool).symm).symm
 
 private theorem twoPartyMul_target_eq (x : Fin 2 → Bool × Bool) :
     ((∑ i : Fin 2, (x i).1) * (∑ i : Fin 2, (x i).2)) =
@@ -246,13 +247,7 @@ private theorem evalWith_twoPartyMulProtocol (x : Fin 2 → Bool × Bool) :
     Steps.evalWith_oracle, Steps.evalWith_done, Steps.outputAt, ProbComp.eval_pure,
     PMF.bind_map, PMF.pure_bind, PMF.pure_map, Function.comp_def]
   rw [sharedMulFunctionality, sampleAdditiveShares, ProbComp.eval_map, ProbComp.eval_uniform,
-    PMF.map_comp]
-  have heq :
-      (PMF.uniformOfFintype (Fin 1 → Bool)) =
-        (PMF.uniformOfFintype Bool).map (fun (c₀ : Bool) (_ : Fin 1) => c₀) := by
-    symm
-    exact PMF.uniformOfFintype_map_equiv (Equiv.funUnique (Fin 1) Bool).symm
-  rw [heq, PMF.map_comp]
+    PMF.map_comp, uniformOfFintype_fin1_bool, PMF.map_comp]
   refine congrArg (PMF.map · (PMF.uniformOfFintype Bool)) (funext fun c₀ => ?_)
   have htarget :
       twoPartyMulResidual (fin4ToBoolPair (boolPairToFin4 (x 1))) (x 0) c₀ =
@@ -322,6 +317,15 @@ def pairEmbedding {m : ℕ} (p : OrderedPair m) : Fin 2 ↪ Fin m where
 @[reducible] def pairRound {m : ℕ} (p : OrderedPair m) : Round m (sharedMulSpec 2) :=
   .oracle () (pairEmbedding p)
 
+/-- A party `i` that is neither `p.1.1` nor `p.1.2` receives a subsingleton record in
+`pairRound p`. -/
+theorem subsingleton_received_pairRound {m : ℕ} (p : OrderedPair m) {i : Fin m}
+    (h1 : i ≠ p.1.1) (h2 : i ≠ p.1.2) : Subsingleton ((pairRound p).Received i) := by
+  refine ⟨fun r₁ r₂ => Round.received_oracle_ext fun s hs => ?_⟩
+  fin_cases s
+  · exact (h1 hs.symm).elim
+  · exact (h2 hs.symm).elim
+
 /-- Schedule of 2-party shared-multiplication oracle rounds for a list of ordered pairs `L`. -/
 @[reducible] def pairsSchedule {m : ℕ} (L : List (OrderedPair m)) :
     Schedule m (sharedMulSpec 2) :=
@@ -375,6 +379,8 @@ def multiPartyMulProtocol (m : ℕ) :
   steps :=
     (pairsSteps (orderedPairs m)).mapState fun _ st =>
       (st.1, m • (st.1.1 * st.1.2))
+
+namespace MultiPartyMul
 
 /-- Sum of party `i`'s received oracle shares across `L : List (OrderedPair m)`. -/
 def sumReceivedShares {m : ℕ} :
@@ -678,46 +684,6 @@ theorem nodup_orderedPairs (m : ℕ) : (orderedPairs m).Nodup := by
     cases h₂
     exact hne rfl
 
-private theorem uniformOfFintype_bind_update {α : Type} [Fintype α] [DecidableEq α]
-    {G : Type} [AddCommGroup G] [Fintype G] (p₀ : α) :
-    ((PMF.uniformOfFintype G).bind fun b =>
-      (PMF.uniformOfFintype (α → G)).map fun r => Function.update r p₀ b) =
-      PMF.uniformOfFintype (α → G) := by
-  have hswap1 :
-      ((PMF.uniformOfFintype G).bind fun b =>
-        (PMF.uniformOfFintype (α → G)).map fun r => Function.update r p₀ b) =
-      (PMF.uniformOfFintype (α → G)).bind fun r =>
-        (PMF.uniformOfFintype G).map fun b => Function.update r p₀ b := by
-    simp only [PMF.map]
-    exact PMF.bind_comm _ _ _
-  rw [hswap1]
-  have h1 : ∀ r : α → G,
-      (PMF.uniformOfFintype G).map (fun b => Function.update r p₀ b) =
-        (PMF.uniformOfFintype G).map (fun b => r + Pi.single p₀ b) := by
-    intro r
-    conv_lhs =>
-      rw [← PMF.uniformOfFintype_map_equiv (Equiv.addLeft (r p₀)), PMF.map_comp]
-    refine congrArg (PMF.map · (PMF.uniformOfFintype G)) (funext fun b => ?_)
-    ext q
-    by_cases hq : q = p₀
-    · subst hq; simp
-    · simp [hq]
-  simp_rw [h1]
-  have hswap2 :
-      ((PMF.uniformOfFintype (α → G)).bind fun r =>
-        (PMF.uniformOfFintype G).map fun b => r + Pi.single p₀ b) =
-      (PMF.uniformOfFintype G).bind fun b =>
-        (PMF.uniformOfFintype (α → G)).map fun r => r + Pi.single p₀ b := by
-    simp only [PMF.map]
-    exact PMF.bind_comm _ _ _
-  rw [hswap2]
-  have h2 : ∀ b : G,
-      (PMF.uniformOfFintype (α → G)).map (fun r => r + Pi.single p₀ b) =
-        PMF.uniformOfFintype (α → G) := by
-    intro b
-    exact PMF.uniformOfFintype_map_equiv (Equiv.addRight (Pi.single p₀ b : α → G))
-  simp_rw [h2, PMF.bind_const]
-
 /-- Received transcript along `pairsSchedule L` generated by `r : OrderedPair m → Bool`. -/
 def deliverCoins {m : ℕ} (x : Fin m → Bool × Bool) (r : OrderedPair m → Bool) :
     (L : List (OrderedPair m)) → (i : Fin m) → (pairsSchedule L).Received i
@@ -753,12 +719,7 @@ private theorem eval_sharedMulWorld2_pair {m : ℕ} (x : Fin m → Bool × Bool)
       (PMF.uniformOfFintype Bool).map (pairAnswer x p) := by
   simp only [sharedMulWorld, sharedMulFunctionality, sampleAdditiveShares,
     ProbComp.eval_map, ProbComp.eval_uniform]
-  have heq :
-      (PMF.uniformOfFintype (Fin 1 → Bool)) =
-        (PMF.uniformOfFintype Bool).map (fun (b : Bool) (_ : Fin 1) => b) := by
-    symm
-    exact PMF.uniformOfFintype_map_equiv (Equiv.funUnique (Fin 1) Bool).symm
-  rw [heq, PMF.map_comp]
+  rw [uniformOfFintype_fin1_bool, PMF.map_comp]
   have htarget :
       ((∑ i : Fin 2, (x (pairEmbedding p i)).1) * (∑ i : Fin 2, (x (pairEmbedding p i)).2)) =
         pairTarget x p.1.1 p.1.2 := by
@@ -808,7 +769,7 @@ theorem evalWith_pairsSteps {m : ℕ} {L : List (OrderedPair m)} (hL : L.Nodup)
             rw [Function.update_self]
           · exact congrFun (deliverCoins_update_of_not_mem _ r hL.1 b).symm i
       _ = _ := by
-          rw [hcongr, uniformOfFintype_bind_update p]
+          rw [hcongr, PMF.uniformOfFintype_update p]
 
 private theorem eval_pi_pure_unit (m : ℕ) :
     ProbComp.eval (OracleComp.pi (fun _ : Fin m => (pure () : ProbComp Unit))) =
@@ -1082,6 +1043,10 @@ private theorem uniform_bind_tildeR {m : ℕ} [NeZero m] {α : Type} (ℓ : Fin 
       rw [← PMF.uniformOfFintype_map_equiv (Equiv.addRight (deltaErase ℓ u)), PMF.map_comp]
     rfl
   simp_rw [hshift2, PMF.bind_const]
+
+end MultiPartyMul
+
+open MultiPartyMul
 
 /-- Coalition simulator for `multiPartyMulProtocol m` (Goldreich Proposition 7.5.9, pp. 704–705). -/
 noncomputable def multiPartyMulSim (m : ℕ) [NeZero m] (I : Finset (Fin m)) :
