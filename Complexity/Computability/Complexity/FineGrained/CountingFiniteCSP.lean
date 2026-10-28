@@ -9,38 +9,29 @@ module
 
 public import Complexity.Init
 public import Complexity.Logics.Propositional.FiniteCSP
-public import Complexity.Computability.Complexity.FineGrained.CountingNativeEndpoint
-public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
+public import Complexity.Computability.Complexity.FineGrained.CountingCSP
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Complexity.FineGrained.CountingScale
 
 /-!
 # Fine-grained complexity of finite-domain CSPs
 
-This module connects finite-domain constraint satisfaction problems (`FiniteCSP`) to the native
-fine-grained counting endpoints (`CountingNativeEndpoint`).
+This module connects finite-domain constraint satisfaction problems (`Cslib.Logic.PL.FiniteCSP`)
+to the subexponential counting endpoint for bounded-arity Boolean CSPs
+(`Cslib.Complexity.CSP.exists_declaredCounter_of_finite`).
 
-For any fixed domain size `q` and arity bound `k`, each domain variable is compiled into
-`b = bitWidth q` Boolean variables, yielding an equivalent CNF formula of clause width at most
-`max 1 k * b` on `n * b` declared variables. Invoking the native counting endpoint
-(`CountingNativeEndpoint.exists_declaredCounter`) yields exact declared-variable model counting
-in time `2 ^ (O(interpolationScale (n * b))) * poly(L) = 2 ^ o(n) * poly(L)` and polynomial space
+For any fixed finite domain size `q` and arity bound `k`, each domain variable is compiled into
+`b = bitWidth q` Boolean variables, yielding an equivalent Boolean CSP instance of constraint scope
+length at most `max 1 k * b` on `N * b` declared variables. Invoking the bounded-arity Boolean CSP
+counter yields exact declared-variable model counting in time
+`2 ^ (O(interpolationScale (N * b))) * poly(L) = 2 ^ o(N) * poly(L)` and polynomial space
 ([OpenAI2026ETH], Corollary C.2).
-
-## Main definitions
-
-* `Cslib.Complexity.CountingFiniteCSP.encConstraint`: bitstring encoding of finite-domain
-  constraints.
-* `Cslib.Complexity.CountingFiniteCSP.encCSP`: bitstring encoding of finite-domain CSPs.
-* `Cslib.Complexity.CountingFiniteCSP.encInput`: bitstring encoding of pairs `(n, φ)` of declared
-  variable count and CSP instance.
-* `Cslib.Complexity.CountingFiniteCSP.ValidFiniteKCSP`: decision language of valid, satisfiable
-  finite-domain `k`-CSP instances.
 
 ## Main results
 
 * `Cslib.Complexity.CountingFiniteCSP.exists_declaredCounter_FiniteCSP`: subexponential-time,
-  polynomial-space exact model counting for finite-domain CSPs on declared scopes.
+  polynomial-space exact declared-variable model counting for finite-domain CSPs, returning
+  `x.2.modelCountOn sem (Finset.range x.1)`.
 
 ## References
 
@@ -58,76 +49,49 @@ open Cslib.Logic.PL.FiniteCSP
 open Turing.MultiTapeTM
 open Turing.MultiTapeTM.Universal
 open Cslib.Complexity
-open Cslib.Complexity.CountingNativeEndpoint
 open SubexponentialSAT
 
-/-- Flattened tuple representation of a `Constraint ℕ` used for bitstring encoding. -/
-abbrev PairConstraint := List ℕ × ℕ × List (List ℕ)
-
-/-- Bitstring encoding of flattened constraint tuples. -/
-def encPairConstraint : PairConstraint ↪ List Bool :=
-  encPair (encList encNat) (encPair encNat (encList (encList encNat)))
-
-/-- Conversion from `Constraint ℕ` to its flattened representation tuple. -/
-def constraintToPair (c : Constraint ℕ) : PairConstraint :=
-  (c.vars, c.arity, c.forbidden)
-
-/-- Bitstring encoding of a finite-domain constraint. -/
-def encConstraint : Constraint ℕ ↪ List Bool :=
-  ⟨fun c => encPairConstraint (constraintToPair c), fun c1 c2 h => by
-    cases c1; cases c2
-    have hinj := encPairConstraint.injective h
-    simp only [constraintToPair, Prod.mk.injEq] at hinj
-    obtain ⟨h1, h2, h3⟩ := hinj
-    subst h1 h2 h3
-    rfl⟩
-
-/-- Bitstring encoding of a finite-domain CSP instance. -/
-def encCSP : CSP ℕ ↪ List Bool :=
-  encList encConstraint
-
-/-- Bitstring encoding of declared variable budget paired with a CSP instance. -/
-def encInput : ℕ × CSP ℕ ↪ List Bool :=
-  encPair encUnary encCSP
-
-/-- The decision problem for valid finite-domain CSP instances of maximum arity `k`
-over domain size `q`. -/
-def ValidFiniteKCSP (q k : ℕ) : Set (ℕ × CSP ℕ) :=
-  {x | x.2.HasWidth k ∧ (∀ c ∈ x.2, c.vars.length = c.arity) ∧
-    (∀ c ∈ x.2, ∀ v ∈ c.vars, v < x.1) ∧
-    ∃ τ : Fin x.1 → Fin q, x.2.eval (fun v => if h : v < x.1 then (τ ⟨v, h⟩).val else 0) = true}
-
 /-- **Subexponential declared-variable model counting for finite-domain CSPs.**
-For fixed domain size `q` and arity bound `k`, there is an exact counter that evaluates the
-compiled model count on every valid finite-domain instance of width at most `k`, in time
-subexponential in `n` and polynomial space. -/
-public theorem exists_declaredCounter_FiniteCSP (q k : ℕ) :
-    ∃ (count : ℕ × CNF ℕ → ℕ) (T S : ℕ × CNF ℕ → ℕ) (A c e a b : ℕ),
-      ComputableInO count (encPair encUnary encCNF) encNat T S ∧
-      (∀ x : ℕ × CSP ℕ, x.2.HasWidth k → (∀ constr ∈ x.2, constr.vars.length = constr.arity) →
-        (∀ constr ∈ x.2, ∀ v ∈ constr.vars, v < x.1) →
-        count (x.1 * bitWidth q, toCNF x.2 q x.1) =
-          (toCNF x.2 q x.1).modelCountOn (Finset.range (x.1 * bitWidth q))) ∧
-      (∀ x : ℕ × CSP ℕ,
-        (T (x.1 * bitWidth q, toCNF x.2 q x.1) : ℝ) ≤
-          c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale (x.1 * bitWidth q)) *
-            (((encPair encUnary encCNF (x.1 * bitWidth q, toCNF x.2 q x.1)).length : ℝ) + 1) ^ e) +
-            c) ∧
-      (∀ x : ℕ × CSP ℕ,
-        S (x.1 * bitWidth q, toCNF x.2 q x.1) ≤
-          a * ((encPair encUnary encCNF (x.1 * bitWidth q, toCNF x.2 q x.1)).length + 1) ^ b) := by
-  obtain ⟨count, T, S, A, c, e, a, b, hcount, hspec, hT, hS⟩ :=
-    exists_declaredCounter (max 1 k * bitWidth q)
-  refine ⟨count, T, S, A, c, e, a, b, hcount, fun x hw hlen hvars => ?_,
-    fun x => hT (x.1 * bitWidth q, toCNF x.2 q x.1),
-    fun x => hS (x.1 * bitWidth q, toCNF x.2 q x.1)⟩
-  rw [hspec]
-  have hvalid := validDeclaredInput_toCNF x.2 q x.1 k hw hlen hvars
+For any fixed domain size `q`, arity bound `k`, and finite relation alphabet `Rel` with semantics
+`sem : Rel → List (Fin q) → Bool`, there is an exact counter that evaluates the declared-variable
+model count `x.2.modelCountOn sem (Finset.range x.1)` on every valid finite-domain instance `x` of
+width at most `k`, in time subexponential in `N` and polynomial space. -/
+public theorem exists_declaredCounter_FiniteCSP {Rel : Type} [Finite Rel]
+    (encRel : Rel ↪ List Bool) (q : ℕ) [Inhabited (Fin q)] (k : ℕ) (hq : 0 < q)
+    (sem : Rel → List (Fin q) → Bool) :
+    let b := bitWidth q
+    let enc := encPair encUnary (encCSP (encOption encRel) encNat)
+    ∃ (count : ℕ × CSP (Option Rel) ℕ → ℕ) (T S : ℕ × CSP (Option Rel) ℕ → ℕ)
+      (A c e a b_space : ℕ),
+      ComputableInO count enc encNat T S ∧
+      (∀ x : ℕ × CSP Rel ℕ,
+        (∀ c ∈ x.2, c.2.length ≤ k) →
+        (∀ v ∈ x.2.vars, v < x.1) →
+        count (x.1 * b, toBooleanCSP q x.1 x.2) =
+          x.2.modelCountOn sem (Finset.range x.1)) ∧
+      (∀ x : ℕ × CSP Rel ℕ,
+        (T (x.1 * b, toBooleanCSP q x.1 x.2) : ℝ) ≤
+          c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale (x.1 * b)) *
+            (((enc (x.1 * b, toBooleanCSP q x.1 x.2)).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ x : ℕ × CSP Rel ℕ,
+        S (x.1 * b, toBooleanCSP q x.1 x.2) ≤
+          a * ((enc (x.1 * b, toBooleanCSP q x.1 x.2)).length + 1) ^ b_space) := by
+  let b := bitWidth q
+  let k' := max 1 k * b
+  let sem' := semBoolean q sem
+  let enc := encPair encUnary (encCSP (encOption encRel) encNat)
+  obtain ⟨count, T, S, A, c, e, a, b_space, hcount, hspec, hT, hS⟩ :=
+    CSP.exists_declaredCounter_of_finite (encOption encRel) k' sem'
+  refine ⟨count, T, S, A, c, e, a, b_space, hcount, fun x hw hvars => ?_,
+    fun x => hT (x.1 * b, toBooleanCSP q x.1 x.2),
+    fun x => hS (x.1 * b, toBooleanCSP q x.1 x.2)⟩
+  rw [hspec (x.1 * b, toBooleanCSP q x.1 x.2)]
+  dsimp only [Prod.fst, Prod.snd]
+  have hvalid := validDeclaredCSP_toBooleanCSP (q := q) hw hvars
   rw [hvalid]
-  simp only [ite_true]
+  simp only [eq_self, ↓reduceIte]
+  exact modelCountOn_toBooleanCSP q x.1 hq sem x.2 hvars
 
 end
 
 end Cslib.Complexity.CountingFiniteCSP
-
-end

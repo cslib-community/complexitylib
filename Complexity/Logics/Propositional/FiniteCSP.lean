@@ -9,41 +9,42 @@ module
 
 public import Complexity.Init
 public import Complexity.Foundations.Data.Nat.Log
-public import Complexity.Logics.Propositional.CNF
-public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
+public import Complexity.Logics.Propositional.CSP
 
 /-!
-# Finite-domain constraint satisfaction problems
+# Finite-domain constraint satisfaction problems and Boolean reduction
 
-This module formalizes constraint satisfaction problems (CSPs) over fixed finite domains
-and their canonical reduction to conjunctive normal form (CNF) via binary encoding of variables
-([OpenAI2026ETH], Corollary C.2).
+This module formalizes the canonical reduction from finite-domain constraint satisfaction
+problems (CSPs) over domain size `q` to Boolean CSPs ([OpenAI2026ETH], Corollary C.2).
 
-Each variable in a domain of size `q` is encoded by `b = max 1 (Nat.clog 2 q)` Boolean variables.
-Unused bit patterns in `[q, 2^b)` are ruled out by unused-code clauses of width `b`. Each forbidden
-domain tuple of arity `r` is translated to a clause of width `r * b`. When every constraint has
-arity at most `k`, the compiled CNF formula has clause width bounded by `max 1 k * b`, and the
-number of satisfying assignments on declared variables is exactly preserved.
+Each domain variable in a domain of size `q` is encoded by `b = max 1 (Nat.clog 2 q)` Boolean
+variables. Unused bit patterns in `[q, 2^b)` are ruled out by domain-validity constraints of
+scope length `b` for each declared variable `v < N`. Original constraints of arity `r` are
+translated to Boolean constraints of scope length `r * b`. When every constraint has arity at
+most `k`, the compiled Boolean CSP has constraint scope lengths bounded by `max 1 k * b`, and
+the number of satisfying assignments on declared variables is exactly preserved.
 
 ## Main definitions
 
-* `Cslib.Logic.PL.FiniteCSP.Constraint`: a local constraint specifying scoped variables,
-  forbidden value tuples, and arity.
-* `Cslib.Logic.PL.FiniteCSP.CSP`: a finite collection of constraints over a variable type `V`.
 * `Cslib.Logic.PL.FiniteCSP.bitWidth`: the number of bits `b = max 1 (Nat.clog 2 q)` for domain `q`.
 * `Cslib.Logic.PL.FiniteCSP.bitsToNat`, `Cslib.Logic.PL.FiniteCSP.natToBits`: little-endian binary
   conversion for natural numbers.
-* `Cslib.Logic.PL.FiniteCSP.toCNF`: canonical polynomial-time compilation of a finite-domain CSP
-  with `n` variables into a CNF formula.
-* `Cslib.Logic.PL.FiniteCSP.CSP.modelCountOn`: count of domain assignments on a declared finite set
-  of variables that satisfy the CSP.
+* `Cslib.Logic.PL.FiniteCSP.bitScope`: the list of `b` Boolean variables representing domain
+  variable `v`.
+* `Cslib.Logic.PL.FiniteCSP.decodeChunks`: extract decoded natural numbers from chunked bit lists.
+* `Cslib.Logic.PL.FiniteCSP.toFin`: clamped conversion of natural numbers into `Fin q`.
+* `Cslib.Logic.PL.FiniteCSP.semBoolean`: the Boolean semantics evaluating domain-validity (`none`)
+  and original relation (`some R`) constraints.
+* `Cslib.Logic.PL.FiniteCSP.toBooleanCSP`: compilation of a finite-domain CSP on declared
+  variables `0, …, N - 1` into an equivalent Boolean CSP.
 
 ## Main results
 
-* `Cslib.Logic.PL.FiniteCSP.all_length_le_toCNF`: clause width bound `max 1 k * bitWidth q`.
-* `Cslib.Logic.PL.FiniteCSP.vars_toCNF_subset`: variables bounded by `n * bitWidth q`.
-* `Cslib.Logic.PL.FiniteCSP.validDeclaredInput_toCNF`: compiled formula satisfies the native
-  declared-variable counting guard `validDeclaredInput`.
+* `Cslib.Logic.PL.FiniteCSP.all_length_le_toBooleanCSP`: constraint scope length bound
+  `max 1 k * bitWidth q`.
+* `Cslib.Logic.PL.FiniteCSP.vars_toBooleanCSP_subset`: all variables bounded by `N * bitWidth q`.
+* `Cslib.Logic.PL.FiniteCSP.modelCountOn_toBooleanCSP`: exact equality of declared-variable model
+  counts between the finite-domain CSP and its Boolean compilation.
 
 ## References
 
@@ -56,50 +57,7 @@ namespace Cslib.Logic.PL.FiniteCSP
 
 open Cslib.Logic.PL
 
-/-- A local constraint over variables in `V` with domain values in `ℕ`. -/
-structure Constraint (V : Type*) where
-  /-- Scoped variable list. -/
-  vars : List V
-  /-- Forbidden tuples of domain values. -/
-  forbidden : List (List ℕ)
-  /-- Arity of the constraint. -/
-  arity : Nat
-  /-- Every forbidden tuple has length equal to the arity. -/
-  valid : ∀ α ∈ forbidden, α.length = arity
-
-/-- A constraint satisfaction problem is a list of local constraints. -/
-abbrev CSP (V : Type*) := List (Constraint V)
-
-/-- Evaluate a constraint under a variable assignment `τ : V → ℕ`. -/
-def Constraint.eval {V : Type*} (c : Constraint V) (τ : V → ℕ) : Bool :=
-  decide ((c.vars.map τ) ∉ c.forbidden)
-
-/-- Evaluate a CSP under a variable assignment `τ : V → ℕ`. -/
-def CSP.eval {V : Type*} (φ : CSP V) (τ : V → ℕ) : Bool :=
-  φ.all (·.eval τ)
-
-/-- A constraint is valid for domain size `q` if all forbidden values are `< q` and the variable
-scope has length matching the arity. -/
-def Constraint.Valid {V : Type*} (q : ℕ) (c : Constraint V) : Prop :=
-  (∀ α ∈ c.forbidden, ∀ x ∈ α, x < q) ∧ c.vars.length = c.arity
-
-/-- A CSP is valid for domain size `q` if every constraint is valid. -/
-def CSP.Valid {V : Type*} (q : ℕ) (φ : CSP V) : Prop :=
-  ∀ c ∈ φ, c.Valid q
-
-/-- A constraint has width at most `k` if its arity is at most `k`. -/
-def Constraint.HasWidth {V : Type*} (k : ℕ) (c : Constraint V) : Prop :=
-  c.arity ≤ k
-
-/-- A CSP has width at most `k` if every constraint has width at most `k`. -/
-def CSP.HasWidth {V : Type*} (k : ℕ) (φ : CSP V) : Prop :=
-  ∀ c ∈ φ, c.HasWidth k
-
-/-- Count assignments of `declared` into `Fin q` satisfying `φ`, extending by 0 outside
-the declared set. -/
-def CSP.modelCountOn {V : Type*} [DecidableEq V] (φ : CSP V) (q : ℕ) (declared : Finset V) : ℕ :=
-  (Finset.univ.filter fun σ : declared → Fin q =>
-    φ.eval (fun v => if h : v ∈ declared then (σ ⟨v, h⟩).val else 0) = true).card
+variable {Rel : Type*}
 
 /-! ### Binary encoding and conversions -/
 
@@ -186,198 +144,487 @@ theorem natToBits_inj {b x y : ℕ} (hx : x < 2 ^ b) (hy : y < 2 ^ b)
   have hy' := bitsToNat_natToBits hy
   rw [← hx', ← hy', h]
 
-/-! ### CNF compilation -/
+/-! ### Variable scopes and chunk decoding -/
 
-/-- Clause forbidding an exact truth assignment `α` on `vars`. -/
-def forbiddenClause {V : Type*} (vars : List V) (α : List Bool) : Clause V :=
-  (vars.zip α).map (fun (v, b) => (v, !b))
-
-theorem forbiddenClause_length {V : Type*} (vars : List V) (α : List Bool)
-    (h : vars.length = α.length) : (forbiddenClause vars α).length = vars.length := by
-  simp [forbiddenClause, h]
-
-theorem mem_of_mem_zip {α β : Type*} {l1 : List α} {l2 : List β} {x : α} {y : β}
-    (h : (x, y) ∈ l1.zip l2) : x ∈ l1 := by
-  induction l1 generalizing l2 with
-  | nil => cases h
-  | cons a as ih =>
-    cases l2 with
-    | nil => cases h
-    | cons b bs =>
-      simp only [List.zip_cons_cons, List.mem_cons] at h ⊢
-      cases h with
-      | inl heq => injection heq with hx _; left; exact hx
-      | inr hmem => right; exact ih hmem
-
-theorem mem_vars_forbiddenClause {V : Type*} {vars : List V} {α : List Bool} {v : V} {b : Bool}
-    (h : (v, b) ∈ forbiddenClause vars α) : v ∈ vars := by
-  simp only [forbiddenClause, List.mem_map] at h
-  obtain ⟨⟨x, y⟩, hxy, heq⟩ := h
-  dsimp at heq
-  injection heq with hx _
-  subst hx
-  exact mem_of_mem_zip hxy
-
-theorem forbiddenClause_eval_eq_false_iff {V : Type*} (σ : V → Bool)
-    (vars : List V) (α : List Bool) (hlen : vars.length = α.length) :
-    Clause.eval σ (forbiddenClause vars α) = false ↔ vars.map σ = α := by
-  induction vars generalizing α with
-  | nil =>
-    cases α with
-    | nil => simp [forbiddenClause, Clause.eval]
-    | cons a as => contradiction
-  | cons v vars ih =>
-    cases α with
-    | nil => contradiction
-    | cons a as =>
-      simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
-      simp only [forbiddenClause, List.zip_cons_cons, List.map_cons, Clause.eval,
-        List.any_cons, Bool.or_eq_false_iff, List.map_cons, List.cons.injEq]
-      dsimp [Literal.eval]
-      have hlit : (σ v == !a) = false ↔ σ v = a := by
-        cases σ v <;> cases a <;> decide
-      have hih := ih as hlen
-      dsimp [Clause.eval, forbiddenClause] at hih
-      rw [hlit, hih]
-
-/-- The `b` bit variables corresponding to a domain variable `v`. -/
-def varBits (v : ℕ) (b : ℕ) : List ℕ :=
+/-- The `b` Boolean variables representing domain variable `v`. -/
+def bitScope (b : ℕ) (v : ℕ) : List ℕ :=
   (List.range b).map (fun j => v * b + j)
 
 @[simp]
-theorem varBits_length (v b : ℕ) : (varBits v b).length = b := by
-  simp [varBits]
+theorem bitScope_length (b v : ℕ) : (bitScope b v).length = b := by
+  simp [bitScope]
 
-theorem mem_varBits_iff (v b : ℕ) (x : ℕ) :
-    x ∈ varBits v b ↔ ∃ j < b, x = v * b + j := by
-  simp only [varBits, List.mem_map, List.mem_range]
-  constructor
-  · rintro ⟨j, hj, rfl⟩; exact ⟨j, hj, rfl⟩
-  · rintro ⟨j, hj, rfl⟩; exact ⟨j, hj, rfl⟩
+theorem mem_bitScope_iff (b v x : ℕ) :
+    x ∈ bitScope b v ↔ ∃ j < b, x = v * b + j := by
+  simp only [bitScope, List.mem_map, List.mem_range, eq_comm]
 
-/-- Unused-code clauses for variable `v`: forbids bit patterns in `[q, 2^b)`. -/
-def unusedCodeClauses (v : ℕ) (q : ℕ) (b : ℕ) : CNF ℕ :=
-  ((List.range (2 ^ b - q)).map (fun i => q + i)).map (fun u =>
-    forbiddenClause (varBits v b) (natToBits b u))
+theorem bitScope_subset_range {b v N : ℕ} (hv : v < N) :
+    ∀ x ∈ bitScope b v, x < N * b := by
+  intro x hx
+  obtain ⟨j, hj, rfl⟩ := (mem_bitScope_iff b v x).mp hx
+  have h1 : (v + 1) * b ≤ N * b := Nat.mul_le_mul_right b (by omega)
+  have h2 : v * b + j < (v + 1) * b := by
+    rw [Nat.add_mul, Nat.one_mul]
+    omega
+  exact h2.trans_le h1
 
-theorem unusedCodeClauses_all_length_le (v q b : ℕ) :
-    ∀ c ∈ unusedCodeClauses v q b, c.length ≤ b := by
-  intro c hc
-  simp only [unusedCodeClauses, List.mem_map] at hc
-  obtain ⟨u, _, rfl⟩ := hc
-  rw [forbiddenClause_length]
-  · simp
-  · rw [varBits_length, natToBits_length]
+/-- Decode a list of bits into `r` natural numbers by taking successive chunks of width `b`. -/
+def decodeChunks (b : ℕ) : ℕ → List Bool → List ℕ
+  | 0, _ => []
+  | r + 1, bs => bitsToNat (bs.take b) :: decodeChunks b r (bs.drop b)
 
-/-- Compile all unused code clauses for variables in `range n`. -/
-def allUnusedCodeClauses (n : ℕ) (q : ℕ) (b : ℕ) : CNF ℕ :=
-  (List.range n).flatMap (fun v => unusedCodeClauses v q b)
+@[simp]
+theorem decodeChunks_zero (b : ℕ) (bs : List Bool) : decodeChunks b 0 bs = [] := rfl
 
-theorem allUnusedCodeClauses_all_length_le (n q b : ℕ) :
-    ∀ c ∈ allUnusedCodeClauses n q b, c.length ≤ b := by
-  intro c hc
-  simp only [allUnusedCodeClauses, List.mem_flatMap, List.mem_range] at hc
-  obtain ⟨v, _, hv⟩ := hc
-  exact unusedCodeClauses_all_length_le v q b c hv
+@[simp]
+theorem decodeChunks_length (b : ℕ) (r : ℕ) (bs : List Bool) :
+    (decodeChunks b r bs).length = r := by
+  induction r generalizing bs with
+  | zero => rfl
+  | succ r ih => simp [decodeChunks, ih]
 
-/-- Compile a single constraint into CNF clauses. -/
-def constraintToCNF (c : Constraint ℕ) (b : ℕ) : CNF ℕ :=
-  let scopeBits := c.vars.flatMap (fun v => varBits v b)
-  c.forbidden.map (fun tuple =>
-    forbiddenClause scopeBits (tuple.flatMap (fun val => natToBits b val)))
+theorem decodeChunks_flatMap (b : ℕ) {α : Type*} (vs : List α) (f : α → List Bool)
+    (hf : ∀ v ∈ vs, (f v).length = b) :
+    decodeChunks b vs.length (vs.flatMap f) = vs.map (bitsToNat ∘ f) := by
+  induction vs with
+  | nil => rfl
+  | cons v vs ih =>
+    have hfv : (f v).length = b := hf v (List.mem_cons.mpr (Or.inl rfl))
+    have hrest : ∀ w ∈ vs, (f w).length = b := fun w hw => hf w (List.mem_cons.mpr (Or.inr hw))
+    simp only [List.flatMap_cons, List.length_cons, decodeChunks, List.map_cons,
+      Function.comp_apply]
+    rw [List.take_append_of_le_length (le_of_eq hfv.symm),
+      List.drop_append_of_le_length (le_of_eq hfv.symm)]
+    have htake : List.take b (f v) = f v := by rw [← hfv, List.take_length]
+    have hdrop : List.drop b (f v) = [] := by rw [← hfv, List.drop_length]
+    rw [htake, hdrop, List.nil_append, ih hrest]
 
-theorem length_flatMap_const {α β : Type*} (l : List α) (f : α → List β) (k : ℕ)
-    (h : ∀ x ∈ l, (f x).length = k) : (l.flatMap f).length = l.length * k := by
-  induction l with
-  | nil => simp
-  | cons x xs ih =>
-    simp only [List.flatMap_cons, List.length_append, List.length_cons]
-    have hx : (f x).length = k := h x (List.mem_cons.mpr (Or.inl rfl))
-    have hxs : (xs.flatMap f).length = xs.length * k :=
-      ih (fun y hy => h y (List.mem_cons.mpr (Or.inr hy)))
-    rw [hx, hxs, Nat.add_comm, Nat.add_mul, Nat.one_mul]
+/-- Clamped conversion from natural numbers into `Fin q`. -/
+def toFin (q : ℕ) (hq : 0 < q) (x : ℕ) : Fin q :=
+  if h : x < q then ⟨x, h⟩ else ⟨0, hq⟩
 
-theorem constraintToCNF_all_length_le (c : Constraint ℕ) (b : ℕ)
-    (hvalid : c.vars.length = c.arity) :
-    ∀ cl ∈ constraintToCNF c b, cl.length = c.arity * b := by
-  intro cl hcl
-  simp only [constraintToCNF, List.mem_map] at hcl
-  obtain ⟨tuple, htuple, rfl⟩ := hcl
-  rw [forbiddenClause_length]
-  · rw [length_flatMap_const _ (fun v => varBits v b) b (fun _ _ => varBits_length _ _), hvalid]
-  · rw [length_flatMap_const _ (fun v => varBits v b) b (fun _ _ => varBits_length _ _),
-      length_flatMap_const _ (fun v => natToBits b v) b (fun _ _ => natToBits_length _ _),
-      c.valid tuple htuple, hvalid]
+@[simp]
+theorem toFin_val_of_lt {q : ℕ} (hq : 0 < q) {x : ℕ} (h : x < q) :
+    (toFin q hq x).val = x := by
+  simp [toFin, h]
 
-/-- Compile a finite-domain CSP with `n` variables and domain size `q` into CNF. -/
-def toCNF (φ : CSP ℕ) (q : ℕ) (n : ℕ) : CNF ℕ :=
+@[simp]
+theorem toFin_of_val {q : ℕ} (hq : 0 < q) (x : Fin q) :
+    toFin q hq x.val = x := by
+  simp [toFin, x.is_lt]
+
+/-! ### Boolean reduction for finite-domain CSP -/
+
+/-- Boolean semantics for compiled finite-domain constraints:
+* `none`: domain-validity constraint asserting length `b` and `bitsToNat bs < q`.
+* `some R`: relation constraint decoding `bs` into $r$ chunks of length `b` and evaluating `sem R`.
+-/
+def semBoolean (q : ℕ) (sem : Rel → List (Fin q) → Bool) :
+    Option Rel → List Bool → Bool
+  | none, bs => decide (bs.length = bitWidth q ∧ bitsToNat bs < q)
+  | some R, bs =>
+    let b := bitWidth q
+    if hq : 0 < q then
+      let r := bs.length / b
+      let vals := decodeChunks b r bs
+      (bs.length % b == 0) && vals.all (decide <| · < q) && sem R (vals.map (toFin q hq))
+    else false
+
+/-- Compile a finite-domain CSP on declared variables `0, …, N - 1` into an equivalent Boolean CSP.
+Emits a domain-validity constraint `(none, bitScope b v)` for every `v < N`, and translates each
+constraint `(R, vs)` to `(some R, vs.flatMap (bitScope b))`. -/
+def toBooleanCSP (q : ℕ) (N : ℕ) (F : CSP Rel ℕ) : CSP (Option Rel) ℕ :=
   let b := bitWidth q
-  allUnusedCodeClauses n q b ++ φ.flatMap (fun c => constraintToCNF c b)
+  (List.range N).map (fun v => (none, bitScope b v)) ++
+  F.map (fun c => (some c.1, c.2.flatMap (bitScope b)))
 
-theorem all_length_le_toCNF (φ : CSP ℕ) (q : ℕ) (n : ℕ) (k : ℕ) (hφ : φ.HasWidth k)
-    (hvalid : ∀ c ∈ φ, c.vars.length = c.arity) :
-    ∀ c ∈ toCNF φ q n, c.length ≤ max 1 k * bitWidth q := by
+theorem length_flatMap_bitScope (b : ℕ) (l : List ℕ) :
+    (l.flatMap (bitScope b)).length = l.length * b := by
+  induction l with
+  | nil => simp only [List.flatMap_nil, List.length_nil, Nat.zero_mul]
+  | cons x xs ih =>
+    simp only [List.flatMap_cons, List.length_append, bitScope_length, List.length_cons, ih]
+    rw [Nat.add_mul, Nat.one_mul, Nat.add_comm]
+
+theorem all_length_le_toBooleanCSP {k q N : ℕ} {F : CSP Rel ℕ}
+    (hF : ∀ c ∈ F, c.2.length ≤ k) :
+    ∀ c ∈ toBooleanCSP q N F, c.2.length ≤ max 1 k * bitWidth q := by
+  let b := bitWidth q
   intro c hc
-  simp only [toCNF, List.mem_append, List.mem_flatMap] at hc
-  rcases hc with h | ⟨constr, hconstr, hcl⟩
-  · have hle := allUnusedCodeClauses_all_length_le n q (bitWidth q) c h
-    have h1 : 1 ≤ max 1 k := le_max_left 1 k
-    have h2 : bitWidth q ≤ max 1 k * bitWidth q := by
-      calc bitWidth q = 1 * bitWidth q := by rw [Nat.one_mul]
-      _ ≤ max 1 k * bitWidth q := Nat.mul_le_mul_right (bitWidth q) h1
-    exact hle.trans h2
-  · have hlen := constraintToCNF_all_length_le constr (bitWidth q) (hvalid constr hconstr) c hcl
-    rw [hlen]
-    have har : constr.arity ≤ max 1 k := (hφ constr hconstr).trans (le_max_right 1 k)
-    exact Nat.mul_le_mul_right (bitWidth q) har
+  simp only [toBooleanCSP, List.mem_append, List.mem_map] at hc
+  rcases hc with ⟨v, _, rfl⟩ | ⟨c₀, hc₀, rfl⟩
+  · simp only [bitScope_length]
+    have : 1 * b ≤ max 1 k * b := Nat.mul_le_mul_right b (le_max_left 1 k)
+    simpa using this
+  · dsimp only
+    rw [length_flatMap_bitScope]
+    have hle : c₀.2.length ≤ max 1 k := (hF c₀ hc₀).trans (le_max_right 1 k)
+    exact Nat.mul_le_mul_right b hle
 
-theorem vars_toCNF_subset (φ : CSP ℕ) (q : ℕ) (n : ℕ)
-    (hvars : ∀ c ∈ φ, ∀ v ∈ c.vars, v < n) :
-    ∀ v ∈ (toCNF φ q n).vars, v < n * bitWidth q := by
-  intro v hv
-  rw [CNF.mem_vars] at hv
-  obtain ⟨c, hc, b, hb⟩ := hv
-  simp only [toCNF, List.mem_append, List.mem_flatMap] at hc
-  cases hc with
-  | inl hc =>
-    simp only [allUnusedCodeClauses, List.mem_flatMap, List.mem_range] at hc
-    obtain ⟨u, hu, hcu⟩ := hc
-    simp only [unusedCodeClauses, List.mem_map] at hcu
-    obtain ⟨val, _, rfl⟩ := hcu
-    have hv_varBits := mem_vars_forbiddenClause hb
-    simp only [varBits, List.mem_map, List.mem_range] at hv_varBits
-    obtain ⟨j, hj, rfl⟩ := hv_varBits
-    have hu_le : u + 1 ≤ n := hu
-    have h1 : (u + 1) * bitWidth q ≤ n * bitWidth q := Nat.mul_le_mul_right (bitWidth q) hu_le
-    have h2 : u * bitWidth q + j < (u + 1) * bitWidth q := by
-      rw [Nat.add_mul, Nat.one_mul]
-      exact Nat.add_lt_add_left hj _
-    exact h2.trans_le h1
-  | inr hc =>
-    obtain ⟨constr, hconstr, hcl⟩ := hc
-    simp only [constraintToCNF, List.mem_map] at hcl
-    obtain ⟨tuple, _, rfl⟩ := hcl
-    have hv_scope := mem_vars_forbiddenClause hb
-    simp only [List.mem_flatMap] at hv_scope
-    obtain ⟨u, hu, hv_varBits⟩ := hv_scope
-    simp only [varBits, List.mem_map, List.mem_range] at hv_varBits
-    obtain ⟨j, hj, rfl⟩ := hv_varBits
-    have hu' := hvars constr hconstr u hu
-    have hu_le : u + 1 ≤ n := hu'
-    have h1 : (u + 1) * bitWidth q ≤ n * bitWidth q := Nat.mul_le_mul_right (bitWidth q) hu_le
-    have h2 : u * bitWidth q + j < (u + 1) * bitWidth q := by
-      rw [Nat.add_mul, Nat.one_mul]
-      exact Nat.add_lt_add_left hj _
-    exact h2.trans_le h1
+theorem vars_toBooleanCSP_subset {q N : ℕ} {F : CSP Rel ℕ}
+    (hvars : ∀ v ∈ F.vars, v < N) :
+    ∀ x ∈ (toBooleanCSP q N F).vars, x < N * bitWidth q := by
+  let b := bitWidth q
+  intro x hx
+  simp only [CSP.vars, toBooleanCSP, List.flatMap_append, List.mem_append,
+    List.mem_flatMap, List.mem_map] at hx
+  rcases hx with ⟨c, ⟨v, hv, rfl⟩, hxc⟩ | ⟨c, ⟨c₀, hc₀, rfl⟩, hxc⟩
+  · rw [List.mem_range] at hv
+    exact bitScope_subset_range hv x hxc
+  · simp only [List.mem_flatMap] at hxc
+    obtain ⟨v, hv, hxv⟩ := hxc
+    have hv_vars : v ∈ F.vars := by
+      simp only [CSP.vars, List.mem_flatMap]
+      exact ⟨c₀, hc₀, hv⟩
+    exact bitScope_subset_range (hvars v hv_vars) x hxv
 
-theorem validDeclaredInput_toCNF (φ : CSP ℕ) (q : ℕ) (n : ℕ) (k : ℕ)
-    (hφ : φ.HasWidth k) (hvalid : ∀ c ∈ φ, c.vars.length = c.arity)
-    (hvars : ∀ c ∈ φ, ∀ v ∈ c.vars, v < n) :
-    CNF.validDeclaredInput (max 1 k * bitWidth q) (n * bitWidth q) (toCNF φ q n) = true := by
-  rw [CNF.validDeclaredInput_eq_true_iff]
-  refine ⟨all_length_le_toCNF φ q n k hφ hvalid, ?_⟩
+theorem validDeclaredCSP_toBooleanCSP {k q N : ℕ} {F : CSP Rel ℕ}
+    (hw : ∀ c ∈ F, c.2.length ≤ k) (hvars : ∀ v ∈ F.vars, v < N) :
+    CSP.validDeclaredCSP (max 1 k * bitWidth q) (N * bitWidth q) (toBooleanCSP q N F) = true := by
+  rw [CSP.validDeclaredCSP_eq_true_iff]
+  refine ⟨all_length_le_toBooleanCSP hw, ?_⟩
   intro v hv
-  rw [Finset.mem_range]
-  exact vars_toCNF_subset φ q n hvars v (List.mem_toFinset.mp hv)
+  have : v ∈ (toBooleanCSP q N F).vars := List.mem_toFinset.mp hv
+  exact Finset.mem_range.mpr (vars_toBooleanCSP_subset hvars v this)
+
+/-! ### Model count equivalence -/
+
+/-- Encode an assignment `τ : Finset.range N → Fin q` into a Boolean assignment on
+`Finset.range (N * bitWidth q)`. -/
+def encodeAssign (q N : ℕ) (τ : Finset.range N → Fin q) :
+    Finset.range (N * bitWidth q) → Bool := fun ⟨x, hx⟩ =>
+  let b := bitWidth q
+  have hx_lt : x < N * b := Finset.mem_range.mp hx
+  have hv : x / b < N := Nat.div_lt_of_lt_mul (by rwa [Nat.mul_comm])
+  (natToBits b (τ ⟨x / b, Finset.mem_range.mpr hv⟩).val).getD (x % b) false
+
+/-- Decode a Boolean assignment on `Finset.range (N * bitWidth q)` into an assignment
+`Finset.range N → Fin q`. -/
+def decodeAssign (q N : ℕ) (hq : 0 < q) (σ : Finset.range (N * bitWidth q) → Bool) :
+    Finset.range N → Fin q := fun ⟨v, _⟩ =>
+  let b := bitWidth q
+  let bits := (List.range b).map fun j =>
+    if h : v * b + j < N * b then σ ⟨v * b + j, Finset.mem_range.mpr h⟩ else false
+  toFin q hq (bitsToNat bits)
+
+theorem div_mul_add (v b j : ℕ) (hj : j < b) : (v * b + j) / b = v := by
+  have hb : 0 < b := by omega
+  rw [Nat.add_comm, Nat.add_mul_div_right _ _ hb, Nat.div_eq_of_lt hj, Nat.zero_add]
+
+theorem mod_mul_add (v b j : ℕ) (hj : j < b) : (v * b + j) % b = j := by
+  rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hj]
+
+theorem getD_eq_getElem {α : Type*} (l : List α) (n : ℕ) (d : α) (h : n < l.length) :
+    l.getD n d = l[n] := by
+  dsimp [List.getD]
+  rw [List.getElem?_eq_getElem h]
+  rfl
+
+theorem decodeAssign_encodeAssign (q N : ℕ) (hq : 0 < q)
+    (τ : Finset.range N → Fin q) :
+    decodeAssign q N hq (encodeAssign q N τ) = τ := by
+  let b := bitWidth q
+  funext ⟨v, hv⟩
+  dsimp only [decodeAssign]
+  have hv_lt : v < N := Finset.mem_range.mp hv
+  have hbits : (List.range b).map (fun j =>
+      if h : v * b + j < N * b then encodeAssign q N τ ⟨v * b + j, Finset.mem_range.mpr h⟩
+      else false) = natToBits b (τ ⟨v, hv⟩).val := by
+    apply List.ext_getElem
+    · simp only [List.length_map, List.length_range, natToBits_length]
+    · intro j hj1 hj2
+      rw [List.length_map, List.length_range] at hj1
+      simp only [List.getElem_map, List.getElem_range]
+      have hj_range : v * b + j < N * b := by
+        have h1 : (v + 1) * b ≤ N * b := Nat.mul_le_mul_right b (by omega)
+        have h2 : v * b + j < (v + 1) * b := by rw [Nat.add_mul, Nat.one_mul]; omega
+        exact h2.trans_le h1
+      simp only [hj_range, dite_true]
+      dsimp only [encodeAssign]
+      have hdiv : (v * b + j) / b = v := div_mul_add v b j hj1
+      have hmod : (v * b + j) % b = j := mod_mul_add v b j hj1
+      have hsub : (⟨(v * b + j) / b, Finset.mem_range.mpr (by rw [hdiv]; exact hv_lt)⟩ :
+          Finset.range N) = ⟨v, hv⟩ := Subtype.ext hdiv
+      rw [hsub, hmod]
+      have hlen : j < (natToBits b (τ ⟨v, hv⟩).val).length := by
+        rw [natToBits_length]; exact hj1
+      exact getD_eq_getElem _ _ _ hlen
+  rw [hbits]
+  have hlt : (τ ⟨v, hv⟩).val < 2 ^ b := (τ ⟨v, hv⟩).is_lt.trans_le (le_two_pow_bitWidth q)
+  rw [bitsToNat_natToBits hlt]
+  exact toFin_of_val hq (τ ⟨v, hv⟩)
+
+theorem map_extend_encodeAssign_bitScope (q N : ℕ) (τ : Finset.range N → Fin q)
+    {v : ℕ} (hv : v < N) :
+    (bitScope (bitWidth q) v).map (fun x =>
+      if h : x ∈ Finset.range (N * bitWidth q) then encodeAssign q N τ ⟨x, h⟩ else false) =
+    natToBits (bitWidth q) (τ ⟨v, Finset.mem_range.mpr hv⟩).val := by
+  let b := bitWidth q
+  rw [bitScope, List.map_map]
+  apply List.ext_getElem
+  · simp only [List.length_map, List.length_range, natToBits_length]
+  · intro j hj1 hj2
+    simp only [List.length_map, List.length_range] at hj1
+    have hj_range : v * bitWidth q + j < N * bitWidth q := by
+      have h1 : (v + 1) * b ≤ N * b := Nat.mul_le_mul_right b (by omega)
+      have h2 : v * b + j < (v + 1) * b := by rw [Nat.add_mul, Nat.one_mul]; omega
+      exact h2.trans_le h1
+    simp only [Function.comp_apply, List.getElem_map, List.getElem_range,
+      Finset.mem_range, hj_range, dite_true]
+    dsimp only [encodeAssign]
+    have hdiv : (v * b + j) / b = v := div_mul_add v b j hj1
+    have hmod : (v * b + j) % b = j := mod_mul_add v b j hj1
+    have hsub : (⟨(v * b + j) / b, Finset.mem_range.mpr (by rw [hdiv]; exact hv)⟩ :
+        Finset.range N) = ⟨v, Finset.mem_range.mpr hv⟩ := Subtype.ext hdiv
+    rw [hsub, hmod]
+    have hlen : j < (natToBits b (τ ⟨v, Finset.mem_range.mpr hv⟩).val).length := by
+      rw [natToBits_length]; exact hj1
+    exact getD_eq_getElem _ _ _ hlen
+
+theorem eval_none_constraint_encodeAssign (q N : ℕ) (sem : Rel → List (Fin q) → Bool)
+    (τ : Finset.range N → Fin q) {v : ℕ} (hv : v < N) :
+    Constraint.eval (semBoolean q sem)
+      (fun x => if h : x ∈ Finset.range (N * bitWidth q) then encodeAssign q N τ ⟨x, h⟩ else false)
+      (none, bitScope (bitWidth q) v) = true := by
+  dsimp only [Constraint.eval, semBoolean]
+  rw [map_extend_encodeAssign_bitScope q N τ hv]
+  simp only [natToBits_length, decide_eq_true_eq]
+  have hlt : (τ ⟨v, Finset.mem_range.mpr hv⟩).val < 2 ^ (bitWidth q) :=
+    (τ ⟨v, Finset.mem_range.mpr hv⟩).is_lt.trans_le (le_two_pow_bitWidth q)
+  rw [bitsToNat_natToBits hlt]
+  exact ⟨trivial, (τ ⟨v, Finset.mem_range.mpr hv⟩).is_lt⟩
+
+theorem map_extend_encodeAssign_flatMap_bitScope (q N : ℕ) (τ : Finset.range N → Fin q)
+    (vs : List ℕ) (hvs : ∀ v ∈ vs, v < N) :
+    (vs.flatMap (bitScope (bitWidth q))).map (fun x =>
+      if h : x ∈ Finset.range (N * bitWidth q) then encodeAssign q N τ ⟨x, h⟩ else false) =
+    vs.flatMap (fun v => natToBits (bitWidth q) (if h : v < N then
+      (τ ⟨v, Finset.mem_range.mpr h⟩).val else 0)) := by
+  let σ := fun x => if h : x ∈ Finset.range (N * bitWidth q) then
+    encodeAssign q N τ ⟨x, h⟩ else false
+  rw [List.map_flatMap]
+  refine List.flatMap_congr fun v hv => ?_
+  have hv_lt := hvs v hv
+  simp only [hv_lt, dite_true]
+  exact map_extend_encodeAssign_bitScope q N τ hv_lt
+
+theorem length_flatMap_of_forall_length_eq {α β : Type*} (b : ℕ) (vs : List α) (g : α → List β)
+    (hg : ∀ x ∈ vs, (g x).length = b) :
+    (vs.flatMap g).length = vs.length * b := by
+  induction vs with
+  | nil => simp only [List.flatMap_nil, List.length_nil, Nat.zero_mul]
+  | cons v vs ih =>
+    simp only [List.flatMap_cons, List.length_append, List.length_cons]
+    have hv : (g v).length = b := hg v List.mem_cons_self
+    have hrest : ∀ x ∈ vs, (g x).length = b := fun x hx => hg x (List.mem_cons_of_mem v hx)
+    rw [hv, ih hrest, Nat.add_mul, Nat.one_mul, Nat.add_comm]
+
+theorem eval_some_constraint_encodeAssign (q N : ℕ) (hq : 0 < q)
+    (sem : Rel → List (Fin q) → Bool) (τ : Finset.range N → Fin q)
+    (c : Constraint Rel ℕ) (hscope : ∀ v ∈ c.2, v < N) :
+    Constraint.eval (semBoolean q sem)
+      (fun x => if h : x ∈ Finset.range (N * bitWidth q) then encodeAssign q N τ ⟨x, h⟩ else false)
+      (some c.1, c.2.flatMap (bitScope (bitWidth q))) =
+    Constraint.eval sem
+      (fun v => if h : v ∈ Finset.range N then τ ⟨v, h⟩ else ⟨0, hq⟩) c := by
+  let b := bitWidth q
+  have hb : 0 < b := one_le_bitWidth q
+  dsimp only [Constraint.eval, semBoolean]
+  simp only [hq, ↓reduceDIte]
+  rw [map_extend_encodeAssign_flatMap_bitScope q N τ c.2 hscope]
+  let g := fun v : ℕ => natToBits b (if h : v < N then
+    (τ ⟨v, Finset.mem_range.mpr h⟩).val else 0)
+  have hg_len : ∀ v ∈ c.2, (g v).length = b := fun _ _ => natToBits_length _ _
+  have hbs_len : (c.2.flatMap g).length = c.2.length * b :=
+    length_flatMap_of_forall_length_eq b c.2 g hg_len
+  have hr : (c.2.flatMap g).length / b = c.2.length := by
+    rw [hbs_len, Nat.mul_div_cancel _ hb]
+  have hmod : (c.2.flatMap g).length % b = 0 := by
+    rw [hbs_len]
+    exact Nat.dvd_iff_mod_eq_zero.mp (dvd_mul_left b c.2.length)
+  have hmod_b : ((c.2.flatMap g).length % b == 0) = true := by
+    rw [hmod]
+    rfl
+  have hdec : decodeChunks b ((c.2.flatMap g).length / b) (c.2.flatMap g) =
+      c.2.map (fun v => if h : v < N then (τ ⟨v, Finset.mem_range.mpr h⟩).val else 0) := by
+    rw [hr, decodeChunks_flatMap b c.2 g hg_len]
+    apply List.map_congr_left
+    intro v hv
+    dsimp only [Function.comp_apply, g]
+    have hv_lt := hscope v hv
+    simp only [hv_lt, dite_true]
+    have hlt : (τ ⟨v, Finset.mem_range.mpr hv_lt⟩).val < 2 ^ b :=
+      (τ ⟨v, Finset.mem_range.mpr hv_lt⟩).is_lt.trans_le (le_two_pow_bitWidth q)
+    exact bitsToNat_natToBits hlt
+  have hall : (c.2.map (fun v => if h : v < N then
+      (τ ⟨v, Finset.mem_range.mpr h⟩).val else 0)).all (fun x => decide (x < q)) = true := by
+    rw [List.all_eq_true]
+    intro x hx
+    simp only [List.mem_map] at hx
+    rcases hx with ⟨v, hv, rfl⟩
+    have hv_lt := hscope v hv
+    simp only [hv_lt, dite_true, decide_eq_true_eq]
+    exact (τ ⟨v, Finset.mem_range.mpr hv_lt⟩).is_lt
+  change (((c.2.flatMap g).length % b == 0 &&
+      (decodeChunks b ((c.2.flatMap g).length / b) (c.2.flatMap g)).all
+        (fun x => decide (x < q))) &&
+      sem c.1 ((decodeChunks b ((c.2.flatMap g).length / b) (c.2.flatMap g)).map
+        (toFin q hq))) =
+    sem c.1 (c.2.map (fun v => if h : v ∈ Finset.range N then τ ⟨v, h⟩ else ⟨0, hq⟩))
+  rw [hmod_b, hdec, hall]
+  simp only [Bool.true_and]
+  congr 1
+  rw [List.map_map]
+  apply List.map_congr_left
+  intro v hv
+  have hv_lt := hscope v hv
+  simp only [Function.comp_apply, hv_lt, dite_true, Finset.mem_range.mpr hv_lt]
+  exact toFin_of_val hq (τ ⟨v, Finset.mem_range.mpr hv_lt⟩)
+
+theorem eval_toBooleanCSP_encodeAssign (q N : ℕ) (hq : 0 < q)
+    (sem : Rel → List (Fin q) → Bool) (F : CSP Rel ℕ) (hvars : ∀ v ∈ F.vars, v < N)
+    (τ : Finset.range N → Fin q) :
+    (toBooleanCSP q N F).eval (semBoolean q sem)
+      (fun x => if h : x ∈ Finset.range (N * bitWidth q) then
+        encodeAssign q N τ ⟨x, h⟩ else false) =
+    F.eval sem (fun v => if h : v ∈ Finset.range N then τ ⟨v, h⟩ else ⟨0, hq⟩) := by
+  let σ := fun x => if h : x ∈ Finset.range (N * bitWidth q) then
+    encodeAssign q N τ ⟨x, h⟩ else false
+  let τ_ext := fun v => if h : v ∈ Finset.range N then τ ⟨v, h⟩ else ⟨0, hq⟩
+  dsimp only [toBooleanCSP, CSP.eval]
+  rw [List.all_append]
+  have hnone : ((List.range N).map (fun v => (none, bitScope (bitWidth q) v))).all
+      (Constraint.eval (semBoolean q sem) σ) = true := by
+    rw [List.all_eq_true]
+    intro c hc
+    simp only [List.mem_map, List.mem_range] at hc
+    rcases hc with ⟨v, hv, rfl⟩
+    exact eval_none_constraint_encodeAssign q N sem τ hv
+  have hsome : (F.map (fun c => (some c.1, c.2.flatMap (bitScope (bitWidth q))))).all
+      (Constraint.eval (semBoolean q sem) σ) = F.all (Constraint.eval sem τ_ext) := by
+    apply Bool.eq_iff_iff.mpr
+    simp only [List.all_eq_true, List.mem_map, forall_exists_index, and_imp]
+    constructor
+    · intro h c hc
+      have hscope : ∀ v ∈ c.2, v < N := fun v hv => hvars v (by
+        simp only [CSP.vars, List.mem_flatMap]
+        exact ⟨c, hc, hv⟩)
+      have h1 := h (some c.1, c.2.flatMap (bitScope (bitWidth q))) c hc rfl
+      have h2 := eval_some_constraint_encodeAssign q N hq sem τ c hscope
+      rwa [h2] at h1
+    · intro h _ c hc rfl
+      have hscope : ∀ v ∈ c.2, v < N := fun v hv => hvars v (by
+        simp only [CSP.vars, List.mem_flatMap]
+        exact ⟨c, hc, hv⟩)
+      have h1 := h c hc
+      have h2 := eval_some_constraint_encodeAssign q N hq sem τ c hscope
+      rwa [← h2] at h1
+  rw [hnone, Bool.true_and, hsome]
+
+theorem encodeAssign_decodeAssign_of_eval (q N : ℕ) (hq : 0 < q)
+    (sem : Rel → List (Fin q) → Bool) (F : CSP Rel ℕ)
+    (σ : Finset.range (N * bitWidth q) → Bool)
+    (h_eval : (toBooleanCSP q N F).eval (semBoolean q sem)
+      (fun x => if h : x ∈ Finset.range (N * bitWidth q) then σ ⟨x, h⟩ else false) = true) :
+    encodeAssign q N (decodeAssign q N hq σ) = σ := by
+  let b := bitWidth q
+  let σ_ext := fun x => if h : x ∈ Finset.range (N * b) then σ ⟨x, h⟩ else false
+  have hnone : ∀ v < N, Constraint.eval (semBoolean q sem) σ_ext (none, bitScope b v) = true := by
+    intro v hv
+    have hmem : (none, bitScope b v) ∈ toBooleanCSP q N F := by
+      simp only [toBooleanCSP, List.mem_append, List.mem_map]
+      left
+      exact ⟨v, List.mem_range.mpr hv, rfl⟩
+    have := List.all_eq_true.mp (by exact h_eval) (none, bitScope b v) hmem
+    exact this
+  have hbits_lt : ∀ v (hv : v < N),
+      bitsToNat ((List.range b).map (fun j =>
+        if h : v * b + j < N * b then σ ⟨v * b + j, Finset.mem_range.mpr h⟩ else false)) < q := by
+    intro v hv
+    have hc := hnone v hv
+    dsimp only [Constraint.eval, semBoolean] at hc
+    simp only [decide_eq_true_eq] at hc
+    have hmap : (bitScope b v).map σ_ext = (List.range b).map (fun j =>
+        if h : v * b + j < N * b then σ ⟨v * b + j, Finset.mem_range.mpr h⟩ else false) := by
+      rw [bitScope, List.map_map]
+      apply List.ext_getElem
+      · simp only [List.length_map, List.length_range]
+      · intro j hj1 hj2
+        simp only [List.length_map, List.length_range] at hj1
+        have hj_range : v * b + j < N * b := by
+          have h1 : (v + 1) * b ≤ N * b := Nat.mul_le_mul_right b (by omega)
+          have h2 : v * b + j < (v + 1) * b := by rw [Nat.add_mul, Nat.one_mul]; omega
+          exact h2.trans_le h1
+        simp only [Function.comp_apply, List.getElem_map, List.getElem_range,
+          Finset.mem_range, hj_range, dite_true, σ_ext]
+    rw [hmap] at hc
+    exact hc.2
+  funext ⟨x, hx⟩
+  dsimp only [encodeAssign]
+  have hx_lt : x < N * b := Finset.mem_range.mp hx
+  have hb_pos : 0 < b := one_le_bitWidth q
+  have hv : x / b < N := Nat.div_lt_of_lt_mul (by rwa [Nat.mul_comm])
+  dsimp only [decodeAssign]
+  let chunk := (List.range b).map fun j =>
+    if h : (x / b) * b + j < N * b then σ ⟨(x / b) * b + j, Finset.mem_range.mpr h⟩ else false
+  have hval : (toFin q hq (bitsToNat chunk)).val = bitsToNat chunk := by
+    apply toFin_val_of_lt
+    exact hbits_lt (x / b) hv
+  rw [hval]
+  have hlen : chunk.length = b := by
+    simp only [chunk, List.length_map, List.length_range]
+  have hinv := natToBits_bitsToNat chunk
+  rw [hlen] at hinv
+  rw [hinv]
+  have hj_lt : x % b < b := Nat.mod_lt x hb_pos
+  have hget := getD_eq_getElem chunk (x % b) false (by rw [hlen]; exact hj_lt)
+  rw [hget]
+  simp only [chunk, List.getElem_map, List.getElem_range]
+  have hdivmod : (x / b) * b + x % b = x := by
+    rw [Nat.mul_comm]
+    exact Nat.div_add_mod x b
+  have hj_range : (x / b) * b + x % b < N * b := by rw [hdivmod]; exact hx_lt
+  simp only [hj_range, dite_true]
+  congr 1
+  exact Subtype.ext hdivmod
+
+theorem eval_congr_default {D Rel : Type*} [Inhabited D] (sem : Rel → List D → Bool)
+    (F : CSP Rel ℕ) {N : ℕ} (hvars : ∀ v ∈ F.vars, v < N) (τ : Finset.range N → D) (d : D) :
+    F.eval sem (fun v => if h : v ∈ Finset.range N then τ ⟨v, h⟩ else default) =
+    F.eval sem (fun v => if h : v ∈ Finset.range N then τ ⟨v, h⟩ else d) := by
+  apply CSP.eval_congr
+  intro v hv
+  have hv_lt := hvars v hv
+  simp only [Finset.mem_range.mpr hv_lt, dite_true]
+
+/-- **Count-preserving bijection for finite-domain CSP to Boolean CSP.**
+The declared-variable model count of a finite-domain CSP on `0, …, N - 1` equals the
+declared-variable model count of its compiled Boolean CSP on `0, …, N * bitWidth q - 1`. -/
+theorem modelCountOn_toBooleanCSP (q : ℕ) [Inhabited (Fin q)] (N : ℕ) (hq : 0 < q)
+    (sem : Rel → List (Fin q) → Bool) (F : CSP Rel ℕ) (hvars : ∀ v ∈ F.vars, v < N) :
+    (toBooleanCSP q N F).modelCountOn (semBoolean q sem)
+      (Finset.range (N * bitWidth q)) =
+    F.modelCountOn sem (Finset.range N) := by
+  let b := bitWidth q
+  dsimp only [CSP.modelCountOn]
+  have hdef_bool : (default : Bool) = false := rfl
+  refine (Finset.card_bij (fun τ _ => encodeAssign q N τ) (fun τ hτ => ?_)
+    (fun τ₁ _ τ₂ _ h => ?_) (fun σ hσ => ?_)).symm
+  · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hτ ⊢
+    have hdef := eval_congr_default sem F hvars τ ⟨0, hq⟩
+    rw [hdef] at hτ
+    have heval := eval_toBooleanCSP_encodeAssign q N hq sem F hvars τ
+    rw [hdef_bool, heval, hτ]
+  · have h1 := congrArg (decodeAssign q N hq) h
+    rw [decodeAssign_encodeAssign q N hq τ₁, decodeAssign_encodeAssign q N hq τ₂] at h1
+    exact h1
+  · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hσ ⊢
+    rw [hdef_bool] at hσ
+    have hinv := encodeAssign_decodeAssign_of_eval q N hq sem F σ hσ
+    refine ⟨decodeAssign q N hq σ, ?_, hinv⟩
+    have heval := eval_toBooleanCSP_encodeAssign q N hq sem F hvars (decodeAssign q N hq σ)
+    have hdef := eval_congr_default sem F hvars (decodeAssign q N hq σ) ⟨0, hq⟩
+    rw [hdef, ← heval, hinv]
+    exact hσ
 
 end Cslib.Logic.PL.FiniteCSP

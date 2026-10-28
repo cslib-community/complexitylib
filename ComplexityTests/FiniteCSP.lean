@@ -15,7 +15,8 @@ This module tests the finite-domain CSP compilation pipeline and its exact model
 * Graph 3-coloring on the triangle graph K₃ (yielding chromatic polynomial P(K₃, 3) = 6).
 * Graph 3-coloring on the path graph P₃ (yielding P(P₃, 3) = 12).
 * Graph 2-coloring on K₃ (unsatisfiable, yielding 0 models).
-* Non-vacuity of `ValidFiniteKCSP` on concrete 3-coloring instances.
+* Exact agreement between finite-domain model count and compiled Boolean CSP model count.
+* Width and variable bounds on the compiled Boolean CSP instance.
 -/
 
 open Cslib.Logic.PL
@@ -41,87 +42,50 @@ example : bitsToNat [true, false] = 1 := by decide
 example : bitsToNat [false, true] = 2 := by decide
 example : bitsToNat (natToBits 3 5) = 5 := by decide
 
+/-- Disequality semantics over `Fin q`. -/
+def semNeq (q : ℕ) : Unit → List (Fin q) → Bool
+  | (), [c1, c2] => c1 != c2
+  | (), _ => false
+
 /-- Triangle graph K₃ 3-coloring CSP instance. -/
-def triangleCSP : CSP ℕ :=
-  [{ vars := [0, 1],
-     forbidden := [[0, 0], [1, 1], [2, 2]],
-     arity := 2,
-     valid := by decide },
-   { vars := [1, 2],
-     forbidden := [[0, 0], [1, 1], [2, 2]],
-     arity := 2,
-     valid := by decide },
-   { vars := [0, 2],
-     forbidden := [[0, 0], [1, 1], [2, 2]],
-     arity := 2,
-     valid := by decide }]
+def triangleCSP : CSP Unit ℕ :=
+  [((), [0, 1]), ((), [1, 2]), ((), [0, 2])]
 
 /-- Path graph P₃ 3-coloring CSP instance. -/
-def pathCSP : CSP ℕ :=
-  [{ vars := [0, 1],
-     forbidden := [[0, 0], [1, 1], [2, 2]],
-     arity := 2,
-     valid := by decide },
-   { vars := [1, 2],
-     forbidden := [[0, 0], [1, 1], [2, 2]],
-     arity := 2,
-     valid := by decide }]
+def pathCSP : CSP Unit ℕ :=
+  [((), [0, 1]), ((), [1, 2])]
 
-/-- Triangle graph K₃ 2-coloring CSP instance. -/
-def triangleCSP2 : CSP ℕ :=
-  [{ vars := [0, 1],
-     forbidden := [[0, 0], [1, 1]],
-     arity := 2,
-     valid := by decide },
-   { vars := [1, 2],
-     forbidden := [[0, 0], [1, 1]],
-     arity := 2,
-     valid := by decide },
-   { vars := [0, 2],
-     forbidden := [[0, 0], [1, 1]],
-     arity := 2,
-     valid := by decide }]
+-- Model counts directly on finite-domain CSP
+example : triangleCSP.modelCountOn (semNeq 3) (Finset.range 3) = 6 := by decide
+example : pathCSP.modelCountOn (semNeq 3) (Finset.range 3) = 12 := by decide
+example : triangleCSP.modelCountOn (semNeq 2) (Finset.range 3) = 0 := by decide
 
--- Model counts
-theorem triangle_3coloring_count :
-    (toCNF triangleCSP 3 3).modelCountOn (Finset.range 6) = 6 := by
+-- Model counts on compiled Boolean CSP
+example :
+    (toBooleanCSP 3 3 triangleCSP).modelCountOn (semBoolean 3 (semNeq 3)) (Finset.range 6) = 6 := by
   decide
 
-theorem path_3coloring_count :
-    (toCNF pathCSP 3 3).modelCountOn (Finset.range 6) = 12 := by
+example :
+    (toBooleanCSP 3 3 pathCSP).modelCountOn (semBoolean 3 (semNeq 3)) (Finset.range 6) = 12 := by
   decide
 
-theorem triangle_2coloring_count :
-    (toCNF triangleCSP2 2 3).modelCountOn (Finset.range 3) = 0 := by
+example :
+    (toBooleanCSP 2 3 triangleCSP).modelCountOn (semBoolean 2 (semNeq 2)) (Finset.range 3) = 0 := by
   decide
+
+-- Model count equivalence theorem application
+example :
+    (toBooleanCSP 3 3 triangleCSP).modelCountOn (semBoolean 3 (semNeq 3)) (Finset.range 6) =
+    triangleCSP.modelCountOn (semNeq 3) (Finset.range 3) :=
+  modelCountOn_toBooleanCSP 3 3 (by decide) (semNeq 3) triangleCSP (by decide)
 
 -- Width and variable bounds
-example : (toCNF triangleCSP 3 3).all (fun c => c.length ≤ 4) = true := by decide
+example : (toBooleanCSP 3 3 triangleCSP).all (fun c => c.2.length ≤ 4) = true := by decide
+example : (toBooleanCSP 3 3 triangleCSP).vars.all (fun v => decide (v < 6)) = true := by decide
+example : CSP.validDeclaredCSP 4 6 (toBooleanCSP 3 3 triangleCSP) = true := by decide
 
-example : (toCNF triangleCSP 3 3).all (fun c => c.all (fun l => l.1 < 6)) = true := by decide
-
--- Non-vacuity: triangle CSP has width 2 and is satisfiable by a proper 3-coloring
-def triangleAssignment : Fin 3 → Fin 3
-  | ⟨0, _⟩ => ⟨0, by decide⟩
-  | ⟨1, _⟩ => ⟨1, by decide⟩
-  | ⟨2, _⟩ => ⟨2, by decide⟩
-
-theorem triangle_hasWidth : triangleCSP.HasWidth 2 := by
-  intro c hc
-  simp only [triangleCSP, List.mem_cons, List.not_mem_nil, or_false] at hc
-  rcases hc with rfl | rfl | rfl <;> simp [Constraint.HasWidth]
-
-theorem triangle_valid : (3, triangleCSP) ∈ ValidFiniteKCSP 3 2 := by
-  refine ⟨triangle_hasWidth, ?_, ?_, ?_⟩
-  · intro c hc
-    simp only [triangleCSP, List.mem_cons, List.not_mem_nil, or_false] at hc
-    rcases hc with rfl | rfl | rfl <;> rfl
-  · intro c hc v hv
-    simp only [triangleCSP, List.mem_cons, List.not_mem_nil, or_false] at hc
-    rcases hc with rfl | rfl | rfl <;>
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hv <;>
-      rcases hv with rfl | rfl <;> decide
-  · refine ⟨triangleAssignment, ?_⟩
-    decide
+-- Satisfiability and unsatisfiability checks
+example : 0 < triangleCSP.modelCountOn (semNeq 3) (Finset.range 3) := by decide
+example : triangleCSP.modelCountOn (semNeq 2) (Finset.range 3) = 0 := by decide
 
 end ComplexityTests.FiniteCSP
