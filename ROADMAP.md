@@ -421,8 +421,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   transfer of Anthropic's modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394])
   has the Convolution-3SUM/Exact Triangle correctness reduction, a charged native single-instance
   matrix builder and the complete finite mathematical Chan–He reduction ([#1435]), including
-  ordinary distinct-position inputs and explicit size bounds. It still needs native Chan–He
-  preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
+  ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
+  interface ([#1438]) adds padding, detection and signed digit reconstruction; it still needs
+  modular Exact Triangle hashing/false-positive splitting, tensor/sparse-query programs, native
+  Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
   asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
@@ -546,6 +548,6 @@ not planned, not as proved.
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
-
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
+[#1438]: https://github.com/cslib-community/complexitylib/issues/1438
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449

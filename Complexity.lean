@@ -1,6 +1,7 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import Complexity.Algorithms.ExactTriangle.Defs
+public import Complexity.Algorithms.ExactTriangle.Lopsided
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
 public import Complexity.Algorithms.Lean.FusionTree.Compression
 public import Complexity.Algorithms.Lean.FusionTree.Correction
@@ -2084,6 +2085,7 @@ public import Complexity.Foundations.Data.List.OfFn
 public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.SelectDistinct
 public import Complexity.Foundations.Data.Matrix.Binary
+public import Complexity.Foundations.Data.Matrix.IntegerBits
 public import Complexity.Foundations.Data.Matrix.Permanent
 public import Complexity.Foundations.Data.Matrix.Reindex
 public import Complexity.Foundations.Data.Matrix.TotallyRegular
