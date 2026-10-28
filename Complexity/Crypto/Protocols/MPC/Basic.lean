@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
+-- upstream: candidate
 
 public import Complexity.Languages.Probabilistic.Oracle
 public import Complexity.Languages.Probabilistic.Sharing
