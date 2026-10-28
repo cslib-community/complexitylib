@@ -33,7 +33,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section
@@ -45,16 +44,17 @@ namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 /-- The set of levels at which a leaf chooses `P₀`. -/
 def P0Levels {L : ℕ} (τ : Leaf L) : Finset (Fin L) := univ.filter fun ℓ => τ ℓ = Term.P0
 
-/-- Section 2.4.3: we define the order of a leaf as m minus the number of levels at which it
-chooses P₀. The order is an integer; it is negative for a leaf that chooses `P₀` at more than `m`
-levels. -/
+/-- The integer difference between `m` and the number of `P0` positions of a leaf. It can be
+negative for arbitrary leaves; nonnegativity is proved for leaves contributing to an
+output with `m` inner positions. -/
 def order {L : ℕ} (m : ℕ) (τ : Leaf L) : ℤ := (m : ℤ) - ((P0Levels τ).card : ℤ)
 
-/-- Section 2.4.3: α_d := binom(m, d) 9^d. -/
+/-- The quantity `m.choose d * 9 ^ d`, counting order-`d` leaves contributing to one output
+with `m` inner positions. -/
 def alpha (m d : ℕ) : ℕ := m.choose d * 9 ^ d
 
-/-- Section 2.4.3: β_d := binom(L, m-d) 9^{L-m+d}.  Meant for `d ≤ m ≤ L`; outside this range the
-subtractions of natural numbers are cut off at 0 and the value has no meaning. -/
+/-- The quantity `L.choose (m - d) * 9 ^ (L - m + d)`, using natural-number subtraction. Its
+interpretation as the number of order-`d` leaves requires `d ≤ m ≤ L`. -/
 def beta (L m d : ℕ) : ℕ := L.choose (m - d) * 9 ^ (L - m + d)
 
 /-! ### One level: which terms contribute to which variables -/
@@ -113,8 +113,7 @@ theorem mem_P0Levels {L : ℕ} {τ : Leaf L} {ℓ : Fin L} : ℓ ∈ P0Levels τ
 theorem mem_innerSetO {L : ℕ} {η : OutStr L} {ℓ : Fin L} : ℓ ∈ innerSetO η ↔ (η ℓ).IsInner := by
   simp [innerSetO]
 
-/-- Section 2.4.3: A leaf contributing to an output string chooses P₀ only at levels of the output
-string's inner set. -/
+/-- A contributing leaf can use `P0` only at an inner position of the output string. -/
 theorem P0Levels_subset {L : ℕ} {τ : Leaf L} {w : OutStr L} (h : Leaf.Contributes τ w) :
     P0Levels τ ⊆ innerSetO w := by
   intro ℓ hℓ
@@ -124,15 +123,16 @@ theorem P0Levels_subset {L : ℕ} {τ : Leaf L} {w : OutStr L} (h : Leaf.Contrib
   · exact hinner
   · exact (OutVar.privateTerm_eq_P0_iff _).mp (hprivate.symm.trans hℓ)
 
-/-- Section 2.4.3: so its order is at least 0. -/
+/-- A leaf contributing to a string with exactly `m` inner positions has nonnegative order
+relative to `m`. -/
 theorem order_nonneg {L m : ℕ} {w : OutStr L} (hw : (innerSetO w).card = m) {τ : Leaf L}
     (h : Leaf.Contributes τ w) : 0 ≤ order m τ := by
   have hc := card_le_card (P0Levels_subset h)
   unfold order
   omega
 
-/-- In the proof of Lemma 11: every leaf of leaves(U) has an order 0 ≤ d ≤ m.  The upper
-bound holds for every leaf. -/
+/-- The order relative to `m` of any leaf is at most `m`, regardless of which outputs it
+contributes to. -/
 theorem order_le {L : ℕ} (m : ℕ) (τ : Leaf L) : order m τ ≤ m := by
   unfold order
   omega
@@ -145,7 +145,7 @@ theorem order_eq_iff {L : ℕ} (m d : ℕ) (τ : Leaf L) :
 
 /-! ### The counts -/
 
-/-- Section 2.4.3: A single output string has 10^m […] leaves contributing to it. -/
+/-- Exactly `10 ^ m` leaves contribute to an output string with `m` inner positions. -/
 theorem card_filter_contributes {L m : ℕ} (w : OutStr L) (hw : (innerSetO w).card = m) :
     (univ.filter fun τ : Leaf L => Leaf.Contributes τ w).card = 10 ^ m := by
   -- Ten terms contribute to `z₀` and one to `z_ij`.
@@ -154,9 +154,8 @@ theorem card_filter_contributes {L m : ℕ} (w : OutStr L) (hw : (innerSetO w).c
   rw [prod_ite, prod_const, prod_const_one, mul_one, ← hw]
   rfl
 
-/-- Section 2.4.3: exactly α_d := binom(m, d) 9^d leaves of order d contribute to an output
-string.  As everywhere in Section 2.4.3, the output strings are those whose inner sets have exactly
-m elements. -/
+/-- For a string with `m` inner positions, `alpha m d` leaves of order `d` contribute to it.
+The natural parameter `d` is unrestricted; for `d > m` both sides are zero. -/
 theorem card_contributing_of_order {L m : ℕ} (w : OutStr L) (hw : (innerSetO w).card = m)
     (d : ℕ) :
     (univ.filter fun τ : Leaf L => Leaf.Contributes τ w ∧ order m τ = d).card = alpha m d := by
@@ -190,10 +189,8 @@ theorem card_contributing_of_order {L m : ℕ} (w : OutStr L) (hw : (innerSetO w
     have hle := order_le m τ
     omega
 
-/-- Section 2.4.3: The total number of leaves of order d in the entire recursion tree is
-β_d := binom(L, m-d) 9^{L-m+d}.
-
-NOTE.  `d ≤ m` and `m ≤ L` are left implicit in the paper. -/
+/-- If `d ≤ m ≤ L`, the full leaf index type contains exactly `beta L m d` leaves of order
+`d`. -/
 theorem card_filter_order_eq {L m : ℕ} (hmL : m ≤ L) (d : ℕ) (hd : d ≤ m) :
     (univ.filter fun τ : Leaf L => order m τ = d).card = beta L m d := by
   -- The leaves of order `d` are the strings of terms with `P₀` at exactly `m - d` levels.
@@ -207,21 +204,17 @@ theorem card_filter_order_eq {L m : ℕ} (hmL : m ≤ L) (d : ℕ) (hd : d ≤ m
     card_term_ne_P0, one_pow, one_mul, Fintype.card_fin, beta,
     show L - (m - d) = L - m + d by omega]
 
-/-- Section 2.4.3: In particular, β₀ = binom(L, m) 9^{L-m}. -/
+/-- Evaluate `beta` at order zero. -/
 theorem beta_zero (L m : ℕ) : beta L m 0 = L.choose m * 9 ^ (L - m) := by
   simp [beta]
 
-/-- Section 2.4.3: β₀ = binom(L, m) 9^{L-m} = M. -/
+/-- The order-zero count formula equals `M L m`. -/
 theorem beta_zero_eq_M (L m : ℕ) : beta L m 0 = M L m := by
   rw [beta_zero, M, K, N0, ← pow_mul, mul_comm (L - m) 2, pow_mul]
   norm_num
 
-/-- Section 2.4.3: A leaf of order d contributes to binom(L-m+d, d) output strings, one for each
-inner set of size m that contains the m-d levels at which it chooses P₀.  Only the number is
-stated.  As everywhere in Section 2.4.3, the output strings are those whose inner sets have exactly
-m elements.
-
-NOTE.  `m ≤ L` is left implicit in the paper. -/
+/-- Assuming `m ≤ L`, a leaf of natural order `d` contributes to exactly `(L - m + d).choose
+d` output strings with `m` inner positions. The order hypothesis forces `d ≤ m`. -/
 theorem card_outStr_of_leaf {L m : ℕ} (hmL : m ≤ L) (d : ℕ) (τ : Leaf L)
     (hτ : order m τ = d) :
     (univ.filter fun w : OutStr L => (innerSetO w).card = m ∧ Leaf.Contributes τ w).card
@@ -254,8 +247,8 @@ theorem card_outStr_of_leaf {L m : ℕ} (hmL : m ≤ L) (d : ℕ) (τ : Leaf L)
 theorem beta_pos {L m : ℕ} (hmL : m ≤ L) (d : ℕ) : 0 < beta L m d :=
   Nat.mul_pos (Nat.choose_pos (by omega)) (by positivity)
 
-/-- The equality in equation (5) without division: `β_d (L-m+d) = 9 (m-d+1) β_{d-1}` for
-`1 ≤ d ≤ m ≤ L`. -/
+/-- For `1 ≤ d ≤ m ≤ L`, consecutive values of `beta` satisfy the displayed multiplication
+identity, without division (cf. [AlmanWilliams2026, equation (5)]). -/
 theorem Equation5.ratio_nat {L m : ℕ} (hmL : m ≤ L) (d : ℕ) (hd1 : 1 ≤ d) (hd : d ≤ m) :
     beta L m d * (L - m + d) = 9 * (m - d + 1) * beta L m (d - 1) := by
   -- With `k = m - d` this is `binom(L, k) (L - k) = binom(L, k + 1) (k + 1)`, times a power of 9.
@@ -269,11 +262,9 @@ theorem Equation5.ratio_nat {L m : ℕ} (hmL : m ≤ L) (d : ℕ) (hd1 : 1 ≤ d
     _ = 9 * 9 ^ (L - m + (d - 1)) * (L.choose (m - d + 1) * (m - d + 1)) := by rw [hchoose]
     _ = 9 * (m - d + 1) * (L.choose (m - d + 1) * 9 ^ (L - m + (d - 1))) := by ring
 
-/-- Section 2.4.3, the equality in equation (5), for every `L ≥ m` (it is used again as equation (7)
-in Section 4.3): β_d / β_{d-1} = 9(m-d+1) / (L-m+d) for `1 ≤ d ≤ m`.
-
-NOTE.  The paper prints the equality under `L = 19m` in (5) and under `L ≥ 10m` in (7); here it is
-stated for every `L ≥ m`. -/
+/-- For `1 ≤ d ≤ m ≤ L`, the ratio of consecutive `beta` values is `9 * (m - d + 1) / (L - m +
+d)`, with the ratio and subtractions interpreted in `ℚ`. This extends the parameter ranges
+used in [AlmanWilliams2026, equations (5) and (7)]. -/
 theorem beta_ratio {L m : ℕ} (hmL : m ≤ L) (d : ℕ) (hd1 : 1 ≤ d) (hd : d ≤ m) :
     (beta L m d : ℚ) / (beta L m (d - 1) : ℚ)
       = 9 * ((m : ℚ) - (d : ℚ) + 1) / ((L : ℚ) - (m : ℚ) + (d : ℚ)) := by
@@ -284,8 +275,8 @@ theorem beta_ratio {L m : ℕ} (hmL : m ≤ L) (d : ℕ) (hd1 : 1 ≤ d) (hd : d
   push_cast [Nat.cast_sub hmL, Nat.cast_sub hd] at hnat
   rw [div_eq_div_iff hbeta.ne' (by linarith), hnat]
 
-/-- Section 2.4.3, the inequalities in equation (5): if L = 19m, then for 1 ≤ d ≤ m we have
-β_d / β_{d-1} = 9(m-d+1)/(L-m+d) ≤ 9m/(18m+1) < 1/2. -/
+/-- At `L = 19 * m` and `1 ≤ d ≤ m`, the ratio of consecutive `beta` values is bounded above
+by `9 * m / (18 * m + 1)`, which is strictly below `1 / 2`. All divisions here are in `ℚ`. -/
 theorem beta_ratio_lt_half (m d : ℕ) (hd1 : 1 ≤ d) (hd : d ≤ m) :
     (beta (19 * m) m d : ℚ) / (beta (19 * m) m (d - 1) : ℚ) ≤ 9 * (m : ℚ) / (18 * (m : ℚ) + 1)
       ∧ 9 * (m : ℚ) / (18 * (m : ℚ) + 1) < 1 / 2 := by
@@ -299,8 +290,8 @@ theorem beta_ratio_lt_half (m d : ℕ) (hd1 : 1 ≤ d) (hd : d ≤ m) :
   · rw [div_lt_div_iff₀ (by positivity) (by norm_num)]
     linarith
 
-/-- **Equation (5)**, conclusion: if `L = 19m` then β_d ≤ 2^{-d} M, for `0 ≤ d ≤ m`.
-The inequality is multiplied out. -/
+/-- For `d ≤ m` and `L = 19 * m`, the order count satisfies `2 ^ d * beta L m d ≤ M L m`. This
+is the division-free geometric bound from [AlmanWilliams2026, equation (5)]. -/
 theorem two_pow_mul_beta_le (m d : ℕ) (hd : d ≤ m) : 2 ^ d * beta (19 * m) m d ≤ M (19 * m) m := by
   induction d with
   | zero => simp [beta_zero_eq_M]

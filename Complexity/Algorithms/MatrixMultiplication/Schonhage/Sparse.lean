@@ -29,7 +29,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section
@@ -38,9 +37,9 @@ open Finset
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-! ### The parameters from Section 2.4.3 on -/
+/-! ### Specialization to `L = 19 * m` -/
 
-/-- Section 2.4.3: From now on, we fix L = 19m, so that N₀ = 3^{18m}. -/
+/-- At `L = 19 * m`, the outer dimension is `3 ^ (18 * m)`. -/
 theorem N0_nineteen_mul (m : ℕ) : N0 (19 * m) m = 3 ^ (18 * m) := by
   unfold N0
   congr 1
@@ -55,12 +54,12 @@ private theorem D_eq_two_pow (m : ℕ) : (D m : ℝ) = (2 : ℝ) ^ (2 * m) := by
   rw [D, pow_mul]
   norm_num
 
-/-- Section 2.4.3: Recall that D = 4^m, so 2^m = √D. -/
+/-- The real square root of `D m` is `2 ^ m`. -/
 theorem two_pow_eq_sqrt_D (m : ℕ) : (2 : ℝ) ^ m = Real.sqrt (D m) := by
   rw [D_eq_two_pow, pow_mul', Real.sqrt_sq (by positivity)]
 
-/-- The factor `2^{-m/9}` of Sections 2.4.3 and 2.4.4, by which the costs of the algorithm of
-Theorem 5 lie below `N²`. -/
+/-- The positive real factor `2 ^ (-m / 9)`, used in the finite leaf and encoding count
+bounds. -/
 noncomputable def saving (m : ℕ) : ℝ := (2 : ℝ) ^ (-(m : ℝ) / 9)
 
 /-- `2^{-m/9}` is positive. -/
@@ -76,7 +75,7 @@ theorem saving_le_one (m : ℕ) : saving m ≤ 1 :=
 theorem saving_mul_two_rpow (m : ℕ) : saving m * (2 : ℝ) ^ ((m : ℝ) / 9) = 1 := by
   rw [saving, ← Real.rpow_add two_pos, show -(m : ℝ) / 9 + (m : ℝ) / 9 = 0 by ring, Real.rpow_zero]
 
-/-- Section 2.4.3: and 2^{-m/9} = D^{-1/18}. -/
+/-- Express `saving m` as the real power `D^(-1/18)` for `D = D m`. -/
 theorem saving_eq_D_rpow (m : ℕ) : saving m = (D m : ℝ) ^ (-(1 / 18 : ℝ)) := by
   rw [saving, D_eq_two_pow, ← Real.rpow_natCast 2 (2 * m), ← Real.rpow_mul two_pos.le]
   congr 1
@@ -85,10 +84,9 @@ theorem saving_eq_D_rpow (m : ℕ) : saving m = (D m : ℝ) ^ (-(1 / 18 : ℝ)) 
 
 /-! ### The first inequality -/
 
-/-- In the proof of Lemma 11: We bound the number of leaves of order d in leaves(U) in two
-ways: by |U| α_d, charging each output string of U for its leaves of order d, and by β_d, the number
-of all leaves of order d. Quoted again in Section 4.3: At every order d, the pruned recursion of
-Section 2.4 visits at most min{|U| α_d, β_d} leaves. -/
+/-- If every string in `U` has `m` inner positions, its contributing leaves of natural order
+`d` are bounded both by `U.card * alpha m d` and by `beta L m d`. The minimum combines
+these bounds without counting a shared leaf more than once. -/
 theorem card_leaves_filter_order_le {L m : ℕ} (U : Finset (OutStr L))
     (hU : ∀ w ∈ U, (innerSetO w).card = m) (d : ℕ) :
     ((leaves U).filter fun τ => order m τ = d).card ≤ min (U.card * alpha m d) (beta L m d) := by
@@ -120,8 +118,9 @@ theorem card_leaves_filter_order_le {L m : ℕ} (U : Finset (OutStr L))
       rw [hempty]
       exact Nat.zero_le _
 
-/-- **Lemma 11**, first inequality.  For every set U of output strings whose inner sets have
-exactly m elements, |leaves(U)| ≤ ∑_{d=0}^{m} min{|U| α_d, β_d}. -/
+/-- Bound the cardinality of `leaves U` by summing the smaller of the per-output bound and the
+full leaf count over natural orders `0` through `m`. Every string in `U` must have exactly
+`m` inner positions; the empty set is permitted (cf. [AlmanWilliams2026, Lemma 11]). -/
 theorem card_leaves_le_sum_min {L m : ℕ} (U : Finset (OutStr L))
     (hU : ∀ w ∈ U, (innerSetO w).card = m) :
     (leaves U).card ≤ ∑ d ∈ range (m + 1), min (U.card * alpha m d) (beta L m d) := by
@@ -170,8 +169,8 @@ private theorem sum_beta_lt_of_subset (m a : ℕ) (s : Finset ℕ) (hs : s ⊆ I
           ((geom_sum_Ico_lt_of_lt_one (by norm_num) (by norm_num) a _).trans_eq (by ring)) hM
     _ = 2 * (1 / 2 : ℝ) ^ a * (M (19 * m) m : ℝ) := by ring
 
-/-- In the proof of Lemma 11: The orders d > m/9 contribute at most
-∑_{d>m/9} β_d ≤ M ∑_{d>m/9} 2^{-d} < 2 · 2^{-m/9} M by (5). -/
+/-- At `L = 19 * m`, the sum of `beta L m d` over `0 ≤ d ≤ m` with `m < 9 * d` is strictly
+below `2 * saving m * M L m`. This includes `m = 0`, when the sum is empty. -/
 theorem sum_beta_large_orders_lt (m : ℕ) :
     ((∑ d ∈ (range (m + 1)).filter (fun d => m < 9 * d), beta (19 * m) m d : ℕ) : ℝ)
       < 2 * saving m * (M (19 * m) m : ℝ) := by
@@ -225,12 +224,9 @@ private theorem sum_alpha_small_orders_le_aux (m : ℕ) :
         rw [← mul_sum, ← add_pow]
         norm_num
 
-/-- The display in the proof of Lemma 11: ∑_{d ≤ m/9} binom(m, d) 9^d ≤ 72^{m/9}
-∑_{d=0}^{m} binom(m, d) 8^{-d} = 72^{m/9} (9/8)^m = (72 · (9/8)^9)^{m/9} < 256^{m/9} = 2^m ·
-2^{-m/9}.
-
-NOTE.  The strict inequality needs `m ≥ 1`, which is fixed in Section 2.3.3; for `m = 0` both ends
-are 1. -/
+/-- For `m ≥ 1`, the sum of `alpha m d` over `0 ≤ d ≤ m` with `9 * d ≤ m` is strictly below `2
+^ m * saving m`. For `m = 0`, the two quantities are equal, so the strict inequality needs
+the stated positivity hypothesis. -/
 theorem sum_alpha_small_orders_lt (m : ℕ) (hm : 1 ≤ m) :
     ((∑ d ∈ (range (m + 1)).filter (fun d => 9 * d ≤ m), alpha m d : ℕ) : ℝ)
       < (2 : ℝ) ^ m * saving m := by
@@ -278,8 +274,10 @@ private theorem card_leaves_le_split {L m : ℕ} (U : Finset (OutStr L))
   rw [filter_congr fun d _ => (not_le (a := 9 * d) (b := m))]
   exact sum_le_sum fun d _ => min_le_right _ _
 
-/-- **Lemma 11**, second inequality.
-and if L = 19m, then |leaves(U)| ≤ 2^{-m/9} (2^m |U| + 2M). -/
+/-- For strings of length `19 * m`, each with `m` inner positions, the contributing leaf set
+has cardinality at most `saving m * (2 ^ m * U.card + 2 * M (19 * m) m)`. This real bound
+permits `m = 0` and `U = ∅`; it makes no execution-cost claim (cf. [AlmanWilliams2026,
+Lemma 11]). -/
 theorem card_leaves_le_saving {m : ℕ} (U : Finset (OutStr (19 * m)))
     (hU : ∀ w ∈ U, (innerSetO w).card = m) :
     ((leaves U).card : ℝ) ≤ saving m * ((2 : ℝ) ^ m * (U.card : ℝ) + 2 * (M (19 * m) m : ℝ)) := by
@@ -295,9 +293,9 @@ theorem card_leaves_le_saving {m : ℕ} (U : Finset (OutStr (19 * m)))
         add_le_add hsmall hlarge
     _ = _ := by ring
 
-/-- **Lemma 11**, both inequalities together.  For every set U of output strings whose inner
-sets have exactly m elements, |leaves(U)| ≤ ∑_{d=0}^{m} min{|U| α_d, β_d}, and if L = 19m,
-then |leaves(U)| ≤ 2^{-m/9} (2^m |U| + 2M). -/
+/-- Combine the order-wise minimum bound on `leaves U` with the explicit real bound available
+when `L = 19 * m`. Both conclusions assume only that each requested string has `m` inner
+positions; the specialization is conditional on the displayed equality of parameters. -/
 theorem sparse_leaf_bounds {L m : ℕ} (U : Finset (OutStr L)) (hU : ∀ w ∈ U, (innerSetO w).card =
   m) :
     (leaves U).card ≤ ∑ d ∈ range (m + 1), min (U.card * alpha m d) (beta L m d)

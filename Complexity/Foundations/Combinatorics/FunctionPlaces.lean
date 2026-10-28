@@ -27,7 +27,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section
@@ -97,8 +96,8 @@ theorem card_powersetCard_superset (T : Finset ι) {k : ℕ} (hk : k ≤ Fintype
 
 variable {α : Type*} [Fintype α]
 
-/-- The number of functions `f` with `f i ∈ A i` whose set of places with `p` is exactly `S`: choose
-a value with `p` at each place of `S` and one without `p` at every other place. -/
+/-- Count the functions satisfying `f i ∈ A i` and having property `p` exactly on `S` by
+multiplying the permitted choices at each position. -/
 theorem card_pi_places_eq [DecidableEq α] (A : ι → Finset α) (p : α → Prop) [DecidablePred p]
     (S : Finset ι) :
     #{f : ι → α | (∀ i, f i ∈ A i) ∧ ({i | p (f i)} : Finset ι) = S} =
@@ -112,8 +111,9 @@ theorem card_pi_places_eq [DecidableEq α] (A : ι → Finset α) (p : α → Pr
   simp only [mem_filter, mem_univ, true_and, Fintype.mem_piFinset, hmem, forall_and,
     Finset.ext_iff]
 
-/-- The number of functions `f` with `f i ∈ A i` that have `p` at exactly `k` places, as a sum over
-the possible sets of these places. -/
+/-- Partition the functions satisfying `f i ∈ A i` and having property `p` at exactly `k`
+positions by their size-`k` set of such positions, and sum the corresponding products of
+choice counts. -/
 theorem card_pi_places_card [DecidableEq α] (A : ι → Finset α) (p : α → Prop) [DecidablePred p]
     (k : ℕ) :
     #{f : ι → α | (∀ i, f i ∈ A i) ∧ #{i | p (f i)} = k} =

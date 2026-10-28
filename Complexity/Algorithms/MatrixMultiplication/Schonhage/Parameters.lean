@@ -17,7 +17,7 @@ public import Mathlib.Analysis.Complex.ExponentialBounds
 
 ## Main results
 
-* `K_mul_N0_le_D_pow`: the band fits when `D^18 ≤ N`.
+* `K_mul_N0_le_D_pow`: bound `K L m * N0 L m` by `D m ^ 18` at `L = 19 * m`.
 * `encoding_size_le`: the shared encoding length bound.
 
 ## References
@@ -26,7 +26,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section
@@ -35,11 +34,8 @@ open Finset
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-- Section 2.4.4: using the general bound binom(L, m) ≤ (eL/m)^m, we have
-K = binom(19m, m) ≤ (19e)^m.  The general bound is `Nat.choose_le_exp_mul_div_pow`.
-
-NOTE.  The printed bound divides by `m`.  In Lean a quotient by 0 is 0 and `0^0 = 1`, so for `m = 0`
-both sides are 1 and no hypothesis `m ≥ 1` is needed. -/
+/-- The binomial count at `L = 19 * m` is at most `(19 * Real.exp 1) ^ m`. This uses
+`Nat.choose_le_exp_mul_div_pow` and includes `m = 0`, when both sides are one. -/
 theorem K_le_pow (m : ℕ) : (K (19 * m) m : ℝ) ≤ (19 * Real.exp 1) ^ m := by
   rcases Nat.eq_zero_or_pos m with rfl | hm
   · simp [K]
@@ -49,7 +45,7 @@ theorem K_le_pow (m : ℕ) : (K (19 * m) m : ℝ) ≤ (19 * Real.exp 1) ^ m := b
       field_simp
     exact hbase ▸ Nat.choose_le_exp_mul_div_pow (19 * m) m
 
-/-- Section 2.4.4: 19e · 3^18 < 4^18. -/
+/-- The real constant `19 * exp 1 * 3 ^ 18` is strictly less than `4 ^ 18`. -/
 theorem nineteen_mul_exp_mul_three_pow_lt : 19 * Real.exp 1 * (3 : ℝ) ^ 18 < (4 : ℝ) ^ 18 := by
   calc 19 * Real.exp 1 * (3 : ℝ) ^ 18 < 19 * 2.7182818286 * (3 : ℝ) ^ 18 := by
         gcongr
@@ -60,7 +56,7 @@ theorem nineteen_mul_exp_mul_three_pow_lt : 19 * Real.exp 1 * (3 : ℝ) ^ 18 < (
 private theorem four_pow_eq (m : ℕ) : ((4 : ℝ) ^ 18) ^ m = (D m : ℝ) ^ 18 := by
   rw [D, Nat.cast_pow, Nat.cast_ofNat, ← pow_mul, ← pow_mul, mul_comm]
 
-/-- Section 2.4.4: so K N₀ ≤ (19e · 3^18)^m ≤ 4^{18m}, and `4^{18m} = D^18`. -/
+/-- At `L = 19 * m`, the product `K L m * N0 L m` is at most `D m ^ 18`. -/
 theorem K_mul_N0_le_D_pow (m : ℕ) : K (19 * m) m * N0 (19 * m) m ≤ D m ^ 18 := by
   have hK := K_le_pow m
   have key : (K (19 * m) m : ℝ) * (N0 (19 * m) m : ℝ) ≤ (D m : ℝ) ^ 18 := by
@@ -76,19 +72,20 @@ theorem K_mul_N0_le_D_pow (m : ℕ) : K (19 * m) m * N0 (19 * m) m ≤ D m ^ 18 
       _ = (D m : ℝ) ^ 18 := four_pow_eq m
   exact_mod_cast key
 
-/-- Section 2.4.4, the first consequence of `N ≥ D^18`: K N₀ ≤ D^18 ≤ N. -/
+/-- The size condition `D m ^ 18 ≤ N` bounds `K (19 * m) m * N0 (19 * m) m` by `N`. -/
 theorem K_mul_N0_le (m N : ℕ) (hN : D m ^ 18 ≤ N) : K (19 * m) m * N0 (19 * m) m ≤ N :=
   (K_mul_N0_le_D_pow m).trans hN
 
-/-- Section 2.4.4, the first consequence of `N ≥ D^18`: and hence K₀ N₀ ≤ K N₀ ≤ D^18 ≤ N. -/
+/-- The size condition `D m ^ 18 ≤ N` bounds the band dimension at `L = 19 * m` by `N`. -/
 theorem K0_mul_N0_le (m N : ℕ) (hN : D m ^ 18 ≤ N) : K0 (19 * m) m * N0 (19 * m) m ≤ N :=
   (Nat.mul_le_mul_right _ (Nat.sqrt_le_self _)).trans (K_mul_N0_le m N hN)
 
-/-- Section 2.4.4: This means the padding at most doubles N. -/
+/-- Under `D m ^ 18 ≤ N`, padding to complete bands at `L = 19 * m` gives a dimension at most
+`2 * N`. -/
 theorem padN_le_two_mul_of_D_pow_le (m N : ℕ) (hN : D m ^ 18 ≤ N) : padN (19 * m) m N ≤ 2 * N :=
   padN_le_two_mul (19 * m) m N (K0_mul_N0_le m N hN)
 
-/-- Section 2.4.4: 10^19 · 2^{1/9} / 3^18 < 4^18. -/
+/-- The real constant `10 ^ 19 * 2 ^ (1 / 9) / 3 ^ 18` is strictly less than `4 ^ 18`. -/
 theorem ten_pow_mul_two_rpow_div_three_pow_lt :
     (10 : ℝ) ^ 19 * (2 : ℝ) ^ (1 / 9 : ℝ) / (3 : ℝ) ^ 18 < (4 : ℝ) ^ 18 := by
   have htwo : (2 : ℝ) ^ (1 / 9 : ℝ) ≤ 2 := by
@@ -100,7 +97,7 @@ theorem ten_pow_mul_two_rpow_div_three_pow_lt :
         mul_le_mul_of_nonneg_left htwo (by positivity)
     _ < (4 : ℝ) ^ 18 * (3 : ℝ) ^ 18 := by norm_num
 
-/-- Section 2.4.4: so 10^L · 2^{m/9} / N₀ ≤ D^18, for `L = 19m`. -/
+/-- At `L = 19 * m`, the real quotient `10 ^ L * 2 ^ (m / 9) / N0 L m` is at most `D m ^ 18`. -/
 theorem ten_pow_div_N0_le (m : ℕ) :
     (10 : ℝ) ^ (19 * m) * (2 : ℝ) ^ ((m : ℝ) / 9) / (N0 (19 * m) m : ℝ) ≤ (D m : ℝ) ^ 18 := by
   have hroot : (2 : ℝ) ^ ((m : ℝ) / 9) = ((2 : ℝ) ^ (1 / 9 : ℝ)) ^ m := by
@@ -116,8 +113,8 @@ theorem ten_pow_div_N0_le (m : ℕ) :
         ten_pow_mul_two_rpow_div_three_pow_lt.le m
     _ = (D m : ℝ) ^ 18 := four_pow_eq m
 
-/-- **Equation (6)**, the second consequence of `N ≥ D^18`: 10^L ≤ 2^{-m/9} N N₀, for
-`L = 19m`. -/
+/-- For `L = 19 * m` and `D m ^ 18 ≤ N`, the encoding index count `10 ^ L` is at most `2 ^ (-m
+/ 9) * N * N0 L m`, as a real inequality (cf. [AlmanWilliams2026, equation (6)]). -/
 theorem encoding_size_le (m N : ℕ) (hN : D m ^ 18 ≤ N) :
     (10 : ℝ) ^ (19 * m) ≤ (2 : ℝ) ^ (-(m : ℝ) / 9) * (N : ℝ) * (N0 (19 * m) m : ℝ) := by
   have hN0 : (0 : ℝ) < (N0 (19 * m) m : ℝ) := by exact_mod_cast N0_pos _ _

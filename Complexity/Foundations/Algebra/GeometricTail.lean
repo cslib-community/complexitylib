@@ -16,7 +16,7 @@ public import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 
 ## Main results
 
-* `geom_sum_Ico_lt_of_lt_one`: every finite tail is strictly below the infinite tail.
+* `geom_sum_Ico_lt_of_lt_one`: the strict bound for `∑ i ∈ Ico m n, x ^ i` when `0 < x < 1`.
 
 ## References
 
@@ -24,7 +24,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section

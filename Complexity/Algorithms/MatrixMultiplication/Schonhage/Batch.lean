@@ -17,8 +17,9 @@ public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Levels
 * `bilinearProduct_arrays_eq_mul`: exact integer matrix multiplication at selected strings.
 * `batch_product_spec`: arbitrary output strings with `m` inner levels.
 
-The tensor error has no effect: a nonzero summand must use the same inner levels on
-both inputs as the output, and the remaining outer coefficients are Kronecker deltas.
+The batch arrays vanish on strings with the wrong number of inner positions.
+The coefficient rules select equal inner indices and the specified outer row and column,
+yielding the usual product of integer matrices.
 
 ## References
 
@@ -26,7 +27,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section
@@ -35,17 +35,17 @@ open Finset
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-! ### The sizes of the matrices, and Figure 4 -/
+/-! ### Cardinalities of index types -/
 
-/-- Section 2.3.3: there are `N₀` strings of `L - m` outer left (or right) variables. -/
+/-- The outer-index type has `N0 L m` elements. -/
 theorem card_outerStr (L m : ℕ) : Fintype.card (OuterStr L m) = N0 L m := by
   simp [N0]
 
-/-- Section 2.3.3: there are `D` strings of `m` inner left (or right) variables. -/
+/-- The inner-index type has `D m` elements. -/
 theorem card_innerStr (m : ℕ) : Fintype.card (InnerStr m) = D m := by
   simp [D]
 
-/-- Section 2.3.3: there are `K = binom(L, m)` subsets `Q` of `{1, …, L}` of size `m`. -/
+/-- There are `K L m` subsets of `Fin L` with cardinality `m`. -/
 theorem card_subsets_eq_K (L m : ℕ) :
     (univ.filter fun Q : Finset (Fin L) => Q.card = m).card = K L m := by
   rw [univ_filter_card_eq, card_powersetCard, card_univ, Fintype.card_fin, K]
@@ -70,7 +70,7 @@ theorem arrayR_rightStrOf {L m : ℕ} (Y : Finset (Fin L) → RightMat L m) (Q :
   have h : (innerSetR (rightStrOf Q hQ π c)).card = m := by rw [innerSetR_rightStrOf, hQ]
   rw [arrayR, dite_eq_left h, innerPartR_rightStrOf, outerPartR_rightStrOf, innerSetR_rightStrOf]
 
-/-! ### The proof of Lemma 9 -/
+/-! ### Coefficients and batch correctness -/
 
 /-- The inner-output coefficient selects equal inner index pairs (Section 2.3.3).
 Checked directly on `coefficient`; no polynomial coefficient bridge is assumed. -/
@@ -141,8 +141,9 @@ private theorem prod_gamma_eq_one {L m : ℕ} (Q : Finset (Fin L)) (hQ : Q.card 
       fun _ => (coefficient_x_y_z _ _ _ _).trans (ite_eq_left ⟨rfl, rfl⟩)⟩
   exact prod_eq_one fun ℓ _ => hone ℓ
 
-/-- Lemma 9 for the output string with inner set `Q`, row `r` and column `c`: by Lemma 8 the entry
-is a sum over all pairs `(u, v)`, and the summands that remain are those of the matrix product. -/
+/-- At the output string for a size-`m` set `Q` and indices `r`, `c`, the bilinear product of
+the batch arrays equals `(X Q * Y Q) r c`. The matrices have arbitrary integer entries
+(cf. [AlmanWilliams2026, Lemma 9]). -/
 theorem bilinearProduct_arrays_eq_mul {L m : ℕ} (X : Finset (Fin L) → LeftMat L m)
     (Y : Finset (Fin L) → RightMat L m) (Q : Finset (Fin L)) (hQ : Q.card = m)
     (r c : OuterStr L m) :
@@ -169,8 +170,9 @@ theorem bilinearProduct_arrays_eq_mul {L m : ℕ} (X : Finset (Fin L) → LeftMa
     intro π
     rw [prod_gamma_eq_one, one_mul, arrayL_leftStrOf, arrayR_rightStrOf]
 
-/-- **Lemma 9**.  For the input arrays a, b above and every output string w whose inner
-set Q has exactly m elements, bilinearProduct(a, b)[w] = (X_Q Y_Q)[w].  (Equation (4).) -/
+/-- An output string with exactly `m` inner levels selects the product of the two matrices
+indexed by its inner set, at its extracted row and column. This is an equality of integer
+values for the arrays `arrayL m X` and `arrayR m Y` (cf. [AlmanWilliams2026, Lemma 9]). -/
 theorem batch_product_spec {L m : ℕ} (X : Finset (Fin L) → LeftMat L m) (Y : Finset (Fin L) →
   RightMat L m)
     (w : OutStr L) (h : (innerSetO w).card = m) :
@@ -180,7 +182,8 @@ theorem batch_product_spec {L m : ℕ} (X : Finset (Fin L) → LeftMat L m) (Y :
   conv_lhs => rw [outStr_eq_outStrOf h rfl h]
   exact bilinearProduct_arrays_eq_mul X Y (innerSetO w) h (rowO w h) (colO w h)
 
-/-- Section 2.3.3: one run of Full […] computes all K of the products X_Q Y_Q. -/
+/-- `Full.result` on the batch arrays agrees with the matrix product for every size-`m` set
+`Q` and every row and column index. -/
 theorem Full.arrays_eq_mul {L m : ℕ} (X : Finset (Fin L) → LeftMat L m)
     (Y : Finset (Fin L) → RightMat L m) (Q : Finset (Fin L)) (hQ : Q.card = m)
     (r c : OuterStr L m) :

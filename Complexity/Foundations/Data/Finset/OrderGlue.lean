@@ -27,7 +27,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section
@@ -171,9 +170,10 @@ theorem filter_glue (hf : ∀ k, IsInner (f k)) (hg : ∀ k, ¬ IsInner (g k)) :
   simpa only [filter_eq_iff_forall_level Q hQ, glue_innerLevel, glue_outerLevel] using
     And.intro hf hg
 
-/-- Let every inner letter `s` be `inner i` for its index `i = innerIndex s`, and every outer letter
-be `outer o` for its index `o = outerIndex s`. Then a string whose inner letters are at the levels
-of `Q` is rebuilt by gluing the letters `inner i` and `outer o` for the indices of its letters. -/
+/-- Reconstruct `u` by extracting and reinserting its inner and outer indices. The hypotheses
+require that both index projections have the stated reconstruction property on their
+respective classes of letters, and that the inner letters of `u` occur exactly on the
+size-`m` set `Q`. -/
 theorem glue_index {I O : Type*} {inner : I → α} {outer : O → α} {innerIndex : α → I}
     {outerIndex : α → O} (hI : ∀ s, IsInner s → inner (innerIndex s) = s)
     (hO : ∀ s, ¬ IsInner s → outer (outerIndex s) = s) {u : Fin L → α}

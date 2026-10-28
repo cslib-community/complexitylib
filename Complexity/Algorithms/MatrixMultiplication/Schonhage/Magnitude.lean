@@ -11,7 +11,7 @@ public import Complexity.Algorithms.MatrixMultiplication.Schonhage.ThinProduct
 public import Complexity.Foundations.Algebra.FiniteMagnitude
 
 /-!
-# Finite intermediate magnitudes and auxiliary counts
+# Magnitudes of specified integer values and auxiliary counts
 
 ## Main results
 
@@ -19,7 +19,9 @@ public import Complexity.Foundations.Algebra.FiniteMagnitude
 * `abs_encodingL_le`, `abs_encodingR_le`, `Pruned.abs_result_le`: explicit integer magnitude bounds.
 * `minutiae_total_le`: bound on layout subsets, tiles and wanted positions.
 
-These bounds do not certify a machine word width or native execution.
+The magnitude bounds concern band-array values, encoded values and returned pruned
+values. They do not bound every intermediate state of a native implementation or certify
+a machine word width.
 
 ## References
 
@@ -27,7 +29,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section
@@ -36,7 +37,7 @@ open Finset
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-! ### The remaining minutiae -/
+/-! ### Auxiliary finite counts -/
 
 /-- `2^{m/9} ≤ 2^m`. -/
 private theorem two_rpow_ninth_le (m : ℕ) : (2 : ℝ) ^ ((m : ℝ) / 9) ≤ (2 : ℝ) ^ m := by
@@ -50,12 +51,12 @@ private theorem one_le_saving_mul {m : ℕ} {x : ℝ} (hx : (2 : ℝ) ^ ((m : �
   rw [← saving_mul_two_rpow m]
   exact mul_le_mul_of_nonneg_left hx (saving_pos m).le
 
-/-- Section 2.4.4, in the remaining minutiae: K ≤ N. -/
+/-- When `D m ^ 18 ≤ N`, the number `K (19 * m) m` of size-`m` level sets is at most `N`. -/
 theorem K_le_of_D_pow_le (m N : ℕ) (hN : D m ^ 18 ≤ N) : K (19 * m) m ≤ N :=
   (Nat.le_mul_of_pos_right _ (N0_pos _ _)).trans (K_mul_N0_le m N hN)
 
-/-- Section 2.4.4, in the remaining minutiae: there are at most 4N²/N₀ tiles, where `N` is the
-padded size. -/
+/-- For `m ≤ L`, the tile count multiplied by `N0 L m` is at most four times the square of the
+padded dimension `padN L m N`. -/
 theorem card_tiles_mul_N0_le {L m : ℕ} (hmL : m ≤ L) (N : ℕ) :
     (tiles L m N).card * N0 L m ≤ 4 * padN L m N ^ 2 := by
   -- `N₀ ≤ K N₀² = M`, and there are at most `4N²/M` tiles.
@@ -64,7 +65,7 @@ theorem card_tiles_mul_N0_le {L m : ℕ} (hmL : m ≤ L) (N : ℕ) :
     _ ≤ K L m * N0 L m ^ 2 :=
         Nat.mul_le_mul (Nat.choose_pos hmL) (Nat.pow_le_pow_right (N0_pos L m) (by norm_num))
 
-/-- Section 2.4.4, in the remaining minutiae: `N ≥ 2^{m/9}`. -/
+/-- The size condition `D m ^ 18 ≤ N` implies the real bound `2 ^ (m / 9) ≤ N`. -/
 theorem two_rpow_le_of_D_pow_le (m N : ℕ) (hN : D m ^ 18 ≤ N) :
     (2 : ℝ) ^ ((m : ℝ) / 9) ≤ (N : ℝ) := by
   -- `2^{m/9} ≤ 2^m ≤ 4^{18m} = D^18 ≤ N`.
@@ -74,7 +75,7 @@ theorem two_rpow_le_of_D_pow_le (m N : ℕ) (hN : D m ^ 18 ≤ N) :
       _ ≤ N := hN
   exact (two_rpow_ninth_le m).trans (by exact_mod_cast hpow)
 
-/-- Section 2.4.4, in the remaining minutiae: `N₀ ≥ 2^{m/9}`. -/
+/-- At `L = 19 * m`, the outer dimension is at least the real power `2 ^ (m / 9)`. -/
 theorem two_rpow_le_N0 (m : ℕ) : (2 : ℝ) ^ ((m : ℝ) / 9) ≤ (N0 (19 * m) m : ℝ) := by
   -- `2^{m/9} ≤ 2^m ≤ 3^{18m} = N₀`.
   have hpow : 2 ^ m ≤ N0 (19 * m) m :=
@@ -113,10 +114,10 @@ private theorem minutiae_parts (m N : ℕ) (W : Finset (Fin N × Fin N)) (hN : D
       _ ≤ saving m * (W.card * (2 : ℝ) ^ m) := by gcongr; exact two_rpow_ninth_le m
       _ ≤ saving m * (N : ℝ) ^ 2 := by gcongr
 
-/-- Section 2.4.4: O(L) operations per subset, per tile, and per position of W, which is
-O(L 2^{-m/9} N²) in all: the number of these objects, with the `K₀²` subsets counted as at most
-`K`, as the paper does (as K ≤ N).  Here `N` is the size of the input.  The constant is
-`18 = 1 + 16 + 1`, because the padding at most doubles `N`. -/
+/-- At `L = 19 * m`, the sum of `K L m`, the tile count and `W.card` is at most `18 *
+D^(-1/18) * N²`, where `D = D m` and `N` is the original matrix dimension. The hypotheses
+are `D m ^ 18 ≤ N` and `W.card * 2 ^ m ≤ N ^ 2`. This counts finite objects; it does not
+count operations on them. -/
 theorem minutiae_total_le (m N : ℕ) (W : Finset (Fin N × Fin N)) (hN : D m ^ 18 ≤ N)
     (hW : W.card * 2 ^ m ≤ N ^ 2) :
     ((K (19 * m) m + (tiles (19 * m) m N).card + W.card : ℕ) : ℝ)
@@ -131,7 +132,7 @@ theorem minutiae_total_le (m N : ℕ) (W : Finset (Fin N × Fin N)) (hN : D m ^ 
   -- `K + |tiles| + |W| ≤ c N² + 4 c (2N)² + c N² = 18 c N²` with `c = 2^{-m/9}`.
   linarith [hK, hT, hW', hsq]
 
-/-! ### The word size -/
+/-! ### Bounds on specified integer values -/
 
 /-- The subsets in the table are distinct (Section 2.3.4), so a sum over the table that selects the
 subset `Q` is one of its terms or 0. -/
@@ -144,10 +145,9 @@ private theorem sum_table_eq_zero_or {L m : ℕ} {A : Type*} [AddCommMonoid A] (
     exact .inr ⟨gh, by simp [lay.table_injective.eq_iff]⟩
   · exact .inl (sum_eq_zero fun gh _ => ite_eq_right (not_exists.mp hQ gh))
 
-/-- Section 2.4.4, word size: The input entries are of this size, by assumption. Every entry of
-the input array of a row band is an entry of `X` or 0.
-
-NOTE.  `0 ≤ A` is needed only when `N = 0`. -/
+/-- A nonnegative bound `A` on the absolute values of all entries of `X` also bounds every
+value of its left band arrays, for every band index. Zero padding and unused strings are
+included; `0 ≤ A` remains required when `N = 0`. -/
 theorem abs_bandArrayL_le {L m N : ℕ} (lay : Layout L m) {X : Matrix (Fin N) (Fin (D m)) ℤ} {A : ℤ}
     (hA : 0 ≤ A) (hX : ∀ I k, |X I k| ≤ A) (β : ℕ) (u : LeftStr L) :
     |bandArrayL lay X β u| ≤ A := by
@@ -164,10 +164,9 @@ theorem abs_bandArrayL_le {L m N : ℕ} (lay : Layout L m) {X : Matrix (Fin N) (
       · simpa using hA
   · simpa using hA
 
-/-- Section 2.4.4, word size: The input entries are of this size, by assumption. Every entry of
-the input array of a column band is an entry of `Y` or 0.
-
-NOTE.  `0 ≤ B` is needed only when `N = 0`. -/
+/-- A nonnegative bound `B` on the absolute values of all entries of `Y` also bounds every
+value of its right band arrays, for every band index. Zero padding and unused strings are
+included; `0 ≤ B` remains required when `N = 0`. -/
 theorem abs_bandArrayR_le {L m N : ℕ} (lay : Layout L m) {Y : Matrix (Fin (D m)) (Fin N) ℤ} {B : ℤ}
     (hB : 0 ≤ B) (hY : ∀ k J, |Y k J| ≤ B) (β : ℕ) (v : RightStr L) :
     |bandArrayR lay Y β v| ≤ B := by
@@ -184,8 +183,9 @@ theorem abs_bandArrayR_le {L m N : ℕ} (lay : Layout L m) {Y : Matrix (Fin (D m
       · simpa using hB
   · simpa using hB
 
-/-- A combination of the entries of an array, with a product of coefficients 0, 1 or -1 for each
-entry, is at most the number of entries times the largest absolute value of an entry. -/
+/-- If every coefficient has absolute value at most one and every array entry has absolute
+value at most `A`, then an encoded value has absolute value at most the array index type's
+cardinality times `A`. This bounds the value of the finite sum defining `encodeWith`. -/
 theorem abs_encodeWith_le {α : Type} [Fintype α] {c : Term → α → ℤ} (hc : ∀ lam s, |c lam s| ≤ 1)
     {L : ℕ} {a : (Fin L → α) → ℤ} {A : ℤ} (ha : ∀ u, |a u| ≤ A) (τ : Leaf L) :
     |encodeWith c τ a| ≤ Fintype.card (Fin L → α) * A := by
@@ -193,25 +193,26 @@ theorem abs_encodeWith_le {α : Type} [Fintype α] {c : Term → α → ℤ} (hc
     (fun u _ => abs_prod_le_one _ fun ℓ _ => hc _ _) fun u _ => ha u
   simpa only [encodeWith, mul_comm, card_univ] using h
 
-/-- Section 2.4.4, word size: Every number in an encoding […] is a ±1 combination of at most 7^L
-input entries, so its absolute value is at most `7^L` times the largest absolute value of an input
-entry.  For the encoding of `a`. -/
+/-- An absolute bound `A` on the left array entries gives the bound `7 ^ L * A` on each value
+of `encodingL`. -/
 theorem abs_encodingL_le {L : ℕ} {a : LeftStr L → ℤ} {A : ℤ} (ha : ∀ u, |a u| ≤ A) (τ : Leaf L) :
     |encodingL a τ| ≤ 7 ^ L * A := by
   have h := abs_encodeWith_le abs_phi_le_one ha τ
   rw [card_leftStr] at h
   exact_mod_cast h
 
-/-- Section 2.4.4, word size: Every number in an encoding […] is a ±1 combination of at most 7^L
-input entries.  For the encoding of `b`. -/
+/-- An absolute bound `B` on the right array entries gives the bound `7 ^ L * B` on each value
+of `encodingR`. -/
 theorem abs_encodingR_le {L : ℕ} {b : RightStr L → ℤ} {B : ℤ} (hb : ∀ v, |b v| ≤ B) (τ : Leaf L) :
     |encodingR b τ| ≤ 7 ^ L * B := by
   have h := abs_encodeWith_le abs_psi_le_one hb τ
   rw [card_rightStr] at h
   exact_mod_cast h
 
-/-- A returned pruned entry is a sum of at most `10^n` encoded products (Section 2.4.4).
-This bounds the mathematical result, not native execution or machine width. -/
+/-- If `encA` and `encB` are bounded in absolute value by `A` and `B`, every value returned by
+`Pruned.result` is bounded by `10 ^ n * (A * B)`. This holds for every request set `S` and
+output string `w`, including unrequested strings, whose returned value is zero. It bounds
+the specified mathematical result, not native scratch states or machine word width. -/
 theorem Pruned.abs_result_le {n : ℕ} (encA encB : Leaf n → ℤ) (A B : ℤ) (hA : ∀ τ, |encA τ| ≤ A)
     (hB : ∀ τ, |encB τ| ≤ B) (S : Finset (OutStr n)) (w : OutStr n) :
     |Pruned.result n encA encB S w| ≤ 10 ^ n * (A * B) := by
@@ -233,7 +234,7 @@ theorem Pruned.abs_result_le {n : ℕ} (encA encB : Leaf n → ℤ) (A B : ℤ) 
   · simp only [Pi.zero_apply, abs_zero]
     positivity
 
-/-- Section 2.4.4, word size: 10^L ≤ N² by (6), for `L = 19m` and `N ≥ D^18`. -/
+/-- Under `D m ^ 18 ≤ N`, the number `10 ^ (19 * m)` of leaf indices is at most `N ^ 2`. -/
 theorem ten_pow_le_sq (m N : ℕ) (hN : D m ^ 18 ≤ N) : 10 ^ (19 * m) ≤ N ^ 2 := by
   -- `N₀ ≤ K N₀ ≤ N` and `2^{-m/9} ≤ 1`, so equation (6) gives `10^L ≤ N N₀ ≤ N²`.
   have hN0 : (N0 (19 * m) m : ℝ) ≤ N := by

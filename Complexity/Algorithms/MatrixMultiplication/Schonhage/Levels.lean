@@ -20,7 +20,7 @@ public import Complexity.Foundations.Data.Finset.OrderGlue
 
 ## Main results
 
-* `existsUnique_leftStr`, `existsUnique_rightStr`, `existsUnique_outStr`: nonvacuous entry layouts.
+* `existsUnique_leftStr`, `existsUnique_rightStr`, `existsUnique_outStr`: unique entry strings.
 
 ## References
 
@@ -28,7 +28,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section
@@ -37,11 +36,11 @@ open Finset
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-- Section 2.2: We call the variables of the inner product, p, q, and z₀, inner. -/
+/-- Recognize the constructors `.p i j` as inner left variables. -/
 def LeftVar.IsInner : LeftVar → Prop
   | .x _ => False
   | .p _ _ => True
-/-- Section 2.2: the right variables `q` are inner, the `y` are outer. -/
+/-- Recognize the constructors `.q i j` as inner right variables. -/
 def RightVar.IsInner : RightVar → Prop
   | .y _ => False
   | .q _ _ => True
@@ -51,69 +50,61 @@ instance LeftVar.instDecidablePredIsInner : DecidablePred LeftVar.IsInner
 instance RightVar.instDecidablePredIsInner : DecidablePred RightVar.IsInner
   | .y _ => isFalse fun h => h
   | .q _ _ => isTrue trivial
-/-- Section 2.3.3: The inner set of a left string is the set of levels at which it has a p (as
-opposed to an x). -/
+/-- Positions of the inner left variables in `u`. -/
 def innerSetL {L : ℕ} (u : LeftStr L) : Finset (Fin L) := univ.filter fun ℓ => (u ℓ).IsInner
-/-- Section 2.3.3: the inner set of a right string is the set of levels at which it has a q (as
-opposed to a y). -/
+/-- Positions of the inner right variables in `v`. -/
 def innerSetR {L : ℕ} (v : RightStr L) : Finset (Fin L) := univ.filter fun ℓ => (v ℓ).IsInner
-/-- Section 2.3.3: the inner set of an output string is the set of levels at which it has z₀ (as
-opposed to a z_ij). -/
+/-- Positions at which the output string is `.z0`. -/
 def innerSetO {L : ℕ} (w : OutStr L) : Finset (Fin L) := univ.filter fun ℓ => (w ℓ).IsInner
 
-/-- Section 2.3.3: N₀ := 3^{L-m}.  Meant for `m ≤ L`; for `m > L` the subtraction of natural
-numbers is cut off at 0 and the value is 1. -/
+/-- The outer dimension `3 ^ (L - m)`, with natural-number subtraction. In particular, this
+definition gives `1` if `m > L`. -/
 def N0 (L m : ℕ) : ℕ := 3 ^ (L - m)
-/-- Section 2.3.3: D := 4^m. -/
+/-- The thin dimension `4 ^ m`. -/
 def D (m : ℕ) : ℕ := 4 ^ m
-/-- Section 2.3.3: K := binom(L, m), the number of subsets of `{1, …, L}` of size `m`. -/
+/-- The binomial coefficient `L.choose m`, counting size-`m` subsets of `Fin L`. -/
 def K (L m : ℕ) : ℕ := L.choose m
 
-/-- The index `i` of an outer left variable `x_i` (the value at a `p` is never used). -/
+/-- Extract `i` from `.x i`; return `0` on inner left variables. -/
 def LeftVar.outerIndex : LeftVar → Fin 3
   | .x i => i
   | .p _ _ => 0
-/-- The index pair `(i, j)` of an inner left variable `p_ij` (the value at an `x` is never used). -/
+/-- Extract `(i, j)` from `.p i j`; return `(0, 0)` on outer left variables. -/
 def LeftVar.innerIndex : LeftVar → Fin 2 × Fin 2
   | .x _ => (0, 0)
   | .p i j => (i, j)
-/-- The index `j` of an outer right variable `y_j` (the value at a `q` is never used). -/
+/-- Extract `j` from `.y j`; return `0` on inner right variables. -/
 def RightVar.outerIndex : RightVar → Fin 3
   | .y j => j
   | .q _ _ => 0
-/-- The index pair `(i, j)` of an inner right variable `q_ij` (the value at a `y` is never used). -/
+/-- Extract `(i, j)` from `.q i j`; return `(0, 0)` on outer right variables. -/
 def RightVar.innerIndex : RightVar → Fin 2 × Fin 2
   | .y _ => (0, 0)
   | .q i j => (i, j)
-/-- The first index `i` of an outer output variable `z_ij` (the value at `z₀` is never used). -/
+/-- Extract the first index from `.z i j`; return `0` on `.z0`. -/
 def OutVar.rowIndex : OutVar → Fin 3
   | .z i _ => i
   | .z0 => 0
-/-- The second index `j` of an outer output variable `z_ij` (the value at `z₀` is never used). -/
+/-- Extract the second index from `.z i j`; return `0` on `.z0`. -/
 def OutVar.colIndex : OutVar → Fin 3
   | .z _ j => j
   | .z0 => 0
 
-/-- A string of `L - m` outer left variables `x_{i₁} ⋯ x_{i_{L-m}}`, written as the string of its
-indices `i₁ ⋯ i_{L-m}`.  The same type is used for strings `y_{j₁} ⋯ y_{j_{L-m}}` of outer right
-variables.  Section 2.3.3: these strings index the `N₀` rows of an `N₀ × D` matrix and the `N₀`
-columns of a `D × N₀` matrix. -/
+/-- Functions from `Fin (L - m)` to `Fin 3`, used as outer row and column indices. Each value
+specifies the index of an outer left or right variable. -/
 abbrev OuterStr (L m : ℕ) : Type := Fin (L - m) → Fin 3
 
-/-- A string of `m` inner left variables `π = p_{i₁j₁} ⋯ p_{i_m j_m}`, written as the string of its
-index pairs.  The same type is used for strings `π' = q_{i₁j₁} ⋯ q_{i_m j_m}` of inner right
-variables, so that the paper's `π'`, with the same indices as `π`, is the same element of this
-type as `π`. Section 2.3.3: these strings index the `D` columns of an `N₀ × D` matrix and the `D`
-rows of a `D × N₀` matrix. With this convention the paper's (AB)[r, c] := ∑_π A[r, π] B[π', c] is
-the usual matrix product. -/
+/-- Functions from `Fin m` to pairs of `Fin 2` indices, used for the common inner dimension of
+the two matrices. Left and right inner variables with the same pair of indices share one
+element of this type, so contraction over `InnerStr m` is ordinary matrix multiplication. -/
 abbrev InnerStr (m : ℕ) : Type := Fin m → Fin 2 × Fin 2
 
-/-- Section 2.3.3: its outer part is the string of its variables at the other levels, for a left
-string whose inner set has `m` elements. -/
+/-- Extract the outer left indices in increasing order of their positions, assuming `u` has
+exactly `m` inner positions. -/
 def outerPartL {L m : ℕ} (u : LeftStr L) (h : (innerSetL u).card = m) : OuterStr L m :=
   fun k => (u (((innerSetL u)ᶜ.orderEmbOfFin (card_compl_of_card_eq (innerSetL u) h)) k)).outerIndex
-/-- Section 2.3.3: The inner part of a string is the string of its variables at the levels of its
-inner set, in the order of the levels, for a left string whose inner set has `m` elements. -/
+/-- Extract the inner left index pairs in increasing order of their positions, assuming `u`
+has exactly `m` inner positions. -/
 def innerPartL {L m : ℕ} (u : LeftStr L) (h : (innerSetL u).card = m) : InnerStr m :=
   fun k => (u (Finset.orderEmbOfFin (innerSetL u) h k)).innerIndex
 /-- The outer part of a right string whose inner set has `m` elements. -/
@@ -123,37 +114,37 @@ def outerPartR {L m : ℕ} (v : RightStr L) (h : (innerSetR v).card = m) : Outer
 def innerPartR {L m : ℕ} (v : RightStr L) (h : (innerSetR v).card = m) : InnerStr m :=
   fun k => (v (Finset.orderEmbOfFin (innerSetR v) h k)).innerIndex
 
-/-- Section 2.3.3: if the variables of w at the levels outside Q are z_{i₁j₁}, …, z_{i_{L-m}
-j_{L-m}}, in the order of the levels, then the row of w is the string x_{i₁} ⋯ x_{i_{L-m}}. -/
+/-- Read the first indices of the outer output variables in increasing position order,
+assuming `w` has exactly `m` inner positions. -/
 def rowO {L m : ℕ} (w : OutStr L) (h : (innerSetO w).card = m) : OuterStr L m :=
   fun k => (w (((innerSetO w)ᶜ.orderEmbOfFin (card_compl_of_card_eq (innerSetO w) h)) k)).rowIndex
-/-- Section 2.3.3: and its column is the string y_{j₁} ⋯ y_{j_{L-m}}. -/
+/-- Read the second indices of the outer output variables in increasing position order,
+assuming `w` has exactly `m` inner positions. -/
 def colO {L m : ℕ} (w : OutStr L) (h : (innerSetO w).card = m) : OuterStr L m :=
   fun k => (w (((innerSetO w)ᶜ.orderEmbOfFin (card_compl_of_card_eq (innerSetO w) h)) k)).colIndex
 
-/-- An `N₀ × D` matrix, its rows and columns indexed by strings as in Section 2.3.3. -/
+/-- Integer matrices with outer row indices and inner column indices. -/
 abbrev LeftMat (L m : ℕ) : Type := Matrix (OuterStr L m) (InnerStr m) ℤ
-/-- A `D × N₀` matrix, its rows and columns indexed by strings as in Section 2.3.3. -/
+/-- Integer matrices with inner row indices and outer column indices. -/
 abbrev RightMat (L m : ℕ) : Type := Matrix (InnerStr m) (OuterStr L m) ℤ
 
-/-- Section 2.3.3: a[u] := X_Q[u] […] for all the left strings u […] whose inner set Q has exactly
-m elements, and a[u] := 0 […] at every other string, where X_Q[u] is the entry of `X_Q` at the
-row and the column of u: the row is the outer part of `u` and the column is its inner part. The
-family `X` gives a matrix `X Q` for every set `Q` of levels; only those with `|Q| = m` are used. -/
+/-- Encode a family of integer matrices as a left array. A string with exactly `m` inner
+positions selects `X` at that set of positions, with row `outerPartL` and column
+`innerPartL`; every other string has value zero. -/
 def arrayL {L : ℕ} (m : ℕ) (X : Finset (Fin L) → LeftMat L m) : LeftStr L → ℤ :=
   fun u =>
     if h : (innerSetL u).card = m then X (innerSetL u) (outerPartL u h) (innerPartL u h) else 0
 
-/-- Section 2.3.3: b[v] := Y_Q[v] for the right strings `v` whose inner set `Q` has exactly `m`
-elements, the row given by the inner part of v and the column by the outer part, and `b[v] := 0`
-at every other string. -/
+/-- Encode a family of integer matrices as a right array. A string with exactly `m` inner
+positions selects `Y` at that set of positions, with row `innerPartR` and column
+`outerPartR`; every other string has value zero. -/
 def arrayR {L : ℕ} (m : ℕ) (Y : Finset (Fin L) → RightMat L m) : RightStr L → ℤ :=
   fun v =>
     if h : (innerSetR v).card = m then Y (innerSetR v) (innerPartR v h) (outerPartR v h) else 0
 
-/-! ### 2.3.4 Tiling the N × D × N product by products of shape N₀ × D × N₀: the number `M` -/
+/-! ### The block-count parameter `M` -/
 
-/-- Section 2.3.4: M := K N₀². -/
+/-- The quantity `K L m * N0 L m ^ 2` used in the leaf and tile bounds. -/
 def M (L m : ℕ) : ℕ := K L m * N0 L m ^ 2
 
 
@@ -169,9 +160,8 @@ def leftStrOf (r : OuterStr L m) (π : InnerStr m) : LeftStr L :=
 def rightStrOf (π : InnerStr m) (c : OuterStr L m) : RightStr L :=
   glue Q hQ (fun k => .q (π k).1 (π k).2) (fun k => .y (c k))
 
-/-- The output string with inner set `Q`, row `r` and column `c` (Section 2.3.3: the output strings
-with inner set Q index the entries of the product X_Q Y_Q): it has `z₀` at the levels of `Q`, and
-at the `k`-th lowest level outside `Q` it has `z_{r_k c_k}`. -/
+/-- Construct an output string with `.z0` at `Q` and `.z (r k) (c k)` at the `k`-th position
+of its complement. Both sets of positions use increasing order. -/
 def outStrOf (r c : OuterStr L m) : OutStr L :=
   glue Q hQ (fun _ => .z0) (fun k => .z (r k) (c k))
 
@@ -296,10 +286,8 @@ theorem outStrOf_inj {Q' : Finset (Fin L)} {hQ' : Q'.card = m} {r c r' c' : Oute
 variable (Q) (hQ)
 include hQ
 
-/-- Section 2.3.3: A string is determined by its inner set, its outer part, and its inner part,
-and the left strings with inner set Q index the entries of such a matrix: for each set `Q` of `m`
-levels, each row `r` and each column `π` there is exactly one left string with inner set `Q`, outer
-part `r` and inner part `π`. -/
+/-- For a set `Q` of cardinality `m`, an outer index `r` and an inner index `π` determine a
+unique left string with those extracted parts and inner set `Q`. -/
 theorem existsUnique_leftStr (r : OuterStr L m) (π : InnerStr m) :
     ∃! u : LeftStr L, innerSetL u = Q
       ∧ ∃ h : (innerSetL u).card = m, outerPartL u h = r ∧ innerPartL u h = π := by
@@ -309,8 +297,8 @@ theorem existsUnique_leftStr (r : OuterStr L m) (π : InnerStr m) :
   rintro u ⟨hu, h, rfl, rfl⟩
   exact leftStr_eq_leftStrOf hQ hu h
 
-/-- Section 2.3.3: Similarly, the right strings v with inner set Q index the entries of a D × N₀
-matrix. -/
+/-- For a set `Q` of cardinality `m`, an inner index `π` and an outer index `c` determine a
+unique right string with those extracted parts and inner set `Q`. -/
 theorem existsUnique_rightStr (π : InnerStr m) (c : OuterStr L m) :
     ∃! v : RightStr L, innerSetR v = Q
       ∧ ∃ h : (innerSetR v).card = m, innerPartR v h = π ∧ outerPartR v h = c := by
@@ -320,8 +308,8 @@ theorem existsUnique_rightStr (π : InnerStr m) (c : OuterStr L m) :
   rintro v ⟨hv, h, rfl, rfl⟩
   exact rightStr_eq_rightStrOf hQ hv h
 
-/-- Section 2.3.3: Finally, the output strings with inner set Q index the entries of the product
-X_Q Y_Q. -/
+/-- For a set `Q` of cardinality `m`, a row `r` and a column `c` determine a unique output
+string with those extracted indices and inner set `Q`. -/
 theorem existsUnique_outStr (r c : OuterStr L m) :
     ∃! w : OutStr L, innerSetO w = Q
       ∧ ∃ h : (innerSetO w).card = m, rowO w h = r ∧ colO w h = c := by

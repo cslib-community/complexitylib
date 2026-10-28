@@ -17,7 +17,7 @@ import Mathlib.Tactic.Ring
 ## Main results
 
 * `nonempty_layout`: valid layouts exist whenever `m ≤ L`.
-* `Full.bandArray_eq_mul`: tiling computes every original integer product entry.
+* `Full.bandArray_eq_mul`: product entries as `Full.result` values of band arrays.
 * `outStrOfPos_injective`: positions in a tile have distinct output strings.
 
 ## References
@@ -26,7 +26,6 @@ Adapted selectively from [AlmanWilliams2026, Section 2] and
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
 counts and identities; they give no native program or instruction-cost certificate.
-Source-derived descriptions below are paraphrases.
 -/
 
 @[expose] public section
@@ -37,11 +36,11 @@ namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 
 /-! ### The numbers -/
 
-/-- Section 2.3.4: K₀² ≤ K. -/
+/-- The square of the natural square root `K0 L m` is at most `K L m`. -/
 theorem K0_sq_le_K (L m : ℕ) : K0 L m ^ 2 ≤ K L m :=
   Nat.sqrt_le' _
 
-/-- Section 2.3.4: K₀ ≥ √K / 2, squared. -/
+/-- The binomial count `K L m` is at most four times `K0 L m ^ 2`. -/
 theorem K_le_four_mul_K0_sq (L m : ℕ) : K L m ≤ 4 * K0 L m ^ 2 := by
   have hlt : K L m < (K0 L m + 1) ^ 2 := Nat.lt_succ_sqrt' _
   rcases Nat.eq_zero_or_pos (K0 L m) with h0 | h0
@@ -55,23 +54,19 @@ theorem K_le_four_mul_K0_sq (L m : ℕ) : K L m ≤ 4 * K0 L m ^ 2 := by
 theorem bandSize_pos {L m : ℕ} (hmL : m ≤ L) : 0 < bandSize L m :=
   Nat.mul_pos (K0_pos hmL) (N0_pos L m)
 
-/-- Section 2.3.4: we first pad N to a multiple of K₀ N₀. -/
+/-- The padded dimension is a multiple of the band size. -/
 theorem bandSize_dvd_padN (L m N : ℕ) : bandSize L m ∣ padN L m N :=
   Dvd.intro_left _ rfl
 
-/-- The padded size is at least `N`.
-
-NOTE. `m ≤ L` is left implicit in the paper. For `m > L` there is no subset of size `m` and
-`K₀ = 0`. -/
+/-- For `m ≤ L`, padding covers all `N` original positions. The parameter condition ensures a
+positive band size. -/
 theorem le_padN {L m : ℕ} (hmL : m ≤ L) (N : ℕ) : N ≤ padN L m N := by
   have h := Nat.lt_div_mul_add (a := N + bandSize L m - 1) (bandSize_pos hmL)
   unfold padN numBands
   omega
 
-/-- The padded size is the least multiple of `K₀ N₀` that is at least `N`: it is less than
-`N + K₀ N₀`.
-
-NOTE. `m ≤ L` is left implicit in the paper. -/
+/-- For `m ≤ L`, the padded dimension is strictly less than `N + bandSize L m`, including `N =
+0`. -/
 theorem padN_lt_add_bandSize {L m : ℕ} (hmL : m ≤ L) (N : ℕ) :
     padN L m N < N + bandSize L m := by
   have h := Nat.div_mul_le_self (N + bandSize L m - 1) (bandSize L m)
@@ -79,7 +74,7 @@ theorem padN_lt_add_bandSize {L m : ℕ} (hmL : m ≤ L) (N : ℕ) :
   unfold padN numBands
   omega
 
-/-- Section 2.3.4: the padding at most doubles N since N ≥ K₀ N₀. -/
+/-- If the band size is at most `N`, the padded dimension is at most `2 * N`. -/
 theorem padN_le_two_mul (L m N : ℕ) (hN : K0 L m * N0 L m ≤ N) : padN L m N ≤ 2 * N := by
   rcases Nat.lt_or_ge L m with hLm | hmL
   · -- for `m > L` there are no subsets, `K₀ = 0`, and the padded size is 0
@@ -93,8 +88,8 @@ theorem padN_le_two_mul (L m N : ℕ) (hN : K0 L m * N0 L m ≤ N) : padN L m N 
 theorem card_tiles (L m N : ℕ) : (tiles L m N).card = numBands L m N ^ 2 := by
   simp [tiles, sq]
 
-/-- Section 2.3.4: there are (N / K₀N₀)² ≤ 4N²/M tiles, where `N` is the padded size.  The
-inequality is multiplied out. -/
+/-- The tile count multiplied by `M L m` is at most `4 * padN L m N ^ 2`. The bound is stated
+without division and requires no positivity hypothesis. -/
 theorem card_tiles_mul_M_le (L m N : ℕ) : (tiles L m N).card * M L m ≤ 4 * padN L m N ^ 2 := by
   rw [card_tiles]
   calc numBands L m N ^ 2 * M L m
@@ -105,9 +100,7 @@ theorem card_tiles_mul_M_le (L m N : ℕ) : (tiles L m N).card * M L m ≤ 4 * p
 
 /-! ### The table of subsets and the matrices of a tile -/
 
-/-- Section 2.3.4: We fix K₀² ≤ K distinct subsets of {1, …, L} of size m: this can be done.
-
-NOTE.  `m ≤ L` is left implicit in the paper; it is a field of `Layout`. -/
+/-- Indexing data `Layout L m` exist for every `m ≤ L`, including `m = 0`. -/
 theorem nonempty_layout {L m : ℕ} (hmL : m ≤ L) : Nonempty (Layout L m) := by
   have hcard : Fintype.card (Fin (K0 L m) × Fin (K0 L m))
       ≤ Fintype.card {Q : Finset (Fin L) // Q.card = m} := by
@@ -129,8 +122,7 @@ private theorem sum_table_eq {L m : ℕ} {A : Type*} [AddCommMonoid A] (lay : La
     (∑ gh', if lay.table gh' = lay.table gh then F gh' else 0) = F gh := by
   simp [lay.table_injective.eq_iff]
 
-/-- Section 2.3.4: In a tile, let X_Q and Y_Q be the row block and the column block of the block
-product with subset Q.  For `X_Q`: it is the `g`-th row block of the row band. -/
+/-- At the table entry `(g, h)`, the left family selects row block `β * K0 L m + g`. -/
 @[simp]
 theorem bandFamilyL_table {L m N : ℕ} (lay : Layout L m) (X : Matrix (Fin N) (Fin (D m)) ℤ) (β : ℕ)
     (g h : Fin (K0 L m)) :
@@ -145,21 +137,21 @@ theorem bandFamilyR_table {L m N : ℕ} (lay : Layout L m) (Y : Matrix (Fin (D m
     bandFamilyR lay Y β (lay.table (g, h)) = colBlock lay Y (β * K0 L m + h) :=
   sum_table_eq lay _ (g, h)
 
-/-- Section 2.3.4: and let X_Q = Y_Q = 0 for the other subsets Q.  For `X_Q`. -/
+/-- The left family is zero at any level set outside the table image. -/
 theorem bandFamilyL_eq_zero {L m N : ℕ} (lay : Layout L m) (X : Matrix (Fin N) (Fin (D m)) ℤ)
     (β : ℕ) {Q : Finset (Fin L)} (hQ : ∀ gh, lay.table gh ≠ Q) : bandFamilyL lay X β Q = 0 :=
   sum_eq_zero fun gh _ => ite_eq_right (hQ gh)
 
-/-- Section 2.3.4: and let X_Q = Y_Q = 0 for the other subsets Q.  For `Y_Q`. -/
+/-- The right family is zero at any level set outside the table image. -/
 theorem bandFamilyR_eq_zero {L m N : ℕ} (lay : Layout L m) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
     (β : ℕ) {Q : Finset (Fin L)} (hQ : ∀ gh, lay.table gh ≠ Q) : bandFamilyR lay Y β Q = 0 :=
   sum_eq_zero fun gh _ => ite_eq_right (hQ gh)
 
-/-! ### One run of `Full` for each tile -/
+/-! ### Product identities for tile arrays -/
 
-/-- Section 2.3.4: Then one run of Full computes all K₀² block products of the tile (Lemma 9).
-The tile is that of the row band `β` and the column band `β'`; the block product in position `(g,
-h)` of its grid is the product of the row block `β K₀ + g` by the column block `β' K₀ + h`. -/
+/-- For the band arrays of tile `(β, β')`, `Full.result` at the output string for table entry
+`(g, h)` equals the product entry of row block `β * K0 L m + g` and column block `β' * K0
+L m + h`. -/
 theorem Full.bandArray_eq_block_mul {L m N : ℕ} (lay : Layout L m)
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ) (β β' : ℕ)
     (g h : Fin (K0 L m)) (r c : OuterStr L m) :
@@ -180,8 +172,9 @@ private theorem position_decomp {L m : ℕ} (lay : Layout L m) (I : ℕ) :
   rw [hblock]
   exact Nat.div_add_mod' _ _
 
-/-- Section 2.3.4: and running it on every tile computes all of XY. The entry `(XY)[I, J]` is the
-output of the run on the tile of `(I, J)` at the output string of `(I, J)`. -/
+/-- The band arrays for the tile containing an original position `(I, J)` give `Full.result`
+equal to `(X * Y) I J` at `outStrOfPos lay I J`. The matrices may have arbitrary signed
+integer entries. -/
 theorem Full.bandArray_eq_mul {L m N : ℕ} (lay : Layout L m)
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ) (I J : Fin N) :
     Full.result L (bandArrayL lay X (bandOf L m I)) (bandArrayR lay Y (bandOf L m J)) (outStrOfPos
@@ -196,10 +189,8 @@ theorem Full.bandArray_eq_mul {L m N : ℕ} (lay : Layout L m)
   simp only [rowBlock, colBlock, Equiv.symm_apply_apply, position_decomp, padRows, padCols,
     I.isLt, J.isLt, dite_eq_left, Fin.eta]
 
-/-- The entry `(XY)[I, J]` as a value of `bilinearProduct`, that is, as a sum over leaves
-  (equation (2)). This
-is the form in which Section 4 uses the tiling (by (2) and Lemma 9, (X_Q Y_Q)[w] is the sum of the
-products at the leaves contributing to w). -/
+/-- At the output string of an original position `(I, J)`, the bilinear product of its two
+band arrays equals `(X * Y) I J`. -/
 theorem bilinearProduct_bandArray_eq_mul {L m N : ℕ} (lay : Layout L m) (X : Matrix (Fin N) (Fin
   (D m)) ℤ)
     (Y : Matrix (Fin (D m)) (Fin N) ℤ) (I J : Fin N) :
@@ -209,9 +200,7 @@ theorem bilinearProduct_bandArray_eq_mul {L m N : ℕ} (lay : Layout L m) (X : M
   rw [← Full.result_eq_bilinearProduct]
   exact Full.bandArray_eq_mul lay X Y I J
 
-/-- Every row and every column lies in one of the bands.
-
-NOTE.  `m ≤ L` is left implicit in the paper. -/
+/-- For `m ≤ L`, any index `I < N` has band index below `numBands L m N`. -/
 theorem bandOf_lt_numBands {L m : ℕ} (hmL : m ≤ L) (N I : ℕ) (hI : I < N) :
     bandOf L m I < numBands L m N := by
   rw [bandOf, Nat.div_lt_iff_lt_mul (bandSize_pos hmL)]
@@ -219,8 +208,8 @@ theorem bandOf_lt_numBands {L m : ℕ} (hmL : m ≤ L) (N I : ℕ) (hI : I < N) 
 
 /-! ### The output string of a position -/
 
-/-- Section 2.4.4: the inner set of the output string of a position is the subset Q of the block
-product containing (I, J). -/
+/-- The inner set of a position's output string is the table entry indexed by its two
+within-band block indices. -/
 theorem innerSetO_outStrOfPos {L m : ℕ} (lay : Layout L m) (I J : ℕ) :
     innerSetO (outStrOfPos lay I J) = lay.table (blockOf lay I, blockOf lay J) :=
   innerSetO_outStrOf _ _ _ _
@@ -230,8 +219,8 @@ theorem card_innerSetO_outStrOfPos {L m : ℕ} (lay : Layout L m) (I J : ℕ) :
     (innerSetO (outStrOfPos lay I J)).card = m :=
   innerSetO_outStrOfPos lay I J ▸ lay.table_card _
 
-/-- Used implicitly in Section 2.4.4 (is indexed by one output string of T, report […] the value
-at its output string): different positions of the same tile have different output strings. -/
+/-- Within a fixed pair of row and column bands, equality of output strings implies equality
+of both natural-number position indices. -/
 theorem outStrOfPos_injective {L m : ℕ} (lay : Layout L m) (I J I' J' : ℕ)
     (hI : bandOf L m I = bandOf L m I') (hJ : bandOf L m J = bandOf L m J')
     (h : outStrOfPos lay I J = outStrOfPos lay I' J') : I = I' ∧ J = J' := by
