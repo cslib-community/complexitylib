@@ -423,7 +423,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   matrix builder and the complete finite mathematical Chan–He reduction ([#1435]), including
   ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
-  and the selected-prime false-positive bound ([#1442]) are proved mathematically. Native parameter,
+  and the selected-prime false-positive bound ([#1442]) are proved mathematically. The charged
+  native Convolution host ([#1524]) initializes from the ordinary input and runs every generated
+  instance, conditional on a concrete solver's execution, correctness and frame theorem.
+  Native parameter,
   collision-counting, prime-table, minimum-search and complete two-prime modulus programs have
   explicit local fit/frame/cost contracts ([#1446]). The complete native distinct-position frontend
   ([#1482]) starts from initialized signed input and produces exact compact root descriptors with
@@ -567,3 +570,4 @@ not planned, not as proved.
 [#1482]: https://github.com/cslib-community/complexitylib/issues/1482
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1481]: https://github.com/cslib-community/complexitylib/issues/1481
+[#1524]: https://github.com/cslib-community/complexitylib/issues/1524
