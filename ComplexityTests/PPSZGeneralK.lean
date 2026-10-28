@@ -27,8 +27,30 @@ example : mu 3 / ((3 : ℝ) - 1) = 2 - 2 * Real.log 2 := by
   rw [mu_three]
   ring
 
-example : ∑' j : ℕ, 1 / (((j : ℝ) + 1) * (2 * ((j : ℝ) + 1) + 1)) = 2 - 2 * Real.log 2 :=
-  tsum_three
+/-- `μ_2 = ∑_{j ≥ 1} 1 / (j (j + 1)) = 1`: the sum telescopes. -/
+example : mu 2 = 1 := by
+  have h : HasSum (fun j : ℕ => 1 / (((j : ℝ) + 1) * ((j : ℝ) + 1 + 1 / ((2 : ℕ) - 1)))) 1 := by
+    rw [hasSum_iff_tendsto_nat_of_nonneg (fun j => by positivity)]
+    have hs : ∀ n : ℕ, ∑ j ∈ Finset.range n,
+        1 / (((j : ℝ) + 1) * ((j : ℝ) + 1 + 1 / ((2 : ℕ) - 1))) = 1 - 1 / ((n : ℝ) + 1) := by
+      intro n
+      induction n with
+      | zero => norm_num
+      | succ n ih =>
+        rw [Finset.sum_range_succ, ih]
+        push_cast
+        field_simp
+        ring
+    simp_rw [hs]
+    simpa using (tendsto_one_div_add_atTop_nhds_zero_nat).const_sub (1 : ℝ)
+  exact h.tsum_eq
+
+/-- For `k = 2` the recursion is `x ↦ r + (1 - r) x`, whose only fixed point is `1` for
+`r ∈ (0, 1]`. -/
+example {r : ℝ} (hr : r ∈ Set.Ioc (0 : ℝ) 1) : R 2 r = 1 := by
+  have h := R_eq (k := 2) (Set.Ioc_subset_Icc_self hr)
+  norm_num at h
+  nlinarith [hr.1]
 
 /-- `∑_{j ≥ 1} 1 / (j (j + 1 / 3)) ≥ 3 / 4 + 3 / 14 + 1 / 10`, so `μ_4 / 3 > 0.35`. -/
 example : 0.35 < mu 4 / ((4 : ℝ) - 1) := by

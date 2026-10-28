@@ -151,14 +151,15 @@ theorem R_le_iff (hr : r ∈ Icc (0 : ℝ) 1) :
 
 /-- **The inverse of the limit** [Paturi, Pudlák, Saks, Zane, p. 352][PaturiPudlakSaksZane2005]:
 `S k t = (t ^ (1 / (k - 1)) - t) / (1 - t)`. Solving the fixed-point equation
-`t = (r + (1 - r) * t) ^ (k - 1)` with `t ∈ [0, 1)` for `r` gives `r = S k t` (`step_eq_iff`). The
-paper sets `S k 1 = (k - 2) / (k - 1)`, the limit at `1`; here `S k 1 = 0`, which changes no
-statement below. -/
+`t = (r + (1 - r) * t) ^ (k - 1)` with `t ∈ [0, 1)` for `r` gives `r = S k t`
+(`pow_add_one_sub_mul_eq_self_iff`). The paper sets `S k 1 = (k - 2) / (k - 1)`, the limit at `1`;
+here `S k 1 = 0`, which changes no statement below. -/
 noncomputable def S (k : ℕ) (t : ℝ) : ℝ := (t ^ (1 / ((k : ℝ) - 1)) - t) / (1 - t)
 
 /-- The constant `μ_k = ∑_{j ≥ 1} 1 / (j (j + 1 / (k - 1)))` of
 [Paturi, Pudlák, Saks, Zane, p. 342][PaturiPudlakSaksZane2005], indexed from `j = 0` here. The
-savings of PPSZ on unique k-SAT are `μ_k / (k - 1)` (`round_success_unique_limit`). -/
+savings of PPSZ on unique k-SAT are `μ_k / (k - 1)` (`round_success_unique_limit`). The paper
+defines `μ_k` only for `k ≥ 2`; for `k ≤ 1` the value `mu k` is a junk value. -/
 noncomputable def mu (k : ℕ) : ℝ :=
   ∑' j : ℕ, 1 / (((j : ℝ) + 1) * ((j : ℝ) + 1 + 1 / ((k : ℝ) - 1)))
 
@@ -186,7 +187,8 @@ theorem S_nonneg (hk : 2 ≤ k) (ht : t ∈ Ico (0 : ℝ) 1) : 0 ≤ S k t :=
 
 /-- **The fixed-point inequality** (original): for `t ∈ [0, 1)`, the recursion step maps `t` below
 itself if and only if `r ≤ S k t`. -/
-theorem step_le_iff (hk : 2 ≤ k) (hr : r ∈ Icc (0 : ℝ) 1) (ht : t ∈ Ico (0 : ℝ) 1) :
+theorem pow_add_one_sub_mul_le_self_iff (hk : 2 ≤ k) (hr : r ∈ Icc (0 : ℝ) 1)
+    (ht : t ∈ Ico (0 : ℝ) 1) :
     (r + (1 - r) * t) ^ (k - 1) ≤ t ↔ r ≤ S k t := by
   have hu0 : 0 ≤ t ^ (1 / ((k : ℝ) - 1)) := Real.rpow_nonneg ht.1 _
   have hb : 0 ≤ r + (1 - r) * t := (add_one_sub_mul_mem_Icc hr ⟨ht.1, ht.2.le⟩).1
@@ -200,7 +202,8 @@ theorem step_le_iff (hk : 2 ≤ k) (hr : r ∈ Icc (0 : ℝ) 1) (ht : t ∈ Ico 
 /-- **The fixed-point equation solved for `r`** [Paturi, Pudlák, Saks, Zane, proof of Claim 1
 (p. 352)][PaturiPudlakSaksZane2005]: for `t ∈ [0, 1)`, `t` is a fixed point of the recursion step
 if and only if `r = S k t`. -/
-theorem step_eq_iff (hk : 2 ≤ k) (hr : r ∈ Icc (0 : ℝ) 1) (ht : t ∈ Ico (0 : ℝ) 1) :
+theorem pow_add_one_sub_mul_eq_self_iff (hk : 2 ≤ k) (hr : r ∈ Icc (0 : ℝ) 1)
+    (ht : t ∈ Ico (0 : ℝ) 1) :
     (r + (1 - r) * t) ^ (k - 1) = t ↔ r = S k t := by
   have hu0 : 0 ≤ t ^ (1 / ((k : ℝ) - 1)) := Real.rpow_nonneg ht.1 _
   have hb : 0 ≤ r + (1 - r) * t := (add_one_sub_mul_mem_Icc hr ⟨ht.1, ht.2.le⟩).1
@@ -309,8 +312,9 @@ theorem R_le_iff_le_S (hk : 2 ≤ k) (hr : r ∈ Icc (0 : ℝ) 1) (ht : t ∈ Ic
   constructor
   · rintro ⟨y, hy, hfy⟩
     have hyI : y ∈ Ico (0 : ℝ) 1 := ⟨hy.1, hy.2.trans_lt ht.2⟩
-    exact ((step_le_iff hk hr hyI).1 hfy).trans (monotoneOn_S hk hyI ht hy.2)
-  · exact fun h => ⟨t, ⟨ht.1, le_rfl⟩, (step_le_iff hk hr ht).2 h⟩
+    exact ((pow_add_one_sub_mul_le_self_iff hk hr hyI).1 hfy).trans
+      (monotoneOn_S hk hyI ht hy.2)
+  · exact fun h => ⟨t, ⟨ht.1, le_rfl⟩, (pow_add_one_sub_mul_le_self_iff hk hr ht).2 h⟩
 
 /-- `t < R k r` if and only if `S k t < r`, for `r ∈ [0, 1]` and `t ∈ [0, 1)`. -/
 theorem lt_R_iff (hk : 2 ≤ k) (hr : r ∈ Icc (0 : ℝ) 1) (ht : t ∈ Ico (0 : ℝ) 1) :
@@ -321,7 +325,7 @@ theorem lt_R_iff (hk : 2 ≤ k) (hr : r ∈ Icc (0 : ℝ) 1) (ht : t ∈ Ico (0 
 [PaturiPudlakSaksZane2005]: if `R k r < 1`, then
 `r = (R k r ^ (1 / (k - 1)) - R k r) / (1 - R k r)`. -/
 theorem S_R (hk : 2 ≤ k) (hr : r ∈ Icc (0 : ℝ) 1) (hR : R k r < 1) : S k (R k r) = r :=
-  ((step_eq_iff hk hr ⟨R_nonneg hr, hR⟩).1 (R_eq hr)).symm
+  ((pow_add_one_sub_mul_eq_self_iff hk hr ⟨R_nonneg hr, hR⟩).1 (R_eq hr)).symm
 
 /-- **`R k` inverts `S k`** [Paturi, Pudlák, Saks, Zane, Claim 1 (p. 352)]
 [PaturiPudlakSaksZane2005]: `R k (S k t) = t` for `t ∈ [0, 1)` and `k ≥ 3`. -/
@@ -597,7 +601,7 @@ theorem exists_le_qbar (hk : 2 ≤ k) {ε : ℝ} (hε : 0 < ε) :
   ((tendsto_order.1 (tendsto_qbar hk)).1 _ (by linarith)).exists.imp fun _ => le_of_lt
 
 /-- **PPSZ for unique k-SAT** [Paturi, Pudlák, Saks, Zane, Theorem 1(ii)][PaturiPudlakSaksZane2005],
-[Scheder, Theorem 1.3][Scheder2021], for PPSZ with w-implication. Let `k ≥ 2`. For every `ε > 0`
+for PPSZ with w-implication. Let `k ≥ 2`. For every `ε > 0`
 there is a bound `w` such that, for every `n`, one round of PPSZ with w-implication outputs the
 unique satisfying assignment `σ` of any CNF formula `φ` on `n` variables whose clauses have at most
 `k` literals with probability at least `2^{-(1 - μ_k / (k - 1) + ε) n}`, where
@@ -610,8 +614,9 @@ uniquely satisfiable k-CNF formulas, the lower bound `2^{-(1 - μ_k / (k - 1)) n
 `ε`-form of that bound. Letting `w` grow slowly with `n` would turn it into a lower bound
 `2^{-(1 - μ_k / (k - 1)) n - o(n)}`, uniformly over all such formulas; that form is not formalized
 here. The paper uses `s`-bounded resolution in place of w-implication; the per-variable analysis is
-the same [Scheder, p. 3][Scheder2021]. The case `k = 2`, where `μ_2 = 1`, is included because the
-proof covers it. -/
+the same [Scheder, p. 3][Scheder2021]. [Scheder, Theorem 1.3][Scheder2021] states the bound with
+the constant `s_k := Pr[T finite]` of its infinite-tree analysis, where `s_k = μ_k / (k - 1)`. The
+case `k = 2`, where `μ_2 = 1`, is included because the proof covers it. -/
 theorem round_success_unique_limit (hk : 2 ≤ k) :
     ∀ ε > 0, ∃ w : ℕ, ∀ (n : ℕ) (φ : CNF (Fin n)) (σ : Fin n → Bool), φ.eval σ = true →
       (∀ τ, φ.eval τ = true → τ = σ) → (∀ c ∈ φ, c.length ≤ k) →
