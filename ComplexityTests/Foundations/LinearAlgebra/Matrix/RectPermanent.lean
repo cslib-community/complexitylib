@@ -16,8 +16,8 @@ import Mathlib.LinearAlgebra.Matrix.Notation
 
 Concrete values of `Matrix.rectPerm` and `Matrix.rectPermSurj` on `1 × 2` and `2 × 3` matrices
 (nonzero, so neither definition is trivially zero), the square and vanishing cases, the
-Binet–Minc identities instantiated at a `2 × 3` matrix, and the right-hand side of the Binet–Minc
-identity evaluated directly at a concrete `2 × 3` matrix.
+Binet–Minc identity and its inclusion–exclusion extension used to compute these values at a
+concrete `2 × 3` matrix, and the right-hand side of the Binet–Minc identity evaluated directly.
 -/
 
 @[expose] public section
@@ -58,20 +58,27 @@ example (b : Matrix (Fin 3) (Fin 2) ℤ) : b.rectPerm = 0 :=
 example (b : Matrix (Fin 2) (Fin 3) ℤ) : b.rectPermSurj univ = 0 :=
   rectPermSurj_eq_zero_of_card_lt univ b (by simp)
 
+/-- Requiring no columns gives the rectangular permanent. -/
 example (b : Matrix (Fin 2) (Fin 3) ℤ) : b.rectPermSurj ∅ = b.rectPerm := by
   simp
 
-/-- The Binet–Minc identity at a `2 × 3` matrix over `ℤ`. -/
-example (b : Matrix (Fin 2) (Fin 3) ℤ) :
-    b.rectPerm = ∑ π : Perm (Fin 2), sign π • ∏ q : Quotient (SameCycle.setoid π),
-      ∑ j, ∏ r with Quotient.mk _ r = q, b r j :=
-  rectPerm_eq_sum_sign_prod_sameCycle b
+/-- The Binet–Minc identity computes the `2 × 3` rectangular permanent above:
+`1 * 5 + 1 * 6 + 2 * 4 + 2 * 6 + 3 * 4 + 3 * 5 = 58`. -/
+example : !![(1 : ℤ), 2, 3; 4, 5, 6].rectPerm = 58 := by
+  rw [rectPerm_eq_sum_sign_prod_sameCycle]
+  decide
 
-/-- Its inclusion–exclusion extension at a `2 × 3` matrix over `ℤ`. -/
-example (b : Matrix (Fin 2) (Fin 3) ℤ) (Z : Finset (Fin 3)) :
-    b.rectPermSurj Z = ∑ π : Perm (Fin 2), sign π • ∑ Y ∈ Z.powerset, (-1) ^ #Y *
-      ∏ q : Quotient (SameCycle.setoid π), ∑ j ∈ Yᶜ, ∏ r with Quotient.mk _ r = q, b r j :=
-  rectPermSurj_eq_sum_sign_prod_sameCycle Z b
+/-- The inclusion–exclusion identity computes `rectPermSurj {2}` of the matrix above:
+`1 * 6 + 2 * 6 + 3 * 4 + 3 * 5 = 45`. -/
+example : !![(1 : ℤ), 2, 3; 4, 5, 6].rectPermSurj {2} = 45 := by
+  rw [rectPermSurj_eq_sum_sign_prod_sameCycle]
+  decide
+
+/-- The inclusion–exclusion identity with two required columns: the injections whose image
+contains `{0, 2}` give `1 * 6 + 3 * 4 = 18`. -/
+example : !![(1 : ℤ), 2, 3; 4, 5, 6].rectPermSurj {0, 2} = 18 := by
+  rw [rectPermSurj_eq_sum_sign_prod_sameCycle]
+  decide
 
 /-- The right-hand side of the Binet–Minc identity evaluated directly, at the matrix above. -/
 example : ∑ π : Perm (Fin 2), sign π • ∏ q : Quotient (SameCycle.setoid π),

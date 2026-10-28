@@ -151,7 +151,7 @@ noncomputable def rectPermSurj [DecidableEq n] (Z : Finset n) (b : Matrix m n R)
 variable [DecidableEq m] [DecidableEq n]
 
 /-- A filtered sum over embeddings is the sum over the injective functions. -/
-theorem sum_embedding_filter_eq (g : (m → n) → R) (p : (m → n) → Prop) [DecidablePred p] :
+private theorem sum_embedding_filter_eq (g : (m → n) → R) (p : (m → n) → Prop) [DecidablePred p] :
     ∑ σ ∈ univ.filter (fun σ : m ↪ n => p σ), g σ =
       ∑ f : m → n with Function.Injective f ∧ p f, g f := by
   refine sum_bij (fun σ _ => ⇑σ) ?_ ?_ ?_ ?_
