@@ -13,7 +13,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.NodeExec
 # Exact output contract for complete native Chan–He node construction
 
 The output uses the existing mathematical heavy subsets and `Node.oneArray`. A heavy array
-contains each selected integer once, in input order, preceded by its exact cardinality. The
+contains each selected integer once, preceded by its exact cardinality. The
 packed array has `4N` cells, including every sentinel and padded cell. Memory outside the
 explicit allocation and caller registers 46–55 are preserved.
 
