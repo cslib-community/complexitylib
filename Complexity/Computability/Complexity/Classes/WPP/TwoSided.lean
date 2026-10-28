@@ -23,8 +23,7 @@ of the differences between rejection targets and the original gap. This vanishes
 and on acceptance takes one of a uniformly computed family of nonzero products. The uniform
 product theorem and one-sided robustness then finish the construction.
 
-The public interfaces ask for `Turing.MultiTapeTM.ComputableInPolyTime` certificates, following
-the plain-statement convention of #456.
+The public interfaces ask for `Turing.MultiTapeTM.ComputableInPolyTime` certificates.
 
 ## Main results
 
