@@ -3,7 +3,9 @@ Complexity/Algorithms/ExactTriangle/{Defs,Weights,Lopsided,Hashing,Splitting,Wit
 Complexity/Algorithms/MatrixMultiplication/Schonhage/,
 Complexity/Algorithms/ThreeSum/,
 Complexity/Algorithms/WordRAM/ThreeSum/,
-Complexity/Foundations/Data/Finset/{Average,Quotient}.lean,
+Complexity/Foundations/Algebra/{FiniteMagnitude,GeometricTail}.lean,
+Complexity/Foundations/Combinatorics/{BinomialUpperBound,FunctionPlaces}.lean,
+Complexity/Foundations/Data/Finset/{Average,OrderGlue,Quotient}.lean,
 Complexity/Foundations/Data/Int/Residue.lean,
 Complexity/Foundations/Data/Nat/CeilDiv.lean,
 Complexity/Foundations/Data/Matrix/{IntegerBits,PairChunks}.lean and

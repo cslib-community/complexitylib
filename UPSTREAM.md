@@ -199,9 +199,16 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   error, full evaluation, shared encodings, pruned values, visited leaves and passed-set totals.
   Its pure finite recursion traces are not native machine semantics or charged instruction costs.
   The zero-depth empty-query root exception is explicit, with an unconditional root-or-leaf API.
-  See [#1459](https://github.com/cslib-community/complexitylib/issues/1459). Tiling/sparse leaf bounds,
-  native tensor/sparse-query programs, native preprocessing/solvers and full input/time/width
-  composition remain in #1394.
+  See [#1459](https://github.com/cslib-community/complexitylib/issues/1459). The complete finite
+  thin-product component ([#1463](https://github.com/cslib-community/complexitylib/issues/1463))
+  adapts `Sec2/{Levels,Lemma9,Tiling,Orders,Lemma11,Theorem5}` and needed finite magnitude bounds.
+  Layouts contain only indexing choices, whose existence is proved; sparse bounds are derived
+  from exact contributing-leaf counts. Generic function-position counts, ordered gluing, binomial
+  and finite-sum bounds live in small Foundations modules. Mathlib `Finset.orderEmbOfFin` indexes
+  both a level set and its complement, and `Finset.piecewise` restricts answers. No source machine,
+  problem-statement universe or solver/time hypothesis is imported. Native tensor/sparse-query
+  programs, native preprocessing/solvers and full input/time/width composition, including the
+  improved Section 4 route to exponent 1.9992, remain in #1394.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.

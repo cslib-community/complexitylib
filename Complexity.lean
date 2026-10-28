@@ -30,9 +30,18 @@ public import Complexity.Algorithms.Lean.VanEmdeBoas.Insert
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Layout
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Successor
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Full
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Identity
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Layout
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Levels
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Magnitude
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Orders
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Parameters
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Pruned
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Sparse
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.ThinProduct
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Tiling
 public import Complexity.Algorithms.Reachability.BreadthFirst
 public import Complexity.Algorithms.Reachability.InductiveCounting
 public import Complexity.Algorithms.Reachability.InductiveCounting.Bounds
@@ -1862,6 +1871,8 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtra
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
+public import Complexity.Foundations.Algebra.FiniteMagnitude
+public import Complexity.Foundations.Algebra.GeometricTail
 public import Complexity.Foundations.Analysis.BernoulliInequality
 public import Complexity.Foundations.Analysis.HarmonicMean
 public import Complexity.Foundations.Analysis.InnerProductSpace.Basic
@@ -1926,6 +1937,7 @@ public import Complexity.Foundations.Combinatorics.AffineDisperser.IndependentSo
 public import Complexity.Foundations.Combinatorics.AffineDisperser.Threshold
 public import Complexity.Foundations.Combinatorics.BalancedSchedules
 public import Complexity.Foundations.Combinatorics.BinomialTail
+public import Complexity.Foundations.Combinatorics.BinomialUpperBound
 public import Complexity.Foundations.Combinatorics.CentralBinomial
 public import Complexity.Foundations.Combinatorics.DepthReduction
 public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
@@ -1964,6 +1976,7 @@ public import Complexity.Foundations.Combinatorics.Expander.Walk
 public import Complexity.Foundations.Combinatorics.Expander.Zigzag
 public import Complexity.Foundations.Combinatorics.FiniteCover
 public import Complexity.Foundations.Combinatorics.FiniteCover.Basic
+public import Complexity.Foundations.Combinatorics.FunctionPlaces
 public import Complexity.Foundations.Combinatorics.FunctionalGraph
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Active
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.CheckpointForest
@@ -2072,6 +2085,7 @@ public import Complexity.Foundations.Data.Fin.Tuple
 public import Complexity.Foundations.Data.Finset.Average
 public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.Markov
+public import Complexity.Foundations.Data.Finset.OrderGlue
 public import Complexity.Foundations.Data.Finset.Quantile
 public import Complexity.Foundations.Data.Finset.Quotient
 public import Complexity.Foundations.Data.Finset.Sampling
