@@ -141,6 +141,17 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Query
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Arrays
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Bounds
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Execute
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Input
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Layout
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Model
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Program
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Scan
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Select
+public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Time
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Call
