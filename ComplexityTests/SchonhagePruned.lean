@@ -10,6 +10,7 @@ import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Repor
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.EmptyChild
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Finish
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Return
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Ready
 
 -- Full controller regressions evaluate the actual native interpreter at elaboration time.
 set_option linter.hashCommand false
@@ -30,6 +31,58 @@ private def leafData : Data registers where
 
 private theorem leafData_parameters : KernelRegs 0 8 3 4 leafData := by
   constructor <;> rfl
+
+-- The general entry assertion is satisfied by concrete memory. Its timestamp directory has
+-- one cell and its occupied list names the unique zero-depth query exactly once.
+private theorem leafData_ready : NodeReady 0 8 3 4 0 0 0 0 {Fin.elim0} leafData := by
+  refine ⟨leafData_parameters, rfl, by decide, rfl, rfl, rfl, rfl, ?_, ?_⟩
+  · intro i
+    fin_cases i <;> rfl
+  · change ScanMemory leafData.mem 12 14 0 1 {0}
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · intro q hq
+      have he := Finset.mem_singleton.mp hq
+      exact he ▸ (by decide : 0 < 1)
+    · intro q hq
+      have he : q = 0 := by omega
+      subst q
+      decide
+    · intro q hq
+      have he : q = 0 := by omega
+      subst q
+      decide
+    · refine ⟨fun _ => 0, ?_, ?_, ?_⟩
+      · change Function.Injective (fun _ : Fin 1 => (0 : ℕ))
+        intro i j _
+        exact Subsingleton.elim i j
+      · ext q
+        constructor
+        · rintro ⟨i, rfl⟩
+          exact Finset.mem_singleton_self _
+        · intro hq
+          exact ⟨⟨0, by simp⟩, (Finset.mem_singleton.mp hq).symm⟩
+      · intro i
+        change leafData.mem (12 + i.val) = 0
+        have hi : i.val < 1 := i.isLt
+        have he : i.val = 0 := by omega
+        rw [he]
+        rfl
+
+-- The numerical magnitude/address hypotheses are derived from original input bounds, and the
+-- value witness belongs to the same actual native execution (including the loop exit).
+example : ∃ y, ExecWithin 9 controller leafData y 8194 ∧ y.mem 13 = encode (-6) := by
+  let S : Finset (Cslib.Algorithms.MatrixMultiplication.Schonhage.OutStr 0) := {Fin.elim0}
+  obtain ⟨y, hy, hrun⟩ := exec_ready_zero (w := 7) (A := 3) (B := 2) S
+    (fun _ => -3) (fun _ => 2) leafData leafData_ready
+    (by intro v; rfl) (by intro v; rfl) (by intro v; decide) (by intro v; decide)
+    (by decide) (by decide) (by decide)
+  have hexit : ExecWithin 9 controller y y 2 := ExecWithin.loop_exit
+    (by simp only [Cond.holds_lt, hy.regs.nil_eq, hy.active_eq]; decide)
+  refine ⟨y, ?_, ?_⟩
+  · simpa only [traceWeight_zero, S, Finset.card_singleton] using hrun y 2 hexit
+  · have hv := hy.values Fin.elim0 (Finset.mem_singleton_self _)
+    simpa [Cslib.Algorithms.MatrixMultiplication.Schonhage.Pruned.result,
+      Cslib.Algorithms.MatrixMultiplication.Schonhage.Pruned.run, Finset.piecewise, S] using hv
 
 -- A concrete negative-product node discharges the general invariant, signed and address
 -- premises. Its returned memory is attached to the same charged native loop execution.

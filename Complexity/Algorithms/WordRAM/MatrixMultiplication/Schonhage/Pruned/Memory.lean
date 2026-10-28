@@ -52,7 +52,7 @@ def stampsBase (L Q : ℕ) : ℕ := valuesBase L Q + (L + 1) * 10 ^ L
 def memoryEnd (L Q : ℕ) : ℕ := stampsBase L Q + 10 ^ L
 
 /-- A scalar budget for the concrete addresses, counters, powers and timestamp generations. -/
-def addressBound (L Q : ℕ) : ℕ := 128 * (L + 1) * 10 ^ L + 8 * Q + 128
+def addressBound (L Q : ℕ) : ℕ := 256 * (L + 1) * 10 ^ L + 32 * Q + 512
 
 /-- The initialized payload includes no precomputed child requests or recursion certificate. -/
 theorem length_input (L : ℕ) (a b : Fin (10 ^ L) → ℤ) (qs : List (Fin (10 ^ L))) :

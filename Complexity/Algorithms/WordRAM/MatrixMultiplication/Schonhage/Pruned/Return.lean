@@ -55,6 +55,9 @@ theorem exec_node_return {w L f a0 b0 d N k : ℕ} (x : Data registers)
           encode (V (input i) + if selected true k (input i) then B (input i / 10) else 0)) ∧
       (∀ j < 3, y.mem (f + 4 * d + j) = x.mem (f + 4 * d + j)) ∧
       y.mem (f + 4 * d + 3) = k + 1 ∧
+      (∀ q < 10 ^ L,
+        y.mem (f + 4 * (L + 1) + 2 * (L + 1) * 10 ^ L + q) =
+          x.mem (f + 4 * (L + 1) + 2 * (L + 1) * 10 ^ L + q)) ∧
       Modifies (nodeWrites L f d) x.mem y.mem := by
   have hpow : 1 ≤ (10 : ℕ) ^ L := Nat.one_le_pow L _ (by decide)
   have hL : L + 1 ≤ (L + 1) * 10 ^ L := by nlinarith only [hpow]
@@ -119,7 +122,7 @@ theorem exec_node_return {w L f a0 b0 d N k : ℕ} (x : Data registers)
   have hvframe : Modifies (Block.mk vb (10 ^ L)).footprint x.mem v.mem := by
     simpa only [huv', humem] using hvFrame
   have frameBeforeValue : f + 4 * d + 4 ≤ vb := by dsimp [vb]; omega
-  refine ⟨y, he, hregs.of_step he, ?_, hym, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨y, he, hregs.of_step he, ?_, hym, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · exact (hy.regs_eq (by decide : advance.Preserves level)).trans
       ((hvreg level (by decide)).trans ((fixed level (by decide)).trans hd))
   · exact (hy.regs_eq (by decide : advance.Preserves active)).trans
@@ -149,6 +152,22 @@ theorem exec_node_return {w L f a0 b0 d N k : ℕ} (x : Data registers)
     change ¬(vb ≤ f + 4 * d + j ∧ _)
     omega
   · simp only [hymem, hvf, hvt, Function.update_self]
+  · intro q _
+    have hafter : vb + 10 ^ L ≤
+        f + 4 * (L + 1) + 2 * (L + 1) * 10 ^ L + q := by
+      dsimp only [vb]
+      nlinarith only [hmul]
+    have hf : f + 4 * (L + 1) + 2 * (L + 1) * 10 ^ L + q ∉
+        (Block.mk (f + 4 * d) 4).footprint := by
+      rw [Block.mem_footprint]
+      dsimp only [Block.Owns]
+      omega
+    have hvf : f + 4 * (L + 1) + 2 * (L + 1) * 10 ^ L + q ∉
+        (Block.mk vb (10 ^ L)).footprint := by
+      rw [Block.mem_footprint]
+      dsimp only [Block.Owns]
+      omega
+    exact (hyframe _ hf).trans (hvframe _ hvf)
   · intro c hc
     have hnotFrame : c ∉ (Block.mk (f + 4 * d) 4).footprint := by
       intro hf

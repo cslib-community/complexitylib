@@ -106,4 +106,38 @@ theorem traceWeight_succ {n : ℕ} (S : Finset (OutStr (n + 1))) :
           Pruned.calls_irrel _ _ (fun _ => 0) (fun _ => 0)]
       · simp
 
+/-- Potential contributed by the child subtrees with numerical labels below `k`. This is a
+finite sum of mathematical trace weights, not an assumed execution-time bound. -/
+def childWeightPrefix {n : ℕ} (S : Finset (OutStr (n + 1))) (k : ℕ) : ℕ :=
+  ∑ i ∈ range k, if hi : i < 10 then
+    if (childSet S (Encoding.termDigits ⟨i, hi⟩)).Nonempty then
+      traceWeight (childSet S (Encoding.termDigits ⟨i, hi⟩)) else 0
+    else 0
+
+/-- No child potential has been spent before the first term. -/
+@[simp]
+theorem childWeightPrefix_zero {n : ℕ} (S : Finset (OutStr (n + 1))) :
+    childWeightPrefix S 0 = 0 := by simp [childWeightPrefix]
+
+/-- Advancing the native term counter adds exactly the next nonempty child's potential. -/
+theorem childWeightPrefix_succ {n : ℕ} (S : Finset (OutStr (n + 1))) (k : Fin 10) :
+    childWeightPrefix S (k.val + 1) = childWeightPrefix S k.val +
+      if (childSet S (Encoding.termDigits k)).Nonempty then
+        traceWeight (childSet S (Encoding.termDigits k)) else 0 := by
+  simp only [childWeightPrefix, sum_range_succ, dite_eq_left k.isLt]
+
+/-- After all ten terms, the child-prefix potential is exactly the recursive part of the
+existing mathematical trace weight, in the program's unchanged numerical term order. -/
+theorem traceWeight_succ_prefix {n : ℕ} (S : Finset (OutStr (n + 1))) :
+    traceWeight S = 4096 * (S.card + 1) + childWeightPrefix S 10 := by
+  rw [traceWeight_succ]
+  congr 1
+
+/-- The complete local controller work fits within the root summand of `traceWeight`.
+The terms account for entry, ten scan/push/accumulate pairs, return, and all loop controls.
+Empty children use less work than the displayed pair. Child recursive work is separate. -/
+theorem node_local_cost_le (N : ℕ) :
+    (7 * N + 30) + 10 * ((20 * N + 44) + (31 * N + 31)) + 28 ≤
+      4096 * (N + 1) := by omega
+
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery

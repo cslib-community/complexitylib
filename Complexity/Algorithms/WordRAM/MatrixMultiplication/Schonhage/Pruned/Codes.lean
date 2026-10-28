@@ -92,6 +92,12 @@ theorem queryIndex_bijective (L : ℕ) : Function.Bijective (queryIndex (L := L)
   finFunctionFinEquiv.bijective.comp
     (Equiv.piCongrRight fun _ : Fin L => outputDigits.symm).bijective
 
+/-- Replacing output strings by their numerical codes preserves a request-set cardinality. -/
+theorem card_image_queryIndex {L : ℕ} (S : Finset (OutStr L)) :
+    (S.image (fun w => (queryIndex w).val)).card = S.card :=
+  Finset.card_image_of_injective S (fun _ _ he =>
+    (queryIndex_bijective L).injective (Fin.ext he))
+
 /-- The first query digit is its output-variable digit; the suffix is shifted by one place. -/
 theorem queryIndex_cons {L : ℕ} (z : OutVar) (w : OutStr L) :
     (queryIndex (Fin.cons z w) : ℕ) = (outputDigits.symm z).val + 10 * (queryIndex w).val := by

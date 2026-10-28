@@ -66,6 +66,36 @@ theorem ScanMemory.congr {mem mem' : ℕ → ℕ} {out stamps epoch capacity : �
   · obtain ⟨v, hv, hrange, hreal⟩ := h.listed
     exact ⟨v, hv, hrange, fun i => (hlist i i.isLt).trans (hreal i)⟩
 
+/-- Reading the occupied native list gives exactly its represented finite set. -/
+theorem ScanMemory.image_read {mem : ℕ → ℕ} {out stamps epoch capacity : ℕ} {S : Finset ℕ}
+    (h : ScanMemory mem out stamps epoch capacity S) :
+    (Finset.range S.card).image (fun i => mem (out + i)) = S := by
+  obtain ⟨v, _, hrange, hreal⟩ := h.listed
+  ext q
+  constructor
+  · rintro hq
+    obtain ⟨i, hi, hq⟩ := Finset.mem_image.mp hq
+    have hi' : i < S.card := Finset.mem_range.mp hi
+    have hread : mem (out + i) = v ⟨i, hi'⟩ := hreal ⟨i, hi'⟩
+    have hv : v ⟨i, hi'⟩ ∈ S := by
+      rw [← Finset.mem_coe, ← hrange]
+      exact ⟨⟨i, hi'⟩, rfl⟩
+    exact (hread.symm.trans hq) ▸ hv
+  · intro hq
+    have hv : q ∈ Set.range v := by rw [hrange]; exact hq
+    obtain ⟨i, rfl⟩ := hv
+    exact Finset.mem_image.mpr ⟨i.val, Finset.mem_range.mpr i.isLt, hreal i⟩
+
+/-- Occupied native list positions store different codes. -/
+theorem ScanMemory.injOn_read {mem : ℕ → ℕ} {out stamps epoch capacity : ℕ} {S : Finset ℕ}
+    (h : ScanMemory mem out stamps epoch capacity S) :
+    Set.InjOn (fun i => mem (out + i)) {i | i < S.card} := by
+  obtain ⟨v, hv, _, hreal⟩ := h.listed
+  intro i hi j hj he
+  have hreadi : mem (out + i) = v ⟨i, hi⟩ := hreal ⟨i, hi⟩
+  have hreadj : mem (out + j) = v ⟨j, hj⟩ := hreal ⟨j, hj⟩
+  exact congrArg Fin.val (hv (hreadi.symm.trans (he.trans hreadj)))
+
 /-- An unseen valid code leaves a free output cell for its insertion. -/
 theorem ScanMemory.card_lt_of_notMem {mem : ℕ → ℕ} {out stamps epoch capacity : ℕ}
     {S : Finset ℕ} (h : ScanMemory mem out stamps epoch capacity S) {q : ℕ}
