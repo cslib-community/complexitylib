@@ -95,29 +95,21 @@ example (P : CounterProgram) (b : ℕ) (xs : List Unit) :
 
 /-! ### Membership in `L` -/
 
-example : graphVocabulary.queryLanguage {M | M ⊨ hasLoop} ∈ L encStructure :=
-  graphVocabulary.queryLanguage_mem_L hasLoop
-
-example : graphVocabulary.queryLanguage {M | M ⊨ allLoops} ∈ L encStructure :=
-  graphVocabulary.queryLanguage_mem_L allLoops
-
-/-- Nullary relations are read from their one-bit tables. -/
-example : nullaryVocabulary.queryLanguage {M | M ⊨ nullaryHolds} ∈ L encStructure :=
-  nullaryVocabulary.queryLanguage_mem_L nullaryHolds
-
-/-- The corollary for definable classes. -/
-example : graphVocabulary.queryLanguage {M | M ⊨ hasLoop} ∈ L encStructure :=
-  FO.Definable.queryLanguage_mem_L graphVocabulary ⟨hasLoop, fun _ _ => Iff.rfl⟩
-
-/-- The complement, within all inputs, and polynomial time. -/
-example : (graphVocabulary.queryLanguage {M | M ⊨ hasLoop})ᶜ ∈ L encStructure :=
-  compl_mem_L (graphVocabulary.queryLanguage_mem_L hasLoop)
-
-example : graphVocabulary.queryLanguage {M | M ⊨ hasLoop} ∈ P encStructure :=
-  L_subset_P (graphVocabulary.queryLanguage_mem_L hasLoop)
-
-example : graphVocabulary.queryLanguage {M | M ⊨ hasLoop} ∈ NL encStructure :=
-  L_subset_NL (graphVocabulary.queryLanguage_mem_L hasLoop)
+/-- Query languages of graph and nullary sentences, definable classes, and closure / inclusion into
+`P` and `NL`. -/
+example :
+    graphVocabulary.queryLanguage {M | M ⊨ hasLoop} ∈ L encStructure ∧
+    graphVocabulary.queryLanguage {M | M ⊨ allLoops} ∈ L encStructure ∧
+    nullaryVocabulary.queryLanguage {M | M ⊨ nullaryHolds} ∈ L encStructure ∧
+    (graphVocabulary.queryLanguage {M | M ⊨ hasLoop})ᶜ ∈ L encStructure ∧
+    graphVocabulary.queryLanguage {M | M ⊨ hasLoop} ∈ P encStructure ∧
+    graphVocabulary.queryLanguage {M | M ⊨ hasLoop} ∈ NL encStructure :=
+  ⟨FO.Definable.queryLanguage_mem_L graphVocabulary ⟨hasLoop, fun _ _ => Iff.rfl⟩,
+    graphVocabulary.queryLanguage_mem_L allLoops,
+    nullaryVocabulary.queryLanguage_mem_L nullaryHolds,
+    compl_mem_L (graphVocabulary.queryLanguage_mem_L hasLoop),
+    L_subset_P (graphVocabulary.queryLanguage_mem_L hasLoop),
+    L_subset_NL (graphVocabulary.queryLanguage_mem_L hasLoop)⟩
 
 /-! ### The problems are nontrivial -/
 
@@ -148,21 +140,15 @@ example : edge ∉ graphVocabulary.queryLanguage {M | M ⊨ hasLoop} := by
   revert hx
   fin_cases x <;> decide +kernel
 
-/-- **The empty structure**: every vertex of the empty graph has a loop, vacuously, and none
-has one. -/
-example : ((0, [ [] ]) : EncodedStructure) ∈
-    graphVocabulary.queryLanguage {M | M ⊨ allLoops} :=
-  ⟨by decide +kernel, (realize_allLoops _).mpr fun x => x.elim0⟩
-
-example : ((0, [ [] ]) : EncodedStructure) ∉
-    graphVocabulary.queryLanguage {M | M ⊨ hasLoop} := by
-  rintro ⟨-, h⟩
-  obtain ⟨x, -⟩ := (realize_hasLoop _).mp h
-  exact x.elim0
-
-/-- Malformed inputs are out, even when the sentence holds vacuously in the decoded structure. -/
-example : ((0, []) : EncodedStructure) ∉ graphVocabulary.queryLanguage {M | M ⊨ allLoops} :=
-  fun h => absurd h.1 (by decide +kernel)
+/-- **The empty structure** and malformed inputs: every vertex of the empty graph has a loop
+vacuously and none has one, while malformed inputs are rejected. -/
+example :
+    ((0, [ [] ]) : EncodedStructure) ∈ graphVocabulary.queryLanguage {M | M ⊨ allLoops} ∧
+    ((0, [ [] ]) : EncodedStructure) ∉ graphVocabulary.queryLanguage {M | M ⊨ hasLoop} ∧
+    ((0, []) : EncodedStructure) ∉ graphVocabulary.queryLanguage {M | M ⊨ allLoops} :=
+  ⟨⟨by decide +kernel, (realize_allLoops _).mpr fun x => x.elim0⟩,
+    fun ⟨_, h⟩ => let ⟨x, _⟩ := (realize_hasLoop _).mp h; x.elim0,
+    fun h => absurd h.1 (by decide +kernel)⟩
 
 /-! ### Counter programs with output -/
 
@@ -227,11 +213,17 @@ section Pieces
 
 open Turing Turing.CounterProgram Turing.MultiTapeTM
 
-/-- Quotients and remainders; the remainder by `0` is the number itself. -/
-example : (Expr.div (.const 7) (.const 2)).eval [] = 3 := rfl
-example : (Expr.mod (.const 7) (.const 2)).eval [] = 1 := rfl
-example : (Expr.div (.const 7) (.const 0)).eval [] = 0 := rfl
-example : (Expr.mod (.const 7) (.const 0)).eval [] = 7 := rfl
+/-- Quotients, remainders (remainder by `0` is the number itself), and `encStructurePrefix`
+length. -/
+example :
+    (Expr.div (.const 7) (.const 2)).eval [] = 3 ∧
+    (Expr.mod (.const 7) (.const 2)).eval [] = 1 ∧
+    (Expr.div (.const 7) (.const 0)).eval [] = 0 ∧
+    (Expr.mod (.const 7) (.const 0)).eval [] = 7 ∧
+    (graphVocabulary.encStructurePrefix edge 1).length = tableStart edge 1 ∧
+    tableStart edge 1 = 14 :=
+  ⟨rfl, rfl, rfl, rfl, graphVocabulary.length_encStructurePrefix (by decide) (by decide),
+    by decide⟩
 
 /-- A loop running twice, emitting `true` each time. -/
 def twiceProgram : CounterProgram where
@@ -283,12 +275,6 @@ example : ∃ regs, loopProgram.Reaches (encStructure ((1, [ [true] ]) : Encoded
       ![0, 0]).mpr (by decide +kernel)
   subst hres'
   exact ⟨regs, hreach⟩
-
-/-- The prefix of the encoding through the first table ends where the next table starts. -/
-example : (graphVocabulary.encStructurePrefix edge 1).length = tableStart edge 1 :=
-  graphVocabulary.length_encStructurePrefix (by decide) (by decide)
-
-example : tableStart edge 1 = 14 := by decide
 
 end Pieces
 
