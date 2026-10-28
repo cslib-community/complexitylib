@@ -22,8 +22,7 @@ hypothesis on the group orders. The distinguisher tests whether the third challe
 identity: it succeeds with probability `1 / q + (q - 1) / q²` on real triples and `1 / q` on
 random ones, so the expected inverse order is at most twice its advantage.
 
-Extracted unchanged from `Complexity/Crypto/Computational/NaorReingold/Security.lean` (#1421), so
-that DDH clients can use it without importing Naor–Reingold.
+DDH clients can use this bound without importing Naor–Reingold.
 
 ## Main results
 

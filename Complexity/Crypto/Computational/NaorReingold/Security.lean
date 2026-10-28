@@ -41,11 +41,9 @@ the universal-hash bit-string pseudorandom-function bridge for the Naor–Reingo
 and Section 4.11, Exercise 4.18, p. 172; [NaorReingold2004], Section 4.1, Construction 4.1,
 Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 
-1. **Automatic inverse-order bound from `DDH` (`DDH.negligible_expected_inv_order`):**
-   Testing whether the third challenge element equals the encoded identity distinguishes real DDH
-   triples (probability `1/q + (q - 1)/q²`) from ideal triples (probability `1/q`) with advantage
-   `(q - 1)/q² ≥ 1/(2q)`, so `F.DDH setup` automatically implies that the setup-averaged inverse
-   group order is negligible without an external lower-bound hypothesis on `F.order`.
+1. **Inverse-order bound from `DDH`:** `DDH.negligible_expected_inv_order`, imported from
+   `Complexity.Crypto.Computational.DiffieHellman.Order`, makes the setup-averaged inverse group
+   order negligible; it bounds the hashed-PRF error terms below.
 2. **Word-level adaptive group-PRF games and lazy-sampling `IsOraclePPT` DDH reduction:**
    `naorReingoldFrontierOracle` memoizes `ddhFixedUWordRerandomize` only on the `k`-bit prefixes
    queried by an `OracleDistinguisher` and evaluates the remaining suffix via
@@ -82,8 +80,6 @@ Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 
 ## Main results
 
-* `Cslib.Crypto.PrimeOrderGroupFamily.DDH.negligible_expected_inv_order`: `F.DDH setup` implies
-  negligibility of the setup-averaged inverse group order.
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_naorReingoldToDDHDistinguisher`: uniform strict PPT
   certificate for `naorReingoldToDDHDistinguisher` from any `IsOraclePPT` distinguisher.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_naorReingoldWordGame_le`,
