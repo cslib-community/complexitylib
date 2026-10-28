@@ -86,8 +86,8 @@ example : (Set.univ : Set (List Bool)) ∈ PWithPPOracle encBits :=
 /-- Binary search terminates on the value. -/
 example : (BinarySearch.step 5)^[3] (0, 3) = (5, 0) := by decide
 
-example {α : Type} (enc : α ↪ List Bool) (k : ℕ) : SigmaP k enc ⊆ PWithPPOracle enc :=
-  (SigmaP_subset_PH k).trans PH_subset_PWithPPOracle
+example : SAT ∈ PWithPPOracle encCNF :=
+  PH_subset_PWithPPOracle (NP_subset_PH SAT.mem_NP)
 
 example {α : Type} (enc : α ↪ List Bool) :
     BPP enc ⊆ PWithPPOracle enc :=

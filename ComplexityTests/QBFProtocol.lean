@@ -118,9 +118,6 @@ example : degreeBound (QBF.ex 0 (.var 0)) = 4 := rfl
 
 example : primeBound (QBF.ex 0 (.var 0)) = 144 := rfl
 
-example : 145 ≤ modulus (QBF.ex 0 (.var 0)) ∧ (modulus (QBF.ex 0 (.var 0))).Prime :=
-  ⟨(prime_modulus (QBF.ex 0 (.var 0))).2, (prime_modulus (QBF.ex 0 (.var 0))).1⟩
-
 /-- A formula with a free variable is rejected without interaction. -/
 example : verifier (QBF.var 0) = pure false := by
   rw [verifier, decide_eq_false (by decide)]

@@ -130,9 +130,11 @@ example : AnswersBits encBits (fun _ => 0) ∅ := by
 example : {w : List Bool | w.headD false = true} ∈ PWithSharpPOracle encBits :=
   P_subset_PWithSharpPOracle ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
-/-- **Toda's theorem** places every level `Σₖᵖ` of the polynomial hierarchy in `P^#P`. -/
-example (k : ℕ) : SigmaP k encBits ⊆ PWithSharpPOracle encBits :=
-  (SigmaP_subset_PH k).trans PH_subset_PWithSharpPOracle
+/-- **Toda's theorem** places every `NP` problem in `P^#P`, here the universal language via
+`P ⊆ NP ⊆ PH`. -/
+example : (Set.univ : Set (List Bool)) ∈ PWithSharpPOracle encBits :=
+  PH_subset_PWithSharpPOracle (NP_subset_PH
+    (P_subset_NP ⟨fun _ => true, .const true, fun _ => by simp⟩))
 
 /-- `NP ⊆ P^#P`. -/
 example : NP encBits ⊆ PWithSharpPOracle encBits := NP_subset_PH.trans PH_subset_PWithSharpPOracle

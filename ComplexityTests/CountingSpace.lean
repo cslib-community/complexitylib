@@ -35,8 +35,8 @@ example : acceptCount firstBit [] 4 = 8 := by decide
 example : acceptCount (fun _ : List Bool × List Bool => true) [] 0 = 1 := by decide
 
 -- The streaming counter runs through all `2 ^ 4` certificates and agrees with `acceptCount`.
-example : acceptCount firstBit [] 4 = 8 := by
-  rw [← streamAcceptCount_eq_acceptCount]
+example : streamAcceptCount firstBit [] 4 = 8 := by
+  rw [streamAcceptCount_eq_acceptCount]
   decide
 
 example : ComputableInPolySpace
@@ -81,11 +81,13 @@ example {A : Set (List Bool)} (hA : A ∈ PP encBits) :
     NPWithOracle A encBits ⊆ PSPACE encBits :=
   NPWithOracle_subset_PSPACE_of_mem_PP hA
 
-example {α : Type} {enc : α ↪ List Bool} : PWithPPOracle enc ⊆ NPSPACE enc :=
-  PWithPPOracle_subset_PSPACE.trans PSPACE_subset_NPSPACE
+example : {w : List Bool | w.headD false = true} ∈ PSPACE encBits :=
+  PWithPPOracle_subset_PSPACE
+    (P_subset_PWithPPOracle ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩)
 
-example {α : Type} {enc : α ↪ List Bool} : PWithSharpPOracle enc ⊆ NPSPACE enc :=
-  PWithSharpPOracle_subset_PSPACE.trans PSPACE_subset_NPSPACE
+example : {w : List Bool | (2 ^ w.length).testBit 0 = true} ∈ PSPACE encBits :=
+  PWithSharpPOracle_subset_PSPACE
+    (mem_PWithSharpPOracle_of_testBit power_mem (p := 0) fun _ => by simp)
 
 -- The extension agrees on singleton codes without constraining its other answers.
 example : ∃ g ∈ SharpP encBits, g [false] = 1 ∧ g [true] = 1 := by

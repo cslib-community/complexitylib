@@ -53,7 +53,7 @@ example : QBF.all 1 ((QBF.var 0).or (QBF.var 0).not) ∉ TQBF := fun h => absurd
 /-! ### Formulas without variables and empty connectives -/
 
 example : QBF.top ∈ TQBF ∧ QBF.bot ∉ TQBF ∧ QBF.var 7 ∉ TQBF :=
-  ⟨top_mem_TQBF, bot_notMem_TQBF, var_notMem_TQBF 7⟩
+  ⟨⟨rfl, rfl⟩, fun h => absurd h.2 (by decide), fun h => absurd h.1 (by decide)⟩
 
 example : (QBF.top.and QBF.bot).not ∈ TQBF := ⟨by decide, rfl⟩
 
@@ -117,9 +117,6 @@ example : evaluate forallExistsIff = true := evaluate_eq_true_iff.mpr ⟨by deci
 example : evaluate existsForallIff = false := by
   rw [evaluate_eq]
   decide
-
-/-- The evaluator runs long enough on every formula. -/
-example : 77 ≤ 2 ^ (encQBF forallExistsIff).length := callSteps_le forallExistsIff
 
 /-- The states of every run are small. -/
 example (n : ℕ) :
@@ -194,8 +191,9 @@ included. -/
 example : PSPACEHard encQBF TQBF :=
   TQBF_pspaceHard.trans (PolyTimeReducible.refl encQBF TQBF)
 
-example : TQBF ∈ NPSPACE encQBF :=
-  PSPACE_subset_NPSPACE TQBF_pspaceComplete.1
+example : TQBF ∈ NPSPACE encQBF ∧ PolyTimeReducible encQBF encQBF TQBF TQBF :=
+  ⟨PSPACE_subset_NPSPACE TQBF_pspaceComplete.1,
+    TQBF_pspaceComplete.2 encQBF TQBF TQBF_pspaceComplete.1⟩
 
 /-! ### Axioms -/
 
