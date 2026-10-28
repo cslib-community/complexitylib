@@ -226,7 +226,8 @@ theorem falsePositiveCount_add_zeroCount_eq_sum_coeff {p : ℕ} (hp : p ≠ 0) :
   rw [Fintype.sum_prod_type]
   refine Finset.sum_congr rfl fun b _ => ?_
   have hcast := Int.natCast_toNat_emod (Nat.pos_of_ne_zero hp) (-wAB a b)
-  rw [(coeff_matP_mul_matQ wBC wAC) hp a b _ (Int.toNat_emod_lt (Nat.pos_of_ne_zero hp) _),
+  have hr : ((-wAB a b) % (p : ℤ)).toNat < p := Int.natMod_lt (m := -wAB a b) hp
+  rw [(coeff_matP_mul_matQ wBC wAC) hp a b _ hr,
     Finset.card_filter]
   push_cast
   refine Finset.sum_congr rfl fun c _ => ?_

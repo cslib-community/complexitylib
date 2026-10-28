@@ -33,7 +33,8 @@ contain distinct modular false positives. No solver, native program or time orac
 
 Adapted from [Witnesses.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec3/Theorem17/Witnesses.lean) and the minimal scan definitions in
 `PaperStatements.lean` at `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
-Context: [AlmanWilliams2026, Section 3]. Source-derived prose is paraphrased.
+Context: [AlmanWilliams2026, Section 3]. Quoted docstring fragments reproduce comments in the pinned
+formal source; other prose describes the local Lean API.
 -/
 
 @[expose] public section
@@ -272,7 +273,10 @@ theorem pieceSize_le_two_mul_sqrt_div (hg1 : 1 ≤ g) (hg : (g : ℝ) ≤ Real.s
           ((one_le_div hg0).mpr hg)
     _ = 2 * Real.sqrt D / (g : ℝ) := by ring
 
-/-- Proof of Theorem 17: "the scans cost O((F(p) + 1)√D/g) = O(ν n³ log n/g)". -/
+/-- For `16 ≤ D ≤ n`, `1 ≤ g ≤ sqrt D`, `κ ≥ 1` and edge weights bounded by `n^κ`, bound
+`(falsePositiveCount + 1) * pieceSize` at any selected prime by
+`(2 * Hashing.falsePositiveConst + 2) * κ * n^3 * log n / g`.
+This arithmetic estimate counts candidate vertices rather than native instructions. -/
 theorem falsePositiveCount_add_one_mul_pieceSize_le {κ : ℝ} (wAB wBC wAC : Fin n → Fin n → ℤ)
     (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1 ≤ g) (hg : (g : ℝ) ≤ Real.sqrt D) (hκ : 1 ≤ κ)
     (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ)) (hp : IsSelectedPrime wAB wBC wAC D p) :

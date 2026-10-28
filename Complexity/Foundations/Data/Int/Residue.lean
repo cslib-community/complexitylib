@@ -16,7 +16,8 @@ public import Mathlib.Algebra.Order.Ring.Int
 ## Main results
 
 * `Int.natCast_toNat_emod`: the nonnegative integer residue survives a round trip through `Nat`.
-* `Int.toNat_emod_lt`: the natural residue is below a positive modulus.
+
+Bounds on natural residues use Mathlib's existing `Int.natMod_lt`.
 
 ## References
 
@@ -29,13 +30,10 @@ The existing Exact Triangle hashing client now uses these shared facts.
 
 namespace Int
 
+/-- Casting the natural Euclidean residue back to `Int` preserves its value for a positive
+modulus. -/
 theorem natCast_toNat_emod {p : ℕ} (hp : 0 < p) (u : ℤ) :
     ((u % (p : ℤ)).toNat : ℤ) = u % (p : ℤ) :=
   Int.toNat_of_nonneg (Int.emod_nonneg _ (by omega))
-
-theorem toNat_emod_lt {p : ℕ} (hp : 0 < p) (u : ℤ) : (u % (p : ℤ)).toNat < p := by
-  have := Int.emod_nonneg u (by omega : (p : ℤ) ≠ 0)
-  have := Int.emod_lt_of_pos u (by omega : (0 : ℤ) < p)
-  omega
 
 end Int

@@ -40,7 +40,8 @@ The reduction is part of [AlmanWilliams2026, Section 3]. Direct adaptation of
 [Instances.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec3/Theorem17/Instances.lean), with only required definitions from
 `PaperStatements.lean`, [Chunks.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec3/Chunks.lean) and [Parameters.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec3/Parameters.lean), at
 `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
-Source-derived prose below is paraphrased; quotations used for review are in the PR record.
+Quoted docstring fragments reproduce comments in the pinned formal source; other prose describes
+the local Lean API.
 -/
 
 @[expose] public section
@@ -215,11 +216,12 @@ theorem numPieces_le (hD : 16 ≤ D) (hg1 : 1 ≤ g) :
 
 /-- The residue of the integer `x` modulo `p`, as an element of `Fin p`. -/
 def resFin (hp : p ≠ 0) (x : ℤ) : Fin p :=
-  ⟨(x % (p : ℤ)).toNat, Int.toNat_emod_lt (Nat.pos_of_ne_zero hp) x⟩
+  ⟨x.natMod p, Int.natMod_lt hp⟩
 
 /-- The residue of `x` is congruent to `x`. -/
 theorem resFin_modEq (hp : p ≠ 0) (x : ℤ) : ((resFin hp x : ℕ) : ℤ) ≡ x [ZMOD (p : ℤ)] := by
-  rw [resFin, Int.natCast_toNat_emod (Nat.pos_of_ne_zero hp)]
+  change ((x % (p : ℤ)).toNat : ℤ) ≡ x [ZMOD (p : ℤ)]
+  rw [Int.natCast_toNat_emod (Nat.pos_of_ne_zero hp)]
   exact Int.mod_modEq x p
 
 /-- An element of `Fin p` is congruent to `x` modulo `p` exactly if it is the residue of `x`. -/
