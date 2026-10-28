@@ -761,6 +761,7 @@ public import Complexity.Computability.Complexity.Fagin.Tableau.Semantics
 public import Complexity.Computability.Complexity.Fagin.Verifier
 public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
+public import Complexity.Computability.Complexity.FineGrained.BooleanCSP
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeEndpoint
