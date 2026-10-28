@@ -23,28 +23,36 @@ multigraphs represented as symmetric zero-diagonal adjacency matrices `W : Fin n
 ## Source statements and notation mapping
 
 * **Cut-survival bounds (paraphrase):**
-  - `[Karger1993]`, Section 2, Theorem 2.1 (paraphrase): contracting randomly chosen edges in an
-    `n`-vertex multigraph down to `2` meta-vertices preserves any fixed global minimum cut with
-    probability at least `C(n, 2)⁻¹ = 2 / (n * (n - 1))`.
-  - `[KargerStein1996]`, Section 2, Lemma 2.1 and Theorem 2.2, and Section 2.1 (paraphrase): a
-    fixed cut survives contraction if and only if no contracted edge crosses it; at `k` active
-    supervertices every singleton cut has weight at least `minCut W`, so total doubled weight `S`
-    is at least `k * minCut W`, a single edge-weight-proportional step crosses a fixed minimum cut
-    with probability at most `2 / k`, and contracting from `n` down to `t` supervertices preserves
-    the cut with probability at least `C(t, 2) / C(n, 2) = t * (t - 1) / (n * (n - 1))`.
-  - `[MitzenmacherUpfal2017]`, Section 1.4, Theorem 1.8 (paraphrase): multiplying the conditional
+  - `[Karger1993]`, Section 2, Theorem 2.1 and Corollary 2.1 (paraphrase): contracting randomly
+    chosen edges in an `n`-vertex multigraph down to `2` meta-vertices preserves any fixed global
+    minimum cut with probability at least `C(n, 2)⁻¹ = 2 / (n * (n - 1))`, and repeating
+    `O(n ^ 2 log n)` independent trials finds a minimum cut with high probability.
+  - `[KargerStein1996]`, Section 2, Lemma 2.1, Theorem 2.2, and Corollary 2.3, and Section 2.1,
+    Corollary 2.4 (paraphrase): a fixed cut survives contraction if and only if no contracted edge
+    crosses it; at `k` active supervertices every singleton cut has weight at least `minCut W`, so
+    total doubled weight `S` is at least `k * minCut W`, a single edge-weight-proportional step
+    crosses a fixed minimum cut with probability at most `2 / k`, and contracting from `n` down to
+    `t` supervertices preserves the cut with probability at least
+    `C(t, 2) / C(n, 2) = t * (t - 1) / (n * (n - 1))`.
+  - `[MitzenmacherUpfal2017]`, Section 1.5, Theorem 1.8 (paraphrase): multiplying the conditional
     single-step survival bounds `1 - 2 / i = (i - 2) / i` for `i = n, …, 3` telescopes to
     `2 / (n * (n - 1))`.
-* **Notation mapping:**
+* **Notation mapping and implementation variants:**
   - `C(t, 2) / C(n, 2)` and `C(n, 2)⁻¹` ↔ `((t * (t - 1) : ℕ) : ℝ≥0∞) / (n * (n - 1))` and
     `2 / (n * (n - 1))` (`step_survival_prob_ge`, `telescope_survival_step`);
-  - edge-weight-proportional sampling in `[KargerStein1996]`, Section 2.1 ↔ uniform index draw
-    `r ∈ Fin S` (`S = totalDoubledWeight W = ∑ u, rowDeg W u`) resolved by prefix sums over
-    `rowDeg` then row weights `W u v` (`edgeOffset`, `IsSampledPair`), selecting each unordered
-    pair `{u, v}` with probability `2 * W u v / S`;
+  - `[KargerStein1996]`, Section 3.1, Lemma 3.1 selects `(u, v)` with probability
+    `2 * W u v / S` via two `Random-Select` draws (`u ∝ D(u)` then `v ∝ W(u, v)`); our
+    `edgeOffset` / `IsSampledPair` formalizes an equivalent single-draw variant using one uniform
+    draw `r ∈ Fin S` (`S = totalDoubledWeight W = ∑ u, rowDeg W u`) resolved by prefix sums over
+    `rowDeg` then row weights `W u v`, achieving the same `2 * W u v / S` distribution;
+  - `[KargerStein1996]`, Section 3.2, Corollary 3.2 updates the `n × n` matrix in `O(n)` time per
+    contraction; our `embedCompact` / `contractMatrix` swap-compacts active slot `k - 1` into the
+    removed slot `v` so each contraction on `k` active supervertices scans only `0..k - 1` (`O(k)`
+    time);
   - `highProbTrials n = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` and the elementary `Real.exp`-free
     Bernoulli bound `highProb_failure_le` (`≤ 1 / (2 * n)`) are our own concrete parameter choices
-    instantiating the `O(n ^ 2 log n)` repeated-trial amplification of `[Karger1993]`, Section 2.
+    instantiating the `O(n ^ 2 log n)` repeated-trial amplification of `[Karger1993]`, Section 2,
+    Corollary 2.1.
 
 ## Main definitions
 

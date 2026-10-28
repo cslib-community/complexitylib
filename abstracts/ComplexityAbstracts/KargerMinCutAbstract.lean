@@ -32,12 +32,17 @@ minimum cuts, and the correctness, resource bounds, and success/failure probabil
    contractions in `33 * n ^ 4 * (Nat.log 2 n + 2)` worst-case steps, missing `minCut W` with
    probability at most `1 / (2 * n)` whenever `0 < minCut W`.
 
-The single-trial bound `2 / (n * (n - 1))` formalizes `[Karger1993]`, Section 2, Theorem 2.1,
-`[KargerStein1996]`, Section 2, Lemma 2.1 and Theorem 2.2 (with the `O(n ^ 2)` adjacency-matrix and
-degree-array contraction of Section 2.1, resolved via `[0, S - 1]` prefix sums over `rowDeg` and
-`W[u, v]`), and `[MitzenmacherUpfal2017]`, Section 1.4, Theorem 1.8 (paraphrase), where the source's
-`C(n, 2)⁻¹` is written `2 / (n * (n - 1))` and random edge selection uses the unit-cost `rand`
-primitive. The concrete trial count `R = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` and the
+The single-trial bound `2 / (n * (n - 1))` formalizes `[Karger1993]`, Section 2, Theorem 2.1 and
+Corollary 2.1, `[KargerStein1996]`, Section 2, Lemma 2.1, Theorem 2.2, and Corollary 2.3,
+Section 2.1, Corollary 2.4, and Section 3 ("Implementing the Contraction Algorithm", Section 3.1,
+Lemma 3.1 and Section 3.2, Corollary 3.2), and `[MitzenmacherUpfal2017]`, Section 1.5, Theorem 1.8
+(paraphrase), where the source's `C(n, 2)⁻¹` is written `2 / (n * (n - 1))`. Relative to
+`[KargerStein1996]`, Section 3, our program uses two implementation variants: (a) whereas
+Section 3.1 draws twice (`u ∝ D[u]` then `v ∝ W[u, v]`), one unit-cost `rand` draw in
+`{0, …, S - 1}` resolved by prefix sums over `rowDeg` and `W[u, v]` achieves the same
+`2 * W[u, v] / S` distribution of Lemma 3.1; (b) whereas Section 3.2 takes `O(n)` time per
+contraction step, swap-compacting active slot `k - 1` into `v` runs each step in `O(k)` time on `k`
+active supervertices. The concrete trial count `R = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` and the
 `1 / (2 * n)` failure bound are our own parameter choice, and `0 < minCut W` in the probability
 clauses is excluded only for proof convenience (deterministic `S = 0` contraction still halts
 without faulting and outputs a valid cut weight).

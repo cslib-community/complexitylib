@@ -36,20 +36,29 @@ minimum cut of a connected multigraph.
 ## Source statements and notation mapping
 
 * **Matrix contraction and survival bound (paraphrase):**
-  - `[KargerStein1996]`, Section 2, Lemma 2.1 and Theorem 2.2, and Section 2.1 (paraphrase): an
-    `n × n` weighted adjacency matrix `W` together with a row-degree array `D[u] = ∑ v, W[u, v]`
-    supports each edge-weight-proportional contraction in `O(k)` time on `k` active supervertices
-    (`O(n ^ 2)` total time from `n` down to `t`), and contracting from `k` down to `t` supervertices
-    preserves any fixed minimum cut with probability at least `C(t, 2) / C(k, 2) = t * (t - 1) /
-    (k * (k - 1))` (`[Karger1993]`, Section 2, Theorem 2.1 gives the `t = 2` case
-    `2 / (n * (n - 1))`).
-* **Notation mapping:**
+  - `[KargerStein1996]`, Section 2, Lemma 2.1, Theorem 2.2, and Corollary 2.3, and Section 2.1,
+    Corollary 2.4 (paraphrase): contracting an `n`-vertex weighted multigraph from `k` down to `t`
+    supervertices via edge-weight-proportional selection preserves any fixed minimum cut with
+    probability at least `C(t, 2) / C(k, 2) = t * (t - 1) / (k * (k - 1))` (`[Karger1993]`,
+    Section 2, Theorem 2.1 and `[MitzenmacherUpfal2017]`, Section 1.5, Theorem 1.8 give the `t = 2`
+    case `2 / (n * (n - 1))`).
+  - `[KargerStein1996]`, Section 3 ("Implementing the Contraction Algorithm"), Section 3.1,
+    Lemma 3.1 and Section 3.2, Corollary 3.2 (paraphrase): maintaining an `n × n` weighted
+    adjacency matrix `W` and row-degree array `D[u] = ∑ v, W[u, v]` selects each edge `(u, v)` with
+    probability `2 * W[u, v] / ∑ w, D[w]` and executes the Contraction Algorithm in `O(n ^ 2)`
+    total time (`O(n)` per contraction step in `[KargerStein1996]`, Section 3.2).
+* **Notation mapping and implementation variants:**
   - `C(t, 2) / C(k, 2)` ↔ `((t * (t - 1) : ℕ) : ℝ≥0∞) / (k * (k - 1))` in `contractDownTo_spec`
     and `contractDownToAt_spec`;
-  - random edge selection proportional to weight ↔ one unit-cost word-RAM `rand` instruction
-    drawing uniformly from `{0, …, totS - 1}` (`totS = totalDoubledWeight W`), followed by linear
-    prefix-sum scans `uScan` over `D[0..k)` and `vScan` over `W[u, 0..k)` that select each
-    unordered pair `{u, v}` with probability `2 * W[u, v] / totS`.
+  - whereas `[KargerStein1996]`, Section 3.1 draws twice (`u ∝ D[u]` then `v ∝ W[u, v]` via two
+    `Random-Select` calls), our `contractDownTo` uses an equivalent single-draw variant: one
+    unit-cost word-RAM `rand` instruction drawing uniformly from `{0, …, totS - 1}`
+    (`totS = totalDoubledWeight W`), resolved through linear prefix-sum scans `uScan` over `D[0..k)`
+    and `vScan` over `W[u, 0..k)` to select each unordered pair `{u, v}` with the same probability
+    `2 * W[u, v] / totS` of Lemma 3.1;
+  - whereas `[KargerStein1996]`, Section 3.2 updates rows and columns in `O(n)` per contraction by
+    zeroing the removed vertex in place, our `contractDownTo` swap-compacts active slot `k - 1` into
+    `v` so each contraction step on `k` active supervertices runs in `O(k)` instructions.
 
 ## Main definitions
 

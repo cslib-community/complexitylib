@@ -42,26 +42,32 @@ three complete machine-level endpoints built on the workspace-relocatable subrou
 ## Source statements and notation mapping
 
 * **Source locators (paraphrase):**
-  - `[Karger1993]`, Section 2, Theorem 2.1 (paraphrase): contracting uniformly chosen edges in an
-    `n`-vertex multigraph down to `2` meta-vertices returns any fixed global minimum cut with
-    probability at least `C(n, 2)⁻¹ = 2 / (n * (n - 1))`, and repeating `O(n ^ 2 log n)`
-    independent trials amplifies the success probability to `1 - 1 / poly(n)`.
-  - `[KargerStein1996]`, Section 2, Lemma 2.1 and Theorem 2.2, and Section 2.1 (paraphrase): an
-    `n × n` weighted adjacency matrix with a maintained row-degree array executes each
-    edge-weight-proportional contraction in `O(k)` time on `k` active supervertices (`O(n ^ 2)`
-    total time per trial), and contracting from `k` down to `t` supervertices preserves any fixed
+  - `[Karger1993]`, Section 2, Theorem 2.1 and Corollary 2.1 (paraphrase): contracting uniformly
+    chosen edges in an `n`-vertex multigraph down to `2` meta-vertices returns any fixed global
+    minimum cut with probability at least `C(n, 2)⁻¹ = 2 / (n * (n - 1))`, and repeating
+    `O(n ^ 2 log n)` independent trials amplifies the success probability to `1 - 1 / poly(n)`.
+  - `[KargerStein1996]`, Section 2, Lemma 2.1, Theorem 2.2, and Corollary 2.3, Section 2.1,
+    Corollary 2.4, and Section 3 ("Implementing the Contraction Algorithm", Section 3.1, Lemma 3.1
+    and Section 3.2, Corollary 3.2) (paraphrase): contracting an `n`-vertex weighted multigraph
+    from `k` down to `t` supervertices via edge-weight-proportional selection preserves any fixed
     minimum cut with probability at least `C(t, 2) / C(k, 2) = t * (t - 1) / (k * (k - 1))`
-    (with `t = 2, k = n` giving `2 / (n * (n - 1))`).
-  - `[MitzenmacherUpfal2017]`, Section 1.4, Theorem 1.8 (paraphrase): multiplying single-step
+    (`2 / (n * (n - 1))` at `t = 2, k = n`), and an `n × n` weighted adjacency matrix with a
+    maintained row-degree array executes each trial in `O(n ^ 2)` total time (`O(n)` per step in
+    Section 3.2).
+  - `[MitzenmacherUpfal2017]`, Section 1.5, Theorem 1.8 (paraphrase): multiplying single-step
     survival bounds `1 - 2 / i` from `i = n` down to `3` yields `2 / (n * (n - 1))`.
-* **Notation mapping and parameter choices:**
+* **Notation mapping, implementation variants, and parameter choices:**
   - `C(n, 2)⁻¹` ↔ `2 / (n * (n - 1))` (`singleProgram_spec`, `amplifiedProgram_spec`);
-  - edge-weight-proportional selection ↔ one unit-cost `rand` draw in `{0, …, S - 1}`
-    (`S = totalDoubledWeight W`) resolved by linear prefix-sum scans over `rowDeg` and `W[u, v]`,
-    giving each unordered pair `{u, v}` probability `2 * W[u, v] / S`;
+  - whereas `[KargerStein1996]`, Section 3.1 draws twice (`u ∝ D[u]` then `v ∝ W[u, v]` via two
+    `Random-Select` calls), `contractDownTo` uses an equivalent single-draw variant: one unit-cost
+    `rand` draw in `{0, …, S - 1}` (`S = totalDoubledWeight W`) resolved through linear prefix-sum
+    scans `uScan` (`rowDeg`) and `vScan` (`W[u, v]`), achieving the same `2 * W[u, v] / S`
+    distribution of Lemma 3.1; and whereas Section 3.2 states `O(n)` per contraction step, our
+    swap-compaction of active slot `k - 1` into `v` gives `O(k)` instructions on `k` active
+    supervertices;
   - the concrete trial count `highProbTrials n = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` and the
     `1 / (2 * n)` failure bound in `highProbProgram_spec` are our own parameter choice instantiating
-    the `O(n ^ 2 log n)` amplification of `[Karger1993]`, Section 2;
+    the `O(n ^ 2 log n)` amplification of `[Karger1993]`, Section 2, Corollary 2.1;
   - the hypothesis `0 < minCut W` in the probability clauses is included only for proof convenience
     (when `minCut W = 0`, deterministic `S = 0` contraction still halts without faulting and outputs
     a valid non-trivial cut weight).
