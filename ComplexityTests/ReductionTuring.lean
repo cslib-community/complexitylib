@@ -27,15 +27,14 @@ namespace ComplexityTests.ReductionTuring
 
 variable (B : Set (List Bool))
 
-/-- Prefixing `true` is a many-one reduction, hence a Turing reduction. -/
-example : PolyTimeTuringReducible encBits encBits {w | true :: w ∈ B} B :=
-  (show PolyTimeReducible encBits encBits {w | true :: w ∈ B} B from
-    ⟨fun w => true :: w, by fun_prop, fun _ => Iff.rfl⟩).polyTimeTuringReducible
-
-/-- Prefixing `false` is a many-one reduction, hence a Turing reduction. -/
-example : PolyTimeTuringReducible encBits encBits {w | false :: w ∈ B} B :=
-  (show PolyTimeReducible encBits encBits {w | false :: w ∈ B} B from
-    ⟨fun w => false :: w, by fun_prop, fun _ => Iff.rfl⟩).polyTimeTuringReducible
+/-- Prefixing `true` or `false` is a many-one reduction, hence a Turing reduction. -/
+example :
+    PolyTimeTuringReducible encBits encBits {w | true :: w ∈ B} B ∧
+    PolyTimeTuringReducible encBits encBits {w | false :: w ∈ B} B :=
+  ⟨(show PolyTimeReducible encBits encBits {w | true :: w ∈ B} B from
+     ⟨fun w => true :: w, by fun_prop, fun _ => Iff.rfl⟩).polyTimeTuringReducible,
+   (show PolyTimeReducible encBits encBits {w | false :: w ∈ B} B from
+     ⟨fun w => false :: w, by fun_prop, fun _ => Iff.rfl⟩).polyTimeTuringReducible⟩
 
 /-- Asking for both `false :: w` and `true :: w` and accepting when either is in `B` is a
 disjunctive truth-table reduction, hence a Turing reduction. -/
@@ -52,12 +51,6 @@ theorem dtt_or_prefix :
     · exact Or.inr (by simpa using h)
     · simp at hi
 
-example : PolyTimeTuringReducible encBits encBits {w | false :: w ∈ B ∨ true :: w ∈ B} B :=
-  (dtt_or_prefix B).polyTimeTuringReducible
-
-example (hB : B ∈ P encBits) : {w | false :: w ∈ B ∨ true :: w ∈ B} ∈ P encBits :=
-  (dtt_or_prefix B).polyTimeTuringReducible.mem_P hB
-
 /-- Accepting when both `false :: w` and `true :: w` are in `B` is a conjunctive truth-table
 reduction, hence a Turing reduction. -/
 theorem ctt_and_prefix :
@@ -72,9 +65,6 @@ theorem ctt_and_prefix :
   · intro h
     exact ⟨by simpa using h 0 (by simp), by simpa using h 1 (by simp)⟩
 
-example : PolyTimeTuringReducible encBits encBits {w | false :: w ∈ B ∧ true :: w ∈ B} B :=
-  (ctt_and_prefix B).polyTimeTuringReducible
-
 /-- Taking the exclusive-or of the two prefix queries is a non-monotone `2`-truth-table reduction,
 hence a Turing reduction. -/
 theorem ktt_xor_prefix :
@@ -87,11 +77,26 @@ theorem ktt_xor_prefix :
   simp only [truthTableAnswers, Set.mem_preimage]
   by_cases h₀ : false :: w ∈ B <;> by_cases h₁ : true :: w ∈ B <;> simp [List.ofFn_succ, h₀, h₁]
 
-example : PolyTimeTuringReducible encBits encBits {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} B :=
-  (ktt_xor_prefix B).polyTimeTuringReducible
-
-example (hB : B ∈ P encBits) : {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} ∈ P encBits :=
-  (ktt_xor_prefix B).polyTimeTuringReducible.mem_P hB
+/-- Disjunctive, conjunctive, and `2`-truth-table (XOR) reductions embed into Turing reductions
+and pull back `P` membership, alongside prefix and complement reductions. -/
+example (hB : B ∈ P encBits) :
+    (PolyTimeTuringReducible encBits encBits {w | false :: w ∈ B ∨ true :: w ∈ B} B ∧
+      {w | false :: w ∈ B ∨ true :: w ∈ B} ∈ P encBits) ∧
+    (PolyTimeTuringReducible encBits encBits {w | false :: w ∈ B ∧ true :: w ∈ B} B ∧
+      {w | false :: w ∈ B ∧ true :: w ∈ B} ∈ P encBits) ∧
+    (PolyTimeTuringReducible encBits encBits {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} B ∧
+      {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} ∈ P encBits) ∧
+    ({w | true :: w ∈ B} ∈ P encBits ∧ Bᶜ ∈ P encBits) :=
+  ⟨⟨(dtt_or_prefix B).polyTimeTuringReducible,
+    (dtt_or_prefix B).polyTimeTuringReducible.mem_P hB⟩,
+   ⟨(ctt_and_prefix B).polyTimeTuringReducible,
+    (ctt_and_prefix B).polyTimeTuringReducible.mem_P hB⟩,
+   ⟨(ktt_xor_prefix B).polyTimeTuringReducible,
+    (ktt_xor_prefix B).polyTimeTuringReducible.mem_P hB⟩,
+   ⟨(show PolyTimeTuringReducible encBits encBits {w | true :: w ∈ B} B from
+      (show PolyTimeReducible encBits encBits {w | true :: w ∈ B} B from
+        ⟨fun w => true :: w, by fun_prop, fun _ => Iff.rfl⟩).polyTimeTuringReducible).mem_P hB,
+    (PolyTimeTuringReducible.compl_self encBits B).mem_P hB⟩⟩
 
 /-- Transitivity of Turing reductions: composing the `2`-truth-table XOR reduction with the
 disjunctive prefix reduction yields a Turing reduction for the 4-query parity-of-disjunctions
@@ -103,26 +108,12 @@ example :
   (ktt_xor_prefix {v | false :: v ∈ B ∨ true :: v ∈ B}).polyTimeTuringReducible.trans
     (dtt_or_prefix B).polyTimeTuringReducible
 
-/-- Composing a reduction with membership in `P` transfers membership. -/
-example (hB : B ∈ P encBits) : {w | true :: w ∈ B} ∈ P encBits :=
-  (show PolyTimeTuringReducible encBits encBits {w | true :: w ∈ B} B from
-    (show PolyTimeReducible encBits encBits {w | true :: w ∈ B} B from
-      ⟨fun w => true :: w, by fun_prop, fun _ => Iff.rfl⟩).polyTimeTuringReducible).mem_P hB
-
-/-- Complemented language membership in `P` via Turing reduction. -/
-example (hB : B ∈ P encBits) : Bᶜ ∈ P encBits :=
-  (PolyTimeTuringReducible.compl_self encBits B).mem_P hB
-
-/-- Turing NP-hardness transfer: if `SAT` Turing-reduces to `B ∈ P`, then `P = NP`. -/
-example (h : PolyTimeTuringReducible encCNF encBits SAT B) (hB : B ∈ P encBits) :
-    P encBits = NP encBits :=
-  NPHard.P_eq_NP_of_turing_mem_P CookLevin.SAT_npHard h hB
-
-/-- Turing NP-hardness transfer to NP ∩ coNP: if `SAT` Turing-reduces to `B ∈ NP ∩ coNP`,
-then `NP = coNP`. -/
-example (h : PolyTimeTuringReducible encCNF encBits SAT B)
-    (hB_np : B ∈ NP encBits) (hB_conp : B ∈ coNP encBits) :
-    NP encBits = coNP encBits :=
-  NPHard.NP_eq_coNP_of_turing_mem_NP_inter_coNP CookLevin.SAT_npHard h hB_np hB_conp
+/-- Turing NP-hardness transfer: if `SAT` Turing-reduces to `B`, then `B ∈ P` collapses `NP` to `P`
+and `B ∈ NP ∩ coNP` collapses `NP` to `coNP`. -/
+example (h : PolyTimeTuringReducible encCNF encBits SAT B) :
+    (B ∈ P encBits → P encBits = NP encBits) ∧
+    (B ∈ NP encBits → B ∈ coNP encBits → NP encBits = coNP encBits) :=
+  ⟨NPHard.P_eq_NP_of_turing_mem_P CookLevin.SAT_npHard h,
+   NPHard.NP_eq_coNP_of_turing_mem_NP_inter_coNP CookLevin.SAT_npHard h⟩
 
 end ComplexityTests.ReductionTuring

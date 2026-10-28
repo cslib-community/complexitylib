@@ -19,12 +19,12 @@ open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
 /-! ### Inhabitants -/
 
-example : (∅ : Set (List Bool)) ∈ PSPACE encBits :=
-  P_subset_PSPACE ⟨fun _ => false, ComputableInPolyTime.const false, fun _ => by simp⟩
-
-example : (Set.univ : Set (List Bool)) ∈ NPSPACE encBits :=
-  PSPACE_subset_NPSPACE (P_subset_PSPACE
-    ⟨fun _ => true, ComputableInPolyTime.const true, fun _ => by simp⟩)
+example :
+    (∅ : Set (List Bool)) ∈ PSPACE encBits ∧
+    (Set.univ : Set (List Bool)) ∈ NPSPACE encBits :=
+  ⟨P_subset_PSPACE ⟨fun _ => false, ComputableInPolyTime.const false, fun _ => by simp⟩,
+   PSPACE_subset_NPSPACE (P_subset_PSPACE
+     ⟨fun _ => true, ComputableInPolyTime.const true, fun _ => by simp⟩)⟩
 
 /-! ### A branch running forever -/
 
@@ -130,12 +130,13 @@ example (input : List Bool) (n : ℕ) : ∃ p : loopOrAccept.ComputationPath inp
 
 /-! ### Views -/
 
-/-- Repeated output is not acceptance: `[true, true]` is summarized as `[false]`. -/
-example : MultiTapeNTM.outputClass [true, true] = [false] := rfl
-
-example : MultiTapeNTM.outputClass [true] = [true] := rfl
-
-example : MultiTapeNTM.outputClass [false] = [false] := rfl
+/-- Repeated output is not acceptance: `[true, true]` is summarized as `[false]`, while `[true]`
+and `[false]` are preserved. -/
+example :
+    MultiTapeNTM.outputClass [true, true] = [false] ∧
+    MultiTapeNTM.outputClass [true] = [true] ∧
+    MultiTapeNTM.outputClass [false] = [false] :=
+  ⟨rfl, rfl, rfl⟩
 
 /-- Acceptance of the looping machine is witnessed by a reachable halted view with output
 `[true]`, on the empty input. -/
