@@ -199,6 +199,9 @@ example : GameTree.value 2 100 0 Nat.succ treeLeaf 1 [] = 5 ∧
     GameTree.value 2 4 0 Nat.succ treeLeaf 1 [] = 4 := by decide
 
 example : (GameTree.step 1 100 0 Nat.succ (fun i => decide (i = 1)) treeLeaf)^[GameTree.time 2 1]
+    ([], none) = ([], some 5) := by decide
+
+example : (GameTree.step 1 100 0 Nat.succ (fun i => decide (i = 1)) treeLeaf)^[GameTree.time 2 1]
     ([], none) = ([], some 5) := by
   rw [GameTree.iterate_step_eval (by norm_num) (fun i hi => by interval_cases i <;> rfl) le_rfl]
   decide

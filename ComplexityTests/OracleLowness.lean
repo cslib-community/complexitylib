@@ -44,27 +44,33 @@ theorem headTrue_mem_coNP : headTrue ∈ coNP encBits :=
 example : [true] ∈ headTrue ∧ [false] ∉ headTrue := by
   simp [headTrue]
 
-/-- Concrete instantiation: `NPWithOracle headTrue encBits = NP encBits` eliminates the oracle from
-`headTrueᶜ ∈ NPWithOracle headTrue encBits`. -/
-example : headTrueᶜ ∈ NP encBits :=
-  NPWithOracle_eq_NP_of_mem_NP_of_mem_coNP headTrue_mem_NP headTrue_mem_coNP encBits ▸
-    PWithOracle_subset_NPWithOracle headTrue encBits (mem_PWithOracle_compl_self headTrue)
+/-- Querying `headTrueᶜ` on the reversed input belongs to `PWithOracle headTrue`. -/
+theorem reverseComplHeadTrue_mem_PWithOracle :
+    {w : List Bool | w.reverse ∈ headTrueᶜ} ∈ PWithOracle headTrue encBits :=
+  PolyTimeReducible.mem_PWithOracle ⟨List.reverse, by fun_prop, fun _ => Iff.rfl⟩
+    (mem_PWithOracle_compl_self headTrue)
 
-/-- Concrete instantiation of the `Low₁` iff on `headTrue`. -/
-example : headTrue ∈ NP encBits :=
+/-- Concrete instantiation: `NPWithOracle headTrue encBits = NP encBits` eliminates the oracle from
+`{w | w.reverse ∈ headTrueᶜ} ∈ NPWithOracle headTrue encBits`. -/
+example : {w : List Bool | w.reverse ∈ headTrueᶜ} ∈ NP encBits :=
+  NPWithOracle_eq_NP_of_mem_NP_of_mem_coNP headTrue_mem_NP headTrue_mem_coNP encBits ▸
+    PWithOracle_subset_NPWithOracle headTrue encBits reverseComplHeadTrue_mem_PWithOracle
+
+/-- Concrete instantiation of the `Low₁` iff on `{w | w.reverse ∈ headTrueᶜ}`. -/
+example : {w : List Bool | w.reverse ∈ headTrueᶜ} ∈ NP encBits :=
   (NPWithOracle_eq_NP_iff.mpr ⟨headTrue_mem_NP, headTrue_mem_coNP⟩) ▸
-    PWithOracle_subset_NPWithOracle headTrue encBits (mem_PWithOracle_self headTrue)
+    PWithOracle_subset_NPWithOracle headTrue encBits reverseComplHeadTrue_mem_PWithOracle
 
 /-- Concrete instantiation: `PWithOracle headTrue encBits ⊆ UP encBits ∩ coUP encBits` applied to
-`headTrueᶜ`. -/
-example : headTrueᶜ ∈ UP encBits ∩ coUP encBits :=
+`{w | w.reverse ∈ headTrueᶜ}`. -/
+example : {w : List Bool | w.reverse ∈ headTrueᶜ} ∈ UP encBits ∩ coUP encBits :=
   PWithOracle_subset_UP_inter_coUP headTrue_mem_UP headTrue_mem_coUP
-    (mem_PWithOracle_compl_self headTrue)
+    reverseComplHeadTrue_mem_PWithOracle
 
 /-- Concrete instantiation: `PWithOracle headTrue encBits ⊆ NP encBits ∩ coNP encBits` applied to
-`headTrueᶜ`. -/
-example : headTrueᶜ ∈ NP encBits ∩ coNP encBits :=
+`{w | w.reverse ∈ headTrueᶜ}`. -/
+example : {w : List Bool | w.reverse ∈ headTrueᶜ} ∈ NP encBits ∩ coNP encBits :=
   PWithOracle_subset_NP_inter_coNP headTrue_mem_NP headTrue_mem_coNP
-    (mem_PWithOracle_compl_self headTrue)
+    reverseComplHeadTrue_mem_PWithOracle
 
 end ComplexityTests.OracleLowness

@@ -44,11 +44,9 @@ example {α : Type} {enc : α ↪ List Bool} {t : ℕ → ℕ} {A : Set α} (hA 
   rw [List.length_append, List.length_replicate, length_frame, Nat.mul_assoc]
   exact Nat.mul_le_mul_left _ (by nlinarith)
 
-/-- `P = NP` would collapse exponential time, for problems on bit words and on natural numbers in
-binary, and `EXP ≠ NEXP` separates `P` from `NP`. -/
-example : (P encBits = NP encBits → EXP encBits = NEXP encBits ∧ E encNat = NE encNat) ∧
-    (EXP encNat ≠ NEXP encNat → P encBits ≠ NP encBits) :=
-  ⟨fun h => ⟨EXP_eq_NEXP_of_P_eq_NP h, E_eq_NE_of_P_eq_NP h⟩, P_ne_NP_of_EXP_ne_NEXP⟩
+/-- Separating linear-exponential time `E` and `NE` separates `P` from `NP`. -/
+example : E encNat ≠ NE encNat → P encBits ≠ NP encBits :=
+  fun hE hP => hE (E_eq_NE_of_P_eq_NP hP)
 
 /-! ### Error reduction on a nontrivial problem -/
 
@@ -80,13 +78,16 @@ theorem decidesWithBoundedError_orAnd : DecidesWithBoundedError encBits 2 orAnd 
     simp only [BoundedErrorAt, orAnd, ha, ↓reduceIte]
     exact hor _ (Polynomial.eval_ofNat 2 _)
 
-/-- Majority votes of `12 (q(n) + 2)` runs of `orAnd` decide `startsTrue` with error at most
-`2 ^ (-(q(n) + 2)) ≤ 1 / 4`, hence with bounded error `1 / 3`. -/
+/-- Majority votes of `12 q(n)` runs of `orAnd` decide `startsTrue` with error at most
+`2 ^ (-q(n))`, and at `q + 2` recover bounded error `1 / 3`. -/
 example (q : Polynomial ℕ) :
+    DecidesWithErrorExponent encBits q (12 * q * 2) (repeatMajority encBits (6 * q) 2 orAnd)
+      startsTrue ∧
     DecidesWithBoundedError encBits (12 * (q + 2) * 2)
       (repeatMajority encBits (6 * (q + 2)) 2 orAnd) startsTrue :=
-  (decidesWithBoundedError_orAnd.repeatMajority (q + 2)).solvesWithBoundedError
-    (fun _ => by simp)
+  ⟨decidesWithBoundedError_orAnd.repeatMajority q,
+    (decidesWithBoundedError_orAnd.repeatMajority (q + 2)).solvesWithBoundedError
+      (fun _ => by simp)⟩
 
 example : startsTrue ∈ BPP encBits :=
   ⟨2, orAnd, by unfold orAnd; fun_prop, decidesWithBoundedError_orAnd⟩
@@ -108,13 +109,16 @@ theorem decidesWithOneSidedError_andHead :
     simp only [andHead, ha, Bool.true_and]
     exact key _ Polynomial.eval_one
 
-/-- `q(n) + 1` runs of `andHead` decide `startsTrue` with one-sided error at most
-`2 ^ (-(q(n) + 1)) ≤ 1 / 2`. -/
+/-- `q(n)` runs of `andHead` decide `startsTrue` with one-sided error at most `2 ^ (-q(n))`, and
+at `q + 1` recover one-sided error `1 / 2`. -/
 example (q : Polynomial ℕ) :
+    DecidesWithOneSidedErrorExponent encBits q (q * 1) (repeatAny encBits q 1 andHead)
+      startsTrue ∧
     DecidesWithOneSidedError encBits ((q + 1) * 1) (repeatAny encBits (q + 1) 1 andHead)
       startsTrue :=
-  (decidesWithOneSidedError_andHead.repeatAny (q + 1)).solvesWithOneSidedError
-    (fun _ => by simp)
+  ⟨decidesWithOneSidedError_andHead.repeatAny q,
+    (decidesWithOneSidedError_andHead.repeatAny (q + 1)).solvesWithOneSidedError
+      (fun _ => by simp)⟩
 
 example : startsTrue ∈ RP encBits :=
   ⟨1, andHead, by unfold andHead; fun_prop, decidesWithOneSidedError_andHead⟩

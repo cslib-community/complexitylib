@@ -114,10 +114,6 @@ example : [true] ∉ unaryLengthLanguage {[], [true, true]} := fun h => by
 
 /-! ### Candidate deciders -/
 
-/-- The candidates are countably many. -/
-example : ∃ f : BakerGillSolovay.Candidate → ℕ, Function.Injective f :=
-  Countable.exists_injective_nat'
-
 open BakerGillSolovay in
 /-- A candidate with a machine that halts at once and a zero clock: its verdict makes no request
 and rejects, against every oracle. -/
@@ -129,10 +125,6 @@ example (A : Set (List Bool)) (n : ℕ) :
       (Candidate.verdict ⟨0, 1, ⟨0, fun _ _ _ _ _ => .step ⟨0, fun i => i.elim0, none, none⟩
         (fun _ => none) (fun _ => 0)⟩, 0, 0⟩ n) = false := by
   constructor <;> rfl
-
-/-- The unary length language of every oracle is in `NP` relative to it. -/
-example : unaryLengthLanguage {[true, false]} ∈ NPWithOracle {[true, false]} encBits :=
-  unaryLengthLanguage_mem_NPWithOracle _
 
 /-- `NP` relative to an oracle is closed under reductions: prepending `true` reduces to the unary
 language. -/
