@@ -38,7 +38,7 @@ This module completes the efficient lazy-sampling Decisional Diffie–Hellman (`
 the universal-hash bit-string pseudorandom-function bridge for the Naor–Reingold PRF over a
 `PrimeOrderGroupFamily` ([BonehShoup2023], Section 10.11, Exercises 10.4, 10.8, 10.11, pp. 424–426,
 and Section 4.11, Exercise 4.18, p. 172; [NaorReingold2004], Section 4.1, Construction 4.1,
-Theorem 4.1, and Lemma 4.2):
+Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 
 1. **Automatic inverse-order bound from `DDH` (`DDH.negligible_expected_inv_order`):**
    Testing whether the third challenge element equals the encoded identity distinguishes real DDH
@@ -53,11 +53,12 @@ Theorem 4.1, and Lemma 4.2):
    distinguisher bounds and asymptotic security (`DDH.negligible_naorReingoldWordGame`,
    `DDH.negligible_naorReingoldProbGame`) under `F.DDH setup` alone.
 3. **Universal-hash bit-string Naor–Reingold PRF (paraphrase of [NaorReingold2004], Section 4.1,
-   Lemma 4.2):** composing `naorReingoldWordEval` with `linearHashKDF` under a public universal-hash
-   seed (`F.withSeed` and `F.seededSetup`) maps group outputs into uniform `outLen n`-bit strings;
-   a multi-query Leftover Hash Lemma bound via `PMF.dist_bind_pair_pi_le_sum` yields adaptive
-   bit-string PRF security (`DDH.negligible_naorReingoldHashedGame`,
-   `DDH.negligible_naorReingoldHashedProbGame`, and `DDH.negligible_naorReingoldHashedGame_const`).
+   Construction 4.2, Theorem 4.3, and Remark 4.2, using Lemma 4.2):** composing
+   `naorReingoldWordEval` with `linearHashKDF` under a public universal-hash seed (`F.withSeed` and
+   `F.seededSetup`) maps group outputs into uniform `outLen n`-bit strings; a multi-query Leftover
+   Hash Lemma bound via `PMF.dist_bind_pair_pi_le_sum` yields adaptive bit-string PRF security
+   (`DDH.negligible_naorReingoldHashedGame`, `DDH.negligible_naorReingoldHashedProbGame`, and
+   `DDH.negligible_naorReingoldHashedGame_const`).
 
 ## Main definitions
 
@@ -103,11 +104,11 @@ Theorem 4.1, and Lemma 4.2):
   Version 0.6][BonehShoup2023], Section 4.11 (Exercise 4.18, p. 172) and Section 10.11
   (Exercises 10.4, 10.8, and 10.11, pp. 424–426).
 * [M. Naor, O. Reingold, *Number-Theoretic Constructions of Efficient Pseudo-Random
-  Functions*][NaorReingold2004], Section 4.1 (Construction 4.1, Theorem 4.1, and Lemma 4.2,
-  pp. 285–289).
+  Functions*][NaorReingold2004], Section 4.1 (Construction 4.1, Theorem 4.1, Lemma 4.2,
+  Construction 4.2, Theorem 4.3, and Remark 4.2).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PrimeOrderGroupFamily
 
@@ -356,7 +357,7 @@ theorem isPPTOn_sampleNaorReingoldExp {α : Type} {input : α ↪ List Bool}
 
 /-- Deterministic word-level oracle wrapper encoding `fn : BitString m → F.Carrier d` on valid
 `m`-bit queries and returning `[]` on malformed queries. -/
-def naorReingoldWordOracle (d : F.Desc) {m : ℕ} (fn : BitString m → F.Carrier d)
+@[expose] def naorReingoldWordOracle (d : F.Desc) {m : ℕ} (fn : BitString m → F.Carrier d)
     (query : List Bool) : List Bool :=
   if query.length = m then F.encode d (fn (BitString.ofList m query)) else []
 
@@ -371,7 +372,7 @@ private noncomputable def naorReingoldWordRun (F : PrimeOrderGroupFamily) (d : F
 /-- Setup-parameterized real Naor–Reingold group-PRF game with exact uniform `ZMod (F.order d)`
 exponents ([BonehShoup2023], Exercise 10.4, p. 424; [NaorReingold2004], Construction 4.1 &
 Theorem 4.1). -/
-noncomputable def naorReingoldWordRealGame (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
+@[expose] noncomputable def naorReingoldWordRealGame (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
     (adversary : OracleDistinguisher) (n : ℕ) : Game := do
   let d ← setup n
   let α₀ ← PMF.uniformOfFintype (ZMod (F.order d))
@@ -383,7 +384,7 @@ noncomputable def naorReingoldWordRealGame (setup : ℕ → PMF F.Desc) (inLen :
 
 /-- Setup-parameterized executable Naor–Reingold group-PRF real game sampling modular exponents via
 `sampleNaorReingoldExp` (original). -/
-noncomputable def naorReingoldProbRealGame (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
+@[expose] noncomputable def naorReingoldProbRealGame (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
     (adversary : OracleDistinguisher) (n : ℕ) : Game := do
   let d ← setup n
   ProbComp.eval (do
@@ -397,7 +398,7 @@ noncomputable def naorReingoldProbRealGame (setup : ℕ → PMF F.Desc) (inLen :
 
 /-- Setup-parameterized ideal random group-function game against `OracleDistinguisher`
 ([BonehShoup2023], Exercise 10.4, p. 424; [NaorReingold2004], Theorem 4.1). -/
-noncomputable def naorReingoldWordIdealGame (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
+@[expose] noncomputable def naorReingoldWordIdealGame (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
     (adversary : OracleDistinguisher) (n : ℕ) : Game := do
   let d ← setup n
   let B ← PMF.uniformOfFintype (BitString (inLen n) → ZMod (F.order d))
@@ -2191,9 +2192,9 @@ theorem DDH.negligible_naorReingoldProbGame {F : PrimeOrderGroupFamily}
 /-! ### Universal-hash bit-string Naor–Reingold PRF -/
 
 /-- Word-level universal-hash Naor–Reingold evaluation (paraphrase of [NaorReingold2004],
-Section 4.1, Construction 4.1 & Lemma 4.2): evaluate `naorReingoldWordEval` and hash the resulting
-encoded group element into `{0, 1}^{outLen}` with `linearHashKDF`. -/
-def naorReingoldHashedWordEval (outLen : ℕ) (bound : F.Desc → ℕ) (d : F.Desc)
+Section 4.1, Construction 4.2): evaluate `naorReingoldWordEval` and hash the resulting encoded
+group element into `{0, 1}^{outLen}` with `linearHashKDF`. -/
+@[expose] def naorReingoldHashedWordEval (outLen : ℕ) (bound : F.Desc → ℕ) (d : F.Desc)
     (seed : List Bool) (α₀ : ℕ) (αs : List ℕ) (xs : List Bool) : List Bool :=
   F.linearHashKDF (fun _ => outLen) bound ((d, seed), F.naorReingoldWordEval d α₀ αs xs)
 
@@ -2247,9 +2248,10 @@ theorem computableInPolyTime_naorReingoldHashedWordEval {bound : F.Desc → ℕ}
 
 /-- Setup-parameterized real universal-hash Naor–Reingold bit-string PRF game with exact uniform
 `ZMod (F.order d)` exponents and public hash seed `(d, seed)` encoded via `F.withSeed.encDesc`
-(paraphrase of [NaorReingold2004], Section 4.1, Lemma 4.2). -/
-noncomputable def naorReingoldHashedRealGame (setup : ℕ → PMF F.Desc) (inLen outLen : ℕ → ℕ)
-    (bound : F.Desc → ℕ) (adversary : OracleDistinguisher) (n : ℕ) : Game := do
+(paraphrase of [NaorReingold2004], Section 4.1, Construction 4.2, Theorem 4.3, and Remark 4.2). -/
+@[expose] noncomputable def naorReingoldHashedRealGame (setup : ℕ → PMF F.Desc)
+    (inLen outLen : ℕ → ℕ) (bound : F.Desc → ℕ) (adversary : OracleDistinguisher) (n : ℕ) :
+    Game := do
   let ds ← F.seededSetup setup (F.linearHashSeedLen outLen bound) n
   let α₀ ← PMF.uniformOfFintype (ZMod (F.order ds.1))
   let α ← PMF.uniformOfFintype (Fin (inLen n) → ZMod (F.order ds.1))
@@ -2264,7 +2266,7 @@ noncomputable def naorReingoldHashedRealGame (setup : ℕ → PMF F.Desc) (inLen
 
 /-- Setup-parameterized executable real universal-hash Naor–Reingold bit-string PRF game sampling
 exponents via `sampleNaorReingoldExp` (original). -/
-noncomputable def naorReingoldHashedProbRealGame (setup : ℕ → PMF F.Desc)
+@[expose] noncomputable def naorReingoldHashedProbRealGame (setup : ℕ → PMF F.Desc)
     (inLen outLen : ℕ → ℕ) (bound : F.Desc → ℕ) (adversary : OracleDistinguisher)
     (n : ℕ) : Game := do
   let ds ← F.seededSetup setup (F.linearHashSeedLen outLen bound) n
@@ -2281,9 +2283,11 @@ noncomputable def naorReingoldHashedProbRealGame (setup : ℕ → PMF F.Desc)
 /-- Setup-parameterized ideal bit-string random-function game for universal-hash Naor–Reingold:
 sample `(d, seed) ← F.seededSetup setup (F.linearHashSeedLen outLen bound) n`, draw an independent
 uniform random function `f : BitString (inLen n) → BitString (outLen n)`, and pass
-`F.withSeed.encDesc (d, seed)` to `adversary`. -/
-noncomputable def naorReingoldHashedIdealGame (setup : ℕ → PMF F.Desc) (inLen outLen : ℕ → ℕ)
-    (bound : F.Desc → ℕ) (adversary : OracleDistinguisher) (n : ℕ) : Game := do
+`F.withSeed.encDesc (d, seed)` to `adversary` (paraphrase of [NaorReingold2004], Section 4.1,
+Theorem 4.3 and Remark 4.2). -/
+@[expose] noncomputable def naorReingoldHashedIdealGame (setup : ℕ → PMF F.Desc)
+    (inLen outLen : ℕ → ℕ) (bound : F.Desc → ℕ) (adversary : OracleDistinguisher) (n : ℕ) :
+    Game := do
   let ds ← F.seededSetup setup (F.linearHashSeedLen outLen bound) n
   let f ← PMF.uniformOfFintype (BitString (inLen n) → BitString (outLen n))
   OracleComp.interpret
@@ -2296,8 +2300,8 @@ noncomputable def naorReingoldHashedIdealGame (setup : ℕ → PMF F.Desc) (inLe
 /-- Intermediate hybrid game for universal-hash Naor–Reingold: sample `(d, seed)` via `seededSetup`,
 draw an independent uniform random group-valued table `B : BitString (inLen n) → ZMod (F.order d)`,
 and hash each queried group element `B x • g` with `linearHashKDF` (paraphrase of
-[NaorReingold2004], Section 4.1, Lemma 4.2). -/
-noncomputable def naorReingoldHashedGroupIdealGame (setup : ℕ → PMF F.Desc)
+[NaorReingold2004], Section 4.1, Theorem 4.3 and Remark 4.2, using Lemma 4.2). -/
+@[expose] noncomputable def naorReingoldHashedGroupIdealGame (setup : ℕ → PMF F.Desc)
     (inLen outLen : ℕ → ℕ) (bound : F.Desc → ℕ) (adversary : OracleDistinguisher)
     (n : ℕ) : Game := do
   let ds ← F.seededSetup setup (F.linearHashSeedLen outLen bound) n
@@ -2818,10 +2822,10 @@ private theorem naorReingoldWordRun_hashedAdvGroup (F : PrimeOrderGroupFamily)
     · simp [hq, PMF.monad_pure_eq_pure]
 
 /-- **Asymptotic DDH security of the universal-hash Naor–Reingold bit-string PRF** (paraphrase of
-[NaorReingold2004], Section 4.1, Construction 4.1, Theorem 4.1, and Lemma 4.2): under `F.DDH setup`,
-when group descriptions on `(setup n).support` have polynomially bounded bit-length, `bound` bounds
-encoded group elements, and `2 ^ (outLen n) / qMin n` is negligible, no `IsOraclePPT` adversary can
-distinguish `naorReingoldHashedRealGame` from `naorReingoldHashedIdealGame`. -/
+[NaorReingold2004], Section 4.1, Construction 4.2, Theorem 4.3, and Remark 4.2): under
+`F.DDH setup`, when group descriptions on `(setup n).support` have polynomially bounded bit-length,
+`bound` bounds encoded group elements, and `2 ^ (outLen n) / qMin n` is negligible, no `IsOraclePPT`
+adversary can distinguish `naorReingoldHashedRealGame` from `naorReingoldHashedIdealGame`. -/
 theorem DDH.negligible_naorReingoldHashedGame {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} {inLen outLen : ℕ → ℕ} {bound : F.Desc → ℕ}
     {descBound qMin : ℕ → ℕ}
@@ -2944,7 +2948,8 @@ theorem DDH.negligible_naorReingoldHashedGame {F : PrimeOrderGroupFamily}
             (qMin n) (hq0 n) (hbound n) (hq n) (hQ_supp n))
 
 /-- **Asymptotic DDH security of the executable universal-hash Naor–Reingold bit-string PRF
-(`naorReingoldHashedProbRealGame`)** (paraphrase of [NaorReingold2004], Section 4.1, Lemma 4.2). -/
+(`naorReingoldHashedProbRealGame`)** (paraphrase of [NaorReingold2004], Section 4.1,
+Construction 4.2, Theorem 4.3, and Remark 4.2). -/
 theorem DDH.negligible_naorReingoldHashedProbGame {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} {inLen outLen : ℕ → ℕ} {bound : F.Desc → ℕ}
     {descBound qMin : ℕ → ℕ}
@@ -3075,9 +3080,10 @@ theorem DDH.negligible_naorReingoldHashedProbGame {F : PrimeOrderGroupFamily}
     (add_le_add (hprob_le n) le_rfl)
 
 /-- **Constant-output-length hashed Naor–Reingold security under `F.DDH setup` alone**
-(original, combining `DDH.negligible_expected_inv_order` with Lemma 4.2 of [NaorReingold2004]): for
-any constant output length `c : ℕ` (including `c = 1`), `F.DDH setup` automatically supplies the
-inverse-order decay needed by the Leftover Hash Lemma, requiring no external `qMin` hypothesis. -/
+(original, combining `DDH.negligible_expected_inv_order` with Theorem 4.3, Remark 4.2, and Lemma 4.2
+of [NaorReingold2004]): for any constant output length `c : ℕ` (including `c = 1`), `F.DDH setup`
+automatically supplies the inverse-order decay needed by the Leftover Hash Lemma, requiring no
+external `qMin` hypothesis. -/
 theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} {inLen : ℕ → ℕ} {bound : F.Desc → ℕ} {descBound : ℕ → ℕ}
     (c : ℕ) (hDDH : F.DDH setup)

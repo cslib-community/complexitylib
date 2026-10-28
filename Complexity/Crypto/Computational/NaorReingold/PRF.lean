@@ -38,7 +38,7 @@ polynomial-time prime-order group family `desc : ℕ → F.Desc`:
 
 1. **Key-expanded Naor–Reingold bit-string PRF (`naorReingoldSeededPRF`,
    `DDH.pseudorandomFunction_naorReingoldSeeded`)** (paraphrase of [NaorReingold2004], Section 4.1,
-   Construction 4.1 and Theorem 4.1, combined with PRG key expansion so a uniform `n`-bit secret key
+   Construction 4.2 and Theorem 4.3, combined with PRG key expansion so a uniform `n`-bit secret key
    supplies both the `n + 1` modular exponents and the two-universal hash seed required by
    `Cslib.Crypto.PseudorandomFunction`): given an expanding PRG `expand : List Bool → List Bool`
    producing at least `(n + 1) * expWidth n + n * (2 * bound (desc n) + 1)` bits from an `n`-bit key
@@ -49,15 +49,17 @@ polynomial-time prime-order group family `desc : ℕ → F.Desc`:
    `Cslib.Crypto.PseudorandomFunction`.
 2. **Direct algebraic PRG from DDH alone (`DDH.exists_pseudorandomGenerator`)**: evaluating 1-bit
    universal-hash Naor–Reingold (`outLen = 1`, whose Leftover Hash Lemma error decays via
-   `DDH.negligible_inv_order` without any external order-growth hypothesis) at `seedLen n + 1`
-   distinct binary inputs `Cslib.BitString.lowBits (inBits n) i` stretches a uniform `seedLen n`-bit
-   seed by one bit, and `Cslib.Crypto.GeneratorReindex.pseudorandomGenerator` reindexes it to a
-   `Cslib.Crypto.PseudorandomGenerator` at every seed length `n`.
+   `DDH.negligible_expected_inv_order` without any external order-growth hypothesis) at
+   `seedLen n + 1` distinct binary inputs `Cslib.BitString.lowBits (inBits n) i` stretches a uniform
+   `seedLen n`-bit seed by one bit, and `Cslib.Crypto.GeneratorReindex.pseudorandomGenerator`
+   reindexes it to a `Cslib.Crypto.PseudorandomGenerator` at every seed length `n`.
 3. **End-to-end `PseudorandomFunction` from DDH (`DDH.exists_naorReingoldPseudorandomFunction`,
    `DDH.exists_pseudorandomFunction`)**: amplifying the DDH PRG via
    `Cslib.Crypto.PseudorandomGenerator.amplify` instantiates `naorReingoldSeededPRF` directly from
-   `F.DDH (fun n => PMF.pure (desc n))` and `Negligible (fun n => 2 ^ n / F.order (desc n))` (and
-   yields `∃ family, PseudorandomFunction family` from `F.DDH (fun n => PMF.pure (desc n))` alone).
+   `F.DDH (fun n => PMF.pure (desc n))` and `Negligible (fun n => 2 ^ n / F.order (desc n))`;
+   combining `DDH.exists_pseudorandomGenerator` with the Goldreich–Goldwasser–Micali construction
+   `PseudorandomGenerator.exists_pseudorandomFunction` ([GGM1986]) also yields
+   `∃ family, PseudorandomFunction family` from `F.DDH (fun n => PMF.pure (desc n))` alone.
 
 ## Main definitions
 
@@ -77,17 +79,21 @@ polynomial-time prime-order group family `desc : ℕ → F.Desc`:
   parameters instantiating `naorReingoldSeededPRF` as a `PseudorandomFunction` from DDH and
   negligible `2 ^ n / F.order (desc n)`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.DDH.exists_pseudorandomFunction`: existence of a uniform
-  `PseudorandomFunction` from `F.DDH (fun n => PMF.pure (desc n))` alone.
+  `PseudorandomFunction` from `F.DDH (fun n => PMF.pure (desc n))` alone via
+  `DDH.exists_pseudorandomGenerator` and the Goldreich–Goldwasser–Micali construction ([GGM1986]).
 
 ## References
 
-* [M. Naor and O. Reingold, *Number-theoretic constructions of efficient pseudo-random
-  functions*][NaorReingold2004], Section 4.1 (Construction 4.1, Theorem 4.1, and Lemma 4.2).
-* [D. Boneh and V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
-  Section 10.6 and Exercise 10.11.
+* [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
+  Version 0.6][BonehShoup2023], Section 4.11 (Exercise 4.18, p. 172) and Section 10.11
+  (Exercises 10.4, 10.8, and 10.11, pp. 424–426).
+* [O. Goldreich, S. Goldwasser, S. Micali, *How to Construct Random Functions*][GGM1986].
+* [M. Naor, O. Reingold, *Number-Theoretic Constructions of Efficient Pseudo-Random
+  Functions*][NaorReingold2004], Section 4.1 (Construction 4.1, Theorem 4.1, Lemma 4.2,
+  Construction 4.2, Theorem 4.3, and Remark 4.2).
 -/
 
-@[expose] public section
+public section
 
 open scoped ENNReal NNReal Cslib.Probability.PMF
 
@@ -484,9 +490,9 @@ private theorem naorReingoldHashedIdealGame_pure_const (inLen outLen : ℕ → �
 `naorReingoldHashedWordEval` after expanding `key` via `expand` into `key.length + 1`
 `expWidth key.length`-bit binary exponents and a
 `key.length * (2 * bound (desc key.length) + 1)`-bit two-universal hash seed (paraphrase of
-[NaorReingold2004], Section 4.1, Construction 4.1, combined with PRG key expansion so a uniform
+[NaorReingold2004], Section 4.1, Construction 4.2, combined with PRG key expansion so a uniform
 `n`-bit secret key suffices for `Cslib.Crypto.PseudorandomFunction`). -/
-def naorReingoldSeededPRF (desc : ℕ → F.Desc) (bound : F.Desc → ℕ)
+@[expose] def naorReingoldSeededPRF (desc : ℕ → F.Desc) (bound : F.Desc → ℕ)
     (expWidth : ℕ → ℕ) (expand : List Bool → List Bool)
     (key query : List Bool) : List Bool :=
   let n := key.length
@@ -659,7 +665,7 @@ private theorem eval_prfTapeDistinguisher (F : PrimeOrderGroupFamily)
   exact id_map _
 
 /-- **Uniform `PseudorandomFunction` security of `naorReingoldSeededPRF`** (paraphrase of
-[NaorReingold2004], Section 4.1, Construction 4.1 and Theorem 4.1, combined with PRG key
+[NaorReingold2004], Section 4.1, Construction 4.2 and Theorem 4.3, combined with PRG key
 expansion): if `desc : ℕ → F.Desc` is a deterministic polynomial-time group family satisfying
 `F.DDH (fun n => PMF.pure (desc n))` with `2 ^ n / F.order (desc n)` negligible, `expWidth n ≥
 (F.order (desc n)).size + n`, and `expand` is a `PseudorandomGenerator` stretching `n`-bit keys to
@@ -1115,7 +1121,11 @@ theorem DDH.exists_naorReingoldPseudorandomFunction {F : PrimeOrderGroupFamily}
 
 /-- **Existence of a uniform `PseudorandomFunction` from DDH alone**: any deterministic
 polynomial-time prime-order group family `desc : ℕ → F.Desc` satisfying
-`F.DDH (fun n => PMF.pure (desc n))` yields a uniform `PseudorandomFunction`. -/
+`F.DDH (fun n => PMF.pure (desc n))` yields a uniform `PseudorandomFunction` by combining the
+1-bit-stretch Naor–Reingold generator `DDH.exists_pseudorandomGenerator` with the
+Goldreich–Goldwasser–Micali tree construction `PseudorandomGenerator.exists_pseudorandomFunction`
+([GGM1986]). For the direct Naor–Reingold PRF family under `Negligible (2 ^ n / F.order (desc n))`,
+see `DDH.exists_naorReingoldPseudorandomFunction`. -/
 theorem DDH.exists_pseudorandomFunction {F : PrimeOrderGroupFamily} {desc : ℕ → F.Desc}
     (hDDH : F.DDH (fun n => PMF.pure (desc n)))
     (hdesc : ComputableInPolyTime desc encUnary F.encDesc) :
