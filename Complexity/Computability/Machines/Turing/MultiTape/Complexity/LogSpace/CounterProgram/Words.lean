@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 
 /-!
 # Word and list operations with counters, in logarithmic space
@@ -40,6 +41,8 @@ None of this uses logarithmic-space composition.
   `Turing.MultiTapeTM.ComputableInLogSpace.bitsDrop`: taking and dropping bits.
 * `Turing.MultiTapeTM.ComputableInLogSpace.range`: the list `0, …, n - 1`.
 * `Turing.MultiTapeTM.ComputableInLogSpace.getElem?`: list lookup at a unary index.
+* `Turing.MultiTapeTM.ComputableInLogSpace.bitsTake'`, `.bitsDrop'`, `.getElem?'`: the same on
+  computed arguments, in the form used by `fun_prop`, with which `range` is also registered.
 
 ## References
 
@@ -642,5 +645,36 @@ theorem getElem? {α : Type} (enc : α ↪ List Bool) :
   refine lookupProgram.computableInLogSpace_of_reachesOut 1 fun ⟨l, k⟩ => ?_
   obtain ⟨s, fin, h, hhalt, rfl, hs⟩ := reachesOut_lookupProgram (enc := enc) (l := l) (k := k)
   exact ⟨s, _, [], h, hhalt, by simp [encOption], hs⟩
+
+/-! ### Automation -/
+
+section Automation
+
+variable {γ : Type} {encIn : γ ↪ List Bool}
+
+/-- The first `k` bits of a computed word, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem bitsTake' {w : γ → List Bool} {k : γ → ℕ} (hw : ComputableInLogSpace w encIn encBits)
+    (hk : ComputableInLogSpace k encIn encUnary) :
+    ComputableInLogSpace (fun a => (w a).take (k a)) encIn encBits :=
+  bitsTake.comp' (pair hw hk)
+
+/-- A computed word without its first `k` bits, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem bitsDrop' {w : γ → List Bool} {k : γ → ℕ} (hw : ComputableInLogSpace w encIn encBits)
+    (hk : ComputableInLogSpace k encIn encUnary) :
+    ComputableInLogSpace (fun a => (w a).drop (k a)) encIn encBits :=
+  bitsDrop.comp' (pair hw hk)
+
+/-- Looking up a computed unary index in a computed list, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem getElem?' {α : Type} {enc : α ↪ List Bool} {l : γ → List α} {k : γ → ℕ}
+    (hl : ComputableInLogSpace l encIn (encList enc)) (hk : ComputableInLogSpace k encIn encUnary) :
+    ComputableInLogSpace (fun a => (l a)[k a]?) encIn (encOption enc) :=
+  (getElem? enc).comp' (pair hl hk)
+
+attribute [fun_prop] range
+
+end Automation
 
 end Turing.MultiTapeTM.ComputableInLogSpace

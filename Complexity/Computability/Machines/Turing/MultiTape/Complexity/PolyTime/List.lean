@@ -162,14 +162,6 @@ theorem bitsReverse : ComputableTidilyInPolyTime List.reverse encBits encBits :=
     (growth := 1) (fun _ _ => by simp)
   simpa using h
 
-/-- Reverse a computed word, fixing its raw intermediate encoding before proof search.
-The input certificate may itself convert from another representation. -/
-@[fun_prop]
-theorem bitsReverseWithInput {word : γ → List Bool}
-    (hword : ComputableTidilyInPolyTime word encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => (word a).reverse) encIn encBits :=
-  bitsReverse.comp hword
-
 /-- Prepending an element to a framed list is polynomial-time. -/
 @[fun_prop]
 theorem cons (enc : α ↪ List Bool) :

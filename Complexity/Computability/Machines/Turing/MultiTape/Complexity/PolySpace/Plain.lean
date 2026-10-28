@@ -36,7 +36,8 @@ direction is a transition rule; the reverse bridge is used explicitly inside the
   `Turing.MultiTapeTM.ComputableTidilyInPolySpace.computableInPolySpace`.
 * `Turing.MultiTapeTM.ComputableInPolySpace.of_polyTime`: plain polynomial time is within
   polynomial space.
-* `Turing.MultiTapeTM.ComputableInPolySpace.comp`, `.prod`, `.ite`: closure properties.
+* `Turing.MultiTapeTM.ComputableInPolySpace.comp`, `.prod`, `.ite`, `.congr`: closure properties.
+* `Turing.MultiTapeTM.ComputableInPolySpace.iterate`: iteration within polynomial space.
 -/
 
 @[expose] public section
@@ -111,6 +112,22 @@ theorem ite {c : α → Bool} {g : α → β} (hc : ComputableInPolySpace c encI
     (hf : ComputableInPolySpace f encIn encOut) (hg : ComputableInPolySpace g encIn encOut) :
     ComputableInPolySpace (fun a => if c a then f a else g a) encIn encOut :=
   .of_tidy (hc.tidy.ite hf.tidy hg.tidy)
+
+/-- Agreement with a function computable within polynomial space. -/
+theorem congr {g : α → β} (h : ComputableInPolySpace f encIn encOut) (hfg : ∀ a, f a = g a) :
+    ComputableInPolySpace g encIn encOut := by
+  rwa [show g = f from funext fun a => (hfg a).symm]
+
+/-- **Iteration within polynomial space**: iterating a step computable within polynomial space a
+number of times computed in polynomial time in binary, from a start computable within polynomial
+space, is within polynomial space when all the states along the way have polynomial length. -/
+theorem iterate [Inhabited β] {n : α → ℕ} {init : α → β} {step : β → β}
+    (hn : ComputableInPolyTime n encIn encNat) (hinit : ComputableInPolySpace init encIn encOut)
+    (hstep : ComputableInPolySpace step encOut encOut) {B : α → ℕ}
+    (hB : PolyBounded (fun a => (encIn a).length) B)
+    (hstate : ∀ a, ∀ k ≤ n a, (encOut (step^[k] (init a))).length ≤ B a) :
+    ComputableInPolySpace (fun a => step^[n a] (init a)) encIn encOut :=
+  .of_tidy (.iterate hn.tidy hinit.tidy hstep.tidy hB hstate)
 
 /-- Composition, in the form used by `fun_prop`. -/
 @[fun_prop]

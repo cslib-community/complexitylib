@@ -70,7 +70,7 @@ theorem IsVerifier.exists_decidesInTime
   have hcount : ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
     (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length enc)
   have hprogram : IsPPTOn enc encBool program :=
-    (hcount).sampleList.map_with (hV)
+    (hcount).sampleList.map_with hV
   obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ := hprogram.exists_halting_machine
   refine ⟨k, State, hfinite, machine, c, d, fun a => ?_, fun _ => machine.exists_step_toNTM⟩
   have htime : machine.toNTM.RunsInTime (enc a) (c * ((enc a).length + 1) ^ d) :=
@@ -90,8 +90,6 @@ theorem IsVerifier.exists_decidesInTime
   · rintro ⟨b, ⟨w, hw, hV⟩, rfl⟩
     exact ⟨w, hw, hV⟩
 
-attribute [local fun_prop] ComputableInPolySpace in
-attribute [local fun_prop] ComputableInPolyTime in
 /-- Problems in `NP` are decidable in polynomial time by nondeterministic machines with a binary
 alphabet and finitely many states. -/
 theorem decidableInPolyTime_of_mem_NP (h : A ∈ NP enc) :

@@ -272,9 +272,6 @@ theorem countSystemExhaustive_eq_rootCount (n : ℕ) (sys : List (List (List ℕ
         HeavyBranchFold.extendAssignment, dite_eq_right hv]
   rw [hfun]
 
-theorem scopeWidthOn_le (n : ℕ) (eq : List (List ℕ)) : scopeWidthOn n eq ≤ n :=
-  List.countP_le_length.trans_eq List.length_range
-
 theorem scopeWidthOn_eq_length_equationVars {n : ℕ} {eq : List (List ℕ)}
     (hvars : ∀ m ∈ eq, ∀ v ∈ m, v < n) : scopeWidthOn n eq = (equationVars eq).length := by
   rw [scopeWidthOn, List.countP_eq_length_filter,
@@ -764,14 +761,6 @@ theorem countSparsePolySystem_eq_commonZeroCount
         (fun i : Fin inp.2.2.length => HeavyBranchFold.toFinsetEquation inp.1 inp.2.2[i]) := by
   rw [countSparsePolySystem_eq_rootCount hbranch inp,
     HeavyBranchFold.rootCount_eq_commonZeroCount hcan hvars]
-
-theorem countSparsePolySystem_le_two_pow
-    (hbranch : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
-      branchEval (prepareBranchEvalInput (n', eqs')) = HeavyBranchFold.rootCount n' eqs')
-    (inp : SparseSystemInput) :
-    countSparsePolySystem N₀_top N₀_branch branchEval inp ≤ 2 ^ inp.1 :=
-  (countSparsePolySystem_eq_rootCount hbranch inp).trans_le
-    (HeavyBranchFold.rootCount_le_two_pow inp.1 inp.2.2)
 
 end SemanticExactness
 

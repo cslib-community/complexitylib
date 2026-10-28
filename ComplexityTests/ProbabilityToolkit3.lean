@@ -69,24 +69,28 @@ example : ∃ mix : PMF {S : Finset (Fin 3) // S.card = 2 ^ 1},
   exists_eq_bind_uniformOfFinset_of_le_minEntropy lopsided (by
     simpa only [Nat.cast_one] using one_le_minEntropy_lopsided)
 
--- Conversely, every mixture of flat distributions on pairs is a `1`-source.
-example (mix : PMF {S : Finset (Fin 3) // S.card = 2 ^ 1}) :
-    ((1 : ℕ) : ℝ) ≤ minEntropy (mix.bind fun S =>
-      uniformOfFinset S.1 (card_ne_zero.mp (S.2.trans_ne (pow_ne_zero 1 two_ne_zero)))) :=
-  (le_minEntropy_iff_exists_eq_bind_uniformOfFinset _ 1).mpr ⟨mix, rfl⟩
+-- Conversely, every mixture of flat distributions on pairs is a `1`-source; in particular, a
+-- point-mass mixture on `{0, 1}` gives `1 ≤ minEntropy (uniformOfFinset {0, 1} _)`.
+example : 1 ≤ minEntropy (uniformOfFinset ({0, 1} : Finset (Fin 3)) (by decide)) := by
+  let S0 : {S : Finset (Fin 3) // S.card = 2 ^ 1} := ⟨{0, 1}, by decide⟩
+  have h := (le_minEntropy_iff_exists_eq_bind_uniformOfFinset
+    (uniformOfFinset ({0, 1} : Finset (Fin 3)) (by decide)) 1).mpr ⟨PMF.pure S0, by simp [S0]⟩
+  simpa using h
 
--- The uniform distribution on a nonempty finset gives each subset its relative cardinality under
--- both `toOuterMeasure` and `toMeasure`.
-example (t : Set (Fin 3)) [DecidablePred (· ∈ t)] :
-    (uniformOfFinset ({0, 1} : Finset (Fin 3)) (by decide)).toMeasure t =
-      (({0, 1} : Finset (Fin 3)).filter (· ∈ t)).card /
-        ({0, 1} : Finset (Fin 3)).card :=
-  toMeasure_uniformOfFinset ({0, 1} : Finset (Fin 3)) (by decide) trivial
+-- The uniform distribution on `{0, 1} ⊆ Fin 3` assigns measure `1 / 2` to `{0, 2}`.
+example :
+    (uniformOfFinset ({0, 1} : Finset (Fin 3)) (by decide)).toMeasure ({0, 2} : Set (Fin 3)) =
+      1 / 2 := by
+  rw [toMeasure_uniformOfFinset ({0, 1} : Finset (Fin 3)) (by decide) trivial]
+  have h1 : (({0, 1} : Finset (Fin 3)).filter (· ∈ ({0, 2} : Set (Fin 3)))).card = 1 := by decide
+  have h2 : ({0, 1} : Finset (Fin 3)).card = 2 := by decide
+  rw [h1, h2]
+  norm_num
 
 /-! ### Weak random sources -/
 
--- Uniform bit strings are sources of their full length.
-example (n : ℕ) : IsSource (uniformOfFintype (BitString n)) n 0 := by
+/-- Uniform bit strings are sources of their full length. -/
+private theorem isSource_uniform (n : ℕ) : IsSource (uniformOfFintype (BitString n)) n 0 := by
   rw [isSource_zero_iff, minEntropy_uniformOfFintype, Fintype.card_fun, Fintype.card_bool,
     Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
     Real.logb_self_eq_one one_lt_two, mul_one]
@@ -112,15 +116,23 @@ example : IsSource lopsided 1 (1 / 2) := by
 
 /-! ### Leftover hashing from sources -/
 
--- Random Boolean matrices extract from every `(k, ε)`-source on bit strings.
-example {n m : ℕ} {source : PMF (BitString n)} {k : ℝ} {ε : ℝ≥0}
-    (hsource : IsSource source k ε) :
-    dist (seededHash (uniformOfFintype (BitString (m * n))) source
+-- Random Boolean matrices extract from every `(k, ε)`-source on bit strings: on a `(6, 0)`-source
+-- hashed to `2` bits, `leftover_hash_of_isSource` bounds the statistical distance by `1 / 8`.
+example :
+    dist (seededHash (uniformOfFintype (BitString (2 * 6))) (uniformOfFintype (BitString 6))
         fun seed => BitString.LinearHash.hash (BitString.blocksEquiv seed))
-      ((uniformOfFintype (BitString (m * n))).bind
-        fun s => (uniformOfFintype (BitString m)).map (s, ·)) ≤
-      ε + Real.sqrt (Fintype.card (BitString m) * 2 ^ (-k)) / 2 :=
-  (BitString.LinearHash.isTwoUniversal_flat n m).leftover_hash_of_isSource hsource
+      ((uniformOfFintype (BitString (2 * 6))).bind
+        fun s => (uniformOfFintype (BitString 2)).map (s, ·)) ≤ 1 / 8 := by
+  have hsource : IsSource (uniformOfFintype (BitString 6)) 6 0 := by
+    simpa using isSource_uniform 6
+  have h := (BitString.LinearHash.isTwoUniversal_flat 6 2).leftover_hash_of_isSource hsource
+  refine h.trans_eq ?_
+  simp only [BitString, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, NNReal.coe_zero,
+    zero_add]
+  rw [Real.rpow_neg (by norm_num),
+    show ((2 ^ 2 : ℕ) : ℝ) * ((2 : ℝ) ^ (6 : ℝ))⁻¹ = (1 / 4) ^ 2 by norm_num,
+    Real.sqrt_sq (by norm_num)]
+  norm_num
 
 -- Hashing a uniform `8`-bit source to `4` bits loses `2 log₂ 4 = 4` bits and errs by `1/8`.
 example :
