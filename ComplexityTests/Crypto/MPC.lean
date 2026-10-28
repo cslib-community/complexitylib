@@ -5,6 +5,9 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Crypto.Protocols.MPC.Basic
+import Complexity.Crypto.Protocols.MPC.CircuitEval
+import Complexity.Crypto.Protocols.MPC.SharedMul
+import Cslib.Computability.Circuit.Boolean.Basic
 import Mathlib.Algebra.Ring.BooleanRing
 import Mathlib.Data.ZMod.Basic
 
@@ -49,7 +52,7 @@ Concrete tests for `Complexity.Languages.Probabilistic.Sharing` and
 
 namespace ComplexityTests.Crypto.MPC
 
-open Cslib Cslib.Probability Cslib.ProbComp Cslib.Crypto.Protocols.MPC
+open Cslib Cslib.Probability Cslib.ProbComp Cslib.Circuits Cslib.Crypto.Protocols.MPC
 
 /-! ### Additive secret sharing tests -/
 
@@ -457,5 +460,138 @@ theorem not_perfectSemiHonestPrivate_independentCoinProtocol
   have h01 := hIdealAgree res hres
   rw [h0, h1] at h01
   exact Bool.false_ne_true h01
+
+/-! ### Ideal $\text{OT}_1^4$, 2-party shared multiplication, and $m$-party pairwise reduction -/
+
+example : fin4ToBoolPair (boolPairToFin4 (true, false)) = (true, false) := by decide
+
+/-- Exhaustive check of the 4-entry $\text{OT}_1^4$ residual table (Goldreich Section 7.3.3,
+CUP print p. 643): for all party inputs `(a₀, b₀)` and `(a₁, b₁)` and sender coin `c₀`, the
+receiver's $\text{OT}_1^4$ answer equals `c₀ + (a₀ + a₁) * (b₀ + b₁)`. -/
+example (a₀ b₀ a₁ b₁ c₀ : Bool) :
+    ot14Answer
+      (fun s =>
+        twoPartyMulQuery s
+          (Fin.cases (a₀, b₀) (fun _ => (a₁, b₁)) s, twoPartyMulCoins c₀ s))
+      1 = c₀ + (a₀ + a₁) * (b₀ + b₁) := by
+  cases a₀ <;> cases b₀ <;> cases a₁ <;> cases b₁ <;> cases c₀ <;> rfl
+
+/-- Locality of pairwise oracle rounds: in the 3-party setting, party `2` receives a subsingleton
+record during the `(0, 1)` pairwise shared-multiplication round. -/
+example :
+    Subsingleton ((pairRound (m := 3) ⟨(0, 1), by decide⟩).Received 2) :=
+  subsingleton_received_pairRound ⟨(0, 1), by decide⟩ (by decide) (by decide)
+
+example : orderedPairs 1 = [] := by decide
+
+example : (orderedPairs 3).length = 3 := by decide
+
+example (I : Finset (Fin 1)) (x : Fin 1 → Bool × Bool) :
+    ProbComp.eval (idealJoint (sharedMulFunctionality 1) I (multiPartyMulSim 1 I) x) =
+      (multiPartyMulProtocol 1).realJoint (sharedMulWorld 2) I x :=
+  perfectSemiHonestPrivate_multiPartyMul 1 I x
+
+example (I : Finset (Fin 3)) (x : Fin 3 → Bool × Bool) :
+    ProbComp.eval (idealJoint (sharedMulFunctionality 3) I (multiPartyMulSim 3 I) x) =
+      (multiPartyMulProtocol 3).realJoint (sharedMulWorld 2) I x :=
+  perfectSemiHonestPrivate_multiPartyMul 3 I x
+
+/-! ### $m$-party Boolean circuit evaluation in `sharedMulWorld m` (Construction 7.5.10) -/
+
+example :
+    (Cslib.BitString.blocksEquiv (α := Bool) (m := 2) (k := 2)).symm
+      ![![true, false], ![false, true]] =
+    ![true, false, false, true] := by
+  decide
+
+/-- Concrete 2-party Boolean circuit with 2 gates:
+- Gate 0 computes `x₀ && x₁` (`.and` of input wires 0 and 1);
+- Gate 1 computes `!(x₀ && x₁)` (`.not` of Gate 0);
+- Party 0 outputs `x₀ && x₁` (Gate 0) and party 1 outputs `!(x₀ && x₁)` (Gate 1). -/
+def andNandCircuit : Cslib.Circuits.Circuit Boolean.signature (2 * 1) (2 * 1) where
+  size := 2
+  program :=
+    ((Cslib.Circuits.Program.empty (σ := Boolean.signature) (inputCount := 2 * 1)).gate
+      { op := Boolean.Op.and, wires := ![Wire.input 0, Wire.input 1] }).gate
+      { op := Boolean.Op.not, wires := ![Wire.gate 0] }
+  outputs := ![Wire.gate 0, Wire.gate 1]
+
+/-- Exhaustive check of `circuitFunctionality 2 1 1 andNandCircuit` on all 4 input pairs `(b₀, b₁)`:
+party 0 receives `b₀ && b₁` and party 1 receives `!(b₀ && b₁)`. -/
+example (b₀ b₁ : Bool) :
+    circuitFunctionality 2 1 1 andNandCircuit ![![b₀], ![b₁]] =
+      ![![b₀ && b₁], ![!(b₀ && b₁)]] := by
+  revert b₀ b₁
+  decide
+
+/-- Every outcome in the support of `(gmwCircuitProtocol 2 1 1 andNandCircuit).evalWith` has
+outputs equal to `circuitFunctionality 2 1 1 andNandCircuit x`. -/
+example (x : Fin 2 → BitString 1)
+    (res : ((i : Fin 2) →
+      PartyView (fun _ => BitString 1) (fun _ => Fin 1 → Fin 1 → Bool)
+        (gmwCircuitSchedule 2 1 1 andNandCircuit) i) × (Fin 2 → BitString 1))
+    (hres :
+      res ∈ ((gmwCircuitProtocol 2 1 1 andNandCircuit).evalWith (sharedMulWorld 2) x).support) :
+    res.2 = circuitFunctionality 2 1 1 andNandCircuit x :=
+  snd_eq_circuitFunctionality_of_mem_support_evalWith andNandCircuit x hres
+
+/-- `gmwCircuitProtocol 2 1 1 andNandCircuit` is perfectly semi-honest private in `sharedMulWorld 2`
+against every static coalition `I : Finset (Fin 2)`. -/
+example :
+    PerfectSemiHonestPrivate
+      (gmwCircuitProtocol 2 1 1 andNandCircuit) (sharedMulWorld 2)
+      (Functionality.ofDeterministic (circuitFunctionality 2 1 1 andNandCircuit))
+      (gmwCircuitSim 2 1 1 andNandCircuit) :=
+  perfectSemiHonestPrivate_gmwCircuit 2 1 1 andNandCircuit
+
+/-- Concrete 2-party circuit whose `outputs` vector exercises all three wire-reuse patterns
+handled by the Step 3 `sharedMulSpec m` share refresh:
+- Party 0's output bit 0 is an input wire directly (`Wire.input 0`);
+- Party 0's output bit 1 and Party 1's output bit 0 both reuse the same gate wire (`Wire.gate 0`);
+- Party 1's output bit 1 is a negated wire (`Wire.gate 1`) of `Wire.gate 0`. -/
+def wireReuseCircuit : Cslib.Circuits.Circuit Boolean.signature (2 * 1) (2 * 2) where
+  size := 2
+  program :=
+    ((Cslib.Circuits.Program.empty (σ := Boolean.signature) (inputCount := 2 * 1)).gate
+      { op := Boolean.Op.and, wires := ![Wire.input 0, Wire.input 1] }).gate
+      { op := Boolean.Op.not, wires := ![Wire.gate 0] }
+  outputs := ![Wire.input 0, Wire.gate 0, Wire.gate 0, Wire.gate 1]
+
+/-- Exhaustive check of `circuitFunctionality 2 1 2 wireReuseCircuit` on all 4 input pairs
+`(b₀, b₁)`: party 0 receives `![b₀, b₀ && b₁]` and party 1 receives
+`![b₀ && b₁, !(b₀ && b₁)]`. -/
+example (b₀ b₁ : Bool) :
+    circuitFunctionality 2 1 2 wireReuseCircuit ![![b₀], ![b₁]] =
+      ![![b₀, b₀ && b₁], ![b₀ && b₁, !(b₀ && b₁)]] := by
+  revert b₀ b₁
+  decide
+
+/-- `gmwCircuitProtocol 2 1 2 wireReuseCircuit` is perfectly semi-honest private in
+`sharedMulWorld 2` against every static coalition `I : Finset (Fin 2)`, even though `outputs`
+includes an input wire, a wire shared across both parties, and its negation. -/
+example :
+    PerfectSemiHonestPrivate
+      (gmwCircuitProtocol 2 1 2 wireReuseCircuit) (sharedMulWorld 2)
+      (Functionality.ofDeterministic (circuitFunctionality 2 1 2 wireReuseCircuit))
+      (gmwCircuitSim 2 1 2 wireReuseCircuit) :=
+  perfectSemiHonestPrivate_gmwCircuit 2 1 2 wireReuseCircuit
+
+/-- 3-party circuit evaluation privacy (`m = 3`) for any circuit `C`. -/
+example (C : Cslib.Circuits.Circuit Boolean.signature (3 * 2) (3 * 1))
+    (I : Finset (Fin 3)) (x : Fin 3 → BitString 2) :
+    ProbComp.eval
+      (idealJoint (Functionality.ofDeterministic (circuitFunctionality 3 2 1 C))
+        I (gmwCircuitSim 3 2 1 C I) x) =
+      (gmwCircuitProtocol 3 2 1 C).realJoint (sharedMulWorld 3) I x :=
+  perfectSemiHonestPrivate_gmwCircuit 3 2 1 C I x
+
+/-- Degenerate 1-party circuit evaluation privacy (`m = 1`) for any circuit `C`. -/
+example (C : Cslib.Circuits.Circuit Boolean.signature (1 * 2) (1 * 2))
+    (I : Finset (Fin 1)) (x : Fin 1 → BitString 2) :
+    ProbComp.eval
+      (idealJoint (Functionality.ofDeterministic (circuitFunctionality 1 2 2 C))
+        I (gmwCircuitSim 1 2 2 C I) x) =
+      (gmwCircuitProtocol 1 2 2 C).realJoint (sharedMulWorld 1) I x :=
+  perfectSemiHonestPrivate_gmwCircuit 1 2 2 C I x
 
 end ComplexityTests.Crypto.MPC
