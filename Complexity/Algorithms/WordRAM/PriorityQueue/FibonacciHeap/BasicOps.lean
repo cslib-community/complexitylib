@@ -20,8 +20,9 @@ This file proves the exact-Word-RAM specifications for:
 
 ## Main definitions
 
-* Shared code fragments are defined in `FibonacciHeap/Program.lean` and verified here against
-  `FibInv`.
+* Shared code fragments are defined in
+  `Complexity/Algorithms/WordRAM/PriorityQueue/FibonacciHeap/Program.lean` and verified here
+  against `FibInv`.
 
 ## Main results
 
