@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Erik Demaine, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Erik Demaine, Samuel Schlesinger
 -/
 
 import Complexity.Computability.WordRAM.Signed.Input
@@ -9,10 +9,11 @@ import Complexity.Computability.WordRAM.Signed.Input
 /-!
 # Complete signed-program compilation regressions
 
-Execute source programs and their compiled unsigned instruction lists. The larger client
-loops over signed inputs, takes both sign branches, computes the square of the sum of their
-absolute values, writes/reads memory, and tests the stored result. The whole-run theorem
-transfers its checked source execution with the ordinary encoded input and charged prologue.
+Execute source programs and their compiled unsigned instruction lists across all five signed
+arithmetic operations, including Euclidean division and remainder, zero divisors, and the
+minimum/`-1` source overflow exclusion. Larger loop clients exercise signed comparisons,
+aliased arithmetic, memory reads/writes, and repeated signed quotient/remainder steps, with
+checked source executions transferred by `executes_compile_input`.
 -/
 
 namespace ComplexityTests.WordRAMSignedCompile
@@ -71,14 +72,14 @@ example : ∃ n ≤ 1061, WordRAM.Executes 10 (compile squareAbsSum)
   have hs : GenericRAM.Executes (M := model) 8 squareAbsSum
       (GenericRAM.Signed.initial [-2, 3, -4]) 81 33 :=
     .of_run (fuel := 200) (by decide)
-  exact executes_compile_input (by decide) (by unfold GenericRAM.Signed.InputFits; decide) hs
+  exact executes_compile_input (by unfold GenericRAM.Signed.InputFits; decide) hs
 
 /-- Empty input is an actual instance of the input/width premises and traverses the exit edge. -/
 example : ∃ n ≤ 389, WordRAM.Executes 10 (compile squareAbsSum)
     (WordRAM.State.init []) 0 n := by
   have hs : GenericRAM.Executes (M := model) 8 squareAbsSum
       (GenericRAM.Signed.initial []) 0 12 := .of_run (fuel := 200) (by decide)
-  exact executes_compile_input (by decide) (by unfold GenericRAM.Signed.InputFits; decide) hs
+  exact executes_compile_input (by unfold GenericRAM.Signed.InputFits; decide) hs
 
 private def oneBit : GenericRAM.Program model 1 := [.op (.const 0 (-1)), .halt 0]
 
@@ -97,23 +98,90 @@ example : ∃ y k, k ≤ 101 ∧ WordRAM.Runs 6 (compile storeNegative)
   have h₃ : GenericRAM.Next (M := model) 4 storeNegative s₂ s₃ := by rfl
   have hr : GenericRAM.Runs (M := model) 4 storeNegative s₀ s₃ 3 :=
     ((Relation.RelatesInSteps.single h₁).tail _ _ _ _ h₂).tail _ _ _ _ h₃
-  obtain ⟨y, k, hk, ht, hm⟩ := runs_compile_input (by decide)
+  obtain ⟨y, k, hk, ht, hm⟩ := runs_compile_input
     (by unfold GenericRAM.Signed.InputFits; decide) hr
   exact ⟨y, k, hk, ht, hm.mem 1⟩
 
 /-- The smallest signed width works. Target code labels may exceed the data word range:
 the relocated halt is at 69, although the physical word has only three bits. -/
-example : GenericRAM.Signed.InputFits 1 [] ∧ SupportedProgram oneBit ∧
+example : GenericRAM.Signed.InputFits 1 [] ∧
     WordRAM.run 3 (compile oneBit) 8 (WordRAM.State.init []) = some (3, 8) := by
   constructor
   · unfold GenericRAM.Signed.InputFits
     decide
   · decide
 
-/-- The theorem's supported fragment explicitly excludes both division and remainder. -/
-example : ¬SupportedProgram (r := 2) [.op (.alu .div 0 ![0, 1]), .halt 0] ∧
-    ¬SupportedProgram (r := 2) [.op (.alu .mod 0 ![0, 1]), .halt 0] := by
+private def onlyDiv : GenericRAM.Program model 2 :=
+  [.op (.const 0 1), .op (.load 0 0), .op (.const 1 2), .op (.load 1 1),
+    .op (.alu .div 0 ![0, 1]), .halt 0]
+
+private def onlyMod : GenericRAM.Program model 2 :=
+  [.op (.const 0 1), .op (.load 0 0), .op (.const 1 2), .op (.load 1 1),
+    .op (.alu .mod 0 ![0, 1]), .halt 0]
+
+-- Six source instructions occupy 389 target slots including the five-instruction prologue.
+set_option maxRecDepth 2048 in
+/-- Compiled `.div` and `.mod` programs agree with the signed RAM across all four sign
+combinations, zero divisors (`a / 0 = 0`, `a % 0 = a`), and the minimum/`-1` boundary:
+at `w = 4`, `(-8) / (-1)` faults in the source model while `(-8) % (-1) = 0` succeeds. -/
+example :
+    (WordRAM.run 6 (compile onlyDiv) 200 (WordRAM.State.init ([7, 3].map encode))).map Prod.fst =
+      some (encode 2) ∧
+    (WordRAM.run 6 (compile onlyDiv) 200 (WordRAM.State.init ([7, -3].map encode))).map Prod.fst =
+      some (encode (-2)) ∧
+    (WordRAM.run 6 (compile onlyDiv) 200 (WordRAM.State.init ([-7, 3].map encode))).map Prod.fst =
+      some (encode (-3)) ∧
+    (WordRAM.run 6 (compile onlyDiv) 200 (WordRAM.State.init ([-7, -3].map encode))).map Prod.fst =
+      some (encode 3) ∧
+    (WordRAM.run 6 (compile onlyDiv) 200 (WordRAM.State.init ([7, 0].map encode))).map Prod.fst =
+      some (encode 0) ∧
+    (WordRAM.run 6 (compile onlyDiv) 200 (WordRAM.State.init ([-8, 0].map encode))).map Prod.fst =
+      some (encode 0) ∧
+    (WordRAM.run 6 (compile onlyMod) 200 (WordRAM.State.init ([7, 3].map encode))).map Prod.fst =
+      some (encode 1) ∧
+    (WordRAM.run 6 (compile onlyMod) 200 (WordRAM.State.init ([7, -3].map encode))).map Prod.fst =
+      some (encode 1) ∧
+    (WordRAM.run 6 (compile onlyMod) 200 (WordRAM.State.init ([-7, 3].map encode))).map Prod.fst =
+      some (encode 2) ∧
+    (WordRAM.run 6 (compile onlyMod) 200 (WordRAM.State.init ([-7, -3].map encode))).map Prod.fst =
+      some (encode 2) ∧
+    (WordRAM.run 6 (compile onlyMod) 200 (WordRAM.State.init ([7, 0].map encode))).map Prod.fst =
+      some (encode 7) ∧
+    (WordRAM.run 6 (compile onlyMod) 200 (WordRAM.State.init ([-8, 0].map encode))).map Prod.fst =
+      some (encode (-8)) ∧
+    GenericRAM.run (M := model) 4 onlyDiv 20 (GenericRAM.Signed.initial [-8, -1]) = none ∧
+    GenericRAM.run (M := model) 4 onlyMod 20 (GenericRAM.Signed.initial [-8, -1]) = some (0, 6) ∧
+    (WordRAM.run 6 (compile onlyDiv) 200 (WordRAM.State.init ([-8, -1].map encode))).map Prod.fst =
+      some (encode 8) := by
   decide
+
+/-- Euclidean quotient-accumulation loop: load `[a, b]`, repeatedly accumulate `q ← a / b` and
+step `(a, b) ← (b, a % b)` until `b = 0`, store the final Euclidean GCD `a` at address `0`,
+and halt with the sum of signed Euclidean quotients. -/
+private def euclideanQuotSum : GenericRAM.Program model 5 :=
+  [.op (.const 0 1), .op (.load 1 0),
+    .op (.const 0 2), .op (.load 2 0),
+    .op (.const 0 0), .op (.const 3 0),
+    .branch (.test .eq ![2, 0]) 13,
+    .op (.alu .div 4 ![1, 2]),
+    .op (.alu .add 3 ![3, 4]),
+    .op (.alu .mod 4 ![1, 2]),
+    .op (.copy 1 2), .op (.copy 2 4), .jump 6,
+    .op (.store 0 1), .halt 3]
+
+/-- On `[-23, -5]`, the loop visits `(--)`, `(-+)` and `(++)` division/remainder steps:
+`(-23) / (-5) = 5` (rem `2`), `(-5) / 2 = -3` (rem `1`), `2 / 1 = 2` (rem `0`), returning
+`5 + (-3) + 2 = 4` in `30` source instructions and transferring within `32 * 30 + 5 = 965`
+unsigned instructions. -/
+example : GenericRAM.run (M := model) 6 euclideanQuotSum 100
+      (GenericRAM.Signed.initial [-23, -5]) = some (4, 30) ∧
+    ∃ n ≤ 965, WordRAM.Executes 8 (compile euclideanQuotSum)
+      (WordRAM.State.init ([-23, -5].map encode)) (encode 4) n := by
+  refine ⟨by decide, ?_⟩
+  have hs : GenericRAM.Executes (M := model) 6 euclideanQuotSum
+      (GenericRAM.Signed.initial [-23, -5]) 4 30 :=
+    .of_run (fuel := 100) (by decide)
+  exact executes_compile_input (by unfold GenericRAM.Signed.InputFits; decide) hs
 
 private def overflowing : GenericRAM.Program model 1 := [.op (.const 0 1), .halt 0]
 

@@ -17,12 +17,12 @@ the proved data/test blocks, followed by relocated control flow; the remaining s
 unreachable padding on successful source runs. Target control labels are natural instruction
 indices and need not fit a word. Source data occupies the register bank and encoded memory.
 
-The supported source language is the existing signed RAM without division or remainder.
-The compiler transfers successful runs; it does not promise to reproduce source faults.
+All instructions of `GenericRAM.Signed.model` (including all five signed arithmetic operations)
+are compiled. The compiler transfers successful runs; it does not promise to reproduce source
+faults.
 
 ## Main definitions
 
-* `ToWordRAM.Supported`, `ToWordRAM.SupportedProgram`: the signed arithmetic/control fragment.
 * `ToWordRAM.entry`, `ToWordRAM.rawBlock`, `ToWordRAM.block`, `ToWordRAM.compileFrom`:
   fixed-size instruction blocks with relocated branches and jumps.
 
@@ -46,22 +46,6 @@ open WordRAM.Signed
 
 variable {r : ℕ}
 
-/-- Constants, memory, tests and control flow are supported; arithmetic excludes division/modulo. -/
-def Supported : GenericRAM.Instr model r → Prop
-  | .op o => SupportedOp o
-  | _ => True
-
-/-- Every instruction belongs to the source fragment. -/
-def SupportedProgram (p : GenericRAM.Program model r) : Prop := ∀ i ∈ p, Supported i
-
-/-- Decidability of the source instruction fragment. -/
-instance (i : GenericRAM.Instr model r) : Decidable (Supported i) := by
-  cases i <;> unfold Supported <;> infer_instance
-
-/-- Decidability of the source program fragment. -/
-instance (p : GenericRAM.Program model r) : Decidable (SupportedProgram p) :=
-  inferInstanceAs (Decidable (∀ i ∈ p, Supported i))
-
 /-- Native instruction address of source instruction `pc`, with code placed after `base`. -/
 def entry (base pc : ℕ) : ℕ := base + 64 * pc
 
@@ -78,17 +62,17 @@ def block (base pc : ℕ) (i : GenericRAM.Instr model r) : WordRAM.Program .stan
   rawBlock base pc i ++ List.replicate (64 - (rawBlock base pc i).length)
     (.jump (entry base (pc + 1)))
 
-/-- Compile a suffix whose first source instruction has index `pc`. Only instructions in
-the supported fragment have a signed correctness guarantee; division/remainder use placeholders. -/
+/-- Compile a suffix whose first source instruction has index `pc`. -/
 def compileFrom (base : ℕ) : ℕ → GenericRAM.Program model r → WordRAM.Program .standard (r + 9)
   | _, [] => []
   | pc, i :: p => block base pc i ++ compileFrom base (pc + 1) p
 
-private theorem size_arithmeticCode (f : Arithmetic) : (arithmeticCode (r := r) f).size ≤ 21 := by
-  cases f <;> simp [arithmeticCode, Code.size, WordRAM.Signed.add, subtract, multiply,
-    unpack, addCore, addMagnitudes, finish, flipRightSign, multiplyMagnitudes]
+private theorem size_arithmeticCode (f : Arithmetic) : (arithmeticCode (r := r) f).size ≤ 28 := by
+  cases f <;> simp [arithmeticCode, Code.size, WordRAM.Signed.add, subtract, multiply, divide,
+    modulo, unpack, addCore, addMagnitudes, finish, flipRightSign, multiplyMagnitudes,
+    divideMagnitudes, moduloCore]
 
-private theorem size_compileOp (o : GenericRAM.Op model r) : (compileOp o).size ≤ 24 := by
+private theorem size_compileOp (o : GenericRAM.Op model r) : (compileOp o).size ≤ 31 := by
   cases o with
   | alu f d args =>
     simp only [compileOp, operandsCode, Code.size]
@@ -161,7 +145,7 @@ private theorem next_simulation {w base : ℕ} {p : GenericRAM.Program model r}
     {q : WordRAM.Program .standard (r + 9)} {s t : GenericRAM.State model r}
     {x : WordRAM.Data (r + 9)}
     (hcode : ∀ pc i, p[pc]? = some i → q.Contains (entry base pc) (rawBlock base pc i))
-    (hp : SupportedProgram p) (hx : Represents w s.data x) (hn : GenericRAM.Next w p s t) :
+    (hx : Represents w s.data x) (hn : GenericRAM.Next w p s t) :
     ∃ y k, k ≤ 32 ∧ WordRAM.Runs (w + 2) q ⟨entry base s.pc, x⟩
       ⟨entry base t.pc, y⟩ k ∧ Represents w t.data y := by
   unfold GenericRAM.Next GenericRAM.step at hn
@@ -171,7 +155,6 @@ private theorem next_simulation {w base : ℕ} {p : GenericRAM.Program model r}
     | none => simp [hi] at hn
     | some i =>
       have hc := hcode s.pc i hi
-      have hs := hp i (List.mem_of_getElem? hi)
       simp only [hi] at hn
       cases i with
       | op o =>
@@ -181,7 +164,7 @@ private theorem next_simulation {w base : ℕ} {p : GenericRAM.Program model r}
           have ht : (⟨s.pc + 1, d⟩ : GenericRAM.State model r) = t :=
             continue_eq (w := w) (by simpa only [he] using hn)
           subst t
-          obtain ⟨y, ⟨k, hk, hex⟩, hyr⟩ := exec_compileOp o hs hx he
+          obtain ⟨y, ⟨k, hk, hex⟩, hyr⟩ := exec_compileOp o hx he
           have hr : WordRAM.Runs (w + 2) q ⟨entry base s.pc, x⟩
               ⟨entry base s.pc + (compileOp o).size, y⟩ k := hex.runs hc.append_left
           have hj : WordRAM.Next (w + 2) q ⟨entry base s.pc + (compileOp o).size, y⟩
@@ -240,7 +223,7 @@ private theorem next_simulation {w base : ℕ} {p : GenericRAM.Program model r}
 private theorem runs_simulation {w base n : ℕ} {p : GenericRAM.Program model r}
     {q : WordRAM.Program .standard (r + 9)} {s t : GenericRAM.State model r}
     (hcode : ∀ pc i, p[pc]? = some i → q.Contains (entry base pc) (rawBlock base pc i))
-    (hp : SupportedProgram p) {x : WordRAM.Data (r + 9)} (hx : Represents w s.data x)
+    {x : WordRAM.Data (r + 9)} (hx : Represents w s.data x)
     (hr : GenericRAM.Runs w p s t n) :
     ∃ y k, k ≤ 32 * n ∧ WordRAM.Runs (w + 2) q ⟨entry base s.pc, x⟩
       ⟨entry base t.pc, y⟩ k ∧ Represents w t.data y := by
@@ -248,7 +231,7 @@ private theorem runs_simulation {w base n : ℕ} {p : GenericRAM.Program model r
   | refl => exact ⟨x, 0, by omega, .refl _, hx⟩
   | tail s t n hsteps hnext ih =>
     obtain ⟨y, k, hk, hrun, hyr⟩ := ih hx
-    obtain ⟨z, l, hl, hlast, hzr⟩ := next_simulation hcode hp hyr hnext
+    obtain ⟨z, l, hl, hlast, hzr⟩ := next_simulation hcode hyr hnext
     exact ⟨z, k + l, by omega, hrun.trans hlast, hzr⟩
 
 private theorem continue_ne_halt {w : ℕ} (s : GenericRAM.State model r) (v : ℤ) :
@@ -311,27 +294,27 @@ theorem contains_compileFrom (pre : WordRAM.Program .standard (r + 9))
 at the translated instruction boundary, within thirty-two target instructions per step.
 Execution of the supplied prefix `pre` is not included. -/
 theorem runs_compile {w n : ℕ} {p : GenericRAM.Program model r}
-    (hp : SupportedProgram p) (pre : WordRAM.Program .standard (r + 9))
+    (pre : WordRAM.Program .standard (r + 9))
     {s t : GenericRAM.State model r} {x : WordRAM.Data (r + 9)}
     (hx : Represents w s.data x) (hr : GenericRAM.Runs w p s t n) :
     ∃ y k, k ≤ 32 * n ∧
       WordRAM.Runs (w + 2) (pre ++ compileFrom pre.length 0 p)
         ⟨entry pre.length s.pc, x⟩ ⟨entry pre.length t.pc, y⟩ k ∧ Represents w t.data y := by
-  exact runs_simulation (fun pc i hi => contains_compileFrom pre hi) hp hx hr
+  exact runs_simulation (fun pc i hi => contains_compileFrom pre hi) hx hr
 
-/-- Every successful source run of the supported signed fragment transfers to the compiled
+/-- Every successful source run of a signed RAM program transfers to the compiled
 unsigned program at width `w + 2` in at most thirty-two target instructions per source
 instruction, including the final halt. Execution of `pre` is not charged here; the target
 starts at the translated source instruction with already represented data. -/
 theorem executes_compile {w n : ℕ} {p : GenericRAM.Program model r}
-    (hp : SupportedProgram p) (pre : WordRAM.Program .standard (r + 9))
+    (pre : WordRAM.Program .standard (r + 9))
     {s : GenericRAM.State model r} {x : WordRAM.Data (r + 9)} {v : ℤ}
     (hx : Represents w s.data x) (hr : GenericRAM.Executes w p s v n) :
     ∃ k ≤ 32 * n, WordRAM.Executes (w + 2) (pre ++ compileFrom pre.length 0 p)
       ⟨entry pre.length s.pc, x⟩ (encode v) k := by
   obtain ⟨t, m, hsteps, hhalt, rfl⟩ := hr
   have hc := fun pc i hi => contains_compileFrom (p := p) (pc := pc) (i := i) pre hi
-  obtain ⟨y, k, hk, hrun, hyr⟩ := runs_simulation hc hp hx hsteps
+  obtain ⟨y, k, hk, hrun, hyr⟩ := runs_simulation hc hx hsteps
   have ht := halt_simulation hc hyr hhalt
   exact ⟨k + 1, by omega, WordRAM.Executes.of_runs hrun (WordRAM.Executes.halt ht)⟩
 
