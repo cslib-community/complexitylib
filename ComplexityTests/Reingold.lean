@@ -48,19 +48,22 @@ example (k : Fin (walkLength 1) → Label) :
   rw [SimpleGraph.reachable_bot] at this
   exact absurd this (by decide)
 
--- The hypotheses of the generic statements are satisfiable: the base graph is a good expander.
-example : base.spectralExpansion < 1 :=
-  spectralExpansion_base_le.trans_lt (by norm_num)
+-- The hypotheses of the generic statements are satisfiable: the base graph has `λ ≤ 1 / 5`, so
+-- one step of Reingold's transformation on the complete rotation map has spectral gap at least
+-- `1 / 5`.
+example :
+    (1 / 5 : ℝ) ≤ 1 - (reingoldStep base baseEquiv (complete Label)).spectralExpansion := by
+  have h := min_le_one_sub_spectralExpansion_reingoldStep base baseEquiv spectralExpansion_base_le
+    (complete Label) (γ := 1) zero_le_one (by rw [spectralExpansion_complete, sub_zero])
+  exact (by norm_num : (1 / 5 : ℝ) ≤ min (6 / 5 * 1) (1 / 5)).trans h
 
 -- The regular rotation map of any simple graph has at least half self-loops at every vertex.
-example {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (v : Fin n × Fin n) :
-    Fintype.card Label ≤ 2 * (input G).edgeCount v v :=
-  card_le_two_mul_edgeCount_input G v
+example : Fintype.card Label ≤ 2 * (input (⊤ : SimpleGraph (Fin 2))).edgeCount (0, 0) (0, 0) :=
+  card_le_two_mul_edgeCount_input ⊤ (0, 0)
 
 -- The connected component of a vertex satisfies the connectivity hypothesis of the spectral gap.
-example {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (s : Fin n × Fin n) :
-    ((input G).componentGraph s).toSimpleGraph.Preconnected :=
-  (input G).preconnected_componentGraph s
+example : ((input (⊤ : SimpleGraph (Fin 2))).componentGraph (0, 0)).toSimpleGraph.Preconnected :=
+  (input (⊤ : SimpleGraph (Fin 2))).preconnected_componentGraph (0, 0)
 
 -- The walk hypothesis is satisfiable: in the complete graph with self-loops one step reaches
 -- every vertex.
@@ -115,12 +118,11 @@ example :
     (Complexity.compl_mem_SL Complexity.USTCON_mem_SL)
 
 example : Complexity.PolyTimeComplete Complexity.L Complexity.encUSTCON Complexity.USTCON :=
-  Complexity.CompleteUnder.mono (fun _ _ h => h.polyTimeReducible)
-    Complexity.USTCON_logSpaceComplete_L
+  Complexity.USTCON_logSpaceComplete_L.polyTimeComplete
 
-example {m m' : ℕ} {l l' : List Bool}
-    (h : List.replicate m true ++ false :: l = List.replicate m' true ++ false :: l') :
-    m = m' ∧ l = l' :=
-  List.replicate_true_append_false_inj h
+example {m : ℕ} {l : List Bool}
+    (h : List.replicate m true ++ false :: l = [true, true, false, true]) :
+    m = 2 ∧ l = [true] :=
+  List.replicate_true_append_false_inj (m' := 2) (l' := [true]) h
 
 end ComplexityTests.Reingold

@@ -94,17 +94,16 @@ example : (toOV φ₁).1.length = 2 ∧ (toOV φ₁).2.length = 4 := by decide
 /-- The reduction agrees with satisfiability. -/
 example : φ₁ ∈ SAT := (toOV_mem_OV_iff φ₁).mp (by decide)
 
-example (φ : CNF ℕ) : OV.dim (toOV φ) ≤ φ.length := OV.dim_toOV_le φ
+example : OV.dim (toOV φ₁) ≤ 3 := (OV.dim_toOV_le φ₁).trans (by decide)
 
 /-! ### Non-vacuity -/
 
-/-- Exhaustive search: every exponent set contains `1`. -/
-example (k : ℕ) : DecidableInExpTime (KSAT k) encCNF CNF.numVars 1 :=
-  KSAT_decidableInExpTime_one k
+/-- Exhaustive search places `ThreeSAT` in exponential time with exponent `1`. -/
+example : DecidableInExpTime ThreeSAT encCNF CNF.numVars 1 :=
+  KSAT_three ▸ KSAT_decidableInExpTime_one 3
 
-example : 0 ≤ satExponent 3 ∧ satExponent 3 ≤ 1 := ⟨satExponent_nonneg 3, satExponent_le_one 3⟩
-
-example : satExponent 3 ≤ satExponent 4 := satExponent_mono (by norm_num)
+example : 0 ≤ satExponent 4 ∧ satExponent 3 ≤ 1 :=
+  ⟨(satExponent_nonneg 3).trans (satExponent_mono (by norm_num)), satExponent_le_one 3⟩
 
 /-- A trivial problem is decidable within linear time, in either form. -/
 example : DecidableInTimeO (∅ : Set (CNF ℕ)) encCNF fun φ => (encCNF φ).length :=
@@ -117,8 +116,8 @@ example : (∅ : Set (CNF ℕ)) ∈ DTIME encCNF id :=
       fun _ => le_rfl)
 
 /-- The hypotheses in terms of the exponents. -/
-example (h : ¬DecidableInSubexpTime ThreeSAT encCNF List.length) : 0 < satExponent 3 :=
-  ETH_iff_satExponent_pos.mp (ETH_of_not_decidableInSubexpTime_length h)
+example (h : ETH) : 0 < satExponent 4 :=
+  (ETH_iff_satExponent_pos.mp h).trans_le (satExponent_mono (by norm_num))
 
 example (h : Filter.Tendsto satExponent Filter.atTop (nhds 1)) : OVH :=
   OVH_of_SETH (SETH_iff_tendsto.mpr h)

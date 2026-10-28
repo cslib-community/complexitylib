@@ -43,34 +43,35 @@ theorem wideCostFamily_reduces :
   localOptRel_searchReducible_LocalOpt (.const 1) neighbor_polytime cost_polytime
     (by simp [neighbor])
 
--- Each canonical search problem reduces concrete instances of its defining principle.
+-- Each canonical search problem reduces concrete 1-bit instances of its defining principle.
 example : SearchReducible encBool encLocalOpt
-    (localOptRel (fun _ : Bool => 1) neighbor cost) LocalOpt :=
-  LocalOpt_searchComplete.2 encBool _ wideCostFamily_mem_PLS
+    (localOptRel (fun _ : Bool => 1) neighbor (fun _ => 0)) LocalOpt :=
+  LocalOpt_searchComplete.2 encBool _
+    (localOptRel_mem_PLS (.const 1) neighbor_polytime (.const 0) (by simp [neighbor]))
 
 example : SearchReducible encBool encPigeon
-    (pigeonRel (fun _ : Bool => 0) (fun p => p.2)) Pigeon :=
+    (pigeonRel (fun _ : Bool => 1) neighbor) Pigeon :=
   Pigeon_searchComplete.2 encBool _
-    (pigeonRel_mem_PPP (.const 0) (.snd encBool encBits) (by simp))
+    (pigeonRel_mem_PPP (.const 1) neighbor_polytime (by simp [neighbor]))
 
 example : SearchReducible encBool encEndOfLine
-    (endOfLineRel (fun _ : Bool => 0) (fun p => p.2) (fun p => p.2)) EndOfLine :=
+    (endOfLineRel (fun _ : Bool => 1) neighbor neighbor) EndOfLine :=
   EndOfLine_searchComplete.2 encBool _
-    (endOfLineRel_mem_PPAD (.const 0) (.snd encBool encBits) (.snd encBool encBits)
-      (by simp) (by simp))
+    (endOfLineRel_mem_PPAD (.const 1) neighbor_polytime neighbor_polytime
+      (by simp [neighbor]) (by simp [neighbor]))
 
 example : SearchReducible encBool encLeaf
-    (leafRel (fun _ : Bool => 0) (fun p => p.2) (fun p => p.2)) Leaf :=
+    (leafRel (fun _ : Bool => 1) neighbor neighbor) Leaf :=
   Leaf_searchComplete.2 encBool _
-    (leafRel_mem_PPA (.const 0) (.snd encBool encBits) (.snd encBool encBits)
-      (by simp) (by simp))
+    (leafRel_mem_PPA (.const 1) neighbor_polytime neighbor_polytime
+      (by simp [neighbor]) (by simp [neighbor]))
 
 example : localOptRel (fun _ : Bool => 1) neighbor cost false [false] := by
   simp [localOptRel, neighbor, cost]
 example : ¬localOptRel (fun _ : Bool => 1) neighbor cost false [true] := by
   simp [localOptRel, neighbor, cost]
 example : binaryWord 5 17 = [true, false, false, false, true] := by decide
-example : binaryValue (binaryWord 5 17) = 17 := binaryValue_binaryWord _ _
+example : binaryValue [true, false, false, false, true] = 17 := by decide
 
 -- The finite principles and compiled reductions include empty vertex strings.
 example : pigeonRel (fun _ : Bool => 0) (fun p => p.2) false [] := by
