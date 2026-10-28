@@ -1,4 +1,5 @@
 The Convolution-3SUM reduction and graph-weight selection in
+Complexity/Algorithms/ExactTriangle/Defs.lean,
 Complexity/Algorithms/ThreeSum/Convolution.lean and
 Complexity/Algorithms/WordRAM/ThreeSum/Weight.lean are adapted from
 anthropics/formal-math, 3sum-apsp, revision

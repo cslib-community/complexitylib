@@ -7,7 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Init
+public import Complexity.Algorithms.ExactTriangle.Defs
 public import Mathlib.Data.Nat.Sqrt
 public import Mathlib.Algebra.Order.Ring.Int
 public import Mathlib.Algebra.Order.Group.Abs
@@ -16,11 +16,13 @@ public import Mathlib.Algebra.Order.Group.Abs
 # Convolution-3SUM reduces to Exact Triangle
 
 This directly adapts Anthropic's [pinned reduction](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec3/Theorem21a/Convolution.lean),
-after the reduction cited there as
-[VW13, Theorem 4.3]. No machine, machine simulation, or subquadratic time bound is asserted here.
+after the reduction cited there as [VassilevskaWilliamsWilliams2013, Theorem 4.3].
+The theorem number is taken from that source. No machine, machine simulation, or subquadratic
+time bound is asserted here.
 The native graph-weight construction is developed separately.
 
 An input has a solution when `x i + x j = x (i + j)` for some `i + j < N`; indices may repeat.
+Indices start at zero: for nonempty input, `x 0 = 0` alone gives the solution `i = j = 0`.
 This differs from ordinary 3SUM, which requires three distinct positions. For `N < t * t`,
 construct `2 * t` tripartite instances with `t` vertices per part. Invalid indices receive
 `2 * U + 1`, preventing them from creating zero triangles when input magnitudes are at most `U`.
@@ -46,6 +48,8 @@ construct `2 * t` tripartite instances with `t` vertices per part. Invalid indic
 @[expose] public section
 
 namespace Cslib.Algorithms.ThreeSum
+
+open ExactTriangle (HasZeroTriangle)
 
 /-- One-array Convolution-3SUM, allowing repeated indices. Only the first `N` entries matter. -/
 def Convolution (N : ℕ) (x : ℕ → ℤ) : Prop :=
@@ -100,11 +104,6 @@ theorem weightAC_eq_pick {t : ℕ} (N s : ℕ) (x : ℕ → ℤ) (fill : ℤ) (a
   rw [pick_nat]
   split_ifs <;> simp [weightAC, *]
 
-/-- The explicit tripartite instance has a zero triangle; no graph representation is bundled. -/
-def HasZeroTriangle {t : ℕ} (N s : ℕ) (x : ℕ → ℤ) (fill : ℤ) : Prop :=
-  ∃ a b c : Fin t, weightAB N x fill a b + weightBC N s x fill b c +
-    weightAC N s x fill a c = 0
-
 /-- Every edge is either an input entry up to sign, or the filler. -/
 theorem weights_abs_le {t N s : ℕ} {x : ℕ → ℤ} {U : ℤ} (hU : 0 ≤ U)
     (hx : ∀ i < N, |x i| ≤ U) (a b c : Fin t) :
@@ -149,7 +148,9 @@ private theorem weights_neg_le {t N s : ℕ} {x : ℕ → ℤ} {U : ℤ} (hU : 0
 There are `2*t` instances and exactly `t` vertices in each of their three parts. -/
 theorem convolution_iff {t N : ℕ} {x : ℕ → ℤ} {U : ℤ} (hU : 0 ≤ U)
     (hNt : N < t * t) (hx : ∀ i < N, |x i| ≤ U) :
-    Convolution N x ↔ ∃ s < 2 * t, HasZeroTriangle (t := t) N s x (2 * U + 1) := by
+    Convolution N x ↔ ∃ s < 2 * t, HasZeroTriangle
+      (weightAB (t := t) N x (2 * U + 1)) (weightBC N s x (2 * U + 1))
+      (weightAC N s x (2 * U + 1)) := by
   constructor
   · rintro ⟨i, j, hij, h⟩
     have ht : 0 < t := Nat.pos_of_ne_zero (by rintro rfl; omega)
@@ -197,7 +198,8 @@ theorem convolution_iff {t N : ℕ} {x : ℕ → ℤ} {U : ℤ} (hU : 0 ≤ U)
 theorem convolution_iff_sqrt {N : ℕ} {x : ℕ → ℤ} {U : ℤ} (hU : 0 ≤ U)
     (hx : ∀ i < N, |x i| ≤ U) :
     Convolution N x ↔ ∃ s < 2 * (Nat.sqrt N + 1),
-      HasZeroTriangle (t := Nat.sqrt N + 1) N s x (2 * U + 1) :=
+      HasZeroTriangle (weightAB (t := Nat.sqrt N + 1) N x (2 * U + 1))
+        (weightBC N s x (2 * U + 1)) (weightAC N s x (2 * U + 1)) :=
   convolution_iff hU (Nat.lt_succ_sqrt N) hx
 
 end Cslib.Algorithms.ThreeSum

@@ -149,7 +149,9 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
 * **Direct 3SUM adaptation.** `Algorithms/ThreeSum/Convolution.lean` adapts the explicit
   Convolution-3SUM to Exact Triangle correctness reduction from Anthropic's
   [`formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp),
-  `Sec3/Theorem21a/Convolution.lean`. The three weight matrices use the original formulas;
+  `Sec3/Theorem21a/Convolution.lean`. Its reduction uses the arbitrary-matrix predicate in
+  `Algorithms/ExactTriangle/Defs.lean`, shared with future Exact Triangle solvers.
+  The three weight matrices use the original formulas;
   an explicit nonnegative magnitude bound also handles empty input. The native selection/store
   kernel in `Algorithms/WordRAM/ThreeSum/Weight.lean` directly adapts `pickStmt`/`putStmt` from
   `Programs/Sec3/Theorem21a/Convolution/Fill.lean`, reusing the unsigned machine and signed
