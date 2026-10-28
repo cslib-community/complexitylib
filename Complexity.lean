@@ -128,6 +128,7 @@ public import Complexity.Computability.Circuit.Arithmetic.Waring
 public import Complexity.Computability.Circuit.Arithmetic.Waring.Basic
 public import Complexity.Computability.Circuit.Arithmetic.Waring.Compilation
 public import Complexity.Computability.Circuit.Arithmetic.Word
+public import Complexity.Computability.Circuit.Arithmetic.WordPolynomial
 public import Complexity.Computability.Circuit.Balanced
 public import Complexity.Computability.Circuit.Basic
 public import Complexity.Computability.Circuit.BipartiteMatching
@@ -2175,6 +2176,7 @@ public import Complexity.Foundations.LinearAlgebra.KernelVector
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
 public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
+public import Complexity.Foundations.LinearAlgebra.Matrix.ListProd
 public import Complexity.Foundations.LinearAlgebra.Matrix.Moore
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rank
 public import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
