@@ -72,8 +72,7 @@ example (A : Set (List Bool)) : (Set.univ : Set (List Bool)) ∈ PWithOracle A e
 /-- A deterministic computation is polynomial time relative to an oracle, with a certificate. -/
 example (A : Set (List Bool)) :
     ComputableInPolyTimeWithOracle A (fun _ : List Bool => false) encBits encBool :=
-  (ComputableInPolyTime.of_tidy
-    (ComputableTidilyInPolyTime.const false)).computableInPolyTimeWithOracle A
+  (ComputableInPolyTime.const false).computableInPolyTimeWithOracle A
 
 /-- `fun_prop` lifts polynomial-time certificates to every oracle. -/
 example (A : Set (List Bool)) :
@@ -116,7 +115,8 @@ example : [true] ∉ unaryLengthLanguage {[], [true, true]} := fun h => by
 /-! ### Candidate deciders -/
 
 /-- The candidates are countably many. -/
-example : Countable BakerGillSolovay.Candidate := inferInstance
+example : ∃ f : BakerGillSolovay.Candidate → ℕ, Function.Injective f :=
+  Countable.exists_injective_nat'
 
 open BakerGillSolovay in
 /-- A candidate with a machine that halts at once and a zero clock: its verdict makes no request
@@ -159,21 +159,20 @@ example : ∃ B : Set (List Bool), ∃ n, ¬(OracleComp.interpret (m := Id) (lan
 /-! ### Oracles in polynomial space and the collapse -/
 
 /-- An oracle in `PSPACE`: the empty language. `P` relative to it is within `PSPACE`. -/
-example : PWithOracle (∅ : Set (List Bool)) encBits ⊆ PSPACE encBits :=
-  PWithOracle_subset_PSPACE (P_subset_PSPACE ⟨fun _ => false,
-    ComputableInPolyTime.const false, fun _ => by simp⟩)
+example : {w : List Bool | w.reverse ∈ (∅ : Set (List Bool))} ∈ PSPACE encBits :=
+  PWithOracle_subset_PSPACE
+    (P_subset_PSPACE ⟨fun _ => false, ComputableInPolyTime.const false, fun _ => by simp⟩)
+    (PolyTimeReducible.mem_PWithOracle ⟨List.reverse, by fun_prop, fun _ => Iff.rfl⟩
+      (mem_PWithOracle_self ∅))
 
 /-- A token list with an unexpected token, one with a missing operand, and one whose constant
 carries a variable are not well formed; a negated constant and a quantified variable are. -/
-example : TQBF.wellFormed [(.not, 0), (.top, 0)] = true := by decide
-
-example : TQBF.wellFormed [(.ex, 3), (.var, 3)] = true := by decide
-
-example : TQBF.wellFormed [(.top, 0), (.top, 0)] = false := by decide
-
-example : TQBF.wellFormed [(.and, 0), (.top, 0)] = false := by decide
-
-example : TQBF.wellFormed [(.top, 1)] = false := by decide
+example : TQBF.wellFormed [(.not, 0), (.top, 0)] = true ∧
+    TQBF.wellFormed [(.ex, 3), (.var, 3)] = true ∧
+    TQBF.wellFormed [(.top, 0), (.top, 0)] = false ∧
+    TQBF.wellFormed [(.and, 0), (.top, 0)] = false ∧
+    TQBF.wellFormed [(.top, 1)] = false := by
+  decide
 
 /-- An encoded formula is a code; a word shorter than every encoded formula is not. -/
 example : TQBF.isCode (encQBF .top) = true := (TQBF.isCode_iff _).mpr ⟨_, rfl⟩
@@ -202,9 +201,10 @@ example : TQBF ∈ PWithOracle (encQBF '' TQBF) encQBF :=
   PSPACE_subset_PWithOracle image_TQBF_pspaceHard encQBF TQBF_mem_PSPACE
 
 /-- The theorem of Baker, Gill and Solovay: the oracles of the collapse and of the separation. -/
-example : (∃ A : Set (List Bool), PWithOracle A encBits = NPWithOracle A encBits) ∧
-    ∃ B : Set (List Bool), PWithOracle B encBits ≠ NPWithOracle B encBits :=
-  baker_gill_solovay
+example : (∃ A : Set (List Bool), unaryLengthLanguage A ∈ PWithOracle A encBits) ∧
+    ∃ B : Set (List Bool), PWithOracle B encBits ≠ NPWithOracle B encBits := by
+  obtain ⟨⟨A, hA⟩, hB⟩ := baker_gill_solovay
+  exact ⟨⟨A, hA ▸ unaryLengthLanguage_mem_NPWithOracle A⟩, hB⟩
 
 /-! ### Oracle monotonicity -/
 
