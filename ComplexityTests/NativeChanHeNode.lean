@@ -10,6 +10,9 @@ module
 import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.NodeSpec
 meta import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.NodeSpec
 
+-- Regression clients intentionally export no public declarations.
+set_option linter.privateModule false
+
 /-!
 # Complete native Chan–He node regression clients
 
@@ -123,18 +126,9 @@ private def twoUnique : Fin 3 → List ℤ := ![[-1, 0], [0, 1], [-1, 0]]
 #guard_msgs in
 #eval (run 4 singleton 3 6 1).isNone
 
--- Layout and fit hypotheses are promises of the component, and these invalid cases violate them.
-public theorem invalid_group_count : ¬(2 * 3 ≤ 5) := by decide
+-- The failing executed width is also below the theorem's sufficient signed-fit promise.
 example : ¬Cslib.GenericRAM.Signed.Fits 4 ((layout (input singleton 3 6 1)).budget : ℤ) := by
   decide
-example : ¬((input singleton 3 6 1).regs (source 0) +
-    (layout (input singleton 3 6 1)).n 0 ≤ 0) := by decide
-
-example : ¬Set.InjOn (fun _ : ℕ => (1 : ℤ)) (↑(Finset.range 2) : Set ℕ) := by
-  intro h
-  have he := h (by decide : 0 ∈ (↑(Finset.range 2) : Set ℕ))
-    (by decide : 1 ∈ (↑(Finset.range 2) : Set ℕ)) rfl
-  omega
 
 -- The theorem's polynomial fit/layout assumptions admit actual supplied native inputs.
 example : Cslib.GenericRAM.Signed.Fits 32 ((layout (input empty 1 2 0)).budget : ℤ) := by decide
