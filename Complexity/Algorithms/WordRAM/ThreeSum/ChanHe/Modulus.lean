@@ -395,7 +395,12 @@ def cost (x : Data 64) : ℕ :=
 /-- Compute exactly the existing Chan–He modulus with two complete native prime searches.
 The prime bitmap/count is a shared input built by `PrimeTable.program`. A single polynomial
 budget bounds selector counters, thresholds and addresses; input values and the maximum modulus
-fit the source width. The final halt is excluded. -/
+fit the source width. The final halt is excluded.
+
+The interface requires `m ≥ 2` for a nonempty candidate-prime window. The intended preprocessing
+caller uses `mPar n U = (wPar n U + 1) * (2 * log₂(wPar n U + 1) + 4) ≥ 4`.
+The default-only window `m = 1` is outside this interface, although the selector bounds extend
+to it; `m = 0` fails the default-selector upper bound. -/
 theorem exec {w : ℕ} (x : Data 64) (values : Fin 3 → ℕ → ℤ)
     (hm : 2 ≤ x.regs Search.limit)
     (hmod : GenericRAM.Signed.Fits w ((x.regs Search.limit ^ 2 : ℕ) : ℤ))
