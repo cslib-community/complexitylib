@@ -49,6 +49,9 @@ public import Complexity.Algorithms.ThreeSum.ChanHe.Sizes
 public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.ThreeSum.ThreeSets
+public import Complexity.Algorithms.WordRAM.Deduplicate.Count
+public import Complexity.Algorithms.WordRAM.Deduplicate.Model
+public import Complexity.Algorithms.WordRAM.Deduplicate.Program
 public import Complexity.Algorithms.WordRAM.Dijkstra.BinaryHeap
 public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapProgram
@@ -103,6 +106,11 @@ public import Complexity.Algorithms.WordRAM.Queue.Dynamic
 public import Complexity.Algorithms.WordRAM.Queue.Model
 public import Complexity.Algorithms.WordRAM.Quickselect
 public import Complexity.Algorithms.WordRAM.Quicksort
+public import Complexity.Algorithms.WordRAM.RadixSort
+public import Complexity.Algorithms.WordRAM.RadixSort.Deduplicate
+public import Complexity.Algorithms.WordRAM.RadixSort.Model
+public import Complexity.Algorithms.WordRAM.RadixSort.Program
+public import Complexity.Algorithms.WordRAM.RadixSort.Scan
 public import Complexity.Algorithms.WordRAM.Stack
 public import Complexity.Algorithms.WordRAM.Stack.Controller
 public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
@@ -1620,6 +1628,7 @@ public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.WordRAM.Generic
 public import Complexity.Computability.WordRAM.Heap
+public import Complexity.Computability.WordRAM.ListArray
 public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Computability.WordRAM.Multiword
 public import Complexity.Computability.WordRAM.Multiword.Arithmetic
