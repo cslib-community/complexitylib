@@ -97,6 +97,21 @@ example : ∃ budget : ℕ → ℕ,
       hevaluate hD spikedDepth_bounded
   exact ⟨budget, hbudget, by simpa [spikedDepth] using hdom 0, hdom, hcorrect, hsecurity⟩
 
+-- Without a separate computability hypothesis on `secretWidth`, `exists_decrypt_circuits` still
+-- gives a single polynomial-size decryption circuit family across all budgets.
+example :
+    ∃ circuits : ∀ n, Circuit Boolean.signature
+        ((3 * secretWidth n + 1) + (ciphertextWidth n + 1)) 1,
+      PolynomiallyBounded (fun n => (circuits n).size) ∧
+      ∀ (budget : ℕ → ℕ) n (sk ciphertext : List Bool),
+        sk.length = 3 * secretWidth n + 1 →
+        ciphertext.length = ciphertextWidth n + 1 →
+        (circuits n).eval Boolean.interpretation
+            (BitString.ofList ((3 * secretWidth n + 1) + (ciphertextWidth n + 1))
+              (sk ++ ciphertext)) 0 =
+          (Leveled.scheme D budget).decrypt n sk ciphertext :=
+  Leveled.exists_decrypt_circuits D hD
+
 end ConditionalSecurity
 
 -- This fixture is insecure. These are concrete instances of every non-security input

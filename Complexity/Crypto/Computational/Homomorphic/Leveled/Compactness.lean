@@ -8,9 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.PolyTime
-import Complexity.Computability.Circuit.Boolean.CodeSubstitution
 import Complexity.Computability.Circuit.Boolean.PolynomialTime
-import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness
+import Complexity.Computability.Complexity.Problems.CircuitValue.Compilation
 
 /-!
 # Compact decryption for the leveled construction
@@ -25,8 +24,8 @@ The resulting family depends only on the security parameter, not on the depth bu
 with decryption on all words of the prescribed lengths, including malformed secret-key encodings.
 This establishes the common-decryption-circuit condition in Gentry's Definition 3. When the base
 secret width is also computable in polynomial time in unary, `exists_uniform_decrypt_circuits`
-compiles the native decryption algorithm via the uniform Boolean tableau constructor and prefix
-hardwiring to provide a native polynomial-time circuit generator.
+compiles the native decryption algorithm via `CircuitValue.exists_uniformCircuitFamily` to provide
+a native polynomial-time circuit generator.
 
 ## Main results
 
@@ -95,7 +94,8 @@ include hD in
 /-- The actual decoder, tag selection and base-circuit evaluation have polynomial-size circuits
 on the derived key and ciphertext widths. One circuit family works for every depth budget, and
 its specification includes every word of those widths, without a support or validity premise.
-This is nonuniform circuit existence, not a circuit-generation certificate. -/
+This is nonuniform circuit existence, not a circuit-generation certificate; see
+`exists_uniform_decrypt_circuits` when `secretWidth` is computable in polynomial time in unary. -/
 theorem exists_decrypt_circuits :
     ∃ circuits : ∀ n, Circuit Boolean.signature
         ((3 * secretWidth n + 1) + (ciphertextWidth n + 1)) 1,
@@ -194,58 +194,27 @@ theorem exists_uniform_decrypt_circuits
       (.of_tidy (ComputableTidilyInPolyTime.fst encUnary encBits))
       (.of_tidy (ComputableTidilyInPolyTime.bitsTakeWithInput hw hklen))
       (.of_tidy (ComputableTidilyInPolyTime.bitsDropWithInput hw hklen))
-  obtain ⟨baseCircuits, hbaseCode, hbaseEval⟩ :=
-    Complexity.CircuitValue.exists_uniformCircuits hdecryptConcat
-  let r := fun n => frame (encUnary n)
-  let circuits (n : ℕ) : Circuit Boolean.signature (W n) 1 :=
-    Boolean.prefixCircuit (r n) (baseCircuits ((r n).length + W n))
-  have hframe : ComputableTidilyInPolyTime frame encBits encBits :=
-    .of_linear (.of_frame fun _ => rfl)
-  have hr : ComputableTidilyInPolyTime r encUnary encBits :=
-    hframe.comp (ComputableTidilyInPolyTime.encode encUnary)
-  have hN : ComputableTidilyInPolyTime (fun n => (r n).length + W n) encUnary encUnary := by
-    have hrlen : ComputableTidilyInPolyTime (fun n => (r n).length) encUnary encUnary :=
-      ComputableTidilyInPolyTime.length_bits.comp hr
-    fun_prop
-  have hcode : ComputableTidilyInPolyTime (fun n => (circuits n).code) encUnary Boolean.encCode := by
-    have hprefix := (Boolean.computableInPolyTime_prefixCode (.of_tidy hr)
-      (.of_tidy (ComputableTidilyInPolyTime.unary_to_binary.comp hW))
-      (hbaseCode.comp (.of_tidy hN))).tidy
-    exact hprefix.of_enc_eq fun n => by
-      rw [show (circuits n).code = _ from Boolean.code_prefixCircuit _ _]
-      rfl
+  let F (p : ℕ × List Bool) : List Bool := [decryptConcat p]
+  have hF : ComputableInPolyTime F (encPair encUnary encBits) encBits :=
+    .of_tidy (hdecryptConcat.tidy.of_enc_eq fun _ => rfl)
+  obtain ⟨circuits, hcode, hcorrect⟩ :=
+    Complexity.CircuitValue.exists_uniformCircuitFamily
+      (n := W) (m := fun _ => 1) (.of_tidy hW) (by fun_prop) hF
   have hgen : ComputableInPolyTime
       (fun n => (⟨W n, circuits n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1) :=
-    .of_tidy ((hW.prod hcode).of_enc_eq fun n => by simp only [Boolean.encCircuit_apply])
+    .of_tidy ((hW.prod hcode.tidy).of_enc_eq fun n => by simp only [Boolean.encCircuit_apply])
   have hsize : PolynomiallyBounded (fun n => (circuits n).size) := by
     have hlength : PolynomiallyBounded (fun n => (circuits n).code.1.length) :=
       ((ComputableTidilyInPolyTime.length_list Boolean.encGate).comp
-        hcode.fst').polynomiallyBounded
+        hcode.tidy.fst').polynomiallyBounded
     exact hlength.mono_of_le fun n => (Circuit.length_code_fst (circuits n)).ge
   refine ⟨circuits, hgen, hsize, ?_⟩
   intro budget n sk ciphertext hsk hciphertext
-  have hcorrectOfFn (p : ℕ × List Bool) (N : ℕ) (y : Fin N → Bool)
-      (hy : encPair encUnary encBits p = List.ofFn y) :
-      (baseCircuits N).eval Boolean.interpretation y 0 = decryptConcat p := by
-    have hN := congrArg List.length hy
-    simp only [List.length_ofFn] at hN
-    subst N
-    have hw : (fun i : Fin (encPair encUnary encBits p).length =>
-        (encPair encUnary encBits p)[i]) = y :=
-      List.ofFn_injective (List.ofFn_getElem.trans hy)
-    simpa only [hw] using hbaseEval p
-  let w := sk ++ ciphertext
-  have hwlen : w.length = W n := by simp [w, W, K, hsk, hciphertext]
-  have hin : encPair encUnary encBits (n, w) = r n ++ w := by
-    simp [r, encPair_apply, encBits_apply]
-  have hofFn : List.ofFn (Fin.append (fun i : Fin (r n).length => (r n)[i.val])
-      (BitString.ofList (W n) w)) = r n ++ w := by
-    rw [List.ofFn_fin_append, List.ofFn_getElem, BitString.ofFn_ofList hwlen]
-  change (Boolean.prefixCircuit (r n) (baseCircuits ((r n).length + W n))).eval
-    Boolean.interpretation (BitString.ofList (W n) w) 0 = decrypt D n sk ciphertext
-  rw [Boolean.eval_prefixCircuit,
-    hcorrectOfFn (n, w) ((r n).length + W n) _ (hin.trans hofFn.symm)]
-  simp only [decryptConcat, w, K, List.take_left' hsk, List.drop_left' hsk]
+  have hwlen : (sk ++ ciphertext).length = W n := by simp [W, K, hsk, hciphertext]
+  have h := hcorrect n (BitString.ofList (W n) (sk ++ ciphertext)) 0
+  simp only [F, decryptConcat, K, BitString.ofFn_ofList hwlen, List.take_left' hsk,
+    List.drop_left' hsk, Fin.val_zero, List.getD_cons_zero] at h
+  exact h
 
 end Cslib.Crypto.Homomorphic.Leveled

@@ -36,8 +36,9 @@ own public key.
 scheme's keys and the polynomial-size decryption circuits. For `leveled` only the marginal law of
 the fresh-ciphertext key pair is fixed; the later keys of the chain, the encrypted links and their
 joint law with that pair are not. The theorems state that such machinery exists with elementary
-properties: correctness for the allowed circuits, fixed key and ciphertext widths, one decryption
-circuit family for all depths, native efficiency and IND-CPA security. These properties exclude
+properties: correctness for the allowed circuits, fixed key and ciphertext widths, one uniformly
+generated decryption circuit family for all depths, native efficiency and IND-CPA security. These
+properties exclude
 trivial witnesses. Decryption is the fixed GSW decryption, and evaluated ciphertexts have the fixed
 ciphertext width, so evaluation cannot leave the computation to decryption: it must output a word of
 that width that GSW decryption maps to the circuit's output. Nor can evaluation work in the clear.
@@ -70,11 +71,13 @@ each a foundational model:
 Lean checks every proof through `GSWFHEBridge`.
 
 The claims are perfect correctness on supported fresh encryptions, fixed key and ciphertext
-widths, polynomial-size decryption circuits, uniform native strict polynomial-time algorithms and
-asymptotic IND-CPA security against uniform classical adversaries. They do not include lattice
-hardness or a worst-case reduction, circuit privacy, evaluation of already evaluated ciphertexts,
-a uniform generator for the leveled decryption circuits, or the concrete loss of Gentry's
-Theorem 4.
+widths, uniformly generated polynomial-size decryption circuits, uniform native strict
+polynomial-time algorithms and asymptotic IND-CPA security against uniform classical adversaries.
+Uniform circuit generation means a single native machine that, on `1^security`, writes the
+decryption circuit's binary code `Cslib.Circuits.Boolean.encCircuit 1`, including its input arity,
+in time polynomial in `security`. The claims do not include lattice hardness or a worst-case
+reduction, circuit privacy, evaluation of already evaluated ciphertexts, or the concrete loss of
+Gentry's Theorem 4.
 
 ## References
 
