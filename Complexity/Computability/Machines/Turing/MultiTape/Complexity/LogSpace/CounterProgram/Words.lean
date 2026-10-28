@@ -37,6 +37,8 @@ None of this uses logarithmic-space composition.
 
 ## Main results
 
+* `Turing.CounterProgram.Words.reachesOut_header`: the run of the header, for programs built on
+  it.
 * `Turing.MultiTapeTM.ComputableInLogSpace.bitsTake`,
   `Turing.MultiTapeTM.ComputableInLogSpace.bitsDrop`: taking and dropping bits.
 * `Turing.MultiTapeTM.ComputableInLogSpace.range`: the list `0, …, n - 1`.
@@ -116,7 +118,10 @@ def headerCode : List Instr :=
 
 variable {P : CounterProgram} {w : List Bool} {k B : ℕ}
 
-private theorem reachesOut_header (hP : P.CodeAt 0 headerCode)
+/-- **The run of `headerCode`**: from the initial registers it stores the length of the framed
+word in register `0` and the unary count in register `1`, and exits at label `4`, without
+emitting. -/
+theorem reachesOut_header (hP : P.CodeAt 0 headerCode)
     (hB : 2 * w.length + 1 + k ≤ B) :
     P.ReachesOut (frame w ++ List.replicate k true) (P.Active B) (0, [0, 0, 0, 0])
       (4, [w.length, k, 0, 0]) [] := by
