@@ -120,9 +120,6 @@ theorem isQueryBounded_zeroCCAAdversary (n : ℕ) :
     (zeroCCAAdversary n []).IsQueryBounded 0 :=
   ProbOracleComp.IsQueryBounded.sample (pure false)
 
-theorem id_polyTime : ComputableInPolyTime (id : ℕ → ℕ) encUnary encUnary := by
-  polytime
-
 -- Composed closed-game `IsPPT` and Theorem 9.1 reduction `IsOraclePPT` certificates on
 -- `echoCipher` with `ctBound = id` and `Q = 0`.
 example (bit : Bool) :
@@ -130,7 +127,7 @@ example (bit : Bool) :
       (fun n _ =>
         echoCipher.cpaGame (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) bit n) :=
   echoCipher.isPPT_cpaGame
-    (SymmetricCipher.isOraclePPT_ccaToCPAAdversary id_polyTime
+    (SymmetricCipher.isOraclePPT_ccaToCPAAdversary ComputableInPolyTime.id'
       isOraclePPT_zeroCCAAdversary)
     bit
 
@@ -140,7 +137,7 @@ example (bit : Bool) :
         echoCipher.ciGame
           (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary) n) :=
   echoCipher.isPPT_ciGame
-    (SymmetricCipher.isOraclePPT_ccaToCIAdversary id_polyTime
+    (SymmetricCipher.isOraclePPT_ccaToCIAdversary ComputableInPolyTime.id'
       (ComputableInPolyTime.const 0) bit isOraclePPT_zeroCCAAdversary)
 
 example :
@@ -149,7 +146,7 @@ example :
         echoCipher.ciGame
           (SymmetricCipher.ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary) n) :=
   echoCipher.isPPT_ciGame
-    (SymmetricCipher.isOraclePPT_ccaToCIHiddenBitAdversary id_polyTime
+    (SymmetricCipher.isOraclePPT_ccaToCIHiddenBitAdversary ComputableInPolyTime.id'
       (ComputableInPolyTime.const 0) isOraclePPT_zeroCCAAdversary)
 
 -- Quantitative Theorem 9.1 bounds instantiated on `echoCipher` and `zeroCCAAdversary`, with

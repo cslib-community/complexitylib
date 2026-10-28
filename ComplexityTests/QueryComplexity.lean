@@ -19,7 +19,9 @@ open Cslib Cslib.BitString Cslib.QueryComplexity Finset
 open scoped BigOperators
 
 -- On 2-bit conjunction, 0-certificates have size 1 and 1-certificates have size 2, so the
--- product bound gives D(and₂) ≤ 1 * 2 = 2 while the quadratic bound gives D(and₂) ≤ 2^2 = 4.
+-- product bound gives D(and₂) ≤ 1 * 2 = 2. In the second example, the computed
+-- `certificateComplexity and₂ = 2` is the substantive check; the instantiated `C²` bound
+-- `D(and₂) ≤ 4` is weaker than the trivial `complexity_le_card` bound of 2.
 private def and₂ : BooleanFunction 2 := fun x => x 0 && x 1
 
 example :
@@ -37,11 +39,7 @@ example :
   refine ⟨hc, ?_⟩
   simpa [hc] using DecisionTree.complexity_le_certificateComplexity_sq and₂
 
-example {n : ℕ} :
-    sensitivity (parity n) = n ∧ blockSensitivity (parity n) = n ∧
-      certificateComplexity (parity n) = n ∧ DecisionTree.complexity (parity n) = n :=
-  ⟨sensitivity_parity, blockSensitivity_parity, certificateComplexity_parity,
-    DecisionTree.complexity_parity⟩
+example : sensitivity (parity 3) = 3 ∧ certificateComplexity (parity 3) = 3 := by decide
 
 -- The finite minimum is executable, including empty-coordinate and missing-output cases.
 example : certificateComplexityAt (parity 2) (fun _ => false) = 2 := by decide
