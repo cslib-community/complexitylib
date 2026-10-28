@@ -149,10 +149,21 @@ private def branchingInput : Data 128 where
     | 5 => Signed.encode (-1)
     | _ => (treeInput 2 1 0).mem a
 
-private def expectedBranching : List (List ℕ) :=
+private def branchingNodes : List Cslib.Algorithms.ThreeSum.ChanHe.Node :=
   let ν₀ : Cslib.Algorithms.ThreeSum.ChanHe.Node := ⟨{0, 4, 1}, {0}, {-1}, 4⟩
   let ν₁ : Cslib.Algorithms.ThreeSum.ChanHe.Node := ⟨{0, 4}, {0}, {-1}, 4⟩
-  [ν₀, ν₁].map fun ν => (List.range 32).map fun i => Signed.encode (ν.oneArray 4 i)
+  [ν₀, ν₁]
+
+private instance : DecidableEq Cslib.Algorithms.ThreeSum.ChanHe.Node := fun a b =>
+  decidable_of_iff (a.S₁ = b.S₁ ∧ a.S₂ = b.S₂ ∧ a.S₃ = b.S₃ ∧ a.M = b.M)
+    (by cases a; cases b; simp only [Cslib.Algorithms.ThreeSum.ChanHe.Node.mk.injEq])
+
+-- The same two nodes are computed by the existing finite recursion, in the same order.
+example : (Math.Task.mk 2 ![{0, 4, 1}, {0}, {-1}]).output {2} 4 = branchingNodes := by
+  decide
+
+private def expectedBranching : List (List ℕ) :=
+  branchingNodes.map fun ν => (List.range 32).map fun i => Signed.encode (ν.oneArray 4 i)
 
 -- Only the first column has heavy elements. The child changes that descriptor and keeps the
 -- other two, then its zero-fuel children and both empty siblings are popped without outputs.

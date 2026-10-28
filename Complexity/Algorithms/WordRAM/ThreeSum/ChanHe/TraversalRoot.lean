@@ -73,7 +73,10 @@ structure RootInput (a : Arena) (w : ℕ) (e : Entry) (ns : List (ℕ × Node))
   protectedMemory : ∀ p < a.stack, x.mem p = a.retained p
 
 /-- Execute the fixed complete native root program. There are no supplied kernel executions:
-all calls are proved from the actual arrays, bitmap, finite bounds and one signed envelope. -/
+all calls are proved from the actual arrays, bitmap, finite bounds and one signed envelope.
+The caller chooses `m`, `Λ` and fuel. Setting `m = mPar n U`, `Λ = labelBits U` and
+`e.fuel = fuel n` makes `e.task.output (Nat.primesLE a.m) a.Λ` the existing Chan–He
+`reduction n U` of the root sets; the initialized-input bridge is in `PreprocessingEntries`. -/
 theorem root_exec {a : Arena} {w : ℕ} (e : Entry) (ns : List (ℕ × Node)) (x : Data 128)
     (ha : a.Separated) (hw : a.Ready w) (h : RootInput a w e ns x) :
     ∃ (out : List (ℕ × Node)) (y : Data 128),

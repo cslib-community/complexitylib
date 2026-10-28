@@ -159,8 +159,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   at width `w + 2`, excluding the halt; its theorem identifies the three encoded matrices and
   preserves the input. Layout, signed index/filler bounds and target address bounds are explicit.
   The existing signed and unsigned APIs were reused; no source machine or separate run semantics
-  were copied. The full reduction host, native Chan–He preprocessing, fast Exact Triangle and full
-  input/time/width/asymptotic composition remain in
+  were copied. The full reduction host, fast Exact Triangle and full input/time/width/asymptotic
+  composition remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
   are retained; the native proofs and representation choices are local.
@@ -179,6 +179,20 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Kκ (n+2)(sqrt(n+2)+1)(log₂(n+2)+1)^13`, including the final halt. The complete native
   preprocessing milestone is #1446; the Exact Triangle solver and full final 3SUM composition
   remain #1394. These components do not affect the curated headlines.
+
+  Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
+  `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,
+  `PreprocessingInvariant`, `PreprocessingStep` and `PreprocessingLoop` with their controller
+  consumer `PreprocessingExecute`, or use `import all` to make their proof plumbing private.
+  This includes `Saved`, `ForestCursor`, `snapshot_exec`, `primes_exec`, `setupTraversal_exec`,
+  `finish_exec`, `execute_next_root` and `forest_body_exec`; keep the initialized-input, readback,
+  width and resource endpoints available through `Preprocessing`. Separately, move
+  `modulus_bounds_of_candidates` from `SelectorBounds` beside `Collisions`' `modulus_bounds` and
+  derive or cross-reference the stronger bound, migrating `TraversalCall` and selector tests.
+  Derive `Structured`'s `ExecWithin.loop_invariant` as the `Data`-state case of
+  `GhostLoop`'s `ExecWithin.loop_invariant_state`, preserving the existing copy/residue/padding/
+  search/reservation clients. Resolve the current import direction by keeping both rules in one
+  loop topic module before changing those clients.
 
   `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
   frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical

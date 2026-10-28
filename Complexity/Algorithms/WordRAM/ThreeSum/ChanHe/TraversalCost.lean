@@ -47,7 +47,7 @@ theorem visitTime_square_le (n m : ℕ) :
   nlinarith
 
 /-- The complete native root cost, including setup, all skipped calls and all stack/loop work,
-has only a polylogarithmic factor beyond `n*m + m³`. -/
+has only a polylogarithmic factor beyond `card*m + m³`. -/
 theorem rootTime_fuel_square_le (n card m : ℕ) :
     rootTime (fuel n) card m (2 * m ^ 2) ≤
       70 + 6144 * (2 * Nat.log 2 n + 2) ^ 5 *
