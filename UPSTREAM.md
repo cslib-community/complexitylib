@@ -206,8 +206,22 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   from exact contributing-leaf counts. Generic function-position counts, ordered gluing, binomial
   and finite-sum bounds live in small Foundations modules. Mathlib `Finset.orderEmbOfFin` indexes
   both a level set and its complement, and `Finset.piecewise` restricts answers. No source machine,
-  problem-statement universe or solver/time hypothesis is imported. Native tensor/sparse-query
-  programs, native preprocessing/solvers and full input/time/width composition, including the
+  problem-statement universe or solver/time hypothesis is imported.
+  `Algorithms/WordRAM/MatrixMultiplication/Schonhage/` implements the complete shared left/right
+  encoding milestone ([#1493](https://github.com/cslib-community/complexitylib/issues/1493)).
+  Fixed standard-WordRAM code with 32 registers transforms one coordinate at a time between
+  two disjoint `10^L` buffers. It starts from `State.init` with a depth header and `7^L`
+  sign-and-magnitude words, computes all public `encodingL`/`encodingR` values, and preserves
+  the input and every cell outside the two buffers. Mathlib's `finFunctionFinEquiv` supplies
+  least-significant-first string numbering. All stages, powers, indices, address arithmetic,
+  signed add/subtract blocks and the final output copy cost at most `240*(L+1)*10^L`
+  instructions; halt adds one. Signed operands have magnitude bounded from the original
+  input by `7^L*A < 2^(w-1)`; the explicit natural bound `L+64+64*10^L` must fit target width
+  `w+2`. The two extra bits and actual arithmetic-block costs come from the existing native
+  signed kernels, without a copied source machine or a whole-program simulation hypothesis.
+  The existing array-copy interface is retained, with a narrow generalization for disjoint
+  blocks in either address order or identical blocks. Band/tile preparation, native pruned
+  and sparse-query programs, native preprocessing/solvers and full input/time/width composition, including the
   improved Section 4 route to exponent 1.9992, remain in #1394.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes

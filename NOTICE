@@ -1,8 +1,9 @@
-The 3SUM/Exact Triangle reductions, finite counting/tensor lemmas and native matrix builder in
+The 3SUM/Exact Triangle reductions, finite counting/tensor lemmas and native programs in
 Complexity/Algorithms/ExactTriangle/{Defs,Weights,Lopsided,Hashing,Splitting,Witnesses}.lean,
 Complexity/Algorithms/MatrixMultiplication/Schonhage/,
 Complexity/Algorithms/ThreeSum/,
 Complexity/Algorithms/WordRAM/ThreeSum/,
+Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/,
 Complexity/Foundations/Algebra/{FiniteMagnitude,GeometricTail}.lean,
 Complexity/Foundations/Combinatorics/{BinomialUpperBound,FunctionPlaces}.lean,
 Complexity/Foundations/Data/Finset/{Average,OrderGlue,Quotient}.lean,

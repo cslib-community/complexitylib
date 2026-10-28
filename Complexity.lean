@@ -31,6 +31,7 @@ public import Complexity.Algorithms.Lean.VanEmdeBoas.Layout
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Successor
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.CoordinateTransform
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Full
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Identity
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Layout
@@ -103,6 +104,17 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Query.Traversal
 public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Cell
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Controller
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Copy
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Encoding
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Exec
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Flat
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Forms
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Header
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Input
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Meaning
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Stage
 public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
