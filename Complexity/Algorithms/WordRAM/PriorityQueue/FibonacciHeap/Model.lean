@@ -353,8 +353,9 @@ theorem IsCircList.remove {n : ℕ} {left right : Fin n → ℕ} {L : List (Fin 
 
 /-! ## Pure-`ℕ` Fibonacci rank and degree bounds -/
 
-/-- Fundamental Fibonacci rank identity ([Fredman and Tarjan][FredmanTarjan1987], Lemma 1):
-`1 + ∑_{i < k} fib ((i - 1) + 2) = fib (k + 2)` in `ℕ` (where `0 - 1 = 0`). -/
+/-- Fundamental Fibonacci rank identity (used in the proof of
+[Fredman and Tarjan][FredmanTarjan1987], Corollary 1, p. 604; [Cormen et al.][CLRS2009],
+Lemma 19.2): `1 + ∑_{i < k} fib ((i - 1) + 2) = fib (k + 2)` in `ℕ` (where `0 - 1 = 0`). -/
 theorem fib_sum_pred_add_two (k : ℕ) :
     1 + ∑ i ∈ Finset.range k, Nat.fib ((i - 1) + 2) = Nat.fib (k + 2) := by
   induction k with

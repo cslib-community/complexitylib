@@ -152,7 +152,8 @@ example :
 def sampleOps : List (IndexedMinPQ.Op 4) :=
   [.insert 2 30, .insert 1 30, .decreaseKey 2 10, .getKey 2, .extractMin, .isEmpty]
 
-theorem sampleOps_valid : ValidSeq 50 (IndexedMinPQ.empty 4) sampleOps := by
+theorem sampleOps_valid :
+    (IndexedMinPQ.spec 4 50).ValidHistory (IndexedMinPQ.empty 4) sampleOps := by
   refine ⟨⟨rfl, by decide⟩, ⟨⟨by decide, by decide⟩, ⟨⟨⟨30, rfl, by decide⟩, by decide⟩,
     ⟨trivial, ⟨trivial, ⟨trivial, trivial⟩⟩⟩⟩⟩⟩
 

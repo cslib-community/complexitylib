@@ -363,7 +363,7 @@ theorem prepareRegs_eq {n : ℕ} (g : IndexedMinPQ.Op n) (reg : Fin 42 → ℕ) 
 
 theorem validSeq_to_lib {n K_max : ℕ} :
     ∀ (gs : List (IndexedMinPQ.Op n)) (q : Fin n → Option ℕ),
-      P.ValidSeq K_max q (gs.map P.opOf) → FibonacciHeap.ValidSeq K_max q gs
+      P.ValidSeq K_max q (gs.map P.opOf) → (IndexedMinPQ.spec n K_max).ValidHistory q gs
   | [], _, _ => trivial
   | g :: gs, q, hv => by
     obtain ⟨hv_g, hv_gs⟩ := hP.validSeq_cons q (P.opOf g) (gs.map P.opOf) hv

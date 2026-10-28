@@ -273,12 +273,6 @@ theorem forestNodes_length_ge {n : ℕ} (ts : List (FHTree n)) :
     unfold FHTree.size at hpos
     omega
 
-theorem nodup_length_le_n {n : ℕ} {L : List (Fin n)} (hnd : L.Nodup) : L.length ≤ n := by
-  have hcard : L.toFinset.card = L.length := List.toFinset_card_of_nodup hnd
-  have hle : L.toFinset.card ≤ (Finset.univ : Finset (Fin n)).card := Finset.card_le_univ _
-  simp only [Finset.card_univ, Fintype.card_fin] at hle
-  omega
-
 theorem forestNodes_nodup_tree {n : ℕ} {ts : List (FHTree n)} (hnd : (forestNodes ts).Nodup)
     {T : FHTree n} (hT : T ∈ ts) : T.nodes.Nodup := by
   obtain ⟨l₁, l₂, rfl⟩ := List.append_of_mem hT
@@ -303,7 +297,8 @@ theorem forestNodes_nodup_disjoint {n : ℕ} {ts : List (FHTree n)} (hnd : (fore
 
 /-! ## Subtree and root invariants -/
 
-/-- Structural heap-order, child-list, and chronological rank invariant on a subtree `T`.
+/-- Structural heap-order, child-list, and chronological rank invariant on a subtree `T`
+([Fredman and Tarjan][FredmanTarjan1987], Lemma 1, p. 604; [Cormen et al.][CLRS2009], Lemma 19.1).
 When `pending = some w`, `w` has just lost a child during cascading cuts and is permitted one extra
 unit of slack before either being cut itself (`mark w = 1`) or becoming marked (`mark w = 0`). -/
 inductive ValidSubtree {n : ℕ} (st : RawState n) (pending : Option (Fin n)) : FHTree n → Prop where
@@ -455,8 +450,9 @@ private theorem fib_range_le_forestNodes {n : ℕ} :
     simp only [Nat.add_zero, forestNodes, List.length_append]
     omega
 
-/-- Fredman–Tarjan subtree size lower bound (`[FredmanTarjan1987]`, Lemma 2): in any subtree with
-no pending cascading cut, `Nat.fib (T.deg + 2) ≤ T.size`. -/
+/-- Fredman–Tarjan subtree size lower bound ([Fredman and Tarjan][FredmanTarjan1987], Corollary 1,
+p. 604; [Cormen et al.][CLRS2009], Corollary 19.5): in any subtree with no pending cascading cut,
+`Nat.fib (T.deg + 2) ≤ T.size`. -/
 theorem ValidSubtree.fib_le_size {n : ℕ} {st : RawState n} {T : FHTree n}
     (hT : ValidSubtree st none T) : Nat.fib (T.deg + 2) ≤ T.size := by
   induction hT with

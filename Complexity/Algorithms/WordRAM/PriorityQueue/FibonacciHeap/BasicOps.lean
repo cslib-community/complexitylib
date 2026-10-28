@@ -336,7 +336,7 @@ theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
   intro st
   have hfit_stop := hbr.fits_stop hb
   have hfn_le : (T_u :: ts).length ≤ n :=
-    (forestNodes_length_ge (T_u :: ts)).trans (nodup_length_le_n hnd)
+    (forestNodes_length_ge (T_u :: ts)).trans (by simpa using hnd.length_le_card)
   have hz0 : x.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
   have ho1 : x.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
   obtain ⟨hu0, hu1, hu2, hu3, hu4, hu5, hum, hunr⟩ := hu_sc

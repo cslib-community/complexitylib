@@ -20,7 +20,9 @@ This file assembles the standalone static-array Word-RAM Fibonacci heap
 `Cslib.Algorithms.Lean.IndexedMinPQ.spec`.
 
 Over `n` vertex handles in a contiguous memory block `[base, base + 9 * n + 1)` with concrete
-integer potential `potential x = 80 * (numRoots + 2 * numMarked)` (`initPotential = 0`):
+integer potential `potential x = 80 * (numRoots + 2 * numMarked)` (`initPotential = 0`,
+[Fredman and Tarjan][FredmanTarjan1987], Section 2, Theorem 1, p. 604;
+[Cormen et al.][CLRS2009], Section 19.1, eq. (19.1)):
 
 * `initFresh` initializes an empty heap on zeroed `[base, base + 9 * n + 1)` in `O(1)` (`≤ 26`)
   instructions;
@@ -47,16 +49,17 @@ integer potential `potential x = 80 * (numRoots + 2 * numMarked)` (`initPotentia
   standalone `Stateful.Amortized` certificate and adaptive-client bound over `Basis.standard`.
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.run_ops_exact_fresh`,
   `run_ops_exact_reusable`: standalone end-to-end `Basis.exact` flat-program execution theorems
-  bounding total halting instructions for `m_q` queries, `m_ins` insertions, `m_dec` key
-  decreases, and `m_ext` minimum extractions by
-  `421 * (1 + m_q + m_ins + m_dec + m_ext * (Nat.log 2 n + 1))` (plus `421 * n` on dirty memory).
+  bounding initialization by `t_init + 1 ≤ 421` (`initFreshProg` on zeroed memory) or
+  `t_init + 1 ≤ 421 * (n + 1)` (`initClearProg` on arbitrary memory) and total operation
+  instructions for `m_q` queries, `m_ins` insertions, `m_dec` key decreases, and `m_ext` minimum
+  extractions by `t_ops ≤ 421 * (m_q + m_ins + m_dec + m_ext * (Nat.log 2 n + 1))`.
 
 ## References
 
 * [M. L. Fredman and R. E. Tarjan, *Fibonacci heaps and their uses in improved network optimization
-  algorithms*][FredmanTarjan1987]
+  algorithms*][FredmanTarjan1987], Section 2, Lemma 1, Corollary 1, and Theorem 1 (p. 604).
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009], Chapter 19.
+  Algorithms*][CLRS2009], Section 19.1, eq. (19.1), and Sections 19.2–19.4.
 -/
 
 @[expose] public section
@@ -166,12 +169,12 @@ def pkg : PQPackage .exact rFib where
   code := code
   space := space
   space_lower := space_lower
-  T_init := tInit
-  T_empty := tEmpty
-  T_get := tGet
-  T_ins := tIns
-  T_dec := tDec
-  T_ext := tExt
+  initTime := tInit
+  emptyTime := tEmpty
+  getTime := tGet
+  insertTime := tIns
+  decreaseTime := tDec
+  extractTime := tExt
   cert hS hK := subroutineDS hS hK
   cert_space _ _ := rfl
   cert_initTime _ _ := le_rfl
@@ -270,13 +273,6 @@ def numExtractMins {n : ℕ} : List (IndexedMinPQ.Op n) → ℕ
   | .extractMin :: ops => 1 + numExtractMins ops
   | _ :: ops => numExtractMins ops
 
-/-- Sequential admissibility of an operation list starting from abstract state `s`. -/
-def ValidSeq {n : ℕ} (K_max : ℕ) : IndexedMinPQ.State n → List (IndexedMinPQ.Op n) → Prop
-  | _, [] => True
-  | s, o :: ops =>
-    (IndexedMinPQ.spec n K_max).valid s o ∧
-      ValidSeq K_max ((IndexedMinPQ.spec n K_max).step s o).1 ops
-
 /-- Sequential flat-program execution of `ops` by repeated calls to `opProg`: each call prepares
 input registers via `prepareRegs`, runs `opProg` from `pc = 0` to `halt`, decodes the exact
 `IndexedMinPQ` result, modifies memory only within `[base, base + space n)`, and accumulates total
@@ -303,7 +299,7 @@ private theorem step_program_halt {w : ℕ} (c : Code .exact rFib) (out : Fin rF
 private theorem seq_runsOps {n K_max w base : ℕ} (hS : Fits w (base + space n))
     (hK : Fits w K_max) :
     ∀ (ops : List (IndexedMinPQ.Op n)) {s : IndexedMinPQ.State n} {x : Data rFib},
-      FibInv n K_max w base s x → ValidSeq K_max s ops →
+      FibInv n K_max w base s x → (IndexedMinPQ.spec n K_max).ValidHistory s ops →
       ∃ z total, RunsOps (K_max := K_max) w base s x ops z total ∧
         FibInv n K_max w base
           (ops.foldl (fun st o => ((IndexedMinPQ.spec n K_max).step st o).1) s) z ∧
@@ -361,7 +357,8 @@ private theorem initRegs_bounded {n base w : ℕ} (hS : Fits w (base + space n))
 theorem run_ops_exact_fresh {n K_max w base : ℕ} (hS : Fits w (base + space n))
     (hK : Fits w K_max) {mem₀ : ℕ → ℕ} (hmem : ∀ a, Fits w (mem₀ a))
     (hzero : ∀ a ∈ (Block.mk base (space n)).footprint, mem₀ a = 0)
-    (ops : List (IndexedMinPQ.Op n)) (hv : ValidSeq K_max (IndexedMinPQ.empty n) ops) :
+    (ops : List (IndexedMinPQ.Op n))
+    (hv : (IndexedMinPQ.spec n K_max).ValidHistory (IndexedMinPQ.empty n) ops) :
     ∃ pc₀ x₀ t_init z t_ops,
       Runs w initFreshProg ⟨0, ⟨initRegs n base, mem₀⟩⟩ ⟨pc₀, x₀⟩ t_init ∧
       (∃ out, step w initFreshProg ⟨pc₀, x₀⟩ = .halt out) ∧
@@ -396,7 +393,8 @@ theorem run_ops_exact_fresh {n K_max w base : ℕ} (hS : Fits w (base + space n)
 arbitrary `w`-bounded memory `mem₀`. -/
 theorem run_ops_exact_reusable {n K_max w base : ℕ} (hS : Fits w (base + space n))
     (hK : Fits w K_max) {mem₀ : ℕ → ℕ} (hmem : ∀ a, Fits w (mem₀ a))
-    (ops : List (IndexedMinPQ.Op n)) (hv : ValidSeq K_max (IndexedMinPQ.empty n) ops) :
+    (ops : List (IndexedMinPQ.Op n))
+    (hv : (IndexedMinPQ.spec n K_max).ValidHistory (IndexedMinPQ.empty n) ops) :
     ∃ pc₀ x₀ t_init z t_ops,
       Runs w initClearProg ⟨0, ⟨initRegs n base, mem₀⟩⟩ ⟨pc₀, x₀⟩ t_init ∧
       (∃ out, step w initClearProg ⟨pc₀, x₀⟩ = .halt out) ∧

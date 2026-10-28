@@ -49,9 +49,9 @@ Both bounds use the exact same word-size hypothesis
 
 * [E. W. Dijkstra, *A note on two problems in connexion with graphs*][Dijkstra1959]
 * [M. L. Fredman and R. E. Tarjan, *Fibonacci heaps and their uses in improved network optimization
-  algorithms*][FredmanTarjan1987]
+  algorithms*][FredmanTarjan1987], Section 4 (pp. 609–610).
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009]
+  Algorithms*][CLRS2009], Section 24.3 (p. 662).
 -/
 
 @[expose] public section
