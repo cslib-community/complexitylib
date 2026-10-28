@@ -29,9 +29,14 @@ word `w`, and block `i` of size `2 ^ |w i|`, this is the measure `relrk_w` of Li
 and Tavenas [LimayeSrinivasanTavenas2021, §2.1, p. 6]; general `A` and `B` also express the
 restricted measures `relrk_{w|S}` used in the multiplicativity property.
 
+The sets `A` and `B` are meant to be disjoint, as the positive and negative blocks of a word are.
+The definitions do not require it: on a block of `A ∩ B` the product of a row and a column monomial
+can have exponent `2`, and the entries are then coefficients of monomials that are not
+set-multilinear. The results below hold for arbitrary `A` and `B`.
+
 This file proves the bound `relrk_w ≤ 1` of the display defining `relrk_w` (`relRank_le_one`) and
 the three properties of Claim 7 (ECCC TR21-081, Revision 1, §2.1, pp. 6–7):
-* imbalance: `relRank_le_sqrt_card_div` and `relRank_le_sqrt_cols_div_rows` bound the relative
+* imbalance: `relRank_le_sqrt_rows_div_cols` and `relRank_le_sqrt_cols_div_rows` bound the relative
   rank by the square root of the ratio of the two dimensions, in both orders; together they bound
   it by the square root of the smaller dimension over the larger, which is Claim 7(1);
 * subadditivity: `relRank_add_le`, Claim 7(2);
@@ -53,7 +58,7 @@ multiplicativity. The dimensions are counted by `MvPolynomial.card_blockChoice`.
 ## Main results
 
 * `Cslib.Circuits.Arithmetic.relRank_le_one`: the relative rank is at most `1`.
-* `Cslib.Circuits.Arithmetic.relRank_le_sqrt_card_div`,
+* `Cslib.Circuits.Arithmetic.relRank_le_sqrt_rows_div_cols`,
   `Cslib.Circuits.Arithmetic.relRank_le_sqrt_cols_div_rows`: imbalance.
 * `Cslib.Circuits.Arithmetic.relRank_add_le`: subadditivity.
 * `Cslib.Circuits.Arithmetic.relRank_smul_le`, `relRank_smul`: scalar multiples.
@@ -90,7 +95,8 @@ indexed by choices of one variable in each block of `A`, columns by choices on `
 is the coefficient in `f` of the product of the two monomials. With `A` and `B` the positive and
 negative blocks of a word, this is the matrix `M_w(f)` of [LimayeSrinivasanTavenas2021, §2.1,
 p. 6]; indexing it by two arbitrary sets of blocks, so that it also covers LST's sub-words `w|S`,
-is original. -/
+is original. `A` and `B` are meant to be disjoint: on a shared block the product monomial can
+have exponent `2`, and the entries are then coefficients of non-set-multilinear monomials. -/
 noncomputable def relMatrix (blk : σ → Fin d) (A B : Finset (Fin d)) (f : MvPolynomial σ K) :
     Matrix (BlockChoice blk A) (BlockChoice blk B) K :=
   Matrix.of fun r c => f.coeff (blockMonomial blk A r + blockMonomial blk B c)
@@ -187,7 +193,8 @@ section Rank
 variable [Fintype σ] [Field K] (blk : σ → Fin d) (A B : Finset (Fin d))
 
 /-- **Relative rank** ([LimayeSrinivasanTavenas2021, §2.1, p. 6]): the rank of the relative-rank
-matrix divided by the geometric mean of its dimensions. -/
+matrix divided by the geometric mean of its dimensions. As for `relMatrix`, the row and column
+blocks `A` and `B` are meant to be disjoint. -/
 noncomputable def relRank (f : MvPolynomial σ K) : ℝ :=
   (relMatrix blk A B f).rank /
     √((Fintype.card (BlockChoice blk A) * Fintype.card (BlockChoice blk B) : ℕ) : ℝ)
@@ -226,7 +233,7 @@ the square root of the number of rows divided by the number of columns. Together
 `relRank_le_sqrt_cols_div_rows` it bounds the relative rank by the square root of the smaller
 dimension over the larger, `2 ^ (-|w_[d]| / 2)` in the notation of the source, which is
 Claim 7(1). -/
-theorem relRank_le_sqrt_card_div (f : MvPolynomial σ K) :
+theorem relRank_le_sqrt_rows_div_cols (f : MvPolynomial σ K) :
     relRank blk A B f ≤
       √((Fintype.card (BlockChoice blk A) : ℝ) / Fintype.card (BlockChoice blk B)) := by
   rw [relRank, Nat.cast_mul]
@@ -235,7 +242,7 @@ theorem relRank_le_sqrt_card_div (f : MvPolynomial σ K) :
 
 /-- **Imbalance** ([LimayeSrinivasanTavenas2021, Claim 7(1), p. 6]): the relative rank is at most
 the square root of the number of columns divided by the number of rows; see
-`relRank_le_sqrt_card_div` for the other order. -/
+`relRank_le_sqrt_rows_div_cols` for the other order. -/
 theorem relRank_le_sqrt_cols_div_rows (f : MvPolynomial σ K) :
     relRank blk A B f ≤
       √((Fintype.card (BlockChoice blk B) : ℝ) / Fintype.card (BlockChoice blk A)) := by

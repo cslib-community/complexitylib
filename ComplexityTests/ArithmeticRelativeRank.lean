@@ -124,7 +124,7 @@ example {K : Type*} [Field K] {n : ℕ} (i : Fin n) :
   rw [e₀, e₁, e₂, e₃] at h
   have h₁ := relRank_le_sqrt_cols_div_rows Prod.fst {0} ∅
     (X (0, i) : MvPolynomial (Fin 2 × Fin n) K)
-  have h₂ := relRank_le_sqrt_card_div Prod.fst ∅ {1}
+  have h₂ := relRank_le_sqrt_rows_div_cols Prod.fst ∅ {1}
     (X (1, i) : MvPolynomial (Fin 2 × Fin n) K)
   rw [card_blockChoice_singleton, card_blockChoice_empty, Nat.cast_one] at h₁ h₂
   calc _ ≤ _ := h
