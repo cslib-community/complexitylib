@@ -22,8 +22,9 @@ open scoped NNReal Cslib.Probability.PMF
 /-! ### Min-entropy of concrete distributions -/
 
 -- A fair coin has one bit of min-entropy, and a point mass has none.
-example : minEntropy (uniformOfFintype Bool) = 1 ∧ minEntropy (PMF.pure true) = 0 :=
-  ⟨by simp, minEntropy_pure true⟩
+example : minEntropy (uniformOfFintype Bool) = 1 := by simp
+
+example : minEntropy (PMF.pure true) = 0 := minEntropy_pure true
 
 /-- A source on three outcomes with masses `1/2, 1/4, 1/4`; it is not flat. -/
 private noncomputable def lopsided : PMF (Fin 3) :=
@@ -88,8 +89,8 @@ example :
 
 /-! ### Weak random sources -/
 
--- Uniform bit strings are sources of their full length.
-example (n : ℕ) : IsSource (uniformOfFintype (BitString n)) n 0 := by
+/-- Uniform bit strings are sources of their full length. -/
+private theorem isSource_uniform (n : ℕ) : IsSource (uniformOfFintype (BitString n)) n 0 := by
   rw [isSource_zero_iff, minEntropy_uniformOfFintype, Fintype.card_fun, Fintype.card_bool,
     Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
     Real.logb_self_eq_one one_lt_two, mul_one]
@@ -123,17 +124,14 @@ example :
       ((uniformOfFintype (BitString (2 * 6))).bind
         fun s => (uniformOfFintype (BitString 2)).map (s, ·)) ≤ 1 / 8 := by
   have hsource : IsSource (uniformOfFintype (BitString 6)) 6 0 := by
-    rw [isSource_zero_iff, minEntropy_uniformOfFintype, Fintype.card_fun, Fintype.card_bool,
-      Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
-      Real.logb_self_eq_one one_lt_two, mul_one]
-    norm_num
+    simpa using isSource_uniform 6
   have h := (BitString.LinearHash.isTwoUniversal_flat 6 2).leftover_hash_of_isSource hsource
   refine h.trans_eq ?_
   simp only [BitString, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, NNReal.coe_zero,
     zero_add]
-  rw [Real.rpow_neg (by norm_num)]
-  norm_num
-  rw [show (16 : ℝ) = 4 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]
+  rw [Real.rpow_neg (by norm_num),
+    show ((2 ^ 2 : ℕ) : ℝ) * ((2 : ℝ) ^ (6 : ℝ))⁻¹ = (1 / 4) ^ 2 by norm_num,
+    Real.sqrt_sq (by norm_num)]
   norm_num
 
 -- Hashing a uniform `8`-bit source to `4` bits loses `2 log₂ 4 = 4` bits and errs by `1/8`.

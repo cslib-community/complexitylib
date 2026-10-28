@@ -35,9 +35,9 @@ private theorem dist_pure_true_uniform :
   rw [PMF.dist_eq]
   norm_num [PMF.pure_apply]
 
--- Mathlib's total variation distance is twice the statistical distance.
-example : tvDist (PMF.pure true).toMeasure
-    (Probability.PMF.uniformOfFintype Bool).toMeasure = 1 := by
+/-- Mathlib's total variation distance is twice the statistical distance. -/
+private theorem tvDist_pure_true_uniform :
+    tvDist (PMF.pure true).toMeasure (Probability.PMF.uniformOfFintype Bool).toMeasure = 1 := by
   have h := PMF.dist_eq_tvDist_toMeasure_div_two (PMF.pure true)
     (Probability.PMF.uniformOfFintype Bool)
   rw [dist_pure_true_uniform] at h
@@ -45,15 +45,9 @@ example : tvDist (PMF.pure true).toMeasure
 
 example : ENNReal.ofReal (1 / 2) ≤
     klDiv (PMF.pure true).toMeasure (Probability.PMF.uniformOfFintype Bool).toMeasure := by
-  have htv : tvDist (PMF.pure true).toMeasure
-      (Probability.PMF.uniformOfFintype Bool).toMeasure = 1 := by
-    have h := PMF.dist_eq_tvDist_toMeasure_div_two (PMF.pure true)
-      (Probability.PMF.uniformOfFintype Bool)
-    rw [dist_pure_true_uniform] at h
-    linarith
   have h := ofReal_tvDist_sq_div_two_le_klDiv (PMF.pure true).toMeasure
     (Probability.PMF.uniformOfFintype Bool).toMeasure
-  rwa [htv, one_pow] at h
+  rwa [tvDist_pure_true_uniform, one_pow] at h
 
 example : (1 / 2 : ℝ) ≤
     ∑ b, ((PMF.pure true) b).toReal *
@@ -111,12 +105,6 @@ private theorem two_le_card_erase (i : Fin 3) :
   simp
 
 example (P : PMF (Fin 3 → Bool)) :
-    2 * PMF.entropy P ≤ ∑ i, PMF.entropy (P.map (univ.erase i).restrict) := by
-  have h := PMF.sub_one_mul_entropy_le_sum_entropy_map_restrict_erase P
-  norm_num at h
-  exact h
-
-example (P : PMF (Fin 3 → Bool)) :
     (2 : ℕ) * PMF.entropy P ≤ ∑ j, PMF.entropy (P.map (univ.erase j).restrict) :=
   PMF.mul_entropy_le_sum_entropy_map_restrict P (fun j => univ.erase j) two_le_card_erase
 
@@ -132,6 +120,7 @@ example : ∏ j : Fin 3, #((univ : Finset (Fin 3 → Bool)).image (univ.erase j)
   simp only [card_image_restrict_erase, prod_const, card_univ, Fintype.card_fin]
   norm_num
 
+/-- A 3-point L-shaped subset of the 3-bit cube. -/
 private def cornerSet : Finset (Fin 3 → Bool) :=
   {![false, false, false], ![true, false, false], ![false, true, false]}
 
@@ -140,6 +129,8 @@ example : 9 ≤ ∏ j : Fin 3, #(cornerSet.image (univ.erase j).restrict) := by
     cornerSet (fun j => univ.erase j) (by norm_num) two_le_card_erase
   have hcard : #cornerSet ^ 2 = 9 := by decide
   rwa [hcard] at h
+
+example : ∏ j : Fin 3, #(cornerSet.image (univ.erase j).restrict) = 12 := by decide
 
 example : #(univ : Finset (Fin 3 → Bool)) ^ 2 = 64 := by simp
 

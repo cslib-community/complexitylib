@@ -117,14 +117,15 @@ example : ¬ IsKWiseIndependentHash 3 (polynomialHash : (Fin 2 → ZMod 5) → Z
 /-- Indicator score for hitting `0` in `𝔽₅`. -/
 private def zeroScore (_ y : ZMod 5) : ℝ := if y = 0 then 1 else 0
 
--- Concrete 4-wise independent tail bound for indicator scores over `𝔽₅`.
+-- Concrete 4-wise independent tail bound for indicator scores over `𝔽₅`: deviation at least `5`
+-- has density at most `((2 ^ 2 * 5 / 5 ^ 2) ^ 2) = 16 / 25 < 1`.
 example :
     (dens {c : Fin (2 * 2) → ZMod 5 |
-      1 ≤ |∑ x : ZMod 5, (zeroScore x (polynomialHash c x) - 𝔼 y, zeroScore x y)|} : ℝ) ≤
-        400 := by
+      5 ≤ |∑ x : ZMod 5, (zeroScore x (polynomialHash c x) - 𝔼 y, zeroScore x y)|} : ℝ) ≤
+        16 / 25 := by
   have h := (isKWiseIndependentHash_polynomialHash (2 * 2)).dens_filter_le_abs_sum_sub_expect
     (univ : Finset (ZMod 5)) zeroScore
-    (fun _ _ y => by unfold zeroScore; split_ifs <;> simp) one_pos
+    (fun _ _ y => by unfold zeroScore; split_ifs <;> simp) (a := 5) (by norm_num)
   refine h.trans ?_
   simp only [card_univ, ZMod.card]
   norm_num
