@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Logics.Propositional.FiniteCSP
+import Complexity.Logics.Propositional.CSP.ToBoolean
 import Complexity.Computability.Complexity.FineGrained.CountingFiniteCSP
 
 /-!
@@ -20,8 +20,8 @@ This module tests the finite-domain CSP compilation pipeline and its exact model
 -/
 
 open Cslib.Logic.PL
-open Cslib.Logic.PL.FiniteCSP
-open Cslib.Complexity.CountingFiniteCSP
+open Cslib.BitString
+open Cslib.Complexity
 
 namespace ComplexityTests.FiniteCSP
 
@@ -34,13 +34,13 @@ example : bitWidth 5 = 3 := by decide
 example : bitWidth 8 = 3 := by decide
 
 -- Binary encoding round-trips
-example : natToBits 2 0 = [false, false] := by decide
-example : natToBits 2 1 = [true, false] := by decide
-example : natToBits 2 2 = [false, true] := by decide
-example : natToBits 2 3 = [true, true] := by decide
-example : bitsToNat [true, false] = 1 := by decide
-example : bitsToNat [false, true] = 2 := by decide
-example : bitsToNat (natToBits 3 5) = 5 := by decide
+example : lowBits 2 0 = [false, false] := by decide
+example : lowBits 2 1 = [true, false] := by decide
+example : lowBits 2 2 = [false, true] := by decide
+example : lowBits 2 3 = [true, true] := by decide
+example : lsbValue [true, false] = 1 := by decide
+example : lsbValue [false, true] = 2 := by decide
+example : lsbValue (lowBits 3 5) = 5 := by decide
 
 /-- Disequality semantics over `Fin q`. -/
 def semNeq (q : ℕ) : Unit → List (Fin q) → Bool
@@ -77,7 +77,7 @@ example :
 example :
     (toBooleanCSP 3 3 triangleCSP).modelCountOn (semBoolean 3 (semNeq 3)) (Finset.range 6) =
     triangleCSP.modelCountOn (semNeq 3) (Finset.range 3) :=
-  modelCountOn_toBooleanCSP 3 3 (by decide) (semNeq 3) triangleCSP (by decide)
+  CSP.modelCountOn_toBoolean 3 3 (semNeq 3) triangleCSP (by decide)
 
 -- Width and variable bounds
 example : (toBooleanCSP 3 3 triangleCSP).all (fun c => c.2.length ≤ 4) = true := by decide

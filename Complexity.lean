@@ -2318,6 +2318,7 @@ public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CSP
+public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
 public import Complexity.Logics.Propositional.ClauseSet.Basic
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification
@@ -2345,7 +2346,6 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Step
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import Complexity.Logics.Propositional.ClauseSet.SubcubeFree
 public import Complexity.Logics.Propositional.DNF
-public import Complexity.Logics.Propositional.FiniteCSP
 public import Complexity.Logics.Propositional.Parity
 public import Complexity.Logics.Propositional.Parity.DepthThree
 public import Complexity.Logics.Propositional.Pigeonhole
