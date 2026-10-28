@@ -103,7 +103,8 @@ example : DecidableInExpTime ThreeSAT encCNF CNF.numVars 1 :=
   KSAT_three ▸ KSAT_decidableInExpTime_one 3
 
 example : 0 ≤ satExponent 4 ∧ satExponent 3 ≤ 1 :=
-  ⟨(satExponent_nonneg 3).trans (satExponent_mono (by norm_num)), satExponent_le_one 3⟩
+  ⟨(satExponent_nonneg 3).trans (satExponent_mono (by norm_num)),
+    (satExponent_mono (by norm_num)).trans (satExponent_le_one 4)⟩
 
 /-- A trivial problem is decidable within linear time, in either form. -/
 example : DecidableInTimeO (∅ : Set (CNF ℕ)) encCNF fun φ => (encCNF φ).length :=
