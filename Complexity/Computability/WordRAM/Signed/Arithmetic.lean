@@ -141,7 +141,8 @@ def divideMagnitudes : Code .standard (r + 9) := ram[
   else [ result ← #0; signA ← #0 ] ]
 
 /-- Signed Euclidean division on sign-and-magnitude words, matching Lean's `a / 0 = 0`
-convention and rounding toward `-∞` with nonnegative remainder when the divisor is nonzero. -/
+convention and, for `b ≠ 0`, Lean's Euclidean `Int.ediv`: the quotient for which `a % b` lies in
+`[0, |b|)` (rounding toward `-∞` when `b > 0` and toward `+∞` when `b < 0`). -/
 def divide : Code .standard (r + 9) := ram[
   ⟪unpack⟫; ⟪divideMagnitudes⟫; ⟪finish⟫ ]
 
@@ -454,7 +455,8 @@ private def divPreData (x : Data (r + 9)) (m n sa sb : ℕ) : Data (r + 9) :=
 
 /-- Signed Euclidean division runs within twenty instructions at unsigned width `w + 2`,
 including Lean's `a / 0 = 0` convention. The result is exact even at the minimum/`-1`
-signed overflow `(-2 ^ (w - 1)) / (-1) = 2 ^ (w - 1)`. -/
+signed overflow `(-2 ^ (w - 1)) / (-1) = 2 ^ (w - 1)`, where `GenericRAM.Signed.model` faults and
+the compiled block returns `encode (2 ^ (w - 1))` without fault reflection. -/
 theorem exec_divide {w : ℕ} {a b : ℤ} (ha : GenericRAM.Signed.Fits w a)
     (hb : GenericRAM.Signed.Fits w b) (x : Data (r + 9))
     (hxa : x.regs left = encode a) (hxb : x.regs right = encode b) :
