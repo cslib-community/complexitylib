@@ -11,9 +11,9 @@ import Complexity.Computability.Circuit.Arithmetic.RelativeRankUpper
 
 LST Claim 17 at `a = b = 1`, and its failure at `a = b = 0`. The hypotheses of LST Claim 16 are
 met by one block of `2 ^ 7` variables with `k = 10` and the letter `⌊10 / √2⌋ = 7`, and the
-claim bounds the relative rank of a variable there by `2 ^ (-1 / 2)`. The greedy word over
-`{⌊k / √2⌋, -k}` meets the alphabet hypothesis of Claim 16. The formula `0` is set-multilinear on
-every set of blocks and computes zero, the case that Claim 16's base case treats separately.
+claim bounds the relative rank of a variable there by `2 ^ (-1 / 2)`. The formula `0` is
+set-multilinear on every set of blocks and computes zero, the case that Claim 16's base case treats
+separately.
 -/
 
 namespace ComplexityTests.ArithmeticRelativeRankUpper
@@ -32,7 +32,7 @@ example : ¬ (1 / (4 * |((0 : ℤ) : ℝ) / √2| + 2) ≤ |((0 : ℤ) : ℝ) / 
 /-! ### One block of `2 ^ 7` variables, `k = 10` -/
 
 /-- `⌊10 / √2⌋ = 7`. -/
-theorem floor_ten_div_sqrt_two : ⌊(10 : ℝ) / √2⌋ = 7 := by
+private theorem floor_ten_div_sqrt_two : ⌊(10 : ℝ) / √2⌋ = 7 := by
   have h := Real.sq_sqrt (show (0 : ℝ) ≤ 2 by norm_num)
   have h0 := Real.sqrt_nonneg 2
   have hpos : 0 < √2 := by positivity
@@ -70,13 +70,6 @@ example : relRank blk7 (wordPos w7 ∩ {0}) (wordNeg w7 ∩ {0})
   refine h.trans_eq ?_
   rw [Formula.nodeCount_input, Finset.card_singleton]
   norm_num
-
-/-! ### The greedy word -/
-
-/-- The greedy word over `{⌊k / √2⌋, -k}` meets the alphabet hypothesis of Claim 16. -/
-example (k d : ℕ) (i : Fin d) :
-    greedyWord ⌊(k : ℝ) / √2⌋ k d i = ⌊(k : ℝ) / √2⌋ ∨ greedyWord ⌊(k : ℝ) / √2⌋ k d i = -k :=
-  greedyWord_eq_or _ _ i
 
 /-! ### Product-depth zero on two blocks -/
 

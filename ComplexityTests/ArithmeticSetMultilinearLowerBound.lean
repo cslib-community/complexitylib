@@ -10,11 +10,11 @@ import Complexity.Computability.Circuit.Arithmetic.SetMultilinearLowerBound
 # Lower bound for set-multilinear formulas computing IMM
 
 Substituting `x₀ ↦ x₀` and `x₁ ↦ 0` into the formula `x₀ · x₁` keeps its size and
-set-multilinearity and computes `0`. The word of Lemma 15 is `k`-unbiased. The hypotheses of the
-headline are met for every `n` and `d` by the sum over paths (`immFormula`). At `d = 11`,
-`k = 110`, `n = 2 ^ 110` and `Δ = 1` the bound reads `2 ^ (11 / 2) ≤ F.nodeCount`, so every
-syntactically set-multilinear formula of product-depth one computing `IMM_{2 ^ 110, 11}` has more
-than `45` nodes.
+set-multilinearity and computes `0`. The word of Lemma 15 at `k = 10` and `d = 3` is
+`7, -10, 7`, and it is `10`-unbiased. The hypotheses of the headline are met for every `n` and `d`
+by the sum over paths (`immFormula`). At `d = 11`, `k = 110`, `n = 2 ^ 110` and `Δ = 1` the bound
+reads `2 ^ (11 / 2) ≤ F.nodeCount`, so every syntactically set-multilinear formula of
+product-depth one computing `IMM_{2 ^ 110, 11}` has more than `45` nodes.
 -/
 
 namespace ComplexityTests.ArithmeticSetMultilinearLowerBound
@@ -54,8 +54,26 @@ example : (SPFormula.subst ρ01 prod01).polynomial = 0 := by
 
 /-! ### The word -/
 
-example (k d : ℕ) : IsUnbiased (sqrtTwoWord k d) k :=
-  isUnbiased_sqrtTwoWord k d
+/-- `⌊10 / √2⌋ = 7`, since `7 ^ 2 * 2 ≤ 10 ^ 2 < 8 ^ 2 * 2`. -/
+private theorem floor_ten_div_sqrt_two : ⌊((10 : ℕ) : ℝ) / √2⌋ = 7 := by
+  have h := Real.sq_sqrt (show (0 : ℝ) ≤ 2 by norm_num)
+  have h0 := Real.sqrt_nonneg 2
+  have hpos : 0 < √2 := by positivity
+  rw [Int.floor_eq_iff]
+  constructor
+  · rw [le_div_iff₀ hpos]
+    push_cast
+    nlinarith
+  · rw [div_lt_iff₀ hpos]
+    push_cast
+    nlinarith
+
+/-- The word of Lemma 15 at `k = 10` and `d = 3` is `7, -10, 7`, with prefix sums `0, 7, -3, 4`,
+and it is `10`-unbiased. -/
+example : sqrtTwoWord 10 3 = ![7, -10, 7] ∧ IsUnbiased (sqrtTwoWord 10 3) 10 := by
+  refine ⟨?_, isUnbiased_sqrtTwoWord 10 3⟩
+  rw [sqrtTwoWord, floor_ten_div_sqrt_two]
+  decide
 
 /-! ### The headline, nonvacuously -/
 
