@@ -37,7 +37,9 @@ public import Complexity.Algorithms.Streaming.CountMin.Basic
 public import Complexity.Algorithms.Streaming.CountMin.LinearHash
 public import Complexity.Algorithms.Streaming.CountMin.Probability
 public import Complexity.Algorithms.Streaming.CountMin.Program
+public import Complexity.Algorithms.ThreeSum.ChanHe.FromNumbers
 public import Complexity.Algorithms.ThreeSum.Convolution
+public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.WordRAM.Dijkstra.BinaryHeap
 public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapProgram

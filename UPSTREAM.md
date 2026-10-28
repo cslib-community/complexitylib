@@ -162,6 +162,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   fast Exact Triangle and full input/time/width composition remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright
   and attribution are retained; the new native proof and representation choices are local.
+  The elementary frontend in `Algorithms/ThreeSum/ChanHe/FromNumbers.lean` preserves
+  distinct input positions, including repeated values, in a finite list of three-set instances.
+  It also packs three-array convolution into the existing one-array predicate with four times
+  the length and magnitude at most `30W + 10`. These interfaces are mathematical preprocessing;
+  the core Chan–He recursion and native running-time accounting remain open.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
