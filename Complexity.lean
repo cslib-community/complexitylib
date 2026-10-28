@@ -29,6 +29,10 @@ public import Complexity.Algorithms.Lean.VanEmdeBoas.Elements
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Insert
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Layout
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Successor
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Full
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Identity
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Pruned
 public import Complexity.Algorithms.Reachability.BreadthFirst
 public import Complexity.Algorithms.Reachability.InductiveCounting
 public import Complexity.Algorithms.Reachability.InductiveCounting.Bounds

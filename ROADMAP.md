@@ -424,8 +424,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
   and the selected-prime false-positive bound ([#1442]), finite residue/chunk/piece splitting and
-  witness recovery ([#1447]) are proved mathematically. It still needs tensor/sparse-query programs,
-  native Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and full
+  witness recovery ([#1447]) are proved mathematically. The tensor identity, full recursion,
+  shared encodings and pruned-evaluation core ([#1459]) include exact visited-leaf and passed-set
+  bounds, with the empty zero-depth root handled explicitly. It still needs tiling and sparse
+  leaf bounds, native tensor/sparse-query programs, native Chan–He preprocessing, the reduction
+  host, the fast Exact Triangle solver and full
   input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
   size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
