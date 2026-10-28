@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
--- vendored: `space` is `space` since cslib #1133
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapes
 public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.RewindInput
@@ -80,7 +80,7 @@ def TransformsTapesAt (tm : MultiTapeTM k Symbol State)
       tm.runFrom (wordsCfgAt input p (some tm.q₀) ws out) t =
         wordsCfgAt input p' none ws' (out ++ emitted) ∧
       Q input p ws p' ws' emitted ∧
-      tm.space (wordsCfgAt input p (some tm.q₀) ws out) t ≤ s
+      (MultiTapeNTM.RunPath.ofDeterministic tm (wordsCfgAt input p (some tm.q₀) ws out) t).space ≤ s
 
 namespace TransformsTapesAt
 

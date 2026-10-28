@@ -8,7 +8,9 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.Computability.GenericRAM.SparseMemory.Turing
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 
 /-!
 # Sparse memory examples and native machine certificates

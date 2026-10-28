@@ -82,11 +82,13 @@ theorem DecidesWithBoundedError.decidesByMajority {p : Polynomial ℕ} {V : α �
   constructor
   · intro ha
     have := (h a).1 ha
+    unfold BoundedErrorAt at this
     rw [← acceptCount] at this
     omega
   · intro hlt
     by_contra ha
     have := (h a).2 ha
+    unfold BoundedErrorAt at this
     omega
 
 /-- **`BPP ⊆ PP`.** -/

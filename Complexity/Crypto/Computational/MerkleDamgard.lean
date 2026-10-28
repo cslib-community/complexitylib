@@ -109,21 +109,13 @@ theorem padOrTake_eq_self {n : ℕ} {w : List Bool} (hw : w.length = n) :
   subst hw
   simp [padOrTake]
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_padOrTake
-    {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ} {w : γ → List Bool}
-    (hn : ComputableTidilyInPolyTime n encIn encUnary)
-    (hw : ComputableTidilyInPolyTime w encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => padOrTake (n a) (w a)) encIn encBits := by
-  unfold padOrTake
-  polytime
-
 /-- Normalizing a word to unary length `n` is computable in plain polynomial time. -/
 @[program_certificate]
 theorem computableInPolyTime_padOrTake :
     ComputableInPolyTime (fun p : ℕ × List Bool => padOrTake p.1 p.2)
-      (encPair encUnary encBits) encBits :=
-  .of_tidy (computableTidilyInPolyTime_padOrTake (by fun_prop) (by fun_prop))
+      (encPair encUnary encBits) encBits := by
+  unfold padOrTake
+  polytime
 
 /-! ### Block-level Merkle–Damgård chain and collision extraction -/
 

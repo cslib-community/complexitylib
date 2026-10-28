@@ -18,7 +18,7 @@ public import Complexity.Computability.Machines.Turing.TM2.PolySpace
 # Removing the stack-machine bridge's word recoding
 
 The forward bridges `TM2.PolyTime` and `TM2.PolySpace` produce computations over framed lists of
-encoded Boolean symbols (`encIn.trans (encList (encFinite Bool))`). Applying
+encoded Boolean symbols (`encIn.trans (encList (encFinEnum Bool))`). Applying
 `Turing.MultiTapeTM.trans_encList_polyTime` transfers them to the caller's original binary
 encodings without requiring a computable inverse for either encoding.
 
@@ -45,9 +45,10 @@ theorem computableInPolyTime {α β : Type}
     (h : TM2ComputableInPolyTime encIn encOut f) [∀ stack, Finite (h.tm.Γ stack)] :
     ComputableInPolyTime f encIn encOut := by
   apply ComputableInPolyTime.of_tidy
-  have hf := h.computableTidilyInPolyTime encIn.injective encOut.injective
-  obtain ⟨hinput, _⟩ := trans_encList_polyTime encIn (encFinite Bool)
-  obtain ⟨_, houtput⟩ := trans_encList_polyTime encOut (encFinite Bool)
+  have hf := h.computableTidilyInPolyTime (encA := encFinEnum Bool) (encB := encFinEnum Bool)
+    encIn.injective encOut.injective
+  obtain ⟨hinput, _⟩ := trans_encList_polyTime encIn (encFinEnum Bool)
+  obtain ⟨_, houtput⟩ := trans_encList_polyTime encOut (encFinEnum Bool)
   simpa only [Function.comp_def] using houtput.tidy.comp (hf.comp hinput.tidy)
 
 end Turing.TM2ComputableInPolyTime
@@ -65,9 +66,10 @@ theorem computableInPolySpace {α β : Type}
     (hstacks : h.StacksBounded space) :
     ComputableInPolySpace f encIn encOut := by
   apply ComputableInPolySpace.of_tidy
-  have hf := h.computableTidilyInPolySpace encIn.injective encOut.injective hspace hstacks
-  obtain ⟨hinput, _⟩ := trans_encList_polyTime encIn (encFinite Bool)
-  obtain ⟨_, houtput⟩ := trans_encList_polyTime encOut (encFinite Bool)
+  have hf := h.computableTidilyInPolySpace (encA := encFinEnum Bool) (encB := encFinEnum Bool)
+    encIn.injective encOut.injective hspace hstacks
+  obtain ⟨hinput, _⟩ := trans_encList_polyTime encIn (encFinEnum Bool)
+  obtain ⟨_, houtput⟩ := trans_encList_polyTime encOut (encFinEnum Bool)
   simpa only [Function.comp_def] using
     (ComputableTidilyInPolySpace.of_polyTime houtput.tidy).comp
       (hf.comp (ComputableTidilyInPolySpace.of_polyTime hinput.tidy))

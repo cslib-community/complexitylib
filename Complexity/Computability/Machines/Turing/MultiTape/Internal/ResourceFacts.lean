@@ -31,7 +31,9 @@ work-tape cells. -/
 theorem ComputesInTimeAndSpace.space_linear {input output : List Symbol} {t s : ℕ}
     (h : tm.ComputesInTimeAndSpace input output t s) :
     tm.ComputesInTimeAndSpace input output t (k * t + k) :=
-  ⟨h.1, h.2.1, runsInSpace_of_halted (runsInTime_iff_halted.mp h.2.1) (tm.space_linear _ t)⟩
+  ⟨h.1, h.2.1, runsInSpace_of_halted (runsInTime_iff_halted.mp h.2.1)
+    ((MultiTapeNTM.RunPath.space_le_mul_time_add_one (.ofDeterministic tm _ t)).trans_eq
+      (Nat.mul_add_one _ _))⟩
 
 /-- A computation within `t` steps emits at most `t` symbols. -/
 theorem ComputesInTimeAndSpace.length_output_le {input output : List Symbol} {t s : ℕ}

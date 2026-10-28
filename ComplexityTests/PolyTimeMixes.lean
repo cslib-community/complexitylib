@@ -31,15 +31,7 @@ example {f : α → ℤ} (hf : ComputableInPolyTime f enc encIntBin) :
 example {f : α → ℤ} (hf : ComputableInPolyTime f enc encIntBin) :
     ComputableTidilyInPolyTime (fun a => [f a]) enc (encList encIntBin) := by polytime
 
-/-- Before: prepare each verifier for the existing tidy rule, then convert its result. -/
-example {k : α → ℕ} {V W : α × List Bool → Bool}
-    (hk : ComputableInPolyTime k enc encUnary)
-    (hV : ComputableInPolyTime V (encPair enc encBits) encBool)
-    (hW : ComputableInPolyTime W (encPair enc encBits) encBool) :
-    ComputableInPolyTime (andVerifier k V W) (encPair enc encBits) encBool :=
-  .of_tidy (computableTidilyInPolyTime_andVerifier hk.tidy hV.tidy hW.tidy)
-
-/-- After: the plain rule lets `fun_prop` use the plain hypotheses directly. -/
+/-- The plain rule lets `fun_prop` use the plain hypotheses directly. -/
 example {k : α → ℕ} {V W : α × List Bool → Bool}
     (hk : ComputableInPolyTime k enc encUnary)
     (hV : ComputableInPolyTime V (encPair enc encBits) encBool)

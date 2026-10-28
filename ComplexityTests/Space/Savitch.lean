@@ -7,6 +7,7 @@ Authors: Bolton Bailey, Samuel Schlesinger
 import Complexity.Algorithms.Reachability.Savitch
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Tests: Savitch's midpoint reachability
@@ -108,7 +109,7 @@ example : savitch (fun _ _ => false) 0 3 [] [] = true := by decide +kernel
 private theorem exists_inO_eq : ∃ T S, ComputableTidilyInO
     (fun q : Unit × List Bool × List Bool => decide (q.2.1 = q.2.2))
     (encPair encUnit (encPair encBits encBits)) encBool T S :=
-  ⟨_, _, ComputableTidilyInO.eqWords.comp (ComputableTidilyInO.snd encUnit _)⟩
+  ⟨_, _, ComputableInO.eqWords.tidy.comp (ComputableTidilyInO.snd encUnit _)⟩
 
 -- Savitch's algorithm at depth `n`, with the width, the endpoints and the edge test fixed.
 example : ∃ T S, ComputableTidilyInO

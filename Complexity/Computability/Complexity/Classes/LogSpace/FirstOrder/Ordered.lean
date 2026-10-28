@@ -240,7 +240,7 @@ theorem queryLanguage_mem_L (φ : (language L).Sentence) :
     queryLanguage v φ ∈ Complexity.L encStructure := by
   classical
   refine ⟨fun a => decide (a ∈ queryLanguage v φ), ?_, fun a => by simp⟩
-  refine (modelChecker v φ).computableInLogSpace_of_reaches (regExponent v) fun a => ?_
+  refine (modelChecker v φ).computableInLogSpace_of_reaches v.maxArity fun a => ?_
   let E := 4 + 6 * v.count
   let A := E + 1 + codeLength φ
   let F := A + 1
@@ -259,7 +259,7 @@ theorem queryLanguage_mem_L (φ : (language L).Sentence) :
   obtain ⟨hacc, hrest⟩ := codeAt_cons.mp hhalt
   have hrej := (codeAt_cons.mp hrest).1
   replace hguard := (codeAt_cons.mp hguard).1
-  have hwB := length_le_pow_regExponent v a
+  have hwB := length_le_pow_maxArity v a
   have hnB := (card_le_length_encStructure a).trans hwB
   obtain ⟨regs₁, hreach₁, hlen₁, h0₁, hB₁⟩ :=
     reaches_shapeCode hshape (pow_arityAt_le v a) hwB (List.replicate (3 + boundDepth φ) 0)
@@ -267,7 +267,7 @@ theorem queryLanguage_mem_L (φ : (language L).Sentence) :
   by_cases hwf : v.WellFormed a
   · rw [ite_eq_left hwf] at hreach₁
     have hreachGuard : (modelChecker v φ).Reaches (encStructure a)
-        ((modelChecker v φ).Running (((encStructure a).length + 1) ^ regExponent v))
+        ((modelChecker v φ).Running (((encStructure a).length + 1) ^ v.maxArity))
         (E, regs₁) (if a.1 < 2 then F else E + 1, regs₁) := by
       refine Reaches.lt hguard hB₁ ?_
       simp only [eval_reg, eval_const, h0₁ hwf]

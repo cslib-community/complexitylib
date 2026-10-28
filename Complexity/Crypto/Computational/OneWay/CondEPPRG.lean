@@ -713,21 +713,13 @@ private theorem computableTidilyInPolyTime_rawGen {g : List Bool → List Bool} 
     encBits encBits
   fun_prop
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_fullGen {g : List Bool → List Bool} {imgLen : ℕ → ℕ}
-    (hg : ComputableTidilyInPolyTime g encBits encBits)
-    (himgLen : ComputableTidilyInPolyTime imgLen encUnary encUnary)
-    (d γ_core γ : ℕ) :
-    ComputableTidilyInPolyTime (fullGen g imgLen d γ_core γ) encBits encBits := by
-  unfold fullGen
-  fun_prop
-
 private theorem computableInPolyTime_fullGen {g : List Bool → List Bool} {imgLen : ℕ → ℕ}
     (hg : ComputableTidilyInPolyTime g encBits encBits)
     (himgLen : ComputableTidilyInPolyTime imgLen encUnary encUnary)
     (d γ_core γ : ℕ) :
-    ComputableInPolyTime (fullGen g imgLen d γ_core γ) encBits encBits :=
-  .of_tidy (computableTidilyInPolyTime_fullGen hg himgLen d γ_core γ)
+    ComputableInPolyTime (fullGen g imgLen d γ_core γ) encBits encBits := by
+  unfold fullGen
+  fun_prop
 
 /-! ### Seed packing and conditioning events $E_n$ -/
 

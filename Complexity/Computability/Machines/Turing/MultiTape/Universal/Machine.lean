@@ -184,7 +184,8 @@ public theorem computableTidilyInO_universal :
   have hinit := (((hd.prod hx).prod (init_inO.comp hd)).prod
     (const (encMid := encList encUnary) [])).of_enc_eq (encOut := eRun)
     (g := fun i : Desc × List ℕ × ℕ => (((i.1, i.2.1), init i.1), ([] : List ℕ))) fun _ => rfl
-  have hiter := iterate (encB := eRun) (step := round) (n := fun i => i.2.2) ht hinit round_inO
+  have hiter := (ComputableInO.iterate (encB := eRun) (step := round) (n := fun i => i.2.2)
+    ht.computableInO hinit.computableInO round_inO.computableInO
     (R := fun i => stepBound (descLen i.1) (encList encUnary i.2.1).length i.2.2 +
       runBound (descLen i.1) (encList encUnary i.2.1).length i.2.2)
     (Q := fun i => runBound (descLen i.1) (encList encUnary i.2.1).length i.2.2)
@@ -198,9 +199,9 @@ public theorem computableTidilyInO_universal :
     (fun i k hk => by
       show (eRun (round^[k] (((i.1, i.2.1), init i.1), []))).length ≤ _
       exact length_eRun_le i.1 i.2.1 hk)
-    fun i k hk => by
+    (fun i k hk => by
       show (eRun (round^[k] (((i.1, i.2.1), init i.1), []))).length ≤ _
-      exact length_eRun_le i.1 i.2.1 hk
+      exact length_eRun_le i.1 i.2.1 hk)).tidy
   have hhalted := (ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := encBool)
     (fun b : Bool => !b)).inO_one.comp_linear ((ComputableTidilyInDegree.isSome encUnary).inO_one
       |>.comp_linear (state_inO.comp_linear hiter.fst'.snd'))

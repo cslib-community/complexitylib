@@ -106,7 +106,7 @@ theorem isPPTOn_sampleGame {Caller : Type} {input : Caller ↪ List Bool}
             (OracleComp.withSampleList [] (fun expansion request =>
               expansionOracle generator (pure expansion) (width a) (depth a) request.2)))
                 (adversary (width a) [])).run ([], values a)) := by
-    refine hadversary.run_interpret_withSampleList []
+    refine hadversary.run_interpret_withSampleList (operationEncoding := encFinEnum Unit) []
       (prepare := fun a => (width a, [])) (by fun_prop) (by fun_prop) (by fun_prop) hvalues
       (fun a cache => ∀ entry ∈ cache, entry.2.length ≤ 2 * width a) (by simp)
       (resources := fun a query => 4 * query.length + 4 * width a + 3) (by fun_prop) ?_

@@ -27,7 +27,7 @@ requires the circuit to output `b` and `none` represents the "don't care" symbol
 
 `Cslib.PartialMCSP` uses the standard De Morgan all-gates size measure `Circuit.size`
 (`complexityOn interpretation x.definedInputs (single x.completion)`), matching `Cslib.MCSP` and
-`Cslib.SuccinctMCSP` (see #798). We also define `Cslib.PartialMCSP.BinaryGate` using
+`Cslib.SuccinctMCSP`. We also define `Cslib.PartialMCSP.BinaryGate` using
 the AND/OR-only gate count `c.program.cost binaryCost` from [Ilango2020FOCS, Section II.B and
 Section III.B, p. 427; ECCC TR20-183, Section 2.2] (where NOT and constant gates are free), and
 prove the threshold-$n-1$ bridge theorems relating the two measures using the binary-cost support

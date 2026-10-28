@@ -13,7 +13,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Deterministic
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -36,7 +37,7 @@ time in the encoded configuration plus one evaluation of `g` on the pending requ
 amount per instruction and every request is no longer than the clock
 (`Turing.MultiTapePTM.spaceBound_answerStep`, `Turing.MultiTapePTM.length_pendingRequest_le`).
 Iterating the instruction with a binary counter
-(`Turing.MultiTapeTM.ComputableTidilyInO.iterate`) therefore simulates a run of polynomial clock
+(`Turing.MultiTapeTM.ComputableInO.iterate`) therefore simulates a run of polynomial clock
 within polynomial space whenever `g` is computable within polynomial space
 (`Turing.MultiTapePTM.exists_computableTidilyInO_run`). The time is not bounded by a polynomial:
 it charges, for every instruction, the largest time of `g` on a word no longer than the clock
@@ -394,7 +395,8 @@ theorem exists_computableTidilyInO_run [Finite Operation] {Î± : Type} {input : Î
         n a :=
     (machine.length_pendingRequest_le (hspace a i)).trans hi
   -- the iteration, with every request answered within the space of `g` on a short word
-  have hit := ComputableTidilyInO.iterate hn.inO hinit.inO hstep
+  have hit := (ComputableInO.iterate hn.inO.computableInO hinit.inO.computableInO
+    hstep.computableInO
     (R := fun a => (B a + 1) ^ e + wordMax Tg (n a))
     (Q := fun a => (B a + 1) ^ e + cg * (n a + 1) ^ dg) (B := B)
     (fun a i hi => Nat.add_le_add (Nat.pow_le_pow_left (by have := hlen a hi; omega) e)
@@ -402,7 +404,7 @@ theorem exists_computableTidilyInO_run [Finite Operation] {Î± : Type} {input : Î
     (fun a i hi => Nat.add_le_add (Nat.pow_le_pow_left (by have := hlen a hi; omega) e)
       ((hSg _).trans (Nat.mul_le_mul_left cg (Nat.pow_le_pow_left (by
         have := hreq a hi; omega) dg))))
-    (fun a i hi => hlen a hi)
+    (fun a i hi => hlen a hi)).tidy
   have h := (hout.inO.comp hit).mono_le (T' := fun a => _ + (B a + 1) ^ do')
     (S' := fun a => ((input a).length + 1) ^ dn + ((input a).length + 1) ^ di +
       ((B a + 1) ^ e + cg * (n a + 1) ^ dg) + B a + (n a + 1) + (B a + 1) ^ do')

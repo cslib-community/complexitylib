@@ -70,14 +70,15 @@ private theorem readWord_halts (input : List Bool) :
 
 private noncomputable def compiled := readWord.comp chooseWord true
 
--- Both table contracts are realized, including on all views that are unreachable from init.
-example : compiled.Nonblocking := chooseWord_nonblocking.comp readWord_nonblocking true
-
 -- Source 2 + buffer preparation (2 + 4) + consumer 2 = 10, with no additional handoff step.
 private theorem compiled_halts (input : List Bool) :
     compiled.HaltsWithin 10 (compiled.initialConfig input).tapes :=
   HaltsWithin.comp chooseWord readWord chooseWord_nonblocking readWord_nonblocking
     true input 2 2 (chooseWord_halts input) (fun result _ => readWord_halts result.output)
+
+-- Both table contracts are preserved by composition.
+example : compiled.Nonblocking :=
+  chooseWord_nonblocking.comp readWord_nonblocking true
 
 -- Order matters: the real input is [false, true], while the generated nonempty word is reversed.
 example : (compiled.runList 10 (compiled.initialConfig [false, true]).tapes).map Cfg.output =
@@ -88,19 +89,19 @@ example : (compiled.runList 10 (compiled.initialConfig [false, true]).tapes).map
   decide
 
 -- The native counts are 4 for the two-symbol word and 2 for the empty word.
-example : compiled.branchCount (· == [true, false]) 10
-    (compiled.initialConfig [false, true]).tapes = 4 := by
+example :
+    compiled.branchCount (· == [true, false]) 10
+      (compiled.initialConfig [false, true]).tapes = 4 ∧
+    compiled.branchCount List.isEmpty 10
+      (compiled.initialConfig [false, true]).tapes = 2 := by
   unfold compiled
-  rw [branchCount_comp chooseWord readWord chooseWord_nonblocking readWord_nonblocking
-    true [false, true] 2 2 (chooseWord_halts _) (fun result _ => readWord_halts result.output)]
-  decide
-
-example : compiled.branchCount List.isEmpty 10
-    (compiled.initialConfig [false, true]).tapes = 2 := by
-  unfold compiled
-  rw [branchCount_comp chooseWord readWord chooseWord_nonblocking readWord_nonblocking
-    true [false, true] 2 2 (chooseWord_halts _) (fun result _ => readWord_halts result.output)]
-  decide
+  constructor
+  · rw [branchCount_comp chooseWord readWord chooseWord_nonblocking readWord_nonblocking
+      true [false, true] 2 2 (chooseWord_halts _) (fun result _ => readWord_halts result.output)]
+    decide
+  · rw [branchCount_comp chooseWord readWord chooseWord_nonblocking readWord_nonblocking
+      true [false, true] 2 2 (chooseWord_halts _) (fun result _ => readWord_halts result.output)]
+    decide
 
 -- Padding past every first halt contributes no additional preparation or consumer choices.
 example (padding : ℕ) : compiled.branchCount (fun _ => true) (10 + padding)
@@ -146,14 +147,16 @@ example : (ofDeterministic (MultiTapeTM.prepareInput 2 true)).branchCount (fun _
   rfl
 
 -- An initial output prefix is retained in the general growth bound, rather than silently free.
-example (machine : MultiTapeCTM 1 Bool Bool) (fuel : ℕ)
-    (cfg final : Cfg 1 Bool Bool [false, true]) (hmem : final ∈ machine.runList fuel cfg) :
-    final.output.length ≤ cfg.output.length + fuel :=
-  machine.length_output_of_mem_runList fuel cfg final hmem
-
-example : ∃ final ∈ chooseWord.runList 0
-    { Cfg.init chooseWord.initial [false, true] with output := [true] },
-    ¬final.output.length ≤ 0 := by
-  simp
+example :
+    (∀ final ∈ chooseWord.runList 2
+      { Cfg.init chooseWord.initial [false, true] with output := [true] },
+      final.output.length ≤ 3) ∧
+    (∃ final ∈ chooseWord.runList 2
+      { Cfg.init chooseWord.initial [false, true] with output := [true] },
+      final.output.length = 3) ∧
+    ∃ final ∈ chooseWord.runList 0
+      { Cfg.init chooseWord.initial [false, true] with output := [true] },
+      ¬final.output.length ≤ 0 :=
+  ⟨fun final hmem => chooseWord.length_output_of_mem_runList 2 _ final hmem, by decide, by simp⟩
 
 end ComplexityTests.CountingComposition

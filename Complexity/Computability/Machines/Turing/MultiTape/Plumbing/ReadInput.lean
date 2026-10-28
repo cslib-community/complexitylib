@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
--- vendored: `spaceUsed` is `space` since cslib #1133
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Cursor
 public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.ForwardWork
@@ -228,7 +228,8 @@ open Sequential in
 cells. -/
 lemma appendOne_space_le (p : Fin (input.length + 2)) (hp : p.val ≠ 0) (v out : List Symbol)
     (t : ℕ) :
-    r.appendOne.space ⟨some r.appendOne.q₀, p, fun _ => tapeOfList v, fun _ => 0, out⟩ t ≤
+    (MultiTapeNTM.RunPath.ofDeterministic r.appendOne
+        ⟨some r.appendOne.q₀, p, fun _ => tapeOfList v, fun _ => 0, out⟩ t).space ≤
       (v ++ (r.read r.q₀ (input.drop (p.val - 1))).1).length + 2 := by
   have hp' : p.val - 1 ≤ input.length := by have := p.isLt; omega
   set L := (v ++ (r.read r.q₀ (input.drop (p.val - 1))).1).length
@@ -258,7 +259,7 @@ lemma appendOne_space_le (p : Fin (input.length + 2)) (hp : p.val ≠ 0) (v out 
       · exact workTapePos_runFrom_rewindWork (input := input) none
           ⟨1 + (p.val - 1 + (r.read r.q₀ (input.drop (p.val - 1))).2), by omega⟩
           (tapeOfList (v ++ (r.read r.q₀ (input.drop (p.val - 1))).1)) out rfl le_rfl n
-  rw [space_eq_sum_spaceUsedByTape, Fin.sum_univ_one]
+  rw [MultiTapeNTM.RunPath.space, Fin.sum_univ_one]
   refine (spaceUsedByTape_le_card _ (S := .Icc (-1) (L : ℤ)) fun m _ => ?_).trans ?_
   · exact Finset.mem_Icc.mpr (hinv m)
   · rw [Int.card_Icc]; omega

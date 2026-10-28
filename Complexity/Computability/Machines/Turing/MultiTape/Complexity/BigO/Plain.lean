@@ -74,26 +74,6 @@ theorem ComputableInTimeAndSpace.computableTidilyInO {t s : α → ℕ}
 
 variable {T S : α → ℕ}
 
-/-- A function computable within time `O(T)` and space `O(S)` is tidily computable within them. -/
-theorem ComputableInO.tidy (h : ComputableInO f encIn encOut T S) :
-    ComputableTidilyInO f encIn encOut T S := by
-  obtain ⟨c, hc, hl⟩ := h
-  obtain ⟨d, hd, hdl⟩ := hc.computableTidilyInO hl
-  refine ⟨d * (c + 1), hd.mono (fun a => ?_) (fun a => ?_), fun a => (hdl a).trans ?_⟩ <;>
-    nlinarith
-
-/-- A function tidily computable within time `O(T)` and space `O(S)` is computable within them, by
-the same machine. -/
-theorem ComputableInO.of_tidy (h : ComputableTidilyInO f encIn encOut T S) :
-    ComputableInO f encIn encOut T S :=
-  let ⟨c, hc, hl⟩ := h
-  ⟨c, hc.computableInTimeAndSpace, hl⟩
-
-/-- `Turing.MultiTapeTM.ComputableInO.of_tidy` for dot notation on a tidy hypothesis. -/
-theorem ComputableTidilyInO.computableInO (h : ComputableTidilyInO f encIn encOut T S) :
-    ComputableInO f encIn encOut T S :=
-  .of_tidy h
-
 /-- **Plain and tidy computability within bounds up to constants agree.** -/
 theorem computableInO_iff_computableTidilyInO :
     ComputableInO f encIn encOut T S ↔ ComputableTidilyInO f encIn encOut T S :=

@@ -19,11 +19,11 @@ open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
 /-! ### The logarithmic bound at short inputs -/
 
-/-- An input of length zero is granted `c` cells, not zero: each work tape costs a cell. -/
-example (c : ℕ) : c * (Nat.log2 ([] : List Bool).length + 1) = c := by simp
-
-/-- An input of length one is granted the same `c` cells. -/
-example (c : ℕ) : c * (Nat.log2 [true].length + 1) = c := by simp
+/-- Inputs of length zero and one are both granted `c` cells: each work tape costs a cell. -/
+example (c : ℕ) :
+    c * (Nat.log2 ([] : List Bool).length + 1) = c ∧
+    c * (Nat.log2 [true].length + 1) = c := by
+  simp
 
 /-! ### A nontrivial problem in `L`: odd parity, in constant workspace -/
 
@@ -43,21 +43,15 @@ private theorem computableInLogSpace_oddOnes : ComputableInLogSpace oddOnes encB
 /-- The words with an odd number of ones. -/
 private def OddOnes : Set (List Bool) := {word | oddOnes word = true}
 
-example : OddOnes ∈ L encBits := ⟨oddOnes, computableInLogSpace_oddOnes, fun _ => Iff.rfl⟩
-
-/-- `L` is closed under complement: the words with an even number of ones. -/
-example : OddOnesᶜ ∈ L encBits :=
-  compl_mem_L ⟨oddOnes, computableInLogSpace_oddOnes, fun _ => Iff.rfl⟩
-
-example : OddOnes ∈ NL encBits :=
-  L_subset_NL ⟨oddOnes, computableInLogSpace_oddOnes, fun _ => Iff.rfl⟩
-
-/-- Through `NL ⊆ P`, by breadth-first search on the views of the deterministic machine. -/
-example : OddOnes ∈ P encBits :=
-  NL_subset_P (L_subset_NL ⟨oddOnes, computableInLogSpace_oddOnes, fun _ => Iff.rfl⟩)
-
-example : OddOnes ∈ PSPACE encBits :=
-  L_subset_PSPACE ⟨oddOnes, computableInLogSpace_oddOnes, fun _ => Iff.rfl⟩
+/-- `OddOnes` and its complement lie in `L`, hence in `NL`, `P`, and `PSPACE`. -/
+example :
+    OddOnes ∈ L encBits ∧
+    OddOnesᶜ ∈ L encBits ∧
+    OddOnes ∈ NL encBits ∧
+    OddOnes ∈ P encBits ∧
+    OddOnes ∈ PSPACE encBits :=
+  let hL : OddOnes ∈ L encBits := ⟨oddOnes, computableInLogSpace_oddOnes, fun _ => Iff.rfl⟩
+  ⟨hL, compl_mem_L hL, L_subset_NL hL, NL_subset_P (L_subset_NL hL), L_subset_PSPACE hL⟩
 
 /-- The `DSPACE(log₂)` shape of cslib pull request #767. -/
 example : ∃ c₁ c₂ t, DecidableInTimeAndSpace OddOnes encBits t
@@ -66,28 +60,27 @@ example : ∃ c₁ c₂ t, DecidableInTimeAndSpace OddOnes encBits t
 
 /-! ### Composition and reductions -/
 
-/-- Composition with a function on a finite type. -/
-example : ComputableInLogSpace (fun w => !oddOnes w) encBits encBool :=
-  (ComputableInLogSpace.of_finite (encIn := encBool) not).comp computableInLogSpace_oddOnes
+/-- Composition with a function on a finite type and after the identity. -/
+example :
+    ComputableInLogSpace (fun w => !oddOnes w) encBits encBool ∧
+    ComputableInLogSpace (oddOnes ∘ fun w : List Bool => w) encBits encBool :=
+  ⟨(ComputableInLogSpace.of_finite (encIn := encBool) not).comp computableInLogSpace_oddOnes,
+    computableInLogSpace_oddOnes.comp .id⟩
 
-/-- Composition after the identity. -/
-example : ComputableInLogSpace (oddOnes ∘ fun w : List Bool => w) encBits encBool :=
-  computableInLogSpace_oddOnes.comp .id
-
-/-- Reversal is computable in zero workspace, so it reduces the words with an odd number of ones to
-the words whose reversal has an odd number of ones. -/
-example : LogSpaceReducible encBits encBits OddOnes {w | oddOnes w.reverse = true} := by
+/-- Reversal is computable in zero workspace, so it reduces `OddOnes` (and its complement, in both
+logarithmic space and polynomial time) to the words whose reversal has an odd number of ones. -/
+private theorem logSpaceReducible_oddOnes_reverse :
+    LogSpaceReducible encBits encBits OddOnes {w | oddOnes w.reverse = true} := by
   refine ⟨List.reverse, ⟨_, 0,
     ComputableTidilyInTimeAndSpace.reverse_bits.computableInTimeAndSpace.mono (fun _ => le_rfl)
       fun _ => Nat.zero_le _⟩, fun w => ?_⟩
   simp [OddOnes]
 
-example : LogSpaceReducible encBits encBits OddOnes OddOnes := .refl _ _
-
-example : LogSpaceReducible encBits encBits OddOnesᶜ OddOnesᶜ := (LogSpaceReducible.refl _ _).compl
-
-example : PolyTimeReducible encBits encBits OddOnes OddOnes :=
-  (LogSpaceReducible.refl _ _).polyTimeReducible
+example :
+    LogSpaceReducible encBits encBits OddOnesᶜ {w | oddOnes w.reverse = true}ᶜ ∧
+    PolyTimeReducible encBits encBits OddOnesᶜ {w | oddOnes w.reverse = true}ᶜ :=
+  ⟨logSpaceReducible_oddOnes_reverse.compl,
+    logSpaceReducible_oddOnes_reverse.compl.polyTimeReducible⟩
 
 /-! ### A nondeterministic machine with a branch running forever -/
 
@@ -137,16 +130,12 @@ example : loopOrAccept.initView [true] ≠ loopOrAccept.initView [false] := by
 /-- A path `0 → 1 → 2 → 3`. -/
 private def pathSucc (n : ℕ) : List ℕ := if n < 3 then [n + 1] else []
 
-/-- Each round finds the next vertex. -/
-example : Reachability.search pathSucc 2 0 = [0, 1, 2] := by decide
-
-/-- Once all vertices are found, further rounds add nothing. -/
-example : Reachability.search pathSucc 7 0 = [0, 1, 2, 3] := by decide
-
-/-- A cycle `0 → 1 → 2 → 0`: no vertex is found twice. -/
-example : Reachability.search (fun n => [(n + 1) % 3]) 5 0 = [0, 1, 2] := by decide
-
-/-- No successors: only the start is found. -/
-example : Reachability.search (fun _ : ℕ => []) 4 7 = [7] := by decide
+/-- Each round of BFS finds the next vertex, saturating on paths, cycles, and isolated vertices. -/
+example :
+    Reachability.search pathSucc 2 0 = [0, 1, 2] ∧
+    Reachability.search pathSucc 7 0 = [0, 1, 2, 3] ∧
+    Reachability.search (fun n => [(n + 1) % 3]) 5 0 = [0, 1, 2] ∧
+    Reachability.search (fun _ : ℕ => []) 4 7 = [7] :=
+  ⟨by decide, by decide, by decide, by decide⟩
 
 end ComplexityTests.LogSpace

@@ -185,7 +185,7 @@ theorem TimeConstructible.succ_mul_of_computableInO {f : ℕ → ℕ} {T : List 
     (hT : ∀ x, T x ≤ c * ((x.length + 1) * f x.length) + c) (hn : ∀ n, n ≤ f n) :
     TimeConstructible fun n => (n + 1) * f n := by
   have hf := hf.tidy
-  have hlen := ComputableTidilyInO.natSucc.comp ComputableTidilyInO.lengthNat
+  have hlen := ComputableInO.natSucc.tidy.comp ComputableTidilyInO.lengthNat
   have h := computableTidilyInDegree_mul.inO.comp (hlen.prod hf)
   obtain ⟨C, hC⟩ := exists_pow_length_encNat_le 3
   obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
@@ -240,7 +240,7 @@ attribute [local fun_prop] ComputableInPolySpace.tidy in
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `(n + 1) ^ 2` is time-constructible. -/
 theorem timeConstructible_succ_sq : TimeConstructible fun n => (n + 1) ^ 2 := by
-  have hlen := ComputableTidilyInO.natSucc.comp ComputableTidilyInO.lengthNat
+  have hlen := ComputableInO.natSucc.tidy.comp ComputableTidilyInO.lengthNat
   obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
   have h := TimeConstructible.succ_mul_of_computableInO (f := fun n => n + 1)
     (S := fun n => n + 1 + ((encNat n).length + 1)) (C₂ + 2) (.of_tidy hlen) (fun x => by
@@ -319,7 +319,7 @@ attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `n + 1` is space-constructible. -/
 theorem spaceConstructible_succ : SpaceConstructible fun n => n + 1 :=
   SpaceConstructible.of_computableInO 2
-    (.of_tidy (ComputableTidilyInO.natSucc.comp ComputableTidilyInO.lengthNat))
+    (.of_tidy (ComputableInO.natSucc.tidy.comp ComputableTidilyInO.lengthNat))
     fun x => by have := Universal.length_encNat_le x.length; omega
 
 /-- Constant bounds are space-constructible, in zero space. -/

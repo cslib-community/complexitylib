@@ -48,6 +48,11 @@ The negation of `ETH` is `Cslib.Complexity.DecidableInSubexpTime`: decidability 
 `2 ^ (δ n)` times a polynomial for every `δ > 0`, by a decider that may depend on `δ`
 (`Cslib.Complexity.ETH_iff_not_decidableInSubexpTime`).
 
+The companion CountingNativeEndpoint module proves subexponential decidability of k-SAT for each
+fixed width using an exact-counting algorithm with polynomial workspace. It derives zero SAT
+exponents and the negations of ETH and SETH. The hypotheses remain defined here so their
+conditional consequences can still be stated.
+
 ## Main definitions
 
 * `Cslib.Complexity.DecidableInTimeO`, `Cslib.Complexity.DecidableInExpTime`,

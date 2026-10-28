@@ -19,7 +19,7 @@ open Cslib.Complexity Turing.MultiTapeTM
 example : {y : List Bool × List Bool | ∃ v : List Bool, v.length = 1 ∧
     (y.2 ++ v).getD 1 false = true} ∈ NP (encPair encBits encBits) := by
   have := mem_NP_setOf_exists_append (enc := encBits) (V := fun x => x.2.getD 1 false)
-    (.of_tidy (ComputableTidilyInPolyTime.bitsGetDWithInput (.snd _ _) (.const 1) false)) 1
+    (by fun_prop) 1
   simpa using this
 
 -- A zero-length suffix is also supported; the verifier can ignore both words.
@@ -27,7 +27,7 @@ example : {y : List Bool × List Bool | ∃ v : List Bool, v.length = 0 ∧
     (fun _ : List Bool × List Bool => true) (y.1, y.2 ++ v) = true} ∈
       NP (encPair encBits encBits) := by
   have h := mem_NP_setOf_exists_append (enc := encBits) (V := fun _ => true)
-    (.of_tidy (ComputableTidilyInPolyTime.const true)) 0
+    (.const true) 0
   simpa only [Polynomial.eval_zero] using h
 
 end ComplexityTests.NPExistsAppend

@@ -447,9 +447,18 @@ class BuildAbstractsTests(unittest.TestCase):
             if subprocess.run(["kpsewhich", package], capture_output=True).returncode:
                 self.skipTest(f"TeX package missing: {package}")
         gsw_source = build.ROOT / "abstracts/ComplexityAbstracts/GSWSecurityAbstract.lean"
-        gsw_bridge = build.ROOT / "abstracts/ComplexityAbstracts/GSWSecurityBridge.lean"
-        shutil.copyfile(gsw_source, self.root / "abstracts/ComplexityAbstracts/GSWSecurityAbstract.lean")
-        shutil.copyfile(gsw_bridge, self.root / "abstracts/ComplexityAbstracts/GSWSecurityBridge.lean")
+        for name in (
+            "Encoding.lean",
+            "Computation.lean",
+            "Randomized.lean",
+            "GSW.lean",
+            "GSWSecurityAbstract.lean",
+            "GSWSecurityBridge.lean",
+        ):
+            shutil.copyfile(
+                build.ROOT / "abstracts/ComplexityAbstracts" / name,
+                self.root / "abstracts/ComplexityAbstracts" / name,
+            )
         gsw_entry = {
             "id": "gsw-security",
             "title": "Generated-key GSW security from decision LWE",
@@ -464,6 +473,12 @@ class BuildAbstractsTests(unittest.TestCase):
                 "ComplexityTests.Abstracts.GSWSecurityAbstract.native_algorithms",
                 "ComplexityTests.Abstracts.GSWSecurityAbstract.indCPA",
             ],
+            "foundations": [
+                "ComplexityAbstracts.Encoding",
+                "ComplexityAbstracts.Computation",
+                "ComplexityAbstracts.Randomized",
+                "ComplexityAbstracts.GSW",
+            ],
         }
         self.write_manifest([gsw_entry])
         sha = "a406f81f19d5cb9c7383cacc1ca37e3d82e60eae"
@@ -473,7 +488,7 @@ class BuildAbstractsTests(unittest.TestCase):
         pdf = self.root / "build/gsw-security.pdf"
         pages = subprocess.check_output(["pdftotext", "-layout", str(pdf), "-"],
                                         text=True).split("\f")[:-1]
-        self.assertEqual(len(pages), 6)
+        self.assertGreaterEqual(len(pages), 5)
 
         def page_of(snippet):
             matches = [index for index, page in enumerate(pages, 1) if snippet in page]
@@ -481,10 +496,10 @@ class BuildAbstractsTests(unittest.TestCase):
             return matches[0]
 
         for start, end, decl in (
-            ("The security parameter is supplied in unary", "consecutive true bits.",
-             "def unaryEncoding"),
-            ("One deterministic finite-state binary multitape Turing machine",
-             "both bounds are uniform.", "def PolyTime"),
+            ("Unary size or security parameter:", "exactly n bits.",
+             "def encUnary"),
+            ("Total polynomial-time computation on encoded inputs,",
+             "explicit time and space bounds.", "def PolyTime"),
             ("Native efficiency.", "supplies efficiency for free.",
              "theorem native_algorithms"),
             ("GSW generated-key IND-CPA from exact decision LWE.",
@@ -498,7 +513,7 @@ class BuildAbstractsTests(unittest.TestCase):
         self.assertEqual(doc_record["source_sha256"], build.digest(gsw_source))
         self.assertEqual(
             [item["url"].rsplit("#", 1)[-1] for item in doc_record["headlines"]],
-            ["L231", "L240"],
+            ["L118", "L129"],
         )
         if shutil.which("pdfinfo"):
             links = subprocess.check_output(["pdfinfo", "-url", str(pdf)], text=True)

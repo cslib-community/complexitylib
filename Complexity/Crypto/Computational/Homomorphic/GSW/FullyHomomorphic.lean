@@ -26,12 +26,12 @@ The security premise is decision LWE for exactly this family: secret dimension `
 centered-binomial noise of width `λ + 1`, and the quasi-polynomial modulus `2 ^ (16384 * t ^ 2)`
 with `t = 1 + ⌈log₂ (λ + 2)⌉`.
 
-* **Leveled FHE.** One polynomial-size decryption circuit family, one natively computable
-  decryption algorithm and fixed polynomial widths are chosen first. Then every polynomially
-  bounded depth family is covered by an actual scheme with that decryption algorithm, assuming
-  only decision LWE [Gentry2009, Definition 3 and Theorem 3]. Security is asymptotic IND-CPA, a
-  consequence of [Gentry2009, Theorem 4] without its exact loss. Native certificates are uniform
-  for each depth family; key generation reads only the unary security parameter.
+* **Leveled FHE.** One uniformly generated polynomial-size decryption circuit family, one natively
+  computable decryption algorithm and fixed polynomial widths are chosen first. Then every
+  polynomially bounded depth family is covered by an actual scheme with that decryption algorithm,
+  assuming only decision LWE [Gentry2009, Definition 3 and Theorem 3]. Security is asymptotic
+  IND-CPA, a consequence of [Gentry2009, Theorem 4] without its exact loss. Native certificates are
+  uniform for each depth family; key generation reads only the unary security parameter.
 * **Fully homomorphic encryption.** The one-key self-loop construction evaluates every circuit,
   assuming decision LWE for this family *and* the separate one-key circular-security assumption
   `Encryption.CircularSecure` for the base scheme [Gentry2009, Section 2, the self-loop
@@ -43,6 +43,8 @@ concrete-security loss.
 
 ## Main results
 
+* `Cslib.Crypto.Homomorphic.GSW.DepthParameters.exists_leveled_decrypt_circuits`: uniformly
+  generated polynomial-size decryption circuits for the leveled GSW scheme across all budgets.
 * `Cslib.Crypto.Homomorphic.GSW.DepthParameters.exists_leveled_of_decisionLWE`: leveled FHE.
 * `Cslib.Crypto.Homomorphic.GSW.DepthParameters.fullyHomomorphic_of_decisionLWE_of_circularSecure`:
   FHE under the additional circular-security assumption.
@@ -61,8 +63,34 @@ namespace Cslib.Crypto.Homomorphic.GSW.DepthParameters
 open Circuits Probability Turing.MultiTapeTM
 open Parameters (dimension noise)
 
+/-- The leveled GSW scheme's complete tagged decryption algorithm has a uniformly generated family
+of polynomial-size circuits on the derived widths
+`(3 * secretWidth k + 1) + (ciphertextWidth k + 1)`, shared across all depth budgets and requiring
+no computational assumption. -/
+theorem exists_leveled_decrypt_circuits :
+    ∃ circuits : ∀ k, Circuit Boolean.signature
+        ((3 * secretWidth k + 1) + (ciphertextWidth k + 1)) 1,
+      ComputableInPolyTime
+        (fun k => (⟨_, circuits k⟩ : Σ m, Circuit Boolean.signature m 1))
+        encUnary (Boolean.encCircuit 1) ∧
+      PolynomiallyBounded (fun k => (circuits k).size) ∧
+      ∀ (budget : ℕ → ℕ) k (sk ciphertext : List Bool),
+        sk.length = 3 * secretWidth k + 1 →
+        ciphertext.length = ciphertextWidth k + 1 →
+        (circuits k).eval Boolean.interpretation
+            (BitString.ofList ((3 * secretWidth k + 1) + (ciphertextWidth k + 1))
+              (sk ++ ciphertext)) 0 =
+          (Leveled.scheme decryptionCircuits budget).decrypt k sk ciphertext := by
+  have hsecret : ComputableInPolyTime secretWidth encUnary encUnary := by
+    have := Parameters.computableInPolyTime_dimension
+    have := computableInPolyTime_width
+    unfold secretWidth
+    fun_prop
+  exact Leveled.exists_uniform_decrypt_circuits decryptionCircuits
+    computableInPolyTime_decryptionCircuits hsecret
+
 /-- Leveled FHE from GSW under decision LWE for this family, with quasi-polynomial modulus.
-One polynomial-size circuit family computes the common decryption algorithm
+One uniformly generated polynomial-size circuit family computes the common decryption algorithm
 `Leveled.decrypt decryptionCircuits`, which is natively computable, and the key and ciphertext
 widths are fixed polynomials; all of these are chosen before the depth. Every polynomially
 bounded depth family is then covered by an actual scheme with an efficiently computable budget
@@ -73,6 +101,9 @@ theorem exists_leveled_of_decisionLWE
     (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k) (noise k))) :
     ∃ circuits : ∀ k, Circuit Boolean.signature
         ((3 * secretWidth k + 1) + (ciphertextWidth k + 1)) 1,
+      ComputableInPolyTime
+        (fun k => (⟨_, circuits k⟩ : Σ m, Circuit Boolean.signature m 1))
+        encUnary (Boolean.encCircuit 1) ∧
       PolynomiallyBounded (fun k => (circuits k).size) ∧
       (∀ k (sk ciphertext : List Bool), sk.length = 3 * secretWidth k + 1 →
         ciphertext.length = ciphertextWidth k + 1 →
@@ -108,12 +139,12 @@ theorem exists_leveled_of_decisionLWE
           Encryption.INDCPA (Leveled.scheme decryptionCircuits budget).keyGen
             (Leveled.scheme decryptionCircuits budget).encrypt := by
   have hD := computableInPolyTime_decryptionCircuits
-  obtain ⟨circuits, hsize, hcircuits⟩ := Leveled.exists_decrypt_circuits decryptionCircuits hD
+  obtain ⟨circuits, hgen, hsize, hcircuits⟩ := exists_leveled_decrypt_circuits
   have hdecrypt := (Leveled.computableInPolyTime_scheme_decrypt decryptionCircuits hD
     (fun _ => 0))
   obtain ⟨hsecret, hciphertext⟩ := Leveled.polynomiallyBounded_widths decryptionCircuits hD
-  refine ⟨circuits, hsize, fun k sk c hsk hc => hcircuits (fun _ => 0) k sk c hsk hc, hdecrypt,
-    hsecret, hciphertext, fun depth hdepth => ?_⟩
+  refine ⟨circuits, hgen, hsize, fun k sk c hsk hc => hcircuits (fun _ => 0) k sk c hsk hc,
+    hdecrypt, hsecret, hciphertext, fun depth hdepth => ?_⟩
   obtain ⟨budget, hbudget, hle, hcorrect, hpermitted, hwidth, -, -, hkeyGen, hencrypt, -,
       hevaluate, hsecure⟩ :=
     Leveled.exists_scheme_of_polynomiallyBounded decryptionCircuits correct fixedWidth

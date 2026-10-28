@@ -10,7 +10,8 @@ module
 public import Complexity.Computability.Complexity.Classes.Space
 public import Complexity.Computability.Complexity.Classes.Space.TQBF.Evaluation
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
@@ -346,7 +347,8 @@ theorem exists_computableInO_evaluate : ∃ e, ComputableInO evaluate encQBF enc
     obtain ⟨d₀, e₀, hinit⟩ := init_pt.exists_degree
     obtain ⟨d₁, e₁, hans⟩ := answer_pt.exists_degree
     have hn := (ComputableTidilyInDegree.two_pow_length encQBF).inO_one
-    have hiter := ComputableTidilyInO.iterate hn hinit.inO hstep.inO
+    have hiter := (ComputableInO.iterate hn.computableInO hinit.inO.computableInO
+      hstep.inO.computableInO
       (R := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
       (Q := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
       (B := fun φ => 16 * ((encQBF φ).length + 1) ^ 2)
@@ -354,7 +356,7 @@ theorem exists_computableInO_evaluate : ∃ e, ComputableInO evaluate encQBF enc
         (length_encState_le (good_iterate_step φ k)) 1) d)
       (fun φ k _ => Nat.pow_le_pow_left (Nat.add_le_add_right
         (length_encState_le (good_iterate_step φ k)) 1) d)
-      (fun φ k _ => length_encState_le (good_iterate_step φ k))
+      (fun φ k _ => length_encState_le (good_iterate_step φ k))).tidy
     have h := hans.inO.comp hiter
     refine ⟨2 * (d + d₀ + d₁) + 2, ?_⟩
     refine (h.mono (17 ^ (d + d₁) * 64) (fun φ => ?_) fun φ => ?_).of_enc_eq fun φ => rfl

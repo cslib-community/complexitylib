@@ -47,8 +47,6 @@ in `Complexity/Crypto/Computational/ElGamal.lean` directly to `Encryption.KEMIND
 
 ## Main definitions
 
-* `Cslib.Crypto.PrimeOrderGroupFamily.sampleElGamalExp`: approximate uniform exponent sampling
-  modulo `F.order d` via `ProbComp.sampleModNat` with statistical distance at most `1 / 2 ^ n`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.elGamalKeyGenProb`: uniform strict-PPT ElGamal key
   generation.
 * `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalEncapsProb`,
@@ -118,66 +116,13 @@ private theorem dropFrame_encPair_encBits_pair (p : List Bool × List Bool) :
     dropFrame (encPair encBits encBits p) = p.2 := by
   simp [encPair_apply]
 
-/-- Sample one approximate uniform exponent modulo `F.order d` using `n + |encNat (F.order d)|`
-fair coins via `ProbComp.sampleModNat`, within statistical distance `1 / 2 ^ n` of exact uniform on
-`ZMod (F.order d)`. -/
-noncomputable def sampleElGamalExp (n : ℕ) (d : F.Desc) : ProbComp ℕ :=
-  ProbComp.sampleModNat (n + (encNat (F.order d)).length) (F.order d)
-
-private theorem isPPTOn_sampleElGamalExp {γ : Type} {encIn : γ ↪ List Bool}
-    {n : γ → ℕ} {d : γ → F.Desc}
-    (hn : ComputableInPolyTime n encIn encUnary)
-    (hd : ComputableInPolyTime d encIn F.encDesc) :
-    IsPPTOn encIn encNat (fun a => F.sampleElGamalExp (n a) (d a)) := by
-  have hord : ComputableInPolyTime (fun a => F.order (d a)) encIn encNat :=
-    F.computableInPolyTime_order.comp hd
-  have hlen : ComputableInPolyTime
-      (fun a => (encNat (F.order (d a))).length) encIn encUnary :=
-    (ComputableInPolyTime.encoding_length encNat).comp hord
-  have hadd : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
-      (encPair encUnary encUnary) encUnary := by fun_prop
-  have hwidth : ComputableInPolyTime
-      (fun a => n a + (encNat (F.order (d a))).length) encIn encUnary :=
-    hadd.comp (hn.prod hlen)
-  exact isPPTOn_sampleModNat hwidth hord
-
-/-- Replacing one `sampleElGamalExp n d` draw by an exact uniform draw on `ZMod (F.order d)`
-changes `Game.advantage` by at most `1 / 2 ^ n`. -/
-theorem advantage_bind_sampleElGamalExp_le (n : ℕ) (d : F.Desc)
-    (k : ZMod (F.order d) → Game) :
-    Game.advantage
-      ((ProbComp.eval (F.sampleElGamalExp n d)).bind fun s => k (s : ZMod (F.order d)))
-      ((PMF.uniformOfFintype (ZMod (F.order d))).bind k) ≤
-      1 / 2 ^ n := by
-  open scoped Cslib.Probability.PMF in
-  have hmap :
-      ((ProbComp.eval (F.sampleElGamalExp n d)).bind fun s => k (s : ZMod (F.order d))) =
-        ((ProbComp.eval (F.sampleElGamalExp n d)).map
-          (Nat.cast : ℕ → ZMod (F.order d))).bind k :=
-    (PMF.bind_map _ _ _).symm
-  have hlt : F.order d < 2 ^ (encNat (F.order d)).length := by
-    simpa only [encNat_apply, ← Nat.size_eq_bits_len] using Nat.lt_size_self (F.order d)
-  have hord_le : (F.order d : ℝ) ≤ 2 ^ (encNat (F.order d)).length := by
-    exact_mod_cast hlt.le
-  rw [← NNReal.coe_le_coe, hmap, Game.advantage_eq_nndist, coe_nndist]
-  refine (PMF.dist_bind_le _ _ k).trans ?_
-  refine (ProbComp.dist_map_natCast_eval_sampleModNat_le
-    (n + (encNat (F.order d)).length) (F.order d)).trans ?_
-  rw [Nat.add_comm n, pow_add, ← div_div]
-  have hdiv : (F.order d : ℝ) / 2 ^ (encNat (F.order d)).length ≤ 1 :=
-    (div_le_one (by positivity)).mpr hord_le
-  have hbound :
-      (F.order d : ℝ) / 2 ^ (encNat (F.order d)).length / 2 ^ n ≤ 1 / 2 ^ n :=
-    div_le_div_of_nonneg_right hdiv (by positivity)
-  simpa using hbound
-
 /-- Probabilistic polynomial-time ElGamal key generation for a group description family
 `d : ℕ → F.Desc` ([BonehShoup2023], Section 11.5, p. 445, and Exercise 11.5, p. 459): sample
-`a ← sampleElGamalExp n (d n)` and output
+`a ← sampleExp n (d n)` and output
 `(encPair F.encDesc encBits (d n, encode (a • g)), encNat a)`. -/
 noncomputable def elGamalKeyGenProb (d : ℕ → F.Desc) (n : ℕ) :
     ProbComp (List Bool × List Bool) :=
-  F.sampleElGamalExp n (d n) >>= fun a =>
+  F.sampleExp n (d n) >>= fun a =>
     pure (encPair F.encDesc encBits (d n, F.encodeElGamalPublicKey (d n, a)), encNat a)
 
 /-- `elGamalKeyGenProb` is uniformly strict PPT whenever `d` is computable in polynomial time. -/
@@ -199,16 +144,16 @@ theorem isPPTOn_elGamalKeyGenProb {d : ℕ → F.Desc}
   have hsk : ComputableInPolyTime (fun p : ℕ × ℕ => encNat p.2) E encBits :=
     (ComputableInPolyTime.of_eq fun _ => rfl).comp ha
   unfold elGamalKeyGenProb
-  exact (F.isPPTOn_sampleElGamalExp ComputableInPolyTime.id' hd).bind_with
+  exact (F.isPPTOn_sampleExp ComputableInPolyTime.id' hd).bind_with
     (hpk.prod hsk).isPPTOn
 
 /-- Probabilistic polynomial-time Hashed ElGamal KEM encapsulation for a group description family
 `d : ℕ → F.Desc` ([BonehShoup2023], Section 11.5, p. 445, Remark 11.1, p. 446, and Exercise 11.9,
-pp. 460–461): sample `b ← sampleElGamalExp n (d n)`, unpack `u = dropFrame pk`, and output
+pp. 460–461): sample `b ← sampleExp n (d n)`, unpack `u = dropFrame pk`, and output
 `(H (d n, encode (b • u)), encode (b • g))`. -/
 noncomputable def hashedElGamalEncapsProb (H : F.Desc × List Bool → List Bool)
     (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) : ProbComp (List Bool × List Bool) :=
-  F.sampleElGamalExp n (d n) >>= fun b =>
+  F.sampleExp n (d n) >>= fun b =>
     let u := dropFrame pk
     pure (H (d n, F.smul (d n, b, u)),
       F.smul (d n, b, F.encode (d n) (F.generator (d n))))
@@ -243,7 +188,7 @@ theorem isPPTOn_hashedElGamalEncapsProb {H : F.Desc × List Bool → List Bool} 
         F.smul (d p.1.1, p.2, F.encode (d p.1.1) (F.generator (d p.1.1)))) E encBits :=
     F.computableInPolyTime_smul.comp (hd1.prod (hb.prod hgen))
   unfold hashedElGamalEncapsProb
-  exact (F.isPPTOn_sampleElGamalExp (ComputableInPolyTime.fst _ _)
+  exact (F.isPPTOn_sampleExp (ComputableInPolyTime.fst _ _)
     (hd.comp (ComputableInPolyTime.fst _ _))).bind_with (hk.prod hv).isPPTOn
 
 /-- Deterministic polynomial-time Hashed ElGamal KEM decapsulation ([BonehShoup2023], Section 11.5,
@@ -371,8 +316,8 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
   have hreal :
       ProbComp.eval
         (kemRealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n) =
-      (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun a =>
-        (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun b =>
+      (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
+        (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
           k (a : ZMod (F.order (d n))) (b : ZMod (F.order (d n))) := by
     simp only [kemRealGame, elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
       ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, dropFrame_encPair_encBits,
@@ -386,12 +331,12 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
   rw [hreal, hddh]
   refine (Game.advantage_triangle _
     ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
-      (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun b =>
+      (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
         k α (b : ZMod (F.order (d n)))) _).trans ?_
-  have h1 := F.advantage_bind_sampleElGamalExp_le n (d n) (fun α =>
-    (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun b => k α (b : ZMod (F.order (d n))))
+  have h1 := F.advantage_bind_sampleExp_le n (d n) (fun α =>
+    (ProbComp.eval (F.sampleExp n (d n))).bind fun b => k α (b : ZMod (F.order (d n))))
   have h2 := advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order (d n)))) _ _
-    (fun α => F.advantage_bind_sampleElGamalExp_le n (d n) (k α))
+    (fun α => F.advantage_bind_sampleExp_le n (d n) (k α))
   calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
     _ = 2 / 2 ^ n := by ring
 
@@ -413,8 +358,8 @@ private theorem advantage_kdfIdealGame_eval_kemIdealGame_le
   have hideal :
       ProbComp.eval
         (kemIdealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n) =
-      (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun a =>
-        (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun b =>
+      (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
+        (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
           k (a : ZMod (F.order (d n))) (b : ZMod (F.order (d n))) := by
     simp only [kemIdealGame, elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
       ProbComp.eval_pure, Cslib.BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind,
@@ -428,12 +373,12 @@ private theorem advantage_kdfIdealGame_eval_kemIdealGame_le
   rw [Game.advantage_comm, hideal, hkdf]
   refine (Game.advantage_triangle _
     ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
-      (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun b =>
+      (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
         k α (b : ZMod (F.order (d n)))) _).trans ?_
-  have h1 := F.advantage_bind_sampleElGamalExp_le n (d n) (fun α =>
-    (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun b => k α (b : ZMod (F.order (d n))))
+  have h1 := F.advantage_bind_sampleExp_le n (d n) (fun α =>
+    (ProbComp.eval (F.sampleExp n (d n))).bind fun b => k α (b : ZMod (F.order (d n))))
   have h2 := advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order (d n)))) _ _
-    (fun α => F.advantage_bind_sampleElGamalExp_le n (d n) (k α))
+    (fun α => F.advantage_bind_sampleExp_le n (d n) (k α))
   calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
     _ = 2 / 2 ^ n := by ring
 
@@ -593,12 +538,12 @@ theorem DDH.wordINDCPA_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
 
 /-- Probabilistic polynomial-time multiplicative ElGamal encryption for a group description family
 `d : ℕ → F.Desc` and message encoder `encodeMsg : F.Desc → Msg → List Bool`
-([BonehShoup2023], Exercise 11.5, p. 459): sample `b ← sampleElGamalExp n (d n)`, unpack
+([BonehShoup2023], Exercise 11.5, p. 459): sample `b ← sampleExp n (d n)`, unpack
 `u = dropFrame pk`, and output
 `encPair encBits encBits (encodeElGamalEncrypt (d n, u, encodeMsg (d n) m, b))`. -/
 noncomputable def elGamalEncryptProb {Msg : Type} (encodeMsg : F.Desc → Msg → List Bool)
     (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) (m : Msg) : ProbComp (List Bool) :=
-  F.sampleElGamalExp n (d n) >>= fun b =>
+  F.sampleExp n (d n) >>= fun b =>
     let u := dropFrame pk
     pure (encPair encBits encBits (F.encodeElGamalEncrypt (d n, u, encodeMsg (d n) m, b)))
 
@@ -642,7 +587,7 @@ theorem isPPTOn_elGamalEncryptProb {Msg : Type} {encMsg : Msg ↪ List Bool}
       E encBits :=
     (ComputableInPolyTime.of_eq fun _ => rfl).comp hraw
   unfold elGamalEncryptProb
-  exact (F.isPPTOn_sampleElGamalExp (ComputableInPolyTime.fst _ _)
+  exact (F.isPPTOn_sampleExp (ComputableInPolyTime.fst _ _)
     (hd.comp (ComputableInPolyTime.fst _ _))).bind_with henc.isPPTOn
 
 /-- Deterministic polynomial-time multiplicative ElGamal decryption on words: given secret key
@@ -720,14 +665,14 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
         if useExactB then
           (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind (innerB α choice)
         else
-          (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun b =>
+          (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
             innerB α choice (b : ZMod (F.order (d n)))
       else
         PMF.pure false
   have hgame0 :
       ProbComp.eval
         (gameOn valid (F.elGamalKeyGenProb d) (F.elGamalEncryptProb encodeMsg d) adversary bit n) =
-      (ProbComp.eval (F.sampleElGamalExp n (d n))).bind fun a =>
+      (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
         innerA false (a : ZMod (F.order (d n))) := by
     simp only [gameOn, elGamalKeyGenProb, elGamalEncryptProb, ProbComp.eval_bind,
       ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval,
@@ -748,7 +693,7 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
   rw [hgame0, hgame1]
   refine (Game.advantage_triangle _
     ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind (innerA false)) _).trans ?_
-  have h1 := F.advantage_bind_sampleElGamalExp_le n (d n) (innerA false)
+  have h1 := F.advantage_bind_sampleExp_le n (d n) (innerA false)
   have h2 : Game.advantage
       ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind (innerA false))
       ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind (innerA true)) ≤ 1 / 2 ^ n := by
@@ -758,7 +703,7 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
     by_cases hv : valid n (encPair F.encDesc encBits (d n, F.encode (d n) (α • F.generator (d n))))
         choice.1.1 choice.1.2 = true
     · simp only [hv, ↓reduceIte, Bool.false_eq_true]
-      exact F.advantage_bind_sampleElGamalExp_le n (d n) (innerB α choice)
+      exact F.advantage_bind_sampleExp_le n (d n) (innerB α choice)
     · simp only [hv, Bool.false_eq_true, ↓reduceIte, Game.advantage_self, zero_le]
   calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
     _ = 2 / 2 ^ n := by ring

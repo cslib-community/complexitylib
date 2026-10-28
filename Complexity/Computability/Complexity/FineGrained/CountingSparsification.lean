@@ -12,7 +12,9 @@ public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -812,8 +814,8 @@ private theorem exists_computableTidilyInO_search_resources (hM2 : 2 ≤ M)
     rw [heq]
     exact length_encState_le hM hK hkK hstk hacc hmem
   exact ⟨d, dn, di,
-    (ComputableTidilyInO.iterate hn.inO hi.inO hstep
-      (hround t R ht) (hround u Q hu) hstate).snd'.snd'⟩
+    (ComputableInO.iterate hn.inO.computableInO hi.inO.computableInO hstep.computableInO
+      (hround t R ht) (hround u Q hu) hstate).tidy.snd'.snd'⟩
 
 
 private theorem le_leafTime {K M L_coeff : ℕ} {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}

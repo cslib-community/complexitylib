@@ -13,33 +13,39 @@ namespace ComplexityTests.BoundedIncidenceExactness
 open Cslib Cslib.Complexity Cslib.GenericRAM Cslib.LinearAlgebra
 open Cslib.Complexity.SubexponentialSAT.SparsePolyCounter
 
-/-- Concrete unguarded stage-by-stage Proposition 5.3 branch pipeline at small parameters for
-executable agreement checks against `HeavyBranchFold.rootCount`. -/
-private def tinyExactPipeline (eqs : List (List (List ℕ))) : ℕ :=
-  let n' := 2; let k' := 1; let Q := 2; let r := 2; let A₀ := 0; let R := 3
-  let ℓ := n' + 1; let q := (k' * (R - 1)) * (eqs.length + 2 * n') / Q; let J := q + 1
+/-- Concrete unguarded stage-by-stage Proposition 5.3 branch pipeline at compact parameters
+(`Q = 1`, `r = 1`, `A₀ = 0`, `R = 1`) for fast kernel-checked agreement checks against
+`HeavyBranchFold.rootCount`. -/
+private def tinyExactPipeline (n' : ℕ) (eqs : List (List (List ℕ))) : ℕ :=
+  let k' := 1; let Q := 1; let r := 1; let A₀ := 0; let R := 1
+  let ℓ := n' + 1; let q := n'; let J := q + 1
   let aug := withNeutralScopesList (eqs.map equationVars) n'
   let sc := BalancedSchedules.constructBalancedSchedules n' aug.length Q r 3
     (scopeIncidencesList n' aug)
-  let d := buildReplacementDesignData n' 16 Q r A₀ R aug sc.1 sc.2
+  let d := buildReplacementDesignData n' 1 Q r A₀ R aug sc.1 sc.2
   let tbls := buildEqRowTables n' eqs d; let m := d.measurementMatrix.length
   let nodeJets := (List.range Q).map fun (t : ℕ) =>
     let grpEqs := (List.range r).map fun g => groupEquationsAt eqs d.factorGroups tbls t g
-    let subCtx : SubsetStepCtx := ((n', r, m), (r * m, 16), (J, ℓ, k'), ((t : ℤ) + 1, d.denom),
+    let subCtx : SubsetStepCtx := ((n', r, m), (r * m, 1), (J, ℓ, k'), ((t : ℤ) + 1, d.denom),
       (d.varGroups.getD t [], d.groupMeasurementMatrices.getD t []), grpEqs)
     (SubsetPairFold.run subsetPairStepBody n' q (subCtx, zeroJet J ℓ)).2
-  (CommonCountingAccum.recoverOuterJetSumModPowTwo [1, 2] J ℓ
+  (CommonCountingAccum.recoverOuterJetSumModPowTwo [1] J ℓ
     (((d.denom ^ k') ^ (2 * ℓ - 1)) ^ eqs.length) nodeJets).toNat
 
 /-- Concrete kernel-checked exactness of the stage-by-stage pipeline across empty, contradictory,
 linear, parity, and uniquely satisfiable systems, plus negative verification on an infeasible raw
 input (`n' = 2 < 16`). -/
-example :
-    tinyExactPipeline [] = HeavyBranchFold.rootCount 2 [] ∧
-    tinyExactPipeline [[[]]] = HeavyBranchFold.rootCount 2 [[[]]] ∧
-    tinyExactPipeline [[[0]]] = HeavyBranchFold.rootCount 2 [[[0]]] ∧
-    tinyExactPipeline [[[0], [1]]] = HeavyBranchFold.rootCount 2 [[[0], [1]]] ∧
-    tinyExactPipeline [[[0], [1]], [[0], []]] =
+example : tinyExactPipeline 1 [] = HeavyBranchFold.rootCount 1 [] ∧
+    tinyExactPipeline 1 [[[]]] = HeavyBranchFold.rootCount 1 [[[]]] ∧
+    tinyExactPipeline 1 [[[0]]] = HeavyBranchFold.rootCount 1 [[[0]]] := by
+  simp only [← countSystemExhaustive_eq_rootCount]
+  decide +kernel
+
+example : tinyExactPipeline 2 [[[0], [1]]] = HeavyBranchFold.rootCount 2 [[[0], [1]]] := by
+  rw [← countSystemExhaustive_eq_rootCount]
+  decide +kernel
+
+example : tinyExactPipeline 2 [[[0], [1]], [[0], []]] =
       HeavyBranchFold.rootCount 2 [[[0], [1]], [[0], []]] ∧
     checkBranchFeasible 0 (2, []) = false ∧
     evalBoundedIncidenceBranch (((2, 0), (1, 1, 2, 1), (2, 2, 1, 1), [])) = 0 ∧

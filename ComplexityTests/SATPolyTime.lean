@@ -18,21 +18,21 @@ namespace ComplexityTests.SATPolyTime
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
-example : SAT ∈ NP encCNF := SAT.mem_NP
-
 /-- `SAT`, whose certificates are genuine assignments, has a polynomial-time nondeterministic
 decider. -/
 example : Turing.MultiTapeNTM.DecidableInPolyTime SAT encCNF :=
   decidableInPolyTime_of_mem_NP SAT.mem_NP
 
-example : UNSAT ∈ coNP encCNF := UNSAT_mem_coNP
+/-- The complement of `UNSAT` is in `NP`, so it also has a polynomial-time nondeterministic
+decider. -/
+example : Turing.MultiTapeNTM.DecidableInPolyTime UNSATᶜ encCNF :=
+  decidableInPolyTime_of_mem_NP UNSAT_mem_coNP
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime SAT.verifier (encPair encCNF encBits) encBool := by
+example : ComputableInPolyTime (fun φ : CNF ℕ => SAT.verifier (φ, [true, false]))
+    encCNF encBool := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime (fun p => (SAT.verifier p, !SAT.verifier p))
+example : ComputableInPolyTime (fun p => (SAT.verifier p, !SAT.verifier p))
     (encPair encCNF encBits) (encPair encBool encBool) := by
   fun_prop
 

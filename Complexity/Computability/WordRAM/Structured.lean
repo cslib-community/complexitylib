@@ -62,6 +62,8 @@ injectively chosen registers of a larger register file and leaves the others unt
 * `Cslib.WordRAM.Exec.unique`: executions are deterministic.
 * `Cslib.WordRAM.Exec.of_eval`: the interpreter only finds executions.
 * `Cslib.WordRAM.ExecWithin.loop_invariant`: the loop rule with an invariant and a measure.
+* `Cslib.WordRAM.ExecWithin.loop_potential`: the loop rule with an invariant and a potential
+  that pays for iterations of different times.
 * `Cslib.WordRAM.Exec.regs_eq`: registers that a program never writes keep their contents.
 * `Cslib.WordRAM.Exec.rename`: renamed programs run on the chosen registers.
 * `Cslib.WordRAM.Exec.mono_width`, `Cslib.WordRAM.Exec.bounded`: a program that does not read the
@@ -385,6 +387,26 @@ theorem loop_invariant (I : Data r → Prop) (μ : Data r → ℕ) {T : ℕ}
       have := Nat.mul_le_mul_right (T + 2) (Nat.succ_le_of_lt hμ)
       rw [Nat.succ_mul] at this
       omega
+    · exact ⟨x, (loop_exit hc).mono (by omega), hx, hc⟩
+
+/-- **Loop rule, invariant and potential.** If every state `x` satisfying the invariant `I` and
+the condition is led by the body to a state `y` satisfying `I`, within a number `T` of instructions
+with `T + 2 + Φ y ≤ Φ x`, then from a state satisfying `I` the loop terminates within `Φ x + 2`
+instructions, in a state satisfying `I` where the condition fails. The two extra instructions of
+each iteration are the condition test and the jump back; the time of the body may differ between
+iterations, as long as the potential `Φ` pays for it. -/
+theorem loop_potential (I : Data r → Prop) (Φ : Data r → ℕ)
+    (hbody : ∀ x, I x → cond.Holds x →
+      ∃ y T, ExecWithin w body x y T ∧ I y ∧ T + 2 + Φ y ≤ Φ x)
+    (hx : I x) :
+    ∃ y, ExecWithin w (.loop cond body) x y (Φ x + 2) ∧ I y ∧ ¬cond.Holds y := by
+  induction hm : Φ x using Nat.strong_induction_on generalizing x with
+  | _ m ih =>
+    subst hm
+    by_cases hc : cond.Holds x
+    · obtain ⟨y, T, hy, hIy, hΦ⟩ := hbody x hx hc
+      obtain ⟨z, hz, hIz, hcz⟩ := ih (Φ y) (by omega) hIy rfl
+      exact ⟨z, (loop_iter hc hy hz).mono (by omega), hIz, hcz⟩
     · exact ⟨x, (loop_exit hc).mono (by omega), hx, hc⟩
 
 /-! ### Data instructions -/

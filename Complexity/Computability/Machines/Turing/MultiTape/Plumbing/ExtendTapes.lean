@@ -98,33 +98,35 @@ public theorem TransformsTapes.extendTapes_update {tm : MultiTapeTM m Symbol S}
 
 /-! ### Space of reindexed runs -/
 
--- vendored: `spaceUsed` is `space` since cslib #1133; the proofs go through the paths of cslib
--- #1117 (`space_map_embedHom_le`)
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122; the proofs go
+-- through the paths of cslib #1117 (`space_map_embedHom_le`)
 /-- **Space bound for a reindexed run.** The embedded tapes contribute the space used by `tm`, while
 each of the remaining `k' - k` tapes never moves and contributes at most one cell. -/
 public lemma space_embed_le (tm : MultiTapeTM k Symbol State) (e : Fin k ↪ Fin k')
     (cfg : Cfg k Symbol State input) (extraTapes : Fin k' → ℤ → Option Symbol)
     (extraPos : Fin k' → ℤ) (n : ℕ) :
-    (tm.extendTapes e).space (embed e cfg extraTapes extraPos) n
-      ≤ tm.space cfg n + (k' - k) := by
+    (MultiTapeNTM.RunPath.ofDeterministic (tm.extendTapes e) (embed e cfg extraTapes extraPos)
+        n).space ≤ (MultiTapeNTM.RunPath.ofDeterministic tm cfg n).space + (k' - k) := by
   have h := (MultiTapeNTM.RunPath.map_ofDeterministic (embedHom tm e extraTapes extraPos) cfg n)
   simp only [embedHom_apply] at h
-  rw [space, ← h]
+  rw [← h]
   exact space_map_embedHom_le ..
 
 /-- **Space bound for a one-tape machine placed on tape `i`:** the space of the one-tape run, plus
 one cell for each tape the machine does not use. -/
 public lemma space_tapeEmb_le {k : ℕ} (tm : MultiTapeTM 1 Symbol State) (i : Fin k)
     (cfg : Cfg k Symbol State input) (n : ℕ) :
-    (tm.extendTapes (tapeEmb i)).space cfg n ≤ tm.space (oneTapeCfg i cfg) n + (k - 1) := by
+    (MultiTapeNTM.RunPath.ofDeterministic (tm.extendTapes (tapeEmb i)) cfg n).space ≤
+      (MultiTapeNTM.RunPath.ofDeterministic tm (oneTapeCfg i cfg) n).space + (k - 1) := by
   conv_lhs => rw [← embed_oneTapeCfg i cfg]
   exact space_embed_le _ _ _ _ _ _
 
 /-- **Space bound for a machine without work tapes:** one cell for each tape it does not use. -/
 public lemma space_noTapes_le {k : ℕ} (tm : MultiTapeTM 0 Symbol State)
     (cfg : Cfg k Symbol State input) (n : ℕ) :
-    (tm.extendTapes (noTapes k)).space cfg n ≤ k := by
+    (MultiTapeNTM.RunPath.ofDeterministic (tm.extendTapes (noTapes k)) cfg n).space ≤ k := by
   conv_lhs => rw [← embed_noTapesCfg cfg]
-  simpa using space_embed_le tm (noTapes k) (noTapesCfg cfg) cfg.workTapes cfg.workTapePos n
+  simpa [MultiTapeNTM.RunPath.space] using
+    space_embed_le tm (noTapes k) (noTapesCfg cfg) cfg.workTapes cfg.workTapePos n
 
 end Turing.MultiTapeTM

@@ -8,11 +8,14 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Reachability.Savitch
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Savitch's algorithm in the space of its stack
@@ -429,7 +432,7 @@ theorem computableTidilyInO_roundStep {edge : π → List Bool → List Bool →
       (encList encFrame) 1 1 := by
     fun_prop (disch := first | apply le_refl | lia)
   have hval := or_deg.inO_one.comp_linear
-    ((ComputableTidilyInO.eqWords.comp hends.inO_one).prod (hedge.comp hargs.inO_one))
+    ((ComputableInO.eqWords.tidy.comp hends.inO_one).prod (hedge.comp hargs.inO_one))
   have hbase := hkeep.inO_one.prod (stateMk_deg.inO_one.comp_linear
     (hstack.inO_one.prod (ret_deg.inO_one.comp_linear hval)))
   refine ((hc.inO_one.ite hbase hrest.inO_one).mono 8 (fun q => ?_) fun q => ?_).of_enc_eq
@@ -633,8 +636,9 @@ private theorem steps_inO :
     rw [List.take_replicate, foldl_countStep, List.nil_append, List.length_replicate]
     rw [Nat.mul_comm]
     exact Nat.mul_le_mul_left _ (min_le_right _ _)
-  have hfold := ComputableTidilyInO.foldlWith (encL := encBits) (encB := encBits) hpar.inO_one
-    hlist.inO_one (ComputableTidilyInO.const []) hstep.inO_one
+  have hfold := (ComputableInO.foldlWith (encL := encBits) (encB := encBits)
+    hpar.inO_one.computableInO hlist.inO_one.computableInO
+    (ComputableTidilyInO.const []).computableInO hstep.inO_one.computableInO
     (R := fun t => 6 * ((t.1 + 2) * (t.2 + 1)) + 4)
     (Q := fun t => 6 * ((t.1 + 2) * (t.2 + 1)) + 4)
     (B := fun t => (t.1 + 2) * (t.2 + 1))
@@ -648,7 +652,7 @@ private theorem steps_inO :
       simp only [length_encPair, encUnary_apply, encBits_apply, encBool_apply,
         List.length_replicate, List.length_singleton]
       nlinarith)
-    (fun t i _ => by simpa using hacc t i)
+    (fun t i _ => by simpa using hacc t i)).tidy
   refine (hfold.mono 32 (fun t => ?_) fun t => ?_).of_enc_eq fun t => ?_
   all_goals
     have hK : t.1 + t.2 + 2 ≤ (t.1 + 2) * (t.2 + 1) := by nlinarith
@@ -748,7 +752,8 @@ theorem computableTidilyInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
       (s := ⟨[], .call (depth x) (src x) (dst x)⟩) _ ⟨trivial, fun i u v h => by
         obtain ⟨rfl, rfl, rfl⟩ := Reg.call.inj h
         exact ⟨by simp, hsrc x, hdst x⟩⟩ k
-  have hiter := ComputableTidilyInO.iterate hn hinit (computableTidilyInO_roundStep hedge)
+  have hiter := (ComputableInO.iterate hn.computableInO hinit.computableInO
+    (computableTidilyInO_roundStep hedge).computableInO
     (R := fun x => (stateBound (encP (par x)).length (width x) (depth x) + 1) ^ 2 +
       edgeMax Te (par x) (width x))
     (Q := fun x => stateBound (encP (par x)).length (width x) (depth x) +
@@ -763,7 +768,7 @@ theorem computableTidilyInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
       exact Nat.add_le_add (length_encRound_le (hinv x k)) (edgeCost_le Se _ (hinv x k)))
     (fun x k _ => by
       simp only [Function.comp_apply, roundStep_iterate]
-      exact length_encRound_le (hinv x k))
+      exact length_encRound_le (hinv x k))).tidy
   refine ((answer_deg.inO_one.comp_linear hiter).mono 900 (fun x => ?_) fun x => ?_).of_enc_eq
     fun x => ?_
   all_goals simp only [Function.comp_apply]

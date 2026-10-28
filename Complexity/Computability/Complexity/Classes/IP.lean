@@ -296,9 +296,11 @@ theorem BPP_subset_IP (enc : α ↪ List Bool) : BPP enc ⊆ IP enc := by
   refine ⟨_, isOraclePPTOn_bppVerifier (p := p) hV.tidy, fun a ha => ⟨Prover.const [], ?_⟩,
     fun a ha P => ?_⟩ <;> rw [acceptProb_bppVerifier]
   · have h := (hA a).1 ha
+    unfold BoundedErrorAt at h
     exact_mod_cast natCast_div_le_natCast_div (a := 2) (b := 3)
       (d := 2 ^ p.eval (enc a).length) three_ne_zero (pow_pos two_pos _).ne' (by omega)
   · have h := (hA a).2 ha
+    unfold BoundedErrorAt at h
     have hsum := Finset.card_filter_add_card_filter_not (s := Finset.univ)
       (fun r : Fin (p.eval (enc a).length) → Bool => V (a, List.ofFn r) = true)
     simp only [Bool.not_eq_true, Finset.card_univ, Fintype.card_fun, Fintype.card_bool,

@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Basic functions within linear work space
@@ -73,6 +74,16 @@ theorem budget_prod {f : α → β} {g : α → γ} (hf : ComputableTidilyInSpac
     ComputableTidilyInSpace (fun x => (f x, g x)) encIn (encPair encB encC) Bs :=
   (hf.prod hg).weaken (.add (.refl _) (.refl _))
 
+/-- A binary operation computed in space linear in its paired arguments, applied to two values
+computed within the budget, stays within the budget. -/
+private theorem budget_binop {f : α → β} {g : α → γ} {op : β × γ → δ} {encD : δ ↪ List Bool}
+    {Sop : β × γ → ℕ} (hop : ComputableTidilyInSpace op (encPair encB encC) encD Sop)
+    (hSop : Sop ≼ fun p => (encPair encB encC p).length)
+    (hf : ComputableTidilyInSpace f encIn encB Bs)
+    (hg : ComputableTidilyInSpace g encIn encC Bs) :
+    ComputableTidilyInSpace (fun x => op (f x, g x)) encIn encD Bs :=
+  budget_comp_lin hop hSop (budget_prod hf hg)
+
 theorem budget_ite {c : α → Bool} {f g : α → β} (hc : ComputableTidilyInSpace c encIn encBool Bs)
     (hf : ComputableTidilyInSpace f encIn encB Bs) (hg : ComputableTidilyInSpace g encIn encB Bs) :
     ComputableTidilyInSpace (fun x => if c x then f x else g x) encIn encB Bs :=
@@ -101,29 +112,29 @@ theorem budget_iterate [Inhabited β] {n : α → ℕ} {init : α → β} {step 
 /-! ### Arithmetic -/
 
 theorem natSucc : ComputableTidilyInSpace (· + 1) encNat encNat fun n => (encNat n).length + 1 :=
-  of_inO ComputableTidilyInO.natSucc
+  of_inO ComputableInO.natSucc.tidy
 
 theorem natPred : ComputableTidilyInSpace (· - 1) encNat encNat fun n => (encNat n).length + 1 :=
-  of_inO ComputableTidilyInO.natPred
+  of_inO ComputableInO.natPred.tidy
 
 theorem natIsZero :
     ComputableTidilyInSpace (fun n => decide (n = 0)) encNat encBool fun n => (encNat n).length :=
-  of_inO ComputableTidilyInO.natIsZero
+  of_inO ComputableInO.natIsZero.tidy
 
 theorem natEq :
     ComputableTidilyInSpace (fun p : ℕ × ℕ => decide (p.1 = p.2)) (encPair encNat encNat) encBool
       fun p => (encPair encNat encNat p).length :=
-  of_inO (ComputableTidilyInO.eq encNat)
+  of_inO (ComputableInO.eq encNat).tidy
 
 theorem natLt :
     ComputableTidilyInSpace (fun p : ℕ × ℕ => decide (p.1 < p.2)) (encPair encNat encNat) encBool
       fun p => (encPair encNat encNat p).length + 1 :=
-  of_inO ComputableTidilyInO.natLt
+  of_inO ComputableInO.natLt.tidy
 
 theorem natSub :
     ComputableTidilyInSpace (fun p : ℕ × ℕ => p.2 - p.1) (encPair encNat encNat) encNat
       fun p => (encPair encNat encNat p).length + 1 :=
-  of_inO ComputableTidilyInO.natSub
+  of_inO ComputableInO.natSub.tidy
 
 theorem natAdd :
     ComputableTidilyInSpace (fun p : ℕ × ℕ => p.1 + p.2) (encPair encNat encNat) encNat
@@ -192,15 +203,12 @@ theorem divStep_inSpace :
       fun s => (encNat3 s).length + 1 := (snd _ _).weaken hl
   have h₂ := fst' h₂₂
   have h₃ := snd' h₂₂
-  have hz := budget_comp_linear natIsZero h₁
-  have hlt := budget_comp natLt (budget_prod h₃ h₁) (.of_le_linear 2 2 fun s => by
-    simp only [length_encPair]; omega)
+  have hz := budget_comp_lin natIsZero (.refl _) h₁
+  have hlt := budget_binop natLt linear_succ h₃ h₁
   have hc := budget_finite (encC := encBool) (fun q : Bool × Bool => !q.1 && !q.2)
     (budget_prod hz hlt)
-  have hsucc := budget_comp natSucc h₂ (.of_le_linear 2 2 fun s => by
-    simp only [length_encPair]; omega)
-  have hsub := budget_comp natSub (budget_prod h₁ h₃) (.of_le_linear 2 2 fun s => by
-    simp only [length_encPair]; omega)
+  have hsucc := budget_comp_lin natSucc linear_succ h₂
+  have hsub := budget_binop natSub linear_succ h₁ h₃
   have hnew := budget_prod h₁ (budget_prod hsucc hsub)
   have hall := budget_ite hc hnew ((ComputableTidilyInSpace.of_inO
     (ComputableTidilyInO.of_linear (.of_eq (f := id) fun _ => rfl))).weaken hl)
@@ -267,9 +275,8 @@ theorem natMul :
     have hl : (fun q => (encPair encNat encNat q).length) ≼
         fun q => 4 * ((encPair encNat encNat q).length + 1) := .of_le fun _ => by omega
     have h := budget_prod ((fst encNat encNat).weaken hl)
-      (budget_comp natAdd (budget_prod ((snd encNat encNat).weaken hl)
-        ((fst encNat encNat).weaken hl)) (.of_le_linear 2 2 fun q => by
-          simp only [length_encPair]; omega))
+      (budget_binop natAdd linear_succ ((snd encNat encNat).weaken hl)
+        ((fst encNat encNat).weaken hl))
     exact h.of_enc_eq fun _ => rfl
   have hinit : ComputableTidilyInSpace (fun p : ℕ × ℕ => (p.1, 0)) (encPair encNat encNat)
       (encPair encNat encNat) fun p => 2 * ((encPair encNat encNat p).length + 1) :=
@@ -369,16 +376,14 @@ theorem setStep_inSpace :
   have hv := snd' hiv
   have hj := fst' (snd' hs)
   have hacc := snd' (snd' hs)
-  have he := budget_comp natEq (budget_prod hj hi) (.of_le_linear 2 2 fun q => by
-    simp only [length_encPair]; omega)
+  have he := budget_binop natEq (.refl _) hj hi
   have hel := budget_ite he hv ha
   have hsnoc : ComputableTidilyInSpace (fun p : List ℕ × ℕ => p.1 ++ [p.2])
       (encPair (encList encNat) encNat) (encList encNat)
       fun p => (encPair (encList encNat) encNat p).length :=
     of_inO (ComputableTidilyInDegree.snoc encNat).inO_one
-  have happ := budget_comp_linear hsnoc (budget_prod hacc hel)
-  have hsucc := budget_comp natSucc hj (.of_le_linear 2 2 fun q => by
-    simp only [length_encPair]; omega)
+  have happ := budget_binop hsnoc (.refl _) hacc hel
+  have hsucc := budget_comp_lin natSucc linear_succ hj
   refine (budget_prod hiv (budget_prod hsucc happ)).of_enc_eq fun q => ?_
   simp only [setStep]
   congr 1
@@ -489,9 +494,7 @@ theorem length :
   have hbits := length_encNat_le_self
   have hstep : ComputableTidilyInSpace (fun q : ℕ × ε => q.1 + 1) (encPair encNat enc) encNat
       fun q => (encPair encNat enc q).length + 1 :=
-    budget_comp natSucc ((fst _ _).weaken (.of_le fun _ => by omega))
-      (.of_le_linear 2 2 fun q => by
-        simp only [length_encPair, Nat.add_eq, Nat.add_zero]; omega)
+    budget_comp_lin natSucc linear_succ ((fst _ _).weaken (.of_le fun _ => by omega))
   have h := foldl (encL := encList enc) (list := fun l : List ε => l) (init := fun _ => 0)
     (step := fun n (_ : ε) => n + 1)
     (of_inO (.of_linear (.of_eq (f := id) fun _ => rfl))) (const 0) hstep
@@ -540,7 +543,7 @@ variable {ε : Type} {enc : ε ↪ List Bool}
 theorem budget_cons {a : α → ε} {l : α → List ε} (ha : ComputableTidilyInSpace a encIn enc Bs)
     (hl : ComputableTidilyInSpace l encIn (encList enc) Bs) :
     ComputableTidilyInSpace (fun x => a x :: l x) encIn (encList enc) Bs :=
-  budget_comp_linear (of_inO (ComputableTidilyInDegree.cons enc).inO_one) (budget_prod ha hl)
+  budget_binop (of_inO (ComputableTidilyInDegree.cons enc).inO_one) (.refl _) ha hl
 
 /-- The head of a list, within the budget. -/
 theorem budget_headD (d : ε) {l : α → List ε}
@@ -587,43 +590,43 @@ theorem budget_natIsZero {a : α → ℕ} (ha : ComputableTidilyInSpace a encIn 
 theorem budget_natEq {a b : α → ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)
     (hb : ComputableTidilyInSpace b encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => decide (a x = b x)) encIn encBool Bs :=
-  budget_comp_lin natEq (.refl _) (budget_prod ha hb)
+  budget_binop natEq (.refl _) ha hb
 
 /-- The sum, within the budget. -/
 theorem budget_natAdd {a b : α → ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)
     (hb : ComputableTidilyInSpace b encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => a x + b x) encIn encNat Bs :=
-  budget_comp_lin natAdd linear_succ (budget_prod ha hb)
+  budget_binop natAdd linear_succ ha hb
 
 /-- The product, within the budget. -/
 theorem budget_natMul {a b : α → ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)
     (hb : ComputableTidilyInSpace b encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => a x * b x) encIn encNat Bs :=
-  budget_comp_lin natMul (linear_mul 32) (budget_prod ha hb)
+  budget_binop natMul (linear_mul 32) ha hb
 
 /-- The quotient, within the budget. -/
 theorem budget_natDiv {a b : α → ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)
     (hb : ComputableTidilyInSpace b encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => a x / b x) encIn encNat Bs :=
-  budget_comp_lin natDiv (linear_mul 16) (budget_prod ha hb)
+  budget_binop natDiv (linear_mul 16) ha hb
 
 /-- Truncated subtraction, within the budget. -/
 theorem budget_natSub {a b : α → ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)
     (hb : ComputableTidilyInSpace b encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => a x - b x) encIn encNat Bs :=
-  budget_comp_lin natSub linear_succ (budget_prod hb ha)
+  budget_binop natSub linear_succ hb ha
 
 /-- The remainder, within the budget. -/
 theorem budget_natMod {a b : α → ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)
     (hb : ComputableTidilyInSpace b encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => a x % b x) encIn encNat Bs :=
-  budget_comp_lin natMod (linear_mul 16) (budget_prod ha hb)
+  budget_binop natMod (linear_mul 16) ha hb
 
 /-- The strict comparison, within the budget. -/
 theorem budget_natLt {a b : α → ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)
     (hb : ComputableTidilyInSpace b encIn encNat Bs) :
     ComputableTidilyInSpace (fun x => decide (a x < b x)) encIn encBool Bs :=
-  budget_comp_lin natLt linear_succ (budget_prod ha hb)
+  budget_binop natLt linear_succ ha hb
 
 /-- A fixed natural power, within the budget. -/
 theorem budget_natPow {a : α → ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)

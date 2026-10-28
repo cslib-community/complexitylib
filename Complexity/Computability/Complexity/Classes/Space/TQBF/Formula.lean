@@ -82,7 +82,7 @@ theorem tokens_conj (l : List (QBF ℕ)) :
   | nil => rfl
   | cons φ l ih => simpa [conj, tokens] using ih
 
-theorem tokens_imp (φ ψ : QBF ℕ) :
+private theorem tokens_imp (φ ψ : QBF ℕ) :
     (imp φ ψ).tokens = (Kind.or, 0) :: (Kind.not, 0) :: (φ.tokens ++ ψ.tokens) := rfl
 
 theorem tokens_iff (φ ψ : QBF ℕ) : (iff φ ψ).tokens =

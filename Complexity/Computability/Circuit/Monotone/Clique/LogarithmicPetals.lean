@@ -18,7 +18,8 @@ import Mathlib.Tactic.Ring
 
 Razborov's approximation theorem permits a free choice of the number `p` of sunflower petals.
 For a dyadic width `w = 2 ^ t`, choose `p = 4 * w * t`, instead of `w ^ 2` as in
-`Monotone/Clique/Asymptotic.lean`. The bound `sunflowerBound p w ≤ (4 * t * w ^ 2) ^ w`
+`Complexity/Computability/Circuit/Monotone/Clique/Asymptotic.lean`.
+The bound `sunflowerBound p w ≤ (4 * t * w ^ 2) ^ w`
 then gives two improvements using the same approximation theorem:
 
 * For `t ≥ 3`, `4 * w ^ 2 ≤ k - 1`, and `k ^ 4 ≤ n`, every monotone circuit for `k`-clique

@@ -17,8 +17,23 @@ private def horizontal : Route := [(0, 0), (4, 0)]
 private def vertical : Route := [(2, -2), (2, 2)]
 
 -- Proper crossings are forbidden unless their exact contact point is allowed.
-example : routeContactCheck [] horizontal vertical = false := by decide
-example : routeContactCheck [(2, 0)] horizontal vertical = true := by decide
+example : routeContactCheck [] horizontal vertical = false := by decide +kernel
+example : routeContactCheck [(2, 0)] horizontal vertical = true := by decide +kernel
+
+-- Disjoint route bounding boxes short-circuit and certify disjoint real supports.
+example : routeBoxDisjoint horizontal [(5, -2), (5, 2)] = true := by decide +kernel
+example : routeBoxDisjoint horizontal [(0, 2), (4, 2)] = true := by decide +kernel
+example : Disjoint (support horizontal) (support [(5, -2), (5, 2)]) :=
+  disjoint_support_of_routeBoxDisjoint (by decide +kernel)
+example : routeContactCheck [] horizontal [(5, -2), (5, 2)] = true := by decide +kernel
+
+-- Touching or overlapping route boxes fall back to segment-piece checks.
+example : routeBoxDisjoint [(0, 0), (2, 0), (2, 2)] [(0, 2), (0, 4)] = false := by decide +kernel
+example : routeContactCheck [] [(0, 0), (2, 0), (2, 2)] [(0, 2), (0, 4)] = true := by
+  decide +kernel
+example : routeBoxDisjoint horizontal [(4, 0), (4, 3)] = false := by decide +kernel
+example : routeContactCheck [] horizontal [(4, 0), (4, 3)] = false := by decide +kernel
+example : routeBoxDisjoint horizontal [(2, 0), (6, 0)] = false := by decide +kernel
 
 -- The finite certificate controls all real points of the crossing.
 example {p : ℝ × ℝ} (hh : p ∈ support horizontal) (hv : p ∈ support vertical) :

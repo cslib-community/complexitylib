@@ -68,7 +68,7 @@ theorem computesTidily_constTM (b : Bool) (w : List Bool) :
     (constTM b).ComputesTidilyInTimeAndSpace w [b] 1 0 := by
   rw [computesTidily_iff]
   refine ⟨.ofDeterministic (constTM b) (wordsCfg w (some (constTM b).q₀) (fun _ => []) []) 1, rfl,
-    ?_, le_rfl, (space_zero_tapes_eq_zero _ _ rfl).le⟩
+    ?_, le_rfl, by simp [MultiTapeNTM.RunPath.space]⟩
   rw [MultiTapeNTM.RunPath.last_ofDeterministic, runFrom_one, step_of_state (q := ()) rfl]
   simp only [constTM, tr_ofTr, wordsCfg, Action.apply, moveInputPos_zero]
   congr <;> funext i <;> exact i.elim0
@@ -92,7 +92,7 @@ example : (Set.univ : Set (List Bool)) ∈ NP encBits :=
 
 example : (∅ : Set (List Bool)) ∈ BPP encBits :=
   ⟨0, fun _ => false, .const false, fun _ => ⟨fun h => h.elim, fun _ => by
-      simp only [Polynomial.eval_zero, pow_zero, mul_one]
+      simp only [BoundedErrorAt, Polynomial.eval_zero, pow_zero, mul_one]
       exact le_trans (by norm_num : 2 ≤ 3 * 1)
         (Nat.mul_le_mul_left 3 (Finset.card_pos.2
           ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩
@@ -109,7 +109,7 @@ example : (⊤ : Language Bool) ∈ PPoly :=
 example : (⊥ : Language Bool) ∈ PPoly :=
   mem_PPolyOn_encBits_iff.1 (BPP_subset_PPolyOn ⟨0, fun _ => false, .const false,
     fun _ => ⟨fun h => h.elim, fun _ => by
-      simp only [Polynomial.eval_zero, pow_zero, mul_one]
+      simp only [BoundedErrorAt, Polynomial.eval_zero, pow_zero, mul_one]
       exact le_trans (by norm_num : 2 ≤ 3 * 1)
         (Nat.mul_le_mul_left 3 (Finset.card_pos.2
           ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩)

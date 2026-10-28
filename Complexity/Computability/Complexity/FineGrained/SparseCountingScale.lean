@@ -39,9 +39,10 @@ domain `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`) and Proposition 6.4 (across all `n
 
 ## Main results
 
-* `sq_mul_pow_four_le_clog`, `clog_lt_succ_sq_mul_pow_four`, `le_numGroups_iff`,
-  `numGroups_eq_iff`: exact integer comparison characterization
-  `s_n² ν_n⁴ ≤ λ_n < (s_n + 1)² ν_n⁴` for `s_n = ReplacementParams.numGroups n`.
+* `numGroups_floor_bounds`, `le_numGroups_iff`, `numGroups_eq_iff`: exact integer comparison
+  characterization `s_n² ν_n⁴ ≤ λ_n < (s_n + 1)² ν_n⁴` for `s_n = ReplacementParams.numGroups n`
+  (from `ReplacementParams.sq_mul_pow_four_le_clog` and
+  `ReplacementParams.clog_lt_succ_sq_mul_pow_four`).
 * `two_le_numGroups_of_clog_ge`, `eventually_two_le_numGroups`, `tendsto_numGroups_atTop`:
   `2 ≤ numGroups n` permanently once `640000 ≤ ⌈log₂ n⌉`, and `numGroups n → ∞`.
 * `isBigO_div_numGroups_interpolationScale`, `eventually_div_numGroups_le`,
@@ -68,51 +69,6 @@ namespace Cslib.Complexity.SubexponentialSAT
 
 open Filter Asymptotics
 open scoped Topology
-
-/-! ### Positivity of the shifted interpolation scale -/
-
-private theorem exp_one_lt_add_sixteen (n : ℕ) : Real.exp 1 < (n : ℝ) + 16 := by
-  have hn : (0 : ℝ) ≤ n := Nat.cast_nonneg n
-  linarith [Real.exp_one_lt_d9]
-
-private theorem one_lt_log_add_sixteen (n : ℕ) : 1 < Real.log ((n : ℝ) + 16) := by
-  rw [← Real.log_exp 1]
-  exact Real.log_lt_log (Real.exp_pos 1) (exp_one_lt_add_sixteen n)
-
-private theorem log_add_sixteen_pos (n : ℕ) : 0 < Real.log ((n : ℝ) + 16) :=
-  zero_lt_one.trans (one_lt_log_add_sixteen n)
-
-private theorem log_log_add_sixteen_pos (n : ℕ) : 0 < Real.log (Real.log ((n : ℝ) + 16)) :=
-  Real.log_pos (one_lt_log_add_sixteen n)
-
-private theorem one_lt_log_log_add_sixteen {n : ℕ} (hn : 16 ≤ n) :
-    1 < Real.log (Real.log ((n : ℝ) + 16)) := by
-  have hn' : (32 : ℝ) ≤ (n : ℝ) + 16 := by linarith [show (16 : ℝ) ≤ n from Nat.cast_le.mpr hn]
-  have hexp3 : Real.exp 3 < 32 := by
-    have h3 : Real.exp 3 = Real.exp 1 ^ 3 := by
-      simpa only [Nat.cast_ofNat, mul_one] using Real.exp_nat_mul 1 3
-    have hpow : Real.exp 1 ^ 3 < (3 : ℝ) ^ 3 :=
-      pow_lt_pow_left₀ (by linarith [Real.exp_one_lt_d9]) (Real.exp_pos 1).le (by decide)
-    linarith
-  have hlog : Real.exp 1 < Real.log ((n : ℝ) + 16) := by
-    rw [← Real.log_exp (Real.exp 1)]
-    refine Real.log_lt_log (Real.exp_pos _) ?_
-    exact (Real.exp_lt_exp.mpr (by linarith [Real.exp_one_lt_d9])).trans_le (hexp3.le.trans hn')
-  rw [← Real.log_exp 1]
-  exact Real.log_lt_log (Real.exp_pos 1) hlog
-
-/-- At `n = 0`, the interpolation scale vanishes. -/
-@[simp]
-theorem interpolationScale_zero : interpolationScale 0 = 0 := by
-  simp only [interpolationScale, CharP.cast_eq_zero, zero_mul, zero_div]
-
-/-- The interpolation scale is strictly positive for `1 ≤ n`. -/
-theorem interpolationScale_pos {n : ℕ} (hn : 1 ≤ n) : 0 < interpolationScale n := by
-  unfold interpolationScale
-  have hn' : (0 : ℝ) < n := Nat.cast_pos.mpr hn
-  have hll : 0 < Real.log (Real.log ((n : ℝ) + 16)) := log_log_add_sixteen_pos n
-  have hl : 0 < Real.sqrt (Real.log ((n : ℝ) + 16)) := Real.sqrt_pos.mpr (log_add_sixteen_pos n)
-  positivity
 
 namespace SparseCountingScale
 
@@ -158,34 +114,6 @@ theorem numGroups_le_clog (n : ℕ) : numGroups n ≤ Nat.clog 2 n :=
 /-- `numGroups n ≤ n` for every natural number `n`. -/
 theorem numGroups_le_self (n : ℕ) : numGroups n ≤ n :=
   (numGroups_le_clog n).trans (clog_two_le_self n)
-
-/-- Lower integer comparison bound: `s_n² ν_n⁴ ≤ λ_n` for every `n`. -/
-theorem sq_mul_pow_four_le_clog (n : ℕ) :
-    numGroups n ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 ≤ Nat.clog 2 n := by
-  set lam := Nat.clog 2 n
-  set nu := Nat.clog 2 lam
-  have hsq : (numGroups n * nu ^ 2) ^ 2 ≤ lam.sqrt ^ 2 :=
-    Nat.pow_le_pow_left (Nat.div_mul_le_self lam.sqrt (nu ^ 2)) 2
-  have hsqrt : lam.sqrt ^ 2 ≤ lam := by simpa only [sq] using Nat.sqrt_le lam
-  calc
-    numGroups n ^ 2 * nu ^ 4 = (numGroups n * nu ^ 2) ^ 2 := by ring
-    _ ≤ lam := hsq.trans hsqrt
-
-/-- Upper integer comparison bound: `λ_n < (s_n + 1)² ν_n⁴` whenever `1 ≤ ν_n` (`3 ≤ n`). -/
-theorem clog_lt_succ_sq_mul_pow_four {n : ℕ} (hnu : 1 ≤ Nat.clog 2 (Nat.clog 2 n)) :
-    Nat.clog 2 n < (numGroups n + 1) ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 := by
-  set lam := Nat.clog 2 n
-  set nu := Nat.clog 2 lam
-  have hdiv : lam.sqrt + 1 ≤ (numGroups n + 1) * nu ^ 2 := by
-    have hlt : lam.sqrt < nu ^ 2 * (numGroups n + 1) :=
-      Nat.lt_mul_div_succ lam.sqrt (pow_pos hnu 2)
-    rw [mul_comm] at hlt
-    omega
-  have hsqrt : lam < (lam.sqrt + 1) ^ 2 := by simpa only [sq] using Nat.lt_succ_sqrt lam
-  calc
-    lam < (lam.sqrt + 1) ^ 2 := hsqrt
-    _ ≤ ((numGroups n + 1) * nu ^ 2) ^ 2 := Nat.pow_le_pow_left hdiv 2
-    _ = (numGroups n + 1) ^ 2 * nu ^ 4 := by ring
 
 /-- Combined floor characterization `s_n² ν_n⁴ ≤ λ_n < (s_n + 1)² ν_n⁴` for `1 ≤ ν_n`. -/
 theorem numGroups_floor_bounds {n : ℕ} (hnu : 1 ≤ Nat.clog 2 (Nat.clog 2 n)) :
@@ -532,9 +460,8 @@ theorem isLittleO_log_pow_interpolationScale (d : ℕ) :
     linarith [show (16 : ℝ) ≤ n from Nat.cast_le.mpr hn, show u n = (n : ℝ) + 16 from rfl]
   have h3 : (fun n : ℕ => (n : ℝ)) =O[atTop]
       (fun n : ℕ => (n : ℝ) * Real.log (Real.log (u n)) ^ 2) := by
-    refine IsBigO.of_bound 1 ?_
-    filter_upwards [eventually_ge_atTop 16] with n hn
-    have hsq : 1 ≤ Real.log (Real.log (u n)) ^ 2 := by nlinarith [one_lt_log_log_add_sixteen hn]
+    refine IsBigO.of_bound 1 (Eventually.of_forall fun n => ?_)
+    have hsq : 1 ≤ Real.log (Real.log (u n)) ^ 2 := by nlinarith [one_lt_log_log_add_sixteen n]
     rw [one_mul, Real.norm_of_nonneg (Nat.cast_nonneg n), Real.norm_of_nonneg (by positivity)]
     exact le_mul_of_one_le_right (Nat.cast_nonneg n) hsq
   have h4 := (h1.trans_isBigO (h2.trans h3)).mul_isBigO

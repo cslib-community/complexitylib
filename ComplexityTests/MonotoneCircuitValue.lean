@@ -13,29 +13,24 @@ namespace ComplexityTests.MonotoneCircuitValue
 
 open Cslib Cslib.Complexity Cslib.Circuits Turing Turing.MultiTapeTM
 
-/-- A yes-instance with no gates. -/
-example : ⟨1, Circuit.id Monotone.signature 1, fun _ => true⟩ ∈ MonotoneCircuitValue := rfl
-
-/-- A no-instance with no gates. -/
-example : ⟨1, Circuit.id Monotone.signature 1, fun _ => false⟩ ∉ MonotoneCircuitValue := by
-  change false ≠ true
-  decide
+/-- Yes- and no-instances with no gates. -/
+example :
+    ⟨1, Circuit.id Monotone.signature 1, fun _ => true⟩ ∈ MonotoneCircuitValue ∧
+    ⟨1, Circuit.id Monotone.signature 1, fun _ => false⟩ ∉ MonotoneCircuitValue :=
+  ⟨rfl, by change false ≠ true; decide⟩
 
 private def notGate : Circuit Boolean.signature 1 1 := Circuit.oneGate .not (fun _ => 0)
 
-/-- The negative input rail implements negation without a monotone NOT gate. -/
+/-- The negative input rail implements negation without a monotone NOT gate, doubling the gate
+count (`(Monotone.dualRail notGate).size = 2`) and mapping `[]` to `[true]`. -/
 example (b : Bool) :
     (Monotone.dualRail notGate).eval Monotone.interpretation
-      (Monotone.railBitString fun _ => b) 0 = !b := by
+      (Monotone.railBitString fun _ => b) 0 = !b ∧
+    (Monotone.dualRail notGate).size = 2 ∧
+    Monotone.railBits [] = [true] := by
+  refine ⟨?_, (Monotone.size_dualRail notGate).trans rfl, rfl⟩
   rw [Monotone.eval_dualRail]
   rfl
-
-/-- The dual-rail translation has exactly two gates per original gate. -/
-example (c : Circuit Boolean.signature 3 2) : (Monotone.dualRail c).size = 2 * c.size :=
-  Monotone.size_dualRail c
-
-/-- Empty original inputs still produce the true rail input. -/
-example : Monotone.railBits [] = [true] := rfl
 
 /-- A writer with no chunks or prefix copies the input unchanged. -/
 private def copySpec : CircuitValue.WriterSpec where
@@ -66,16 +61,20 @@ example : ComputableInLogSpace id (encFramed encBits) encBits := by
   change PolynomiallyBounded fun _ : ℕ => 0
   fun_prop
 
-example : LogSpaceReducible encCircuitValue encMonotoneCircuitValue
-    CircuitValue MonotoneCircuitValue := MonotoneCircuitValue.circuitValue_logSpaceReducible
+/-- Composing the mutual logspace reductions between `CircuitValue` and `MonotoneCircuitValue`,
+reducing `CircuitValueᶜ` via `P`-completeness of `MonotoneCircuitValue`, and collapsing
+`CircuitValue` into `L` when `MonotoneCircuitValue ∈ L`. -/
+example :
+    LogSpaceReducible encCircuitValue encCircuitValue CircuitValue CircuitValue ∧
+    PolyTimeReducible encCircuitValue encMonotoneCircuitValue
+      CircuitValueᶜ MonotoneCircuitValue :=
+  ⟨MonotoneCircuitValue.circuitValue_logSpaceReducible.trans
+      MonotoneCircuitValue.logSpaceReducible_circuitValue,
+    MonotoneCircuitValue.logSpaceComplete.polyTimeComplete.2 _ _
+      (compl_mem_P CircuitValue.mem_P)⟩
 
-example : LogSpaceReducible encMonotoneCircuitValue encCircuitValue
-    MonotoneCircuitValue CircuitValue := MonotoneCircuitValue.logSpaceReducible_circuitValue
-
-example : PolyTimeComplete @P encMonotoneCircuitValue MonotoneCircuitValue :=
-  MonotoneCircuitValue.logSpaceComplete.polyTimeComplete
-
-example (h : MonotoneCircuitValue ∈ L encMonotoneCircuitValue) : P encBits = L encBits :=
-  MonotoneCircuitValue.mem_L_iff_forall_P_eq_L.1 h encBits
+example (h : MonotoneCircuitValue ∈ L encMonotoneCircuitValue) :
+    CircuitValue ∈ L encCircuitValue :=
+  MonotoneCircuitValue.mem_L_iff_forall_P_eq_L.1 h encCircuitValue ▸ CircuitValue.mem_P
 
 end ComplexityTests.MonotoneCircuitValue

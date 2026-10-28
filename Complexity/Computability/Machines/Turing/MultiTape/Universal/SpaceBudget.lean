@@ -613,7 +613,7 @@ private lemma foldEndS_inO : ComputableTidilyInO foldEndS eSSt eSSt
   have hstay : ComputableTidilyInO (fun s : SSt =>
       (((s.1.1.1, s.1.1.2), (s.1.2.1 - 1, s.1.1.2.inputPos, 0)), s.2)) eSSt eSSt
       (fun s => ((eSSt s).length + 1) ^ 3) fun s => (eSSt s).length + 1 := by
-    refine ((h₁.fst'.prod ((natPred.comp h₁.snd'.fst').prod
+    refine ((h₁.fst'.prod ((ComputableInO.natPred.tidy.comp h₁.snd'.fst').prod
       (hpos.prod (const (encMid := encUnary) 0)))).prod h₂).mono 8 (fun s => ?_) fun s => ?_
     all_goals
       have e₁ := length_eSSt s

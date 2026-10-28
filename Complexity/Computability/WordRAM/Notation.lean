@@ -30,10 +30,12 @@ for instance local abbreviations of elements of `Fin r`. The statements are:
 The notation unfolds to the constructors of `Cslib.WordRAM.Code`, so it adds nothing to the
 semantics. The binary operations and `width%` are instructions of the standard basis
 (`Cslib.WordRAM.Op.bin`, `Cslib.WordRAM.Op.width`); the other statements work over every basis.
-It is scoped: `open Cslib.WordRAM` enables it. Its statement forms follow the word-RAM notation of
-[Algolean][Algolean2026]. Its only new tokens are `ram[`, `width%` and the
-internal `ram_stmt%` and `ram_block%`, so it reserves no identifiers: `ram` and `width` remain
-ordinary names.
+It is scoped: `open Cslib.WordRAM` enables it, with its statement forms, their expansions and the
+tactic `ram_eval`. Only the category `wramStmt` and the syntax abbreviation `wramBlock` are
+global, since Lean cannot scope them; without the open, `wramStmt` has no rules, so they parse
+nothing. The statement forms follow the word-RAM notation of [Algolean][Algolean2026]. Its only
+new tokens are `ram[`, `width%` and the internal `ram_stmt%` and `ram_block%`, so it reserves no
+identifiers: `ram` and `width` remain ordinary names.
 
 ## Main definitions
 
@@ -41,14 +43,14 @@ ordinary names.
 
 ## Tactics
 
-* `ram_eval`, `ram_eval n`: symbolic execution. On a goal `Cslib.WordRAM.ExecWithin w c x y T`
-  or `Cslib.WordRAM.Exec w c x y T`, it runs the interpreter `Cslib.WordRAM.Code.eval` on `c` and
-  `x` with `simp`, allowing each loop `n` iterations (default `0`, for loop-free code), and
-  closes the goal when the result is `y` within (exactly, for `Exec`) `T` instructions; with `y`
-  a metavariable, it determines `y`. Which constants and results fit a word is decided for
-  numerals and otherwise taken from the given simp lemmas, stated with `Cslib.WordRAM.Fits`.
-  Programs given by name are unfolded by passing their definitions among the simp lemmas, as in
-  `ram_eval [myProgram, h]`.
+* `ram_eval`, `ram_eval n` (scoped, like the notation): symbolic execution. On a goal
+  `Cslib.WordRAM.ExecWithin w c x y T` or `Cslib.WordRAM.Exec w c x y T`, it runs the interpreter
+  `Cslib.WordRAM.Code.eval` on `c` and `x` with `simp`, allowing each loop `n` iterations (default
+  `0`, for loop-free code), and closes the goal when the result is `y` within (exactly, for `Exec`)
+  `T` instructions; with `y` a metavariable, it determines `y`. Which constants and results fit a
+  word is decided for numerals and otherwise taken from the given simp lemmas, stated with
+  `Cslib.WordRAM.Fits`. Programs given by name are unfolded by passing their definitions among the
+  simp lemmas, as in `ram_eval [myProgram, h]`.
 
 ## References
 
@@ -75,54 +77,54 @@ scoped syntax "ram_block%" wramBlock : term
 scoped syntax "ram_stmt%" wramStmt : term
 
 /-- Set a register to a constant. -/
-syntax ident " ← " "#" term:max : wramStmt
+scoped syntax ident " ← " "#" term:max : wramStmt
 /-- Copy a register. -/
-syntax ident " ← " ident : wramStmt
+scoped syntax ident " ← " ident : wramStmt
 /-- Addition. -/
-syntax ident " ← " ident " + " ident : wramStmt
+scoped syntax ident " ← " ident " + " ident : wramStmt
 /-- Truncated subtraction. -/
-syntax ident " ← " ident " - " ident : wramStmt
+scoped syntax ident " ← " ident " - " ident : wramStmt
 /-- Multiplication. -/
-syntax ident " ← " ident " * " ident : wramStmt
+scoped syntax ident " ← " ident " * " ident : wramStmt
 /-- Division. -/
-syntax ident " ← " ident " / " ident : wramStmt
+scoped syntax ident " ← " ident " / " ident : wramStmt
 /-- Remainder. -/
-syntax ident " ← " ident " % " ident : wramStmt
+scoped syntax ident " ← " ident " % " ident : wramStmt
 /-- Bitwise and. -/
-syntax ident " ← " ident " &&& " ident : wramStmt
+scoped syntax ident " ← " ident " &&& " ident : wramStmt
 /-- Bitwise or. -/
-syntax ident " ← " ident " ||| " ident : wramStmt
+scoped syntax ident " ← " ident " ||| " ident : wramStmt
 /-- Bitwise exclusive or. -/
-syntax ident " ← " ident " ^^^ " ident : wramStmt
+scoped syntax ident " ← " ident " ^^^ " ident : wramStmt
 /-- Shift left. -/
-syntax ident " ← " ident " <<< " ident : wramStmt
+scoped syntax ident " ← " ident " <<< " ident : wramStmt
 /-- Shift right. -/
-syntax ident " ← " ident " >>> " ident : wramStmt
+scoped syntax ident " ← " ident " >>> " ident : wramStmt
 /-- Load from the memory cell whose address is in a register. -/
-syntax ident " ← " "*" ident : wramStmt
+scoped syntax ident " ← " "*" ident : wramStmt
 /-- Store to the memory cell whose address is in a register. -/
-syntax "*" ident " ← " ident : wramStmt
+scoped syntax "*" ident " ← " ident : wramStmt
 /-- Read the word size. -/
-syntax ident " ← " "width%" : wramStmt
+scoped syntax ident " ← " "width%" : wramStmt
 /-- Sample uniformly from `[0, regs s]` into a register. -/
-syntax ident " ← " &"rand" ppSpace ident : wramStmt
+scoped syntax ident " ← " &"rand" ppSpace ident : wramStmt
 /-- A conditional on the equality of two registers. -/
-syntax "if " ident " = " ident " then " wramBlock " else " wramBlock : wramStmt
+scoped syntax "if " ident " = " ident " then " wramBlock " else " wramBlock : wramStmt
 /-- A conditional on the comparison of two registers. -/
-syntax "if " ident " < " ident " then " wramBlock " else " wramBlock : wramStmt
+scoped syntax "if " ident " < " ident " then " wramBlock " else " wramBlock : wramStmt
 /-- A loop while two registers are equal. -/
-syntax "while " ident " = " ident " do " wramBlock : wramStmt
+scoped syntax "while " ident " = " ident " do " wramBlock : wramStmt
 /-- A loop while one register is smaller than another. -/
-syntax "while " ident " < " ident " do " wramBlock : wramStmt
+scoped syntax "while " ident " < " ident " do " wramBlock : wramStmt
 /-- A structured program given as a term. -/
-syntax "⟪" term "⟫" : wramStmt
+scoped syntax "⟪" term "⟫" : wramStmt
 
-macro_rules
+scoped macro_rules
   | `(ram[ $s:wramStmt ]) => `(ram_stmt% $s)
   | `(ram[ $s:wramStmt; $ss;* ]) => `(Cslib.WordRAM.Code.seq (ram_stmt% $s) (ram[ $ss;* ]))
   | `(ram_block% [ $ss;* ]) => `(ram[ $ss;* ])
 
-macro_rules
+scoped macro_rules
   | `(ram_stmt% $d:ident ← #$v) => `(Cslib.WordRAM.Code.op (.const $d $v))
   | `(ram_stmt% $d:ident ← $s:ident) => `(Cslib.WordRAM.Code.op (.copy $d $s))
   | `(ram_stmt% $d:ident ← $i:ident + $j:ident) =>
@@ -162,10 +164,10 @@ macro_rules
 /-- Symbolically execute structured code on a goal `ExecWithin w c x y T` or `Exec w c x y T`,
 allowing each loop the given number of iterations (default `0`), and deciding with the given simp
 lemmas which written numbers fit a word. -/
-syntax (name := ramEval) "ram_eval" (ppSpace num)? (" [" Lean.Parser.Tactic.simpArg,* "]")? :
+scoped syntax (name := ramEval) "ram_eval" (ppSpace num)? (" [" Lean.Parser.Tactic.simpArg,* "]")? :
   tactic
 
-macro_rules
+scoped macro_rules
   | `(tactic| ram_eval) => `(tactic| ram_eval 0 [])
   | `(tactic| ram_eval [$args,*]) => `(tactic| ram_eval 0 [$args,*])
   | `(tactic| ram_eval $n:num) => `(tactic| ram_eval $n [])
