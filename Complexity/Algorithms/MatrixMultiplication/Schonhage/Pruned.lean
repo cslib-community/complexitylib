@@ -82,28 +82,12 @@ def PrunedCall.under (lam : Term) (c : PrunedCall) : PrunedCall where
   vertex := ⟨c.vertex.1 + 1, (Fin.cons lam c.vertex.2 : Vertex (c.vertex.1 + 1))⟩
   passed := c.passed
 
-/-- Section 2.4.2: Pruned_{τ₁⋯τ_k}(S), for a set S of output strings of length L - k, returns the
-array returned by the vertex τ₁⋯τ_k of Full.result, restricted to the strings in S: (1) If k = L,
-then look up Φ_τ(a) and Ψ_τ(b) from the precomputed encodings (Section 2.4.1) and return Φ_τ(a)
-Ψ_τ(b) for the leaf τ = τ₁⋯τ_L. (2) For each term λ of Schönhage's identity, let S_λ be the union
-of the slices S_z over the z to which λ contributes, i.e., S_{P_ij} := S_{z_ij} ∪ S_{z₀} and
-S_{P₀} := S_{z₀}. (3) For each term λ of Schönhage's identity with S_λ ≠ ∅, compute C_λ :=
-Pruned_{τ₁⋯τ_k λ}(S_λ), an array on S_λ. (4) Return the array c on S whose slices are c_{z_ij} :=
-C_{P_ij} and c_{z₀} := ∑_λ C_λ, restricted to S_{z_ij} and to S_{z₀}.
-
-`Pruned.run` is this recursion, and it also keeps a record of the calls.  Its first component is
-the array that is returned.  Its second component lists all the calls that are made, this one
-included, each with the set passed to it.  Vertices are named relative to the call we start from,
-so for the call at the root they are the vertices of the paper.
-
-Here `n = L - k`.  The vertex `τ₁⋯τ_k` enters only through the look-ups of step (1), so it is
-passed as the parts of the two encodings that lie below it: `encA τ'` is the entry of the encoding
-of `a` at the leaf `τ₁⋯τ_k τ'`, and likewise `encB`.  At the root these are the two encodings
-themselves, and the child `λ` receives their slices at `λ`.  For a term `λ` with `S_λ = ∅` no call
-is made: nothing is recorded, and `C_λ` is written as the zero array; step (4) does not read it,
-because then `S_{z₀}`, and `S_{z_ij}` if `λ = P_ij`, are empty.  In step (1) the number is
-returned as an array on `S`, like every other result; `S` then consists of the empty string,
-except when `Pruned.result` is called at the root with `L = 0` and `S = ∅`.
+/-- Evaluate requested outputs from the two supplied leaf-encoding arrays. For each term, form its
+child request set and recurse only when that set is nonempty. Decode the child values and set
+unrequested outputs to zero. The second component records recursive calls and their requested sets
+as a multiset. Each child receives the corresponding slices of the encoding arrays. The root call
+is always recorded, including at depth zero with an empty request set. These are mathematical
+values and call records, without a native execution cost.
 -/
 def Pruned.run : (n : ℕ) → (Leaf n → ℤ) → (Leaf n → ℤ) → Finset (OutStr n) →
     (OutStr n → ℤ) × Multiset PrunedCall
@@ -151,12 +135,9 @@ def privateLeaf {L : ℕ} (w : OutStr L) : Leaf L := fun ℓ => (w ℓ).privateT
 
 /-! ### Section 2.4.1: the encodings -/
 
-/-- Section 2.4.1, the procedure that computes the encoding of `a`: we run Full.result with b left
-out and without step (4): […] the left number at the leaf τ is Φ_τ(a), and the leaf stores it.
-What is left of `Full.result` is step (2) for `a`, the recursive calls of step (3), and at depth
-`L` the number that has been reached. The encoding of b […] is computed in the same way, so the
-procedure is written once, for the coefficients `c` of any family of linear forms: `c = φ` for
-`a`, and `c = ψ` for `b`.
+/-- Recursively apply the coefficient family `c` along a term string. Each level replaces the
+input array by a weighted sum of its first-letter slices; depth zero returns its unique entry.
+Choosing `phi` or `psi` computes the corresponding shared input encoding.
 -/
 def computeEncoding {α : Type} [Fintype α] (c : Term → α → ℤ) :
     (L : ℕ) → ((Fin L → α) → ℤ) → Leaf L → ℤ
@@ -289,8 +270,8 @@ theorem Pruned.result_eq_piecewise_sum {n : ℕ} (encA encB : Leaf n → ℤ) (S
       rw [hC, Finset.piecewise_eq_of_mem _ _ _ hmem]
     · rfl
 
-/-- **Lemma 10**, first claim.  Let a and b be input arrays, and let U be a set of output strings
-of length L. Called at the root, Pruned.result(U) returns bilinearProduct(a, b) restricted to U.
+/-- Pruning the two input encodings yields `bilinearProduct` on the requested strings and zero
+elsewhere.
 -/
 theorem Pruned.result_eq_piecewise_bilinearProduct {L : ℕ} (a : LeftStr L → ℤ)
     (b : RightStr L → ℤ) (U : Finset (OutStr L)) :
@@ -298,10 +279,8 @@ theorem Pruned.result_eq_piecewise_bilinearProduct {L : ℕ} (a : LeftStr L → 
   -- Sum the products of the encoded numbers over the contributing leaves.
   Pruned.result_eq_piecewise_sum _ _ U
 
-/-- Section 2.4.2, the specification of `Pruned.result`: it returns the array returned by the
-vertex τ₁⋯τ_k of Full.result, restricted to the strings in S.  Here `a` and `b` are the input
-arrays of that vertex: by `encodeLeft_cons` and `encodeRight_cons`, applied once for each level,
-the parts of the two encodings below a vertex are the encodings of its input arrays.
+/-- Pruning precomputed input encodings agrees with full evaluation at every requested string and
+is zero elsewhere.
 -/
 theorem Pruned.result_eq_piecewise_full {n : ℕ} (a : LeftStr n → ℤ) (b : RightStr n → ℤ)
     (S : Finset (OutStr n)) :
@@ -717,8 +696,8 @@ theorem Pruned.sum_card_passed_le {L : ℕ} (encA encB : Leaf L → ℤ) (U : Fi
       · exact ih _ _ _ _
       · simp [sizeAt]
 
-/-- **Lemma 10**, third claim.  the sets passed to the calls it makes have total size at most
-(L+1) |leaves(U)|.
+/-- The sum of the cardinalities of all passed request sets is at most `(L + 1) * (leaves
+U).card`.
 -/
 theorem Pruned.totalSize_le {L : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (OutStr L)) :
     Pruned.totalSize encA encB U ≤ (L + 1) * (leaves U).card := by
@@ -730,15 +709,10 @@ theorem Pruned.totalSize_le {L : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (
         sum_le_sum fun k _ => Pruned.sum_card_passed_le _ _ U k
     _ = (L + 1) * (leaves U).card := by simp
 
-/-- **Lemma 10**, its three claims together.  Let a and b be input arrays, and let U be a set of
-output strings of length L. Called at the root, Pruned.result(U) returns bilinearProduct(a, b)
-restricted to U. The leaves it visits are exactly those of leaves(U), and the sets passed to the
-calls it makes have total size at most (L+1) |leaves(U)|.
-
-NOTE.  The hypothesis `0 < L ∨ U.Nonempty` of the second claim is not in the paper.  It excludes
-only the case `L = 0`, `U = ∅`, in which the root is itself a leaf, so that the call at the root
-visits it, while `leaves(∅)` is empty.  In the paper `L ≥ m ≥ 1`, and `Pruned.result` is run only
-on nonempty sets (Section 2.4.4).
+/-- Combine value correctness, the visited-leaf characterization and the passed-set cardinality
+bound for the two input encodings. Values and the set-size bound apply at every depth and request
+set. The leaf equivalence excludes the empty zero-depth root;
+`Pruned.visits_iff_root_or_mem_leaves` gives the unconditional alternative for that case.
 -/
 theorem pruned_spec {L : ℕ} (a : LeftStr L → ℤ) (b : RightStr L → ℤ) (U : Finset (OutStr L)) :
     Pruned.result L (encodingL a) (encodingR b) U = U.piecewise (bilinearProduct a b) 0

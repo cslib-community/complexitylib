@@ -67,19 +67,11 @@ def encodeStepL {L : ℕ} (lam : Term) (a : LeftStr (L + 1) → ℤ) : LeftStr L
 def encodeStepR {L : ℕ} (lam : Term) (b : RightStr (L + 1) → ℤ) : RightStr L → ℤ :=
   fun v' => ∑ t, psi lam t * sliceAt b t v'
 
-/-- Section 2.3.1: The recursion Full.result(a, b), for arrays a, b on the left and right strings
-of length L, returns an array on the output strings of length L: (1) If L = 0, return the number
-ab. (2) For each term λ of Schönhage's identity, form A_λ := ∑_s φ_λ(s) a_s and B_λ := ∑_t ψ_λ(t)
-b_t. (3) For each term λ, recursively compute C_λ := Full.result(A_λ, B_λ). (4) Return the array c
-whose slices are c_{z_ij} := C_{P_ij} and c_{z₀} := ∑_λ C_λ.
-
-`Full.run` is this recursion, and it also keeps a record of the multiplications.  Its first
-component is the array that is returned.  Its second component gives, for each leaf `τ`, the two
-numbers that step (1) multiplies at `τ`: the leaf `λ τ'` of a call is the leaf `τ'` of its
-recursive call for `λ`.
-
-An array on the strings of length 0 has one entry, at the empty string `Fin.elim0`; that entry is
-the number.
+/-- Evaluate the two arrays and retain the operands used at each leaf. At depth zero, multiply
+their unique entries. At positive depth, apply each term’s left and right coefficient forms,
+recurse, and decode the child results into an output array. The second component maps each term
+string to its pair of encoded input values. This is a finite integer recursion, with no
+instruction counter.
 -/
 def Full.run : (L : ℕ) → (LeftStr L → ℤ) → (RightStr L → ℤ) → (OutStr L → ℤ) × (Leaf L → ℤ × ℤ)
   | 0, a, b => (fun _ => a Fin.elim0 * b Fin.elim0, fun _ => (a Fin.elim0, b Fin.elim0))
@@ -280,7 +272,7 @@ levels are empty (proof of Lemma 7).
 private theorem encodeLeft_zero (τ : Leaf 0) (a : LeftStr 0 → ℤ) : encodeLeft τ a = a Fin.elim0 :=
   encodeWith_zero phi τ a
 
-/-- and Ψ_τ(b) = b (proof of Lemma 7).
+/-- At depth zero, the right encoding equals the input entry at the unique empty string.
 -/
 private theorem encodeRight_zero (τ : Leaf 0) (b : RightStr 0 → ℤ) :
     encodeRight τ b = b Fin.elim0 :=
@@ -321,7 +313,7 @@ theorem bilinearProduct_succ {L : ℕ} (a : LeftStr (L + 1) → ℤ) (b : RightS
       bilinearProduct (encodeStepL lam a) (encodeStepR lam b) (Fin.tail w) := by
   simp only [bilinearProduct, Leaf.sum_contributes_succ, encodeLeft_cons, encodeRight_cons]
 
-/-- **Lemma 7**, second half.  and it returns bilinearProduct(a, b).
+/-- Full evaluation computes the bilinear tensor expansion `bilinearProduct`.
 -/
 theorem Full.result_eq_bilinearProduct {L : ℕ} (a : LeftStr L → ℤ) (b : RightStr L → ℤ) :
     Full.result L a b = bilinearProduct a b := by
@@ -334,8 +326,8 @@ theorem Full.result_eq_bilinearProduct {L : ℕ} (a : LeftStr L → ℤ) (b : Ri
     funext w
     simp only [Full.result_succ, bilinearProduct_succ, ih]
 
-/-- **Lemma 7**.  At the leaf τ, Full.result(a, b) multiplies Φ_τ(a) by Ψ_τ(b), and it returns
-bilinearProduct(a, b).
+/-- The complete value specification of full evaluation: its result is `bilinearProduct`, and each
+leaf’s operands are the corresponding left and right encodings.
 -/
 theorem full_spec {L : ℕ} (a : LeftStr L → ℤ) (b : RightStr L → ℤ) :
     (∀ τ : Leaf L, Full.multipliedAt L a b τ = (encodeLeft τ a, encodeRight τ b)) ∧
@@ -355,14 +347,13 @@ theorem prod_gamma_eq_sum_contributes {L : ℕ} (u : LeftStr L) (v : RightStr L)
   rw [prod_univ_sum, Leaf.filter_contributes_eq_piFinset]
   exact sum_congr rfl fun τ _ => prod_mul_distrib
 
-/-- **Lemma 8**.  For all arrays a, b and every output string w, bilinearProduct(a, b)[w] =
-∑_{u,v} γ(u₁, v₁, w₁) γ(u₂, v₂, w₂) ⋯ γ(u_L, v_L, w_L) a[u] b[v], the sum over all left strings u
-and right strings v.
+/-- Expand `bilinearProduct` as a double sum of input-entry products. The coefficient of each pair
+is the product, over string positions, of the one-level coefficients.
 -/
 theorem tensor_expansion {L : ℕ} (a : LeftStr L → ℤ) (b : RightStr L → ℤ) (w : OutStr L) :
     bilinearProduct a b w = ∑ u, ∑ v, (∏ ℓ, coefficient (u ℓ) (v ℓ) (w ℓ)) * a u * b v := by
-  -- "the coefficient of a[u] b[v] in (2) is ∑_τ ∏_ℓ φ_{τ_ℓ}(u_ℓ) ψ_{τ_ℓ}(v_ℓ), summed over the
-  -- leaves τ contributing to w": expand `Φ_τ(a) Ψ_τ(b)` and sum over `τ` last.
+  -- Expand the encoded factors and reorder the finite sums. The coefficient of each input
+  -- product is the product of its one-level coefficients.
   simp only [bilinearProduct, encodeLeft, encodeRight, sum_mul_sum]
   rw [sum_comm]
   refine sum_congr rfl fun u _ => ?_

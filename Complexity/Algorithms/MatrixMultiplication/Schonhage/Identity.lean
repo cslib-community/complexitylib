@@ -179,9 +179,8 @@ theorem sum_pHat_mul_qHat :
   simp [Fin.sum_univ_three, Fin.sum_univ_two, pHat, qHat, pForm, qForm,
     formL_eq_linearCombination, formR_eq_linearCombination]
 
-/-- **Lemma 6**.  Summing over the ten terms, ∑_λ φ_λ ψ_λ χ_λ = G + E, where E := ∑_{i,j=1}^{3}
-(x_i q̂_ij + p̂_ij y_j + p̂_ij q̂_ij) z_ij.  An identity of polynomials with integer coefficients
-in the 24 variables.
+/-- The ten products of the coefficient forms equal the wanted polynomial `G` plus the explicit
+error polynomial `E`.
 -/
 theorem identity : ∑ lam, formL (phi lam) * formR (psi lam) * formO (chi lam) = G + E := by
   -- The column sums of p̂ and the row sums of q̂, as identities of polynomials.
