@@ -24,9 +24,9 @@ def language : Set (List Bool) := {w | w.headD false = true}
 private def numerator (w : List Bool) : ℤ := if w.headD false then 3 else 1
 
 private theorem numerator_gap : numerator ∈ GapP encBits := by
-  have h : ComputableTidilyInPolyTime
+  have h : ComputableInPolyTime
       (fun w : List Bool => if w.headD false then (3 : ℕ) else 1) encBits encNat := by fun_prop
-  convert SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime (.of_tidy h)) using 1
+  convert SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime h) using 1
   ext w
   simp only [numerator]
   split_ifs <;> rfl
@@ -69,14 +69,16 @@ example (S : Set (List Bool)) : ∃ G ∈ GapP encBits, ∃ P : Polynomial ℕ, 
     simp only [encBits_apply]
     split_ifs <;> lia
 
-/-- Zero requested exponent permits the empty majority experiment and its constant zero output. -/
-example (g D : ℤ) : AWPPAmplification.majorityPolynomial g D 0 = 0 := by
-  simp [AWPPAmplification.majorityPolynomial]
+/-- Zero requested exponent permits the empty majority experiment and its constant zero output,
+while one half-width gives a two-trial majority weight of `g ^ 2 = 9`. -/
+example : AWPPAmplification.majorityPolynomial 3 4 0 = 0 ∧
+    AWPPAmplification.majorityPolynomial 3 4 1 = 9 := by
+  decide
 
-/-- A denominator of one is allowed, including the exact accepting endpoint. -/
-example (e : ℕ) : (2 : ℤ) ^ e *
-    (1 - AWPPAmplification.majorityPolynomial 1 1 (6 * e)) ≤ 1 := by
+/-- A denominator of one is allowed, including the exact accepting endpoint at `e = 2`. -/
+example : (2 : ℤ) ^ 2 *
+    (1 - AWPPAmplification.majorityPolynomial 1 1 12) ≤ 1 := by
   simpa using (AWPPAmplification.majorityPolynomial_bounds
-    (g := 1) (m := 0) (e := e) (by norm_num) (by norm_num)).2.1 (by norm_num)
+    (g := 1) (m := 0) (e := 2) (by norm_num) (by norm_num)).2.1 (by norm_num)
 
 end Cslib.Complexity.Tests.UniformAWPP

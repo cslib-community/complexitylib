@@ -46,17 +46,17 @@ def query (x : List Bool × ℕ) : List Bool := x.1.drop x.2
 def combine (x : List Bool × List Bool) : Bool :=
   x.2.getD 0 false ^^ x.2.getD 1 false
 
-theorem polyTime_count : ComputableTidilyInPolyTime count encBits encUnary := by
+theorem polyTime_count : ComputableInPolyTime count encBits encUnary := by
   unfold count
   fun_prop
 
 theorem polyTime_query :
-    ComputableTidilyInPolyTime query (encPair encBits encUnary) encBits := by
+    ComputableInPolyTime query (encPair encBits encUnary) encBits := by
   unfold query
   fun_prop
 
 theorem polyTime_combine :
-    ComputableTidilyInPolyTime combine (encPair encBits encBits) encBool := by
+    ComputableInPolyTime combine (encPair encBits encBits) encBool := by
   unfold combine
   fun_prop
 
@@ -64,8 +64,7 @@ def language : Set (List Bool) :=
   {w | combine (w, truthTableAnswers (query ⁻¹' headTrue) count w) = true}
 
 theorem reduction : PolyTimeTruthTableReducible encBits encBits language headTrue :=
-  ⟨count, query, combine, .of_tidy polyTime_count, .of_tidy polyTime_query,
-    .of_tidy polyTime_combine, fun _ => Iff.rfl⟩
+  ⟨count, query, combine, polyTime_count, polyTime_query, polyTime_combine, fun _ => Iff.rfl⟩
 
 example : language ∈ PP encBits := reduction.mem_PP headTrue_mem_PP
 
@@ -79,20 +78,20 @@ example : language ∈ PP encBits :=
 example : languageᶜ ∈ PP encBits :=
   reduction.compl.mem_PP (compl_mem_PP headTrue_mem_PP)
 
-example : PolyTimeTruthTableReducible encBits encBits headTrue headTrue :=
-  PolyTimeTruthTableReducible.refl encBits headTrue
+example : headTrueᶜ ∈ PP encBits :=
+  (PolyTimeTruthTableReducible.refl encBits headTrue).compl_left.mem_PP headTrue_mem_PP
 
 theorem joint_mem_PP : query ⁻¹' headTrue ∈ PP (encPair encBits encUnary) :=
-  PolyTimeReducible.mem_PP ⟨query, .of_tidy polyTime_query, fun _ => Iff.rfl⟩ headTrue_mem_PP
+  PolyTimeReducible.mem_PP ⟨query, polyTime_query, fun _ => Iff.rfl⟩ headTrue_mem_PP
 
 example : language ∈ PP encBits :=
-  truthTable_mem_PP joint_mem_PP (.of_tidy polyTime_count) (.of_tidy polyTime_combine)
+  truthTable_mem_PP joint_mem_PP polyTime_count polyTime_combine
 
 example : {w : List Bool | ∀ i < count w, (w, i) ∈ query ⁻¹' headTrue} ∈ PP encBits :=
-  forall_lt_mem_PP joint_mem_PP (.of_tidy polyTime_count)
+  forall_lt_mem_PP joint_mem_PP polyTime_count
 
 example : {w : List Bool | ∃ i < count w, (w, i) ∈ query ⁻¹' headTrue} ∈ PP encBits :=
-  exists_lt_mem_PP joint_mem_PP (.of_tidy polyTime_count)
+  exists_lt_mem_PP joint_mem_PP polyTime_count
 
 example : headTrue ∩ secondTrue ∈ PP encBits :=
   inter_mem_PP headTrue_mem_PP secondTrue_mem_PP
@@ -112,9 +111,8 @@ example : [true, false] ∈ language := by
 example : [true, true] ∉ language := by
   simp [language, truthTableAnswers, count, query, headTrue, combine]
 
-example : newmanPoly 1 2 = 12 := by decide
-
-example : 2 * |newmanPoly 1 (-2)| ≤ newmanPoly 1 2 :=
-  two_mul_abs_newmanPoly_neg_le (by omega) (by omega)
+example : newmanPoly 1 2 = 12 ∧ 2 * |newmanPoly 1 (-2)| ≤ 12 := by
+  have hval : newmanPoly 1 2 = 12 := by decide
+  exact ⟨hval, hval ▸ two_mul_abs_newmanPoly_neg_le (by omega) (by omega)⟩
 
 end ComplexityTests.PPTruthTable

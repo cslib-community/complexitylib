@@ -25,25 +25,26 @@ example : splitAlternatingBlocks [(1, 2), (0, 1), (2, 0)]
 
 example : splitAlternatingBlocks [(0, 0), (0, 0)] [true] = ([], []) := by decide
 
-example (q : Bool) (P Q : List Bool → Prop) :
-    Alternation q [3, 1, 2]
-      (fun w => P (splitAlternatingBlocks [(1, 2), (0, 1), (2, 0)] w).1 ∧
-        Q (splitAlternatingBlocks [(1, 2), (0, 1), (2, 0)] w).2) ↔
-      Alternation q [1, 0, 2] P ∧ Alternation q [2, 1, 0] Q :=
-  alternation_splitAlternatingBlocks [(1, 2), (0, 1), (2, 0)] q P Q
+example :
+    Alternation true [2]
+      (fun w => (splitAlternatingBlocks [(1, 1)] w).1 = [true] ∧
+        (splitAlternatingBlocks [(1, 1)] w).2 = [false]) :=
+  (alternation_splitAlternatingBlocks [(1, 1)] true
+    (fun u => u = [true]) (fun v => v = [false])).mpr
+    ⟨⟨[true], rfl, rfl⟩, ⟨[false], rfl, rfl⟩⟩
 
 example (ps : List (Polynomial ℕ × Polynomial ℕ)) :
     ComputableInPolyTime
       (fun w : List Bool =>
         splitAlternatingBlocks (ps.map fun pq => (pq.1.eval w.length, pq.2.eval w.length)) w)
       encBits (encPair encBits encBits) :=
-  computableInPolyTime_splitAlternatingBlocks ps (.of_tidy (.encoding_length encBits)) .id'
+  computableInPolyTime_splitAlternatingBlocks ps (.encoding_length encBits) .id'
 
 private theorem true_in_P : ({true} : Set Bool) ∈ P encBool :=
   ⟨id, ComputableInPolyTime.id', fun _ => Iff.rfl⟩
 
 private theorem false_in_P : ({false} : Set Bool) ∈ P encBool :=
-  ⟨Bool.not, .of_tidy ComputableTidilyInPolyTime.bool_not, fun b => by cases b <;> simp⟩
+  ⟨Bool.not, ComputableInPolyTime.bool_not, fun b => by cases b <;> simp⟩
 
 example : ({true} ∪ {false} : Set Bool) ∈ SigmaP 0 encBool :=
   union_mem_SigmaP (P_subset_SigmaP_zero true_in_P) (P_subset_SigmaP_zero false_in_P)

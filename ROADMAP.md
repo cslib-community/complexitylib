@@ -77,9 +77,9 @@ Priorities live in this list and in the tiers of [#897].
 
 ### Modern fully homomorphic encryption
 
-Gentry's bootstrapping is instantiated with GSW ([#486]; formal abstract `gsw-fhe`). Its
-follow-ups ([#1104]) are a uniform generator for the leveled scheme's wrapper decryption circuits
-(uniform compactness), multi-hop evaluation, and Gentry's exact concrete-security loss together
+Gentry's bootstrapping is instantiated with GSW ([#486]; formal abstract `gsw-fhe`), including
+uniform compactness for the leveled wrapper decryption circuits and level-indexed multi-hop
+evaluation. Its remaining follow-up ([#1104]) is Gentry's exact concrete-security loss together
 with the `poly(ℓ, d)` running-time clause of his Theorem 4. Then develop these in reviewable
 milestones, reusing the finite sampling, gadget algebra, native certificates and game reductions
 where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to

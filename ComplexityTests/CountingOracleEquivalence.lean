@@ -36,10 +36,11 @@ example : ∃ f ∈ SharpP encBool, ∃ q : Polynomial ℕ,
 example : {b : Bool | b = true} ∈ PWithSharpPOracle encBool :=
   PWithPPOracle_subset_PWithSharpPOracle (PP_subset_PWithPPOracle true_mem_PP)
 
-example : PWithPPOracle encBool = PWithSharpPOracle encBool :=
-  PWithPPOracle_eq_PWithSharpPOracle encBool
-
 private def count (b : Bool) : ℕ := if b then 2 else 0
+
+example : {_b : Bool | (1 : ℕ).testBit 0 = true} ∈ PWithPPOracle encBool := by
+  rw [PWithPPOracle_eq_PWithSharpPOracle encBool]
+  exact mem_PWithSharpPOracle_of_testBit (p := 0) SharpP.one_mem (fun _ => by simp)
 
 -- The empty word is not a pair code, so changing its answer preserves AnswersBits.
 example : AnswersBits encBool count (insert [] (bitGraph encBool count)) := by
