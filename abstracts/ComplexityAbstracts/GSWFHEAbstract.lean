@@ -10,6 +10,7 @@ import ComplexityAbstracts.Check
 import ComplexityAbstracts.Encoding
 import ComplexityAbstracts.Computation
 import ComplexityAbstracts.Randomized
+import ComplexityAbstracts.GSW
 import ComplexityAbstracts.GSWFHEBridge
 
 /-! # Fully homomorphic encryption from GSW and decision LWE
@@ -133,47 +134,6 @@ Keys of the bootstrapped schemes are framed words (`Encoding.frame` in the share
 on every word.
 -/
 
-/-- Write exactly `w` digits, least significant first, including leading zeros. -/
-def lowBits (w value : ℕ) : List Bool := (List.range w).map value.testBit
-
-/-- The leading entry of `[B t + e | B]`, reduced by signed Euclidean remainder. -/
-def rowHead (n w : ℕ) (inputs : List ℕ × (List (List ℕ) × List ℤ)) (i : ℕ) : ℕ :=
-  (((((List.range n).map fun j =>
-    (inputs.2.1.getD i []).getD j 0 * inputs.1.getD j 0).sum : ℕ) +
-      inputs.2.2.getD i 0 : ℤ) % (2 ^ w : ℤ)).toNat
-
-/-- Row-major serialization of the public matrix, with its noisy column first. -/
-def publicWord (n m w : ℕ) (inputs : List ℕ × (List (List ℕ) × List ℤ)) : List Bool :=
-  (List.range m).flatMap fun i =>
-    lowBits w (rowHead n w inputs i) ++
-      (List.range n).flatMap fun j => lowBits w ((inputs.2.1.getD i []).getD j 0 % 2 ^ w)
-
-/-- Serialize the secret residues; these bits are not given to the adversary. -/
-def secretWord (n w : ℕ) (secret : List ℕ) : List Bool :=
-  (List.range n).flatMap fun j => lowBits w (secret.getD j 0 % 2 ^ w)
-
-/-- Read a fixed-width matrix entry. Missing bits are zero, and excess bits are ignored. -/
-def matrixEntry (cols w : ℕ) (word : List Bool) (i j : ℕ) : ℕ :=
-  ((word.drop ((i * cols + j) * w) ++ List.replicate w false).take w).foldr Nat.bit 0
-
-/-- An entry of `message * G + R * A`, before binary decomposition. -/
-def ciphertextEntry (n m w : ℕ) (publicKey : List Bool) (message : Bool)
-    (coins : List (List (List Bool))) (i k j : ℕ) : ℕ :=
-  ((if i = j then message.toNat * 2 ^ k else 0) +
-    ((List.range m).map fun r =>
-      if ((coins.getD i []).getD k []).getD r false then
-        matrixEntry (n + 1) w publicKey r j else 0).sum) % 2 ^ w
-
-/-- Write every bit of the square ciphertext. Its row order is `(i, k)` and column order
-`(j, l)`; this is the bit decomposition of `message * G + R * A`, which equals GSW's
-`Flatten(μ I_N + BitDecomp(R A))`. -/
-def ciphertextWord (n m w : ℕ) (publicKey : List Bool) (message : Bool)
-    (coins : List (List (List Bool))) : List Bool :=
-  (List.range (n + 1)).flatMap fun i =>
-    (List.range w).flatMap fun k =>
-      (List.range (n + 1)).flatMap fun j =>
-        lowBits w (ciphertextEntry n m w publicKey message coins i k j)
-
 /-- The first framed word: keep `b` from each leading pair `true, b`, and stop at the first
 `false` or when fewer than two bits remain. Thus `unframe (Encoding.frame u ++ v) = u`. -/
 def unframe : List Bool → List Bool
@@ -196,40 +156,24 @@ which for a fresh ciphertext gives `μ 2 ^ (w - 1)` plus the small error `⟨R_i
 [GentrySahaiWaters2013, Sections 3.1–3.2].
 -/
 
-/-- Collect independent draws in their original order; the empty list requires no draw. -/
-noncomputable def independentList {α : Type} (count : ℕ) (law : PMF α) : PMF (List α) :=
-  (List.replicate count ()).mapM (fun _ => law)
-
-/-- A canonical residue representative chosen uniformly from `0, …, 2 ^ w - 1`. -/
-noncomputable def residueLaw (w : ℕ) : PMF ℕ :=
-  (Cslib.Probability.PMF.uniformOfFintype (Fin (2 ^ w))).map Fin.val
-
-/-- The signed noise is the difference of the counts of ones in two independent uniform words
-of length `noiseWidth`. Its support is `[-noiseWidth, noiseWidth]`; this is a centered binomial
-law, not a discrete Gaussian. -/
-noncomputable def errorLaw (noiseWidth : ℕ) : PMF ℤ := do
-  let positive ← Randomized.uniformBits noiseWidth
-  let negative ← Randomized.uniformBits noiseWidth
-  return (positive.count true : ℤ) - negative.count true
-
 /-- Generate the public and secret key words. The secret, the matrix rows and the signed errors
 are sampled independently, with dimension and noise width both `security + 1`. -/
 noncomputable def keyGeneration (security : ℕ) : PMF (List Bool × List Bool) := do
-  let secret ← independentList (dimension security) (residueLaw (width security))
-  let matrix ← independentList (samples security)
-    (independentList (dimension security) (residueLaw (width security)))
-  let errors ← independentList (samples security) (errorLaw (dimension security))
-  return (publicWord (dimension security) (samples security) (width security)
-    (secret, (matrix, errors)), secretWord (dimension security) (width security) secret)
+  let secret ← GSW.independentList (dimension security) (GSW.residueLaw (width security))
+  let matrix ← GSW.independentList (samples security)
+    (GSW.independentList (dimension security) (GSW.residueLaw (width security)))
+  let errors ← GSW.independentList (samples security) (GSW.errorLaw (dimension security))
+  return (GSW.publicWord (dimension security) (samples security) (width security)
+    (secret, (matrix, errors)), GSW.secretWord (dimension security) (width security) secret)
 
 /-- Encrypt a bit using only the public word and independent fair matrix coins. This law is
 defined on every public word, including malformed ones. -/
 noncomputable def encryption (security : ℕ) (publicKey : List Bool) (message : Bool) :
     PMF (List Bool) := do
-  let coins ← independentList (dimension security + 1)
-    (independentList (width security) (independentList (samples security)
+  let coins ← GSW.independentList (dimension security + 1)
+    (GSW.independentList (width security) (GSW.independentList (samples security)
       (Cslib.Probability.PMF.uniformOfFintype Bool)))
-  return ciphertextWord (dimension security) (samples security) (width security)
+  return GSW.ciphertextWord (dimension security) (samples security) (width security)
     publicKey message coins
 
 /-- **GSW decryption** [GentrySahaiWaters2013, Section 3.1]. Take row `(0, w - 1)` of the
@@ -242,10 +186,10 @@ the first `n w` bits of the secret word and is defined on every pair of words. -
 def decryption (security : ℕ) (secret ciphertext : List Bool) : Bool :=
   let n := dimension security
   let w := width security
-  let value := (((matrixEntry (n + 1) w ciphertext (w - 1) 0 : ℤ) -
+  let value := (((GSW.matrixEntry (n + 1) w ciphertext (w - 1) 0 : ℤ) -
     (((List.range n).map fun j =>
-      matrixEntry (n + 1) w ciphertext (w - 1) (j + 1) * matrixEntry n w secret 0 j).sum : ℕ)) %
-        (2 ^ w : ℤ)).toNat
+      GSW.matrixEntry (n + 1) w ciphertext (w - 1) (j + 1) *
+        GSW.matrixEntry n w secret 0 j).sum : ℕ)) % (2 ^ w : ℤ)).toNat
   decide (2 ^ w ≤ 4 * value ∧ 4 * value < 3 * 2 ^ w)
 
 /-- GSW decryption of one word that holds a secret key followed by a ciphertext, the input
@@ -266,7 +210,7 @@ it uses.
 bits per entry, least significant first. -/
 noncomputable def uniformMatrixWord (m k w : ℕ) : PMF (List Bool) :=
   (Cslib.Probability.PMF.uniformOfFintype (Fin m → Fin k → ZMod (2 ^ w))).map
-    (fun A => (List.ofFn fun i => (List.ofFn fun j => lowBits w (A i j).val).flatten).flatten)
+    (fun A => (List.ofFn fun i => (List.ofFn fun j => GSW.lowBits w (A i j).val).flatten).flatten)
 
 /-- The decision-LWE comparison: a uniform matrix of the same shape and modulus as the public
 key, encoded in the same order. -/
@@ -587,13 +531,14 @@ theorem fullyHomomorphic (hLWE : DecisionLWE) (hcircular : CircularSecure) :
 end ComplexityTests.Abstracts.GSWFHEAbstract
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.GSWFHEAbstract`: 57 root declarations,
+info: abstract audit passed for `ComplexityTests.Abstracts.GSWFHEAbstract`: 46 root declarations,
 314 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.GSWFHEAbstract allowing [
   -- shared foundations
   ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation, ComplexityAbstracts.Randomized,
+  ComplexityAbstracts.GSW,
   -- the scheme record and randomized programs
   Complexity.Crypto.Computational.Homomorphic.Basic,
   Complexity.Languages.Probabilistic.Basic,
