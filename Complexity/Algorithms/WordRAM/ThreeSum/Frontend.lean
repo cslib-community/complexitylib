@@ -64,12 +64,15 @@ theorem size_program (κ : ℕ) : (program κ).size = κ + 71 + construct.size :
   simp only [program, Code.size, Code.size_rename, ChanHe.Parameters.size_program]
 
 /-- The complete finite program halts with its descriptor count, and following its descriptors
-gives exactly the existing frontend list. No slot, bit budget, sorting result or fit is advice. -/
+gives exactly the existing frontend list. The memory witness is the actual native state just
+before the final halt. No slot, bit budget, sorting result or fit is advice. -/
 theorem runs_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length ≤ w)
     (hvalues : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)) :
     ∃ (y : Data 128) (steps : ℕ),
       Executes w ((program κ).program descriptorCount) (State.init (input.map Signed.encode))
-        (layout κ input.length).count steps ∧ steps ≤ cost κ input.length ∧
+        (layout κ input.length).count steps ∧
+      Runs w ((program κ).program descriptorCount) (State.init (input.map Signed.encode))
+        ⟨(program κ).size, y⟩ (steps - 1) ∧ steps ≤ cost κ input.length ∧
       readRoots (layout κ input.length) y.mem =
         Cslib.Algorithms.ThreeSum.inputs ((input.length + 2) ^ κ)
           (fun i : Fin input.length => input[i]) ∧
@@ -80,8 +83,11 @@ theorem runs_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
     exec_input input hw hvalues
   obtain ⟨steps, hsteps, hexec⟩ := he
   have hpos : 0 < cost κ input.length := by dsimp only [cost]; omega
-  refine ⟨y, steps + 1, ?_, by omega, ?_, hbase, hcount, hend, ?_⟩
+  refine ⟨y, steps + 1, ?_, ?_, by omega, ?_, hbase, hcount, hend, ?_⟩
   · simpa only [hcount, State.init] using hexec.executes descriptorCount
+  · simpa only [State.init, Nat.zero_add, Nat.add_sub_cancel] using
+      hexec.runs (pc := 0) (p := (program κ).program descriptorCount)
+        (Program.Contains.self _).append_left
   · exact ho.readback hkeys (fun p hp => (hcounts p hp).2) hvalues
   · exact hexec.bounded (Data.Bounded.init (input_fits input hw hvalues))
 
@@ -119,7 +125,7 @@ theorem intermediates_polynomial {κ w : ℕ} (input : List ℤ)
       (State.init (input.map Signed.encode)) s steps) :
     (∀ i, s.data.regs i < (input.length + 2) ^ (160 * κ + 968)) ∧
       ∀ a, s.data.mem a < (input.length + 2) ^ (160 * κ + 968) := by
-  obtain ⟨_, _, he, _, _, _, _, _, _⟩ := runs_input input le_rfl hvalues
+  obtain ⟨_, _, he, _, _, _, _, _, _, _⟩ := runs_input input le_rfl hvalues
   have hsmall := prefix_at_smaller_width
     (Code.not_readsWidth_program (not_readsWidth κ) descriptorCount) hw hr he
   have hb := hsmall.bounded_init (input_fits input le_rfl hvalues)

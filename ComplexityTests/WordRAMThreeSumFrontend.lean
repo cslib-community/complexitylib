@@ -78,7 +78,8 @@ private meta def exact (κ : ℕ) (input : List ℤ) : Bool :=
 #guard_msgs in
 #eval exact 1 [1, 2, 3]
 
--- A wider admitted physical word does not change output or charged execution time.
+-- Two successful physical widths give identical output and charged time.
+-- Both are below the exported sufficient threshold of 1692 for this input.
 /-- info: true -/
 #guard_msgs in
 #eval decide (observe 1 64 [-3, 1, 2] = observe 1 512 [-3, 1, 2])

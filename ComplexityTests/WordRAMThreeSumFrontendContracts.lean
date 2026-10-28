@@ -26,11 +26,13 @@ example : width 0 0 = 484 ∧ (layout 0 0).count = 20 ∧ (layout 0 0).arrays = 
 
 example : ∃ (y : Data 128) (steps : ℕ),
     Executes 4096 ((program 0).program descriptorCount) (State.init []) 20 steps ∧
+      Runs 4096 ((program 0).program descriptorCount) (State.init [])
+        ⟨(program 0).size, y⟩ (steps - 1) ∧
       steps ≤ cost 0 0 ∧ readRoots (layout 0 0) y.mem =
         Cslib.Algorithms.ThreeSum.inputs 1 (fun i : Fin 0 => ([] : List ℤ)[i]) := by
-  obtain ⟨y, steps, he, ht, ho, _, _, _, _⟩ := runs_input (κ := 0) (w := 4096) [] (by decide)
+  obtain ⟨y, steps, he, hr, ht, ho, _, _, _, _⟩ := runs_input (κ := 0) (w := 4096) [] (by decide)
     (by simp)
-  exact ⟨y, steps, he, ht, ho⟩
+  exact ⟨y, steps, he, hr, ht, ho⟩
 
 -- The signed endpoints satisfy both the input promise and the physical/signed width offset.
 example : ∃ steps,
@@ -41,7 +43,7 @@ example : ∃ steps,
     intro z hz
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hz
     rcases hz with rfl | rfl <;> decide
-  obtain ⟨y, steps, he, ht, _, _, _, _, _⟩ :=
+  obtain ⟨y, steps, he, _, ht, _, _, _, _, _⟩ :=
     runs_input (κ := 1) (w := 4096) [(-4 : ℤ), 4] (by decide) hv
   exact ⟨steps, he, ht⟩
 
