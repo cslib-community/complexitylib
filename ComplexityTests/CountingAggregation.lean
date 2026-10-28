@@ -18,17 +18,17 @@ open Cslib.Complexity Turing.MultiTapeTM
 example : (fun w : List Bool => (-1 : ℤ) ^ w.length) ∈ GapP encBits := by
   have hneg : (fun _ : List Bool => (-1 : ℤ)) ∈ GapP encBits :=
     GapP.neg_mem GapP.one_mem
-  exact GapP.pow_mem_polyTime hneg (.of_tidy (ComputableTidilyInPolyTime.encoding_length encBits))
+  exact GapP.pow_mem_polyTime hneg (ComputableInPolyTime.encoding_length encBits)
 
 /-- The exponent-zero case includes a zero base and returns one. -/
 example : (fun _ : List Bool => (0 : ℤ) ^ (0 : ℕ)) ∈ GapP encBits :=
-  GapP.pow_mem_polyTime GapP.zero_mem (.of_tidy (ComputableTidilyInPolyTime.const 0))
+  GapP.pow_mem_polyTime GapP.zero_mem (ComputableInPolyTime.const 0)
 
 /-- Summing negative weights over an input-dependent Boolean cube. -/
 example : (fun w : List Bool => -(2 : ℤ) ^ w.length) ∈ GapP encBits := by
   have hneg : (fun _ : List Bool × List Bool => (-1 : ℤ)) ∈ GapP (encPair encBits encBits) :=
     GapP.neg_mem GapP.one_mem
-  convert GapP.sum_bits_mem hneg (.of_tidy (ComputableTidilyInPolyTime.encoding_length encBits))
+  convert GapP.sum_bits_mem hneg (ComputableInPolyTime.encoding_length encBits)
     using 1
   ext w
   rw [Finset.sum_const, Finset.card_univ, Fintype.card_fun, Fintype.card_bool,
