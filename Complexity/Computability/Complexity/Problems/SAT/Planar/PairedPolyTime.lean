@@ -51,12 +51,33 @@ namespace Cslib.Complexity.SAT.ParsimoniousPlanar
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal Turing.MultiTapeTM
 
+/-- Explicit constructive enumeration of the eight split internal crossover variables. -/
+local instance : FinEnum Crossover.Internal :=
+  FinEnum.ofList [.aInnerLeft, .upperLeft, .lowerLeft, .bInnerTop, .bInnerBottom,
+    .upperRight, .lowerRight, .aInnerRight] fun v => by cases v <;> decide
+
+/-- Explicit constructive enumeration of the 57 paired-crossover variables. -/
+instance : FinEnum PairedCrossover.Variable :=
+  FinEnum.ofEquiv ((Fin 4 × Fin 2) ⊕ Unit ⊕ (Crossover.Internal × Fin 6))
+    { toFun := fun
+        | .port s l => .inl (s, l)
+        | .center => .inr (.inl ())
+        | .copy v i => .inr (.inr (v, i))
+      invFun := fun
+        | .inl (s, l) => .port s l
+        | .inr (.inl ()) => .center
+        | .inr (.inr (v, i)) => .copy v i
+      left_inv := fun
+        | .port _ _ | .center | .copy _ _ => rfl
+      right_inv := fun
+        | .inl (_, _) | .inr (.inl ()) | .inr (.inr (_, _)) => rfl }
+
 /-- Binary cell coordinates together with a fixed finite ordinary-port or crossover tag. -/
-noncomputable def encVariable : Variable ↪ List Bool :=
-  encPair encPoint (encFinite ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable))
+def encVariable : Variable ↪ List Bool :=
+  encPair encPoint (encFinEnum ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable))
 
 /-- A clause and its binary position and incidence-route data. -/
-noncomputable def encPlacedClause : PlacedClause ↪ List Bool :=
+def encPlacedClause : PlacedClause ↪ List Bool :=
   encPair (encList (encPair encVariable encBool)) (encPair encPoint (encList encRoute))
 
 private theorem computable_natCast :
@@ -74,7 +95,7 @@ private theorem computable_layoutCenter :
 
 private theorem computable_side :
     ComputableInPolyTime (fun p : Point × Point => side p.1 p.2)
-      (encPair encPoint encPoint) (encFinite (Fin 4)) := by
+      (encPair encPoint encPoint) (encFinEnum (Fin 4)) := by
   refine .of_tidy ?_
   unfold side PlanarCompile.side encPoint
   fun_prop
@@ -155,18 +176,18 @@ private theorem computable_port :
     ComputableInPolyTime (fun p : List Point × Point × Fin 4 × Fin 2 =>
       port p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encRoute (encPair encPoint
-        (encPair (encFinite (Fin 4)) (encFinite (Fin 2))))) encVariable := by
+        (encPair (encFinEnum (Fin 4)) (encFinEnum (Fin 2))))) encVariable := by
   have hi : ComputableTidilyInPolyTime
       (fun p : Fin 4 × Fin 2 => (Sum.inl p : (Fin 4 × Fin 2) ⊕ PairedCrossover.Variable))
-      (encPair (encFinite (Fin 4)) (encFinite (Fin 2)))
-      (encFinite ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable)) := .of_finite _
+      (encPair (encFinEnum (Fin 4)) (encFinEnum (Fin 2)))
+      (encFinEnum ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable)) := .of_finite _
   have ht : ComputableTidilyInPolyTime
       (fun p : Fin 4 × Fin 2 =>
         (Sum.inr (PairedCrossover.terminal p.1 p.2) : (Fin 4 × Fin 2) ⊕ PairedCrossover.Variable))
-      (encPair (encFinite (Fin 4)) (encFinite (Fin 2)))
-      (encFinite ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable)) := .of_finite _
+      (encPair (encFinEnum (Fin 4)) (encFinEnum (Fin 2)))
+      (encFinEnum ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable)) := .of_finite _
   let input := encPair encRoute (encPair encPoint
-    (encPair (encFinite (Fin 4)) (encFinite (Fin 2))))
+    (encPair (encFinEnum (Fin 4)) (encFinEnum (Fin 2))))
   have hs : ComputableTidilyInPolyTime
       (fun p : List Point × Point × Fin 4 × Fin 2 => p.1) input encRoute := .fst _ _
   have hp : ComputableTidilyInPolyTime
@@ -175,7 +196,7 @@ private theorem computable_port :
     fun_prop
   have ha : ComputableTidilyInPolyTime
       (fun p : List Point × Point × Fin 4 × Fin 2 => (p.2.2.1, p.2.2.2)) input
-      (encPair (encFinite (Fin 4)) (encFinite (Fin 2))) := by
+      (encPair (encFinEnum (Fin 4)) (encFinEnum (Fin 2))) := by
     unfold input
     fun_prop
   have hm := ComputableTidilyInPolyTime.decide_mem hs hp
@@ -187,7 +208,7 @@ attribute [local fun_prop] computable_port
 private theorem computable_signal :
     ComputableInPolyTime (fun p : List Point × Point × Point × Fin 2 =>
       signal p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encRoute (encPair encPoint (encPair encPoint (encFinite (Fin 2)))))
+      (encPair encRoute (encPair encPoint (encPair encPoint (encFinEnum (Fin 2)))))
       encVariable := by
   refine .of_tidy ?_
   unfold signal
@@ -198,17 +219,17 @@ private theorem computable_variablePosition :
   have hl : ComputableTidilyInPolyTime
       (fun v : (Fin 4 × Fin 2) ⊕ PairedCrossover.Variable =>
         v.elim (fun p => PairedPorts.variablePosition p.1 p.2) PairedCrossover.variablePosition)
-      (encFinite ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable)) encPoint := .of_finite _
+      (encFinEnum ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable)) encPoint := .of_finite _
   refine .of_tidy ?_
   unfold variablePosition encVariable
   fun_prop
 
 private theorem computable_boundary :
     ComputableInPolyTime (fun p : Point × Fin 4 × Fin 2 => boundary p.1 p.2.1 p.2.2)
-      (encPair encPoint (encPair (encFinite (Fin 4)) (encFinite (Fin 2)))) encPoint := by
+      (encPair encPoint (encPair (encFinEnum (Fin 4)) (encFinEnum (Fin 2)))) encPoint := by
   have hb : ComputableTidilyInPolyTime
       (fun p : Fin 4 × Fin 2 => PairedPorts.boundaryPort p.1 p.2)
-      (encPair (encFinite (Fin 4)) (encFinite (Fin 2))) encPoint := .of_finite _
+      (encPair (encFinEnum (Fin 4)) (encFinEnum (Fin 2))) encPoint := .of_finite _
   refine .of_tidy ?_
   unfold boundary
   fun_prop
@@ -218,7 +239,7 @@ attribute [local fun_prop] computable_signal computable_variablePosition computa
 private theorem computable_access :
     ComputableInPolyTime (fun p : List Point × Point × Point × Fin 2 =>
       access p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encRoute (encPair encPoint (encPair encPoint (encFinite (Fin 2))))) encRoute := by
+      (encPair encRoute (encPair encPoint (encPair encPoint (encFinEnum (Fin 2))))) encRoute := by
   refine .of_tidy ?_
   unfold access encRoute
   fun_prop
@@ -228,7 +249,7 @@ attribute [local fun_prop] computable_access
 private theorem computable_link :
     ComputableInPolyTime (fun p : List Point × Point × Point × Fin 2 =>
       link p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encRoute (encPair encPoint (encPair encPoint (encFinite (Fin 2)))))
+      (encPair encRoute (encPair encPoint (encPair encPoint (encFinEnum (Fin 2)))))
       encPlacedClause := by
   refine .of_tidy ?_
   dsimp only [link]
@@ -249,9 +270,9 @@ private theorem computable_lastLiteral :
       (encPair encRoute (encPair encRoute encBool))
       (encPair (encPair encVariable encBool) encRoute) := by
   have hl : ComputableTidilyInPolyTime PairedPorts.spokeLane
-      (encFinite (Fin 4)) (encFinite (Fin 2)) := .of_finite _
+      (encFinEnum (Fin 4)) (encFinEnum (Fin 2)) := .of_finite _
   have he : ComputableTidilyInPolyTime PairedPorts.spokeElbow
-      (encFinite (Fin 4)) encPoint := .of_finite _
+      (encFinEnum (Fin 4)) encPoint := .of_finite _
   refine .of_tidy ?_
   dsimp only [lastLiteral]
   simp only [List.getLastD_eq_getLast?, List.getLast?_eq_head?_reverse]
@@ -269,7 +290,7 @@ private theorem computable_originalClauses :
   unfold encPlacedClause encCNF
   fun_prop
 
-private theorem computable_templateClauses {A : Type} [Finite A]
+private theorem computable_templateClauses {A : Type} [FinEnum A]
     (tag : A → (Fin 4 × Fin 2) ⊕ PairedCrossover.Variable) (ψ : CNF A)
     (clausePositions : List Point) (incidenceRoutes : List (ℕ × A × Route)) :
     ComputableInPolyTime (fun p : Point => ψ.zipIdx.map fun (c, i) =>
@@ -277,11 +298,9 @@ private theorem computable_templateClauses {A : Type} [Finite A]
         cellOrigin 120 p + clausePositions.getD i (0, 0),
         (incidenceRoutes.filter fun e => e.1 == i).map fun e =>
           translate (cellOrigin 120 p) e.2.2)) encPoint (encList encPlacedClause) := by
-  classical
-  let : Fintype A := Fintype.ofFinite A
-  let rowEncoding := encPair (encList (encPair (encFinite A) encBool)) encUnary
-  have htag : ComputableTidilyInPolyTime tag (encFinite A)
-      (encFinite ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable)) := .of_finite _
+  let rowEncoding := encPair (encList (encPair (encFinEnum A) encBool)) encUnary
+  have htag : ComputableTidilyInPolyTime tag (encFinEnum A)
+      (encFinEnum ((Fin 4 × Fin 2) ⊕ PairedCrossover.Variable)) := .of_finite _
   have hbody : ComputableInPolyTime (fun p : Point × (Clause A × ℕ) =>
       (p.2.1.relabel (fun v => (p.1, tag v)),
         cellOrigin 120 p.1 + clausePositions.getD p.2.2 (0, 0),

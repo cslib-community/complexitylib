@@ -1,0 +1,12 @@
+The Convolution-3SUM reduction and graph-weight selection in
+Complexity/Algorithms/ExactTriangle/Defs.lean,
+Complexity/Algorithms/ThreeSum/Convolution.lean and
+Complexity/Algorithms/WordRAM/ThreeSum/Weight.lean are adapted from
+anthropics/formal-math, 3sum-apsp, revision
+16a5ce41304fcdaea4e0be7c132e1c361dc26da5.
+
+ThreeSumApsp: a Lean 4 formalization of "Truly Subquadratic 3SUM and Truly Subcubic APSP via Triangles in
+Sparse Lopsided Graphs"
+Copyright 2026 Anthropic, PBC
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).

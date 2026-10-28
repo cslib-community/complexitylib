@@ -516,24 +516,20 @@ theorem reaches_shapeCode {b T F : ℕ} (hP : P.CodeAt b (shapeCode v b T F))
 
 variable (v)
 
-/-- An exponent bounding the registers of the model checker in the length of the input: one more
-than the largest arity. -/
-def regExponent : ℕ := Finset.univ.sup v.arity + 1
-
 theorem pow_arityAt_le (a : EncodedStructure) (i : ℕ) :
-    a.1 ^ arityAt v i ≤ ((encStructure a).length + 1) ^ (regExponent v) := by
+    a.1 ^ arityAt v i ≤ ((encStructure a).length + 1) ^ v.maxArity := by
   have h₁ : a.1 ≤ (encStructure a).length + 1 :=
     (card_le_length_encStructure a).trans (Nat.le_succ _)
-  have h₂ : arityAt v i ≤ (regExponent v) := by
-    unfold arityAt regExponent
+  have h₂ : arityAt v i ≤ v.maxArity := by
+    unfold arityAt
     split_ifs with h
-    · exact (Finset.le_sup (f := v.arity) (Finset.mem_univ ⟨i, h⟩)).trans (Nat.le_succ _)
+    · exact v.arity_le_maxArity ⟨i, h⟩
     · exact Nat.zero_le _
   exact (Nat.pow_le_pow_left h₁ _).trans (Nat.pow_le_pow_right (Nat.succ_pos _) h₂)
 
-theorem length_le_pow_regExponent (a : EncodedStructure) :
-    (encStructure a).length ≤ ((encStructure a).length + 1) ^ (regExponent v) :=
-  (Nat.le_succ _).trans (Nat.le_self_pow (by simp [regExponent]) _)
+theorem length_le_pow_maxArity (a : EncodedStructure) :
+    (encStructure a).length ≤ ((encStructure a).length + 1) ^ v.maxArity :=
+  (Nat.le_succ _).trans (Nat.le_self_pow (by simp [Vocabulary.maxArity]) _)
 
 end Shape
 
@@ -660,7 +656,7 @@ theorem queryLanguage_mem_L (φ : L.Sentence) :
     v.queryLanguage {M | M ⊨ φ} ∈ Complexity.L encStructure := by
   classical
   refine ⟨fun a => decide (a ∈ v.queryLanguage {M | M ⊨ φ}), ?_, fun a => by simp⟩
-  refine (v.modelChecker φ).computableInLogSpace_of_reaches (regExponent v) fun a => ?_
+  refine (v.modelChecker φ).computableInLogSpace_of_reaches v.maxArity fun a => ?_
   have hE := length_shapeCode v 0 (4 + 6 * v.count) (4 + 6 * v.count + codeLength φ + 1)
   have hC := length_formulaCode v (fun e : Empty => e.elim) 3 φ (4 + 6 * v.count)
     (4 + 6 * v.count + codeLength φ) (4 + 6 * v.count + codeLength φ + 1)
@@ -672,7 +668,7 @@ theorem queryLanguage_mem_L (φ : L.Sentence) :
   simp only [List.length_append, hE, hC, Nat.zero_add] at hcomp hhalt
   simp only [codeAt_cons] at hhalt
   obtain ⟨hacc, hrej, -⟩ := hhalt
-  have hwB := length_le_pow_regExponent v a
+  have hwB := length_le_pow_maxArity v a
   have hnB := (card_le_length_encStructure a).trans hwB
   obtain ⟨regs₁, hreach₁, hlen₁, h0₁, hB₁⟩ :=
     reaches_shapeCode hshape (pow_arityAt_le v a) hwB (List.replicate (3 + boundDepth φ) 0)

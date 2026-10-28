@@ -50,14 +50,6 @@ namespace Cslib.Circuits.Rational
 
 open Rational.Formula Rational.Output
 
-theorem matrix_inverse_left {d : ℕ} (a : Mat d) (ha : a.det ≠ 0) :
-    a * (a.det⁻¹ • a.adjugate) = 1 := by
-  rw [Matrix.mul_smul, Matrix.mul_adjugate, smul_smul, inv_mul_cancel₀ ha, one_smul]
-
-theorem matrix_inverse_right {d : ℕ} (a : Mat d) (ha : a.det ≠ 0) :
-    (a.det⁻¹ • a.adjugate) * a = 1 := by
-  rw [Matrix.smul_mul, Matrix.adjugate_mul, smul_smul, inv_mul_cancel₀ ha, one_smul]
-
 private theorem evalMatrix?_sound {n d : ℕ} (f : Formula n) (X : Tuple n d)
     {v : Mat d} (h : f.evalMatrix? X = some v) : Evaluates f X v := by
   induction f using inductionOn generalizing v with
@@ -84,7 +76,9 @@ private theorem evalMatrix?_sound {n d : ℕ} (f : Formula n) (X : Tuple n d)
     by_cases hd : a.det = 0
     · simp [hd] at hb
     · have hv : a.det⁻¹ • a.adjugate = v := by simpa [hd] using hb
-      exact hv ▸ Eval.inv (ih ha) (matrix_inverse_left a hd) (matrix_inverse_right a hd)
+      have hinv : a.det⁻¹ • a.adjugate = a⁻¹ := by rw [Matrix.inv_def, Ring.inverse_eq_inv']
+      have hu : IsUnit a.det := isUnit_iff_ne_zero.mpr hd
+      exact hv ▸ hinv ▸ Eval.inv (ih ha) (a.mul_nonsing_inv hu) (a.nonsing_inv_mul hu)
 
 private theorem evalMatrix?_complete {n d : ℕ} {f : Formula n} {X : Tuple n d}
     {v : Mat d} (h : Evaluates f X v) : f.evalMatrix? X = some v := by
@@ -99,12 +93,12 @@ private theorem evalMatrix?_complete {n d : ℕ} {f : Formula n} {X : Tuple n d}
     simp [ihf ha, ihg hb]
   | inv f ih =>
     obtain ⟨a, ha, hab, hba⟩ := eval_inv_iff.mp h
-    have hd : a.det ≠ 0 :=
-      ((Matrix.isUnit_iff_isUnit_det a).mp ⟨⟨a, v, hab, hba⟩, rfl⟩).ne_zero
-    have hi : Evaluates (.inv f) X (a.det⁻¹ • a.adjugate) :=
-      Eval.inv ha (matrix_inverse_left a hd) (matrix_inverse_right a hd)
+    have hu : IsUnit a.det := (Matrix.isUnit_iff_isUnit_det a).mp ⟨⟨a, v, hab, hba⟩, rfl⟩
+    have hi : Evaluates (.inv f) X (a.det⁻¹ • a.adjugate) := by
+      rw [← Ring.inverse_eq_inv', ← Matrix.inv_def]
+      exact Eval.inv ha (a.mul_nonsing_inv hu) (a.nonsing_inv_mul hu)
     have he := Eval.unique hi h
-    simp [ih ha, hd, he]
+    simp [ih ha, hu.ne_zero, he]
 
 /-- The executable evaluator returns exactly the values admitted by the evaluation relation. -/
 theorem Formula.evalMatrix?_eq_some_iff {n d : ℕ} (f : Formula n) (X : Tuple n d)

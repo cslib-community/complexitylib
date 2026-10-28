@@ -265,7 +265,9 @@ private theorem work_run_eq_tape_run (tm : MultiTapeTM k Bool State) (input : Li
 
 /-- Summed raw work-tape storage is exactly native visited space. -/
 theorem sum_work_span_run_eq_space (tm : MultiTapeTM k Bool State) (input : List Bool)
-    (t : ℕ) : ∑ i, ((run tm input t).work i).span = tm.space (tm.initCfg input) t := by
+    (t : ℕ) :
+    ∑ i, ((run tm input t).work i).span =
+      (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) t).space := by
   simp only [work_run_eq_tape_run]
   exact RawTape.sum_span_run_eq_space tm input t
 
@@ -273,7 +275,8 @@ theorem sum_work_span_run_eq_space (tm : MultiTapeTM k Bool State) (input : List
 theorem sum_work_sides_run_add_eq_space (tm : MultiTapeTM k Bool State) (input : List Bool)
     (t : ℕ) :
     (∑ i, (((run tm input t).work i).left.length +
-      ((run tm input t).work i).right.length)) + k = tm.space (tm.initCfg input) t := by
+      ((run tm input t).work i).right.length)) + k =
+      (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) t).space := by
   simpa [RawTape.span, Finset.sum_add_distrib] using sum_work_span_run_eq_space tm input t
 
 /-- A native space certificate bounds all raw work storage, independently of runtime. -/

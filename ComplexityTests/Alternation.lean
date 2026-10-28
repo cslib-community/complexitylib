@@ -93,9 +93,8 @@ example : (∅ : Set (List Bool)) ∈ AP encBits :=
 
 /-- Under its time bound, the universal machine decides by acceptance within one move. -/
 example (a : List Bool) :
-    a ∈ (∅ : Set (List Bool)) ↔
-      (emitMove true).AcceptsWithin 1 ((emitMove true).toPTM.toNTM.initCfg a) :=
-  decidesInTime_empty.mem_iff a
+    ¬(emitMove true).AcceptsWithin 1 ((emitMove true).toPTM.toNTM.initCfg a) :=
+  (decidesInTime_empty.mem_iff a).not.mp (Set.notMem_empty a)
 
 /-- A problem in `AP` is in `PSPACE`. -/
 example : (Set.univ : Set (List Bool)) ∈ PSPACE encBits :=
@@ -140,19 +139,19 @@ private def firstMove (x : List Bool × List Bool) : Bool := x.2.getD 0 false
 /-- The game won when the second move is `true`. -/
 private def secondMove (x : List Bool × List Bool) : Bool := x.2.getD 1 false
 
-private theorem computableTidilyInPolyTime_firstMove :
-    MultiTapeTM.ComputableTidilyInPolyTime firstMove (MultiTapeTM.encPair encBits encBits)
+private theorem computableInPolyTime_firstMove :
+    MultiTapeTM.ComputableInPolyTime firstMove (MultiTapeTM.encPair encBits encBits)
       MultiTapeTM.encBool :=
-  MultiTapeTM.ComputableTidilyInPolyTime.bitsGetDWithInput
+  .of_tidy (MultiTapeTM.ComputableTidilyInPolyTime.bitsGetDWithInput
     (MultiTapeTM.ComputableTidilyInPolyTime.snd encBits encBits)
-    (MultiTapeTM.ComputableTidilyInPolyTime.const 0) false
+    (MultiTapeTM.ComputableTidilyInPolyTime.const 0) false)
 
-private theorem computableTidilyInPolyTime_secondMove :
-    MultiTapeTM.ComputableTidilyInPolyTime secondMove (MultiTapeTM.encPair encBits encBits)
+private theorem computableInPolyTime_secondMove :
+    MultiTapeTM.ComputableInPolyTime secondMove (MultiTapeTM.encPair encBits encBits)
       MultiTapeTM.encBool :=
-  MultiTapeTM.ComputableTidilyInPolyTime.bitsGetDWithInput
+  .of_tidy (MultiTapeTM.ComputableTidilyInPolyTime.bitsGetDWithInput
     (MultiTapeTM.ComputableTidilyInPolyTime.snd encBits encBits)
-    (MultiTapeTM.ComputableTidilyInPolyTime.const 1) false
+    (MultiTapeTM.ComputableTidilyInPolyTime.const 1) false)
 
 /-- The existential player wins the game of one round by moving `true`. -/
 private theorem isGameVerifier_firstMove :
@@ -175,27 +174,27 @@ private theorem isGameVerifier_secondMove :
 
 /-- `Set.univ ∈ AP` through the guess-then-verify machine. -/
 example : (Set.univ : Set (List Bool)) ∈ AP encBits :=
-  isGameVerifier_firstMove.mem_AP (.of_tidy computableTidilyInPolyTime_firstMove)
+  isGameVerifier_firstMove.mem_AP computableInPolyTime_firstMove
 
 /-- `∅ ∈ AP` through the guess-then-verify machine. -/
 example : (∅ : Set (List Bool)) ∈ AP encBits :=
-  isGameVerifier_secondMove.mem_AP (.of_tidy computableTidilyInPolyTime_secondMove)
+  isGameVerifier_secondMove.mem_AP computableInPolyTime_secondMove
 
 /-- A game verifier gives a problem in `PSPACE`, and conversely. -/
 example : (∅ : Set (List Bool)) ∈ PSPACE encBits :=
   mem_PSPACE_iff_exists_isGameVerifier.mpr
-    ⟨1, secondMove, (.of_tidy computableTidilyInPolyTime_secondMove), isGameVerifier_secondMove⟩
+    ⟨1, secondMove, computableInPolyTime_secondMove, isGameVerifier_secondMove⟩
 
 /-- `AP = PSPACE`, used to move a problem from one class to the other. -/
 example : (Set.univ : Set (List Bool)) ∈ PSPACE encBits :=
-  AP_eq_PSPACE ▸ isGameVerifier_firstMove.mem_AP (.of_tidy computableTidilyInPolyTime_firstMove)
+  AP_eq_PSPACE ▸ isGameVerifier_firstMove.mem_AP computableInPolyTime_firstMove
 
 /-- A problem in `PSPACE` has a polynomial-time game verifier. -/
 example : ∃ (p : Polynomial ℕ) (V : List Bool × List Bool → Bool),
     MultiTapeTM.ComputableInPolyTime V (MultiTapeTM.encPair encBits encBits)
       MultiTapeTM.encBool ∧ IsGameVerifier encBits p V (Set.univ : Set (List Bool)) :=
   exists_isGameVerifier_of_mem_PSPACE
-    (AP_eq_PSPACE ▸ isGameVerifier_firstMove.mem_AP (.of_tidy computableTidilyInPolyTime_firstMove))
+    (AP_eq_PSPACE ▸ isGameVerifier_firstMove.mem_AP computableInPolyTime_firstMove)
 
 /-! ### Single-bit moves -/
 
@@ -256,8 +255,8 @@ example : ¬Alternation true (List.replicate (2 * ((1 + 1) * 1)) 1)
   decide
 
 /-- Trailing moves do not change a game that reads only its first move. -/
-example : Alternation true ([1] ++ [1, 1]) (fun z => z.take 1 = [true]) ↔
-    Alternation true [1] (fun z => z.take 1 = [true]) :=
-  alternation_append_iff fun z => by simp only [List.sum_cons, List.sum_nil, List.take_take]; rfl
+example : Alternation true ([1] ++ [1, 1]) (fun z => z.take 1 = [true]) :=
+  (alternation_append_iff fun z => by
+    simp only [List.sum_cons, List.sum_nil, List.take_take]; rfl).mpr ⟨[true], rfl, rfl⟩
 
 end ComplexityTests.Alternation

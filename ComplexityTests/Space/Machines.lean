@@ -88,7 +88,7 @@ private theorem visitedByTapeHead_writeAccept {input : List Bool} (p : writeAcce
   | snoc p c hc ih =>
     have ih := ih (by simpa using hp)
     have hlast : p.last.workTapePos 0 = 0 := Finset.mem_singleton.mp
-      (ih (RunPath.mem_visitedByTapeHead_iff.mpr ⟨p.last, RelSeries.last_mem _, rfl⟩))
+      (ih ((RunPath.mem_visitedByTapeHead _).mpr ⟨p.last, RelSeries.last_mem _, rfl⟩))
     have hc' : c.workTapePos 0 = 0 := by
       change writeAccept.Step p.last c at hc
       rcases hs : p.last.state with _ | _

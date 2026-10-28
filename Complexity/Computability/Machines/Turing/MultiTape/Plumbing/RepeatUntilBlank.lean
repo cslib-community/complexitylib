@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
+-- vendored: `ConfinedRun.confined` is stated with the cells visited by a run path since cslib #1122
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.RepeatUntilBlank
 
@@ -32,6 +33,8 @@ variable {k : ℕ} {Symbol State : Type*} {input : List Symbol}
 public structure ConfinedRun (M : MultiTapeTM k Symbol State)
     (start finish : Cfg k Symbol State input) (steps r : ℕ) : Prop where
   reaches : M.runFrom start steps = finish
-  confined : ∀ l, M.visitedByTapeHead start steps l ⊆ Finset.Icc (-(r : ℤ)) (r : ℤ)
+  confined : ∀ l,
+    (MultiTapeNTM.RunPath.ofDeterministic M start steps).visitedByTapeHead l ⊆
+      Finset.Icc (-(r : ℤ)) (r : ℤ)
 
 end Turing.MultiTapeTM

@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
--- vendored: `spaceUsed` is `space` since cslib #1133
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Correct
@@ -289,18 +289,19 @@ lemma headAt_desc (tm : MultiTapeTM k Symbol State) (x : List Symbol) (j : ℕ) 
 
 /-- **The space of the simulation** of the description of a machine is the space of the machine. -/
 public theorem simSpace_desc (tm : MultiTapeTM k Symbol State) (x : List Symbol) (j : ℕ) :
-    simSpace (desc eS eY tm) (x.map eY) j = tm.space (tm.initCfg x) j := by
+    simSpace (desc eS eY tm) (x.map eY) j =
+      (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg x) j).space := by
   -- vendored: `space` is the space of a run path since cslib #1117
-  rw [space_eq_sum_spaceUsedByTape]
-  simp only [simSpace, spaceUsedByTape]
+  rw [MultiTapeNTM.RunPath.space]
+  simp only [simSpace, MultiTapeNTM.RunPath.spaceUsedByTape]
   rw [show (desc eS eY tm).tapes = k from rfl, Finset.sum_range]
   refine Finset.sum_congr rfl fun i _ => congrArg Finset.card (Finset.ext fun z => ?_)
-  simp only [visited, visitedByTapeHead, Finset.mem_image, Finset.mem_range, Finset.mem_univ,
-    true_and, headAt_desc]
+  rw [MultiTapeNTM.RunPath.mem_visitedByTapeHead_ofDeterministic]
+  simp only [visited, Finset.mem_image, Finset.mem_range, headAt_desc]
   constructor
   · rintro ⟨n, hn, rfl⟩
-    exact ⟨⟨n, hn⟩, rfl⟩
-  · rintro ⟨n, rfl⟩
-    exact ⟨n, n.isLt, rfl⟩
+    exact ⟨n, by omega, rfl⟩
+  · rintro ⟨n, hn, rfl⟩
+    exact ⟨n, by omega, rfl⟩
 
 end Turing.MultiTapeTM.Universal

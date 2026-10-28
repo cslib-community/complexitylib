@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.Data.BitString.Basic
 public import Complexity.Init
 public import Cslib.Foundations.Data.BitString
 public import Mathlib.Algebra.Ring.BooleanRing
@@ -29,11 +30,11 @@ An affine map from `BitString d` is determined by its values at `0` and at the u
 ## Main definitions
 
 * `Cslib.BitString.IsAffine`: affine maps over `𝔽₂`.
-* `Cslib.BitString.zeroExtend`: extension of a bit string by zeros to a longer length.
 
 ## Main results
 
 * `Cslib.BitString.IsAffine.comp`: affine maps compose.
+* `Cslib.BitString.isAffine_zeroExtend`: extension by zeros is affine.
 * `Cslib.BitString.IsAffine.ext_single`: an affine map from `BitString d` is determined by its
   values at `0` and at the unit vectors.
 * `Cslib.BitString.card_isAffine_le`: at most `2 ^ (n (d + 1))` maps from `BitString d` to
@@ -63,24 +64,12 @@ affine. -/
 theorem isAffine_const {α β : Type*} [Add α] [AddGroup β] (h : ∀ b : β, b + b = 0) (c : β) :
     IsAffine (fun _ : α => c) := fun _ _ _ => by rw [h, zero_add]
 
-/-- The extension of a point of `BitString d` by zeros to `BitString d'`, for `d ≤ d'`. -/
-def zeroExtend {d d' : ℕ} (x : BitString d) : BitString d' :=
-  fun i => if h : i.val < d then x ⟨i.val, h⟩ else false
-
 /-- Extension by zeros is affine. -/
 theorem isAffine_zeroExtend {d d' : ℕ} : IsAffine (zeroExtend (d := d) (d' := d')) := by
   intro x y z
   funext i
   simp only [zeroExtend, Pi.add_apply]
   split_ifs <;> rfl
-
-/-- Extension by zeros from `BitString d` to `BitString d'` is injective when `d ≤ d'`. -/
-theorem zeroExtend_injective {d d' : ℕ} (h : d ≤ d') :
-    Function.Injective (zeroExtend (d := d) (d' := d')) := by
-  intro x y hxy
-  funext i
-  have := congrFun hxy ⟨i.val, by omega⟩
-  simpa [zeroExtend, i.isLt] using this
 
 /-! ### Counting affine maps -/
 

@@ -19,18 +19,18 @@ private def language : Set (List Bool) := {w | w.headD false = true}
 private def gap (w : List Bool) : ℤ := if w.headD false then 0 else 1
 
 private theorem gap_mem : gap ∈ GapP encBits := mem_GapP_of_polyTime
-  (.of_tidy (by unfold gap; fun_prop))
+  (by unfold gap; fun_prop)
 
 private def yesTargets (n : ℕ) : List ℤ := 0 :: List.replicate n (-2)
 private def noTargets (n : ℕ) : List ℤ := 1 :: List.replicate (2 * n) 3
 
 private theorem yes_polyTime :
-    ComputableInPolyTime yesTargets encUnary (encList encIntBin) :=
-  .of_tidy (by unfold yesTargets; fun_prop)
+    ComputableInPolyTime yesTargets encUnary (encList encIntBin) := by
+  unfold yesTargets; fun_prop
 
 private theorem no_polyTime :
-    ComputableInPolyTime noTargets encUnary (encList encIntBin) :=
-  .of_tidy (by unfold noTargets; fun_prop)
+    ComputableInPolyTime noTargets encUnary (encList encIntBin) := by
+  unfold noTargets; fun_prop
 
 private theorem disjoint (n : ℕ) : (yesTargets n).Disjoint (noTargets n) := by
   simp [yesTargets, noTargets, List.disjoint_left]
@@ -49,8 +49,8 @@ example : language ∈ LWPP encBits :=
 
 example : language ∈ WPP encBits :=
   mem_WPP_of_disjoint_targets gap_mem
-    (yes_polyTime.comp (ComputableTidilyInPolyTime.encoding_length encBits).computableInPolyTime)
-    (no_polyTime.comp (ComputableTidilyInPolyTime.encoding_length encBits).computableInPolyTime)
+    (yes_polyTime.comp (ComputableInPolyTime.encoding_length encBits))
+    (no_polyTime.comp (ComputableInPolyTime.encoding_length encBits))
     (fun w => disjoint w.length) accepts rejects
 
 -- The plain characterization retains zero and signed/repeated targets on disjoint sides.

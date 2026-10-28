@@ -55,27 +55,27 @@ private theorem computable_natCast :
     ComputableTidilyInPolyTime.unary_to_binary)
 
 private theorem computable_finVal :
-    ComputableInPolyTime (fun s : Fin 3 => s.val) (encFinite (Fin 3)) encNat :=
+    ComputableInPolyTime (fun s : Fin 3 => s.val) (encFinEnum (Fin 3)) encNat :=
   .of_tidy (ComputableTidilyInPolyTime.of_finite _)
 
 attribute [local fun_prop] computable_natCast computable_finVal ComputableInPolyTime.tidy
 
 private theorem computable_incidencePort :
     ComputableInPolyTime (fun p : Graph × ℕ => p.1.incidencePort p.2)
-      (encPair encGraph encUnary) (encFinite (Fin 3)) := by
+      (encPair encGraph encUnary) (encFinEnum (Fin 3)) := by
   have hc : ComputableTidilyInPolyTime (fun p : Graph × ℕ =>
       (p.1.incidenceVertices.take p.2).count (p.1.incidenceVertices.getD p.2 0))
       (encPair encGraph encUnary) encUnary := by
     unfold Graph.incidenceVertices encGraph
     fun_prop
   exact .of_tidy ((ComputableTidilyInPolyTime.unary_finMod (by decide)
-    (encFinite (Fin 3))).comp hc)
+    (encFinEnum (Fin 3))).comp hc)
 
 attribute [local fun_prop] computable_incidencePort
 
 private theorem computable_canonicalPorts :
     ComputableInPolyTime Graph.canonicalPorts encGraph
-      (encList (encPair (encFinite (Fin 3)) (encFinite (Fin 3)))) := by
+      (encList (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3)))) := by
   refine .of_tidy ?_
   unfold Graph.canonicalPorts encGraph
   fun_prop
@@ -90,7 +90,7 @@ private theorem computable_layoutCenter :
 
 private theorem computable_layoutColumn :
     ComputableInPolyTime (fun p : ℕ × Fin 3 => Layout.column p.1 p.2)
-      (encPair encUnary (encFinite (Fin 3))) encIntBin := by
+      (encPair encUnary (encFinEnum (Fin 3))) encIntBin := by
   refine .of_tidy ?_
   unfold Layout.column
   fun_prop
@@ -106,7 +106,7 @@ attribute [local fun_prop] computable_layoutCenter computable_layoutColumn compu
 
 private theorem computable_layoutElbow :
     ComputableInPolyTime (fun p : ℕ × Fin 3 => Layout.elbow p.1 p.2)
-      (encPair encUnary (encFinite (Fin 3))) encPoint := by
+      (encPair encUnary (encFinEnum (Fin 3))) encPoint := by
   refine .of_tidy ?_
   unfold Layout.elbow encPoint
   fun_prop
@@ -117,7 +117,7 @@ private theorem computable_layoutRoute :
     ComputableInPolyTime (fun p : ℕ × ℕ × ℕ × ℕ × Fin 3 × Fin 3 =>
       Layout.route p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2)
       (encPair encUnary (encPair encUnary (encPair encUnary
-        (encPair encUnary (encPair (encFinite (Fin 3)) (encFinite (Fin 3))))))) encRoute := by
+        (encPair encUnary (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3))))))) encRoute := by
   refine .of_tidy ?_
   unfold Layout.route encRoute
   fun_prop
@@ -129,11 +129,11 @@ private theorem computable_orthogonalRoutes :
       encGraph (encList encRoute) := by
   let edgeEncoding := encPair (encPair encNat encNat) encUnary
   let routeInput := encPair encUnary (encPair encUnary (encPair encUnary
-    (encPair encUnary (encPair (encFinite (Fin 3)) (encFinite (Fin 3))))))
+    (encPair encUnary (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3))))))
   have hcan := computable_canonicalPorts.tidy
   have hp : ComputableTidilyInPolyTime (fun p : Graph × ((ℕ × ℕ) × ℕ) =>
       p.1.canonicalPorts.getD p.2.2 (0, 0))
-      (encPair encGraph edgeEncoding) (encPair (encFinite (Fin 3)) (encFinite (Fin 3))) := by
+      (encPair encGraph edgeEncoding) (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3))) := by
     unfold edgeEncoding encGraph
     fun_prop
   have hargs : ComputableInPolyTime (fun p : Graph × ((ℕ × ℕ) × ℕ) =>
@@ -188,7 +188,7 @@ private theorem computable_endpointColumns :
   have hcan := computable_canonicalPorts.tidy
   have hp : ComputableTidilyInPolyTime (fun p : Graph × ℕ =>
       p.1.canonicalPorts.getD p.2 (0, 0))
-      (encPair encGraph encUnary) (encPair (encFinite (Fin 3)) (encFinite (Fin 3))) := by
+      (encPair encGraph encUnary) (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3))) := by
     unfold encGraph
     fun_prop
   have he : ComputableTidilyInPolyTime (fun p : Graph × ℕ => p.1.2.getD p.2 (0, 0))

@@ -187,11 +187,6 @@ theorem natCast_pow_eq_bitVal (c : ℕ) :
     rw [map_pow, map_natCast, map_one] at h
     simp [h, hc, bitVal]
 
-/-- In characteristic `p`, the `(p - 1)`-st power of a nonzero count is `1`. -/
-theorem natCast_pow_eq_one {c : ℕ} (hc : (c : R) ≠ 0) : (c : R) ^ (p - 1) = 1 := by
-  have h : c % p ≠ 0 := fun h => hc ((CharP.cast_eq_zero_iff R p c).2 (Nat.dvd_of_mod_eq_zero h))
-  simp [natCast_pow_eq_bitVal, h, bitVal]
-
 /-- The `MOD_p` polynomial is exact on bits. -/
 private theorem modApprox_bitVal (u : Fin m → Bool) :
     modApprox p (fun i => bitVal R (u i)) = bitVal R (modGate p m u) := by
@@ -203,9 +198,11 @@ private theorem orApprox_bitVal_of_exists (T : Fin ℓ → Finset (Fin m)) (u : 
     orApprox p T (fun i => bitVal R (u i)) = 1 := by
   obtain ⟨j, hj⟩ := hT
   rw [sum_bitVal] at hj
+  have hmod : #((T j).filter fun i => u i = true) % p ≠ 0 :=
+    fun h => hj ((CharP.cast_eq_zero_iff R p _).2 (Nat.dvd_of_mod_eq_zero h))
   unfold orApprox
   rw [Finset.prod_eq_zero (Finset.mem_univ j)
-    (by rw [sum_bitVal, natCast_pow_eq_one hj, sub_self]), sub_zero]
+    (by simp [natCast_pow_eq_bitVal, hmod, bitVal]), sub_zero]
 
 /-! ### Counting erring tuples -/
 

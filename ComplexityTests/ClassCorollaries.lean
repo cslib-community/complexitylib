@@ -75,10 +75,9 @@ example : (Set.univ : Set (List Bool)) ∈ PWithPPOracle encBits :=
 example {α : Type} (enc : α ↪ List Bool) : PWithOracle Set.univ enc ⊆ PWithPPOracle enc :=
   PWithOracle_subset_PWithPPOracle (BPP_subset_PP (P_subset_BPP univ_mem_P))
 
-example {α : Type} {enc : α ↪ List Bool} {L : Set α} (hL : L ∈ PWithPPOracle enc) :
-    ∃ (β : Type) (encβ : β ↪ List Bool) (B : Set β), B ∈ PP encβ ∧
-      L ∈ PWithOracle (encβ '' B) enc :=
-  exists_mem_PP_mem_PWithOracle_image hL
+example : ∃ (β : Type) (encβ : β ↪ List Bool) (B : Set β), B ∈ PP encβ ∧
+    (Set.univ : Set (List Bool)) ∈ PWithOracle (encβ '' B) encBits :=
+  exists_mem_PP_mem_PWithOracle_image (P_subset_PWithPPOracle univ_mem_P)
 
 /-- Binary search for the constant `1 ∈ #P` reads its bit `0`. -/
 example : (Set.univ : Set (List Bool)) ∈ PWithPPOracle encBits :=
@@ -87,22 +86,22 @@ example : (Set.univ : Set (List Bool)) ∈ PWithPPOracle encBits :=
 /-- Binary search terminates on the value. -/
 example : (BinarySearch.step 5)^[3] (0, 3) = (5, 0) := by decide
 
-example {α : Type} (enc : α ↪ List Bool) : PH enc ⊆ PWithPPOracle enc :=
-  PH_subset_PWithPPOracle
+example : SAT ∈ PWithPPOracle encCNF :=
+  PH_subset_PWithPPOracle (NP_subset_PH SAT.mem_NP)
 
 example {α : Type} (enc : α ↪ List Bool) :
-    BPOp enc (ParityP (encPair enc encBits)) ⊆ PWithPPOracle enc :=
-  BPOp_ParityP_subset_PWithPPOracle
+    BPP enc ⊆ PWithPPOracle enc :=
+  (BPOp_P.symm.subset.trans (BPOp_mono P_subset_ParityP)).trans
+    BPOp_ParityP_subset_PWithPPOracle
 
 /-- Binary search on the codes of a word, with one round more than its length, is strict oracle
 PPT. -/
 example : IsOraclePPTOn encBits encNat (fun w => OracleComp.interpret ProbOracleComp.query
     (BinarySearch.search w (w.length + 1))) :=
-  BinarySearch.isOraclePPTOn_search (.of_tidy ComputableTidilyInPolyTime.id')
-    (.of_tidy (by fun_prop))
+  BinarySearch.isOraclePPTOn_search .id' (by fun_prop)
 
-example {α : Type} (enc : α ↪ List Bool) : PWithSharpPOracle enc ⊆ PWithPPOracle enc :=
-  PWithSharpPOracle_subset_PWithPPOracle
+example {α : Type} (enc : α ↪ List Bool) : NP enc ⊆ PWithPPOracle enc :=
+  (NP_subset_PH.trans PH_subset_PWithSharpPOracle).trans PWithSharpPOracle_subset_PWithPPOracle
 
 open Classical in
 /-- Binary search against the oracle of `k ≤ 5`, on codes `(u, k)`, finds `5` in three rounds. -/

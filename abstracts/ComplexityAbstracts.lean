@@ -12,11 +12,14 @@ import ComplexityAbstracts.CookLevinAbstract
 import ComplexityAbstracts.CookLevinBridge
 import ComplexityAbstracts.CryptographyAbstract
 import ComplexityAbstracts.CryptographyBridge
+import ComplexityAbstracts.DijkstraAbstract
+import ComplexityAbstracts.DijkstraBridge
 import ComplexityAbstracts.Encoding
 import ComplexityAbstracts.FaginAbstract
 import ComplexityAbstracts.FaginBridge
 import ComplexityAbstracts.FormulaBoundsAbstract
 import ComplexityAbstracts.FormulaBoundsBridge
+import ComplexityAbstracts.GSW
 import ComplexityAbstracts.GSWFHEAbstract
 import ComplexityAbstracts.GSWFHEBridge
 import ComplexityAbstracts.GSWSecurityAbstract
@@ -40,6 +43,8 @@ import ComplexityAbstracts.ShamirAbstract
 import ComplexityAbstracts.ShamirBridge
 import ComplexityAbstracts.SipserLautemannAbstract
 import ComplexityAbstracts.SipserLautemannBridge
+import ComplexityAbstracts.SubexponentialSATAbstract
+import ComplexityAbstracts.SubexponentialSATBridge
 import ComplexityAbstracts.SubsetSumAbstract
 import ComplexityAbstracts.SubsetSumBridge
 import ComplexityAbstracts.TQBFAbstract

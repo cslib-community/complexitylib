@@ -41,15 +41,20 @@ polynomial time with error at most `2 ^ (-q(n))` for every polynomial `q`
 
 ## Main definitions
 
+* `Cslib.Complexity.ErrorExponentAt`: the per-instance condition that a verifier errs from a
+  specified Boolean answer on at most a `2 ^ (-q(n))` fraction of random strings.
 * `Cslib.Complexity.PromiseProblem.SolvesWithErrorExponent`: error at most `2 ^ (-q(n))`.
 * `Cslib.Complexity.DecidesWithErrorExponent`: its specialization to a decision problem.
 * `Cslib.Complexity.BPP.booleanSubalgebra`: `BPP` as a Boolean subalgebra of `Set α`.
 
 ## Main results
 
-* `Cslib.Complexity.PromiseProblem.SolvesWithBoundedError.repeatMajority`: `12 q(n)` majority
+* `Cslib.Complexity.ErrorExponentAt.congr`: extensionality for per-instance error-exponent bounds.
+* `Cslib.Complexity.BoundedErrorAt.repeatMajority`,
+  `Cslib.Complexity.PromiseProblem.SolvesWithBoundedError.repeatMajority`: `12 q(n)` majority
   votes reduce the error to `2 ^ (-q(n))`.
-* `Cslib.Complexity.PromiseProblem.SolvesWithErrorExponent.solvesWithBoundedError`: error at most
+* `Cslib.Complexity.ErrorExponentAt.boundedErrorAt`,
+  `Cslib.Complexity.PromiseProblem.SolvesWithErrorExponent.solvesWithBoundedError`: error at most
   `2 ^ (-q(n)) ≤ 1 / 4` is bounded error.
 * `Cslib.Complexity.mem_PromiseBPP_iff_forall_solvesWithErrorExponent`,
   `Cslib.Complexity.mem_BPP_iff_forall_decidesWithErrorExponent`: error reduction for `PromiseBPP`
@@ -70,6 +75,70 @@ open Finset Turing.MultiTapeTM
 
 variable {α : Type}
 
+/-- `V` gives the answer `b` with error at most `2 ^ (-q(n))` on the instance `a`, using random
+strings whose length is `p` evaluated at the length `n` of the encoded instance: the random strings
+`r` of length `p n` with `V (a, r) = !b` make up at most a `2 ^ (-q n)` fraction. -/
+abbrev ErrorExponentAt (enc : α ↪ List Bool) (q p : Polynomial ℕ) (V : α × List Bool → Bool)
+    (a : α) (b : Bool) : Prop :=
+  2 ^ q.eval (enc a).length *
+    (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      V (a, List.ofFn r) = !b).card ≤
+    2 ^ p.eval (enc a).length
+
+/-- An error-exponent bound at an instance depends only on the verifier's values on strings of
+length `p(|a|)`. -/
+theorem ErrorExponentAt.congr {enc : α ↪ List Bool} {q p : Polynomial ℕ}
+    {V W : α × List Bool → Bool} {a : α} {b : Bool} (h : ErrorExponentAt enc q p V a b)
+    (hVW : ∀ r : Fin (p.eval (enc a).length) → Bool, V (a, List.ofFn r) = W (a, List.ofFn r)) :
+    ErrorExponentAt enc q p W a b := by
+  have hcard : (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      V (a, List.ofFn r) = !b).card =
+    (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      W (a, List.ofFn r) = !b).card :=
+    congrArg Finset.card (Finset.filter_congr fun r _ => by rw [hVW r])
+  rwa [ErrorExponentAt, ← hcard]
+
+/-- **Per-instance error reduction for bounded error**: the strict majority of `12 q(n)` runs of a
+verifier on independent blocks of random bits errs from `b` on at most a `2 ^ (-q(n))` fraction of
+the random strings whenever a single run produces `b` on at least two thirds of them. -/
+theorem BoundedErrorAt.repeatMajority {enc : α ↪ List Bool} {p : Polynomial ℕ}
+    {V : α × List Bool → Bool} {a : α} {b : Bool} (h : BoundedErrorAt enc p V a b)
+    (q : Polynomial ℕ) :
+    ErrorExponentAt enc q (12 * q * p) (Complexity.repeatMajority enc (6 * q) p V) a b := by
+  unfold ErrorExponentAt
+  have hlen : (12 * q * p).eval (enc a).length =
+      2 * (6 * q).eval (enc a).length * p.eval (enc a).length := by
+    simp only [Polynomial.eval_mul, Polynomial.eval_ofNat]
+    ring
+  have hR : (6 * q).eval (enc a).length = 6 * q.eval (enc a).length := by simp
+  rw [hlen]
+  refine (Nat.mul_le_mul_left _ (card_le_card fun x hx => ?_)).trans
+    (BitString.two_pow_mul_card_filter_card_filter_block_le hR
+      (fun s => V (a, List.ofFn s) = b) h)
+  rw [mem_filter, repeatMajority_ofFn] at hx
+  cases b
+  · rw [Bool.not_false, decide_eq_true_iff] at hx
+    have hsum := card_filter_add_card_filter_not (s := (univ : Finset (Fin (2 *
+      (6 * q).eval (enc a).length))))
+      fun i => V (a, List.ofFn (BitString.block x i)) = true
+    simp only [Bool.not_eq_true, card_univ, Fintype.card_fin] at hsum
+    refine mem_filter.2 ⟨mem_univ _, ?_⟩
+    omega
+  · rw [Bool.not_true, decide_eq_false_iff_not, not_lt] at hx
+    exact mem_filter.2 ⟨mem_univ _, hx.2⟩
+
+/-- Error at most `2 ^ (-q(n)) ≤ 1 / 4` on an instance is bounded error on that instance. -/
+theorem ErrorExponentAt.boundedErrorAt {enc : α ↪ List Bool} {q p : Polynomial ℕ}
+    {V : α × List Bool → Bool} {a : α} {b : Bool} (h : ErrorExponentAt enc q p V a b)
+    (hq : 2 ≤ q.eval (enc a).length) : BoundedErrorAt enc p V a b := by
+  refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le
+    (fun r => V (a, List.ofFn r) = b) ?_
+  have hnot : (univ.filter fun r : BitString (p.eval (enc a).length) => ¬V (a, List.ofFn r) = b) =
+      univ.filter fun r : BitString (p.eval (enc a).length) => V (a, List.ofFn r) = !b :=
+    filter_congr fun _ _ => by cases b <;> simp
+  rw [hnot]
+  exact (Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) hq)).trans h
+
 namespace PromiseProblem
 
 /-- `V` solves the promise problem `Q` with error at most `2 ^ (-q(n))`, using random strings whose
@@ -78,12 +147,8 @@ rejected random strings, and for every no-instance the accepted ones, make up at
 `2 ^ (-q(n))` fraction. Nothing is required on instances outside the promise. -/
 def SolvesWithErrorExponent (enc : α ↪ List Bool) (q p : Polynomial ℕ)
     (V : α × List Bool → Bool) (Q : PromiseProblem α) : Prop :=
-  ∀ a, (a ∈ Q.yes → 2 ^ q.eval (enc a).length *
-      (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn r) = false).card ≤ 2 ^ p.eval (enc a).length) ∧
-    (a ∈ Q.no → 2 ^ q.eval (enc a).length *
-      (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn r) = true).card ≤ 2 ^ p.eval (enc a).length)
+  ∀ a, (a ∈ Q.yes → ErrorExponentAt enc q p V a true) ∧
+    (a ∈ Q.no → ErrorExponentAt enc q p V a false)
 
 variable {enc : α ↪ List Bool} {Q : PromiseProblem α}
 
@@ -93,50 +158,15 @@ promise problems. The strict majority of `12 q(n)` runs of a bounded-error solve
 blocks of random bits, errs on at most a `2 ^ (-q(n))` fraction of the random strings. -/
 theorem SolvesWithBoundedError.repeatMajority {p : Polynomial ℕ} {V : α × List Bool → Bool}
     (h : Q.SolvesWithBoundedError enc p V) (q : Polynomial ℕ) :
-    Q.SolvesWithErrorExponent enc q (12 * q * p) (Complexity.repeatMajority enc (6 * q) p V) := by
-  intro a
-  have hlen : (12 * q * p).eval (enc a).length =
-      2 * (6 * q).eval (enc a).length * p.eval (enc a).length := by
-    simp only [Polynomial.eval_mul, Polynomial.eval_ofNat]
-    ring
-  have hR : (6 * q).eval (enc a).length = 6 * q.eval (enc a).length := by simp
-  rw [hlen]
-  constructor
-  · -- on a yes-instance, the majority rejects only when at most `R` runs accept
-    intro ha
-    refine (Nat.mul_le_mul_left _ (card_le_card fun x hx => ?_)).trans
-      (BitString.two_pow_mul_card_filter_card_filter_block_le hR
-        (fun s => V (a, List.ofFn s) = true) ((h a).1 ha))
-    rw [mem_filter, repeatMajority_ofFn, decide_eq_false_iff_not, not_lt] at hx
-    exact mem_filter.2 ⟨mem_univ _, hx.2⟩
-  · -- on a no-instance, the majority accepts only when at most `R` runs reject
-    intro ha
-    refine (Nat.mul_le_mul_left _ (card_le_card fun x hx => ?_)).trans
-      (BitString.two_pow_mul_card_filter_card_filter_block_le hR
-        (fun s => V (a, List.ofFn s) = false) ((h a).2 ha))
-    rw [mem_filter, repeatMajority_ofFn, decide_eq_true_iff] at hx
-    have hsum := card_filter_add_card_filter_not (s := (univ : Finset (Fin (2 *
-      (6 * q).eval (enc a).length))))
-      fun i => V (a, List.ofFn (BitString.block x i)) = true
-    simp only [Bool.not_eq_true, card_univ, Fintype.card_fin] at hsum
-    refine mem_filter.2 ⟨mem_univ _, ?_⟩
-    omega
+    Q.SolvesWithErrorExponent enc q (12 * q * p) (Complexity.repeatMajority enc (6 * q) p V) :=
+  fun a => ⟨fun ha => ((h a).1 ha).repeatMajority q, fun ha => ((h a).2 ha).repeatMajority q⟩
 
 /-- Error at most `2 ^ (-q(n)) ≤ 1 / 4` is bounded error. -/
 theorem SolvesWithErrorExponent.solvesWithBoundedError {q p : Polynomial ℕ}
     {V : α × List Bool → Bool} (h : Q.SolvesWithErrorExponent enc q p V)
-    (hq : ∀ n, 2 ≤ q.eval n) : Q.SolvesWithBoundedError enc p V := fun a => by
-  have hsum := acceptCount_add_card_filter_eq_false (V := V) (a := a) (n := p.eval (enc a).length)
-  have h4 : 2 ^ 2 ≤ 2 ^ q.eval (enc a).length := Nat.pow_le_pow_right (by norm_num) (hq _)
-  rw [← acceptCount]
-  constructor
-  · intro ha
-    have := (Nat.mul_le_mul_right _ h4).trans ((h a).1 ha)
-    omega
-  · intro ha
-    have := (Nat.mul_le_mul_right _ h4).trans ((h a).2 ha)
-    rw [← acceptCount] at this
-    omega
+    (hq : ∀ n, 2 ≤ q.eval n) : Q.SolvesWithBoundedError enc p V :=
+  fun a => ⟨fun ha => ((h a).1 ha).boundedErrorAt (hq _),
+    fun ha => ((h a).2 ha).boundedErrorAt (hq _)⟩
 
 end PromiseProblem
 
@@ -182,26 +212,27 @@ theorem inter_mem_BPP {A B : Set α} (hA : A ∈ BPP enc) (hB : B ∈ BPP enc) :
   obtain ⟨p₂, V₂, hV₂, h₂⟩ := mem_BPP_iff_forall_decidesWithErrorExponent.1 hB 3
   refine mem_BPP.2 ⟨p₁ + p₂, andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂,
     by fun_prop, fun a => ?_⟩
-  have hs₁ := acceptCount_add_card_filter_eq_false (V := V₁) (a := a)
-    (n := p₁.eval (enc a).length)
-  have hs₂ := acceptCount_add_card_filter_eq_false (V := V₂) (a := a)
-    (n := p₂.eval (enc a).length)
+  have hs₁ := acceptCount_add_card_filter_eq_false (V := V₁) (a := a) (n := p₁.eval (enc a).length)
+  have hs₂ := acceptCount_add_card_filter_eq_false (V := V₂) (a := a) (n := p₂.eval (enc a).length)
   have hs := acceptCount_add_card_filter_eq_false
     (V := andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂) (a := a)
     (n := (p₁ + p₂).eval (enc a).length)
   have hc : acceptCount (andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂) a
       ((p₁ + p₂).eval (enc a).length) =
-      acceptCount V₁ a (p₁.eval (enc a).length) * acceptCount V₂ a (p₂.eval (enc a).length) := by
-    rw [Polynomial.eval_add, acceptCount_andVerifier]
+      acceptCount V₁ a (p₁.eval (enc a).length) *
+        acceptCount V₂ a (p₂.eval (enc a).length) := by
+    rw [Polynomial.eval_add]
+    exact acceptCount_andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂ a (p₂.eval (enc a).length)
   constructor
   · intro ha
     have e₁ := (h₁ a).1 ha.1
     have e₂ := (h₂ a).1 ha.2
-    simp only [Polynomial.eval_ofNat] at e₁ e₂
-    have f₁ : 7 * 2 ^ p₁.eval (enc a).length ≤ 8 * acceptCount V₁ a (p₁.eval (enc a).length) := by
-      omega
-    have f₂ : 7 * 2 ^ p₂.eval (enc a).length ≤ 8 * acceptCount V₂ a (p₂.eval (enc a).length) := by
-      omega
+    simp only [ErrorExponentAt, Bool.not_true, Polynomial.eval_ofNat] at e₁ e₂
+    have f₁ : 7 * 2 ^ p₁.eval (enc a).length ≤
+        8 * acceptCount V₁ a (p₁.eval (enc a).length) := by omega
+    have f₂ : 7 * 2 ^ p₂.eval (enc a).length ≤
+        8 * acceptCount V₂ a (p₂.eval (enc a).length) := by omega
+    unfold BoundedErrorAt
     rw [← acceptCount, hc, Polynomial.eval_add, pow_add]
     nlinarith [Nat.mul_le_mul f₁ f₂]
   · intro ha
@@ -211,15 +242,18 @@ theorem inter_mem_BPP {A B : Set α} (hA : A ∈ BPP enc) (hB : B ∈ BPP enc) :
       by_cases ha₁ : a ∈ A
       · have ha₂ : a ∉ B := fun hb => ha ⟨ha₁, hb⟩
         have e₂ := (h₂ a).2 ha₂
-        simp only [Polynomial.eval_ofNat] at e₂
+        simp only [ErrorExponentAt, Bool.not_false, Polynomial.eval_ofNat] at e₂
         rw [← acceptCount] at e₂
-        have hb₁ := acceptCount_le_two_pow (V := V₁) (a := a) (n := p₁.eval (enc a).length)
+        have hb₁ : acceptCount V₁ a (p₁.eval (enc a).length) ≤
+            2 ^ p₁.eval (enc a).length := by omega
         nlinarith [Nat.mul_le_mul hb₁ e₂]
       · have e₁ := (h₁ a).2 ha₁
-        simp only [Polynomial.eval_ofNat] at e₁
+        simp only [ErrorExponentAt, Bool.not_false, Polynomial.eval_ofNat] at e₁
         rw [← acceptCount] at e₁
-        have hb₂ := acceptCount_le_two_pow (V := V₂) (a := a) (n := p₂.eval (enc a).length)
+        have hb₂ : acceptCount V₂ a (p₂.eval (enc a).length) ≤
+            2 ^ p₂.eval (enc a).length := by omega
         nlinarith [Nat.mul_le_mul e₁ hb₂]
+    unfold BoundedErrorAt
     omega
 
 /-- `BPP` as a Boolean subalgebra of `Set α`. -/

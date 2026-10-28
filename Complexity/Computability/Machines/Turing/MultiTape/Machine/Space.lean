@@ -62,32 +62,11 @@ variable {k : ℕ} {State Symbol : Type*} {input : List Symbol} {ntm : MultiTape
 
 namespace RunPath
 
-/-- A position is visited exactly when a configuration of the path has the head there. -/
-theorem mem_visitedByTapeHead_iff {p : ntm.RunPath input} {i : Fin k} {z : ℤ} :
-    z ∈ visitedByTapeHead p i ↔ ∃ c ∈ p, c.workTapePos i = z := by
-  simp only [visitedByTapeHead, Finset.mem_image, Finset.mem_univ, true_and, RelSeries.mem_def,
-    Set.mem_range]
-  exact ⟨fun ⟨j, hj⟩ => ⟨_, ⟨j, rfl⟩, hj⟩, fun ⟨_, ⟨j, hj⟩, hz⟩ => ⟨j, hj ▸ hz⟩⟩
-
-/-- The positions visited by a head after one more step. -/
-theorem visitedByTapeHead_snoc (p : ntm.RunPath input) (c : Cfg k Symbol State input)
-    (h : (p.last, c) ∈ ntm.stepRel input) (i : Fin k) :
-    visitedByTapeHead (p.snoc c h) i = insert (c.workTapePos i) (visitedByTapeHead p i) := by
-  ext z
-  simp only [mem_visitedByTapeHead_iff, RelSeries.mem_snoc, Finset.mem_insert]
-  constructor
-  · rintro ⟨c', hc' | rfl, rfl⟩
-    · exact .inr ⟨c', hc', rfl⟩
-    · exact .inl rfl
-  · rintro (rfl | ⟨c', hc', rfl⟩)
-    · exact ⟨c, .inr rfl, rfl⟩
-    · exact ⟨c', .inl hc', rfl⟩
-
 /-- A single configuration visits its head position only. -/
 theorem visitedByTapeHead_singleton (c : Cfg k Symbol State input) (i : Fin k) :
     visitedByTapeHead (RelSeries.singleton (ntm.stepRel input) c) i = {c.workTapePos i} := by
   ext z
-  simp only [mem_visitedByTapeHead_iff, Finset.mem_singleton, RelSeries.mem_def,
+  simp only [mem_visitedByTapeHead, Finset.mem_singleton, RelSeries.mem_def,
     Set.mem_range]
   constructor
   · rintro ⟨_, ⟨j, rfl⟩, rfl⟩
@@ -124,7 +103,7 @@ theorem visitedInterval (p : ntm.RunPath input) (hblank : ∀ i z, p.head.workTa
     obtain ⟨h₀, hconv, hwritten⟩ := ih (by simpa using hblank) (by simpa using hpos)
     have hsnoc := visitedByTapeHead_snoc p c hc i
     have hlast : p.last.workTapePos i ∈ visitedByTapeHead p i :=
-      mem_visitedByTapeHead_iff.mpr ⟨p.last, p.last_mem, rfl⟩
+      (mem_visitedByTapeHead _).mpr ⟨p.last, p.last_mem, rfl⟩
     -- the new head is next to the old one, and only the old head's cell is written
     have hmove : |c.workTapePos i - p.last.workTapePos i| ≤ 1 ∧
         ∀ z, c.workTapes i z ≠ none → p.last.workTapes i z ≠ none ∨
@@ -185,7 +164,7 @@ theorem natAbs_lt_spaceUsedByTape (p : ntm.RunPath input)
     (p.last.workTapePos i).natAbs < p.spaceUsedByTape i ∧
       ∀ z, p.last.workTapes i z ≠ none → z.natAbs < p.spaceUsedByTape i := by
   have h := p.visitedInterval hblank hpos i
-  exact ⟨h.natAbs_lt (mem_visitedByTapeHead_iff.mpr ⟨p.last, p.last_mem, rfl⟩),
+  exact ⟨h.natAbs_lt ((mem_visitedByTapeHead _).mpr ⟨p.last, p.last_mem, rfl⟩),
     fun z hz => h.natAbs_lt (h.written z hz)⟩
 
 end RunPath

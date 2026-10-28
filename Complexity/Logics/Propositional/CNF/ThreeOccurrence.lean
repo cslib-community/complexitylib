@@ -25,7 +25,9 @@ Literal occurrences include repetitions within one clause. This is the construct
 is formalized here; the additional bound of two occurrences per signed literal is not claimed.
 
 Adapted from `lean-trominoes` at `6d5b36c15cec6cb18d30137b7f1c7fb92ea24332`,
-`LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThree{,Correctness,ExactSize}.lean`.
+[PeriodicThreeSATThree.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThree.lean),
+[PeriodicThreeSATThreeCorrectness.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThreeCorrectness.lean), and
+[PeriodicThreeSATThreeExactSize.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThreeExactSize.lean).
 This construction uses ordinary CNF formulas and Boolean assignments.
 
 The model-count preservation proof is original here, an elementary consequence of `copies_agree`.

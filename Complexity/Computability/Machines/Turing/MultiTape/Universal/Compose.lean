@@ -6,8 +6,8 @@ Authors: Christian Reitwiessner
 
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
--- vendored: `spaceUsed` is `space` since cslib #1133; `try` steps that the
--- unused-tactic linter flags are dropped
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122; `try` steps
+-- that the unused-tactic linter flags are dropped
 
 public import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace
@@ -64,7 +64,8 @@ public lemma haltsAt_pos {input : List Symbol} {h : ℕ} (hh : tm.HaltsAt (tm.in
 
 /-- A space bound bounds the space of every run. -/
 public lemma RunsInSpace.space_le {input : List Symbol} {s : ℕ}
-    (h : tm.RunsInSpace input s) (t : ℕ) : tm.space (tm.initCfg input) t ≤ s := by
+    (h : tm.RunsInSpace input s) (t : ℕ) :
+    (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) t).space ≤ s := by
   let p : tm.ComputationPath input :=
     { toRunPath :=
         { length := t

@@ -27,8 +27,6 @@ time-bounded Kolmogorov complexity `Cslib.Kolmogorov.levinKt` (`Kt`).
 
 ## Modeling conventions
 
-Following the design recorded in [#798](https://github.com/cslib-community/complexitylib/issues/798):
-
 * **Clock counts steps of the described machine:**
   A binary program `p : List Bool` is parsed into a multi-tape Turing machine description
   `decodeDesc (unframe p)` (`Turing.MultiTapeTM.Universal.decodeDesc`) and an input bit string

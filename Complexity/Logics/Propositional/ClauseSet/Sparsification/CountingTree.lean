@@ -18,7 +18,8 @@ import Mathlib.Algebra.Group.Action.Defs
 /-!
 # Recursive counting-sparsification tree
 
-The decision sparsification tree (`BranchingRule` in `Sparsification/Tree.lean`) fixes its step to
+The decision sparsification tree (`BranchingRule` in
+`Complexity/Logics/Propositional/ClauseSet/Sparsification/Tree.lean`) fixes its step to
 `child`, whose branches cover the parent's satisfying assignments but may overlap. For exact model
 counting (`Counting.lean`), `countingChild` refines the petal branch (`true`) by adjoining the unit
 clauses `negatedHeartUnits H` requiring every literal of `H` to be false, matching equation (A.2)
@@ -620,17 +621,6 @@ theorem sum_modelCountOn_countingLeaves (θ : ℕ → ℕ) (ψ : ClauseSet V) (d
       simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, Nat.add_zero]
 
 /-! ### Bridges to `CNF` formulas and `CNF.modelCountOn` -/
-
-/-- Round-tripping `φ : CNF V` through `toClauseSet` and `toCNF` preserves `modelCountOn` on any
-declared variable set. -/
-@[simp]
-theorem modelCountOn_toCNF_toClauseSet (φ : CNF V) (declared : Finset V) :
-    φ.toClauseSet.toCNF.modelCountOn declared = φ.modelCountOn declared := by
-  unfold CNF.modelCountOn
-  congr 1
-  ext σ
-  simp only [mem_filter, mem_univ, true_and, ClauseSet.eval_toCNF_eq_true_iff,
-    CNF.sat_toClauseSet_iff]
 
 /-- Clause-set reduction `reduce` preserves `modelCountOn` on any declared variable set. -/
 @[simp]

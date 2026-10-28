@@ -77,9 +77,9 @@ Priorities live in this list and in the tiers of [#897].
 
 ### Modern fully homomorphic encryption
 
-Gentry's bootstrapping is instantiated with GSW ([#486]; formal abstract `gsw-fhe`). Its
-follow-ups ([#1104]) are a uniform generator for the leveled scheme's wrapper decryption circuits
-(uniform compactness), multi-hop evaluation, and Gentry's exact concrete-security loss together
+Gentry's bootstrapping is instantiated with GSW ([#486]; formal abstract `gsw-fhe`), including
+uniform compactness for the leveled wrapper decryption circuits and level-indexed multi-hop
+evaluation. Its remaining follow-up ([#1104]) is Gentry's exact concrete-security loss together
 with the `poly(ℓ, d)` running-time clause of his Theorem 4. Then develop these in reviewable
 milestones, reusing the finite sampling, gadget algebra, native certificates and game reductions
 where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
@@ -120,8 +120,10 @@ families and full-input native runtime.
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers; eavesdropping security in the strict-PPT model, with the
   statistical-distance term from sampling `ZMod q`.
-- **Diffie–Hellman and ElGamal:** Hashed ElGamal with a general semantically secure symmetric
-  cipher `E_s` (Boneh–Shoup Theorem 11.5) ([#1047]).
+- **Diffie–Hellman and ElGamal:** arbitrary-key-length standalone symmetric-cipher bridge for
+  general-cipher Hashed ElGamal (Boneh–Shoup Theorem 11.5; the general-cipher construction,
+  Game 0/1/2 hybrids, Equation `(11.14)` reductions, and normalized `n`-bit-key `DEMOneTimeINDCPAOn`
+  / `linearHashKDF` endpoints have landed) ([#1047]).
 - **Chosen-ciphertext security** ([#1000]): authenticated encryption by encrypt-then-MAC and
   Cramer–Shoup from DDH, with KEM–DEM hybrid encryption ([#881]) as the chosen-plaintext
   starting point (Boneh–Shoup Exercise 11.9).
@@ -129,11 +131,6 @@ families and full-input native runtime.
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation; SIS for
   general moduli; module SIS and module LWE toward Dilithium-style schemes, as theory.
-- **Symmetric:** Carter–Wegman word-level `IsOraclePPT` PRF reduction wrappers, `MACScheme`
-  packaging for randomized Carter–Wegman, and a computational nonce-MAC interface ([#736]); the
-  Naor–Reingold PRF from DDH (efficient lazy-sampling
-  reduction and `PseudorandomFunction` bridge; algebraic/tree evaluation and distributional
-  prefix-hybrid bound landed) ([#1093]).
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -390,7 +387,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
-- **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations; size-based width
+- **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
+  transfer of Anthropic's modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394])
+  has the Convolution-3SUM/Exact Triangle correctness reduction, a native one-weight kernel and
+  elementary distinct-position preprocessing interfaces, but still needs charged matrix-building
+  loops, core Chan–He recursion and native preprocessing, the fast Exact Triangle solver
+  and full time/width composition; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
@@ -438,11 +440,14 @@ still to read them for the mathematics and write proofs against Complexitylib's 
 adapted code keeps its Apache 2.0 attribution. The rewrites state no license and are only read
 and credited.
 
-- **Native sparse-formula counting** ([#1226](https://github.com/cslib-community/complexitylib/issues/1226)):
-  `CNF.GreedyContext` certifies the existing greedy parity search uniformly from a supplied counter
-  on encoded `(context, rows)`, retaining and charging the context through both loops. Theorem 2.2
-  counting and Tanner initialization remain separate prerequisites; the complete native counting
-  endpoint is still open. This conditional interface does not establish their algorithms or rates.
+- **Native declared-variable counting** ([#1226](https://github.com/cslib-community/complexitylib/issues/1226)):
+  `CountingNativeEndpoint.exists_declaredCounter` supplies one native counter for each fixed width,
+  exact on every valid declared-size/CNF input and zero otherwise. It has
+  `2^{O_k(interpolationScale N)} * (L + 1)^{O_k(1)}` time and independent polynomial workspace in the
+  original external encoded length `L`, with no supplier premises. The module derives
+  subexponential-time `k`-SAT, zero SAT exponents, `¬ETH`, and `¬SETH`. This is the Sections 3–6 and
+  Appendices A–B interpolation-scale bound, not the sharper Appendix D runtime. Integration,
+  validation, and the curated formal abstract are tracked in #1226.
 
 ## Documentation and repository
 
@@ -482,7 +487,6 @@ not planned, not as proved.
 [#640]: https://github.com/cslib-community/complexitylib/issues/640
 [#643]: https://github.com/cslib-community/complexitylib/issues/643
 [#645]: https://github.com/cslib-community/complexitylib/issues/645
-[#736]: https://github.com/cslib-community/complexitylib/issues/736
 [#798]: https://github.com/cslib-community/complexitylib/issues/798
 [#862]: https://github.com/cslib-community/complexitylib/issues/862
 [#881]: https://github.com/cslib-community/complexitylib/issues/881
@@ -506,7 +510,7 @@ not planned, not as proved.
 [#1002]: https://github.com/cslib-community/complexitylib/issues/1002
 [#1047]: https://github.com/cslib-community/complexitylib/issues/1047
 [#1079]: https://github.com/cslib-community/complexitylib/issues/1079
-[#1093]: https://github.com/cslib-community/complexitylib/issues/1093
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
+[#1394]: https://github.com/cslib-community/complexitylib/issues/1394

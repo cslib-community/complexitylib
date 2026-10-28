@@ -360,7 +360,9 @@ theorem computesInTimeAndSpace_ofSingleTapeTM (tm : SingleTapeTM Symbol)
   rcases runFrom_ofSingleTapeTM_of_outputsWithinTime tm h with ⟨hhalt, hout⟩
   have h1 : (ofSingleTapeTM tm).ComputesInTimeAndSpace x y T (1 * T + 1) :=
     ⟨⟨T, hhalt, hout⟩, runsInTime_of_halted hhalt,
-      runsInSpace_of_halted hhalt ((ofSingleTapeTM tm).space_linear _ T)⟩
+      runsInSpace_of_halted hhalt
+        ((MultiTapeNTM.RunPath.space_le_mul_time_add_one (.ofDeterministic _ _ T)).trans_eq
+          (Nat.mul_add_one _ _))⟩
   exact ⟨h1.1, h1.2.1, h1.2.2.mono (by omega)⟩
 
 /-- Input-only time bound for `ofSingleTapeTM tm`: since `y.length ≤ max 1 x.length + t`,

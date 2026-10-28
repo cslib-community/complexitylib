@@ -21,11 +21,11 @@ open Cslib.Complexity Turing.MultiTapeTM
 /-! ### Polynomial-time reductions -/
 
 example : PolyTimeReducible (encPair encGraph (encPair encNat encNat))
-    (encPair encGraph (encPair encNat encNat)) DirHamPath HamPath :=
-  polyTimeReducible_DirHamPath_HamPath
+    (encPair encGraph (encPair encNat encNat)) DirHamPathᶜ HamPathᶜ :=
+  polyTimeReducible_DirHamPath_HamPath.compl
 
-example : PolyTimeReducible encGraph encGraph DirHamCycle HamCycle :=
-  polyTimeReducible_DirHamCycle_HamCycle
+example : PolyTimeReducible encGraph encGraph DirHamCycleᶜ HamCycleᶜ :=
+  polyTimeReducible_DirHamCycle_HamCycle.compl
 
 example : ComputableInPolyTime Graph.split encGraph encGraph := by fun_prop
 

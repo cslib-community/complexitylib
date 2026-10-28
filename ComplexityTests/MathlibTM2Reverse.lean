@@ -84,7 +84,7 @@ private theorem workRoundtrip_computes (input : List Bool) :
 private theorem workRoundtrip_runsInSpace (input : List Bool) :
     workRoundtrip.RunsInSpace input 3 :=
   workRoundtrip.runsInSpace_of_halted (workRoundtrip_halted input)
-    (by simpa using workRoundtrip.space_linear (workRoundtrip.initCfg input) 2)
+    (MultiTapeNTM.RunPath.space_le_mul_time_add_one _)
 
 private theorem workRoundtrip_computable :
     ComputableInTimeAndSpace (fun _ : List Bool => true) encBits encBool
@@ -123,14 +123,14 @@ example : ∃ h : TM2Computable encBits encBits List.reverse,
       ∃ space : List Bool → ℕ, PolyBounded List.length space ∧ h.StacksBounded space :=
   computableInPolySpace_iff_tm2.mp (.of_polyTime .bitsReverse)
 
-example : ∃ (f : List Bool → Bool) (h : TM2Computable (encList (encFinite Bool)) encBool f),
+example : ∃ (f : List Bool → Bool) (h : TM2Computable (encList (encFinEnum Bool)) encBool f),
     (∀ stack, Finite (h.tm.Γ stack)) ∧
       (∃ space : List Bool → ℕ,
-        PolyBounded (fun xs => (encList (encFinite Bool) xs).length) space ∧
+        PolyBounded (fun xs => (encList (encFinEnum Bool) xs).length) space ∧
           h.StacksBounded space) ∧
       (∀ xs, xs ∈ {xs : List Bool | xs.isEmpty = true} ↔ f xs = true) :=
   Cslib.Complexity.mem_PSPACE_iff_tm2.mp
     (Cslib.Complexity.mem_PSPACE_of_computableInPolySpace
-      (.of_tidy (.of_polyTime (.listIsEmpty' (encFinite Bool)))) (fun _ => Iff.rfl))
+      (.of_tidy (.of_polyTime (.listIsEmpty' (encFinEnum Bool)))) (fun _ => Iff.rfl))
 
 end ComplexityTests.MathlibTM2Reverse

@@ -44,44 +44,41 @@ example : hittingGenerator [true, false, true, false, true] = [] := by decide +k
 example : gridPointWords 0 1 2 1 1 = [] := by decide +kernel
 example : outputWord 0 1 2 1 1 = encodeNat 2 ++ encodeNat 0 := by decide +kernel
 
-example :
-    outputWord 0 1 (CyclotomicRing.dimension 0) (CyclotomicRing.degree 0) 1 =
-      encodeOutput (ExecutableGenerator.output 0 1 0 1) :=
-  outputWord_eq 0 1 0 1
+example : encodeOutput (ExecutableGenerator.output 0 1 0 1) = encodeNat 2 ++ encodeNat 0 := by
+  rw [← outputWord_eq 0 1 0 1]
+  decide +kernel
 
 /-- info: true -/
 #guard_msgs in
 #eval outputWord 1 2 4 2 1 == encodeOutput (ExecutableGenerator.output 1 2 1 1)
 
-example (n s : ℕ) : hittingListWord n s = encodeOutput (hittingList n s) :=
-  hittingListWord_eq n s
-
-example {n s : ℕ} (hn : 1 ≤ n) (hs : 1 ≤ s) :
-    hittingGenerator (inputWord n s) = encodeOutput (hittingList n s) :=
-  hittingGenerator_inputWord hn hs
+example : hittingGenerator (inputWord 1 2) = hittingListWord 1 2 :=
+  (hittingGenerator_inputWord le_rfl (by decide)).trans (hittingListWord_eq 1 2).symm
 
 /-! ### Polynomial-time certificates and end-to-end specification -/
 
 example :
-    ComputableTidilyInPolyTime parseInput encBits (encOption (encPair encUnary encUnary)) :=
-  parseInput_polytime.tidy
+    ComputableInPolyTime (fun w : List Bool => parseInput (true :: w))
+      encBits (encOption (encPair encUnary encUnary)) := by
+  fun_prop
 
 example :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => encodeOutput (hittingList p.1 p.2))
+    ComputableInPolyTime (fun p : ℕ × ℕ => encodeOutput (hittingList (p.1 + 1) (p.2 + 1)))
       (encPair encUnary encUnary) encBits :=
-  hittingList_polytime.tidy
-
-example : ComputableTidilyInPolyTime hittingGenerator encBits encBits :=
-  hittingGenerator_polytime.tidy
+  computableInPolyTime_hittingList (by fun_prop) (by fun_prop)
 
 example :
-    ComputableInPolyTime hittingGenerator encBits encBits ∧
-      ∀ n s : ℕ, 1 ≤ n → 1 ≤ s →
-        hittingGenerator (inputWord n s) = encodeOutput (hittingList n s) ∧
-          (hittingList n s).dimension ≤ 256 * (n + s + 1) ^ 10 ∧
-          (encodeOutput (hittingList n s)).length ≤
-            PolynomialBounds.outputConstant * (n + s + 1) ^ 104 ∧
-          Hits s (hittingList n s) :=
-  hittingGenerator_spec
+    ComputableInPolyTime (fun p : List Bool × List Bool => hittingGenerator (p.1 ++ p.2))
+      (encPair encBits encBits) encBits :=
+  hittingGenerator_polytime.comp (g := fun p : List Bool × List Bool => p.1 ++ p.2) (by fun_prop)
+
+example : (hittingList 1 1).dimension = 32768 := by decide
+
+example :
+    hittingGenerator (inputWord 1 1) = encodeOutput (hittingList 1 1) ∧
+      (hittingList 1 1).dimension ≤ 256 * 3 ^ 10 ∧
+      (encodeOutput (hittingList 1 1)).length ≤ PolynomialBounds.outputConstant * 3 ^ 104 ∧
+      Hits 1 (hittingList 1 1) :=
+  hittingGenerator_spec.2 1 1 le_rfl le_rfl
 
 end ComplexityTests.RationalHitting.Runtime

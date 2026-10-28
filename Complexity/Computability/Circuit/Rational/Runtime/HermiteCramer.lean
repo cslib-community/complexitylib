@@ -31,7 +31,8 @@ Following Appendix B.3, equation (B.1), of [OpenAI2026ETH], `hermiteRows nodes J
 `N × N` integer confluent Vandermonde matrix `V` (`Polynomial.hermiteMatrix`), `cramerColZeroRows`
 replaces column `0` with the flattened scaled jet vector `b = Ω y` to form `V_{(0)}`, and
 `hermiteRecoverZero` evaluates `N_H = detRows V_{(0)}` and `D_H = detRows V` via the division-free
-staged determinant of `Runtime/Determinant.lean` before performing the single total integer
+staged determinant of `Complexity/Computability/Circuit/Rational/Runtime/Determinant.lean`
+before performing the single total integer
 division `N_H / (Ω · D_H)` (`Int.ediv`, exact when `nodes.Nodup` and `Ω ≠ 0`, and returning `0`
 when `Ω = 0` or `D_H = 0`). `hermiteRecoverModPowTwo` composes this recovery with `Int.modPowTwo`
 to extract bounded counts modulo `2 ^ ℓ`.

@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 
 import Complexity.Computability.PCP.Encoded.AssignmentTester
+import Complexity.Computability.PCP.Encoded.AssignmentTester.Enumeration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import Complexity.Tactic.PolyTime
@@ -17,6 +18,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.P
 namespace ComplexityTests.PCPEncodedTester
 
 open Cslib.PCP Cslib.PCP.HadamardTester Turing.MultiTapeTM
+
+attribute [local instance] HadamardTester.instFinEnumBool Rand.finEnum
 
 private def same : Bool → Bool → Bool := fun a b => a == b
 
@@ -85,13 +88,13 @@ attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun p : (Bool → Bool → Bool) × Rand Bool × Query =>
       Encoded.HadamardTester.query p.1 p.2.1 p.2.2)
-    (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+    (encPair (encPi (encPi encBool)) (encPair (encFinEnum (Rand Bool)) (encFinEnum Query)))
     (encFinEnum (Pos Bool)) := by fun_prop
 
 example : ComputableTidilyInPolyTime
     (fun p : (Bool → Bool → Bool) × Rand Bool × (Query → Bool) =>
       Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
-    (encPair (encPi (encPi encBool)) (encPair (encFinite (Rand Bool)) (encPi encBool)))
+    (encPair (encPi (encPi encBool)) (encPair (encFinEnum (Rand Bool)) (encPi encBool)))
     encBool := by polytime
 
 attribute [local fun_prop] ComputableInPolySpace.tidy in
@@ -100,7 +103,7 @@ attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableTidilyInPolyTime
     (fun p : List Bool × Rand Bool × Query => Encoded.HadamardTester.query
       (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
-    (encPair encBits (encPair (encFinite (Rand Bool)) (encFinEnum Query)))
+    (encPair encBits (encPair (encFinEnum (Rand Bool)) (encFinEnum Query)))
     (encFinEnum (Pos Bool)) := by polytime
 
 end ComplexityTests.PCPEncodedTester

@@ -1,0 +1,34 @@
+name: Install Lean
+description: >-
+  Restore elan and the toolchain named in `lean-toolchain` from the Actions cache, or install them
+  with bounded retries and save them (#1426). Run it before `leanprover/lean-action`: that action
+  always reinstalls elan from GitHub, but then finds the toolchain installed and does not download
+  it from releases.lean-lang.org.
+runs:
+  using: composite
+  steps:
+    # The key changes only with `lean-toolchain`. The entry (about 600 MB) is saved right after the
+    # installation, before any Lake command runs: Lake keeps its artifact cache under the toolchain
+    # directory (`~/.elan/toolchains/<toolchain>/lake`), which must not enter this entry.
+    - name: Restore the Lean toolchain from the Actions cache
+      id: restore
+      uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+      with:
+        path: ~/.elan
+        key: elan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}
+    - name: Install elan and the Lean toolchain, retrying transient failures
+      if: steps.restore.outputs.cache-hit != 'true'
+      shell: bash
+      run: '"$GITHUB_ACTION_PATH/install.sh" lean-toolchain'
+    # Merge-group refs are discarded after the merge, so their copies would only take space from
+    # `main`'s entries. Pull requests restore `main`'s entry; one saves its own copy only when it
+    # changes the toolchain or before `main` has saved the current one.
+    - name: Save the Lean toolchain to the Actions cache
+      if: steps.restore.outputs.cache-hit != 'true' && github.event_name != 'merge_group'
+      uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      with:
+        path: ~/.elan
+        key: elan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}
+    - name: Put elan on the path
+      shell: bash
+      run: echo "$HOME/.elan/bin" >> "$GITHUB_PATH"

@@ -13,6 +13,7 @@ on:
       - "scripts/guide.sh"
       - "scripts/check_docs.py"
       - "lean-toolchain"
+      - ".github/actions/install-lean/**"
       - ".github/workflows/guide.yml"
   workflow_dispatch:
 
@@ -31,7 +32,9 @@ jobs:
         with:
           # scripts/cache/get.sh looks for the nearest ancestor whose outputs `main` CI uploaded.
           fetch-depth: 100
-      # Only installs Lean; the guide does not use the Actions cache, which Lean CI fills.
+      # Restores or installs the toolchain with retries (.github/actions/install-lean, #1426).
+      - uses: ./.github/actions/install-lean
+      # Only installs Lean; the guide does not use the `.lake` Actions cache, which Lean CI fills.
       - uses: leanprover/lean-action@v1
         with:
           auto-config: "false"

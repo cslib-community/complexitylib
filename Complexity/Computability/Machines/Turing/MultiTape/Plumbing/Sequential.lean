@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 -- `exists_runPath_seq_space_le` is from cslib PR #1111 @3441fa81.
+-- vendored: `space_seq_le` is stated with the space of run paths since cslib #1122
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.Sequential
 public import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
@@ -143,8 +144,9 @@ open Sequential in
 theorem space_seq_le {cfg mid : Cfg k Symbol State₀ input} {t₀ t₁ : ℕ}
     (h₀ : tm₀.runFrom cfg t₀ = mid) (hmid : mid.Halted)
     (h₁ : (tm₁.runFrom (mid.withState (some tm₁.q₀)) t₁).Halted) :
-    (tm₀.seq tm₁).space (leftCfg tm₁ cfg) (t₀ + t₁) ≤
-      tm₀.space cfg t₀ + tm₁.space (mid.withState (some tm₁.q₀)) t₁ := by
+    (MultiTapeNTM.RunPath.ofDeterministic (tm₀.seq tm₁) (leftCfg tm₁ cfg) (t₀ + t₁)).space ≤
+      (MultiTapeNTM.RunPath.ofDeterministic tm₀ cfg t₀).space +
+        (MultiTapeNTM.RunPath.ofDeterministic tm₁ (mid.withState (some tm₁.q₀)) t₁).space := by
   -- the first halting time of `tm₀`, which may be earlier than `t₀`
   obtain ⟨u, hu, hhaltsAt⟩ := exists_haltsAt (tm := tm₀) (cfg := cfg) (h₀ ▸ hmid)
   -- from step `u` on, `seq` mirrors `tm₁`, started on what `tm₀` left

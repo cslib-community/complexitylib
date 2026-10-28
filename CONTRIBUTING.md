@@ -137,7 +137,8 @@ observed concurrency and memory use. Keep mutable build outputs separate between
 (for example with `scripts/worktree.sh create <branch> [dir_name]`, which seeds `.lake/build` from
 the root checkout and, when `<branch>` exists only on `origin`, checks it out tracking
 `origin/<branch>`). Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
-forbidden proof tokens, `set_option` justifications and the key order of `references.bib`
+forbidden proof tokens, `set_option` justifications, the key order of `references.bib` and that
+every docstring citation key has an entry there
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name

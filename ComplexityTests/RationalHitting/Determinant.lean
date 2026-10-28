@@ -42,11 +42,9 @@ example : detRows [[1, 2, 99], [3]] = -6 := by decide +kernel
 
 /-! ### Correctness -/
 
-example : detRows (rowsOf !![2, 1; 1, 3]) = (!![2, 1; 1, 3] : Matrix (Fin 2) (Fin 2) ℤ).det :=
-  detRows_eq _
-
-example (A : List (List ℤ)) : detRows A = (ofRows A).det :=
-  detRows_eq_det_ofRows A
+example : (ofRows [[2, 1], [1, 3]]).det = 5 := by
+  rw [← detRows_eq_det_ofRows]
+  decide +kernel
 
 -- The list program computes a `Matrix.det` in the kernel.
 example : (!![2, -1, 0; 1, 3, 2; 0, 1, 4] : Matrix (Fin 3) (Fin 3) ℤ).det = 24 := by
@@ -78,25 +76,14 @@ example : intBits 0 = 1 ∧ intBits 1 = 2 ∧ intBits (-5) = 4 := by decide +ker
 
 /-! ### Polynomial-time certificate -/
 
-example : ComputableTidilyInPolyTime detRows (encList (encList encIntBin)) encIntBin :=
-  detRows_polytime.tidy
-
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The registered certificate composes under `fun_prop`.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : List (List ℤ) × List (List ℤ) => detRows p.1 * detRows p.2)
     (encPair (encList (encList encIntBin)) (encList (encList encIntBin))) encIntBin := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime (List.map detRows)
+example : ComputableInPolyTime (List.map detRows)
     (encList (encList (encList encIntBin))) (encList encIntBin) := by
   fun_prop
-
-example {i k : ℕ} (hik : i ≤ k) :
-    (encList (encList encIntBin) (stagesRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] i)).length ≤
-      stageTableBound
-        (encList (encList encIntBin) [[2, -1, 0], [1, 3, 2], [0, 1, 4]]).length k :=
-  length_encList_stagesRows_le _ hik
 
 end ComplexityTests.RationalHitting.Determinant

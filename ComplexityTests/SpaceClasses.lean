@@ -59,20 +59,30 @@ example : {w | oddOnes w = true} ∈ PSPACE encBits :=
 
 /-! ### Space-constructible bounds -/
 
-example : SpaceConstructible fun n => n := spaceConstructible_id
+example : ∃ T, ComputableInO (fun x : List Bool => x.length) encBits encNat T
+    fun x => x.length :=
+  spaceConstructible_id.computableInO
 
-example : SpaceConstructible fun n => n + 1 := spaceConstructible_succ
+example : ∃ T, ComputableInO (fun x : List Bool => x.length + 1) encBits encNat T
+    fun x => x.length + 1 :=
+  spaceConstructible_succ.computableInO
 
-example : SpaceConstructible fun n => (n + 1) ^ 3 := spaceConstructible_succ_pow 3
+example : ∃ T, ComputableInO (fun x : List Bool => (x.length + 1) ^ 3) encBits encNat T
+    fun x => (x.length + 1) ^ 3 :=
+  (spaceConstructible_succ_pow 3).computableInO
 
-example : SpaceConstructible fun _ => 5 := spaceConstructible_const 5
+example : ∃ T, ComputableInO (fun _ : List Bool => 5) encBits encNat T fun _ => 5 :=
+  (spaceConstructible_const 5).computableInO
 
-example : SpaceConstructible (2 ^ ·) := spaceConstructible_two_pow
+example : ∃ T, ComputableInO (fun x : List Bool => 2 ^ x.length) encBits encNat T
+    fun x => 2 ^ x.length :=
+  spaceConstructible_two_pow.computableInO
 
-/-- `L` and `PSPACE` through `DSPACE`, as in cslib pull request #767. -/
-example (A : Set (List Bool)) : A ∈ L encBits ↔ A ∈ DSPACE encBits Nat.log2 := mem_L_iff_mem_DSPACE
-
-example (A : Set (List Bool)) : A ∈ PSPACE encBits ↔ ∃ k, A ∈ DSPACE encBits (· ^ k) :=
-  mem_PSPACE_iff_exists_mem_DSPACE
+/-- `L` and `PSPACE` through `DSPACE`, instantiated on `Set.univ` and `oddOnes`. -/
+example : (Set.univ : Set (List Bool)) ∈ DSPACE encBits Nat.log2 ∧
+    ∃ k, {w | oddOnes w = true} ∈ DSPACE encBits (· ^ k) :=
+  ⟨mem_L_iff_mem_DSPACE.mp ⟨fun _ => true, .const true, fun _ => by simp⟩,
+   mem_PSPACE_iff_exists_mem_DSPACE.mp
+     (DSPACE_subset_PSPACE (by fun_prop) setOf_oddOnes_mem_DSPACE)⟩
 
 end ComplexityTests.SpaceClasses

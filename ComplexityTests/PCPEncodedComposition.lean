@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 
 import ComplexityTests.PCPNumbering
+import Complexity.Computability.PCP.Encoded.AssignmentTester.Enumeration
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import Complexity.Tactic.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
@@ -16,6 +17,8 @@ namespace ComplexityTests.PCPEncodedComposition
 
 open Cslib Cslib.PCP Cslib.PCP.HadamardTester Cslib.PCP.Encoded Turing.MultiTapeTM
 open ComplexityTests.PCPNumbering
+
+attribute [local instance] HadamardTester.instFinEnumBool Rand.finEnum
 
 -- The complete empty-alphabet gadget is small enough to evaluate: 8 coins, 17 queries.
 private def emptyAlphabet : Numbering (Fin 0) := ⟨0, Equiv.refl _⟩
@@ -96,7 +99,7 @@ example : ComputableTidilyInPolyTime
     (Graph.compose (numberSlots boolAlphabet).2 boolCoins queries)
     (Graph.encoding (encPi (encPi encBool)))
     (Graph.encoding (encPair (encPi (encPi encBool))
-      (encPair (encFinite (Rand Bool)) (encFinEnum Query)))) := by fun_prop
+      (encPair (encFinEnum (Rand Bool)) (encFinEnum Query)))) := by fun_prop
 
 attribute [local fun_prop] ComputableInPolySpace.tidy in
 attribute [local fun_prop] ComputableInPolyTime.tidy in

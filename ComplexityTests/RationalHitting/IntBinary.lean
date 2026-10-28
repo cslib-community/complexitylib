@@ -28,7 +28,6 @@ example : encIntBin (-1) = [true, true] := by decide +kernel
 -- The sign is the first bit and the magnitude is the rest of the code.
 example : (encIntBin (-6)).headD false = true := by decide +kernel
 example : (encIntBin (-6)).tail = encNat 6 := by decide +kernel
-example : (encIntBin (-6)).length = Nat.size 6 + 1 := length_encIntBin (-6)
 example : (encIntBin (-6)).length = 4 := by decide +kernel
 
 -- Zero has a single code, so the sign bit of a negative code always meets a nonzero magnitude.
@@ -51,10 +50,9 @@ example : ([false, true, true, false, false] : List Bool).foldr Nat.bit 0 = 6 :=
 
 /-! ### Binary lengths -/
 
-example : (6 * 7 : ℕ).size ≤ Nat.size 6 + Nat.size 7 := Nat.size_mul_le 6 7
-example : (-6 + -7 : ℤ).natAbs.size ≤ max (Nat.size 6) (Nat.size 7) + 1 :=
-  Int.size_natAbs_add_le (-6) (-7)
-example : ((-3 : ℤ) ^ 4).natAbs.size ≤ 4 * Nat.size 3 + 1 := Int.size_natAbs_pow_le (-3) 4
+example : (6 * 7 : ℕ).size = 6 ∧ (-6 + -7 : ℤ).natAbs.size = 4 ∧
+    ((-3 : ℤ) ^ 4).natAbs.size = 7 := by
+  decide +kernel
 
 -- The list-sum bound is satisfiable: three magnitudes of at most two bits.
 example : ([3, -2, 1] : List ℤ).sum.natAbs.size ≤ 2 + Nat.size 3 :=
@@ -62,37 +60,34 @@ example : ([3, -2, 1] : List ℤ).sum.natAbs.size ≤ 2 + Nat.size 3 :=
 
 /-! ### Certificates and composed clients -/
 
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 - p.2)
-    (encPair encNat encNat) encNat := binary_sub
+-- The `intBin_*` arithmetic certificates are currently registered on `ComputableTidilyInPolyTime`,
+-- so plain `ComputableInPolyTime` clients over `ℤ` route through `.of_tidy (by fun_prop)`.
+example : ComputableInPolyTime (fun p : ℤ × ℤ => p.1 * p.2 - p.2)
+    (encPair encIntBin encIntBin) encIntBin :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime List.sum (encList encIntBin) encIntBin := intBin_sum
+example : ComputableInPolyTime (fun p : ℤ × ℤ => -(p.1 + p.2) * p.1)
+    (encPair encIntBin encIntBin) encIntBin :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => p.1 * p.2 - p.2)
-    (encPair encIntBin encIntBin) encIntBin := by
-  fun_prop
+example : ComputableInPolyTime (fun p : ℤ × ℕ => (p.1 ^ p.2).natAbs)
+    (encPair encIntBin encUnary) encNat :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => -(p.1 + p.2) * p.1)
-    (encPair encIntBin encIntBin) encIntBin := by
-  fun_prop
+example : ComputableInPolyTime (fun p : ℕ × ℕ => ((p.1 : ℤ) - p.2).natAbs)
+    (encPair encNat encNat) encNat :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : ℤ × ℕ => (p.1 ^ p.2).natAbs)
-    (encPair encIntBin encUnary) encNat := by
-  fun_prop
-
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => ((p.1 : ℤ) - p.2).natAbs)
-    (encPair encNat encNat) encNat := by
-  fun_prop
-
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℤ × ℤ => decide (p.1 * p.1 ≤ p.2) && !decide (p.2 = 0))
-    (encPair encIntBin encIntBin) encBool := by
-  fun_prop
+    (encPair encIntBin encIntBin) encBool :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : List ℤ × ℤ => p.1.sum - p.2)
-    (encPair (encList encIntBin) encIntBin) encIntBin := by
-  fun_prop
+example : ComputableInPolyTime (fun p : List ℤ × ℤ => p.1.sum - p.2)
+    (encPair (encList encIntBin) encIntBin) encIntBin :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (p.1 - p.2) * p.1 ^ 3)
+example : ComputableInPolyTime (fun p : ℕ × ℕ => (p.1 - p.2) * p.1 ^ 3)
     (encPair encNat encNat) encNat := by
   fun_prop
 

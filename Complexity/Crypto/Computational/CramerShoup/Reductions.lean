@@ -28,7 +28,7 @@ data $\mathcal{D} = \mathrm{Unit}$) over a `PrimeOrderGroupFamily`, following th
 reduction structure of [Boneh and Shoup, Section 12.5.3, Theorem 12.9, printed
 pp. 488–493][BonehShoup2023]:
 
-1. **Approximate exponent sampling via `sampleModNat`**: `sampleCramerShoupExp`,
+1. **Approximate exponent sampling via `sampleModNat`**: `sampleExp`,
    `sampleCramerShoupPair`, `sampleCramerShoupTripleExponents`, and `sampleCramerShoupSK`, together
    with their `IsPPTOn` certificates and `Game.advantage` bounds (`1 / 2 ^ n` per exponent draw)
    relative to exact uniform sampling on `ZMod (F.order d)`.
@@ -140,22 +140,16 @@ private theorem computableTidilyInPolyTime_decodeCramerShoup
 
 /-! ### Approximate exponent sampling via `sampleModNat` -/
 
-/-- Sample one approximate exponent modulo `F.order d` using `n + |encNat (F.order d)|` random bits,
-so that its residue modulo `F.order d` is within statistical distance `1 / 2 ^ n` of uniform on
-`ZMod (F.order d)`. -/
-noncomputable def sampleCramerShoupExp (n : ℕ) (d : F.Desc) : ProbComp ℕ :=
-  ProbComp.sampleModNat (n + (encNat (F.order d)).length) (F.order d)
-
 /-- Sample a pair of approximate exponents modulo `F.order d`. -/
 noncomputable def sampleCramerShoupPair (n : ℕ) (d : F.Desc) : ProbComp (ℕ × ℕ) :=
-  F.sampleCramerShoupExp n d >>= fun s =>
-    F.sampleCramerShoupExp n d >>= fun t =>
+  F.sampleExp n d >>= fun s =>
+    F.sampleExp n d >>= fun t =>
       pure (s, t)
 
 /-- Sample a 3-tuple of approximate exponents `(a, b, c)` modulo `F.order d`. -/
 noncomputable def sampleCramerShoupTripleExponents (n : ℕ) (d : F.Desc) :
     ProbComp (ℕ × ℕ × ℕ) :=
-  F.sampleCramerShoupExp n d >>= fun a =>
+  F.sampleExp n d >>= fun a =>
     F.sampleCramerShoupPair n d >>= fun bc =>
       pure (a, bc)
 
@@ -168,31 +162,15 @@ noncomputable def sampleCramerShoupSK (n : ℕ) (d : F.Desc) :
       F.sampleCramerShoupPair n d >>= fun p₂ =>
         pure (p, (p₁, p₂))
 
-private theorem isPPTOn_sampleCramerShoupExp {γ : Type} {encIn : γ ↪ List Bool}
-    {n : γ → ℕ} {d : γ → F.Desc}
-    (hn : ComputableTidilyInPolyTime n encIn encUnary)
-    (hd : ComputableTidilyInPolyTime d encIn F.encDesc) :
-    IsPPTOn encIn encNat (fun a => F.sampleCramerShoupExp (n a) (d a)) := by
-  have hord : ComputableTidilyInPolyTime (fun a => F.order (d a)) encIn encNat :=
-    F.computableInPolyTime_order.tidy.comp hd
-  have hlen : ComputableTidilyInPolyTime
-      (fun a => (encNat (F.order (d a))).length) encIn encUnary :=
-    (ComputableTidilyInPolyTime.encoding_length encNat).comp hord
-  have hadd : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
-      (encPair encUnary encUnary) encUnary := by fun_prop
-  have hwidth : ComputableTidilyInPolyTime
-      (fun a => n a + (encNat (F.order (d a))).length) encIn encUnary :=
-    hadd.comp (hn.prod hlen)
-  exact isPPTOn_sampleModNat (.of_tidy hwidth) (.of_tidy hord)
-
 private theorem isPPTOn_sampleCramerShoupPair {γ : Type} {encIn : γ ↪ List Bool}
     {n : γ → ℕ} {d : γ → F.Desc}
     (hn : ComputableTidilyInPolyTime n encIn encUnary)
     (hd : ComputableTidilyInPolyTime d encIn F.encDesc) :
     IsPPTOn encIn (encPair encNat encNat) (fun a => F.sampleCramerShoupPair (n a) (d a)) := by
   unfold sampleCramerShoupPair
-  refine (F.isPPTOn_sampleCramerShoupExp hn hd).bind_with ?_
-  exact (F.isPPTOn_sampleCramerShoupExp (hn.comp (by fun_prop)) (hd.comp (by fun_prop))).bind_with
+  refine (F.isPPTOn_sampleExp (.of_tidy hn) (.of_tidy hd)).bind_with ?_
+  exact (F.isPPTOn_sampleExp (.of_tidy (hn.comp (by fun_prop)))
+    (.of_tidy (hd.comp (by fun_prop)))).bind_with
     (ComputableTidilyInPolyTime.isPPTOn (by fun_prop))
 
 private theorem isPPTOn_sampleCramerShoupTripleExponents {γ : Type} {encIn : γ ↪ List Bool}
@@ -202,7 +180,7 @@ private theorem isPPTOn_sampleCramerShoupTripleExponents {γ : Type} {encIn : γ
     IsPPTOn encIn (encPair encNat (encPair encNat encNat))
       (fun a => F.sampleCramerShoupTripleExponents (n a) (d a)) := by
   unfold sampleCramerShoupTripleExponents
-  refine (F.isPPTOn_sampleCramerShoupExp hn hd).bind_with ?_
+  refine (F.isPPTOn_sampleExp (.of_tidy hn) (.of_tidy hd)).bind_with ?_
   exact (F.isPPTOn_sampleCramerShoupPair (hn.comp (by fun_prop)) (hd.comp (by fun_prop))).bind_with
     (ComputableTidilyInPolyTime.isPPTOn (by fun_prop))
 
@@ -219,36 +197,6 @@ private theorem isPPTOn_sampleCramerShoupSK {γ : Type} {encIn : γ ↪ List Boo
     (hn.comp (by fun_prop)) (hd.comp (by fun_prop))).bind_with
     (ComputableTidilyInPolyTime.isPPTOn (by fun_prop))
 
-/-- Replacing one `sampleCramerShoupExp n d` draw by an exact uniform draw on `ZMod (F.order d)`
-changes `Game.advantage` by at most `1 / 2 ^ n`. -/
-theorem advantage_bind_sampleCramerShoupExp_le (n : ℕ) (d : F.Desc)
-    (k : ZMod (F.order d) → Game) :
-    Game.advantage
-      ((ProbComp.eval (F.sampleCramerShoupExp n d)).bind fun s => k (s : ZMod (F.order d)))
-      ((PMF.uniformOfFintype (ZMod (F.order d))).bind k) ≤
-      1 / 2 ^ n := by
-  open scoped Cslib.Probability.PMF in
-  have hmap :
-      ((ProbComp.eval (F.sampleCramerShoupExp n d)).bind fun s => k (s : ZMod (F.order d))) =
-        ((ProbComp.eval (F.sampleCramerShoupExp n d)).map
-          (Nat.cast : ℕ → ZMod (F.order d))).bind k :=
-    (PMF.bind_map _ _ _).symm
-  have hlt : F.order d < 2 ^ (encNat (F.order d)).length := by
-    simpa only [encNat_apply, ← Nat.size_eq_bits_len] using Nat.lt_size_self (F.order d)
-  have hord_le : (F.order d : ℝ) ≤ 2 ^ (encNat (F.order d)).length := by
-    exact_mod_cast hlt.le
-  rw [← NNReal.coe_le_coe, hmap, Game.advantage_eq_nndist, coe_nndist]
-  refine (PMF.dist_bind_le _ _ k).trans ?_
-  refine (ProbComp.dist_map_natCast_eval_sampleModNat_le
-    (n + (encNat (F.order d)).length) (F.order d)).trans ?_
-  rw [Nat.add_comm n, pow_add, ← div_div]
-  have hdiv : (F.order d : ℝ) / 2 ^ (encNat (F.order d)).length ≤ 1 :=
-    (div_le_one (by positivity)).mpr hord_le
-  have hbound :
-      (F.order d : ℝ) / 2 ^ (encNat (F.order d)).length / 2 ^ n ≤ 1 / 2 ^ n :=
-    div_le_div_of_nonneg_right hdiv (by positivity)
-  simpa using hbound
-
 /-- Replacing `sampleCramerShoupPair n d` by two independent uniform draws on `ZMod (F.order d)`
 changes `Game.advantage` by at most `2 / 2 ^ n`. -/
 theorem advantage_bind_sampleCramerShoupPair_le (n : ℕ) (d : F.Desc)
@@ -263,12 +211,12 @@ theorem advantage_bind_sampleCramerShoupPair_le (n : ℕ) (d : F.Desc)
     PMF.bind_bind, PMF.pure_bind]
   refine (Game.advantage_triangle _
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun σ =>
-      (ProbComp.eval (F.sampleCramerShoupExp n d)).bind fun t =>
+      (ProbComp.eval (F.sampleExp n d)).bind fun t =>
         k σ (t : ZMod (F.order d))) _).trans ?_
-  have h1 := F.advantage_bind_sampleCramerShoupExp_le n d (fun σ =>
-    (ProbComp.eval (F.sampleCramerShoupExp n d)).bind fun t => k σ (t : ZMod (F.order d)))
+  have h1 := F.advantage_bind_sampleExp_le n d (fun σ =>
+    (ProbComp.eval (F.sampleExp n d)).bind fun t => k σ (t : ZMod (F.order d)))
   have h2 := advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _
-    (fun σ => F.advantage_bind_sampleCramerShoupExp_le n d (k σ))
+    (fun σ => F.advantage_bind_sampleExp_le n d (k σ))
   calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
     _ = 2 / 2 ^ n := by ring
 
@@ -286,7 +234,7 @@ theorem advantage_bind_sampleCramerShoupTripleExponents_le (n : ℕ) (d : F.Desc
   have hbind :
       ((ProbComp.eval (F.sampleCramerShoupTripleExponents n d)).bind fun p =>
         k (p.1 : ZMod (F.order d)) (p.2.1 : ZMod (F.order d)) (p.2.2 : ZMod (F.order d))) =
-      (ProbComp.eval (F.sampleCramerShoupExp n d)).bind fun a =>
+      (ProbComp.eval (F.sampleExp n d)).bind fun a =>
         (ProbComp.eval (F.sampleCramerShoupPair n d)).bind fun bc =>
           k (a : ZMod (F.order d)) (bc.1 : ZMod (F.order d)) (bc.2 : ZMod (F.order d)) := by
     simp only [sampleCramerShoupTripleExponents, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -296,7 +244,7 @@ theorem advantage_bind_sampleCramerShoupTripleExponents_le (n : ℕ) (d : F.Desc
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
       (ProbComp.eval (F.sampleCramerShoupPair n d)).bind fun bc =>
         k α (bc.1 : ZMod (F.order d)) (bc.2 : ZMod (F.order d))) _).trans ?_
-  have h1 := F.advantage_bind_sampleCramerShoupExp_le n d (fun α =>
+  have h1 := F.advantage_bind_sampleExp_le n d (fun α =>
     (ProbComp.eval (F.sampleCramerShoupPair n d)).bind fun bc =>
       k α (bc.1 : ZMod (F.order d)) (bc.2 : ZMod (F.order d)))
   have h2 := advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _
@@ -527,7 +475,7 @@ private theorem isPPTOn_run_cramerShoupPhase1Oracle
     (hd : ComputableTidilyInPolyTime d encIn F.encDesc)
     (hsk : ComputableTidilyInPolyTime sk encIn encCramerShoupSK)
     (hpk : ComputableTidilyInPolyTime pk encIn encBits) :
-    IsPPTOn encIn (encPair (encPair (encPair encMsg encMsg) encBits) (encFinite Unit))
+    IsPPTOn encIn (encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit))
       (fun a => (OracleComp.interpret
         (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupPhase1Oracle H isElem (d a) (sk a)))
@@ -537,9 +485,9 @@ private theorem isPPTOn_run_cramerShoupPhase1Oracle
   have hreply := F.computableTidilyInPolyTime_cramerShoupPhase1Reply hH hisElem
     (computableTidilyInPolyTime_comp hd hp1) (computableTidilyInPolyTime_comp hsk hp1) hp2
   have hE1 := ComputableTidilyInPolyTime.fst encIn
-    (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hE2 := ComputableTidilyInPolyTime.snd encIn
-    (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hreplyIn := F.computableTidilyInPolyTime_cramerShoupPhase1Reply hH hisElem
     (computableTidilyInPolyTime_comp hd hE1) (computableTidilyInPolyTime_comp hsk hE1)
     hE2.fst'.snd'
@@ -570,7 +518,7 @@ private theorem isPPTOn_run_cramerShoupPhase2Oracle
     (hsk : ComputableTidilyInPolyTime sk encIn encCramerShoupSK)
     (hstate : ComputableTidilyInPolyTime state encIn encBits)
     (hct : ComputableTidilyInPolyTime ct encIn encBits) :
-    IsPPTOn encIn (encPair encBool (encFinite Unit))
+    IsPPTOn encIn (encPair encBool (encFinEnum Unit))
       (fun a => (OracleComp.interpret
         (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupPhase2Oracle H isElem (d a) (sk a) (ct a)))
@@ -581,9 +529,9 @@ private theorem isPPTOn_run_cramerShoupPhase2Oracle
     (computableTidilyInPolyTime_comp hd hp1) (computableTidilyInPolyTime_comp hsk hp1)
     (computableTidilyInPolyTime_comp hct hp1) hp2
   have hE1 := ComputableTidilyInPolyTime.fst encIn
-    (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hE2 := ComputableTidilyInPolyTime.snd encIn
-    (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hreplyIn := F.computableTidilyInPolyTime_cramerShoupPhase2Reply hH hisElem
     (computableTidilyInPolyTime_comp hd hE1) (computableTidilyInPolyTime_comp hsk hE1)
     (computableTidilyInPolyTime_comp hct hE1) hE2.fst'.snd'
@@ -625,9 +573,9 @@ private theorem isPPTOn_run_cramerShoupCollisionPhase2Oracle
     (computableTidilyInPolyTime_comp hd hp1) (computableTidilyInPolyTime_comp hsk hp1)
     (computableTidilyInPolyTime_comp hct hp1) hp2
   have hE1 := ComputableTidilyInPolyTime.fst encIn
-    (encPair (encPair (encFinite Unit) encBits) (encOption encBits))
+    (encPair (encPair (encFinEnum Unit) encBits) (encOption encBits))
   have hE2 := ComputableTidilyInPolyTime.snd encIn
-    (encPair (encPair (encFinite Unit) encBits) (encOption encBits))
+    (encPair (encPair (encFinEnum Unit) encBits) (encOption encBits))
   have hreplyIn := F.computableTidilyInPolyTime_cramerShoupCollisionPhase2Reply hH hisElem
     (computableTidilyInPolyTime_comp hd hE1) (computableTidilyInPolyTime_comp hsk hE1)
     (computableTidilyInPolyTime_comp hct hE1) hE2.fst'.snd'
@@ -718,7 +666,7 @@ theorem isPPTOn_cramerShoupMsgToDDHDistinguisher
         F.cramerShoupMsgToDDHDistinguisher encodeMsg H isElem adversary bit p.1 p.2) := by
   let E0 := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   let E1 := encPair E0 encCramerShoupSK
-  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinite Unit)
+  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit)
   have hn0 := ComputableTidilyInPolyTime.fst encUnary
     (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   have hd0 := (ComputableTidilyInPolyTime.snd encUnary
@@ -830,7 +778,7 @@ theorem isPPTOn_cramerShoupMsgToCollisionFinder
   let EExp := encPair encNat (encPair encNat encNat)
   let E1 := encPair E0 EExp
   let E2 := encPair E1 encCramerShoupSK
-  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinite Unit)
+  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit)
   let E3 := encPair E2 EChoice
   have habc := F.isPPTOn_sampleCramerShoupTripleExponents
     (ComputableTidilyInPolyTime.fst encUnary F.encDesc)
@@ -1048,7 +996,7 @@ def cramerShoupValid (isElem : F.Desc × List Bool → Bool) (d : ℕ → F.Desc
 sampling approximate uniform exponents via `sampleModNat`. -/
 noncomputable def cramerShoupKeyGenProb (d : ℕ → F.Desc) (n : ℕ) :
     ProbComp (List Bool × List Bool) :=
-  F.sampleCramerShoupExp n (d n) >>= fun a =>
+  F.sampleExp n (d n) >>= fun a =>
     F.sampleCramerShoupSK n (d n) >>= fun sk =>
       let u := F.smul (d n, a, F.encode (d n) (F.generator (d n)))
       pure (F.encodeCramerShoupPublicKey (d n) u sk, encCramerShoupSK sk)
@@ -1058,7 +1006,7 @@ sampling the encryption exponent via `sampleModNat`. -/
 noncomputable def cramerShoupEncryptProb
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
     (n : ℕ) (pk m : List Bool) : ProbComp (List Bool) :=
-  F.sampleCramerShoupExp n (d n) >>= fun b =>
+  F.sampleExp n (d n) >>= fun b =>
     pure (F.encodeCramerShoupEncrypt H (d n) (decodeBits4 (dropFrame pk)) m b)
 
 /-- Deterministic polynomial-time Cramer–Shoup decryption for `Encryption.cca2GameOn`. -/
@@ -1114,7 +1062,7 @@ theorem isPPTOn_cramerShoupKeyGenProb {d : ℕ → F.Desc}
       (fun p : (ℕ × ℕ) × ((ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) => encCramerShoupSK p.2) E2 encBits :=
     (ComputableTidilyInPolyTime.encode encCramerShoupSK).comp (by fun_prop)
   unfold cramerShoupKeyGenProb
-  exact (F.isPPTOn_sampleCramerShoupExp (by fun_prop) hd.tidy).bind_with
+  exact (F.isPPTOn_sampleExp (by fun_prop) hd).bind_with
     ((F.isPPTOn_sampleCramerShoupSK (by fun_prop) (hd.tidy.comp (by fun_prop))).bind_with
       (hpk.prod hskBits).isPPTOn)
 
@@ -1135,8 +1083,8 @@ theorem isPPTOn_cramerShoupEncryptProb
     F.computableTidilyInPolyTime_encodeCramerShoupEncrypt hH.tidy (hd.tidy.comp (by fun_prop))
       (computableTidilyInPolyTime_decodeBits4.comp (by fun_prop)) (by fun_prop) (by fun_prop)
   unfold cramerShoupEncryptProb
-  exact (F.isPPTOn_sampleCramerShoupExp (by fun_prop)
-    (hd.tidy.comp (by fun_prop))).bind_with hct.isPPTOn
+  exact (F.isPPTOn_sampleExp (by fun_prop)
+    (hd.comp (by fun_prop))).bind_with hct.isPPTOn
 
 /-- `cramerShoupDecryptOpt` is computable in polynomial time whenever `H`, `isElem`, and `d`
 are. -/

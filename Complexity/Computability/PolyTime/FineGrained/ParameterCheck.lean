@@ -69,9 +69,11 @@ soundness/completeness and eventual-feasibility bridges to `ReplacementParams`.
 
 ## Main results
 
-* `Cslib.Complexity.SubexponentialSAT.ParameterCheck.numGroups_sq_mul_le`,
-  `lt_succ_numGroups_sq_mul`, `numGroups_eq_findGreatest`: Proposition 6.4 integer-comparison
-  characterization of `Cslib.Complexity.SubexponentialSAT.ReplacementParams.numGroups`.
+* `Cslib.Complexity.SubexponentialSAT.ParameterCheck.numGroups_eq_findGreatest`: Proposition 6.4
+  `Nat.findGreatest` characterization of
+  `Cslib.Complexity.SubexponentialSAT.ReplacementParams.numGroups` (from
+  `ReplacementParams.sq_mul_pow_four_le_clog` and
+  `ReplacementParams.clog_lt_succ_sq_mul_pow_four`).
 * `Cslib.Complexity.SubexponentialSAT.ParameterCheck.checkBinomTail_eq_true_iff`,
   `checkBinomTail_schedule_eq_true_iff`, `checkScheduleFeasible_eq_true_iff`: exact equivalences
   with real Binomial tail probabilities and schedule balance bounds.
@@ -192,35 +194,6 @@ theorem chooseBeta_spec {lam b w : ℕ} (hlam : 2 ≤ lam) :
     have hj_lt := List.mem_range.mp hj
     omega
 
-/-- Proposition 6.4 integer-comparison upper bound (`[OpenAI2026ETH]`, pp. 43–44) on
-`s = ReplacementParams.numGroups n = ⌊√λ_n / ν_n²⌋`: `s ^ 2 * ν_n ^ 4 ≤ λ_n` for every `n`. -/
-theorem numGroups_sq_mul_le (n : ℕ) :
-    ReplacementParams.numGroups n ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 ≤ Nat.clog 2 n := by
-  unfold ReplacementParams.numGroups
-  set lam := Nat.clog 2 n; set nu := Nat.clog 2 lam
-  calc (lam.sqrt / nu ^ 2) ^ 2 * nu ^ 4
-      = (lam.sqrt / nu ^ 2 * nu ^ 2) * (lam.sqrt / nu ^ 2 * nu ^ 2) := by ring
-    _ ≤ lam.sqrt * lam.sqrt :=
-        Nat.mul_le_mul (Nat.div_mul_le_self _ _) (Nat.div_mul_le_self _ _)
-    _ ≤ lam := Nat.sqrt_le lam
-
-/-- Proposition 6.4 maximality (`[OpenAI2026ETH]`, pp. 43–44): whenever `1 ≤ ν_n`,
-`ReplacementParams.numGroups n` is strictly the largest natural satisfying
-`s ^ 2 * ν_n ^ 4 ≤ λ_n`. -/
-theorem lt_succ_numGroups_sq_mul {n : ℕ} (hnu : 1 ≤ Nat.clog 2 (Nat.clog 2 n)) :
-    Nat.clog 2 n < (ReplacementParams.numGroups n + 1) ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 := by
-  unfold ReplacementParams.numGroups
-  set lam := Nat.clog 2 n; set nu := Nat.clog 2 lam
-  have hlt_sqrt : lam.sqrt < (lam.sqrt / nu ^ 2 + 1) * nu ^ 2 := by
-    rw [add_one_mul, mul_comm _ (nu ^ 2)]
-    have hdiv := Nat.div_add_mod lam.sqrt (nu ^ 2)
-    have hmod := Nat.mod_lt lam.sqrt (by positivity : 0 < nu ^ 2)
-    omega
-  calc lam < (lam.sqrt + 1) ^ 2 := Nat.sqrt_lt'.mp (Nat.lt_succ_self lam.sqrt)
-    _ ≤ ((lam.sqrt / nu ^ 2 + 1) * nu ^ 2) ^ 2 :=
-        Nat.pow_le_pow_left (Nat.succ_le_of_lt hlt_sqrt) 2
-    _ = (lam.sqrt / nu ^ 2 + 1) ^ 2 * nu ^ 4 := by ring
-
 /-- Proposition 6.4 integer-comparison characterization (`[OpenAI2026ETH]`, pp. 43–44):
 `ReplacementParams.numGroups n` equals the `Nat.findGreatest` search for the largest `s ≤ λ_n`
 satisfying `s ^ 2 * ν_n ^ 4 ≤ λ_n` (and `0` when `ν_n = 0`). -/
@@ -237,7 +210,7 @@ theorem numGroups_eq_findGreatest (n : ℕ) :
     have hs_le_lam : ReplacementParams.numGroups n ≤ lam :=
       (Nat.div_le_self _ _).trans (Nat.sqrt_le_self lam)
     have hle_fg := Nat.le_findGreatest
-      (P := fun s => s ^ 2 * nu ^ 4 ≤ lam) hs_le_lam (numGroups_sq_mul_le n)
+      (P := fun s => s ^ 2 * nu ^ 4 ≤ lam) hs_le_lam (ReplacementParams.sq_mul_pow_four_le_clog n)
     refine le_antisymm hle_fg ?_
     by_contra! hgt
     have hfg_spec : Nat.findGreatest (fun s => s ^ 2 * nu ^ 4 ≤ lam) lam ^ 2 * nu ^ 4 ≤ lam :=
@@ -245,7 +218,7 @@ theorem numGroups_eq_findGreatest (n : ℕ) :
         (by simp only [zero_pow (by positivity : 2 ≠ 0), zero_mul, Nat.zero_le])
     have hstep : (ReplacementParams.numGroups n + 1) ^ 2 * nu ^ 4 ≤ lam :=
       (Nat.mul_le_mul_right (nu ^ 4) (Nat.pow_le_pow_left hgt 2)).trans hfg_spec
-    exact (not_le_of_gt (lt_succ_numGroups_sq_mul hnu)) hstep
+    exact (not_le_of_gt (ReplacementParams.clog_lt_succ_sq_mul_pow_four hnu)) hstep
 
 /-! ### 2. Cleared-Denominator `ℕ` Binomial-Tail and Feasibility Checkers -/
 

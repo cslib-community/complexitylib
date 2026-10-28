@@ -42,11 +42,11 @@ example : {w : List Bool | w.tail.headD false = true} ∈ US encBits :=
 /-- FP counts may be exponentially large: the output encoding is binary. -/
 example : (fun w : List Bool => 2 ^ w.length) ∈ SharpP encBits :=
   mem_SharpP_of_polyTime
-    (.of_tidy (ComputableTidilyInPolyTime.binary_two_pow.comp (.encoding_length encBits)))
+    (ComputableInPolyTime.binary_two_pow.comp (.encoding_length encBits))
 
 private def target (n : ℕ) : ℤ := -(2 ^ n : ℤ)
 
-private theorem target_poly : ComputableTidilyInPolyTime target encUnary encIntBin := by
+private theorem target_poly : ComputableInPolyTime target encUnary encIntBin := by
   unfold target
   fun_prop
 
@@ -55,12 +55,12 @@ private theorem target_ne_zero (n : ℕ) : target n ≠ 0 := by
 
 /-- A nonconstant language with a negative target of exponential magnitude. -/
 private theorem head_mem_LWPP : {w : List Bool | w.headD false = true} ∈ LWPP encBits := by
-  have htarget : ComputableTidilyInPolyTime (fun w : List Bool => target w.length)
+  have htarget : ComputableInPolyTime (fun w : List Bool => target w.length)
       encBits encIntBin := target_poly.comp (.encoding_length encBits)
-  have hgap : ComputableTidilyInPolyTime
+  have hgap : ComputableInPolyTime
       (fun w : List Bool => if w.headD false then target w.length else 0) encBits encIntBin := by
     fun_prop
-  refine ⟨_, mem_GapP_of_polyTime (.of_tidy hgap), target, .of_tidy target_poly, target_ne_zero,
+  refine ⟨_, mem_GapP_of_polyTime hgap, target, target_poly, target_ne_zero,
     fun w => ?_, fun w => ?_⟩
   · cases w.headD false <;> simp
   · change (w.headD false = true) ↔ _
@@ -92,12 +92,15 @@ example : Set.univ ∈ coModP 6 encBits :=
 example : coModP 3 encBits = ModP 3 encBits := coModP_eq_ModP (by decide)
 
 example : (∅ : Set (List Bool)) ∈ BH encBits 0 := rfl
-example : BH encBits 1 = NP encBits := BH_one
-example : BH encBits 2 = DP encBits := BH_two
 
-private theorem head_mem_BH_one : {w : List Bool | w.headD false = true} ∈ BH encBits 1 := by
-  rw [BH_one]
-  exact UP_subset_NP (P_subset_UP head_mem_P)
+private theorem head_mem_NP : {w : List Bool | w.headD false = true} ∈ NP encBits :=
+  UP_subset_NP (P_subset_UP head_mem_P)
+
+private theorem head_mem_BH_one : {w : List Bool | w.headD false = true} ∈ BH encBits 1 :=
+  BH_one ▸ head_mem_NP
+
+example : {w : List Bool | w.headD false = true} ∈ DP encBits :=
+  BH_two ▸ BH_mono (by decide : 1 ≤ 2) head_mem_BH_one
 
 example : {w : List Bool | w.headD false = true} ∈ BH encBits 7 :=
   BH_mono (by decide : 1 ≤ 7) head_mem_BH_one
@@ -115,8 +118,9 @@ example : {w : List Bool | w.headD false = true} ∈ coDP encBits := by
 example : (Set.univ : Set (List Bool)) ∈ coBH encBits 0 := by
   simp [coBH_zero]
 
-example : coBH encBits 1 = coNP encBits := coBH_one
-example : coBH encBits 2 = coDP encBits := coBH_two
+example : {w : List Bool | w.headD false = true}ᶜ ∈ coBH encBits 1 := by
+  rw [coBH_one, coNP, Set.mem_ofPred_eq, compl_compl]
+  exact head_mem_NP
 
 private theorem head_mem_coBH_two :
     {w : List Bool | w.headD false = true} ∈ coBH encBits 2 :=
@@ -128,11 +132,8 @@ example : {w : List Bool | w.headD false = true} ∈ coBH encBits 5 :=
 example : {w : List Bool | w.headD false = true} ∈ BH encBits 3 :=
   coBH_subset_BH_succ 2 head_mem_coBH_two
 
-example : (⋃ n, coBH encBits n) = BooleanHierarchy encBits :=
-  iUnion_coBH_eq_BooleanHierarchy
-
-private theorem head_mem_NP : {w : List Bool | w.headD false = true} ∈ NP encBits :=
-  UP_subset_NP (P_subset_UP head_mem_P)
+example : {w : List Bool | w.headD false = true} ∈ BooleanHierarchy encBits :=
+  iUnion_coBH_eq_BooleanHierarchy ▸ Set.mem_iUnion.mpr ⟨2, head_mem_coBH_two⟩
 
 example : {w : List Bool | w.headD false = true} ∩ {w | w.headD false = true} ∈ BH encBits 1 :=
   inter_mem_BH_of_mem_NP head_mem_BH_one head_mem_NP
@@ -149,18 +150,16 @@ example : {w : List Bool | w.tail.headD false = true} ∈ coBH encBits 2 :=
 example : {w : List Bool | w.tail.headD false = true} ∈ BooleanHierarchy encBits :=
   tail_reduces_head.mem_BooleanHierarchy (Set.mem_iUnion.mpr ⟨1, head_mem_BH_one⟩)
 
-example (k : ℕ) : BH encBits (k + 1) ⊆ BH encBits k ↔ coBH encBits k ⊆ BH encBits k :=
-  BH_succ_subset_iff_coBH_subset
-
-example (k : ℕ) : BH encBits k = coBH encBits k ↔ BH encBits (k + 1) = BH encBits k :=
-  BH_eq_coBH_iff_BH_succ_eq
-
 example (k : ℕ) (h : coBH encBits k ⊆ BH encBits k) :
-    BooleanHierarchy encBits = BH encBits k :=
-  BooleanHierarchy_eq_BH_of_coBH_subset h
+    BH encBits k = coBH encBits k ∧ BooleanHierarchy encBits = BH encBits k :=
+  ⟨BH_eq_coBH_iff_BH_succ_eq.mpr
+     (Set.Subset.antisymm (BH_succ_subset_iff_coBH_subset.mpr h) (BH_mono (Nat.le_succ k))),
+   BooleanHierarchy_eq_BH_of_coBH_subset h⟩
 
-example (h : NP encBits = coNP encBits) : BooleanHierarchy encBits = NP encBits :=
-  BooleanHierarchy_eq_NP_of_NP_eq_coNP h
+example (h : NP encBits = coNP encBits) :
+    {w : List Bool | w.headD false = true}ᶜ ∈ NP encBits :=
+  BooleanHierarchy_eq_NP_of_NP_eq_coNP h ▸
+    compl_mem_BooleanHierarchy (Set.mem_iUnion.mpr ⟨1, head_mem_BH_one⟩)
 
 private abbrev trivialClass : Set (Set Bool) := {∅, Set.univ}
 

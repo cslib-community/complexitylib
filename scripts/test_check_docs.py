@@ -478,6 +478,62 @@ class CheckOutputTests(unittest.TestCase):
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Tactic/TautoSet.html">specialize_all</a>',
         )
 
+    def test_trim_redirects_omitted_recursors_to_the_documented_type(self):
+        self.index["modules"]["Init.Core"] = {}
+        self.index["declarations"]["Sum"] = {
+            "docLink": "./Init/Core.html#Sum", "kind": "inductive",
+        }
+        self.index["declarations"]["Prod"] = {
+            "docLink": "./Init/Core.html#Prod", "kind": "structure",
+        }
+        self.write(self.page("Init.Core"), '<div id="Sum"></div><div id="Prod"></div>')
+        prefixes = ("./", check_docs.API_DOCS_URL, check_docs.MATHLIB_DOCS_URL)
+        links = [f'<a href="{prefix}Init/Core.html#{name}.rec">{name}.rec</a>'
+                 for prefix in prefixes for name in ("Sum", "Prod")]
+        self.write(self.page("Complexity"), "\n".join(links))
+        self.write(self.docs / "declarations/declaration-data.bmp", json.dumps(self.index))
+
+        check_docs.trim_output()
+        with redirect_stdout(io.StringIO()):
+            check_docs.check_output()
+        expected = "\n".join(
+            f'<a href="{check_docs.MATHLIB_DOCS_URL}Init/Core.html#{name}">{name}.rec</a>'
+            for _ in prefixes for name in ("Sum", "Prod")
+        )
+        self.assertEqual(self.page("Complexity").read_text(), expected)
+        check_docs.trim_output()
+        self.assertEqual(self.page("Complexity").read_text(), expected)
+
+    def test_trim_recursor_fallback_rejects_unproved_targets(self):
+        for module in ("Init.Core", "Init.Other"):
+            self.index["modules"][module] = {}
+            self.write(self.page(module), '<div id="Sum"></div><div id="ordinary"></div>')
+        self.index["declarations"]["Sum"] = {
+            "docLink": "./Init/Core.html#Sum", "kind": "inductive",
+        }
+        self.index["declarations"]["ordinary"] = {
+            "docLink": "./Init/Core.html#ordinary", "kind": "def",
+        }
+        self.write(self.docs / "declarations/declaration-data.bmp", json.dumps(self.index))
+        for target in ("Init/Core.html#Missing.rec", "Init/Core.html#ordinary.rec",
+                       "Init/Core.html#Sum.missing", "Init/Other.html#Sum.rec"):
+            with self.subTest(target=target):
+                self.write(self.page("Complexity"), f'<a href="./{target}">bad</a>')
+                with self.assertRaisesRegex(ValueError, "Broken dependency anchor"):
+                    check_docs.trim_output()
+
+    def test_trim_preserves_a_documented_recursor_anchor(self):
+        self.index["modules"]["Init.Core"] = {}
+        self.index["declarations"]["Sum"] = {
+            "docLink": "./Init/Core.html#Sum", "kind": "inductive",
+        }
+        self.write(self.page("Init.Core"), '<div id="Sum"></div><div id="Sum.rec"></div>')
+        self.write(self.page("Complexity"), '<a href="./Init/Core.html#Sum.rec">rec</a>')
+        self.write(self.docs / "declarations/declaration-data.bmp", json.dumps(self.index))
+        check_docs.trim_output()
+        self.assertEqual(self.page("Complexity").read_text(),
+                         f'<a href="{check_docs.MATHLIB_DOCS_URL}Init/Core.html#Sum.rec">rec</a>')
+
     def test_trim_remaps_moved_and_falls_back_for_omitted_published_declarations(self):
         self.index["modules"]["Mathlib.LinearAlgebra.Matrix.Defs"] = {
             "importedBy": ["Complexity.Current"],
@@ -743,10 +799,13 @@ class CheckConfigTests(unittest.TestCase):
         return {"name": name, "type": "git", "url": f"https://example.com/{name}", "rev": rev,
                 "inputRev": input_rev, "subDir": None}
 
-    def check(self):
+    def write_manifests(self):
         for project, packages in self.manifests.items():
             (self.root / project / "lake-manifest.json").write_text(
                 json.dumps({"packages": packages}))
+
+    def check(self):
+        self.write_manifests()
         check_docs.check_config()
 
     def assert_failure(self, message):
@@ -759,7 +818,34 @@ class CheckConfigTests(unittest.TestCase):
 
     def test_guide_lockfile_follows_the_library(self):
         self.manifests["guide"][1]["rev"] = "b"
-        self.assert_failure("Guide lockfile differs for cslib: rev")
+        self.assert_failure(
+            'Guide lockfile differs for cslib: rev is "b" in guide/lake-manifest.json but "a" in '
+            "lake-manifest.json; update guide/lake-manifest.json to match the root pin")
+
+    def test_root_pin_bump_requires_documentation_lockfiles(self):
+        # #1372 moved the root cslib pin without the docs projects' lockfiles (#1397).
+        self.manifests[""][0]["rev"] = "b"
+        self.assert_failure(
+            'Documentation lockfile differs for cslib: rev is "a" in docbuild/lake-manifest.json '
+            'but "b" in lake-manifest.json; update docbuild/lake-manifest.json to match the '
+            "root pin")
+
+    def test_root_dependency_must_be_locked(self):
+        self.manifests[""].append(self.package("mathlib", "x"))
+        self.assert_failure(
+            "Documentation lockfile omits mathlib; copy its entry from lake-manifest.json into "
+            "docbuild/lake-manifest.json")
+
+    def test_command_line_reports_drift(self):
+        self.manifests[""][0]["rev"] = "b"
+        stderr = io.StringIO()
+        with patch("sys.argv", ["check_docs.py", "--config-only"]), \
+                patch("sys.stderr", stderr), self.assertRaises(SystemExit) as raised:
+            self.write_manifests()
+            check_docs.main()
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("Documentation check failed: Documentation lockfile differs for cslib: rev",
+                      stderr.getvalue())
 
     def test_verso_tag_follows_the_toolchain(self):
         (self.root / "guide/lakefile.toml").write_text(

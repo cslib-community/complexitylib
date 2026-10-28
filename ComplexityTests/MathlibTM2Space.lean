@@ -43,7 +43,7 @@ private theorem prepend_bound (w : List Bool) (i : ℕ) (k : Unit) :
 
 -- The endpoint starts from termination and a source-space bound, with no runtime argument.
 example : ComputableTidilyInPolySpace (fun w : List Bool => false :: w)
-    (encList (encFinite Bool)) (encList (encFinite Bool)) := by
+    (encList (encFinEnum Bool)) (encList (encFinEnum Bool)) := by
   exact prependComputer.computableTidilyInPolySpace Function.injective_id Function.injective_id
     (space := fun w => w.length + 1) (PolyBounded.self.add (.const 1))
     (by
@@ -55,11 +55,16 @@ example : ComputableTidilyInPolySpace (fun w : List Bool => false :: w)
 -- assert an exponential lower bound on its runtime.
 example : ComputableTidilyInPolySpace
     (fun w : List Bool => (TM2.stepTotal prependMachine.m)^[2 ^ (w.length + 1)]
-      (initList prependMachine w)) (encList (encFinite Bool)) TM2.encCfg := by
-  have hlength := ComputableTidilyInPolyTime.length_list (encFinite Bool)
+      (initList prependMachine w)) (encList (encFinEnum Bool)) TM2.encCfg := by
+  have hlength := ComputableTidilyInPolyTime.length_list (encFinEnum Bool)
   have hexponent := ComputableTidilyInPolyTime.unary_add.comp
     (hlength.prod (ComputableTidilyInPolyTime.const 1))
-  exact TM2.run_polySpace prependMachine ComputableTidilyInPolyTime.id'
+  have hstart : ComputableTidilyInPolyTime (fun w => w) (encList (encFinEnum Bool))
+      (encList (encFinite (prependMachine.Γ prependMachine.k₀))) :=
+    (ComputableTidilyInPolyTime.map
+      (.of_finite (encB := encFinite (prependMachine.Γ prependMachine.k₀)) id)).of_enc_eq
+      (fun _ => by simp only [List.map_id]; rfl)
+  exact TM2.run_polySpace prependMachine hstart
     (ComputableTidilyInPolyTime.binary_two_pow.comp hexponent) hexponent.polyBounded
     (fun w i _ k => prepend_bound w i k)
 
@@ -85,7 +90,7 @@ private noncomputable abbrev identityComputer (Γ : Type) [Fintype Γ] :
 
 -- An empty alphabet requires no artificial inhabitant, even in the counting proof.
 example : ComputableTidilyInPolySpace (id : List Empty → List Empty)
-    (encList (encFinite Empty)) (encList (encFinite Empty)) := by
+    (encList (encFinEnum Empty)) (encList (encFinEnum Empty)) := by
   let h := identityComputer Empty
   let : ∀ k, Finite (h.tm.Γ k) := fun _ => inferInstanceAs (Finite Empty)
   exact h.computableTidilyInPolySpace Function.injective_id Function.injective_id
@@ -181,7 +186,7 @@ private theorem clear_bound (xs : List Bool) (i : ℕ) : ∀ k,
 -- An infinite Boolean input domain and a distinct empty output alphabet. No default output
 -- symbol is available; the empty output comes from clearing the input before halting.
 example : ComputableTidilyInPolySpace (fun _ : List Bool => ([] : List Empty))
-    (encList (encFinite Bool)) (encList (encFinite Empty)) := by
+    (encList (encFinEnum Bool)) (encList (encFinEnum Empty)) := by
   let : ∀ k, Finite (clearComputer.tm.Γ k) := fun k => by
     change Finite (clearMachine.Γ k)
     cases k <;> infer_instance
@@ -201,7 +206,7 @@ private noncomputable abbrev boolComputer :
 
 example : {b : Bool | b = true} ∈ Cslib.Complexity.PSPACE
     ((⟨encodeBool, encodingBoolBool.encode_injective⟩ : Bool ↪ List Bool).trans
-      (encList (encFinite Bool))) := by
+      (encList (encFinEnum Bool))) := by
   let : ∀ k, Finite (boolComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
   apply Cslib.Complexity.mem_PSPACE_of_tm2 boolComputer encodingBoolBool.encode_injective
     encodingBoolBool.encode_injective (space := fun _ => 1) (.const 1) ?_ (fun _ => Iff.rfl)
@@ -310,7 +315,7 @@ private theorem empty_bound (xs : List Bool) (i : ℕ) (k : Bool) :
     exact (congrArg (fun cfg : emptyMachine.Cfg => (cfg.stk k).length) heq).le.trans
       (hrun i xs xs.isEmpty false)
 
-example : {xs : List Bool | xs = []} ∈ Cslib.Complexity.PSPACE (encList (encFinite Bool)) := by
+example : {xs : List Bool | xs = []} ∈ Cslib.Complexity.PSPACE (encList (encFinEnum Bool)) := by
   let : ∀ k, Finite (emptyComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
   apply Cslib.Complexity.mem_PSPACE_of_tm2 emptyComputer Function.injective_id
     encodingBoolBool.encode_injective (space := fun xs => xs.length + 1)
