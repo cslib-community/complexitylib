@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Crypto.Protocols.MPC.Basic
 import Complexity.Crypto.Protocols.MPC.CircuitEval
+import Complexity.Crypto.Protocols.MPC.Composition
 import Complexity.Crypto.Protocols.MPC.SharedMul
 import Cslib.Computability.Circuit.Boolean.Basic
 import Mathlib.Algebra.Ring.BooleanRing
@@ -593,5 +594,164 @@ example (C : Cslib.Circuits.Circuit Boolean.signature (1 * 2) (1 * 2))
         I (gmwCircuitSim 1 2 2 C I) x) =
       (gmwCircuitProtocol 1 2 2 C).realJoint (sharedMulWorld 1) I x :=
   perfectSemiHonestPrivate_gmwCircuit 1 2 2 C I x
+
+/-! ### Subprotocol composition, `xorPreludeCircuit`, and $\text{OT}_1^4$-hybrid GMW (M4) -/
+
+/-- Exhaustive check of `xorPreludeCircuit 2 1 1` on all 16 combinations of 2-party 1-bit inputs
+`(b₀, b₁)` and 1-bit coin shares `(r₀, r₁)`: outputs `![b₀, b₁, r₀ + r₁]`. -/
+example (b₀ b₁ r₀ r₁ : Bool) :
+    (xorPreludeCircuit 2 1 1).eval Boolean.interpretation
+      ![b₀, r₀, b₁, r₁] =
+    ![b₀, b₁, r₀ + r₁] := by
+  revert b₀ b₁ r₀ r₁
+  decide
+
+/-- Gate count of `xorPreludeCircuit 3 2 4` is `1 + 3 * (4 * 4) = 49`. -/
+example : (xorPreludeCircuit 3 2 4).size = 49 := by
+  simp [size_xorPreludeCircuit]
+
+/-- Composing `multiPartyMulProtocol 3` with `twoPartyMulProtocol` via
+`PerfectSemiHonestPrivate.compose` (Theorem 7.5.7) yields a 3-party shared-multiplication protocol
+in `ot14World` that is perfectly semi-honest private against every static coalition
+`I : Finset (Fin 3)`. -/
+example :
+    PerfectSemiHonestPrivate
+      ((multiPartyMulProtocol 3).compose (fun _ => twoPartyMulProtocol))
+      ot14World (sharedMulFunctionality 3)
+      (composeSim (multiPartyMulProtocol 3) (multiPartyMulSim 3) (fun _ => twoPartyMulSim)) :=
+  (perfectSemiHonestPrivate_multiPartyMul 3).compose (fun _ => perfectSemiHonestPrivate_twoPartyMul)
+
+/-- `gmwOT14Protocol 2 1 1 andNandCircuit` is perfectly semi-honest private in `ot14World` against
+every static coalition `I : Finset (Fin 2)`. -/
+example :
+    PerfectSemiHonestPrivate
+      (gmwOT14Protocol 2 1 1 andNandCircuit) ot14World
+      (Functionality.ofDeterministic (circuitFunctionality 2 1 1 andNandCircuit))
+      (gmwOT14Sim 2 1 1 andNandCircuit) :=
+  perfectSemiHonestPrivate_gmwOT14 2 1 1 andNandCircuit
+
+/-- `gmwOT14Protocol 2 1 2 wireReuseCircuit` is perfectly semi-honest private in `ot14World` against
+every static coalition `I : Finset (Fin 2)`. -/
+example :
+    PerfectSemiHonestPrivate
+      (gmwOT14Protocol 2 1 2 wireReuseCircuit) ot14World
+      (Functionality.ofDeterministic (circuitFunctionality 2 1 2 wireReuseCircuit))
+      (gmwOT14Sim 2 1 2 wireReuseCircuit) :=
+  perfectSemiHonestPrivate_gmwOT14 2 1 2 wireReuseCircuit
+
+/-- Concrete 2-party randomized Boolean circuit (`m = 2`, `n = 1`, `coins = 1`, `k = 1`) where
+input wire 0 is `x₀`, input wire 1 is `x₁`, input wire 2 is the shared coin bit `r`, party 0
+outputs `x₀ && r` (Gate 0), and party 1 outputs `x₁ && r` (Gate 1). -/
+def randomizedAndCoinCircuit : Cslib.Circuits.Circuit Boolean.signature (2 * 1 + 1) (2 * 1) where
+  size := 2
+  program :=
+    ((Cslib.Circuits.Program.empty (σ := Boolean.signature) (inputCount := 2 * 1 + 1)).gate
+      { op := Boolean.Op.and, wires := ![Wire.input 0, Wire.input 2] }).gate
+      { op := Boolean.Op.and, wires := ![Wire.input 1, Wire.input 2] }
+  outputs := ![Wire.gate 0, Wire.gate 1]
+
+/-- Theorem 7.5.12 instantiated on `randomizedAndCoinCircuit`:
+`gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit` is perfectly semi-honest private in
+`ot14World` against every proper static coalition `I ≠ Finset.univ`. -/
+example :
+    PerfectSemiHonestPrivateProper
+      (gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit) ot14World
+      (randomizedFunctionality 1 (fun r x i =>
+        Cslib.BitString.block
+          (randomizedAndCoinCircuit.eval Boolean.interpretation
+            (Fin.append
+              ((Cslib.BitString.blocksEquiv (α := Bool) (m := 2) (k := 1)).symm x) r)) i))
+      (gmwOT14RandomizedSim 2 1 1 1 randomizedAndCoinCircuit) :=
+  perfectSemiHonestPrivateProper_gmwOT14Randomized 2 1 1 1 randomizedAndCoinCircuit
+
+/-- Trivial 1-party 0-round protocol outputting its 1-bit coin input `(xr 0).2 0`, used to verify
+that the proper-coalition hypothesis `I ≠ Finset.univ` in
+`perfectSemiHonestPrivate_randomizedWrapper` cannot be dropped when `I = Finset.univ`. -/
+def coinEchoDetProtocol :
+    Protocol 1 noOracleSpec [] (fun _ => Unit × BitString 1) (fun _ => Unit) (fun _ => Bool) where
+  sampleCoins _ := pure ()
+  steps := .done fun _ st => st.1.2 0
+
+/-- Trivial simulator for `coinEchoDetProtocol`. -/
+def coinEchoDetSim (I : Finset (Fin 1)) :
+    CoalitionSimulator (spec := noOracleSpec) [] (fun _ => Unit × BitString 1)
+      (fun _ => Unit) (fun _ => Bool) I :=
+  fun xI _ => pure (fun i => ⟨xI i, (), ()⟩)
+
+/-- `coinEchoDetProtocol` is perfectly semi-honest private against all coalitions `I` for
+`detOfRandomized 1 (fun r _ _ => r 0)`. -/
+theorem perfectSemiHonestPrivate_coinEchoDet :
+    PerfectSemiHonestPrivate coinEchoDetProtocol noOracleWorld
+      (Functionality.ofDeterministic (detOfRandomized 1 (fun r (_ : Fin 1 → Unit) _ => r 0)))
+      coinEchoDetSim := by
+  intro I x
+  simp only [idealJoint, coinEchoDetSim, Functionality.ofDeterministic, detOfRandomized,
+    Protocol.realJoint, Protocol.evalWith_eq, coinEchoDetProtocol,
+    OracleComp.pi_succ, OracleComp.pi_zero, Protocol.outputOfView,
+    Steps.evalWith_done, Steps.outputAt,
+    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
+    PMF.pure_bind, PMF.pure_map, Finset.restrict_def, Fin.sum_univ_one]
+  refine congrArg PMF.pure (Prod.ext (funext fun ⟨i, _⟩ => ?_) (funext fun i => ?_))
+  · fin_cases i
+    rfl
+  · fin_cases i
+    rfl
+
+/-- Negative test for `perfectSemiHonestPrivate_randomizedWrapper` at `I = Finset.univ`:
+although `coinEchoDetProtocol` satisfies `PerfectSemiHonestPrivate` for all coalitions,
+`coinEchoDetProtocol.randomizedWrapper 1` with `randomizedWrapperSim 1 coinEchoDetSim` FAILS
+at the full coalition `I = Finset.univ`, because every real execution satisfies
+`(v 0).coins.1 0 = y 0` whereas `randomizedWrapperSim` samples the coalition's coin shares
+independently of the ideal output `y 0`. -/
+theorem not_perfectSemiHonestPrivate_coinEchoRandomizedWrapper_univ :
+    ¬ PerfectSemiHonestPrivate (coinEchoDetProtocol.randomizedWrapper 1) noOracleWorld
+        (randomizedFunctionality 1 (fun r (_ : Fin 1 → Unit) _ => r 0))
+        (randomizedWrapperSim 1 coinEchoDetSim) := by
+  intro hAll
+  have hUniv := hAll Finset.univ (fun _ => ())
+  have hRealEq :
+      ∀ res ∈ ((coinEchoDetProtocol.randomizedWrapper 1).realJoint
+          noOracleWorld Finset.univ (fun _ => ())).support,
+        (res.1 ⟨0, Finset.mem_univ 0⟩).coins.1 0 = res.2 0 := by
+    intro res hres
+    simp only [Protocol.realJoint, Protocol.evalWith_eq, Protocol.outputOfView,
+      Protocol.randomizedWrapper, coinEchoDetProtocol,
+      OracleComp.pi_succ, OracleComp.pi_zero,
+      ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, ProbComp.eval_uniform,
+      Steps.evalWith_mapState, Steps.evalWith_done,
+      Steps.outputAt_mapState, Steps.outputAt,
+      PMF.bind_bind, PMF.pure_bind, PMF.pure_map,
+      PMF.mem_support_bind_iff, PMF.mem_support_map_iff, PMF.mem_support_pure_iff,
+      PMF.mem_support_uniformOfFintype, Finset.restrict_def] at hres
+    obtain ⟨_, ⟨a, _, rfl⟩, rfl⟩ := hres
+    rfl
+  let badRes :
+      ((i : (Finset.univ : Finset (Fin 1))) →
+        PartyView (fun _ => Unit) (fun _ => BitString 1 × Unit)
+          ([] : Schedule 1 noOracleSpec) i.1) × (Fin 1 → Bool) :=
+    (fun _ => ⟨(), (![true], ()), ()⟩, fun _ => false)
+  have hBadIdeal :
+      badRes ∈ (ProbComp.eval
+        (idealJoint (randomizedFunctionality 1 (fun r (_ : Fin 1 → Unit) _ => r 0))
+          Finset.univ (randomizedWrapperSim 1 coinEchoDetSim Finset.univ)
+          (fun _ => ()))).support := by
+    simp only [idealJoint, randomizedFunctionality, randomizedWrapperSim, coinEchoDetSim,
+      OracleComp.piRestrict, Finset.mem_univ, ↓reduceDIte,
+      ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, ProbComp.eval_uniform,
+      PMF.bind_bind, PMF.pure_bind, PMF.pure_map,
+      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff,
+      PMF.mem_support_uniformOfFintype]
+    refine ⟨![false], trivial, ![true], trivial, ?_⟩
+    refine Prod.ext (funext fun ⟨i, _⟩ => ?_) (funext fun i => ?_)
+    · fin_cases i
+      refine PartyView.ext rfl (Prod.ext ?_ rfl) rfl
+      ext j
+      fin_cases j
+      rfl
+    · fin_cases i
+      rfl
+  rw [hUniv] at hBadIdeal
+  have hEq := hRealEq badRes hBadIdeal
+  exact Bool.noConfusion hEq
 
 end ComplexityTests.Crypto.MPC
