@@ -425,9 +425,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
   and the selected-prime false-positive bound ([#1442]) are proved mathematically. Native parameter,
   collision-counting, prime-table, minimum-search and complete two-prime modulus programs have
-  explicit local fit/frame/cost contracts ([#1446]); frontend enumeration, heavy extraction, recursive traversal,
-  packed output and global preprocessing width/time composition remain. It still needs
-  residue/chunk/piece splitting and witness recovery, tensor/sparse-query programs, native
+  explicit local fit/frame/cost contracts ([#1446]). The complete native one-node component ([#1481]) computes
+  all residues/histograms, three compact heavy arrays and exact packed output in linear time;
+  frontend enumeration, recursive traversal and global preprocessing width/time composition remain.
+  It still needs residue/chunk/piece splitting and witness recovery, tensor/sparse-query programs, native
   Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
   asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
@@ -557,3 +558,4 @@ not planned, not as proved.
 [#1442]: https://github.com/cslib-community/complexitylib/issues/1442
 [#1446]: https://github.com/cslib-community/complexitylib/issues/1446
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
+[#1481]: https://github.com/cslib-community/complexitylib/issues/1481
