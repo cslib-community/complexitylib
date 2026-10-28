@@ -53,8 +53,9 @@ unary numbers, as well as bounded-count batch evaluation (`map_range_const`, `ma
   `.unaryBoundedMap`: unary-number operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.map_range_const`, `.map_range_of_le`,
   `.mapToBits_range_const`, `.mapToBits_range_of_le`: bounded-count batch evaluation.
-* `Turing.MultiTapeTM.ComputableInLogSpace.fst'`, `.snd'`: projections of a computed pair, in the
-  form used by `fun_prop`, with which the closure rules and word operations above are registered.
+* `Turing.MultiTapeTM.ComputableInLogSpace.fst'`, `.snd'`, `.bool_and`, `.bool_or`:
+  projections of a computed pair and Boolean connectives, in the form used by `fun_prop`, with which
+  the closure rules and word operations above are registered.
 
 ## References
 
@@ -492,6 +493,22 @@ theorem fst' {f : α → β₁ × β₂} (hf : ComputableInLogSpace f encIn (enc
 theorem snd' {f : α → β₁ × β₂} (hf : ComputableInLogSpace f encIn (encPair enc₁ enc₂)) :
     ComputableInLogSpace (fun a => (f a).2) encIn enc₂ :=
   (snd enc₁ enc₂).comp hf
+
+/-- The conjunction of two computed Booleans. -/
+@[fun_prop]
+theorem bool_and {c₁ c₂ : α → Bool} (h₁ : ComputableInLogSpace c₁ encIn encBool)
+    (h₂ : ComputableInLogSpace c₂ encIn encBool) :
+    ComputableInLogSpace (fun a => c₁ a && c₂ a) encIn encBool :=
+  (of_finite (encIn := encPair encBool encBool) fun p : Bool × Bool => p.1 && p.2).comp'
+    (pair h₁ h₂)
+
+/-- The disjunction of two computed Booleans. -/
+@[fun_prop]
+theorem bool_or {c₁ c₂ : α → Bool} (h₁ : ComputableInLogSpace c₁ encIn encBool)
+    (h₂ : ComputableInLogSpace c₂ encIn encBool) :
+    ComputableInLogSpace (fun a => c₁ a || c₂ a) encIn encBool :=
+  (of_finite (encIn := encPair encBool encBool) fun p : Bool × Bool => p.1 || p.2).comp'
+    (pair h₁ h₂)
 
 attribute [fun_prop] pair ite optionSome optionGetD listSingleton listCons listAppend listHeadD
   bitsAppend bitsHeadD bitsMap bitsFoldl bitsAll bitsAny unaryAdd unaryMulConst unaryLeConst

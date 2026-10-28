@@ -72,9 +72,10 @@ tapes and counters of logarithmic length [Sipser, Section 8.5][Sipser2013].
 * `Turing.MultiTapeTM.ComputableInLogSpace.computableInPolyTime`,
   `Turing.MultiTapeTM.ComputableInLogSpace.computableTidilyInPolyTime`: logspace functions are
   computable in polynomial time.
-* `Turing.MultiTapeTM.ComputableInLogSpace.comp'`: composition in the form used by `fun_prop`, for
-  which `ComputableInLogSpace` is registered, with the inclusion in polynomial time as a one-way
-  transition.
+* `Turing.MultiTapeTM.ComputableInLogSpace.comp'`,
+  `Turing.MultiTapeTM.ComputableInLogSpace.bool_not`: composition and negation in the form used by
+  `fun_prop`, for which `ComputableInLogSpace` is registered, with the inclusion in polynomial time
+  as a one-way transition.
 * `Turing.MultiTapeTM.Transducer.computableInLogSpace`: functions computed by finite-state
   transducers are computable in logarithmic space.
 * `Turing.MultiTapeTM.polyBounded_log`: logarithmic bounds are polynomially bounded.
@@ -345,6 +346,12 @@ theorem ComputableInLogSpace.comp' {g : β → γ} {f : α → β}
     (hg : ComputableInLogSpace g encMid encOut) (hf : ComputableInLogSpace f encIn encMid) :
     ComputableInLogSpace (fun a => g (f a)) encIn encOut :=
   hg.comp hf
+
+/-- Negating a computed Boolean, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem ComputableInLogSpace.bool_not {c : α → Bool} (hc : ComputableInLogSpace c encIn encBool) :
+    ComputableInLogSpace (fun a => !c a) encIn encBool :=
+  (ComputableInLogSpace.of_finite (encIn := encBool) not).comp' hc
 
 /-- Doubling one false bit gives its marker followed by `false`. -/
 @[simp] theorem doubled_false : doubled [false] = [true, false] := rfl
