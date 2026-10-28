@@ -9,7 +9,7 @@ Complexity/Foundations/Data/Finset/{Average,OrderGlue,Quotient}.lean,
 Complexity/Foundations/Data/Int/Residue.lean,
 Complexity/Foundations/Data/Nat/CeilDiv.lean,
 Complexity/Foundations/Data/Matrix/{IntegerBits,PairChunks}.lean and
-Complexity/Foundations/NumberTheory/{PrimeCounting,PrimeWindow}.lean and
+Complexity/Foundations/NumberTheory/{PrimeCounting,PrimeWindow,SqrtPrimeWindow}.lean and
 Complexity/Foundations/RingTheory/CyclicIntRing.lean are adapted from
 anthropics/formal-math, 3sum-apsp, revision
 16a5ce41304fcdaea4e0be7c132e1c361dc26da5.

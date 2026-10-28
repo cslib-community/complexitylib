@@ -177,14 +177,18 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   common-neighbor counts as product entries, detection, the zero/one converse, and signed products
   from `4 * β²` count instances with the original queried edges. Its digit identities live in
   `Foundations/Data/Matrix/IntegerBits.lean`, reuse Mathlib's pointwise positive/negative parts,
-  and give an explicit `Nat.log 2 U + 1` magnitude-bit bound including zero. Query answers use
-  `Set.EqOn`; no additional weighted-triangle predicate or source machine is introduced.
+  with descriptive lemmas in `Cslib.Matrix`. The scalar magnitude-bit bound, including zero,
+  lives in `Foundations/Data/Int/LogBounds.lean`. Count answers use `Set.EqOn`; detection
+  consumes a direct iff on queried edges. No additional weighted-triangle predicate or source
+  machine is introduced.
   This is the mathematical interface milestone
   [#1438](https://github.com/cslib-community/complexitylib/issues/1438), with no sparsity assumption,
   preprocessing/time claim or solver. `Algorithms/ExactTriangle/{Weights,Hashing}.lean` now adapts
   the modular counting/coefficient identities, minimum-count prime and uniform false-positive
   bound from `Sec3/Theorem17/Hashing.lean`, using supplied matrices and the existing decision
-  predicate. Its integer-square window characterisation supports later native enumeration.
+  predicate. The application-independent `Nat.sqrtPrimeWindow` API lives in
+  `Foundations/NumberTheory/SqrtPrimeWindow.lean`; its integer-square characterization supports
+  native enumeration, and splitting and witness recovery reuse it.
   The quotient/coefficient API lives in `Foundations/RingTheory/CyclicIntRing.lean`; the uniform
   all-window prime-count bound lives in `Foundations/NumberTheory/PrimeWindow.lean`, retaining
   the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
