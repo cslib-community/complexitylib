@@ -1,0 +1,86 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Karn Seth
+-/
+
+module
+-- upstream: candidate
+
+public import Complexity.Computability.Complexity.FineGrained.PPZ
+
+/-!
+# PPSZ with w-implication: definitions
+
+The PPSZ algorithm of Paturi, Pudlák, Saks and Zane processes the variables of a CNF formula in a
+uniformly random order, like PPZ (`Cslib.Complexity.PPZ.round`). A variable is set to a value
+when that value is *w-implied*: some subformula of at most `w` clauses, together with the values
+already chosen, forces it. Otherwise the variable is set uniformly at random. This is PPSZ with
+w-implication [Hertli, Definition 3][Hertli2011] [Scheder, Algorithm 1][Scheder2021]; the analysis
+of [Paturi, Pudlák, Saks, Zane][PaturiPudlakSaksZane2005] uses nothing about its bounded
+resolution beyond this property [Scheder, p. 4][Scheder2021].
+
+## Main definitions
+
+* `Cslib.Complexity.PPSZ.WImplied`: a subformula of at most `w` clauses implies `x = b` under
+  a partial assignment.
+* `Cslib.Complexity.PPSZ.implied`: the value implied on a variable, if any.
+* `Cslib.Complexity.PPSZ.run`: the first `i` steps of a round in a fixed order.
+* `Cslib.Complexity.PPSZ.round`: one round of PPSZ, in a uniformly random order.
+
+## References
+
+* [R. Paturi, P. Pudlák, M. Saks, F. Zane, *An improved exponential-time algorithm for
+  k-SAT*][PaturiPudlakSaksZane2005]
+* [T. Hertli, *3-SAT faster and simpler*][Hertli2011]
+* [D. Scheder, *PPSZ is better than you think*][Scheder2021]
+-/
+
+@[expose] public section
+
+namespace Cslib.Complexity.PPSZ
+
+open Cslib.Logic.PL Finset
+
+variable {n : ℕ}
+
+/-- **w-implication.** Under the partial assignment `τ`, the literal `x = b` is implied by a
+subformula of `φ` with at most `w` clauses: every total assignment extending `τ` that satisfies
+the subformula sets `x` to `b`. -/
+def WImplied (φ : CNF (Fin n)) (w : ℕ) (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) :
+    Prop :=
+  ∃ ψ : CNF (Fin n), (∀ c ∈ ψ, c ∈ φ) ∧ ψ.length ≤ w ∧
+    ∀ σ : Fin n → Bool, (∀ y c, τ y = some c → σ y = c) → ψ.eval σ = true → σ x = b
+
+open Classical in
+/-- The value w-implied on `x` under `τ`, if any (`true` is preferred if both are implied, which
+happens only when no extension of `τ` satisfies `φ`). -/
+noncomputable def implied (φ : CNF (Fin n)) (w : ℕ) (τ : Fin n → Option Bool) (x : Fin n) :
+    Option Bool :=
+  if WImplied φ w τ x true then some true
+  else if WImplied φ w τ x false then some false else none
+
+/-- One step of PPSZ on `x`: the implied value if there is one, and a uniform bit otherwise. -/
+noncomputable def step (φ : CNF (Fin n)) (w : ℕ) (τ : Fin n → Option Bool) (x : Fin n) :
+    PMF Bool :=
+  match implied φ w τ x with
+  | some b => PMF.pure b
+  | none => Cslib.Probability.PMF.uniformOfFintype Bool
+
+/-- **The first `i` steps of a PPSZ round** in the order `π`: the variable `π j` is processed at
+step `j`. -/
+noncomputable def run (φ : CNF (Fin n)) (w : ℕ) (π : Equiv.Perm (Fin n)) :
+    ℕ → PMF (Fin n → Option Bool)
+  | 0 => PMF.pure fun _ => none
+  | i + 1 =>
+    if h : i < n then
+      (run φ w π i).bind fun τ =>
+        (step φ w τ (π ⟨i, h⟩)).map fun b => Function.update τ (π ⟨i, h⟩) (some b)
+    else run φ w π i
+
+/-- **One round of PPSZ** with w-implication: process all variables in a uniformly random
+order. -/
+noncomputable def round (φ : CNF (Fin n)) (w : ℕ) : PMF (Fin n → Option Bool) :=
+  (Cslib.Probability.PMF.uniformOfFintype (Equiv.Perm (Fin n))).bind fun π => run φ w π n
+
+end Cslib.Complexity.PPSZ
