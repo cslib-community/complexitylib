@@ -155,7 +155,7 @@ theorem CutInv.bounds {n K_max : ℕ} {s : IndexedMinPQ.State n} {st : RawState 
     {v m : Fin n} {pending : Option (Fin n)} (h : CutInv n K_max s st v m pending) :
     st.sz ≤ n ∧ st.numRoots ≤ n ∧ st.numMarked ≤ n ∧ st.minRoot ≤ n := by
   obtain ⟨ts, _, hnd, _, _, _, hsz, hnr, hnm, _, ⟨_, hm, _, _⟩, _, _⟩ := h
-  have hfn_le : (forestNodes ts).length ≤ n := nodup_length_le_n hnd
+  have hfn_le : (forestNodes ts).length ≤ n := by simpa using hnd.length_le_card
   have hts_le : ts.length ≤ n := (forestNodes_length_ge ts).trans hfn_le
   have hdom_le : (IndexedMinPQ.dom s).card ≤ n :=
     (Finset.card_le_univ _).trans (by simp only [Fintype.card_fin, le_rfl])
@@ -1193,17 +1193,14 @@ theorem cutNode_forest {n K_max base w : ℕ} {s' : IndexedMinPQ.State n} {x : D
     exists_parent_info (hts ts[i] hi_mem).1 hcur_desc hpar_pre_cur
   have hdp_pos : 1 ≤ st.deg p := hd_ag ▸ hdp_pos_pre
   have hdp_le : st.deg p ≤ n := by
-    have hnd_fn_le : (forestNodes ts).length ≤ n := nodup_length_le_n hnd
-    -- Find subtree at p inside ts[i] to bound deg p ≤ n; even simpler, deg_bounds gives fib ≤ size!
-    have hTi_sz : (ts[i]).size ≤ n := nodup_length_le_n hnd_Ti
-    -- Let's extract deg p ≤ n from ValidSubtree on ts[i]:
     let rec sub_deg_le (U : FHTree n) (hU : ValidSubtree st_pre pending U)
         (hnd_U : U.nodes.Nodup) (hp_U : p ∈ U.nodes) : st_pre.deg p ≤ n :=
       match U, hU with
       | .node u cs, .mk _ _ hdeg _ _ _ _ hsub => by
         rcases List.mem_cons.mp hp_U with rfl | hp_cs
         · have hcs_le : cs.length ≤ (forestNodes cs).length := forestNodes_length_ge cs
-          have hfn_le : (p :: forestNodes cs).length ≤ n := nodup_length_le_n hnd_U
+          have hfn_le : (FHTree.node p cs).nodes.length ≤ n := by simpa using hnd_U.length_le_card
+          change (p :: forestNodes cs).length ≤ n at hfn_le
           simp only [List.length_cons] at hfn_le
           omega
         · obtain ⟨c, hc, hp_c⟩ := mem_forestNodes_iff.mp hp_cs
@@ -1234,7 +1231,7 @@ theorem cutNode_forest {n K_max base w : ℕ} {s' : IndexedMinPQ.State n} {x : D
       rw [hR_eq] at hp0
       omega
     have hnd_cons : (cur :: ts.map FHTree.root).Nodup := List.nodup_cons.mpr ⟨hcur_not_map, hr_nd⟩
-    have hlen_le := nodup_length_le_n hnd_cons
+    have hlen_le : (cur :: ts.map FHTree.root).length ≤ n := by simpa using hnd_cons.length_le_card
     simp only [List.length_cons, List.length_map] at hlen_le
     exact hlen_le
   obtain ⟨y, he, hbr_y, hmod_y, hy_reg, hy_props⟩ :=

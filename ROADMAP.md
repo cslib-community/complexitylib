@@ -439,6 +439,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **A typed-call evaluator** for fixed-program Word-RAM clients, returning the typed observation,
   final state and halt-inclusive instruction cost, so the prefix-sum and stack clients no longer
   assemble preparation, evaluation and halt accounting by hand.
+- **Priority-queue and shortest-path consolidation** ([#1363]): lift operation-count helpers
+  (`numQueries`, `numInserts`, `numDecreaseKeys`, `numExtractMins`) to `IndexedMinPQ`, parameterize
+  flat-program operation-sequence execution (`RunsOps`) over `PQCode` in `PriorityQueue/Basic.lean`
+  so `BinaryHeap` and `FibonacciHeap` share a generic `run_ops_exact` theorem, and factor a common
+  `ShortestPathSpec p bound` predicate in `Dijkstra/HeapStatement.lean` across `LogLinearSpec`,
+  `FibonacciSpec`, and `FibonacciLinearSpec`.
 
 ## Coverage and reuse
 
@@ -555,6 +561,7 @@ not planned, not as proved.
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
 [#1336]: https://github.com/cslib-community/complexitylib/issues/1336
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
+[#1363]: https://github.com/cslib-community/complexitylib/issues/1363
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435

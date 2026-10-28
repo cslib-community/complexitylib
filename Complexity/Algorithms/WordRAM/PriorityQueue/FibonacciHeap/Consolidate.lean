@@ -102,7 +102,7 @@ theorem deg_bounds_of_extra {n : ℕ} {st : RawState n} {T : FHTree n} {z : Fin 
     (hT : ValidSubtree st none T) (hnd : (z :: T.nodes).Nodup) :
     T.deg ≤ 2 * Nat.log 2 n + 1 ∧ T.deg + 2 ≤ n := by
   have hlen : 1 + T.size ≤ n := by
-    have h := nodup_length_le_n hnd
+    have h : (z :: T.nodes).length ≤ n := by simpa using hnd.length_le_card
     simp only [List.length_cons] at h
     unfold FHTree.size
     omega
@@ -202,7 +202,7 @@ theorem SlotInv.lookup {n maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHT
     have hnone : ∀ T ∈ slotTrees, T.deg ≠ d := fun T hT e => hex ⟨T, hT, e⟩
     exact ⟨hemp d hd hnone, hnone⟩
 
-theorem getElem_mem_eraseIdx_of_ne {α : Type*} :
+private theorem getElem_mem_eraseIdx_of_ne {α : Type*} :
     ∀ (L : List α) (i k : ℕ) (_hi : i < L.length) (hk : k < L.length),
       k ≠ i → L[k] ∈ L.eraseIdx i
   | [], _, _, _, hk, _ => absurd hk (Nat.not_lt_zero _)
@@ -2851,7 +2851,7 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
     have hrtail_len : rtail.length = r_trees.length := by
       simpa only [List.length_map] using hperm_rtail.length_eq
     have hTz_val : ValidRoot st none T_z := hroots T_z (List.getElem_mem hidx_z)
-    have hts_len_le_n : (forestNodes ts).length ≤ n := nodup_length_le_n hnd
+    have hts_len_le_n : (forestNodes ts).length ≤ n := by simpa using hnd.length_le_card
     have hTz_size_le_n : T_z.size ≤ n := by
       have h1 := hperm_ts.length_eq
       simp only [List.length_append] at h1

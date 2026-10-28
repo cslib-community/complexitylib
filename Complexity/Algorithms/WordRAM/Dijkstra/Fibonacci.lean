@@ -42,9 +42,9 @@ the sharper reachable-vertex bound `Cslib.Algorithms.WordRAM.Dijkstra.FibonacciS
 
 * [E. W. Dijkstra, *A note on two problems in connexion with graphs*][Dijkstra1959]
 * [M. L. Fredman and R. E. Tarjan, *Fibonacci heaps and their uses in improved network optimization
-  algorithms*][FredmanTarjan1987]
+  algorithms*][FredmanTarjan1987], Section 4 (pp. 609–610).
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009]
+  Algorithms*][CLRS2009], Section 24.3 (p. 662).
 -/
 
 @[expose] public section
@@ -66,12 +66,12 @@ private theorem fits_fib_space {G : ListInstance} {w : ℕ}
   nlinarith [Nat.zero_le G.maxWeight]
 
 private theorem fibonacciHeap_dijkstra_bound (G : ListInstance) :
-    PriorityQueue.FibonacciHeap.pkg.T_init G.n +
-      PriorityQueue.FibonacciHeap.pkg.T_ins G.n + 28 +
-      min G.n (G.m + 1) * (PriorityQueue.FibonacciHeap.pkg.T_ext G.n +
-        PriorityQueue.FibonacciHeap.pkg.T_empty G.n + 20) +
-      min G.n G.m * (PriorityQueue.FibonacciHeap.pkg.T_ins G.n + 20) +
-      G.m * (PriorityQueue.FibonacciHeap.pkg.T_dec G.n + 20) + 1 ≤
+    PriorityQueue.FibonacciHeap.pkg.initTime G.n +
+      PriorityQueue.FibonacciHeap.pkg.insertTime G.n + 28 +
+      min G.n (G.m + 1) * (PriorityQueue.FibonacciHeap.pkg.extractTime G.n +
+        PriorityQueue.FibonacciHeap.pkg.emptyTime G.n + 20) +
+      min G.n G.m * (PriorityQueue.FibonacciHeap.pkg.insertTime G.n + 20) +
+      G.m * (PriorityQueue.FibonacciHeap.pkg.decreaseTime G.n + 20) + 1 ≤
       640 * (G.m + min G.n (G.m + 1) * (Nat.log 2 G.n + 1)) := by
   dsimp only [PriorityQueue.FibonacciHeap.pkg, PriorityQueue.FibonacciHeap.tInit,
     PriorityQueue.FibonacciHeap.tEmpty, PriorityQueue.FibonacciHeap.tIns,

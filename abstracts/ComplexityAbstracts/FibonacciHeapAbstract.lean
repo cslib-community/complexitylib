@@ -39,9 +39,9 @@ statement here depends on implementation modules.
 ## References
 
 * [M. L. Fredman and R. E. Tarjan, *Fibonacci heaps and their uses in improved network optimization
-  algorithms*][FredmanTarjan1987]
+  algorithms*][FredmanTarjan1987], Section 2, Theorem 1 (p. 604).
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009], Chapter 19.
+  Algorithms*][CLRS2009], Section 19.1, eq. (19.1), and Sections 19.2–19.4.
 -/
 
 namespace ComplexityAbstracts.FibonacciHeapAbstract
@@ -291,8 +291,9 @@ def prepareRegs {n : ℕ} : Op n → (Fin r → ℕ) → Fin r → ℕ
 def regAt (reg : Fin r → ℕ) (idx : ℕ) : ℕ :=
   if h : idx < r then reg ⟨idx, h⟩ else 0
 
-/-- Decode operation `o`'s return value from `R[22..24]`: `R[22]` is the non-empty / boolean flag,
-`R[23]` is the extracted handle index, and `R[24]` is the queried or extracted key. -/
+/-- Decode operation `o`'s return value from `R[22..24]`: `R[22]` is the boolean result for
+`isEmpty` and the presence flag for `getKey`/`extractMin`, `R[23]` is the extracted handle index,
+and `R[24]` is the queried or extracted key. -/
 def decodeResult {n : ℕ} : (o : Op n) → (Fin r → ℕ) → Option (OpResult o)
   | .isEmpty, reg => some (decide (regAt reg 22 ≠ 0))
   | .getKey _, reg =>

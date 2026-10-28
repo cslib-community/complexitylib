@@ -743,7 +743,7 @@ theorem FibRawInv.bounds {n K_max : ℕ} {s : IndexedMinPQ.State n} {st : RawSta
     (h : FibRawInv n K_max s st) :
     st.sz ≤ n ∧ st.numRoots ≤ n ∧ st.numMarked ≤ n ∧ st.minRoot ≤ n := by
   obtain ⟨ts, _, hnd, _, _, _, hsz, hnr, hnm, _, hrl⟩ := h
-  have hfn_le : (forestNodes ts).length ≤ n := nodup_length_le_n hnd
+  have hfn_le : (forestNodes ts).length ≤ n := by simpa using hnd.length_le_card
   have hts_le : ts.length ≤ n := (forestNodes_length_ge ts).trans hfn_le
   have hdom_le : (IndexedMinPQ.dom s).card ≤ n :=
     (Finset.card_le_univ _).trans (by simp only [Fintype.card_fin, le_rfl])
