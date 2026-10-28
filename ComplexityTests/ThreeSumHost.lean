@@ -60,7 +60,7 @@ example {w : ℕ} (x : Data 7) (h1 : Fits w 1) :
 private theorem probe_spec (input : List ℤ)
     (hinput : input = [] ∨ input = [-1] ∨ input = [0] ∨ input = [1])
     (w : ℕ) (h1 : Fits (w + 2) 1) :
- let N := input.length; let U := (N + 2) ^ 0;
+    let N := input.length; let U := (N + 2) ^ 0;
       let μ : ℕ → ℤ := fun i => input.getD i 0;
       ∀ s < 2 * Host.sideLength N, ∀ (a : Data 7) (mem : ℕ → ℕ),
       a.regs (Host.solverArg 0) = Host.sideLength N → a.regs (Host.solverArg 1) = 2 * U + 1 →
