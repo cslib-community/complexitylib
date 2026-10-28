@@ -841,8 +841,9 @@ theorem size_program (κ : ℕ) : (program κ).size = κ + 71 := by
     induction κ with
     | zero => rfl
     | succ κ ih => simp [power, ih]
-  simp [program, setup, calculate, hp, NatLog.program, NatLog.body,
-    NatClog.program, NatClog.body, NatSqrt.program, NatSqrt.body]
+  simp only [program, setup, calculate, NatLog.program, NatLog.body, NatSqrt.program,
+    NatSqrt.body, NatClog.program, NatClog.body, Code.size.eq_2, Code.size, Nat.reduceAdd, hp,
+    Code.size_rename]
   omega
 
 /-- The code is the same at every word width. -/

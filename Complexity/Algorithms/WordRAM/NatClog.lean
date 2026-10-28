@@ -11,7 +11,7 @@ public import Complexity.Computability.WordRAM.Notation
 public import Mathlib.Data.Nat.Log
 
 /-!
-# A charged native binary logarithm
+# A charged native ceiling binary logarithm
 
 ## Main definitions
 
@@ -30,7 +30,7 @@ open Cslib.WordRAM
 
 /-- Quotient, initially the input. -/
 abbrev arg : Fin 4 := 0
-/-- Floor logarithm output. -/
+/-- Ceiling logarithm output. -/
 abbrev result : Fin 4 := 1
 /-- Constant one. -/
 abbrev one : Fin 4 := 2
