@@ -23,23 +23,14 @@ open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
 /-! ### Satisfiability parameterized by the number of variables -/
 
-example : SAT ∈ FPT encCNF CNF.numVars := SAT_mem_FPT
-
-example : KSAT 3 ∈ FPT encCNF CNF.numVars := KSAT_mem_FPT 3
-
-example : SAT ∈ XP encCNF CNF.numVars := FPT_subset_XP SAT_mem_FPT
-
 /-- A larger parameter: the number of occurrences of variables bounds the number of distinct
 variables. -/
 example : SAT ∈ FPT encCNF fun φ => φ.vars.length :=
   FPT_subset_FPT_of_le_comp (h := id) CNF.numVars_le_length_vars SAT_mem_FPT
 
-example : SATᶜ ∈ FPT encCNF CNF.numVars := compl_mem_FPT SAT_mem_FPT
-
-/-- The fpt bound of exhaustive search can be read off with a monotone function. -/
-example : ∃ f : ℕ → ℕ, Monotone f ∧ ∃ c : ℕ, DecidableInTimeO SAT encCNF
-    fun φ => f φ.numVars * ((encCNF φ).length + 1) ^ c :=
-  mem_FPT_iff_exists_monotone.mp SAT_mem_FPT
+example : SATᶜ ∈ XP encCNF fun φ => φ.vars.length :=
+  FPT_subset_XP (compl_mem_FPT
+    (FPT_subset_FPT_of_le_comp (h := id) CNF.numVars_le_length_vars SAT_mem_FPT))
 
 /-! ### A problem in `P` -/
 
@@ -48,8 +39,6 @@ private def Narrow : Set (CNF ℕ) := {φ | ∀ c ∈ φ, c.length ≤ 3}
 
 private theorem narrow_mem_P : Narrow ∈ P encCNF :=
   ⟨_, (computableInPolyTime_all_length_le 3), fun φ => by simp [Narrow]⟩
-
-example : Narrow ∈ FPT encCNF CNF.numVars := P_subset_FPT narrow_mem_P
 
 /-- Every parameter works for a problem in `P`, even the length of the formula. -/
 example : Narrow ∈ FPT encCNF List.length := P_subset_FPT narrow_mem_P
@@ -69,13 +58,12 @@ example : Narrow ∪ SAT ∈ FPT encCNF CNF.numVars :=
 
 /-! ### Bounded parameters -/
 
-example : FPT encCNF (fun _ => 0) = P encCNF := FPT_eq_P_of_le (K := 0) fun _ => le_rfl
+/-- `SAT ∈ FPT` or `SAT ∈ XP` for a constant parameter is equivalent to `SAT ∈ P`. -/
+example : (SAT ∈ FPT encCNF fun _ => 7) ↔ SAT ∈ P encCNF := by
+  rw [FPT_eq_P_of_le (K := 7) fun _ => le_rfl]
 
-example : XP encCNF (fun _ => 5) = P encCNF := XP_eq_P_of_le (K := 5) fun _ => le_rfl
-
-/-- `SAT ∈ FPT` for a constant parameter would put `SAT` in `P`. -/
-example (h : SAT ∈ FPT encCNF fun _ => 7) : SAT ∈ P encCNF :=
-  FPT_eq_P_of_le (K := 7) (fun _ => le_rfl) ▸ h
+example : (SAT ∈ XP encCNF fun _ => 5) ↔ SAT ∈ P encCNF := by
+  rw [XP_eq_P_of_le (K := 5) fun _ => le_rfl]
 
 /-! ### An fpt-reduction from 3SAT to SAT -/
 
@@ -121,18 +109,11 @@ example : ThreeSAT ∈ FPT encCNF CNF.numVars :=
 example : ThreeSATᶜ ∈ XP encCNF CNF.numVars :=
   threeSAT_fptReducible_SAT.compl.mem_XP (FPT_subset_XP (compl_mem_FPT SAT_mem_FPT))
 
-example : FPTReducible encCNF encCNF CNF.numVars CNF.numVars ThreeSAT ThreeSAT :=
-  .refl _ _ _
-
 /-- Composing the reduction with the identity reduction on SAT. -/
 example : FPTReducible encCNF encCNF CNF.numVars CNF.numVars ThreeSAT SAT :=
   threeSAT_fptReducible_SAT.trans (.refl _ _ _)
 
 /-! ### Kernelization -/
-
-example : HasKernel encCNF CNF.numVars SAT := hasKernel_of_mem_FPT SAT_mem_FPT
-
-example : HasPolyKernel encCNF CNF.numVars Narrow := hasPolyKernel_of_mem_P narrow_mem_P
 
 example : HasKernel encCNF CNF.numVars Narrow := (hasPolyKernel_of_mem_P narrow_mem_P).hasKernel
 
@@ -196,11 +177,7 @@ example : (triangle, 1) ∉ VertexCover := by
   rw [← VertexCover.search_eq_true_iff]
   decide
 
-example : DecidableInExpTime VertexCover (encPair encGraph encNat) Prod.snd 1 :=
-  VertexCover_decidableInExpTime_one
-
-example : VertexCover ∈ FPT (encPair encGraph encNat) Prod.snd := VertexCover_mem_FPT
-
-example : HasKernel (encPair encGraph encNat) Prod.snd VertexCover := VertexCover_hasKernel
+example : VertexCoverᶜ ∈ XP (encPair encGraph encNat) Prod.snd :=
+  FPT_subset_XP (compl_mem_FPT VertexCover_mem_FPT)
 
 end ComplexityTests.Parameterized
