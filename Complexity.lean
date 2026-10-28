@@ -96,6 +96,8 @@ public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
 public import Complexity.Algorithms.WordRAM.PrefixSums.Update
+public import Complexity.Algorithms.WordRAM.PrimeTable
+public import Complexity.Algorithms.WordRAM.PrimeTrial
 public import Complexity.Algorithms.WordRAM.Queue.Basic
 public import Complexity.Algorithms.WordRAM.Queue.Dynamic
 public import Complexity.Algorithms.WordRAM.Queue.Model
@@ -104,10 +106,16 @@ public import Complexity.Algorithms.WordRAM.Quicksort
 public import Complexity.Algorithms.WordRAM.Stack
 public import Complexity.Algorithms.WordRAM.Stack.Controller
 public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CollisionTest
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Collisions
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Count
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountCall
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountFrame
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountTriple
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Query
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
