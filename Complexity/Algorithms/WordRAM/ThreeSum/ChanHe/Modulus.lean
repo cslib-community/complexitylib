@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
+import Complexity.Algorithms.ThreeSum.ChanHe.SelectorBounds
 
 /-!
 # Native setup of the two Chan–He prime searches
@@ -115,19 +116,9 @@ theorem exec_secondSetup {w : ℕ} (x : Data 64) (h3 : Fits w 3)
 private theorem selector_bounds {m : ℕ} (hm : 1 ≤ m) (A : ℕ → Prop) [DecidablePred A] :
     1 ≤ minOrOne {q ∈ Nat.primesLE m | A q} ∧
       minOrOne {q ∈ Nat.primesLE m | A q} ≤ m := by
-  let S := {q ∈ Nat.primesLE m | A q}
-  by_cases h : S.Nonempty
-  · have hmem : S.min' h ∈ S := Finset.min'_mem _ _
-    have hprime : (S.min' h).Prime ∧ S.min' h < m + 1 := by
-      have hh := (Finset.mem_filter.mp hmem).1
-      rw [Nat.primesLE_eq_filter_range, Finset.mem_filter, Finset.mem_range] at hh
-      exact ⟨hh.2, hh.1⟩
-    change 1 ≤ minOrOne S ∧ minOrOne S ≤ m
-    rw [minOrOne, dite_eq_left h]
-    exact ⟨by have := hprime.1.two_le; omega, by omega⟩
-  · change 1 ≤ minOrOne S ∧ minOrOne S ≤ m
-    rw [minOrOne, dite_eq_right h]
-    exact ⟨le_refl _, hm⟩
+  exact minOrOne_filter_bounds hm
+    (fun q hq => (Nat.prime_of_mem_primesLE hq).two_le.trans' (by decide))
+    (fun _ hq => Nat.le_of_mem_primesLE hq) A
 
 private theorem forall_three {P : Fin 3 → Prop} : (∀ j, P j) ↔ P 0 ∧ P 1 ∧ P 2 := by
   constructor
