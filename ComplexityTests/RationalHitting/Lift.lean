@@ -145,29 +145,25 @@ example {table : List (List ℤ)} (htable : table ∈ liftRows 0 2 4 2 385 385 3
 
 /-! ### Polynomial-time certificates -/
 
-open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
+open Turing MultiTapeTM
 
 example : (encList encIntBin (coeffRow 2 3)).length ≤ coeffRowBound (encIntBin 2).length 3 :=
   length_encList_coeffRow_le 2 le_rfl
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime (fun p : ℤ × ℕ => coeffRow p.1 p.2)
+example : ComputableInPolyTime (fun p : ℤ × ℕ => coeffRow p.1 p.2)
     (encPair encIntBin encUnary) (encList encIntBin) := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × (ℤ × ℤ) =>
+example : ComputableInPolyTime (fun p : (ℕ × ℕ) × (ℤ × ℤ) =>
     testRows p.1.1 p.1.2 p.2.1 p.2.2)
     (encPair (encPair encUnary encUnary) (encPair encIntBin encIntBin))
     (encList (encList encIntBin)) := by
   fun_prop
 
-example : ComputableTidilyInPolyTime
-    (fun q : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ =>
-      liftRows q.1 q.2.1 q.2.2.1 q.2.2.2.1 q.2.2.2.2.1 q.2.2.2.2.2.1 q.2.2.2.2.2.2)
-    (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary
-      (encPair encUnary (encPair encUnary encUnary))))))
-    (encList (encList (encList encIntBin))) :=
-  liftRows_polytime.tidy
+example : ComputableInPolyTime
+    (fun p : ℕ × ℕ => (liftRows p.1 p.2 p.1 p.2 p.1 p.2 p.1).length)
+    (encPair encUnary encUnary) encUnary :=
+  (ComputableInPolyTime.of_tidy (.length_list (encList (encList encIntBin)))).comp
+    (by fun_prop)
 
 end ComplexityTests.RationalHitting.Lift

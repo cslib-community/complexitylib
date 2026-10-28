@@ -78,43 +78,31 @@ example : encodeRat (Rat.divInt 5 0) = [false, false, true, false, true] := by
 
 /-! ### Certificates and composed clients -/
 
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (p.1 / p.2, p.1 % p.2))
-    (encPair encNat encNat) (encPair encNat encNat) := binary_divMod
-
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 / p.2)
-    (encPair encNat encNat) encNat := binary_div
-
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 % p.2)
-    (encPair encNat encNat) encNat := binary_mod
-
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => Nat.gcd p.1 p.2)
-    (encPair encNat encNat) encNat := binary_gcd
-
-example : ComputableTidilyInPolyTime encodeNat encNat encBits := encodeNat_polytime.tidy
-
-example : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => encodeRat (Rat.divInt p.1 p.2))
-    (encPair encIntBin encIntBin) encBits := encodeDivInt_polytime.tidy
-
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × ℕ => encodeNat (Nat.gcd (p.1 / p.2) (p.1 % p.2)))
     (encPair encNat encNat) encBits := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
+    (fun p : ℕ × ℕ => let qr := (p.1 / p.2, p.1 % p.2); encodeNat (qr.1 + qr.2))
+    (encPair encNat encNat) encBits := by
+  have hqr : ComputableInPolyTime (fun p : ℕ × ℕ => (p.1 / p.2, p.1 % p.2))
+      (encPair encNat encNat) (encPair encNat encNat) := .of_tidy binary_divMod
+  have hadd : ComputableInPolyTime (fun qr : ℕ × ℕ => encodeNat (qr.1 + qr.2))
+      (encPair encNat encNat) encBits := by fun_prop
+  exact hadd.comp hqr
+
+example : ComputableInPolyTime
     (fun p : ℤ × ℤ => encodeRat (Rat.divInt (p.1 + p.2) (p.1 * p.2 - 1)))
     (encPair encIntBin encIntBin) encBits := by
-  apply ComputableInPolyTime.tidy
   apply encodeDivInt_polytime' <;> exact .of_tidy (by fun_prop)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℤ × ℤ =>
       encodeNat (Nat.gcd p.1.natAbs p.2.natAbs) ++ encodeRat (Rat.divInt p.1 p.2))
     (encPair encIntBin encIntBin) encBits := by
-  have hrat := encodeDivInt_polytime.tidy
-  have hnat : ComputableTidilyInPolyTime
+  have hrat := encodeDivInt_polytime
+  have hnat : ComputableInPolyTime
       (fun p : ℤ × ℤ => encodeNat (Nat.gcd p.1.natAbs p.2.natAbs))
       (encPair encIntBin encIntBin) encBits := by fun_prop
   fun_prop

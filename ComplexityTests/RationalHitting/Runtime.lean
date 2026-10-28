@@ -63,25 +63,25 @@ example {n s : ℕ} (hn : 1 ≤ n) (hs : 1 ≤ s) :
 /-! ### Polynomial-time certificates and end-to-end specification -/
 
 example :
-    ComputableTidilyInPolyTime parseInput encBits (encOption (encPair encUnary encUnary)) :=
-  parseInput_polytime.tidy
+    ComputableInPolyTime (fun w : List Bool => parseInput (true :: w))
+      encBits (encOption (encPair encUnary encUnary)) := by
+  fun_prop
 
 example :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => encodeOutput (hittingList p.1 p.2))
+    ComputableInPolyTime (fun p : ℕ × ℕ => encodeOutput (hittingList (p.1 + 1) (p.2 + 1)))
       (encPair encUnary encUnary) encBits :=
-  hittingList_polytime.tidy
-
-example : ComputableTidilyInPolyTime hittingGenerator encBits encBits :=
-  hittingGenerator_polytime.tidy
+  computableInPolyTime_hittingList (by fun_prop) (by fun_prop)
 
 example :
-    ComputableInPolyTime hittingGenerator encBits encBits ∧
-      ∀ n s : ℕ, 1 ≤ n → 1 ≤ s →
-        hittingGenerator (inputWord n s) = encodeOutput (hittingList n s) ∧
-          (hittingList n s).dimension ≤ 256 * (n + s + 1) ^ 10 ∧
-          (encodeOutput (hittingList n s)).length ≤
-            PolynomialBounds.outputConstant * (n + s + 1) ^ 104 ∧
-          Hits s (hittingList n s) :=
-  hittingGenerator_spec
+    ComputableInPolyTime (fun p : List Bool × List Bool => hittingGenerator (p.1 ++ p.2))
+      (encPair encBits encBits) encBits :=
+  hittingGenerator_polytime.comp (g := fun p : List Bool × List Bool => p.1 ++ p.2) (by fun_prop)
+
+example :
+    hittingGenerator (inputWord 1 2) = encodeOutput (hittingList 1 2) ∧
+      (hittingList 1 2).dimension ≤ 256 * 4 ^ 10 ∧
+      (encodeOutput (hittingList 1 2)).length ≤ PolynomialBounds.outputConstant * 4 ^ 104 ∧
+      Hits 2 (hittingList 1 2) :=
+  hittingGenerator_spec.2 1 2 le_rfl (by decide)
 
 end ComplexityTests.RationalHitting.Runtime

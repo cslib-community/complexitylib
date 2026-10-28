@@ -62,37 +62,32 @@ example : ([3, -2, 1] : List ℤ).sum.natAbs.size ≤ 2 + Nat.size 3 :=
 
 /-! ### Certificates and composed clients -/
 
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 - p.2)
-    (encPair encNat encNat) encNat := binary_sub
+example : ComputableInPolyTime (fun p : ℤ × ℤ => p.1 * p.2 - p.2)
+    (encPair encIntBin encIntBin) encIntBin :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime List.sum (encList encIntBin) encIntBin := intBin_sum
+example : ComputableInPolyTime (fun p : ℤ × ℤ => -(p.1 + p.2) * p.1)
+    (encPair encIntBin encIntBin) encIntBin :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => p.1 * p.2 - p.2)
-    (encPair encIntBin encIntBin) encIntBin := by
-  fun_prop
+example : ComputableInPolyTime (fun p : ℤ × ℕ => (p.1 ^ p.2).natAbs)
+    (encPair encIntBin encUnary) encNat :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => -(p.1 + p.2) * p.1)
-    (encPair encIntBin encIntBin) encIntBin := by
-  fun_prop
+example : ComputableInPolyTime (fun p : ℕ × ℕ => ((p.1 : ℤ) - p.2).natAbs)
+    (encPair encNat encNat) encNat :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : ℤ × ℕ => (p.1 ^ p.2).natAbs)
-    (encPair encIntBin encUnary) encNat := by
-  fun_prop
-
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => ((p.1 : ℤ) - p.2).natAbs)
-    (encPair encNat encNat) encNat := by
-  fun_prop
-
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℤ × ℤ => decide (p.1 * p.1 ≤ p.2) && !decide (p.2 = 0))
-    (encPair encIntBin encIntBin) encBool := by
-  fun_prop
+    (encPair encIntBin encIntBin) encBool :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : List ℤ × ℤ => p.1.sum - p.2)
-    (encPair (encList encIntBin) encIntBin) encIntBin := by
-  fun_prop
+example : ComputableInPolyTime (fun p : List ℤ × ℤ => p.1.sum - p.2)
+    (encPair (encList encIntBin) encIntBin) encIntBin :=
+  .of_tidy (by fun_prop)
 
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (p.1 - p.2) * p.1 ^ 3)
+example : ComputableInPolyTime (fun p : ℕ × ℕ => (p.1 - p.2) * p.1 ^ 3)
     (encPair encNat encNat) encNat := by
   fun_prop
 

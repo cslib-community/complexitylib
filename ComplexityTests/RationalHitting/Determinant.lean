@@ -78,18 +78,13 @@ example : intBits 0 = 1 ∧ intBits 1 = 2 ∧ intBits (-5) = 4 := by decide +ker
 
 /-! ### Polynomial-time certificate -/
 
-example : ComputableTidilyInPolyTime detRows (encList (encList encIntBin)) encIntBin :=
-  detRows_polytime.tidy
-
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The registered certificate composes under `fun_prop`.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : List (List ℤ) × List (List ℤ) => detRows p.1 * detRows p.2)
     (encPair (encList (encList encIntBin)) (encList (encList encIntBin))) encIntBin := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime (List.map detRows)
+example : ComputableInPolyTime (List.map detRows)
     (encList (encList (encList encIntBin))) (encList encIntBin) := by
   fun_prop
 

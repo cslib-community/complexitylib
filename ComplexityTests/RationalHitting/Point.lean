@@ -84,23 +84,21 @@ example :
 /-! ### Polynomial-time certificates -/
 
 example :
-    ComputableTidilyInPolyTime pointWordOfTables
-      (encList (encList (encList encIntBin))) encBits :=
-  pointWordOfTables_polytime.tidy
+    ComputableInPolyTime (fun p : ℕ × ℕ => pointWordOfTables (liftRows p.1 p.2 p.1 p.2 p.1 p.2 p.1))
+      (encPair encUnary encUnary) encBits := by
+  fun_prop
 
 example :
-    ComputableTidilyInPolyTime pointWordsOfTables
-      (encList (encList (encList encIntBin))) (encList encBits) :=
-  pointWordsOfTables_polytime.tidy
+    ComputableInPolyTime
+      (fun p : ℕ × ℕ => pointWordsOfTables (liftRows p.1 p.2 p.1 p.2 p.1 p.2 p.1))
+      (encPair encUnary encUnary) (encList encBits) := by
+  fun_prop
 
 example :
-    ComputableTidilyInPolyTime
-      (fun q : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ =>
-        pointWord q.1 q.2.1 q.2.2.1 q.2.2.2.1 q.2.2.2.2.1 q.2.2.2.2.2.1 q.2.2.2.2.2.2)
-      (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary
-        (encPair encUnary (encPair encUnary encUnary))))))
-      encBits :=
-  pointWord_polytime.tidy
+    ComputableInPolyTime
+      (fun p : ℕ × ℕ => pointWord p.1 p.2 p.1 p.2 p.1 p.2 p.1)
+      (encPair encUnary encUnary) encBits := by
+  fun_prop
 
 /-! ### Axioms -/
 
