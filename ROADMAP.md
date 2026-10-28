@@ -432,6 +432,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   The shared native left/right encoders ([#1493]) compute all `10^L` leaf values from `7^L`
   signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
   with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
+  Native ExactTriangle preparation ([#1532]) has checked parameter, residue-class/query,
+  chunk-descriptor and zero/one matrix kernels, including initialized signed-weight class
+  execution. Its complete catalogue, width and aggregate preparation composition remain open.
   Band/tile preparation, native pruned/sparse-query programs, native Chan–He preprocessing, the reduction
   host, the fast Exact Triangle solver and full
   input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
@@ -558,6 +561,7 @@ not planned, not as proved.
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
+[#1532]: https://github.com/cslib-community/complexitylib/issues/1532
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
 [#1438]: https://github.com/cslib-community/complexitylib/issues/1438
 [#1442]: https://github.com/cslib-community/complexitylib/issues/1442

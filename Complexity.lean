@@ -78,6 +78,14 @@ public import Complexity.Algorithms.WordRAM.Dijkstra.Statement
 public import Complexity.Algorithms.WordRAM.DynamicArray
 public import Complexity.Algorithms.WordRAM.ElementDistinctness
 public import Complexity.Algorithms.WordRAM.ElementDistinctnessRAM
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Chunks
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Classes
+public import Complexity.Algorithms.WordRAM.ExactTriangle.MatrixSpec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Parameters
+public import Complexity.Algorithms.WordRAM.ExactTriangle.QueryScan
+public import Complexity.Algorithms.WordRAM.ExactTriangle.QuerySpec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ResidueClasses
+public import Complexity.Algorithms.WordRAM.ExactTriangle.WriteMatrices
 public import Complexity.Algorithms.WordRAM.FusionTree.Binary
 public import Complexity.Algorithms.WordRAM.FusionTree.Boundary
 public import Complexity.Algorithms.WordRAM.FusionTree.Compress
@@ -104,6 +112,7 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Query.Traversal
 public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
+public import Complexity.Algorithms.WordRAM.Histogram
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Cell
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Controller
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Copy
@@ -115,7 +124,6 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Heade
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Input
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Meaning
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Stage
-public import Complexity.Algorithms.WordRAM.Histogram
 public import Complexity.Algorithms.WordRAM.NatClog
 public import Complexity.Algorithms.WordRAM.NatLog
 public import Complexity.Algorithms.WordRAM.NatSqrt
