@@ -55,6 +55,9 @@ jobs:
           path: ./.lake
           key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
           restore-keys: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
+      # Restore the toolchain from the Actions cache, or install it with retries, so that
+      # lean-action does not download it (.github/actions/install-lean, #1426).
+      - uses: ./.github/actions/install-lean
       - uses: leanprover/lean-action@v1
         with:
           auto-config: "false"
