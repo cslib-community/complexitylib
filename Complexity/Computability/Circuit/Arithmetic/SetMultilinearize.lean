@@ -7,7 +7,7 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Circuit.Arithmetic.SMGadget
+public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearGadget
 
 /-!
 # Set-multilinearization of formulas over any field
@@ -54,8 +54,8 @@ There is no assumption on the characteristic of the field, on homogeneity or on 
 * [M. A. Forbes, *Low-depth algebraic circuit lower bounds over any field*][Forbes2024],
   Lemmas 24–26 and Corollary 27, pp. 31:13–31:14. Forbes simulates the gates of a circuit and
   bounds the size by `poly(s, Θ(d / ln d) ^ d)`; the simulation here is done on formulas, with the
-  product gadget of `SMGadget.lean`, the explicit factor `smCost d` and the bound linear in the
-  size, and is original in this form.
+  product gadget `SPFormula.mulGadget`, the explicit factor `smCost d` and the bound linear in
+  the size, and is original in this form.
 -/
 
 @[expose] public section

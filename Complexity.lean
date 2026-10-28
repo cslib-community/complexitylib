@@ -127,10 +127,10 @@ public import Complexity.Computability.Circuit.Arithmetic.Pairing
 public import Complexity.Computability.Circuit.Arithmetic.Power
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRank
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRankUpper
-public import Complexity.Computability.Circuit.Arithmetic.SMGadget
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinear
+public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearGadget
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearLowerBound
-public import Complexity.Computability.Circuit.Arithmetic.Setmultilinearize
+public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearize
 public import Complexity.Computability.Circuit.Arithmetic.SigmaPi
 public import Complexity.Computability.Circuit.Arithmetic.VNP
 public import Complexity.Computability.Circuit.Arithmetic.VP
@@ -2079,6 +2079,7 @@ public import Complexity.Foundations.Data.Fin.Order
 public import Complexity.Foundations.Data.Fin.Tuple
 public import Complexity.Foundations.Data.Finset.Average
 public import Complexity.Foundations.Data.Finset.Expect
+public import Complexity.Foundations.Data.Finset.Finpartition
 public import Complexity.Foundations.Data.Finset.Markov
 public import Complexity.Foundations.Data.Finset.Quantile
 public import Complexity.Foundations.Data.Finset.Sampling

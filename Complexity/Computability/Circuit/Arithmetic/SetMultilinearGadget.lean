@@ -34,8 +34,8 @@ gates. The gadget
 * has product-depth at most two more than the `g j T` (`SPFormula.productDepth_mulGadget_le`);
 * has at most `gadgetCost d * (1 + card ι + ∑ j, w j)` nodes, when each `g j T` with `T ⊆ S` has at
   most `w j` (`SPFormula.nodeCount_mulGadget_le`). The factor `gadgetCost d` depends only on the
-  number `d` of blocks, not on the fan-in of the product gate: the number of terms is at most
-  `(d + 1) ^ d · d! · 2 ^ d` (set partitions, permutations, subsets of `Z`).
+  number `d` of blocks, not on the fan-in of the product gate: the number of products of sums is
+  at most `(d + 1) ^ d · d! · 2 ^ d` (set partitions, permutations, subsets of `Z`).
 
 The formula is built from sum and product gates over finite sets of children
 (`SPFormula.sumOn`, `SPFormula.prodOn`).
@@ -59,9 +59,11 @@ The formula is built from sum and product gates over finite sets of children
 
 * [M. A. Forbes, *Low-depth algebraic circuit lower bounds over any field*][Forbes2024], Lemma 26
   and its proof, pp. 31:13–31:14. Forbes computes the surjective permanents of the proof by
-  Lemma 21 and Corollary 22 (p. 31:12); the gadget here uses instead the permutation form of the
-  Binet–Minc identity with inclusion–exclusion (`Matrix.rectPermSurj_eq_sum_sign_prod_sameCycle`),
-  and is original, as are its explicit size bound and the formulas `sumOn` and `prodOn`.
+  Corollary 22 (p. 31:12), reducing them to permanents by Lemma 21 (p. 31:12) and expanding those
+  by the partition form of the Binet–Minc identity, Theorem 13 (p. 31:10). The gadget here uses
+  instead inclusion–exclusion in place of Lemma 21 and the permutation form of the Binet–Minc
+  identity in place of Theorem 13 (`Matrix.rectPermSurj_eq_sum_sign_prod_sameCycle`), and is
+  original, as are its explicit size bound and the formulas `sumOn` and `prodOn`.
 -/
 
 @[expose] public section
@@ -159,12 +161,14 @@ section Gadget
 variable [Field K] [DecidableEq K] [Fintype ι] [DecidableEq ι]
 
 /-- The factors with constant term `0`. -/
-def zeroCols (a : ι → K) : Finset ι :=
+def mulGadget.zeroCols (a : ι → K) : Finset ι :=
   {j | a j = 0}
 
 /-- The scale of a factor: the inverse of its constant term, or `1` if that is `0`. -/
-def colScale (a : ι → K) (j : ι) : K :=
+def mulGadget.colScale (a : ι → K) (j : ι) : K :=
   if a j = 0 then 1 else (a j)⁻¹
+
+open mulGadget
 
 /-- **The product gadget** (original; it simulates a product gate as in [Forbes2024, Lemma 26]):
 from formulas `g j T` for the parts on `T` of the factors of a product with constant terms `a j`,
@@ -255,7 +259,7 @@ theorem productDepth_mulGadget_le {p : ℕ} (hg : ∀ j T, (g j T).productDepth 
 end Gadget
 
 /-- The size factor of the product gadget on `d` blocks: `2 * (2 * (d + 1) ^ 2) ^ (d + 1)`. It
-bounds `4 (d + 1)` times the number of terms, at most `(d + 1) ^ d · d! · 2 ^ d`. -/
+bounds `4 (d + 1)` times the number of products of sums, at most `(d + 1) ^ d · d! · 2 ^ d`. -/
 def gadgetCost (d : ℕ) : ℕ :=
   2 * (2 * (d + 1) ^ 2) ^ (d + 1)
 
@@ -277,6 +281,8 @@ private theorem four_mul_le_gadgetCost (d : ℕ) :
 section Size
 
 variable [Field K] [DecidableEq K] [Fintype ι] [DecidableEq ι]
+
+open mulGadget
 
 /-- **The size of the product gadget** (original): if each `g j T` with `T ⊆ S` has at most `w j`
 nodes, the gadget has at most `gadgetCost d * (1 + card ι + ∑ j, w j)` nodes. -/
@@ -355,7 +361,10 @@ theorem nodeCount_mulGadget_le {S : Finset (Fin d)} {a : ι → K}
     exact Nat.mul_le_mul_right _
       (Nat.factorial_le (P.card_parts_le_card.trans hSd))
   rw [nodeCount_sumOn]
-  have hB := Finpartition.card_finpartition_le S
+  have hB : Fintype.card (Finpartition S) ≤ (d + 1) ^ d :=
+    (Fintype.card_finpartition_le S).trans <|
+      (Nat.pow_le_pow_left (hSd.trans (Nat.le_succ d)) _).trans
+        (Nat.pow_le_pow_right (Nat.succ_pos d) hSd)
   have hL0 := Nat.add_le_add_right ((sum_le_sum fun P _ => hL1 P).trans_eq
     (by rw [sum_const, card_univ, smul_eq_mul])) 1
   refine hL0.trans ?_

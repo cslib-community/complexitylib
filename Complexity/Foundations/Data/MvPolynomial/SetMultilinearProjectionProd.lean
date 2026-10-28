@@ -7,10 +7,9 @@ Authors: Karn Seth
 module
 -- upstream: candidate (Mathlib, set-multilinear polynomials)
 
+public import Complexity.Foundations.Data.Finset.Finpartition
 public import Complexity.Foundations.Data.MvPolynomial.SetMultilinearProjection
 public import Complexity.Foundations.LinearAlgebra.Matrix.RectPermanent
-public import Mathlib.Order.Partition.Finpartition
-public import Mathlib.Data.Fintype.WithTopBot
 
 /-!
 # The set-multilinear projection of a product, by set partitions
@@ -29,20 +28,14 @@ injections whose image contains `Z` (`Matrix.rectPermSurj`), and the Binet–Min
 inclusion–exclusion (`Matrix.rectPermSurj_eq_sum_sign_prod_sameCycle`) expands it as a signed sum
 over the permutations of the parts of `P` and the subsets of `Z`
 (`MvPolynomial.smProj_prod_eq_sum_sign`). This is the expansion of the proof of
-[Forbes2024, Lemma 26], pp. 31:13–31:14, with the permutation form of the Binet–Minc identity in
-place of [Forbes2024, Lemma 21 and Corollary 22]. Its number of terms is bounded in terms of `#S`
-and `#Z` only, not of the number of factors. If `#S < #Z` the part is `0`
+[Forbes2024, Lemma 26], pp. 31:13–31:14, with inclusion–exclusion in place of [Forbes2024,
+Lemma 21] (p. 31:12) and the permutation form of the Binet–Minc identity in place of its partition
+form [Forbes2024, Theorem 13] (p. 31:10). Its number of products of sums is bounded in terms of
+`#S` and `#Z` only, not of the number of factors. If `#S < #Z` the part is `0`
 (`MvPolynomial.smProj_prod_eq_zero_of_card_lt`).
-
-## Main definitions
-
-* `MvPolynomial.partSplit`: the ordered split of `S` given by a set partition of `S` and an
-  injection of its parts.
 
 ## Main results
 
-* `Finpartition.card_finpartition_le`: a finite set of elements of `Fin d` has at most
-  `(d + 1) ^ d` set partitions.
 * `MvPolynomial.smProj_prod_eq_sum_finpartition`: the part of a product, by set partitions.
 * `MvPolynomial.smProj_prod_eq_zero_of_card_lt`: it vanishes when more than `#S` factors have
   constant term `0`.
@@ -54,62 +47,13 @@ and `#Z` only, not of the number of factors. If `#S < #Z` the part is `0`
 * [M. A. Forbes, *Low-depth algebraic circuit lower bounds over any field*][Forbes2024], proof of
   Lemma 26, pp. 31:13–31:14, which collects the set-multilinear terms of a product by set partitions
   and injections and writes them as surjective permanents. The statements here as identities of
-  polynomials, the normalization by the constant terms in this form, the use of the permutation
-  form of the Binet–Minc identity and the bound on the number of set partitions are original.
+  polynomials, the normalization by the constant terms in this form and the use of
+  inclusion–exclusion and of the permutation form of the Binet–Minc identity are original.
 -/
 
 @[expose] public section
 
 open Finset
-
-namespace Finpartition
-
-variable {d : ℕ}
-
-/-- Two set partitions of `S` whose parts have the same largest element at every point have the
-same parts. -/
-private theorem mem_part_of_max_eq {S : Finset (Fin d)} {P P' : Finpartition S}
-    (h : ∀ x, (P.part x).max = (P'.part x).max) {x y : Fin d} (hy : y ∈ P.part x) :
-    y ∈ P'.part x := by
-  have hxS : x ∈ S := by
-    by_contra hx
-    rw [P.part_eq_empty.2 hx] at hy
-    exact notMem_empty y hy
-  have hyS : y ∈ S := P.part_subset x hy
-  have hPy : P.part y = P.part x := P.part_eq_of_mem (P.part_mem.2 hxS) hy
-  obtain ⟨a, ha⟩ := max_of_nonempty (P.part_nonempty.2 hxS)
-  have h₁ : a ∈ P'.part x := mem_of_max ((h x).symm.trans ha)
-  have h₂ : a ∈ P'.part y := mem_of_max ((h y).symm.trans (hPy ▸ ha))
-  rw [← P'.eq_of_mem_parts (P'.part_mem.2 hyS) (P'.part_mem.2 hxS) h₂ h₁]
-  exact P'.mem_part_self.2 hyS
-
-/-- **The number of set partitions** (original bound): a finite set of elements of `Fin d` has at
-most `(d + 1) ^ d` set partitions. A partition is determined by the largest element of the part
-of each point. -/
-theorem card_finpartition_le (S : Finset (Fin d)) :
-    Fintype.card (Finpartition S) ≤ (d + 1) ^ d := by
-  have hinj : Function.Injective fun (P : Finpartition S) (x : Fin d) => (P.part x).max := by
-    intro P P' h
-    have h' (x : Fin d) : (P.part x).max = (P'.part x).max := congrFun h x
-    have hpart (x : Fin d) : P.part x = P'.part x := by
-      ext y
-      exact ⟨mem_part_of_max_eq h', mem_part_of_max_eq fun x => (h' x).symm⟩
-    ext t
-    constructor
-    · intro ht
-      obtain ⟨x, hx⟩ := P.nonempty_of_mem_parts ht
-      rw [← P.part_eq_of_mem ht hx, hpart]
-      exact P'.part_mem.2 (P.le ht hx)
-    · intro ht
-      obtain ⟨x, hx⟩ := P'.nonempty_of_mem_parts ht
-      rw [← P'.part_eq_of_mem ht hx, ← hpart]
-      exact P.part_mem.2 (P'.le ht hx)
-  refine (Fintype.card_le_of_injective _ hinj).trans_eq ?_
-  rw [Fintype.card_fun, Fintype.card_fin]
-  change Fintype.card (Option (Fin d)) ^ d = _
-  rw [Fintype.card_option, Fintype.card_fin]
-
-end Finpartition
 
 namespace MvPolynomial
 
@@ -123,25 +67,26 @@ variable [DecidableEq ι] {S : Finset (Fin d)}
 
 /-- The ordered split of `S` given by a set partition `P` of `S` and an injection `e` of its parts
 into `ι`: the part at `j` is the part of `P` sent to `j` by `e`, or `∅` if there is none. -/
-def partSplit (P : Finpartition S) (e : P.parts ↪ ι) (j : ι) : Finset (Fin d) :=
+private def partSplit (P : Finpartition S) (e : P.parts ↪ ι) (j : ι) : Finset (Fin d) :=
   (univ.filter fun r => e r = j).biUnion Subtype.val
 
 variable {P : Finpartition S} {e : P.parts ↪ ι}
 
 /-- The split puts each part of `P` at its image under `e`. -/
-theorem partSplit_apply (r : P.parts) : partSplit P e (e r) = r := by
+private theorem partSplit_apply (r : P.parts) : partSplit P e (e r) = r := by
   have h : (univ.filter fun r' => e r' = e r) = {r} := by
     ext r'
     simp only [mem_filter, mem_univ, true_and, mem_singleton, e.injective.eq_iff]
   rw [partSplit, h, singleton_biUnion]
 
 /-- The split is empty outside the image of `e`. -/
-theorem partSplit_of_notMem {j : ι} (hj : j ∉ univ.map e) : partSplit P e j = ∅ := by
+private theorem partSplit_of_notMem {j : ι} (hj : j ∉ univ.map e) : partSplit P e j = ∅ := by
   rw [partSplit, filter_false_of_mem fun r _ h => hj (mem_map.2 ⟨r, mem_univ r, h⟩),
     biUnion_empty]
 
 /-- A part of `P` sits only at its image under `e`. -/
-theorem eq_of_partSplit_eq {j : ι} {r : P.parts} (h : partSplit P e j = r) : j = e r := by
+private theorem eq_of_partSplit_eq {j : ι} {r : P.parts} (h : partSplit P e j = r) :
+    j = e r := by
   by_cases hj : j ∈ univ.map e
   · obtain ⟨r', -, rfl⟩ := mem_map.1 hj
     rw [partSplit_apply] at h
@@ -150,7 +95,7 @@ theorem eq_of_partSplit_eq {j : ι} {r : P.parts} (h : partSplit P e j = r) : j 
     exact absurd h.symm (P.nonempty_of_mem_parts r.2).ne_empty
 
 /-- The split is an ordered split of `S`. -/
-theorem partSplit_mem_blockSplits [Fintype ι] : partSplit P e ∈ blockSplits ι S := by
+private theorem partSplit_mem_blockSplits [Fintype ι] : partSplit P e ∈ blockSplits ι S := by
   refine mem_blockSplits.2 ⟨fun j k hjk => ?_, ?_⟩
   · rw [Function.onFun, partSplit, partSplit]
     refine (disjoint_biUnion_left _ _ _).2 fun r hr =>
@@ -169,7 +114,7 @@ theorem partSplit_mem_blockSplits [Fintype ι] : partSplit P e ∈ blockSplits �
       exact ⟨e ⟨t, ht⟩, ⟨t, ht⟩, rfl, hx⟩
 
 /-- The parts of `P` are the nonempty parts of the split. -/
-theorem mem_parts_iff_exists_partSplit_eq {t : Finset (Fin d)} :
+private theorem mem_parts_iff_exists_partSplit_eq {t : Finset (Fin d)} :
     t ∈ P.parts ↔ t.Nonempty ∧ ∃ j, partSplit P e j = t := by
   constructor
   · intro ht
@@ -183,7 +128,7 @@ theorem mem_parts_iff_exists_partSplit_eq {t : Finset (Fin d)} :
       exact absurd ht not_nonempty_empty
 
 /-- The split determines the set partition and the injection. -/
-theorem partSplit_injective {x y : Σ P : Finpartition S, P.parts ↪ ι}
+private theorem partSplit_injective {x y : Σ P : Finpartition S, P.parts ↪ ι}
     (h : partSplit x.1 x.2 = partSplit y.1 y.2) : x = y := by
   obtain ⟨P, e⟩ := x
   obtain ⟨P', e'⟩ := y
@@ -195,7 +140,8 @@ theorem partSplit_injective {x y : Σ P : Finpartition S, P.parts ↪ ι}
   rfl
 
 /-- Every ordered split of `S` comes from a set partition of `S` and an injection of its parts. -/
-theorem exists_partSplit_eq [Fintype ι] {T : ι → Finset (Fin d)} (hT : T ∈ blockSplits ι S) :
+private theorem exists_partSplit_eq [Fintype ι] {T : ι → Finset (Fin d)}
+    (hT : T ∈ blockSplits ι S) :
     ∃ x : Σ P : Finpartition S, P.parts ↪ ι, partSplit x.1 x.2 = T := by
   obtain ⟨hdisj, hU⟩ := mem_blockSplits.1 hT
   have hind : (univ.image T).SupIndep id := by
@@ -226,7 +172,7 @@ theorem exists_partSplit_eq [Fintype ι] {T : ι → Finset (Fin d)} (hT : T ∈
 
 /-- The term of the split: the parts of `P` on their factors, and the constant terms of the other
 factors. -/
-theorem prod_smProj_partSplit [Fintype ι] [CommSemiring K] (blk : σ → Fin d)
+private theorem prod_smProj_partSplit [Fintype ι] [CommSemiring K] (blk : σ → Fin d)
     (f : ι → MvPolynomial σ K) :
     ∏ j, smProj blk (partSplit P e j) (f j) =
       (∏ r : P.parts, smProj blk r (f (e r))) * ∏ j ∈ (univ.map e)ᶜ, C (constantCoeff (f j)) := by
@@ -317,8 +263,9 @@ theorem sum_embedding_eq_C_mul_rectPermSurj (blk : σ → Fin d) {S : Finset (Fi
     rw [prod_eq_zero (mem_compl.2 hje) (by rw [(hZ j).1 hjZ, map_zero]), mul_zero, mul_zero]
 
 /-- **The part of a product over a field, by the Binet–Minc identity** (original as stated; the
-expansion of the proof of [Forbes2024, Lemma 26], pp. 31:13–31:14, with the permutation form of
-the Binet–Minc identity in place of [Forbes2024, Lemma 21 and Corollary 22]). Let `Z` be the set
+expansion of the proof of [Forbes2024, Lemma 26], pp. 31:13–31:14, with inclusion–exclusion in
+place of [Forbes2024, Lemma 21] and the permutation form of the Binet–Minc identity in place of
+[Forbes2024, Theorem 13], p. 31:10). Let `Z` be the set
 of factors with constant term `0`, and let `u j` be the inverse of the constant term of `f j` for
 `j ∉ Z` and `1` for `j ∈ Z`. Then the part on `S` of `∏ j, f j` is the product of the nonzero
 constant terms times the sum, over the set partitions `P` of `S`, the permutations `π` of the
