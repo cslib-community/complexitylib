@@ -14,12 +14,16 @@ import Mathlib.Algebra.Field.ZMod
 
 Two-sided nonvacuity and regression tests for `Complexity.Crypto.Computational.Encryption.CCA` and
 `Complexity.Crypto.Computational.CollisionResistant`:
-1. **Satisfiable `INDCCA2` instance**: a constant-ciphertext scheme satisfies `INDCCA2`.
+1. **Satisfiable `INDCCA2` and `WordINDCCA2` instances**: a constant-ciphertext scheme satisfies
+   `INDCCA2`, and a length-only word scheme satisfies `WordINDCCA2` (and hence `WordINDCPA` via
+   `WordINDCCA2.wordINDCPA`) while violating unrestricted `INDCCA2Of encBits encOut` via
+   `INDCCA2Of.indcpaOf`.
 2. **Refutable `INDCCA2` instance**: the plaintext-leaking scheme from
    `ComplexityTests.Crypto.Encryption` violates `INDCCA2` via `INDCCA2.indcpa`.
-3. **Concrete `cca2Phase2Oracle` and `CCA2Adversary.IsPPT` checks**: `cca2Phase2Oracle` returns
+3. **Concrete `cca2Phase2Oracle` and `CCA2AdversaryOf.IsPPT` checks**: `cca2Phase2Oracle` returns
    `[]` on the challenge ciphertext and `encOption encBool (decrypt …)` otherwise, and
-   `CCA2Adversary.isPPT_ofCPA` constructs a concrete strict oracle PPT 1CCA adversary.
+   `CCA2AdversaryOf.isPPT_ofCPA` and `CCA2AdversaryOf.IsPPT.restrict` construct concrete strict
+   oracle PPT 1CCA adversaries.
 4. **Live Phase-2 decryption-oracle test**: for a scheme whose decryption ignores trailing bits
    (`decrypt _ _ ct := ct.head?`), a Phase-2 adversary querying `ct ++ [true] ≠ ct` bypasses the
    challenge-ciphertext guard and recovers the challenge bit with probability `1`.
@@ -74,6 +78,58 @@ theorem wordINDCCA2_lenEncrypt : WordINDCCA2 constKeyGen lenEncrypt lenDecrypt :
       simp [hl]
     · simp [hlen]
   simpa only [heq, Game.advantage_self] using negligible_zero
+
+/-- `WordINDCCA2.wordINDCPA` transfers equal-length 1CCA security to `WordINDCPA`. -/
+theorem wordINDCPA_lenEncrypt : WordINDCPA constKeyGen lenEncrypt :=
+  wordINDCCA2_lenEncrypt.wordINDCPA
+
+/-- A word CPA adversary that submits the unequal-length pair `([], [false])` and tests whether the
+ciphertext is `[false]`. -/
+def lenAdversary : WordAdversary where
+  choose _ _ := pure (([], [false]), [])
+  guess _ _ ct := pure (decide (ct = [false]))
+
+/-- `lenAdversary` is uniform strict PPT. -/
+theorem lenAdversary_isPPT : lenAdversary.IsPPT where
+  choose := ComputableTidilyInPolyTime.isPPTOn (ComputableTidilyInPolyTime.const _)
+  guess := by
+    have hct : ComputableTidilyInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2)
+        (encPair encUnary (encPair encBits encBits)) encBits := by fun_prop
+    exact (ComputableTidilyInPolyTime.decide_eq' (encB := encBits) hct
+      (ComputableTidilyInPolyTime.const [false])).isPPTOn
+
+/-- Without the equal-length admissibility guard, `lenEncrypt` violates `INDCPAOf encBits`. -/
+theorem not_indcpaOf_lenEncrypt : ¬ INDCPAOf encBits constKeyGen lenEncrypt := by
+  intro hsecure
+  have hneg := hsecure lenAdversary lenAdversary_isPPT
+  have hfalse (n : ℕ) :
+      ProbComp.eval (game constKeyGen lenEncrypt lenAdversary false n) = PMF.pure false := by
+    simp [game, gameOn, constKeyGen, lenEncrypt, lenAdversary]
+  have htrue (n : ℕ) :
+      ProbComp.eval (game constKeyGen lenEncrypt lenAdversary true n) = PMF.pure true := by
+    simp [game, gameOn, constKeyGen, lenEncrypt, lenAdversary]
+  simp only [hfalse, htrue] at hneg
+  have hone : Game.advantage (PMF.pure false) (PMF.pure true) = 1 := by
+    simp [Game.advantage, Game.succProbability]
+  rw [hone] at hneg
+  exact not_negligible_const one_ne_zero hneg
+
+/-- By `INDCCA2Of.indcpaOf`, `lenEncrypt` also violates unrestricted `INDCCA2Of encBits encOut` for
+every decryption function, whereas `wordINDCCA2_lenEncrypt` shows it satisfies `WordINDCCA2`
+(demonstrating that `WordINDCCA2` is strictly weaker than `INDCCA2Of encBits encBits`, while
+`INDCCA2Of.wordINDCCA2` gives the forward implication). -/
+theorem not_indcca2Of_lenEncrypt {Out : Type} (encOut : Out ↪ List Bool)
+    (decrypt : ℕ → List Bool → List Bool → Option Out) :
+    ¬ INDCCA2Of encBits encOut constKeyGen lenEncrypt decrypt :=
+  fun hCCA => not_indcpaOf_lenEncrypt hCCA.indcpaOf
+
+/-- Concrete witness for `WordCCA2Adversary.IsPPT` via `CCA2AdversaryOf.isPPT_ofCPA` and
+`CCA2AdversaryOf.IsPPT.restrict`. -/
+example :
+    ((CCA2AdversaryOf.ofCPA lenAdversary).restrict
+      (fun _ _ (m₀ m₁ : List Bool) => m₀.length == m₁.length)).IsPPT encBits :=
+  (CCA2AdversaryOf.isPPT_ofCPA lenAdversary_isPPT).restrict
+    (ComputableInPolyTime.of_tidy (by polytime))
 
 /-! ### 2. Refutable `INDCCA2` instance via `INDCCA2.indcpa` -/
 
