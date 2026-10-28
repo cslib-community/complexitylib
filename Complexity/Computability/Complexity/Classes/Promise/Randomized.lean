@@ -430,13 +430,6 @@ private theorem probability_and2 (M : α → ProbComp Bool) (a : α) :
     simp [ProbComp.eval_map, PMF.map_apply]
   rw [htrue, hfalse, mul_zero, add_zero]
 
-/-- The program sampling a random string for a seeded verifier accepts with the accepted
-fraction of the strings. -/
-private theorem probability_sampleList_verifier (V : β × List Bool → Bool) (b : β) (n : ℕ) :
-    Pr[(fun w => V (b, w)) <$> BitString.sampleList n] = (acceptCount V b n : ℝ) / 2 ^ n := by
-  simp only [ProbComp.eval_map, BitString.eval_sampleList]
-  exact uniformList_acceptCount_toReal V b n
-
 /-- **`PromiseCoRP` is closed under `RPReducible`** (library lemma): if `X` reduces to `Y` by a
 randomized one-sided reduction and `Y ∈ PromiseCoRP encB`, then `X ∈ PromiseCoRP encA`. -/
 theorem RPReducible.mem_PromiseCoRP (hXY : RPReducible encA encB X Y)
