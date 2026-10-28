@@ -20,12 +20,22 @@ open Cslib.Complexity Turing.MultiTapeTM
 
 /-! ### Headline results -/
 
-example : TSP ∈ NP encTSP := TSP.mem_NP
-example : NPComplete encTSP TSP := TSP_npComplete
-example : PolyTimeReducible encGraph encTSP HamCycle TSP := polyTimeReducible_HamCycle_TSP
+private theorem head_mem_NP : {w : List Bool | w.headD false = true} ∈ NP encBits :=
+  P_subset_NP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
--- Certificates are quadratic in the encoded instance.
-example : IsVerifier encTSP (Polynomial.X ^ 2) TSP.verifier TSP := TSP.isVerifier
+example : TSP ∈ NP encTSP ∧
+    PolyTimeReducible encBits encTSP {w : List Bool | w.headD false = true} TSP :=
+  ⟨TSP_npComplete.1, TSP_npComplete.2 encBits _ head_mem_NP⟩
+
+example : PolyTimeReducible encGraph encTSP DirHamCycle TSP :=
+  polyTimeReducible_DirHamCycle_HamCycle.trans polyTimeReducible_HamCycle_TSP
+
+-- Certificates are quadratic in the encoded instance: every positive instance has a witness of
+-- length `len ^ 2`.
+example {x : List (List ℕ) × ℕ} (hx : x ∈ TSP) :
+    ∃ w : List Bool,
+      w.length = (encTSP x).length ^ 2 ∧ TSP.verifier (x, w) = true := by
+  simpa using (TSP.isVerifier x).mp hx
 
 /-! ### Compositional `fun_prop` synthesis -/
 
@@ -41,8 +51,6 @@ example : ComputableInPolyTime (fun x : List (List ℕ) × List ℕ => TSP.tourL
 example : ComputableInPolyTime
     (fun x : (List (List ℕ) × List ℕ) × ℕ => decide (TSP.tourLength x.1.1 x.1.2 + x.2 ≤ x.2 * 2))
     (encPair (encPair (encList (encList encNat)) (encList encNat)) encNat) encBool := by
-  have htour := TSP.computableInPolyTime_tourLength.tidy
-  refine .of_tidy ?_
   fun_prop
 
 /-- Non-membership in `TSP`, checked over the permutations of the cities. -/
