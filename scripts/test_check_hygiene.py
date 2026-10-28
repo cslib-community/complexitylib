@@ -48,6 +48,70 @@ class CheckHygieneTests(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("missing or invalid `-- upstream:` marker", errors[0])
 
+    def heartbeat_module(self, rel: str, value: int) -> pathlib.Path:
+        return self.write(
+            rel,
+            "module\n"
+            "-- upstream: candidate\n\n"
+            "-- Justified: a large closed certificate.\n"
+            f"set_option maxHeartbeats {value} in\n"
+            "theorem demo : True := trivial\n",
+        )
+
+    def test_heartbeat_above_default_requires_allowlist(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 400000)
+        errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps={})
+        self.assertEqual(len(errors), 1)
+        self.assertIn("exceeds the 200000 default", errors[0])
+        # The default itself, and smaller budgets, need no entry.
+        q = self.heartbeat_module("Complexity/Default.lean", 200000)
+        self.assertEqual(check_hygiene.check_file(q, root=self.root, heartbeat_caps={}), [])
+
+    def test_heartbeat_allowlist_cap_is_enforced(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 400000)
+        ok = {"Complexity/Big.lean": 400000}
+        self.assertEqual(check_hygiene.check_file(p, root=self.root, heartbeat_caps=ok), [])
+        low = {"Complexity/Big.lean": 300000}
+        errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps=low)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("exceeds its allowlisted cap 300000", errors[0])
+
+    def test_heartbeat_check_is_off_without_caps(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 400000)
+        self.assertEqual(check_hygiene.check_file(p, root=self.root), [])
+
+    def test_heartbeat_budget_in_a_comment_is_ignored(self) -> None:
+        p = self.write(
+            "Complexity/Commented.lean",
+            "module\n-- upstream: candidate\n\n"
+            "-- An earlier version used set_option maxHeartbeats 8000000 here.\n"
+            "theorem demo : True := trivial\n",
+        )
+        self.assertEqual(check_hygiene.check_file(p, root=self.root, heartbeat_caps={}), [])
+
+    def test_stale_heartbeat_allowlist_entries_are_reported(self) -> None:
+        self.heartbeat_module("Complexity/Big.lean", 400000)
+        self.heartbeat_module("Complexity/Small.lean", 100000)
+        caps = {"Complexity/Big.lean": 500000, "Complexity/Small.lean": 400000,
+                "Complexity/Gone.lean": 400000}
+        errors = check_hygiene.check_heartbeat_allowlist_stale(caps, root=self.root)
+        self.assertEqual(len(errors), 3)
+        self.assertTrue(any("cap 500000 exceeds its largest budget 400000" in e for e in errors))
+        self.assertTrue(any("`Complexity/Small.lean` has no budget above" in e for e in errors))
+        self.assertTrue(any("`Complexity/Gone.lean` does not exist" in e for e in errors))
+        exact = {"Complexity/Big.lean": 400000}
+        self.assertEqual(check_hygiene.check_heartbeat_allowlist_stale(exact, root=self.root), [])
+
+    def test_heartbeat_allowlist_parsing(self) -> None:
+        path = self.write("scripts/heartbeat_allowlist.txt",
+                          "# header\n\nComplexity/Big.lean 400000  # see #1528\n")
+        self.assertEqual(check_hygiene.load_heartbeat_allowlist(path),
+                         {"Complexity/Big.lean": 400000})
+        self.assertEqual(check_hygiene.load_heartbeat_allowlist(self.root / "missing.txt"), {})
+        bad = self.write("scripts/bad.txt", "Complexity/Big.lean lots\n")
+        with self.assertRaises(ValueError):
+            check_hygiene.load_heartbeat_allowlist(bad)
+
     def test_unjustified_set_option_fails(self) -> None:
         p = self.write(
             "Complexity/UnjustifiedOption.lean",

@@ -320,7 +320,10 @@ submitting a PR; quick success does not satisfy that requirement.
 ## Proof hygiene
 
 - No `sorry` on `main`, no custom `axiom`, no `native_decide`.
-- `set_option maxHeartbeats` / `maxRecDepth` overrides need a justifying comment.
+- `set_option maxHeartbeats` / `maxRecDepth` overrides need a justifying comment. A
+  `maxHeartbeats` above the 200000 default also needs a reviewed entry in
+  `scripts/heartbeat_allowlist.txt`, which `scripts/check_hygiene.py` enforces and keeps
+  shrinking; prefer reducing the proof's cost.
 - Never put `[simp]` on machine step functions or transition tables (goals explode).
 - Non-terminal `simp` only as `simp only`; definitions as terms, not `by` blocks, where possible.
 - Prefer `do` notation for sequential monadic computations, including probabilistic experiments
