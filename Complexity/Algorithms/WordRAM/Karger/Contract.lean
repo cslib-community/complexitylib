@@ -50,12 +50,12 @@ minimum cut of a connected multigraph.
 * **Notation mapping and implementation variants:**
   - `C(t, 2) / C(k, 2)` ↔ `((t * (t - 1) : ℕ) : ℝ≥0∞) / (k * (k - 1))` in `contractDownTo_spec`
     and `contractDownToAt_spec`;
-  - whereas `[KargerStein1996]`, Section 3.1 draws twice (`u ∝ D[u]` then `v ∝ W[u, v]` via two
-    `Random-Select` calls), our `contractDownTo` uses an equivalent single-draw variant: one
-    unit-cost word-RAM `rand` instruction drawing uniformly from `{0, …, totS - 1}`
-    (`totS = totalDoubledWeight W`), resolved through linear prefix-sum scans `uScan` over `D[0..k)`
-    and `vScan` over `W[u, 0..k)` to select each unordered pair `{u, v}` with the same probability
-    `2 * W[u, v] / totS` of Lemma 3.1;
+  - whereas `[KargerStein1996]`, Section 3.1 draws twice (`u` proportional to `D[u]` then `v`
+    proportional to `W[u, v]` via two `Random-Select` calls), our `contractDownTo` uses an
+    equivalent single-draw variant: one unit-cost word-RAM `rand` instruction drawing uniformly from
+    `{0, …, totS - 1}` (`totS = totalDoubledWeight W`), resolved through linear prefix-sum scans
+    `uScan` over `D[0..k)` and `vScan` over `W[u, 0..k)` to select each unordered pair `{u, v}` with
+    the same probability `2 * W[u, v] / totS` of Lemma 3.1;
   - whereas `[KargerStein1996]`, Section 3.2 updates rows and columns in `O(n)` per contraction by
     zeroing the removed vertex in place, our `contractDownTo` swap-compacts active slot `k - 1` into
     `v` so each contraction step on `k` active supervertices runs in `O(k)` instructions.

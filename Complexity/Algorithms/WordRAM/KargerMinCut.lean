@@ -58,13 +58,13 @@ three complete machine-level endpoints built on the workspace-relocatable subrou
     survival bounds `1 - 2 / i` from `i = n` down to `3` yields `2 / (n * (n - 1))`.
 * **Notation mapping, implementation variants, and parameter choices:**
   - `C(n, 2)⁻¹` ↔ `2 / (n * (n - 1))` (`singleProgram_spec`, `amplifiedProgram_spec`);
-  - whereas `[KargerStein1996]`, Section 3.1 draws twice (`u ∝ D[u]` then `v ∝ W[u, v]` via two
-    `Random-Select` calls), `contractDownTo` uses an equivalent single-draw variant: one unit-cost
-    `rand` draw in `{0, …, S - 1}` (`S = totalDoubledWeight W`) resolved through linear prefix-sum
-    scans `uScan` (`rowDeg`) and `vScan` (`W[u, v]`), achieving the same `2 * W[u, v] / S`
-    distribution of Lemma 3.1; and whereas Section 3.2 states `O(n)` per contraction step, our
-    swap-compaction of active slot `k - 1` into `v` gives `O(k)` instructions on `k` active
-    supervertices;
+  - whereas `[KargerStein1996]`, Section 3.1 draws twice (`u` proportional to `D[u]` then `v`
+    proportional to `W[u, v]` via two `Random-Select` calls), `contractDownTo` uses an equivalent
+    single-draw variant: one unit-cost `rand` draw in `{0, …, S - 1}` (`S = totalDoubledWeight W`)
+    resolved through linear prefix-sum scans `uScan` (`rowDeg`) and `vScan` (`W[u, v]`), achieving
+    the same `2 * W[u, v] / S` distribution of Lemma 3.1; and whereas Section 3.2 states `O(n)` per
+    contraction step, our swap-compaction of active slot `k - 1` into `v` gives `O(k)` instructions
+    on `k` active supervertices;
   - the concrete trial count `highProbTrials n = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` and the
     `1 / (2 * n)` failure bound in `highProbProgram_spec` are our own parameter choice instantiating
     the `O(n ^ 2 log n)` amplification of `[Karger1993]`, Section 2, Corollary 2.1;

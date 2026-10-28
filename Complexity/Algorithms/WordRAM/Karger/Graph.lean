@@ -41,10 +41,11 @@ multigraphs represented as symmetric zero-diagonal adjacency matrices `W : Fin n
   - `C(t, 2) / C(n, 2)` and `C(n, 2)⁻¹` ↔ `((t * (t - 1) : ℕ) : ℝ≥0∞) / (n * (n - 1))` and
     `2 / (n * (n - 1))` (`step_survival_prob_ge`, `telescope_survival_step`);
   - `[KargerStein1996]`, Section 3.1, Lemma 3.1 selects `(u, v)` with probability
-    `2 * W u v / S` via two `Random-Select` draws (`u ∝ D(u)` then `v ∝ W(u, v)`); our
-    `edgeOffset` / `IsSampledPair` formalizes an equivalent single-draw variant using one uniform
-    draw `r ∈ Fin S` (`S = totalDoubledWeight W = ∑ u, rowDeg W u`) resolved by prefix sums over
-    `rowDeg` then row weights `W u v`, achieving the same `2 * W u v / S` distribution;
+    `2 * W u v / S` via two `Random-Select` draws (`u` proportional to `D(u)` then `v` proportional
+    to `W(u, v)`); our `edgeOffset` / `IsSampledPair` formalizes an equivalent single-draw variant
+    using one uniform draw `r ∈ Fin S` (`S = totalDoubledWeight W = ∑ u, rowDeg W u`) resolved by
+    prefix sums over `rowDeg` then row weights `W u v`, achieving the same `2 * W u v / S`
+    distribution;
   - `[KargerStein1996]`, Section 3.2, Corollary 3.2 updates the `n × n` matrix in `O(n)` time per
     contraction; our `embedCompact` / `contractMatrix` swap-compacts active slot `k - 1` into the
     removed slot `v` so each contraction on `k` active supervertices scans only `0..k - 1` (`O(k)`
