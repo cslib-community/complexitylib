@@ -59,11 +59,12 @@ example (p : Protocol (Fin 3) (Fin 3) Bool) (hp : p.run = equality) : 5 ≤ p.le
 
 /-! ### Intersection and inclusion -/
 
-example : Protocol.ecomplexityFun (fun x y : BitString 4 => !disjointness x y) = 5 :=
-  ecomplexityFun_not_disjointness (by decide)
-
-example : Protocol.ecomplexityFun (fun x y : BitString 4 => decide (x ≤ y)) = 5 :=
-  ecomplexityFun_decide_le (by decide)
+-- Set intersection and pointwise inclusion on 4-bit strings both cost 5 bits, so they have the
+-- same communication complexity.
+example :
+    Protocol.ecomplexityFun (fun x y : BitString 4 => !disjointness x y) =
+      Protocol.ecomplexityFun (fun x y : BitString 4 => decide (x ≤ y)) :=
+  (ecomplexityFun_not_disjointness (by decide)).trans (ecomplexityFun_decide_le (by decide)).symm
 
 -- Inclusion of subsets of a three-element set: the diagonal fooling set has `8` pairs.
 example (p : Protocol (Finset (Fin 3)) (Finset (Fin 3)) Bool)
@@ -74,25 +75,16 @@ example (p : Protocol (Finset (Fin 3)) (Finset (Fin 3)) Bool)
 
 /-! ### Rank bounds -/
 
-example (A B : Matrix (Fin 2) (Fin 3) ℚ) : (A - B).rank ≤ A.rank + B.rank :=
-  Matrix.rank_sub_le A B
+-- Any relabelling of the outputs of `small` has rank at most `2 ^ small.depth = 4`.
+example : (Matrix.of fun x y => ((small.run x y : ℕ) : ℚ)).rank ≤ 4 :=
+  small.rank_comp_le_two_pow rfl fun z => ((z : ℕ) : ℚ)
 
--- Scaling does not increase rank over `ℤ` either, including scaling by a non-unit.
-example (A : Matrix (Fin 2) (Fin 3) ℤ) : (2 • A).rank ≤ A.rank :=
-  Matrix.rank_smul_le 2 A
-
--- Any relabelling of the outputs of a protocol: here the values `0, 1, 2` as rationals.
-example {X Y : Type} [Fintype Y] (p : Protocol X Y (Fin 3)) :
-    (Matrix.of fun x y => ((p.run x y : ℕ) : ℚ)).rank ≤ 2 ^ p.depth :=
-  Protocol.rank_comp_le_two_pow (f := p.run) rfl fun z => ((z : ℕ) : ℚ)
-
-example (f : Fin 2 → Fin 3 → Bool) (x : Fin 2) (y : Fin 3) :
-    signMatrix ℝ f x y = BitString.signVal (f x y) :=
-  signMatrix_apply_eq_signVal f x y
-
-example {X Y : Type} [Fintype Y] (p : Protocol X Y Bool) :
-    (signMatrix ℝ p.run).rank ≤ 2 ^ p.depth :=
-  Protocol.rank_signMatrix_le_two_pow rfl
+-- The `8 × 8` sign matrix of the 3-bit inner product has full rank `8`, so by the sign-matrix
+-- rank bound any protocol computing it satisfies `8 ≤ 2 ^ p.depth`.
+example (p : Protocol (Fin 3 → Bool) (Fin 3 → Bool) Bool) (hp : p.run = fun x y => x ⬝ᵥ y) :
+    8 ≤ 2 ^ p.depth := by
+  have h := p.rank_signMatrix_le_two_pow (R := ℝ) hp
+  rwa [rank_signMatrix_dotProduct, Fintype.card_fin] at h
 
 -- The inner product of two bits: its `4 × 4` matrix has rank `3` over `ℚ`.
 example : (communicationMatrix ℚ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank = 3 := by
@@ -103,8 +95,13 @@ example : (signMatrix ℝ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank = 4 := by
   rw [rank_signMatrix_dotProduct, Fintype.card_fin]
   rfl
 
-example : (signMatrix ℤ fun x y : Fin 3 → Bool => x ⬝ᵥ y).IsHadamard :=
-  isHadamard_signMatrix_dotProduct ℤ
+-- Because the sign matrix of the 3-bit inner product is Hadamard, its square has `8` on the
+-- diagonal.
+example :
+    (signMatrix ℤ (fun x y : Fin 3 → Bool => x ⬝ᵥ y) *
+      signMatrix ℤ (fun x y : Fin 3 → Bool => x ⬝ᵥ y)) 0 0 = 8 := by
+  rw [signMatrix_dotProduct_mul_self]
+  rfl
 
 -- Character orthogonality holds over any ring, here one that is not a domain.
 example (w : Fin 3 → Bool) (hw : w ≠ 0) :

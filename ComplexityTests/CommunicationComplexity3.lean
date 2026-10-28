@@ -23,10 +23,6 @@ namespace CommunicationComplexity3Tests
 
 /-! ### Averaging and minimax on finite distributions -/
 
--- Some outcome of a distribution is at most the mean, on an infinite sample space.
-example (μ : PMF ℕ) (g : ℕ → ENNReal) : ∃ n ∈ μ.support, g n ≤ ∑' n, μ n * g n :=
-  Probability.PMF.exists_mem_support_le_tsum_mul μ g
-
 /-- Matching pennies: guessing the input `j` costs one. Against every distribution on the inputs
 some guess has expected cost at most one half. -/
 private theorem pennies (ν : PMF Bool) :
@@ -41,9 +37,15 @@ private theorem pennies (ν : PMF Bool) :
 example (μ : PMF Bool) : Probability.PMF.ofStdSimplex (Probability.PMF.toStdSimplex μ) = μ := by
   simp
 
--- So some mixed guess costs at most one half on every input.
-example : ∃ μ : PMF Bool, ∀ j, ∑ i, (μ i).toReal * (if i = j then 1 else 0 : ℝ) ≤ 1 / 2 :=
-  Probability.PMF.exists_forall_sum_mul_le _ pennies
+-- So some mixed guess has probability at most `1 / 2` on both outcomes (hence is a fair coin).
+example : ∃ μ : PMF Bool, (μ true).toReal = 1 / 2 := by
+  obtain ⟨μ, hμ⟩ := Probability.PMF.exists_forall_sum_mul_le _ pennies
+  have ht := hμ true
+  have hf := hμ false
+  have hsum := Probability.PMF.sum_toReal μ
+  simp only [Fintype.sum_bool, ↓reduceIte, Bool.false_eq_true, Bool.true_eq_false, mul_one,
+    mul_zero, add_zero, zero_add] at ht hf hsum
+  exact ⟨μ, by linarith⟩
 
 -- The failure form allows infinitely many strategies: here, guesses indexed by `ℕ` that only look
 -- at their parity.
@@ -68,12 +70,6 @@ example {X Y : Type*} (f : X → Y → Bool) (x : X) (y : Y) :
   refine le_antisymm ?_ bot_le
   refine (Protocol.distributionalComplexity_le_depth (p := .output (f x y)) ?_).trans_eq rfl
   simp [Protocol.distributionalError, PMF.toOuterMeasure_pure_apply]
-
--- Yao's principle, easy direction: distributional lower bounds are randomized lower bounds.
-example {X Y Z : Type*} {R : X → Y → Z → Prop} (ν : PMF (X × Y)) :
-    Protocol.distributionalComplexity (1 / 3) R ν ≤
-      PublicCoin.ecomplexity (1 / 3) R Set.univ Set.univ :=
-  PublicCoin.distributionalComplexity_le_ecomplexity fun _ _ => ⟨trivial, trivial⟩
 
 /-- Under every distribution, one of the two constant protocols errs with probability at most one
 half. -/
@@ -101,11 +97,15 @@ example {X Y : Type*} [Finite X] [Finite Y] (f : X → Y → Bool) :
   exact_mod_cast PublicCoin.ecomplexity_le_of_forall_distributionalComplexity_le (c := 0)
     fun ν _ => distributionalComplexity_half f ν
 
--- Yao's minimax principle for equality on two bits.
-example : PublicCoin.ecomplexityFun (1 / 3) (equality : BitString 2 → BitString 2 → Bool) =
-    ⨆ ν : PMF (BitString 2 × BitString 2),
-      Protocol.distributionalComplexity (1 / 3) (fun x y b => equality x y = b) ν :=
-  PublicCoin.ecomplexityFun_eq_iSup_distributionalComplexity _
+-- By Yao's minimax principle, the supremum over all input distributions of the error-`1 / 2`
+-- distributional complexity of equality on two bits is `0`.
+example :
+    (⨆ ν : PMF (BitString 2 × BitString 2),
+      Protocol.distributionalComplexity (1 / 2) (fun x y b => equality x y = b) ν) = 0 := by
+  rw [← PublicCoin.ecomplexityFun_eq_iSup_distributionalComplexity]
+  refine le_antisymm ?_ bot_le
+  exact_mod_cast PublicCoin.ecomplexity_le_of_forall_distributionalComplexity_le (c := 0)
+    fun ν _ => distributionalComplexity_half equality ν
 
 /-! ### The corruption bound -/
 
@@ -176,12 +176,12 @@ example (send : Bool → Bool) (p₀ p₁ : Protocol Bool Unit ℕ) (i : Fin p�
       ({x | send x = true} ∩ p₁.leafAlice i) ×ˢ p₁.leafBob i := by
   simp
 
--- Sums over leaf rectangles count the inputs.
+-- The leaf rectangles of any protocol on `Fin 3 × Fin 2` partition all `6` input pairs.
 open Classical in
 example (p : Protocol (Fin 3) (Fin 2) Bool) :
-    ∑ _x : Fin 3, ∑ _y : Fin 2, (1 : ℕ) =
-      ∑ i, ∑ x with x ∈ p.leafAlice i, ∑ y with y ∈ p.leafBob i, 1 :=
-  p.sum_eq_sum_leaves _
+    ∑ i, ∑ x with x ∈ p.leafAlice i, ∑ y with y ∈ p.leafBob i, 1 = 6 := by
+  rw [← p.sum_eq_sum_leaves (fun _ _ => 1)]
+  decide
 
 -- The area bound: rectangles on which equality is `true` have one entry, so a protocol computing
 -- equality on three elements has at least three leaves labelled `true`.
@@ -199,10 +199,5 @@ example (p : Protocol (Fin 3) (Fin 3) Bool) (hp : p.run = equality) :
       _ = 1 := rfl
   have h3 : #{q : Fin 3 × Fin 3 | equality q.1 q.2 = true} = 3 := by decide
   omega
-
--- Lindsey's lemma for the inner product on two bits.
-example (A B : Finset (BitString 2)) :
-    (∑ x ∈ A, ∑ y ∈ B, BitString.signVal (x ⬝ᵥ y)) ^ 2 ≤ #A * #B * 2 ^ 2 := by
-  simpa using BitString.sq_sum_signVal_dotProduct_le A B
 
 end CommunicationComplexity3Tests
