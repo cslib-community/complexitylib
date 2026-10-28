@@ -63,16 +63,15 @@ example : liftRows 0 1 2 1 1 1 1 = [[[0, 0], [2, 0]]] := by decide +kernel
 #eval liftRows 1 2 4 2 1 2 3 == (ExecutableGenerator.inputTables 1 2 1 ![1, 2, 3]).toList.map
   fun A => rowsOf (DeterminantAlgorithm.denote A)
 
-example : liftRows 1 2 4 2 1 2 3 = (ExecutableGenerator.inputTables 1 2 1 ![1, 2, 3]).toList.map
-    fun A => rowsOf (DeterminantAlgorithm.denote A) :=
-  liftRows_eq_inputTables 1 2 1 ![1, 2, 3]
+example : (List.finRange (0 + 1)).map
+    (fun a => rowsOf (Generator.integralLift 0 1 0 ![1, 1, 1] a)) = [[[0, 0], [2, 0]]] := by
+  rw [← liftRows_eq 0 1 0 ![1, 1, 1]]
+  decide +kernel
 
-example : liftRows 0 1 2 1 1 1 1 = [rowsOf (Generator.integralLift 0 1 0 ![1, 1, 1] 0)] :=
-  liftRows_eq 0 1 0 ![1, 1, 1]
-
-example : rowEntry (liftTable 4 2 (testRows 4 2 (1 : ℕ) (1 : ℕ)) (2 : ℕ) (3 : ℕ)) 6 0 =
-    Generator.integralLift 1 2 1 ![1, 2, 3] 1 ⟨6, by decide⟩ ⟨0, by decide⟩ :=
-  rowEntry_liftTable 1 2 1 ![1, 2, 3] 1 ⟨6, by decide⟩ ⟨0, by decide⟩
+example :
+    Generator.integralLift 1 2 1 ![1, 2, 3] 1 ⟨6, by decide⟩ ⟨0, by decide⟩ = 405 := by
+  rw [← rowEntry_liftTable 1 2 1 ![1, 2, 3] 1 ⟨6, by decide⟩ ⟨0, by decide⟩]
+  decide +kernel
 
 -- The two lift tables, evaluated by the kernel.
 example : liftRows 1 2 4 2 1 2 3 = [[
@@ -98,7 +97,9 @@ example : liftRows 1 2 4 2 1 2 3 = [[
 /-! ### Bit lengths -/
 
 example : liftBits 1 4 3 = 86 := by decide +kernel
-example : liftBits 0 4 385 = PolynomialBounds.logarithmic 0 0 + 2 := liftBits_parameters 0 0
+example : PolynomialBounds.logarithmic 0 0 + 2 = 4654 := by
+  rw [← liftBits_parameters 0 0]
+  decide +kernel
 
 -- The hypotheses of the bounds hold on concrete inputs.
 example (i : ℕ) :
@@ -146,9 +147,6 @@ example {table : List (List ℤ)} (htable : table ∈ liftRows 0 2 4 2 385 385 3
 /-! ### Polynomial-time certificates -/
 
 open Turing MultiTapeTM
-
-example : (encList encIntBin (coeffRow 2 3)).length ≤ coeffRowBound (encIntBin 2).length 3 :=
-  length_encList_coeffRow_le 2 le_rfl
 
 example : ComputableInPolyTime (fun p : ℤ × ℕ => coeffRow p.1 p.2)
     (encPair encIntBin encUnary) (encList encIntBin) := by

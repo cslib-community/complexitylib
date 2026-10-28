@@ -191,8 +191,9 @@ example : ¬EndOfLine (1, idCode1, idCode1) [true] := fun ⟨_, h⟩ =>
 example : Leaf (1, notCode1, idCode1) [true] :=
   ⟨rfl, rfl⟩
 
-/-- Every total polynomial-time search problem reduces to `LocalOpt`, `Pigeon`, `EndOfLine`, and
-`Leaf` and therefore belongs to `PLS`, `PPP`, `PPAD`, and `PPA`. -/
+/-! The total `emptyRel` reduces to `LocalOpt`, `Pigeon`, `EndOfLine`, and `Leaf`, and so lies in
+`PLS`, `PPP`, `PPAD`, and `PPA`. -/
+
 private theorem emptyRel_searchReducible_LocalOpt :
     SearchReducible encBits encLocalOpt emptyRel LocalOpt :=
   .of_isTotalSearch isTotalSearch_LocalOpt

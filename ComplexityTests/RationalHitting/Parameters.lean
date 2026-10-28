@@ -39,8 +39,9 @@ example : (hittingList 2 1).dimension = 131072 := by decide
 
 /-! ### Certifiable forms -/
 
-example : Parameters.ambientDimension 1 1 = 2 ^ Nat.clog 2 (threshold 1 1 + 1) :=
-  Parameters.ambientDimension_eq 1 1
+example : 2 ^ Nat.clog 2 (threshold 1 1 + 1) = 256 := by
+  rw [← Parameters.ambientDimension_eq 1 1]
+  decide
 
 example (n s : ℕ) : 2 * CyclotomicRing.degree (Parameters.exponent n s) =
     Parameters.ambientDimension n s := by
