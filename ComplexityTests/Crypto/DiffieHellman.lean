@@ -77,8 +77,8 @@ noncomputable def trivialAdversary : Encryption.Adversary where
 
 /-- `trivialAdversary` is uniform strict PPT. -/
 theorem trivialAdversary_isPPT : trivialAdversary.IsPPT where
-  choose := ComputableTidilyInPolyTime.isPPTOn (ComputableTidilyInPolyTime.const _)
-  guess := ComputableTidilyInPolyTime.isPPTOn (ComputableTidilyInPolyTime.const _)
+  choose := (ComputableInPolyTime.const _).isPPTOn
+  guess := (ComputableInPolyTime.const _).isPPTOn
 
 /-- For every Schnorr group description `d`, the identity `0 : schnorrGroups.Carrier d` (residue `1`
 modulo `p`) is encoded by `(1 : ℕ).bits`. -/
@@ -132,7 +132,7 @@ theorem computableInPolyTime_twoElements :
       (fun p : ℕ × List Bool × List Bool × List Bool => twoElements p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool := by
   unfold twoElements
-  exact ComputableInPolyTime.of_tidy (by polytime)
+  polytime
 
 /-- A word-message IND-CPA adversary that extracts the encoded generator `g` from the group
 description in the public key `pk`, chooses `(encode d 0, encode d g)`, and tests whether the second
@@ -144,25 +144,25 @@ noncomputable def groupWordAdversary : Encryption.WordAdversary where
 /-- `groupWordAdversary` is uniform strict PPT. -/
 theorem groupWordAdversary_isPPT : groupWordAdversary.IsPPT where
   choose := by
-    have hunf : ComputableTidilyInPolyTime unframe encBits encBits :=
-      ComputableTidilyInPolyTime.of_linear (.of_unframe fun _ => rfl)
-    have hdrop : ComputableTidilyInPolyTime dropFrame encBits encBits :=
-      ComputableTidilyInPolyTime.of_linear (.of_dropFrame fun _ => rfl)
-    have hg : ComputableTidilyInPolyTime
+    have hunf : ComputableInPolyTime unframe encBits encBits :=
+      ComputableInPolyTime.unframe
+    have hdrop : ComputableInPolyTime dropFrame encBits encBits :=
+      ComputableInPolyTime.dropFrame
+    have hg : ComputableInPolyTime
         (fun p : ℕ × List Bool => dropFrame (dropFrame (unframe p.2)))
         (encPair encUnary encBits) encBits :=
-      hdrop.comp (hdrop.comp (hunf.comp (ComputableTidilyInPolyTime.snd _ _)))
-    exact (((ComputableTidilyInPolyTime.const (1 : ℕ).bits).prod hg).prod
-      (ComputableTidilyInPolyTime.const ([] : List Bool))).isPPTOn
+      hdrop.comp (hdrop.comp (hunf.comp (ComputableInPolyTime.snd _ _)))
+    exact (((ComputableInPolyTime.const (1 : ℕ).bits).prod hg).prod
+      (ComputableInPolyTime.const ([] : List Bool))).isPPTOn
   guess := by
-    have hdrop : ComputableTidilyInPolyTime dropFrame encBits encBits :=
-      ComputableTidilyInPolyTime.of_linear (.of_dropFrame fun _ => rfl)
-    have hct : ComputableTidilyInPolyTime
+    have hdrop : ComputableInPolyTime dropFrame encBits encBits :=
+      ComputableInPolyTime.dropFrame
+    have hct : ComputableInPolyTime
         (fun p : ℕ × List Bool × List Bool => dropFrame p.2.2)
         (encPair encUnary (encPair encBits encBits)) encBits :=
-      hdrop.comp ((ComputableTidilyInPolyTime.snd _ _).comp (ComputableTidilyInPolyTime.snd _ _))
-    exact (ComputableTidilyInPolyTime.decide_eq' (encB := encBits) hct
-      (ComputableTidilyInPolyTime.const (1 : ℕ).bits)).isPPTOn
+      hdrop.comp ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _))
+    exact (ComputableInPolyTime.decide_eq' (encB := encBits) hct
+      (ComputableInPolyTime.const (1 : ℕ).bits)).isPPTOn
 
 /-- Under DDH for any setup law `setup`, `groupWordAdversary` has negligible advantage in the
 group-element ElGamal IND-CPA game with admissibility predicate `twoElements`. The adversary's pair
@@ -189,7 +189,7 @@ noncomputable def hashedWordAdversary : Encryption.WordAdversary where
 
 /-- `hashedWordAdversary` is uniform strict PPT. -/
 theorem hashedWordAdversary_isPPT : hashedWordAdversary.IsPPT where
-  choose := ComputableTidilyInPolyTime.isPPTOn (ComputableTidilyInPolyTime.const _)
+  choose := (ComputableInPolyTime.const _).isPPTOn
   guess := groupWordAdversary_isPPT.guess
 
 /-- Degenerate `msgLen = 0` smoke test for `SecureKDF`: the 0-bit constant KDF `fun _ => []` has
@@ -270,20 +270,25 @@ example :
         schnorrGroups.ddhRealTupleLaw d23 :=
   schnorrGroups.ddhRerandomizeLaw_real d23 3 5
 
-/-- Under DDH random self-reducibility for any Schnorr group, re-randomizing any candidate non-DDH
-tuple `(α • g, β • g, γ • g)` with `γ ≠ α * β` yields the uniform ideal DDH tuple distribution. -/
-example (d : schnorrGroups.Desc) {α β γ : ZMod (schnorrGroups.order d)} (hγ : γ ≠ α * β) :
-    schnorrGroups.ddhRerandomizeLaw d (α • schnorrGroups.generator d)
-      (β • schnorrGroups.generator d) (γ • schnorrGroups.generator d) =
-        schnorrGroups.ddhIdealTupleLaw d :=
-  schnorrGroups.ddhRerandomizeLaw_ideal d hγ
-
-/-- Encoded elements of any Schnorr group have bit-length polynomially bounded in the description
-bit-length. -/
+/-- Under DDH random self-reducibility on the concrete group `d23`, re-randomizing the non-DDH
+tuple `(3 • g, 5 • g, 7 • g)` (`7 ≠ 3 * 5` in `ZMod 11`) yields the uniform ideal DDH tuple
+distribution. -/
 example :
-    ∃ c k : ℕ, ∀ d : schnorrGroups.Desc, ∀ x : schnorrGroups.Carrier d,
-      (schnorrGroups.encode d x).length ≤ c * ((schnorrGroups.encDesc d).length + 1) ^ k :=
-  schnorrGroups.exists_length_encode_le
+    let α : ZMod (schnorrGroups.order d23) := 3
+    let β : ZMod (schnorrGroups.order d23) := 5
+    let γ : ZMod (schnorrGroups.order d23) := 7
+    schnorrGroups.ddhRerandomizeLaw d23 (α • schnorrGroups.generator d23)
+      (β • schnorrGroups.generator d23) (γ • schnorrGroups.generator d23) =
+        schnorrGroups.ddhIdealTupleLaw d23 :=
+  schnorrGroups.ddhRerandomizeLaw_ideal d23 (by decide)
+
+/-- Encoded elements of `d23` satisfy the uniform polynomial encoding-length bound. -/
+example :
+    ∃ c k : ℕ,
+      (schnorrGroups.encode d23 (schnorrGroups.generator d23)).length ≤
+        c * ((schnorrGroups.encDesc d23).length + 1) ^ k :=
+  let ⟨c, k, h⟩ := schnorrGroups.exists_length_encode_le
+  ⟨c, k, h d23 (schnorrGroups.generator d23)⟩
 
 /-! ### Exercise 10.10: Worst-case DDH decider tests -/
 
@@ -306,7 +311,7 @@ theorem isPPTOn_constFalseDDHDistinguisher :
       (encPair encUnary
         (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
       encBool (fun input => constFalseDDHDistinguisher input.1 input.2) :=
-  ComputableTidilyInPolyTime.isPPTOn (ComputableTidilyInPolyTime.const false)
+  (ComputableInPolyTime.const false).isPPTOn
 
 /-- `constFalseDDHDistinguisher` has DDH advantage `0` at every security parameter. -/
 example (setup : ℕ → PMF schnorrGroups.Desc) (n : ℕ) :
@@ -328,8 +333,7 @@ example :
       (fun input =>
         schnorrGroups.ddhAmplifiedDecider constFalseDDHDistinguisher (fun n => n + 1)
           input.1 input.2) :=
-  schnorrGroups.isPPTOn_ddhAmplifiedDecider isPPTOn_constFalseDDHDistinguisher
-    (ComputableInPolyTime.of_tidy (by fun_prop))
+  schnorrGroups.isPPTOn_ddhAmplifiedDecider isPPTOn_constFalseDDHDistinguisher (by fun_prop)
 
 /-- Idealized discrete-logarithm oracle for `schnorrGroups`, inverting `α ↦ encode d (α • g)` via
 `Function.invFun`. Used to witness non-vacuity of the inverse-polynomial advantage hypothesis in
@@ -449,7 +453,7 @@ example (α β γ : ℕ → ZMod (schnorrGroups.order d23)) :
           schnorrGroups.encode d23 (γ n • schnorrGroups.generator d23)))).toOuterMeasure
         {b | b ≠ decide (γ n = α n * β n)}).toNNReal :=
   schnorrGroups.negligible_ddhAmplifiedDecider_error
-    (ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.const 2))
+    (ComputableInPolyTime.const 2)
     (fun _ => d23) α β γ
     (Filter.Eventually.of_forall fun _ => by decide)
     (Filter.Eventually.of_forall one_half_le_advantage_exactDDHDistinguisher)
@@ -500,22 +504,19 @@ example (distinguisher : ℕ → schnorrGroups.withSeed.Desc × List Bool × Lis
       subst hd
       decide)
 
-/-- Positive-side non-degenerate asymptotic `SecureKDF` instantiation (`k = 4 > 0`): for any setup
+/-- Positive-side non-degenerate asymptotic `SecureKDF` instantiation (`k = 8 > 0`): for any setup
 law whose supported descriptions have group order at least `2 ^ n`, `schnorrGroups.withSeed` admits
-a `SecureKDF` with output key length `4 > 0` (constructed via `linearHashKDF` using the canonical
+a `SecureKDF` with output key length `8 > 0` (constructed via `linearHashKDF` using the canonical
 polynomial encoding-length bound of `schnorrGroups`). -/
 example (setup : ℕ → PMF schnorrGroups.Desc)
     (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
     ∃ (seedLen : ℕ → schnorrGroups.Desc → ℕ)
       (H : schnorrGroups.withSeed.Desc × List Bool → List Bool),
-      ComputableInPolyTime (fun p => seedLen p.1 p.2)
-        (encPair encUnary schnorrGroups.encDesc) encUnary ∧
-      ComputableInPolyTime H
-        (encPair schnorrGroups.withSeed.encDesc encBits) encBits ∧
-      (∀ ds : schnorrGroups.withSeed.Desc, ∀ w : List Bool, (H (ds, w)).length = 4) ∧
       schnorrGroups.withSeed.SecureKDF
-        (schnorrGroups.seededSetup setup seedLen) H (fun _ => 4) :=
-  schnorrGroups.exists_secureKDF_withSeed setup 4 Nat.two_pow_pos hsize negligible_inv_two_pow
+        (schnorrGroups.seededSetup setup seedLen) H (fun _ => 8) :=
+  let ⟨seedLen, H, _, _, _, hsec⟩ :=
+    schnorrGroups.exists_secureKDF_withSeed setup 8 Nat.two_pow_pos hsize negligible_inv_two_pow
+  ⟨seedLen, H, hsec⟩
 
 /-- Negative-side KDF counterexample: a constant 1-bit KDF `constZeroKDF := fun _ => [false]`
 always outputs `[false]` instead of a uniform 1-bit key. -/
@@ -584,28 +585,30 @@ theorem computableInPolyTime_const_d23 :
   ComputableInPolyTime.const d23
 
 /-- Support-level round-trip correctness of `elGamalKeyGenProb`, `hashedElGamalEncapsProb`, and
-`hashedElGamalDecaps` on `d23`. -/
-example (n : ℕ) {keys : List Bool × List Bool}
-    (hkeys : keys ∈ (ProbComp.eval (schnorrGroups.elGamalKeyGenProb (fun _ => d23) n)).support)
+`hashedElGamalDecaps` on `d23` at `n = 4`. -/
+example {keys : List Bool × List Bool}
+    (hkeys : keys ∈ (ProbComp.eval (schnorrGroups.elGamalKeyGenProb (fun _ => d23) 4)).support)
     {encapsulated : List Bool × List Bool}
     (hencaps : encapsulated ∈
       (ProbComp.eval
-        (schnorrGroups.hashedElGamalEncapsProb Prod.snd (fun _ => d23) n keys.1)).support) :
-    schnorrGroups.hashedElGamalDecaps Prod.snd (fun _ => d23) n keys.2 encapsulated.2 =
+        (schnorrGroups.hashedElGamalEncapsProb Prod.snd (fun _ => d23) 4 keys.1)).support) :
+    schnorrGroups.hashedElGamalDecaps Prod.snd (fun _ => d23) 4 keys.2 encapsulated.2 =
       encapsulated.1 :=
-  schnorrGroups.hashedElGamalDecaps_hashedElGamalEncapsProb Prod.snd (fun _ => d23) n hkeys hencaps
+  schnorrGroups.hashedElGamalDecaps_hashedElGamalEncapsProb Prod.snd (fun _ => d23) 4 hkeys hencaps
 
 /-- Support-level round-trip correctness of `elGamalKeyGenProb`, `elGamalEncryptProb`, and
-`elGamalDecryptDet` on `d23`. -/
-example (n : ℕ) {keys : List Bool × List Bool}
-    (hkeys : keys ∈ (ProbComp.eval (schnorrGroups.elGamalKeyGenProb (fun _ => d23) n)).support)
-    (m : schnorrGroups.Carrier d23) {ct : List Bool}
+`elGamalDecryptDet` on `d23` at `n = 4` for the generator `schnorrGroups.generator d23`. -/
+example {keys : List Bool × List Bool}
+    (hkeys : keys ∈ (ProbComp.eval (schnorrGroups.elGamalKeyGenProb (fun _ => d23) 4)).support)
+    {ct : List Bool}
     (hct : ct ∈
       (ProbComp.eval
-        (schnorrGroups.elGamalEncryptProb (fun _ x => x) (fun _ => d23) n keys.1
-          (schnorrGroups.encode d23 m))).support) :
-    schnorrGroups.elGamalDecryptDet (fun _ => d23) n keys.2 ct = schnorrGroups.encode d23 m :=
-  schnorrGroups.elGamalDecryptDet_elGamalEncryptProb (fun _ => d23) n hkeys m hct
+        (schnorrGroups.elGamalEncryptProb (fun _ x => x) (fun _ => d23) 4 keys.1
+          (schnorrGroups.encode d23 (schnorrGroups.generator d23)))).support) :
+    schnorrGroups.elGamalDecryptDet (fun _ => d23) 4 keys.2 ct =
+      schnorrGroups.encode d23 (schnorrGroups.generator d23) :=
+  schnorrGroups.elGamalDecryptDet_elGamalEncryptProb (fun _ => d23) 4 hkeys
+    (schnorrGroups.generator d23) hct
 
 /-- Concrete instantiation of `DDH.kemINDCPA_hashedElGamalEncapsProb`,
 `DDH.wordINDCPA_hybrid_hashedElGamal` (with `otpWordEncrypt`),

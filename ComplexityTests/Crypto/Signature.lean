@@ -39,12 +39,17 @@ noncomputable def idLamportScheme : SignatureScheme :=
   lamportScheme (fun x => x) .id'
 
 -- Ordinary certificates construct the actual scheme and reduction, with no public raw premise.
-example {f : List Bool → List Bool} (hf : ComputableInPolyTime f encBits encBits) :
-    (lamportScheme f hf).verify = lamportVerify f := rfl
+example : idLamportScheme.verify = lamportVerify id := rfl
 
-example {f : List Bool → List Bool} (hf : ComputableInPolyTime f encBits encBits)
-    {adversary : Forger} (ha : IsOraclePPT (encPair encBits encBits) adversary) :
-    IsPPT encBits (lamportInverter f hf adversary) := isPPT_lamportInverter hf ha
+example :
+    IsPPT encBits
+      (lamportInverter id .id'
+        (fun n _ => ProbOracleComp.sample (pure (List.replicate n false, [])))) := by
+  refine isPPT_lamportInverter .id' ?_
+  have hpair : ComputableInPolyTime
+      (fun p : ℕ × List Bool => (List.replicate p.1 false, ([] : List Bool)))
+      (encPair encUnary encBits) (encPair encBits encBits) := by polytime
+  exact hpair.isPPTOn.isOraclePPTOn.isOraclePPT
 
 -- Each message bit selects the corresponding secret from its pair.
 example : lamportSign (encList encBits
@@ -92,7 +97,7 @@ theorem not_oneTimeEUFCMA_trivialSignatureScheme :
   have hforgerBody : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p : ℕ × List Bool => (pure (List.replicate p.1 false, []) :
         ProbComp (List Bool × List Bool))) := by
-    have hpair : ComputableTidilyInPolyTime
+    have hpair : ComputableInPolyTime
         (fun p : ℕ × List Bool => (List.replicate p.1 false, ([] : List Bool)))
         (encPair encUnary encBits) (encPair encBits encBits) := by polytime
     exact hpair.isPPTOn
