@@ -198,7 +198,7 @@ example : IsPPTOn encBits (encPair encBits encBits) (fun word =>
     (OracleComp.interpret
       (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
         (requestHead word)).run word) := by
-  apply requestHead_isOraclePPTOn.run_interpret_preprocess
+  apply requestHead_isOraclePPTOn.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
     (resources := fun caller _ => caller.length + 1)
     ComputableTidilyInPolyTime.id' (by unfold respond; fun_prop)
     ComputableTidilyInPolyTime.id' (fun caller state => caller.length ≤ state.length)
@@ -228,12 +228,12 @@ example : IsPPTOn (encList encBool) (encPair encBits encBits) (fun word =>
     (OracleComp.interpret
       (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
         (requestHead word.reverse)).run word) := by
-  apply requestHead_isOraclePPTOn.run_interpret_preprocess
+  apply requestHead_isOraclePPTOn.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
     (resources := fun caller _ => caller.length + 1)
     (ComputableTidilyInPolyTime.bitsReverse.comp ComputableTidilyInPolyTime.listToBits)
     (by
       have h : IsPPTOn
-          (encPair encBits (encPair (encPair (encFinite Unit) encBits) encBits))
+          (encPair encBits (encPair (encPair (encFinEnum Unit) encBits) encBits))
           (encPair encBits encBits) (fun pair => respond pair.1 pair.2.1 pair.2.2) := by
         unfold respond
         fun_prop
@@ -267,7 +267,7 @@ example {β : Type} {output : β ↪ List Bool} {program : List Bool → WordOra
         (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
           (fun request => memoize (fun _ => BitString.sampleList word.length) request.2))
             (program word)).run []) := by
-  apply hprogram.run_interpret_preprocess
+  apply hprogram.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
     (resources := fun caller query => 4 * query.length + 2 * caller.length + 3)
     ComputableTidilyInPolyTime.id' (by fun_prop) (by fun_prop)
     (fun caller cache => ∀ entry ∈ cache, entry.2.length ≤ caller.length)
@@ -315,7 +315,8 @@ example : IsPPTOn (encPair encBits (encList encBits))
           (OracleComp.withSampleList [] (fun value _ state =>
             pure (value.take pair.1.length, value.take pair.1.length ++ state))))
               (requestHead pair.1)).run (pair.1, pair.2)) := by
-  apply requestHead_isOraclePPTOn.run_interpret_withSampleList []
+  apply requestHead_isOraclePPTOn.run_interpret_withSampleList
+    (operationEncoding := encFinEnum Unit) []
     (prepare := fun pair => pair.1) (resources := fun pair _ => pair.1.length)
     (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
     (fun _ _ => True) (by simp) (by fun_prop)

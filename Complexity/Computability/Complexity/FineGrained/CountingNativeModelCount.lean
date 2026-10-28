@@ -8,8 +8,11 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeEndpoint
+import Complexity.Computability.Complexity.FineGrained.CountingScaleBounds
 import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 
 /-!
 # Subexponential model counting for bounded-width CNF formulas
@@ -23,15 +26,23 @@ This restates `CountingNativeEndpoint.exists_declaredCounter` on the plain formu
 relabels the variables densely, declares their number, and runs the declared counter. The
 resource bounds are folded into `ComputableInO`.
 
-More generally, `CountingNativeEndpoint.exists_counter_of_polyTime_toDeclared` composes
-`CountingNativeEndpoint.exists_declaredCounter` with any polynomial-time reduction
-`g : α → ℕ × CNF ℕ` and polynomial-time validity guard `valid : α → Bool`.
+More generally:
+* `CountingNativeEndpoint.exists_counter_of_polyTime_toDeclared` composes
+  `CountingNativeEndpoint.exists_declaredCounter` with any polynomial-time reduction
+  `g : α → ℕ × CNF ℕ` and polynomial-time validity guard `valid : α → Bool`.
+* `CountingNativeEndpoint.exists_shiftedCounter_of_polyTime_toCNF` composes
+  `CountingNativeEndpoint.exists_modelCounter` with any polynomial-time CNF compilation
+  `φ : α → CNF ℕ`, unary binary-power shift `shift : α → ℕ`, validity guard `valid : α → Bool`,
+  and linear variable-count bound `(φ x).numVars ≤ C * μ x + D`, multiplying `(φ x).modelCount`
+  by `2 ^ shift x` in binary while rescaling the subexponential rate to `μ x`.
 
 ## Main results
 
 * `CountingNativeEndpoint.exists_counter_of_polyTime_toDeclared`: compose the declared `k`-CNF
   counter with any polynomial-time reduction and validity guard.
 * `CountingNativeEndpoint.exists_modelCounter`: the bounded-width model counter.
+* `CountingNativeEndpoint.exists_shiftedCounter_of_polyTime_toCNF`: compose the bounded-width
+  model counter with a `2 ^ shift` factor and a linear `numVars ≤ C * μ + D` rescaling.
 
 ## References
 
@@ -248,5 +259,150 @@ public theorem exists_modelCounter (k : ℕ) :
     generalize a * (p + 1) ^ b = v at hSg ⊢
     generalize c * (p + 1) ^ e = u
     nlinarith [Nat.zero_le (c * Z), Nat.zero_le (v * Z), Nat.zero_le (u * Z)]
+
+/-- Compose `CountingNativeEndpoint.exists_modelCounter` with a polynomial-time CNF compilation
+`φ : α → CNF ℕ`, a polynomial-time unary binary-exponent shift `shift : α → ℕ`, a polynomial-time
+validity guard `valid : α → Bool`, and a linear variable-count bound `(φ x).numVars ≤ C * μ x + D`
+under `valid x = true`, multiplying `(φ x).modelCount` in binary by `2 ^ shift x` while rescaling
+the `interpolationScale` exponent to `μ x`. -/
+public theorem exists_shiftedCounter_of_polyTime_toCNF {α : Type} {encA : α ↪ List Bool} (k : ℕ)
+    {φ : α → CNF ℕ} (hφ : ComputableInPolyTime φ encA encCNF)
+    {shift : α → ℕ} (hshift : ComputableInPolyTime shift encA encUnary)
+    {valid : α → Bool} (hvalid : ComputableInPolyTime valid encA encBool)
+    (μ : α → ℕ) (C D : ℕ)
+    (hvalid_imp : ∀ x, valid x = true →
+      (∀ cl ∈ φ x, cl.length ≤ k) ∧ (φ x).numVars ≤ C * μ x + D) :
+    ∃ (count : α → ℕ) (A e b : ℕ),
+      (∀ x, count x = if valid x then 2 ^ shift x * (φ x).modelCount else 0) ∧
+      ComputableInO count encA encNat
+        (fun x => ⌈(2 : ℝ) ^ ((A : ℝ) * interpolationScale (μ x))⌉₊ *
+          ((encA x).length + 1) ^ e)
+        (fun x => ((encA x).length + 1) ^ b) := by
+  open ComputableTidilyInPolyTime in
+  set fCNF : α → CNF ℕ := fun x => if valid x then φ x else []
+  have hfCNF_poly : ComputableTidilyInPolyTime fCNF encA encCNF :=
+    hvalid.tidy.cond hφ.tidy (const [])
+  set fPow : α → ℕ := fun x => if valid x then 2 ^ shift x else 0
+  have hfPow_poly : ComputableTidilyInPolyTime fPow encA encNat :=
+    hvalid.tidy.cond (binary_two_pow.comp hshift.tidy) (const 0)
+  obtain ⟨d₁, _, hfCNF_deg⟩ := hfCNF_poly.exists_degree
+  obtain ⟨p, q, hfCNF_len⟩ := hfCNF_poly.polyBounded_length.exists_le
+  obtain ⟨d₂, _, hfPow_deg⟩ := hfPow_poly.exists_degree
+  obtain ⟨d₃, _, hmul_deg⟩ := binary_mul.exists_degree
+  obtain ⟨countCNF, A₀, e₀, b₀, hcountCNF_spec, hcountCNF_inO⟩ := exists_modelCounter k
+  have hsub := hcountCNF_inO.tidy.comp hfCNF_deg.inO
+  have hpair := hfPow_deg.inO.prod hsub
+  obtain ⟨c_pair, hpair_len⟩ := hpair.length_le
+  have htot := hmul_deg.inO.comp hpair
+  obtain ⟨K, _, hK_bound⟩ := ceil_two_pow_interpolationScale_le_of_linear A₀ C D
+  let A : ℕ := A₀ * 8 ^ (2 * C)
+  let B₁ : ℕ := d₁ + d₂ + q * b₀
+  let M : ℕ := c_pair * (3 + (p + 1) ^ b₀) + 1
+  let e : ℕ := B₁ + q * e₀ + B₁ * d₃
+  let b : ℕ := B₁ + B₁ * d₃
+  let C_bound : ℕ := 2 + K * (p + 1) ^ e₀ + (p + 1) ^ b₀ + M ^ d₃ + 1
+  refine ⟨fun x => fPow x * countCNF (fCNF x), A, e, b, fun x => ?_,
+    (htot.mono C_bound (fun x => ?_) (fun x => ?_)).computableInO⟩
+  · dsimp only [fPow, fCNF]
+    split_ifs with hvx
+    · rw [hcountCNF_spec (φ x) (hvalid_imp x hvx).1]
+    · simp only [Nat.zero_mul]
+  all_goals
+    set Y : ℕ := (encA x).length + 1
+    have hY1 : 1 ≤ Y := Nat.le_add_left 1 _
+    have hφ_len : (encCNF (fCNF x)).length + 1 ≤ (p + 1) * Y ^ q := by
+      have h1 : (encCNF (fCNF x)).length ≤ p * Y ^ q := hfCNF_len x
+      have h2 : 1 ≤ Y ^ q := Nat.one_le_pow q Y hY1
+      nlinarith
+    have hφ_b₀ : ((encCNF (fCNF x)).length + 1) ^ b₀ ≤ (p + 1) ^ b₀ * Y ^ (q * b₀) := by
+      calc ((encCNF (fCNF x)).length + 1) ^ b₀
+          ≤ ((p + 1) * Y ^ q) ^ b₀ := Nat.pow_le_pow_left hφ_len b₀
+        _ = (p + 1) ^ b₀ * Y ^ (q * b₀) := by rw [mul_pow, pow_mul]
+    have hSpair_le : Y ^ d₂ + (Y ^ d₁ + ((encCNF (fCNF x)).length + 1) ^ b₀) ≤
+        (2 + (p + 1) ^ b₀) * Y ^ B₁ := by
+      have hd₂ : Y ^ d₂ ≤ Y ^ B₁ := Nat.pow_le_pow_right hY1 (by dsimp only [B₁]; omega)
+      have hd₁ : Y ^ d₁ ≤ Y ^ B₁ := Nat.pow_le_pow_right hY1 (by dsimp only [B₁]; omega)
+      have hqb₀ : Y ^ (q * b₀) ≤ Y ^ B₁ := Nat.pow_le_pow_right hY1 (by dsimp only [B₁]; omega)
+      have h3 := hφ_b₀.trans (Nat.mul_le_mul_left _ hqb₀)
+      nlinarith
+    have hpair_d₃ : ((encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1) ^ d₃ ≤
+        M ^ d₃ * Y ^ (B₁ * d₃) := by
+      have h1 : (encPair encNat encNat (fPow x, countCNF (fCNF x))).length ≤
+          c_pair * (Y ^ d₂ + (Y ^ d₁ + ((encCNF (fCNF x)).length + 1) ^ b₀) + 1) := hpair_len x
+      have hYB₁ : 1 ≤ Y ^ B₁ := Nat.one_le_pow B₁ Y hY1
+      have hS1 : Y ^ d₂ + (Y ^ d₁ + ((encCNF (fCNF x)).length + 1) ^ b₀) + 1 ≤
+          (3 + (p + 1) ^ b₀) * Y ^ B₁ := by
+        calc Y ^ d₂ + (Y ^ d₁ + ((encCNF (fCNF x)).length + 1) ^ b₀) + 1
+            ≤ (2 + (p + 1) ^ b₀) * Y ^ B₁ + Y ^ B₁ := Nat.add_le_add hSpair_le hYB₁
+          _ = (3 + (p + 1) ^ b₀) * Y ^ B₁ := by ring
+      have h2 : (encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1 ≤ M * Y ^ B₁ := by
+        calc (encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1
+            ≤ c_pair * ((3 + (p + 1) ^ b₀) * Y ^ B₁) + Y ^ B₁ :=
+              Nat.add_le_add (h1.trans (Nat.mul_le_mul_left c_pair hS1)) hYB₁
+          _ = M * Y ^ B₁ := by dsimp only [M]; ring
+      calc ((encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1) ^ d₃
+          ≤ (M * Y ^ B₁) ^ d₃ := Nat.pow_le_pow_left h2 d₃
+        _ = M ^ d₃ * Y ^ (B₁ * d₃) := by rw [mul_pow, pow_mul]
+  · set N : ℕ := ⌈(2 : ℝ) ^ ((A : ℝ) * interpolationScale (μ x))⌉₊
+    have hN1 : 1 ≤ N := Nat.one_le_ceil_iff.mpr (Real.rpow_pos_of_pos (by norm_num) _)
+    have hnum_le : (fCNF x).numVars ≤ C * μ x + D := by
+      dsimp only [fCNF]
+      split_ifs with hvx
+      · exact (hvalid_imp x hvx).2
+      · simp only [CNF.numVars, CNF.vars, List.flatten_nil, List.map_nil, List.toFinset_nil,
+          Finset.card_empty, Nat.zero_le]
+    have hscale : ⌈(2 : ℝ) ^ ((A₀ : ℝ) * interpolationScale (fCNF x).numVars)⌉₊ ≤ K * N :=
+      hK_bound hnum_le
+    have hφ_e₀ : ((encCNF (fCNF x)).length + 1) ^ e₀ ≤ (p + 1) ^ e₀ * Y ^ (q * e₀) := by
+      calc ((encCNF (fCNF x)).length + 1) ^ e₀
+          ≤ ((p + 1) * Y ^ q) ^ e₀ := Nat.pow_le_pow_left hφ_len e₀
+        _ = (p + 1) ^ e₀ * Y ^ (q * e₀) := by rw [mul_pow, pow_mul]
+    have hsub_T : ⌈(2 : ℝ) ^ ((A₀ : ℝ) * interpolationScale (fCNF x).numVars)⌉₊ *
+        ((encCNF (fCNF x)).length + 1) ^ e₀ ≤ K * (p + 1) ^ e₀ * (N * Y ^ e) := by
+      have hqe₀ : Y ^ (q * e₀) ≤ Y ^ e := Nat.pow_le_pow_right hY1 (by dsimp only [e]; omega)
+      have h1 := Nat.mul_le_mul hscale (hφ_e₀.trans (Nat.mul_le_mul_left _ hqe₀))
+      calc ⌈(2 : ℝ) ^ ((A₀ : ℝ) * interpolationScale (fCNF x).numVars)⌉₊ *
+            ((encCNF (fCNF x)).length + 1) ^ e₀
+          ≤ (K * N) * ((p + 1) ^ e₀ * Y ^ e) := h1
+        _ = K * (p + 1) ^ e₀ * (N * Y ^ e) := by ring
+    have hd₂ : Y ^ d₂ ≤ N * Y ^ e :=
+      (Nat.pow_le_pow_right hY1 (by dsimp only [e, B₁]; omega)).trans
+        (Nat.le_mul_of_pos_left _ hN1)
+    have hd₁ : Y ^ d₁ ≤ N * Y ^ e :=
+      (Nat.pow_le_pow_right hY1 (by dsimp only [e, B₁]; omega)).trans
+        (Nat.le_mul_of_pos_left _ hN1)
+    have hd₃ : ((encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1) ^ d₃ ≤
+        M ^ d₃ * (N * Y ^ e) := by
+      have hBe : Y ^ (B₁ * d₃) ≤ N * Y ^ e :=
+        (Nat.pow_le_pow_right hY1 (by dsimp only [e]; omega)).trans
+          (Nat.le_mul_of_pos_left _ hN1)
+      exact hpair_d₃.trans (Nat.mul_le_mul_left _ hBe)
+    change Y ^ d₂ + (Y ^ d₁ + ⌈(2 : ℝ) ^ ((A₀ : ℝ) * interpolationScale (fCNF x).numVars)⌉₊ *
+      ((encCNF (fCNF x)).length + 1) ^ e₀) +
+      ((encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1) ^ d₃ ≤
+      C_bound * (N * Y ^ e + 1)
+    dsimp only [C_bound]
+    calc Y ^ d₂ + (Y ^ d₁ + ⌈(2 : ℝ) ^ ((A₀ : ℝ) * interpolationScale (fCNF x).numVars)⌉₊ *
+          ((encCNF (fCNF x)).length + 1) ^ e₀) +
+          ((encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1) ^ d₃
+        ≤ N * Y ^ e + (N * Y ^ e + K * (p + 1) ^ e₀ * (N * Y ^ e)) + M ^ d₃ * (N * Y ^ e) :=
+          Nat.add_le_add (Nat.add_le_add hd₂ (Nat.add_le_add hd₁ hsub_T)) hd₃
+      _ = (2 + K * (p + 1) ^ e₀ + M ^ d₃) * (N * Y ^ e) := by ring
+      _ ≤ (2 + K * (p + 1) ^ e₀ + (p + 1) ^ b₀ + M ^ d₃ + 1) * (N * Y ^ e + 1) :=
+          Nat.mul_le_mul (by omega) (Nat.le_succ _)
+  · have hB₁_b : Y ^ B₁ ≤ Y ^ b := Nat.pow_le_pow_right hY1 (by dsimp only [b]; omega)
+    have hBd₃_b : Y ^ (B₁ * d₃) ≤ Y ^ b := Nat.pow_le_pow_right hY1 (by dsimp only [b]; omega)
+    have hs1 := hSpair_le.trans (Nat.mul_le_mul_left _ hB₁_b)
+    have hs2 := hpair_d₃.trans (Nat.mul_le_mul_left _ hBd₃_b)
+    change Y ^ d₂ + (Y ^ d₁ + ((encCNF (fCNF x)).length + 1) ^ b₀) +
+      ((encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1) ^ d₃ ≤
+      C_bound * (Y ^ b + 1)
+    dsimp only [C_bound]
+    calc Y ^ d₂ + (Y ^ d₁ + ((encCNF (fCNF x)).length + 1) ^ b₀) +
+          ((encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1) ^ d₃
+        ≤ (2 + (p + 1) ^ b₀) * Y ^ b + M ^ d₃ * Y ^ b := Nat.add_le_add hs1 hs2
+      _ = (2 + (p + 1) ^ b₀ + M ^ d₃) * Y ^ b := by ring
+      _ ≤ (2 + K * (p + 1) ^ e₀ + (p + 1) ^ b₀ + M ^ d₃ + 1) * (Y ^ b + 1) :=
+          Nat.mul_le_mul (by omega) (Nat.le_succ _)
 
 end Cslib.Complexity.CountingNativeEndpoint

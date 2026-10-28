@@ -103,11 +103,12 @@ variable [Finite Control]
 
 /-- A certified stateful handler makes one complete interpreter step PPT. -/
 theorem isPPTOn_step [Fintype Operation] {input : α ↪ List Bool}
+    {operationEncoding : Operation ↪ List Bool}
     {stateEncoding : State ↪ List Bool}
     (machine : MultiTapePTM k Bool Control Operation)
     {handler : α → Operation × List Bool → State → ProbComp (List Bool × State)}
     (hhandler : IsPPTOn
-      (encPair input (encPair (encPair (encFinite Operation) encBits) stateEncoding))
+      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2)) :
     IsPPTOn (encPair input (encPair encFiniteConfig stateEncoding))
       (encPair encFiniteConfig stateEncoding)
@@ -119,13 +120,14 @@ theorem isPPTOn_step [Fintype Operation] {input : α ↪ List Bool}
 /-- A bounded native run with a stateful PPT handler is PPT. A local invariant bounds reply
 length and private-state growth; the loop certificate charges all interpreter storage. -/
 theorem isPPTOn_run [Finite Operation] {input : α ↪ List Bool}
+    {operationEncoding : Operation ↪ List Bool}
     {stateEncoding : State ↪ List Bool} (machine : MultiTapePTM k Bool Control Operation)
     {word : α → List Bool} {count : α → ℕ}
     {handler : α → Operation × List Bool → State → ProbComp (List Bool × State)}
     {initial : α → State} (hword : ComputableTidilyInPolyTime word input encBits)
     (hcount : ComputableTidilyInPolyTime count input encUnary)
     (hhandler : IsPPTOn
-      (encPair input (encPair (encPair (encFinite Operation) encBits) stateEncoding))
+      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : α → State → Prop) (hinit : ∀ a, invariant a (initial a))

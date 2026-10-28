@@ -39,12 +39,16 @@ clause and the conjunction of the finished clauses at fixed offsets from the end
 
 ## Main definitions
 
+* `Cslib.Complexity.SignatureCircuitSAT`: the satisfiable single-output circuits over an arbitrary
+  Boolean signature and interpretation.
 * `Cslib.Complexity.CircuitSAT`: the satisfiable De Morgan circuits with one output.
 * `Cslib.Complexity.CircuitSAT.verifier`: evaluation on the first bits of a certificate.
 * `Cslib.Complexity.SAT.toCircuit`: the circuit of a formula in conjunctive normal form.
 
 ## Main results
 
+* `Cslib.Complexity.signatureCircuitSAT_boolean`: specializing `SignatureCircuitSAT` to the De
+  Morgan basis recovers `CircuitSAT`.
 * `Cslib.Complexity.CircuitSAT.mem_NP`: circuit satisfiability is in `NP`.
 * `Cslib.Complexity.SAT.toCircuit_mem_CircuitSAT_iff`: the circuit of a formula is satisfiable
   exactly when the formula is.
@@ -64,10 +68,27 @@ namespace Cslib.Complexity
 
 open Circuits Circuits.Boolean Turing.MultiTapeTM Cslib.Logic.PL
 
+/-- **Circuit satisfiability over an arbitrary Boolean signature**: the single-output circuits
+over `σ` that output `true` under `I` on some input. -/
+def SignatureCircuitSAT {σ : Signature} (I : Interpretation σ Bool) :
+    Set (Σ n, Circuit σ n 1) :=
+  {c | ∃ x : BitString c.1, c.2.eval I x 0 = true}
+
+/-- Membership in `SignatureCircuitSAT I`. -/
+theorem mem_SignatureCircuitSAT {σ : Signature} {I : Interpretation σ Bool}
+    {c : Σ n, Circuit σ n 1} :
+    c ∈ SignatureCircuitSAT I ↔ ∃ x : BitString c.1, c.2.eval I x 0 = true :=
+  Iff.rfl
+
 /-- **Circuit satisfiability**: the De Morgan circuits with one output that output true on some
 input [Arora and Barak, Section 6.1][AroraBarak09]. -/
 def CircuitSAT : Set (Σ n, Circuit signature n 1) :=
   {c | ∃ x : BitString c.1, c.2.eval interpretation x 0 = true}
+
+/-- Specializing `SignatureCircuitSAT` to the De Morgan basis recovers `CircuitSAT`. -/
+@[simp]
+theorem signatureCircuitSAT_boolean :
+    SignatureCircuitSAT interpretation = CircuitSAT := rfl
 
 theorem mem_CircuitSAT {c : Σ n, Circuit signature n 1} :
     c ∈ CircuitSAT ↔ ∃ x : BitString c.1, c.2.eval interpretation x 0 = true :=

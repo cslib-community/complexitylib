@@ -148,21 +148,6 @@ theorem computableInPolyTime_binaryValue_le :
     ((bitsBinaryValue.comp (fst encBits encBits)).prod
       (bitsBinaryValue.comp (snd encBits encBits))))
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-/-- Comparing two binary natural numbers (`encNat`) is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_nat_le :
-    ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
-      (encPair encNat encNat) encBool :=
-  .of_tidy (binary_le)
-
-@[fun_prop]
-theorem computableInPolyTime_nat_le' {encIn : α ↪ List Bool} {left right : α → ℕ}
-    (hleft : ComputableInPolyTime left encIn encNat)
-    (hright : ComputableInPolyTime right encIn encNat) :
-    ComputableInPolyTime (fun a => decide (left a ≤ right a)) encIn encBool :=
-  computableInPolyTime_nat_le.comp (hleft.prod hright)
-
 /-! ### `FNP` and `TFNP` membership of the family relations -/
 
 private theorem computableTidilyInPolyTime_hasOut {enc : α ↪ List Bool} {n : α → ℕ}

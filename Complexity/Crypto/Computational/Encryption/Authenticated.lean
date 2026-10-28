@@ -252,14 +252,14 @@ noncomputable def cpaGame (E : SymmetricCipher) (adversary : OracleDistinguisher
 @[program_certificate]
 theorem isPPTOn_run_cpaEncryptionOracle (E : SymmetricCipher) {adversary : OracleDistinguisher}
     (hadversary : IsOraclePPT encBool adversary) (bit : Bool) :
-    IsPPTOn (encPair encUnary encBits) (encPair encBool (encFinite Unit))
+    IsPPTOn (encPair encUnary encBits) (encPair encBool (encFinEnum Unit))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
             (E.cpaEncryptionOracle caller.1 caller.2 bit)) (adversary caller.1 [])).run ()) := by
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
   let EIn := encPair (encPair encUnary encBits)
-    (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hm0 : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => unframe p.2.1.2)
       EIn encBits :=
@@ -284,17 +284,17 @@ theorem isPPTOn_run_cpaEncryptionOracle (E : SymmetricCipher) {adversary : Oracl
       EIn (encPair encUnary (encPair encBits encBits)) :=
     ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop)
       (ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop) hmsg)
-  have hyes : IsPPTOn EIn (encPair encBits (encFinite Unit))
+  have hyes : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => do
         let ct ← E.encrypt p.1.1 p.1.2 (if bit then dropFrame p.2.1.2 else unframe p.2.1.2)
         return (ct, ())) :=
     (E.encrypt_ppt.preprocess hencArg.computableInPolyTime).bind_with
       ((ComputableTidilyInPolyTime.prod (by fun_prop)
         (ComputableTidilyInPolyTime.const ())).isPPTOn)
-  have hno : IsPPTOn EIn (encPair encBits (encFinite Unit))
+  have hno : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun _ => pure ([], ())) :=
     (ComputableTidilyInPolyTime.const ([], ())).isPPTOn
-  have hhandler : IsPPTOn EIn (encPair encBits (encFinite Unit))
+  have hhandler : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
         E.cpaEncryptionOracle pair.1.1 pair.1.2 bit pair.2.1 pair.2.2) := by
     unfold cpaEncryptionOracle
@@ -619,7 +619,7 @@ theorem isPPTOn_run_ciEncryptionOracle (E : SymmetricCipher) {adversary : CIAdve
             (E.ciEncryptionOracle caller.1 caller.2)) (adversary caller.1 [])).run []) := by
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
   let EIn := encPair (encPair encUnary encBits)
-    (encPair (encPair (encFinite Unit) encBits) (encList encBits))
+    (encPair (encPair (encFinEnum Unit) encBits) (encList encBits))
   have hcond : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         p.2.1.2.length == p.1.1)
@@ -801,7 +801,7 @@ theorem isPPTOn_run_ccaOracle (E : SymmetricCipher) {adversary : CCAAdversary}
   obtain ⟨ce, de, hlenEnc⟩ := E.encrypt_ppt.length_le
   obtain ⟨cd, dd, hlenDec⟩ := E.decrypt_polyTime.tidy.polyBounded_length.exists_le
   let EIn := encPair (encPair encUnary encBits)
-    (encPair (encPair (encFinite Bool) encBits) (encList encBits))
+    (encPair (encPair (encFinEnum Bool) encBits) (encList encBits))
   have hop : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.2.1.1)
       EIn encBool :=
@@ -1030,7 +1030,7 @@ theorem isOraclePPT_ccaToCPAAdversary {ctBound : ℕ → ℕ}
     {adversary : CCAAdversary} (hadversary : IsOraclePPT encBool adversary) :
     IsOraclePPT encBool (ccaToCPAAdversary ctBound adversary) := by
   let EIn := encPair (encPair encUnary encBits)
-    (encPair (encPair encBool encBits) (encFinite Unit))
+    (encPair (encPair encBool encBits) (encFinEnum Unit))
   have hop : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Unit) => p.2.1.1)
       EIn encBool := by
@@ -1044,16 +1044,16 @@ theorem isOraclePPT_ccaToCPAAdversary {ctBound : ℕ → ℕ}
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Unit) => ctBound p.1.1)
       EIn encUnary :=
     hctBound.tidy.comp (by dsimp only [EIn]; fun_prop)
-  have hquery : IsOraclePPTOn EIn (encPair encBits (encFinite Unit))
+  have hquery : IsOraclePPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Unit) =>
         (fun ct => (ct, ())) <$>
           (List.take (ctBound p.1.1) <$> ProbOracleComp.query ((), p.2.1.2))) :=
     (IsOraclePPTOn.query_take () (by dsimp only [EIn]; fun_prop) hlimit).map
       (ComputableTidilyInPolyTime.prod (by fun_prop) (ComputableTidilyInPolyTime.const ()))
-  have hnoReply : IsOraclePPTOn EIn (encPair encBits (encFinite Unit))
+  have hnoReply : IsOraclePPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun _ => pure ([], ())) :=
     (ComputableTidilyInPolyTime.const ([], ())).isPPTOn.isOraclePPTOn (Operation := Unit)
-  have hhandler : IsOraclePPTOn EIn (encPair encBits (encFinite Unit))
+  have hhandler : IsOraclePPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun pair : (ℕ × List Bool) × ((Bool × List Bool) × Unit) =>
         ccaToCPAHandler pair.1.1 (ctBound pair.1.1) pair.2.1 pair.2.2) := by
     unfold ccaToCPAHandler
@@ -1064,7 +1064,7 @@ theorem isOraclePPT_ccaToCPAAdversary {ctBound : ℕ → ℕ}
     ComputableTidilyInPolyTime.unary_add.comp
       (ComputableTidilyInPolyTime.prod (hctBound.tidy.comp (by fun_prop))
         (ComputableTidilyInPolyTime.const 1))
-  have hrun : IsOraclePPTOn (encPair encUnary encBits) (encPair encBool (encFinite Unit))
+  have hrun : IsOraclePPTOn (encPair encUnary encBits) (encPair encBool (encFinEnum Unit))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
           (ProbOracleComp.handler
