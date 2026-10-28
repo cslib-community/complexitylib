@@ -148,27 +148,10 @@ theorem Q_three_le_R3 {d : ℕ} (hr : r ∈ Set.Icc (0 : ℝ) 1) : Q 3 d r ≤ R
     exact pow_le_pow_left₀ (add_one_sub_mul_mem_Icc hr (Q_mem_Icc hr)).1
       ((add_le_add_iff_left r).2 (mul_le_mul_of_nonneg_left ih (sub_nonneg.2 hr.2))) _
 
-/-- A fixed point of the recursion step in `[0, R3 r]` with `x ≤ 1` is `R3 r`. -/
+/-- A fixed point of the recursion step that is at most `R3 r` equals `R3 r`. -/
 theorem eq_R3_of_eq (hr : r ∈ Set.Icc (0 : ℝ) 1) {x : ℝ} (hx : (r + (1 - r) * x) ^ 2 = x)
-    (hxR : x ≤ R3 r) (hx1 : x ≤ 1) : x = R3 r := by
-  have h := sq_add_one_sub_mul_sub r x
-  rw [hx, sub_self, eq_comm, mul_eq_zero] at h
-  rcases lt_or_ge r (1 / 2) with hr2 | hr2
-  · rcases h with h | h
-    · have : (1 - r) ^ 2 ≠ 0 := by
-        have : 1 - r ≠ 0 := by linarith
-        positivity
-      rw [R3_of_le hr2.le, div_pow, eq_div_iff this]
-      linear_combination h
-    · linarith [R3_lt_one hr.1 hr2, sub_eq_zero.1 h]
-  · rw [R3_of_ge hr2]
-    rcases h with h | h
-    · have h1 : (1 - r) ^ 2 * (1 - x) = 1 - 2 * r := by linear_combination -h
-      have hr' : r = 1 / 2 := by
-        nlinarith [mul_nonneg (sq_nonneg (1 - r)) (sub_nonneg.2 hx1)]
-      rw [hr'] at h1
-      linarith
-    · exact sub_eq_zero.1 h
+    (hxR : x ≤ R3 r) : x = R3 r :=
+  le_antisymm hxR (R3_le_of_eq hr hx)
 
 /-- **`Q 3 d r` tends to `R3 r`** [Paturi, Pudlák, Saks, Zane, p. 352 and
 p. 354][PaturiPudlakSaksZane2005]: for `r ∈ [0, 1]` the sequence increases and is bounded by
@@ -183,7 +166,7 @@ theorem tendsto_Q_three (hr : r ∈ Set.Icc (0 : ℝ) 1) :
   have hfix : (r + (1 - r) * ⨆ d, Q 3 d r) ^ 2 = ⨆ d, Q 3 d r := by
     refine tendsto_nhds_unique ?_ (hT.comp (tendsto_add_atTop_nat 1))
     exact ((hT.const_mul (1 - r)).const_add r).pow 2
-  rwa [← eq_R3_of_eq hr hfix (ciSup_le fun _ => Q_three_le_R3 hr) (ciSup_le fun _ => Q_le_one hr)]
+  rwa [← eq_R3_of_eq hr hfix (ciSup_le fun _ => Q_three_le_R3 hr)]
 
 /-! ### The integral of the limit -/
 
