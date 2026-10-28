@@ -46,11 +46,8 @@ open Finset
 def coll (S : Finset ℤ) (M : ℕ) : ℕ := #{p ∈ S.offDiag | (M : ℤ) ∣ p.1 - p.2}
 
 /-- The elements of `S` that share their residue modulo `M` with another element of `S`.  They play
-the role of the bad elements of [ChanHe2020].  The other elements of `S`, those that are alone in
-their
-residue class modulo `M`, are called light below; they play the role of the good elements of
-[ChanHe2020].
--/
+the role of the bad elements of [ChanHe2020]. The elements alone in their residue class modulo
+`M` are called light below; they play the role of the good elements of [ChanHe2020]. -/
 def heavy (S : Finset ℤ) (M : ℕ) : Finset ℤ := {x ∈ S | ∃ y ∈ S, y ≠ x ∧ (M : ℤ) ∣ x - y}
 
 /-! ### The arrays of one node -/
@@ -79,20 +76,20 @@ def arrZ (S : Finset ℤ) (M U : ℕ) (k : ℕ) : ℤ :=
 /-! ### The choice of the modulus -/
 
 /-- The least element of a finite set of natural numbers, and 1 if the set is empty. -/
-def pick (T : Finset ℕ) : ℕ := if h : T.Nonempty then T.min' h else 1
+def minOrOne (T : Finset ℕ) : ℕ := if h : T.Nonempty then T.min' h else 1
 
 /-- The first prime: the least `p` in `Q` modulo which each of the three sets has at most
 `3Λ|S|²/|Q|` colliding pairs.  Here and below, `Q` is the set of candidate primes, and `Λ` bounds
 how many of them divide a nonzero difference of two elements.  `reduction` takes the primes up to
 `mPar n U` for `Q`, and `labelBits U` for `Λ`. -/
 def firstP (Q : Finset ℕ) (Λ : ℕ) (S₁ S₂ S₃ : Finset ℤ) : ℕ :=
-  pick {p ∈ Q | coll S₁ p * #Q ≤ 3 * Λ * #S₁ ^ 2 ∧ coll S₂ p * #Q ≤ 3 * Λ * #S₂ ^ 2 ∧
+  minOrOne {p ∈ Q | coll S₁ p * #Q ≤ 3 * Λ * #S₁ ^ 2 ∧ coll S₂ p * #Q ≤ 3 * Λ * #S₂ ^ 2 ∧
     coll S₃ p * #Q ≤ 3 * Λ * #S₃ ^ 2}
 
 /-- The second prime, given the first: the least `q` in `Q` such that, in each of the three sets, at
 most the fraction `3Λ/|Q|` of the pairs that collide modulo `p` still collide modulo `pq`. -/
 def secondP (Q : Finset ℕ) (Λ : ℕ) (S₁ S₂ S₃ : Finset ℤ) (p : ℕ) : ℕ :=
-  pick {q ∈ Q | coll S₁ (p * q) * #Q ≤ 3 * Λ * coll S₁ p ∧
+  minOrOne {q ∈ Q | coll S₁ (p * q) * #Q ≤ 3 * Λ * coll S₁ p ∧
     coll S₂ (p * q) * #Q ≤ 3 * Λ * coll S₂ p ∧ coll S₃ (p * q) * #Q ≤ 3 * Λ * coll S₃ p}
 
 /-- The modulus of a node: the product of the two primes. -/

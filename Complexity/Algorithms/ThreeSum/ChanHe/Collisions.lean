@@ -12,26 +12,22 @@ public import Complexity.Foundations.NumberTheory.PrimeCounting
 public import Mathlib.Combinatorics.Enumerative.DoubleCounting
 
 /-!
-# Theorem 21(a), the reduction of Chan and He: the choice of the modulus
+# Choosing the modulus in the Chan–He reduction
 
-For Theorem 21(a): the deterministic reduction from 3SUM to
-Convolution-3SUM after [ChanHe2020, Theorem 5.1] hashes the numbers by `x ↦ x mod pq`, for two
-primes
-`p` and `q` that it finds by exhaustive search among the primes up to `m = mPar n U`.  This file
-shows that both searches succeed and that few elements are badly hashed.
+The deterministic reduction from 3SUM to Convolution-3SUM after [ChanHe2020, Theorem 5.1]
+hashes the numbers by `x ↦ x mod pq`. It finds the two primes `p` and `q` by exhaustive search
+among the primes up to `m = mPar n U`. Both searches succeed and leave few elements badly hashed.
 
 * An ordered pair of distinct elements of a set `S` collides modulo `M` if `M` divides their
   difference; `coll S M` counts these ordered pairs.  An element that collides with another one is
   heavy.  There are at most as many heavy elements as colliding pairs (`card_heavy_le_coll`).  The
   count is determined by the sizes of the residue classes (`coll_eq_sum`); the proofs below do not
   need this, a program that computes the count does.
-* A nonzero difference has at most `Λ = labelBits U` prime divisors.  So, summed over the
-candidates `q`
-  in the set `Q` of primes that a search goes through, the pairs that collide modulo `M₀ q` number
+* A nonzero difference has at most `Λ = labelBits U` prime divisors. Summed over the candidates
+  `q` in the set `Q` of primes, the pairs that collide modulo `M₀ q` number
   at most `Λ` times those that collide modulo `M₀` (`sum_coll_mul_le`).
-* By counting (the finite form of Markov's inequality and of the union bound, which [ChanHe2020]
-uses),
-  some candidate is, for each of the three sets, at most three times as bad as the average
+* Finite Markov and union bounds, as used in [ChanHe2020], show that some candidate is, for each
+  of the three sets, at most three times as bad as the average
   (`Finset.exists_forall_mul_card_le_mul_sum`, `exists_prime_coll_le`). So both searches succeed
   (`firstP_spec`, `secondP_spec`), and the modulus `pq` leaves at most `9Λ²|S|²/|Q|²` colliding
   pairs in each set `S` (`modulus_spec`).
@@ -117,9 +113,8 @@ private theorem card_prime_divisors_le {Q : Finset ℕ} (hP : ∀ p ∈ Q, p.Pri
 
 /-- Double counting.  Summed over the candidates `q ∈ Q`, the pairs that collide modulo `M₀ q`
 number at most `labelBits U` times those that collide modulo `M₀`: such a pair collides modulo
-`M₀`, and
-`q` divides its difference.  Coprimality of `q` and `M₀` is not used, so the two primes of a modulus
-are allowed to coincide. -/
+`M₀`, and `q` divides its difference. Coprimality of `q` and `M₀` is not used, so the two primes
+of a modulus are allowed to coincide. -/
 theorem sum_coll_mul_le {Q : Finset ℕ} (hP : ∀ p ∈ Q, p.Prime) {U : ℕ} {S : Finset ℤ}
     (hS : Bdd U S) (M₀ : ℕ) : ∑ q ∈ Q, coll S (M₀ * q) ≤ labelBits U * coll S M₀ := by
   set C := {xy ∈ S.offDiag | (M₀ : ℤ) ∣ xy.1 - xy.2}
@@ -145,9 +140,9 @@ section searches
 
 variable {Q : Finset ℕ} {U : ℕ} {S₁ S₂ S₃ : Finset ℤ}
 
-/-- On a nonempty set, `pick` returns a member. -/
-private theorem pick_mem {T : Finset ℕ} (h : T.Nonempty) : pick T ∈ T := by
-  rw [pick, dite_eq_left h]
+/-- On a nonempty set, `minOrOne` returns a member. -/
+private theorem minOrOne_mem {T : Finset ℕ} (h : T.Nonempty) : minOrOne T ∈ T := by
+  rw [minOrOne, dite_eq_left h]
   exact T.min'_mem h
 
 /-- Some candidate `q` is good for the three sets at once: in each of them at most the fraction
@@ -174,7 +169,7 @@ theorem firstP_spec (hQ : Q.Nonempty) (hP : ∀ p ∈ Q, p.Prime) (h₁ : Bdd U 
   rw [one_mul] at c₁ c₂ c₃
   have hall : ∀ S : Finset ℤ, 3 * labelBits U * coll S 1 ≤ 3 * labelBits U * #S ^ 2 :=
     fun S => Nat.mul_le_mul_left _ (coll_le_sq S 1)
-  exact pick_mem
+  exact minOrOne_mem
     ⟨p, mem_filter.mpr ⟨hp, c₁.trans (hall S₁), c₂.trans (hall S₂), c₃.trans (hall S₃)⟩⟩
 
 /-- The second search succeeds, for any first factor `p`. -/
@@ -185,7 +180,7 @@ theorem secondP_spec (hQ : Q.Nonempty) (hP : ∀ p ∈ Q, p.Prime) (h₁ : Bdd U
       coll S₂ (p * q) * #Q ≤ 3 * labelBits U * coll S₂ p ∧
       coll S₃ (p * q) * #Q ≤ 3 * labelBits U * coll S₃ p} := by
   obtain ⟨q, hq, hc⟩ := exists_prime_coll_le hQ hP h₁ h₂ h₃ p
-  exact pick_mem ⟨q, mem_filter.mpr ⟨hq, hc⟩⟩
+  exact minOrOne_mem ⟨q, mem_filter.mpr ⟨hq, hc⟩⟩
 
 /-- Both searches succeed, and the modulus leaves at most `9Λ²|S|²/|Q|²` colliding pairs in each of
 the three sets.  (A search that fails returns 1, which is not in `Q`.) -/

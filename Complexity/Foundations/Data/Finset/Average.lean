@@ -26,6 +26,9 @@ avoided: "`f p` is at most `k` times the average of `f`" is written
 * So for `k` functions there is one index at which each of them is at most `k` times its average
   (`Finset.exists_forall_mul_card_le_mul_sum`, the union bound).
 
+For the non-strict, unnormalised finite Markov bound, see
+`Finset.mul_card_filter_le_sum` in `Complexity/Foundations/Data/Finset/Markov.lean`.
+
 Adapted from [Average.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Util/Average.lean) in
 `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
 

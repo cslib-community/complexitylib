@@ -9,12 +9,11 @@ module
 public import Complexity.Algorithms.ThreeSum.ChanHe.Collisions
 
 /-!
-# Theorem 21(a), the reduction of Chan and He: one node, and the recursion for three sets
+# One node and the three-set recursion in the Chan–He reduction
 
 This file proves that the reduction for three sets, `reduction n U`, is correct and makes
-polylogarithmically many instances.  It follows the proof of [ChanHe2020, Theorem 5.1], one of the
-reductions behind Theorem 21(a).  A node of the recursion tree consists of three sets and a
-modulus `M`.
+polylogarithmically many instances, following [ChanHe2020, Theorem 5.1]. A node of the recursion
+tree consists of three sets and a modulus `M`.
 
 * One node.  The elements that are alone in their residue class modulo `M` are called light.  The
   first two arrays hold each light element of the first two sets at the index of its remainder.  The
