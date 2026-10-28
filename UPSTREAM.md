@@ -152,21 +152,21 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   [`formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp),
   `Sec3/Theorem21a/Convolution.lean`. Its reduction uses the arbitrary-matrix predicate in
   `Algorithms/ExactTriangle/Defs.lean`, shared with future Exact Triangle solvers.
-  The three weight matrices use the original formulas;
-  an explicit nonnegative magnitude bound also handles empty input. The native selection/store
-  kernel in `Algorithms/WordRAM/ThreeSum/Weight.lean` directly adapts `pickStmt`/`putStmt` from
-  `Programs/Sec3/Theorem21a/Convolution/Fill.lean`, reusing the unsigned machine and signed
-  encoding/subtraction. It charges at most 28 instructions at width `w + 2` once arguments and
-  the signed index are supplied. This is no machine-to-machine bridge, complete reduction,
-  or subquadratic 3SUM theorem. Index computation, matrix traversal, Chan–He preprocessing,
-  fast Exact Triangle and full input/time/width composition remain in
+  The three weight matrices use the original formulas; an explicit nonnegative magnitude bound
+  also handles empty input. The native builder in `Algorithms/WordRAM/ThreeSum/{Cell,Fill,Memory}.lean`
+  extends the one-weight kernel with index/address calculations and the complete matrix loop.
+  Given its arguments in registers, it writes one instance in at most `131*t² + 5` instructions
+  at width `w + 2`, excluding the halt; its theorem identifies the three encoded matrices and
+  preserves the input. Layout, signed index/filler bounds and target address bounds are explicit.
+  `Algorithms/ThreeSum/ChanHe/FromNumbers.lean` adds the elementary distinct-position frontend
+  (including repeated values), its finite list of three-set instances, and three-array convolution
+  packing into the existing one-array predicate. These are mathematical preprocessing interfaces,
+  without a machine running-time bound. The existing signed and unsigned APIs were reused;
+  no source machine or separate run semantics were copied.
+  The full reduction host, core Chan–He prime searches and heavy-element recursion, fast Exact
+  Triangle, native preprocessing and full input/time/width composition remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright
-  and attribution are retained; the new native proof and representation choices are local.
-  The elementary frontend in `Algorithms/ThreeSum/ChanHe/FromNumbers.lean` preserves
-  distinct input positions, including repeated values, in a finite list of three-set instances.
-  It also packs three-array convolution into the existing one-array predicate with four times
-  the length and magnitude at most `30W + 10`. These interfaces are mathematical preprocessing;
-  the core Chan–He recursion and native running-time accounting remain open.
+  and attribution are retained; the new native proofs and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.

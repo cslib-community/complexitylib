@@ -389,9 +389,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
   transfer of Anthropic's modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394])
-  has the Convolution-3SUM/Exact Triangle correctness reduction, a native one-weight kernel and
-  elementary distinct-position preprocessing interfaces, but still needs charged matrix-building
-  loops, core Chan–He recursion and native preprocessing, the fast Exact Triangle solver
+  has the Convolution-3SUM/Exact Triangle correctness reduction, a charged native single-instance
+  matrix builder and elementary distinct-position preprocessing interfaces, but still needs the
+  reduction host, core Chan–He recursion, native preprocessing, the fast Exact Triangle solver
   and full time/width composition; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
