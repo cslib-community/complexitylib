@@ -44,6 +44,19 @@ patterns of length `≤ k` for each symbol `R : Rel` form a finite table). Compo
 3. Subexponential-time decision (`CSP.decidableInSubexpTime_KCSP`) for `CSP.KCSP k sem` with respect
    to `CSP.numVars`.
 
+### Source relation and library adaptations
+
+* **Generalizing the forbidden-assignment encoding of Corollary C.2 (`7ef5c0cc`, p. 52):**
+  In [OpenAI2026ETH] (Appendix C, p. 52), the proof of Corollary C.2 encodes each local output test
+  $G_i(x_{S_i}) = b_i$ of arity $|S_i| \le d$ as at most $2^d$ width-$d$ clauses forbidding the
+  assignments to $x_{S_i}$ on which $G_i$ disagrees with $b_i$, producing an equivalent $d$-CNF
+  formula on the same $n$ variables with no auxiliary variables (so $|G^{-1}(b)|$ equals the model
+  count of the compiled $d$-CNF formula). This module abstracts and generalizes that proof pattern
+  to arbitrary finite Boolean constraint languages (`Rel` with `[Finite Rel]` and semantics
+  `sem : Rel → List Bool → Bool`) of arity at most `k`.
+* **Runtime scale:** As in `CountingNativeEndpoint`, the sublinear exponent $\rho(n)$ of
+  Proposition 6.4 (pp. 43–44) is formalized as `interpolationScale`.
+
 ## Main definitions
 
 * `Cslib.Complexity.Constraint`, `Cslib.Complexity.CSP`: Boolean constraints and `#CSP` instances.
