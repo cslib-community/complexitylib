@@ -46,39 +46,31 @@ example : ((paths single).filter fun r => r.contains (3, 4)).length ≤ 1 :=
 example : ((paths single).filter fun r => r.contains (3, 4)).length = 1 := by decide +kernel
 
 -- Canonical path certificates are available from the shared path API alone.
-example (φ : CNF ℕ) : paths φ = (Cslib.Complexity.SAT.incidenceGraph φ).unitPaths :=
-  paths_eq_unitPaths φ
-
-example (φ : CNF ℕ) (o : Occurrence ℕ) : occurrencePath φ o =
-    (Cslib.Complexity.SAT.incidenceGraph φ).unitPath
-      ((Cslib.Logic.PL.occurrences φ).idxOf o) := occurrencePath_eq_unitPath φ o
-
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    (Cslib.Logic.PL.occurrences φ).idxOf o < (Cslib.Complexity.SAT.incidenceGraph φ).2.length :=
-  occurrence_index_lt ho
-
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    (occurrencePath φ o).head? =
-        some (Cslib.Orthogonal.Layout.center (φ.distinctVars.idxOf o.2.2.1)) ∧
-      (occurrencePath φ o).getLast? =
-        some (Cslib.Orthogonal.Layout.center (φ.distinctVars.length + o.1)) :=
-  occurrencePath_endpoints ho
-
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    (occurrencePath φ o).Nodup := occurrencePath_nodup ho
-
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    occurrencePath φ o ≠ [] := occurrencePath_ne_nil ho
-
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    2 ≤ (occurrencePath φ o).length := occurrencePath_length_ge_two ho
+example (φ : CNF ℕ) (o : Occurrence ℕ) :
+    paths φ = (Cslib.Complexity.SAT.incidenceGraph φ).unitPaths ∧
+    occurrencePath φ o =
+      (Cslib.Complexity.SAT.incidenceGraph φ).unitPath
+        ((Cslib.Logic.PL.occurrences φ).idxOf o) :=
+  ⟨paths_eq_unitPaths φ, occurrencePath_eq_unitPath φ o⟩
 
 example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ)
     {e : Cslib.Orthogonal.Point × Cslib.Orthogonal.Point}
     (he : e ∈ (occurrencePath φ o).consecutivePairs) :
-    Cslib.Orthogonal.length e.1 e.2 = 1 := occurrencePath_unit ho he
-
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    let r := occurrencePath φ o
-    Cslib.Orthogonal.length (r.getD (r.length - 2) (0, 0)) (r.getLastD (0, 0)) = 1 :=
-  occurrencePath_last_unit ho
+    (Cslib.Logic.PL.occurrences φ).idxOf o < (Cslib.Complexity.SAT.incidenceGraph φ).2.length ∧
+    ((occurrencePath φ o).head? =
+        some (Cslib.Orthogonal.Layout.center (φ.distinctVars.idxOf o.2.2.1)) ∧
+      (occurrencePath φ o).getLast? =
+        some (Cslib.Orthogonal.Layout.center (φ.distinctVars.length + o.1))) ∧
+    (occurrencePath φ o).Nodup ∧
+    occurrencePath φ o ≠ [] ∧
+    2 ≤ (occurrencePath φ o).length ∧
+    Cslib.Orthogonal.length e.1 e.2 = 1 ∧
+    (let r := occurrencePath φ o
+     Cslib.Orthogonal.length (r.getD (r.length - 2) (0, 0)) (r.getLastD (0, 0)) = 1) :=
+  ⟨occurrence_index_lt ho,
+   occurrencePath_endpoints ho,
+   occurrencePath_nodup ho,
+   occurrencePath_ne_nil ho,
+   occurrencePath_length_ge_two ho,
+   occurrencePath_unit ho he,
+   occurrencePath_last_unit ho⟩

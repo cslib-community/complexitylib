@@ -85,27 +85,24 @@ example : Decoder.bool.decode [] = false := rfl
 
 /-! ### `P` under reductions and `NP`-complete problems -/
 
-example {A : Set (List Bool)} (h : A ∈ P encBits) : A ∈ P encBits :=
-  (PolyTimeReducible.refl encBits A).mem_P h
-
-/-- With `SAT` in `P`, every encoding has `P = NP`. -/
-example (h : SAT ∈ P encCNF) : P encBits = NP encBits :=
-  CookLevin.SAT_npComplete.P_eq_NP_of_mem_P h encBits
-
-example (h : SAT ∈ P encCNF) : P encCNF = NP encCNF :=
-  Ladner.P_eq_NP_of_SAT_mem_P h encCNF
+/-- Reflexivity of `PolyTimeReducible` on `P`, and `P = NP` from `SAT ∈ P` for both `encBits`
+and `encCNF`. -/
+example {A : Set (List Bool)} (hA : A ∈ P encBits) (hSAT : SAT ∈ P encCNF) :
+    A ∈ P encBits ∧ P encBits = NP encBits ∧ P encCNF = NP encCNF :=
+  ⟨(PolyTimeReducible.refl encBits A).mem_P hA,
+   CookLevin.SAT_npComplete.P_eq_NP_of_mem_P hSAT encBits,
+   Ladner.P_eq_NP_of_SAT_mem_P hSAT encCNF⟩
 
 /-! ### Deterministic deciders as nondeterministic ones -/
 
-example {α : Type} {enc : α ↪ List Bool} : L enc ⊆ NL enc := L_subset_NL
-
-example {α : Type} {enc : α ↪ List Bool} : PSPACE enc ⊆ NPSPACE enc := PSPACE_subset_NPSPACE
+example : L encBits ⊆ NL encBits ∧ PSPACE encBits ⊆ NPSPACE encBits :=
+  ⟨L_subset_NL, PSPACE_subset_NPSPACE⟩
 
 /-- `NPSPACE` is stated with `DecidesInSpace`. -/
-example {α : Type} {enc : α ↪ List Bool} {A : Set α} :
-    A ∈ NPSPACE enc ↔ ∃ (k : ℕ) (State : Type) (_ : Finite State)
-      (ntm : MultiTapeNTM k Bool State) (s : α → ℕ),
-        PolyBounded (fun a => (enc a).length) s ∧ ntm.DecidesInSpace enc A s :=
+example {A : Set (List Bool)} :
+    A ∈ NPSPACE encBits ↔ ∃ (k : ℕ) (State : Type) (_ : Finite State)
+      (ntm : MultiTapeNTM k Bool State) (s : List Bool → ℕ),
+        PolyBounded (fun a => (encBits a).length) s ∧ ntm.DecidesInSpace encBits A s :=
   Iff.rfl
 
 /-! ### Parities of symmetric differences -/
@@ -121,17 +118,14 @@ example (s : Finset (Fin 4)) (x : Fin 4 → Bool) : (parityOn s x ^^ parityOn s 
 
 /-! ### Logarithmic bounds -/
 
-example : 2 ^ (Nat.log2 5 + 1) ≤ 2 * (5 + 1) := Nat.two_pow_log2_succ_le 5
-
-/-- At `n = 0` the bound is `2 ≤ 2`, attained. -/
-example : 2 ^ (Nat.log2 0 + 1) = 2 * (0 + 1) := by decide
-
-example (c : ℕ) : PolynomiallyBounded fun n => c * (Nat.log2 n + 1) :=
-  polynomiallyBounded_mul_log2_add_one c
-
-example (c : ℕ) : PolyBounded (fun w : List Bool => w.length)
-    fun w => c * (Nat.log2 w.length + 1) :=
-  polyBounded_log _ c
+example (c : ℕ) :
+    2 ^ (Nat.log2 5 + 1) ≤ 2 * (5 + 1) ∧
+    2 ^ (Nat.log2 0 + 1) = 2 * (0 + 1) ∧
+    PolynomiallyBounded (fun n => c * (Nat.log2 n + 1)) ∧
+    PolyBounded (fun w : List Bool => w.length) (fun w => c * (Nat.log2 w.length + 1)) :=
+  ⟨Nat.two_pow_log2_succ_le 5, by decide,
+   polynomiallyBounded_mul_log2_add_one c,
+   polyBounded_log _ c⟩
 
 /-- Adding one increases `⌊log_b n⌋` by at most one, and equality holds at `n = b ^ k - 1`. -/
 example : Nat.log 2 (7 + 1) ≤ Nat.log 2 7 + 1 ∧ Nat.log 2 (7 + 1) = Nat.log 2 7 + 1 :=
