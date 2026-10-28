@@ -46,6 +46,7 @@ public import Complexity.Algorithms.ThreeSum.ChanHe.Defs
 public import Complexity.Algorithms.ThreeSum.ChanHe.FromNumbers
 public import Complexity.Algorithms.ThreeSum.ChanHe.Recursion
 public import Complexity.Algorithms.ThreeSum.ChanHe.SelectorBounds
+public import Complexity.Algorithms.ThreeSum.ChanHe.ShiftedSizes
 public import Complexity.Algorithms.ThreeSum.ChanHe.Sizes
 public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
@@ -138,6 +139,8 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Place
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PlaceExec
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PlaceMemory
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingEntries
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingProgram
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Query
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
