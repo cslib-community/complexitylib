@@ -44,60 +44,37 @@ example : PolyTimeManyOneAutoreducible encBits headTrueSet :=
     (y₀ := [true]) (y₁ := [true, false]) rfl rfl (by decide)
     (n₀ := []) (n₁ := [false]) (fun h => by cases h) (fun h => by cases h) (by decide)
 
-/-! ### Autoreducibility hierarchy projections -/
+/-! ### Concrete polynomial-time many-one mitotic set -/
 
-example (h : LogSpaceManyOneAutoreducible encA A) : PolyTimeManyOneAutoreducible encA A :=
-  h.polyTimeManyOneAutoreducible
+/-- `{[]}ᶜ` is polynomial-time many-one mitotic, split by `headTrueSet`. Both halves `{w | w ≠ [] ∧
+w.headD false = true}` and `{w | w ≠ [] ∧ w.headD false = false}` are non-empty and non-universal
+sets in `P`, so both are mutually polynomial-time reducible to `{[]}ᶜ`. -/
+theorem coSingleton_mitotic : PolyTimeManyOneMitotic encBits ({[]}ᶜ : Set (List Bool)) :=
+  ⟨headTrueSet, headTrueSet_mem_P,
+    ⟨⟨fun w => if w.isEmpty then [] else [true], by fun_prop,
+       fun w => by cases w <;> simp [headTrueSet]⟩,
+     ⟨fun w => if w.headD false then [true] else [], by fun_prop,
+       fun w => by rcases w with _ | ⟨_ | _, _⟩ <;> simp [headTrueSet]⟩⟩,
+    ⟨⟨fun w => if w.isEmpty then [] else [false], by fun_prop,
+       fun w => by cases w <;> simp [headTrueSet]⟩,
+     ⟨fun w => if !w.isEmpty && !w.headD false then [true] else [], by fun_prop,
+       fun w => by rcases w with _ | ⟨_ | _, _⟩ <;> simp [headTrueSet]⟩⟩⟩
 
-example (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeKTruthTableAutoreducible 1 encA A :=
-  h.polyTimeKTruthTableAutoreducible_one
+-- `{[]}ᶜ` is disjunctive, 1-truth-table, bounded truth-table, and truth-table autoreducible.
+example : PolyTimeDTTAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=
+  coSingleton_mitotic.polyTimeDTTAutoreducible
 
-example (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeDTTAutoreducible encA A :=
-  h.polyTimeDTTAutoreducible
+example : PolyTimeKTruthTableAutoreducible 1 encBits ({[]}ᶜ : Set (List Bool)) :=
+  coSingleton_mitotic.polyTimeKTruthTableAutoreducible_one
 
-example (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeCTTAutoreducible encA A :=
-  h.polyTimeCTTAutoreducible
+example : PolyTimeBTTAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=
+  coSingleton_mitotic.polyTimeBTTAutoreducible
 
-example (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeBTTAutoreducible encA A :=
-  h.polyTimeBTTAutoreducible
+example : PolyTimeTruthTableAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=
+  coSingleton_mitotic.polyTimeTruthTableAutoreducible
 
-example (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeTruthTableAutoreducible encA A :=
-  h.polyTimeTruthTableAutoreducible
-
-example (h : PolyTimeDTTAutoreducible encA A) : PolyTimeTruthTableAutoreducible encA A :=
-  h.polyTimeTruthTableAutoreducible
-
-example (h : PolyTimeCTTAutoreducible encA A) : PolyTimeTruthTableAutoreducible encA A :=
-  h.polyTimeTruthTableAutoreducible
-
-example : PolyTimeDTTAutoreducible encA A ↔ PolyTimeCTTAutoreducible encA Aᶜ :=
-  polyTimeDTTAutoreducible_iff_polyTimeCTTAutoreducible_compl
-
-/-! ### Mitoticity hierarchy and autoreducibility implications -/
-
-example (h : LogSpaceManyOneMitotic encA A) : PolyTimeManyOneMitotic encA A :=
-  h.polyTimeManyOneMitotic
-
-example (h : PolyTimeManyOneMitotic encA A) : PolyTimeBTTMitotic encA A :=
-  h.polyTimeBTTMitotic
-
-example (h : PolyTimeManyOneMitotic encA A) : PolyTimeTruthTableMitotic encA A :=
-  h.polyTimeTruthTableMitotic
-
-example (h : PolyTimeManyOneMitotic encA A) : PolyTimeDTTAutoreducible encA A :=
-  h.polyTimeDTTAutoreducible
-
-example (h : PolyTimeManyOneMitotic encA A) : PolyTimeKTruthTableAutoreducible 1 encA A :=
-  h.polyTimeKTruthTableAutoreducible_one
-
-example (h : PolyTimeManyOneMitotic encA A) : PolyTimeBTTAutoreducible encA A :=
-  h.polyTimeBTTAutoreducible
-
-example (h : PolyTimeManyOneMitotic encA A) : PolyTimeTruthTableAutoreducible encA A :=
-  h.polyTimeTruthTableAutoreducible
-
-example (h : PolyTimeManyOneMitotic encA A) :
-    PolyTimeManyOneAutoreducible encA A ↔ ∀ a ∉ A, ∃ n ∉ A, n ≠ a :=
-  h.polyTimeManyOneAutoreducible_iff
+-- However, `{[]}ᶜ` is strictly not many-one autoreducible, because its complement is a singleton.
+example : ¬ PolyTimeManyOneAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=
+  not_polyTimeManyOneAutoreducible_compl_singleton []
 
 end ComplexityTests.Autoreducibility
