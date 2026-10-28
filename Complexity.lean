@@ -36,6 +36,7 @@ public import Complexity.Algorithms.Streaming.CountMin.Basic
 public import Complexity.Algorithms.Streaming.CountMin.LinearHash
 public import Complexity.Algorithms.Streaming.CountMin.Probability
 public import Complexity.Algorithms.Streaming.CountMin.Program
+public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.WordRAM.Dijkstra.BinaryHeap
 public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapProgram
@@ -85,6 +86,7 @@ public import Complexity.Algorithms.WordRAM.Queue.Model
 public import Complexity.Algorithms.WordRAM.Quicksort
 public import Complexity.Algorithms.WordRAM.Stack
 public import Complexity.Algorithms.WordRAM.Stack.Controller
+public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Call
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Init
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Init.Table
