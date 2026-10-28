@@ -47,7 +47,6 @@ public import Complexity.Algorithms.ThreeSum.ChanHe.Sizes
 public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.ThreeSum.ThreeSets
-public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
 public import Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci
 public import Complexity.Algorithms.WordRAM.Dijkstra.FibonacciStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.GenericPQ

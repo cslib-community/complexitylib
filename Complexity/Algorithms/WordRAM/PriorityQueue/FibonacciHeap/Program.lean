@@ -61,7 +61,6 @@ namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
 open Cslib.WordRAM
 open Cslib.Algorithms.Lean
 open scoped Cslib.WordRAM
-open scoped Cslib.Algorithms.WordRAM.PriorityQueue.Notation
 
 /-! ## Register file (`rFib = 42`) and footprint size -/
 

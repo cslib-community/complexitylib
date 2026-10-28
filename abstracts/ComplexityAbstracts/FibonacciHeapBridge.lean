@@ -24,8 +24,8 @@ extractions).
 
 ## Main results
 
-* `Machine.runs_map`: a run of a library program over `Basis.exact` translates step-for-step to a
-  run of `S.programOf`.
+* `PQPresentation.runsOps_map`: multi-operation runs of `FibonacciHeap.opProg` over `Basis.exact`
+  translate step-for-step to `P.RunsOps` via `WordRAMBridge.Machine.runs_map`.
 * `amortized_fresh`: transfers `FibonacciHeap.run_ops_exact_fresh` (`O(1)` fresh initialization on
   zeroed `[base, base + 9 n + 1)`) to any `S` and `P`.
 * `amortized_reusable`: transfers `FibonacciHeap.run_ops_exact_reusable` (`O(n)` initialization on
@@ -34,13 +34,12 @@ extractions).
 ## Syntax in the imports
 
 `FibonacciHeap` is authored in the scoped word-RAM program syntax of
-`Complexity/Computability/WordRAM/Notation.lean` and its exact-basis priority-queue variant in
-`Complexity/Algorithms/WordRAM/PriorityQueue/Basic.lean`. All syntax rules, `macro_rules` and
-tactics in those files are scoped to `Cslib.WordRAM` and
-`Cslib.Algorithms.WordRAM.PriorityQueue.Notation`. Only the syntax category `wramStmt` and the
+`Complexity/Computability/WordRAM/Notation.lean` and its exact-basis variant in
+`Complexity/Computability/WordRAM/ExactNotation.lean`. All syntax rules, `macro_rules` and
+tactics in those files are scoped to `Cslib.WordRAM`. Only the syntax category `wramStmt` and the
 syntax abbreviation `wramBlock` are global, since Lean cannot scope syntax categories, and outside
-those namespaces `wramStmt` has no rules. `FibonacciHeapAbstract.lean` opens neither namespace, so
-none of this syntax is active there.
+`Cslib.WordRAM` `wramStmt` has no rules. `FibonacciHeapAbstract.lean` does not open
+`Cslib.WordRAM`, so none of this syntax is active there.
 -/
 
 namespace ComplexityAbstracts.FibonacciHeapBridge
@@ -49,65 +48,7 @@ open Cslib.WordRAM
 open Cslib.Algorithms.Lean
 open Cslib.Algorithms.WordRAM.PriorityQueue
 open ComplexityTests.Abstracts
-
-/-! ## The machine -/
-
-/-- Halting runs defined from one step by cases on its outcome, filling the unused `Halts` field of
-`WordRAMBridge.Presentation` for abstracts phrased in terms of `Runs`. -/
-def haltsVia (Instr State Outcome : ℕ → Type)
-    (step : ∀ {r : ℕ}, ℕ → List (Instr r) → State r → Outcome r)
-    (cases : ∀ {r : ℕ}, (State r → Prop) → (ℕ → Prop) → Prop → Outcome r → Prop) {r : ℕ}
-    (w : ℕ) (p : List (Instr r)) : State r → ℕ → ℕ → Prop
-  | _, _, 0 => False
-  | s, v, n + 1 =>
-    cases (fun t => haltsVia Instr State Outcome step cases w p t v n) (fun x => x = v ∧ n = 0)
-      False (step w p s)
-
-namespace Machine
-
-variable {S : WordRAMBridge.Presentation} (h : WordRAMBridge.Laws S) {r : ℕ}
-include h
-
-/-- Translate a library machine state to an abstract state of `S`. -/
-def stateOf (S : WordRAMBridge.Presentation) (t : Cslib.WordRAM.State r) : S.State r :=
-  S.state t.pc t.data.regs t.data.mem
-
-omit h in
-/-- A step that does not fault is not at a `rand` instruction. -/
-theorem isRandFree_of_step {w : ℕ} {q : Program .exact r} {t : Cslib.WordRAM.State r}
-    (ht : Cslib.WordRAM.step w q t ≠ .fault) : ∀ j, q[t.pc]? = some j → j.IsRandFree := by
-  rintro (_ | _ | _ | _ | _) hj <;> first | trivial | exact ht (step_rand hj)
-
-/-- A non-halting, non-faulting library step matches one abstract step of `S.programOf`. -/
-theorem step_next {w : ℕ} {q : Program .exact r} {t t' : Cslib.WordRAM.State r}
-    (ht : Cslib.WordRAM.step w q t = .next t') :
-    S.step w (S.programOf q) (stateOf S t) = S.next (stateOf S t') := by
-  have hnr := isRandFree_of_step (w := w) (q := q) (t := t) (by simp [ht])
-  obtain ⟨pc, reg, mem⟩ := t
-  rcases S.step_matches_at h w q pc reg mem hnr with ⟨_, _, _, h₁, h₂⟩ | ⟨_, _, h₂⟩ | ⟨_, h₂⟩ <;>
-    rw [ht] at h₂ <;> cases h₂
-  exact h₁
-
-/-- A halting library step matches a halting abstract step of `S.programOf`. -/
-theorem step_halt {w : ℕ} {q : Program .exact r} {t : Cslib.WordRAM.State r} {v : ℕ}
-    (ht : Cslib.WordRAM.step w q t = .halt v) :
-    S.step w (S.programOf q) (stateOf S t) = S.halted v := by
-  have hnr := isRandFree_of_step (w := w) (q := q) (t := t) (by simp [ht])
-  obtain ⟨pc, reg, mem⟩ := t
-  rcases S.step_matches_at h w q pc reg mem hnr with ⟨_, _, _, _, h₂⟩ | ⟨_, h₁, h₂⟩ | ⟨_, h₂⟩ <;>
-    rw [ht] at h₂ <;> cases h₂
-  exact h₁
-
-/-- Multi-step runs over `Basis.exact` map to abstract runs of `S.programOf`. -/
-theorem runs_map {w : ℕ} {q : Program .exact r} {s t : Cslib.WordRAM.State r} {k : ℕ}
-    (hr : Runs w q s t k) :
-    Relation.RelatesInSteps (fun a b => S.step w (S.programOf q) a = S.next b) (stateOf S s)
-      (stateOf S t) k := by
-  induction hr with
-  | refl => exact .refl _
-  | tail _ _ _ _ hn ih => exact .tail _ _ _ _ ih (step_next h hn)
-
-end Machine
+open WordRAMBridge
 
 /-! ## Priority-queue presentation and agreement with `IndexedMinPQ` -/
 

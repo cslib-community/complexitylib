@@ -356,9 +356,11 @@ theorem fibonacciHeap_amortized :
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump, .branchEq, .branchLt, .halt,
       @Instr.rec, State, .mk, Outcome, .next, .halt, .fault, step,
-      FibonacciHeapBridge.haltsVia Instr State Outcome step fun f g a o => o.rec f g a,
+      ComplexityTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
+        fun f g a o => o.rec f g a,
       fun _ _ => True⟩
-    (by constructor <;> simp_all [step, FibonacciHeapBridge.haltsVia, AluOp.eval])
+    (by constructor <;>
+      simp_all [step, ComplexityTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
     ⟨Op, .isEmpty, .getKey, .insert, .decreaseKey, .extractMin, @Op.rec, @chooseMin, @foldMin,
       @findMin, fun q o => (stepOp q o).1, fun q o reg => decodeResult o reg = some (stepOp q o).2,
       @ValidOp, @ValidSeq, @numQueries, @numInserts, @numDecreaseKeys, @numExtractMins, @initRegs,
@@ -406,9 +408,11 @@ theorem fibonacciHeap_amortized_reusable :
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump, .branchEq, .branchLt, .halt,
       @Instr.rec, State, .mk, Outcome, .next, .halt, .fault, step,
-      FibonacciHeapBridge.haltsVia Instr State Outcome step fun f g a o => o.rec f g a,
+      ComplexityTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
+        fun f g a o => o.rec f g a,
       fun _ _ => True⟩
-    (by constructor <;> simp_all [step, FibonacciHeapBridge.haltsVia, AluOp.eval])
+    (by constructor <;>
+      simp_all [step, ComplexityTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
     ⟨Op, .isEmpty, .getKey, .insert, .decreaseKey, .extractMin, @Op.rec, @chooseMin, @foldMin,
       @findMin, fun q o => (stepOp q o).1, fun q o reg => decodeResult o reg = some (stepOp q o).2,
       @ValidOp, @ValidSeq, @numQueries, @numInserts, @numDecreaseKeys, @numExtractMins, @initRegs,

@@ -29,7 +29,8 @@ under `potential = 80 * (numRoots + 2 * numMarked)`):
 
 ## Main definitions
 
-* `cutNodeCode` and `decreaseKeyCode` are defined in `FibonacciHeap/Program.lean` and verified here
+* `cutNodeCode` and `decreaseKeyCode` are defined in
+  `Complexity/Algorithms/WordRAM/PriorityQueue/FibonacciHeap/Program.lean` and verified here
   against `CutInv` and `FibInv`.
 
 ## Main results
