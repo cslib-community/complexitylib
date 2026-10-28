@@ -61,7 +61,7 @@ oracle for `B` within polynomial time [Ladner, Lynch and Selman][LadnerLynchSelm
 * Hardness transfer to `P`:
   * `Cslib.Complexity.NPHard.P_eq_NP_of_turing_mem_P`: if an NP-hard problem Turing-reduces to a
     problem in `P`, then `P = NP`.
-  * `Cslib.Complexity.PolyTimeHard_PP.P_eq_PP_of_turing_mem_P`: if a PP-hard problem Turing-reduces
+  * `Cslib.Complexity.PolyTimeHard.P_eq_PP_of_turing_mem_P`: if a PP-hard problem Turing-reduces
     to a problem in `P`, then `P = PP`.
   * `Cslib.Complexity.PSPACEHard.P_eq_PSPACE_of_turing_mem_P`: if a PSPACE-hard problem
     Turing-reduces to a problem in `P`, then `P = PSPACE`.
@@ -87,11 +87,15 @@ variable {A : Set α} {B : Set β} {L : Set γ}
 
 /-- `A` is polynomial-time Turing reducible to `B` (`A ≤ᵖ_T B`): some algorithm deciding `A` runs
 in polynomial time relative to an oracle for the encoded language of `B`
-[Ladner, Lynch and Selman][LadnerLynchSelman1975]. -/
+[Ladner, Lynch and Selman][LadnerLynchSelman1975].
+
+Query and resource conventions: an algorithm is represented by a single deterministic, adaptive
+`WordQueryComp` program certified by `IsOraclePPTOn`. The clock is polynomial in `|encA a|`,
+with each query symbol costing one step, bounding both query length and the number of queries
+via `IsOraclePPTOn.query_bounds`. Oracle evaluation itself takes one step. -/
 def PolyTimeTuringReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A : Set α)
     (B : Set β) : Prop :=
-  ∃ f : α → Bool, ComputableInPolyTimeWithOracle (encB '' B) f encA encBool ∧
-    ∀ a, a ∈ A ↔ f a = true
+  A ∈ PWithOracle (encB '' B) encA
 
 /-- **The Turing bridge**: `A ≤ᵖ_T B` if and only if `A ∈ P^B` with respect to the encoded oracle
 language `encB '' B`. -/
@@ -115,7 +119,7 @@ theorem PolyTimeReducible.polyTimeTuringReducible
   · rw [computableInPolyTimeWithOracle_iff_polyTimeOracleProgram]
     refine PolyTimeOracleProgram.of_query (req := fun a => encB (f a)) ?_ fun _ hA => hA ▸ rfl
     exact .of_tidy hf.tidy
-  · dsimp
+  · dsimp only
     rw [decide_eq_true_iff, encB.injective.mem_set_image, hAB a]
 
 /-- A one-one reduction is a polynomial-time Turing reduction. -/
@@ -220,13 +224,9 @@ theorem NPHard.P_eq_NP_of_turing_mem_P {B : Set (List Bool)}
     (hB : B ∈ P encBits) : P encBits = NP encBits :=
   Set.Subset.antisymm P_subset_NP (hL.subset_P_of_turing_mem_P hLB hB encBits)
 
-/-- `P` is contained in `PP`. -/
-theorem P_subset_PP {α : Type} {enc : α ↪ List Bool} : P enc ⊆ PP enc :=
-  P_subset_NP.trans NP_subset_PP
-
 /-- **PP-hardness transfer**: if a PP-hard problem Turing-reduces to a language in `P`, then
 `P = PP`. -/
-theorem PolyTimeHard_PP.P_eq_PP_of_turing_mem_P {B : Set (List Bool)}
+theorem PolyTimeHard.P_eq_PP_of_turing_mem_P {B : Set (List Bool)}
     (hL : PolyTimeHard PP encL L) (hLB : PolyTimeTuringReducible encL encBits L B)
     (hB : B ∈ P encBits) : P encBits = PP encBits :=
   Set.Subset.antisymm P_subset_PP (hL.subset_P_of_turing_mem_P hLB hB encBits)

@@ -63,4 +63,10 @@ example (h : PolyTimeTuringReducible encCNF encBits SAT B)
     NP encBits = coNP encBits :=
   NPHard.NP_eq_coNP_of_turing_mem_NP_inter_coNP CookLevin.SAT_npHard h hB_np hB_conp
 
+/-- Turing PP-hardness transfer: if a PP-hard language Turing-reduces to `B ∈ P`, then `P = PP`. -/
+example (L : Set (List Bool)) (hL : PolyTimeHard PP encBits L)
+    (h : PolyTimeTuringReducible encBits encBits L B) (hB : B ∈ P encBits) :
+    P encBits = PP encBits :=
+  hL.P_eq_PP_of_turing_mem_P h hB
+
 end ComplexityTests.ReductionTuring
