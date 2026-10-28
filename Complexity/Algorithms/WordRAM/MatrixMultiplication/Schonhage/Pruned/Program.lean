@@ -145,14 +145,21 @@ def scanSetup : Code .standard registers := ram[
 def scan (child : Bool) : Code .standard registers := ram[
   ⟪scanSetup⟫; while index < count do [ ⟪scanStep child⟫ ] ]
 
-/-- Deduplicate supplied queries into the root list; the original list remains read-only. -/
-def rootList : Code .standard registers := ram[
-  listBase ← queries; count ← queryCount; childList ← lists; ⟪scan false⟫;
+/-- Point the deduplicating root scan at the actual supplied query list. -/
+def rootScanSetup : Code .standard registers := ram[
+  listBase ← queries; count ← queryCount; childList ← lists ]
+
+/-- Store the four actual root-frame words and enter its first controller phase. -/
+def rootFinish : Code .standard registers := ram[
   address ← frames; *address ← childCount;
   address ← address + one; *address ← nil;
   address ← address + one; *address ← one;
   address ← address + one; *address ← nil;
   level ← #0; mode ← #0; active ← #1 ]
+
+/-- Deduplicate supplied queries into the root list; the original list remains read-only. -/
+def rootList : Code .standard registers := ram[
+  ⟪rootScanSetup⟫; ⟪scan false⟫; ⟪rootFinish⟫ ]
 
 /-- Load the current frame and compute its depth-specific list/value addresses. -/
 def loadFrame : Code .standard registers := ram[
