@@ -288,14 +288,6 @@ private theorem comap_set_of_injective {r₁ r₂ : ℕ} {f : Fin r₁ → Fin r
   · simp only [Data.comap, Data.set_regs, Function.comp_apply, Function.update_apply, hf.eq_iff]
   · rfl
 
-private theorem bounded_set {r w : ℕ} {x : Data r} (hb : x.Bounded w) (d : Fin r) {v : ℕ}
-    (hv : Fits w v) : (x.set d v).Bounded w := by
-  refine ⟨fun i => ?_, hb.2⟩
-  simp only [Data.set_regs, Function.update_apply]
-  split_ifs
-  · exact hv
-  · exact hb.1 i
-
 private theorem copy_from_val {B : Basis} {r w : ℕ} {x : Data r} {dst src : Fin r} {v : ℕ}
     (h : x.regs src = v) :
     ExecWithin (B := B) w (.op (.copy dst src)) x (x.set dst v) 1 := by
@@ -338,7 +330,7 @@ theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     simp only [x₃, x₂, x₁, comap_set_of_injective hf]
   have hb3 : (x₃.comap f).Bounded w := by
     rw [hcomap]
-    exact bounded_set (bounded_set (bounded_set hx_bnd _ hfit0) _ hfit0) _ hfit0
+    exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set hx_bnd hfit0) hfit0) hfit0
   have hreg : ∀ i, P.input i = false → x₃.regs (f i) = x.regs (f i) := by
     intro i hi
     change (x₃.comap f).regs i = (x.comap f).regs i
@@ -392,7 +384,7 @@ theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   have hcomap : x₁.comap f = (x.comap f).set P.tag2 1 := comap_set_of_injective hf x P.tag2 1
   have hb1 : (x₁.comap f).Bounded w := by
     rw [hcomap]
-    exact bounded_set hx_bnd _ hfit1
+    exact Data.Bounded.set hx_bnd hfit1
   have hreg : ∀ i, P.input i = false → x₁.regs (f i) = x.regs (f i) := by
     intro i hi
     change (x₁.comap f).regs i = (x.comap f).regs i
@@ -461,12 +453,12 @@ theorem callInsert_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     simp only [x₅, x₄, x₃, x₂, x₁, comap_set_of_injective hf]
   have hb5 : (x₅.comap f).Bounded w := by
     rw [hcomap]
-    exact bounded_set (bounded_set (bounded_set (bounded_set
-      (bounded_set hx_bnd _ (hS.of_le (Nat.zero_le _)))
-      _ (hS.of_le (by omega)))
-      _ (hS.of_le (Nat.zero_le _)))
-      _ (hS.of_le (by have := v.isLt; omega)))
-      _ (hK.of_le hval.2)
+    exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set (Data.Bounded.set
+      (Data.Bounded.set hx_bnd (hS.of_le (Nat.zero_le _)))
+      (hS.of_le (by omega)))
+      (hS.of_le (Nat.zero_le _)))
+      (hS.of_le (by have := v.isLt; omega)))
+      (hK.of_le hval.2)
   have hreg : ∀ i, P.input i = false → x₅.regs (f i) = x.regs (f i) := by
     intro i hi
     change (x₅.comap f).regs i = (x.comap f).regs i
@@ -543,12 +535,12 @@ theorem callDecreaseKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     simp only [x₅, x₄, x₃, x₂, x₁, comap_set_of_injective hf]
   have hb5 : (x₅.comap f).Bounded w := by
     rw [hcomap]
-    exact bounded_set (bounded_set (bounded_set (bounded_set
-      (bounded_set hx_bnd _ (hS.of_le (Nat.zero_le _)))
-      _ (hS.of_le (by omega)))
-      _ (hS.of_le (by omega)))
-      _ (hS.of_le (by have := v.isLt; omega)))
-      _ (hK.of_le hval.2)
+    exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set (Data.Bounded.set
+      (Data.Bounded.set hx_bnd (hS.of_le (Nat.zero_le _)))
+      (hS.of_le (by omega)))
+      (hS.of_le (by omega)))
+      (hS.of_le (by have := v.isLt; omega)))
+      (hK.of_le hval.2)
   have hreg : ∀ i, P.input i = false → x₅.regs (f i) = x.regs (f i) := by
     intro i hi
     change (x₅.comap f).regs i = (x.comap f).regs i
@@ -618,11 +610,11 @@ theorem callGetKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     simp only [x₄, x₃, x₂, x₁, comap_set_of_injective hf]
   have hb4 : (x₄.comap f).Bounded w := by
     rw [hcomap]
-    exact bounded_set (bounded_set (bounded_set
-      (bounded_set hx_bnd _ (hS.of_le (Nat.zero_le _)))
-      _ (hS.of_le (Nat.zero_le _)))
-      _ (hS.of_le (by omega)))
-      _ (hS.of_le (by have := v.isLt; omega))
+    exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set
+      (Data.Bounded.set hx_bnd (hS.of_le (Nat.zero_le _)))
+      (hS.of_le (Nat.zero_le _)))
+      (hS.of_le (by omega)))
+      (hS.of_le (by have := v.isLt; omega))
   have hreg : ∀ i, P.input i = false → x₄.regs (f i) = x.regs (f i) := by
     intro i hi
     change (x₄.comap f).regs i = (x.comap f).regs i
