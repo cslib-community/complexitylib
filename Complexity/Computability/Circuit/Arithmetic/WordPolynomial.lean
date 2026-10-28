@@ -52,11 +52,11 @@ monomial with rest `τ`, and none contributes the others.
 
 **Original.** LST's branching program identifies all the vertices of its last layer, so the last
 matrix of their substitution has sums of variables as entries and the substitution is linear, not
-a projection (their proof of Lemma 8 speaks of "linear substitutions"). Fixing one sink `τ` keeps
-one vertex of the last layer instead: the substitution becomes a projection, and full rank holds
-for every sink. The fixed-sink polynomial, the numeric encoding of bit strings, the step function
-`wordStep` and the non-asymptotic hypotheses `IsUnbiased w b` and `2 ^ b ≤ n` are original to this
-formalization.
+a projection (their proof of Lemma 8, §8, p. 20, speaks of "linear substitutions"). Fixing one
+sink `τ` keeps one vertex of the last layer instead: the substitution becomes a projection, and
+full rank holds for every sink. The fixed-sink polynomial, the numeric encoding of bit strings,
+the step function `wordStep` and the non-asymptotic hypotheses `IsUnbiased w b` and `2 ^ b ≤ n`
+are original to this formalization.
 
 ## Main definitions
 
@@ -132,7 +132,7 @@ def prefixRest (A a B b : ℕ) : Option ℕ :=
 
 /-- When `a ≤ b`, `prefixRest` compares `A` with the prefix of `B`; for `a = b` both forms
 agree. -/
-theorem prefixRest_of_le {A a B b : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b) (hab : a ≤ b) :
+private theorem prefixRest_of_le {A a B b : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b) (hab : a ≤ b) :
     prefixRest A a B b = if B % 2 ^ a = A then some (B / 2 ^ a) else none := by
   rcases hab.lt_or_eq with hab | rfl
   · rw [prefixRest, ite_eq_right (by omega)]
@@ -143,14 +143,14 @@ theorem prefixRest_of_le {A a B b : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b) (hab 
     · simp [h, Ne.symm h]
 
 /-- `prefixRest` is symmetric in its two strings. -/
-theorem prefixRest_comm {A a B b : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b) :
+private theorem prefixRest_comm {A a B b : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b) :
     prefixRest A a B b = prefixRest B b A a := by
   rcases le_total a b with h | h
   · rw [prefixRest_of_le hA hB h, prefixRest, ite_eq_left h]
   · rw [prefixRest_of_le hB hA h, prefixRest, ite_eq_left h]
 
 /-- The rest of the longer string has length `|a - b|`. -/
-theorem prefixRest_lt {A a B b s : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b)
+private theorem prefixRest_lt {A a B b s : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b)
     (h : prefixRest A a B b = some s) : s < 2 ^ ((a : ℤ) - b).natAbs := by
   unfold prefixRest at h
   split_ifs at h with hab h'
@@ -165,14 +165,14 @@ theorem prefixRest_lt {A a B b s : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b)
 
 /-- A string `x` followed by `t`, compared with `y` when `y` is no longer: the rest is `t` exactly
 when `y = x`. -/
-theorem prefixRest_add_left {a b x y t : ℕ} (hx : x < 2 ^ b) (hba : b ≤ a) :
+private theorem prefixRest_add_left {a b x y t : ℕ} (hx : x < 2 ^ b) (hba : b ≤ a) :
     prefixRest (x + 2 ^ b * t) a y b = if x = y then some t else none := by
   rw [prefixRest, ite_eq_left hba, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hx,
     Nat.add_mul_div_left _ _ (Nat.two_pow_pos b), Nat.div_eq_of_lt hx, zero_add]
 
 /-- A string `y` compared with `x` followed by `t`, when `y` is shorter: the rest is `t` exactly
 when `y = x`. -/
-theorem prefixRest_add_right {a b x y t : ℕ} (hx : x < 2 ^ a) (hab : a < b) :
+private theorem prefixRest_add_right {a b x y t : ℕ} (hx : x < 2 ^ a) (hab : a < b) :
     prefixRest y a (x + 2 ^ a * t) b = if x = y then some t else none := by
   rw [prefixRest, ite_eq_right (by omega), Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hx,
     Nat.add_mul_div_left _ _ (Nat.two_pow_pos a), Nat.div_eq_of_lt hx, zero_add]
@@ -189,12 +189,12 @@ def wordStep (e : ℤ) (s : ℕ) (k : ℤ) (β : ℕ) : Option ℕ :=
     if s % 2 ^ k.natAbs = β then some (s / 2 ^ k.natAbs) else none
   else if β % 2 ^ e.natAbs = s then some (β / 2 ^ e.natAbs) else none
 
-theorem wordStep_neg (e : ℤ) (s : ℕ) (k : ℤ) (β : ℕ) :
+private theorem wordStep_neg (e : ℤ) (s : ℕ) (k : ℤ) (β : ℕ) :
     wordStep (-e) s k β = wordStep e s (-k) β := by
   simp only [wordStep, Int.natAbs_neg, neg_mul, mul_neg]
 
 /-- A step is determined by its source and target: at most one label leads from `s` to `t`. -/
-theorem wordStep_inj {e : ℤ} {s : ℕ} {k : ℤ} {β β' t : ℕ} (h : wordStep e s k β = some t)
+private theorem wordStep_inj {e : ℤ} {s : ℕ} {k : ℤ} {β β' t : ℕ} (h : wordStep e s k β = some t)
     (h' : wordStep e s k β' = some t) : β = β' := by
   unfold wordStep at h h'
   by_cases h₁ : 0 ≤ e * k
@@ -224,7 +224,7 @@ theorem wordStep_inj {e : ℤ} {s : ℕ} {k : ℤ} {β β' t : ℕ} (h : wordSte
 
 /-- **Appending a positive block**: comparing after appending `β` (length `k`) to the first string
 is one `wordStep` after comparing before. -/
-theorem prefixRest_append {A a B b β k : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b)
+private theorem prefixRest_append {A a B b β k : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b)
     (hβ : β < 2 ^ k) :
     prefixRest (A + 2 ^ a * β) (a + k) B b =
       (prefixRest A a B b).bind fun s => wordStep ((a : ℤ) - b) s k β := by
@@ -283,7 +283,7 @@ theorem prefixRest_append {A a B b β k : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b)
 
 /-- **Appending a negative block**: comparing after appending `β` (length `k`) to the second
 string is one `wordStep`, with signed length `-k`, after comparing before. -/
-theorem prefixRest_append_right {A a B b β k : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b)
+private theorem prefixRest_append_right {A a B b β k : ℕ} (hA : A < 2 ^ a) (hB : B < 2 ^ b)
     (hβ : β < 2 ^ k) :
     prefixRest A a (B + 2 ^ b * β) (b + k) =
       (prefixRest A a B b).bind fun s => wordStep ((a : ℤ) - b) s (-(k : ℤ)) β := by
@@ -323,17 +323,17 @@ def wordRestAt (i : ℕ) : Option ℕ :=
 
 variable {p W D}
 
-theorem wordStringLen_succ (i : ℕ) :
+private theorem wordStringLen_succ (i : ℕ) :
     wordStringLen p W (i + 1) = wordStringLen p W i + if p (W i) then (W i).natAbs else 0 :=
   Finset.sum_range_succ _ i
 
-theorem wordStringVal_succ (i : ℕ) :
+private theorem wordStringVal_succ (i : ℕ) :
     wordStringVal p W D (i + 1) =
       wordStringVal p W D i + if p (W i) then 2 ^ wordStringLen p W i * D i else 0 :=
   Finset.sum_range_succ _ i
 
 /-- The string read from the first `i` blocks has the length `wordStringLen`. -/
-theorem wordStringVal_lt (hD : ∀ j, D j < 2 ^ (W j).natAbs) (i : ℕ) :
+private theorem wordStringVal_lt (hD : ∀ j, D j < 2 ^ (W j).natAbs) (i : ℕ) :
     wordStringVal p W D i < 2 ^ wordStringLen p W i := by
   induction i with
   | zero => simp [wordStringVal, wordStringLen]
@@ -344,7 +344,7 @@ theorem wordStringVal_lt (hD : ∀ j, D j < 2 ^ (W j).natAbs) (i : ℕ) :
     · simpa using ih
 
 /-- The signed excess of the positive string over the negative string is the prefix sum. -/
-theorem wordStringLen_sub (i : ℕ) :
+private theorem wordStringLen_sub (i : ℕ) :
     (wordStringLen (0 ≤ ·) W i : ℤ) - wordStringLen (· < 0) W i = wordPrefixSum W i := by
   induction i with
   | zero => simp [wordStringLen, wordPrefixSum]
@@ -354,12 +354,12 @@ theorem wordStringLen_sub (i : ℕ) :
     split_ifs <;> omega
 
 @[simp]
-theorem wordRestAt_zero : wordRestAt W D 0 = some 0 := by
+private theorem wordRestAt_zero : wordRestAt W D 0 = some 0 := by
   simp [wordRestAt, wordStringVal, wordStringLen, prefixRest]
 
 /-- **The branching program reads a word**: comparing the strings of the first `i + 1` blocks is
 one `wordStep` after comparing those of the first `i`. -/
-theorem wordRestAt_succ (hD : ∀ j, D j < 2 ^ (W j).natAbs) (i : ℕ) :
+private theorem wordRestAt_succ (hD : ∀ j, D j < 2 ^ (W j).natAbs) (i : ℕ) :
     wordRestAt W D (i + 1) =
       (wordRestAt W D i).bind fun s => wordStep (wordPrefixSum W i) s (W i) (D i) := by
   have hP := wordStringVal_lt (p := (0 ≤ ·)) hD i
@@ -380,13 +380,13 @@ theorem wordRestAt_succ (hD : ∀ j, D j < 2 ^ (W j).natAbs) (i : ℕ) :
     omega
 
 /-- The rest after the first `i` blocks has length `|∑ j < i, W j|`. -/
-theorem wordRestAt_lt (hD : ∀ j, D j < 2 ^ (W j).natAbs) {i s : ℕ}
+private theorem wordRestAt_lt (hD : ∀ j, D j < 2 ^ (W j).natAbs) {i s : ℕ}
     (h : wordRestAt W D i = some s) : s < 2 ^ (wordPrefixSum W i).natAbs := by
   rw [← wordStringLen_sub]
   exact prefixRest_lt (wordStringVal_lt hD i) (wordStringVal_lt hD i) h
 
 /-- Once the strings disagree, they disagree on every longer prefix. -/
-theorem wordRestAt_eq_none (hD : ∀ j, D j < 2 ^ (W j).natAbs) {i j : ℕ}
+private theorem wordRestAt_eq_none (hD : ∀ j, D j < 2 ^ (W j).natAbs) {i j : ℕ}
     (h : wordRestAt W D i = none) (hij : i ≤ j) : wordRestAt W D j = none := by
   induction j, hij using Nat.le_induction with
   | base => exact h
@@ -529,24 +529,25 @@ theorem sum_wordPoly :
 section Rank
 
 /-- The variable chosen in block `j` by a choice `r` on a set of blocks containing `j`. -/
-def blockDigit {S : Finset (Fin d)} (r : BlockChoice (Sigma.fst : WordVar w → Fin d) S) (j : Fin d)
-    (h : j ∈ S) : Fin (2 ^ (w j).natAbs) :=
+private def blockDigit {S : Finset (Fin d)} (r : BlockChoice (Sigma.fst : WordVar w → Fin d) S)
+    (j : Fin d) (h : j ∈ S) : Fin (2 ^ (w j).natAbs) :=
   Equiv.sigmaSubtype j (r ⟨j, h⟩)
 
 @[simp]
-theorem blockDigit_spec {S : Finset (Fin d)} (r : BlockChoice (Sigma.fst : WordVar w → Fin d) S)
-    (j : Fin d) (h : j ∈ S) : (r ⟨j, h⟩ : WordVar w) = ⟨j, blockDigit r j h⟩ := by
+private theorem blockDigit_spec {S : Finset (Fin d)}
+    (r : BlockChoice (Sigma.fst : WordVar w → Fin d) S) (j : Fin d) (h : j ∈ S) :
+    (r ⟨j, h⟩ : WordVar w) = ⟨j, blockDigit r j h⟩ := by
   conv_lhs => rw [← (Equiv.sigmaSubtype j).symm_apply_apply (r ⟨j, h⟩)]
   rfl
 
 /-- The choice on all blocks made of a choice `r` on the positive and `c` on the negative
 blocks. -/
-def wordMerge (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordPos w))
+private def wordMerge (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordPos w))
     (c : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordNeg w)) : WordChoice w :=
   fun i => if h : 0 ≤ w i then blockDigit r i (mem_wordBlocks.mpr h)
     else blockDigit c i (mem_wordBlocks.mpr (not_le.mp h))
 
-theorem blockMonomial_add_blockMonomial (r : BlockChoice (Sigma.fst : WordVar w → Fin d)
+private theorem blockMonomial_add_blockMonomial (r : BlockChoice (Sigma.fst : WordVar w → Fin d)
     (wordPos w)) (c : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordNeg w)) :
     blockMonomial Sigma.fst (wordPos w) r + blockMonomial Sigma.fst (wordNeg w) c =
       wordMono (wordMerge r c) := by
@@ -565,10 +566,10 @@ theorem blockMonomial_add_blockMonomial (r : BlockChoice (Sigma.fst : WordVar w 
 
 variable (w) in
 /-- The size `2 ^ |w j|` of block `j` if its signed length satisfies `p`, and `1` otherwise. -/
-def sideSize (p : ℤ → Prop) [DecidablePred p] (j : Fin d) : ℕ :=
+private def sideSize (p : ℤ → Prop) [DecidablePred p] (j : Fin d) : ℕ :=
   2 ^ (if p (w j) then (w j).natAbs else 0)
 
-theorem prod_sideSize (p : ℤ → Prop) [DecidablePred p] :
+private theorem prod_sideSize (p : ℤ → Prop) [DecidablePred p] :
     ∏ j, sideSize w p j = 2 ^ wordStringLen p (wordSeq w) d := by
   simp only [sideSize]
   rw [Finset.prod_pow_eq_pow_sum, wordStringLen, ← Fin.sum_univ_eq_sum_range]
@@ -576,7 +577,7 @@ theorem prod_sideSize (p : ℤ → Prop) [DecidablePred p] :
 
 /-- The labels of a choice `x` in the blocks whose signed length satisfies `p`, and `0`
 elsewhere. -/
-def sideDigits (p : ℤ → Prop) [DecidablePred p] (x : WordChoice w) (j : Fin d) :
+private def sideDigits (p : ℤ → Prop) [DecidablePred p] (x : WordChoice w) (j : Fin d) :
     Fin (sideSize w p j) :=
   ⟨if p (w j) then x j else 0, by
     unfold sideSize
@@ -585,7 +586,7 @@ def sideDigits (p : ℤ → Prop) [DecidablePred p] (x : WordChoice w) (j : Fin 
     · simp⟩
 
 /-- The mixed-radix value of the labels on one side is the string of that side. -/
-theorem finPiFinEquiv_sideDigits (p : ℤ → Prop) [DecidablePred p] (x : WordChoice w) :
+private theorem finPiFinEquiv_sideDigits (p : ℤ → Prop) [DecidablePred p] (x : WordChoice w) :
     (finPiFinEquiv (sideDigits p x) : ℕ) = wordStringVal p (wordSeq w) x.digits d := by
   rw [finPiFinEquiv_apply, wordStringVal, ← Fin.sum_univ_eq_sum_range]
   refine Finset.sum_congr rfl fun i _ => ?_
@@ -602,7 +603,7 @@ theorem finPiFinEquiv_sideDigits (p : ℤ → Prop) [DecidablePred p] (x : WordC
 
 /-- The labels of a choice `r` on the blocks satisfying `p`, as a tuple with the factor `1` in the
 other blocks. -/
-def choiceDigits (p : ℤ → Prop) [DecidablePred p]
+private def choiceDigits (p : ℤ → Prop) [DecidablePred p]
     (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordBlocks w p)) (j : Fin d) :
     Fin (sideSize w p j) :=
   if h : p (w j) then
@@ -612,7 +613,7 @@ def choiceDigits (p : ℤ → Prop) [DecidablePred p]
       exact (blockDigit r j _).isLt⟩
   else ⟨0, by simp [sideSize, h]⟩
 
-theorem choiceDigits_injective (p : ℤ → Prop) [DecidablePred p] :
+private theorem choiceDigits_injective (p : ℤ → Prop) [DecidablePred p] :
     Function.Injective (choiceDigits (w := w) p) := by
   intro r r' h
   funext ⟨j, hj⟩
@@ -622,7 +623,7 @@ theorem choiceDigits_injective (p : ℤ → Prop) [DecidablePred p] :
   apply Subtype.ext
   rw [blockDigit_spec r j hj, blockDigit_spec r' j hj, Fin.ext this]
 
-theorem choiceDigits_surjective (p : ℤ → Prop) [DecidablePred p] :
+private theorem choiceDigits_surjective (p : ℤ → Prop) [DecidablePred p] :
     Function.Surjective (choiceDigits (w := w) p) := by
   intro y
   refine ⟨fun j => (Equiv.sigmaSubtype (j : Fin d)).symm
@@ -635,7 +636,8 @@ theorem choiceDigits_surjective (p : ℤ → Prop) [DecidablePred p] :
     ext
     simp [choiceDigits, h, this]
 
-theorem sideDigits_wordMerge_pos (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordPos w))
+private theorem sideDigits_wordMerge_pos
+    (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordPos w))
     (c : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordNeg w)) :
     sideDigits (0 ≤ ·) (wordMerge r c) = choiceDigits (0 ≤ ·) r := by
   funext j
@@ -644,7 +646,8 @@ theorem sideDigits_wordMerge_pos (r : BlockChoice (Sigma.fst : WordVar w → Fin
   · simp [sideDigits, choiceDigits, wordMerge, h]
   · simp [sideDigits, choiceDigits, h]
 
-theorem sideDigits_wordMerge_neg (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordPos w))
+private theorem sideDigits_wordMerge_neg
+    (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordPos w))
     (c : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordNeg w)) :
     sideDigits (· < 0) (wordMerge r c) = choiceDigits (· < 0) c := by
   funext j
@@ -654,26 +657,26 @@ theorem sideDigits_wordMerge_neg (r : BlockChoice (Sigma.fst : WordVar w → Fin
   · simp [sideDigits, choiceDigits, wordMerge, h, not_le.mp h]
 
 /-- The number encoding the string chosen by `r` on the blocks satisfying `p`. -/
-def choiceValue (p : ℤ → Prop) [DecidablePred p]
+private def choiceValue (p : ℤ → Prop) [DecidablePred p]
     (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordBlocks w p)) : ℕ :=
   finPiFinEquiv (choiceDigits p r)
 
-theorem choiceValue_lt (p : ℤ → Prop) [DecidablePred p]
+private theorem choiceValue_lt (p : ℤ → Prop) [DecidablePred p]
     (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordBlocks w p)) :
     choiceValue p r < 2 ^ wordStringLen p (wordSeq w) d :=
   prod_sideSize (w := w) p ▸ (finPiFinEquiv (choiceDigits p r)).isLt
 
-theorem choiceValue_injective (p : ℤ → Prop) [DecidablePred p] :
+private theorem choiceValue_injective (p : ℤ → Prop) [DecidablePred p] :
     Function.Injective (choiceValue (w := w) p) :=
   fun _ _ h => choiceDigits_injective p (finPiFinEquiv.injective (Fin.ext h))
 
-theorem exists_choiceValue_eq (p : ℤ → Prop) [DecidablePred p] {v : ℕ}
+private theorem exists_choiceValue_eq (p : ℤ → Prop) [DecidablePred p] {v : ℕ}
     (hv : v < 2 ^ wordStringLen p (wordSeq w) d) : ∃ r, choiceValue (w := w) p r = v := by
   obtain ⟨r, hr⟩ := choiceDigits_surjective (w := w) p
     (finPiFinEquiv.symm ⟨v, (prod_sideSize (w := w) p).symm ▸ hv⟩)
   exact ⟨r, by rw [choiceValue, hr, Equiv.apply_symm_apply]⟩
 
-theorem card_blockChoice_wordBlocks (p : ℤ → Prop) [DecidablePred p] :
+private theorem card_blockChoice_wordBlocks (p : ℤ → Prop) [DecidablePred p] :
     Fintype.card (BlockChoice (Sigma.fst : WordVar w → Fin d) (wordBlocks w p)) =
       2 ^ wordStringLen p (wordSeq w) d := by
   rw [Fintype.card_of_bijective ⟨choiceDigits_injective (w := w) p,
@@ -682,7 +685,7 @@ theorem card_blockChoice_wordBlocks (p : ℤ → Prop) [DecidablePred p] :
 
 /-- The relative-rank matrix of the word polynomial: the entry for the choices `r` on the positive
 and `c` on the negative blocks is `1` when their strings are prefix-related with rest `τ`. -/
-theorem relMatrix_wordPoly_apply (τ : ℕ)
+private theorem relMatrix_wordPoly_apply (τ : ℕ)
     (r : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordPos w))
     (c : BlockChoice (Sigma.fst : WordVar w → Fin d) (wordNeg w)) :
     relMatrix Sigma.fst (wordPos w) (wordNeg w) (wordPoly K w τ) r c =
@@ -822,7 +825,7 @@ end IMM
 
 section Projection
 
-theorem wordPrefixSum_wordSeq {t : ℕ} (ht : t ≤ d) :
+private theorem wordPrefixSum_wordSeq {t : ℕ} (ht : t ≤ d) :
     wordPrefixSum (wordSeq w) t = ∑ i : Fin d with i.val < t, w i := by
   have h : ∑ i : Fin d, (if i.val < t then w i else 0) =
       ∑ i : Fin d, (fun j : ℕ => if j < t then wordSeq w j else 0) i :=
@@ -836,7 +839,7 @@ theorem wordPrefixSum_wordSeq {t : ℕ} (ht : t ≤ d) :
   omega
 
 /-- The rest after one more block, for a word indexed by `Fin d`. -/
-theorem wordRestAt_castSucc (x : WordChoice w) (i : Fin d) :
+private theorem wordRestAt_castSucc (x : WordChoice w) (i : Fin d) :
     wordRestAt (wordSeq w) x.digits ((i : ℕ) + 1) =
       (wordRestAt (wordSeq w) x.digits i).bind
         fun s => wordStep (wordPrefixSum (wordSeq w) i) s (w i) (x i) := by
@@ -877,7 +880,7 @@ theorem wordSubst_eq_inr {τ n : ℕ} {i : Fin d} {a c : Fin n} {k : K}
 
 /-- The substituted entry `(a, c)` of matrix `i` is the label of the edge from `a` to
 `wordTarget τ i c`, written as a sum over the possible labels. -/
-theorem elim_wordSubst (τ : ℕ) {n : ℕ} (i : Fin d) (a c : Fin n) :
+private theorem elim_wordSubst (τ : ℕ) {n : ℕ} (i : Fin d) (a c : Fin n) :
     Sum.elim X (fun k => C k) (wordSubst w τ n K (i, a, c)) =
       ∑ β : Fin (2 ^ (w i).natAbs),
         if wordStep (wordPrefixSum (wordSeq w) i) a (w i) β = some (wordTarget τ i c) then
@@ -897,12 +900,12 @@ variable {n : ℕ} [NeZero n]
 
 /-- A path of states through the branching program of the word polynomial with sink `τ` that
 reads the choice `x`, as a path through the indices of `IMM_{n,d}` from `0` to `0`. -/
-def IsWordPath (τ : ℕ) (x : WordChoice w) (p : Fin (d + 1) → Fin n) : Prop :=
+private def IsWordPath (τ : ℕ) (x : WordChoice w) (p : Fin (d + 1) → Fin n) : Prop :=
   (p 0 = 0 ∧ p (Fin.last d) = 0) ∧ ∀ i : Fin d,
     wordStep (wordPrefixSum (wordSeq w) i) (p i.castSucc) (w i) (x i) =
       some (wordTarget τ i (p i.succ))
 
-theorem IsWordPath.wordRestAt_eq {τ : ℕ} {x : WordChoice w} {p : Fin (d + 1) → Fin n}
+private theorem IsWordPath.wordRestAt_eq {τ : ℕ} {x : WordChoice w} {p : Fin (d + 1) → Fin n}
     (hp : IsWordPath τ x p) :
     ∀ (i : ℕ) (hi : i < d), wordRestAt (wordSeq w) x.digits i = some (p ⟨i, by omega⟩).val
   | 0, _ => by
@@ -914,7 +917,7 @@ theorem IsWordPath.wordRestAt_eq {τ : ℕ} {x : WordChoice w} {p : Fin (d + 1) 
       Option.bind_some]
     exact h
 
-theorem IsWordPath.wordRest {τ : ℕ} {x : WordChoice w} {p : Fin (d + 1) → Fin n}
+private theorem IsWordPath.wordRest {τ : ℕ} {x : WordChoice w} {p : Fin (d + 1) → Fin n}
     (hp : IsWordPath τ x p) (hτ : τ < 2 ^ (∑ i, w i).natAbs) : wordRest w x = some τ := by
   rcases Nat.eq_zero_or_pos d with hd | hd
   · subst hd
@@ -929,7 +932,7 @@ theorem IsWordPath.wordRest {τ : ℕ} {x : WordChoice w} {p : Fin (d + 1) → F
     rw [wordRest, this, hp.wordRestAt_eq d (by omega), Option.bind_some]
     exact h
 
-theorem IsWordPath.unique {τ : ℕ} {x : WordChoice w} {p q : Fin (d + 1) → Fin n}
+private theorem IsWordPath.unique {τ : ℕ} {x : WordChoice w} {p q : Fin (d + 1) → Fin n}
     (hp : IsWordPath τ x p) (hq : IsWordPath τ x q) : p = q := by
   funext j
   by_cases hj : (j : ℕ) = d
@@ -940,7 +943,7 @@ theorem IsWordPath.unique {τ : ℕ} {x : WordChoice w} {p q : Fin (d + 1) → F
 
 /-- When the strings of `x` are prefix-related with rest `τ`, the states of the branching program
 form a path through the indices of `IMM_{n,d}`. -/
-theorem exists_isWordPath {b : ℕ} (hw : IsUnbiased w b) (hn : 2 ^ b ≤ n) {τ : ℕ}
+private theorem exists_isWordPath {b : ℕ} (hw : IsUnbiased w b) (hn : 2 ^ b ≤ n) {τ : ℕ}
     {x : WordChoice w} (hx : wordRest w x = some τ) : ∃ p : Fin (d + 1) → Fin n,
       IsWordPath τ x p := by
   have hsome (i : ℕ) (hi : i ≤ d) : ∃ s, wordRestAt (wordSeq w) x.digits i = some s := by

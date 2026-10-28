@@ -9,8 +9,9 @@ import Complexity.Computability.Circuit.Arithmetic.Word
 /-!
 # Words
 
-The positive and negative blocks of the word `(2, -1, 1)`. The greedy word over `{7, -10}` is
-computed, `7, -10, 7`, and is `10`-unbiased; the greedy word over `{0, 0}` is `0`-unbiased.
+The positive and negative blocks of the word `(2, -1, 1)`, which are complementary. The greedy
+word over `{7, -10}` is computed, `7, -10, 7`, and is `10`-unbiased; the greedy word over `{0, 0}`
+is `0`-unbiased.
 -/
 
 namespace ComplexityTests.ArithmeticWord
@@ -22,7 +23,10 @@ private def w : Fin 3 → ℤ := ![2, -1, 1]
 
 example : wordPos w = {0, 2} ∧ wordNeg w = {1} := by decide
 
-example : (wordPos w)ᶜ = wordNeg w := compl_wordPos
+/-- The complement of the positive blocks `{0, 2}` of `(2, -1, 1)` is the negative block `{1}`. -/
+example : (wordPos w)ᶜ = {1} := by
+  rw [compl_wordPos]
+  decide
 
 /-- `(2, -1, 1)` is `2`-unbiased: its prefix sums are `0, 2, 1, 2`. -/
 example : IsUnbiased w 2 := by
