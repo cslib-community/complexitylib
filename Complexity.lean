@@ -379,6 +379,7 @@ public import Complexity.Computability.Circuit.Frontier.AverageCase
 public import Complexity.Computability.Circuit.Frontier.BoundedFanIn
 public import Complexity.Computability.Circuit.Frontier.BranchingProgram
 public import Complexity.Computability.Circuit.Frontier.Compiler
+public import Complexity.Computability.Circuit.Frontier.Compiler.CNF
 public import Complexity.Computability.Circuit.Frontier.Compiler.Network
 public import Complexity.Computability.Circuit.Frontier.Correlation
 public import Complexity.Computability.Circuit.Frontier.Correlation.Asymptotics
@@ -512,6 +513,7 @@ public import Complexity.Computability.Circuit.Rational.SmallExpansion
 public import Complexity.Computability.Circuit.Rational.Wronskian
 public import Complexity.Computability.Circuit.ReedMullerDecoding
 public import Complexity.Computability.Circuit.Replication
+public import Complexity.Computability.Circuit.SatCount
 public import Complexity.Computability.Circuit.SignatureHom
 public import Complexity.Computability.Circuit.Simulation
 public import Complexity.Computability.Circuit.SimulationContext
@@ -773,12 +775,14 @@ public import Complexity.Computability.Complexity.Fagin.Verifier
 public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
+public import Complexity.Computability.Complexity.FineGrained.CircuitCounting
 public import Complexity.Computability.Complexity.FineGrained.CountingCSP
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeModelCount
 public import Complexity.Computability.Complexity.FineGrained.CountingParameterBounds
 public import Complexity.Computability.Complexity.FineGrained.CountingScale
+public import Complexity.Computability.Complexity.FineGrained.CountingScaleBounds
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsification
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsificationUniform
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
