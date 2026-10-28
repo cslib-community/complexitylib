@@ -66,6 +66,27 @@ private def observe (w L m N : ℕ)
 #guard (observe 12 2 1 1 (fun _ _ => -1) (fun _ _ => 1)).map Prod.snd ==
   some [0, 1, 0, 0]
 
+private def asymmetricRead (side : Bool) (a : ℕ) : Code .standard 96 :=
+  .seq header (.seq saveInput (.seq countCode (.seq tablesCode
+    (.seq (.op (.const band 0)) (.seq (.op (.const index a))
+      (.seq splitCode (readCell side)))))))
+
+private def observeAsymmetricRead (side : Bool) (a : ℕ) :
+    Option (ℕ × ℕ × ℕ × ℕ × ℤ) :=
+  let data : Data 96 := (State.init (input 4 1 29
+    (fun i k => ((100 * i.val + k.val : ℕ) : ℤ) - 1000)
+    (fun k j => -((1000 * k.val + j.val + 7 : ℕ) : ℤ)))).data
+  ((asymmetricRead side a).eval 24 256 data).map fun (y, _) =>
+    (y.regs root, y.regs maskAcc, y.regs block, y.regs row, decode (y.regs value))
+
+-- At L=4,m=1, the computed root is 2. Masks 2 and 4 have ranks 1 and 2, so division
+-- and remainder select different blocks. Both guarded rows (1 and 28) are real at N=29.
+-- These runs compute headers/tables/snapshot and decode/load only, without an encoder run.
+#guard observeAsymmetricRead false 36 == some (2, 2, 0, 1, -898)
+#guard observeAsymmetricRead true 36 == some (2, 2, 1, 28, -2035)
+#guard observeAsymmetricRead false 246 == some (2, 4, 1, 28, 1802)
+#guard observeAsymmetricRead true 246 == some (2, 4, 0, 1, -2008)
+
 -- Address-width boundary for a padded, two-band call. The nonzero sentinel also survives.
 #guard observe 6 1 0 4 (fun _ _ => 0) (fun _ _ => 0) == none
 #guard (observe 7 1 0 4 (fun _ _ => 0) (fun _ _ => 0)).map (fun z => z.1.2) == some true

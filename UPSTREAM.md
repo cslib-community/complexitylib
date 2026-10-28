@@ -316,6 +316,7 @@ agreement during upstream review.
 | `Foundations/Combinatorics/{FiniteCover,Hoeffding,Hypergeometric,PowersetTail,Sunflower}` | Consider Mathlib combinatorics; probabilistic-method lemmas belong near `Combinatorics/Probabilistic`. |
 | `Foundations/Data/Finset/Expect` | Product-type expectation helpers extracted from `Foundations/Combinatorics/Expander/Products` (#317); Mathlib candidates. |
 | `Foundations/Data/Finset/Markov` | Mathlib candidate: `Algebra/Order/BigOperators/Group/Finset` (`Finset.card_filter_mul_le_sum`, `Finset.mul_card_filter_le_sum`). |
+| `Foundations/Data/Finset/OrderGlue` | #1545 resolves the generic naming follow-up from #1496 after native bands stabilized in #1536: order-embedding/subset/complement terminology, Mathlib's `orderEmbOfFin_mem`/`range_orderEmbOfFin` and ordinary substitution in place of five redundant wrappers, and migration of finite tensor clients with checked native band clients. Retain this focused topic module. |
 | `Foundations/Data/Matrix/Permanent` | Mathlib candidate: Laplace expansion of the permanent along row and column 0, beside `LinearAlgebra/Matrix/Permanent` (mirroring `Matrix.det_succ_row_zero`). |
 | `Foundations/LinearAlgebra/{Rank,Matrix/CutRank,Matrix/Lindsey}` | Mathlib candidates: `LinearAlgebra/Dimension/LinearMap` and `LinearAlgebra/Matrix/Rank`; placement of Lindsey's lemma needs agreement. |
 | `Probability/PairwiseIndependentHash/Shift` | Consider integration into `PairwiseIndependentHash`. |
