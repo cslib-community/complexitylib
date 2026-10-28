@@ -16,8 +16,8 @@ This file proves the exact-Word-RAM specification `decreaseKeyCode_exec` (`O(1)`
 under `potential = 80 * (numRoots + 2 * numMarked)`):
 
 * **No-cut key decrease (`ValidSubtree.lower_key_no_cut`):** When `v` is already a root or lowering
-  `key[v]` to `k ≤ key[v]` preserves `PrioLT (p, key[p]) (v, k)`, `FibRawInv` holds without cutting
-  any edges.
+  `key[v]` to `k ≤ key[v]` preserves `IndexedMinPQ.PrioLT (p, key[p]) (v, k)`, `FibRawInv` holds
+  without cutting any edges.
 * **Single-edge cut (`cutNodeCode_raw`, `cutNode_forest`):** Executes `cutNodeCode` in at most `36`
   instructions, splicing `cur` into the circular root list, updating parent degree/child pointers,
   clearing `par[cur]` and `mark[cur]`, and adjusting `potential` by `-80` when `cur` was marked or
@@ -72,7 +72,7 @@ theorem ValidRoot.par_eq_zero_iff_root {n : ℕ} {st : RawState n} {pending : Op
     exact hT.2.1
 
 /-- Lowering `key[v]` to `k ≤ st.key v` preserves `ValidSubtree st' none T` whenever `v = T.root` or
-`v` has parent `p` (`st.par v = p.val + 1`) with `¬PrioLT (v, k) (p, st.key p)`. -/
+`v` has parent `p` (`st.par v = p.val + 1`) with `¬IndexedMinPQ.PrioLT (v, k) (p, st.key p)`. -/
 theorem ValidSubtree.lower_key_no_cut {n : ℕ} {st st' : RawState n} {T : FHTree n}
     (hT : ValidSubtree st none T) (hnd : T.nodes.Nodup) {v : Fin n} {k : ℕ}
     (hv : v ∈ T.nodes) (hle : k ≤ st.key v)
@@ -82,7 +82,8 @@ theorem ValidSubtree.lower_key_no_cut {n : ℕ} {st st' : RawState n} {T : FHTre
       st'.child x = st.child x)
     (hptr : ∀ x ∈ forestNodes T.children,
       st'.par x = st.par x ∧ st'.left x = st.left x ∧ st'.right x = st.right x)
-    (hord : v = T.root ∨ ∃ p : Fin n, st.par v = p.val + 1 ∧ ¬PrioLT (v, k) (p, st.key p)) :
+    (hord : v = T.root ∨ ∃ p : Fin n, st.par v = p.val + 1 ∧
+      ¬IndexedMinPQ.PrioLT (v, k) (p, st.key p)) :
     ValidSubtree st' none T := by
   induction hT with
   | @mk u cs hin hmark hdeg hchild hpar hprio hrank hsub ih =>
@@ -107,7 +108,8 @@ theorem ValidSubtree.lower_key_no_cut {n : ℕ} {st st' : RawState n} {T : FHTre
       by_cases hvu : v = u
       · subst hvu
         rw [hk_v, hk_other c.root hcr_in hu_ne_cr.symm]
-        exact PrioLT.of_le_of_lt (by dsimp only [IndexedMinPQ.PrioLE]; omega) (hprio c hc)
+        exact IndexedMinPQ.PrioLT.of_le_of_lt
+          (by dsimp only [IndexedMinPQ.PrioLE]; omega) (hprio c hc)
       · rw [hk_other u hu_in (Ne.symm hvu)]
         by_cases hv_cr : c.root = v
         · rw [hv_cr, hk_v]
@@ -118,7 +120,7 @@ theorem ValidSubtree.lower_key_no_cut {n : ℕ} {st st' : RawState n} {T : FHTre
             have hup : u = p := Fin.ext (by omega)
             subst hup
             have hu_ne_v : u ≠ v := hv_cr ▸ hu_ne_cr
-            exact (prioLT_or_prioLT_of_ne hu_ne_v (st.key u) k).resolve_right hnlt
+            exact (IndexedMinPQ.prioLT_or_prioLT_of_ne hu_ne_v (st.key u) k).resolve_right hnlt
         · rw [hk_other c.root hcr_in hv_cr]
           exact hprio c hc
     · intro i hi
@@ -171,8 +173,8 @@ theorem CutInv.to_fibRawInv {n K_max : ℕ} {s : IndexedMinPQ.State n} {st st' :
       st'.left = st.left ∧ st'.right = st.right ∧ st'.deg = st.deg ∧
       st'.mark = st.mark ∧ st'.inHeap = st.inHeap ∧ st'.cons = st.cons ∧
       st'.numRoots = st.numRoots ∧ st'.numMarked = st.numMarked ∧ st'.sz = st.sz)
-    (hmin : (PrioLT (v, st.key v) (m, st.key m) ∧ st'.minRoot = v.val + 1) ∨
-      (¬PrioLT (v, st.key v) (m, st.key m) ∧ st'.minRoot = m.val + 1)) :
+    (hmin : (IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m) ∧ st'.minRoot = v.val + 1) ∨
+      (¬IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m) ∧ st'.minRoot = m.val + 1)) :
     FibRawInv n K_max s st' := by
   obtain ⟨ts, hts, hnd, hdom, hin, hkeys, hsz, hnr, hnm, hcons,
     ⟨rtail, _, hcirc, hperm⟩, ⟨T_v, hTv, hTv_r⟩, hmin_other⟩ := h
@@ -199,11 +201,11 @@ theorem CutInv.to_fibRawInv {n K_max : ℕ} {s : IndexedMinPQ.State n} {st st' :
     rw [hk]
     by_cases hTr : T.root = v
     · rw [hTr]; exact IndexedMinPQ.PrioLE.refl _
-    · exact (PrioLT.le hlt).trans (hmin_other T hT hTr)
+    · exact (IndexedMinPQ.PrioLT.le hlt).trans (hmin_other T hT hTr)
   · refine Or.inr ⟨m, rtail, hmin_m, hcirc, hperm, fun T hT => ?_⟩
     rw [hk]
     by_cases hTr : T.root = v
-    · rw [hTr]; exact not_prioLT_iff_prioLE.mp hnlt
+    · rw [hTr]; exact IndexedMinPQ.not_prioLT_iff_prioLE.mp hnlt
     · exact hmin_other T hT hTr
 
 /-! ## `evalCascGuard` specification -/
@@ -1292,12 +1294,15 @@ theorem cutNode_forest {n K_max base w : ℕ} {s' : IndexedMinPQ.State n} {x : D
     intro T hT
     rcases List.mem_cons.mp hT with rfl | hT_set
     · exact ⟨hvalid_cut.1.weaken_pending (some p), hvalid_cut.2.1, hvalid_cut.2.2⟩
-    · rcases mem_set_exists_idx ts i T' T hT_set with rfl | ⟨j, hj, hji, rfl⟩
-      · exact hvalid_T'
-      · have hcur_not_j : cur ∉ (ts[j]).nodes := fun hm_in =>
-          forestNodes_nodup_idx_disjoint hnd hi hj hji.symm hcur_Ti hm_in
+    · obtain ⟨j, hj_set, rfl⟩ := List.mem_iff_getElem.mp hT_set
+      have hj : j < ts.length := by simpa only [List.length_set] using hj_set
+      by_cases hji : j = i
+      · subst j; simp only [List.getElem_set_self]; exact hvalid_T'
+      · rw [List.getElem_set_ne (Ne.symm hji)]
+        have hcur_not_j : cur ∉ (ts[j]).nodes := fun hm_in =>
+          forestNodes_nodup_idx_disjoint hnd hi hj (Ne.symm hji) hcur_Ti hm_in
         have hp_not_j : p ∉ (ts[j]).nodes := fun hm_in =>
-          forestNodes_nodup_idx_disjoint hnd hi hj hji.symm hp_in_Ti hm_in
+          forestNodes_nodup_idx_disjoint hnd hi hj (Ne.symm hji) hp_in_Ti hm_in
         have hsub_j_none : ValidSubtree st_pre none ts[j] := by
           rcases hpend with rfl | rfl
           · exact (hts ts[j] (List.getElem_mem hj)).1
@@ -1353,10 +1358,13 @@ theorem cutNode_forest {n K_max base w : ℕ} {s' : IndexedMinPQ.State n} {x : D
           (hts ts[i] hi_mem).1.prioLE_of_mem hcur_Ti
         rw [← hk_other (ts[i]).root hcur_ne_Ti_root.symm, ← hk_cur_eq] at hle_pre
         exact hle_Ti.trans hle_pre
-    · rcases mem_set_exists_idx ts i T' T hT_set with rfl | ⟨j, hj, _, rfl⟩
-      · rw [hT'_r]
+    · obtain ⟨j, hj_set, rfl⟩ := List.mem_iff_getElem.mp hT_set
+      have hj : j < ts.length := by simpa only [List.length_set] using hj_set
+      by_cases hji : j = i
+      · subst j; simp only [List.getElem_set_self, hT'_r]
         exact hmin_other ts[i] hi_mem hTi_root_ne_v
-      · exact hmin_other ts[j] (List.getElem_mem hj) hTr_ne
+      · rw [List.getElem_set_ne (Ne.symm hji)] at hTr_ne ⊢
+        exact hmin_other ts[j] (List.getElem_mem hj) hTr_ne
   have hp_tree_ne_v : ∀ T ∈ ts', p ∈ T.nodes → T.root ≠ v := by
     have hT'_mem : T' ∈ ts' :=
       List.mem_cons_of_mem T_cut
@@ -1405,7 +1413,8 @@ private theorem decreaseKeyTail_exec {n base w : ℕ} {x : Data rFib}
        RawState.ofData n base y =
          { st with
            minRoot :=
-             if PrioLT (v, st.key v) (m, st.key m) then v.val + 1 else m.val + 1 }) := by
+             if IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m)
+               then v.val + 1 else m.val + 1 }) := by
   have hfit_stop := hbr.fits_stop hb
   set st := RawState.ofData n base x with hst_def
   have hv_lt := v.isLt
@@ -1451,7 +1460,7 @@ private theorem decreaseKeyTail_exec {n base w : ℕ} {x : Data rFib}
   have he_plt := prioLTFlag_exec (w := w) hbr2 argV argK s1 s2 s3
   dsimp only at he_plt
   rw [hx2_k, hx2_s2, hx2_v, hx2_s1] at he_plt
-  let bval := if PrioLT (v, st.key v) (m, st.key m) then 1 else 0
+  let bval := if IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m) then 1 else 0
   have e4 : ExecWithin w (prioLTFlag argV argK s1 s2 s3) x2 (x2.set s3 bval) 6 := he_plt
   let x3 := x2.set s3 bval
   have hbr3 : BaseRegs n base x3 := hbr2.set_non_base (by decide) bval
@@ -1464,7 +1473,7 @@ private theorem decreaseKeyTail_exec {n base w : ℕ} {x : Data rFib}
   have hx3_o1 : x3.regs oneP = 1 := hbr3.2.2.2.2.2.2.2.2.2.2.2.2
   have hx3_v : x3.regs argV = v.val := by
     simp only [x3, Data.set_regs, Function.update_of_ne (by decide : argV ≠ s3), hx2_v]
-  by_cases hlt : PrioLT (v, st.key v) (m, st.key m)
+  by_cases hlt : IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m)
   · have hc : (Cond.lt zeroP s3).Holds x3 := by
       rw [Cond.Holds, hx3_z0]
       simp only [x3, Data.set_regs, Function.update_self, bval, hlt, ↓reduceIte]
@@ -1685,7 +1694,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
     have hraw_y : FibRawInv n K_max s' (RawState.ofData n base y) := by
       refine hcut_inv3.to_fibRawInv ?_ ?_
       · rw [hsty]; exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
-      · by_cases hlt : PrioLT (v, (RawState.ofData n base x3).key v)
+      · by_cases hlt : IndexedMinPQ.PrioLT (v, (RawState.ofData n base x3).key v)
             (m, (RawState.ofData n base x3).key m)
         · exact Or.inl ⟨hlt, by rw [hsty]; simp only [hlt, ↓reduceIte]⟩
         · exact Or.inr ⟨hlt, by rw [hsty]; simp only [hlt, ↓reduceIte]⟩
@@ -1772,7 +1781,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
     have he_plt_p := prioLTFlag_exec (w := w) hbr4 argV argK pReg s2 s3
     dsimp only at he_plt_p
     rw [hx4_k, hx4_s2, hx4_v, hx4_p] at he_plt_p
-    let bval_p := if PrioLT (v, k) (p₀, st₀.key p₀) then 1 else 0
+    let bval_p := if IndexedMinPQ.PrioLT (v, k) (p₀, st₀.key p₀) then 1 else 0
     have ep_plt : ExecWithin w (prioLTFlag argV argK pReg s2 s3) x4 (x4.set s3 bval_p) 6 :=
       he_plt_p
     let x5 := x4.set s3 bval_p
@@ -1798,7 +1807,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
       simp only [x5, Data.set_regs, Function.update_of_ne (by decide : argK ≠ s3), hx4_k]
     have hx5_p : x5.regs pReg = p₀.val := by
       simp only [x5, Data.set_regs, Function.update_of_ne (by decide : pReg ≠ s3), hx4_p]
-    by_cases hviol : PrioLT (v, k) (p₀, st₀.key p₀)
+    by_cases hviol : IndexedMinPQ.PrioLT (v, k) (p₀, st₀.key p₀)
     · -- Case B2: parent heap order violated (`PrioLT (v, k) (p₀, st₀.key p₀)`) → cut + cascade!
       have hc_viol : (Cond.lt zeroP s3).Holds x5 := by
         rw [Cond.Holds, hx5_z0]
@@ -2298,7 +2307,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
       have hraw_y : FibRawInv n K_max s' (RawState.ofData n base y) := by
         refine hcut_post.to_fibRawInv ?_ ?_
         · rw [hsty]; exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
-        · by_cases hlt : PrioLT (v, (RawState.ofData n base x_post).key v)
+        · by_cases hlt : IndexedMinPQ.PrioLT (v, (RawState.ofData n base x_post).key v)
               (m, (RawState.ofData n base x_post).key m)
           · exact Or.inl ⟨hlt, by rw [hsty]; simp only [hlt, ↓reduceIte]⟩
           · exact Or.inr ⟨hlt, by rw [hsty]; simp only [hlt, ↓reduceIte]⟩
@@ -2342,18 +2351,18 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
       have hmv_ne : m ≠ v := fun e => hpv0 (e ▸ (by
         obtain ⟨R_m, hRm, hm_r⟩ := List.mem_map.mp (hperm₀.subset List.mem_cons_self)
         exact hm_r ▸ (hts₀ R_m hRm).2.1))
-      have hnlt_m : ¬PrioLT (v, (RawState.ofData n base x6).key v)
+      have hnlt_m : ¬IndexedMinPQ.PrioLT (v, (RawState.ofData n base x6).key v)
           (m, (RawState.ofData n base x6).key m) := by
         rw [hst6]
         dsimp only
         rw [Function.update_self, Function.update_of_ne hmv_ne]
-        rw [not_prioLT_iff_prioLE]
+        rw [IndexedMinPQ.not_prioLT_iff_prioLE]
         have hle1 : IndexedMinPQ.PrioLE (m, st₀.key m) (T_rv.root, st₀.key T_rv.root) :=
           hmin_le₀ T_rv hTrv_mem
         have hle2 : IndexedMinPQ.PrioLE (T_rv.root, st₀.key T_rv.root) (p₀, st₀.key p₀) :=
           (hts₀ T_rv hTrv_mem).1.prioLE_of_mem hp₀_in_Trv
         have hle3 : IndexedMinPQ.PrioLE (p₀, st₀.key p₀) (v, k) :=
-          not_prioLT_iff_prioLE.mp hviol
+          IndexedMinPQ.not_prioLT_iff_prioLE.mp hviol
         exact (hle1.trans hle2).trans hle3
       have hsty_eq :
           RawState.ofData n base y = { st₀ with key := Function.update st₀.key v k } := by

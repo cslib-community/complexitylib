@@ -54,18 +54,6 @@ open Cslib.Algorithms.Lean
 
 /-! ## List surgery lemmas for child removal and replacement -/
 
-theorem nodup_eraseIdx_eq_erase {α : Type*} [DecidableEq α] :
-    ∀ (L : List α) (i : ℕ) (hi : i < L.length), L.Nodup → L.eraseIdx i = L.erase (L[i])
-  | [], _, hi, _ => absurd hi (Nat.not_lt_zero _)
-  | _ :: tl, 0, _, _ => by
-    simp only [List.eraseIdx_zero, List.tail_cons, List.getElem_cons_zero, List.erase_cons_head]
-  | a :: tl, i + 1, hi, hnd => by
-    have hi' : i < tl.length := Nat.lt_of_succ_lt_succ hi
-    have ha_ne : ¬(a == tl[i]) = true :=
-      mt beq_iff_eq.mp fun e => (List.nodup_cons.mp hnd).1 (e ▸ List.getElem_mem hi')
-    simp only [List.eraseIdx_cons_succ, List.getElem_cons_succ, List.erase_cons_tail ha_ne]
-    rw [nodup_eraseIdx_eq_erase tl i hi' (List.nodup_cons.mp hnd).2]
-
 theorem map_root_nodup {n : ℕ} {cs : List (FHTree n)} (hnd : (forestNodes cs).Nodup) :
     (cs.map FHTree.root).Nodup := by
   induction cs with
@@ -92,38 +80,14 @@ theorem forestNodes_nodup_idx_disjoint {n : ℕ} {cs : List (FHTree n)}
     exact hij ((List.Nodup.getElem_inj_iff hnd_roots).mp hget)
   exact forestNodes_nodup_disjoint hnd (List.getElem_mem hi) (List.getElem_mem hj) hne_tree hxi hxj
 
-theorem mem_eraseIdx_exists_idx {α : Type*} :
-    ∀ (L : List α) (i : ℕ) (x : α),
-      x ∈ L.eraseIdx i → ∃ (j : ℕ) (hj : j < L.length), j ≠ i ∧ L[j] = x
-  | [], _, _, h => absurd h List.not_mem_nil
-  | _ :: tl, 0, x, h => by
-    simp only [List.eraseIdx_zero] at h
-    obtain ⟨k, hk, rfl⟩ := List.mem_iff_getElem.mp h
-    exact ⟨k + 1, Nat.succ_lt_succ hk, Nat.succ_ne_zero k, rfl⟩
-  | a :: tl, i + 1, x, h => by
-    simp only [List.eraseIdx_cons_succ] at h
-    rcases List.mem_cons.mp h with rfl | htl
-    · exact ⟨0, Nat.zero_lt_succ _, (Nat.succ_ne_zero i).symm, rfl⟩
-    · obtain ⟨k, hk, hki, rfl⟩ := mem_eraseIdx_exists_idx tl i x htl
-      exact ⟨k + 1, Nat.succ_lt_succ hk, fun e => hki (Nat.succ.inj e), rfl⟩
-
-theorem mem_set_exists_idx {α : Type*} :
-    ∀ (L : List α) (i : ℕ) (v x : α),
-      x ∈ L.set i v → x = v ∨ ∃ (j : ℕ) (hj : j < L.length), j ≠ i ∧ L[j] = x
-  | [], _, _, _, h => absurd h List.not_mem_nil
-  | _ :: tl, 0, v, x, h => by
-    simp only [List.set_cons_zero] at h
-    rcases List.mem_cons.mp h with rfl | htl
-    · exact Or.inl rfl
-    · obtain ⟨k, hk, rfl⟩ := List.mem_iff_getElem.mp htl
-      exact Or.inr ⟨k + 1, Nat.succ_lt_succ hk, Nat.succ_ne_zero k, rfl⟩
-  | a :: tl, i + 1, v, x, h => by
-    simp only [List.set_cons_succ] at h
-    rcases List.mem_cons.mp h with rfl | htl
-    · exact Or.inr ⟨0, Nat.zero_lt_succ _, (Nat.succ_ne_zero i).symm, rfl⟩
-    · rcases mem_set_exists_idx tl i v x htl with rfl | ⟨k, hk, hki, rfl⟩
-      · exact Or.inl rfl
-      · exact Or.inr ⟨k + 1, Nat.succ_lt_succ hk, fun e => hki (Nat.succ.inj e), rfl⟩
+private theorem mem_set_exists_idx {α : Type*} (L : List α) (i : ℕ) (v x : α)
+    (h : x ∈ L.set i v) :
+    x = v ∨ ∃ (j : ℕ) (hj : j < L.length), j ≠ i ∧ L[j] = x := by
+  obtain ⟨j, hj, rfl⟩ := List.mem_iff_getElem.mp h
+  rw [List.length_set] at hj
+  by_cases hji : j = i
+  · subst hji; left; simp
+  · right; refine ⟨j, hj, hji, ?_⟩; simp [List.getElem_set_ne (Ne.symm hji)]
 
 theorem forestNodes_eraseIdx_perm {n : ℕ} :
     ∀ (cs : List (FHTree n)) (i : ℕ) (hi : i < cs.length),
@@ -393,11 +357,11 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
                 simp only [List.length_map]; exact hi
               have hget_m : (cs.map FHTree.root)[i]'hlen_m = cur := by
                 simp only [List.getElem_map, hroot_eq]
-              rw [nodup_eraseIdx_eq_erase _ i hlen_m (map_root_nodup hnd_cs), hget_m]
+              rw [← (map_root_nodup hnd_cs).erase_getElem i hlen_m, hget_m]
             exact Or.inr ⟨r, rest, hch_u', hcirc',
               hperm_er.trans (hmap_er ▸ hperm.erase cur)⟩
       · intro T_c hTc
-        obtain ⟨j, hj, hji, rfl⟩ := mem_eraseIdx_exists_idx cs i T_c hTc
+        obtain ⟨j, hj, hji, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hTc
         have hr_ne_cur : (cs[j]).root ≠ cur := fun e =>
           forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm
             (hroot_eq ▸ (cs[i]).root_mem_nodes) (e ▸ (cs[j]).root_mem_nodes)
@@ -406,7 +370,7 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
             (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, (cs[j]).root_mem_nodes⟩)
         exact (hpar'.2 (cs[j]).root hr_in hr_ne_cur).trans (hpar cs[j] (List.getElem_mem hj))
       · intro T_c hTc
-        obtain ⟨j, hj, _, rfl⟩ := mem_eraseIdx_exists_idx cs i T_c hTc
+        obtain ⟨j, hj, _, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hTc
         have hr_in : (cs[j]).root ∈ (FHTree.node u cs).nodes :=
           List.mem_cons_of_mem u
             (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, (cs[j]).root_mem_nodes⟩)
@@ -453,7 +417,7 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
           rw [hdeg'.2 (cs[j + 1]).root hr_in hr_ne_u, hmark'.2 (cs[j + 1]).root hr_in hr_ne_cur]
           omega
       · intro T_c hTc
-        obtain ⟨j, hj, hji, rfl⟩ := mem_eraseIdx_exists_idx cs i T_c hTc
+        obtain ⟨j, hj, hji, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hTc
         have hcur_not_cj : cur ∉ (cs[j]).nodes := fun hm =>
           forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm hx_in_cw hm
         have hu_not_cj : u ∉ (cs[j]).nodes := fun hm =>

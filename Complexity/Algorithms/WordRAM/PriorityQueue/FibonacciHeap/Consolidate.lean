@@ -20,7 +20,8 @@ This file proves the correctness, memory-safety, and `O(log n)` amortized instru
   currently stored in `cons[0..maxDeg]`, maintaining pairwise-distinct degrees, `maxDeg ≤
   2 * Nat.log 2 n + 1`, and zeroing of all unoccupied entries `cons[d]` (`d ≤ n`).
 * **Root scattering (`scatterRootCode_exec`):** Repeatedly links equal-degree roots via
-  `ValidRoot.link` under lexicographic `PrioLT` using internal potential `50 * slotTrees.length`,
+  `ValidRoot.link` under lexicographic `IndexedMinPQ.PrioLT` using internal potential
+  `50 * slotTrees.length`,
   executing in `t + 50 * slotTrees'.length ≤ 63 + 50 * slotTrees.length` steps while framing all
   other live nodes.
 * **Minimum extraction (`extractMinCode_exec`):** Removes `z = minRoot - 1` (agreeing with
@@ -121,7 +122,7 @@ private theorem nodup_eraseIdx {α : Type*} :
     rw [List.eraseIdx_cons_succ, List.nodup_cons]
     refine ⟨?_, nodup_eraseIdx i htl⟩
     intro hm
-    obtain ⟨j, hj, _, rfl⟩ := mem_eraseIdx_exists_idx tl i a hm
+    obtain ⟨j, hj, _, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hm
     exact ha (List.getElem_mem hj)
 
 private theorem map_eraseIdx_eq {α β : Type*} (f : α → β) :
@@ -193,7 +194,7 @@ theorem SlotInv.lookup {n maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHT
     refine ⟨i, hi, hT_deg, hT_deg ▸ hhit slotTrees[i] (List.getElem_mem hi),
       length_eraseIdx_add_one slotTrees i hi, ?_⟩
     intro R hR hR_deg
-    obtain ⟨j, hj, hji, rfl⟩ := mem_eraseIdx_exists_idx slotTrees i R hR
+    obtain ⟨j, hj, hji, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hR
     have hget : (slotTrees.map FHTree.deg)[j]'(by simp only [List.length_map]; exact hj) =
         (slotTrees.map FHTree.deg)[i]'(by simp only [List.length_map]; exact hi) := by
       simp only [List.getElem_map, hR_deg, hT_deg]
@@ -230,10 +231,10 @@ theorem SlotInv.step_collision {n maxDeg : ℕ} {st st' : RawState n} {slotTrees
   obtain ⟨hnd, htr, hhit, hemp, hmd1, hmd2⟩ := hs
   refine ⟨by rw [map_eraseIdx_eq]; exact nodup_eraseIdx i hnd, ?_, ?_, ?_, hmd1, hmd2⟩
   · intro R hR
-    obtain ⟨j, hj, _, rfl⟩ := mem_eraseIdx_exists_idx slotTrees i R hR
+    obtain ⟨j, hj, _, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hR
     exact ⟨hvalid' _ hR, (htr _ (List.getElem_mem hj)).2⟩
   · intro R hR
-    obtain ⟨j, hj, _, hR_eq⟩ := mem_eraseIdx_exists_idx slotTrees i R hR
+    obtain ⟨j, hj, _, hR_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hR
     rw [hcons', Function.update_of_ne (hno_other R hR)]
     exact hR_eq ▸ hhit _ (List.getElem_mem hj)
   · intro d' hd' hnone'
@@ -353,7 +354,8 @@ private abbrev scatterBody : Code .exact rFib :=
   ]
 
 /-- Single collision step of `scatterRootCode`: clears `cons[curD]`, orders `T_cur` (`s4`) and
-`T_slot` (`s5`) under `PrioLT`, links the loser as newest child of the winner via `ValidRoot.link`,
+`T_slot` (`s5`) under `IndexedMinPQ.PrioLT`, links the loser as newest child of the winner via
+`ValidRoot.link`,
 advances `curD` to `curD + 1`, and decreases `slotTrees.length` by `1` in `≤ 43` steps. -/
 private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
     {T_cur : FHTree n} {slotTrees : List (FHTree n)} {otherNodes : List (Fin n)} {z : Fin n}
@@ -520,7 +522,7 @@ private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
   have he_plt := prioLTFlag_exec (w := w) hbr2_pre s5 s2 s4 s1 s6
   dsimp only at he_plt
   rw [ha2_s2, ha2_s1, ha2_s5, ha2_s4] at he_plt
-  let bflag := if PrioLT (u5, st.key u5) (u4, st.key u4) then 1 else 0
+  let bflag := if IndexedMinPQ.PrioLT (u5, st.key u5) (u4, st.key u4) then 1 else 0
   let a2 := a2_pre.set s6 bflag
   have e2_5 : ExecWithin w (prioLTFlag s5 s2 s4 s1 s6) a2_pre a2 6 := he_plt
   have hb2 : a2.Bounded w := e2_5.bounded hb2_pre
@@ -541,7 +543,7 @@ private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
       (∀ r : Fin rFib, r.val < 35 → a3.regs r = a.regs r) ∧
       ValidRoot st none T₁ ∧ ValidRoot st none T₂ ∧
       T₁.deg = curD ∧ T₂.deg = curD ∧
-      PrioLT (T₁.root, st.key T₁.root) (T₂.root, st.key T₂.root) ∧
+      IndexedMinPQ.PrioLT (T₁.root, st.key T₁.root) (T₂.root, st.key T₂.root) ∧
       (T₁.nodes ++ T₂.nodes).Perm (T_cur.nodes ++ T_slot.nodes) ∧
       a3.regs s4 = T₁.root.val ∧ a3.regs s5 = T₂.root.val := by
     have hz_a2 : a2.regs zeroP = 0 := hbr2.2.2.2.2.2.2.2.2.2.2.2.1
@@ -556,7 +558,7 @@ private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
         Function.update_of_ne (ne_of s0 (by decide)),
         Function.update_of_ne (ne_of s1 (by decide)),
         Function.update_of_ne (ne_of s5 (by decide))]
-    by_cases hlt54 : PrioLT (u5, st.key u5) (u4, st.key u4)
+    by_cases hlt54 : IndexedMinPQ.PrioLT (u5, st.key u5) (u4, st.key u4)
     · have hc_sw : (Cond.lt zeroP s6).Holds a2 := by
         rw [Cond.Holds, hz_a2]
         simp only [a2, Data.set_regs, Function.update_self, bflag, hlt54, ↓reduceIte]
@@ -611,8 +613,8 @@ private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
             (.seq (.op (.copy s6 s4)) (.seq (.op (.copy s4 s5)) (.op (.copy s5 s6))))
             (.op (.copy s0 zeroP))) a2 a3 4 :=
         (ExecWithin.branch_neg hc_sw c0).mono (by omega)
-      have hlt45 : PrioLT (u4, st.key u4) (u5, st.key u5) :=
-        (prioLT_or_prioLT_of_ne hu4_ne_u5 (st.key u4) (st.key u5)).resolve_right hlt54
+      have hlt45 : IndexedMinPQ.PrioLT (u4, st.key u4) (u5, st.key u5) :=
+        (IndexedMinPQ.prioLT_or_prioLT_of_ne hu4_ne_u5 (st.key u4) (st.key u5)).resolve_right hlt54
       refine ⟨T_cur, T_slot, a3, he_sw, he_sw.bounded hb2, hbr2.set_non_base (by decide) 0,
         rfl, (ofData_set_scratch a2 (by decide : 17 ≤ s0.val) 0).trans hst2, ?_,
         hT_cur, hT_slot, hcur_deg, hslot_deg, hlt45, List.Perm.refl _, ?_, ?_⟩
@@ -1156,7 +1158,7 @@ private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
   have hs6 : SlotInv n (RawState.ofData n base a6) slotTrees' maxDeg := by
     rw [hst6]
     refine hs.step_collision hidx hslot_deg hd_le_n hno_other hco5 fun R hR => ?_
-    obtain ⟨j, hj, _, hR_eq⟩ := mem_eraseIdx_exists_idx slotTrees idx R hR
+    obtain ⟨j, hj, _, hR_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hR
     have hR_st : ValidRoot st none R := (hs.2.1 R (hR_eq ▸ List.getElem_mem hj)).1
     refine hR_st.frame_nodes fun u hu => ?_
     have hu_out : u ∉ T₁.nodes ++ T₂.nodes :=
@@ -1524,7 +1526,7 @@ private theorem extract_tree_by_root {n : ℕ} {cs : List (FHTree n)} {u : Fin n
   refine ⟨i, hi, hT_root, ?_, forestNodes_eraseIdx_perm cs i hi⟩
   have hnd_map : (cs.map FHTree.root).Nodup := map_root_nodup hnd
   have hi_map : i < (cs.map FHTree.root).length := by simp only [List.length_map]; exact hi
-  rw [map_eraseIdx_eq, nodup_eraseIdx_eq_erase _ i hi_map hnd_map, List.getElem_map, hT_root]
+  rw [map_eraseIdx_eq, ← hnd_map.erase_getElem i hi_map, List.getElem_map, hT_root]
   simpa only [List.erase_cons_head] using hperm.erase u
 
 private theorem perm_reassoc_mid {α : Type*} (A B C D : List α) :
@@ -1934,7 +1936,7 @@ private theorem scatterChildrenLoop_exec {n base w : ℕ}
       rw [hst_next]; exact hs_sc
     have hsub_next : ∀ c ∈ c_rest, ValidSubtree (RawState.ofData n base a_next) none c := by
       intro c hc_mem
-      obtain ⟨j, hj, _, hc_eq⟩ := mem_eraseIdx_exists_idx c_trees idx c hc_mem
+      obtain ⟨j, hj, _, hc_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hc_mem
       have hc_sub : ValidSubtree st none c := hc_eq ▸ hsub _ (List.getElem_mem hj)
       rw [hst_next]
       refine hc_sub.frame (fun x hx => ?_) (fun x hx => ?_)
@@ -2173,7 +2175,7 @@ private theorem scatterRootsLoop_exec {n base w : ℕ}
         hnd_sc
     have hroots_next : ∀ R ∈ r_rest, ValidRoot (RawState.ofData n base a_next) none R := by
       intro R hR_mem
-      obtain ⟨j, hj, _, hR_eq⟩ := mem_eraseIdx_exists_idx r_trees idx R hR_mem
+      obtain ⟨j, hj, _, hR_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hR_mem
       have hR_val : ValidRoot st none R := hR_eq ▸ hroots _ (List.getElem_mem hj)
       rw [hst_next]
       refine hR_val.frame_nodes fun x hx => ?_
@@ -2704,7 +2706,7 @@ private theorem gatherSlotsLoop_exec {n base w maxDeg : ℕ} (hn_pos : 1 ≤ n)
         rw [hst5]
         refine hs.step_collision hidx hslot_deg hd_le_n hno_other
           (by rw [hcons4, hst3]) fun R hR => ?_
-        obtain ⟨j, hj, _, hR_eq⟩ := mem_eraseIdx_exists_idx slotTrees idx R hR
+        obtain ⟨j, hj, _, hR_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hR
         have hR_st : ValidRoot st none R := hR_eq ▸ (hs.2.1 _ (List.getElem_mem hj)).1
         refine hR_st.frame_tree
           (fun w' _ => ⟨by rw [hin4, hst3], by rw [hmk4, hst3], by rw [hd4, hst3],
@@ -2724,7 +2726,7 @@ private theorem gatherSlotsLoop_exec {n base w maxDeg : ℕ} (hn_pos : 1 ≤ n)
       have hcleared5 : ∀ d < curD + 1, ∀ R ∈ slotRest, R.deg ≠ d := by
         intro d hd R hR
         rcases Nat.lt_succ_iff_lt_or_eq.mp hd with hlt | rfl
-        · obtain ⟨j, hj, _, rfl⟩ := mem_eraseIdx_exists_idx slotTrees idx R hR
+        · obtain ⟨j, hj, _, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hR
           exact hcleared d hlt _ (List.getElem_mem hj)
         · exact hno_other R hR
       obtain ⟨b, finalRoots, t_tl, he_tl, ht_tl, hb_b, hbr_b, hmod_tl, hregs_tl,
@@ -3276,7 +3278,7 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
         (perm_swap_front (forestNodes slotTrees_1) (forestNodes r_trees) [z]).nodup_iff.mp hnd_A1
       have hroots_tr : ∀ R ∈ r_trees, ValidRoot (RawState.ofData n base x_tr) none R := by
         intro R hR
-        obtain ⟨j, hj, _, hR_eq⟩ := mem_eraseIdx_exists_idx ts idx_z R hR
+        obtain ⟨j, hj, _, hR_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hR
         have hR_st : ValidRoot st none R := hR_eq ▸ hroots _ (List.getElem_mem hj)
         rw [hst_tr]
         refine hR_st.frame_nodes fun u hu => ?_

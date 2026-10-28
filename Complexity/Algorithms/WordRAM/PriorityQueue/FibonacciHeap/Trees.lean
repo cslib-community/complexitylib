@@ -313,7 +313,7 @@ inductive ValidSubtree {n : ℕ} (st : RawState n) (pending : Option (Fin n)) : 
           IsCircList st.left st.right (h :: tail) ∧
           (h :: tail).Perm (cs.map FHTree.root)))
       (hpar : ∀ T ∈ cs, st.par T.root = u.val + 1)
-      (hprio : ∀ T ∈ cs, PrioLT (u, st.key u) (T.root, st.key T.root))
+      (hprio : ∀ T ∈ cs, IndexedMinPQ.PrioLT (u, st.key u) (T.root, st.key T.root))
       (hrank : ∀ (i : ℕ) (hi : i < cs.length),
         i ≤ st.deg (cs[i]).root + st.mark (cs[i]).root +
           (if some (cs[i]).root = pending then 1 else 0))
@@ -390,7 +390,7 @@ theorem ValidSubtree.clear_pending {n : ℕ} {st : RawState n} {z : Fin n} {T : 
 
 theorem ValidSubtree.prioLT_of_mem_children {n : ℕ} {st : RawState n} {pending : Option (Fin n)}
     {T : FHTree n} (hT : ValidSubtree st pending T) :
-    ∀ x ∈ forestNodes T.children, PrioLT (T.root, st.key T.root) (x, st.key x) := by
+    ∀ x ∈ forestNodes T.children, IndexedMinPQ.PrioLT (T.root, st.key T.root) (x, st.key x) := by
   induction hT with
   | @mk u cs _ _ _ _ _ hprio _ _ ih =>
     intro x hx
@@ -398,7 +398,7 @@ theorem ValidSubtree.prioLT_of_mem_children {n : ℕ} {st : RawState n} {pending
     cases hc_eq : c with
     | node w cs_w =>
       rw [hc_eq] at hc hxc
-      have hlt_uw : PrioLT (u, st.key u) (w, st.key w) := hprio (.node w cs_w) hc
+      have hlt_uw : IndexedMinPQ.PrioLT (u, st.key u) (w, st.key w) := hprio (.node w cs_w) hc
       rcases List.mem_cons.mp hxc with rfl | hdesc
       · exact hlt_uw
       · exact hlt_uw.trans (ih (.node w cs_w) hc x hdesc)
@@ -505,12 +505,12 @@ theorem link_nodes_eq {n : ℕ} (u : Fin n) (cs₁ : List (FHTree n)) (T₂ : FH
   simp only [FHTree.nodes, forestNodes_append, forestNodes, List.append_nil, List.cons_append]
 
 /-- Linking an equal-degree root tree `T₂` as the newest child of `T₁` preserves `ValidRoot`
-when `(T₁.root, key₁)` strictly precedes `(T₂.root, key₂)` under `PrioLT`. -/
+when `(T₁.root, key₁)` strictly precedes `(T₂.root, key₂)` under `IndexedMinPQ.PrioLT`. -/
 theorem ValidRoot.link {n : ℕ} {st st' : RawState n} {T₁ T₂ : FHTree n}
     (h₁ : ValidRoot st none T₁) (h₂ : ValidRoot st none T₂)
     (hnd : (T₁.nodes ++ T₂.nodes).Nodup)
     (hdeg_eq : T₁.deg = T₂.deg)
-    (hprio_lt : PrioLT (T₁.root, st.key T₁.root) (T₂.root, st.key T₂.root))
+    (hprio_lt : IndexedMinPQ.PrioLT (T₁.root, st.key T₁.root) (T₂.root, st.key T₂.root))
     (hunch : ∀ x ∈ T₁.nodes ++ T₂.nodes,
       st'.inHeap x = st.inHeap x ∧ st'.mark x = st.mark x ∧ st'.key x = st.key x)
     (hdeg' : st'.deg T₁.root = T₁.deg + 1 ∧

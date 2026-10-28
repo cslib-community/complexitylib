@@ -22,20 +22,16 @@ This file develops the pure-Lean invariants and structural lemmas underlying the
 Word-RAM Fibonacci heap [Fredman and Tarjan][FredmanTarjan1987]
 [Cormen et al., Chapter 19][CLRS2009]:
 
-1. **Strict lexicographic priority order (`PrioLT`):** Compares `(handle, key)` pairs by key first
-   and handle index second, matching `IndexedMinPQ.PrioLE` on distinct handles.
-2. **Circular doubly-linked lists (`ChainLinks`, `IsCircList`):** Pointer-level invariants over
+1. **Circular doubly-linked lists (`ChainLinks`, `IsCircList`):** Pointer-level invariants over
    `Fin n → ℕ` supporting `O(1)` singleton creation, post-head insertion, cyclic rotation, arbitrary
    node removal, and disjoint-support framing without modular index arithmetic.
-3. **Pure-`ℕ` Fibonacci rank and degree bound:** Proves the sum identity
+2. **Pure-`ℕ` Fibonacci rank and degree bound:** Proves the sum identity
    `1 + ∑_{i < k} fib ((i - 1) + 2) = fib (k + 2)` and `2 ^ m ≤ fib (2 * m + 2)`, deriving
    `d ≤ 2 * Nat.log 2 n + 1` from `fib (d + 2) ≤ n` without real numbers or floating-point
    logarithms.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.PrioLT`: strict `(key, handle)` priority
-  order on `Fin n × ℕ`.
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.ChainLinks`, `IsCircList`: pointer-level
   invariants for circular doubly-linked lists over `Fin n → ℕ`.
 
@@ -60,71 +56,6 @@ Word-RAM Fibonacci heap [Fredman and Tarjan][FredmanTarjan1987]
 namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
 
 open Cslib.Algorithms.Lean
-
-/-! ## Strict lexicographic `(key, handle)` ordering -/
-
-/-- Strict lexicographic priority comparison on `(handle, key)` pairs: smaller key first, breaking
-equal-key ties by strictly smaller handle index. -/
-def PrioLT {n : ℕ} (a b : Fin n × ℕ) : Prop :=
-  a.2 < b.2 ∨ (a.2 = b.2 ∧ a.1.val < b.1.val)
-
-instance instDecidablePrioLT {n : ℕ} (a b : Fin n × ℕ) : Decidable (PrioLT a b) :=
-  inferInstanceAs (Decidable (_ ∨ _))
-
-/-- Irreflexivity of `PrioLT`. -/
-theorem PrioLT.irrefl {n : ℕ} (a : Fin n × ℕ) : ¬PrioLT a a := by
-  dsimp only [PrioLT]
-  omega
-
-/-- Transitivity of `PrioLT`. -/
-theorem PrioLT.trans {n : ℕ} {a b c : Fin n × ℕ} (hab : PrioLT a b) (hbc : PrioLT b c) :
-    PrioLT a c := by
-  dsimp only [PrioLT] at hab hbc ⊢
-  omega
-
-/-- Asymmetry of `PrioLT`. -/
-theorem PrioLT.asymm {n : ℕ} {a b : Fin n × ℕ} (hab : PrioLT a b) : ¬PrioLT b a := by
-  intro hba
-  exact PrioLT.irrefl a (hab.trans hba)
-
-/-- `PrioLT` implies `IndexedMinPQ.PrioLE`. -/
-theorem PrioLT.le {n : ℕ} {a b : Fin n × ℕ} (h : PrioLT a b) : IndexedMinPQ.PrioLE a b := by
-  dsimp only [PrioLT] at h
-  dsimp only [IndexedMinPQ.PrioLE]
-  omega
-
-/-- `PrioLT` mixed with `PrioLE` on the left. -/
-theorem PrioLT.of_le_of_lt {n : ℕ} {a b c : Fin n × ℕ}
-    (hab : IndexedMinPQ.PrioLE a b) (hbc : PrioLT b c) : PrioLT a c := by
-  dsimp only [IndexedMinPQ.PrioLE] at hab
-  dsimp only [PrioLT] at hbc ⊢
-  omega
-
-/-- `PrioLT` mixed with `PrioLE` on the right. -/
-theorem PrioLT.of_lt_of_le {n : ℕ} {a b c : Fin n × ℕ}
-    (hab : PrioLT a b) (hbc : IndexedMinPQ.PrioLE b c) : PrioLT a c := by
-  dsimp only [PrioLT] at hab ⊢
-  dsimp only [IndexedMinPQ.PrioLE] at hbc
-  omega
-
-/-- Negation of `PrioLT` is reverse `PrioLE`. -/
-theorem not_prioLT_iff_prioLE {n : ℕ} {a b : Fin n × ℕ} :
-    ¬PrioLT a b ↔ IndexedMinPQ.PrioLE b a := by
-  dsimp only [PrioLT, IndexedMinPQ.PrioLE]
-  omega
-
-/-- Any two pairs with distinct handles are strictly comparable under `PrioLT`. -/
-theorem prioLT_or_prioLT_of_ne {n : ℕ} {u v : Fin n} (huv : u ≠ v) (ku kv : ℕ) :
-    PrioLT (u, ku) (v, kv) ∨ PrioLT (v, kv) (u, ku) := by
-  have hval : u.val ≠ v.val := fun h => huv (Fin.ext h)
-  dsimp only [PrioLT]
-  omega
-
-/-- Lowering the key of a handle preserves or improves its priority. -/
-theorem prioLE_of_key_le {n : ℕ} (v : Fin n) {k k₀ : ℕ} (hk : k ≤ k₀) :
-    IndexedMinPQ.PrioLE (v, k) (v, k₀) := by
-  dsimp only [IndexedMinPQ.PrioLE]
-  omega
 
 /-! ## Circular doubly-linked lists over `Fin n` -/
 

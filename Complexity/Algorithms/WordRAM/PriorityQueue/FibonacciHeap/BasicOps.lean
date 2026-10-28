@@ -63,7 +63,7 @@ theorem owns_cons_addr {n base d : ℕ} (hd : d ≤ n) :
 /-! ## Shared primitives: `prioLTFlag`, `insertIntoNonEmptyList`, `addRootAndUpdateMin` -/
 
 /-- `prioLTFlag uReg kuReg vReg kvReg flagReg` sets `flagReg ← 1` iff `(u, ku)` strictly precedes
-`(v, kv)` under `PrioLT`, and `0` otherwise, within `6` instructions. -/
+`(v, kv)` under `IndexedMinPQ.PrioLT`, and `0` otherwise, within `6` instructions. -/
 theorem prioLTFlag_exec {n base w : ℕ} {x : Data rFib} (hbr : BaseRegs n base x)
     (uReg kuReg vReg kvReg flagReg : Fin rFib) :
     let ltProp := x.regs kuReg < x.regs kvReg ∨
@@ -297,7 +297,8 @@ theorem addRootAndUpdateMin_preserves {r uReg : Fin rFib}
       hnr.symm, not_false_eq_true]
 
 /-- `addRootAndUpdateMin uReg` appends a new valid root tree `T_u` (`T_u.root = u`) to the root
-circular list `ts`, updating `minRootReg` under `PrioLT` and incrementing `numRootsReg` in `≤ 28`
+circular list `ts`, updating `minRootReg` under `IndexedMinPQ.PrioLT` and incrementing
+`numRootsReg` in `≤ 28`
 instructions while preserving `ValidRoot` across `T_u :: ts`. -/
 theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
     (hb : x.Bounded w) (hbr : BaseRegs n base x)
@@ -563,7 +564,7 @@ theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
     have he_plt := prioLTFlag_exec (w := w) hbr4 uReg s3 s1 s4 s5
     dsimp only at he_plt
     rw [hx4_s3, hx4_s4, hx4_u, hx4_s1] at he_plt
-    let bval := if PrioLT (u, st.key u) (m, st.key m) then 1 else 0
+    let bval := if IndexedMinPQ.PrioLT (u, st.key u) (m, st.key m) then 1 else 0
     have he_plt' : ExecWithin w (prioLTFlag uReg s3 s1 s4 s5) x4 (x4.set s5 bval) 6 := he_plt
     let x5 := x4.set s5 bval
     have hbr5 : BaseRegs n base x5 := hbr4.set_non_base (by decide) bval
@@ -602,7 +603,7 @@ theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
     have hperm_new : (m :: u :: rtail).Perm ((T_u :: ts).map FHTree.root) := by
       simp only [List.map, hu_root]
       exact (List.Perm.swap u m rtail).trans (List.Perm.cons u hperm)
-    by_cases hlt : PrioLT (u, st.key u) (m, st.key m)
+    by_cases hlt : IndexedMinPQ.PrioLT (u, st.key u) (m, st.key m)
     · have hc_b : (Cond.lt zeroP s5).Holds x5 := by
         simp only [Cond.Holds]
         rw [hx5_z]
@@ -667,7 +668,7 @@ theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
         rw [hk7]
         rcases List.mem_cons.mp hT with rfl | hT_ts
         · rw [hu_root]; exact IndexedMinPQ.PrioLE.refl _
-        · exact (PrioLT.le hlt).trans (hmin_le T hT_ts)
+        · exact (IndexedMinPQ.PrioLT.le hlt).trans (hmin_le T hT_ts)
     · have hc_b : ¬(Cond.lt zeroP s5).Holds x5 := by
         simp only [Cond.Holds]
         rw [hx5_z]
@@ -720,7 +721,7 @@ theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
       intro T hT
       rw [hk7]
       rcases List.mem_cons.mp hT with rfl | hT_ts
-      · rw [hu_root]; exact not_prioLT_iff_prioLE.mp hlt
+      · rw [hu_root]; exact IndexedMinPQ.not_prioLT_iff_prioLE.mp hlt
       · exact hmin_le T hT_ts
 
 /-! ## `allocSpan`, `initSetup`, and `incCur` -/

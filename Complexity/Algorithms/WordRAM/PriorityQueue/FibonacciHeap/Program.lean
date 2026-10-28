@@ -242,8 +242,9 @@ def insertIntoNonEmptyList (hReg uReg : Fin rFib) : Code .exact rFib :=
     *s0 ← uReg
   ]
 
-/-- Insert root `uReg` into the root circular list, update `minRootReg` under `PrioLT`, and
-increment `numRootsReg`. Writes only `s0..s5, minRootReg, numRootsReg`. -/
+/-- Insert root `uReg` into the root circular list, update `minRootReg` under
+`IndexedMinPQ.PrioLT`, and increment `numRootsReg`. Writes only `s0..s5, minRootReg, numRootsReg`.
+-/
 def addRootAndUpdateMin (uReg : Fin rFib) : Code .exact rFib :=
   ram_exact[
     if minRootReg = zeroP then [
@@ -371,7 +372,7 @@ def evalCascGuard : Code .exact rFib :=
   ]
 
 /-- `decreaseKey v k`: lowers `key[argV] ← argK`, cuts `argV` and runs cascading cuts if parent
-order under `PrioLT` is violated, and updates `minRootReg`. -/
+order under `IndexedMinPQ.PrioLT` is violated, and updates `minRootReg`. -/
 def decreaseKeyCode : Code .exact rFib :=
   ram_exact[
     s0 ← baseReg + argV;
@@ -422,8 +423,8 @@ def decreaseKeyCode : Code .exact rFib :=
     ]
   ]
 
-/-- Scatter root `iterCur` into `cons`, linking equal-degree roots under `PrioLT` until reaching an
-empty slot and updating `maxDegReg`. Writes only `s0..s6, curDReg, maxDegReg`. -/
+/-- Scatter root `iterCur` into `cons`, linking equal-degree roots under `IndexedMinPQ.PrioLT`
+until reaching an empty slot and updating `maxDegReg`. Writes only `s0..s6, curDReg, maxDegReg`. -/
 def scatterRootCode : Code .exact rFib :=
   ram_exact[
     s4 ← iterCur;
