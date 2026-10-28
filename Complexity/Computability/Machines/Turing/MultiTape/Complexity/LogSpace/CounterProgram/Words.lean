@@ -8,9 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 
 /-!
 # Word and list operations with counters, in logarithmic space
@@ -27,7 +27,8 @@ length, so that they are not finite-state transductions:
 Each program reads the length `n` of the framed first component and the unary second component
 into registers (`headerCode`), and keeps its registers below the input length, so it computes its
 function in logarithmic space by `Turing.CounterProgram.computableInLogSpace_of_reachesOut`.
-None of this uses logarithmic-space composition.
+None of this uses logarithmic-space composition, apart from the `fun_prop` forms at the end.
+The rules of `LogSpace/Words` are imported publicly, so that `fun_prop` has the full rule set.
 
 ## Main definitions
 

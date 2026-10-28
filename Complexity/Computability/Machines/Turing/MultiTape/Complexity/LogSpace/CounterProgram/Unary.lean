@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Words
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Bitwise

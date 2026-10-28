@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 
 /-!
 # Tests for unary arithmetic in logarithmic space
@@ -24,6 +23,11 @@ open Turing Turing.MultiTapeTM
 
 /-- A polynomial with a truncated difference, in unary. -/
 example : ComputableInLogSpace (fun p : ℕ × ℕ => p.1 * p.1 + (p.2 - p.1))
+    (encPair encUnary encUnary) encUnary := by
+  fun_prop
+
+/-- A constant factor on the left, by `unaryMul` with a constant. -/
+example : ComputableInLogSpace (fun p : ℕ × ℕ => 3 * p.1 + p.2 * 2)
     (encPair encUnary encUnary) encUnary := by
   fun_prop
 
