@@ -131,9 +131,6 @@ families and full-input native runtime.
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation; SIS for
   general moduli; module SIS and module LWE toward Dilithium-style schemes, as theory.
-- **Symmetric:** the Naor–Reingold PRF from DDH (efficient lazy-sampling
-  reduction and `PseudorandomFunction` bridge; algebraic/tree evaluation and distributional
-  prefix-hybrid bound landed) ([#1093]).
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -513,7 +510,6 @@ not planned, not as proved.
 [#1002]: https://github.com/cslib-community/complexitylib/issues/1002
 [#1047]: https://github.com/cslib-community/complexitylib/issues/1047
 [#1079]: https://github.com/cslib-community/complexitylib/issues/1079
-[#1093]: https://github.com/cslib-community/complexitylib/issues/1093
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155

@@ -58,8 +58,8 @@ Following Boneh–Shoup Exercises 10.4, 10.8, 10.11, and 4.18, we formalize:
      (which samples the $2^k$-entry prefix table `BitString k`) and adjacent-hop bound
      `advantage_naorReingoldHybridGame_succ_le`, the $n$-hybrid sum bound
      `advantage_naorReingold_le_sum`, and the common-bound corollary `advantage_naorReingold_le_mul`
-     ($\le n \cdot (\varepsilon + 1 / q)$). The efficient lazy-sampling reduction (`IsOraclePPT` /
-     `PseudorandomFunction` bridge) remains open in #1093.
+     ($\le n \cdot (\varepsilon + 1 / q)$). The efficient lazy-sampling `IsOraclePPT` reduction and
+     `PseudorandomFunction` bridge are proved in `NaorReingold.Security` and `NaorReingold.PRF`.
 
 ## Main definitions
 
@@ -101,8 +101,8 @@ Following Boneh–Shoup Exercises 10.4, 10.8, 10.11, and 4.18, we formalize:
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_naorReingold_le_mul`:
   distributional prefix-hybrid security bounds for the Naor–Reingold PRF against the explicit
   $2^k$-pair PMF distinguisher `naorReingoldLevelDDHDistinguisher` (Boneh–Shoup Exercise 10.4(b);
-  Naor–Reingold Theorem 4.1). The efficient lazy-sampling reduction (`IsOraclePPT` /
-  `PseudorandomFunction` bridge) remains open in #1093.
+  Naor–Reingold Theorem 4.1); see `NaorReingold.Security` and `NaorReingold.PRF` for the
+  lazy-sampling `IsOraclePPT` reduction and `PseudorandomFunction` bridge.
 
 ## References
 
@@ -689,8 +689,7 @@ noncomputable def naorReingoldHopDDHDistinguisher (d : F.Desc) (n k : ℕ)
 between `naorReingoldRealGame` and `naorReingoldIdealGame` is bounded by the sum over
 `k ∈ Finset.range n` of the DDH distinguishing advantages of the explicit `2^k`-pair PMF
 distinguisher `naorReingoldLevelDDHDistinguisher` (`naorReingoldHopDDHDistinguisher`) plus
-`n * (F.order d)⁻¹`. The efficient lazy-sampling reduction (`IsOraclePPT` /
-`PseudorandomFunction` bridge) remains open in #1093. -/
+`n * (F.order d)⁻¹`. -/
 theorem advantage_naorReingold_le_sum (d : F.Desc) (n : ℕ)
     (adv : OracleComp (fun _ : BitString n => F.Carrier d) Bool) :
     Game.advantage (F.naorReingoldRealGame d n adv) (F.naorReingoldIdealGame d n adv) ≤
@@ -726,9 +725,7 @@ theorem advantage_naorReingold_le_sum (d : F.Desc) (n : ℕ)
 /-- **Common-bound Naor–Reingold PRF distributional prefix-hybrid bound**
 ([BonehShoup2023], Exercise 10.4; [NaorReingold2004], Theorem 4.1): if for every `k < n` the
 explicit `2^k`-pair PMF distinguisher `naorReingoldHopDDHDistinguisher d n k adv` has DDH advantage
-at most `ε`, then the Naor–Reingold PRF advantage is at most `n * (ε + (F.order d)⁻¹)`. The
-efficient lazy-sampling reduction (`IsOraclePPT` / `PseudorandomFunction` bridge) remains open in
-#1093. -/
+at most `ε`, then the Naor–Reingold PRF advantage is at most `n * (ε + (F.order d)⁻¹)`. -/
 theorem advantage_naorReingold_le_mul (d : F.Desc) (n : ℕ)
     (adv : OracleComp (fun _ : BitString n => F.Carrier d) Bool) (ε : ℝ≥0)
     (hε : ∀ k < n,
