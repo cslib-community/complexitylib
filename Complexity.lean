@@ -1839,6 +1839,7 @@ public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Sampling
 public import Complexity.Crypto.Protocols.Cipher.EvenMansour
 public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
+public import Complexity.Crypto.Protocols.MPC.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
@@ -2229,6 +2230,7 @@ public import Complexity.Languages.Probabilistic.RandomPermutation
 public import Complexity.Languages.Probabilistic.Repeat
 public import Complexity.Languages.Probabilistic.Selection
 public import Complexity.Languages.Probabilistic.Semantics
+public import Complexity.Languages.Probabilistic.Sharing
 public import Complexity.Languages.Probabilistic.Simulation
 public import Complexity.Languages.Probabilistic.Sum
 public import Complexity.Languages.Probabilistic.Transcript
