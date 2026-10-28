@@ -54,4 +54,24 @@ theorem paritySet_autoreducible : PolyTimeTuringAutoreducible encBits paritySet 
 example : PolyTimeTuringReducible encBits encBits paritySet paritySet :=
   paritySet_autoreducible.polyTimeTuringReducible
 
+/-- A concrete disjunctive truth-table autoreduction on non-empty bitstrings `{[]}ᶜ`,
+making 0 queries when `w = []` and querying `true :: w` otherwise, induces a polynomial-time
+Turing autoreduction. -/
+theorem coEmpty_dtt_autoreducible :
+    PolyTimeDTTAutoreducible encBits ({[]}ᶜ : Set (List Bool)) := by
+  refine ⟨fun w => if w.isEmpty then 0 else 1,
+    fun p => true :: p.1,
+    by fun_prop, by fun_prop, fun w i hi => ?_, fun w => ?_⟩
+  · cases w <;> simp at hi ⊢
+  · cases w <;> simp
+
+example : PolyTimeTuringAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=
+  coEmpty_dtt_autoreducible.polyTimeTuringAutoreducible
+
+example : PolyTimeTuringAutoreducible encBits ({[]} : Set (List Bool)) := by
+  have hctt : PolyTimeCTTAutoreducible encBits ({[]} : Set (List Bool)) := by
+    simpa using polyTimeDTTAutoreducible_iff_polyTimeCTTAutoreducible_compl.mp
+      coEmpty_dtt_autoreducible
+  exact hctt.polyTimeTuringAutoreducible
+
 end ComplexityTests.TuringAutoreducible
