@@ -547,7 +547,7 @@ end ComplexityTests.Abstracts.GSWFHEAbstract
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.GSWFHEAbstract`: 46 root declarations,
-315 dependencies checked
+316 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.GSWFHEAbstract allowing [
