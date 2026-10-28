@@ -300,7 +300,8 @@ This module formalizes:
   `Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanNonceMAC`: full nonce-based Carter–Wegman
   security (Boneh–Shoup Attack Game 7.4 and Theorem 7.10).
 * `Cslib.Crypto.Protocols.CarterWegman.uniform_bind_run_interpret_randomNonceFnHandler`,
-  `probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler`,
+`Cslib.Crypto.Protocols.CarterWegman.probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler`
+  (`ProbOracleComp` lift),
   `Cslib.Crypto.Protocols.CarterWegman.randomNonceSimHandler_not_nodup_le`,
   `Cslib.Crypto.Protocols.CarterWegman.probOracleComp_randomNonceSimHandler_not_nodup_le`,
   `Cslib.Crypto.Protocols.CarterWegman.seed_uniform_probOracleComp_checkRandomNonceSUF_le`,
@@ -2766,8 +2767,57 @@ private theorem interpret_unifFin {α : Type} (p : ProbComp α) :
     OracleComp.interpret ProbComp.unifFin p = p :=
   OracleComp.interpret_query_eq_self p
 
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_contains {γ α : Type} [BEq α] [LawfulBEq α]
+    {encIn : γ ↪ List Bool} {encElem : α ↪ List Bool}
+    {list : γ → List α} {elem : γ → α}
+    (hlist : ComputableTidilyInPolyTime list encIn (encList encElem))
+    (helem : ComputableTidilyInPolyTime elem encIn encElem) :
+    ComputableTidilyInPolyTime (fun a => (list a).contains (elem a)) encIn encBool := by
+  have heq : (fun a => (list a).contains (elem a)) =
+      (fun a => (list a).any (fun x => elem a == x)) := by
+    funext a
+    rw [Bool.eq_iff_iff, List.contains_iff_mem, List.any_eq_true]
+    simp only [beq_iff_eq]
+    exact ⟨fun h => ⟨elem a, h, rfl⟩, fun ⟨_, h, heq⟩ => heq ▸ h⟩
+  rw [heq]
+  exact ComputableTidilyInPolyTime.anyWithInput (test := fun a x => elem a == x) hlist
+    (ComputableTidilyInPolyTime.beq (encB := encElem)
+      (helem.comp (ComputableTidilyInPolyTime.fst _ _))
+      (ComputableTidilyInPolyTime.snd _ _))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_decide_nodup {γ : Type} {encIn : γ ↪ List Bool}
+    {list : γ → List (List Bool)}
+    (hlist : ComputableTidilyInPolyTime list encIn (encList encBits)) :
+    ComputableTidilyInPolyTime (fun a => decide (list a).Nodup) encIn encBool := by
+  have heq : (fun a => decide (list a).Nodup) =
+      (fun a => (list a).all (fun x => (list a).count x == 1)) := by
+    funext a
+    rw [Bool.eq_iff_iff, decide_eq_true_eq, List.all_eq_true, List.nodup_iff_count_le_one]
+    simp only [beq_iff_eq]
+    refine ⟨fun h x hx => ?_, fun h x => ?_⟩
+    · have hle := h x
+      have hpos := List.count_pos_iff.mpr hx
+      omega
+    · by_cases hx : x ∈ list a
+      · exact (h x hx).le
+      · simp [List.count_eq_zero.mpr hx]
+  rw [heq]
+  exact ComputableTidilyInPolyTime.allWithInput (test := fun a x => (list a).count x == 1)
+    hlist (by polytime)
+
+private theorem length_unframe_add_dropFrame_le :
+    ∀ v : List Bool, 2 * (unframe v).length + (dropFrame v).length ≤ v.length
+  | [] | [true] => by simp [unframe, dropFrame]
+  | false :: v => by simp [unframe, dropFrame]
+  | true :: b :: v => by
+    have ih := length_unframe_add_dropFrame_le v
+    simp only [unframe, dropFrame, List.length_cons]
+    omega
+
 /-- **Computational nonce-based Carter–Wegman MAC (`NonceMACScheme`)**
-([BonehShoup2023], Section 7.5, Figure 7.3 and Theorem 7.10, p. 274):
+([BonehShoup2023], Section 7.5.1, Attack Game 7.4 and Theorem 7.10, p. 274):
 given a polynomial-time message-length schedule `msgLen : ℕ → ℕ`, a strict-PPT hash-key sampler
 `seed : ℕ → ProbComp (List Bool)`, a polynomial-time hash evaluator
 `hash : ℕ → List Bool → List Bool → List Bool`, and a polynomial-time PRF family

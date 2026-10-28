@@ -81,9 +81,9 @@ $$\Pr[\text{Forge}] \le \mathrm{Adv}_{\mathrm{PRF}}(B(\mathcal{A}), n) + 2^{-n}.
 * `Cslib.Crypto.NonceMACForger`, `Cslib.Crypto.NonceMACScheme`: uniform nonce-based message
   authentication code (`sign : Key → Msg → Nonce → ProbComp Tag`) and adaptive forger
   ([Boneh and Shoup, Section 7.5, Attack Game 7.4][BonehShoup2023]).
-* `Cslib.Crypto.NonceMACScheme.signingPairOracle`, `sufCmaGame`, `eufCmaGame`, `SUFCMA`
-  (`NonceSUFCMA`), `EUFCMA` (`NonceEUFCMA`): nonce-respecting adaptive chosen-message security
-  experiments and predicates requiring distinct queried nonces (`(tr.map (fun e => e.1.2)).Nodup`).
+* `Cslib.Crypto.NonceMACScheme.signingPairOracle`, `sufCmaGame`, `eufCmaGame`, `SUFCMA`,
+  `EUFCMA`: nonce-respecting adaptive chosen-message security experiments and predicates requiring
+  distinct queried nonces (`(tr.map (fun e => e.1.2)).Nodup`).
 
 ## Main results
 
@@ -120,11 +120,12 @@ $$\Pr[\text{Forge}] \le \mathrm{Adv}_{\mathrm{PRF}}(B(\mathcal{A}), n) + 2^{-n}.
   `Cslib.Crypto.PseudorandomFunction.eufCma_prfMAC`,
   `Cslib.Crypto.PseudorandomFunction.oneTimeEUFCMA_prfMAC`: any secure uniform
   `PseudorandomFunction` yields a `SUFCMA`-, `EUFCMA`-, and `OneTimeEUFCMA`-secure `MACScheme`.
-* `Cslib.Crypto.NonceMACScheme.isPPTOn_sufCmaGame`, `isPPT_sufCmaGame`, `isPPTOn_eufCmaGame`,
+* `Cslib.Crypto.NonceMACScheme.isPPTOn_run_signingPairOracle`,
+  `Cslib.Crypto.NonceMACScheme.isPPTOn_sufCmaGame`, `isPPT_sufCmaGame`, `isPPTOn_eufCmaGame`,
   `isPPT_eufCmaGame`, `succProbability_eufCmaGame_le_sufCmaGame`, `SUFCMA.eufCma`,
-  `eval_sufCmaGame_eq_freshPair_of_unique_tag`, `sufCma_iff_eufCma_of_unique_tag`: strict PPT
-  certificates, quantitative / asymptotic implication from `SUFCMA` to `EUFCMA`, and unique-tag
-  characterizations for nonce-based MACs.
+  `eval_sufCmaGame_eq_freshPair_of_unique_tag`: strict PPT certificates, quantitative /
+  asymptotic implication from `SUFCMA` to `EUFCMA`, and unique-tag pair-freshness characterization
+  for nonce-based MACs.
 
 ## References
 
@@ -181,10 +182,11 @@ private theorem MACScheme.verify_polyTime_tidy (M : MACScheme) :
   simpa only [← computableInPolyTime_iff_computableTidilyInPolyTime] using M.verify_polyTime
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_contains {γ : Type} {encIn : γ ↪ List Bool}
-    {list : γ → List (List Bool)} {elem : γ → List Bool}
-    (hlist : ComputableTidilyInPolyTime list encIn (encList encBits))
-    (helem : ComputableTidilyInPolyTime elem encIn encBits) :
+private theorem computableTidilyInPolyTime_contains {γ α : Type} [BEq α] [LawfulBEq α]
+    {encIn : γ ↪ List Bool} {encElem : α ↪ List Bool}
+    {list : γ → List α} {elem : γ → α}
+    (hlist : ComputableTidilyInPolyTime list encIn (encList encElem))
+    (helem : ComputableTidilyInPolyTime elem encIn encElem) :
     ComputableTidilyInPolyTime (fun a => (list a).contains (elem a)) encIn encBool := by
   have heq : (fun a => (list a).contains (elem a)) =
       (fun a => (list a).any (fun x => elem a == x)) := by
@@ -193,7 +195,10 @@ private theorem computableTidilyInPolyTime_contains {γ : Type} {encIn : γ ↪ 
     simp only [beq_iff_eq]
     exact ⟨fun h => ⟨elem a, h, rfl⟩, fun ⟨_, h, heq⟩ => heq ▸ h⟩
   rw [heq]
-  exact ComputableTidilyInPolyTime.anyWithInput (test := fun a x => elem a == x) hlist (by polytime)
+  exact ComputableTidilyInPolyTime.anyWithInput (test := fun a x => elem a == x) hlist
+    (ComputableTidilyInPolyTime.beq (encB := encElem)
+      (helem.comp (ComputableTidilyInPolyTime.fst _ _))
+      (ComputableTidilyInPolyTime.snd _ _))
 
 namespace MACScheme
 
@@ -1679,54 +1684,10 @@ structure NonceMACScheme where
     ∀ tag, tag ∈ (ProbComp.eval (sign sk msg nonce)).support →
     verify sk msg nonce tag = true
 
-/-- Testing membership in a framed list of bit-string pairs is computable tidily in polynomial time.
--/
-@[fun_prop]
-theorem computableTidilyInPolyTime_contains_pair {γ : Type} {encIn : γ ↪ List Bool}
-    {list : γ → List (List Bool × List Bool)}
-    {elem : γ → List Bool × List Bool}
-    (hlist : ComputableTidilyInPolyTime list encIn (encList (encPair encBits encBits)))
-    (helem : ComputableTidilyInPolyTime elem encIn (encPair encBits encBits)) :
-    ComputableTidilyInPolyTime (fun a => (list a).contains (elem a)) encIn encBool := by
-  have heq : (fun a => (list a).contains (elem a)) =
-      (fun a => (list a).any (fun x => elem a == x)) := by
-    funext a
-    rw [Bool.eq_iff_iff, List.contains_iff_mem, List.any_eq_true]
-    simp only [beq_iff_eq]
-    exact ⟨fun h => ⟨elem a, h, rfl⟩, fun ⟨_, h, heq⟩ => heq ▸ h⟩
-  rw [heq]
-  exact ComputableTidilyInPolyTime.anyWithInput (test := fun a x => elem a == x) hlist
-    (ComputableTidilyInPolyTime.beq (encB := encPair encBits encBits)
-      (helem.comp (ComputableTidilyInPolyTime.fst _ _))
-      (ComputableTidilyInPolyTime.snd _ _))
-
-/-- Testing membership in a framed list of `((msg, nonce), tag)` triples is computable tidily in
-polynomial time. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_contains_triple {γ : Type} {encIn : γ ↪ List Bool}
-    {list : γ → List ((List Bool × List Bool) × List Bool)}
-    {elem : γ → (List Bool × List Bool) × List Bool}
-    (hlist : ComputableTidilyInPolyTime list encIn
-      (encList (encPair (encPair encBits encBits) encBits)))
-    (helem : ComputableTidilyInPolyTime elem encIn
-      (encPair (encPair encBits encBits) encBits)) :
-    ComputableTidilyInPolyTime (fun a => (list a).contains (elem a)) encIn encBool := by
-  have heq : (fun a => (list a).contains (elem a)) =
-      (fun a => (list a).any (fun x => elem a == x)) := by
-    funext a
-    rw [Bool.eq_iff_iff, List.contains_iff_mem, List.any_eq_true]
-    simp only [beq_iff_eq]
-    exact ⟨fun h => ⟨elem a, h, rfl⟩, fun ⟨_, h, heq⟩ => heq ▸ h⟩
-  rw [heq]
-  exact ComputableTidilyInPolyTime.anyWithInput (test := fun a x => elem a == x) hlist
-    (ComputableTidilyInPolyTime.beq (encB := encPair (encPair encBits encBits) encBits)
-      (helem.comp (ComputableTidilyInPolyTime.fst _ _))
-      (ComputableTidilyInPolyTime.snd _ _))
-
 /-- Deciding `List.Nodup` on a framed list of bit strings is computable tidily in polynomial time.
 -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_decide_nodup {γ : Type} {encIn : γ ↪ List Bool}
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_decide_nodup {γ : Type} {encIn : γ ↪ List Bool}
     {list : γ → List (List Bool)}
     (hlist : ComputableTidilyInPolyTime list encIn (encList encBits)) :
     ComputableTidilyInPolyTime (fun a => decide (list a).Nodup) encIn encBool := by
@@ -1748,7 +1709,7 @@ theorem computableTidilyInPolyTime_decide_nodup {γ : Type} {encIn : γ ↪ List
 
 /-- The unframed prefix and remaining suffix of any bit list satisfy
 `2 * (unframe v).length + (dropFrame v).length ≤ v.length`. -/
-theorem length_unframe_add_dropFrame_le :
+private theorem length_unframe_add_dropFrame_le :
     ∀ v : List Bool, 2 * (unframe v).length + (dropFrame v).length ≤ v.length
   | [] | [true] => by simp [unframe, dropFrame]
   | false :: v => by simp [unframe, dropFrame]
@@ -2194,68 +2155,6 @@ theorem eval_sufCmaGame_eq_freshPair_of_unique_tag (M : NonceMACScheme)
     · simp [Bool.eq_false_iff.mpr hnonce]
   · simp [Bool.eq_false_iff.mpr hmsg]
 
-/-- For any `NonceMACScheme` whose valid `(nonce, tag)` pairs on `M.msgLen n`-bit messages under
-supported secret keys agree with every `(nonce', tag')` produced on that message, `sufCmaGame` and
-`eufCmaGame` have the exact same output distribution. -/
-theorem eval_sufCmaGame_eq_eufCmaGame_of_unique_tag (M : NonceMACScheme)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n →
-      ∀ nonce, nonce.length = M.nonceLen n → ∀ nonce' tag tag',
-      M.verify sk msg nonce tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg nonce')).support →
-      nonce' = nonce ∧ tag' = tag)
-    (adversary : NonceMACForger) (n : ℕ) :
-    ProbComp.eval (M.sufCmaGame adversary n) =
-      ProbComp.eval (M.eufCmaGame adversary n) := by
-  simp only [sufCmaGame, eufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
-  refine PMF.bind_congr_on_support _ _ _ fun sk hsk => ?_
-  refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨⟨msg, nonce⟩, tag⟩, queriedTriples⟩ hout => ?_
-  have hinv := M.mem_support_signingPairOracle sk (adversary n [])
-    ((msg, nonce), tag) queriedTriples hout
-  congr 1
-  by_cases hmsg : (msg.length == M.msgLen n) = true
-  · by_cases hnonce : (nonce.length == M.nonceLen n) = true
-    · by_cases hver : M.verify sk msg nonce tag = true
-      · have hmsgLen : msg.length = M.msgLen n := beq_iff_eq.mp hmsg
-        have hnonceLen : nonce.length = M.nonceLen n := beq_iff_eq.mp hnonce
-        have hmem_iff : ((msg, nonce), tag) ∈ queriedTriples ↔
-            msg ∈ queriedTriples.map (fun e => e.1.1) := by
-          rw [List.mem_map]
-          refine ⟨fun h => ⟨((msg, nonce), tag), h, rfl⟩, ?_⟩
-          rintro ⟨⟨⟨qmsg, qnonce⟩, qtag⟩, hmemTriple, hmsg_eq⟩
-          dsimp only at hmsg_eq
-          subst qmsg
-          have hqtag := hinv ((msg, qnonce), qtag) hmemTriple
-          obtain ⟨rfl, rfl⟩ := huniq n sk hsk msg hmsgLen nonce hnonceLen qnonce tag qtag hver hqtag
-          exact hmemTriple
-        simp only [hmsg, hnonce, hver, Bool.true_and, Bool.and_true, List.contains_eq_mem,
-          decide_eq_decide.mpr hmem_iff]
-      · simp [Bool.eq_false_iff.mpr hver]
-    · simp [Bool.eq_false_iff.mpr hnonce]
-  · simp [Bool.eq_false_iff.mpr hmsg]
-
-/-- Under the unique-`(nonce, tag)` hypothesis of `eval_sufCmaGame_eq_eufCmaGame_of_unique_tag`,
-strong unforgeability (`SUFCMA`) is equivalent to fresh-message unforgeability (`EUFCMA`). -/
-theorem sufCma_iff_eufCma_of_unique_tag (M : NonceMACScheme)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n →
-      ∀ nonce, nonce.length = M.nonceLen n → ∀ nonce' tag tag',
-      M.verify sk msg nonce tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg nonce')).support →
-      nonce' = nonce ∧ tag' = tag) :
-    M.SUFCMA ↔ M.EUFCMA := by
-  refine ⟨SUFCMA.eufCma, fun h => ?_⟩
-  apply SUFCMA.of_negligible
-  intro adversary hadversary
-  refine (h.negligible adversary hadversary).congr fun n => ?_
-  rw [M.eval_sufCmaGame_eq_eufCmaGame_of_unique_tag huniq adversary n]
-
 end NonceMACScheme
-
-/-- Alias for `NonceMACScheme.SUFCMA`. -/
-abbrev NonceSUFCMA := NonceMACScheme.SUFCMA
-
-/-- Alias for `NonceMACScheme.EUFCMA`. -/
-abbrev NonceEUFCMA := NonceMACScheme.EUFCMA
 
 end Cslib.Crypto
