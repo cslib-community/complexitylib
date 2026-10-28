@@ -7,6 +7,7 @@ Authors: Renfei Zhou
 -- upstream: local-only (formal abstract library)
 
 import ComplexityAbstracts.WordRAMBridge
+import Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci
 import Complexity.Algorithms.WordRAM.Dijkstra.LogLinear
 
 /-!
@@ -24,28 +25,30 @@ its `Laws`, that one step of a library program over `Cslib.WordRAM.Basis.exact` 
 other than `rand` matches one step of its translation `WordRAMBridge.Presentation.programOf`
 (`WordRAMBridge.Presentation.step_matches_at`). A step that does not fault is not at a `rand`
 (`isRandFree_of_step`), so this file extends that to runs of a given number of steps (`runs_map`),
-and transfers
-`Cslib.Algorithms.WordRAM.Dijkstra.logLinearStatement` to the walk distance and the abstract's
+and transfers `Cslib.Algorithms.WordRAM.Dijkstra.logLinearStatement` and
+`Cslib.Algorithms.WordRAM.Dijkstra.fibonacciStatement` to the walk distance and the abstract's
 machine.
 
 ## Main results
 
 * `walkDist_eq`: the walk distance is the library's distance.
 * `runs_map`: a run of a library program is a run of its translation.
-* `logLinear`: the library's main theorem, over unfolded adjacency lists, the walk distance and
-  any presentation of the exact word RAM.
+* `logLinear`: the binary-heap `O((m + 1) log n)` library theorem, over unfolded adjacency lists,
+  the walk distance and any presentation of the exact word RAM.
+* `fibonacci`: the Fibonacci-heap `O(m + n log n)` library theorem, over unfolded adjacency lists,
+  the walk distance and any presentation of the exact word RAM.
 
 ## Syntax in the imports
 
-The library's Dijkstra program and binary min-heap are written in the word-RAM program syntax of
-`Complexity/Computability/WordRAM/Notation.lean` and its exact-basis variant
-`Complexity/Computability/WordRAM/ExactNotation.lean`, so the import of the library theorem
-brings both files in (`LogLinear` → `GenericPQ` → `PriorityQueue.Basic` → `ExactNotation` →
-`Notation`, and `LogLinear` → `BinaryHeap` → `Sift` → `Program` → `PriorityQueue.Basic`). All
-their syntax rules, `macro_rules` and tactics are scoped to `Cslib.WordRAM`. Only the syntax
-category `wramStmt` and the syntax abbreviation `wramBlock` are global, since Lean cannot scope
-them, and outside `Cslib.WordRAM` `wramStmt` has no rules. `DijkstraAbstract.lean` does not open
-`Cslib.WordRAM`, so none of this syntax is active there.
+The library's Dijkstra programs and priority queues (`BinaryHeap` and `FibonacciHeap`) are written
+in the word-RAM program syntax of `Complexity/Computability/WordRAM/Notation.lean` and its
+exact-basis variant `Complexity/Computability/WordRAM/ExactNotation.lean`, so the imports of the
+library theorems bring both files in (`LogLinear` and `Fibonacci` → `GenericPQ` →
+`PriorityQueue.Basic` → `ExactNotation` → `Notation`). All their syntax rules, `macro_rules` and
+tactics are scoped to `Cslib.WordRAM`. Only the syntax category `wramStmt` and the syntax
+abbreviation `wramBlock` are global, since Lean cannot scope them, and outside `Cslib.WordRAM`
+`wramStmt` has no rules. `DijkstraAbstract.lean` does not open `Cslib.WordRAM`, so none of this
+syntax is active there.
 -/
 
 namespace ComplexityAbstracts.DijkstraBridge
@@ -230,6 +233,32 @@ theorem logLinear (S : WordRAMBridge.Presentation) (h : WordRAMBridge.Laws S)
         ∀ v : Fin n, mem t (n + 2 * (ListInstance.mk n G s).m + 4 + v) =
           encodeDist (walkDist W G s v) := by
   obtain ⟨r, q, K, hq⟩ := logLinearStatement
+  refine ⟨r, S.programOf q, K, fun n G s w hw => ?_⟩
+  obtain ⟨t, steps, hr, ⟨v, hv⟩, hle, hd⟩ := hq ⟨n, G, s⟩ w hw
+  refine ⟨Machine.stateOf S t, steps, ?_, ⟨v, Machine.step_halt h hv⟩, hle, fun u => ?_⟩
+  · rw [← Machine.stateOf_init]
+    exact Machine.runs_map h hr
+  · rw [Machine.stateOf, hmem, walkDist_eq hW ⟨n, G, s⟩]
+    exact hd u
+
+/-- **Transfer of the Fibonacci-heap main theorem.**
+`Cslib.Algorithms.WordRAM.Dijkstra.fibonacciStatement`, for the instance `⟨n, G, s⟩`, with the
+distance given by walks, and on any presentation `S` of the exact word RAM; `mem t` is the memory
+of the abstract state `t`. -/
+theorem fibonacci (S : WordRAMBridge.Presentation) (h : WordRAMBridge.Laws S)
+    (mem : ∀ {r : ℕ}, S.State r → ℕ → ℕ)
+    (hmem : ∀ {r : ℕ} (pc : ℕ) (reg : Fin r → ℕ) (m : ℕ → ℕ), mem (S.state pc reg m) = m)
+    (hW : WalkLaws W) :
+    ∃ r, ∃ p : List (S.Instr r), ∃ K, ∀ (n : ℕ) (G : Fin n → List (Fin n × ℕ)) (s : Fin n)
+      (w : ℕ), 8 * (n + (ListInstance.mk n G s).m + 2) *
+        ((ListInstance.mk n G s).maxWeight + 2) < 2 ^ w →
+      ∃ t steps, Relation.RelatesInSteps (fun a b => S.step w p a = S.next b)
+          (S.init (ListInstance.mk n G s).encode) t steps ∧
+        (∃ v, S.step w p t = S.halted v) ∧
+        steps + 1 ≤ K * ((ListInstance.mk n G s).m + n * (Nat.log 2 n + 1)) ∧
+        ∀ v : Fin n, mem t (n + 2 * (ListInstance.mk n G s).m + 4 + v) =
+          encodeDist (walkDist W G s v) := by
+  obtain ⟨r, q, K, hq⟩ := fibonacciStatement
   refine ⟨r, S.programOf q, K, fun n G s w hw => ?_⟩
   obtain ⟨t, steps, hr, ⟨v, hv⟩, hle, hd⟩ := hq ⟨n, G, s⟩ w hw
   refine ⟨Machine.stateOf S t, steps, ?_, ⟨v, Machine.step_halt h hv⟩, hle, fun u => ?_⟩
