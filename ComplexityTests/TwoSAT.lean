@@ -124,12 +124,15 @@ example : TwoSAT.reachabilityFormula backInstance ∈ TwoSAT := by
 
 /-! ### Completeness -/
 
-example : TwoSATᶜ ∈ NL encCNF := TwoSAT.compl_mem_NL
+-- `TwoSATᶜ` reduces in logarithmic space to `TwoSAT` via `NL`-completeness.
+example : LogSpaceReducible encCNF encCNF TwoSATᶜ TwoSAT :=
+  TwoSAT.logSpaceComplete.2 encCNF TwoSATᶜ TwoSAT.compl_mem_NL
 
-example : TwoSAT ∈ NL encCNF := TwoSAT.mem_NL
+-- `TwoSAT` reduces in logarithmic space to `STCON`, and `STCON` reduces to `TwoSATᶜ`.
+example : LogSpaceReducible encCNF encSTCON TwoSAT STCON :=
+  STCON.logSpaceComplete.2 encCNF TwoSAT TwoSAT.mem_NL
 
-example : LogSpaceReducible encSTCON encCNF STCONᶜ TwoSAT := TwoSAT.logSpaceReducible_compl_STCON
-
-example : LogSpaceComplete NL encCNF TwoSAT := TwoSAT.logSpaceComplete
+example : LogSpaceReducible encSTCON encCNF STCON TwoSATᶜ := by
+  simpa only [compl_compl] using TwoSAT.logSpaceReducible_compl_STCON.compl
 
 end ComplexityTests.TwoSAT

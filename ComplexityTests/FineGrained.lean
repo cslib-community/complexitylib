@@ -41,10 +41,10 @@ example : φ₁ ∈ KSAT 2 := ⟨by decide, fun _ => true, rfl⟩
 
 example : φ₁ ∉ KSAT 1 := fun h => absurd (h.1 _ List.mem_cons_self) (by decide)
 
-example : φ₂ ∉ KSAT 3 := fun ⟨_, σ, hσ⟩ => by
-  cases h : σ 0 <;> simp [φ₂, h] at hσ
+example : φ₁ ∈ ThreeSAT := KSAT_three ▸ ⟨by decide, fun _ => true, rfl⟩
 
-example : KSAT 3 = ThreeSAT := KSAT_three
+example : φ₂ ∉ ThreeSAT := KSAT_three ▸ fun ⟨_, σ, hσ⟩ => by
+  cases h : σ 0 <;> simp [φ₂, h] at hσ
 
 /-! ### Numbered assignments and exhaustive search -/
 
@@ -108,22 +108,19 @@ example : satExponent 3 ≤ satExponent 4 := satExponent_mono (by norm_num)
 
 /-- A trivial problem is decidable within linear time, in either form. -/
 example : DecidableInTimeO (∅ : Set (CNF ℕ)) encCNF fun φ => (encCNF φ).length :=
-  DecidableInTimeO.of_computableInO (.of_tidy (ComputableTidilyInO.const false)) (by simp) fun _ =>
+  DecidableInTimeO.of_computableInO (ComputableInO.const false) (by simp) fun _ =>
     le_rfl
 
 example : (∅ : Set (CNF ℕ)) ∈ DTIME encCNF id :=
   mem_DTIME_iff_decidableInTimeO.mpr
-    (DecidableInTimeO.of_computableInO (.of_tidy (ComputableTidilyInO.const false)) (by simp)
+    (DecidableInTimeO.of_computableInO (ComputableInO.const false) (by simp)
       fun _ => le_rfl)
 
 /-- The hypotheses in terms of the exponents. -/
-example : ETH ↔ 0 < satExponent 3 := ETH_iff_satExponent_pos
+example (h : ¬DecidableInSubexpTime ThreeSAT encCNF List.length) : 0 < satExponent 3 :=
+  ETH_iff_satExponent_pos.mp (ETH_of_not_decidableInSubexpTime_length h)
 
-example : SETH ↔ Filter.Tendsto satExponent Filter.atTop (nhds 1) := SETH_iff_tendsto
-
-example : SETH → OVH := OVH_of_SETH
-
-example (h : ¬DecidableInSubexpTime ThreeSAT encCNF List.length) : ETH :=
-  ETH_of_not_decidableInSubexpTime_length h
+example (h : Filter.Tendsto satExponent Filter.atTop (nhds 1)) : OVH :=
+  OVH_of_SETH (SETH_iff_tendsto.mpr h)
 
 end ComplexityTests.FineGrained

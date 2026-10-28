@@ -49,8 +49,8 @@ example (k : Fin (walkLength 1) → Label) :
   exact absurd this (by decide)
 
 -- The hypotheses of the generic statements are satisfiable: the base graph is a good expander.
-example : base.spectralExpansion ≤ 1 / 5 :=
-  spectralExpansion_base_le
+example : base.spectralExpansion < 1 :=
+  spectralExpansion_base_le.trans_lt (by norm_num)
 
 -- The regular rotation map of any simple graph has at least half self-loops at every vertex.
 example {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (v : Fin n × Fin n) :
@@ -99,23 +99,24 @@ example : emptyInstance ∉ Complexity.USTCON := by
   cases p with
   | cons hadj _ => exact absurd hadj (by simp [emptyInstance, Complexity.USTCONInstance.graph])
 
-example : Complexity.USTCON ∈ Complexity.L Complexity.encUSTCON :=
-  Complexity.USTCON_mem_L
-
-example : Complexity.USTCON ∈ Complexity.SL Complexity.encUSTCON :=
-  Complexity.USTCON_mem_SL
-
-example : Complexity.LogSpaceComplete Complexity.SL Complexity.encUSTCON Complexity.USTCON :=
-  Complexity.USTCON_logSpaceComplete_SL
-
-example : Complexity.LogSpaceComplete Complexity.L Complexity.encUSTCON Complexity.USTCON :=
-  Complexity.USTCON_logSpaceComplete_L
-
-example {α : Type} (enc : α ↪ List Bool) : Complexity.SL enc = Complexity.L enc :=
-  Complexity.SL_eq_L
+example : Complexity.USTCON ∈ Complexity.P Complexity.encUSTCON :=
+  Complexity.L_subset_P Complexity.USTCON_mem_L
 
 example : Complexity.USTCONᶜ ∈ Complexity.SL Complexity.encUSTCON :=
   Complexity.compl_mem_SL Complexity.USTCON_mem_SL
+
+example : Complexity.USTCONᶜ ∈ Complexity.L Complexity.encUSTCON :=
+  Complexity.SL_eq_L ▸ Complexity.compl_mem_SL Complexity.USTCON_mem_SL
+
+example :
+    Complexity.LogSpaceReducible Complexity.encUSTCON Complexity.encUSTCON
+      Complexity.USTCONᶜ Complexity.USTCON :=
+  Complexity.USTCON_logSpaceComplete_SL.2 Complexity.encUSTCON Complexity.USTCONᶜ
+    (Complexity.compl_mem_SL Complexity.USTCON_mem_SL)
+
+example : Complexity.PolyTimeComplete Complexity.L Complexity.encUSTCON Complexity.USTCON :=
+  Complexity.CompleteUnder.mono (fun _ _ h => h.polyTimeReducible)
+    Complexity.USTCON_logSpaceComplete_L
 
 example {m m' : ℕ} {l l' : List Bool}
     (h : List.replicate m true ++ false :: l = List.replicate m' true ++ false :: l') :

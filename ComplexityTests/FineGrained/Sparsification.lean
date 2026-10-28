@@ -93,7 +93,7 @@ example : ∃ c : ℕ, DecidableInExpTime (KSAT 3) encCNF CNF.numVars (1 + c * (
   obtain ⟨c, hc⟩ := exists_decidableInExpTime_numVars_of_length 3 one_pos
   exact ⟨c, hc _ (by norm_num) ((KSAT_decidableInExpTime_one 3).length_of_numVars zero_le_one)⟩
 
-example : ETH ↔ ¬DecidableInSubexpTime ThreeSAT encCNF List.length :=
-  ETH_iff_not_decidableInSubexpTime_length
+example : 0 < satExponent 3 ↔ ¬DecidableInSubexpTime ThreeSAT encCNF List.length :=
+  ETH_iff_satExponent_pos.symm.trans ETH_iff_not_decidableInSubexpTime_length
 
 end ComplexityTests.FineGrained.Sparsification

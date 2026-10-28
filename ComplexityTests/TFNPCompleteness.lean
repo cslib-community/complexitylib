@@ -13,44 +13,57 @@ local-search costs whose bit-length exceeds the vertex width. -/
 namespace ComplexityTests.TFNPCompleteness
 
 open Cslib.Complexity Cslib.BitString Cslib.Circuits.Boolean
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM
 
 -- One uniform constructor handles every identity cube, including the zero-dimensional cube.
 example : ∃ code : ℕ → CircuitCode,
     ComputableInPolyTime code encUnary encCode ∧
       ∀ n u, u.length = n → evalCircuitOutputs (code n) u = u :=
-  exists_uniformCircuitCodes (.of_tidy id') (.of_tidy id') (.of_tidy (snd encUnary encBits))
-    (fun _ _ h => h)
-
--- Each canonical search problem has the advertised class and reduction quantifiers.
-example : SearchComplete @PPP encPigeon Pigeon := Pigeon_searchComplete
-example : SearchComplete @PPAD encEndOfLine EndOfLine := EndOfLine_searchComplete
-example : SearchComplete @PPA encLeaf Leaf := Leaf_searchComplete
-example : SearchComplete @PLS encLocalOpt LocalOpt := LocalOpt_searchComplete
+  exists_uniformCircuitCodes .id' .id' (.snd encUnary encBits) (fun _ _ h => h)
 
 private def neighbor (_ : Bool × List Bool) : List Bool := [false]
 
 private def cost (p : Bool × List Bool) : ℕ := if p.2.headD false then 17 else 3
 
 private theorem neighbor_polytime :
-    ComputableTidilyInPolyTime neighbor (encPair encBool encBits) encBits := const _
+    ComputableInPolyTime neighbor (encPair encBool encBits) encBits := .const _
 
 private theorem cost_polytime :
-    ComputableTidilyInPolyTime cost (encPair encBool encBits) encNat := by
+    ComputableInPolyTime cost (encPair encBool encBits) encNat := by
   unfold cost
-  polytime
+  fun_prop
 
 /-- A one-bit local-search family can have costs requiring five bits. -/
 theorem wideCostFamily_mem_PLS : localOptRel (fun _ : Bool => 1) neighbor cost ∈ PLS encBool :=
-  localOptRel_mem_PLS (.of_tidy (const 1)) (.of_tidy neighbor_polytime) (.of_tidy cost_polytime)
-    (by simp [neighbor])
+  localOptRel_mem_PLS (.const 1) neighbor_polytime cost_polytime (by simp [neighbor])
 
 /-- The reduction preserves this family without restricting costs to the vertex width. -/
 theorem wideCostFamily_reduces :
     SearchReducible encBool encLocalOpt (localOptRel (fun _ : Bool => 1) neighbor cost) LocalOpt :=
-  localOptRel_searchReducible_LocalOpt (.of_tidy (const 1)) (.of_tidy neighbor_polytime)
-    (.of_tidy cost_polytime)
+  localOptRel_searchReducible_LocalOpt (.const 1) neighbor_polytime cost_polytime
     (by simp [neighbor])
+
+-- Each canonical search problem reduces concrete instances of its defining principle.
+example : SearchReducible encBool encLocalOpt
+    (localOptRel (fun _ : Bool => 1) neighbor cost) LocalOpt :=
+  LocalOpt_searchComplete.2 encBool _ wideCostFamily_mem_PLS
+
+example : SearchReducible encBool encPigeon
+    (pigeonRel (fun _ : Bool => 0) (fun p => p.2)) Pigeon :=
+  Pigeon_searchComplete.2 encBool _
+    (pigeonRel_mem_PPP (.const 0) (.snd encBool encBits) (by simp))
+
+example : SearchReducible encBool encEndOfLine
+    (endOfLineRel (fun _ : Bool => 0) (fun p => p.2) (fun p => p.2)) EndOfLine :=
+  EndOfLine_searchComplete.2 encBool _
+    (endOfLineRel_mem_PPAD (.const 0) (.snd encBool encBits) (.snd encBool encBits)
+      (by simp) (by simp))
+
+example : SearchReducible encBool encLeaf
+    (leafRel (fun _ : Bool => 0) (fun p => p.2) (fun p => p.2)) Leaf :=
+  Leaf_searchComplete.2 encBool _
+    (leafRel_mem_PPA (.const 0) (.snd encBool encBits) (.snd encBool encBits)
+      (by simp) (by simp))
 
 example : localOptRel (fun _ : Bool => 1) neighbor cost false [false] := by
   simp [localOptRel, neighbor, cost]
