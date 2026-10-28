@@ -20,11 +20,17 @@ Checks enforced by default (see AGENTS.md):
    full HTML backstop.
 5. (Default selection only.) `references.bib` keys are unique and its entries are sorted by key,
    both compared case-insensitively as BibTeX does, so that PRs adding entries rarely conflict.
+6. Every citation key in a docstring is a `references.bib` key. A citation is a bracketed segment
+   (`[Key]`, `[Key, Theorem 2]`, `[Key; Other]`, or the reference in `[text][Key]`) that has the
+   shape of the repository's keys: letters, a two- to four-digit year or number, and an optional
+   letter suffix (`AroraBarak09`, `NISTFIPS203`, `Ilango2020FOCS`). Code spans, fenced code, math,
+   escaped brackets, inline links `[text](target)` and block quotes (`> ...`, which quote a
+   source's own citations) are not scanned. Keys without digits are not recognized.
 
 Opt-in heuristic checks:
-6. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
+7. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
    under Complexity/.
-7. (`--max-lines N`) Flag Lean files exceeding N lines.
+8. (`--max-lines N`) Flag Lean files exceeding N lines.
 """
 
 from __future__ import annotations
@@ -79,6 +85,12 @@ DOC_INLINE_RE = re.compile(
     r"|(?P<code_fence>`+)(?P<code>.+?)(?<!`)(?P=code_fence)(?!`)"
 )
 WHITESPACE_RUN_RE = re.compile(r"\S+")
+# The shape of every `references.bib` key except the year-less `MilewskiDao`.
+CITATION_KEY_RE = re.compile(r"[A-Za-z]+[0-9]{2,4}[A-Za-z]*")
+# A bracketed span not preceded by `\` or `!` and not followed by `(` (a link the masks missed).
+DOC_BRACKET_RE = re.compile(r"(?<![\\!])\[([^\[\]]*)\](?!\()")
+DOC_BLOCKQUOTE_RE = re.compile(r"^[ \t]*>.*$", re.M)
+CITATION_SEGMENT_RE = re.compile(r"[^;,]+")
 
 
 def extract_docstrings(text: str) -> list[tuple[int, str]]:
@@ -242,6 +254,52 @@ def check_docstring_links(raw: str, rel: pathlib.Path, root: pathlib.Path) -> li
     return errors
 
 
+def mask_span(chars: list[str], start: int, end: int) -> None:
+    for j in range(start, end):
+        if chars[j] != "\n":
+            chars[j] = " "
+
+
+def docstring_citations(doc: str) -> list[tuple[int, str]]:
+    """Return `(offset, key)` for every citation-shaped key in a docstring body (check 6)."""
+    chars = list(doc)
+    for m in DOC_FENCE_RE.finditer(doc):
+        mask_span(chars, m.start(), m.end())
+    for m in DOC_BLOCKQUOTE_RE.finditer(doc):
+        mask_span(chars, m.start(), m.end())
+    masked = "".join(chars)
+    for m in DOC_INLINE_RE.finditer(masked):
+        mask_span(chars, m.start(), m.end())
+    masked = "".join(chars)
+    citations: list[tuple[int, str]] = []
+    for bracket in DOC_BRACKET_RE.finditer(masked):
+        for segment in CITATION_SEGMENT_RE.finditer(bracket.group(1)):
+            key = segment.group(0).strip()
+            if CITATION_KEY_RE.fullmatch(key):
+                offset = bracket.start(1) + segment.start() + segment.group(0).index(key)
+                citations.append((offset, key))
+    return citations
+
+
+def check_docstring_citations(raw: str, rel: pathlib.Path, bib_keys: frozenset[str]) -> list[str]:
+    """Report docstring citation keys that `references.bib` does not define."""
+    errors: list[str] = []
+    for doc_start, doc in extract_docstrings(raw):
+        for offset, key in docstring_citations(doc):
+            if key not in bib_keys:
+                line_no = raw.count("\n", 0, doc_start + offset) + 1
+                errors.append(
+                    f"{rel}:{line_no}: docstring cites `{key}`, which is not a key in "
+                    "references.bib (add the entry, or escape the brackets `\\[...\\]` if it is "
+                    "not a citation)"
+                )
+    return errors
+
+
+def bibliography_keys(text: str) -> frozenset[str]:
+    return frozenset(m.group(1) for m in BIB_KEY_RE.finditer(text))
+
+
 def is_candidate_module(text: str) -> bool:
     return bool(re.search(r"^--\s*upstream:\s*candidate\b", text, re.M))
 
@@ -309,6 +367,7 @@ def check_file(
     root: pathlib.Path = ROOT,
     check_simp: bool = False,
     max_lines: int | None = None,
+    bib_keys: frozenset[str] | None = None,
 ) -> list[str]:
     rel = path.relative_to(root) if path.is_relative_to(root) else path
     raw = path.read_text(encoding="utf-8")
@@ -322,6 +381,8 @@ def check_file(
         errors.append(f"{rel}: missing or invalid `-- upstream:` marker")
     if in_complexity:
         errors.extend(check_docstring_links(raw, rel, root))
+    if bib_keys is not None:
+        errors.extend(check_docstring_citations(raw, rel, bib_keys))
 
     for idx, s_line in enumerate(syntax.split("\n"), 1):
         for m in FORBIDDEN_TOKEN_RE.finditer(s_line):
@@ -371,6 +432,7 @@ def check_paths(
     root: pathlib.Path = ROOT,
     check_simp: bool = False,
     max_lines: int | None = None,
+    bib_keys: frozenset[str] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     checked = 0
@@ -384,7 +446,8 @@ def check_paths(
             files = [p]
         for f in files:
             checked += 1
-            errors.extend(check_file(f, root=root, check_simp=check_simp, max_lines=max_lines))
+            errors.extend(check_file(f, root=root, check_simp=check_simp, max_lines=max_lines,
+                                     bib_keys=bib_keys))
     if not checked and not errors:
         errors.append("no source files found in selected paths")
     return errors
@@ -416,14 +479,16 @@ def main() -> int:
     else:
         targets = [ROOT / "Complexity", ROOT / "ComplexityTests", ROOT / "abstracts/ComplexityAbstracts"]
 
+    bibliography = (ROOT / "references.bib").read_text(encoding="utf-8")
     errors = check_paths(
         targets,
         root=ROOT,
         check_simp=args.check_simp,
         max_lines=args.max_lines,
+        bib_keys=bibliography_keys(bibliography),
     )
     if not args.paths:
-        errors += check_bibliography((ROOT / "references.bib").read_text(encoding="utf-8"))
+        errors += check_bibliography(bibliography)
     if errors:
         for err in errors:
             print(f"ERROR: {err}", file=sys.stderr)
