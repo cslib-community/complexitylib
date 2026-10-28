@@ -817,6 +817,7 @@ private theorem ampTrialBody_toExact {w sb n R i : ℕ} {W : Fin n → Fin n →
     ExecRand (B := .exact) w (toExactCode ampTrialBody) x m := by
   let wb := sb + n * n
   let db := sb + 2 * (n * n)
+  have hr22 : 16 ≤ 22 := by decide
   have hwEnd : Fits w (wb + n * n) := hdEnd.of_le (by omega)
   have hwb1_fit : Fits w (wb + 1) := hdEnd.of_le (by omega)
   have h2_fit : Fits w 2 := hdEnd.of_le (by omega)

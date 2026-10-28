@@ -39,6 +39,33 @@ three complete machine-level endpoints built on the workspace-relocatable subrou
    misses `minCut W` with probability at most `1 / (2 * n)` (hence at most `1 / n`) whenever
    `0 < minCut W`, via an elementary Bernoulli power bound without `Real.exp`.
 
+## Source statements and notation mapping
+
+* **Source locators (paraphrase):**
+  - `[Karger1993]`, Section 2, Theorem 2.1 (paraphrase): contracting uniformly chosen edges in an
+    `n`-vertex multigraph down to `2` meta-vertices returns any fixed global minimum cut with
+    probability at least `C(n, 2)⁻¹ = 2 / (n * (n - 1))`, and repeating `O(n ^ 2 log n)`
+    independent trials amplifies the success probability to `1 - 1 / poly(n)`.
+  - `[KargerStein1996]`, Section 2, Lemma 2.1 and Theorem 2.2, and Section 2.1 (paraphrase): an
+    `n × n` weighted adjacency matrix with a maintained row-degree array executes each
+    edge-weight-proportional contraction in `O(k)` time on `k` active supervertices (`O(n ^ 2)`
+    total time per trial), and contracting from `k` down to `t` supervertices preserves any fixed
+    minimum cut with probability at least `C(t, 2) / C(k, 2) = t * (t - 1) / (k * (k - 1))`
+    (with `t = 2, k = n` giving `2 / (n * (n - 1))`).
+  - `[MitzenmacherUpfal2017]`, Section 1.4, Theorem 1.8 (paraphrase): multiplying single-step
+    survival bounds `1 - 2 / i` from `i = n` down to `3` yields `2 / (n * (n - 1))`.
+* **Notation mapping and parameter choices:**
+  - `C(n, 2)⁻¹` ↔ `2 / (n * (n - 1))` (`singleProgram_spec`, `amplifiedProgram_spec`);
+  - edge-weight-proportional selection ↔ one unit-cost `rand` draw in `{0, …, S - 1}`
+    (`S = totalDoubledWeight W`) resolved by linear prefix-sum scans over `rowDeg` and `W[u, v]`,
+    giving each unordered pair `{u, v}` probability `2 * W[u, v] / S`;
+  - the concrete trial count `highProbTrials n = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` and the
+    `1 / (2 * n)` failure bound in `highProbProgram_spec` are our own parameter choice instantiating
+    the `O(n ^ 2 log n)` amplification of `[Karger1993]`, Section 2;
+  - the hypothesis `0 < minCut W` in the probability clauses is included only for proof convenience
+    (when `minCut W = 0`, deterministic `S = 0` contraction still halts without faulting and outputs
+    a valid non-trivial cut weight).
+
 ## Main definitions
 
 * `Cslib.Algorithms.WordRAM.Karger.singleCode`,
@@ -166,10 +193,6 @@ theorem holdsMatrix_init_single {r n : ℕ} (W : Fin n → Fin n → ℕ) :
 theorem holdsMatrix_init_amplified {r R n : ℕ} (W : Fin n → Fin n → ℕ) :
     HoldsMatrix (Data.init (r := r) (R :: n :: flattenMatrix W)).mem 3 n W :=
   holdsMatrix_init_append [R, n] W
-
-private theorem pmf_toOuterMeasure_map_local {α β : Type*} (p : PMF α) (g : α → β) (S : Set β) :
-    (p.map g).toOuterMeasure S = p.toOuterMeasure (g ⁻¹' S) := by
-  rw [PMF.toOuterMeasure_map_apply]
 
 /-! ### Endpoint 1: Single-trial Basic Karger (`r = 16`) -/
 
@@ -410,7 +433,7 @@ theorem singleCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
       have hz₁ : z₁ ∈ m_c.support := (ProbComp.support_eval m_c) ▸ hz₁_eval
       obtain ⟨y_p, e_p, _, hv1_p⟩ := hpost_all z₁ hz₁
       rw [hm_post_def, e_p.execRand.codeComp_eq, ProbComp.eval_pure,
-        pmf_toOuterMeasure_map_local, PMF.toOuterMeasure_pure_apply]
+        PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_pure_apply]
       have hmem3 : z₁.1.mem 3 = minCut W := survivalPost_two_mem_eq hC_nt hC_min hsurv₁
       have hhit : y_p.regs val1 = minCut W := hv1_p.trans hmem3
       simp [hhit]
@@ -421,7 +444,9 @@ At word size `w ≥ logWidth 3 n` when `totalDoubledWeight W < 2 ^ w`:
 2. executes at most `n - 2` `rand` calls;
 3. on every supported branch, outputs `cutWeight W C ≥ minCut W` for a genuine non-trivial cut `C`
    of `W` while modifying memory only in `[2, 2 + n * n + n)`;
-4. when `0 < minCut W`, outputs `minCut W` with probability at least `2 / (n * (n - 1))`. -/
+4. when `0 < minCut W` (excluded only for proof convenience; `S = 0` contraction still halts
+   fault-free with a valid cut weight), outputs `minCut W` with probability at least
+   `2 / (n * (n - 1))`. -/
 theorem singleProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hn : 2 ≤ n) (hW : IsMultigraph W)
     (hw : logWidth 3 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
@@ -459,7 +484,7 @@ theorem singleProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     rcases hsup z hz with ⟨_, hmod, C, hC_nt, hv1⟩
     exact ⟨z.1, C, by rw [hv1], hbnd.2, hC_nt, minCut_le_cutWeight W hC_nt, hmod⟩
   · intro hmin_pos
-    rw [evalRand, hrun, ProbComp.eval_map, pmf_toOuterMeasure_map_local]
+    rw [evalRand, hrun, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
     refine (hsurv hmin_pos).trans (PMF.toOuterMeasure_mono _ ?_)
     intro z hz
     exact ⟨z.1, congrArg (fun v => RandCfg.halted v z.1) hz.1⟩
@@ -469,7 +494,7 @@ end SingleTrial
 /-! ### Shared `R`-trial amplification engine (`r = 22`) -/
 
 /-- `16 ≤ 22`, used to embed `computeDegreesAndTotal` and `contractDownTo` into `Data 22`. -/
-theorem hr22 : 16 ≤ 22 := by decide
+private theorem hr22 : 16 ≤ 22 := by decide
 
 -- Register layout (`r = 22`) for repeated-trial Karger amplification: registers `0..15` match
 -- `Reg` (`Contract.lean`), while `16..21` hold caller state preserved across contractions.
@@ -625,8 +650,8 @@ def ampTrialBody : Code .standard 22 := ram[
   activeK ← nOrig;
   stride ← nOrig;
   targetT ← #2;
-  ⟪computeDegreesAndTotalAt hr22⟫;
-  ⟪contractDownToAt hr22⟫;
+  ⟪computeDegreesAndTotalAt (by decide)⟫;
+  ⟪contractDownToAt (by decide)⟫;
   ⟪ampTrialPost⟫
 ]
 
@@ -1017,7 +1042,7 @@ theorem ampTrialBody_spec {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {mem�
         have hz₁ : z₁ ∈ m_c.support := (ProbComp.support_eval m_c) ▸ hz₁_eval
         obtain ⟨y_p, n_p, _, e_p, _, _, _, _, _, _, _, _, hbv_p⟩ := hpost_all z₁ hz₁
         rw [hm_post_def, e_p.execRand.codeComp_eq, ProbComp.eval_pure,
-          pmf_toOuterMeasure_map_local, PMF.toOuterMeasure_pure_apply]
+          PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_pure_apply]
         have hmem_wb1 : z₁.1.mem (wb + 1) = minCut W :=
           survivalPost_two_mem_eq hC_nt hC_min hsurv₁
         have hbv_hit : y_p.regs bestVal = minCut W := by
@@ -1142,13 +1167,13 @@ theorem ampLoop_spec {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : �
       · intro z₁ hz₁_eval _
         have hz₁ : z₁ ∈ m_b.support := (ProbComp.support_eval m_b) ▸ hz₁_eval
         obtain ⟨m_r, hm_r, _, _, hfail_r⟩ := hnext z₁ hz₁
-        rw [hml_def, hm_r.codeComp_eq, pmf_toOuterMeasure_map_local]
+        rw [hml_def, hm_r.codeComp_eq, PMF.toOuterMeasure_map_apply]
         exact hfail_r hmin_pos
       · intro z₁ hz₁_eval hhit
         have hz₁ : z₁ ∈ m_b.support := (ProbComp.support_eval m_b) ▸ hz₁_eval
         have hbv₁ : z₁.1.regs bestVal = minCut W := not_not.mp hhit
         obtain ⟨m_r, hm_r, _, hsup_r, _⟩ := hnext z₁ hz₁
-        rw [hml_def, hm_r.codeComp_eq, pmf_toOuterMeasure_map_local,
+        rw [hml_def, hm_r.codeComp_eq, PMF.toOuterMeasure_map_apply,
           PMF.toOuterMeasure_apply]
         convert ENNReal.tsum_eq_zero.mpr _
         intro z₂
@@ -1238,7 +1263,7 @@ theorem ampCore_spec {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 22
     rcases hsup_l z₀ hz₀ with ⟨ht₀, hinv_f, _⟩
     exact ⟨by omega, hinv_f.modifies_ws, hinv_f.best_cut hR⟩
   · intro hmin_pos
-    simp only [Functor.map_map, ProbComp.eval_map, pmf_toOuterMeasure_map_local]
+    simp only [Functor.map_map, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
     exact hfail_l hmin_pos
 
 end AmplificationEngine
@@ -1333,7 +1358,7 @@ theorem amplifiedCode_spec {R n w : ℕ} {W : Fin n → Fin n → ℕ}
     rcases hsup_c z₀ hz₀ with ⟨ht₀, hmod₀, hcut₀⟩
     exact ⟨by simp only [amplifiedTime]; omega, hm_s ▸ hmod₀, hcut₀⟩
   · intro hmin_pos
-    rw [ProbComp.eval_map, pmf_toOuterMeasure_map_local]
+    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
     exact hfail_c hmin_pos
 
 /-- **`R`-trial amplified Karger specification (`amplifiedProgram`).**
@@ -1342,7 +1367,9 @@ At word size `w ≥ logWidth 3 n` when `1 ≤ R`, `R < 2 ^ w`, and `totalDoubled
 2. executes at most `R * (n - 2)` `rand` calls;
 3. on every supported branch, outputs `cutWeight W C ≥ minCut W` for a genuine non-trivial cut `C`
    of `W` while modifying memory only in `[3 + n * n, 3 + 2 * (n * n) + n)`;
-4. when `0 < minCut W`, misses `minCut W` with probability at most `(1 - 2 / (n * (n - 1))) ^ R`. -/
+4. when `0 < minCut W` (excluded only for proof convenience; `S = 0` contraction still halts
+   fault-free with a valid cut weight), misses `minCut W` with probability at most
+   `(1 - 2 / (n * (n - 1))) ^ R`. -/
 theorem amplifiedProgram_spec {R n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hR : 1 ≤ R) (hn : 2 ≤ n) (hW : IsMultigraph W)
     (hw : logWidth 3 n ≤ w) (hR_fit : Fits w R) (htot : Fits w (totalDoubledWeight W)) :
@@ -1381,7 +1408,7 @@ theorem amplifiedProgram_spec {R n w : ℕ} {W : Fin n → Fin n → ℕ}
     rcases hsup z hz with ⟨_, hmod, C, hC_nt, hbv⟩
     exact ⟨z.1, C, by rw [hbv], hbnd.2, hC_nt, minCut_le_cutWeight W hC_nt, hmod⟩
   · intro hmin_pos
-    rw [evalRand, hrun, ProbComp.eval_map, pmf_toOuterMeasure_map_local]
+    rw [evalRand, hrun, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
     refine (PMF.toOuterMeasure_mono _ ?_).trans (hfail hmin_pos)
     intro z hz heq
     exact hz.1 z.1 (congrArg (fun v => RandCfg.halted v z.1) heq)
@@ -1658,7 +1685,7 @@ theorem highProbCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     rcases hsup_c z₀ hz₀ with ⟨ht₀, hmod₀, hcut₀⟩
     exact ⟨by omega, hm_s ▸ hmod₀, hcut₀⟩
   · intro hmin_pos
-    rw [ProbComp.eval_map, pmf_toOuterMeasure_map_local]
+    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
     exact (hfail_c hmin_pos).trans (highProb_failure_le hn)
 
 /-- **Explicit `O(n ^ 4 log n)` high-probability global minimum cut (`highProbProgram`).**
@@ -1667,7 +1694,8 @@ At word size `w ≥ logWidth 3 n` when `2 ≤ n` and `totalDoubledWeight W < 2 ^
 2. executes at most `highProbTrials n * (n - 2)` `rand` calls;
 3. on every supported branch, outputs `cutWeight W C ≥ minCut W` for a genuine non-trivial cut `C`
    of `W` while modifying memory only in `[2 + n * n, 2 + 2 * (n * n) + n)`;
-4. when `0 < minCut W`, misses `minCut W` with probability at most `1 / (2 * n)`. -/
+4. when `0 < minCut W` (excluded only for proof convenience; `S = 0` contraction still halts
+   fault-free with a valid cut weight), misses `minCut W` with probability at most `1 / (2 * n)`. -/
 theorem highProbProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hn : 2 ≤ n) (hW : IsMultigraph W)
     (hw : logWidth 3 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
@@ -1707,7 +1735,7 @@ theorem highProbProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     rcases hsup z hz with ⟨_, hmod, C, hC_nt, hbv⟩
     exact ⟨z.1, C, by rw [hbv], hbnd.2, hC_nt, minCut_le_cutWeight W hC_nt, hmod⟩
   · intro hmin_pos
-    rw [evalRand, hrun, ProbComp.eval_map, pmf_toOuterMeasure_map_local]
+    rw [evalRand, hrun, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
     refine (PMF.toOuterMeasure_mono _ ?_).trans (hfail hmin_pos)
     intro z hz heq
     exact hz.1 z.1 (congrArg (fun v => RandCfg.halted v z.1) heq)

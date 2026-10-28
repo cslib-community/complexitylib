@@ -32,6 +32,16 @@ minimum cuts, and the correctness, resource bounds, and success/failure probabil
    contractions in `33 * n ^ 4 * (Nat.log 2 n + 2)` worst-case steps, missing `minCut W` with
    probability at most `1 / (2 * n)` whenever `0 < minCut W`.
 
+The single-trial bound `2 / (n * (n - 1))` formalizes `[Karger1993]`, Section 2, Theorem 2.1,
+`[KargerStein1996]`, Section 2, Lemma 2.1 and Theorem 2.2 (with the `O(n ^ 2)` adjacency-matrix and
+degree-array contraction of Section 2.1, resolved via `[0, S - 1]` prefix sums over `rowDeg` and
+`W[u, v]`), and `[MitzenmacherUpfal2017]`, Section 1.4, Theorem 1.8 (paraphrase), where the source's
+`C(n, 2)⁻¹` is written `2 / (n * (n - 1))` and random edge selection uses the unit-cost `rand`
+primitive. The concrete trial count `R = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` and the
+`1 / (2 * n)` failure bound are our own parameter choice, and `0 < minCut W` in the probability
+clauses is excluded only for proof convenience (deterministic `S = 0` contraction still halts
+without faulting and outputs a valid cut weight).
+
 At word size `w`, a *word* is a natural number below `2 ^ w`. All three theorems assume
 `3 * (Nat.log 2 n + 1) ≤ w` (so workspace addresses and trial counts fit in a word) and
 `totalDoubledWeight W < 2 ^ w` (so every edge weight, vertex degree, and total active edge weight
@@ -263,8 +273,9 @@ def flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) : List ℕ :=
 any `n`-vertex multigraph (`n ≥ 2`) at word size `w ≥ 3 * (Nat.log 2 n + 1)` with
 `totalDoubledWeight W < 2 ^ w` within `42 * n ^ 2 + 12 * n + 21` steps and `n - 2` `rand` calls.
 Every branch outputs `cutWeight W C ≥ minCut W` for a non-trivial cut `C` while preserving memory
-outside `[2, 2 + n * n + n)`, and when `0 < minCut W` it outputs `minCut W` with probability at
-least `2 / (n * (n - 1))`. -/
+outside `[2, 2 + n * n + n)`, and when `0 < minCut W` (excluded only for proof convenience; `S = 0`
+contraction still halts fault-free with a valid cut weight) it outputs `minCut W` with probability
+at least `2 / (n * (n - 1))`. -/
 theorem kargerSingleTrial :
     ∃ p : Program 16,
       ∀ (n w : ℕ) (W : Fin n → Fin n → ℕ),
@@ -307,8 +318,8 @@ theorem kargerSingleTrial :
 (`1 ≤ R < 2 ^ w`) independent contraction trials on `R :: n :: flattenMatrix W` within
 `R * (50 * n ^ 2 + 12 * n + 30) + 16` steps and `R * (n - 2)` `rand` calls, preserving the input
 matrix and all memory outside `[3 + n * n, 3 + 2 * (n * n) + n)`. Every branch outputs a genuine
-non-trivial cut weight `≥ minCut W`, and when `0 < minCut W` the probability of missing `minCut W`
-is at most `(1 - 2 / (n * (n - 1))) ^ R`. -/
+non-trivial cut weight `≥ minCut W`, and when `0 < minCut W` (excluded only for proof convenience)
+the probability of missing `minCut W` is at most `(1 - 2 / (n * (n - 1))) ^ R`. -/
 theorem kargerAmplified :
     ∃ p : Program 22,
       ∀ (R n w : ℕ) (W : Fin n → Fin n → ℕ),
@@ -353,8 +364,8 @@ theorem kargerAmplified :
 runs `R = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` independent contractions on `n :: flattenMatrix W`
 within `33 * n ^ 4 * (Nat.log 2 n + 2)` steps and `R * (n - 2)` `rand` calls, preserving the input
 matrix and all memory outside `[2 + n * n, 2 + 2 * (n * n) + n)`. Every branch outputs a genuine
-non-trivial cut weight `≥ minCut W`, and when `0 < minCut W` the probability of missing `minCut W`
-is at most `1 / (2 * n)`. -/
+non-trivial cut weight `≥ minCut W`, and when `0 < minCut W` (excluded only for proof convenience)
+the probability of missing `minCut W` is at most `1 / (2 * n)`. -/
 theorem kargerHighProb :
     ∃ p : Program 22,
       ∀ (n w : ℕ) (W : Fin n → Fin n → ℕ),

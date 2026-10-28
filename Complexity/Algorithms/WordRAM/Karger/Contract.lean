@@ -33,6 +33,24 @@ yielding `36 * (k ^ 2 - t ^ 2) + 4` worst-case instructions and at most `k - t` 
 `k` down to `t`, with survival probability at least `(t * (t - 1)) / (k * (k - 1))` for any fixed
 minimum cut of a connected multigraph.
 
+## Source statements and notation mapping
+
+* **Matrix contraction and survival bound (paraphrase):**
+  - `[KargerStein1996]`, Section 2, Lemma 2.1 and Theorem 2.2, and Section 2.1 (paraphrase): an
+    `n × n` weighted adjacency matrix `W` together with a row-degree array `D[u] = ∑ v, W[u, v]`
+    supports each edge-weight-proportional contraction in `O(k)` time on `k` active supervertices
+    (`O(n ^ 2)` total time from `n` down to `t`), and contracting from `k` down to `t` supervertices
+    preserves any fixed minimum cut with probability at least `C(t, 2) / C(k, 2) = t * (t - 1) /
+    (k * (k - 1))` (`[Karger1993]`, Section 2, Theorem 2.1 gives the `t = 2` case
+    `2 / (n * (n - 1))`).
+* **Notation mapping:**
+  - `C(t, 2) / C(k, 2)` ↔ `((t * (t - 1) : ℕ) : ℝ≥0∞) / (k * (k - 1))` in `contractDownTo_spec`
+    and `contractDownToAt_spec`;
+  - random edge selection proportional to weight ↔ one unit-cost word-RAM `rand` instruction
+    drawing uniformly from `{0, …, totS - 1}` (`totS = totalDoubledWeight W`), followed by linear
+    prefix-sum scans `uScan` over `D[0..k)` and `vScan` over `W[u, 0..k)` that select each
+    unordered pair `{u, v}` with probability `2 * W[u, v] / totS`.
+
 ## Main definitions
 
 * `Cslib.Algorithms.WordRAM.Karger.HoldsMatrix`,
@@ -2439,32 +2457,11 @@ theorem postRandStep_exec {w wb db str m t r_val : ℕ}
 
 /-! #### `PMF.toOuterMeasure` helpers for step-count maps and `contractDownTo_spec` -/
 
-open Classical in
-private theorem pmf_toOuterMeasure_pure {α : Type*} (a : α) (S : Set α) :
-    (PMF.pure a).toOuterMeasure S = if a ∈ S then 1 else 0 := by
-  rw [PMF.toOuterMeasure_apply]
-  have h : (fun x => S.indicator (PMF.pure a) x) =
-      fun x => if x = a then (if a ∈ S then (1 : ℝ≥0∞) else 0) else 0 := by
-    ext x
-    by_cases hx : x = a
-    · subst hx
-      by_cases ha : x ∈ S <;> simp [ha]
-    · simp [hx, Set.indicator_apply]
-  rw [h, tsum_ite_eq]
-
-private theorem pmf_toOuterMeasure_map {α β : Type*} (p : PMF α) (g : α → β) (S : Set β) :
-    (p.map g).toOuterMeasure S = p.toOuterMeasure (g ⁻¹' S) := by
-  classical
-  rw [PMF.map, PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply]
-  refine tsum_congr fun a => ?_
-  simp only [Function.comp_apply, pmf_toOuterMeasure_pure]
-  by_cases ha : g a ∈ S <;> simp [ha]
-
 private theorem eval_map_snd_toOuterMeasure {α : Type} (m : ProbComp (α × ℕ))
     (g : α × ℕ → ℕ) (P : α → Prop) :
     (((fun z => (z.1, g z)) <$> m).eval).toOuterMeasure {z | P z.1} =
       m.eval.toOuterMeasure {z | P z.1} := by
-  rw [ProbComp.eval_map, pmf_toOuterMeasure_map]
+  rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
   rfl
 
 private theorem step_budget_succ {t m n_post z₂ : ℕ} (ht : 2 ≤ t) (hm : t ≤ m)
@@ -2520,7 +2517,7 @@ private theorem contractLoop_spec {n w wb db str t steps : ℕ} {W₀ : Fin n �
       cases hk_eq
       exact ⟨W, part, hC, hst⟩
     · intro B _ _ _
-      simp only [Nat.add_zero, ProbComp.eval_pure, pmf_toOuterMeasure_pure]
+      simp only [Nat.add_zero, ProbComp.eval_pure, PMF.toOuterMeasure_pure_apply]
       have ht_pos : 0 < t * (t - 1) := Nat.mul_pos (by omega) (by omega)
       have hne0 : (((t * (t - 1) : ℕ) : ℝ≥0∞)) ≠ 0 := by exact_mod_cast ht_pos.ne'
       have htop : (((t * (t - 1) : ℕ) : ℝ≥0∞)) ≠ ⊤ := ENNReal.natCast_ne_top _
@@ -2529,7 +2526,7 @@ private theorem contractLoop_spec {n w wb db str t steps : ℕ} {W₀ : Fin n �
           SurvivalPost W₀ wb db str t (pullbackCut part B) z.1} := by
         cases hk_eq
         exact ⟨W, part, B, hC, hst.workspace, hst.regs_totS, rfl⟩
-      simp only [hmem, ↓reduceIte, le_rfl]
+      simp [hmem]
   | succ s ih =>
     let m_cur := t + s
     have hm_def : m_cur = t + s := rfl
@@ -2845,7 +2842,7 @@ private theorem contractLoop_spec {n w wb db str t steps : ℕ} {W₀ : Fin n �
           have h1_step := step_survival_prob_ge (by omega : 2 ≤ m_cur + 1) hC.multigraph
             hS_pos hdeg_bound
           have hsub_m : m_cur + 1 - 2 = m_cur - 1 := by omega
-          rw [hsub_m, hmap_u, pmf_toOuterMeasure_map] at h1_step
+          rw [hsub_m, hmap_u, PMF.toOuterMeasure_map_apply] at h1_step
           exact h1_step
         have hsub_ms : t + (s + 1) - 1 = m_cur := by omega
         have hm_add : t + (s + 1) = m_cur + 1 := rfl
@@ -3075,7 +3072,7 @@ theorem contractDownToAt_spec {r n w wb db str k t : ℕ} (hr : 16 ≤ r)
     refine ⟨ht0, hmod0, fun j hj => extend_castLE_regs_ge hr z₀.1 x j hj, W', part', hC', ?_⟩
     rwa [Data.comap_extend hf]
   · intro B hmin_pos hB_nt hB_min
-    rw [ProbComp.eval_map, pmf_toOuterMeasure_map]
+    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
     have hpre : ((fun z : Data 16 × ℕ => (z.1.extend f x, z.2)) ⁻¹'
         {z : Data r × ℕ | SurvivalPost W₀ wb db str t (pullbackCut part B) (z.1.comap f)}) =
         {z : Data 16 × ℕ | SurvivalPost W₀ wb db str t (pullbackCut part B) z.1} := by
