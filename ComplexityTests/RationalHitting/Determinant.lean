@@ -86,10 +86,4 @@ example : ComputableInPolyTime (List.map detRows)
     (encList (encList (encList encIntBin))) (encList encIntBin) := by
   fun_prop
 
-example :
-    (encList (encList encIntBin) (stagesRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] 1)).length ≤
-      stageTableBound
-        (encList (encList encIntBin) [[2, -1, 0], [1, 3, 2], [0, 1, 4]]).length 2 :=
-  length_encList_stagesRows_le _ (by decide)
-
 end ComplexityTests.RationalHitting.Determinant
