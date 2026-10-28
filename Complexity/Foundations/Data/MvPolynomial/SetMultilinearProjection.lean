@@ -10,6 +10,7 @@ module
 public import Complexity.Foundations.Data.MvPolynomial.SetMultilinear
 public import Mathlib.Algebra.MvPolynomial.Rename
 public import Mathlib.Data.Fintype.Pi
+public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
 # The set-multilinear projection
@@ -23,16 +24,23 @@ set-multilinear polynomials on `S` and which fixes them (`MvPolynomial.smProj_eq
 the empty set of blocks it is the constant coefficient (`MvPolynomial.smProj_empty`).
 
 A monomial is set-multilinear on `S` exactly when its block degrees, the exponent sums over the
-blocks, are one on `S` and zero elsewhere (`MvPolynomial.mem_range_blockMonomial_iff`). From this,
-the projection of a product is the sum, over the ways of splitting `S` into disjoint parts, one
-for each factor, of the products of the projections of the factors on their parts
-(`MvPolynomial.smProj_mul`, `MvPolynomial.smProj_prod`): a set-multilinear monomial of the product
-comes from set-multilinear monomials of the factors on disjoint blocks. The projection commutes
+blocks, are one on `S` and zero elsewhere (`MvPolynomial.mem_range_blockMonomial_iff`). The block
+degrees are the weight of the monomial for the weight `v ↦ single (blk v) 1`, valued in
+`Fin d →₀ ℕ`, that sends each variable to the unit vector of its block. So the set-multilinear
+polynomials on `S` are the weighted homogeneous polynomials of weighted degree the indicator of `S`
+(`MvPolynomial.isSetMultilinear_iff_isWeightedHomogeneous`), and `smProj blk S` is defined as
+Mathlib's `MvPolynomial.weightedHomogeneousComponent` for this weight and degree; idempotence and
+orthogonality come from Mathlib. From the characterization, the projection of a product is the
+sum, over the ways of splitting `S` into disjoint parts, one for each factor, of the products of
+the projections of the factors on their parts (`MvPolynomial.smProj_mul`,
+`MvPolynomial.smProj_prod`): a set-multilinear monomial of the product comes from set-multilinear
+monomials of the factors on disjoint blocks. The projection commutes
 with renaming variables along their blocks (`MvPolynomial.rename_smProj`).
 
 ## Main definitions
 
-* `MvPolynomial.smProj`: the projection onto the set-multilinear monomials on a set of blocks.
+* `MvPolynomial.smProj`: the projection onto the set-multilinear monomials on a set of blocks, a
+  weighted homogeneous component.
 * `MvPolynomial.blockSplits`: the families of pairwise disjoint sets of blocks, indexed by a
   finite type, with a given union.
 
@@ -40,6 +48,8 @@ with renaming variables along their blocks (`MvPolynomial.rename_smProj`).
 
 * `MvPolynomial.mem_range_blockMonomial_iff`: a monomial is set-multilinear on `S` if and only if
   its block degrees are the indicator of `S`.
+* `MvPolynomial.isSetMultilinear_iff_isWeightedHomogeneous`: set-multilinear polynomials on `S`
+  are the weighted homogeneous polynomials, for the block weight, of degree the indicator of `S`.
 * `MvPolynomial.sum_mem_range_blockMonomial_iff`, `MvPolynomial.add_mem_range_blockMonomial_iff`:
   a product of monomials is set-multilinear on `S` exactly when the factors are set-multilinear on
   the parts of an ordered split of `S`.
@@ -58,7 +68,8 @@ with renaming variables along their blocks (`MvPolynomial.rename_smProj`).
   Definition 23, p. 31:12 (the projection `π_{sm,S}`), and the remark after it, p. 31:13
   (`π_{sm,∅}(f) = f(0)`). The product formulas `smProj_mul` and `smProj_prod` are the expansion
   used in the proof of [Forbes2024, Lemma 26], pp. 31:13–31:14; their statement as identities of
-  polynomials, the block-degree characterization and `rename_smProj` are original.
+  polynomials, the block-degree characterization, its weighted homogeneous form and
+  `rename_smProj` are original.
 -/
 
 @[expose] public section
@@ -150,6 +161,23 @@ theorem mem_range_blockMonomial_iff {blk : σ → Fin d} {S : Finset (Fin d)} {m
       have := hle hv
       rw [ite_eq_right hS] at this
       exact hne (by omega)
+
+/-- The weight that sends each variable to the unit vector of its block computes the block
+degrees of a monomial. -/
+theorem _root_.Finsupp.weight_single_one_eq_mapDomain {τ : Type*} (blk : σ → τ) (m : σ →₀ ℕ) :
+    Finsupp.weight (fun v => Finsupp.single (blk v) (1 : ℕ)) m = m.mapDomain blk := by
+  rw [Finsupp.weight_apply, Finsupp.mapDomain]
+  exact Finsupp.sum_congr fun v _ => by rw [Finsupp.smul_single, smul_eq_mul, mul_one]
+
+/-- A monomial is set-multilinear on `S` exactly when its weight, for the weight
+`v ↦ single (blk v) 1` that sends each variable to the unit vector of its block, is the indicator
+of `S`. -/
+theorem mem_range_blockMonomial_iff_weight {blk : σ → Fin d} {S : Finset (Fin d)}
+    {m : σ →₀ ℕ} :
+    m ∈ Set.range (blockMonomial blk S) ↔
+      Finsupp.weight (fun v => Finsupp.single (blk v) (1 : ℕ)) m =
+        ∑ i ∈ S, Finsupp.single i 1 := by
+  rw [Finsupp.weight_single_one_eq_mapDomain, mem_range_blockMonomial_iff]
 
 /-- A monomial is set-multilinear on at most one set of blocks. -/
 theorem eq_of_mem_range_blockMonomial {blk : σ → Fin d} {S T : Finset (Fin d)} {m : σ →₀ ℕ}
@@ -293,20 +321,34 @@ end Splits
 
 variable [CommSemiring K]
 
+/-- **Set-multilinear polynomials are weighted homogeneous.** A polynomial is set-multilinear on
+`S` exactly when it is weighted homogeneous of weighted degree the indicator of `S`, for the
+weight `v ↦ single (blk v) 1` that sends each variable to the unit vector of its block
+(original). -/
+theorem isSetMultilinear_iff_isWeightedHomogeneous {blk : σ → Fin d} {S : Finset (Fin d)}
+    {f : MvPolynomial σ K} :
+    IsSetMultilinear blk S f ↔
+      IsWeightedHomogeneous (fun v => Finsupp.single (blk v) (1 : ℕ)) f
+        (∑ i ∈ S, Finsupp.single i 1) :=
+  ⟨fun hf _ hm => mem_range_blockMonomial_iff_weight.1 (hf _ (mem_support_iff.2 hm)),
+    fun hf _ hm => mem_range_blockMonomial_iff_weight.2 (hf (mem_support_iff.1 hm))⟩
+
 /-- The **set-multilinear projection** `π_{sm,S}` of [Forbes2024, Def. 23]: the linear map that
 keeps the terms whose monomials are set-multilinear on the set `S` of blocks and drops the others.
--/
+It is Mathlib's weighted homogeneous component of weighted degree the indicator of `S`, for the
+weight `v ↦ single (blk v) 1` that sends each variable to the unit vector of its block
+(`MvPolynomial.isSetMultilinear_iff_isWeightedHomogeneous`). -/
 noncomputable def smProj (blk : σ → Fin d) (S : Finset (Fin d)) :
     MvPolynomial σ K →ₗ[K] MvPolynomial σ K :=
-  letI := Classical.decPred (· ∈ Set.range (blockMonomial blk S))
-  { toFun := fun f =>
-      AddMonoidAlgebra.ofCoeff (f.coeff.filter (· ∈ Set.range (blockMonomial blk S)))
-    map_add' := fun f g => by
-      ext m
-      simp only [AddMonoidAlgebra.coeff_add, Finsupp.filter_add]
-    map_smul' := fun c f => by
-      ext m
-      simp only [AddMonoidAlgebra.coeff_smul, Finsupp.filter_smul, RingHom.id_apply] }
+  weightedHomogeneousComponent (fun v => Finsupp.single (blk v) (1 : ℕ))
+    (∑ i ∈ S, Finsupp.single i 1)
+
+/-- The set-multilinear projection on `S` is the weighted homogeneous component, for the block
+weight, of weighted degree the indicator of `S`. -/
+theorem smProj_eq_weightedHomogeneousComponent (blk : σ → Fin d) (S : Finset (Fin d)) :
+    smProj (K := K) blk S = weightedHomogeneousComponent
+      (fun v => Finsupp.single (blk v) (1 : ℕ)) (∑ i ∈ S, Finsupp.single i 1) :=
+  rfl
 
 variable {blk : σ → Fin d} {S T : Finset (Fin d)} {f g : MvPolynomial σ K}
 
@@ -314,17 +356,15 @@ variable {blk : σ → Fin d} {S T : Finset (Fin d)} {f g : MvPolynomial σ K}
 theorem coeff_smProj_of_mem {m : σ →₀ ℕ} (hm : m ∈ Set.range (blockMonomial blk S)) :
     (smProj blk S f).coeff m = f.coeff m := by
   classical
-  simp only [smProj, LinearMap.coe_mk, AddHom.coe_mk, AddMonoidAlgebra.coeff_ofCoeff]
-  rw [Finsupp.filter_apply]
-  convert ite_eq_left hm
+  rw [smProj, coeff_weightedHomogeneousComponent,
+    ite_eq_left (mem_range_blockMonomial_iff_weight.1 hm)]
 
 /-- The projection drops the coefficients of the other monomials. -/
 theorem coeff_smProj_of_notMem {m : σ →₀ ℕ} (hm : m ∉ Set.range (blockMonomial blk S)) :
     (smProj blk S f).coeff m = 0 := by
   classical
-  simp only [smProj, LinearMap.coe_mk, AddHom.coe_mk, AddMonoidAlgebra.coeff_ofCoeff]
-  rw [Finsupp.filter_apply]
-  convert ite_eq_right hm
+  rw [smProj, coeff_weightedHomogeneousComponent,
+    ite_eq_right fun h => hm (mem_range_blockMonomial_iff_weight.2 h)]
 
 /-- The projection of a monomial keeps it if it is set-multilinear on `S`, and is zero
 otherwise. -/
@@ -356,38 +396,23 @@ private theorem smProj_monomial' (m : σ →₀ ℕ) (a : K)
 
 /-- The projection is set-multilinear on `S`. -/
 theorem isSetMultilinear_smProj (blk : σ → Fin d) (S : Finset (Fin d)) (f : MvPolynomial σ K) :
-    IsSetMultilinear blk S (smProj blk S f) := by
-  intro m hm
-  by_contra h
-  exact mem_support_iff.1 hm (coeff_smProj_of_notMem fun h' => h h')
-
-/-- A polynomial is set-multilinear on `S` exactly when the projection on `S` fixes it. -/
-theorem smProj_eq_self_iff : smProj blk S f = f ↔ IsSetMultilinear blk S f := by
-  constructor
-  · intro h
-    exact h ▸ isSetMultilinear_smProj blk S f
-  · intro hf
-    ext m
-    by_cases hm : m ∈ Set.range (blockMonomial blk S)
-    · exact coeff_smProj_of_mem hm
-    · rw [coeff_smProj_of_notMem hm]
-      by_contra h
-      exact hm (hf m (mem_support_iff.2 (Ne.symm h)))
+    IsSetMultilinear blk S (smProj blk S f) :=
+  isSetMultilinear_iff_isWeightedHomogeneous.2
+    (weightedHomogeneousComponent_isWeightedHomogeneous _ f)
 
 /-- The projection on `S` fixes a set-multilinear polynomial on `S`. -/
 theorem IsSetMultilinear.smProj_eq_self (hf : IsSetMultilinear blk S f) : smProj blk S f = f :=
-  smProj_eq_self_iff.2 hf
+  (isSetMultilinear_iff_isWeightedHomogeneous.1 hf).weightedHomogeneousComponent_same
+
+/-- A polynomial is set-multilinear on `S` exactly when the projection on `S` fixes it. -/
+theorem smProj_eq_self_iff : smProj blk S f = f ↔ IsSetMultilinear blk S f :=
+  ⟨fun h => h ▸ isSetMultilinear_smProj blk S f, IsSetMultilinear.smProj_eq_self⟩
 
 /-- The projection on `T` of a set-multilinear polynomial on a different set `S` is zero. -/
 theorem IsSetMultilinear.smProj_eq_zero (hf : IsSetMultilinear blk S f) (hST : T ≠ S) :
-    smProj blk T f = 0 := by
-  ext m
-  rw [AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]
-  by_cases hm : m ∈ Set.range (blockMonomial blk T)
-  · rw [coeff_smProj_of_mem hm]
-    by_contra h
-    exact hST (eq_of_mem_range_blockMonomial hm (hf m (mem_support_iff.2 h)))
-  · exact coeff_smProj_of_notMem hm
+    smProj blk T f = 0 :=
+  (isSetMultilinear_iff_isWeightedHomogeneous.1 hf).weightedHomogeneousComponent_ne _
+    fun h => hST (sum_single_one_injective h)
 
 /-- Projecting twice: the projections on different sets of blocks are orthogonal, and each is
 idempotent. -/
@@ -401,13 +426,9 @@ theorem smProj_smProj [Decidable (T = S)] :
 theorem smProj_add : smProj blk S (f + g) = smProj blk S f + smProj blk S g :=
   map_add _ f g
 
-/-- The projection commutes with scalars. -/
-theorem smProj_smul (c : K) : smProj blk S (c • f) = c • smProj blk S f :=
-  map_smul _ c f
-
 /-- The projection commutes with multiplication by a constant. -/
 theorem smProj_C_mul (c : K) : smProj blk S (C c * f) = C c * smProj blk S f := by
-  rw [← smul_eq_C_mul, ← smul_eq_C_mul, smProj_smul]
+  rw [smProj, weightedHomogeneousComponent_C_mul]
 
 /-- **The projection on no blocks is the constant coefficient** [Forbes2024, p. 31:13]. -/
 theorem smProj_empty (blk : σ → Fin d) (f : MvPolynomial σ K) :

@@ -13,9 +13,10 @@ import Mathlib.Algebra.BigOperators.Fin
 The variables `x₀, x₁, x₂` are split into the blocks `{x₀, x₁}` and `{x₂}`. The projection of
 `(1 + x₀)(2 + x₂)` onto both blocks is `x₀ x₂`, computed term by term; its projection onto the
 first block is `2 x₀`, computed through both product formulas; its projection onto no blocks is the
-constant coefficient `2`. Ordered splits are checked on both sides. The monomial
-`x₀ x₁`, two variables of one block, is set-multilinear on no set of blocks. Merging `x₀` and `x₁`
-into one variable is a renaming along the blocks, and commutes with the projection.
+constant coefficient `2`. Ordered splits are checked on both sides. The monomial `x₀ x₁`, two
+variables of one block, is set-multilinear on no set of blocks, and `x₀ x₂` is weighted homogeneous
+for the block weight. Merging `x₀` and `x₁` into one variable is a renaming along the blocks, and
+commutes with the projection on `x₀ x₂ + x₁ x₂`.
 -/
 
 namespace ComplexityTests.SetMultilinearProjection
@@ -86,10 +87,30 @@ example : (![{0}, {0}] : Fin 2 → Finset (Fin 2)) ∉ blockSplits (Fin 2) Finse
   rintro ⟨-, h⟩
   exact absurd h (by decide)
 
+/-- `x₀ x₂` and `x₁ x₂` take one variable from each block. -/
+private theorem isSetMultilinear_X_mul_X_two (v : Fin 3) (hv : blk v = 0) :
+    IsSetMultilinear blk Finset.univ (X v * X 2 : MvPolynomial (Fin 3) ℚ) := by
+  have h := (isSetMultilinear_X (K := ℚ) blk v).mul (isSetMultilinear_X blk 2)
+    (by rw [hv]; decide)
+  rw [hv] at h
+  exact (by decide : ({0} ∪ {blk 2} : Finset (Fin 2)) = Finset.univ) ▸ h
+
+/-- For the block weight, sending `x₀, x₁` to `(1, 0)` and `x₂` to `(0, 1)`, the set-multilinear
+polynomial `x₀ x₂` is weighted homogeneous of weighted degree `(1, 1)`. -/
+example : IsWeightedHomogeneous (fun v => Finsupp.single (blk v) (1 : ℕ))
+    (X 0 * X 2 : MvPolynomial (Fin 3) ℚ) (∑ i, Finsupp.single i 1) :=
+  isSetMultilinear_iff_isWeightedHomogeneous.1 (isSetMultilinear_X_mul_X_two 0 rfl)
+
 /-- Renaming each variable to its block merges `x₀` and `x₁`; it is a renaming along the blocks,
-so it commutes with the projection, although it is not injective. -/
-example (g : MvPolynomial (Fin 3) ℚ) (S : Finset (Fin 2)) :
-    rename blk (smProj blk S g) = smProj id S (rename blk g) :=
-  rename_smProj (blk := blk) (blk' := id) blk (fun _ => rfl) S g
+although it is not injective. Through `rename_smProj`, the projection onto both blocks of the
+renamed `x₀ x₂ + x₁ x₂` is the renamed projection of `x₀ x₂ + x₁ x₂`, which is the polynomial
+itself, so it is `2 • x₀ x₁`. -/
+example : smProj id Finset.univ (rename blk (X 0 * X 2 + X 1 * X 2 : MvPolynomial (Fin 3) ℚ)) =
+    2 • (X 0 * X 1 : MvPolynomial (Fin 2) ℚ) := by
+  have hg := (isSetMultilinear_X_mul_X_two 0 rfl).add (isSetMultilinear_X_mul_X_two 1 rfl)
+  rw [← rename_smProj (blk := blk) (blk' := id) blk (fun _ => rfl), hg.smProj_eq_self]
+  simp only [map_add, map_mul, rename_X]
+  rw [two_smul]
+  rfl
 
 end ComplexityTests.SetMultilinearProjection
