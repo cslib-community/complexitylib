@@ -22,6 +22,7 @@ These are specializations of `Block.Realizes`, not an additional memory model.
 
 * `Block.HoldsList.append_one`: a store immediately after a list appends one element.
 * `Block.HoldsList.frame`: writes outside the block preserve its list.
+* `Block.holdsList_append_iff`: concatenation is equivalent to two adjacent represented blocks.
 -/
 
 @[expose] public section
@@ -90,5 +91,21 @@ theorem HoldsList.append {base : ℕ} {xs ys : List ℕ} {mem : ℕ → ℕ}
     simp only [List.length_append] at hil
     have he : base + xs.length + (i.val - xs.length) = base + i.val := by omega
     simpa only [he] using h'.get (i.val - xs.length) (by omega)
+
+/-- A represented concatenation consists of two adjacent represented blocks. -/
+theorem holdsList_append_iff {base : ℕ} {xs ys : List ℕ} {mem : ℕ → ℕ} :
+    HoldsList base (xs ++ ys) mem ↔
+      HoldsList base xs mem ∧ HoldsList (base + xs.length) ys mem := by
+  constructor
+  · intro h
+    constructor
+    · simpa only [List.take_left] using h.take xs.length
+    · intro i
+      have hh := h.get (xs.length + i.val) (by simp only [List.length_append]; omega)
+      change mem (base + xs.length + i.val) = ys[i.val]
+      simpa only [List.getElem_append_right (by omega : xs.length ≤ xs.length + i.val),
+        Nat.add_sub_cancel_left, Nat.add_assoc] using hh
+  · rintro ⟨hx, hy⟩
+    exact hx.append hy
 
 end Cslib.WordRAM.Block
