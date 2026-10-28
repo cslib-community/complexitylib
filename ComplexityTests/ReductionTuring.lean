@@ -93,6 +93,16 @@ example : PolyTimeTuringReducible encBits encBits {w | (false :: w ∈ B) ≠ (t
 example (hB : B ∈ P encBits) : {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} ∈ P encBits :=
   (ktt_xor_prefix B).polyTimeTuringReducible.mem_P hB
 
+/-- Transitivity of Turing reductions: composing the `2`-truth-table XOR reduction with the
+disjunctive prefix reduction yields a Turing reduction for the 4-query parity-of-disjunctions
+language. -/
+example :
+    PolyTimeTuringReducible encBits encBits
+      {w | (false :: w ∈ {v | false :: v ∈ B ∨ true :: v ∈ B}) ≠
+        (true :: w ∈ {v | false :: v ∈ B ∨ true :: v ∈ B})} B :=
+  (ktt_xor_prefix {v | false :: v ∈ B ∨ true :: v ∈ B}).polyTimeTuringReducible.trans
+    (dtt_or_prefix B).polyTimeTuringReducible
+
 /-- Composing a reduction with membership in `P` transfers membership. -/
 example (hB : B ∈ P encBits) : {w | true :: w ∈ B} ∈ P encBits :=
   (show PolyTimeTuringReducible encBits encBits {w | true :: w ∈ B} B from
