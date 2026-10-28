@@ -385,7 +385,7 @@ private theorem computableInLogSpace_alt (encA : α ↪ List Bool) (x₀ x₁ : 
 open scoped Classical in
 private theorem computableInPolyTime_alt (encA : α ↪ List Bool) (x₀ x₁ : α) :
     ComputableInPolyTime (fun a => if a = x₀ then x₁ else x₀) encA encA :=
-  (computableInLogSpace_alt encA x₀ x₁).computableTidilyInPolyTime.computableInPolyTime
+  (computableInLogSpace_alt encA x₀ x₁).computableInPolyTime
 
 /-- A set in `L` with at least two members and at least two non-members is logspace many-one
 autoreducible. -/

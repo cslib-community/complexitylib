@@ -22,9 +22,15 @@ nonadaptive oracle reduction in logarithmic space: on input `a : α`, a logspace
 `q : α × ℕ → β` determine the queries `q (a, 0), …, q (a, r a - 1)` before any oracle answer is
 seen, and a logspace evaluator `d : α × List Bool → Bool` combines `a` and the answer bit
 vector `truthTableAnswers (q ⁻¹' B) r a` into the decision for `a`
-[Ladner, Lynch and Selman][LadnerLynchSelman1975]. Following Ladner and Lynch, both query
-generation and truth-table evaluation are required to be computable in logarithmic space (`L`),
-ensuring that bounded-query truth-table reductions preserve membership in `L` and compose in `L`.
+(adapting the polynomial-time scheme of [Ladner, Lynch and Selman][LadnerLynchSelman1975] to
+logarithmic space).
+
+**Design choice.** The literature uses two inequivalent conventions for logspace truth-table
+evaluation: requiring the evaluator `d` to be computable in logarithmic space (`L`), or restricting
+truth tables to Boolean formulas / `NC¹` evaluators. This module adopts the `L`-evaluator
+convention so that both query generation and truth-table evaluation lie in `L`, ensuring that
+bounded-query truth-table reductions preserve membership in `L` and compose in `L`. No equivalence
+with the formula/`NC¹` convention is claimed.
 
 This module also defines the standard restricted logspace truth-table notions mirroring
 `TruthTableVariants`:
@@ -83,7 +89,6 @@ This module also defines the standard restricted logspace truth-table notions mi
 
 * [R. E. Ladner, N. A. Lynch, A. L. Selman, *A comparison of polynomial time
   reducibilities*][LadnerLynchSelman1975]
-* [S. R. Buss, L. Hay, *On truth-table reducibility to SAT*][BussHay1991]
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.5][Sipser2013]
 -/
 
