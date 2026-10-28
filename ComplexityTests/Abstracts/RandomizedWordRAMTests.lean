@@ -189,18 +189,20 @@ private theorem dup6_mergeSort : dup6.mergeSort = [0, 1, 2, 2, 4, 4] := by
       · rfl
       · rfl
       · rfl
-      · rw [List.count_eq_zero.mpr (by simp [dup6]; omega),
-            List.count_eq_zero.mpr (by simp; omega)]
+      · rw [List.count_eq_zero.mpr
+            (by simp only [dup6, List.mem_cons, List.not_mem_nil, or_false]; omega),
+          List.count_eq_zero.mpr
+            (by simp only [List.mem_cons, List.not_mem_nil, or_false]; omega)]
   exact ((List.mergeSort_perm dup6 (· ≤ ·)).trans hp6).eq_of_pairwise'
     (List.pairwise_mergeSort' (· ≤ ·) dup6) (by decide)
 
 /-- Non-vacuous instantiation of `RandomizedWordRAMAbstract.quickselect` on
-`dup6 = [4, 2, 4, 0, 2, 1]` at word size `w = 6` across any in-range rank `k < 6`: every branch
-halts within `375` steps and `5` `rand` calls returning `[0, 1, 2, 2, 4, 4].getD k 0`, permuting
+`dup6 = [4, 2, 4, 0, 2, 1]` at word size `w = 6` across any in-range rank `k < 6`: a single program
+`p` halts within `375` steps and `5` `rand` calls returning `[0, 1, 2, 2, 4, 4].getD k 0`, permuting
 `M[2 .. 8)` around `2 + k`, preserving `M[0] = 7`, `M[1] = k`, and `M[8] = 0` (zero auxiliary
 memory words), with `expectedTime ≤ 495`. -/
-theorem quickselect_dup6_rank (k : ℕ) (hk : k < 6) :
-    ∃ p : Program 16,
+theorem quickselect_dup6_rank :
+    ∃ p : Program 16, ∀ k < 6,
       let ans := ([0, 1, 2, 2, 4, 4] : List ℕ).getD k 0
       HaltsWithin 6 p (init (k :: dup6)) 375 ∧
       RandCallsBounded 6 p (init (k :: dup6)) 375 5 ∧
@@ -213,6 +215,7 @@ theorem quickselect_dup6_rank (k : ℕ) (hk : k < 6) :
           mem 0 = 7 ∧ mem 1 = k ∧ mem 8 = 0) ∧
       expectedTime 6 p (init (k :: dup6)) ≤ (495 : ENNReal) := by
   obtain ⟨p, hp_in, -⟩ := quickselect
+  refine ⟨p, fun k hk => ?_⟩
   have hw : 2 * (Nat.log 2 dup6.length + 1) ≤ 6 := by decide
   have hfit : InputFits 6 (k :: dup6) := by
     refine ⟨by change 7 < 2 ^ 6; decide, ?_⟩
@@ -225,7 +228,7 @@ theorem quickselect_dup6_rank (k : ℕ) (hk : k < 6) :
   have hT : 10 * dup6.length ^ 2 + 15 = 375 := by decide
   have hR : dup6.length - 1 = 5 := rfl
   have hE : 80 * dup6.length + 15 = 495 := by decide
-  refine ⟨p, ?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_⟩
   · simpa [hT] using hHalts
   · simpa [hT, hR] using hCalls
   · intro cfg hcfg
@@ -241,23 +244,24 @@ theorem quickselect_dup6_rank (k : ℕ) (hk : k < 6) :
   · rw [hE] at hExp
     exact_mod_cast hExp
 
-/-- Concrete boundary and duplicate-rank checks (`k = 0, 2, 3, 5`) on `dup6`: outputs `0, 2, 2, 4`
-at `M[2], M[4], M[5], M[7]`. -/
+/-- Concrete boundary and duplicate-rank checks (`k = 0, 2, 3, 5`) on `dup6` for a single program
+`p`: outputs `0, 2, 2, 4` at `M[2], M[4], M[5], M[7]`. -/
 theorem quickselect_dup6_concrete_ranks :
-    (∃ p : Program 16, ∀ cfg ∈ (evalRand 6 p 375 (init (0 :: dup6))).support,
-      ∃ reg mem, cfg = .halted 0 reg mem ∧ mem 2 = 0 ∧ mem 8 = 0) ∧
-    (∃ p : Program 16, ∀ cfg ∈ (evalRand 6 p 375 (init (2 :: dup6))).support,
-      ∃ reg mem, cfg = .halted 2 reg mem ∧ mem 4 = 2) ∧
-    (∃ p : Program 16, ∀ cfg ∈ (evalRand 6 p 375 (init (3 :: dup6))).support,
-      ∃ reg mem, cfg = .halted 2 reg mem ∧ mem 5 = 2) ∧
-    (∃ p : Program 16, ∀ cfg ∈ (evalRand 6 p 375 (init (5 :: dup6))).support,
-      ∃ reg mem, cfg = .halted 4 reg mem ∧ mem 7 = 4) := by
-  obtain ⟨p₀, -, -, h₀, -⟩ := quickselect_dup6_rank 0 (by decide)
-  obtain ⟨p₂, -, -, h₂, -⟩ := quickselect_dup6_rank 2 (by decide)
-  obtain ⟨p₃, -, -, h₃, -⟩ := quickselect_dup6_rank 3 (by decide)
-  obtain ⟨p₅, -, -, h₅, -⟩ := quickselect_dup6_rank 5 (by decide)
-  refine ⟨⟨p₀, fun cfg hc => ?_⟩, ⟨p₂, fun cfg hc => ?_⟩,
-    ⟨p₃, fun cfg hc => ?_⟩, ⟨p₅, fun cfg hc => ?_⟩⟩
+    ∃ p : Program 16,
+      (∀ cfg ∈ (evalRand 6 p 375 (init (0 :: dup6))).support,
+        ∃ reg mem, cfg = .halted 0 reg mem ∧ mem 2 = 0 ∧ mem 8 = 0) ∧
+      (∀ cfg ∈ (evalRand 6 p 375 (init (2 :: dup6))).support,
+        ∃ reg mem, cfg = .halted 2 reg mem ∧ mem 4 = 2) ∧
+      (∀ cfg ∈ (evalRand 6 p 375 (init (3 :: dup6))).support,
+        ∃ reg mem, cfg = .halted 2 reg mem ∧ mem 5 = 2) ∧
+      (∀ cfg ∈ (evalRand 6 p 375 (init (5 :: dup6))).support,
+        ∃ reg mem, cfg = .halted 4 reg mem ∧ mem 7 = 4) := by
+  obtain ⟨p, hp⟩ := quickselect_dup6_rank
+  obtain ⟨-, -, h₀, -⟩ := hp 0 (by decide)
+  obtain ⟨-, -, h₂, -⟩ := hp 2 (by decide)
+  obtain ⟨-, -, h₃, -⟩ := hp 3 (by decide)
+  obtain ⟨-, -, h₅, -⟩ := hp 5 (by decide)
+  refine ⟨p, fun cfg hc => ?_, fun cfg hc => ?_, fun cfg hc => ?_, fun cfg hc => ?_⟩
   · obtain ⟨reg, mem, hcfg, -, hm2, -, -, -, -, hm8⟩ := h₀ cfg hc
     exact ⟨reg, mem, hcfg, hm2, hm8⟩
   · obtain ⟨reg, mem, hcfg, -, hm4, -⟩ := h₂ cfg hc
@@ -300,6 +304,8 @@ theorem quickselect_out_of_range_instances :
        expectedTime 6 p (init (6 :: dup6)) = 8) ∧
       (HaltsWithin 1 p (init [0]) 8 ∧
        RandCallsBounded 1 p (init [0]) 8 0 ∧
+       (∀ cfg ∈ (evalRand 1 p 8 (init [0])).support,
+         ∃ reg mem, cfg = .halted 0 reg mem ∧ mem = (init (r := 16) [0]).mem) ∧
        expectedTime 1 p (init [0]) = 8) := by
   obtain ⟨p, -, hp_out⟩ := quickselect
   have h1 := hp_out 6 6 dup6 (by decide) ⟨by decide, by decide⟩
@@ -307,6 +313,8 @@ theorem quickselect_out_of_range_instances :
   exact ⟨p, ⟨h1.1, h1.2.1, fun cfg hc => by
     obtain ⟨reg, mem, hcfg, -, -, hm⟩ := h1.2.2.1 cfg hc
     exact ⟨reg, mem, hcfg, hm⟩, h1.2.2.2⟩,
-    ⟨h2.1, h2.2.1, h2.2.2.2⟩⟩
+    ⟨h2.1, h2.2.1, fun cfg hc => by
+      obtain ⟨reg, mem, hcfg, -, -, hm⟩ := h2.2.2.1 cfg hc
+      exact ⟨reg, mem, hcfg, hm⟩, h2.2.2.2⟩⟩
 
 end ComplexityTests.Abstracts.RandomizedWordRAMTests

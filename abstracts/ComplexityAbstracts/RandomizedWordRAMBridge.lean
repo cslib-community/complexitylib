@@ -22,10 +22,10 @@ This bridge establishes two facts:
 1. **Lifting randomized quicksort and quickselect from `Basis.standard` to `Basis.exact`:**
    `Cslib.Algorithms.WordRAM.Quicksort` and `Cslib.Algorithms.WordRAM.Quickselect` are written in
    `Code .standard 16` via `ram[...]` and `Allocation`, which type over `Basis.standard`. Neither
-   uses `.div` or `.mod`, and every `.sub` instruction (`gt ← gt - one` in `partStep`;
-   `sp ← sp - one`, `tmp ← hi - lo`, `tmp ← tmp - one` in `Quicksort.popPrefix`; and
+   uses `.div` or `.mod`, and every reached `.sub` instruction `a - b` (`gt ← gt - one` in
+   `partStep`; `sp ← sp - one`, `tmp ← hi - lo`, `tmp ← tmp - one` in `Quicksort.popPrefix`; and
    `len ← len - one` in `Quickselect.loadHeader`, `tmp ← hi - lo1` in `Quickselect.samplePivot`)
-   satisfies `b ≤ a` whenever reached. Translating every operation symbol identically to
+   satisfies `b ≤ a` (no subtraction underflows). Translating every operation symbol identically to
    `Basis.exact` (`toExactCode`) therefore preserves the structured `ProbComp` execution trees on
    the nose, transferring all guarantees of `Quicksort` and `Quickselect` to `Program .exact 16`.
 2. **Polymorphic presentation correspondence (Pattern B):**
@@ -256,29 +256,40 @@ private theorem ExecRand.toExact_partStep {w : ℕ} {x : Data 16} {m : ProbComp 
         | branch_neg hc' hn' =>
           exact .branch_neg hc (.branch_neg hc' (ExecRand.toExact_of_noSubDivMod hn' rfl))
 
-private theorem ExecRand.toExact_partLoop_aux {w : ℕ} {c : Code .standard 16} {x : Data 16}
-    {m : ProbComp (Data 16 × ℕ)} (h : ExecRand w c x m) :
-    c = .loop (.lt Quicksort.Reg.cur Quicksort.Reg.gt) Quicksort.partStep →
-    x.regs Quicksort.Reg.one = 1 →
-    ExecRand w (toExactCode c) x m := by
+private theorem ExecRand.toExact_loop_aux {r w : ℕ} {cond : Cond r} {body c : Code .standard r}
+    {P : Data r → Prop}
+    (hstep : ∀ {x m}, ExecRand w body x m → P x → cond.Holds x → ExecRand w (toExactCode body) x m)
+    (hinv : ∀ {x m}, ExecRand w body x m → P x → cond.Holds x → ∀ z ∈ m.support, P z.1)
+    {x : Data r} {m : ProbComp (Data r × ℕ)} (h : ExecRand w c x m) :
+    c = .loop cond body → P x → ExecRand w (toExactCode c) x m := by
   induction h with
   | loop_exit hc =>
     rintro ⟨⟩ _
     exact .loop_exit hc
-  | loop_iter hc hb hl _ ihl =>
-    rintro ⟨⟩ hone
-    refine .loop_iter hc (ExecRand.toExact_partStep hb hone hc) fun z hz => ?_
-    exact ihl z hz rfl ((ExecRand.regs_eq_of_preserves hb rfl z hz).trans hone)
+  | loop_iter hc hb _ _ ihl =>
+    rintro ⟨⟩ hP
+    exact .loop_iter hc (hstep hb hP hc) fun z hz => ihl z hz rfl (hinv hb hP hc z hz)
   | _ =>
     intro hc_eq
     cases hc_eq
+
+private theorem ExecRand.toExact_loop {r w : ℕ} {cond : Cond r} {body : Code .standard r}
+    {P : Data r → Prop}
+    (hstep : ∀ {x m}, ExecRand w body x m → P x → cond.Holds x → ExecRand w (toExactCode body) x m)
+    (hinv : ∀ {x m}, ExecRand w body x m → P x → cond.Holds x → ∀ z ∈ m.support, P z.1)
+    {x : Data r} {m : ProbComp (Data r × ℕ)} (h : ExecRand w (.loop cond body) x m) (hP : P x) :
+    ExecRand w (toExactCode (.loop cond body)) x m :=
+  ExecRand.toExact_loop_aux hstep hinv h rfl hP
 
 private theorem ExecRand.toExact_partLoop {w : ℕ} {x : Data 16} {m : ProbComp (Data 16 × ℕ)}
     (h : ExecRand w (.loop (.lt Quicksort.Reg.cur Quicksort.Reg.gt) Quicksort.partStep) x m)
     (hone : x.regs Quicksort.Reg.one = 1) :
     ExecRand w (toExactCode (.loop (.lt Quicksort.Reg.cur Quicksort.Reg.gt) Quicksort.partStep))
       x m :=
-  ExecRand.toExact_partLoop_aux h rfl hone
+  ExecRand.toExact_loop (P := fun d => d.regs Quicksort.Reg.one = 1)
+    (fun hb hP hc => ExecRand.toExact_partStep hb hP hc)
+    (fun hb hP _ z hz => (ExecRand.regs_eq_of_preserves hb rfl z hz).trans hP)
+    h hone
 
 private theorem ExecRand.toExact_partLoopAndPush {w : ℕ} {x : Data 16}
     {m : ProbComp (Data 16 × ℕ)}
@@ -677,23 +688,6 @@ private theorem ExecRand.toExact_selectStep {w : ℕ} {x : Data 16}
       (ExecRand.regs_eq_of_preserves hsamp rfl z₁ hz₁).trans hone
     exact ExecRand.toExact_partitionAndNarrow (hpn z₁ hz₁) hz₁_one
 
-private theorem ExecRand.toExact_selectLoop_aux {w : ℕ} {c : Code .standard 16} {x : Data 16}
-    {m : ProbComp (Data 16 × ℕ)} (h : ExecRand w c x m) :
-    c = .loop (.lt Quickselect.Reg.lo1 Quickselect.Reg.hi) Quickselect.selectStep →
-    x.regs Quicksort.Reg.one = 1 →
-    ExecRand w (toExactCode c) x m := by
-  induction h with
-  | loop_exit hc =>
-    rintro ⟨⟩ _
-    exact .loop_exit hc
-  | loop_iter hc hb hl _ ihl =>
-    rintro ⟨⟩ hone
-    refine .loop_iter hc (ExecRand.toExact_selectStep hb hone hc) fun z hz => ?_
-    exact ihl z hz rfl ((ExecRand.regs_eq_of_preserves hb rfl z hz).trans hone)
-  | _ =>
-    intro hc_eq
-    cases hc_eq
-
 private theorem ExecRand.toExact_selectLoop {w : ℕ} {x : Data 16} {m : ProbComp (Data 16 × ℕ)}
     (h : ExecRand w
       (.loop (.lt Quickselect.Reg.lo1 Quickselect.Reg.hi) Quickselect.selectStep) x m)
@@ -701,7 +695,10 @@ private theorem ExecRand.toExact_selectLoop {w : ℕ} {x : Data 16} {m : ProbCom
     ExecRand w
       (toExactCode (.loop (.lt Quickselect.Reg.lo1 Quickselect.Reg.hi) Quickselect.selectStep))
       x m :=
-  ExecRand.toExact_selectLoop_aux h rfl hone
+  ExecRand.toExact_loop (P := fun d => d.regs Quicksort.Reg.one = 1)
+    (fun hb hP hc => ExecRand.toExact_selectStep hb hP hc)
+    (fun hb hP _ z hz => (ExecRand.regs_eq_of_preserves hb rfl z hz).trans hP)
+    h hone
 
 private theorem selectSetup_sets_one {w : ℕ} {x : Data 16} {m : ProbComp (Data 16 × ℕ)}
     (h : ExecRand w Quickselect.selectSetup x m) :
@@ -745,42 +742,31 @@ private theorem Exec.toExact_loadHeader {w k : ℕ} {input : List ℕ}
       Exec w Quickselect.loadHeader (Data.init (k :: input)) x_hdr 4 ∧
       Exec w (toExactCode Quickselect.loadHeader) (Data.init (k :: input)) x_hdr 4 := by
   open Quickselect Quickselect.Reg in
-  let x₀ : Data 16 := Data.init (k :: input)
-  have hfit_len1 : Fits w (input.length + 1) := by
-    simpa only [List.length_cons] using hfit.1
-  have hfit1 : Fits w 1 := hfit_len1.of_le (by omega)
-  have hfit_len : Fits w input.length := hfit_len1.of_le (by omega)
-  let s₁ := x₀.set len (input.length + 1)
-  let s₂ := s₁.set one 1
-  let s₃ := s₂.set rk k
-  let x_hdr := s₃.set len input.length
-  have e₁ : Exec (B := .standard) w (.op (.load len ans)) x₀ s₁ 1 := by
-    simpa only [s₁, x₀, Data.init_regs, Data.init_mem_zero, List.length_cons] using
-      Exec.load (w := w) (d := len) (a := ans) (x := x₀)
-  have e₂ : Exec (B := .standard) w (.op (.const one 1)) s₁ s₂ 1 := Exec.const hfit1
-  have e₃ : Exec (B := .standard) w (.op (.load rk one)) s₂ s₃ 1 := by
-    have ho₂ : s₂.regs one = 1 := by simp only [s₂, Data.set_regs, Function.update_self]
-    have hm₂ : s₂.mem 1 = k := by
-      simp only [s₂, s₁, Data.set_mem, x₀, Data.init_mem_succ, List.getD_cons_zero]
-    simpa only [s₃, ho₂, hm₂] using Exec.load (w := w) (d := rk) (a := one) (x := s₂)
-  have hl₃ : s₃.regs len = input.length + 1 := by
-    simp only [s₃, s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : len ≠ rk),
-      Function.update_of_ne (by decide : len ≠ one), Function.update_self]
-  have ho₃ : s₃.regs one = 1 := by
-    simp only [s₃, s₂, Data.set_regs, Function.update_of_ne (by decide : one ≠ rk),
-      Function.update_self]
-  have e₄ : Exec w (.op (.bin .sub len len one)) s₃ x_hdr 1 := by
-    simpa only [x_hdr, hl₃, ho₃, BinOp.eval, Nat.add_sub_cancel] using
-      Exec.bin (w := w) (f := .sub) (d := len) (i := len) (j := one) (x := s₃)
-        (by simpa only [hl₃, ho₃, BinOp.eval, Nat.add_sub_cancel] using hfit_len)
-  have e₄_ex : Exec w (toExactCode (.op (.bin .sub len len one))) s₃ x_hdr 1 := by
-    cases e₄ with
-    | op ho => exact .op (by rw [eval_toExactOp_sub (by rw [hl₃, ho₃]; omega)]; exact ho)
-  exact ⟨x_hdr,
-    e₁.seq (e₂.seq (e₃.seq e₄)),
-    (Exec.toExact_of_noSubDivMod e₁ rfl).seq
-      ((Exec.toExact_of_noSubDivMod e₂ rfl).seq
-        ((Exec.toExact_of_noSubDivMod e₃ rfl).seq e₄_ex))⟩
+  obtain ⟨x_hdr, e_hdr, -, hone_hdr, -, -⟩ := loadHeader_spec hfit
+  refine ⟨x_hdr, e_hdr, ?_⟩
+  generalize (4 : ℕ) = n_hdr at e_hdr ⊢
+  cases e_hdr with
+  | @seq _ _ _ s₁ _ _ _ e₁ e₂₃₄ =>
+    cases e₂₃₄ with
+    | seq e₂ e₃₄ =>
+      cases e₃₄ with
+      | @seq _ _ _ s₃ _ _ _ e₃ e₄ =>
+        have hs₁_len : s₁.regs len = input.length + 1 := by
+          cases e₁ with
+          | op ho₁ =>
+            simp only [Op.eval, Data.init_regs, Data.init_mem_zero, List.length_cons] at ho₁
+            cases ho₁
+            simp only [Data.set_regs, Function.update_self]
+        have hs₃_len : s₃.regs len = input.length + 1 :=
+          ((e₂.seq e₃).regs_eq (by decide)).trans hs₁_len
+        have hs₃_one : s₃.regs one = 1 :=
+          (e₄.regs_eq (by decide)).symm.trans hone_hdr
+        cases e₄ with
+        | op ho₄ =>
+          exact (Exec.toExact_of_noSubDivMod e₁ rfl).seq
+            ((Exec.toExact_of_noSubDivMod e₂ rfl).seq
+              ((Exec.toExact_of_noSubDivMod e₃ rfl).seq
+                (.op (by rw [eval_toExactOp_sub (by rw [hs₃_len, hs₃_one]; omega)]; exact ho₄))))
 
 private theorem ExecRand.toExact_quickselectCode {w k : ℕ} {input : List ℕ}
     {m : ProbComp (Data 16 × ℕ)} (hfit : InputFits w (k :: input))

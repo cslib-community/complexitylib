@@ -14,33 +14,45 @@ import Mathlib.Data.List.Sort
 /-!
 # In-place randomized quickselect on the word RAM
 
-Iterative in-place 3-way randomized quickselect (Hoare's `FIND`) over
-`Cslib.WordRAM.Basis.standard`, selecting the `0`-indexed `k`-th smallest element
-(`input.mergeSort[k]`) of an `n`-word array in place using zero auxiliary memory words (`O(1)`
-registers only).
+Iterative in-place 3-way randomized quickselect over `Cslib.WordRAM.Basis.standard`. Given an
+`n`-word slice starting at address `base` and a `0`-indexed target rank `k < n`, the algorithm
+selects the `k`-th smallest element `input.mergeSort[k]` in place using zero auxiliary memory
+words (`O(1)` registers only).
 
-Maintaining a single active subarray `[lo, hi)` containing `target = base + k` (`lo ≤ target < hi`)
-and applying Dutch National Flag 3-way partitioning (`< piv`, `= piv`, `> piv`) around a uniformly
-sampled pivot `off ← rand (hi - lo - 1)` ensures that:
-1. **Pathwise correctness and zero auxiliary space:** every execution path halts cleanly returning
-   `input.mergeSort[k]`, permuting `[base, base + n)` in place so `mem (base + k)` holds
-   `input.mergeSort[k]` with `mem (base + i) ≤ mem (base + k)` for `i < k` and
-   `mem (base + k) ≤ mem (base + i)` for `k < i < n`, and modifying memory only within
-   `Finset.Ico base (base + n)`;
-2. **Strict worst-case bounds:** every iteration strictly shrinks `hi - lo` (`lt < gt` eliminates at
-   least the sampled pivot), bounding every path to at most `n - 1` `rand` calls and
-   `10 * n ^ 2 + 15` instructions;
-3. **Unconditional linear expected running time (including duplicates):** equal elements fall into
-   `[lt, gt)`, so when `lt ≤ target < gt` the active range collapses immediately to length `1`, and
-   otherwise recurses on at most one side of length at most `max r (m - 1 - r)` on sorted rank `r`.
-   The elementary identity `4 * ∑_{r < m} max r (m - 1 - r) ≤ 3 * m ^ 2` gives a `(3 / 4)`-shrinking
-   linear potential `80 * m`, proving `expectedTime w program (.init (k :: input)) ≤ 80 * n + 15`
-   uniformly over all `k < n` and all duplicate-key patterns;
-4. **Total out-of-range handling:** when `n ≤ k`, `program` halts deterministically in `8`
-   instructions with output `0`, `0` `rand` calls, and untouched memory.
+The selection loop maintains a single active subarray `[lo, hi)` of length `m = hi - lo`
+containing the target address `target = base + k` (`lo ≤ target < hi`). When `2 ≤ m`, each
+iteration samples a uniform pivot offset `off ← rand (m - 1)` with pivot value
+`piv = mem (lo + off)` and applies Dutch National Flag 3-way partitioning to split `[lo, hi)` into
+`< piv` on `[lo, lt)`, `= piv` on `[lt, gt)`, and `> piv` on `[gt, hi)`:
+1. **Pathwise correctness and zero auxiliary space:** Every execution path halts cleanly and
+   returns `input.mergeSort[k]`. The final memory permutes `[base, base + n)` in place so that
+   `mem (base + k) = input.mergeSort[k]`, `mem (base + i) ≤ mem (base + k)` for `i < k`, and
+   `mem (base + k) ≤ mem (base + i)` for `k < i < n`. All memory outside
+   `Finset.Ico base (base + n)` is unchanged.
+2. **Strict worst-case bounds:** Because the `= piv` region `[lt, gt)` contains the sampled pivot,
+   `lt < gt` holds and each iteration strictly decreases `m = hi - lo`. Every execution path
+   makes at most `n - 1` `rand` calls and executes at most `10 * n ^ 2 + 15` instructions.
+3. **Unconditional linear expected running time (including duplicates):** All copies of `piv` in
+   `[lo, hi)` land in `[lt, gt)`. When `lt ≤ target < gt`, the active range collapses immediately
+   to length `1`; otherwise, for a sampled pivot of sorted rank `r < m` in `[lo, hi)`, the next
+   active subarray has length at most `max r (m - 1 - r)`. The identity
+   `4 * ∑_{r < m} max r (m - 1 - r) ≤ 3 * m ^ 2` gives a `(3 / 4)`-shrinking linear potential
+   `80 * m` on the active subarray length `m`, proving
+   `expectedTime w program (.init (k :: input)) ≤ 80 * n + 15` uniformly over all `k < n` and all
+   duplicate-key patterns.
+4. **Total out-of-range handling:** On `State.init (k :: input)` satisfying
+   `InputFits w (k :: input)` with `n ≤ k`, `program` skips `selectSlice` and halts
+   deterministically in `8` instructions with output `0`, `0` `rand` calls, and unchanged memory.
 
 ## Main definitions
 
+* `Cslib.Algorithms.WordRAM.Quickselect.samplePivot`,
+  `Cslib.Algorithms.WordRAM.Quickselect.narrowRange`,
+  `Cslib.Algorithms.WordRAM.Quickselect.partitionAndNarrow`,
+  `Cslib.Algorithms.WordRAM.Quickselect.selectStep`,
+  `Cslib.Algorithms.WordRAM.Quickselect.selectSetup`,
+  `Cslib.Algorithms.WordRAM.Quickselect.loadHeader`: structured building blocks of the selection
+  loop and `Data.init` header.
 * `Cslib.Algorithms.WordRAM.Quickselect.selectSlice`: reusable 16-register structured subroutine
   selecting rank `regs rk` in `[regs base, regs base + regs len)` in place.
 * `Cslib.Algorithms.WordRAM.Quickselect.code`, `Cslib.Algorithms.WordRAM.Quickselect.program`:
@@ -54,6 +66,10 @@ sampled pivot `off ← rand (hi - lo - 1)` ensures that:
 
 * `Cslib.Algorithms.WordRAM.Quickselect.selectSlice_spec`: `ExecRandWithin` and linear
   `expectedCodeTime` specification for `selectSlice` on an arbitrary slice `[base, base + n)`.
+* `Cslib.Algorithms.WordRAM.Quickselect.loadHeader_spec`,
+  `Cslib.Algorithms.WordRAM.Quickselect.code_spec`,
+  `Cslib.Algorithms.WordRAM.Quickselect.code_out_of_range_spec`: structured `loadHeader` and `code`
+  specifications for `k < input.length` and `input.length ≤ k`.
 * `Cslib.Algorithms.WordRAM.Quickselect.quickselect_correct_and_bounds`: joint certificate of
   `RandHaltsWithin`, `RandCallsBounded` (`≤ n - 1`), pathwise order-statistic output, in-place
   partition order, zero-auxiliary-memory `Modifies` frame, and `O(n)` `expectedTime` at word size
@@ -61,16 +77,16 @@ sampled pivot `off ← rand (hi - lo - 1)` ensures that:
 * `Cslib.Algorithms.WordRAM.Quickselect.quickselect_out_of_range`: deterministic `8`-step halting
   when `input.length ≤ k`.
 
-Classical randomized selection (`RANDOMIZED-SELECT`) appears in [CLRS2009], Section 9.2, and
-[MitzenmacherUpfal2017], Section 2.5 (Theorem 2.5 / `LazySelect` background). The 3-way Dutch
-National Flag word-RAM formulation, zero-auxiliary-memory frame, pure-`ℕ` linear drift potential
-`80 * m`, and duplicate-key rank domination are original to this formalization.
+Classical randomized selection (`RANDOMIZED-SELECT`) appears in [CLRS2009], Section 9.2; see also
+[MitzenmacherUpfal2017], Section 3.5 (sampling-based median selection, related background). The
+3-way Dutch National Flag word-RAM formulation, zero-auxiliary-memory frame, pure-`ℕ` linear drift
+potential `80 * m`, and duplicate-key rank domination are original to this formalization.
 
 ## References
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
   Algorithms*][CLRS2009], Section 9.2.
-* [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017], Section 2.5.
+* [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017], Section 3.5.
 -/
 
 @[expose] public section
@@ -87,7 +103,7 @@ open Cslib.Algorithms.WordRAM.Quicksort (memSlice length_memSlice getElem_memSli
 
 /-- Elementary sum bound for randomized selection: `4 * ∑_{r < m} max r (m - 1 - r) ≤ 3 * m ^ 2`
 for every `m : ℕ`. -/
-theorem four_mul_sum_max_le : ∀ m : ℕ,
+private theorem four_mul_sum_max_le : ∀ m : ℕ,
     4 * ∑ r ∈ Finset.range m, max r (m - 1 - r) ≤ 3 * m ^ 2
   | 0 => by simp
   | 1 => by simp
@@ -111,17 +127,17 @@ theorem four_mul_sum_max_le : ∀ m : ℕ,
     omega
 
 /-- Linear expected-time potential `Φ(m) = 0` for `m < 2` and `80 * m` for `m ≥ 2`. -/
-def expSubCost (m : ℕ) : ℕ :=
+private def expSubCost (m : ℕ) : ℕ :=
   if m < 2 then 0 else 80 * m
 
-theorem expSubCost_of_lt_two {m : ℕ} (h : m < 2) : expSubCost m = 0 := by
+private theorem expSubCost_of_lt_two {m : ℕ} (h : m < 2) : expSubCost m = 0 := by
   simp only [expSubCost, h, ↓reduceIte]
 
-theorem expSubCost_le (m : ℕ) : expSubCost m ≤ 80 * m := by
+private theorem expSubCost_le (m : ℕ) : expSubCost m ≤ 80 * m := by
   unfold expSubCost
   split_ifs <;> omega
 
-theorem expSubCost_mono {a b : ℕ} (hab : a ≤ b) : expSubCost a ≤ expSubCost b := by
+private theorem expSubCost_mono {a b : ℕ} (hab : a ≤ b) : expSubCost a ≤ expSubCost b := by
   unfold expSubCost
   split_ifs <;> omega
 
@@ -135,7 +151,7 @@ private theorem list_map_sum_nat_eq_sum_range (l : List ℕ) (g : ℕ → ℕ) :
 
 /-- Sum of `max (countP (· < piv)) (countP (piv < ·))` over all `m = u.length` uniform pivot
 positions is bounded by `∑_{r < m} max r (m - 1 - r)`, even with duplicate keys. -/
-theorem sum_max_pivot_le (u : List ℕ) :
+private theorem sum_max_pivot_le (u : List ℕ) :
     ∑ k : Fin u.length,
       max (u.countP (· < u[k.val])) (u.countP (u[k.val] < ·)) ≤
         ∑ r ∈ Finset.range u.length, max r (u.length - 1 - r) := by
@@ -207,7 +223,7 @@ private theorem countP_le_of_suffix {l : List ℕ} (k : ℕ) {p : ℕ → Bool}
 /-- If `xs` is a permutation of `ys` partitioned around index `k < ys.length` so that
 `xs[i] ≤ xs[k]` for `i < k` and `xs[k] ≤ xs[i]` for `k < i < xs.length`, then `xs[k]` equals the
 `k`-th sorted element `ys.mergeSort[k]` (regardless of duplicate keys). -/
-theorem eq_mergeSort_getElem_of_perm_of_partitioned {xs ys : List ℕ} {k : ℕ}
+private theorem eq_mergeSort_getElem_of_perm_of_partitioned {xs ys : List ℕ} {k : ℕ}
     (hperm : xs.Perm ys) (hk : k < ys.length)
     (hleft : ∀ i (hi : i < k),
       xs[i]'(by have := hperm.length_eq; omega) ≤ xs[k]'(by have := hperm.length_eq; omega))
@@ -252,7 +268,7 @@ theorem eq_mergeSort_getElem_of_perm_of_partitioned {xs ys : List ℕ} {k : ℕ}
     omega
 
 /-- `logWidth 2 n ≤ w` suffices to fit every address up to `n + 2` for all `n : ℕ`. -/
-theorem fits_add_two {n w : ℕ} (hw : logWidth 2 n ≤ w) :
+private theorem fits_add_two {n w : ℕ} (hw : logWidth 2 n ≤ w) :
     Fits w (n + 2) := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · have hw2 : 2 ≤ w := by simpa only [logWidth, Nat.log_zero_right, zero_add, mul_one] using hw
@@ -269,8 +285,8 @@ namespace Reg
 
 /-- Output register (also `0` initially in `Data.init`). -/
 @[simp] abbrev ans : Fin 16 := 0
-/-- Constant `1` (matching `Quicksort.Reg.one`). -/
-@[simp] abbrev one : Fin 16 := 1
+/-- Constant `1` (`Quicksort.Reg.one`). -/
+@[simp] abbrev one : Fin 16 := Quicksort.Reg.one
 /-- Target `0`-indexed rank `k`. -/
 @[simp] abbrev rk : Fin 16 := 2
 /-- Slice length `n`. -/
@@ -282,23 +298,23 @@ namespace Reg
 /-- Maintained value `lo + 1` for the loop test `lo + 1 < hi`. -/
 @[simp] abbrev lo1 : Fin 16 := 6
 /-- Active subarray start address `lo` (`Quicksort.Reg.lo`). -/
-@[simp] abbrev lo : Fin 16 := 7
+@[simp] abbrev lo : Fin 16 := Quicksort.Reg.lo
 /-- Active subarray exclusive end address `hi` (`Quicksort.Reg.hi`). -/
-@[simp] abbrev hi : Fin 16 := 8
+@[simp] abbrev hi : Fin 16 := Quicksort.Reg.hi
 /-- 3-way partition `< piv` boundary `lt` (`Quicksort.Reg.lt`). -/
-@[simp] abbrev lt : Fin 16 := 9
+@[simp] abbrev lt : Fin 16 := Quicksort.Reg.lt
 /-- 3-way partition scan cursor `cur` (`Quicksort.Reg.cur`). -/
-@[simp] abbrev cur : Fin 16 := 10
+@[simp] abbrev cur : Fin 16 := Quicksort.Reg.cur
 /-- 3-way partition `> piv` boundary `gt` (`Quicksort.Reg.gt`). -/
-@[simp] abbrev gt : Fin 16 := 11
+@[simp] abbrev gt : Fin 16 := Quicksort.Reg.gt
 /-- Pivot value `piv` (`Quicksort.Reg.piv`). -/
-@[simp] abbrev piv : Fin 16 := 12
+@[simp] abbrev piv : Fin 16 := Quicksort.Reg.piv
 /-- Element scratch `val` (`Quicksort.Reg.val`). -/
-@[simp] abbrev val : Fin 16 := 13
+@[simp] abbrev val : Fin 16 := Quicksort.Reg.val
 /-- Swap scratch `val2` (`Quicksort.Reg.val2`). -/
-@[simp] abbrev val2 : Fin 16 := 14
+@[simp] abbrev val2 : Fin 16 := Quicksort.Reg.val2
 /-- Offset / address scratch `tmp` (`Quicksort.Reg.tmp`). -/
-@[simp] abbrev tmp : Fin 16 := 15
+@[simp] abbrev tmp : Fin 16 := Quicksort.Reg.tmp
 
 end Reg
 
@@ -387,11 +403,12 @@ def expectedTimeBound (n : ℕ) : ℕ :=
 
 /-- Cut property at address `cut` across `[vbase, vbase + n)`: every element before `cut` is at
 most every element from `cut` onward. -/
-def IsCut (vbase n cut : ℕ) (mem : ℕ → ℕ) : Prop :=
+private def IsCut (vbase n cut : ℕ) (mem : ℕ → ℕ) : Prop :=
   ∀ a b, vbase ≤ a → a < cut → cut ≤ b → b < vbase + n → mem a ≤ mem b
 
 /-- Outer loop invariant of `selectSlice` on `[vbase, vbase + n)` for rank `k < n`. -/
-structure SelectInv (w vbase n k : ℕ) (s₀ : List ℕ) (mem₀ : ℕ → ℕ) (x : Data 16) : Prop where
+private structure SelectInv (w vbase n k : ℕ) (s₀ : List ℕ) (mem₀ : ℕ → ℕ)
+    (x : Data 16) : Prop where
   /-- Register `one` holds `1`. -/
   one_eq : x.regs one = 1
   /-- Register `target` holds `vbase + k`. -/
@@ -634,8 +651,9 @@ private theorem narrowRange_spec {w vbase n k vlo vlt vgt vhi vpiv : ℕ}
         by rw [hy_hi]; exact hcut_hi⟩
 
 /-- Deterministic specification of `partitionAndNarrow` for a sampled pivot offset
-`off : Fin (vhi - vlo)` when `2 ≤ vhi - vlo` (`≤ 11 * (vhi - vlo) + 13` steps). -/
-theorem partitionAndNarrow_spec {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → ℕ} {x : Data 16}
+`off : Fin (x.regs hi - x.regs lo)` when `2 ≤ x.regs hi - x.regs lo`
+(`≤ 11 * (x.regs hi - x.regs lo) + 13` steps). -/
+private theorem partitionAndNarrow_spec {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → ℕ} {x : Data 16}
     (hI : SelectInv w vbase n k s₀ mem₀ x) (hm2 : 2 ≤ x.regs hi - x.regs lo)
     (off : Fin (x.regs hi - x.regs lo)) (htmp : x.regs tmp = off.val) :
     ∃ y t_pn, Exec w partitionAndNarrow x y t_pn ∧
@@ -776,7 +794,7 @@ theorem partitionAndNarrow_spec {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : 
     rcases hcases with h1 | h2 | h3 <;> omega
 
 /-- Randomized specification of `selectStep` when `lo1 < hi` holds (`2 ≤ hi - lo`). -/
-theorem selectStep_spec {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → ℕ} {x : Data 16}
+private theorem selectStep_spec {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → ℕ} {x : Data 16}
     (hI : SelectInv w vbase n k s₀ mem₀ x) (hc : (Cond.lt lo1 hi).Holds x) :
     ∃ (y : Fin (x.regs hi - x.regs lo - 1 + 1) → Data 16)
       (t : Fin (x.regs hi - x.regs lo - 1 + 1) → ℕ),
@@ -886,16 +904,16 @@ theorem selectStep_spec {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → 
   exact hseq
 
 /-- Quadratic worst-case potential `0` for `m < 2` and `10 * m ^ 2` for `m ≥ 2`. -/
-def stepPotential (x : Data 16) : ℕ :=
+private def stepPotential (x : Data 16) : ℕ :=
   let m := x.regs hi - x.regs lo
   if m < 2 then 0 else 10 * m ^ 2
 
 /-- `rand`-call potential `hi - lo - 1`. -/
-def callPotential (x : Data 16) : ℕ :=
+private def callPotential (x : Data 16) : ℕ :=
   x.regs hi - x.regs lo - 1
 
 /-- Linear expected-time potential `(expSubCost (hi - lo) : ℝ≥0∞)`. -/
-def expPotential (x : Data 16) : ℝ≥0∞ :=
+private def expPotential (x : Data 16) : ℝ≥0∞ :=
   (expSubCost (x.regs hi - x.regs lo) : ℝ≥0∞)
 
 private theorem selectStep_worstCase {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → ℕ} {x : Data 16}
@@ -1044,7 +1062,7 @@ private theorem selectStep_drift {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ :
           ENNReal.mul_div_cancel_right (by positivity) (ENNReal.natCast_ne_top m)
 
 /-- Deterministic `5`-step execution of `selectSetup`. -/
-theorem selectSetup_spec {w : ℕ} {x : Data 16}
+private theorem selectSetup_spec {w : ℕ} {x : Data 16}
     (hk : x.regs rk < x.regs len) (hfit : Fits w (x.regs base + x.regs len)) :
     ∃ x_init, Exec w selectSetup x x_init 5 ∧
       x_init.mem = x.mem ∧
@@ -1125,7 +1143,7 @@ theorem selectSetup_spec {w : ℕ} {x : Data 16}
 
 /-- Extracting order-statistic and partition-order properties from `SelectInv` at loop exit
 (`¬(lo1 < hi)`). -/
-theorem SelectInv.exit_post {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → ℕ} {y : Data 16}
+private theorem SelectInv.exit_post {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → ℕ} {y : Data 16}
     (hIy : SelectInv w vbase n k s₀ mem₀ y) (hnc : ¬(Cond.lt lo1 hi).Holds y)
     (hs₀_len : s₀.length = n) (hk : k < n) :
     y.mem (vbase + k) = s₀.mergeSort[k]'(by rw [List.length_mergeSort, hs₀_len]; exact hk) ∧

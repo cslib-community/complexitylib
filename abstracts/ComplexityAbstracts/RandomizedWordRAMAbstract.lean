@@ -17,13 +17,14 @@ import Mathlib.Data.Nat.Log
 This file states the randomized word-RAM model, its worst-case and expected running time, and the
 correctness and cost bounds of randomized in-place three-way quicksort and quickselect.
 
-For an `n`-word input, `quicksort` assumes word-fitting values and `3 * (Nat.log 2 n + 1) ≤ w`,
-sorting the array in place using a `2 * n`-word auxiliary range stack in `[n + 1, 3 * n + 1)` in
-`O(n log n)` expected time. On `init (k :: input)` (`M[0] = n + 1`, `M[1] = k`, and
-`M[2 .. n + 2) = input`), `quickselect` assumes word-fitting values and `2 * (Nat.log 2 n + 1) ≤ w`
-when `k < n`, selecting the `0`-indexed `k`-th smallest element in place with **zero** auxiliary
-memory words (modifying only `[2, n + 2)`) in linear expected time `80 n + 15`, and halting
-deterministically in `8` steps with output `0` and untouched memory when `n ≤ k`.
+For an `n`-word input `input` satisfying `InputFits w input` and `3 * (Nat.log 2 n + 1) ≤ w`,
+`quicksort` sorts the array in place using a `2 * n`-word auxiliary range stack in
+`[n + 1, 3 * n + 1)` and runs in `O(n log n)` expected time. On `init (k :: input)`
+(`M[0] = n + 1`, `M[1] = k`, and `M[2 .. n + 2) = input`) satisfying `InputFits w (k :: input)`,
+when `k < n` and `2 * (Nat.log 2 n + 1) ≤ w`, `quickselect` selects the `0`-indexed `k`-th
+smallest element in place with **zero** auxiliary memory words (modifying only `[2, n + 2)`) and
+runs in linear expected time `80 n + 15`. When `InputFits w (k :: input)` and `n ≤ k`,
+`quickselect` halts deterministically in `8` steps with output `0` and leaves memory unchanged.
 
 At word size `w`, a *word* is a natural number below `2 ^ w`. A machine has `r` registers
 `R[0], …, R[r - 1]` and memory `M[a]` for `a : ℕ`. Its ten deterministic instructions, `init`, and
@@ -240,22 +241,24 @@ For sorting (`quicksort`), one fixed 16-register program sorts `input` of length
 iterative three-way randomized quicksort (splitting around a random pivot into `<`, `=`, and `>`),
 using `M[n + 1 .. 3 n + 1)` as a `2 n`-word stack. At word size `w ≥ 3 * (Nat.log 2 n + 1)`
 (`Nat.log 2 0 = 0`, so `w ≥ 3` addresses `3 n + 3` for all `n`) on any word-fitting input, every
-branch halts within `20 n² + 8 n + 32` steps and `n - 1` `rand` calls with a sorted
-(`Pairwise (· ≤ ·)`) permutation of `input` in `M[1 .. n + 1)`, preserving memory outside
-`1, …, 3 n`, in expected time at most `120 n (Nat.log 2 n + 1) + 32`.
+branch halts within `20 n² + 8 n + 32` steps and makes at most `n - 1` `rand` calls. Each halting
+state places a sorted (`Pairwise (· ≤ ·)`) permutation of `input` in `M[1 .. n + 1)` and leaves
+memory outside `1, …, 3 n` unchanged. Expected running time is at most
+`120 n (Nat.log 2 n + 1) + 32`.
 
 For selection (`quickselect`), `init (k :: input)` places `n + 1` in `M[0]`, the `0`-indexed target
 rank `k` in `M[1]`, and the `n`-element array `input` in `M[2 .. n + 2)`. One fixed 16-register
 program narrows a single active subarray `[lo, hi)` containing `2 + k` by three-way Dutch National
 Flag partitioning with **zero** auxiliary memory words. When `k < n` and
 `w ≥ 2 * (Nat.log 2 n + 1)` (`w ≥ 2` addresses `n + 2` for all `n`) on a word-fitting `k :: input`,
-every branch halts within `10 n² + 15` steps and `n - 1` `rand` calls, returning the `0`-indexed
-`k`-th smallest element `ans = input.mergeSort.getD k 0` (where `List.mergeSort` sorts `input` in
-nondecreasing order `(· ≤ ·)`), permuting `M[2 .. n + 2)` in place so `M[2 + k] = ans`,
-`M[2 + i] ≤ ans` for `i < k`, and `ans ≤ M[2 + i]` for `k < i < n`, and preserving all memory
-outside `2, …, n + 1`, in expected time at most `80 n + 15` uniformly over all `k < n` and
-duplicate keys. When `n ≤ k`, the same program halts deterministically in `8` steps returning `0`
-with `0` `rand` calls and memory unchanged.
+every branch halts within `10 n² + 15` steps, makes at most `n - 1` `rand` calls, and returns the
+`0`-indexed `k`-th smallest element `ans = input.mergeSort.getD k 0` (where `List.mergeSort` sorts
+`input` in nondecreasing order `(· ≤ ·)`). Each halting state permutes `M[2 .. n + 2)` in place so
+that `M[2 + k] = ans`, `M[2 + i] ≤ ans` for `i < k`, and `ans ≤ M[2 + i]` for `k < i < n`, and
+leaves all memory outside `2, …, n + 1` unchanged. Expected running time is at most `80 n + 15`
+uniformly over all `k < n` and duplicate keys. When `n ≤ k` on a word-fitting `k :: input`, the
+same program halts deterministically in `8` steps, returns `0`, makes `0` `rand` calls, leaves
+memory unchanged, and has `expectedTime = 8`.
 -/
 
 /-- Start state on `input = [x₁, …, xₖ]`: `pc = 0`, registers `0`, `M[0] = k`, `M[1..k] = input`. -/
@@ -311,13 +314,13 @@ theorem quicksort :
 /-- **In-place randomized quickselect.** One fixed 16-register program selects the `0`-indexed
 `k`-th smallest element of every word-fitting `k :: input` of length `n = input.length` in place
 with zero auxiliary memory words:
-1. When `k < n` and `w ≥ 2 * (Nat.log 2 n + 1)`, every branch halts within `10 n² + 15` steps and
-   `n - 1` `rand` calls, returning `ans = input.mergeSort.getD k 0`, permuting `M[2 .. n + 2)` in
-   place with `M[2 + k] = ans`, `M[2 + i] ≤ ans` for `i < k`, and `ans ≤ M[2 + i]` for
-   `k < i < n`, preserving all memory outside `2, …, n + 1`, and running in expected time at most
-   `80 n + 15`.
-2. When `n ≤ k`, the program halts deterministically in `8` steps returning `0` with `0` `rand`
-   calls, leaving memory unchanged, and `expectedTime = 8`. -/
+1. When `k < n` and `w ≥ 2 * (Nat.log 2 n + 1)`, every branch halts within `10 n² + 15` steps,
+   makes at most `n - 1` `rand` calls, and returns `ans = input.mergeSort.getD k 0`. Each halting
+   state permutes `M[2 .. n + 2)` in place so that `M[2 + k] = ans`, `M[2 + i] ≤ ans` for `i < k`,
+   and `ans ≤ M[2 + i]` for `k < i < n`, and leaves all memory outside `2, …, n + 1` unchanged.
+   Expected running time is at most `80 n + 15`.
+2. When `n ≤ k`, the program halts deterministically in `8` steps, returns `0`, makes `0` `rand`
+   calls, leaves memory unchanged, and has `expectedTime = 8`. -/
 theorem quickselect :
     ∃ p : Program 16,
       (∀ (w k : ℕ) (input : List ℕ),

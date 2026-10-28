@@ -51,8 +51,10 @@ theorem dup6_mergeSort : dup6.mergeSort = [0, 1, 2, 2, 4, 4] := by
       · rfl
       · rfl
       · rfl
-      · rw [List.count_eq_zero.mpr (by simp [dup6]; omega),
-            List.count_eq_zero.mpr (by simp; omega)]
+      · rw [List.count_eq_zero.mpr
+            (by simp only [dup6, List.mem_cons, List.not_mem_nil, or_false]; omega),
+          List.count_eq_zero.mpr
+            (by simp only [List.mem_cons, List.not_mem_nil, or_false]; omega)]
   exact ((List.mergeSort_perm dup6 (· ≤ ·)).trans hp6).eq_of_pairwise'
     (List.pairwise_mergeSort' (· ≤ ·) dup6) (by decide)
 
@@ -162,20 +164,26 @@ theorem quickselect_singleton :
 theorem quickselect_out_of_range_dup6 :
     Executes 6 Quickselect.program (.init (6 :: dup6)) 0 8 ∧
     RandCallsBounded 6 Quickselect.program (.init (6 :: dup6)) 375 0 ∧
+    (∀ cfg ∈ (runRand 6 Quickselect.program 375 (.running (.init (6 :: dup6)))).support,
+      ∃ y : Data 16, cfg = .halted 0 y ∧ y.Bounded 6 ∧
+        y.mem = (Data.init (r := 16) (6 :: dup6)).mem) ∧
     expectedTime 6 Quickselect.program (.init (6 :: dup6)) = 8 := by
   have hfit : InputFits 6 (6 :: dup6) := by decide
-  obtain ⟨hExec, -, hCalls, -, hExp⟩ :=
+  obtain ⟨hExec, -, hCalls, hPost, hExp⟩ :=
     Quickselect.quickselect_out_of_range (w := 6) (k := 6) (input := dup6) (by decide) hfit
-  exact ⟨hExec, hCalls, hExp⟩
+  exact ⟨hExec, hCalls, hPost, hExp⟩
 
 theorem quickselect_out_of_range_empty :
     Executes 1 Quickselect.program (.init [0]) 0 8 ∧
     RandCallsBounded 1 Quickselect.program (.init [0]) 15 0 ∧
+    (∀ cfg ∈ (runRand 1 Quickselect.program 15 (.running (.init [0]))).support,
+      ∃ y : Data 16, cfg = .halted 0 y ∧ y.Bounded 1 ∧
+        y.mem = (Data.init (r := 16) [0]).mem) ∧
     expectedTime 1 Quickselect.program (.init [0]) = 8 := by
   have hfit : InputFits 1 (0 :: ([] : List ℕ)) := by decide
-  obtain ⟨hExec, -, hCalls, -, hExp⟩ :=
+  obtain ⟨hExec, -, hCalls, hPost, hExp⟩ :=
     Quickselect.quickselect_out_of_range (w := 1) (k := 0) (input := []) (by decide) hfit
-  exact ⟨hExec, hCalls, hExp⟩
+  exact ⟨hExec, hCalls, hPost, hExp⟩
 
 /-! ## 4. Reusable `selectSlice` on a custom slice `[10, 14)` at `w = 4` -/
 
